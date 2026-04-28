@@ -4,7 +4,6 @@ import React from 'react';
 import {
   LayoutDashboard,
   TrendingUp,
-  BarChart3,
   Eye,
   Brain,
   FileBarChart,
@@ -32,9 +31,8 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { id: 'dashboard' as const, label: 'لوحة التحكم', labelEn: 'Dashboard', icon: LayoutDashboard },
   { id: 'stocks' as const, label: 'الأسهم', labelEn: 'Stocks', icon: CandlestickChart },
-  { id: 'portfolio' as const, label: 'المحفظة', labelEn: 'Portfolio', icon: BarChart3 },
+  { id: 'portfolio' as const, label: 'المحفظة المالية', labelEn: 'Portfolio', icon: Wallet },
   { id: 'watchlist' as const, label: 'قائمة المراقبة', labelEn: 'Watchlist', icon: Eye },
-  { id: 'finance' as const, label: 'المحفظة المالية', labelEn: 'Finance', icon: Wallet },
   { id: 'recommendations' as const, label: 'التحليلات', labelEn: 'Analyses', icon: Brain },
   { id: 'analysis' as const, label: 'تحليل شامل', labelEn: 'Deep Analysis', icon: SearchCode },
   { id: 'reports' as const, label: 'التقارير', labelEn: 'Reports', icon: FileBarChart },

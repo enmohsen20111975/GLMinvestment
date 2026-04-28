@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard,
   TrendingUp,
-  BarChart3,
+  Wallet,
   Eye,
   Brain,
   LogIn,
@@ -28,7 +28,7 @@ import type { AppView } from '@/types';
 const mainNavItems = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
   { id: 'stocks', label: 'الأسهم', icon: TrendingUp },
-  { id: 'portfolio', label: 'المحفظة', icon: BarChart3 },
+  { id: 'portfolio', label: 'المحفظة', icon: Wallet },
   { id: 'watchlist', label: 'المراقبة', icon: Eye },
   { id: 'recommendations', label: 'التحليلات', icon: Brain },
 ];

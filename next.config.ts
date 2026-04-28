@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // VPS API URL for live EGX data - set here as fallback if not in .env
+  env: {
+    EGXPY_SERVICE_URL: process.env.EGXPY_SERVICE_URL || 'http://72.61.137.86:8010',
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
