@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShareButton } from '@/components/share/ShareButton';
-import { TipOfTheDay } from '@/components/smart-tips/SmartTip';
 import { StockSelector } from '@/components/stocks/StockSelector';
 import { toast } from 'sonner';
 
@@ -154,11 +153,6 @@ export function DashboardView() {
           <DashboardSkeleton />
         ) : (
           <div id="dashboard-export" className="space-y-3 p-3 md:p-4" dir="rtl">
-            {/* Smart Tip of the Day */}
-            <section aria-label="نصيحة اليوم">
-              <TipOfTheDay />
-            </section>
-
             {/* Market Summary Stats */}
             <section aria-label="ملخص السوق">
               <MarketSummary />
