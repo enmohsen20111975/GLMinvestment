@@ -7,6 +7,7 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { headers } from 'next/headers';
 
 const ADMIN_EMAILS = ['enmohsen2011975@gmail.com', 'ceo@m2y.net'];
 const ADMIN_USERNAMES = ['mohseny', 'admin'];
@@ -22,7 +23,17 @@ const ADMIN_USERNAMES = ['mohseny', 'admin'];
  */
 export async function getSessionUserId(): Promise<{ userId: string | null; isAdmin: boolean }> {
   try {
+    // Get headers for debugging
+    const headersList = await headers();
+    const host = headersList.get('host') || 'unknown';
+    const cookie = headersList.get('cookie') || '';
+    const hasSessionCookie = cookie.includes('next-auth.session-token') || cookie.includes('__Secure-next-auth.session-token');
+    
     const session = await getServerSession(authOptions);
+    
+    // Debug logging (remove in production if needed)
+    console.log('[Auth Helper] Host:', host, '| Has session cookie:', hasSessionCookie, '| Session exists:', !!session, '| Email:', session?.user?.email || 'none');
+    
     if (!session?.user?.email) {
       return { userId: null, isAdmin: false };
     }
@@ -32,8 +43,10 @@ export async function getSessionUserId(): Promise<{ userId: string | null; isAdm
     // session.user.id is set by the JWT callback in [...nextauth]/route.ts
     const token = session.user as Record<string, unknown>;
     const userId = (session.user.id || token.id) as string | undefined ?? null;
+    console.log('[Auth Helper] userId:', userId, '| isAdmin:', isAdmin);
     return { userId, isAdmin };
-  } catch {
+  } catch (error) {
+    console.error('[Auth Helper] Error:', error);
     return { userId: null, isAdmin: false };
   }
 }
