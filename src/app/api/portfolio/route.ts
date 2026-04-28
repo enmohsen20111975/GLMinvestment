@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db as prisma } from '@/lib/db';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 /**
  * Portfolio API
@@ -9,10 +11,35 @@ import { ensureInitialized, getLightDb } from '@/lib/egx-db';
  * POST /api/portfolio - Add new position
  */
 
+const ADMIN_EMAILS = ['enmohsen2011975@gmail.com', 'ceo@m2y.net'];
+
+/**
+ * Get the user ID from the session.
+ * Returns null if not authenticated.
+ */
+async function getSessionUserId(): Promise<{ userId: string | null; isAdmin: boolean }> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return { userId: null, isAdmin: false };
+    }
+    const isAdmin = ADMIN_EMAILS.includes(session.user.email);
+    const token = session.user as Record<string, unknown>;
+    const userId = (session.user.id || token.id) as string | undefined ?? null;
+    return { userId, isAdmin };
+  } catch {
+    return { userId: null, isAdmin: false };
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Get user ID from header (for now, use default)
-    const userId = request.headers.get('X-User-Id') || 'default-user';
+    const { userId } = await getSessionUserId();
+
+    // Unauthenticated users get empty portfolio
+    if (!userId) {
+      return NextResponse.json({ success: true, items: [], summary: null });
+    }
 
     // Ensure DB is initialized
     await ensureInitialized();
@@ -107,7 +134,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('X-User-Id') || 'default-user';
+    const { userId } = await getSessionUserId();
+
+    // Must be authenticated to add positions
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لإضافة أسهم إلى المحفظة' },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
     const {
@@ -197,7 +232,16 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = request.headers.get('X-User-Id') || 'default-user';
+    const { userId } = await getSessionUserId();
+
+    // Must be authenticated to delete positions
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول لحذف الأسهم من المحفظة' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const positionId = searchParams.get('id');
 

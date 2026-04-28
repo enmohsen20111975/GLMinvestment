@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   User,
@@ -13,6 +13,8 @@ import {
   ShieldMinus,
   Save,
   Download,
+  Crown,
+  Zap,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -33,15 +35,54 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { DataManager } from '@/components/reports/DataManager';
-import { AdminPanel } from '@/components/admin/AdminPanel';
+import { SubscriptionView } from '@/components/subscription/SubscriptionView';
 
 export function SettingsView() {
-  const { user } = useAppStore();
+  const { user, setCurrentView } = useAppStore();
   const [riskTolerance, setRiskTolerance] = useState(user?.default_risk_tolerance || 'medium');
   const [language, setLanguage] = useState('ar');
+  const [showSubscription, setShowSubscription] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<{name: string; name_ar: string} | null>(null);
+
+  // Fetch current subscription
+  useEffect(() => {
+    if (user) {
+      fetch('/api/subscription/current')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.subscription) {
+            setCurrentPlan({
+              name: data.subscription.plan_name,
+              name_ar: data.subscription.plan_name_ar,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
   const handleSave = () => {
     toast.success('تم حفظ الإعدادات بنجاح');
   };
+
+  // If showing subscription view
+  if (showSubscription) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-background">
+        <div className="p-4 md:p-6 max-w-2xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => setShowSubscription(false)}
+            className="mb-4 gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            العودة للإعدادات
+          </Button>
+          <SubscriptionView />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div dir="rtl" className="min-h-screen bg-background">
@@ -68,12 +109,41 @@ export function SettingsView() {
                 <p className="text-sm text-muted-foreground truncate">
                   {user?.email || 'لم يتم تسجيل الدخول'}
                 </p>
-                {user?.subscription_tier && (
-                  <Badge variant="secondary" className="mt-1 text-xs">
-                    {user.subscription_tier === 'free' ? 'مجاني' : user.subscription_tier === 'pro' ? 'احترافي' : 'مميز'}
+                {(currentPlan || user?.subscription_tier) && (
+                  <Badge variant="secondary" className="mt-1 text-xs gap-1">
+                    <Zap className="w-3 h-3" />
+                    {currentPlan?.name_ar || (user?.subscription_tier === 'free' ? 'مجاني' : user?.subscription_tier === 'plus' ? 'بلس' : user?.subscription_tier === 'premium' ? 'بريميوم' : 'مجاني')}
                   </Badge>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Subscription Section */}
+        <Card className="border-emerald-200 dark:border-emerald-800">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <CardTitle className="text-base">الاشتراك والباقات</CardTitle>
+            </div>
+            <CardDescription>إدارة اشتراكك والترقية لباقات أعلى</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div>
+                <p className="text-sm font-medium">باقتك الحالية</p>
+                <p className="text-xs text-muted-foreground">
+                  {currentPlan?.name_ar || (user?.subscription_tier === 'free' ? 'مجاني' : user?.subscription_tier === 'plus' ? 'بلس' : user?.subscription_tier === 'premium' ? 'بريميوم' : 'مجاني')}
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowSubscription(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              >
+                <Crown className="w-4 h-4" />
+                عرض الباقات
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -168,20 +238,6 @@ export function SettingsView() {
           </CardHeader>
           <CardContent>
             <DataManager />
-          </CardContent>
-        </Card>
-
-        {/* Admin Panel */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <CardTitle className="text-base">لوحة الإدارة</CardTitle>
-            </div>
-            <CardDescription>إدارة أسعار الذهب والعملات والتحليلات (يتطلب كلمة مرور)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AdminPanel />
           </CardContent>
         </Card>
 
