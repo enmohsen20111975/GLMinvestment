@@ -112,7 +112,7 @@ export function SettingsView() {
                 {(currentPlan || user?.subscription_tier) && (
                   <Badge variant="secondary" className="mt-1 text-xs gap-1">
                     <Zap className="w-3 h-3" />
-                    {currentPlan?.name_ar || (user?.subscription_tier === 'free' ? 'مجاني' : user?.subscription_tier === 'plus' ? 'بلس' : user?.subscription_tier === 'premium' ? 'بريميوم' : 'مجاني')}
+                    {currentPlan?.name_ar || (user?.subscription_tier === 'free' ? 'مجاني' : user?.subscription_tier === 'normal' ? 'عادي' : user?.subscription_tier === 'premium' ? 'مميز' : 'مجاني')}
                   </Badge>
                 )}
               </div>
@@ -134,7 +134,7 @@ export function SettingsView() {
               <div>
                 <p className="text-sm font-medium">باقتك الحالية</p>
                 <p className="text-xs text-muted-foreground">
-                  {currentPlan?.name_ar || (user?.subscription_tier === 'free' ? 'مجاني' : user?.subscription_tier === 'plus' ? 'بلس' : user?.subscription_tier === 'premium' ? 'بريميوم' : 'مجاني')}
+                  {currentPlan?.name_ar || (user?.subscription_tier === 'free' ? 'مجاني' : user?.subscription_tier === 'normal' ? 'عادي' : user?.subscription_tier === 'premium' ? 'مميز' : 'مجاني')}
                 </p>
               </div>
               <Button

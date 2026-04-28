@@ -296,8 +296,8 @@ interface AppStore {
   updateWatchlistItem: (id: number, updates: { alert_price_above?: number | null; alert_price_below?: number | null; alert_change_percent?: number | null; notes?: string | null }) => Promise<{ success: boolean; error: string | null }>;
   removeFromWatchlist: (id: number) => Promise<{ success: boolean; error: string | null }>;
   addToPortfolio: (stockIdOrTicker: number | string, quantity: number, avgBuyPrice: number) => Promise<{ success: boolean; error: string | null }>;
-  updatePortfolioItem: (id: number, updates: Record<string, unknown>) => Promise<{ success: boolean; error: string | null }>;
-  removeFromPortfolio: (id: number) => Promise<{ success: boolean; error: string | null }>;
+  updatePortfolioItem: (id: number | string, updates: Record<string, unknown>) => Promise<{ success: boolean; error: string | null }>;
+  removeFromPortfolio: (id: number | string) => Promise<{ success: boolean; error: string | null }>;
 
   // UI State
   isLoading: boolean;
@@ -584,19 +584,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
     fetch('/api/portfolio', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && data.items && data.items.length > 0) {
-          const items = data.items;
+        // API returns { success, positions, summary }
+        const items = data.positions || data.items || [];
+        if (data.success && items.length > 0) {
           const summary = data.summary || {};
           // Build PortfolioImpactResponse from real data
           const totalMarketValue = summary.total_market_value || 0;
-          const totalInvested = summary.total_invested || 0;
-          const totalGainLoss = summary.total_gain_loss || 0;
-          const totalGainLossPercent = summary.total_gain_loss_percent || 0;
-          const dayImpactValue = summary.day_impact_value || 0;
-          const dayImpactPercent = summary.day_impact_percent || 0;
+          const totalInvested = summary.total_cost_basis || 0;
+          const totalGainLoss = summary.total_unrealized_pnl || 0;
+          const totalGainLossPercent = summary.total_unrealized_pnl_percent || 0;
+          const dayImpactValue = 0; // Not available in current API
+          const dayImpactPercent = 0;
 
-          const positiveItems = items.filter((i: Record<string, unknown>) => Number(i.day_impact_value) > 0).sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(b.day_impact_value) - Number(a.day_impact_value)).slice(0, 5);
-          const negativeItems = items.filter((i: Record<string, unknown>) => Number(i.day_impact_value) < 0).sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(a.day_impact_value) - Number(b.day_impact_value)).slice(0, 5);
+          const positiveItems = items.filter((i: Record<string, unknown>) => Number(i.unrealized_pnl) > 0).sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(b.unrealized_pnl) - Number(a.unrealized_pnl)).slice(0, 5);
+          const negativeItems = items.filter((i: Record<string, unknown>) => Number(i.unrealized_pnl) < 0).sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(a.unrealized_pnl) - Number(b.unrealized_pnl)).slice(0, 5);
 
           const impact = {
             summary: {
@@ -618,29 +619,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
               const weight = totalMarketValue > 0 ? (Number(i.market_value) / totalMarketValue) * 100 : 0;
               return weight > 30;
             }).map((i: Record<string, unknown>) => ({
-              asset_id: i.stock_id,
-              ticker: (i as Record<string, unknown>).ticker,
-              name_ar: (i as Record<string, unknown>).name_ar,
+              asset_id: i.id,
+              ticker: i.stock_symbol,
+              name_ar: i.stock_name,
               weight_percent: totalMarketValue > 0 ? Math.round((Number(i.market_value) / totalMarketValue) * 1000) / 10 : 0,
               is_concentration_alert: true,
-              is_day_loss_alert: Number(i.day_impact_value) < 0,
+              is_day_loss_alert: Number(i.unrealized_pnl) < 0,
             })),
             top_positive: positiveItems.map((i: Record<string, unknown>) => ({
-              asset_id: i.id, ticker: i.ticker, name_ar: i.name_ar,
-              day_impact_percent: Number(i.day_impact_percent),
-              day_impact_value: Number(i.day_impact_value),
+              asset_id: i.id, ticker: i.stock_symbol, name_ar: i.stock_name,
+              day_impact_percent: 0,
+              day_impact_value: Number(i.unrealized_pnl),
             })),
             top_negative: negativeItems.map((i: Record<string, unknown>) => ({
-              asset_id: i.id, ticker: i.ticker, name_ar: i.name_ar,
-              day_impact_percent: Number(i.day_impact_percent),
-              day_impact_value: Number(i.day_impact_value),
+              asset_id: i.id, ticker: i.stock_symbol, name_ar: i.stock_name,
+              day_impact_percent: 0,
+              day_impact_value: Number(i.unrealized_pnl),
             })),
             items: items.map((i: Record<string, unknown>) => ({
-              asset_id: i.id, ticker: i.ticker, name_ar: i.name_ar,
-              quantity: Number(i.quantity), market_value: Number(i.market_value || 0),
-              total_gain_loss_value: Number(i.gain_loss || 0), total_gain_loss_percent: Number(i.gain_loss_percent || 0),
-              day_impact_percent: Number(i.day_impact_percent || 0), day_impact_value: Number(i.day_impact_value || 0),
+              asset_id: i.id, ticker: i.stock_symbol, name_ar: i.stock_name,
+              quantity: Number(i.shares), market_value: Number(i.market_value || 0),
+              total_gain_loss_value: Number(i.unrealized_pnl || 0), total_gain_loss_percent: Number(i.unrealized_pnl_percent || 0),
+              day_impact_percent: 0, day_impact_value: 0,
               weight_percent: totalMarketValue > 0 ? Math.round((Number(i.market_value || 0) / totalMarketValue) * 1000) / 10 : 0,
+              invested_value: Number(i.cost_basis || 0),
             })),
             thresholds: { concentration_alert_percent: 30, day_loss_alert_percent: 3 },
           };
@@ -749,9 +751,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   // Portfolio CRUD actions
   addToPortfolio: async (stockIdOrTicker: number | string, quantity: number, avgBuyPrice: number) => {
     try {
-      const body = typeof stockIdOrTicker === 'number'
-        ? { stock_id: stockIdOrTicker, quantity, avg_buy_price: avgBuyPrice }
-        : { ticker: stockIdOrTicker, quantity, avg_buy_price: avgBuyPrice };
+      // API expects: stock_symbol, shares, avg_cost
+      const body = {
+        stock_symbol: typeof stockIdOrTicker === 'number' ? String(stockIdOrTicker) : stockIdOrTicker.toUpperCase(),
+        shares: quantity,
+        avg_cost: avgBuyPrice,
+      };
       const res = await fetch('/api/portfolio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -766,7 +771,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
-  updatePortfolioItem: async (id: number, updates: Record<string, unknown>) => {
+  updatePortfolioItem: async (id: number | string, updates: Record<string, unknown>) => {
     try {
       const res = await fetch('/api/portfolio', {
         method: 'PUT',
@@ -782,7 +787,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
-  removeFromPortfolio: async (id: number) => {
+  removeFromPortfolio: async (id: number | string) => {
     try {
       const res = await fetch(`/api/portfolio?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -790,7 +795,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         get().loadPortfolio();
         return { success: true, error: null };
       }
-      return { success: false, error: data.error || 'فشل في إزالة السهم' };
+      return { success: false, error: data.error || 'فشل في حذف السهم' };
     } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 

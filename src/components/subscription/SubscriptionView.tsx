@@ -218,7 +218,7 @@ export function SubscriptionView() {
       badgeText: 'مجاني',
       iconBg: 'bg-gray-100 dark:bg-gray-900/30',
     },
-    plus: {
+    normal: {
       gradient: 'from-emerald-500 to-teal-600',
       border: 'border-emerald-300 dark:border-emerald-800',
       badgeBg: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
@@ -300,7 +300,7 @@ export function SubscriptionView() {
         {plans.map((plan) => {
           const styles = planStyles[plan.name] || planStyles.free;
           const isCurrent = currentTier === plan.name;
-          const isRecommended = plan.name === 'plus';
+          const isRecommended = plan.name === 'normal';
           const displayPrice = billingPeriod === 'yearly' && plan.price_yearly
             ? plan.price_yearly
             : plan.price;
@@ -329,7 +329,7 @@ export function SubscriptionView() {
                 <div className={`mx-auto w-12 h-12 rounded-xl ${styles.iconBg} flex items-center justify-center mb-3`}>
                   {plan.name === 'premium' ? (
                     <Crown className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                  ) : plan.name === 'plus' ? (
+                  ) : plan.name === 'normal' ? (
                     <Star className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Zap className="w-6 h-6 text-gray-600 dark:text-gray-400" />

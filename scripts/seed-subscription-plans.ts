@@ -32,8 +32,8 @@ const plans = [
     sort_order: 0,
   },
   {
-    name: 'plus',
-    name_ar: 'بلس',
+    name: 'normal',
+    name_ar: 'عادي',
     price: 99,
     price_yearly: 999,
     trial_days: 0,
@@ -58,12 +58,12 @@ const plans = [
   },
   {
     name: 'premium',
-    name_ar: 'بريميوم',
+    name_ar: 'مميز',
     price: 199,
     price_yearly: 1999,
     trial_days: 0,
     features: JSON.stringify([
-      'كل مميزات باقة بلس',
+      'كل مميزات باقة عادي',
       'قائمة مراقبة غير محدودة',
       'محافظ استثمارية غير محدودة',
       'تنبيهات أسعار غير محدودة',
