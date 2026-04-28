@@ -1,12 +1,13 @@
 /**
- * egxpy-bridge.ts — Node.js wrapper for TradingView data fetching
+ * egxpy-bridge.ts — Data fetching for EGX stocks
  *
- * This module fetches live EGX stock data from TradingView using:
- * 1. tradingview-ta Python package (PRIMARY)
- * 2. Web scraping fallback
+ * This module fetches live EGX stock data using:
+ * 1. VPS API Service (PRIMARY - for Hostinger deployment)
+ * 2. Python tradingview-ta fallback (for local development)
  *
  * Architecture:
- *   Next.js API route → egxpy-bridge.ts → python3 tv_fetcher.py → TradingView
+ *   Production (Hostinger): Next.js → VPS API → TradingView
+ *   Local Development:     Next.js → Python tv_fetcher.py → TradingView
  *
  * IMPORTANT: Server-side only. Never import on the client.
  */
@@ -17,7 +18,11 @@ import * as path from 'path';
 
 const execFileAsync = promisify(execFile);
 
-// Path to the tv_fetcher.py script
+// VPS API Configuration
+const VPS_API_URL = process.env.EGX_VPS_API_URL || process.env.EGXPY_SERVICE_URL || '';
+const VPS_API_TIMEOUT = 30_000; // 30 seconds
+
+// Path to the tv_fetcher.py script (fallback for local dev)
 const TV_FETCHER_PATH = path.join(process.cwd(), 'scripts', 'tv_fetcher.py');
 
 // ---- Cache ----
@@ -53,7 +58,71 @@ function clearCache(pattern?: string) {
   }
 }
 
-// ---- Python Execution ----
+// ---- VPS API Client ----
+
+interface VpsApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  count?: number;
+  timestamp?: string;
+}
+
+/**
+ * Check if VPS API is configured and available
+ */
+export async function isVpsApiAvailable(): Promise<boolean> {
+  if (!VPS_API_URL) return false;
+
+  try {
+    const response = await fetch(`${VPS_API_URL}/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await response.json();
+    return data.status === 'healthy';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Make a request to the VPS API
+ */
+async function vpsApiGet<T>(endpoint: string, params?: Record<string, string>): Promise<T | null> {
+  if (!VPS_API_URL) return null;
+
+  const url = new URL(`${VPS_API_URL}${endpoint}`);
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  }
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(VPS_API_TIMEOUT),
+    });
+
+    if (!response.ok) {
+      console.warn(`[vps-api] ${endpoint} returned ${response.status}`);
+      return null;
+    }
+
+    const result: VpsApiResponse<T> = await response.json();
+    if (!result.success) {
+      console.warn(`[vps-api] ${endpoint} error:`, result.error);
+      return null;
+    }
+
+    return result.data ?? (result as unknown as T);
+  } catch (err: any) {
+    console.error(`[vps-api] ${endpoint} failed:`, err.message);
+    return null;
+  }
+}
+
+// ---- Python Execution (Fallback) ----
 
 interface PythonResult {
   success: boolean;
@@ -64,7 +133,7 @@ interface PythonResult {
 }
 
 /**
- * Run the tv_fetcher.py script with arguments
+ * Run the tv_fetcher.py script with arguments (local fallback)
  */
 async function runTvFetcher(args: string[], timeoutMs = 30_000): Promise<string> {
   const { stdout, stderr } = await execFileAsync('python3', [TV_FETCHER_PATH, ...args], {
@@ -126,9 +195,13 @@ export interface EgxpyHistoryResult {
 // ---- Public API ----
 
 /**
- * Check if tradingview-ta is available (Python + tradingview-ta installed)
+ * Check if data fetching is available (VPS API or Python)
  */
 export async function isEgxpyAvailable(): Promise<boolean> {
+  // Try VPS API first
+  if (await isVpsApiAvailable()) return true;
+
+  // Fall back to Python check
   try {
     const result = await runTvFetcher(['quote', 'COMI'], 10_000);
     const data = JSON.parse(result);
@@ -139,7 +212,8 @@ export async function isEgxpyAvailable(): Promise<boolean> {
 }
 
 /**
- * Fetch a single stock quote by ticker from TradingView.
+ * Fetch a single stock quote by ticker.
+ * Tries VPS API first, falls back to Python.
  * Returns null on any failure (never throws).
  */
 export async function fetchQuote(ticker: string): Promise<EgxpyQuote | null> {
@@ -149,6 +223,34 @@ export async function fetchQuote(ticker: string): Promise<EgxpyQuote | null> {
   const cached = getCached<EgxpyQuote>(cacheKey);
   if (cached) return cached;
 
+  // Try VPS API first
+  if (VPS_API_URL) {
+    try {
+      const data = await vpsApiGet<any>(`/api/stock/${symbol}`);
+      if (data) {
+        const quote: EgxpyQuote = {
+          ticker: symbol,
+          exchange: 'EGX',
+          current_price: data.price,
+          previous_close: data.open || data.price - data.change,
+          open_price: data.open || data.price,
+          high_price: data.high || data.price,
+          low_price: data.low || data.price,
+          volume: data.volume || 0,
+          price_change: data.change || 0,
+          price_change_percent: data.change_percent || 0,
+          last_update: data.timestamp || new Date().toISOString(),
+          source: 'vps-api'
+        };
+        setCache(cacheKey, quote);
+        return quote;
+      }
+    } catch (err: any) {
+      console.warn(`[tv-bridge] VPS API failed for ${symbol}:`, err.message);
+    }
+  }
+
+  // Fall back to Python
   try {
     const result = await runTvFetcherJSON<any>(['quote', symbol], 20_000);
     if (result.error || !result.success) {
@@ -174,7 +276,7 @@ export async function fetchHistory(ticker: string, days: number = 30): Promise<E
   const cached = getCached<EgxpyHistoryResult>(cacheKey);
   if (cached) return cached;
 
-  // Note: History not yet implemented in tv_fetcher.py
+  // Note: History not yet implemented in VPS API or tv_fetcher.py
   // Return empty result for now
   console.warn(`[tv-bridge] fetchHistory(${symbol}) not yet implemented`);
   return {
@@ -185,17 +287,48 @@ export async function fetchHistory(ticker: string, days: number = 30): Promise<E
 
 /**
  * Fetch quotes for multiple tickers at once.
+ * Tries VPS API first, falls back to Python.
  * Returns array of quotes (empty array on failure).
  */
 export async function fetchBatchQuotes(tickers: string[]): Promise<EgxpyQuote[]> {
   if (tickers.length === 0) return [];
 
   const symbols = tickers.map(t => t.toUpperCase().trim());
-  const cacheKey = `batch:${symbols.join(',')}`;
+  const cacheKey = `batch:${symbols.slice(0, 10).join(',')}:${symbols.length}`;
 
   const cached = getCached<EgxpyQuote[]>(cacheKey);
   if (cached) return cached;
 
+  // Try VPS API first
+  if (VPS_API_URL) {
+    try {
+      const data = await vpsApiGet<any[]>('/api/stocks');
+      if (data && Array.isArray(data)) {
+        const quotes: EgxpyQuote[] = data
+          .filter((item: any) => symbols.includes(item.symbol?.toUpperCase()))
+          .map((item: any) => ({
+            ticker: item.symbol.toUpperCase(),
+            exchange: 'EGX',
+            current_price: item.price,
+            previous_close: item.open || item.price - item.change,
+            open_price: item.open || item.price,
+            high_price: item.high || item.price,
+            low_price: item.low || item.price,
+            volume: item.volume || 0,
+            price_change: item.change || 0,
+            price_change_percent: item.change_percent || 0,
+            last_update: item.timestamp || new Date().toISOString(),
+            source: 'vps-api'
+          }));
+        setCache(cacheKey, quotes);
+        return quotes;
+      }
+    } catch (err: any) {
+      console.warn('[tv-bridge] VPS API batch failed:', err.message);
+    }
+  }
+
+  // Fall back to Python
   try {
     const timeout = Math.max(30_000, symbols.length * 2000);
     const result = await runTvFetcherJSON<{ results: EgxpyQuote[]; errors: any[] }>(
@@ -211,6 +344,125 @@ export async function fetchBatchQuotes(tickers: string[]): Promise<EgxpyQuote[]>
     console.error(`[tv-bridge] fetchBatchQuotes failed:`, err.message);
     return [];
   }
+}
+
+/**
+ * Fetch all stocks from VPS API
+ */
+export async function fetchAllStocks(): Promise<EgxpyQuote[]> {
+  const cacheKey = 'all_stocks';
+
+  const cached = getCached<EgxpyQuote[]>(cacheKey);
+  if (cached) return cached;
+
+  // Try VPS API
+  if (VPS_API_URL) {
+    try {
+      const data = await vpsApiGet<any[]>('/api/stocks');
+      if (data && Array.isArray(data)) {
+        const quotes: EgxpyQuote[] = data.map((item: any) => ({
+          ticker: item.symbol.toUpperCase(),
+          exchange: 'EGX',
+          current_price: item.price,
+          previous_close: item.open || item.price - item.change,
+          open_price: item.open || item.price,
+          high_price: item.high || item.price,
+          low_price: item.low || item.price,
+          volume: item.volume || 0,
+          price_change: item.change || 0,
+          price_change_percent: item.change_percent || 0,
+          last_update: item.timestamp || new Date().toISOString(),
+          source: 'vps-api'
+        }));
+        setCache(cacheKey, quotes);
+        return quotes;
+      }
+    } catch (err: any) {
+      console.warn('[tv-bridge] VPS API fetchAllStocks failed:', err.message);
+    }
+  }
+
+  // Fall back to getting tickers from DB and fetching via Python
+  const tickers = await fetchAllActiveTickers();
+  return fetchBatchQuotes(tickers);
+}
+
+/**
+ * Fetch indices data from VPS API
+ */
+export async function fetchIndices(): Promise<EgxpyQuote[]> {
+  const cacheKey = 'indices';
+
+  const cached = getCached<EgxpyQuote[]>(cacheKey);
+  if (cached) return cached;
+
+  // Try VPS API
+  if (VPS_API_URL) {
+    try {
+      const data = await vpsApiGet<any[]>('/api/indices');
+      if (data && Array.isArray(data)) {
+        const quotes: EgxpyQuote[] = data.map((item: any) => ({
+          ticker: item.original_symbol || item.symbol.toUpperCase(),
+          exchange: 'EGX',
+          current_price: item.price,
+          previous_close: item.open || item.price - item.change,
+          open_price: item.open || item.price,
+          high_price: item.high || item.price,
+          low_price: item.low || item.price,
+          volume: item.volume || 0,
+          price_change: item.change || 0,
+          price_change_percent: item.change_percent || 0,
+          last_update: item.timestamp || new Date().toISOString(),
+          source: 'vps-api'
+        }));
+        setCache(cacheKey, quotes);
+        return quotes;
+      }
+    } catch (err: any) {
+      console.warn('[tv-bridge] VPS API fetchIndices failed:', err.message);
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Fetch gold prices from VPS API
+ */
+export async function fetchGoldPrices(): Promise<EgxpyQuote[]> {
+  const cacheKey = 'gold';
+
+  const cached = getCached<EgxpyQuote[]>(cacheKey);
+  if (cached) return cached;
+
+  // Try VPS API
+  if (VPS_API_URL) {
+    try {
+      const data = await vpsApiGet<any[]>('/api/gold');
+      if (data && Array.isArray(data)) {
+        const quotes: EgxpyQuote[] = data.map((item: any) => ({
+          ticker: item.original_symbol || item.symbol.toUpperCase(),
+          exchange: item.exchange || 'TVC',
+          current_price: item.price,
+          previous_close: item.open || item.price - item.change,
+          open_price: item.open || item.price,
+          high_price: item.high || item.price,
+          low_price: item.low || item.price,
+          volume: item.volume || 0,
+          price_change: item.change || 0,
+          price_change_percent: item.change_percent || 0,
+          last_update: item.timestamp || new Date().toISOString(),
+          source: 'vps-api'
+        }));
+        setCache(cacheKey, quotes);
+        return quotes;
+      }
+    } catch (err: any) {
+      console.warn('[tv-bridge] VPS API fetchGoldPrices failed:', err.message);
+    }
+  }
+
+  return [];
 }
 
 /**
@@ -263,4 +515,4 @@ export function egxpyQuoteToLiveStock(quote: EgxpyQuote) {
   };
 }
 
-export { clearCache };
+export { clearCache, VPS_API_URL };

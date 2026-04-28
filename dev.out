@@ -1,0 +1,59 @@
+
+> egx-investment-platform@3.4.29 dev
+> next dev -p 3000 --webpack
+
+▲ Next.js 16.2.4 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://21.0.11.122:3000
+- Environments: .env.local
+✓ Ready in 381ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[instrumentation] Server instrumentation registered (DB init deferred to first API request)
+- Experiments (use with caution):
+  · serverActions
+
+[instrumentation] Server instrumentation registered (DB init deferred to first API request)
+[Sync Live] Data source priority: vps → database fallback
+[Sync Live] VPS available: true
+[sqlite-wrapper] Diagnostic paths: {
+  "cwd": "/home/z/my-project/GLMinvestment",
+  "node_modules/sql.js/dist/sql-wasm.js": true,
+  "node_modules/sql.js/dist/sql-wasm.wasm": true,
+  "node_modules/sql.js": true,
+  "db/custom.db": true,
+  "db/egx_investment.db": true,
+  "node_modules/sql.js/dist/ (contents)": [
+    "sql-asm-debug.js",
+    "sql-asm-memory-growth.js",
+    "sql-asm.js",
+    "sql-wasm-browser-debug.js",
+    "sql-wasm-browser-debug.wasm",
+    "sql-wasm-browser.js",
+    "sql-wasm-browser.wasm",
+    "sql-wasm-debug.js",
+    "sql-wasm-debug.wasm",
+    "sql-wasm.js",
+    "sql-wasm.wasm",
+    "worker.sql-asm-debug.js",
+    "worker.sql-asm.js",
+    "worker.sql-wasm-debug.js",
+    "worker.sql-wasm.js"
+  ]
+}
+[sqlite-wrapper] Strategy 1: require(sql.js) succeeded
+[sqlite-wrapper] Using local WASM file
+[sqlite-wrapper] sql.js initialized successfully (loader: require(sql.js), wasm: local file)
+[egx-db] Light DB loaded (custom.db)
+[Sync Live] Found 295 tickers in local DB
+[Sync Live] Fetching chunk 1: COMI,ETEL,SWDY,HRHO,EKHO,TMGH,PHDC,GTHE,ESRS,ORHD
+[Sync Live] Chunk returned 8 stocks
+[Sync Live] Fetching chunk 2: CIEB,AMER,HELI,OCDI,JUFO,ABUK,SKPC,MNHD,ESGH,ALCN
+[Sync Live] Chunk returned 8 stocks
+[Sync Live] Fetching chunk 3: EFIH,BTFH,MFPC,FWRY,EGTS,CAPE,DMNH,ORTE,CLHO,PIOH
+[Sync Live] Chunk returned 6 stocks
+[Sync Live] Fetching chunk 4: APRI,EMFD,UASG,DCRC,PHAR,TEXT,SUGR,IRON,CERA,MILS
+[Sync Live] Chunk returned 7 stocks
+[Sync Live] Fetching chunk 5: OCIC,TELE,RAYA,ELKA,PETR,NSGB,KAHA,SPMD,CALT,PACL
+[Sync Live] Chunk returned 3 stocks
+[Sync Live] VPS batch returned 32 stocks total
+ POST /api/market/sync-live 200 in 12.4s (next.js: 2.4s, proxy.ts: 124ms, application-code: 9.9s)
