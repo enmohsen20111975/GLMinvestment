@@ -1,100 +1,135 @@
 # EGX Data API Service for VPS
 
-This Python Flask service runs on your VPS to fetch live EGX stock market data from TradingView. It provides HTTP API endpoints that your Next.js app on Hostinger can call.
+Python Flask API service for fetching EGX stock market data with comprehensive features.
 
-## Why This Architecture?
+## Architecture
 
-- **Hostinger shared hosting** doesn't support Python execution
-- **VPS** has full Python support and can run heavy data processing
-- **Next.js app** on Hostinger calls the VPS API for live data
-- **Separation of concerns**: Frontend on Hostinger, data fetching on VPS
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    HOSTINGER (Shared Host)                     │
+│                                                                │
+│   Next.js App (https://invist.m2y.net)                        │
+│   • User Interface                                             │
+│   • Authentication                                             │
+│   • Portfolio Management                                       │
+│   • Calls VPS API for real-time data                          │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+                            │
+                            │ HTTP API calls
+                            ▼
+┌────────────────────────────────────────────────────────────────┐
+│                    VPS (72.61.137.86:8010)                     │
+│                                                                │
+│   Python Flask API                                             │
+│   • ALL 295 EGX stocks                                         │
+│   • Real-time prices from TradingView                         │
+│   • Historical data (yfinance)                                │
+│   • Technical indicators (RSI, MACD, Bollinger)               │
+│   • Price alerts system                                        │
+│   • Daily market reports                                       │
+│   • SQLite database (caches all data)                         │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
 
 ## Quick Deploy
 
-1. **Copy files to your VPS:**
-   ```bash
-   scp -r vps-service/ root@YOUR_VPS_IP:/opt/egx-api/
-   ```
-
-2. **Run the deployment script:**
-   ```bash
-   ssh root@YOUR_VPS_IP
-   cd /opt/egx-api
-   chmod +x deploy.sh
-   ./deploy.sh
-   ```
-
-3. **Configure your Next.js app:**
-   Add to your Hostinger environment variables:
-   ```
-   EGX_VPS_API_URL=http://YOUR_VPS_IP:5000
-   ```
-
-## Manual Deploy
-
+### 1. Copy files to VPS
 ```bash
-# On your VPS
-sudo apt update
-sudo apt install python3 python3-pip -y
+scp -r vps-service/* root@72.61.137.86:/opt/egx-api/
+```
 
-# Create service directory
-sudo mkdir -p /opt/egx-api
+### 2. Install dependencies
+```bash
+ssh root@72.61.137.86
 cd /opt/egx-api
-
-# Copy files (or create them)
-# egx_api_service.py
-# requirements.txt
-
-# Install dependencies
 pip3 install -r requirements.txt
-pip3 install tradingview-ta
+```
 
-# Test run
+### 3. Run the service
+```bash
 python3 egx_api_service.py
+```
 
-# Create systemd service (for auto-start)
-sudo cp egx-api.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable egx-api
-sudo systemctl start egx-api
-
-# Check status
-sudo systemctl status egx-api
+### 4. Run as systemd service (auto-start on boot)
+```bash
+cp egx-api.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable egx-api
+systemctl start egx-api
 ```
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/api/stocks` | GET | Fetch all EGX stocks |
-| `/api/stock/<symbol>` | GET | Fetch single stock |
-| `/api/indices` | GET | Fetch EGX indices |
-| `/api/gold` | GET | Fetch gold prices |
-| `/api/sync` | POST | Full sync all data |
-| `/api/search?q=COM` | GET | Search stocks |
+**Base URL:** `http://72.61.137.86:8010`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/api/stocks/all` | **ALL 295 EGX stocks** |
+| GET | `/api/stocks` | Stocks with pagination |
+| GET | `/api/stock/{symbol}` | Single stock |
+| GET | `/api/indices` | EGX indices (EGX30, EGX50, etc.) |
+| GET | `/api/history/{symbol}` | Historical price data |
+| GET | `/api/indicators/{symbol}` | Technical indicators |
+| GET | `/api/alerts` | List price alerts |
+| POST | `/api/alerts` | Create price alert |
+| DELETE | `/api/alerts/{id}` | Delete alert |
+| GET | `/api/reports/daily` | Daily market report |
+| GET | `/api/search?q={query}` | Search stocks |
+| GET | `/api/exchanges` | List supported exchanges |
+| POST | `/api/sync` | Trigger data sync |
 
 ## Example Usage
 
+### Get ALL Stocks (295 stocks)
 ```bash
-# Health check
-curl http://YOUR_VPS_IP:5000/health
-
-# Get all stocks
-curl http://YOUR_VPS_IP:5000/api/stocks
-
-# Get single stock
-curl http://YOUR_VPS_IP:5000/api/stock/COMI
-
-# Get indices
-curl http://YOUR_VPS_IP:5000/api/indices
-
-# Get gold prices
-curl http://YOUR_VPS_IP:5000/api/gold
-
-# Full sync
-curl -X POST http://YOUR_VPS_IP:5000/api/sync
+curl http://72.61.137.86:8010/api/stocks/all
 ```
+
+### Get Single Stock
+```bash
+curl http://72.61.137.86:8010/api/stock/COMI
+```
+
+### Get Indices
+```bash
+curl http://72.61.137.86:8010/api/indices
+```
+
+### Get Technical Indicators
+```bash
+curl http://72.61.137.86:8010/api/indicators/COMI
+```
+
+### Create Price Alert
+```bash
+curl -X POST http://72.61.137.86:8010/api/alerts \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "COMI", "target_price": 150.0, "condition": "above"}'
+```
+
+### Get Daily Report
+```bash
+curl http://72.61.137.86:8010/api/reports/daily
+```
+
+## Data Storage
+
+The VPS stores all data locally in SQLite:
+- **stocks**: All 295 EGX stocks with current prices
+- **price_history**: Historical OHLCV data
+- **indices**: EGX30, EGX50, EGX70, EGX100, EGX30C
+- **price_alerts**: User price alerts
+- **daily_reports**: Cached daily reports
+
+## Automatic Sync
+
+The service automatically syncs data every 5 minutes:
+- Fetches prices for all 295 stocks from TradingView
+- Updates indices
+- Checks price alerts
 
 ## Logs
 
@@ -103,29 +138,43 @@ curl -X POST http://YOUR_VPS_IP:5000/api/sync
 journalctl -u egx-api -f
 
 # Restart service
-sudo systemctl restart egx-api
+systemctl restart egx-api
 
 # Stop service
-sudo systemctl stop egx-api
+systemctl stop egx-api
 ```
 
-## Security (Recommended)
+## Environment Variables
 
-For production, add a firewall rule and/or API key:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8010` | API server port |
+| `DATABASE_PATH` | `/opt/egx-api/data/egx_data.db` | SQLite database path |
 
-```bash
-# Allow only your Hostinger server IP
-sudo ufw allow from YOUR_HOSTINGER_IP to any port 5000
+## Files
+
+```
+vps-service/
+├── egx_api_service.py    # Main API service (complete)
+├── requirements.txt      # Python dependencies
+├── egx-api.service       # Systemd service file
+└── README.md             # This file
 ```
 
-Or add API key authentication by modifying the Python code.
+## Supported Exchanges
 
-## Adding egxpy
+| Code | Exchange | Country |
+|------|----------|---------|
+| EGX | Egyptian Exchange | Egypt |
+| NASDAQ | NASDAQ | USA |
+| NYSE | New York Stock Exchange | USA |
+| LSE | London Stock Exchange | UK |
+| TSE | Tokyo Stock Exchange | Japan |
+| HKG | Hong Kong Stock Exchange | Hong Kong |
+| TADAWUL | Saudi Stock Exchange | Saudi Arabia |
+| DFM | Dubai Financial Market | UAE |
+| NSE | National Stock Exchange | India |
 
-If you have egxpy installed on your VPS:
+---
 
-```bash
-# The service will auto-detect and use egxpy
-# You can force egxpy usage:
-curl "http://YOUR_VPS_IP:5000/api/stocks?egxpy=true"
-```
+*API Documentation: See FLUTTER_MOBILE_APP_GUIDE.md for complete Flutter integration guide.*
