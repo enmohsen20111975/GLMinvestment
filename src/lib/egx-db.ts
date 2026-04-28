@@ -713,6 +713,36 @@ export function getStocks(options?: StockFilters): PaginatedStocks {
 }
 
 // ---------------------------------------------------------------------------
+// getAllStocks (LIGHT) - Returns all active stocks as array
+// ---------------------------------------------------------------------------
+
+export function getAllStocks(): Record<string, unknown>[] {
+  const cacheKey = 'all_stocks'
+  const cached = getCached<Record<string, unknown>[]>(cacheKey)
+  if (cached) return cached
+
+  const db = getLightDb()
+  const rows = db
+    .prepare('SELECT * FROM stocks WHERE is_active = 1 ORDER BY volume DESC')
+    .all() as Record<string, unknown>[]
+
+  const stocks = toPlainRows(rows).map((stock) => {
+    const prev = Number(stock.previous_close) || 0
+    const curr = Number(stock.current_price) || 0
+    const vol = Number(stock.volume) || 0
+
+    return {
+      ...stock,
+      price_change: prev > 0 ? ((curr - prev) / prev) * 100 : 0,
+      value_traded: curr * vol,
+    }
+  })
+
+  setCache(cacheKey, stocks)
+  return stocks
+}
+
+// ---------------------------------------------------------------------------
 // getStockByTicker (LIGHT)
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureInitialized, getAllStocks, getHeavyDbHealth } from '@/lib/egx-db';
+import { ensureInitialized, getHeavyDbHealth } from '@/lib/egx-db';
 import { classifyStockMovement, type StockMovementInfo } from '@/lib/stock-movement-classifier';
 
 export const maxDuration = 60;
