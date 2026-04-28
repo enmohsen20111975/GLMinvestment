@@ -143,10 +143,11 @@ export interface VpsFinancials {
 
 /**
  * Returns the VPS service URL from the environment variable.
+ * Supports both EGXPY_SERVICE_URL and EGX_VPS_API_URL for backward compatibility.
  * Returns an empty string if not configured (caller should fall back).
  */
 export function getVpsServiceUrl(): string {
-  return process.env.EGXPY_SERVICE_URL || '';
+  return process.env.EGX_VPS_API_URL || process.env.EGXPY_SERVICE_URL || '';
 }
 
 // ---------------------------------------------------------------------------
@@ -244,13 +245,14 @@ export async function isVpsAvailable(): Promise<boolean> {
 
 /**
  * Fetch a single stock quote by ticker.
+ * Uses the VPS endpoint: GET /api/stock/{symbol}
  * Returns the quote data (with cached/source metadata) or null on failure.
  */
 export async function fetchStockQuote(
   ticker: string
 ): Promise<VpsBaseResponse<VpsStockQuote> | null> {
   return vpsFetch<VpsStockQuote>(
-    `/api/stocks/${encodeURIComponent(ticker.toUpperCase())}`
+    `/api/stock/${encodeURIComponent(ticker.toUpperCase())}`
   );
 }
 
@@ -260,14 +262,17 @@ export async function fetchStockQuote(
 
 /**
  * Fetch historical price data for a single stock.
- * `days` defaults to 30 if not specified.
+ * Uses the VPS endpoint: GET /api/history/{symbol}?period=1y
+ * `days` defaults to 30 if not specified (converted to period parameter).
  */
 export async function fetchStockHistory(
   ticker: string,
   days: number = 30
 ): Promise<VpsBaseResponse<VpsHistoryPoint[]> | null> {
+  // Convert days to period string for yfinance-style API
+  const period = days <= 7 ? '1wk' : days <= 30 ? '1mo' : days <= 90 ? '3mo' : '1y';
   return vpsFetch<VpsHistoryPoint[]>(
-    `/api/stocks/${encodeURIComponent(ticker.toUpperCase())}/history?days=${days}`
+    `/api/history/${encodeURIComponent(ticker.toUpperCase())}?period=${period}`
   );
 }
 
@@ -277,58 +282,80 @@ export async function fetchStockHistory(
 
 /**
  * Fetch quotes for multiple tickers at once.
- * Automatically chunks requests into batches of max 25 tickers each
- * and merges the results.
+ * Uses the VPS endpoint: GET /api/stocks/all to get all stocks,
+ * then filters by the requested tickers.
+ * Alternatively uses /api/search for individual lookups.
  */
 export async function fetchBatchQuotes(
   tickers: string[]
 ): Promise<VpsBaseResponse<VpsStockQuote[]> | null> {
   if (tickers.length === 0) return null;
 
-  const CHUNK_SIZE = 25;
-  const allQuotes: VpsStockQuote[] = [];
-  let anySuccess = false;
-  let isCached = true;
-  let source = '';
-
-  // Chunk tickers and fetch in parallel (up to 4 concurrent chunks)
-  const chunks: string[][] = [];
-  for (let i = 0; i < tickers.length; i += CHUNK_SIZE) {
-    chunks.push(tickers.slice(i, i + CHUNK_SIZE));
-  }
-
-  const CONCURRENCY = 4;
-  for (let i = 0; i < chunks.length; i += CONCURRENCY) {
-    const batch = chunks.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(
-      batch.map(async (chunk) => {
-        const tickerStr = chunk
-          .map((t) => t.toUpperCase())
-          .join(',');
-        return vpsFetch<VpsStockQuote[]>(
-          `/api/stocks/quotes?tickers=${encodeURIComponent(tickerStr)}`,
-          BATCH_TIMEOUT_MS
-        );
-      })
-    );
-
-    for (const result of results) {
-      if (result && result.data) {
-        allQuotes.push(...result.data);
-        anySuccess = true;
-        if (result.cached === false) isCached = false;
-        if (result.source) source = result.source;
+  // For small batches, use search endpoint
+  if (tickers.length <= 5) {
+    const results: VpsStockQuote[] = [];
+    for (const ticker of tickers) {
+      const result = await vpsFetch<{ symbol: string; current_price: number; change_amount?: number; change_percent?: number; volume?: number }[]>(
+        `/api/search?q=${encodeURIComponent(ticker.toUpperCase())}`,
+        DEFAULT_TIMEOUT_MS
+      );
+      if (result?.data?.[0]) {
+        const stock = result.data[0];
+        results.push({
+          ticker: stock.symbol,
+          current_price: stock.current_price,
+          change: stock.change_amount ?? 0,
+          change_percent: stock.change_percent ?? 0,
+          volume: stock.volume ?? 0,
+        });
       }
     }
+    if (results.length === 0) return null;
+    return {
+      success: true,
+      data: results,
+      source: 'vps-search',
+      fetched_at: new Date().toISOString(),
+    };
   }
 
-  if (!anySuccess) return null;
+  // For larger batches, get all stocks and filter
+  const result = await vpsFetch<{ data: Array<{
+    symbol: string;
+    current_price: number;
+    change_amount?: number;
+    change_percent?: number;
+    volume?: number;
+    open_price?: number;
+    high_price?: number;
+    low_price?: number;
+    previous_close?: number;
+  }> }>(
+    '/api/stocks/all',
+    BATCH_TIMEOUT_MS
+  );
+
+  if (!result?.data?.data) return null;
+
+  const tickerSet = new Set(tickers.map(t => t.toUpperCase()));
+  const filtered = result.data.data
+    .filter(s => tickerSet.has(s.symbol.toUpperCase()))
+    .map(s => ({
+      ticker: s.symbol,
+      current_price: s.current_price,
+      change: s.change_amount ?? 0,
+      change_percent: s.change_percent ?? 0,
+      volume: s.volume ?? 0,
+      open: s.open_price,
+      high: s.high_price,
+      low: s.low_price,
+      previous_close: s.previous_close,
+    }));
 
   return {
     success: true,
-    data: allQuotes,
-    cached: isCached,
-    source: source || 'vps-batch',
+    data: filtered,
+    source: 'vps-all',
     fetched_at: new Date().toISOString(),
   };
 }
@@ -339,15 +366,86 @@ export async function fetchBatchQuotes(
 
 /**
  * Fetch a market-wide overview including all stocks, indices, and market stats.
+ * Uses VPS endpoints: /api/stocks/all, /api/indices, /api/reports/daily
  */
 export async function fetchMarketOverview(
   tickers?: string[]
 ): Promise<VpsBaseResponse<VpsMarketOverview> | null> {
-  let path = '/api/market/overview';
+  // Fetch all data in parallel
+  const [stocksResult, indicesResult, reportResult] = await Promise.all([
+    vpsFetch<{ data: Array<{
+      symbol: string;
+      current_price: number;
+      change_amount?: number;
+      change_percent?: number;
+      volume?: number;
+    }> }>('/api/stocks/all', BATCH_TIMEOUT_MS),
+    vpsFetch<{ data: Array<{
+      symbol: string;
+      name?: string;
+      current_value?: number;
+      change_amount?: number;
+      change_percent?: number;
+    }> }>('/api/indices', DEFAULT_TIMEOUT_MS),
+    vpsFetch<{ data: {
+      market_summary?: {
+        total_stocks?: number;
+        gainers?: number;
+        losers?: number;
+        average_change?: number;
+      };
+    } }>('/api/reports/daily', DEFAULT_TIMEOUT_MS),
+  ]);
+
+  // Check if we got any data
+  if (!stocksResult?.data?.data) return null;
+
+  // Build quotes from stocks
+  let stocks = stocksResult.data.data.map(s => ({
+    ticker: s.symbol,
+    current_price: s.current_price,
+    change: s.change_amount ?? 0,
+    change_percent: s.change_percent ?? 0,
+    volume: s.volume ?? 0,
+  }));
+
+  // Filter by tickers if provided
   if (tickers && tickers.length > 0) {
-    path += `?tickers=${encodeURIComponent(tickers.map((t) => t.toUpperCase()).join(','))}`;
+    const tickerSet = new Set(tickers.map(t => t.toUpperCase()));
+    stocks = stocks.filter(s => tickerSet.has(s.ticker.toUpperCase()));
   }
-  return vpsFetch<VpsMarketOverview>(path, BATCH_TIMEOUT_MS);
+
+  // Build indices
+  const indices = indicesResult?.data?.data?.map(i => ({
+    symbol: i.symbol,
+    name: i.name,
+    value: i.current_value ?? 0,
+    change: i.change_amount ?? 0,
+    change_percent: i.change_percent ?? 0,
+  })) ?? [];
+
+  // Build market stats
+  const marketStats = reportResult?.data?.data?.market_summary ?? {
+    gainers: 0,
+    losers: 0,
+    unchanged: 0,
+  };
+
+  return {
+    success: true,
+    data: {
+      quotes: stocks,
+      indices,
+      market_stats: {
+        gainers: marketStats.gainers,
+        losers: marketStats.losers,
+        unchanged: (marketStats.total_stocks ?? stocks.length) - (marketStats.gainers ?? 0) - (marketStats.losers ?? 0),
+      },
+      last_updated: new Date().toISOString(),
+    },
+    source: 'vps-overview',
+    fetched_at: new Date().toISOString(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -451,12 +549,13 @@ export interface VpsTechnicalAnalysis {
 
 /**
  * Fetch technical indicators (RSI, MACD, Bollinger Bands, ATR, SMA) for a stock.
+ * Uses VPS endpoint: GET /api/indicators/{symbol}
  */
 export async function fetchTechnicalAnalysis(
   ticker: string
 ): Promise<VpsBaseResponse<VpsTechnicalAnalysis> | null> {
   return vpsFetch<VpsTechnicalAnalysis>(
-    `/api/technical/${encodeURIComponent(ticker.toUpperCase())}`,
+    `/api/indicators/${encodeURIComponent(ticker.toUpperCase())}`,
     15_000 // longer timeout for calculations
   );
 }
@@ -544,17 +643,97 @@ export async function pushBulkDataToVps(payload: {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch paginated list of all active stocks from VPS DB.
+ * Fetch list of all active stocks from VPS DB.
+ * Uses VPS endpoint: GET /api/stocks/all
+ * Note: VPS returns all stocks at once, client-side pagination is applied.
  */
-export async function fetchAllStocks(page = 1, pageSize = 100, sector?: string, search?: string): Promise<VpsBaseResponse<{
+export async function fetchAllStocks(
+  page = 1,
+  pageSize = 100,
+  _sector?: string,
+  search?: string
+): Promise<VpsBaseResponse<{
   total: number;
   page: number;
   page_size: number;
   total_pages: number;
   data: VpsStockQuote[];
 }> | null> {
-  let path = `/api/stocks/all?page=${page}&page_size=${pageSize}`;
-  if (sector) path += `&sector=${encodeURIComponent(sector)}`;
-  if (search) path += `&search=${encodeURIComponent(search)}`;
-  return vpsFetch(path, 5_000);
+  // Use search endpoint if search term provided
+  if (search) {
+    const searchResult = await vpsFetch<{ results: Array<{
+      symbol: string;
+      current_price: number;
+      change_percent?: number;
+      name?: string;
+    }> }>(
+      `/api/search?q=${encodeURIComponent(search)}`,
+      DEFAULT_TIMEOUT_MS
+    );
+
+    if (!searchResult?.data?.results) return null;
+
+    const results = searchResult.data.results.map(s => ({
+      ticker: s.symbol,
+      current_price: s.current_price,
+      change_percent: s.change_percent ?? 0,
+      volume: 0,
+    }));
+
+    return {
+      success: true,
+      data: {
+        total: results.length,
+        page: 1,
+        page_size: results.length,
+        total_pages: 1,
+        data: results,
+      },
+      source: 'vps-search',
+      fetched_at: new Date().toISOString(),
+    };
+  }
+
+  // Get all stocks from VPS
+  const result = await vpsFetch<{
+    count: number;
+    data: Array<{
+      symbol: string;
+      current_price: number;
+      change_amount?: number;
+      change_percent?: number;
+      volume?: number;
+      name?: string;
+    }>;
+    total_in_database: number;
+  }>('/api/stocks/all', BATCH_TIMEOUT_MS);
+
+  if (!result?.data?.data) return null;
+
+  const allStocks: VpsStockQuote[] = result.data.data.map(s => ({
+    ticker: s.symbol,
+    name: s.name,
+    current_price: s.current_price,
+    change: s.change_amount ?? 0,
+    change_percent: s.change_percent ?? 0,
+    volume: s.volume ?? 0,
+  }));
+
+  const total = allStocks.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const paginatedData = allStocks.slice(startIndex, startIndex + pageSize);
+
+  return {
+    success: true,
+    data: {
+      total,
+      page,
+      page_size: pageSize,
+      total_pages: totalPages,
+      data: paginatedData,
+    },
+    source: 'vps-all',
+    fetched_at: new Date().toISOString(),
+  };
 }
