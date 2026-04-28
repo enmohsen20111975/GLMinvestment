@@ -121,27 +121,68 @@ async function fetchFromVps(): Promise<{
 } | null> {
   try {
     const available = await isVpsAvailable();
+    console.log(`[Sync Live] VPS available: ${available}`);
     if (!available) {
+      console.log('[Sync Live] VPS not available, skipping');
       return null;
     }
 
-    const overview = await fetchMarketOverview();
-    if (overview?.data?.stocks && overview.data.stocks.length > 0) {
-      const stocks = vpsQuotesToLiveStocks(overview.data.stocks);
-      if (stocks.length > 0) {
-        console.log(`[Sync Live] VPS returned ${stocks.length} stocks`);
-        return { stocks: stocks.slice(0, 300), source: 'vps', message: 'Data from VPS' };
+    // Get tickers from local DB first (need to ensure initialized)
+    await ensureInitialized();
+    const dbTickers = getKnownTickersFromDb();
+    console.log(`[Sync Live] Found ${dbTickers.length} tickers in local DB`);
+    
+    // If we have tickers, batch fetch from VPS
+    if (dbTickers.length > 0) {
+      const CHUNK_SIZE = 10; // Reduced from 25 to avoid timeout
+      const allStocks: LiveStock[] = [];
+      const MAX_STOCKS = 50; // Limit to 50 stocks to avoid rate limiting
+      
+      // Fetch in chunks
+      for (let i = 0; i < Math.min(dbTickers.length, MAX_STOCKS); i += CHUNK_SIZE) {
+        const chunk = dbTickers.slice(i, i + CHUNK_SIZE);
+        console.log(`[Sync Live] Fetching chunk ${Math.floor(i / CHUNK_SIZE) + 1}: ${chunk.join(',')}`);
+        
+        try {
+          const batch = await vpsFetchBatchQuotes(chunk);
+          if (batch?.data && batch.data.length > 0) {
+            const stocks = vpsQuotesToLiveStocks(batch.data);
+            allStocks.push(...stocks);
+            console.log(`[Sync Live] Chunk returned ${stocks.length} stocks`);
+          }
+        } catch (err) {
+          console.warn(`[Sync Live] Chunk ${Math.floor(i / CHUNK_SIZE) + 1} failed:`, err);
+        }
+        
+        // Delay between chunks to avoid rate limiting
+        if (i + CHUNK_SIZE < Math.min(dbTickers.length, MAX_STOCKS)) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      if (allStocks.length > 0) {
+        console.log(`[Sync Live] VPS batch returned ${allStocks.length} stocks total`);
+        return { 
+          stocks: allStocks.slice(0, 300), 
+          source: 'vps', 
+          message: `Fresh data from VPS (${allStocks.length} stocks)` 
+        };
       }
     }
 
-    const dbTickers = getKnownTickersFromDb();
-    if (dbTickers.length > 0) {
-      const batch = await vpsFetchBatchQuotes(dbTickers);
-      if (batch?.data && batch.data.length > 0) {
-        const stocks = vpsQuotesToLiveStocks(batch.data);
-        if (stocks.length > 0) {
-          return { stocks: stocks.slice(0, 300), source: 'vps', message: 'Data from VPS (batch)' };
-        }
+    // Fallback: get default market overview
+    const overview = await fetchMarketOverview();
+    console.log(`[Sync Live] VPS overview response:`, overview ? 'received' : 'null');
+    
+    // VPS returns quotes array, not stocks
+    const quotes = overview?.data?.quotes || overview?.data?.stocks;
+    console.log(`[Sync Live] VPS quotes count: ${quotes?.length || 0}`);
+    
+    if (quotes && quotes.length > 0) {
+      const stocks = vpsQuotesToLiveStocks(quotes);
+      if (stocks.length > 0) {
+        console.log(`[Sync Live] VPS returned ${stocks.length} stocks (default)`);
+        return { stocks: stocks.slice(0, 300), source: 'vps', message: `Fresh data from VPS (${stocks.length} stocks)` };
       }
     }
 
@@ -156,12 +197,15 @@ async function fetchFromVps(): Promise<{
 // Strategy 3: Database fallback — return existing DB data
 // ---------------------------------------------------------------------------
 
-function fetchFromDatabase(): {
+async function fetchFromDatabase(): Promise<{
   stocks: LiveStock[];
   source: string;
   message?: string;
-} {
+}> {
   try {
+    // Ensure DB is initialized
+    await ensureInitialized();
+    
     // Use light DB singleton (custom.db, ~200KB) — no disk I/O
     const db = getLightDb();
     const rows = db

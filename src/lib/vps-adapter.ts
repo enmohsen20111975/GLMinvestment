@@ -57,7 +57,8 @@ export interface VpsHistoryPoint {
 
 /** Market overview item from /api/market/overview */
 export interface VpsMarketOverview {
-  stocks: VpsStockQuote[];
+  stocks?: VpsStockQuote[];
+  quotes?: VpsStockQuote[];  // VPS returns 'quotes' not 'stocks'
   market_stats?: {
     gainers?: number;
     losers?: number;
@@ -153,7 +154,7 @@ export function getVpsServiceUrl(): string {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_TIMEOUT_MS = 5_000;
-const BATCH_TIMEOUT_MS = 10_000;
+const BATCH_TIMEOUT_MS = 30_000; // Increased from 10s to 30s for TradingView requests
 const HEALTH_TIMEOUT_MS = 3_000;
 
 /**
@@ -192,14 +193,26 @@ async function vpsFetch<T>(
       return null;
     }
 
-    const json = (await response.json()) as VpsBaseResponse<T>;
+    const json = await response.json();
 
-    if (!json.success && json.error) {
+    // Handle both wrapped and unwrapped responses
+    // VPS may return { success: true, data: {...} } or just {...} directly
+    if (json.success === true && json.data) {
+      // Wrapped response
+      return json as VpsBaseResponse<T>;
+    } else if (json.error) {
+      // Error response
       console.error(`[VPS Adapter] API error: ${json.error} (url: ${url})`);
       return null;
+    } else {
+      // Unwrapped response - wrap it ourselves
+      return {
+        success: true,
+        data: json as T,
+        source: 'vps',
+        fetched_at: new Date().toISOString(),
+      };
     }
-
-    return json;
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
       console.warn(`[VPS Adapter] Timeout (${timeoutMs}ms) for ${url}`);
