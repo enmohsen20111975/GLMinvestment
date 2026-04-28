@@ -1,0 +1,7 @@
+{
+  "name": "h1-proxy",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node --watch index.js"
+  }
+}

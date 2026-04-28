@@ -1,0 +1,33 @@
+# Prevent Hostinger CDN (hcdn) from caching HTML pages
+# HTML pages must be fresh so users always get latest chunk hashes
+<IfModule mod_headers.c>
+    # No cache for HTML pages
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+        Header set Surrogate-Control "no-store"
+    </FilesMatch>
+
+    # No cache for root and page requests (no extension)
+    # Static assets (_next/static) have content hashes and CAN be cached long-term
+    <FilesMatch "^(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|webp|avif)$).*$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+        Header set Surrogate-Control "no-store"
+    </FilesMatch>
+
+    # Cache static assets with content hashes for 1 year (they never change)
+    <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|gif|svg|ico|webp|avif)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# Ensure proper MIME types
+<IfModule mod_mime.c>
+    AddType text/html .html
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+    AddType image/svg+xml .svg
+</IfModule>

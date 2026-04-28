@@ -1,0 +1,81 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+local-*
+.claude
+.z-ai-config
+*.log
+dev.log
+dev.out.log
+test
+prompt
+
+server.log
+# Skills directory
+/skills/download/egx-platform-deployment.zip
+download/egx-investment-platform-full-source.zip
+download/egx-platform-20260418-113225.zip
+download/egx-platform-subscriptions-20260418-123027.zip
+*.zip
+ziM9Y0pg
+upload/
+download/investment_fullstack
+deployment/
+hostinger-deploy/
+# Database backups (auto-created by prestart script)
+db_backups/
+flutter_egx_app/
+flutter-application/
+public/deployment_slim.zip
+public/egx-platform-deploy.zip
+deployment_slim.zip
+deployment_slim_v2.zip
+egx_investment_app.zip
+egx_investment_app_v2.zip
+egx-platform-full-source.zip
+egxpy-bridge-vps-deploy.zip
+API_DOCUMENTATION.md
+PROJECT_STATUS.md
+download/egx-platform-source-code.zip
+
+# .next build artifacts
+.next/

@@ -1,0 +1,797 @@
+import { NextResponse } from 'next/server';
+import { ensureInitialized, getWritableDb } from '@/lib/egx-db';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface GoldSyncResult {
+  success: boolean;
+  gold_updated: number;
+  silver_updated: number;
+  bullion_updated: number;
+  currency_updated: number;
+  gold_prices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }>;
+  silver_prices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }>;
+  bullion_prices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }>;
+  currency_rates: Array<{ code: string; buy_rate: number; sell_rate: number; change: number }>;
+  source: string;
+  fetched_at: string;
+  errors: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Cache — 15-minute TTL
+// ---------------------------------------------------------------------------
+
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minute cache TTL
+
+// ---------------------------------------------------------------------------
+// Database helpers
+// ---------------------------------------------------------------------------
+
+// --- Database helpers use singletons (no per-request file reads) ---
+
+// Use getWritableDb() from egx-db.ts — cached 55MB connection
+
+// ---------------------------------------------------------------------------
+// Helper: Parse number from text
+// ---------------------------------------------------------------------------
+
+function parseNumber(text: string): number | null {
+  const normalized = text
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[,،\s]/g, '');
+  const match = normalized.match(/(\d+\.?\d*)/);
+  return match ? parseFloat(match[1]) : null;
+}
+
+
+
+// ---------------------------------------------------------------------------
+// Strategy 1b: Fetch gold prices from goldrate24.com (real-time, reliable)
+// Uses native fetch — no SDK needed, no rate limits
+// ---------------------------------------------------------------------------
+
+async function fetchFromGoldrate24(): Promise<{
+  karats: Record<string, number>;
+  source: string;
+} | null> {
+  const url = 'https://www.goldrate24.com/gold-prices/middle-east/egypt/';
+  try {
+    console.log(`[Gold Sync] Fetching from goldrate24.com...`);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) {
+      console.log(`[Gold Sync] goldrate24.com returned ${response.status}`);
+      return null;
+    }
+
+    const html = await response.text();
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    const karats: Record<string, number> = {};
+
+    // Pattern: "24 Karat Gold" ... "Price per Gram : X,XXX.XX"
+    const gramPricePattern = /(\d+)\s*(?:Karat|K|karat)\s*(?:Gold)?\s*(?:Price)?[^0-9]*?(?:per\s*Gram[^0-9]*)?([\d,]+\.\d{2})/gi;
+    let match;
+    while ((match = gramPricePattern.exec(text)) !== null) {
+      const karatNum = parseInt(match[1], 10);
+      if ([24, 22, 21, 18, 16, 14, 12, 10, 8].includes(karatNum)) {
+        const price = parseNumber(match[2]);
+        if (price && price > 500 && price < 20000) {
+          karats[String(karatNum)] = price;
+        }
+      }
+    }
+
+    // Fallback: Look for table-like patterns "24K  ... X,XXX.XX EGP"
+    if (Object.keys(karats).length < 2) {
+      const tablePattern = /(\d+)\s*K[^0-9]{0,50}([\d,]+\.\d{2})\s*(?:EGP|جنيه|مصري)?/gi;
+      while ((match = tablePattern.exec(text)) !== null) {
+        const karatNum = parseInt(match[1], 10);
+        if ([24, 22, 21, 18, 16, 14].includes(karatNum)) {
+          const price = parseNumber(match[2]);
+          if (price && price > 500 && price < 20000) {
+            karats[String(karatNum)] = price;
+          }
+        }
+      }
+    }
+
+    if (Object.keys(karats).length >= 1) {
+      console.log(`[Gold Sync] goldrate24.com found:`, karats);
+      return { karats, source: 'goldrate24.com' };
+    }
+  } catch (err) {
+    console.log(`[Gold Sync] goldrate24.com error:`, String(err));
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy 2: Fetch from exchange-rates.org
+// ---------------------------------------------------------------------------
+
+async function fetchFromExchangeRates(): Promise<{
+  karats: Record<string, number>;
+  ounce_egp: number;
+  source: string;
+} | null> {
+  const url = 'https://www.exchange-rates.org/precious-metals/gold-price/egypt/';
+  try {
+    console.log(`[Gold Sync] Fetching from exchange-rates.org...`);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    const karats: Record<string, number> = {};
+    let ounce_egp = 0;
+
+    // Pattern: "24K ... X,XXX.XX"
+    const patterns: Array<{ regex: RegExp; key: string }> = [
+      { regex: /24\s*K[^0-9]*?([\d,]+\.\d+)/gi, key: '24' },
+      { regex: /22\s*K[^0-9]*?([\d,]+\.\d+)/gi, key: '22' },
+      { regex: /21\s*K[^0-9]*?([\d,]+\.\d+)/gi, key: '21' },
+      { regex: /18\s*K[^0-9]*?([\d,]+\.\d+)/gi, key: '18' },
+      { regex: /14\s*K[^0-9]*?([\d,]+\.\d+)/gi, key: '14' },
+      { regex: /10\s*K[^0-9]*?([\d,]+\.\d+)/gi, key: '10' },
+    ];
+
+    for (const { regex, key } of patterns) {
+      const match = text.match(regex);
+      if (match) {
+        const num = parseNumber(match[0]);
+        if (num && num > 500 && num < 20000) {
+          karats[key] = num;
+        }
+      }
+    }
+
+    // Ounce in EGP
+    const ounceMatch = text.match(/(?:Gold\s*Ounce|الأونصة)[^0-9]*?([\d,]+\.\d+)/i);
+    if (ounceMatch) {
+      const num = parseNumber(ounceMatch[1]);
+      if (num && num > 100000 && num < 500000) {
+        ounce_egp = num;
+      }
+    }
+
+    if (Object.keys(karats).length >= 1) {
+      console.log(`[Gold Sync] exchange-rates.org found:`, karats);
+      return { karats, ounce_egp, source: 'exchange-rates.org' };
+    }
+  } catch (err) {
+    console.log(`[Gold Sync] exchange-rates.org error:`, String(err));
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy 3: Fetch silver prices from exchange-rates.org
+// ---------------------------------------------------------------------------
+
+async function fetchSilverFromExchangeRates(): Promise<{
+  gram_egp: number;
+  ounce_egp: number;
+  source: string;
+} | null> {
+  const url = 'https://www.exchange-rates.org/precious-metals/silver-price/egypt/';
+  try {
+    console.log(`[Silver Sync] Fetching from exchange-rates.org...`);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    let gram_egp = 0;
+    let ounce_egp = 0;
+
+    // Silver gram
+    const gramMatch = text.match(/(?:per\s*Gram|جرام)[^0-9]*?([\d,]+\.\d+)/i);
+    if (gramMatch) {
+      const num = parseNumber(gramMatch[1]);
+      if (num && num > 50 && num < 1000) {
+        gram_egp = num;
+      }
+    }
+
+    // Silver ounce
+    const ounceMatch = text.match(/(?:per\s*(?:Troy\s*)?Ounce|أونصة)[^0-9]*?([\d,]+\.\d+)/i);
+    if (ounceMatch) {
+      const num = parseNumber(ounceMatch[1]);
+      if (num && num > 1000 && num < 100000) {
+        ounce_egp = num;
+      }
+    }
+
+    if (gram_egp > 0 || ounce_egp > 0) {
+      console.log(`[Silver Sync] Found: gram=${gram_egp}, ounce=${ounce_egp}`);
+      return { gram_egp, ounce_egp, source: 'exchange-rates.org' };
+    }
+  } catch (err) {
+    console.log(`[Silver Sync] exchange-rates.org error:`, String(err));
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy 4: Fetch currency from exchange-rates.org
+// ---------------------------------------------------------------------------
+
+async function fetchCurrencyRates(): Promise<{
+  rates: Record<string, { buy: number; sell: number }>;
+  source: string;
+} | null> {
+  // Try multiple reliable sources for USD/EGP
+  const sources = [
+    {
+      url: 'https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To=EGP',
+      patterns: [
+        /([\d]+\.\d{2,4})\s*(?:EGP|Egyptian|جنيه)/i,
+        /USD[^0-9]{0,50}([\d]+\.\d{2,4})/i,
+      ],
+    },
+    {
+      url: 'https://www.tradingeconomics.com/egypt/currency',
+      patterns: [
+        /([\d]+\.\d{2,4})\s*(?:EGP|Egyptian|جنيه)/i,
+        /USD\s*\/\s*EGP[^0-9]*?([\d]+\.\d{2,4})/i,
+      ],
+    },
+    {
+      url: 'https://www.x-rates.com/table/?from=USD&to=EGP',
+      patterns: [
+        /([\d]+\.\d{4})\s*EGP/i,
+        /rateConversion[^0-9]*?([\d]+\.\d{4})/i,
+      ],
+    },
+  ];
+
+  for (const source of sources) {
+    try {
+      console.log(`[Currency Sync] Fetching from ${new URL(source.url).hostname}...`);
+      const response = await fetch(source.url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!response.ok) continue;
+
+      const html = await response.text();
+      const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+      let rate: number | null = null;
+      for (const pattern of source.patterns) {
+        const match = text.match(pattern);
+        if (match) {
+          const num = parseFloat(match[1].replace(/,/g, ''));
+          if (num > 20 && num < 80) {
+            rate = num;
+            break;
+          }
+        }
+      }
+
+      if (rate) {
+        console.log(`[Currency Sync] USD/EGP rate: ${rate} from ${new URL(source.url).hostname}`);
+        return {
+          rates: {
+            USD: { buy: rate, sell: Math.round((rate + 0.5) * 100) / 100 },
+          },
+          source: new URL(source.url).hostname,
+        };
+      }
+    } catch (err) {
+      console.log(`[Currency Sync] ${source.url} error:`, String(err));
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy 5: Fallback - use goldpricedata.com
+// ---------------------------------------------------------------------------
+
+async function fetchFromGoldPriceData(): Promise<{
+  karats: Record<string, number>;
+  source: string;
+} | null> {
+  const url = 'https://www.goldpricedata.com/en/gold-rates/egypt/';
+  try {
+    console.log(`[Gold Sync] Fetching from goldpricedata.com...`);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    const karats: Record<string, number> = {};
+
+    const patterns: Array<{ regex: RegExp; key: string }> = [
+      { regex: /24\s*(?:K|karat|عيار)[^0-9]*?([\d,]+\.\d+)/gi, key: '24' },
+      { regex: /21\s*(?:K|karat|عيار)[^0-9]*?([\d,]+\.\d+)/gi, key: '21' },
+      { regex: /18\s*(?:K|karat|عيار)[^0-9]*?([\d,]+\.\d+)/gi, key: '18' },
+      { regex: /16\s*(?:K|karat|عيار)[^0-9]*?([\d,]+\.\d+)/gi, key: '16' },
+    ];
+
+    for (const { regex, key } of patterns) {
+      const match = text.match(regex);
+      if (match) {
+        const num = parseNumber(match[0]);
+        if (num && num > 500 && num < 20000) {
+          karats[key] = num;
+        }
+      }
+    }
+
+    if (Object.keys(karats).length >= 1) {
+      console.log(`[Gold Sync] goldpricedata.com found:`, karats);
+      return { karats, source: 'goldpricedata.com' };
+    }
+  } catch (err) {
+    console.log(`[Gold Sync] goldpricedata.com error:`, String(err));
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Derive additional karats from 24K using proportional purity
+// ---------------------------------------------------------------------------
+function deriveKarats(base24: number): Record<string, number> {
+  return {
+    '21': Math.round(base24 * 21 / 24 * 100) / 100,
+    '18': Math.round(base24 * 18 / 24 * 100) / 100,
+    '16': Math.round(base24 * 16 / 24 * 100) / 100,
+    '14': Math.round(base24 * 14 / 24 * 100) / 100,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Calculate bullion prices (24K gold + small making premium)
+// ---------------------------------------------------------------------------
+
+function calculateBullionPrices(karat24Price: number, ouncePrice: number): Record<string, { name_ar: string; price: number }> {
+  const premiumRates: Record<string, { name_ar: string; premium: number; weight: number }> = {
+    'bullion_1g': { name_ar: 'سبيكة 1 جرام', premium: 0.05, weight: 1 },
+    'bullion_5g': { name_ar: 'سبيكة 5 جرام', premium: 0.04, weight: 5 },
+    'bullion_10g': { name_ar: 'سبيكة 10 جرام', premium: 0.03, weight: 10 },
+    'bullion_50g': { name_ar: 'سبيكة 50 جرام', premium: 0.025, weight: 50 },
+    'bullion_100g': { name_ar: 'سبيكة 100 جرام', premium: 0.02, weight: 100 },
+    'bullion_1oz': { name_ar: 'سبيكة 1 أونصة', premium: 0.015, weight: 1 },
+    'gold_pound': { name_ar: 'الجنيه الذهب', premium: 0.04, weight: 8 },
+  };
+
+  const result: Record<string, { name_ar: string; price: number }> = {};
+  for (const [key, info] of Object.entries(premiumRates)) {
+    const basePrice = key === 'bullion_1oz' ? ouncePrice : karat24Price;
+    const weight = key === 'bullion_1oz' ? 1 : info.weight;
+    result[key] = {
+      name_ar: info.name_ar,
+      price: Math.round(basePrice * (1 + info.premium) * weight * 100) / 100,
+    };
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Main fetch function
+// ---------------------------------------------------------------------------
+
+async function fetchAllPrices(bypassCache = false): Promise<{
+  goldPrices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }>;
+  silverPrices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }>;
+  bullionPrices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }>;
+  currencyRates: Array<{ code: string; buy_rate: number; sell_rate: number; change: number }>;
+  source: string;
+}> {
+  // Check cache (skip for POST sync operations)
+  const cached = !bypassCache && (globalThis as Record<string, unknown>).__goldSyncCache as { data: GoldSyncResult; expiresAt: number } | undefined;
+  if (cached && cached.expiresAt > Date.now()) {
+    console.log('[Gold Sync] Returning cached data');
+    return {
+      goldPrices: cached.data.gold_prices,
+      silverPrices: cached.data.silver_prices,
+      bullionPrices: cached.data.bullion_prices,
+      currencyRates: cached.data.currency_rates,
+      source: cached.data.source,
+    };
+  }
+
+  // --- Fetch gold prices (try multiple sources) ---
+  let goldKarats: Record<string, number> = {};
+  let goldSource = '';
+  let ounceEgp = 0;
+
+  // Priority 1: gold-api.com (official USD prices, most accurate)
+  const goldApiResult = await fetchFromGoldApiCom();
+  if (goldApiResult) {
+    goldKarats = goldApiResult.karats;
+    ounceEgp = goldApiResult.ounce_usd;
+    goldSource = goldApiResult.source;
+  }
+
+  // Priority 2: goldrate24.com
+  if (Object.keys(goldKarats).length < 2) {
+    const goldResult = await fetchFromGoldrate24();
+    if (goldResult) {
+      goldKarats = goldResult.karats;
+      goldSource = goldResult.source;
+    }
+  }
+
+  // Priority 3: exchange-rates.org
+  if (Object.keys(goldKarats).length < 2) {
+    const exchangeResult = await fetchFromExchangeRates();
+    if (exchangeResult) {
+      for (const [k, v] of Object.entries(exchangeResult.karats)) {
+        if (!goldKarats[k]) goldKarats[k] = v;
+      }
+      if (exchangeResult.ounce_egp) ounceEgp = exchangeResult.ounce_egp;
+      if (!goldSource) goldSource = exchangeResult.source;
+    }
+  }
+
+  // Priority 4: goldpricedata.com
+  if (Object.keys(goldKarats).length < 2) {
+    const gpdResult = await fetchFromGoldPriceData();
+    if (gpdResult) {
+      for (const [k, v] of Object.entries(gpdResult.karats)) {
+        if (!goldKarats[k]) goldKarats[k] = v;
+      }
+      if (!goldSource) goldSource = gpdResult.source;
+    }
+  }
+
+  // Derive missing karats from 24K
+  if (goldKarats['24']) {
+    const derived = deriveKarats(goldKarats['24']);
+    for (const [k, v] of Object.entries(derived)) {
+      if (!goldKarats[k]) goldKarats[k] = v;
+    }
+  }
+
+  // --- Fetch silver ---
+  let silverGram = 0;
+  let silverOunce = 0;
+  let silverSource = '';
+
+  const silverResult = await fetchSilverFromExchangeRates();
+  if (silverResult) {
+    silverGram = silverResult.gram_egp;
+    silverOunce = silverResult.ounce_egp;
+    silverSource = silverResult.source;
+  }
+
+  // Fallback: derive silver from gold (ratio ~1:80)
+  if (silverGram === 0 && goldKarats['24']) {
+    silverGram = Math.round(goldKarats['24'] / 80 * 100) / 100;
+    silverSource = 'derived';
+  }
+  if (silverOunce === 0 && silverGram > 0) {
+    silverOunce = Math.round(silverGram * 31.1035 * 100) / 100;
+  }
+
+  // --- Fetch currency ---
+  let currencyData: Record<string, { buy: number; sell: number }> = {};
+  let currencySource = '';
+
+  const currResult = await fetchCurrencyRates();
+  if (currResult) {
+    currencyData = currResult.rates;
+    currencySource = currResult.source;
+  }
+
+  // Derive SAR/AED from USD
+  if (currencyData['USD']) {
+    const usdBuy = currencyData['USD'].buy;
+    if (!currencyData['SAR']) {
+      const sarBuy = Math.round(usdBuy / 3.75 * 100) / 100;
+      currencyData['SAR'] = { buy: sarBuy, sell: Math.round((sarBuy + 0.05) * 100) / 100 };
+    }
+    if (!currencyData['AED']) {
+      const aedBuy = Math.round(usdBuy / 3.6725 * 100) / 100;
+      currencyData['AED'] = { buy: aedBuy, sell: Math.round((aedBuy + 0.05) * 100) / 100 };
+    }
+    // Derive EUR, GBP, KWD from USD using approximate cross rates
+    if (!currencyData['EUR']) {
+      const eurRate = Math.round(usdBuy * 1.08 * 100) / 100;
+      currencyData['EUR'] = { buy: eurRate, sell: Math.round((eurRate + 0.5) * 100) / 100 };
+    }
+    if (!currencyData['GBP']) {
+      const gbpRate = Math.round(usdBuy * 1.26 * 100) / 100;
+      currencyData['GBP'] = { buy: gbpRate, sell: Math.round((gbpRate + 0.8) * 100) / 100 };
+    }
+    if (!currencyData['KWD']) {
+      const kwdRate = Math.round(usdBuy / 0.307 * 100) / 100;
+      currencyData['KWD'] = { buy: kwdRate, sell: Math.round((kwdRate + 0.3) * 100) / 100 };
+    }
+  }
+
+  // --- Build arrays ---
+  const karatNames: Record<string, string> = {
+    '24': 'عيار 24', '22': 'عيار 22', '21': 'عيار 21', '18': 'عيار 18',
+    '16': 'عيار 16', '14': 'عيار 14', '12': 'عيار 12', '10': 'عيار 10',
+  };
+
+  const goldPrices = Object.entries(goldKarats)
+    .filter(([, price]) => price > 0)
+    .map(([karat, price]) => ({
+      karat,
+      name_ar: karatNames[karat] || `عيار ${karat}`,
+      price_per_gram: price,
+      change: 0,
+      currency: 'EGP' as const,
+    }));
+
+  // Add ounce entry if we have it
+  if (ounceEgp > 0) {
+    goldPrices.push({
+      karat: 'ounce',
+      name_ar: 'الأونصة (24K)',
+      price_per_gram: ounceEgp,
+      change: 0,
+      currency: 'EGP' as const,
+    });
+  }
+
+  const silverPrices: Array<{ karat: string; name_ar: string; price_per_gram: number; change: number; currency: string }> = [];
+  if (silverGram > 0) {
+    silverPrices.push({ karat: 'silver', name_ar: 'فضة (جرام)', price_per_gram: silverGram, change: 0, currency: 'EGP' });
+  }
+  if (silverOunce > 0) {
+    silverPrices.push({ karat: 'silver_ounce', name_ar: 'أونصة فضة', price_per_gram: silverOunce, change: 0, currency: 'EGP' });
+  }
+
+  const bullionCalc = goldKarats['24'] ? calculateBullionPrices(goldKarats['24'], ounceEgp || goldKarats['24'] * 31.1035) : {};
+  const bullionPrices = Object.entries(bullionCalc).map(([karat, info]) => ({
+    karat,
+    name_ar: info.name_ar,
+    price_per_gram: info.price,
+    change: 0,
+    currency: 'EGP' as const,
+  }));
+
+  const currencyRatesArray = Object.entries(currencyData).map(([code, rates]) => ({
+    code,
+    buy_rate: rates.buy,
+    sell_rate: rates.sell,
+    change: 0,
+  }));
+
+  // Combine sources
+  const allSources = [goldSource, silverSource, currencySource].filter(Boolean).join(', ');
+
+  // Cache
+  if (goldPrices.length > 0 || currencyRatesArray.length > 0) {
+    const result: GoldSyncResult = {
+      success: true,
+      gold_updated: goldPrices.length,
+      silver_updated: silverPrices.length,
+      bullion_updated: bullionPrices.length,
+      currency_updated: currencyRatesArray.length,
+      gold_prices: goldPrices,
+      silver_prices: silverPrices,
+      bullion_prices: bullionPrices,
+      currency_rates: currencyRatesArray,
+      source: allSources || 'unknown',
+      fetched_at: new Date().toISOString(),
+      errors: [],
+    };
+    (globalThis as Record<string, unknown>).__goldSyncCache = {
+      data: result,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    };
+  }
+
+  return { goldPrices, silverPrices, bullionPrices, currencyRates: currencyRatesArray, source: allSources };
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/market/gold/sync
+// ---------------------------------------------------------------------------
+
+export async function POST() {
+  try {
+    const { goldPrices, silverPrices, bullionPrices, currencyRates, source } = await fetchAllPrices(true); // Always bypass cache for POST
+
+    if (goldPrices.length === 0 && silverPrices.length === 0 && currencyRates.length === 0) {
+      return NextResponse.json({
+        success: false,
+        gold_updated: 0,
+        silver_updated: 0,
+        bullion_updated: 0,
+        currency_updated: 0,
+        gold_prices: [],
+        silver_prices: [],
+        bullion_prices: [],
+        currency_rates: [],
+        source,
+        fetched_at: new Date().toISOString(),
+        errors: ['لم يتم العثور على بيانات أسعار من مصادر خارجية'],
+      });
+    }
+
+    const errors: string[] = [];
+    let goldUpdated = 0;
+    let silverUpdated = 0;
+    let bullionUpdated = 0;
+    let currencyUpdated = 0;
+
+    try {
+      await ensureInitialized();
+      const db = getWritableDb();
+
+      // Update gold prices
+      for (const gp of goldPrices) {
+        try {
+          const existing = db.prepare('SELECT price_per_gram FROM gold_prices WHERE karat = ?').get(gp.karat) as { price_per_gram: number } | undefined;
+          const oldPrice = existing ? Number(existing.price_per_gram) : 0;
+          const change = oldPrice > 0 ? Math.round((gp.price_per_gram - oldPrice) * 100) / 100 : 0;
+
+          const result = db.prepare(
+            `UPDATE gold_prices SET price_per_gram = ?, change = ?, updated_at = datetime('now'), updated_by = ? WHERE karat = ?`
+          ).run(gp.price_per_gram, change, 'system_sync', gp.karat);
+
+          if (result.changes > 0) {
+            goldUpdated++;
+            try {
+              db.prepare(
+                `INSERT INTO gold_price_history (karat, price_per_gram, change, currency, recorded_at, source)
+                 VALUES (?, ?, ?, ?, datetime('now'), ?)`
+              ).run(gp.karat, gp.price_per_gram, change, 'EGP', source);
+            } catch { /* ignore */ }
+          }
+        } catch (err) {
+          errors.push(`خطأ في تحديث ذهب ${gp.karat}: ${String(err)}`);
+        }
+      }
+
+      // Update silver
+      for (const sp of silverPrices) {
+        try {
+          const existing = db.prepare('SELECT price_per_gram FROM gold_prices WHERE karat = ?').get(sp.karat) as { price_per_gram: number } | undefined;
+          const oldPrice = existing ? Number(existing.price_per_gram) : 0;
+          const change = oldPrice > 0 ? Math.round((sp.price_per_gram - oldPrice) * 100) / 100 : 0;
+
+          const result = db.prepare(
+            `UPDATE gold_prices SET price_per_gram = ?, change = ?, updated_at = datetime('now'), updated_by = ? WHERE karat = ?`
+          ).run(sp.price_per_gram, change, 'system_sync', sp.karat);
+
+          if (result.changes > 0) {
+            silverUpdated++;
+            try {
+              db.prepare(
+                `INSERT INTO gold_price_history (karat, price_per_gram, change, currency, recorded_at, source)
+                 VALUES (?, ?, ?, ?, datetime('now'), ?)`
+              ).run(sp.karat, sp.price_per_gram, change, 'EGP', source);
+            } catch { /* ignore */ }
+          }
+        } catch (err) {
+          errors.push(`خطأ في تحديث فضة ${sp.karat}: ${String(err)}`);
+        }
+      }
+
+      // Update bullion
+      for (const bp of bullionPrices) {
+        try {
+          const existing = db.prepare('SELECT price_per_gram FROM gold_prices WHERE karat = ?').get(bp.karat) as { price_per_gram: number } | undefined;
+          const oldPrice = existing ? Number(existing.price_per_gram) : 0;
+          const change = oldPrice > 0 ? Math.round((bp.price_per_gram - oldPrice) * 100) / 100 : 0;
+
+          const result = db.prepare(
+            `UPDATE gold_prices SET price_per_gram = ?, change = ?, updated_at = datetime('now'), updated_by = ? WHERE karat = ?`
+          ).run(bp.price_per_gram, change, 'system_sync', bp.karat);
+
+          if (result.changes > 0) {
+            bullionUpdated++;
+          }
+        } catch (err) {
+          errors.push(`خطأ في تحديث سبائك ${bp.karat}: ${String(err)}`);
+        }
+      }
+
+      // Update currency
+      for (const cr of currencyRates) {
+        try {
+          const existing = db.prepare('SELECT buy_rate FROM currency_rates WHERE code = ?').get(cr.code) as { buy_rate: number } | undefined;
+          const oldRate = existing ? Number(existing.buy_rate) : 0;
+          const change = oldRate > 0 ? Math.round((cr.buy_rate - oldRate) * 100) / 100 : 0;
+
+          const result = db.prepare(
+            `UPDATE currency_rates SET buy_rate = ?, sell_rate = ?, change = ?, updated_at = datetime('now'), updated_by = ? WHERE code = ?`
+          ).run(cr.buy_rate, cr.sell_rate, change, 'system_sync', cr.code);
+
+          if (result.changes > 0) {
+            currencyUpdated++;
+          }
+        } catch (err) {
+          errors.push(`خطأ في تحديث عملة ${cr.code}: ${String(err)}`);
+        }
+      }
+
+      // DON'T close the singleton — it persists across requests
+      return NextResponse.json({
+        success: goldUpdated > 0 || silverUpdated > 0 || currencyUpdated > 0,
+        gold_updated: goldUpdated,
+        silver_updated: silverUpdated,
+        bullion_updated: bullionUpdated,
+        currency_updated: currencyUpdated,
+        gold_prices: goldPrices,
+        silver_prices: silverPrices,
+        bullion_prices: bullionPrices,
+        currency_rates: currencyRates,
+        source,
+        fetched_at: new Date().toISOString(),
+        errors,
+      });
+    } catch (error) {
+      console.error('[POST /api/market/gold/sync] DB write error:', error);
+      return NextResponse.json(
+      {
+        success: false,
+        gold_updated: 0,
+        silver_updated: 0,
+        bullion_updated: 0,
+        currency_updated: 0,
+        gold_prices: [],
+        silver_prices: [],
+        bullion_prices: [],
+        currency_rates: [],
+        source: 'error',
+        fetched_at: new Date().toISOString(),
+        errors: [`فشل المزامنة: ${String(error)}`],
+      },
+      { status: 500 }
+    );
+    }
+  } catch (error) {
+    console.error('[POST /api/market/gold/sync] Error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        gold_updated: 0,
+        silver_updated: 0,
+        bullion_updated: 0,
+        currency_updated: 0,
+        gold_prices: [],
+        silver_prices: [],
+        bullion_prices: [],
+        currency_rates: [],
+        source: 'error',
+        fetched_at: new Date().toISOString(),
+        errors: [`فشل المزامنة: ${String(error)}`],
+      },
+      { status: 500 }
+    );
+  }
+}
