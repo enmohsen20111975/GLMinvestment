@@ -1,0 +1,1052 @@
+{
+  "audit_phase": "1.4 + 1.5",
+  "audit_name": "Corporate Actions + Timestamp Consistency",
+  "dataset_md5_expected": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_actual": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_verified": true,
+  "audit_timestamp_utc": "2026-08-19T17:40:00.964659+00:00",
+  "phase_1_4_corporate_actions": {
+    "dividends": {
+      "table_found": true,
+      "issues": [],
+      "data_engine_tables": [
+        "btc_local_prices",
+        "crypto_prices",
+        "egksco_price_history",
+        "egksco_stocks",
+        "egx_fundamentals",
+        "exchange_rates",
+        "gold_prices",
+        "gold_prices_clean",
+        "historical_data",
+        "lost_and_found",
+        "screener_lists",
+        "silver_prices",
+        "stock_prices",
+        "stocks",
+        "tab_balance_sheet",
+        "tab_cash_flow",
+        "tab_dividends",
+        "tab_income_statement",
+        "tab_performance",
+        "tab_profitability",
+        "tab_technical_analysis",
+        "tab_valuation"
+      ],
+      "table_name": "tab_dividends",
+      "column_names": [
+        "id",
+        "symbol",
+        "market",
+        "dps_ttm",
+        "dps_fy",
+        "div_yield",
+        "div_yield_fwd",
+        "payout_ratio",
+        "dps_growth",
+        "cont_div",
+        "cont_div_growth"
+      ],
+      "table_info": [
+        {
+          "cid": 0,
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": 0,
+          "default": null,
+          "pk": 1
+        },
+        {
+          "cid": 1,
+          "name": "symbol",
+          "type": "TEXT",
+          "notnull": 1,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 2,
+          "name": "market",
+          "type": "TEXT",
+          "notnull": 1,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 3,
+          "name": "dps_ttm",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 4,
+          "name": "dps_fy",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 5,
+          "name": "div_yield",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 6,
+          "name": "div_yield_fwd",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 7,
+          "name": "payout_ratio",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 8,
+          "name": "dps_growth",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 9,
+          "name": "cont_div",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        },
+        {
+          "cid": 10,
+          "name": "cont_div_growth",
+          "type": "TEXT",
+          "notnull": 0,
+          "default": null,
+          "pk": 0
+        }
+      ],
+      "total_dividends": 858,
+      "examples": [
+        {
+          "id": 1,
+          "symbol": "1010",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629",
+          "dps_ttm": "1.05 SAR",
+          "dps_fy": null,
+          "div_yield": "6.56%",
+          "div_yield_fwd": "5.25%",
+          "payout_ratio": "0.00%",
+          "dps_growth": "\u221217.65%",
+          "cont_div": "23",
+          "cont_div_growth": "0"
+        },
+        {
+          "id": 2,
+          "symbol": "1020",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629",
+          "dps_ttm": "0.50 SAR",
+          "dps_fy": null,
+          "div_yield": "4.37%",
+          "div_yield_fwd": "4.37%",
+          "payout_ratio": "0.00%",
+          "dps_growth": null,
+          "cont_div": "1",
+          "cont_div_growth": "0"
+        },
+        {
+          "id": 3,
+          "symbol": "1030",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629",
+          "dps_ttm": "0.70 SAR",
+          "dps_fy": null,
+          "div_yield": "5.94%",
+          "div_yield_fwd": "5.20%",
+          "payout_ratio": "0.00%",
+          "dps_growth": "\u22127.89%",
+          "cont_div": "6",
+          "cont_div_growth": "0"
+        },
+        {
+          "id": 4,
+          "symbol": "1050",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629",
+          "dps_ttm": "1.07 SAR",
+          "dps_fy": null,
+          "div_yield": "5.73%",
+          "div_yield_fwd": "5.73%",
+          "payout_ratio": "0.00%",
+          "dps_growth": "+8.95%",
+          "cont_div": "26",
+          "cont_div_growth": "5"
+        },
+        {
+          "id": 5,
+          "symbol": "1060",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629",
+          "dps_ttm": "2.00 SAR",
+          "dps_fy": null,
+          "div_yield": "5.99%",
+          "div_yield_fwd": "5.99%",
+          "payout_ratio": "0.00%",
+          "dps_growth": "0.00%",
+          "cont_div": "5",
+          "cont_div_growth": "0"
+        }
+      ],
+      "date_column": null,
+      "schema_note": "tab_dividends is a TTM snapshot (dps_ttm, div_yield, dps_fy) \u2014 NO historical ex-dividend dates stored; cannot verify 'ex_dividend_date in past'",
+      "ex_dividend_in_past_pct": null,
+      "future_ex_dividend_count": null,
+      "market_breakdown": {
+        "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629": 388,
+        "\u0645\u0635\u0631": 285,
+        "\u0627\u0644\u0643\u0648\u064a\u062a": 130,
+        "\u0642\u0637\u0631": 55
+      },
+      "egx30_dividends": [
+        {
+          "ticker": "COMI",
+          "matches": 1,
+          "sample": {
+            "id": 445,
+            "symbol": "COMI\u0627\u0644\u0628\u0646\u0643",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "6.00 EGP",
+            "dps_fy": null,
+            "div_yield": "4.53%",
+            "div_yield_fwd": "4.53%",
+            "payout_ratio": "0.00%",
+            "dps_growth": "+164.00%",
+            "cont_div": "5",
+            "cont_div_growth": "3"
+          }
+        },
+        {
+          "ticker": "SWDY",
+          "matches": 1,
+          "sample": {
+            "id": 649,
+            "symbol": "SWDY\u0627\u0644\u0633\u0648\u064a\u062f\u064a",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "1.85 EGP",
+            "dps_fy": null,
+            "div_yield": "1.13%",
+            "div_yield_fwd": "2.09%",
+            "payout_ratio": null,
+            "dps_growth": "+85.00%",
+            "cont_div": "4",
+            "cont_div_growth": "3"
+          }
+        },
+        {
+          "ticker": "ETEL",
+          "matches": 1,
+          "sample": {
+            "id": 504,
+            "symbol": "ETEL\u0627\u0644\u0645\u0635\u0631\u064a\u0629",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "1.50 EGP",
+            "dps_fy": "1.50 EGP",
+            "div_yield": "1.55%",
+            "div_yield_fwd": "1.55%",
+            "payout_ratio": "11.35%",
+            "dps_growth": "0.00%",
+            "cont_div": "21",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "HRHO",
+          "matches": 1,
+          "sample": {
+            "id": 533,
+            "symbol": "HRHO\u0647\u064a\u0631\u0645\u064a\u0633D",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.00 EGP",
+            "dps_fy": "0.00 EGP",
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": "0.00%",
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "FWRY",
+          "matches": 1,
+          "sample": {
+            "id": 512,
+            "symbol": "FWRYFawry",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.00 EGP",
+            "dps_fy": "0.00 EGP",
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": "0.00%",
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "EAST",
+          "matches": 1,
+          "sample": {
+            "id": 462,
+            "symbol": "EAST\u0627\u064a\u0633\u062a\u0631\u0646",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "2.85 EGP",
+            "dps_fy": "1.00 EGP",
+            "div_yield": "11.14%",
+            "div_yield_fwd": "3.76%",
+            "payout_ratio": "128.74%",
+            "dps_growth": "+5.56%",
+            "cont_div": "26",
+            "cont_div_growth": "1"
+          }
+        },
+        {
+          "ticker": "ABUK",
+          "matches": 1,
+          "sample": {
+            "id": 390,
+            "symbol": "ABUK\u0627\u0628\u0648\u0642\u064a\u0631",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "6.00 EGP",
+            "dps_fy": "0.00 EGP",
+            "div_yield": "10.14%",
+            "div_yield_fwd": "5.62%",
+            "payout_ratio": null,
+            "dps_growth": "+20.00%",
+            "cont_div": "23",
+            "cont_div_growth": "1"
+          }
+        },
+        {
+          "ticker": "PHDC",
+          "matches": 1,
+          "sample": {
+            "id": 610,
+            "symbol": "PHDC\u0628\u0627\u0644\u0645",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.00 EGP",
+            "dps_fy": "0.00 EGP",
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": "0.00%",
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "MFPC",
+          "matches": 1,
+          "sample": {
+            "id": 566,
+            "symbol": "MFPC\u0645\u0648\u0628\u0643\u0648D",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "3.94 EGP",
+            "dps_fy": null,
+            "div_yield": "9.16%",
+            "div_yield_fwd": "9.16%",
+            "payout_ratio": null,
+            "dps_growth": "+55.23%",
+            "cont_div": "10",
+            "cont_div_growth": "1"
+          }
+        },
+        {
+          "ticker": "SKPC",
+          "matches": 1,
+          "sample": {
+            "id": 638,
+            "symbol": "SKPC\u0633\u064a\u062f\u064a",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.40 EGP",
+            "dps_fy": null,
+            "div_yield": "4.69%",
+            "div_yield_fwd": "5.87%",
+            "payout_ratio": null,
+            "dps_growth": "\u221250.00%",
+            "cont_div": "4",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "ORWE",
+          "matches": 1,
+          "sample": {
+            "id": 607,
+            "symbol": "ORWE\u0627\u0644\u0646\u0633\u0627\u062c\u0648\u0646",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "1.50 EGP",
+            "dps_fy": "1.50 EGP",
+            "div_yield": "6.38%",
+            "div_yield_fwd": "6.38%",
+            "payout_ratio": "45.57%",
+            "dps_growth": "\u22126.25%",
+            "cont_div": "25",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "CCAP",
+          "matches": 1,
+          "sample": {
+            "id": 434,
+            "symbol": "CCAP\u0627\u0644\u0642\u0644\u0639\u0629",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.00 EGP",
+            "dps_fy": null,
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": null,
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "AMER",
+          "matches": 1,
+          "sample": {
+            "id": 409,
+            "symbol": "AMER\u0639\u0627\u0645\u0631",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": null,
+            "dps_fy": "0.00 EGP",
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": null,
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "DCRC",
+          "matches": 1,
+          "sample": {
+            "id": 454,
+            "symbol": "DCRCDelta",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": null,
+            "dps_fy": null,
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": null,
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "EGTS",
+          "matches": 1,
+          "sample": {
+            "id": 490,
+            "symbol": "EGTS\u0627\u0644\u0645\u0635\u0631\u064a\u0629",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.00 EGP",
+            "dps_fy": "0.00 EGP",
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": "0.00%",
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        },
+        {
+          "ticker": "TMGH",
+          "matches": 1,
+          "sample": {
+            "id": 653,
+            "symbol": "TMGH\u0637\u0644\u0639\u062a",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": "0.30 EGP",
+            "dps_fy": "0.30 EGP",
+            "div_yield": "0.31%",
+            "div_yield_fwd": "0.31%",
+            "payout_ratio": "4.48%",
+            "dps_growth": "+20.00%",
+            "cont_div": "13",
+            "cont_div_growth": "6"
+          }
+        },
+        {
+          "ticker": "GTHE",
+          "matches": 1,
+          "sample": {
+            "id": 526,
+            "symbol": "GTHEGlobal",
+            "market": "\u0645\u0635\u0631",
+            "dps_ttm": null,
+            "dps_fy": null,
+            "div_yield": "0.00%",
+            "div_yield_fwd": null,
+            "payout_ratio": null,
+            "dps_growth": null,
+            "cont_div": "0",
+            "cont_div_growth": "0"
+          }
+        }
+      ],
+      "dividends_with_yield_examples": [
+        {
+          "symbol": "1010",
+          "dps_ttm": "1.05 SAR",
+          "div_yield": "6.56%",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629"
+        },
+        {
+          "symbol": "1020",
+          "dps_ttm": "0.50 SAR",
+          "div_yield": "4.37%",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629"
+        },
+        {
+          "symbol": "1030",
+          "dps_ttm": "0.70 SAR",
+          "div_yield": "5.94%",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629"
+        },
+        {
+          "symbol": "1050",
+          "dps_ttm": "1.07 SAR",
+          "div_yield": "5.73%",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629"
+        },
+        {
+          "symbol": "1060",
+          "dps_ttm": "2.00 SAR",
+          "div_yield": "5.99%",
+          "market": "\u0627\u0644\u0633\u0639\u0648\u062f\u064a\u0629"
+        }
+      ],
+      "out_of_range_yield_examples": [
+        {
+          "symbol": "MEGM\u0627\u0644\u0634\u0631\u0642",
+          "dps_ttm": null,
+          "div_yield": "42.17%",
+          "market": "\u0645\u0635\u0631"
+        },
+        {
+          "symbol": "ORAS\u0627\u0648\u0631\u0627\u0633\u0643\u0648\u0645",
+          "dps_ttm": "0.00 EGP",
+          "div_yield": "46.94%",
+          "market": "\u0645\u0635\u0631"
+        }
+      ],
+      "schema_note_2": "div_yield stored as TEXT with '%' (e.g. '6.56%') - needs parsing"
+    },
+    "splits_rights": {
+      "tables_searched": [
+        {
+          "db": "data_engine.db",
+          "table_count": 22
+        },
+        {
+          "db": "stocks.db",
+          "table_count": 55
+        },
+        {
+          "db": "price_history.db",
+          "table_count": 1
+        },
+        {
+          "db": "historical.db",
+          "table_count": 2
+        },
+        {
+          "db": "custom.db",
+          "table_count": 2
+        },
+        {
+          "db": "news.db",
+          "table_count": 2
+        },
+        {
+          "db": "predictions.db",
+          "table_count": 26
+        }
+      ],
+      "splits_table_found": false,
+      "rights_table_found": false,
+      "corporate_actions_table_found": false,
+      "matched_tables": {},
+      "data_missing": [
+        "stock_splits_table",
+        "rights_issues_table",
+        "corporate_actions_table"
+      ],
+      "issues": [
+        "no_corporate_actions_tables_detected"
+      ]
+    },
+    "adjusted_vs_unadjusted": {
+      "db_found": true,
+      "issues": [],
+      "tables": [
+        "price_history"
+      ],
+      "main_table": "price_history",
+      "columns": [
+        "id",
+        "ticker",
+        "date",
+        "open_price",
+        "high_price",
+        "low_price",
+        "close_price",
+        "volume",
+        "source",
+        "created_at"
+      ],
+      "has_adjusted_column": false,
+      "price_columns": [
+        "open_price",
+        "high_price",
+        "low_price",
+        "close_price"
+      ],
+      "ticker_col": "ticker",
+      "date_col": "date",
+      "close_col": "close_price",
+      "total_rows": 288194,
+      "distinct_tickers": 1260,
+      "interpretation": "Prices are RAW (no adjusted_price column) \u2014 split adjustments NOT applied to historical series",
+      "sample_tickers_checked": [
+        "1010",
+        "1020",
+        "1030",
+        "1050",
+        "1060",
+        "1080",
+        "1111",
+        "1120",
+        "1140",
+        "1150"
+      ],
+      "split_suspect_events": [],
+      "split_adjustment_detected": false,
+      "note": "no_splits_detected",
+      "source_breakdown": {
+        "egx_investment_migration": 273750,
+        "yfinance_autofill": 12116,
+        "tradingview_live": 1035,
+        "egksco": 824,
+        "egxpilot_live": 469
+      },
+      "date_range": {
+        "min": "2025-01-09",
+        "max": "2026-08-17"
+      }
+    },
+    "dividend_yield": {
+      "db_found": true,
+      "issues": [
+        "yield_dps_mismatch:293 (yield_no_dps=293, dps_no_yield=0)"
+      ],
+      "stocks_db_table_count": 55,
+      "stocks_table": "stocks",
+      "columns": [
+        "id",
+        "ticker",
+        "name",
+        "name_ar",
+        "market",
+        "sector",
+        "industry",
+        "current_price",
+        "previous_close",
+        "open_price",
+        "high_price",
+        "low_price",
+        "change_percent",
+        "volume",
+        "market_cap",
+        "pe_ratio",
+        "pb_ratio",
+        "ps_ratio",
+        "eps",
+        "roe",
+        "roa",
+        "debt_to_equity",
+        "current_ratio",
+        "book_value_per_share",
+        "ma_50",
+        "ma_200",
+        "rsi",
+        "support",
+        "resistance",
+        "signal",
+        "trend",
+        "dividend_yield",
+        "profit_margin",
+        "avg_volume",
+        "beta",
+        "high_52w",
+        "low_52w",
+        "close",
+        "change_value",
+        "is_active",
+        "is_egx30",
+        "is_egx70",
+        "is_egx100",
+        "last_update",
+        "created_at",
+        "updated_at",
+        "dps_ttm",
+        "free_float_percentage",
+        "free_float_shares",
+        "change",
+        "last_updated",
+        "currency",
+        "exchange",
+        "is_suspended",
+        "is_egx",
+        "turnover_egp",
+        "value_traded"
+      ],
+      "dividend_yield_col": "dividend_yield",
+      "dps_ttm_col": "dps_ttm",
+      "stocks_count": 1046,
+      "market_breakdown": {
+        "EGX": 451,
+        "TADAWUL": 390,
+        "KSE": 138,
+        "QSE": 67
+      },
+      "dividend_yield_stats": {
+        "min": 0.31,
+        "max": 7.05,
+        "avg": 5.7579,
+        "count": 293
+      },
+      "out_of_range_count": 0,
+      "out_of_range_examples": [],
+      "dps_ttm_stats": {
+        "min": 0.0,
+        "max": 0.0,
+        "avg": null,
+        "non_null_count": 1046,
+        "positive_count": 0,
+        "zero_count": 1046
+      },
+      "dps_negative_count": 0,
+      "yield_dps_mismatch": 293,
+      "yield_no_dps_count": 293,
+      "dps_no_yield_count": 0,
+      "yield_no_dps_examples": [
+        {
+          "ticker": "COMI",
+          "name": "Commercial International Bank - Egypt (CIB) S.A.E.",
+          "dividend_yield": 6.37,
+          "dps_ttm": 0.0
+        },
+        {
+          "ticker": "ETEL",
+          "name": "Telecom Egypt",
+          "dividend_yield": 6.87,
+          "dps_ttm": 0.0
+        },
+        {
+          "ticker": "SWDY",
+          "name": "El Sewedy Electric Company",
+          "dividend_yield": 3.19,
+          "dps_ttm": 0.0
+        },
+        {
+          "ticker": "HRHO",
+          "name": "EFG Holding S.A.E.",
+          "dividend_yield": 5.06,
+          "dps_ttm": 0.0
+        },
+        {
+          "ticker": "EKHO",
+          "name": "Eastern Company",
+          "dividend_yield": 0.62,
+          "dps_ttm": 0.0
+        }
+      ]
+    }
+  },
+  "phase_1_5_timestamp_consistency": {
+    "predictions_db": {
+      "db_found": true,
+      "issues": [],
+      "tables": [
+        "CachedAnalysis",
+        "ExpertRecommendation",
+        "ExpertTrackRecord",
+        "TechnicalIndicator",
+        "aiPrediction",
+        "aiPredictionStats",
+        "analysis_engine_status",
+        "analysis_jobs",
+        "cached_analysis",
+        "crypto_predictions_log",
+        "hunter_pick_tracking",
+        "learned_lessons",
+        "optimizer_params_history",
+        "persona_predictions",
+        "prediction_lessons",
+        "prediction_logs",
+        "prediction_outcomes",
+        "predictions",
+        "quant_cache",
+        "reports",
+        "sniper_performance",
+        "stored_analyses",
+        "telegram_news",
+        "telegram_signals",
+        "trade_journal_entries",
+        "trade_journal_reflections"
+      ],
+      "predictions_table": "predictions",
+      "columns": [
+        "id",
+        "ticker",
+        "signal",
+        "signal_type",
+        "prediction_date",
+        "entry_price",
+        "target_price",
+        "stop_loss",
+        "master_score",
+        "technical_score",
+        "fundamental_score",
+        "ai_pattern_score",
+        "sentiment_score",
+        "outcome_date",
+        "exit_price",
+        "actual_return",
+        "hit_target",
+        "hit_stop",
+        "is_correct",
+        "holding_days",
+        "notes",
+        "market",
+        "confidence",
+        "created_at",
+        "stock_ticker",
+        "direction",
+        "score",
+        "risk_reward",
+        "horizon",
+        "persona",
+        "status",
+        "pnl_percent",
+        "closed_at",
+        "analysis_json",
+        "updated_at",
+        "signal_ar",
+        "maestro_score",
+        "actual_exit_price",
+        "highest_price",
+        "lowest_price",
+        "days_to_close",
+        "pnl_pct",
+        "is_trend_following",
+        "exit_type",
+        "trailing_stop_atr_mult",
+        "initial_stop_atr_mult",
+        "atr_at_entry",
+        "highest_price_reached",
+        "lowest_price_reached",
+        "data_quality",
+        "quality_flags",
+        "partial_exit_price",
+        "partial_exit_date",
+        "partial_return_pct",
+        "exit_policy",
+        "exit_reason",
+        "target_price_2",
+        "explosive_score",
+        "explosive_label",
+        "evidence_count",
+        "morning_bell",
+        "kill_filter_result"
+      ],
+      "prediction_date_col": "prediction_date",
+      "outcome_date_col": "outcome_date",
+      "total_predictions": 153,
+      "prediction_date_examples": [
+        "2026-08-17",
+        "2026-05-28",
+        "2026-05-25",
+        "2026-05-20",
+        "2026-05-17",
+        "2026-05-12",
+        "2026-05-07",
+        "2026-05-04",
+        "2026-04-29",
+        "2026-04-26"
+      ],
+      "prediction_date_range": {
+        "min": "2026-01-01",
+        "max": "2026-08-17"
+      },
+      "weekday_distribution": {
+        "0": 26,
+        "1": 34,
+        "2": 26,
+        "3": 37,
+        "4": 30
+      },
+      "weekday_distribution_named": {
+        "Sunday": 26,
+        "Monday": 34,
+        "Tuesday": 26,
+        "Wednesday": 37,
+        "Thursday": 30
+      },
+      "friday_saturday_count": 0,
+      "predictions_with_time_component": 0,
+      "timezone_note": "prediction_date stored as DATE (YYYY-MM-DD) \u2014 represents EGX trading date directly, no UTC/Cairo ambiguity",
+      "outcome_before_prediction_count": 0,
+      "outcome_after_today_count": 0,
+      "prediction_outcomes_columns": [
+        "id",
+        "prediction_id",
+        "outcome_date",
+        "exit_price",
+        "pnl_percent",
+        "hit_target",
+        "hit_stop",
+        "days_to_resolve",
+        "notes",
+        "created_at"
+      ],
+      "prediction_outcomes_count": 0,
+      "aiPrediction_total": 167,
+      "aiPrediction_weekday_distribution": {
+        "0": 167
+      },
+      "aiPrediction_weekday_named": {
+        "Sunday": 167
+      }
+    },
+    "news_db": {
+      "db_found": true,
+      "issues": [
+        "mixed_timestamp_formats: iso8601=1193, compact=6701, other=0",
+        "compact_format_no_dashes_no_colons:6701/7894 (84.9%)"
+      ],
+      "tables": [
+        "news_api_keys",
+        "news_articles"
+      ],
+      "news_table": "news_articles",
+      "columns": [
+        "id",
+        "title",
+        "content",
+        "summary",
+        "source",
+        "source_url",
+        "image_url",
+        "market",
+        "market_code",
+        "symbol",
+        "category",
+        "language",
+        "published_at",
+        "fetched_at",
+        "created_at"
+      ],
+      "total_news": 7894,
+      "published_at_col": "published_at",
+      "total_with_timestamp": 7894,
+      "iso8601_count": 1193,
+      "compact_format_count": 6701,
+      "other_format_count": 0,
+      "compact_examples": [
+        {
+          "id": 100,
+          "published_at": "20260608T144434"
+        },
+        {
+          "id": 99,
+          "published_at": "20260608T144603"
+        },
+        {
+          "id": 98,
+          "published_at": "20260608T144819"
+        },
+        {
+          "id": 97,
+          "published_at": "20260608T144952"
+        },
+        {
+          "id": 96,
+          "published_at": "20260608T145106"
+        }
+      ],
+      "other_examples": [],
+      "mixed_format": true,
+      "iso_examples": [
+        "2026-05-17T09:49:01Z",
+        "2026-05-18T23:05:35Z",
+        "2026-05-20T14:20:07Z",
+        "2026-05-24T09:16:56Z",
+        "2026-05-27T13:21:35Z"
+      ],
+      "published_at_range": {
+        "min": "2026-05-17T09:49:01Z",
+        "max": "20260717T215956"
+      }
+    },
+    "price_history_dates": {
+      "db_found": true,
+      "issues": [],
+      "main_table": "price_history",
+      "date_col": "date",
+      "total_rows": 288194,
+      "distinct_dates": 391,
+      "format_distribution": {
+        "YYYY-MM-DD": 288194,
+        "YYYY-MM-DDTHH:MM:SS": 0,
+        "null": 0,
+        "other": 0
+      },
+      "note": "All non-null dates conform to YYYY-MM-DD ISO format"
+    }
+  },
+  "summary": {
+    "phase_1_4_status": "FAIL",
+    "phase_1_5_status": "FAIL",
+    "overall_status": "FAIL",
+    "phase_1_4_issues": [
+      "no_corporate_actions_tables_detected",
+      "yield_dps_mismatch:293 (yield_no_dps=293, dps_no_yield=0)"
+    ],
+    "phase_1_5_issues": [
+      "mixed_timestamp_formats: iso8601=1193, compact=6701, other=0",
+      "compact_format_no_dashes_no_colons:6701/7894 (84.9%)"
+    ],
+    "phase_1_4_real_issues": [
+      "yield_dps_mismatch:293 (yield_no_dps=293, dps_no_yield=0)"
+    ],
+    "phase_1_5_real_issues": [
+      "mixed_timestamp_formats: iso8601=1193, compact=6701, other=0",
+      "compact_format_no_dashes_no_colons:6701/7894 (84.9%)"
+    ],
+    "next_phase_allowed": false
+  }
+}

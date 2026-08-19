@@ -1,0 +1,889 @@
+{
+  "agent": "PHASE 1.2 + 1.3 Audit Agent",
+  "generated_at": "2026-08-19T17:35:24",
+  "dataset_md5_declared": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_observed_price_history": "446718e086e0f75669450664e1dc8be8",
+  "dataset_md5_observed_predictions": "7681ac3b4908a405c6881770724ebcbf",
+  "today": "2026-08-19",
+  "phase_1_2": {
+    "phase": "1.2",
+    "name": "Price History Completeness",
+    "db": "/home/z/my-project/db/price_history.db",
+    "checks": {
+      "gaps": {
+        "status": "FAIL",
+        "tickers_with_gaps": 548,
+        "total_missing_trading_days": 22653,
+        "pct_tickers_with_gaps": 43.49,
+        "examples": [
+          {
+            "ticker": "1010",
+            "first_date": "2025-01-09",
+            "last_date": "2026-08-17",
+            "missing_count": 31,
+            "examples": [
+              "2026-06-04",
+              "2026-06-07",
+              "2026-06-08",
+              "2026-06-09",
+              "2026-06-10"
+            ]
+          },
+          {
+            "ticker": "1020",
+            "first_date": "2025-01-09",
+            "last_date": "2026-08-17",
+            "missing_count": 31,
+            "examples": [
+              "2026-06-04",
+              "2026-06-07",
+              "2026-06-08",
+              "2026-06-09",
+              "2026-06-10"
+            ]
+          },
+          {
+            "ticker": "1030",
+            "first_date": "2025-01-09",
+            "last_date": "2026-08-17",
+            "missing_count": 31,
+            "examples": [
+              "2026-06-04",
+              "2026-06-07",
+              "2026-06-08",
+              "2026-06-09",
+              "2026-06-10"
+            ]
+          },
+          {
+            "ticker": "1050",
+            "first_date": "2025-01-09",
+            "last_date": "2026-08-17",
+            "missing_count": 31,
+            "examples": [
+              "2026-06-04",
+              "2026-06-07",
+              "2026-06-08",
+              "2026-06-09",
+              "2026-06-10"
+            ]
+          },
+          {
+            "ticker": "1060",
+            "first_date": "2025-01-09",
+            "last_date": "2026-08-17",
+            "missing_count": 31,
+            "examples": [
+              "2026-06-04",
+              "2026-06-07",
+              "2026-06-08",
+              "2026-06-09",
+              "2026-06-10"
+            ]
+          }
+        ]
+      },
+      "stale_prices": {
+        "status": "FAIL",
+        "threshold_days": 30,
+        "cutoff_date": "2026-07-20",
+        "count": 214,
+        "examples": [
+          {
+            "ticker": "ADA",
+            "last_date": "2026-06-03"
+          },
+          {
+            "ticker": "ALBH",
+            "last_date": "2026-06-03"
+          },
+          {
+            "ticker": "APMTB",
+            "last_date": "2026-06-03"
+          },
+          {
+            "ticker": "AVAX",
+            "last_date": "2026-06-03"
+          },
+          {
+            "ticker": "BBK",
+            "last_date": "2026-06-03"
+          }
+        ]
+      },
+      "missing_recent_sessions": {
+        "status": "FAIL",
+        "window_days": 7,
+        "cutoff_date": "2026-08-12",
+        "count": 214,
+        "examples": [
+          "ADA",
+          "ALBH",
+          "APMTB",
+          "AVAX",
+          "BBK"
+        ]
+      },
+      "duplicate_dates": {
+        "status": "PASS",
+        "duplicate_groups": 0,
+        "examples": []
+      },
+      "invalid_ohlc": {
+        "status": "FAIL",
+        "count": 1191,
+        "pct_of_rows": 0.4133,
+        "examples": [
+          {
+            "id": 500801,
+            "ticker": "TORA",
+            "date": "2026-06-07",
+            "open": 74.01,
+            "high": 77.78,
+            "low": 75.0,
+            "close": 75.0,
+            "volume": 8770
+          },
+          {
+            "id": 500806,
+            "ticker": "ACRO",
+            "date": "2026-06-07",
+            "open": 94.4,
+            "high": 93.88,
+            "low": 93.88,
+            "close": 93.88,
+            "volume": 50
+          },
+          {
+            "id": 500832,
+            "ticker": "DIFC",
+            "date": "2026-06-07",
+            "open": 11.0,
+            "high": 10.99,
+            "low": 10.89,
+            "close": 10.89,
+            "volume": 1321
+          },
+          {
+            "id": 504950,
+            "ticker": "SCEM",
+            "date": "2026-06-07",
+            "open": 65.77,
+            "high": 65.5,
+            "low": 62.5,
+            "close": 64.31,
+            "volume": 343327
+          },
+          {
+            "id": 504953,
+            "ticker": "OCPH",
+            "date": "2026-06-07",
+            "open": 355.0,
+            "high": 377.0,
+            "low": 356.08,
+            "close": 360.99,
+            "volume": 26846
+          }
+        ]
+      },
+      "impossible_prices": {
+        "status": "PASS",
+        "count": 0,
+        "pct_of_rows": 0.0,
+        "examples": []
+      },
+      "volume_anomalies": {
+        "status": "FAIL",
+        "zero_volume_count": 1422,
+        "spike_10x_avg_count": 2243,
+        "total_anomalies": 3665,
+        "pct_of_rows": 1.2717,
+        "examples": [
+          {
+            "id": 515661,
+            "ticker": "1010",
+            "date": "2026-07-20",
+            "volume": 3326827,
+            "avg_volume": 219202.58,
+            "ratio": 15.18,
+            "type": "spike_10x_avg"
+          },
+          {
+            "id": 515662,
+            "ticker": "1010",
+            "date": "2026-07-21",
+            "volume": 5543647,
+            "avg_volume": 219202.58,
+            "ratio": 25.29,
+            "type": "spike_10x_avg"
+          },
+          {
+            "id": 515663,
+            "ticker": "1010",
+            "date": "2026-07-22",
+            "volume": 2499661,
+            "avg_volume": 219202.58,
+            "ratio": 11.4,
+            "type": "spike_10x_avg"
+          },
+          {
+            "id": 515664,
+            "ticker": "1010",
+            "date": "2026-07-23",
+            "volume": 2562462,
+            "avg_volume": 219202.58,
+            "ratio": 11.69,
+            "type": "spike_10x_avg"
+          },
+          {
+            "id": 515666,
+            "ticker": "1010",
+            "date": "2026-07-27",
+            "volume": 4513814,
+            "avg_volume": 219202.58,
+            "ratio": 20.59,
+            "type": "spike_10x_avg"
+          }
+        ]
+      }
+    },
+    "schema": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "ticker",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "date",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "open_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "high_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "low_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "close_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "volume",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "source",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'system'",
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "datetime('now')",
+        "pk": 0
+      }
+    ],
+    "total_rows": 288194,
+    "total_tickers": 1260,
+    "date_range": {
+      "min": "2025-01-09",
+      "max": "2026-08-17"
+    },
+    "status": "FAIL"
+  },
+  "phase_1_3": {
+    "phase": "1.3",
+    "name": "Entry/Exit Price Sanity",
+    "db": "/home/z/my-project/db/predictions.db",
+    "checks": {
+      "entry_price_positive": {
+        "status": "PASS",
+        "count": 0,
+        "examples": []
+      },
+      "stop_loss_sensible": {
+        "status": "PASS",
+        "count": 0,
+        "examples": []
+      },
+      "target_price_sensible": {
+        "status": "PASS",
+        "count": 0,
+        "examples": []
+      },
+      "exit_price_positive": {
+        "status": "PASS",
+        "count": 0,
+        "null_exit_price_active_count": 5,
+        "examples": []
+      },
+      "return_calculation_cap": {
+        "status": "PASS",
+        "hard_cap": 50.0,
+        "count": 0,
+        "examples": []
+      },
+      "highest_vs_target": {
+        "status": "PASS",
+        "count": 0,
+        "examples": []
+      },
+      "lowest_vs_stop": {
+        "status": "PASS",
+        "count": 0,
+        "examples": []
+      }
+    },
+    "schema": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "ticker",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "signal",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "signal_type",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "prediction_date",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "entry_price",
+        "type": "REAL",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "target_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "stop_loss",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "master_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "technical_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "50",
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "fundamental_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "50",
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "ai_pattern_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "50",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "sentiment_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "50",
+        "pk": 0
+      },
+      {
+        "cid": 13,
+        "name": "outcome_date",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 14,
+        "name": "exit_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 15,
+        "name": "actual_return",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 16,
+        "name": "hit_target",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 17,
+        "name": "hit_stop",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 18,
+        "name": "is_correct",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 19,
+        "name": "holding_days",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 20,
+        "name": "notes",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 21,
+        "name": "market",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'EGX'",
+        "pk": 0
+      },
+      {
+        "cid": 22,
+        "name": "confidence",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 23,
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'datetime(''now'')'",
+        "pk": 0
+      },
+      {
+        "cid": 24,
+        "name": "stock_ticker",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 25,
+        "name": "direction",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 26,
+        "name": "score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 27,
+        "name": "risk_reward",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 28,
+        "name": "horizon",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 29,
+        "name": "persona",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'balanced'",
+        "pk": 0
+      },
+      {
+        "cid": 30,
+        "name": "status",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'active'",
+        "pk": 0
+      },
+      {
+        "cid": 31,
+        "name": "pnl_percent",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 32,
+        "name": "closed_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 33,
+        "name": "analysis_json",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 34,
+        "name": "updated_at",
+        "type": "DATETIME",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 35,
+        "name": "signal_ar",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 36,
+        "name": "maestro_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 37,
+        "name": "actual_exit_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 38,
+        "name": "highest_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 39,
+        "name": "lowest_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 40,
+        "name": "days_to_close",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 41,
+        "name": "pnl_pct",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 42,
+        "name": "is_trend_following",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 43,
+        "name": "exit_type",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 44,
+        "name": "trailing_stop_atr_mult",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "2.5",
+        "pk": 0
+      },
+      {
+        "cid": 45,
+        "name": "initial_stop_atr_mult",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "2.0",
+        "pk": 0
+      },
+      {
+        "cid": 46,
+        "name": "atr_at_entry",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 47,
+        "name": "highest_price_reached",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 48,
+        "name": "lowest_price_reached",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 49,
+        "name": "data_quality",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 50,
+        "name": "quality_flags",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 51,
+        "name": "partial_exit_price",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 52,
+        "name": "partial_exit_date",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 53,
+        "name": "partial_return_pct",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 54,
+        "name": "exit_policy",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'fixed'",
+        "pk": 0
+      },
+      {
+        "cid": 55,
+        "name": "exit_reason",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 56,
+        "name": "target_price_2",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 57,
+        "name": "explosive_score",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 58,
+        "name": "explosive_label",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "''",
+        "pk": 0
+      },
+      {
+        "cid": 59,
+        "name": "evidence_count",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 60,
+        "name": "morning_bell",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 61,
+        "name": "kill_filter_result",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "''",
+        "pk": 0
+      }
+    ],
+    "total_rows": 153,
+    "failed_checks": [],
+    "total_problems": 0,
+    "pct_problems": 0.0,
+    "status": "PASS"
+  },
+  "status": "FAIL",
+  "next_phase_allowed": false
+}

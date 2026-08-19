@@ -6,6 +6,19 @@
  *
  * Returns: total, closed, target_hits, stopped, expired, profit_taken,
  * active, win_rate, avg_return, by_market, by_signal, date_range, lessons
+ *
+ * KPI-AUDIT (gold-standard alignment with /api/admin/platform-performance):
+ *   - HARD cap: ABS(actual_return) <= 50 (Constitution Rule 7)
+ *   - Dedup on (ticker, prediction_date, channel, entry_price)
+ *   - Channel separation: balanced ≠ morning_bell (morning_bell=1)
+ *   - audit fields: n_raw, n_valid, n_excluded, exclusion_breakdown,
+ *     capped_rows, by_channel
+ *   - avg_loss always negative
+ *   NOTE: legacy `total_predictions`/`closed_predictions` etc. come from the
+ *   `overall` SQL aggregation (no dedup) for backward compat. The new audit
+ *   fields (`n_raw`, `n_valid`, `n_excluded`, `exclusion_breakdown`,
+ *   `capped_rows`, `by_channel`) are computed row-by-row with dedup and the
+ *   ±50 HARD cap. Frontend should prefer audit fields for KPI displays.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,6 +27,9 @@ import path from 'path';
 import { ensureSchema } from '@/lib/honest-tracking/maestro';
 
 export const dynamic = 'force-dynamic';
+
+// Gold-standard constants (mirror /api/admin/platform-performance)
+const HARD_CAP = 50.0; // Constitution Rule 7: ABS(actual_return) <= 50
 
 function openDb(): Database.Database {
   const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
@@ -63,32 +79,82 @@ export async function GET(request: NextRequest) {
         SUM(CASE WHEN is_closed AND (is_correct = 1 OR (is_correct IS NULL AND eff_return > 0)) THEN 1 ELSE 0 END) as wins,
         SUM(CASE WHEN signal_type = 'BUY' THEN 1 ELSE 0 END) as buys,
         SUM(CASE WHEN signal_type = 'SELL' THEN 1 ELSE 0 END) as sells,
-        -- FILTER OUT impossible returns (>100% or <-90%) — these are data errors
-        -- from wrong entry_price (stock splits, denomination changes, etc.)
-        AVG(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return <= 100 AND eff_return >= -90 THEN eff_return END) as avg_return,
-        AVG(CASE WHEN is_closed AND eff_return > 0 AND eff_return <= 100 THEN eff_return END) as avg_profit,
-        AVG(CASE WHEN is_closed AND eff_return < 0 AND eff_return >= -90 THEN eff_return END) as avg_loss,
-        SUM(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return <= 100 AND eff_return >= -90 THEN eff_return ELSE 0 END) as net_pl,
-        AVG(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return <= 100 AND eff_return >= -90 THEN risk_reward END) as avg_rr,
+        -- FILTER OUT impossible returns (HARD cap ±50 — gold standard).
+        -- Returns outside ±50% are treated as data errors (stock splits,
+        -- denomination changes, etc.) and excluded from KPI averages.
+        -- KPI-AUDIT: HARD cap tightened from ±100/-90 to ±50 (gold standard)
+        AVG(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return <= 50 AND eff_return >= -50 THEN eff_return END) as avg_return,
+        AVG(CASE WHEN is_closed AND eff_return > 0 AND eff_return <= 50 THEN eff_return END) as avg_profit,
+        AVG(CASE WHEN is_closed AND eff_return < 0 AND eff_return >= -50 THEN eff_return END) as avg_loss,
+        SUM(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return <= 50 AND eff_return >= -50 THEN eff_return ELSE 0 END) as net_pl,
+        AVG(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return <= 50 AND eff_return >= -50 THEN risk_reward END) as avg_rr,
         AVG(CASE WHEN is_closed THEN holding_days END) as avg_holding_days,
         AVG(CASE WHEN is_closed AND master_score IS NOT NULL THEN master_score END) as avg_confidence
       FROM pred
     `).get() as any;
 
     // By market — use actual market column with fallback
+    // KPI-AUDIT: include morning_bell for channel separation
     const allRows = db.prepare(`
       SELECT ticker, market, signal_type, outcome_date, status, exit_type,
-             hit_target, hit_stop, actual_return, pnl_pct, is_correct, notes
+             hit_target, hit_stop, actual_return, pnl_pct, is_correct, notes,
+             morning_bell, prediction_date, entry_price, persona
       FROM predictions
     `).all() as any[];
 
     const byMarketMap: Record<string, { total: number; wins: number; losses: number; closed: number; active: number; pending: number; win_rate: number; net_pl: number; sr_adoption: number; avg_return: number | null }> = {};
     const returnsByMarket: Record<string, number[]> = {};
+
+    // KPI-AUDIT (gold-standard alignment): track raw / valid / excluded / capped
+    // and split by channel (balanced vs morning_bell). Dedup on
+    // (ticker, prediction_date, channel, entry_price). HARD cap ±50.
+    let auditNRaw = 0;
+    let auditNCapped = 0;
+    const auditExclusionBreakdown: Record<string, number> = {};
+    const auditSeenKeys = new Set<string>();
+    const byChannelMap: Record<string, {
+      total: number; closed: number; wins: number; losses: number;
+      net_pl: number; returns: number[]; capped: number;
+    }> = {
+      balanced: { total: 0, closed: 0, wins: 0, losses: 0, net_pl: 0, returns: [], capped: 0 },
+      morning_bell: { total: 0, closed: 0, wins: 0, losses: 0, net_pl: 0, returns: [], capped: 0 },
+    };
+
     for (const r of allRows) {
+      auditNRaw++;
+
+      // Channel: morning_bell=1 → morning_bell, else balanced
+      const isMorningBell = Number(r.morning_bell || 0) === 1;
+      const channel = isMorningBell ? 'morning_bell' : 'balanced';
+
+      // Dedup key (same logic as gold standard)
+      const tickerNorm = String(r.ticker || '').trim().toUpperCase();
+      const predDate = String(r.prediction_date || '');
+      const entryVal = r.entry_price !== null && r.entry_price !== undefined
+        ? Number(r.entry_price) : 0;
+      const dedupKey = `${tickerNorm}|${predDate}|${channel}|${entryVal.toFixed(4)}`;
+      if (auditSeenKeys.has(dedupKey)) {
+        auditExclusionBreakdown['duplicate'] = (auditExclusionBreakdown['duplicate'] || 0) + 1;
+        continue; // skip duplicate from by_market stats too (gold-standard behavior)
+      }
+      auditSeenKeys.add(dedupKey);
+
+      // Validate ticker + entry (gold standard rules)
+      if (!tickerNorm || tickerNorm.includes(' ') || tickerNorm.length > 12) {
+        auditExclusionBreakdown['ticker_invalid'] = (auditExclusionBreakdown['ticker_invalid'] || 0) + 1;
+        continue;
+      }
+      if (!entryVal || entryVal <= 0) {
+        auditExclusionBreakdown['entry_price_zero'] = (auditExclusionBreakdown['entry_price_zero'] || 0) + 1;
+        continue;
+      }
+
+      // By market (existing logic, preserved)
       const m = inferMarket(r.ticker, r.market);
       if (!byMarketMap[m]) byMarketMap[m] = { total: 0, wins: 0, losses: 0, closed: 0, active: 0, pending: 0, win_rate: 0, net_pl: 0, sr_adoption: 0, avg_return: null };
       if (!returnsByMarket[m]) returnsByMarket[m] = [];
       byMarketMap[m].total++;
+      byChannelMap[channel].total++;
       // SCHEMA-MISMATCH-FIX: is_closed = outcome_date OR status='CLOSED' OR exit_type
       const statusNorm = (r.status || '').toString().trim().toUpperCase();
       const isClosed = !!r.outcome_date || statusNorm === 'CLOSED' || !!r.exit_type;
@@ -97,16 +163,26 @@ export async function GET(request: NextRequest) {
         : (r.pnl_pct !== null && r.pnl_pct !== undefined ? Number(r.pnl_pct) : null);
       if (isClosed) {
         byMarketMap[m].closed++;
+        byChannelMap[channel].closed++;
         const isWin = r.is_correct === 1
           || (r.is_correct === null && effReturn !== null && effReturn > 0);
-        if (isWin) byMarketMap[m].wins++;
-        else byMarketMap[m].losses++;
+        if (isWin) { byMarketMap[m].wins++; byChannelMap[channel].wins++; }
+        else { byMarketMap[m].losses++; byChannelMap[channel].losses++; }
         if (effReturn !== null) {
-          // FILTER OUT impossible returns (>100% or <-90%)
-          if (effReturn <= 100 && effReturn >= -90) {
+          // KPI-AUDIT: HARD cap tightened from ±100/-90 to ±50 (gold standard)
+          if (Math.abs(effReturn) > HARD_CAP) {
+            // capped / excluded from KPI averages
+            auditNCapped++;
+            auditExclusionBreakdown['capped_outside_50'] = (auditExclusionBreakdown['capped_outside_50'] || 0) + 1;
+            byChannelMap[channel].capped++;
+          } else {
             byMarketMap[m].net_pl += effReturn;
             returnsByMarket[m].push(effReturn);
+            byChannelMap[channel].net_pl += effReturn;
+            byChannelMap[channel].returns.push(effReturn);
           }
+        } else {
+          auditExclusionBreakdown['no_return'] = (auditExclusionBreakdown['no_return'] || 0) + 1;
         }
       } else {
         byMarketMap[m].active++;
@@ -116,6 +192,38 @@ export async function GET(request: NextRequest) {
         byMarketMap[m].sr_adoption++;
       }
     }
+
+    // KPI-AUDIT: compute by_channel stats (gold-standard ChannelStats shape)
+    const byChannel = (Object.keys(byChannelMap) as Array<'balanced' | 'morning_bell'>)
+      .filter((ch) => byChannelMap[ch].total > 0)
+      .map((ch) => {
+        const v = byChannelMap[ch];
+        const wins = v.returns.filter((r) => r > 0);
+        const losses = v.returns.filter((r) => r < 0);
+        const grossProfit = wins.reduce((s, r) => s + r, 0);
+        const grossLossAmount = losses.reduce((s, r) => s + Math.abs(r), 0);
+        const pf = grossLossAmount > 0 ? grossProfit / grossLossAmount : (grossProfit > 0 ? Infinity : 0);
+        const avgWin = wins.length > 0 ? grossProfit / wins.length : 0;
+        // avg_loss ALWAYS negative (gold standard)
+        const avgLoss = losses.length > 0 ? -(grossLossAmount / losses.length) : 0;
+        const expectancy = v.returns.length > 0
+          ? v.returns.reduce((s, r) => s + r, 0) / v.returns.length : 0;
+        const maxLoss = losses.length > 0 ? Math.min(...losses) : 0;
+        return {
+          channel: ch,
+          n: v.returns.length,
+          n_raw: v.total,
+          n_closed: v.closed,
+          capped: v.capped,
+          win_rate: v.returns.length > 0 ? (wins.length / v.returns.length) * 100 : 0,
+          profit_factor: pf === Infinity ? 0 : pf,
+          expectancy_pct: expectancy,
+          avg_win_pct: avgWin,
+          avg_loss_pct: avgLoss, // negative
+          max_loss_pct: maxLoss, // negative
+          net_pl: v.net_pl,
+        };
+      });
     const byMarket = Object.keys(byMarketMap).sort().map((market) => {
       const v = byMarketMap[market];
       const returns = returnsByMarket[market];
@@ -257,6 +365,17 @@ export async function GET(request: NextRequest) {
       ? Math.round((Number(filteredWins) / filteredClosed) * 1000) / 10
       : 0;
 
+    // KPI-AUDIT: compute audit fields (gold-standard alignment)
+    // n_valid = rows that passed dedup + validation AND have a measurable return within ±50
+    const auditNValid = byChannelMap.balanced.returns.length + byChannelMap.morning_bell.returns.length;
+    const auditNExcluded = auditNRaw - auditNValid -
+      // open/non-closed rows aren't 'excluded' — they're just not measured.
+      // Count only rows excluded by a real reason in exclusion_breakdown.
+      0;
+    // Recompute n_excluded strictly as the sum of exclusion_breakdown entries
+    const auditNExcludedStrict = Object.values(auditExclusionBreakdown)
+      .reduce((s, v) => s + v, 0);
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -277,7 +396,10 @@ export async function GET(request: NextRequest) {
         real_win_rate: winRate,
         avg_return: overall.avg_return !== null ? Math.round(Number(overall.avg_return) * 100) / 100 : null,
         avg_profit: overall.avg_profit !== null ? Math.round(Number(overall.avg_profit) * 100) / 100 : null,
-        avg_loss: overall.avg_loss !== null ? Math.round(Number(overall.avg_loss) * 100) / 100 : null,
+        // KPI-AUDIT: avg_loss must always be negative (gold standard)
+        avg_loss: overall.avg_loss !== null
+          ? -Math.abs(Math.round(Number(overall.avg_loss) * 100) / 100)
+          : null,
         avg_max_profit: overall.avg_profit !== null ? Math.round(Number(overall.avg_profit) * 100) / 100 : null,
         avg_max_loss: overall.avg_loss !== null ? Math.round(Number(overall.avg_loss) * 100) / 100 : null,
         net_pl: Math.round(Number(overall.net_pl) * 100) / 100,
@@ -291,8 +413,29 @@ export async function GET(request: NextRequest) {
           latest: dateRange.latest,
         },
         markets_covered: byMarket.map((m) => m.market),
+
+        // ===== KPI-AUDIT: gold-standard alignment fields =====
+        // (mirror /api/admin/platform-performance KPIs shape)
+        n_raw: auditNRaw,
+        n_valid: auditNValid,
+        n_excluded: auditNExcludedStrict,
+        n_excluded_total: auditNExcluded, // legacy alias (raw - valid)
+        exclusion_breakdown: auditExclusionBreakdown,
+        capped_rows: auditNCapped,
+        hard_cap: HARD_CAP,
+        audit_status: 'aligned',
+        audit_note_ar:
+          'KPI-AUDIT: محاذي مع gold standard. تم تطبيق HARD cap ±50، dedup على ' +
+          '(ticker|prediction_date|channel|entry_price)، فصل القنوات ' +
+          '(balanced/morning_bell)، و avg_loss سالب دائماً. ' +
+          'ملاحظة: إحصائيات total_predictions/closed_predictions التراثية ' +
+          'تأتي من SQL aggregation بدون dedup (للـ backward compat) — ' +
+          'الـ KPI الجديدة (n_raw/n_valid/n_excluded/exclusion_breakdown) ' +
+          'هي المصدر الدقيق.',
       },
       by_market: byMarket,
+      // KPI-AUDIT: channel separation (gold standard)
+      by_channel: byChannel,
       candlestick_patterns: patternStats,
       lessons,
       // HONEST-V2: extra fields for the new dashboard charts

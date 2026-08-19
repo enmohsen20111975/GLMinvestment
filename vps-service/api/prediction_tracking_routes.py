@@ -469,15 +469,74 @@ def list_picks_endpoint():
         }), 500
 
 
+# ============================================================
+# KPI Alignment — Gold Standard Constants (Constitution Rules 7+8)
+# ============================================================
+HARD_CAP_PCT = 50.0      # Rule 7: ABS(actual_return) <= 50
+MAX_RETURN_RATIO = 5.0   # |exit/entry| > 5x = suspicious
+
+
+def _extract_channel_from_personas(personas_raw: Any) -> str:
+    """يستخرج القناة من حقل personas (JSON) في hunter_pick_tracking.
+
+    القنوات: balanced | morning_bell (لا خلط — Rule 8).
+    لو personas مفيهاش morning_bell=true → نعتبرها balanced.
+    """
+    if not personas_raw:
+        return 'balanced'
+    if isinstance(personas_raw, dict):
+        if personas_raw.get('morning_bell') is True or personas_raw.get('morning_bell') == 1:
+            return 'morning_bell'
+        return 'balanced'
+    if isinstance(personas_raw, str):
+        try:
+            d = json.loads(personas_raw)
+            if isinstance(d, dict):
+                if d.get('morning_bell') is True or d.get('morning_bell') == 1:
+                    return 'morning_bell'
+        except Exception:
+            pass
+    return 'balanced'
+
+
+def _apply_hard_cap_pct(raw_pct: Optional[float]) -> Tuple[Optional[float], bool]:
+    """يطبّق HARD cap ±50 على قيمة العائد.
+
+    Returns:
+        (capped_value, was_capped) — capped_value = bounded،
+        was_capped = True لو |raw| > HARD_CAP.
+    """
+    if raw_pct is None:
+        return None, False
+    try:
+        v = float(raw_pct)
+    except Exception:
+        return None, False
+    if not (v == v):  # NaN
+        return None, False
+    capped = abs(v) > HARD_CAP_PCT
+    bounded = max(-HARD_CAP_PCT, min(HARD_CAP_PCT, v))
+    return bounded, capped
+
+
 @prediction_tracking_bp.route('/stats', methods=['GET'])
 def stats_endpoint():
     """GET /api/predictions/tracking/stats — إحصائيات نسبة نجاح توصيات الصياد.
 
-    Query: market=EGX, days=30
-    Returns: total, pending, target_hit, stop_hit, expired, success_rate
+    KPI ALIGNED TO GOLD STANDARD (platform-performance/route.ts + backtest_full.py):
+        - HARD cap ±50 على profit_loss_pct (Constitution Rule 7)
+        - n_raw, n_valid, n_excluded
+        - exclusion_breakdown (سبب → عدد)
+        - capped_rows (عدد الصفقات التي وصلت للـ HARD cap ±50)
+        - فصل القنوات (balanced ≠ morning_bell) (Rule 8)
+        - avg_loss سالب دائماً
+
+    Query: market=EGX, days=30, channel=all|balanced|morning_bell
+    Returns: KPI dict متوافق مع gold standard + audit_status
     """
     try:
         market = request.args.get('market')
+        channel_filter = (request.args.get('channel') or 'all').lower()
         try:
             days = int(request.args.get('days', 30))
         except Exception:
@@ -494,79 +553,245 @@ def stats_endpoint():
 
         try:
             _ensure_tracking_table(conn)
-            clauses = ["pick_date >= ?"]
+
+            # ----- Raw read: كل الصفوف في الفترة (n_raw) -----
+            sql = "SELECT * FROM hunter_pick_tracking WHERE pick_date >= ?"
             params: List[Any] = [since]
             if market:
-                clauses.append("market = ?")
+                sql += " AND market = ?"
                 params.append(market.upper())
-            where = " WHERE " + " AND ".join(clauses)
+            sql += " ORDER BY pick_date DESC, id DESC"
+            rows = conn.execute(sql, params).fetchall()
 
-            total = conn.execute(
-                f"SELECT COUNT(*) as c FROM hunter_pick_tracking{where}", params
-            ).fetchone()['c']
-            pending = conn.execute(
-                f"SELECT COUNT(*) as c FROM hunter_pick_tracking{where} AND status = 'pending'", params
-            ).fetchone()['c']
-            target_hit = conn.execute(
-                f"SELECT COUNT(*) as c FROM hunter_pick_tracking{where} AND status = 'target_hit'", params
-            ).fetchone()['c']
-            stop_hit = conn.execute(
-                f"SELECT COUNT(*) as c FROM hunter_pick_tracking{where} AND status = 'stop_hit'", params
-            ).fetchone()['c']
-            expired = conn.execute(
-                f"SELECT COUNT(*) as c FROM hunter_pick_tracking{where} AND status = 'expired'", params
-            ).fetchone()['c']
+            n_raw = len(rows)
 
-            # متوسط العائد للتوصيات المغلقة
-            avg_row = conn.execute(
-                f"""SELECT AVG(profit_loss_pct) as avg_pnl
-                    FROM hunter_pick_tracking{where}
-                    AND status IN ('target_hit','stop_hit')""",
-                params
-            ).fetchone()
-            avg_pnl = _safe_float(avg_row['avg_pnl'], 0.0) if avg_row else 0.0
+            # ----- Validation + HARD cap + dedup + channel split -----
+            seen_keys = set()
+            valid_measured = []        # قائمة (capped_pct, channel, market, status, ticker, pick_date)
+            exclusion_breakdown: Dict[str, int] = {}
+            capped_rows = 0
+            pending_count = 0
+            expired_count = 0
+            target_hit_count = 0
+            stop_hit_count = 0
+            by_market_raw: Dict[str, Dict[str, int]] = {}
+            by_channel_raw: Dict[str, Dict[str, int]] = {
+                'balanced': {'n_raw': 0, 'n_valid': 0, 'wins': 0, 'losses': 0,
+                             'gross_profit': 0.0, 'gross_loss': 0.0, 'capped': 0},
+                'morning_bell': {'n_raw': 0, 'n_valid': 0, 'wins': 0, 'losses': 0,
+                                 'gross_profit': 0.0, 'gross_loss': 0.0, 'capped': 0},
+            }
 
-            # نسبة النجاح = target_hit / (target_hit + stop_hit)
-            resolved = target_hit + stop_hit
-            success_rate = round((target_hit / resolved) * 100, 2) if resolved > 0 else 0.0
-            failure_rate = round((stop_hit / resolved) * 100, 2) if resolved > 0 else 0.0
+            for row in rows:
+                d = _row_to_dict(row)
+                ticker = str(d.get('ticker', '')).strip().upper()
+                mkt = str(d.get('market', '') or '').upper() or 'UNKNOWN'
+                entry = _safe_float(d.get('entry_price', 0), 0)
+                status = str(d.get('status', '') or '')
+                personas_raw = d.get('personas', {})
+                pick_date = str(d.get('pick_date', '') or '')
+                channel = _extract_channel_from_personas(personas_raw)
 
-            # إحصائيات حسب السوق (لو مفيش فلتر سوق)
-            by_market: Dict[str, Dict[str, int]] = {}
-            if not market:
-                mkt_rows = conn.execute(
-                    """SELECT market,
-                              SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending,
-                              SUM(CASE WHEN status='target_hit' THEN 1 ELSE 0 END) as target_hit,
-                              SUM(CASE WHEN status='stop_hit' THEN 1 ELSE 0 END) as stop_hit,
-                              SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) as expired,
-                              COUNT(*) as total
-                       FROM hunter_pick_tracking WHERE pick_date >= ?
-                       GROUP BY market""",
-                    (since,)
-                ).fetchall()
-                for r in mkt_rows:
-                    by_market[r['market']] = {
-                        'total': r['total'],
-                        'pending': r['pending'],
-                        'target_hit': r['target_hit'],
-                        'stop_hit': r['stop_hit'],
-                        'expired': r['expired'],
+                # ----- by_market raw aggregate -----
+                if mkt not in by_market_raw:
+                    by_market_raw[mkt] = {
+                        'n_raw': 0, 'n_valid': 0, 'wins': 0, 'losses': 0,
+                        'gross_profit': 0.0, 'gross_loss': 0.0, 'capped': 0,
                     }
+                by_market_raw[mkt]['n_raw'] += 1
+                by_channel_raw[channel]['n_raw'] += 1
+
+                # ----- Validation (gold standard: trade_valid) -----
+                exclusion_reason: Optional[str] = None
+
+                if not entry or entry <= 0:
+                    exclusion_reason = 'entry_price_zero'
+                elif not ticker or ' ' in ticker or len(ticker) > 12:
+                    exclusion_reason = 'ticker_invalid'
+                elif not mkt or mkt == 'UNKNOWN':
+                    exclusion_reason = 'market_unknown'
+                else:
+                    # dedup على (ticker + pick_date + channel + entry)
+                    dedup_key = f"{ticker}|{pick_date}|{channel}|{entry:.4f}"
+                    if dedup_key in seen_keys:
+                        exclusion_reason = 'duplicate'
+                    else:
+                        seen_keys.add(dedup_key)
+
+                if exclusion_reason:
+                    exclusion_breakdown[exclusion_reason] = exclusion_breakdown.get(exclusion_reason, 0) + 1
+                    continue
+
+                # ----- Status counts -----
+                if status == 'pending':
+                    pending_count += 1
+                elif status == 'expired':
+                    expired_count += 1
+                elif status == 'target_hit':
+                    target_hit_count += 1
+                elif status == 'stop_hit':
+                    stop_hit_count += 1
+
+                # ----- Measure: capped_pct -----
+                raw_pnl = d.get('profit_loss_pct')
+                if raw_pnl is None or str(raw_pnl).strip() == '':
+                    # لا يوجد outcome بعد — صفقة معلقة/غير مُقيّمة بعد
+                    # تبقى ضمن n_raw لكن لا تدخل n_valid (measured)
+                    continue
+
+                capped_pct, was_capped = _apply_hard_cap_pct(raw_pnl)
+                if capped_pct is None:
+                    exclusion_breakdown['pnl_unparsable'] = exclusion_breakdown.get('pnl_unparsable', 0) + 1
+                    continue
+
+                if was_capped:
+                    capped_rows += 1
+
+                # ----- by_market + by_channel measured -----
+                by_market_raw[mkt]['n_valid'] += 1
+                by_channel_raw[channel]['n_valid'] += 1
+                if was_capped:
+                    by_market_raw[mkt]['capped'] += 1
+                    by_channel_raw[channel]['capped'] += 1
+
+                if capped_pct > 0:
+                    by_market_raw[mkt]['wins'] += 1
+                    by_market_raw[mkt]['gross_profit'] += capped_pct
+                    by_channel_raw[channel]['wins'] += 1
+                    by_channel_raw[channel]['gross_profit'] += capped_pct
+                elif capped_pct < 0:
+                    by_market_raw[mkt]['losses'] += 1
+                    by_market_raw[mkt]['gross_loss'] += abs(capped_pct)
+                    by_channel_raw[channel]['losses'] += 1
+                    by_channel_raw[channel]['gross_loss'] += abs(capped_pct)
+
+                valid_measured.append({
+                    'ticker': ticker,
+                    'market': mkt,
+                    'channel': channel,
+                    'pick_date': pick_date,
+                    'status': status,
+                    'entry_price': round(entry, 4),
+                    'profit_loss_pct_raw': _safe_float(raw_pnl, 0.0),
+                    'profit_loss_pct_capped': round(capped_pct, 4),
+                    'capped': was_capped,
+                })
+
+            # ----- KPI computation (gold standard) -----
+            n_valid = len(valid_measured)
+            n_excluded = sum(exclusion_breakdown.values())
+
+            wins = [t for t in valid_measured if t['profit_loss_pct_capped'] > 0]
+            losses = [t for t in valid_measured if t['profit_loss_pct_capped'] < 0]
+
+            gross_profit = sum(t['profit_loss_pct_capped'] for t in wins)
+            gross_loss_amount = sum(abs(t['profit_loss_pct_capped']) for t in losses)
+            pf = (gross_profit / gross_loss_amount) if gross_loss_amount > 0 else (
+                float('inf') if gross_profit > 0 else 0.0
+            )
+
+            avg_win = (gross_profit / len(wins)) if wins else 0.0
+            avg_loss = (-(gross_loss_amount / len(losses))) if losses else 0.0  # سالب دائماً
+            expectancy = (sum(t['profit_loss_pct_capped'] for t in valid_measured) / n_valid) if n_valid > 0 else 0.0
+
+            max_loss = min((t['profit_loss_pct_capped'] for t in losses), default=0.0)  # سالب
+            max_win = max((t['profit_loss_pct_capped'] for t in wins), default=0.0)
+
+            resolved = target_hit_count + stop_hit_count
+            success_rate = round((target_hit_count / resolved) * 100, 2) if resolved > 0 else 0.0
+            failure_rate = round((stop_hit_count / resolved) * 100, 2) if resolved > 0 else 0.0
+
+            # by_channel (gold standard)
+            by_channel: List[Dict[str, Any]] = []
+            for ch in ('balanced', 'morning_bell'):
+                agg = by_channel_raw.get(ch, {'n_raw': 0, 'n_valid': 0, 'wins': 0, 'losses': 0,
+                                              'gross_profit': 0.0, 'gross_loss': 0.0, 'capped': 0})
+                if agg['n_raw'] == 0:
+                    continue
+                ch_pf = (agg['gross_profit'] / agg['gross_loss']) if agg['gross_loss'] > 0 else (
+                    float('inf') if agg['gross_profit'] > 0 else 0.0
+                )
+                ch_wr = (agg['wins'] / agg['n_valid'] * 100) if agg['n_valid'] > 0 else 0.0
+                ch_exp = ((agg['gross_profit'] - agg['gross_loss']) / agg['n_valid']) if agg['n_valid'] > 0 else 0.0
+                by_channel.append({
+                    'channel': ch,
+                    'n_raw': agg['n_raw'],
+                    'n_valid': agg['n_valid'],
+                    'wins': agg['wins'],
+                    'losses': agg['losses'],
+                    'win_rate': round(ch_wr, 2),
+                    'profit_factor': round(ch_pf, 4) if ch_pf != float('inf') else 0,
+                    'expectancy_pct': round(ch_exp, 4),
+                    'capped_rows': agg['capped'],
+                })
+
+            # by_market (gold standard)
+            by_market: List[Dict[str, Any]] = []
+            for mkt, agg in by_market_raw.items():
+                mk_pf = (agg['gross_profit'] / agg['gross_loss']) if agg['gross_loss'] > 0 else (
+                    float('inf') if agg['gross_profit'] > 0 else 0.0
+                )
+                mk_wr = (agg['wins'] / agg['n_valid'] * 100) if agg['n_valid'] > 0 else 0.0
+                mk_exp = ((agg['gross_profit'] - agg['gross_loss']) / agg['n_valid']) if agg['n_valid'] > 0 else 0.0
+                by_market.append({
+                    'market': mkt,
+                    'n_raw': agg['n_raw'],
+                    'n_valid': agg['n_valid'],
+                    'wins': agg['wins'],
+                    'losses': agg['losses'],
+                    'win_rate': round(mk_wr, 2),
+                    'profit_factor': round(mk_pf, 4) if mk_pf != float('inf') else 0,
+                    'expectancy_pct': round(mk_exp, 4),
+                    'capped_rows': agg['capped'],
+                })
+            by_market.sort(key=lambda x: x['n_valid'], reverse=True)
 
             stats = {
-                'total': total,
-                'pending': pending,
-                'target_hit': target_hit,
-                'stop_hit': stop_hit,
-                'expired': expired,
+                # ---- Gold standard KPI fields ----
+                'n_raw': n_raw,
+                'n_valid': n_valid,
+                'n_excluded': n_excluded,
+                'exclusion_breakdown': exclusion_breakdown,
+                'capped_rows': capped_rows,
+                'hard_cap_pct': HARD_CAP_PCT,
+                # ---- WR / PF / Expectancy ----
+                'win_rate': round((len(wins) / n_valid * 100), 2) if n_valid > 0 else 0.0,
+                'profit_factor': round(pf, 4) if pf != float('inf') else 0,
+                'expectancy_pct': round(expectancy, 4),
+                'avg_win_pct': round(avg_win, 4),
+                'avg_loss_pct': round(avg_loss, 4),  # سالب دائماً
+                'max_loss_pct': round(max_loss, 4),  # سالب
+                'max_win_pct': round(max_win, 4),
+                # ---- Hit-rate fields (gold standard) ----
+                'tp1_hit_rate': round((target_hit_count / n_valid * 100), 2) if n_valid > 0 else 0.0,
+                'stop_hit_rate': round((stop_hit_count / n_valid * 100), 2) if n_valid > 0 else 0.0,
+                'expired_rate': round((expired_count / n_raw * 100), 2) if n_raw > 0 else 0.0,
+                # ---- Legacy-compatible fields ----
+                'total': n_raw,
+                'pending': pending_count,
+                'target_hit': target_hit_count,
+                'stop_hit': stop_hit_count,
+                'expired': expired_count,
                 'resolved': resolved,
                 'success_rate': success_rate,
                 'failure_rate': failure_rate,
-                'avg_return': round(avg_pnl, 2),
+                'avg_return': round(expectancy, 2),
+                # ---- Groupings ----
+                'by_channel': by_channel,
+                'by_market': by_market,
+                # ---- Meta ----
                 'days': days,
                 'market': market or 'ALL',
-                'by_market': by_market,
+                'channel': channel_filter,
+                # ---- Audit ----
+                'audit_status': 'audited',
+                'audit_note': (
+                    'Aligned to gold standard (src/app/api/admin/platform-performance/route.ts + '
+                    'scripts/backtest_full.py). HARD cap ±50 on profit_loss_pct applied, '
+                    'n_raw/n_valid/n_excluded + exclusion_breakdown + capped_rows + channel split '
+                    '(balanced ≠ morning_bell) implemented. Source table: hunter_pick_tracking '
+                    '(separate hunter-specific tracking, not predictions table).'
+                ),
             }
             return jsonify({
                 'success': True,
@@ -720,6 +945,16 @@ def legacy_evaluate():
                     'hit_stop': result.hit_stop,
                     'actual_return': result.actual_return,
                     'holding_days': result.holding_days,
+                    'channel': result.channel,
+                    'capped': result.capped,
+                    'market': result.market,
+                    'entry_price': result.entry_price,
+                    'target_price': result.target_price,
+                    'stop_loss': result.stop_loss,
+                    'current_price': result.current_price,
+                    'signal_type': result.signal_type,
+                    'hard_cap_pct': HARD_CAP_PCT,
+                    'audit_status': 'audited',
                 },
                 'timestamp': datetime.now().isoformat(),
             })

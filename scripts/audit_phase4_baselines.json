@@ -1,0 +1,108 @@
+{
+  "glminvestment_balanced": {
+    "n": 108,
+    "WR": 54.63,
+    "PF": 1.704,
+    "Exp": 1.9566,
+    "MaxLoss": -7.5927
+  },
+  "baseline_a_random": {
+    "n": 108,
+    "WR": 54.49,
+    "PF": 1.578,
+    "Exp": 1.1592,
+    "MaxLoss": -6.0,
+    "mc_runs": 1000,
+    "WR_std": 4.83,
+    "PF_std": 0.351,
+    "Exp_std": 0.574
+  },
+  "baseline_b_momentum": {
+    "n": 114,
+    "WR": 64.91,
+    "PF": 2.569,
+    "Exp": 2.7597,
+    "MaxLoss": -6.0
+  },
+  "baseline_c_rvol": {
+    "n": 114,
+    "WR": 51.75,
+    "PF": 1.434,
+    "Exp": 1.0579,
+    "MaxLoss": -6.0
+  },
+  "baseline_d_benchmark": {
+    "n": 556,
+    "WR": 45.5,
+    "PF": 1.12,
+    "Exp": 1.0861,
+    "MaxLoss": -55.1464,
+    "n_tickers": 556
+  },
+  "baseline_e_buyhold": {
+    "n": 108,
+    "WR": 44.44,
+    "PF": 2.445,
+    "Exp": 4.977,
+    "MaxLoss": -10.0681
+  },
+  "verdict": "GLMinvestment_underperforms",
+  "comparison": {
+    "glm_pf": 1.704,
+    "glm_exp": 1.9566,
+    "baselines_pf": {
+      "baseline_a_random": 1.578,
+      "baseline_b_momentum": 2.569,
+      "baseline_c_rvol": 1.434,
+      "baseline_d_benchmark": 1.12,
+      "baseline_e_buyhold": 2.445
+    },
+    "baselines_exp": {
+      "baseline_a_random": 1.1592,
+      "baseline_b_momentum": 2.7597,
+      "baseline_c_rvol": 1.0579,
+      "baseline_d_benchmark": 1.0861,
+      "baseline_e_buyhold": 4.977
+    },
+    "baselines_beating_glm_by_pf": [
+      "baseline_b_momentum",
+      "baseline_e_buyhold"
+    ],
+    "baselines_beating_glm_by_exp": [
+      "baseline_b_momentum",
+      "baseline_e_buyhold"
+    ]
+  },
+  "meta": {
+    "tp_pct_proxy": 8.0,
+    "sl_pct_proxy": -6.0,
+    "mc_runs": 1000,
+    "universe_size_glm": 15,
+    "universe_size_egx": 556,
+    "universe_tickers_glm": [
+      "1030",
+      "1120",
+      "1302",
+      "1321",
+      "1322",
+      "1323",
+      "1324",
+      "2090",
+      "2180",
+      "2190",
+      "2200",
+      "BOURSA",
+      "EG23X",
+      "ENERGYH",
+      "TAO"
+    ],
+    "prediction_dates_count": 38,
+    "date_range": [
+      "2026-01-01",
+      "2026-05-28"
+    ],
+    "exit_logic": "TP=+8%, SL=-6%, time-stop=outcome_date close, intraday high/low used; if TP+SL hit same day, assume SL hit first (conservative)",
+    "glm_filter": "persona='balanced' AND morning_bell=0 AND status='EXPIRED' AND kill_filter_result != '' (dedup by ticker+prediction_date)",
+    "verdict_logic": "outperforms if GLM PF and Exp >= 90% of every baseline; underperforms if any baseline beats GLM by >10% on PF or Exp"
+  }
+}

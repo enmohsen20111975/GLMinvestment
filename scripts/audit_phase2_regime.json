@@ -1,0 +1,445 @@
+{
+  "phase": "2.4",
+  "audit_name": "regime_breakdown",
+  "dataset_md5": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_source": "data/active_databases_20260817_full.zip",
+  "regime_detection_method": "proxy: avg daily return of all EGX stocks, 20-day SMA (EGX30 historical series unavailable; only snapshot in stocks.db.market_indices)",
+  "window": {
+    "start": "2026-01-01",
+    "end": "2026-08-17"
+  },
+  "thresholds_pct": {
+    "bull_gt": 0.3,
+    "bear_lt": -0.3,
+    "sma_window": 20
+  },
+  "proxy_ret_cap_pct": 20.0,
+  "proxy_total_returns_input": 161684,
+  "proxy_returns_capped_out": 679,
+  "hard_cap_abs_return": 50.0,
+  "dedup_key": "ticker|prediction_date|channel(morning_bell)|entry_price(4dp)",
+  "return_formula": {
+    "hit_target=1": "(target_price - entry_price)/entry_price*100",
+    "hit_stop=1": "(stop_loss - entry_price)/entry_price*100",
+    "expired_no_hit": "null"
+  },
+  "regime_day_distribution": {
+    "bull": 0,
+    "bear": 0,
+    "range": 136
+  },
+  "trading_days_in_window": 136,
+  "predictions_raw": 153,
+  "predictions_after_dedup": 152,
+  "duplicates_excluded": 1,
+  "predictions_without_regime_tag": 0,
+  "no_regime_dates_sample": [],
+  "regimes": {
+    "bull": {
+      "predictions_count": 0,
+      "balanced": {
+        "n_raw": 0,
+        "n_valid": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "expectancy": null,
+        "avg_win": null,
+        "avg_loss": null,
+        "max_win": null,
+        "max_loss": null,
+        "n_wins": 0,
+        "n_losses": 0
+      },
+      "morning_bell": {
+        "n_raw": 0,
+        "n_valid": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "expectancy": null,
+        "avg_win": null,
+        "avg_loss": null,
+        "max_win": null,
+        "max_loss": null,
+        "n_wins": 0,
+        "n_losses": 0
+      }
+    },
+    "bear": {
+      "predictions_count": 0,
+      "balanced": {
+        "n_raw": 0,
+        "n_valid": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "expectancy": null,
+        "avg_win": null,
+        "avg_loss": null,
+        "max_win": null,
+        "max_loss": null,
+        "n_wins": 0,
+        "n_losses": 0
+      },
+      "morning_bell": {
+        "n_raw": 0,
+        "n_valid": 0,
+        "win_rate": null,
+        "profit_factor": null,
+        "expectancy": null,
+        "avg_win": null,
+        "avg_loss": null,
+        "max_win": null,
+        "max_loss": null,
+        "n_wins": 0,
+        "n_losses": 0
+      }
+    },
+    "range": {
+      "predictions_count": 152,
+      "balanced": {
+        "n_raw": 113,
+        "n_valid": 91,
+        "win_rate": 0.461538,
+        "profit_factor": 1.271278,
+        "expectancy": 0.895166,
+        "avg_win": 9.089116,
+        "avg_loss": -6.12822,
+        "max_win": 12.268889,
+        "max_loss": -7.59274,
+        "n_wins": 42,
+        "n_losses": 49
+      },
+      "morning_bell": {
+        "n_raw": 39,
+        "n_valid": 35,
+        "win_rate": 0.4,
+        "profit_factor": 1.010948,
+        "expectancy": 0.040008,
+        "avg_win": 9.236189,
+        "avg_loss": -6.090779,
+        "max_win": 12.085278,
+        "max_loss": -7.234392,
+        "n_wins": 14,
+        "n_losses": 21
+      }
+    },
+    "all": {
+      "predictions_count": 152,
+      "balanced": {
+        "n_raw": 113,
+        "n_valid": 91,
+        "win_rate": 0.461538,
+        "profit_factor": 1.271278,
+        "expectancy": 0.895166,
+        "avg_win": 9.089116,
+        "avg_loss": -6.12822,
+        "max_win": 12.268889,
+        "max_loss": -7.59274,
+        "n_wins": 42,
+        "n_losses": 49
+      },
+      "morning_bell": {
+        "n_raw": 39,
+        "n_valid": 35,
+        "win_rate": 0.4,
+        "profit_factor": 1.010948,
+        "expectancy": 0.040008,
+        "avg_win": 9.236189,
+        "avg_loss": -6.090779,
+        "max_win": 12.085278,
+        "max_loss": -7.234392,
+        "n_wins": 14,
+        "n_losses": 21
+      }
+    }
+  },
+  "sma_samples": [
+    {
+      "date": "2026-01-01",
+      "sma20_pct": -0.021923,
+      "median_ret_pct": 0.058002,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-01-18",
+      "sma20_pct": 0.006725,
+      "median_ret_pct": 0.0,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-02-02",
+      "sma20_pct": -0.020417,
+      "median_ret_pct": -0.088936,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-02-17",
+      "sma20_pct": -0.010248,
+      "median_ret_pct": 0.020166,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-03-04",
+      "sma20_pct": 0.017716,
+      "median_ret_pct": -0.001056,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-03-19",
+      "sma20_pct": 0.004539,
+      "median_ret_pct": -0.05955,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-04-05",
+      "sma20_pct": -0.012411,
+      "median_ret_pct": -0.109523,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-04-20",
+      "sma20_pct": 0.024252,
+      "median_ret_pct": 0.016165,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-05-05",
+      "sma20_pct": 0.02946,
+      "median_ret_pct": -0.143494,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-05-20",
+      "sma20_pct": -0.010286,
+      "median_ret_pct": 0.041411,
+      "regime": "range",
+      "n_stocks_avg": 750
+    },
+    {
+      "date": "2026-06-07",
+      "sma20_pct": 0.086486,
+      "median_ret_pct": 2.529388,
+      "regime": "range",
+      "n_stocks_avg": 11
+    },
+    {
+      "date": "2026-07-28",
+      "sma20_pct": 0.082619,
+      "median_ret_pct": -0.431779,
+      "regime": "range",
+      "n_stocks_avg": 577
+    }
+  ],
+  "sensitivity_egx30etf": {
+    "method": "EGX30ETF daily-return 20-day SMA (ETF directly tracks the EGX30 index). Falls back to the proxy mean SMA20 when ETF data is missing (e.g. after 2026-06-03).",
+    "regime_day_distribution": {
+      "bull": 5,
+      "bear": 36,
+      "range": 95
+    },
+    "source_distribution": {
+      "egx30etf": 110,
+      "proxy_fallback": 26
+    },
+    "regimes": {
+      "bull": {
+        "predictions_count": 4,
+        "balanced": {
+          "n_raw": 3,
+          "n_valid": 2,
+          "win_rate": 1.0,
+          "profit_factor": null,
+          "expectancy": 9.098586,
+          "avg_win": 9.098586,
+          "avg_loss": null,
+          "max_win": 9.538901,
+          "max_loss": null,
+          "n_wins": 2,
+          "n_losses": 0
+        },
+        "morning_bell": {
+          "n_raw": 1,
+          "n_valid": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "expectancy": -6.696468,
+          "avg_win": null,
+          "avg_loss": -6.696468,
+          "max_win": null,
+          "max_loss": -6.696468,
+          "n_wins": 0,
+          "n_losses": 1
+        }
+      },
+      "bear": {
+        "predictions_count": 47,
+        "balanced": {
+          "n_raw": 35,
+          "n_valid": 27,
+          "win_rate": 0.481481,
+          "profit_factor": 1.369702,
+          "expectancy": 1.169698,
+          "avg_win": 9.000534,
+          "avg_loss": -6.101793,
+          "max_win": 10.804272,
+          "max_loss": -6.692806,
+          "n_wins": 13,
+          "n_losses": 14
+        },
+        "morning_bell": {
+          "n_raw": 12,
+          "n_valid": 11,
+          "win_rate": 0.363636,
+          "profit_factor": 0.868125,
+          "expectancy": -0.517481,
+          "avg_win": 9.368008,
+          "avg_loss": -6.166332,
+          "max_win": 10.816795,
+          "max_loss": -7.234392,
+          "n_wins": 4,
+          "n_losses": 7
+        }
+      },
+      "range": {
+        "predictions_count": 101,
+        "balanced": {
+          "n_raw": 75,
+          "n_valid": 62,
+          "win_rate": 0.435484,
+          "profit_factor": 1.147451,
+          "expectancy": 0.510985,
+          "avg_win": 9.131066,
+          "avg_loss": -6.138791,
+          "max_win": 12.268889,
+          "max_loss": -7.59274,
+          "n_wins": 27,
+          "n_losses": 35
+        },
+        "morning_bell": {
+          "n_raw": 26,
+          "n_valid": 23,
+          "win_rate": 0.434783,
+          "profit_factor": 1.176679,
+          "expectancy": 0.599523,
+          "avg_win": 9.183461,
+          "avg_loss": -6.003506,
+          "max_win": 12.085278,
+          "max_loss": -7.202713,
+          "n_wins": 10,
+          "n_losses": 13
+        }
+      },
+      "all": {
+        "predictions_count": 152,
+        "balanced": {
+          "n_raw": 113,
+          "n_valid": 91,
+          "win_rate": 0.461538,
+          "profit_factor": 1.271278,
+          "expectancy": 0.895166,
+          "avg_win": 9.089116,
+          "avg_loss": -6.12822,
+          "max_win": 12.268889,
+          "max_loss": -7.59274,
+          "n_wins": 42,
+          "n_losses": 49
+        },
+        "morning_bell": {
+          "n_raw": 39,
+          "n_valid": 35,
+          "win_rate": 0.4,
+          "profit_factor": 1.010948,
+          "expectancy": 0.040008,
+          "avg_win": 9.236189,
+          "avg_loss": -6.090779,
+          "max_win": 12.085278,
+          "max_loss": -7.234392,
+          "n_wins": 14,
+          "n_losses": 21
+        }
+      }
+    },
+    "sma_samples": [
+      {
+        "date": "2026-01-01",
+        "sma20_pct": -0.399833,
+        "regime": "bear",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-01-18",
+        "sma20_pct": -0.964139,
+        "regime": "bear",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-02-02",
+        "sma20_pct": -1.156769,
+        "regime": "bear",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-02-17",
+        "sma20_pct": -0.43428,
+        "regime": "bear",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-03-04",
+        "sma20_pct": 0.07299,
+        "regime": "range",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-03-19",
+        "sma20_pct": -0.217433,
+        "regime": "range",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-04-05",
+        "sma20_pct": -0.204799,
+        "regime": "range",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-04-20",
+        "sma20_pct": 0.212287,
+        "regime": "range",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-05-05",
+        "sma20_pct": 0.045322,
+        "regime": "range",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-05-20",
+        "sma20_pct": -0.072901,
+        "regime": "range",
+        "source": "egx30etf"
+      },
+      {
+        "date": "2026-06-07",
+        "sma20_pct": 0.086486,
+        "regime": "range",
+        "source": "proxy_fallback"
+      },
+      {
+        "date": "2026-07-28",
+        "sma20_pct": 0.082619,
+        "regime": "range",
+        "source": "proxy_fallback"
+      }
+    ]
+  }
+}

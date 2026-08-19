@@ -1,0 +1,610 @@
+{
+  "audit_phase": "1.1",
+  "audit_name": "look_ahead_bias_detection",
+  "audit_timestamp_utc": "2026-08-19T17:44:17.115982+00:00",
+  "dataset_zip": "data/active_databases_20260817_full.zip",
+  "dataset_md5_expected": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_observed": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_match": true,
+  "predictions_count": 153,
+  "predictions_distinct_tickers": 22,
+  "predictions_date_range": {
+    "min_prediction_date": "2026-01-01",
+    "max_prediction_date": "2026-08-17"
+  },
+  "checks": {
+    "1_fundamentals_timestamp": {
+      "check": "1_fundamentals_timestamp",
+      "db": "db/data_engine.db",
+      "tables_checked": [
+        {
+          "table": "tab_income_statement",
+          "exists": true,
+          "rowcount": 866,
+          "ts_column": "fiscal_end",
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "fiscal_period",
+            "fiscal_end",
+            "revenue",
+            "revenue_growth",
+            "gross_profit",
+            "operating_income",
+            "net_income",
+            "eps_basic",
+            "eps_diluted"
+          ],
+          "status": "FAIL",
+          "lookahead_count": 80,
+          "max_fiscal_end_observed": "2026-04-30"
+        },
+        {
+          "table": "tab_balance_sheet",
+          "exists": true,
+          "rowcount": 866,
+          "ts_column": "fiscal_end",
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "fiscal_period",
+            "fiscal_end",
+            "total_assets",
+            "total_liabilities",
+            "total_equity",
+            "shares_outstanding",
+            "shares_float",
+            "current_assets",
+            "current_liabilities",
+            "cash",
+            "debt"
+          ],
+          "status": "FAIL",
+          "lookahead_count": 80,
+          "max_fiscal_end_observed": "2026-04-30"
+        },
+        {
+          "table": "tab_cash_flow",
+          "exists": true,
+          "rowcount": 866,
+          "ts_column": "fiscal_end",
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "fiscal_period",
+            "fiscal_end",
+            "operating_cf",
+            "investing_cf",
+            "financing_cf",
+            "free_cf"
+          ],
+          "status": "FAIL",
+          "lookahead_count": 80,
+          "max_fiscal_end_observed": "2026-04-30"
+        },
+        {
+          "table": "tab_dividends",
+          "exists": true,
+          "rowcount": 858,
+          "ts_column": null,
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "dps_ttm",
+            "dps_fy",
+            "div_yield",
+            "div_yield_fwd",
+            "payout_ratio",
+            "dps_growth",
+            "cont_div",
+            "cont_div_growth"
+          ],
+          "status": "BLOCKED",
+          "note": "No fiscal_end / fiscal_period / last_updated column - cannot perform point-in-time check on this table."
+        },
+        {
+          "table": "tab_valuation",
+          "exists": true,
+          "rowcount": 858,
+          "ts_column": null,
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "market_cap",
+            "market_cap_perf",
+            "pe_ratio",
+            "peg_ratio",
+            "ps_ratio",
+            "pb_ratio",
+            "pcf_ratio",
+            "pfcf_ratio",
+            "pcash_ratio",
+            "ev",
+            "ev_revenue",
+            "ev_ebit",
+            "ev_ebitda"
+          ],
+          "status": "BLOCKED",
+          "note": "No fiscal_end / fiscal_period / last_updated column - cannot perform point-in-time check on this table."
+        },
+        {
+          "table": "tab_profitability",
+          "exists": true,
+          "rowcount": 858,
+          "ts_column": null,
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "gross_margin",
+            "operating_margin",
+            "pretax_margin",
+            "net_margin",
+            "fcf_margin",
+            "roa",
+            "roe",
+            "roc",
+            "rd_ratio",
+            "sga_ratio"
+          ],
+          "status": "BLOCKED",
+          "note": "No fiscal_end / fiscal_period / last_updated column - cannot perform point-in-time check on this table."
+        },
+        {
+          "table": "tab_performance",
+          "exists": true,
+          "rowcount": 858,
+          "ts_column": null,
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "price",
+            "change_percent",
+            "perf_1w",
+            "perf_1m",
+            "perf_3m",
+            "perf_6m",
+            "perf_ytd",
+            "perf_1y",
+            "perf_5y",
+            "perf_10y",
+            "perf_all",
+            "volatility_1w",
+            "volatility_1m"
+          ],
+          "status": "BLOCKED",
+          "note": "No fiscal_end / fiscal_period / last_updated column - cannot perform point-in-time check on this table."
+        },
+        {
+          "table": "tab_technical_analysis",
+          "exists": true,
+          "rowcount": 863,
+          "ts_column": null,
+          "columns": [
+            "id",
+            "symbol",
+            "market",
+            "technical_rating",
+            "ma_rating",
+            "oscillators_rating",
+            "trend",
+            "momentum",
+            "rsi",
+            "macd",
+            "stoch",
+            "adx",
+            "atr"
+          ],
+          "status": "BLOCKED",
+          "note": "No fiscal_end / fiscal_period / last_updated column - cannot perform point-in-time check on this table."
+        },
+        {
+          "table": "egx_fundamentals",
+          "exists": true,
+          "rowcount": 0,
+          "ts_column": "last_updated",
+          "columns": [
+            "ticker",
+            "name",
+            "pe_ratio",
+            "pb_ratio",
+            "roe",
+            "roa",
+            "debt_to_equity",
+            "current_ratio",
+            "dividend_yield",
+            "market_cap",
+            "shares_outstanding",
+            "sector",
+            "industry",
+            "last_updated"
+          ],
+          "status": "PASS",
+          "lookahead_count": 0,
+          "note": "egx_fundamentals has last_updated column; checked vs prediction_date."
+        }
+      ],
+      "lookahead_count": 240,
+      "predictions_with_lookahead": 80,
+      "examples": [
+        {
+          "pred_id": 21322,
+          "ticker": "1302",
+          "prediction_date": "2026-01-01",
+          "fund_symbol": "1302",
+          "fund_market": "السعودية",
+          "fiscal_end": "2026-03-31",
+          "fiscal_period": "2026-Q1",
+          "table": "tab_income_statement"
+        },
+        {
+          "pred_id": 21323,
+          "ticker": "2190",
+          "prediction_date": "2026-01-01",
+          "fund_symbol": "2190",
+          "fund_market": "السعودية",
+          "fiscal_end": "2026-03-31",
+          "fiscal_period": "2026-Q1",
+          "table": "tab_income_statement"
+        },
+        {
+          "pred_id": 21324,
+          "ticker": "1321",
+          "prediction_date": "2026-01-01",
+          "fund_symbol": "1321",
+          "fund_market": "السعودية",
+          "fiscal_end": "2026-03-31",
+          "fiscal_period": "2025-Q4",
+          "table": "tab_income_statement"
+        },
+        {
+          "pred_id": 21325,
+          "ticker": "1302",
+          "prediction_date": "2026-01-06",
+          "fund_symbol": "1302",
+          "fund_market": "السعودية",
+          "fiscal_end": "2026-03-31",
+          "fiscal_period": "2026-Q1",
+          "table": "tab_income_statement"
+        },
+        {
+          "pred_id": 21326,
+          "ticker": "1120",
+          "prediction_date": "2026-01-06",
+          "fund_symbol": "1120",
+          "fund_market": "السعودية",
+          "fiscal_end": "2026-03-31",
+          "fiscal_period": "2026-Q1",
+          "table": "tab_income_statement"
+        }
+      ],
+      "status": "FAIL",
+      "evidence": "Found 240 fundamental rows whose fiscal_end > prediction_date across 4 timestamped tables; 80 predictions affected."
+    },
+    "2_news_timestamp": {
+      "check": "2_news_timestamp",
+      "db": "db/news.db",
+      "table": "news_articles",
+      "status": "BLOCKED",
+      "lookahead_count": 1132109,
+      "predictions_with_lookahead": 153,
+      "examples": [
+        {
+          "pred_id": 21322,
+          "ticker": "1302",
+          "prediction_date": "2026-01-01",
+          "news_id": 260,
+          "news_title": "من الوقود إلى العقارات.. كيف تسللت العصابات إلى الاقتصاد البرازيلي؟",
+          "news_market_code": "GENERAL",
+          "news_published_at": "2026-06-01T11:20:35Z",
+          "matching_news_count": 7423,
+          "note": "Linked via market_code proxy (news.symbol is NULL for all rows)."
+        },
+        {
+          "pred_id": 21323,
+          "ticker": "2190",
+          "prediction_date": "2026-01-01",
+          "news_id": 260,
+          "news_title": "من الوقود إلى العقارات.. كيف تسللت العصابات إلى الاقتصاد البرازيلي؟",
+          "news_market_code": "GENERAL",
+          "news_published_at": "2026-06-01T11:20:35Z",
+          "matching_news_count": 7423,
+          "note": "Linked via market_code proxy (news.symbol is NULL for all rows)."
+        },
+        {
+          "pred_id": 21324,
+          "ticker": "1321",
+          "prediction_date": "2026-01-01",
+          "news_id": 260,
+          "news_title": "من الوقود إلى العقارات.. كيف تسللت العصابات إلى الاقتصاد البرازيلي؟",
+          "news_market_code": "GENERAL",
+          "news_published_at": "2026-06-01T11:20:35Z",
+          "matching_news_count": 7423,
+          "note": "Linked via market_code proxy (news.symbol is NULL for all rows)."
+        },
+        {
+          "pred_id": 21325,
+          "ticker": "1302",
+          "prediction_date": "2026-01-06",
+          "news_id": 260,
+          "news_title": "من الوقود إلى العقارات.. كيف تسللت العصابات إلى الاقتصاد البرازيلي؟",
+          "news_market_code": "GENERAL",
+          "news_published_at": "2026-06-01T11:20:35Z",
+          "matching_news_count": 7423,
+          "note": "Linked via market_code proxy (news.symbol is NULL for all rows)."
+        },
+        {
+          "pred_id": 21326,
+          "ticker": "1120",
+          "prediction_date": "2026-01-06",
+          "news_id": 260,
+          "news_title": "من الوقود إلى العقارات.. كيف تسللت العصابات إلى الاقتصاد البرازيلي؟",
+          "news_market_code": "GENERAL",
+          "news_published_at": "2026-06-01T11:20:35Z",
+          "matching_news_count": 7423,
+          "note": "Linked via market_code proxy (news.symbol is NULL for all rows)."
+        }
+      ],
+      "evidence": "All 7894 news_articles have symbol=NULL — per-ticker look-ahead cannot be verified (linkage column effectively missing). Market-level proxy scan: 1132109 news rows with market_code in ['EGX', 'GENERAL'] have published_at > prediction_date, affecting 153 predictions (examples listed for transparency; NOT counted as proven look-ahead because no per-ticker linkage exists).",
+      "columns": [
+        "id",
+        "title",
+        "content",
+        "summary",
+        "source",
+        "source_url",
+        "image_url",
+        "market",
+        "market_code",
+        "symbol",
+        "category",
+        "language",
+        "published_at",
+        "fetched_at",
+        "created_at"
+      ],
+      "rowcount": 7894,
+      "published_at_min": "2026-05-17T09:49:01Z",
+      "published_at_max": "20260717T215956",
+      "null_symbol_count": 7894,
+      "market_code_distribution": [
+        {
+          "market_code": "GENERAL",
+          "count": 7047
+        },
+        {
+          "market_code": "EGX",
+          "count": 376
+        },
+        {
+          "market_code": "QSE",
+          "count": 327
+        },
+        {
+          "market_code": "KSE",
+          "count": 117
+        },
+        {
+          "market_code": "TADAWUL",
+          "count": 27
+        }
+      ],
+      "caveat": "news_articles.symbol is NULL for all rows; linkage to predictions is via market_code proxy only. Findings are informational unless symbol linkage is restored."
+    },
+    "3_price_history_point_in_time": {
+      "check": "3_price_history_point_in_time",
+      "db": "db/price_history.db",
+      "table": "price_history",
+      "status": "PASS",
+      "lookahead_count": 0,
+      "predictions_with_lookahead": 0,
+      "examples": [],
+      "evidence": "Checked 153 predictions; 0 have prediction_date > max(price_history.date) for their ticker. price_history range: 2025-01-09 → 2026-08-17; 1260 distinct tickers. Sample leak-surface (1302, rows with date > 2026-01-01): 131 rows AFTER prediction_date exist in price_history (cannot use these for prediction inputs).",
+      "columns": [
+        "id",
+        "ticker",
+        "date",
+        "open_price",
+        "high_price",
+        "low_price",
+        "close_price",
+        "volume",
+        "source",
+        "created_at"
+      ],
+      "rowcount": 288194,
+      "date_min": "2025-01-09",
+      "date_max": "2026-08-17",
+      "distinct_tickers": 1260
+    },
+    "4_cross_table_alignment": {
+      "check": "4_cross_table_alignment",
+      "tables": [
+        "predictions.db.predictions",
+        "price_history.db.price_history"
+      ],
+      "status": "PASS",
+      "pre_prediction_price_missing": 0,
+      "outcome_price_missing": 0,
+      "examples": [],
+      "evidence": "pre_prediction_price_missing=0; outcome_price_missing=0; total predictions=153"
+    },
+    "5_stocks_freshness": {
+      "check": "5_stocks_freshness",
+      "db": "db/stocks.db",
+      "table": "stocks",
+      "status": "FAIL",
+      "lookahead_count": 146,
+      "predictions_with_lookahead": 146,
+      "examples": [
+        {
+          "pred_id": 21322,
+          "ticker": "1302",
+          "prediction_date": "2026-01-01",
+          "stock_last_update": "2026-08-17T14:38:31.633714",
+          "stock_last_update_date": "2026-08-17",
+          "issue": "stocks.last_update > prediction_date (snapshot used future state)"
+        },
+        {
+          "pred_id": 21323,
+          "ticker": "2190",
+          "prediction_date": "2026-01-01",
+          "stock_last_update": "2026-08-17T14:38:31.633877",
+          "stock_last_update_date": "2026-08-17",
+          "issue": "stocks.last_update > prediction_date (snapshot used future state)"
+        },
+        {
+          "pred_id": 21324,
+          "ticker": "1321",
+          "prediction_date": "2026-01-01",
+          "stock_last_update": "2026-08-17T14:38:31.633732",
+          "stock_last_update_date": "2026-08-17",
+          "issue": "stocks.last_update > prediction_date (snapshot used future state)"
+        },
+        {
+          "pred_id": 21325,
+          "ticker": "1302",
+          "prediction_date": "2026-01-06",
+          "stock_last_update": "2026-08-17T14:38:31.633714",
+          "stock_last_update_date": "2026-08-17",
+          "issue": "stocks.last_update > prediction_date (snapshot used future state)"
+        },
+        {
+          "pred_id": 21326,
+          "ticker": "1120",
+          "prediction_date": "2026-01-06",
+          "stock_last_update": "2026-08-17T14:38:31.633653",
+          "stock_last_update_date": "2026-08-17",
+          "issue": "stocks.last_update > prediction_date (snapshot used future state)"
+        }
+      ],
+      "evidence": "Used 'last_update' as point-in-time marker (also present: ['last_update', 'last_updated', 'updated_at']). 146 of 153 predictions have stocks.last_update > prediction_date — i.e., the stocks snapshot used was newer than the claimed prediction as-of date. 2 prediction tickers were not found in stocks table.",
+      "columns": [
+        "id",
+        "ticker",
+        "name",
+        "name_ar",
+        "market",
+        "sector",
+        "industry",
+        "current_price",
+        "previous_close",
+        "open_price",
+        "high_price",
+        "low_price",
+        "change_percent",
+        "volume",
+        "market_cap",
+        "pe_ratio",
+        "pb_ratio",
+        "ps_ratio",
+        "eps",
+        "roe",
+        "roa",
+        "debt_to_equity",
+        "current_ratio",
+        "book_value_per_share",
+        "ma_50",
+        "ma_200",
+        "rsi",
+        "support",
+        "resistance",
+        "signal",
+        "trend",
+        "dividend_yield",
+        "profit_margin",
+        "avg_volume",
+        "beta",
+        "high_52w",
+        "low_52w",
+        "close",
+        "change_value",
+        "is_active",
+        "is_egx30",
+        "is_egx70",
+        "is_egx100",
+        "last_update",
+        "created_at",
+        "updated_at",
+        "dps_ttm",
+        "free_float_percentage",
+        "free_float_shares",
+        "change",
+        "last_updated",
+        "currency",
+        "exchange",
+        "is_suspended",
+        "is_egx",
+        "turnover_egp",
+        "value_traded"
+      ],
+      "rowcount": 1046,
+      "ts_columns_present": [
+        "last_update",
+        "last_updated",
+        "updated_at"
+      ],
+      "predictions_ticker_missing_in_stocks": 2
+    },
+    "bonus_created_at_vs_prediction_date": {
+      "check": "bonus_created_at_vs_prediction_date",
+      "status": "FAIL",
+      "total_predictions": 153,
+      "created_after_prediction_date": 148,
+      "created_on_prediction_date": 5,
+      "created_before_prediction_date": 0,
+      "created_at_null": 0,
+      "examples": [
+        {
+          "pred_id": 21322,
+          "ticker": "1302",
+          "prediction_date": "2026-01-01",
+          "created_at": "2026-08-16T16:00:51.089025",
+          "created_at_date": "2026-08-16",
+          "issue": "prediction was generated AFTER its claimed prediction_date (retroactive/backtest)"
+        },
+        {
+          "pred_id": 21323,
+          "ticker": "2190",
+          "prediction_date": "2026-01-01",
+          "created_at": "2026-08-16T16:00:51.092392",
+          "created_at_date": "2026-08-16",
+          "issue": "prediction was generated AFTER its claimed prediction_date (retroactive/backtest)"
+        },
+        {
+          "pred_id": 21324,
+          "ticker": "1321",
+          "prediction_date": "2026-01-01",
+          "created_at": "2026-08-16T16:00:51.095500",
+          "created_at_date": "2026-08-16",
+          "issue": "prediction was generated AFTER its claimed prediction_date (retroactive/backtest)"
+        },
+        {
+          "pred_id": 21325,
+          "ticker": "1302",
+          "prediction_date": "2026-01-06",
+          "created_at": "2026-08-16T16:00:51.098649",
+          "created_at_date": "2026-08-16",
+          "issue": "prediction was generated AFTER its claimed prediction_date (retroactive/backtest)"
+        },
+        {
+          "pred_id": 21326,
+          "ticker": "1120",
+          "prediction_date": "2026-01-06",
+          "created_at": "2026-08-16T16:00:51.101697",
+          "created_at_date": "2026-08-16",
+          "issue": "prediction was generated AFTER its claimed prediction_date (retroactive/backtest)"
+        }
+      ],
+      "evidence": "148/153 predictions have created_at > prediction_date, indicating retroactive generation (backtest). This is a prerequisite for look-ahead bias — the audit checks above determine if future data was actually used."
+    }
+  },
+  "overall_status": "FAIL",
+  "next_phase_allowed": false
+}

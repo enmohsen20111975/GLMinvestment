@@ -1,0 +1,280 @@
+{
+  "audit": "PHASE-2.2+2.3-Commission-Slippage",
+  "engine": "python3 + sqlite3 (READ-ONLY URI)",
+  "audit_timestamp_utc": "2026-08-19T17:54:53.405103Z",
+  "dataset_zip": "/home/z/my-project/data/active_databases_20260817_full.zip",
+  "dataset_md5_expected": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_observed": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_match": true,
+  "db_path": "/home/z/my-project/db/predictions.db",
+  "db_md5": "7681ac3b4908a405c6881770724ebcbf",
+  "rules": {
+    "hard_cap_abs_return": 50.0,
+    "max_return_ratio": 5.0,
+    "return_formula": "actual_return | exit_price | hit_target=(t-e)/e*100 | hit_stop=(s-e)/e*100 | expired=None",
+    "adjusted_return_formula": "raw_return - (commission_round_trip_pct + slippage_round_trip_pct)",
+    "dedup_key": "(ticker, prediction_date, morning_bell, ROUND(entry_price,6)) -> lowest id"
+  },
+  "scenarios_def": {
+    "NO_COST": {
+      "commission_rt_pct": 0.0,
+      "slippage_rt_pct": 0.0
+    },
+    "BASE_COST": {
+      "commission_rt_pct": 0.3,
+      "slippage_rt_pct": 0.1
+    },
+    "STRESS_COST": {
+      "commission_rt_pct": 0.5,
+      "slippage_rt_pct": 0.3
+    }
+  },
+  "filter_pipeline": {
+    "n_raw": 153,
+    "exclusion_breakdown": {
+      "entry_price_zero": 0,
+      "ticker_invalid": 0,
+      "market_unknown": 0
+    },
+    "dedup_meta": {
+      "dedup_removed": 1,
+      "dedup_keys": 152
+    },
+    "n_after_quality_filter": 153,
+    "n_after_dedup": 152,
+    "n_qualifying_for_kpi": 152
+  },
+  "scenarios": {
+    "NO_COST": {
+      "commission_rt_pct": 0.0,
+      "slippage_rt_pct": 0.0,
+      "total_cost_pct": 0.0,
+      "n_no_return_expired": 5,
+      "n_unrealistic_exit": 0,
+      "all": {
+        "n_valid": 147,
+        "win_rate": 52.381,
+        "profit_factor": 1.5041,
+        "expectancy": 1.4683,
+        "avg_win": 8.3639,
+        "avg_loss": -6.117,
+        "max_loss": -7.5927,
+        "max_win": 50.0,
+        "gross_profit": 644.0238,
+        "gross_loss": 428.1892,
+        "n_wins": 77,
+        "n_losses": 70,
+        "hard_capped_count": 1
+      },
+      "balanced": {
+        "n_valid": 108,
+        "win_rate": 54.6296,
+        "profit_factor": 1.7019,
+        "expectancy": 1.9515,
+        "avg_win": 8.6618,
+        "avg_loss": -6.1282,
+        "max_loss": -7.5927,
+        "max_win": 50.0,
+        "gross_profit": 511.049,
+        "gross_loss": 300.2828,
+        "n_wins": 59,
+        "n_losses": 49,
+        "hard_capped_count": 1
+      },
+      "morning_bell": {
+        "n_valid": 39,
+        "win_rate": 46.1538,
+        "profit_factor": 1.0396,
+        "expectancy": 0.13,
+        "avg_win": 7.3875,
+        "avg_loss": -6.0908,
+        "max_loss": -7.2344,
+        "max_win": 11.2115,
+        "gross_profit": 132.9748,
+        "gross_loss": 127.9064,
+        "n_wins": 18,
+        "n_losses": 21,
+        "hard_capped_count": 0
+      }
+    },
+    "BASE_COST": {
+      "commission_rt_pct": 0.3,
+      "slippage_rt_pct": 0.1,
+      "total_cost_pct": 0.4,
+      "n_no_return_expired": 5,
+      "n_unrealistic_exit": 0,
+      "all": {
+        "n_valid": 147,
+        "win_rate": 52.381,
+        "profit_factor": 1.3451,
+        "expectancy": 1.071,
+        "avg_win": 7.9691,
+        "avg_loss": -6.517,
+        "max_loss": -7.9927,
+        "max_win": 50.0,
+        "gross_profit": 613.6238,
+        "gross_loss": 456.1892,
+        "n_wins": 77,
+        "n_losses": 70,
+        "hard_capped_count": 1
+      },
+      "balanced": {
+        "n_valid": 108,
+        "win_rate": 54.6296,
+        "profit_factor": 1.5251,
+        "expectancy": 1.5552,
+        "avg_win": 8.2686,
+        "avg_loss": -6.5282,
+        "max_loss": -7.9927,
+        "max_win": 50.0,
+        "gross_profit": 487.849,
+        "gross_loss": 319.8828,
+        "n_wins": 59,
+        "n_losses": 49,
+        "hard_capped_count": 1
+      },
+      "morning_bell": {
+        "n_valid": 39,
+        "win_rate": 46.1538,
+        "profit_factor": 0.9227,
+        "expectancy": -0.27,
+        "avg_win": 6.9875,
+        "avg_loss": -6.4908,
+        "max_loss": -7.6344,
+        "max_win": 10.8115,
+        "gross_profit": 125.7748,
+        "gross_loss": 136.3064,
+        "n_wins": 18,
+        "n_losses": 21,
+        "hard_capped_count": 0
+      }
+    },
+    "STRESS_COST": {
+      "commission_rt_pct": 0.5,
+      "slippage_rt_pct": 0.3,
+      "total_cost_pct": 0.8,
+      "n_no_return_expired": 5,
+      "n_unrealistic_exit": 0,
+      "all": {
+        "n_valid": 147,
+        "win_rate": 52.381,
+        "profit_factor": 1.204,
+        "expectancy": 0.672,
+        "avg_win": 7.571,
+        "avg_loss": -6.917,
+        "max_loss": -8.3927,
+        "max_win": 49.7442,
+        "gross_profit": 582.9681,
+        "gross_loss": 484.1892,
+        "n_wins": 77,
+        "n_losses": 70,
+        "hard_capped_count": 0
+      },
+      "balanced": {
+        "n_valid": 108,
+        "win_rate": 54.6296,
+        "profit_factor": 1.3679,
+        "expectancy": 1.1566,
+        "avg_win": 7.8711,
+        "avg_loss": -6.9282,
+        "max_loss": -8.3927,
+        "max_win": 49.7442,
+        "gross_profit": 464.3932,
+        "gross_loss": 339.4828,
+        "n_wins": 59,
+        "n_losses": 49,
+        "hard_capped_count": 0
+      },
+      "morning_bell": {
+        "n_valid": 39,
+        "win_rate": 46.1538,
+        "profit_factor": 0.8194,
+        "expectancy": -0.67,
+        "avg_win": 6.5875,
+        "avg_loss": -6.8908,
+        "max_loss": -8.0344,
+        "max_win": 10.4115,
+        "gross_profit": 118.5748,
+        "gross_loss": 144.7064,
+        "n_wins": 18,
+        "n_losses": 21,
+        "hard_capped_count": 0
+      }
+    }
+  },
+  "delta": {
+    "NO_COST_to_BASE_COST": {
+      "all": {
+        "pf_delta": -0.159,
+        "exp_delta": -0.3973,
+        "wr_delta": 0.0
+      },
+      "balanced": {
+        "pf_delta": -0.1768,
+        "exp_delta": -0.3963,
+        "wr_delta": 0.0
+      },
+      "morning_bell": {
+        "pf_delta": -0.1169,
+        "exp_delta": -0.4,
+        "wr_delta": 0.0
+      },
+      "pf_delta": -0.159,
+      "exp_delta": -0.3973,
+      "wr_delta": 0.0
+    },
+    "BASE_COST_to_STRESS_COST": {
+      "all": {
+        "pf_delta": -0.1411,
+        "exp_delta": -0.399,
+        "wr_delta": 0.0
+      },
+      "balanced": {
+        "pf_delta": -0.1572,
+        "exp_delta": -0.3986,
+        "wr_delta": 0.0
+      },
+      "morning_bell": {
+        "pf_delta": -0.1033,
+        "exp_delta": -0.4,
+        "wr_delta": 0.0
+      },
+      "pf_delta": -0.1411,
+      "exp_delta": -0.399,
+      "wr_delta": 0.0
+    },
+    "NO_COST_to_STRESS_COST": {
+      "all": {
+        "pf_delta": -0.3001,
+        "exp_delta": -0.7963,
+        "wr_delta": 0.0
+      },
+      "balanced": {
+        "pf_delta": -0.334,
+        "exp_delta": -0.7949,
+        "wr_delta": 0.0
+      },
+      "morning_bell": {
+        "pf_delta": -0.2202,
+        "exp_delta": -0.8,
+        "wr_delta": 0.0
+      },
+      "pf_delta": -0.3001,
+      "exp_delta": -0.7963,
+      "wr_delta": 0.0
+    }
+  },
+  "verdict": {
+    "edge_survives_base_cost": {
+      "all": true,
+      "balanced": true,
+      "morning_bell": false
+    },
+    "edge_survives_stress_cost": {
+      "all": true,
+      "balanced": true,
+      "morning_bell": false
+    }
+  },
+  "next_phase_allowed": true
+}

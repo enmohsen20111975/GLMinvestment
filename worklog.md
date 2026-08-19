@@ -7217,3 +7217,68 @@ Files produced:
 - [معدّل] vps-service/api/admin_routes.py — execute_backtest random→NOT_IMPLEMENTED.
 - [معدّل] vps-service/api/kimi_backtest.py — avg_loss sign fixed.
 - [معدّل] db/stocks.db — re-extracted from ZIP (canonical).
+
+---
+Task ID: MASTER-AUDIT-FULL
+Agent: Z.ai Code (main orchestrator) + 10 parallel subagents
+Task: MASTER AUDIT كامل — PHASE 0 → 5 على الأرشيف الرسمي.
+
+Work Log:
+- التزمت بـ MASTER MISSION: TRUTH → DATA → LEAKAGE → BACKTEST → EDGE → BASELINES → RISK
+
+[PHASE 0 — TRUTH LAYER]:
+- 0.1 Dataset: ✅ PASS (MD5 0947bdf6... confirmed)
+- 0.2 Provenance: ✅ FIXED (stocks.db drift → re-extracted)
+- 0.3 Duplicates: ⚠️ Structural (persona degenerate, 0 real dups with canonical key)
+- 0.4 Channels: ✅ PASS (balanced ≠ morning_bell, 0 overlap)
+- 0.5 KPI Provenance: ❌ FAIL → 5/6 aligned, 2 CRITICAL fixes (fake random + avg_loss sign)
+
+[PHASE 1 — DATA INTEGRITY]:
+- 1.1 Look-Ahead: ❌ FAIL (CRITICAL) — 80/153 fundamentals + 146/153 stocks snapshot
+- 1.2 Price History: ❌ FAIL — 43% gaps, 17% stale
+- 1.3 Entry/Exit Sanity: ✅ PASS
+- 1.4 Corporate Actions: ❌ FAIL — dps_ttm all zero
+- 1.5 Timestamps: ❌ FAIL — news mixed formats
+
+[PHASE 2 — BACKTEST INTEGRITY]:
+- 2.2+2.3 Commission: ✅ balanced survives (PF=1.37 at STRESS), ❌ morning_bell fails (PF=0.82)
+- 2.4 Regime: ✅ balanced robust (bear PF=1.37), morning_bell fragile (bear PF=0.87)
+- 2.5 Concentration: ✅ PASS (distributed — Top1=2.4%, Pareto 80% from 34%)
+- 2.6 Portfolio MaxDD: ✅ 7.48% (acceptable)
+
+[PHASE 3 — EDGE DISCOVERY (Ablation)]:
+- ⚠️ NEEDS_OWNER — requires Python backend (V40.2) to disable components
+
+[PHASE 4 — BASELINE CHALLENGE]:
+- ❌ CRITICAL: GLMinvestment LOSES to Buy & Hold (Exp +1.96% vs +4.98%)
+- ❌ CRITICAL: GLMinvestment LOSES to simple Momentum (PF 1.70 vs 2.57)
+- ✅ GLMinvestment beats Random + RVOL + Benchmark
+- Verdict: GLMinvestment_underperforms — complexity without sufficient alpha
+
+[PHASE 5 — RISK ENGINE]:
+- ✅ MaxDD 7.48% acceptable
+- ✅ Max single loss -7.59% (within ATR range)
+- ❌ morning_bell should be quarantined
+
+[FINDINGS — THE HARD TRUTH]:
+1. Look-ahead bias inflates all KPIs (proven, not suspected)
+2. Buy & Hold outperforms GLMinvestment by 2.5× — exit logic kills alpha
+3. Simple momentum outperforms complex scoring (PF 2.57 vs 1.70)
+4. morning_bell fails at realistic costs (PF<1.0)
+5. Learning loop not writing (learned_lessons = 0 rows)
+6. balanced Edge is REAL but inflated — survives costs even with look-ahead
+
+[FINAL STATUS: NOT_PROVEN]
+The system has a real selection edge (beats random + market) but:
+- Doesn't outperform simple baselines (Buy&Hold + Momentum)
+- KPIs inflated by look-ahead bias
+- Exit logic (TP=+8%/SL=-6%) destroys ~60% of alpha
+- Learning loop broken
+
+[RECOMMENDED NEXT STEPS]:
+1. Fix exit logic (trailing stop instead of fixed TP)
+2. Simplify scoring (test momentum-only)
+3. Fix look-ahead bias (point-in-time data)
+4. Quarantine morning_bell
+5. Fix learning loop
+6. Run Ablation (needs Python backend)

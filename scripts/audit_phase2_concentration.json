@@ -1,0 +1,281 @@
+{
+  "audit": "PHASE-2.5-Profit-Concentration",
+  "db_path": "/home/z/my-project/db/predictions.db",
+  "dataset_zip": "/home/z/my-project/data/active_databases_20260817_full.zip",
+  "dataset_md5_expected": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_observed": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_match": true,
+  "rules": {
+    "hard_cap_abs_return": 50.0,
+    "max_return_ratio": 5.0,
+    "return_formula": "hit_target=(target-entry)/entry*100 | hit_stop=(stop-entry)/entry*100 | expired_no_hit=None",
+    "dedup_key": "(ticker, prediction_date, ROUND(entry_price,4), morning_bell) keeping MAX(id)",
+    "total_profit_def": "sum(positive returns)"
+  },
+  "n_raw_predictions": 153,
+  "n_after_dedup": 152,
+  "n_dropped_duplicates": 1,
+  "n_measured": 126,
+  "n_winners": 56,
+  "n_losers": 70,
+  "n_excluded": 0,
+  "n_null_returns": 26,
+  "exclusion_breakdown": {},
+  "total_profit": 511.0495,
+  "total_loss": -428.1892,
+  "top1_contribution_pct": 2.4007,
+  "top3_contribution_pct": 6.9567,
+  "top5_contribution_pct": 11.2594,
+  "top10_contribution_pct": 21.6537,
+  "pareto_80pct_from_n_trades": 43,
+  "pareto_80pct_from_pct_trades": 34.127,
+  "by_channel": {
+    "balanced": {
+      "n_measured": 91,
+      "n_winners": 42,
+      "n_losers": 49,
+      "total_profit": 381.7429,
+      "total_loss": -300.2828,
+      "top1_contribution_pct": 3.2139,
+      "top3_contribution_pct": 8.9707,
+      "top5_contribution_pct": 14.5724,
+      "top10_contribution_pct": 27.9573,
+      "pareto_80pct_from_n_trades": 33,
+      "pareto_80pct_from_pct_trades": 36.2637,
+      "top_winner_meta": [
+        {
+          "id": 21437,
+          "ticker": "1030",
+          "morning_bell": 0,
+          "prediction_date": "2026-05-04",
+          "return_pct": 12.2689
+        },
+        {
+          "id": 21372,
+          "ticker": "2190",
+          "morning_bell": 0,
+          "prediction_date": "2026-02-25",
+          "return_pct": 11.1718
+        },
+        {
+          "id": 21342,
+          "ticker": "1323",
+          "morning_bell": 0,
+          "prediction_date": "2026-01-22",
+          "return_pct": 10.8043
+        },
+        {
+          "id": 21335,
+          "ticker": "1030",
+          "morning_bell": 0,
+          "prediction_date": "2026-01-19",
+          "return_pct": 10.7259
+        },
+        {
+          "id": 21326,
+          "ticker": "1120",
+          "morning_bell": 0,
+          "prediction_date": "2026-01-06",
+          "return_pct": 10.6583
+        },
+        {
+          "id": 21441,
+          "ticker": "2090",
+          "morning_bell": 0,
+          "prediction_date": "2026-05-07",
+          "return_pct": 10.5808
+        },
+        {
+          "id": 21382,
+          "ticker": "2090",
+          "morning_bell": 0,
+          "prediction_date": "2026-03-10",
+          "return_pct": 10.3509
+        },
+        {
+          "id": 21429,
+          "ticker": "2090",
+          "morning_bell": 0,
+          "prediction_date": "2026-04-26",
+          "return_pct": 10.3473
+        },
+        {
+          "id": 21380,
+          "ticker": "1030",
+          "morning_bell": 0,
+          "prediction_date": "2026-03-10",
+          "return_pct": 9.9373
+        },
+        {
+          "id": 21397,
+          "ticker": "1302",
+          "morning_bell": 0,
+          "prediction_date": "2026-03-23",
+          "return_pct": 9.8795
+        }
+      ]
+    },
+    "morning_bell": {
+      "n_measured": 35,
+      "n_winners": 14,
+      "n_losers": 21,
+      "total_profit": 129.3066,
+      "total_loss": -127.9064,
+      "top1_contribution_pct": 9.3462,
+      "top3_contribution_pct": 26.3717,
+      "top5_contribution_pct": 41.6432,
+      "top10_contribution_pct": 76.7006,
+      "pareto_80pct_from_n_trades": 11,
+      "pareto_80pct_from_pct_trades": 31.4286,
+      "top_winner_meta": [
+        {
+          "id": 21435,
+          "ticker": "2090",
+          "morning_bell": 1,
+          "prediction_date": "2026-05-04",
+          "return_pct": 12.0853
+        },
+        {
+          "id": 21399,
+          "ticker": "2090",
+          "morning_bell": 1,
+          "prediction_date": "2026-03-26",
+          "return_pct": 11.1983
+        },
+        {
+          "id": 21334,
+          "ticker": "1323",
+          "morning_bell": 1,
+          "prediction_date": "2026-01-19",
+          "return_pct": 10.8168
+        },
+        {
+          "id": 21328,
+          "ticker": "1030",
+          "morning_bell": 1,
+          "prediction_date": "2026-01-11",
+          "return_pct": 9.9274
+        },
+        {
+          "id": 21445,
+          "ticker": "2090",
+          "morning_bell": 1,
+          "prediction_date": "2026-05-17",
+          "return_pct": 9.8197
+        },
+        {
+          "id": 21316,
+          "ticker": "TMGH",
+          "morning_bell": 1,
+          "prediction_date": "2026-04-08",
+          "return_pct": 9.7079
+        },
+        {
+          "id": 21405,
+          "ticker": "1030",
+          "morning_bell": 1,
+          "prediction_date": "2026-04-05",
+          "return_pct": 9.539
+        },
+        {
+          "id": 21366,
+          "ticker": "2190",
+          "morning_bell": 1,
+          "prediction_date": "2026-02-17",
+          "return_pct": 9.523
+        },
+        {
+          "id": 21449,
+          "ticker": "2090",
+          "morning_bell": 1,
+          "prediction_date": "2026-05-20",
+          "return_pct": 8.7215
+        },
+        {
+          "id": 21439,
+          "ticker": "1323",
+          "morning_bell": 1,
+          "prediction_date": "2026-05-07",
+          "return_pct": 7.8402
+        }
+      ]
+    }
+  },
+  "top_tickers": [
+    {
+      "ticker": "2090",
+      "profit": 100.3672,
+      "pct": 19.6394,
+      "n_trades": 12,
+      "n_winning_trades": 10
+    },
+    {
+      "ticker": "1323",
+      "profit": 97.0222,
+      "pct": 18.9849,
+      "n_trades": 17,
+      "n_winning_trades": 11
+    },
+    {
+      "ticker": "1030",
+      "profit": 88.9992,
+      "pct": 17.415,
+      "n_trades": 16,
+      "n_winning_trades": 9
+    },
+    {
+      "ticker": "1324",
+      "profit": 60.0527,
+      "pct": 11.7509,
+      "n_trades": 7,
+      "n_winning_trades": 7
+    },
+    {
+      "ticker": "2190",
+      "profit": 59.3044,
+      "pct": 11.6044,
+      "n_trades": 12,
+      "n_winning_trades": 7
+    },
+    {
+      "ticker": "2180",
+      "profit": 39.1488,
+      "pct": 7.6605,
+      "n_trades": 11,
+      "n_winning_trades": 5
+    },
+    {
+      "ticker": "1120",
+      "profit": 20.513,
+      "pct": 4.0139,
+      "n_trades": 9,
+      "n_winning_trades": 2
+    },
+    {
+      "ticker": "1302",
+      "profit": 19.3187,
+      "pct": 3.7802,
+      "n_trades": 12,
+      "n_winning_trades": 2
+    },
+    {
+      "ticker": "TMGH",
+      "profit": 9.7079,
+      "pct": 1.8996,
+      "n_trades": 1,
+      "n_winning_trades": 1
+    },
+    {
+      "ticker": "TAO",
+      "profit": 8.9941,
+      "pct": 1.7599,
+      "n_trades": 1,
+      "n_winning_trades": 1
+    }
+  ],
+  "top3_tickers_combined_pct": 56.0393,
+  "single_ticker_dominant": false,
+  "verdict": "DISTRIBUTED",
+  "status": "PASS",
+  "next_phase_allowed": true
+}
