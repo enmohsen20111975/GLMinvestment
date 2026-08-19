@@ -1,0 +1,78 @@
+{
+  "task": "INTERSECTION-BASELINE",
+  "dataset_md5": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "bh_days": 20,
+  "intersection_n": 108,
+  "comparison": {
+    "glm_bh": {
+      "n": 107,
+      "wr": 55.14,
+      "pf": 2.8796,
+      "exp": 6.6825,
+      "avg_win": 18.5669,
+      "avg_loss": -7.9255,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "GLM Selection→BH [PIT-clean]"
+    },
+    "momentum_bh": {
+      "n": 96,
+      "wr": 37.5,
+      "pf": 1.3698,
+      "exp": 1.7966,
+      "avg_win": 17.7483,
+      "avg_loss": -7.7743,
+      "max_loss": -19.3333,
+      "max_win": 50.0,
+      "label": "Momentum top-1→BH 20d [PIT-clean]"
+    },
+    "random_bh": {
+      "n": 100,
+      "wr": 48.0,
+      "pf": 1.4556,
+      "exp": 2.304,
+      "avg_win": 15.3349,
+      "avg_loss": -9.7245,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "Random→BH 20d [PIT-clean, seed=42]"
+    },
+    "glm_tpsl": {
+      "n": 91,
+      "wr": 46.15,
+      "pf": 1.2713,
+      "exp": 0.8952,
+      "avg_win": 9.0891,
+      "avg_loss": -6.1282,
+      "max_loss": -7.5927,
+      "max_win": 12.2689,
+      "label": "GLM Fixed TP/SL [CONTAMINATED]"
+    },
+    "glm_unique_bh": {
+      "n": 106,
+      "wr": 54.72,
+      "pf": 2.7869,
+      "exp": 6.413,
+      "avg_win": 18.2792,
+      "avg_loss": -7.9255,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "GLM Unique picks (not in Momentum top-3)→BH [PIT-clean]"
+    }
+  },
+  "verdict": {
+    "beats_random": true,
+    "beats_momentum": true,
+    "unique_beats_momentum": true,
+    "exit_kills_selection": true,
+    "glm_momentum_overlap_pct": 0.9
+  },
+  "notes": [
+    "All strategies use BH = 20 trading days.",
+    "GLM BH/Momentum/Random use close_price on prediction_date as entry (PIT-clean).",
+    "GLM TP/SL uses prediction entry/target/stop (CONTAMINATED — may use future data).",
+    "max_loss values are HARD-capped at -50% (not actual market losses).",
+    "Intersection = only trades where ALL 3 strategies have price data for the same date.",
+    "GLM Unique = GLM picks that are NOT in Momentum top-3 (GLM's independent selection value)."
+  ]
+}
