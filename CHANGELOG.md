@@ -1,6 +1,88 @@
 # Changelog
 
 
+## [BACKTEST-FULL-001] — باك تست كامل 2025-12-01 → 2026-06-17 (2026-08-19)
+
+> **المهمة:** باك تست كامل على التوصيات الفعلية المحفوظة في predictions.db
+> خلال الفترة المحددة، مع فصل القنوات والأسواق وفلتر الجودة.
+
+### الفترة وتغطية البيانات
+- **المطلوبة:** 2025-12-01 → 2026-06-17
+- **الفعلية:** 2026-01-01 → 2026-05-28 (predictions تبدأ من يناير 2026)
+- **n_raw:** 148 صفقة (EGX فقط، كلها EXPIRED)
+
+### طريقة الحساب
+- **حساب العائد:** `actual_return → exit_price → hit_target/target → hit_stop/stop → null`
+- **HARD cap:** `ABS(return) <= 50%` (مع تعليم `capped=true`)
+- **متوسط الخسارة:** سالب دائماً
+- **القنوات مفصولة:** balanced ≠ morning_bell
+- **الأسواق مفصولة:** EGX فقط
+
+### النتائج الإجمالية (ALL)
+| KPI | القيمة |
+|-----|--------|
+| n_raw | 148 |
+| n_valid | 147 |
+| n_excluded | 1 (duplicate) |
+| Win Rate | 52.38% |
+| Profit Factor | 1.50 |
+| Expectancy | +1.47% |
+| متوسط الربح | +8.36% |
+| متوسط الخسارة | -6.12% |
+| Max Loss | -7.59% |
+| Max Win | +50.0% (1 capped) |
+| TP1 hit rate | 38.1% |
+| Stop hit rate | 47.62% |
+
+### مقارنة القنوات (balanced vs morning_bell)
+| القناة | n_valid | WR | PF | Expectancy | avg_win | avg_loss | max_loss | max_win |
+|--------|---------|-----|-----|------------|---------|----------|----------|---------|
+| **balanced** | 108 | 54.63% | **1.70** | +1.95% | +8.66% | -6.13% | -7.59% | +50.0% |
+| **morning_bell** | 39 | 46.15% | 1.04 | +0.13% | +7.39% | -6.09% | -7.23% | +11.21% |
+
+### Portfolio MaxDD (محاكاة محفظة)
+| القناة | initial | final | return% | MaxDD% | n_taken |
+|--------|---------|-------|---------|--------|---------|
+| ALL | 100.0 | 141.33 | +41.33% | **7.48%** | 147 |
+| balanced | 100.0 | 140.79 | +40.79% | 6.13% | 108 |
+| morning_bell | 100.0 | 100.38 | +0.38% | 5.39% | 39 |
+
+**الطريقة:** risk=1% per trade (compounding)، chronological order
+
+### آفاق القياس (+1, +3, +5 أيام)
+| الأفق | n | WR | avg_return | PF | max_loss | max_win |
+|-------|-----|-----|------------|-----|----------|---------|
+| +1d | 147 | 44.22% | -0.20% | 0.81 | -5.45% | +6.05% |
+| +3d | 147 | 44.90% | -0.31% | 0.82 | -8.63% | +10.06% |
+| +5d | 147 | 41.50% | +0.67% | 1.27 | -12.15% | +50.0% |
+
+### Top 5 (clean)
+1. **1323** | EGX | balanced | entry=5.35 | ret=**+50.00%** (capped)
+2. **2090** | EGX | balanced | entry=9.02 | ret=+31.96%
+3. **2090** | EGX | balanced | entry=9.28 | ret=+29.05%
+4. **2090** | EGX | morning_bell | entry=8.17 | ret=+11.21%
+5. **1323** | EGX | balanced | entry=4.12 | ret=+11.17%
+
+### Worst 5 (clean)
+1. **1030** | EGX | balanced | entry=4.63 | ret=**-7.59%**
+2. **1321** | EGX | morning_bell | entry=9.10 | ret=**-7.23%**
+3. **1322** | EGX | morning_bell | entry=1.03 | ret=**-7.20%**
+4. **1322** | EGX | balanced | entry=1.02 | ret=**-7.08%**
+5. **2190** | EGX | balanced | entry=287.26 | ret=**-7.00%**
+
+### أسباب الاستبعاد
+| السبب | العدد |
+|------|------|
+| duplicate | 1 |
+
+### الملفات المنشأة
+- [جديد] `scripts/backtest_full.py` (560 LOC)
+- [جديد] `scripts/backtest_full_results.json` (23KB)
+- [جديد] `scripts/backtest_full_report.md` (8KB)
+- [جديد] `scripts/check_backtest_period.py`
+
+---
+
 ## [ADMIN-PERFORMANCE-002] — إصلاح جودة بيانات لوحة كفاءة المنصة + تنظيم بالسوق (2026-08-19)
 
 > **المشكلة:** اللوحة كانت تعرض بيانات غير صالحة للقياس (تكرار، دخول=0، خروج

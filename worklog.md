@@ -7021,3 +7021,101 @@ Stage Summary:
 - [معدّل] src/app/api/admin/platform-performance/route.ts — validateTrade + computeActualReturnRaw + market filter + byMarket + capped + exclusion_breakdown.
 - [معدّل] src/components/admin/platform-performance/PlatformPerformanceView.tsx — market filter + market column + capped badge + excluded_examples section + by_market section.
 - [جديد] scripts/check_data_quality.py, check_persona_quality.py.
+
+---
+Task ID: BACKTEST-FULL-001
+Agent: Z.ai Code (main orchestrator)
+Task: باك تست كامل على الفترة 2025-12-01 → 2026-06-17 على التوصيات الفعلية
+      المحفوظة في predictions.db.predictions، مع فصل القنوات والأسواق وفلتر الجودة.
+
+Work Log:
+- التزمت بـ Documentation/00-CONSTITUTION.md (خاصة Rule 7 HARD cap، Rule 8 لا خلط قنوات).
+- قرأت worklog (DEAL-ADVISOR-001/002، ADMIN-PERFORMANCE-001/002) لفهم السياق.
+
+[الجزء 1 — تأكيد توفر البيانات]:
+- فحصت predictions.db في الفترة 2025-12-01 → 2026-06-17:
+  * 148 صفقة raw (كلها EGX، كلها EXPIRED).
+  * البيانات الفعلية تبدأ من 2026-01-01 (لا يوجد ديسمبر 2025 في DB).
+  * by month: 2026-01 (27), 2026-02 (25), 2026-03 (31), 2026-04 (39), 2026-05 (26).
+  * by channel: balanced (109) + morning_bell (39).
+  * hit_target/hit_stop: 56 هدف + 70 وقف + 22 بدون (126 لها نتيجة واضحة).
+  * entry_price ≤ 0: 0 (نظيف).
+  * duplicate keys: 2 (سيُستبعد 1).
+- price_history.db: 762 سهم في الفترة (للآفاق +1/+3/+5).
+
+[الجزء 2 — سكريبت الباك تست]:
+- ملف جديد: scripts/backtest_full.py (560 LOC).
+- يقرأ من predictions.db.predictions (READ-ONLY).
+- منطق trade_valid (نفس ADMIN-PERFORMANCE-002):
+  * entry_price > 0.
+  * ticker نظيف (لا مسافات، ≤ 12 char).
+  * dedup على (ticker + date + channel + entry).
+  * market معروف.
+  * |exit/entry| <= 5x (استبعاد قفزات غير منطقية).
+- حساب العائد: actual_return → exit_price → hit_target/target → hit_stop/stop → null.
+- HARD cap: ABS(return) <= 50 (مع تعليم capped=true).
+- avg_loss سالب دائماً.
+- فصل القنوات: balanced ≠ morning_bell.
+- فصل الأسواق: by_market.
+
+[الجزء 3 — MaxDD محفظة]:
+- compute_portfolio_maxdd():
+  * initial_equity = 100.
+  * risk_per_trade = 1% من equity (compounding).
+  * position_size = (risk_amount) / (stop_distance_pct / 100).
+  * return_dollars = position_size * (actual_return / 100).
+  * MaxDD = peak-to-valley على equity curve (كل الصفقات بالترتيب الزمني).
+  * لا concurrent limit (simplified — كل الصفقات تُؤخذ).
+- إصلاح: المنطق الأولي كان يأخذ 3 صفقات فقط (concurrent limit) → أصلحته ليأخذ
+  كل الصفقات بالترتيب الزمني (n_taken=147 بدلاً من 3).
+
+[الجزء 4 — آفاق +1/+3/+5]:
+- compute_horizons(): يقرأ من price_history.db.
+- لكل صفقة: جلب close_price بعد تاريخ الدخول بـ 1، 3، 5 أيام.
+- حساب العائد عند كل أفق (مع HARD cap).
+- نتيجة: +1d (n=147, WR=44.2%, avg=-0.2%), +3d (n=147, WR=44.9%, avg=-0.3%),
+  +5d (n=147, WR=41.5%, avg=+0.67%).
+
+[الجزء 5 — النتائج الكاملة]:
+- ALL: n_raw=148, n_valid=147, n_excluded=1 (duplicate).
+  * WR=52.38%, PF=1.50, Exp=+1.47%.
+  * avg_win=+8.36%, avg_loss=-6.12% (سالب ✓).
+  * max_loss=-7.59%, max_win=+50% (1 capped).
+  * TP1 hit=38.1%, Stop hit=47.62%, Expired=14.86%.
+- balanced: n=108, WR=54.63%, PF=1.70, Exp=+1.95%, max_loss=-7.59%.
+- morning_bell: n=39, WR=46.15%, PF=1.04, Exp=+0.13%, max_loss=-7.23%.
+- by_market: EGX only (148 raw → 147 valid).
+- Portfolio MaxDD (all): 7.48% (n_taken=147, final_equity=141.33, return=+41.33%).
+- Portfolio MaxDD (balanced): 6.13% (final=140.79, return=+40.79%).
+- Portfolio MaxDD (morning_bell): 5.39% (final=100.38, return=+0.38%).
+- Top 20: 1323 (+50% capped), 2090 (+31.96%), 2090 (+29.05%), ...
+- Worst 20: 1030 (-7.59%), 1321 (-7.23%), 1322 (-7.20%), ...
+- Excluded: 1302 (duplicate, entry=5.477).
+
+[الجزء 6 — Output files]:
+- scripts/backtest_full_results.json (23KB) — JSON كامل.
+- scripts/backtest_full_report.md (8KB) — تقرير Markdown قابل للقراءة.
+
+[التحقق]:
+- Python script: نجح بدون أخطاء.
+- JSON validity: صحيح (كل الحقول موجودة).
+- n_taken=147 (كل الصفقات الصالحة اتعملت في MaxDD).
+- avg_loss سالب (-6.12%) ✓.
+- لا خلط قنوات: balanced ≠ morning_bell مفصولة ✓.
+- HARD cap مطبق (1 capped) ✓.
+
+Stage Summary:
+- ✅ باك تست كامل على 148 صفقة raw → 147 valid (1 duplicate excluded).
+- ✅ balanced: n=108, WR=54.6%, PF=1.70, Exp=+1.95%, max_loss=-7.59%.
+- ✅ morning_bell: n=39, WR=46.2%, PF=1.04, Exp=+0.13%, max_loss=-7.23%.
+- ✅ Portfolio MaxDD (all): 7.48% (n_taken=147).
+- ✅ آفاق +1/+3/+5 محسوبة من price_history.db.
+- ✅ HARD cap مطبق (1 capped).
+- ✅ لا خلط قنوات أو أسواق.
+- ✅ JSON + Markdown report محفوظة.
+
+ملفات تم إنشاؤها:
+- [جديد] scripts/backtest_full.py (560 LOC).
+- [جديد] scripts/backtest_full_results.json (23KB).
+- [جديد] scripts/backtest_full_report.md (8KB).
+- [جديد] scripts/check_backtest_period.py (تحليل توفر البيانات).
