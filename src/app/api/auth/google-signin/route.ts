@@ -96,11 +96,16 @@ export async function POST(request: NextRequest) {
       .map(id => id.trim())
       .filter(Boolean);
     
-    // All valid client IDs (Web + Android)
-    const KNOWN_MOBILE_CLIENT_IDS = [
-      '642150971767-ga2gohq77mcsgoa385ekciubnmvr0b02.apps.googleusercontent.com',
-      '393659426254-n4ngsvhtfie714l0o5h8mlcpm5c58195.apps.googleusercontent.com',
-    ];
+    // All valid client IDs (Web + Android).
+    // SECURITY (2026-08-19): previously had two hardcoded production client IDs here.
+    // They are now read from the GOOGLE_KNOWN_MOBILE_CLIENT_IDS env var (comma-separated).
+    // In the sandbox this env var is unset → KNOWN_MOBILE_CLIENT_IDS is empty → only
+    // GOOGLE_CLIENT_ID from env is accepted (which is also empty in sandbox → endpoint
+    // returns "not configured" as expected). Production sets the env var to the real IDs.
+    const KNOWN_MOBILE_CLIENT_IDS = (process.env.GOOGLE_KNOWN_MOBILE_CLIENT_IDS || '')
+      .split(',')
+      .map(id => id.trim())
+      .filter(Boolean);
     const VALID_CLIENT_IDS = Array.from(
       new Set([GOOGLE_CLIENT_ID, ...GOOGLE_ANDROID_CLIENT_IDS, ...KNOWN_MOBILE_CLIENT_IDS].filter(Boolean))
     );

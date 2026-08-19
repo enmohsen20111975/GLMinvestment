@@ -607,6 +607,23 @@ interface AppStore {
   goBack: () => void;
   setCurrentMarket: (market: MarketType) => void;
 
+  // Deal Advisor prefill (from Portfolio / Watchlist → TradingChartView)
+  // Allows the user to jump into #trading-chart with a pre-filled entry price
+  // and quantity so the Deal Advisor panel can assess their position.
+  dealAdvisorPrefill: {
+    ticker: string | null;
+    entryPrice: number | null;
+    entryQty: number | null;
+    source: 'portfolio' | 'watchlist' | null;
+  };
+  setDealAdvisorPrefill: (prefill: {
+    ticker: string | null;
+    entryPrice?: number | null;
+    entryQty?: number | null;
+    source?: 'portfolio' | 'watchlist' | null;
+  }) => void;
+  clearDealAdvisorPrefill: () => void;
+
   // Auth
   user: User | null;
   apiKey: string | null;
@@ -757,6 +774,25 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const prev = get().previousView;
     if (prev) set({ currentView: prev, previousView: null });
   },
+
+  // Deal Advisor prefill (from Portfolio / Watchlist → TradingChartView)
+  dealAdvisorPrefill: {
+    ticker: null,
+    entryPrice: null,
+    entryQty: null,
+    source: null,
+  },
+  setDealAdvisorPrefill: (prefill) =>
+    set((s) => ({
+      dealAdvisorPrefill: {
+        ticker: prefill.ticker,
+        entryPrice: prefill.entryPrice ?? s.dealAdvisorPrefill.entryPrice,
+        entryQty: prefill.entryQty ?? s.dealAdvisorPrefill.entryQty,
+        source: prefill.source ?? s.dealAdvisorPrefill.source,
+      },
+    })),
+  clearDealAdvisorPrefill: () =>
+    set({ dealAdvisorPrefill: { ticker: null, entryPrice: null, entryQty: null, source: null } }),
 
   // Auth
   user: null,

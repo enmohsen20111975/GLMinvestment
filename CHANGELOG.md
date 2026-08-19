@@ -1,6 +1,89 @@
 # Changelog
 
 
+## [DEAL-ADVISOR-001] — مستشار الصفقة + إصلاحات أمنية (2026-08-19)
+
+> **المهمة:** مساعد قرار (Trade Advisor) للعميل داخل #trading-chart +
+> المحفظة + قائمة المتابعة. Node-side (بدون اعتماد على Python backend) +
+> إصلاحات أمنية حرجة (مسارات نسبية + مسح كل المفاتيح الحقيقية).
+
+### الإصلاحات الأمنية (الجزء 0 — أولوية قصوى)
+1. **DATABASE_URL نسبي**: `"file:./db/auth.db"` بدلاً من المسار المطلق
+   `"file:/home/z/my-project/db/custom.db"`.
+2. **.env نظيف**: مسحت Google Client ID/Secret, Paymob API/public/secret keys,
+   Telegram bot token/api_hash, Admin password, NextAuth secret — استبدلتها
+   بـ placeholders فارغة.
+3. **.env.example نظيف**: نفس التنظيف + تعليقات تشرح كيف توليد القيم.
+4. **ecosystem.config.js**: مسحت Telegram tokens hardcoded → `process.env` فقط.
+5. **src/app/api/auth/google/route.ts**: 2 Google Client IDs hardcoded →
+   `GOOGLE_KNOWN_MOBILE_CLIENT_IDS` env var (comma-separated).
+6. **src/app/api/auth/google-signin/route.ts**: نفس الإصلاح.
+7. **.gitignore**: حذفت git merge conflict marker (`<<<<<<< HEAD`) في السطر 223.
+
+### مستشار الصفقة (الجزء 1 — الميزة الجديدة)
+- **API**: `/api/deal-advisor/[ticker]` (Node-side، READ-ONLY، 620 LOC)
+  - يقرأ من `stocks.db` + `price_history.db` مباشرة (بدون Python backend).
+  - Query params: `ticker, entry_price, entry_qty, entry_date, persona, note`.
+  - يرجع JSON بهيكل ثابت (8 أقسام):
+    1. identity: ticker, name, sector, classification (clean/momentum/high_risk)
+    2. market_context: trend, sector, market_regime, is_market_open
+    3. technical_state: trend, rsi, above_ma50/200, near_support/resistance,
+       volume_vs_avg, volatility
+    4. entry_assessment (إن وُجد entry_price): pnl_pct, assessment (cheap/fair/expensive)
+    5. events: dividend_yield, dps_ttm, events_ar
+    6. action_scenarios: 4-6 سيناريوهات + current_recommendation
+    7. suggested_levels: support, resistance, suggested_stop, near_target, rr_ratio
+    8. disclaimer: نص ثابت بالعربية
+  - ذكاء في حساب البيانات: احسب support/resistance من percentiles إذا كانت
+    قديمة، احسب avg_volume من price_history إذا كان غير موثوق، فلتر البيانات الشاذة.
+
+- **UI Component**: `src/components/deal-advisor/DealAdvisorPanel.tsx` (560 LOC)
+  - 'use client' + shadcn/ui (Card, Button, Input, Label, Badge, Alert, Select).
+  - Form إدخال (entry_price, entry_qty, entry_date, persona) + زر "حلّل وضعي".
+  - prefill تلقائي: لو initialEntryPrice/Qty موجودان، يحلل تلقائياً.
+  - عرض التقرير: التوصية الحالية (Alert ملون) → هوية السهم → السوق والقطاع →
+    الوضع الفني → تقييم سعر الدخول → أحداث جوهرية → سيناريوهات التصرف →
+    مستويات مقترحة → تحذير ثابت → مصادر البيانات.
+  - Mobile responsive + ألوان دلالية للقرارات.
+
+### التكامل (الجزء 2 — 3 شاشات)
+1. **#trading-chart**: `SingleStockAnalysisView.tsx` — DealAdvisorPanel كـ
+   CardContent إضافية (خارج `{data && ...}` block لتظهر دائماً).
+2. **المحفظة**: `EnhancedPortfolioView.tsx` — زر "مستشار" لكل مركز، prefill
+   تلقائي (ticker + avg_buy_price + quantity).
+3. **قائمة المتابعة**: `EnhancedWatchlistView.tsx` — زر "مستشار" في mobile +
+   desktop، prefill (ticker + purchase_price + quantity).
+
+### store.ts update
+- `dealAdvisorPrefill` state (ticker, entryPrice, entryQty, source).
+- `setDealAdvisorPrefill` + `clearDealAdvisorPrefill` actions.
+
+### النتائج
+- ✅ الصفحة الرئيسية: HTTP 200 في 0.03s.
+- ✅ API test (COMI): support=130.7, resistance=139.29, stop=128.09, rr=0.04,
+  volume_vs_avg=2.54×, volatility=2.1%, rec="صبر مشروط" (المركز رابح 6.8%).
+- ✅ API test (SWDY): RSI=76.7 (تشبع), trend=صاعد, volatility=8.2%, rec="انتظار".
+- ✅ Agent Browser: الـ Panel يعرض كل الأقسام الثمانية على desktop + mobile.
+- ✅ Build chunks: "مستشار" في 5 chunks، setDealAdvisorPrefill في 4 chunks.
+- ✅ bun run lint: exit 0.
+
+### الملفات المعدّلة/الجديدة
+- [جديد] `src/app/api/deal-advisor/[ticker]/route.ts` (620 LOC)
+- [جديد] `src/components/deal-advisor/DealAdvisorPanel.tsx` (560 LOC)
+- [معدّل] `src/components/analysis/SingleStockAnalysisView.tsx` — import + CardContent
+- [معدّل] `src/components/portfolio/EnhancedPortfolioView.tsx` — زر "مستشار" + imports
+- [معدّل] `src/components/watchlist/EnhancedWatchlistView.tsx` — زر "مستشار" + imports
+- [معدّل] `src/lib/store.ts` — dealAdvisorPrefill state + setters
+- [معدّل] `.env` — DATABASE_URL نسبي + مسح كل المفاتيح
+- [معدّل] `.env.example` — مسح كل المفاتيح + placeholders
+- [معدّل] `ecosystem.config.js` — مسح Telegram tokens hardcoded
+- [معدّل] `src/app/api/auth/google/route.ts` — Google Client IDs → env var
+- [معدّل] `src/app/api/auth/google-signin/route.ts` — Google Client IDs → env var
+- [معدّل] `.gitignore` — حذف git merge conflict marker
+- [جديد] `scripts/patch_watchlist*.py` (4 سكربتات لتعديل ملفات CRLF)
+
+---
+
 ## [SANDBOX-CLONE-001] — نسخ المشروع إلى الساندبوكس السحابي (2026-08-19)
 
 > **المهمة:** نسخ مشروع GLMinvestment بالكامل من GitHub إلى الساندبوكس

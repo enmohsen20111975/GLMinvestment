@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Clock,
   Brain,
+  Sparkles,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,6 +50,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import type { EnhancedWatchlistItem } from '@/types';
 import { WatchlistIntelligenceSection } from '@/components/intelligence/WatchlistIntelligenceSection';
@@ -578,12 +580,14 @@ function WatchlistMobileCard({
   item, 
   hasGainLoss, 
   onEdit, 
-  onDelete 
+  onDelete, 
+  onAnalyze 
 }: { 
   item: EnhancedWatchlistItem; 
   hasGainLoss: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onAnalyze: () => void;
 }) {
   const hasAlertAbove = item.alert_price_above !== null;
   const hasAlertBelow = item.alert_price_below !== null;
@@ -694,6 +698,16 @@ function WatchlistMobileCard({
           <Button
             variant="outline"
             size="sm"
+            onClick={onAnalyze}
+            className="h-9 border-primary text-primary hover:bg-primary/10"
+            title="مستشار الصفقة"
+          >
+            <Sparkles className="w-3.5 h-3.5 ml-1.5" />
+            مستشار
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onEdit}
             className="h-9"
           >
@@ -728,6 +742,7 @@ export function EnhancedWatchlistView() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showIntelligence, setShowIntelligence] = useState(false);
+  const { setDealAdvisorPrefill, setCurrentView } = useAppStore();
 
   const fetchData = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -951,6 +966,15 @@ export function EnhancedWatchlistView() {
                 hasGainLoss={hasGainLoss}
                 onEdit={() => handleEdit(item)}
                 onDelete={() => setDeleteId(item.id)}
+                onAnalyze={() => {
+                  setDealAdvisorPrefill({
+                    ticker: item.ticker,
+                    entryPrice: item.purchase_price ?? null,
+                    entryQty: item.quantity ?? null,
+                    source: 'watchlist',
+                  });
+                  setCurrentView('trading-chart');
+                }}
               />
             ))}
           </div>
@@ -1111,6 +1135,23 @@ export function EnhancedWatchlistView() {
                           {/* Actions */}
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-primary hover:bg-primary/10"
+                                onClick={() => {
+                                  setDealAdvisorPrefill({
+                                    ticker: item.ticker,
+                                    entryPrice: item.purchase_price ?? null,
+                                    entryQty: item.quantity ?? null,
+                                    source: 'watchlist',
+                                  });
+                                  setCurrentView('trading-chart');
+                                }}
+                                title="مستشار الصفقة"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"

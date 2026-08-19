@@ -220,7 +220,6 @@ p0-*.png
 
 # V40.2 Protection: runtime config (do not commit state)
 db/display_protection.json
-<<<<<<< HEAD
 
 # SECURITY: payment & messaging credentials — NEVER commit
 db/pymob

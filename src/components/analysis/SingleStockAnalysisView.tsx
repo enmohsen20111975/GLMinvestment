@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import ChartControls from './ChartControls';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
+import { DealAdvisorPanel } from '@/components/deal-advisor/DealAdvisorPanel';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -249,7 +250,7 @@ export function SingleStockAnalysisView({
   onRemove,
   onTickerChange,
 }: SingleStockAnalysisViewProps) {
-  const { stocks, user, currentMarket } = useAppStore();
+  const { stocks, user, currentMarket, dealAdvisorPrefill } = useAppStore();
   const currencyLabel = currentMarket === 'CRYPTO' ? '$' : 'ج.م';
   const isCrypto = currentMarket === 'CRYPTO';
   const [ticker, setTicker] = useState(initialTicker);
@@ -1362,6 +1363,19 @@ export function SingleStockAnalysisView({
             )}
           </div>
         )}
+      </CardContent>
+
+      {/* ── Deal Advisor Panel (مستشار الصفقة) ──
+          Node-side تقرير قرار بهيكل ثابت (هوية/سوق/فني/تقييم الدخول/أحداث/سيناريوهات/مستويات).
+          يعمل بدون Python backend — يقرأ من stocks.db + price_history.db مباشرة.
+          يدعم prefill من المحفظة/قائمة المتابعة عبر useAppStore.dealAdvisorPrefill.
+          موضوع خارج {data && ...} block ليظهر دائماً (حتى لو الـ Python backend غير متاح). */}
+      <CardContent className="pt-0">
+        <DealAdvisorPanel
+          ticker={ticker}
+          initialEntryPrice={dealAdvisorPrefill?.entryPrice ?? userEntryPrice}
+          initialEntryQty={dealAdvisorPrefill?.entryQty ?? userEntryQty}
+        />
       </CardContent>
 
       <AlertPanel ticker={ticker} open={alertPanelOpen} onClose={() => setAlertPanelOpen(false)} />

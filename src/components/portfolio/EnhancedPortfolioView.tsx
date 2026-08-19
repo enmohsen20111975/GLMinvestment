@@ -10,6 +10,7 @@ import {
   Plus,
   Trash2,
   Pencil,
+  Sparkles,
   Building2,
   PiggyBank,
   CreditCard,
@@ -472,7 +473,7 @@ function CryptoSearchDropdown({
 // ==================== ASSETS TAB ====================
 
 function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: number | 'master' }) {
-  const { loadStockDetail, setFxRates, displayCurrency, usdRate, sarRate, persona } = useAppStore();
+  const { loadStockDetail, setFxRates, displayCurrency, usdRate, sarRate, persona, setDealAdvisorPrefill, setCurrentView } = useAppStore();
   // P39-PHASE-2: state for the DynamicRiskProfilerModal (إعادة الاختبار button).
   const [profilerOpen, setProfilerOpen] = useState(false);
   // P37-PHASE-2B-4A: local currency-aware formatter — shadows the module-level
@@ -1318,6 +1319,31 @@ function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: n
                                   title="هذا السهم مزنوق بخسارة — اضغط للإنقاذ الفوري"
                                 >
                                   🚨 مزنوق
+                                </Button>
+                              )}
+                              {/* Deal Advisor button — opens #trading-chart with prefill
+                                  (ticker + avg_buy_price + quantity) so the user lands
+                                  directly on the Deal Advisor panel for this position. */}
+                              {isStock && asset.stock_ticker && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 mr-1 text-[10px] font-bold border-primary text-primary hover:bg-primary/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setDealAdvisorPrefill({
+                                      ticker: String(asset.stock_ticker),
+                                      entryPrice: avgBuy > 0 ? avgBuy : null,
+                                      entryQty: qty > 0 ? qty : null,
+                                      source: 'portfolio',
+                                    });
+                                    setCurrentView('trading-chart');
+                                  }}
+                                  title="افتح مستشار الصفقة لهذا المركز"
+                                >
+                                  <Sparkles className="w-3 h-3 ml-1" />
+                                  مستشار
                                 </Button>
                               )}
                               <Button variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title="تعديل"><Pencil className="w-3.5 h-3.5" /></Button>

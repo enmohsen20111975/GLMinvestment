@@ -6469,3 +6469,172 @@ Stage Summary:
 - [معدّل] package.json — script "dev" يستخدم watchdog + setsid -f
 - [معدّل] proxy-server.js — STATIC_DIR/PUBLIC_DIR بدون standalone
 - [معدّل] .env — قيم localhost بدلاً من الإنتاج
+
+---
+Task ID: DEAL-ADVISOR-001
+Agent: Z.ai Code (main orchestrator)
+Task: مستشار الصفقة (Trade Advisor / ملف السهم المتكلم) — مساعد قرار
+      للعميل داخل #trading-chart + المحفظة + قائمة المتابعة. Node-side
+      (بدون اعتماد على Python backend) — يقرأ من stocks.db + price_history.db.
+
+Work Log:
+- التزمت بـ Documentation/00-CONSTITUTION.md والقواعد المطلقة:
+  * Rule 2: لا مسح جوهري — وسّعت الموجود (SingleStockAnalysisView + EnhancedPortfolioView
+    + EnhancedWatchlistView) بدلاً من بناء شاشة موازية.
+  * Rule 3: مسارات نسبية فقط (DATABASE_URL="file:./db/auth.db").
+  * Rule 4: لا أسرار/tokens في الملفات — نظّفت .env + .env.example +
+    ecosystem.config.js + src/app/api/auth/google/route.ts + google-signin/route.ts
+    من كل المفاتيح الحقيقية (Google Client IDs, Telegram tokens, Paymob keys,
+    NextAuth secret, Admin password). حولت hardcoded IDs إلى env vars.
+  * Rule 5: قرأت التوثيق قبل العمل (00-CONSTITUTION, 01-ANATOMY,
+    02-SCREENS_AND_COMPONENTS, worklog.md, CHANGELOG.md).
+  * Rule 6: أحدثت worklog + CHANGELOG.
+  * Rule 7: قواعد البيانات للقراءة فقط — الـ API READ-ONLY (لا يكتب على أي DB).
+  * Rule 8: لا خلط إحصائيات الشخصيات — persona param اختياري، لا يخلط.
+  * Rule 9: VERIFY-BEFORE-DELETE — لم أمسح أي مكوّن موجود.
+  * Rule 10: وسّعت الموجود — أضفت DealAdvisorPanel كـ CardContent إضافية.
+
+[الجزء 0 — إصلاحات أمنية حرجة]:
+- نظّفت .env: DATABASE_URL="file:./db/auth.db" (نسبي، يشير لـ auth.db)،
+  مسحت Google Client ID/Secret, Paymob API/public/secret keys, Telegram bot token,
+  Admin password, NextAuth secret — استبدلتها بـ placeholders فارغة.
+- نظّفت .env.example: نفس التنظيف + تعليقات تشرح كيف توليد القيم.
+- نظّفت ecosystem.config.js: Telegram tokens hardcoded → process.env فقط.
+- نظّفت src/app/api/auth/google/route.ts: 2 Google Client IDs hardcoded →
+  GOOGLE_KNOWN_MOBILE_CLIENT_IDS env var (comma-separated).
+- نظّفت src/app/api/auth/google-signin/route.ts: نفس الإصلاح.
+- أصلحت .gitignore: حذفت git merge conflict marker (<<<<<<< HEAD) في السطر 223.
+- تأكدت من أن .env* محجوب في .gitignore (سطر 108, 151).
+
+[الجزء 1 — استكشاف]:
+- أطلقت وكيل استكشاف (Explore) لرسم خريطة:
+  * #trading-chart → TradingChartView → SingleStockAnalysisView (1370 LOC)
+    يحتوي على 6 cards: Score, Trade Plan, InstitutionalDecisionPanel,
+    Candle Prob, Stock DNA, SMC/Technical.
+  * #portfolio → EnhancedPortfolioView (3069 LOC) — كل مركز يحوي
+    avg_buy_price + quantity + current_stock_price (حقول prefill جاهزة).
+  * #watchlist → EnhancedWatchlistView (1183 LOC) — لا يوجد زر للانتقال
+    لشاشة التحليل (ثغرة UX سُدّت).
+  * APIs تحليل سهم فردي متاحة: /api/v2/chart/full-analysis (Python proxy),
+    /api/unified-analysis/[symbol] (Node-side), /api/stocks/[ticker]/comprehensive.
+  * DBs متاحة: stocks.db (57 عمود), price_history.db, predictions.db (62 عمود).
+
+[الجزء 2 — API مستشار الصفقة]:
+- ملف جديد: src/app/api/deal-advisor/[ticker]/route.ts (620+ LOC)
+- Node-side — يقرأ مباشرة من stocks.db + price_history.db عبر openDb(shared-db).
+- READ-ONLY: لا يكتب على أي DB.
+- Query params: ticker, entry_price, entry_qty, entry_date, persona, note.
+- يرجع JSON بهيكل ثابت (8 أقسام):
+  1. identity: ticker, name, sector, classification (clean/momentum/high_risk)
+  2. market_context: trend, sector, market_regime, is_market_open
+  3. technical_state: trend, rsi, above_ma50/200, near_support/resistance,
+     volume_vs_avg, volatility
+  4. entry_assessment (إن وُجد entry_price): pnl_pct, assessment (cheap/fair/expensive)
+  5. events: dividend_yield, dps_ttm, events_ar
+  6. action_scenarios: 4-6 سيناريوهات (break_support, hold_above_ma50,
+     near_resistance, break_resistance, rsi_overbought/oversold) +
+     current_recommendation
+  7. suggested_levels: support, resistance, suggested_stop, near_target, rr_ratio
+  8. disclaimer: نص ثابت بالعربية
+- ذكاء في حساب البيانات:
+  * لو support/resistance في stocks.db قديمة جداً (بعيدة عن السعر الحالي)،
+    احسب من price_history (percentile 25 للدعم، percentile 75 للمقاومة).
+  * لو avg_volume غير موثوق (< 100)، احسب من آخر 20 يوم في price_history.
+  * فلتر البيانات الشاذة في حساب التذبذب (ATR > 25% من السعر → تجاهل).
+  * حد أقصى للتذبذب 15% (EGX لا يتذبذب أكثر من ذلك عادةً).
+- اختبار: COMI → support=130.7, resistance=139.29, stop=128.09, rr=0.04,
+  volume_vs_avg=2.54×, volatility=2.1%, rec="صبر مشروط" (المركز رابح 6.8%).
+- اختبار: SWDY → RSI=76.7 (تشبع), trend=صاعد, volatility=8.2%, rec="انتظار".
+
+[الجزء 3 — مكوّن DealAdvisorPanel]:
+- ملف جديد: src/components/deal-advisor/DealAdvisorPanel.tsx (560+ LOC)
+- 'use client' component يستخدم shadcn/ui (Card, Button, Input, Label,
+  Badge, Alert, Select, Separator, Tooltip).
+- يقبل props: ticker, initialEntryPrice, initialEntryQty, onEntryChange, compact.
+- يدعم prefill تلقائي: لو initialEntryPrice/Qty موجودان، يحلل تلقائياً.
+- UI: form إدخال (entry_price, entry_qty, entry_date, persona) + زر "حلّل وضعي".
+- عرض التقرير بالترتيب: التوصية الحالية (Alert ملون) → هوية السهم →
+  السوق والقطاع → الوضع الفني → تقييم سعر الدخول → أحداث جوهرية →
+  سيناريوهات التصرف (مع priority badges) → مستويات مقترحة → تحذير ثابت →
+  مصادر البيانات (details قابلة للطي).
+- ألوان دلالية: exit=أحمر, reduce=برتقالي, take_profit=أخضر,
+  hold_conditional=أزرق, wait=رمادي.
+- Mobile responsive: grid-cols-2 sm:grid-cols-4 للـ form، cards عمودية.
+
+[الجزء 4 — تكامل #trading-chart]:
+- عدّلت src/components/analysis/SingleStockAnalysisView.tsx:
+  * أضفت import: DealAdvisorPanel.
+  * أضفت dealAdvisorPrefill للـ store destructuring.
+  * أضفت <DealAdvisorPanel> كـ CardContent إضافية بعد الـ detailed cards
+    (خارج {data && ...} block ليظهر دائماً — حتى لو Python backend لا يعمل).
+  * prefill من store: initialEntryPrice={dealAdvisorPrefill?.entryPrice ?? userEntryPrice}.
+
+[الجزء 5 — تكامل المحفظة]:
+- عدّلت src/components/portfolio/EnhancedPortfolioView.tsx:
+  * أضفت import: Sparkles icon.
+  * أضفت setDealAdvisorPrefill + setCurrentView للـ store destructuring.
+  * أضفت زر "مستشار" (مع أيقونة Sparkles) بجانب زر "🚨 مزنوق" لكل مركز.
+  * onClick: setDealAdvisorPrefill({ticker, entryPrice: avg_buy_price,
+    entryQty: quantity, source: 'portfolio'}) ثم setCurrentView('trading-chart').
+  * prefill تلقائي: سعر الدخول + الكمية من portfolio_assets.
+
+[الجزء 6 — تكامل قائمة المتابعة]:
+- عدّلت src/components/watchlist/EnhancedWatchlistView.tsx:
+  * أضفت import: Sparkles icon + useAppStore.
+  * أضفت setDealAdvisorPrefill + setCurrentView للـ store destructuring.
+  * أضفت onAnalyze prop لـ WatchlistMobileCard.
+  * أضفت زر "مستشار" في WatchlistMobileCard (mobile) + Desktop Table (بجانب تعديل/حذف).
+  * onClick: setDealAdvisorPrefill({ticker, entryPrice: purchase_price,
+    entryQty: quantity, source: 'watchlist'}) ثم setCurrentView('trading-chart').
+
+[الجزء 7 — store.ts update]:
+- عدّلت src/lib/store.ts:
+  * أضفت dealAdvisorPrefill state (ticker, entryPrice, entryQty, source).
+  * أضفت setDealAdvisorPrefill + clearDealAdvisorPrefill actions.
+
+[التحقق]:
+- bun run build: نجح (لا أخطاء TypeScript).
+- bun run lint: exit 0 ✓.
+- API test (curl): COMI → 200 OK, SWDY → 200 OK.
+- Agent Browser test: الـ Panel يظهر في #trading-chart، زر "حلّل وضعي"
+  يعمل، التقرير يعرض كل الأقسام الثمانية بالعربية.
+- Mobile responsive: 375x812 → يعمل (3088 chars content).
+- Desktop: 1280x800 → يعمل.
+- Build chunks: "مستشار" في 5 chunks، setDealAdvisorPrefill في 4 chunks،
+  source:'portfolio'/'watchlist' موجودان.
+
+[قيود الساندبوكس]:
+- Python backend (port 8010) غير مشغل — الـ API Node-side يعمل بدون الحاجة إليه.
+- المحفظة/قائمة المتابعة تحتاجان مستخدم مسجل — في الساندبوكس النظيف لا يوجد
+  مستخدمين، لكن الأزرار موجودة في الـ build وستظهر عند وجود مراكز/عناصر.
+- الـ DealAdvisorPanel يظهر دائماً في #trading-chart (حتى لو Python backend
+  لا يعمل) لأنه موضوع خارج {data && ...} block.
+
+Stage Summary:
+- ✅ API /api/deal-advisor/[ticker] — Node-side، READ-ONLY، هيكل JSON ثابت
+- ✅ DealAdvisorPanel.tsx — لوحة قرار بهيكل 8 أقسام + form prefill
+- ✅ تكامل #trading-chart — panel داخل SingleStockAnalysisView
+- ✅ تكامل المحفظة — زر "مستشار" مع prefill (ticker + entry_price + qty)
+- ✅ تكامل قائمة المتابعة — زر "مستشار" في mobile + desktop
+- ✅ store.ts — dealAdvisorPrefill state
+- ✅ إصلاحات أمنية: .env + .env.example + ecosystem.config.js + google routes
+  + .gitignore conflict marker — كل المفاتيح الحقيقية أُزيلت
+- ✅ DATABASE_URL="file:./db/auth.db" (نسبي)
+- ✅ lint + build: نجح
+- ✅ Agent Browser: panel يعمل على desktop + mobile
+
+ملفات تم إنشاؤها/تعديلها:
+- [جديد] src/app/api/deal-advisor/[ticker]/route.ts (620 LOC)
+- [جديد] src/components/deal-advisor/DealAdvisorPanel.tsx (560 LOC)
+- [معدّل] src/components/analysis/SingleStockAnalysisView.tsx — import + CardContent
+- [معدّل] src/components/portfolio/EnhancedPortfolioView.tsx — زر "مستشار" + imports
+- [معدّل] src/components/watchlist/EnhancedWatchlistView.tsx — زر "مستشار" + imports + onAnalyze
+- [معدّل] src/lib/store.ts — dealAdvisorPrefill state + setters
+- [معدّل] .env — DATABASE_URL نسبي + مسح كل المفاتيح
+- [معدّل] .env.example — مسح كل المفاتيح + placeholders
+- [معدّل] ecosystem.config.js — مسح Telegram tokens hardcoded
+- [معدّل] src/app/api/auth/google/route.ts — Google Client IDs → env var
+- [معدّل] src/app/api/auth/google-signin/route.ts — Google Client IDs → env var
+- [معدّل] .gitignore — حذف git merge conflict marker
+- [جديد] scripts/patch_watchlist.py + patch_watchlist2.py + patch_watchlist3.py + patch_watchlist4.py
+  (سكربتات Python لتعديل ملفات CRLF line endings)

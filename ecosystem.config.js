@@ -203,10 +203,12 @@ module.exports = {
       max_memory_restart: '300M',
       env: {
         NODE_ENV: 'production',
-        TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8150921223:AAFteLXeaH_lutZC62auVorlaey9BfNJVP0',
-        TELEGRAM_API_ID: process.env.TELEGRAM_API_ID || '34557076',
-        TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH || 'fe604a9844bf753210acb4e648af4155',
-        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || '@Arabian_investment_guide'
+        // Telegram credentials MUST come from environment / .env file.
+        // NO hardcoded tokens/api_hashes in the repo — security rule.
+        TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
+        TELEGRAM_API_ID: process.env.TELEGRAM_API_ID || '',
+        TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH || '',
+        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || ''
       },
       error_file: './logs/telegram-poster-error.log',
       out_file: './logs/telegram-poster-out.log',
