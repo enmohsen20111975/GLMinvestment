@@ -1,6 +1,98 @@
 # Changelog
 
 
+## [ADMIN-PERFORMANCE-002] — إصلاح جودة بيانات لوحة كفاءة المنصة + تنظيم بالسوق (2026-08-19)
+
+> **المشكلة:** اللوحة كانت تعرض بيانات غير صالحة للقياس (تكرار، دخول=0، خروج
+> غير منطقي، خلط أسواق، متوسط خسارة موجب، ±50% بكثرة). أي KPI مبني عليها مضلل.
+
+### الإصلاحات المنفذة
+
+#### 1. تعريف `trade_valid` للقياس (فلتر جودة)
+- **`validateTrade()`** يفحص:
+  - `entry_price > 0` (يستبعد entry=0).
+  - ticker نظيف (لا مسافات، ≤ 12 char) — يستبعد الصفوف المشوهة.
+  - استبعاد التكرار على `(ticker + prediction_date + channel + entry_price)`.
+  - `market` معروف — يستبعد صفوف بدون market.
+- **`computeActualReturnRaw()`** يرجع `{ret, capped, suspicious}`:
+  - `capped = true` لو `|return| > 50%` (HARD cap).
+  - `suspicious = true` لو `|exit/entry| > 5x` (قفزة غير منطقية) → يستبعد.
+- كل trade له `exclusion_reason` (duplicate, entry_price_zero, ticker_invalid, market_unknown, exit_price_unrealistic).
+
+#### 2. عمود `market` + فلتر سوق
+- أضفت `market` column في `Trade` interface + SQL query.
+- فلتر سوق في الـ API: `?market=EGX|CRYPTO|KSE|TADAWUL|all`.
+- `computeByMarket()` يرجع `MarketStats[]` (market, n_raw, n_valid, WR, PF, Exp, Max Loss).
+- منع خلط الأسواق: لو `market=EGX`، فقط EGX يظهر في KPI والجداول.
+
+#### 3. متوسط الخسارة سالب
+- `avg_loss = -(grossLossAmount / losses.length)` → **سالب دائماً**.
+- `max_loss = Math.min(...losses.map(t => t.actual_return))` → **سالب**.
+- **قبل**: avg_loss = +8.49% (موجب خطأ!).
+- **بعد**: avg_loss = -6.12% (سالب صحيح).
+
+#### 4. `capped` flag + measured/raw/excluded
+- كل trade له `capped: boolean` (true لو `|return| > 50%`).
+- KPIs الآن يحوي:
+  - `n_raw` = كل الصفوف قبل الفلتر.
+  - `n_valid` = صفقات صالحة للقياس.
+  - `n_excluded` = صفقات مستبعدة.
+  - `exclusion_breakdown` = `{سبب → عدد}`.
+- `sample_note_ar`: «بيانات بعد فلتر الجودة: n=147 من أصل 153 (مستبعد: 1 — 1 duplicate)».
+
+#### 5. UI updates
+- فلتر السوق (الكل/EGX/CRYPTO/KSE/TADAWUL) — `grid-cols-4`.
+- عمود «السوق» في جداول Top + Worst + Excluded.
+- `capped` badge (border-amber) بجانب العائد لو capped=True.
+- قسم **«صفقات مستبعدة من القياس»** (excluded_examples) — للشفافية.
+- قسم **«كفاءة الأسواق»** (by_market) — مقارنة بين الأسواق.
+- KPI card: «الصفقات الصالحة للقياس» مع sublabel «من أصل N (مستبعد: M)».
+
+### النتائج بعد التنظيف (period=all)
+| KPI | قبل (مضلل) | بعد (نظيف) |
+|-----|-----------|-----------|
+| n | 153 (مع تكرار) | **147** (بدون تكرار) |
+| avg_loss | +8.49% (موجب خطأ!) | **-6.12%** (سالب صحيح) |
+| max_loss | -50% (HARD cap يغطي فوضى) | **-7.59%** (حقيقي) |
+| market | مختلط | **EGX فقط** (مفصول) |
+| capped | غير معلّم | **معلّم بـ badge** |
+| excluded | غير ظاهر | **قسم كامل للشفافية** |
+
+### by_market (بعد التنظيف)
+| السوق | n_raw | n_valid | Win Rate | PF | Expectancy | Max Loss |
+|-------|-------|---------|----------|-----|------------|----------|
+| EGX | 153 | 147 | 52.4% | 1.50 | +1.47% | -7.59% |
+
+### by_channel (بعد التنظيف)
+| القناة | n | Win Rate | PF | Expectancy | Max Loss |
+|--------|-----|----------|-----|------------|----------|
+| balanced | 108 | 54.6% | 1.70 | +1.96% | -7.59% |
+| morning_bell | 39 | 46.2% | 1.04 | +0.07% | -7.23% |
+
+### Top 5 (clean)
+1. **1323** | EGX | balanced | entry=5.35 | ret=+50.00% | **capped=True**
+2. **2090** | EGX | balanced | entry=9.02 | ret=+31.96% | capped=False
+3. **2090** | EGX | balanced | entry=9.28 | ret=+29.05% | capped=False
+4. **2090** | EGX | morning_bell | entry=8.17 | ret=+11.21% | capped=False
+5. **1323** | EGX | balanced | entry=4.12 | ret=+11.17% | capped=False
+
+### Worst 5 (clean)
+1. **1030** | EGX | balanced | entry=4.63 | ret=**-7.59%**
+2. **1321** | EGX | morning_bell | entry=9.10 | ret=**-7.23%**
+3. **1322** | EGX | morning_bell | entry=1.03 | ret=**-7.20%**
+4. **1322** | EGX | balanced | entry=1.02 | ret=**-7.08%**
+5. **2190** | EGX | balanced | entry=287.26 | ret=**-7.00%**
+
+### Excluded examples (شفافية)
+- **1302** | reason=duplicate | entry=5.48 | market=EGX
+
+### الملفات المعدّلة
+- [معدّل] `src/app/api/admin/platform-performance/route.ts` — validateTrade + computeActualReturnRaw + market filter + byMarket + capped + exclusion_breakdown
+- [معدّل] `src/components/admin/platform-performance/PlatformPerformanceView.tsx` — market filter + market column + capped badge + excluded_examples section + by_market section
+- [جديد] `scripts/check_data_quality.py`, `check_persona_quality.py`
+
+---
+
 ## [ADMIN-PERFORMANCE-001] — لوحة أدمن «كفاءة المنصة» (Admin Only) (2026-08-19)
 
 > **المهمة:** لوحة أدمن بأرقام حقيقية بدون تجميل — KPIs + أفضل/أسوأ الصفقات +

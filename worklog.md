@@ -6907,3 +6907,117 @@ Stage Summary:
 - [جديد] src/components/admin/platform-performance/PlatformPerformanceView.tsx (560 LOC)
 - [معدّل] src/components/admin/AdminView.tsx — import + tab type + hub + render
 - [جديد] scripts/check_predictions.py, check_predictions2.py, check_predictions3.py
+
+---
+Task ID: ADMIN-PERFORMANCE-002
+Agent: Z.ai Code (main orchestrator)
+Task: إصلاح عاجل لجودة بيانات لوحة كفاءة المنصة + تنظيم بالسوق + جماليات أدمن.
+      المشكلة: بيانات غير صالحة للقياس (تكرار، دخول=0، خروج غير منطقي،
+      خلط أسواق، متوسط خسارة موجب، ±50% بكثرة).
+
+Work Log:
+- التزمت بـ Documentation/00-CONSTITUTION.md (خاصة Rule 7 HARD cap، Rule 8 لا خلط قنوات).
+
+[التشخيص]:
+- فحصت predictions.db:
+  * predictions: 153 صف (EGX فقط، 148 EXPIRED + 5 active) — نظيف نسبياً.
+    - 2 مكرر فقط (1302 و 1322 بـ نفس entry_price).
+    - entry_price = 0: 0 (مفيش!).
+    - لكن actual_return/exit_price كلها NULL → حساب من hit_target/hit_stop.
+  * persona_predictions: 1052 صف — مشكلة!
+    - 430 مكرر! (كل صف له نسختين gambler + investor).
+    - خلط أسواق: EGX (798) + KSE (254).
+    - كلها PENDING، لا profit_loss_percent، لا final_price.
+- استنتاج: المستخدم شاف بيانات الإنتاج الحقيقي الذي قد يكون أكبر/أكثر تلوثاً.
+  الـ API الحالي كان يقرأ من predictions فقط لكن بدون فلتر جودة.
+
+[الإصلاح 1 — تعريف trade_valid للقياس]:
+- ملف: src/app/api/admin/platform-performance/route.ts.
+- أضفت validateTrade() يفحص:
+  1. entry_price > 0 (يستبعد entry=0).
+  2. ticker نظيف (لا مسافات، ≤ 12 char) — يستبعد الصفوف المشوهة مثل "VALUU Consumer Finance".
+  3. استبعاد التكرار على (ticker + prediction_date + channel + entry_price) — dedup.
+  4. market معروف — يستبعد صفوف بدون market.
+- أضفت computeActualReturnRaw() يرجع {ret, capped, suspicious}:
+  * ret = العائد بعد HARD cap (±50%).
+  * capped = true لو |return| > 50% (يُعلّم في UI).
+  * suspicious = true لو |exit/entry| > 5x (قفزة غير منطقية) → يستبعد.
+- أضفت exclusion_reason لكل trade (duplicate, entry_price_zero, ticker_invalid, market_unknown, exit_price_unrealistic).
+
+[الإصلاح 2 — عمود market + فلتر سوق]:
+- أضفت market column في Trade interface + في SQL query.
+- أضفت market filter في الـ API: ?market=EGX|CRYPTO|KSE|TADAWUL|all.
+- أضفت computeByMarket() يرجع MarketStats[] (market, n_raw, n_valid, WR, PF, Exp, Max Loss).
+- منع خلط الأسواق: لو market=EGX، فقط EGX يظهر في KPI والجداول.
+
+[الإصلاح 3 — متوسط الخسارة سالب]:
+- في computeKPIs():
+  * grossLossAmount = sum(|actual_return|) للخسائر (قيمة موجبة).
+  * avgLoss = -(grossLossAmount / losses.length) → سالب دائماً.
+  * maxLoss = Math.min(...losses.map(t => t.actual_return)) → سالب.
+- اختبار: avg_loss = -6.12% (سالب ✓)، max_loss = -7.59% (سالب ✓).
+
+[الإصلاح 4 — capped flag + measured/raw/excluded]:
+- كل trade له capped: boolean (true لو |return| > 50%).
+- KPIs الآن يحوي:
+  * n_raw = كل الصفوف قبل الفلتر.
+  * n_valid = صفقات صالحة للقياس (بعد فلتر الجودة + لها actual_return).
+  * n_excluded = صفقات مستبعدة.
+  * exclusion_breakdown = {سبب → عدد} (duplicate: 1, entry_price_zero: 0, ...).
+- sample_note_ar: «بيانات بعد فلتر الجودة: n=147 من أصل 153 (مستبعد: 1 — 1 duplicate)».
+
+[الإصلاح 5 — UI updates]:
+- ملف: src/components/admin/platform-performance/PlatformPerformanceView.tsx.
+- أضفت فلتر السوق (الكل/EGX/CRYPTO/KSE/TADAWUL) — grid-cols-4 بدلاً من 3.
+- أضفت عمود «السوق» في جداول Top + Worst + Excluded.
+- أضفت capped badge (border-amber) بجانب العائد لو capped=True.
+- أضفت قسم «صفقات مستبعدة من القياس» (excluded_examples) — للشفافية.
+- أضفت قسم «كفاءة الأسواق» (by_market) — مقارنة n_raw/n_valid/WR/PF بين الأسواق.
+- حدّثت KPI card: «الصفقات الصالحة للقياس» بدلاً من «عدد الصفقات المقاسة».
+- حدّثت sublabel: «من أصل N (مستبعد: M)».
+
+[الاختبار]:
+- API test (period=all):
+  * n_raw=153, n_valid=147, n_excluded=1 (duplicate).
+  * exclusion_breakdown: {duplicate: 1}.
+  * avg_loss=-6.12% (سالب ✓), max_loss=-7.59% (سالب ✓).
+  * by_market: EGX (raw=153, valid=147, WR=52.4%, PF=1.5).
+  * by_channel: balanced (n=108, PF=1.7), morning_bell (n=39, PF=1.04).
+  * hard_capped_count=1 (سهم 1323 = +50%).
+  * excluded_examples: 1 (1302 duplicate).
+- Agent Browser:
+  * panel يظهر في #admin → التعلم الذكي → كفاءة المنصة.
+  * بعد تغيير الفترة للكل: كل الأقسام تظهر.
+  * hasPlatform, hasNValid (147), hasExcluded, hasAvgLoss (-6.12), hasByMarket,
+    hasExcludedExamples, hasSampleNote, hasTopTrades, hasWorstTrades, hasCapped — كلها true.
+  * Mobile (375x812): يعمل (5844 chars).
+  * Desktop (1280x800): يعمل.
+
+[النتائج بعد التنظيف]:
+| KPI | قبل (مضلل) | بعد (نظيف) |
+|-----|-----------|-----------|
+| n | 153 (مع تكرار) | 147 (بدون تكرار) |
+| avg_loss | +8.49% (موجب خطأ!) | -6.12% (سالب صحيح) |
+| max_loss | -50% (HARD cap يغطي فوضى) | -7.59% (حقيقي) |
+| market | مختلط | EGX فقط (مفصول) |
+| capped | غير معلّم | معلّم بـ badge |
+| excluded | غير ظاهر | قسم كامل للشفافية |
+
+Stage Summary:
+- ✅ trade_valid filter: entry>0، ticker نظيف، dedup، market معروف، exit منطقي.
+- ✅ market column + market filter (EGX/CRYPTO/KSE/TADAWUL).
+- ✅ avg_loss سالب (-6.12%)، max_loss سالب (-7.59%).
+- ✅ capped flag + badge في UI.
+- ✅ measured/raw/excluded مع exclusion_breakdown.
+- ✅ قسم «صفقات مستبعدة» للشفافية.
+- ✅ قسم «كفاءة الأسواق» (by_market).
+- ✅ readiness: «مرشح لنسخة عميل لاحقاً» (n=147, PF=1.5, max_loss=-7.59%).
+- ✅ لم أخلط القنوات: balanced (n=108) ≠ morning_bell (n=39).
+- ✅ HARD cap مطبق (ABS(return) <= 50).
+- ✅ bun run build: نجح.
+- ✅ Agent Browser: كل الأقسام تظهر على desktop + mobile.
+
+ملفات تم تعديلها:
+- [معدّل] src/app/api/admin/platform-performance/route.ts — validateTrade + computeActualReturnRaw + market filter + byMarket + capped + exclusion_breakdown.
+- [معدّل] src/components/admin/platform-performance/PlatformPerformanceView.tsx — market filter + market column + capped badge + excluded_examples section + by_market section.
+- [جديد] scripts/check_data_quality.py, check_persona_quality.py.

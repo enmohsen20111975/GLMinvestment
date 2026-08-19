@@ -82,11 +82,16 @@ interface Trade {
   highest_price: number | null;
   lowest_price: number | null;
   channel: 'balanced' | 'morning_bell';
+  market: string;
+  capped: boolean;
+  valid: boolean;
+  exclusion_reason: string | null;
 }
 
 interface KPIs {
-  n_total: number;
-  n_measured: number;
+  n_raw: number;
+  n_valid: number;
+  n_excluded: number;
   n_open: number;
   win_rate: number;
   profit_factor: number;
@@ -99,11 +104,22 @@ interface KPIs {
   stop_hit_rate: number;
   expired_rate: number;
   hard_capped_count: number;
+  exclusion_breakdown: Record<string, number>;
 }
 
 interface ChannelStats {
   channel: string;
   n: number;
+  win_rate: number;
+  profit_factor: number;
+  expectancy_pct: number;
+  max_loss_pct: number;
+}
+
+interface MarketStats {
+  market: string;
+  n_raw: number;
+  n_valid: number;
   win_rate: number;
   profit_factor: number;
   expectancy_pct: number;
@@ -125,6 +141,7 @@ interface PlatformPerformanceData {
   filters: {
     period: string;
     channel: string;
+    market: string;
     min_return: number;
     date_from: string | null;
     date_to: string | null;
@@ -134,6 +151,8 @@ interface PlatformPerformanceData {
   worst_trades: Trade[];
   target_hits: Trade[];
   by_channel: ChannelStats[];
+  by_market: MarketStats[];
+  excluded_examples: Trade[];
   readiness: ReadinessBox | null;
   data_sources: string[];
   data_missing: string[];
@@ -232,10 +251,15 @@ function KPICard({
 // Trade table row
 // ============================================================================
 
-function TradeRow({ trade, showChannel = true }: { trade: Trade; showChannel?: boolean }) {
+function TradeRow({ trade, showChannel = true, showMarket = true }: { trade: Trade; showChannel?: boolean; showMarket?: boolean }) {
   return (
     <tr className="border-b hover:bg-muted/30 transition-colors">
       <td className="px-2 py-2 text-xs font-mono font-medium">{trade.ticker}</td>
+      {showMarket && (
+        <td className="px-2 py-2 text-xs">
+          <Badge variant="outline" className="text-[10px] font-mono">{trade.market}</Badge>
+        </td>
+      )}
       {showChannel && (
         <td className="px-2 py-2 text-xs">
           <Badge variant="outline" className="text-[10px]">
@@ -250,6 +274,11 @@ function TradeRow({ trade, showChannel = true }: { trade: Trade; showChannel?: b
       <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(trade.exit_price ?? trade.highest_price)}</td>
       <td className={`px-2 py-2 text-xs ${returnColor(trade.actual_return)}`} dir="ltr">
         {fmtPct(trade.actual_return)}
+        {trade.capped && (
+          <Badge variant="outline" className="ml-1 text-[9px] border-amber-300 text-amber-700 px-1 py-0">
+            capped
+          </Badge>
+        )}
       </td>
       <td className="px-2 py-2 text-xs text-muted-foreground">
         {trade.holding_days !== null ? `${trade.holding_days}ي` : '—'}
@@ -277,6 +306,7 @@ export function PlatformPerformanceView() {
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<string>('30d');
   const [channel, setChannel] = useState<string>('all');
+  const [market, setMarket] = useState<string>('all');
   const [minReturn, setMinReturn] = useState<string>('8.0');
 
   const fetchData = useCallback(async () => {
@@ -286,6 +316,7 @@ export function PlatformPerformanceView() {
       const params = new URLSearchParams();
       params.set('period', period);
       params.set('channel', channel);
+      params.set('market', market);
       params.set('min_return', minReturn);
       const res = await fetch(`/api/admin/platform-performance?${params}`, {
         cache: 'no-store',
@@ -301,7 +332,7 @@ export function PlatformPerformanceView() {
     } finally {
       setLoading(false);
     }
-  }, [period, channel, minReturn]);
+  }, [period, channel, market, minReturn]);
 
   useEffect(() => {
     fetchData();
@@ -309,7 +340,7 @@ export function PlatformPerformanceView() {
 
   const kpis = data?.kpis;
   const readiness = data?.readiness;
-  const insufficientData = kpis && kpis.n_measured === 0;
+  const insufficientData = kpis && kpis.n_valid === 0;
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -358,7 +389,7 @@ export function PlatformPerformanceView() {
       {/* === Filters === */}
       <Card>
         <CardContent className="p-3 sm:p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">الفترة</label>
               <Select value={period} onValueChange={setPeriod}>
@@ -370,6 +401,21 @@ export function PlatformPerformanceView() {
                   <SelectItem value="7d">آخر 7 أيام</SelectItem>
                   <SelectItem value="30d">آخر 30 يوم</SelectItem>
                   <SelectItem value="all">الكل (من 2026-01)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">السوق</label>
+              <Select value={market} onValueChange={setMarket}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الأسواق</SelectItem>
+                  <SelectItem value="EGX">EGX (مصر)</SelectItem>
+                  <SelectItem value="CRYPTO">كريبتو</SelectItem>
+                  <SelectItem value="KSE">KSE (الكويت)</SelectItem>
+                  <SelectItem value="TADAWUL">TADAWUL (السعودية)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -436,9 +482,9 @@ export function PlatformPerformanceView() {
       {kpis && !insufficientData && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           <KPICard
-            label="عدد الصفقات المقاسة"
-            value={String(kpis.n_measured)}
-            sublabel={`من أصل ${kpis.n_total} | مفتوح: ${kpis.n_open}`}
+            label="الصفقات الصالحة للقياس"
+            value={String(kpis.n_valid)}
+            sublabel={`من أصل ${kpis.n_raw} (مستبعد: ${kpis.n_excluded})`}
             icon={<BarChart3 className="h-4 w-4" />}
           />
           <KPICard
@@ -561,6 +607,7 @@ export function PlatformPerformanceView() {
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
                     <th className="px-2 py-2 font-medium">السهم</th>
+                    <th className="px-2 py-2 font-medium">السوق</th>
                     <th className="px-2 py-2 font-medium">القناة</th>
                     <th className="px-2 py-2 font-medium">التاريخ</th>
                     <th className="px-2 py-2 font-medium">دخول</th>
@@ -649,6 +696,7 @@ export function PlatformPerformanceView() {
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
                     <th className="px-2 py-2 font-medium">السهم</th>
+                    <th className="px-2 py-2 font-medium">السوق</th>
                     <th className="px-2 py-2 font-medium">القناة</th>
                     <th className="px-2 py-2 font-medium">التاريخ</th>
                     <th className="px-2 py-2 font-medium">دخول</th>
@@ -661,6 +709,105 @@ export function PlatformPerformanceView() {
                 <tbody>
                   {data.worst_trades.map((t) => (
                     <TradeRow key={t.id} trade={t} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* === Excluded Examples (شفافية) === */}
+      {data && data.excluded_examples.length > 0 && (
+        <Card className="border-amber-200 dark:border-amber-800/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-5 w-5" />
+              صفقات مستبعدة من القياس ({data.excluded_examples.length})
+              <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">شفافية</Badge>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              صفقات استُبعدت من KPI بسبب تكرار/دخول=0/خروج غير منطقي
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-2 py-2 font-medium">السهم</th>
+                    <th className="px-2 py-2 font-medium">السوق</th>
+                    <th className="px-2 py-2 font-medium">دخول</th>
+                    <th className="px-2 py-2 font-medium">خروج</th>
+                    <th className="px-2 py-2 font-medium">سبب الاستبعاد</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.excluded_examples.map((t) => (
+                    <tr key={t.id} className="border-b">
+                      <td className="px-2 py-2 text-xs font-mono">{t.ticker}</td>
+                      <td className="px-2 py-2 text-xs">
+                        <Badge variant="outline" className="text-[10px] font-mono">{t.market}</Badge>
+                      </td>
+                      <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(t.entry_price)}</td>
+                      <td className="px-2 py-2 text-xs font-mono" dir="ltr">{fmtPrice(t.exit_price)}</td>
+                      <td className="px-2 py-2 text-xs">
+                        <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">
+                          {t.exclusion_reason || 'unknown'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* === By Market === */}
+      {data && data.by_market.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="h-5 w-5 text-primary" />
+              كفاءة الأسواق (مقارنة)
+            </CardTitle>
+            <CardDescription className="text-xs">
+              مقارنة الأداء بين الأسواق — بدون خلط
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-right">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">السوق</th>
+                    <th className="px-3 py-2 font-medium">n_raw</th>
+                    <th className="px-3 py-2 font-medium">n_valid</th>
+                    <th className="px-3 py-2 font-medium">Win Rate</th>
+                    <th className="px-3 py-2 font-medium">Profit Factor</th>
+                    <th className="px-3 py-2 font-medium">Expectancy</th>
+                    <th className="px-3 py-2 font-medium">Max Loss</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.by_market.map((m) => (
+                    <tr key={m.market} className="border-b hover:bg-muted/30">
+                      <td className="px-3 py-2 text-sm font-medium">
+                        <Badge variant="outline" className="font-mono">{m.market}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-sm text-muted-foreground">{m.n_raw}</td>
+                      <td className="px-3 py-2 text-sm font-medium">{m.n_valid}</td>
+                      <td className="px-3 py-2 text-sm">{fmtNum(m.win_rate, 1)}%</td>
+                      <td className={`px-3 py-2 text-sm ${m.profit_factor >= 1.3 ? 'text-emerald-600 font-medium' : 'text-amber-600'}`}>
+                        {fmtNum(m.profit_factor)}
+                      </td>
+                      <td className={`px-3 py-2 text-sm ${m.expectancy_pct >= 0 ? 'text-emerald-600' : 'text-red-600'}`} dir="ltr">
+                        {fmtPct(m.expectancy_pct)}
+                      </td>
+                      <td className="px-3 py-2 text-sm text-red-600" dir="ltr">{fmtPct(m.max_loss_pct)}</td>
+                    </tr>
                   ))}
                 </tbody>
               </table>

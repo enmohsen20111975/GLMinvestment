@@ -43,7 +43,7 @@ interface Trade {
   target_price_2: number | null;
   stop_loss: number | null;
   exit_price: number | null;
-  actual_return: number; // محسوب
+  actual_return: number; // محسوب (موجب = ربح، سالب = خسارة)
   hit_target: 0 | 1;
   hit_stop: 0 | 1;
   status: string;
@@ -52,28 +52,44 @@ interface Trade {
   highest_price: number | null;
   lowest_price: number | null;
   channel: 'balanced' | 'morning_bell';
+  market: 'EGX' | 'CRYPTO' | 'OTHER' | string;
+  capped: boolean; // true لو العائد وصل للـ HARD cap (±50%)
+  valid: boolean; // true لو الصفقة صالحة للقياس (دخلت KPI)
+  exclusion_reason: string | null; // سبب الاستبعاد لو valid=false
 }
 
 interface KPIs {
-  n_total: number;
-  n_measured: number; // trades with valid return
+  n_raw: number; // كل الصفوف قبل الفلتر
+  n_valid: number; // صفقات صالحة للقياس (بعد فلتر الجودة)
+  n_excluded: number; // صفقات مستبعدة
   n_open: number;
   win_rate: number;
   profit_factor: number;
   expectancy_pct: number;
-  avg_win_pct: number;
-  avg_loss_pct: number;
-  max_loss_pct: number;
-  max_win_pct: number;
+  avg_win_pct: number; // موجب
+  avg_loss_pct: number; // سالب (إشارة سالبة دائماً)
+  max_loss_pct: number; // سالب
+  max_win_pct: number; // موجب
   tp1_hit_rate: number;
   stop_hit_rate: number;
   expired_rate: number;
-  hard_capped_count: number; // trades that hit the 50% cap
+  hard_capped_count: number;
+  exclusion_breakdown: Record<string, number>; // سبب → عدد
 }
 
 interface ChannelStats {
   channel: string;
   n: number;
+  win_rate: number;
+  profit_factor: number;
+  expectancy_pct: number;
+  max_loss_pct: number;
+}
+
+interface MarketStats {
+  market: string;
+  n_raw: number;
+  n_valid: number;
   win_rate: number;
   profit_factor: number;
   expectancy_pct: number;
@@ -95,6 +111,7 @@ interface PlatformPerformanceResponse {
   filters: {
     period: string;
     channel: string;
+    market: string;
     min_return: number;
     date_from: string | null;
     date_to: string | null;
@@ -104,6 +121,8 @@ interface PlatformPerformanceResponse {
   worst_trades: Trade[];
   target_hits: Trade[];
   by_channel: ChannelStats[];
+  by_market: MarketStats[];
+  excluded_examples: Trade[]; // أمثلة على صفقات مستبعدة (للشفافية)
   readiness: ReadinessBox;
   data_sources: string[];
   data_missing: string[];
@@ -116,6 +135,7 @@ interface PlatformPerformanceResponse {
 // ============================================================================
 
 const HARD_CAP = 50.0; // Constitution Rule 7: ABS(actual_return) <= 50
+const MAX_RETURN_RATIO = 5.0; // لو |exit/entry| > 5x → مشكوك فيها (قفزة 500%+)
 
 function safeNum(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -124,46 +144,115 @@ function safeNum(v: unknown): number | null {
 }
 
 /**
- * حساب العائد الفعلي للصفقة.
+ * حساب العائد الفعلي للصفقة (بدون HARD cap — يُطبق لاحقاً).
  * الأولوية:
- * 1. actual_return لو موجود
- * 2. hit_target=1 → (target - entry) / entry × 100
- * 3. hit_stop=1 → (stop - entry) / entry × 100
- * 4. expired no hit → 0 (لا نختلق)
+ * 1. actual_return لو موجود ومحدود
+ * 2. exit_price → (exit - entry) / entry × 100 (مع فحص منطقية)
+ * 3. hit_target=1 → (target - entry) / entry × 100
+ * 4. hit_stop=1 → (stop - entry) / entry × 100
+ * 5. expired no hit → null (لا نختلق)
+ *
+ * يرجع { return, capped, suspicious } — return = العائد المحدود،
+ * capped = true لو |return| > HARD_CAP، suspicious = true لو قفزة غير منطقية.
  */
-function computeActualReturn(row: Record<string, unknown>): number | null {
+function computeActualReturnRaw(
+  row: Record<string, unknown>
+): { ret: number | null; capped: boolean; suspicious: boolean } {
   const entry = safeNum(row.entry_price);
-  if (!entry || entry <= 0) return null;
+  if (!entry || entry <= 0) return { ret: null, capped: false, suspicious: false };
 
-  // 1. actual_return field
+  let rawRet: number | null = null;
+  let exitUsed: number | null = null;
+
+  // 1. actual_return field (مع فحص منطقية)
   const ar = safeNum(row.actual_return);
-  if (ar !== null && Number.isFinite(ar)) return Math.max(-HARD_CAP, Math.min(HARD_CAP, ar));
+  if (ar !== null && Number.isFinite(ar)) {
+    rawRet = ar;
+    exitUsed = entry * (1 + ar / 100); // تخمين exit
+  }
 
   // 2. exit_price → (exit - entry) / entry × 100
-  const exit = safeNum(row.exit_price) ?? safeNum(row.actual_exit_price);
-  if (exit !== null && exit > 0) {
-    const ret = ((exit - entry) / entry) * 100;
-    return Math.max(-HARD_CAP, Math.min(HARD_CAP, ret));
+  if (rawRet === null) {
+    const exit = safeNum(row.exit_price) ?? safeNum(row.actual_exit_price);
+    if (exit !== null && exit > 0) {
+      rawRet = ((exit - entry) / entry) * 100;
+      exitUsed = exit;
+    }
   }
 
   // 3. hit_target=1 → target
-  const hitTarget = Number(row.hit_target || 0);
-  const target = safeNum(row.target_price);
-  if (hitTarget === 1 && target !== null && target > 0) {
-    const ret = ((target - entry) / entry) * 100;
-    return Math.max(-HARD_CAP, Math.min(HARD_CAP, ret));
+  if (rawRet === null) {
+    const hitTarget = Number(row.hit_target || 0);
+    const target = safeNum(row.target_price);
+    if (hitTarget === 1 && target !== null && target > 0) {
+      rawRet = ((target - entry) / entry) * 100;
+      exitUsed = target;
+    }
   }
 
   // 4. hit_stop=1 → stop
-  const hitStop = Number(row.hit_stop || 0);
-  const stop = safeNum(row.stop_loss);
-  if (hitStop === 1 && stop !== null && stop > 0) {
-    const ret = ((stop - entry) / entry) * 100;
-    return Math.max(-HARD_CAP, Math.min(HARD_CAP, ret));
+  if (rawRet === null) {
+    const hitStop = Number(row.hit_stop || 0);
+    const stop = safeNum(row.stop_loss);
+    if (hitStop === 1 && stop !== null && stop > 0) {
+      rawRet = ((stop - entry) / entry) * 100;
+      exitUsed = stop;
+    }
   }
 
-  // 5. expired no hit → null (لا نختلق)
-  return null;
+  // 5. expired no hit → null
+  if (rawRet === null) return { ret: null, capped: false, suspicious: false };
+
+  // فحص منطقية: لو |exit/entry| > 5x → مشكوك فيه (قفزة غير منطقية)
+  const ratio = exitUsed ? Math.abs(exitUsed / entry) : 1;
+  const suspicious = ratio > MAX_RETURN_RATIO;
+
+  // تطبيق HARD cap
+  const capped = Math.abs(rawRet) > HARD_CAP;
+  const ret = Math.max(-HARD_CAP, Math.min(HARD_CAP, rawRet));
+
+  return { ret, capped, suspicious };
+}
+
+/**
+ * التحقق من صلاحية الصفقة للقياس (trade_valid).
+ * يعيد سبب الاستبعاد لو غير صالحة، أو null لو صالحة.
+ */
+function validateTrade(
+  row: Record<string, unknown>,
+  seenKeys: Set<string>
+): { valid: boolean; reason: string | null } {
+  const ticker = String(row.ticker || '').trim().toUpperCase();
+  const entry = safeNum(row.entry_price);
+
+  // 1. entry_price > 0
+  if (!entry || entry <= 0) {
+    return { valid: false, reason: 'entry_price_zero' };
+  }
+
+  // 2. ticker نظيف (لا مسافات، ≤ 12 char)
+  if (!ticker || ticker.includes(' ') || ticker.length > 12) {
+    return { valid: false, reason: 'ticker_invalid' };
+  }
+
+  // 3. استبعاد التكرار على (ticker + prediction_date + channel + entry_price)
+  const persona = String(row.persona || 'balanced');
+  const morningBell = Number(row.morning_bell || 0);
+  const channel = morningBell === 1 ? 'morning_bell' : 'balanced';
+  const predictionDate = String(row.prediction_date || '');
+  const dedupKey = `${ticker}|${predictionDate}|${channel}|${entry.toFixed(4)}`;
+  if (seenKeys.has(dedupKey)) {
+    return { valid: false, reason: 'duplicate' };
+  }
+  seenKeys.add(dedupKey);
+
+  // 4. market معروف
+  const market = String(row.market || '').toUpperCase();
+  if (!market) {
+    return { valid: false, reason: 'market_unknown' };
+  }
+
+  return { valid: true, reason: null };
 }
 
 function computeHoldingDays(row: Record<string, unknown>): number | null {
@@ -184,16 +273,26 @@ function computeHoldingDays(row: Record<string, unknown>): number | null {
   return null;
 }
 
-function computeKPIs(trades: Trade[]): KPIs {
-  const measured = trades.filter((t) => t.actual_return !== null);
-  const nMeasured = measured.length;
-  const nTotal = trades.length;
-  const nOpen = trades.filter((t) => t.status === 'active' || t.status === 'ACTIVE' || t.status === 'PENDING').length;
+function computeKPIs(allTrades: Trade[]): KPIs {
+  const nRaw = allTrades.length;
+  const validTrades = allTrades.filter((t) => t.valid);
+  const measured = validTrades.filter((t) => t.actual_return !== null && t.actual_return !== 0);
+  const nValid = measured.length;
+  const excluded = allTrades.filter((t) => !t.valid);
+  const nOpen = allTrades.filter((t) => t.status === 'active' || t.status === 'ACTIVE' || t.status === 'PENDING').length;
 
-  if (nMeasured === 0) {
+  // استبعاد breakdown
+  const exclusionBreakdown: Record<string, number> = {};
+  for (const t of excluded) {
+    const r = t.exclusion_reason || 'unknown';
+    exclusionBreakdown[r] = (exclusionBreakdown[r] || 0) + 1;
+  }
+
+  if (nValid === 0) {
     return {
-      n_total: nTotal,
-      n_measured: 0,
+      n_raw: nRaw,
+      n_valid: 0,
+      n_excluded: excluded.length,
       n_open: nOpen,
       win_rate: 0,
       profit_factor: 0,
@@ -206,42 +305,49 @@ function computeKPIs(trades: Trade[]): KPIs {
       stop_hit_rate: 0,
       expired_rate: 0,
       hard_capped_count: 0,
+      exclusion_breakdown: exclusionBreakdown,
     };
   }
 
+  // wins = actual_return > 0, losses = actual_return < 0 (سالب)
   const wins = measured.filter((t) => t.actual_return > 0);
   const losses = measured.filter((t) => t.actual_return < 0);
-  const expired = trades.filter((t) => t.status === 'EXPIRED' && t.hit_target === 0 && t.hit_stop === 0);
-  const tpHits = trades.filter((t) => t.hit_target === 1);
-  const stopHits = trades.filter((t) => t.hit_stop === 1);
-  const hardCapped = measured.filter((t) => Math.abs(t.actual_return) >= HARD_CAP);
+  const expired = allTrades.filter((t) => t.status === 'EXPIRED' && t.hit_target === 0 && t.hit_stop === 0);
+  const tpHits = validTrades.filter((t) => t.hit_target === 1);
+  const stopHits = validTrades.filter((t) => t.hit_stop === 1);
+  const hardCapped = measured.filter((t) => t.capped);
 
   const grossProfit = wins.reduce((sum, t) => sum + t.actual_return, 0);
-  const grossLoss = Math.abs(losses.reduce((sum, t) => sum + t.actual_return, 0));
-  const pf = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  // grossLoss = مبلغ الخسائر (قيمة موجبة = المبلغ المخسر)
+  const grossLossAmount = losses.reduce((sum, t) => sum + Math.abs(t.actual_return), 0);
+  const pf = grossLossAmount > 0 ? grossProfit / grossLossAmount : grossProfit > 0 ? Infinity : 0;
 
+  // avg_win = موجب، avg_loss = سالب (بإشارة سالبة دائماً)
   const avgWin = wins.length > 0 ? grossProfit / wins.length : 0;
-  const avgLoss = losses.length > 0 ? grossLoss / losses.length : 0;
-  const expectancy = measured.reduce((sum, t) => sum + t.actual_return, 0) / nMeasured;
+  const avgLoss = losses.length > 0 ? -(grossLossAmount / losses.length) : 0; // سالب
+  const expectancy = measured.reduce((sum, t) => sum + t.actual_return, 0) / nValid;
 
-  const maxLoss = Math.min(...measured.map((t) => t.actual_return));
-  const maxWin = Math.max(...measured.map((t) => t.actual_return));
+  // max_loss = أكثر قيمة سلبية (أقل رقم)
+  const maxLoss = losses.length > 0 ? Math.min(...losses.map((t) => t.actual_return)) : 0;
+  const maxWin = wins.length > 0 ? Math.max(...wins.map((t) => t.actual_return)) : 0;
 
   return {
-    n_total: nTotal,
-    n_measured: nMeasured,
+    n_raw: nRaw,
+    n_valid: nValid,
+    n_excluded: excluded.length,
     n_open: nOpen,
-    win_rate: (wins.length / nMeasured) * 100,
-    profit_factor: pf === Infinity ? 0 : pf, // Infinity = no losses → 0 for display
+    win_rate: (wins.length / nValid) * 100,
+    profit_factor: pf === Infinity ? 0 : pf,
     expectancy_pct: expectancy,
     avg_win_pct: avgWin,
-    avg_loss_pct: avgLoss,
-    max_loss_pct: maxLoss,
+    avg_loss_pct: avgLoss, // سالب
+    max_loss_pct: maxLoss, // سالب
     max_win_pct: maxWin,
-    tp1_hit_rate: nTotal > 0 ? (tpHits.length / nTotal) * 100 : 0,
-    stop_hit_rate: nTotal > 0 ? (stopHits.length / nTotal) * 100 : 0,
-    expired_rate: nTotal > 0 ? (expired.length / nTotal) * 100 : 0,
+    tp1_hit_rate: validTrades.length > 0 ? (tpHits.length / validTrades.length) * 100 : 0,
+    stop_hit_rate: validTrades.length > 0 ? (stopHits.length / validTrades.length) * 100 : 0,
+    expired_rate: nRaw > 0 ? (expired.length / nRaw) * 100 : 0,
     hard_capped_count: hardCapped.length,
+    exclusion_breakdown: exclusionBreakdown,
   };
 }
 
@@ -255,7 +361,7 @@ function computeByChannel(trades: Trade[]): ChannelStats[] {
     const kpis = computeKPIs(chTrades);
     result.push({
       channel: ch,
-      n: kpis.n_measured,
+      n: kpis.n_valid,
       win_rate: kpis.win_rate,
       profit_factor: kpis.profit_factor,
       expectancy_pct: kpis.expectancy_pct,
@@ -265,14 +371,36 @@ function computeByChannel(trades: Trade[]): ChannelStats[] {
   return result;
 }
 
+function computeByMarket(trades: Trade[]): MarketStats[] {
+  // جمع كل الأسواق الموجودة
+  const markets = [...new Set(trades.map((t) => t.market).filter(Boolean))];
+  const result: MarketStats[] = [];
+
+  for (const mk of markets) {
+    const mkTrades = trades.filter((t) => t.market === mk);
+    if (mkTrades.length === 0) continue;
+    const kpis = computeKPIs(mkTrades);
+    result.push({
+      market: mk,
+      n_raw: kpis.n_raw,
+      n_valid: kpis.n_valid,
+      win_rate: kpis.win_rate,
+      profit_factor: kpis.profit_factor,
+      expectancy_pct: kpis.expectancy_pct,
+      max_loss_pct: kpis.max_loss_pct,
+    });
+  }
+  return result.sort((a, b) => b.n_valid - a.n_valid);
+}
+
 function computeReadiness(kpis: KPIs): ReadinessBox {
-  const nSufficient = kpis.n_measured >= 30;
+  const nSufficient = kpis.n_valid >= 30;
   const pfPasses = kpis.profit_factor >= 1.3;
   // max_loss_reasonable: stop loss is usually 5-9%, so -15% max loss is reasonable
   const maxLossReasonable = kpis.max_loss_pct >= -20;
 
   const notes: string[] = [];
-  if (!nSufficient) notes.push(`العينة صغيرة (${kpis.n_measured} < 30) — النتائج غير حاسمة`);
+  if (!nSufficient) notes.push(`العينة صغيرة (${kpis.n_valid} < 30) — النتائج غير حاسمة`);
   if (!pfPasses) notes.push(`Profit Factor ${kpis.profit_factor.toFixed(2)} < 1.3 — الـ edge ضعيف`);
   if (!maxLossReasonable) notes.push(`Max Loss ${kpis.max_loss_pct.toFixed(1)}% خارج نطاق الوقف المعقول`);
 
@@ -300,6 +428,7 @@ export async function GET(request: NextRequest) {
     const sp = request.nextUrl.searchParams;
     const period = sp.get('period') || '30d';
     const channel = sp.get('channel') || 'all';
+    const market = sp.get('market') || 'all';
     const minReturn = parseFloat(sp.get('min_return') || '8.0');
 
     // Compute date range
@@ -332,7 +461,7 @@ export async function GET(request: NextRequest) {
       SELECT id, ticker, persona, morning_bell, prediction_date, entry_price,
              target_price, target_price_2, stop_loss, exit_price, actual_exit_price,
              actual_return, hit_target, hit_stop, status, holding_days,
-             outcome_date, closed_at, highest_price, lowest_price, signal
+             outcome_date, closed_at, highest_price, lowest_price, signal, market
       FROM predictions
       WHERE 1=1
     `;
@@ -354,14 +483,36 @@ export async function GET(request: NextRequest) {
       sql += ` AND (morning_bell = 0 OR morning_bell IS NULL)`;
     }
 
+    // Market filter (applied at SQL level for efficiency)
+    if (market !== 'all') {
+      sql += ` AND UPPER(market) = ?`;
+      params.push(market.toUpperCase());
+    }
+
     sql += ` ORDER BY prediction_date DESC`;
 
     const rows = db.prepare(sql).all(...params) as Record<string, unknown>[];
 
-    // Transform to Trade objects
+    // Transform to Trade objects + apply validation + dedup
+    const seenKeys = new Set<string>();
     const trades: Trade[] = rows.map((row) => {
-      const actualReturn = computeActualReturn(row);
+      const { ret: actualReturn, capped, suspicious } = computeActualReturnRaw(row);
       const isMorningBell = Number(row.morning_bell || 0) === 1;
+      const validation = validateTrade(row, seenKeys);
+
+      // لو suspicious (قفزة غير منطقية) → استبعد
+      let valid = validation.valid;
+      let exclusionReason = validation.reason;
+      if (valid && suspicious) {
+        valid = false;
+        exclusionReason = 'exit_price_unrealistic';
+      }
+      // لو actual_return = null (لا outcome) → لا تدخل KPI لكن اعرضها
+      if (valid && actualReturn === null) {
+        // صفقة مفتوقة أو بدون outcome — تبقى في القائمة لكن لا تدخل measured
+        // (valid = true لكن actual_return = null → تُستبعد من measured تلقائياً)
+      }
+
       return {
         id: Number(row.id),
         ticker: String(row.ticker || ''),
@@ -374,7 +525,7 @@ export async function GET(request: NextRequest) {
         target_price_2: safeNum(row.target_price_2),
         stop_loss: safeNum(row.stop_loss),
         exit_price: safeNum(row.exit_price) ?? safeNum(row.actual_exit_price),
-        actual_return: actualReturn ?? 0, // 0 = not measurable (will be filtered)
+        actual_return: actualReturn ?? 0, // 0 = not measurable
         hit_target: (Number(row.hit_target || 0)) as 0 | 1,
         hit_stop: (Number(row.hit_stop || 0)) as 0 | 1,
         status: String(row.status || ''),
@@ -382,52 +533,65 @@ export async function GET(request: NextRequest) {
         outcome_date: (row.outcome_date as string) || null,
         highest_price: safeNum(row.highest_price),
         lowest_price: safeNum(row.lowest_price),
+        market: String(row.market || 'UNKNOWN').toUpperCase(),
+        capped,
+        valid,
+        exclusion_reason: exclusionReason,
       };
     });
 
-    // Separate measured (with valid return) from unmeasured
-    const measured = trades.filter((t) => t.actual_return !== null && t.hit_target !== null);
     const dataSources = ['predictions.db.predictions'];
     const dataMissing: string[] = [];
     if (trades.length === 0) {
       dataMissing.push('no_predictions_in_period');
     }
-    const unmeasuredCount = trades.length - measured.length;
-    if (unmeasuredCount > 0) {
-      dataMissing.push(`${unmeasuredCount}_trades_without_exit_price`);
-    }
 
-    // KPIs (on measured trades)
+    // KPIs (computed on valid + measured trades only)
     const kpis = computeKPIs(trades);
 
-    // Top trades (actual_return >= minReturn, sorted by return desc)
-    const topTrades = measured
+    // Valid measured trades (for top/worst tables)
+    const validMeasured = trades.filter((t) => t.valid && t.actual_return !== null && t.actual_return !== 0);
+
+    // Top trades (actual_return >= minReturn, valid, sorted by return desc)
+    const topTrades = validMeasured
       .filter((t) => t.actual_return >= minReturn)
       .sort((a, b) => b.actual_return - a.actual_return)
       .slice(0, 20);
 
-    // Worst trades (sorted by return asc)
-    const worstTrades = measured
+    // Worst trades (actual_return < 0, valid, sorted by return asc)
+    const worstTrades = validMeasured
       .filter((t) => t.actual_return < 0)
       .sort((a, b) => a.actual_return - b.actual_return)
       .slice(0, 10);
 
-    // Target hits (trades that hit target, with high/low tracking)
-    const targetHits = measured
-      .filter((t) => t.hit_target === 1 || (t.actual_return > 0 && t.highest_price))
+    // Target hits (trades that hit target)
+    const targetHits = validMeasured
+      .filter((t) => t.hit_target === 1)
       .sort((a, b) => b.actual_return - a.actual_return)
       .slice(0, 20);
 
-    // By channel
+    // Excluded examples (for transparency)
+    const excludedExamples = trades
+      .filter((t) => !t.valid)
+      .slice(0, 10);
+
+    // By channel + by market (on valid trades only)
     const byChannel = computeByChannel(trades);
+    const byMarket = computeByMarket(trades);
 
     // Readiness box
     const readiness = computeReadiness(kpis);
 
     // Sample note
-    let sampleNote = `تم قياس ${kpis.n_measured} صفقة من أصل ${kpis.n_total} في الفترة المحددة.`;
-    if (kpis.n_measured < 30) {
-      sampleNote += ` العينة أقل من 30 — النتائج إرشادية فقط.`;
+    let sampleNote = `بيانات بعد فلتر الجودة: n=${kpis.n_valid} من أصل ${kpis.n_raw}`;
+    if (kpis.n_excluded > 0) {
+      const reasons = Object.entries(kpis.exclusion_breakdown)
+        .map(([k, v]) => `${v} ${k}`)
+        .join('، ');
+      sampleNote += ` (مستبعد: ${kpis.n_excluded} — ${reasons})`;
+    }
+    if (kpis.n_valid < 30) {
+      sampleNote += `. العينة أقل من 30 — النتائج إرشادية فقط.`;
     }
 
     const response: PlatformPerformanceResponse = {
@@ -436,6 +600,7 @@ export async function GET(request: NextRequest) {
       filters: {
         period,
         channel,
+        market,
         min_return: minReturn,
         date_from: dateFromStr,
         date_to: dateToStr,
@@ -445,6 +610,8 @@ export async function GET(request: NextRequest) {
       worst_trades: worstTrades,
       target_hits: targetHits,
       by_channel: byChannel,
+      by_market: byMarket,
+      excluded_examples: excludedExamples,
       readiness,
       data_sources: dataSources,
       data_missing: dataMissing,
@@ -459,12 +626,14 @@ export async function GET(request: NextRequest) {
         success: false,
         error: `فشل تحميل البيانات: ${(error as Error).message}`,
         generated_at: new Date().toISOString(),
-        filters: { period: '30d', channel: 'all', min_return: 8.0, date_from: null, date_to: null },
+        filters: { period: '30d', channel: 'all', market: 'all', min_return: 8.0, date_from: null, date_to: null },
         kpis: null,
         top_trades: [],
         worst_trades: [],
         target_hits: [],
         by_channel: [],
+        by_market: [],
+        excluded_examples: [],
         readiness: null,
         data_sources: [],
         data_missing: ['query_error'],
