@@ -1,0 +1,401 @@
+{
+  "run_at": "2026-08-18T13:16:36.477585+00:00",
+  "archive": "active_databases_20260817_full.zip",
+  "price_history_db": "/home/z/my-project/db/vps_real/price_history.db",
+  "predictions_db": "/home/z/my-project/db/vps_real/predictions.db",
+  "portfolio_maxdd": {
+    "equity_curve": [
+      {
+        "date": "2025-08-08",
+        "equity": 99.0,
+        "n_open": 0,
+        "closed_ticker": "UASG",
+        "closed_return_pct": -4.5805,
+        "peak": 100.0,
+        "dd_pct": 1.0
+      },
+      {
+        "date": "2026-03-22",
+        "equity": 98.01,
+        "n_open": 0,
+        "closed_ticker": "AMAR",
+        "closed_return_pct": -4.9924,
+        "peak": 100.0,
+        "dd_pct": 1.99
+      },
+      {
+        "date": "2026-06-10",
+        "equity": 97.0299,
+        "n_open": 2,
+        "closed_ticker": "EGCH",
+        "closed_return_pct": -3.9164,
+        "peak": 100.0,
+        "dd_pct": 2.9701
+      },
+      {
+        "date": "2026-06-11",
+        "equity": 96.0498,
+        "n_open": 2,
+        "closed_ticker": "ISPH",
+        "closed_return_pct": -9.0,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-06-12",
+        "equity": 96.3967,
+        "n_open": 1,
+        "closed_ticker": "ELSH",
+        "closed_return_pct": 3.1852,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-06-12",
+        "equity": 97.2985,
+        "n_open": 0,
+        "closed_ticker": "AMPI",
+        "closed_return_pct": 8.365,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-07-24",
+        "equity": 97.66,
+        "n_open": 2,
+        "closed_ticker": "1050",
+        "closed_return_pct": 2.5993,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-07-25",
+        "equity": 98.0591,
+        "n_open": 1,
+        "closed_ticker": "1080",
+        "closed_return_pct": 2.7826,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-07-25",
+        "equity": 97.6342,
+        "n_open": 0,
+        "closed_ticker": "1150",
+        "closed_return_pct": -3.0081,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-07-31",
+        "equity": 97.2081,
+        "n_open": 2,
+        "closed_ticker": "1320",
+        "closed_return_pct": -3.5816,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-07-31",
+        "equity": 96.9305,
+        "n_open": 1,
+        "closed_ticker": "2130",
+        "closed_return_pct": -2.5256,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-07-31",
+        "equity": 96.3139,
+        "n_open": 0,
+        "closed_ticker": "AQAR",
+        "closed_return_pct": -4.5455,
+        "peak": 100.0,
+        "dd_pct": 3.9502
+      },
+      {
+        "date": "2026-08-03",
+        "equity": 95.3508,
+        "n_open": 2,
+        "closed_ticker": "1214",
+        "closed_return_pct": -3.9659,
+        "peak": 100.0,
+        "dd_pct": 4.6492
+      },
+      {
+        "date": "2026-08-07",
+        "equity": 96.0352,
+        "n_open": 2,
+        "closed_ticker": "1202",
+        "closed_return_pct": 6.3961,
+        "peak": 100.0,
+        "dd_pct": 4.6492
+      },
+      {
+        "date": "2026-08-07",
+        "equity": 95.5632,
+        "n_open": 1,
+        "closed_ticker": "2340",
+        "closed_return_pct": -2.2187,
+        "peak": 100.0,
+        "dd_pct": 4.6492
+      },
+      {
+        "date": "2026-08-08",
+        "equity": 95.1318,
+        "n_open": 0,
+        "closed_ticker": "1182",
+        "closed_return_pct": -2.4229,
+        "peak": 100.0,
+        "dd_pct": 4.8682
+      },
+      {
+        "date": "2026-08-10",
+        "equity": 94.1805,
+        "n_open": 2,
+        "closed_ticker": "KFIC",
+        "closed_return_pct": -3.7096,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-13",
+        "equity": 96.3209,
+        "n_open": 2,
+        "closed_ticker": "KPPC",
+        "closed_return_pct": 8.606,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-14",
+        "equity": 96.3014,
+        "n_open": 2,
+        "closed_ticker": "2120",
+        "closed_return_pct": -0.0617,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-15",
+        "equity": 97.0077,
+        "n_open": 1,
+        "closed_ticker": "2381",
+        "closed_return_pct": 2.4407,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-15",
+        "equity": 96.0445,
+        "n_open": 0,
+        "closed_ticker": "ARKAN",
+        "closed_return_pct": -3.0,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-17",
+        "equity": 95.916,
+        "n_open": 2,
+        "closed_ticker": "CIEB",
+        "closed_return_pct": -1.2048,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-17",
+        "equity": 95.9674,
+        "n_open": 1,
+        "closed_ticker": "EFIH",
+        "closed_return_pct": 0.4823,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      },
+      {
+        "date": "2026-08-17",
+        "equity": 95.6713,
+        "n_open": 0,
+        "closed_ticker": "ETEL",
+        "closed_return_pct": -2.2995,
+        "peak": 100.0,
+        "dd_pct": 5.8195
+      }
+    ],
+    "final_equity": 95.6713,
+    "peak_equity": 100.0,
+    "max_drawdown_pct": 5.8195,
+    "max_drawdown_dollars": 5.8195,
+    "n_trades_taken": 27,
+    "n_trades_skipped_concurrent": 97,
+    "portfolio_return_pct": -4.3287,
+    "model_params": {
+      "initial_equity": 100.0,
+      "risk_per_trade_pct": 0.01,
+      "max_concurrent": 3
+    }
+  },
+  "expired_analysis": {
+    "n_expired": 78,
+    "n_non_expired": 46,
+    "pct_expired": 62.9,
+    "return_distribution": {
+      "wins": 35,
+      "losses": 38,
+      "flat": 5,
+      "win_rate": 44.87,
+      "avg_return": 1.9107,
+      "max_win": 50.0,
+      "max_loss": -10.2857
+    },
+    "diagnosis": {
+      "tp_too_far": 5,
+      "stop_too_tight": 15,
+      "stalled": 20,
+      "momentum_died": 38
+    },
+    "comparison_expired_vs_non": {
+      "expired_avg_rvol": 10.31,
+      "non_expired_avg_rvol": 8.08,
+      "expired_avg_extension": 4.46,
+      "non_expired_avg_extension": 4.76
+    },
+    "exit_proposal_test": {
+      "proposal": "Trailing exit بعد +3% من entry (جني سريع بدل انتظار TP1)",
+      "old_avg_return": 1.9107,
+      "new_avg_return": 0.9516,
+      "old_win_rate": 44.87,
+      "new_win_rate": 58.97,
+      "delta_avg_return": -0.9591,
+      "delta_win_rate": 14.1,
+      "n_tested": 78
+    }
+  },
+  "comparison": {
+    "morning_bell": {
+      "channel": "morning_bell_historical",
+      "date_range": {
+        "start": "2025-08-04",
+        "end": "2026-08-17"
+      },
+      "n_trades": 124,
+      "win_rate": 38.71,
+      "profit_factor": 1.444,
+      "expectancy": 0.9773,
+      "max_drawdown": 67.068,
+      "avg_holding_days": 3.57,
+      "max_loss": -10.2857,
+      "max_win": 50.0,
+      "stats_separated": true,
+      "note": "محاكاة تاريخية على price_history.db — لا تُكتب في predictions DB"
+    },
+    "balanced": {
+      "channel": "balanced",
+      "date_range": {
+        "start": "2026-01-01",
+        "end": "2026-05-28"
+      },
+      "n_trades": 147,
+      "win_rate": 52.38,
+      "profit_factor": 1.396,
+      "expectancy": 1.1535,
+      "max_drawdown": 43.0933,
+      "avg_holding_days": 0,
+      "max_loss": -7.5927,
+      "max_win": 31.9602,
+      "stats_separated": true,
+      "note": "توقعات حقيقية من predictions.db (الأرشيف) — مسار منضبط"
+    },
+    "delta_mb_minus_balanced": {
+      "win_rate_delta": -13.67,
+      "profit_factor_delta": 0.048,
+      "expectancy_delta": -0.1762,
+      "max_drawdown_delta": 23.9747
+    }
+  },
+  "sensitivity": {
+    "scenarios": [
+      {
+        "scenario": "C (current)",
+        "label": "الحالي: RVOL≥1.5, ext≥1.0%",
+        "thresholds": {
+          "rvol_threshold": 1.5,
+          "min_extension_pct": 1.0
+        },
+        "metrics": {
+          "n_trades": 124,
+          "win_rate": 38.71,
+          "profit_factor": 1.444,
+          "expectancy": 0.9773,
+          "max_loss": -10.2857,
+          "max_win": 50.0,
+          "max_drawdown": 67.068,
+          "avg_holding_days": 3.57,
+          "gross_profit": 394.0358,
+          "gross_loss": 272.8552,
+          "tp1_hit_rate": 15.32,
+          "tp2_hit_rate": 8.06,
+          "stop_hit_rate": 29.03
+        },
+        "portfolio_maxdd_pct": 5.8195,
+        "portfolio_return_pct": -4.3287,
+        "n_trades_taken_in_portfolio": 27,
+        "n_skipped_concurrent": 97
+      },
+      {
+        "scenario": "A",
+        "label": "تضييق RVOL: RVOL≥2.0, ext≥1.0%",
+        "thresholds": {
+          "rvol_threshold": 2.0,
+          "min_extension_pct": 1.0
+        },
+        "metrics": {
+          "n_trades": 121,
+          "win_rate": 39.67,
+          "profit_factor": 1.566,
+          "expectancy": 1.2003,
+          "max_loss": -10.2857,
+          "max_win": 50.0,
+          "max_drawdown": 60.3357,
+          "avg_holding_days": 3.62,
+          "gross_profit": 401.7858,
+          "gross_loss": 256.55,
+          "tp1_hit_rate": 14.88,
+          "tp2_hit_rate": 8.26,
+          "stop_hit_rate": 26.45
+        },
+        "portfolio_maxdd_pct": 3.9554,
+        "portfolio_return_pct": -2.3862,
+        "n_trades_taken_in_portfolio": 25,
+        "n_skipped_concurrent": 96
+      },
+      {
+        "scenario": "B",
+        "label": "تضييق مزدوج: RVOL≥2.0, ext≥2.0%",
+        "thresholds": {
+          "rvol_threshold": 2.0,
+          "min_extension_pct": 2.0
+        },
+        "metrics": {
+          "n_trades": 115,
+          "win_rate": 42.61,
+          "profit_factor": 1.688,
+          "expectancy": 1.4694,
+          "max_loss": -10.2857,
+          "max_win": 50.0,
+          "max_drawdown": 39.6187,
+          "avg_holding_days": 3.73,
+          "gross_profit": 414.6673,
+          "gross_loss": 245.6852,
+          "tp1_hit_rate": 16.52,
+          "tp2_hit_rate": 7.83,
+          "stop_hit_rate": 27.83
+        },
+        "portfolio_maxdd_pct": 7.8654,
+        "portfolio_return_pct": -5.9913,
+        "n_trades_taken_in_portfolio": 24,
+        "n_skipped_concurrent": 91
+      }
+    ]
+  }
+}

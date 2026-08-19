@@ -1,0 +1,599 @@
+'use client';
+
+/**
+ * PredictionTrackingView — تتبع التوصيات (Feature 3)
+ * =========================================================
+ * بيعرض:
+ * - كروت إحصائية: إجمالي التوصيات، المعلقة، نسبة النجاح، نسبة الفشل
+ * - جدول قابل للفلترة بالسوق والحالة
+ * - زرار "تحقق الآن" للتحقق اليدوي من التوصيات المعلقة
+ *
+ * مصدر البيانات: /api/predictions/tracking/{stats,list,verify}
+ * (Python Backend على المنفذ 8010 — Node.js للعرض فقط)
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Trophy,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+  Target,
+  Shield,
+  Gauge,
+  ListChecks,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
+import { MarketSelector } from '@/components/shared/MarketSelector';
+import { toast } from 'sonner';
+
+// ============================================================
+// Types
+// ============================================================
+
+type PickStatus = 'pending' | 'target_hit' | 'stop_hit' | 'expired';
+
+interface TrackedPick {
+  id: number;
+  ticker: string;
+  market: string;
+  entry_price: number;
+  stop_loss: number;
+  target_price: number;
+  risk_reward: number;
+  pick_date: string;
+  status: PickStatus;
+  current_price: number | null;
+  verification_date: string | null;
+  profit_loss_pct: number | null;
+  narrative: string[];
+  personas: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface TrackingStats {
+  total: number;
+  pending: number;
+  target_hit: number;
+  stop_hit: number;
+  expired: number;
+  resolved: number;
+  success_rate: number;
+  failure_rate: number;
+  avg_return: number;
+  days: number;
+  market: string;
+  by_market?: Record<string, Record<string, number>>;
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+
+const STATUS_LABEL_AR: Record<PickStatus, string> = {
+  pending: 'قيد الانتظار',
+  target_hit: 'تم الوصول للهدف',
+  stop_hit: 'تم ضرب الوقف',
+  expired: 'منتهي الصلاحية',
+};
+
+const STATUS_BADGE_CLASS: Record<PickStatus, string> = {
+  pending: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800',
+  target_hit: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',
+  stop_hit: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800',
+  expired: 'bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-900/50 dark:text-zinc-400 dark:border-zinc-700',
+};
+
+function formatNumber(v: number | null | undefined, digits = 2): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  return v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function formatPct(v: number | null | undefined, withSign = false): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  const sign = withSign && v > 0 ? '+' : '';
+  return `${sign}${v.toFixed(2)}%`;
+}
+
+function shortDate(s: string | null | undefined): string {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s.slice(0, 10);
+    return d.toLocaleDateString('en-GB');
+  } catch {
+    return s.slice(0, 10);
+  }
+}
+
+// ============================================================
+// Stat Card Component
+// ============================================================
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  hint?: string;
+  icon: React.ReactNode;
+  iconBg: string;
+  valueColor?: string;
+}
+
+function StatCard({ title, value, hint, icon, iconBg, valueColor }: StatCardProps) {
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-muted-foreground truncate">{title}</p>
+            <p className={cn('text-2xl sm:text-3xl font-bold mt-1', valueColor)}>
+              {value}
+            </p>
+            {hint && (
+              <p className="text-xs text-muted-foreground mt-1 truncate">{hint}</p>
+            )}
+          </div>
+          <div className={cn('rounded-xl p-2.5 shrink-0', iconBg)}>
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+export function PredictionTrackingView() {
+  const currentMarket = useAppStore((s) => s.currentMarket);
+
+  const [stats, setStats] = useState<TrackingStats | null>(null);
+  const [picks, setPicks] = useState<TrackedPick[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | PickStatus>('all');
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingList, setLoadingList] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+
+  // fetch stats
+  const fetchStats = useCallback(async (market: MarketType) => {
+    setLoadingStats(true);
+    try {
+      const res = await fetch(
+        `/api/predictions/tracking/stats?market=${market}&days=30`,
+        { cache: 'no-store' }
+      );
+      const json = await res.json();
+      if (json.success && json.data) {
+        setStats(json.data as TrackingStats);
+      } else {
+        setStats(null);
+      }
+    } catch {
+      setStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  // fetch list
+  const fetchList = useCallback(async (market: MarketType, status: 'all' | PickStatus) => {
+    setLoadingList(true);
+    try {
+      const params = new URLSearchParams({ market, limit: '200' });
+      if (status !== 'all') params.set('status', status);
+      const res = await fetch(`/api/predictions/tracking/list?${params.toString()}`, {
+        cache: 'no-store',
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setPicks(json.data as TrackedPick[]);
+      } else {
+        setPicks([]);
+      }
+    } catch {
+      setPicks([]);
+    } finally {
+      setLoadingList(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats(currentMarket);
+  }, [currentMarket, fetchStats]);
+
+  useEffect(() => {
+    fetchList(currentMarket, statusFilter);
+  }, [currentMarket, statusFilter, fetchList]);
+
+  // verify handler
+  const handleVerify = async () => {
+    setVerifying(true);
+    try {
+      const res = await fetch('/api/predictions/tracking/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ market: currentMarket }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        const d = json.data || {};
+        toast.success(
+          `تم التحقق: ${d.target_hit || 0} وصلت للهدف، ${d.stop_hit || 0} ضربت الوقف، ${d.expired || 0} منتهية`
+        );
+        // refresh
+        await Promise.all([fetchStats(currentMarket), fetchList(currentMarket, statusFilter)]);
+      } else {
+        toast.error(json.error || 'فشل التحقق من التوصيات');
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'فشل الاتصال بالخادم');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const refreshAll = () => {
+    fetchStats(currentMarket);
+    fetchList(currentMarket, statusFilter);
+  };
+
+  // derived display values
+  const display = useMemo(() => {
+    const s = stats;
+    if (!s) {
+      return {
+        total: '—',
+        pending: '—',
+        successRate: '—',
+        failureRate: '—',
+      };
+    }
+    return {
+      total: String(s.total ?? 0),
+      pending: String(s.pending ?? 0),
+      successRate: `${(s.success_rate ?? 0).toFixed(1)}%`,
+      failureRate: `${(s.failure_rate ?? 0).toFixed(1)}%`,
+    };
+  }, [stats]);
+
+  return (
+    <div className="space-y-4 p-3 sm:p-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="rounded-xl bg-emerald-100 dark:bg-emerald-950/50 p-2.5">
+            <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold">تتبع التوصيات</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              متابعة نسبة نجاح التوصيات عبر الزمن
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <MarketSelector size="sm" />
+          <Button
+            size="sm"
+            variant="default"
+            onClick={handleVerify}
+            disabled={verifying}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {verifying ? (
+              <RefreshCw className="h-4 w-4 ml-1 animate-spin" />
+            ) : (
+              <Activity className="h-4 w-4 ml-1" />
+            )}
+            <span>{verifying ? 'جارٍ التحقق...' : 'تحقق الآن'}</span>
+          </Button>
+          <Button size="sm" variant="outline" onClick={refreshAll}>
+            <RefreshCw className="h-4 w-4 ml-1" />
+            <span>تحديث</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {loadingStats ? (
+          <>
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="إجمالي التوصيات"
+              value={display.total}
+              hint={`آخر ${stats?.days ?? 30} يوم — ${MARKET_NAMES_AR[currentMarket]}`}
+              icon={<ListChecks className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
+              iconBg="bg-emerald-100 dark:bg-emerald-950/50"
+            />
+            <StatCard
+              title="قيد الانتظار"
+              value={display.pending}
+              hint="توصيات لم تُحل بعد"
+              icon={<Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+              iconBg="bg-amber-100 dark:bg-amber-950/50"
+              valueColor="text-amber-600 dark:text-amber-400"
+            />
+            <StatCard
+              title="نسبة النجاح"
+              value={display.successRate}
+              hint={`وصلت للهدف: ${stats?.target_hit ?? 0}`}
+              icon={<CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
+              iconBg="bg-emerald-100 dark:bg-emerald-950/50"
+              valueColor="text-emerald-600 dark:text-emerald-400"
+            />
+            <StatCard
+              title="نسبة الفشل"
+              value={display.failureRate}
+              hint={`ضربت الوقف: ${stats?.stop_hit ?? 0}`}
+              icon={<XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />}
+              iconBg="bg-rose-100 dark:bg-rose-950/50"
+              valueColor="text-rose-600 dark:text-rose-400"
+            />
+          </>
+        )}
+      </div>
+
+      {/* Summary strip */}
+      {!loadingStats && stats && (
+        <Card className="bg-muted/40">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <span className="flex items-center gap-1.5">
+                  <Target className="h-4 w-4 text-emerald-600" />
+                  <span className="text-muted-foreground">وصلت للهدف:</span>
+                  <span className="font-bold text-emerald-600">{stats.target_hit ?? 0}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-4 w-4 text-rose-600" />
+                  <span className="text-muted-foreground">ضربت الوقف:</span>
+                  <span className="font-bold text-rose-600">{stats.stop_hit ?? 0}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4 text-zinc-500" />
+                  <span className="text-muted-foreground">منتهية:</span>
+                  <span className="font-bold text-zinc-600 dark:text-zinc-300">{stats.expired ?? 0}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Gauge className="h-4 w-4 text-amber-600" />
+                  <span className="text-muted-foreground">متوسط العائد:</span>
+                  <span
+                    className={cn(
+                      'font-bold',
+                      (stats.avg_return ?? 0) >= 0
+                        ? 'text-emerald-600'
+                        : 'text-rose-600'
+                    )}
+                  >
+                    {formatPct(stats.avg_return, true)}
+                  </span>
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                التوصيات المحلولة: {stats.resolved ?? 0} من {stats.total ?? 0}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filter + Table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ListChecks className="h-5 w-5 text-emerald-600" />
+                سجل التوصيات
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {picks.length} توصية — {MARKET_NAMES_AR[currentMarket]}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">الحالة:</span>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as 'all' | PickStatus)}
+              >
+                <SelectTrigger className="h-9 w-[160px]" aria-label="فلتر الحالة">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="pending">قيد الانتظار</SelectItem>
+                  <SelectItem value="target_hit">وصلت للهدف</SelectItem>
+                  <SelectItem value="stop_hit">ضربت الوقف</SelectItem>
+                  <SelectItem value="expired">منتهية</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0 sm:p-2">
+          {loadingList ? (
+            <div className="p-4 space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : picks.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">لا توجد توصيات متتبعة بعد</p>
+              <p className="text-sm mt-1">
+                ستظهر التوصيات هنا تلقائياً عند توليدها.
+              </p>
+            </div>
+          ) : (
+            <ScrollArea className="h-[60vh] sm:h-[65vh] w-full" dir="rtl">
+              <div className="min-w-[860px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="text-right">السهم</TableHead>
+                      <TableHead className="text-right">تاريخ التوصية</TableHead>
+                      <TableHead className="text-right">الدخول</TableHead>
+                      <TableHead className="text-right">الوقف</TableHead>
+                      <TableHead className="text-right">الهدف</TableHead>
+                      <TableHead className="text-right">R/R</TableHead>
+                      <TableHead className="text-right">السعر الحالي</TableHead>
+                      <TableHead className="text-right">العائد %</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {picks.map((p) => {
+                      const pnl = p.profit_loss_pct;
+                      const pnlColor =
+                        pnl === null
+                          ? 'text-muted-foreground'
+                          : pnl >= 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-rose-600 dark:text-rose-400';
+                      return (
+                        <TableRow key={p.id} className="hover:bg-muted/40">
+                          <TableCell className="font-bold">
+                            <div className="flex flex-col">
+                              <span className="text-sm">{p.ticker}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {p.market}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {shortDate(p.pick_date)}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {formatNumber(p.entry_price)}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-rose-600 dark:text-rose-400">
+                            {formatNumber(p.stop_loss)}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                            {formatNumber(p.target_price)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-[11px] border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
+                            >
+                              {formatNumber(p.risk_reward, 1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {p.current_price !== null ? formatNumber(p.current_price) : '—'}
+                          </TableCell>
+                          <TableCell className={cn('font-mono text-xs font-bold', pnlColor)}>
+                            {formatPct(pnl, true)}
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        'text-[11px] whitespace-nowrap',
+                                        STATUS_BADGE_CLASS[p.status]
+                                      )}
+                                    >
+                                      {p.status === 'target_hit' && (
+                                        <TrendingUp className="h-3 w-3 ml-1" />
+                                      )}
+                                      {p.status === 'stop_hit' && (
+                                        <TrendingDown className="h-3 w-3 ml-1" />
+                                      )}
+                                      {p.status === 'pending' && (
+                                        <Clock className="h-3 w-3 ml-1" />
+                                      )}
+                                      {p.status === 'expired' && (
+                                        <Clock className="h-3 w-3 ml-1" />
+                                      )}
+                                      {STATUS_LABEL_AR[p.status]}
+                                    </Badge>
+                                  </span>
+                                </TooltipTrigger>
+                                {p.verification_date && (
+                                  <TooltipContent side="top">
+                                    <p className="text-xs">
+                                      آخر تحقق: {shortDate(p.verification_date)}
+                                    </p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Info note */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-3 text-xs text-muted-foreground text-center">
+          <p>
+            💡 يتم حفظ كل توصية تلقائياً عند توليدها،
+            ويتم التحقق منها يومياً مقابل السعر الحالي لمعرفة ما إذا كانت وصلت للهدف أو ضربت الوقف.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default PredictionTrackingView;

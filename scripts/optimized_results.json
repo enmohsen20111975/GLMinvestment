@@ -1,0 +1,13 @@
+{
+  "date": "2026-07-11T13:48:31.762778",
+  "engine": "PredictionOptimizer (mean-reversion + conviction + regime)",
+  "total_trades": 79,
+  "skipped": 2921,
+  "win_rate": 62.03,
+  "avg_return": 3.52,
+  "avg_win": 8.24,
+  "avg_loss": -4.18,
+  "profit_factor": 3.22,
+  "avg_holding": 16.1,
+  "improvement_vs_baseline": 20.76
+}

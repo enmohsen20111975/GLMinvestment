@@ -1,0 +1,272 @@
+// Auth Database Schema
+// File: ../db/auth.db  (consolidated into the single db/ folder)
+// Purpose: User authentication and subscription data
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/auth-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db/auth.db"
+}
+
+model User {
+  id                     String       @id @default(cuid())
+  email                  String       @unique
+  name                   String?
+  username               String?      @unique
+  password_hash          String?
+  image                  String?
+  is_active              Boolean      @default(true)
+  subscription_tier      String       @default("free")
+  default_risk_tolerance String       @default("medium")
+  last_login             DateTime?
+  email_verified         DateTime?
+  created_at             DateTime     @default(now())
+  updated_at             DateTime     @default(now()) @updatedAt
+  trial_ends_at          DateTime?
+  trial_warning_sent_at  DateTime?
+  trial_deletion_scheduled_at DateTime?
+  Account                Account[]
+  Session                Session[]
+  api_tokens             ApiToken[]
+  watchlist              Watchlist[]
+  portfolioItems         PortfolioItem[]
+  portfolioHistory       PortfolioHistory[]
+}
+
+model Account {
+  id                String  @id
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model SubscriptionPlan {
+  id               String             @id
+  name             String             @unique
+  name_ar          String
+  price            Float              @default(0)
+  price_yearly     Float?
+  trial_days       Int                @default(0)
+  features         String
+  max_watchlist    Int                @default(5)
+  max_portfolio    Int                @default(3)
+  max_alerts       Int                @default(10)
+  ai_analysis      Int                @default(0)
+  deep_analysis    Int                @default(0)
+  priority_support Int                @default(0)
+  is_active        Int                @default(1)
+  sort_order       Int                @default(0)
+  created_at       String             @default("datetime('now')")
+  updated_at       String             @default("datetime('now')")
+  UserSubscription UserSubscription[]
+}
+
+model UserSubscription {
+  id               String           @id
+  user_id          String           @unique
+  plan_id          String
+  status           String           @default("active")
+  started_at       String           @default("datetime('now')")
+  expires_at       String?
+  trial_started_at String?
+  trial_ends_at    String?
+  auto_renew       Int              @default(0)
+  payment_method   String?
+  created_at       String           @default("datetime('now')")
+  updated_at       String           @default("datetime('now')")
+  SubscriptionPlan SubscriptionPlan @relation(fields: [plan_id], references: [id])
+}
+
+model ApiToken {
+  id          String  @id
+  user_id     String
+  token       String  @unique
+  device_info String?
+  ip_address  String?
+  name        String?
+  expires_at  String
+  last_used   String?
+  created_at  String? @default("datetime('now')")
+  User        User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([user_id])
+  @@map("api_tokens")
+}
+
+model AdvancedAnalysisResult {
+  id                      String  @id @default(cuid())
+  ticker                  String
+  name                    String?
+  asset_type              String  @default("stock")
+  is_alive                Boolean @default(true)
+  vitality_score          Float   @default(0)
+  vitality_reasons        String?
+  current_price           Float
+  previous_close          Float?
+  change_percent          Float?
+  volume                  Float?
+  trend                   String  @default("NEUTRAL")
+  trend_ar                String  @default("محايد")
+  overall_score           Int     @default(0)
+  rsi                     Float?
+  rsi_signal              String?
+  macd_signal             String?
+  macd_histogram          Float?
+  bollinger_position      String?
+  stochastic_k            Float?
+  stochastic_d            Float?
+  stochastic_signal       String?
+  sma_20                  Float?
+  sma_50                  Float?
+  ema_12                  Float?
+  ema_26                  Float?
+  candlestick_patterns    String?
+  best_pattern            String?
+  best_pattern_ar         String?
+  best_pattern_signal     String?
+  best_pattern_confidence Float?
+  fib_golden_price        Float?
+  fib_at_golden           Boolean @default(false)
+  fib_levels              String?
+  recommendation          String  @default("HOLD")
+  recommendation_ar       String  @default("احتفاظ")
+  recommendation_score    Int     @default(0)
+  entry_price             Float?
+  stop_loss               Float?
+  take_profit_1           Float?
+  take_profit_2           Float?
+  take_profit_3           Float?
+  risk_level              String  @default("MEDIUM")
+  risk_reward_ratio       Float?
+  scan_date               String
+  scan_timestamp          String
+  notes                   String?
+  created_at              String  @default("datetime('now')")
+
+  @@unique([ticker, scan_date])
+  @@map("advanced_analysis_results")
+}
+
+model DailyAnalysisSummary {
+  id                   String  @id @default(cuid())
+  scan_date            String  @unique
+  total_stocks         Int     @default(0)
+  alive_stocks         Int     @default(0)
+  dead_stocks          Int     @default(0)
+  buy_opportunities    Int     @default(0)
+  sell_opportunities   Int     @default(0)
+  avg_score            Float   @default(0)
+  highest_score        Float   @default(0)
+  highest_score_ticker String?
+  top_buy_tickers      String?
+  top_sell_tickers     String?
+  scan_timestamp       String
+  duration_ms          Int     @default(0)
+  status               String  @default("completed")
+  error_message        String?
+  created_at           String  @default("datetime('now')")
+
+  @@map("daily_analysis_summaries")
+}
+
+model PromoCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  max_uses     Int       @default(1)
+  current_uses Int       @default(0)
+  expires_at   DateTime?
+  premium_days Int       @default(30) // how many days of premium to grant
+  plan_tier    String    @default("premium") // e.g. normal, premium, developer
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  redeemed_by  String?   // last user who redeemed (for quick audit)
+
+  @@index([code])
+}
+
+model Watchlist {
+  id                String   @id @default(cuid())
+  user_id           String
+  ticker            String
+  market            String   @default("EGX")
+  alert_price_above Float?
+  alert_price_below Float?
+  current_price     Float?
+  created_at        DateTime @default(now())
+
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, ticker])
+  @@index([user_id])
+  @@map("watchlist")
+}
+
+model PortfolioItem {
+  id                  String   @id @default(cuid())
+  user_id             String
+  asset_type          String   @default("stock") // stock, gold, realestate, deposit, certificate, currency
+  symbol              String?  // EGX ticker or custom name
+  name                String?
+  shares              Float?   // quantity, weight, amount
+  purchase_price      Float?   // avg_cost, purchase_price_per_gram, purchase_rate
+  current_price       Float?
+  currency            String   @default("EGP")
+  notes               String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  user                User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("portfolio_items")
+}
+
+model PortfolioHistory {
+  id                  String   @id @default(cuid())
+  user_id             String
+  date                DateTime @default(now())
+  total_value         Float
+  total_cost          Float
+  profit_loss         Float
+  profit_loss_percent Float
+  created_at          DateTime @default(now())
+
+  user                User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([date])
+  @@map("portfolio_history")
+}

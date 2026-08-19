@@ -1,0 +1,116 @@
+'use client';
+
+import React from 'react';
+import { Globe, Shield, FileText, AlertTriangle, Facebook, MessageCircle, Send } from 'lucide-react';
+import Link from 'next/link';
+
+export function Footer() {
+  return (
+    <footer className="border-t border-border bg-card/50 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        {/* Social Media Links */}
+        <div className="flex items-center justify-center gap-6 mb-3 pb-3 border-b border-border/50">
+          <a
+            href="https://www.facebook.com/profile.php?id=61590600300048"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-blue-600 transition-colors min-h-[44px] py-2"
+            title="تابعنا على فيسبوك"
+          >
+            <Facebook className="w-4 h-4" />
+            <span>فيسبوك</span>
+          </a>
+          <a
+            href="https://wa.me/201287644099"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-green-600 transition-colors min-h-[44px] py-2"
+            title="تواصل معنا عبر واتساب"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>واتساب</span>
+          </a>
+          <a
+            href="https://t.me/REDACTED_CHANNEL_NAME"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-blue-500 transition-colors min-h-[44px] py-2"
+            title="انضم لقناتنا على تليجرام"
+          >
+            <Send className="w-4 h-4" />
+            <span>تليجرام</span>
+          </a>
+          <a
+            href="https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-green-600 transition-colors min-h-[44px] py-2"
+            title="انضم لجروب واتساب"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>جروب واتساب</span>
+          </a>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Brand */}
+          <div className="flex items-center gap-2">
+            <a
+              href="https://m2y.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <Globe className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-primary">m2y.net</span>
+            </a>
+            <span className="text-xs text-muted-foreground">دليل الاستثمار</span>
+          </div>
+
+          {/* Legal Links */}
+          <nav className="flex items-center gap-3 sm:gap-4 flex-wrap justify-center" aria-label="روابط قانونية">
+            <Link
+              href="/legal/privacy"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline min-h-[44px] py-2"
+            >
+              <Shield className="w-3 h-3" />
+              سياسة الخصوصية
+            </Link>
+            <Link
+              href="/legal/terms"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline min-h-[44px] py-2"
+            >
+              <FileText className="w-3 h-3" />
+              شروط الاستخدام
+            </Link>
+            <Link
+              href="/legal/disclaimer"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline min-h-[44px] py-2"
+            >
+              <AlertTriangle className="w-3 h-3" />
+              إخلاء المسؤولية
+            </Link>
+          </nav>
+
+          {/* Disclaimer note */}
+          <p className="text-xs text-muted-foreground text-center sm:text-left max-w-[400px] leading-relaxed">
+            المنصة لأغراض تعليمية وتحليلية فقط. المحتوى لا يُعد تحليل استثمارية أو نصيحة مالية. استشر متخصصًا ماليًا قبل اتخاذ أي قرار استثمار.
+          </p>
+
+          {/* Powered by */}
+          <p className="text-xs text-muted-foreground text-center sm:text-left">
+            تعمل بتقنية{' '}
+            <a
+              href="https://m2y.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              m2y.net
+            </a>
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}

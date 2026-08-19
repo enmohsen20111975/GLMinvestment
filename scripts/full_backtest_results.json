@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-11T09:57:53.529975",
+  "stocks_tested": 751,
+  "total_trades": 1299,
+  "skipped": 43761,
+  "win_rate": 45.57,
+  "avg_return": 0.17,
+  "avg_win": 8.11,
+  "avg_loss": -6.47,
+  "profit_factor": 1.05
+}

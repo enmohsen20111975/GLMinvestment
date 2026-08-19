@@ -1,0 +1,266 @@
+{
+  "total_tickers_tested": 125,
+  "total_signals": 172,
+  "total_trades": 172,
+  "winning_trades": 60,
+  "losing_trades": 112,
+  "win_rate": 34.883720930232556,
+  "avg_return": -0.11249557071038484,
+  "total_return_pct": -19.349238162186193,
+  "gross_profit": 139.29122509387759,
+  "gross_loss": 158.64046325606378,
+  "profit_factor": 0.8780308770849067,
+  "avg_holding_days": 12.203488372093023,
+  "avg_risk_reward": 1.5,
+  "max_consecutive_wins": 12,
+  "max_consecutive_losses": 18,
+  "sharpe_ratio": -0.9768527190761044,
+  "calmar_ratio": -0.04982353922110126,
+  "max_drawdown_pct": 46.6248446676254,
+  "by_signal": {
+    "STRONG_BUY": 172
+  },
+  "by_proof_count": {
+    "3": 147,
+    "4": 25
+  },
+  "top_winners": [
+    {
+      "ticker": "EG07X",
+      "date": "2026-03-10",
+      "return_pct": 12.91,
+      "pnl_pct": 3.265,
+      "r_multiple": 2.177,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 8,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG07X",
+      "date": "2026-03-18",
+      "return_pct": 13.15,
+      "pnl_pct": 3.104,
+      "r_multiple": 2.069,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 2,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG07X",
+      "date": "2026-03-15",
+      "return_pct": 11.67,
+      "pnl_pct": 3.1,
+      "r_multiple": 2.067,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 5,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG30X",
+      "date": "2026-05-04",
+      "return_pct": 9.0,
+      "pnl_pct": 3.009,
+      "r_multiple": 2.006,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 13,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG29X",
+      "date": "2026-02-04",
+      "return_pct": 11.92,
+      "pnl_pct": 2.894,
+      "r_multiple": 1.929,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 11,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG30X",
+      "date": "2026-05-12",
+      "return_pct": 9.41,
+      "pnl_pct": 2.866,
+      "r_multiple": 1.911,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 7,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG19X",
+      "date": "2026-02-04",
+      "return_pct": 11.41,
+      "pnl_pct": 2.711,
+      "r_multiple": 1.808,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 7,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG37X",
+      "date": "2026-05-17",
+      "return_pct": 10.02,
+      "pnl_pct": 2.674,
+      "r_multiple": 1.783,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 3,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG34X",
+      "date": "2026-02-01",
+      "return_pct": 11.03,
+      "pnl_pct": 2.636,
+      "r_multiple": 1.757,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 3,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG29X",
+      "date": "2026-02-09",
+      "return_pct": 11.96,
+      "pnl_pct": 2.636,
+      "r_multiple": 1.757,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 8,
+      "exit_reason": "hit_target"
+    }
+  ],
+  "top_losers": [
+    {
+      "ticker": "EG37X",
+      "date": "2026-02-01",
+      "return_pct": -6.36,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 17,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG37X",
+      "date": "2026-05-20",
+      "return_pct": -5.94,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 7,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG37X",
+      "date": "2026-05-25",
+      "return_pct": -6.38,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 5,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG07X",
+      "date": "2026-05-04",
+      "return_pct": -4.5,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 16,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG08X",
+      "date": "2026-05-07",
+      "return_pct": -5.35,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 18,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG14X",
+      "date": "2026-03-02",
+      "return_pct": -5.2,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 10,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG20X",
+      "date": "2026-04-13",
+      "return_pct": -6.33,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 29,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG24X",
+      "date": "2026-05-04",
+      "return_pct": -5.03,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 4,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG30X",
+      "date": "2026-03-18",
+      "return_pct": -5.1,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 12,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG30X",
+      "date": "2026-03-26",
+      "return_pct": -5.77,
+      "pnl_pct": -1.5,
+      "r_multiple": -1.0,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 7,
+      "exit_reason": "hit_stop"
+    }
+  ],
+  "monthly_returns": {
+    "2026-02": -16.286033120950318,
+    "2026-03": -2.329152752864551,
+    "2026-04": 6.9968229632097465,
+    "2026-05": -7.73087525158107
+  },
+  "adaptive_threshold_final": 75,
+  "model_quality": "POOR",
+  "model_quality_ar": "🔴 النموذج فاشل — إعادة تصميم",
+  "avg_win": 2.321520418231293,
+  "avg_loss": -1.4164327076434267,
+  "avg_r_multiple": -0.07499704714025657,
+  "risk_per_trade_pct": 1.5,
+  "position_sizing_enabled": true,
+  "final_equity": 80.09023697588903
+}

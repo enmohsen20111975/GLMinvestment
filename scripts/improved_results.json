@@ -1,0 +1,14 @@
+{
+  "date": "2026-07-11T12:23:58.524180",
+  "total_trades": 1402,
+  "win_rate": 46.93,
+  "avg_return": 0.26,
+  "avg_win": 7.75,
+  "avg_loss": -6.37,
+  "profit_factor": 1.08,
+  "avg_holding": 16.4,
+  "improvement": {
+    "win_rate_delta": 5.66,
+    "profit_factor_delta": -0.04
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "capital": 100000.0,
+  "day_number": 0,
+  "total_trades": 0,
+  "total_wins": 0,
+  "total_pnl": 0,
+  "open_trades": [],
+  "closed_trades": []
+}

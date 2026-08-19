@@ -1,0 +1,80 @@
+{
+  "task_id": "V40.4-PHASE-5",
+  "engine": "V38BacktestEngine (V39.3 pipeline + V40.4 MarketProfile)",
+  "backtest_window": {
+    "start": "2025-06-01",
+    "end": "2026-06-01"
+  },
+  "scan_interval": 5,
+  "max_daily_picks": 10,
+  "pass_criteria": {
+    "min_profit_factor": 1.5,
+    "min_win_rate_pct": 50.0
+  },
+  "generated_at": "2026-08-17T20:57:42.201150Z",
+  "markets": [
+    {
+      "market": "EGX",
+      "tickers": 250,
+      "total_trades": 592,
+      "winning_trades": 266,
+      "losing_trades": 326,
+      "win_rate_pct": 44.93,
+      "profit_factor": 0.994,
+      "expectancy_pct_per_trade": -0.0051,
+      "total_return_pct": -3.04,
+      "max_drawdown_pct": 40.84,
+      "avg_risk_reward": 1.5,
+      "avg_r_multiple": -0.003,
+      "sharpe_ratio": -0.049,
+      "final_equity": 89.34,
+      "avg_holding_days": 11.46,
+      "model_quality": "FAIR",
+      "notes": "real price_history.db",
+      "directive_pass": false,
+      "directive_reason": "FAIL (PF 0.99 < 1.5, WR 44.9% < 50.0%)"
+    },
+    {
+      "market": "KSA",
+      "tickers": 40,
+      "total_trades": 8,
+      "winning_trades": 5,
+      "losing_trades": 3,
+      "win_rate_pct": 62.5,
+      "profit_factor": 2.518,
+      "expectancy_pct_per_trade": 0.854,
+      "total_return_pct": 6.83,
+      "max_drawdown_pct": 4.43,
+      "avg_risk_reward": 1.648,
+      "avg_r_multiple": 0.569,
+      "sharpe_ratio": 6.883,
+      "final_equity": 106.9,
+      "avg_holding_days": 6.5,
+      "model_quality": "EXCELLENT",
+      "notes": "real price_history.db",
+      "directive_pass": true,
+      "directive_reason": "PASS (PF 2.52 ≥ 1.5, WR 62.5% ≥ 50.0%)"
+    },
+    {
+      "market": "CRYPTO",
+      "tickers": 5,
+      "total_trades": 25,
+      "winning_trades": 12,
+      "losing_trades": 13,
+      "win_rate_pct": 48.0,
+      "profit_factor": 1.195,
+      "expectancy_pct_per_trade": 0.1523,
+      "total_return_pct": 3.81,
+      "max_drawdown_pct": 6.6,
+      "avg_risk_reward": 1.8,
+      "avg_r_multiple": 0.102,
+      "sharpe_ratio": 1.336,
+      "final_equity": 103.47,
+      "avg_holding_days": 8.2,
+      "model_quality": "FAIR",
+      "notes": "synthetic random-walk (220 days, seeded) — no crypto price DB available",
+      "directive_pass": false,
+      "directive_reason": "FAIL (PF 1.20 < 1.5, WR 48.0% < 50.0%)"
+    }
+  ]
+}

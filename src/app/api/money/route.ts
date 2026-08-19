@@ -1,0 +1,192 @@
+/**
+ * Unified Money Management API
+ * =============================
+ * GET /api/money?section=overview — ملخص شامل
+ * GET /api/money?section=portfolio — المحفظة
+ * GET /api/money?section=watchlist — قائمة المراقبة
+ * GET /api/money?section=alerts — التنبيهات
+ * GET /api/money?section=journal — ذاكرة التداول
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import Database from 'better-sqlite3';
+import path from 'path';
+
+export const revalidate = 10;
+
+export async function GET(request: NextRequest) {
+  try {
+    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
+    const db = new Database(dbPath, { readonly: true, timeout: 5000 });
+    db.pragma('busy_timeout = 5000');
+
+    // Find user — try session, then first portfolio user
+    let userId: string | null = null;
+    try {
+      const user = db.prepare('SELECT DISTINCT user_id FROM portfolio_assets LIMIT 1').get() as any;
+      userId = user?.user_id || null;
+    } catch {}
+
+    if (!userId) {
+      db.close();
+      return NextResponse.json({
+        success: true,
+        data: {
+          portfolio: { total_assets: 0, total_invested: 0, total_current_value: 0, total_pnl: 0, total_pnl_pct: 0, assets: [] },
+          watchlist: { count: 0, items: [] },
+          alerts: { active: 0 },
+          journal: { total: 0, open: 0, wins: 0, losses: 0, win_rate: 0 },
+          obligations: { count: 0, total_remaining: 0 },
+        },
+      });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const section = searchParams.get('section') || 'overview';
+
+    if (section === 'overview') {
+      const portfolio = db.prepare('SELECT * FROM portfolio_assets WHERE user_id = ?').all(userId) as any[];
+      const watchlist = db.prepare(`
+        SELECT w.*, s.ticker, s.name, s.current_price, s.change_percent
+        FROM user_stock_watchlists w
+        LEFT JOIN stocks s ON w.stock_id = s.id
+        WHERE w.user_id = ?
+      `).all(userId) as any[];
+
+      let alertsCount = 0;
+      try {
+        const a = db.prepare('SELECT COUNT(*) as c FROM price_alerts WHERE user_id = ? AND is_active = 1').get(userId) as any;
+        alertsCount = a?.c || 0;
+      } catch {}
+
+      let journal = { total: 0, open: 0, wins: 0, losses: 0 } as any;
+      try {
+        journal = db.prepare(`
+          SELECT COUNT(*) as total,
+            SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+            SUM(CASE WHEN status = 'closed' AND result > 0 THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN status = 'closed' AND result <= 0 THEN 1 ELSE 0 END) as losses
+          FROM trading_journal WHERE user_id = ?
+        `).get(userId) || journal;
+      } catch {}
+
+      let totalInvested = 0, totalCurrent = 0;
+      for (const a of portfolio) {
+        totalInvested += a.total_invested || 0;
+        totalCurrent += a.current_value || 0;
+      }
+
+      db.close();
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          portfolio: {
+            total_assets: portfolio.length,
+            total_invested: Math.round(totalInvested * 100) / 100,
+            total_current_value: Math.round(totalCurrent * 100) / 100,
+            total_pnl: Math.round((totalCurrent - totalInvested) * 100) / 100,
+            total_pnl_pct: totalInvested > 0 ? Math.round((totalCurrent - totalInvested) / totalInvested * 10000) / 100 : 0,
+            assets: portfolio,
+          },
+          watchlist: { count: watchlist.length, items: watchlist },
+          alerts: { active: alertsCount },
+          journal: {
+            total: journal.total || 0,
+            open: journal.open || 0,
+            wins: journal.wins || 0,
+            losses: journal.losses || 0,
+            win_rate: journal.total > 0 ? Math.round((journal.wins / journal.total) * 100) : 0,
+          },
+          obligations: { count: 0, total_remaining: 0 },
+        },
+      });
+    }
+
+    if (section === 'portfolio') {
+      const assets = db.prepare(`
+        SELECT p.*, s.ticker, s.name as stock_name, s.current_price as live_price,
+               s.change_percent as live_change
+        FROM portfolio_assets p
+        LEFT JOIN stocks s ON p.stock_ticker = s.ticker
+        WHERE p.user_id = ?
+        ORDER BY p.total_invested DESC
+      `).all(userId) as any[];
+
+      const enriched = assets.map(a => {
+        const liveValue = a.live_price ? a.live_price * (a.quantity || 0) : a.current_value || 0;
+        const pnl = liveValue - (a.total_invested || 0);
+        return {
+          ...a,
+          live_value: Math.round(liveValue * 100) / 100,
+          pnl: Math.round(pnl * 100) / 100,
+          pnl_pct: a.total_invested > 0 ? Math.round(pnl / a.total_invested * 10000) / 100 : 0,
+        };
+      });
+
+      db.close();
+      return NextResponse.json({ success: true, data: enriched });
+    }
+
+    if (section === 'watchlist') {
+      const items = db.prepare(`
+        SELECT w.*, s.ticker, s.name, s.current_price, s.change_percent,
+               s.sector, s.pe_ratio, s.rsi, s.signal, s.trend
+        FROM user_stock_watchlists w
+        LEFT JOIN stocks s ON w.stock_id = s.id
+        WHERE w.user_id = ?
+        ORDER BY w.added_at DESC
+      `).all(userId) as any[];
+
+      db.close();
+      return NextResponse.json({ success: true, data: items });
+    }
+
+    if (section === 'journal') {
+      const trades = db.prepare(`
+        SELECT j.*, s.name as stock_name
+        FROM trading_journal j
+        LEFT JOIN stocks s ON j.ticker = s.ticker
+        WHERE j.user_id = ?
+        ORDER BY j.entry_date DESC
+      `).all(userId) as any[];
+
+      let stats: any = { total: 0, open: 0, winning: 0, losing: 0, total_pnl: 0, avg_return: 0 };
+      try {
+        stats = db.prepare(`
+          SELECT COUNT(*) as total,
+            SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+            SUM(CASE WHEN status = 'closed' AND result > 0 THEN 1 ELSE 0 END) as winning,
+            SUM(CASE WHEN status = 'closed' AND result <= 0 THEN 1 ELSE 0 END) as losing,
+            COALESCE(SUM(CASE WHEN status = 'closed' THEN result ELSE 0 END), 0) as total_pnl,
+            COALESCE(AVG(CASE WHEN status = 'closed' THEN result_pct ELSE NULL END), 0) as avg_return
+          FROM trading_journal WHERE user_id = ?
+        `).get(userId) || stats;
+      } catch {}
+
+      db.close();
+      return NextResponse.json({
+        success: true,
+        data: trades,
+        stats: {
+          total: stats.total || 0,
+          open: stats.open || 0,
+          winning: stats.winning || 0,
+          losing: stats.losing || 0,
+          win_rate: stats.total > 0 ? Math.round(((stats.winning || 0) / stats.total) * 100) : 0,
+          total_pnl: Math.round((stats.total_pnl || 0) * 100) / 100,
+          avg_return: Math.round((stats.avg_return || 0) * 100) / 100,
+        },
+      });
+    }
+
+    db.close();
+    return NextResponse.json({ success: false, error: 'Unknown section' }, { status: 400 });
+  } catch (error) {
+    console.error('[Money API] Error:', error);
+    return NextResponse.json(
+      { success: false, error: 'فشل في جلب البيانات', details: String(error) },
+      { status: 500 }
+    );
+  }
+}

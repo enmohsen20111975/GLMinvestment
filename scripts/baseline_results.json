@@ -1,0 +1,30 @@
+{
+  "date": "2026-07-11T08:48:25.722952",
+  "sample_size": 50,
+  "sim_days": 60,
+  "max_holding": 20,
+  "total_trades": 1294,
+  "win_rate": 41.27,
+  "avg_return": 0.36,
+  "avg_win": 7.95,
+  "avg_loss": -4.97,
+  "profit_factor": 1.12,
+  "avg_holding": 13.5,
+  "by_outcome": {
+    "EXPIRED": 527,
+    "STOPPED": 550,
+    "TARGET_HIT": 217
+  },
+  "by_signal": {
+    "SELL": {
+      "total": 411,
+      "win_rate": 50.4,
+      "avg_return": 0.77
+    },
+    "BUY": {
+      "total": 883,
+      "win_rate": 37.0,
+      "avg_return": 0.17
+    }
+  }
+}

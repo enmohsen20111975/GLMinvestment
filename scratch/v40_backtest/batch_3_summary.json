@@ -1,0 +1,228 @@
+{
+  "total_tickers_tested": 125,
+  "total_signals": 341,
+  "total_trades": 341,
+  "winning_trades": 156,
+  "losing_trades": 185,
+  "win_rate": 45.74780058651026,
+  "avg_return": -0.007595145873122518,
+  "total_return_pct": -2.5899447427347786,
+  "gross_profit": 1155.4815943758942,
+  "gross_loss": 1158.071539118629,
+  "profit_factor": 0.9977635710271354,
+  "avg_holding_days": 11.941348973607038,
+  "avg_risk_reward": 1.5,
+  "max_consecutive_wins": 11,
+  "max_consecutive_losses": 9,
+  "sharpe_ratio": -0.016924114838829902,
+  "calmar_ratio": -0.0020035195552015,
+  "max_drawdown_pct": 79.99994421245702,
+  "by_signal": {
+    "STRONG_BUY": 341
+  },
+  "by_proof_count": {
+    "3": 281,
+    "4": 60
+  },
+  "top_winners": [
+    {
+      "ticker": "EG24X",
+      "date": "2025-06-01",
+      "return_pct": 11.74,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 21,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG37X",
+      "date": "2025-06-01",
+      "return_pct": 11.73,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 4,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG37X",
+      "date": "2025-11-02",
+      "return_pct": 11.58,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 3,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG24X",
+      "date": "2025-10-26",
+      "return_pct": 11.36,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 10,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG15X",
+      "date": "2025-07-13",
+      "return_pct": 11.35,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 19,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG25X",
+      "date": "2025-12-21",
+      "return_pct": 11.18,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 12,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG25X",
+      "date": "2025-06-22",
+      "return_pct": 11.15,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 13,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG16X",
+      "date": "2025-12-28",
+      "return_pct": 10.99,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 7,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG23X",
+      "date": "2025-12-07",
+      "return_pct": 10.77,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 19,
+      "exit_reason": "hit_target"
+    },
+    {
+      "ticker": "EG34X",
+      "date": "2025-10-05",
+      "return_pct": 10.77,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 3,
+      "exit_reason": "hit_target"
+    }
+  ],
+  "top_losers": [
+    {
+      "ticker": "EG33X",
+      "date": "2025-06-22",
+      "return_pct": -7.93,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 12,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG20X",
+      "date": "2026-04-12",
+      "return_pct": -7.93,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 30,
+      "exit_reason": "expired"
+    },
+    {
+      "ticker": "EG08X",
+      "date": "2025-06-15",
+      "return_pct": -7.93,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 8,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG25X",
+      "date": "2025-11-23",
+      "return_pct": -7.96,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 4,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG17X",
+      "date": "2025-11-30",
+      "return_pct": -8.0,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 4,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG14X",
+      "date": "2025-06-29",
+      "return_pct": -8.07,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 5,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG37X",
+      "date": "2025-11-09",
+      "return_pct": -8.12,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 19,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG23X",
+      "date": "2025-07-20",
+      "return_pct": -8.16,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 6,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG35X",
+      "date": "2025-07-13",
+      "return_pct": -8.23,
+      "signal": "STRONG_BUY",
+      "score": 81,
+      "holding_days": 9,
+      "exit_reason": "hit_stop"
+    },
+    {
+      "ticker": "EG25X",
+      "date": "2025-07-20",
+      "return_pct": -8.57,
+      "signal": "STRONG_BUY",
+      "score": 100,
+      "holding_days": 6,
+      "exit_reason": "hit_stop"
+    }
+  ],
+  "monthly_returns": {
+    "2025-11": -31.830251787174383,
+    "2025-12": 40.794958325086455,
+    "2026-02": -34.791835230029996,
+    "2026-03": -7.64589475206488,
+    "2026-04": 67.59546276060283,
+    "2026-05": -18.51136307044031,
+    "2025-06": -48.6091865779239,
+    "2025-08": 10.120595873038349,
+    "2025-07": -27.07130899934308,
+    "2026-01": -53.786919053398925,
+    "2025-09": 27.439534054178736,
+    "2025-10": 73.7062637147343
+  },
+  "adaptive_threshold_final": 75,
+  "model_quality": "FAIR",
+  "model_quality_ar": "🟠 النموذج ضعيف — يحتاج تحسين"
+}

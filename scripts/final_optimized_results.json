@@ -1,0 +1,10 @@
+{
+  "config": "conv=5 + stop=3% + target=5% + skip bear",
+  "stocks_tested": 751,
+  "total_trades": 1386,
+  "win_rate": 31.82,
+  "profit_factor": 1.41,
+  "avg_return": 0.81,
+  "avg_win": 8.86,
+  "avg_loss": -2.95
+}

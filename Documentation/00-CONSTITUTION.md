@@ -1,0 +1,879 @@
+# 📜 دستور مشروع GLMinvestment — القواعد الثابتة للعمل
+
+> **هذا الملف هو الدستور.** هو المصدر الوحيد للحقيقة (single source of truth) لحوكمة المشروع:
+> القواعد غير القابلة للنقض، الأدوار، ترتيب القراءة، القواعد الذهبية، سير العمل،
+> KPIs والحدود الحرجة، سياسة الشخصيات (Personas)، قواعد سلامة قواعد البيانات،
+> قواعد حالة التوقعات (prediction-status)، القياس المغلق (closed-loop)، إدارة التوصيات،
+> سياسة الـ fundamentals، وسياسة الـ refactoring/الكود الميت.
+>
+> كل قاعدة هنا ملزمة ولا يجوز تجاوزها لأي سبب إلا بموافقة وتأكيد صريح من المالك
+> (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
+> المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
+>
+> **آخر تحديث:** 2026-08-17 (بعد commit `65a748f` — إصلاح R:R + تفعيل الـ fundamentals الحقيقية)
+> **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
+> **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
+> **الإنتاج:** https://invist.m2y.net
+>
+> 📚 **توحيد التوثيق (2026-08-17):** كل التوثيقات السابقة في `/Documentation/` دُمجت في
+> **4 ملفات رئيسية** فقط:
+> 1. `Documentation/00-CONSTITUTION.md` (هذا الملف) — الحوكمة والقواعد.
+> 2. `Documentation/01-PROJECT_ANATOMY.md` — التشريح الكامل (المعمارية، المحركات، DBs، تدفق البيانات).
+> 3. `Documentation/02-SCREENS_AND_COMPONENTS.md` — كل شاشة وكل مكوّن بحالته (نشط/ميت/مكرر).
+> 4. `Documentation/SYSTEM_HOW_IT_THINKS.md` — كيف يحلّل النظام سهمًا ويُولّد توصية (المنطق).
+>
+> أي ملف توثيقي آخر في `/Documentation/` يُعتبر **مرجعًا تاريخيًا** أو سيُحذف من قبل المالك.
+
+---
+
+## 📑 جدول المحتويات
+
+1. [ترتيب قراءة التوثيق (إلزامي)](#-ترتيب-قراءة-التوثيق-إلزامي-قبل-أي-عمل)
+2. [الأدوار وجهات الاتصال](#-الأدوار-وجهات-الاتصال)
+3. [القواعد المطلقة (لا تُكسر أبدًا)](#-القواعد-المطلقة-لا-تُكسر-أبدًا)
+4. [KPIs والحدود الحرجة (Hard Caps)](#-kpis-والحدود-الحرجة-hard-caps)
+5. [سياسة الشخصيات (PERSONA-UNIFY-A)](#-سياسة-الشخصيات-persona-unify-a)
+6. [قواعد حالة التوقعات (Prediction-Status Taxonomy)](#-قواعد-حالة-التوقعات-prediction-status-taxonomy)
+7. [القياس المغلق (Closed-Loop)](#-القياس-المغلق-closed-loop)
+8. [إدارة التوصيات (Picks Management)](#-إدارة-التوصيات-picks-management)
+9. [سياسة الـ Fundamentals](#-سياسة-الـ-fundamentals)
+10. [سلامة قواعد البيانات (DB Safety)](#-سلامة-قواعد-البيانات-db-safety)
+11. [أسلوب التفكير المطلوب (7 مبادئ)](#-أسلوب-التفكير-المطلوب)
+12. [خطوات سير العمل (Workflow)](#-خطوات-سير-العمل-workflow)
+13. [دورة التحديث والإغلاق + الرفع على GitHub](#-دورة-التحديث-والإغلاق--الرفع-على-github)
+14. [بنية المشروع (مرجع سريع)](#-بنية-المشروع-مرجع-سريع)
+15. [القيود الحرجة المعروفة](#-القيود-الحرجة-المعروفة-حلّها-مُجدوَل)
+16. [عهد الوكيل](#-عهد-الوكيل)
+
+---
+
+## 🗂️ ترتيب قراءة التوثيق (إلزامي قبل أي عمل)
+
+عند بداية كل جلسة، **بهذا الترتيب فقط**:
+
+1. **`Documentation/00-CONSTITUTION.md`** (هذا الملف) — الدستور والقواعد.
+2. **`Documentation/01-PROJECT_ANATOMY.md`** — التشريح الكامل (المعمارية، المحركات، DBs، تدفق البيانات، الـ 5 Pillars).
+3. **`Documentation/02-SCREENS_AND_COMPONENTS.md`** — كل شاشة وكل مكوّن بحالته (نشط/ميت/مكرر).
+4. **`Documentation/SYSTEM_HOW_IT_THINKS.md`** — منطق المحرك (Maker State → Flight State → 6 إثباتات → Tech Score → Signal → Portfolio Advice → Stops).
+5. **`AGENTS.md`** (جذر المشروع) — دليل سير العمل اليومي (golden rules + runbooks + بيئة الساندبوكس).
+6. **`SYSTEM_STATE.md`** (جذر المشروع) — آخر حالة للنظام + سجل الإصلاحات P0-v2 → RL-FIX-9 → R:R-FIX → FUNDAMENTALS-ACTIVATION.
+7. **`CHANGELOG.md`** — آخر 3 إدخالات فقط (في الأعلى) لمعرفة آخر التعديلات.
+8. **`worklog.md`** — آخر ~150 سطر لمعرفة ما فعله الوكلاء السابقون في هذه الجلسة.
+
+بعد القراءة، اتبع **خطوات سير العمل** في §12، ثم ابدأ. عند الانتهاء، حدّث التوثيق
+المتأثر وأرفع على GitHub (§13).
+
+> ⚠️ **ملاحظة توحيدية:** الـ `03-REFACTORING_REPORT.md` القديم دُمج في
+> `01-PROJECT_ANATOMY.md` §18.5 + قسم القيود الحرجة في هذا الملف (§15). لا تبحث عنه كملف منفصل.
+
+---
+
+## 📞 الأدوار وجهات الاتصال
+
+| الدور | المسؤول |
+|-------|---------|
+| **المالك (Owner)** | `enmohsen20111975` (GitHub) — القرار النهائي في كل خلاف، الموافقة على أي استثناء، الموافقة على أي refactoring، الموافقة على أي لمس DB إنتاجي. |
+| **المدير + المبرمج (Z.ai Code)** | Full autonomy في التنفيذ اليومي: Fix / Feature / Documentation. Refactor يحتاج موافقة المالك (§12.4). |
+| **الوكلاء الآخرون** | Kilo / Grok / Gemini / Z.ai subagents / بشري — كلهم يلتزمون بهذا الدستور دون استثناء. |
+| **المستودع الرئيسي** | https://github.com/enmohsen20111975/GLMinvestment |
+| **تطبيق Flutter** | https://github.com/enmohsen20111975/flutter_investment_App |
+| **الإنتاج (Production VPS)** | https://invist.m2y.net — `/root/GLMinvestment/` — PM2 (nextjs, python-backend, data-engine, ws-service). |
+| **الساندبوكس (Sandbox)** | `/home/z/my-project/` — Next.js dev على 3000 + Python على 8010 + Caddy على 81. |
+
+### حدود الصلاحيات
+
+| الإجراء | المالك | Z.ai Code | وكلاء آخرون |
+|---------|:-----:|:---------:|:----------:|
+| تعديل كود في `src/` أو `vps-service/` | ✅ | ✅ | ❌ (بدون إذن) |
+| تعديل DB على الإنتاج | ✅ فقط | ❌ | ❌ |
+| استرجاع DB (`restore_from_local.py`) | ✅ بعد موافقة | ⚠️ ينفّذ بعد موافقة المالك فقط | ❌ |
+| إنشاء ملف/شاشة/route جديد | ⚠️ طوارئ فقط | ⚠️ طوارئ فقط + توثيق السبب | ❌ |
+| Refactoring (حذف كود ميت) | ✅ بعد موافقة | ⚠️ ينفّذ في فرع + مراجعة المالك | ❌ |
+| تعديل `00-CONSTITUTION.md` نفسه | ✅ | ⚠️ بعد موافقة المالك + إدخال في `CHANGELOG.md` | ❌ |
+| Push على `origin/main` | ✅ | ✅ (بعد `bun run lint` + `tsc --noEmit` يمرّان) | ❌ |
+
+---
+
+## 🚫 القواعد المطلقة (لا تُكسر أبدًا)
+
+هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
+
+### القاعدة 1 — لا تُلمس قواعد البيانات على الإنتاج
+- **ممنوع** الكتابة في أي `.db` على الإنتاج (`/root/GLMinvestment/db/*.db`).
+- **ممنوع** تشغيل `restore_dbs.py` أو أي سكربت يكتب فوق DB إنتاجي.
+- **المسموح فقط:** `SELECT` للقراءة، أو الأدوات الـ read-only (`diagnose_db_structure.py`).
+- استرجاع DB يكون **فقط** عبر `vps-service/tools/restore_from_local.py` (آمن: نسخة احتياطية + فحص + V40 migration) وبعد تأكيد المالك (§10).
+- في الساندبوكس: اسمح بالكتابة في `db/vps_real/` فقط (gitignored، للتجارب على نسخة مستخرجة من zip الإنتاج).
+
+### القاعدة 2 — لا تُلمس ملفات النظام
+- **ممنوع** تعديل `.env`, `ecosystem.config.js`, `Caddyfile`, `package.json`, `bun.lock`, `requirements.txt` إلا بموافقة المالك.
+- **ممنوع** تعديل `tsconfig.json`, `next.config.js`, `tailwind.config.ts`, `postcss.config.js`.
+- **ممنوع** لمس `prisma/schema.prisma` دون موافقة (يؤثر على الإنتاج عبر `db:push`).
+- **المسموح:** تعديل ملفات الكود (`.py`, `.tsx`, `.ts`) داخل `src/` و `vps-service/`.
+
+### القاعدة 3 — الالتزام ببنية المشروع
+- **لا تُنشئ مجلدات جديدة**. استخدم المجلدات الموجودة (`src/components/<feature>/`, `vps-service/<module>/`).
+- **لا تُنشئ طبقات (domain/application/infrastructure) جديدة**. المشروع يستخدم بنية flat حسب `01-PROJECT_ANATOMY.md` §2.
+- **لا تُغيّر أسماء الملفات**. الإنتاج والساندبوكس والـ Flutter يعتمدون على المسارات الحالية.
+- عند الحاجة لمكان جديد، **اسأل المالك أولًا**.
+
+### القاعدة 4 — لا شاشات/ملفات/أنظمة جديدة إلا في الطوارئ
+- **ممنوع** إنشاء `page.tsx` جديد (لدينا 20 صفحة، 9 منها ميتة — انظر `02-SCREENS_AND_COMPONENTS.md`).
+- **ممنوع** إنشاء `.tsx` جديد إذا يوجد مكوّن مشابه — وسّعه بدلًا من ذلك.
+- **ممنوع** إنشاء `route.ts` جديد إذا يمكن توسيع `/api/proxy/[...path]` أو الـ catch-all الموجود.
+- **ممنوع** إنشاء `.py` جديد في `vps-service/` إذا يمكن توسيع ملف موجود.
+- **ممنوع** إنشاء Flask blueprint جديد — لدينا 65 ملف API، 33 منها DEPRECATED. وسّع المسجّل منها فقط.
+- **الطوارئ فقط:** عطل إنتاجي حرج لا يحله توسيع الموجود — يجب توثيق السبب في `CHANGELOG.md` والحصول على موافقة المالك بعدين.
+
+### القاعدة 5 — كل كود جديد لازم يتربط
+- أي دالة/endpoint جديد **لازم يُستخدم فعليًا** (من الباك-إند ← API ← بروكسي ← الواجهة).
+- لا تترك كود ميت. لو ضفت حقل، أكد إن الـ API بيرجّعه والـ UI بيعرضه.
+- لو ضفت منطق في الباك-إند، اربطه في الـ UI عبر endpoint موجود.
+
+### القاعدة 6 — schema-aware دائمًا (P0-v2)
+- أي script/route بقرأ من `predictions.db` **لازم** يفحص الأعمدة بـ `PRAGMA table_info` قبل SELECT.
+- استخدم `COALESCE(signal, signal_type, recommendation)` لو محتاج الإشارة.
+- الإنتاج بـ يستخدم `signal`/`signal_type` — مش `recommendation`.
+
+### القاعدة 7 — HARD cap على الـ toxic returns (P0-v2 / PERSONA-BALANCE)
+- كل KPI query على الصفوف المغلقة لازم فيها:
+  `AND (actual_return IS NULL OR ABS(actual_return) <= 50)` في WHERE نفسها.
+- يمنع `-10814%` (تجزئة سهم غير مُعدّلة) من تلوث الـ win/loss COUNT والمتوسطات.
+- يُطبّق في كل المسارات: `live-tracking/route.ts` (overall + per-persona) + `PredictionTrackingDashboard.tsx::computeStatsFromPredictions` + `core/persona_db.py::get_persona_stats`.
+
+### القاعدة 8 — ATR stop في نطاق [3%, 9%] (PILLAR-3)
+- `atr_stop_min_pct=3.0` و `atr_stop_max_pct=9.0` في `engine_settings.py` (مصدر الحقيقة الوحيد).
+- تم رفع الـ cap من 7% لـ 9% في PILLAR-3 عشان الأسهم المضاربية المصرية عالية التقلب (HRHO/MFPC/COMI تتحرك 7-9% ATR). الـ 7% القديم كان بـ يـ reject صفقات بـ R/R كويسة.
+- الـ stop_loss لكل BUY جديد لازم يكون في النطاق ده. يُطبّق في:
+  - `core/opportunity_quality.py::enforce_atr_based_stop` (V40.2 production path).
+  - `engines/v38_backtest_engine.py` (ATR clamp بعد استخراج `sl` — defensive, 0 fires on current archive).
+- مؤكد بـ `tests/unit/test_regression_settings_consistency.py::TestPillar3AtrStopFromSettings` (ATR_STOP_MAX_PCT == 9.0).
+
+### القاعدة 9 — Trailing stop = FLOOR not CAP (P0-v3)
+- في `daily_closer.py`: بعد الـ partial exit، `trailing_stop = max(trailing_stop, entry_price)`.
+- الـ trailing بـ يـ ratchet up مع highest وما بـ ينزلش تحت entry.
+- `trailing_stop_activation_gain=2.0` (موحّد عبر 4 مستهلكين + 3 اختبارات).
+
+### القاعدة 10 — EXIT_POLICY_MODE = 'partial_1r_trailing' (P0-v3)
+- سياسة الخروج الافتراضية: 50% عند 1R (=`partial_exit_at_rr=1.5`) + breakeven + trail الباقي.
+- للـ backward compat فقط: `EXIT_POLICY_MODE=fixed`.
+- `partial_exit_pct=50.0`, `partial_exit_trail_remaining=1.0`.
+
+### القاعدة 11 — لا overrides إلا عبر `engine_settings.py`
+- **مصدر الحقيقة الواحد** للعتبات هو `analyzers/engine_settings.py` (~100 مفتاح).
+- **ممنوع** كتابة `tech_score = 50` hardcoded في كود جديد — استخدم `get_setting('tech_score_base', 50)`.
+- **ممنوع** كتابة `STOP_LOSS_EGX` dict جديد — اقرأ من `engine_settings`.
+- التناقضات الموثّقة سابقًا (في `GAPS_AND_MISSING.md` القديم) تم حل أغلبها في Phase 3 من PERSONA-UNIFY-A: `trailing_stop_activation_gain=2.0` موحّد، `partial_exit_at_rr=1.5` موحّد، `max_stop_pct=9.0` موحّد في `optimizer_params.json` + `optimizer_params_routes.py` DEFAULT_PARAMS + `prediction_optimizer.py` fallback.
+
+### القاعدة 12 — `load_merged_history()` هو المصدر الوحيد لبيانات الأسعار (DATA-UNIFY-007)
+- أي محلل جديد **لازم** يستخدم `load_merged_history()` من `analyzers/master_analyzer.py`.
+- **ممنوع** القراءة المباشرة من `stock_daily_prices` أو `price_history` (يخلق split-brain).
+- الـ Normalization: فلتر egksco + تطبيع migration + `_adjust_for_splits`.
+
+### القاعدة 13 — فلتر السيولة الصارم
+- `MIN_TURNOVER_EGP = 500_000` (في `background_analyzer.py`).
+- أي سهم turnover يومي < 500K EGP → **يُسقط** من `stored_analyses` نهائيًا.
+- في الـ strict mode (V40.2): `kill_filter_min_turnover_egp = 3_000_000` (يُفعّل عبر `set_strict_kill_filters(True)`).
+
+### القاعدة 14 — لا commit قبل التحقق
+- **Frontend:** `npx tsc --noEmit -p tsconfig.json` لازم يمر.
+- **Backend:** `python3 -c "import vps-service.<module>"` لازم يمر.
+- **Lint:** `bun run lint` لازم يمر (تحذيرات مقبولة، أخطاء لا).
+- لا ترفع كود مكسور على GitHub.
+
+### القاعدة 15 — الساندبوكس ≠ الإنتاج
+- الساندبوكس: `/home/z/my-project/` — Next.js dev على 3000 + Python على 8010 + Caddy على 81.
+- الإنتاج: `/root/GLMinvestment/` — PM2 + Next.js + Python + Data-Engine + WS-Service.
+- **ممنوع** تشغيل `bun run build` في الساندبوكس (next dev فقط).
+- **ممنوع** استخدام `http://localhost:PORT` في كود الواجهة — استخدم مسار نسبي + `XTransformPort`.
+- الـ DBs الحقيقية مش كاملة في الساندبوكس — استخدم `db/vps_real/` (مستخرجة من zip الإنتاج).
+
+### القاعدة 16 — تحقّق قبل الحذف (VERIFY-BEFORE-DELETE)
+- **ممنوع** تصنيف أي محرك/ملف/route كـ «ميت» أو «DEPRECATED» أو «قابل للحذف» قبل التحقق الثلاثي:
+  1. **استدعاءات الواجهة** — ابحث في `src/` عن `fetch('/api/...')` أو `import` للمكوّن.
+  2. **تسجيل الـ blueprint** — ابحث في قائمة `BLUEPRINTS` بـ `vps-service/lightweight_server.py` (السطور ~50-83). وجود `register_blueprint()` داخل ملف الـ route **لا يكفي** — لازم يكون مستدعى فعلياً من الخادم.
+  3. **سجل الأداء** — اسأل المالك عن نتائج المحرك قبل اقتراح حذفه.
+- **القاعدة الذهبية:** إذا وجدت `fetch()` في الواجهة لـ endpoint لكن الـ blueprint غير مسجّل → هذا **BUG يجب إصلاحه (تسجيل الـ blueprint)**، وليس سببًا لحذف الكود.
+- **الحالة المرجعية (2026-08-14):** `expert_memory_v4` (V4 = ذاكرة المحلل الشخصية) — الواجهة تستخدمه (`ExpertMemoryPanel` + `TradingMemoryView`) لكن `v4_bp` غير مسجّل → أُسيء تصنيفه كـ «DEPRECATED» وكاد يُحذف. صُحّح في P1.9.
+- **⚠️ تمييز مهم:** **V4 ≠ V40**. عندما يقول المالك «V4 كان بيدى أفضل نتائج» فالمقصود هو **V40.2** (محرك التوقعات evidence-based المعمول ببايثون، `jobs/v40_2_daily_generator.py`) وليس `ExpertMemoryV4`. نتائج الـ backtest تؤكد تفوّق V40.2 على V40.1 (profit factor 1.327 vs 1.221، max drawdown 12.4% vs 29.7% — انظر `01-PROJECT_ANATOMY.md` §18). خلط التسميتين كاد يسبب حذف ميزة خاطئة.
+- **رفع على GitHub إلزامي بعد كل مهمة** + تشغيل اختبارات الصحة (`bun run lint` + فحص بنية الـ docs) قبل الـ commit.
+
+### القاعدة 17 — المسارات نسبية دائمًا (RELATIVE-PATHS-ONLY)
+- **كل المسارات في الكود لازم تكون نسبية** (`db/price_history.db`, `vps-service/data/...`, `src/lib/...`) — **ممنوع** كتابة مسار مطلق مثل `/root/GLMinvestment/...` أو `/home/meme/my_apps/...` أو `C:\Users\...`.
+- **السبب:** المشروع يعمل بنفس الأكواد على **ثلاث بيئات**:
+  1. **الإنتاج (VPS):** `/root/GLMinvestment/`
+  2. **سيرفر المالك المحلى:** `/home/meme/my_apps/GLMinvestment/`
+  3. **الساندبوكس:** `/home/z/my-project/`
+- أي مسار مطلق = كود ينكسر في بيئتين من الثلاثة. هذا سبب كوارث سابقة (cron entries كانت بتشير إلى `/home/meme/...` على VPS فشل السكربتات).
+- **في Python:** استخدم `Path(__file__).resolve().parent.parent` لحساب جذر المشروع ديناميكيًا (انظر `data/prices.py:71` كنموذج). أو استخدم `utils/db_paths.py` إن وُجد.
+- **في cron jobs:** استخدم متغير أو استدعِ relative من الـ working directory المحدد في crontab (`cd /path && python ...` مسموح لأنه في الـ crontab نفسه، مش في الكود).
+- **الاستثناء الوحيد:** مسار الـ Python binary في crontab (`/root/.venv/bin/python3`) لأنه خاص بالـ OS، مش بالمشروع.
+
+### القاعدة 18 — R:R ديناميكي مع floor إلزامي 1.5 (R:R-FIX — commit `65a748f`)
+- **الـ R:R الفعلي للإنتاج هو ديناميكي، NOT ثابت 1.5** (تم إصلاحه في commit `65a748f`):
+  - **المسار العادي:** `dynamic_rr_normal = 1.5` (R:R = 1.5).
+  - **مسار التفوق على السوق (outperforming benchmark):** `dynamic_rr_outperform = 2.0` (R:R = 2.0 — يُفعّل لو `stock_roc > benchmark_change`).
+  - **95.27% من الصفقات** في الأرشيف الحالي تأخذ R:R = 2.0 (السوق يتفوّق في أغلب الأيام).
+- **R:R floor gate إلزامي** في `vps-service/jobs/v40_2_daily_generator.py` (lines ~314-326):
+  ```python
+  if r_mult < get_setting('dynamic_rr_normal', default=1.5):
+      continue  # skip — quality gate
+  ```
+  - يرفض أي توقع R:R < 1.5 **قبل** الكتابة لـ `predictions.db`.
+- **مفاتيح `risk_profile` الكنسية** (مما يُرجعه `institutional_decision_engine.py`):
+  - `sl` / `tp1` / `tp2` / `rr_ratio_tp1` / `rr_ratio_tp2`.
+  - **ممنوع** قراءة المفاتيح القديمة `stop_loss` / `target_1` / `target_2` فقط (key-mismatch bug السابق).
+  - `v38_backtest_engine.py` يقرأ المفاتيح الكنسية مع backward-compat fallback للقرارات القديمة.
+- **النتيجة المرجعية (archive `active_databases_20260817_full.zip`, 148 صفقة):**
+  - BEFORE-RESIM: PF=1.398, Exp=+1.35%/trade.
+  - **AFTER-A (dynamic 1.5/2.0): PF=1.453, Exp=+1.54%/trade (+0.055 PF, +0.189% Exp).**
+  - Max loss: -7.59% (unchanged — Hard Loss Ceiling intact).
+  - ATR clamp fired: 0 trades (defensive — كل الـ stops الحالية ضمن [3%, 9%]).
+
+### القاعدة 19 — Hard Loss Ceiling + Split Guard (PILLAR-3)
+- **Hard Loss Ceiling:** `hard_loss_ceiling_pct = 7.0` (in `daily_closer.py::_mark_closed`).
+  - كل صفقة BUY مغلقة بـ stop لازم `actual_return >= -7%`.
+  - يُفعّل بعد الـ ATR clamp [3%, 9%] — خط دفاع ثاني.
+- **Split Guard:** `split_drop_threshold_pct = 35.0`.
+  - لو `ABS(actual_return) > 35%` → الصفقة تُستبعد من كل KPI (تجزئة سهم غير مُعدّلة).
+  - النتيجة المرجعية: 0 صفقات ضربت الـ Split Guard في archive 20260817.
+- **Cap على SELL PnL:** `max(profit_loss, -20.0)` في `daily_closer.py` (منع الشذوذ الرياضي — لا يمكن خسارة أكثر من 100%).
+- **ممنوع** رفع `hard_loss_ceiling_pct` فوق 7% أو `split_drop_threshold_pct` فوق 35% بدون موافقة المالك + قياس backtest.
+
+### القاعدة 20 — Python = العقل، Node = العرض فقط
+- **كل المنطق الحسابي في Python.** Node.js (Next.js) بـ يعرض فقط.
+- **ممنوع** كتابة `if/for/compute/aggregate` في `route.ts` لغير الـ auth/subscription/paywall → ده architecture violation.
+- **ممنوع** فحص SQLite مباشرة من Node (3 endpoints فقط تاريخيًا فعلت ذلك — تُصنّف كـ violation).
+- **الـ Proxy الافتراضي:** `route.ts` بـ يعمل `fetch(PYTHON_BACKEND + pathname + qs)` ويرجّع JSON فقط.
+- لو محتاج logic جديد في الواجهة → ضعه في Python endpoint + استدعِه من Node proxy.
+
+### القاعدة 21 — V40.2 هو مصدر التوقعات الإنتاجي الوحيد (evidence-based)
+- **`jobs/v40_2_daily_generator.py`** هو مولّد التوقعات الإنتاجي.
+- كل توقع BUY/STRONG_BUY لازم يمرّ بـ:
+  1. **Kill Filters** (5 فلاتر استبعاد: سيولة/سعر/تذبذب حجم/بيانات/قوة نسبية) — `liquidity_filter.py::evaluate_kill_filters`.
+  2. **6 إثباتات موزونة** (Trend 8 + Makers 26 + DNA 8 + Fundamentals 8 + Sector 8 + Benchmark 24 = 82 وزن كلي) — `institutional_decision_engine.py::build_institutional_decision`.
+  3. **R:R ≥ 1.5 floor gate** (القاعدة 18).
+  4. **ATR stop clamp [3%, 9%]** (القاعدة 8).
+  5. **`morning_bell=1`** لأعلى توقع في اليوم (sort by evidence_count → score).
+- **`maestro_orchestrator.py`** مسار منفصل للـ persona_predictions (gambler/investor) — أقل صرامة في الـ evidence. لا يُعتمد عليه للـ overall KPI.
+- **ممنوع** توليد توقعات من `MarketScheduler.tick` مباشرة (الطريق القديم `generate_predictions_internal` INSERT خام 15 عمود — لا يمرّ بـ V40.2 evidence).
+
+### القاعدة 22 — KPIs تُحسب بـ dedup-by-ticker (PERSONA-BALANCE)
+- **القاعدة الذهبية (المالك):** السهم الواحد = صفقة واحدة حتى لو تكرر بين الثلاث شخصيات.
+- التكرار بين الشخصيات = **إشارة أقوى** (أسهم تحت التركيز)، وليس 3 صفقات منفصلة.
+- أي حساب WR / PF / Expectancy لازم يكون على مستوى `(ticker, prediction_date)` فريد أولًا، ثم تفصيل حسب الشخصية.
+- **أولوية الـ dedup:** `target_hit` > `holding_days` أقل > `master_score` أعلى > `morning_bell` > `evidence_count`.
+- الـ overall KPI = العدّاد الرسمي. تفصيل الشخصيات (byPersona) يعرض "تغطية" — مجموع الشخصيات قد يفوق الـ overall وهذا صحيح.
+- **HARD cap (القاعدة 7)** مطبّق في كل المسارات (server SQL + client + persona_db).
+
+### القاعدة 23 — لا تعيد تصنيف الشخصيات في `predictions.persona` (PERSONA-UNIFY-A)
+- جدول `predictions.persona` **محمي**: `persona='balanced'` ثابت لكل V40.2 picks.
+- الـ `persona_fit` (محسوب عبر `compute_persona_fit()` في `v40_2_daily_generator.py`) بـ يُannotated في `kill_filter_result` فقط (رؤية تحليلية).
+- للأسهم اللي strongly fit gambler/conservative (fit_score ≥ 50): بـ يُكتب row منفصل في `persona_predictions` من نفس الـ pool القوي + بـ يتـ closed فورًا بالـ outcome المحاكى.
+- **ممنوع** إعادة تصنيف `predictions.persona` من `balanced` لـ `gambler`/`conservative` بدون موافقة المالك (يكسر الـ baseline التاريخي ويجعل المقارنات المستقبلية مستحيلة).
+- القرار المؤجل: لو المالك وافق → flip الـ persona tag للأسهم اللي fit_score عالي + verify بـ backtest إن جودة المتوازن ما انخفضتش. **حاليًا: الخيار الآمن مُطبّق.**
+
+### القاعدة 24 — Fundamentals: لا placeholder 50 (FUNDAMENTALS-ACTIVATION — commit `04354a5`)
+- **`fundamental_score` الحقيقي يُحسب الآن من `data_engine.db`** (مش 50.0 ثابت).
+- المصدر: `vps-service/analyzers/fundamental_data_provider.py::get_fundamental_score(ticker)`.
+- المكوّنات (4 أوزان):
+  - Profitability 40% (roe 20% + net_margin 12% + op_margin 8%).
+  - Valuation 30% (pe 18% + pb 12%).
+  - Dividend 15% (div_yield + payout penalty).
+  - Growth 15% (dps_growth proxy).
+- **Missing data handling:** field = None → ذلك المكوّن weight = 0 (excluded من weighted average، NOT forced to 50).
+- Confidence = % من المكوّنات المتوفرة.
+- **ممنوع** إرجاع `fundamental_score = 50.0` كـ placeholder في أي مسار إنتاجي.
+- **mapping success:** 81.8% ticker / 97.4% trade coverage (4 tickers unmatched: EG23X, MTEZ, OCIC, TAO → score=None).
+- **Hard veto (مقترح للتفعيل بعد أسبوع حي):** رفض BUY لو `fundamental_score < 30` (يرفع PF +0.273، Exp +0.52% — مُختبَر على 148 صفقة).
+- **ممنوع** تفعيل `egx_fundamental_fetcher.py` كـ cron قبل إصلاح `tab_balance_sheet`/`tab_income_statement`/`tab_cash_flow` column-shift bug (الـ `symbol` column بيحمل Arabic names بدل tickers).
+
+### القاعدة 25 — Refactoring يحتاج موافقة المالك + لا حذف بدون VERIFY-BEFORE-DELETE
+- أي refactoring (حذف كود ميت، دمج ملفات، إعادة تسمية) لازم يبدأ بـ:
+  1. **موافقة صريحة** من المالك.
+  2. **قراءة** قسم القيود الحرجة في هذا الملف (§15) + `01-PROJECT_ANATOMY.md` §18.5.
+  3. **تنفيذ في فرع منفصل** (`git checkout -b refactor/<name>`).
+  4. **اختبار شامل** بعد كل ملف (`bun run lint` + `python3 -c "import ..."`).
+  5. **مراجعة المالك** قبل الـ merge.
+- **الـ rename refactor ملغى**: لا تُغيّر أسماء ملفات لتحسين القراءة فقط (تنتهك القاعدة 3). حل بديل: وثّق اللبس في `01-PROJECT_ANATOMY.md`.
+- الكود الميت يُسجّل في القيود الحرجة (§15)، لا يُحذف إلا بعد VERIFY-BEFORE-DELETE (القاعدة 16).
+
+---
+
+## 📊 KPIs والحدود الحرجة (Hard Caps)
+
+> **المرجع:** `01-PROJECT_ANATOMY.md` §1 (نظرة عامة) + `SYSTEM_HOW_IT_THINKS.md` §17 (الـ 5 Pillars).
+
+### الأهداف الإلزامية (Targets)
+
+| KPI | القيمة الحالية (archive 20260817) | الهدف | الحالة |
+|-----|----------------------------------:|------:|:------:|
+| **Total Trades (backtest)** | 539 | 60-150 | ✅ تجاوز |
+| **Win Rate (backtest)** | 51.0% | ≥ 50% | ✅ |
+| **Profit Factor (backtest)** | 1.584 | ≥ 1.5 | ✅ |
+| **Win Rate (live production)** | ~69.2% (تقارير المالك 2026-08-17) | ≥ 60% | ✅ |
+| **PF (live production)** | ~4.46 | ≥ 1.5 | ✅ |
+| **Avg Win** | +8.30% → +11.44% (AFTER-A dynamic) | — | — |
+| **Avg Loss** | -6.00% (capped) | within [-9%, -3%] | ✅ |
+| **Max Loss (capped)** | -7.59% (raw) → ≤ -7% (after Hard Loss Ceiling) | ≤ -7% | ✅ |
+| **Max Gain** | +50.0% (HARD cap applied) | — | — |
+| **Expectancy / trade** | +1.54% (AFTER-A dynamic 1.5/2.0) | > 0 | ✅ |
+
+### الـ Hard Caps (لا تُتجاوز)
+
+| الحد | القيمة | الملف | السبب |
+|------|-------:|------|-------|
+| `ABS(actual_return)` | ≤ 50 | كل KPI queries | منع toxic returns من تلوث المتوسطات (Rule 7) |
+| `hard_loss_ceiling_pct` | 7.0% | `daily_closer.py` | سقف الخسارة الأقصى لكل صفقة (Rule 19) |
+| `split_drop_threshold_pct` | 35.0% | `daily_closer.py` | تجزئة سهم → استبعاد كامل (Rule 19) |
+| `atr_stop_min_pct` | 3.0% | `engine_settings.py` | الحد الأدنى للـ stop (commission edge) (Rule 8) |
+| `atr_stop_max_pct` | 9.0% | `engine_settings.py` | الحد الأقصى للـ stop (risk ceiling) (Rule 8) |
+| `dynamic_rr_normal` | 1.5 | `engine_settings.py` | R:R floor إلزامي (Rule 18) |
+| `dynamic_rr_outperform` | 2.0 | `engine_settings.py` | R:R للأسهم المتفوقة على المؤشر (Rule 18) |
+| `MIN_TURNOVER_EGP` | 500,000 | `background_analyzer.py` | فلتر السيولة (Rule 13) |
+| `kill_filter_min_turnover_egp` | 3,000,000 | `liquidity_filter.py` (strict) | V40.2 strict mode (Rule 13) |
+| `MAX_PREDICTIONS_PER_DAY` | 7 (legacy) / 5 (picks-management) | `historical_prediction_generator.py` / `confidence_engine.py` | حد التوصيات اليومية (Rule §8) |
+| `MIN_PREDICTIONS_PER_DAY` | 2 | `historical_prediction_generator.py` | الحد الأدنى لليوم الواحد |
+| `MONITORING_PERIOD_DAYS` | 30 | `historical_prediction_generator.py` | أفق التوقع الافتراضي |
+| `trailing_stop_activation_gain` | 2.0 | `engine_settings.py` | موحّد (Rule 9) |
+| `partial_exit_at_rr` | 1.5 | `engine_settings.py` | بيع 50% عند 1.5R + breakeven (Rule 10) |
+| `partial_exit_pct` | 50.0 | `engine_settings.py` | نسبة الخروج الجزئي (Rule 10) |
+| `min_score` | 60 | `engine_settings.py` (V40-PHASE-4) | حد القبول الإنتاجي |
+| `max_holding_days` | 30 | `engine_settings.py` | أقصى مدة احتفاظ (V40.2) |
+| `breakeven_trigger` | 7% | `stop_manager.py` | تفعيل break-even |
+| `portfolio_heat` | 2% | `stop_manager.py` | أقصى خسارة لكل صفقة من المحفظة |
+
+### الـ Market Weights (ثابتة)
+
+| السوق | الكود | الوزن | رمز |
+|-------|------|------|------|
+| تداول السعودية | KSA | 1.5 | 🇸🇦 |
+| البورصة المصرية | EGX | 1.2 | 🏛️ |
+| بورصة الكويت | KSE | 0.8 | 🇰🇼 |
+| بورصة قطر | QSE | 0.6 | 🇶🇦 |
+| العملات الرقمية | CRYPTO | 0.5 | ₿ |
+
+---
+
+## 🎭 سياسة الشخصيات (PERSONA-UNIFY-A)
+
+> **المرجع التفصيلي:** `SYSTEM_HOW_IT_THINKS.md` §19.
+
+### الـ 3 شخصيات الحالية (لا تُعيد تصنيفها)
+
+| Persona | Arabic | min_score | target_mult | stop_mult | strategy | min_hold_days |
+|---------|--------|----------:|------------:|----------:|----------|---------------|
+| **gambler** | المضارب | 42 | 2.0x | 1.2x | scalp_short | 1 |
+| **balanced** | المتوازن | 50 | 2.2x | 1.0x | swing_medium | 5 |
+| **conservative** | المستثمر | 55 | 2.5x | 1.0x | swing_medium_long | 10 |
+
+> ⚠️ ملاحظة تاريخية: قائمة الـ personas في الـ code تذكر أحيانًا `expert` (شخصية رابعة تجريبية)، لكن في الإنتاج الفعلي `predictions.persona` ∈ {`balanced`, `gambler`, `conservative`} فقط. أي إشارة لـ `expert` هي legacy ولم تُفعّل.
+
+### مصفوفة أوزان الشخصيات (PERSONA_INPUT_WEIGHTS)
+
+| Persona | Price Action | SMC/VSA | Sector Heat | Fundamental |
+|---------|-------------:|--------:|------------:|------------:|
+| **Gambler** | 40% | 35% | 25% | 0% |
+| **Balanced** | 30% | 25% | 20% | 25% |
+| **Conservative** | 15% | 10% | 15% | 60% |
+
+- المصدر: `vps-service/analyzers/adaptive_weights.py::PERSONA_INPUT_WEIGHTS`.
+- نفس input vector بـ يطلع score=71.5 للـ gambler و 58.0 للـ conservative (فجوة 13.5 نقطة) — يدل على أن الأوزان فعّالة.
+
+### مسارا التوليد
+
+| المسار | المولّد | persona المكتوبة | الجودة |
+|--------|---------|------------------|--------|
+| **V40.2 evidence-based** | `jobs/v40_2_daily_generator.py` | `balanced` فقط | عالية — 6 إثباتات + kill filters + R:R≥1.5. **~69% WR حيًا** |
+| **Maestro persona** | `analyzers/maestro_orchestrator.py` → `core/persona_db.py` | `gambler` + `investor` | مسار منفصل، أقل صرامة في الـ evidence |
+
+### قاعدة حماية الـ Baseline (PERSONA-UNIFY-A — 2026-08-17)
+
+1. **جدول `predictions` (مصدر الـ live dashboard) لم يُلمس** — `persona='balanced'` ثابت لكل V40.2 picks.
+2. **جدول `persona_predictions` منفصل** — لا يقرأه الـ live dashboard overall KPI.
+3. **الـ overall KPI محمي بالـ dedup-by-ticker** (Rule 22) — السهم الواحد = صفقة واحدة.
+4. **مفيش orphan PENDING rows** — كل `persona_predictions` row بـ يتـ closed فورًا بالـ outcome المحاكى من V40.2 (`update_persona_prediction_outcome`).
+5. **HARD cap (Rule 7)** مطبّق على `get_persona_stats` في `persona_db.py`.
+
+---
+
+## 🚦 قواعد حالة التوقعات (Prediction-Status Taxonomy)
+
+> **المرجع التفصيلي:** `RL-FIX-9-Predictions-Status-Logic.md` (مُدمج هنا).
+
+### الـ 5 حالات رسمية
+
+| الحالة (status) | exit_type | hit_target | hit_stop | is_correct | المعنى | اللون |
+|------------------|-----------|:----------:|:--------:|:----------:|----------------|--------|
+| `TARGET_HIT` | `target_hit` | 1 | 0 | 1 | ✅ تم تحقيق الهدف | أخضر |
+| `TRAILING_PROFIT` | `trailing_profit` | 0 | 0 | 1 | 💰 خرج بربح قبل الهدف | زمردی |
+| `STOPPED` | `stop_loss` / `trailing_stop` | 0 | 1 | 0 | ❌ ضرب وقف | أحمر |
+| `EXPIRED` | `expired` | 0 | 0 | 0 | ⌛ انتهت المدة | رمادي |
+| `PENDING` | (NULL) | 0 | 0 | NULL | ⏳ لسه معلقة | كهرمانی |
+
+### قواعد الانتقال (Transition Rules)
+
+1. **لا `STOPPED` مع `actual_return > 0`** — لو الـ trailing stop خرج بربح → صنّفه `TRAILING_PROFIT` (not `STOPPED`).
+2. **لا `PENDING` مع `actual_return`** — لو `outcome_date IS NULL` → `actual_return` لازم يكون NULL (ممنوع نحسبه من `exit_price`).
+3. **لا `WIN` في API بدون `outcome_date`** — كل WIN لازم يكون له `outcome_date IS NOT NULL` (Rule §7 Closed-Loop).
+4. **`is_correct` مشتق من `exit_type`** — `target_hit → 1`, `stop_loss → 0`. ممنوع نسمّي ضربة وقف "win".
+5. **الـ SELL sign-flip إلزامي** في كل المسارات: `(entry - exit) / entry × 100` (مش `(exit - entry) / entry × 100`).
+6. **`highest_price_reached` + `lowest_price_reached`** لازم تكون قيم فعلية (مش 0.0) — لو EXPIRED بدون بيانات، استخدم `entry_price` كـ fallback.
+7. **الـ migration script** `vps-service/scripts/rl_fix_9_migrate_bad_rows.py` يُشغّل مرة واحدة بعد أي restore لإصلاح الصفوف التاريخية.
+
+### أوامر التحقق (Post-Restore)
+
+```sql
+-- 1. لا STOPPED + profit
+SELECT COUNT(*) FROM predictions WHERE hit_stop = 1 AND actual_return > 0;  -- == 0
+-- 2. لا PENDING + return
+SELECT COUNT(*) FROM predictions WHERE outcome_date IS NULL AND actual_return IS NOT NULL;  -- == 0
+-- 3. تنوع التواريخ
+SELECT COUNT(DISTINCT date(prediction_date)) FROM predictions WHERE date(prediction_date) >= '2026-01-01';  -- > 1
+-- 4. TRAILING_PROFIT موجود
+SELECT COUNT(*) FROM predictions WHERE exit_type = 'trailing_profit';  -- > 0 (post-migration)
+```
+
+---
+
+## 🔁 القياس المغلق (Closed-Loop)
+
+> **المرجع التفصيلي:** `CLOSED_LOOP_FINAL.md` (مُدمج هنا).
+> **التعريف:** كل توصية مفتوحة تُراجع دورياً بالسعر الحي وتُقفل عند الهدف/الوقف/انتهاء الأفق مع درس.
+> الدروس تُقرأ في التحليل التالي وتعدّل شروط الشخصية ضمن حدود، مع قياس على `/live-tracking`.
+> **التسجيل وحده دون قراءة وتأثير = غير مقبول كـ closed loop.**
+
+### الـ 4 ملفات المعتمدة (Closed-Loop Chain)
+
+| # | الملف | الدور |
+|---|------|------|
+| 1 | `vps-service/utils/live_price.py` | مصدر السعر الموحّد: `get_live_price` (intraday → data_engine → fallback). |
+| 2 | `vps-service/analyzers/maestro_orchestrator.py` | العقل: `run_expert_memory_phase` يقرأ الدروس → `applied_lesson` (توسيع وقف مسقوف) → `record_prediction` يكتب التوقع بـ persona حقيقية. |
+| 3 | `vps-service/jobs/daily_closer.py` | الإغلاق الآلي: يقفل على سعر التفعيل (target/stop) + `is_correct` من `exit_type` + `record_lesson_from_close` + `detect_and_record_missed_opportunities`. |
+| 4 | `vps-service/utils/lesson_store.py` | ذاكرة الدروس: `record_lesson_from_close` يصنّف (STOP_TOO_TIGHT / TARGET_HIT_OK / LATE_MOMENTUM / MISSED_BREAKOUT) → `get_persona_lesson_summary` / `get_ticker_lesson_summary` يقرأها المايسترو. |
+
+### قواعد الـ Closed-Loop
+
+1. **Python = العقل · Node = عرض فقط.** لا WIN/LOSS نهائي بدون `outcome_date`.
+2. **الإغلاق على سعر التفعيل** (مش سعر `close`):
+   - `TARGET_HIT` → exit عند `target_price` (limit order).
+   - `STOPPED` → exit عند `stop_loss` (stop order).
+   - `SELL` → `return = (entry - trigger) / entry × 100` (direction-aware).
+3. **التعلّم الفعّال المسقوف:** لو `STOP_TOO_TIGHT ≥2` (سهم) أو `≥3` (شخصية) → `stop_widen_atr = min(0.5, n×0.15)` ATR.
+   - BUY: `stop_loss -= widen`، سقف: `entry×0.85` + 50% من المخاطرة الأصلية.
+   - SELL: `stop_loss += widen`، سقف: `entry×1.15` + 50%.
+   - إعادة حساب RR + log: `[LEARNING] applied_lesson: widen_stop +0.45ATR (STOP_TOO_TIGHT 3x on X) stop 95.0->94.1 RR 2.0->1.69`.
+4. **الأتمتة (A1/A2):**
+   - `MarketScheduler.tick()` يستدعي `run_daily_closer()` كل 15 دقيقة (3 مسارات: paused/intraday/post-market).
+   - `vps-service/scripts/setup_cron.sh` يركّب cron يومي 14:35 Cairo Sun-Thu (belt-and-suspenders).
+5. **تعريف "التعلّم شغّال وفعّال"** (بعد أسبوع تشغيل آلي):
+   - دروس جديدة يومياً (`lessons` يزيد).
+   - `[LEARNING]` يظهر على أسهم لها تاريخ.
+   - `applied_lesson` يظهر عند تكرار STOP_TOO_TIGHT.
+   - بدون ذلك: النظام **يسجّل** ولا **يتعلّم** — يعني الـ closed loop مكسور.
+
+---
+
+## 🎯 إدارة التوصيات (Picks Management)
+
+> **المرجع التفصيلي:** `PICKS-MANAGEMENT-SYSTEM.md` (مُدمج هنا).
+> **Task ID الأصلي:** PICKS-MGMT-v3.4.43.
+
+### الـ 4 tiers للثقة (Confidence Engine)
+
+| Tier | النطاق | اللون | الإجراء |
+|------|--------|-------|---------|
+| 🥇 **TOP_PICK** | ≥ 80% | ذهبي | اختيار فوري (أولوية قصوى) |
+| 🟢 **STRONG** | 65-79% | أخضر | اختيار إذا توفرت فرصة |
+| 🟡 **WATCH** | 50-64% | أصفر | مراقبة فقط (لا اختيار) |
+| 🔴 **SKIP** | < 50% | أحمر | تجاهل تام |
+
+### قواعد إدارة التوصيات
+
+1. **Daily Cap = 5 توصيات/يوم** (NON-NEGOTIABLE — طلب المالك المباشر).
+2. **`min_confidence = 65%`** افتراضيًا (للظهور في قائمة اليوم).
+3. **منع التكرار:** نفس السهم لا يتكرر في نفس اليوم — `seen_tickers` set في `select_top_picks()`.
+4. **الترتيب:** بالثقة تنازليًا (confidence desc).
+5. **7 عوامل حساب الثقة** (وزن 30/15/15/15/10/10/5):
+   - Technical Score 30% + Trend Strength 15% + Volume Confirmation 15% + R/R Ratio 15% + Volatility (ATR) 10% + Explosive Signal 10% + Data Quality 5%.
+6. **7 توصيات إدارة المراكز** (Position Manager):
+   - HOLD ⏳ / TRAILING_STOP 📈 / TAKE_PROFIT_T1 💰 / TAKE_PROFIT_T2 💎 / ADD ➕ / REDUCE ⚠️ / EXIT 🛑.
+7. **3 مستويات إلحاح (urgency):** high / medium / low.
+
+### الـ API Endpoints (5)
+
+| Endpoint | الوظيفة |
+|----------|---------|
+| `GET /api/predictions/daily-picks?date=&max_picks=5&min_confidence=65` | أعلى 5 توصيات لليوم |
+| `GET /api/predictions/daily-picks/history?days=7` | آخر N أيام |
+| `GET /api/predictions/active-management?urgency=high` | إدارة كل المراكز المفتوحة |
+| `GET /api/predictions/{id}/management?entry_price=&entry_qty=` | إدارة مركز واحد |
+| `POST /api/predictions/management/refresh` | إعادة حساب (admin) |
+
+---
+
+## 💰 سياسة الـ Fundamentals
+
+> **المرجع التفصيلي:** `FUNDAMENTALS_HISTORICAL_TEST_REPORT.md` + `DATA_ENGINE_FUNDAMENTALS_INVENTORY.md` (مُدمجين هنا).
+
+### القاعدة الأساسية
+
+- **`fundamental_score` الحقيقي 0-100** من 4 جداول نظيفة في `data_engine.db`:
+  - `tab_valuation` (pe, pb, peg, ps, ev_ebitda).
+  - `tab_profitability` (roe, roa, net_margin, gross_margin, operating_margin).
+  - `tab_dividends` (div_yield, payout, dps_growth).
+  - `tab_technical_analysis` (technical_rating, rsi, macd, adx, atr).
+- **الجداول المكسورة (لا تُستخدم حتى الإصلاح):** `tab_balance_sheet` / `tab_income_statement` / `tab_cash_flow` (column-shift bug — `symbol` column يحمل Arabic names).
+- **الجدول الفارغ:** `egx_fundamentals` (0 rows — fetcher غير مُجدول).
+
+### قواعد السياسة
+
+1. **لا placeholder 50** (Rule 24) — أي مسار إنتاجي لازم يحسب الـ score الحقيقي.
+2. **Missing data → weight 0** (مش forced to 50) — التقييم يعكس البيانات المتاحة فقط.
+3. **Resolver strategy** (no guessing):
+   - Exact match على `tab_valuation.symbol` (numeric Saudi tickers: 1030, 1120...).
+   - Prefix match `symbol LIKE 'TICKER%'` (EGX alpha tickers stored as `TICKER+Arabic name`).
+   - No match → `fundamental_score = None`, confidence = 0.
+4. **Hard veto (مقترح للتفعيل بعد أسبوع حي):** رفض BUY لو `fundamental_score < 30` (PF 1.511 → 1.784, +0.273).
+5. **ممنوع رفض BUY بناءً على fundamentals فقط للـ Gambler** (يقتل الزخم — الأساسيات filter إضافي فقط).
+6. **ممنوع رفع عتبة الـ veto فوق 30** (هتقتل winners — يوجد false positive واحد موثّق: 2180 score=17.5 ret=+8.97%).
+7. **Conservative gate** (مرحلة 3): رفض BUY لو `score<40 + conf>70` للـ conservative persona — يحتاج بيانات conservative persona أولاً.
+8. **لا تفعّل `egx_fundamental_fetcher.py` cron** قبل إصلاح `tab_*→ticker` mapping.
+9. **Point-in-time caveat:** الـ snapshot بتاريخ ~2026-08-17 — تطبيقه على توقعات Jan-Jul 2026 يُدخل look-ahead bias بسيط (مقبول لأن الـ fundamentals تتغير ربع سنوي).
+
+### النتائج المرجعية (148 صفقة مغلقة، archive 20260817)
+
+| Tier | n | WR | PF | Expectancy |
+|------|---:|----:|----:|----------:|
+| High score (≥70) | 9 | **77.78%** | **4.436** | **+4.30%** |
+| Mid score (40-70) | 4 | 25.00% | 0.341 | -3.24% |
+| Low score (<40) | 3 | 33.33% | 0.717 | -1.18% |
+| No score (missing) | 2 | 50.00% | 1.515 | +1.43% |
+
+→ الأساسيات **تفيد بقوة في اختيار الرابحين** (شريحة ≥70 = PF 4.4 vs 1.5 baseline = 2.9×).
+
+---
+
+## 🛡️ سلامة قواعد البيانات (DB Safety)
+
+> **المرجع التفصيلي:** `ULTRA-RESTORE-DATABASE-RECOVERY.md` + `V40_2_LIVE_INTEGRATION_PLAN.md` (مُدمجين هنا).
+
+### الـ 18 قاعدة بيانات SQLite
+
+1. `stocks.db` — الأسهم + القطاعات + `stock_daily_prices` + `stored_analyses` + `real_evaluated_predictions`.
+2. `price_history.db` — التاريخ اليومي (المصدر الموحّد لقراءة الأسعار عبر `load_merged_history()`).
+3. `predictions.db` — التوقعات النشطة + المغلقة + `actual_return` + V40 columns (`evidence_count`, `morning_bell`, `kill_filter_result`, `exit_type`, `lowest_price_reached`).
+4. `data_engine.db` — بيانات الـ fundamentals + الأخبار + الكروب + `tab_*` (8 جداول).
+5. `intraday.db` — بيانات intraday (ticker-level).
+6. `auth.db` — مصادقة NextAuth.
+7. `news.db` — الأخبار.
+8. `crypto.db` — العملات الرقمية.
+9. ثانوية: `gold_prices.db`, `silver_prices.db`, `analytics.db`, `community.db`, `telegram_data.db`, `learned.db`, `crypto_learning.db`, `crypto-lab.db`, `exchange_rates.db`, `ai_search_cache.db`, `historical.db`.
+
+### قواعد السلامة
+
+1. **WAL mode + busy_timeout=30000** على كل DBs (عبر `scripts/init_db_safety.py`).
+2. **لا `ALTER TABLE`** — بس `CREATE TABLE IF NOT EXISTS`. (ملاحظة: `ALTER TABLE ADD COLUMN` مسموح للـ migrations الآمنة فقط).
+3. **كل عمليات DB في `try/except`** — لو فشل التخزين، التحليل بيكمل.
+4. **ممنوع استخدام** `db/egx_investment.db` أو `db/custom.db` (runtime فقط).
+5. **نسخ احتياطي يومي:** `scripts/auto-backup.sh` + `POST /api/admin/db-manager/auto-backup`.
+6. **أرشيف GitHub:** `db/databases_backup.tar.gz` (37 MB) — يسترجع عبر `vps-service/tools/restore_from_local.py --from-git`.
+7. **الاسترجاع الآمن** (SAFE restore):
+   ```bash
+   # فحص فقط (read-only)
+   python3 vps-service/tools/restore_from_local.py --from-git --check
+   # الاسترجاع الفعلي (مع نسخة احتياطية تلقائية + V40 migration)
+   python3 vps-service/tools/restore_from_local.py --from-git
+   ```
+8. **⚠️ أدوات خطيرة (لا تستخدم):**
+   - `vps-service/tools/restore_dbs.py` — يكتب فوق DBs إنتاجية بدون نسخ احتياطي. **ممنوع.**
+   - `scripts/inject_egx_historical_data.py` — يحقن بيانات EODHD (API key متلغي) — قد يلوّث.
+9. **الـ ULTRA-RESTORE policy** (من 2026-08-11):
+   - **Cap على الخسائر -20%** في `daily_closer.py` + `historical_prediction_generator.py` لمنع الشذوذ الرياضي.
+   - **SELL expiry calculation** إلزامي: `profit_loss = (entry - exit) / entry × 100` (مش BUY formula).
+   - **لا double negation** في `historical_prediction_generator.py` (كان بـ يضرب الموجب مرتين).
+
+### سكربتات "لا تكسر الإنتاج" (4)
+
+1. `scripts/init_db_safety.py` — WAL + busy_timeout على كل DBs.
+2. `scripts/repair_all_dbs.py` — إصلاح DBs تالفة (REINDEX + dump/rebuild).
+3. `scripts/daily_db_health_check.py` — فحص يومي + إصلاح تلقائي + تقرير JSON.
+4. `scripts/setup-daily-health-cron.sh` — تثبيت/إزالة cron job.
+
+---
+
+## 🧠 أسلوب التفكير المطلوب
+
+### المبدأ 1 — اقرأ قبل أن تكتب
+- قبل أي تعديل، اقرأ الملفات الـ 4 في `Documentation/` + `AGENTS.md` + آخر 3 إدخالات في `CHANGELOG.md`.
+- ابحث عن الموجود قبل أن تنشئ جديدًا (Grep/Glob).
+- فهم الـ golden rules في هذا الملف قبل لمس المحركات.
+
+### المبدأ 2 — وسّع ولا تُنشئ
+- لو محتاج ميزة: دوّر على أقرب مكوّن/دالة موجودة ووسّعها.
+- لو محتاج حقل: أضفه للـ dataclass + `to_dict` + الـ API type + الـ UI render.
+- لو محتاج endpoint: وسّع blueprint مسجّل، ما تنشئش ملف route جديد.
+
+### المبدأ 3 — الكود الميت جريمة
+- أي دالة/endpoint/مكوّن بتكتبه لازم يتربط ويُستخدم.
+- لو لقيت كود ميت، سجّله في القيود الحرجة (§15) ولا تحذفه إلا بموافقة المالك + VERIFY-BEFORE-DELETE (Rule 16/25).
+- الـ refactoring يجي بعد توثيق الوضع الحالي، مش قبله.
+
+### المبدأ 4 — البيانات أولاً
+- الإنتاج بـ يعتمد على `price_history.db` و `predictions.db` و `stocks.db`.
+- لو المحرك بيطلع 0 نتيجة، **السبب الأول دائمًا هو البيانات** مش الكود.
+- تحقق من `MAX(date)` في `price_history.db` قبل أي تشخيص للمحرك.
+
+### المبدأ 5 — التراجع ممكن دائمًا
+- كل تعديل خطير لازم يسبقه نسخة احتياطية (DB أو git commit).
+- استخدم `git stash` و `git checkout` بحرص في الساندبوكس.
+- في الإنتاج، النسخة الاحتياطية في `db/backups/restore_TIMESTAMP/`.
+
+### المبدأ 6 — الوضوح قبل الذكاء
+- الكود الواضح أفضل من الكود الذكي المعقّد.
+- التعليقات بالعربي مقبولة (المشروع عربي بالكامل).
+- الـ dataclass + `to_dict()` أفضل من dict خام.
+
+### المبدأ 7 — لا تخمن، اسأل
+- لو مش متأكد من قرار، اسأل المالك.
+- لو الطلب غامض، اطلب توضيح.
+- خطأ في الفهم = ساعات ضائعة + مشاكل في الإنتاج.
+
+---
+
+## 📋 خطوات سير العمل (Workflow)
+
+### §12.1 — عند بداية أي مهمة
+
+1. اقرأ الملفات الـ 4 في `Documentation/` بهذا الترتيب:
+   - `00-CONSTITUTION.md` (هذا الملف)
+   - `01-PROJECT_ANATOMY.md`
+   - `02-SCREENS_AND_COMPONENTS.md`
+   - `SYSTEM_HOW_IT_THINKS.md`
+2. اقرأ `AGENTS.md` + آخر 3 إدخالات في `CHANGELOG.md`.
+3. اقرأ آخر ~150 سطر في `worklog.md` لمعرفة ما فعله الوكلاء السابقون.
+4. لو المهمة تشمل DBs، اقرأ `SYSTEM_STATE.md` §3 (مسارات DBs).
+5. حدد ما إذا كانت المهمة:
+   - **Fix** (إصلاح bug موجود) — اتبع §12.2.
+   - **Feature** (ميزة جديدة) — اتبع §12.3.
+   - **Refactor** (إعادة هيكلة) — اتبع §12.4 + لازم موافقة المالك.
+   - **Documentation** (توثيق) — اتبع §12.5.
+6. سجّل المهمة في `worklog.md` قبل البدء.
+
+### §12.2 — Fix workflow
+
+1. **أعد إنتاج الـ bug** في الساندبوكس أولًا (لو ممكن).
+2. **شخّص السبب الجذري** — لا تعالج العَرض. ابحث عن:
+   - بيانات ناقصة؟ (`price_history.db` متجمّد؟)
+   - عتبة hardcoded تتجاوز `engine_settings`؟
+   - import مكسور؟
+   - كود ميت بـ يـ shadow كود نشط؟
+   - key-mismatch (مثل `stop_loss`/`target_1`/`target_2` vs `sl`/`tp1`/`tp2`)؟
+3. **اكتب الإصلاح** في الملف الموجود (لا تنشئ ملف جديد).
+4. **تحقق**: `tsc --noEmit` + `python3 -c "import ..."` + `bun run lint`.
+5. **اختبر** في الساندبوكس (Agent Browser للواجهة + curl للـ API).
+6. **حدّث التوثيق** (لو الإصلاح يغيّر سلوك المحرك).
+7. **ارفع** على git (§13).
+
+### §12.3 — Feature workflow
+
+1. **اسأل**: هل الميزة موجودة فعلًا؟ (Grep في `src/` و `vps-service/`).
+2. **إن وُجدت**: وسّعها. إن لم توجد: اطلب موافقة المالك على إنشاء ملف.
+3. **اربط الباك-إند ← API ← بروكسي ← الواجهة** في نفس الـ PR.
+4. **لا تترك كود ميت** — لو ضفت endpoint، استخدمه في الواجهة.
+5. **حدّث** `02-SCREENS_AND_COMPONENTS.md` لو ضفت شاشة/مكوّن.
+6. **حدّث** `01-PROJECT_ANATOMY.md` لو ضفت محرك/قاعدة بيانات/وحدة.
+7. **ارفع** على git.
+
+### §12.4 — Refactor workflow (لازم موافقة المالك)
+
+1. **لا تبدأ refactoring بدون موافقة صريحة** من المالك.
+2. اقرأ قسم القيود الحرجة في هذا الملف (§15) لمعرفة الديون الموثّقة.
+3. اختر مرحلة واحدة فقط (مثلًا: "حذف garage/ directory" أو "حذف 71 مكوّن orphan").
+4. **نفّذ في فرع منفصل** (`git checkout -b refactor/<name>`).
+5. **اختبر شاملًا** بعد كل ملف تُعدّله.
+6. **حدّث** قسم القيود الحرجة في هذا الملف (ضع علامة ✅ على المكتمل).
+7. **اطلب مراجعة المالك** قبل الـ merge.
+
+### §12.5 — Documentation workflow
+
+1. التوثيق **يلزم** الواقع الحالي للكود، مش النظري.
+2. استخدم الأدوات (Grep/Glob/Read) للتأكد من كل رقم وكل مسار.
+3. لا تنسخ من `CHANGELOG.md` بدون تحقق — قد يكون قديمًا.
+4. كل ملف توثيقي لازم يبدأ بـ "آخر تحديث" + المالك + المسار.
+5. بعد التحديث، ارفع على git فورًا.
+
+---
+
+## 🔄 دورة التحديث والإغلاق + الرفع على GitHub
+
+### §13.1 — عند انتهاء أي مهمة
+
+1. **تحقق من القواعد** في هذا الملف (§3-§11 — ماذا كسرت؟ لا شيء؟ كمل).
+2. **شغّل الفحوصات**:
+   ```bash
+   bun run lint                                  # Frontend lint
+   npx tsc --noEmit -p tsconfig.json            # TypeScript types
+   python3 -c "import vps-service.<module>"      # Backend import
+   ```
+3. **اختبر في المتصفح** (Agent Browser للواجهة، curl للـ API).
+4. **حدّث التوثيق المتأثر**:
+   - لو غيّرت محرك → `01-PROJECT_ANATOMY.md` + `SYSTEM_STATE.md`.
+   - لو ضفت/حذفت شاشة أو مكوّن → `02-SCREENS_AND_COMPONENTS.md`.
+   - لو غيّرت منطق التحليل → `SYSTEM_HOW_IT_THINKS.md`.
+   - لو ضفت قاعدة → `00-CONSTITUTION.md` (هذا الملف) — بموافقة المالك.
+5. **أضف إدخال** في `CHANGELOG.md` (في الأعلى، بصيغة P0-vX أو RL-FIX-X أو R:R-FIX أو FUNDAMENTALS-ACTIVATION).
+6. **أضف إدخال** في `worklog.md` (في النهاية، بصيغة `Task ID: <X>` + `Work Log` + `Stage Summary`).
+7. **Commit** برسالة واضحة (عربي أو إنجليزي، شاملة).
+
+### §13.2 — الرفع على GitHub
+
+```bash
+cd /home/z/my-project  # أو /root/GLMinvestment على الإنتاج
+git status
+git add <files-changed>
+git commit -m "<وصف مختصر بالعربي أو الإنجليزي>"
+git push origin main
+```
+
+**قواعد الـ commit:**
+- لا تـ commit ملفات `.db` (ممنوع بحسب `.gitignore`).
+- لا تـ commit `.env` أو أسرار.
+- لا تـ commit `node_modules/` أو `__pycache__/`.
+- رسالة الـ commit لازم تشمل: ماذا تغيّر + لماذا + رقم المهمة (لو موجود).
+
+### §13.3 — مزامنة الإنتاج من الساندبوكس (READ-ONLY — No DB Touch)
+
+```bash
+# على الإنتاج
+cd /root/GLMinvestment
+git pull origin main
+pm2 restart nextjs python-backend data-engine
+# تحقق:
+curl -s http://localhost:3000/api/health
+curl -s http://localhost:8010/health
+```
+
+**ملاحظة:** الـ DBs على الإنتاج **لا تُلمس** (Rule 1). الـ `git pull` بـ يجيب الكود فقط، مش DBs.
+
+### §13.4 — ما لا يُفعل بعد R:R-FIX / FUNDAMENTALS-ACTIVATION
+
+- ❌ لا تحذف أو تعدّل أي توقع موجود في `predictions.db` — الإصلاح forward-only.
+- ❌ لا تُعد تشغيل الـ historical backfill (`maestro_backfill_*`) — بـ يكتب فوق الـ closed-trade outcomes.
+- ❌ لا تغيّر عتبات `engine_settings.py` (`dynamic_rr_normal`, `atr_stop_min_pct`, etc.) بدون جلسة قياس منفصلة.
+- ❌ لا تفعّل `egx_fundamental_fetcher.py` cron قبل إصلاح `tab_*→ticker` mapping.
+
+---
+
+## 🏗️ بنية المشروع (مرجع سريع)
+
+> التفاصيل الكاملة في `01-PROJECT_ANATOMY.md`. هذا ملخص للقواعد البنيوية.
+
+### الواجهة (Frontend — Next.js 16)
+- المسار: `src/`
+- الدخول: `src/app/page.tsx` (single-page shell مع hash routing).
+- المكونات: `src/components/` (328 ملف، 56 مجلد فرعي).
+- الـ UI primitives: `src/components/ui/` (49 shadcn/ui).
+- الـ API routes: `src/app/api/` (588 route، 257 proxy لـ Python).
+
+### الباك-إند (Backend — Python)
+- المسار: `vps-service/`
+- الدخول: `lightweight_server.py` (Flask على 8010) + `main.py` (FastAPI).
+- المحركات: `analyzers/` (123 ملف) + `engine/` (10) + `engines/` (6).
+- الـ APIs: `api/` (65 ملف، 31 blueprint مسجّل).
+- الـ jobs: `jobs/` (12 ملف — schedulers + closers + learners).
+- المخاطر: `portfolio/` (9) + `risk_management_advanced.py` (root).
+- البيانات: `data/` (15) + `data_engine/` (منفصل).
+
+### الـ Data Engine
+- منفصل عن `vps-service/` — مساره `data_engine/`.
+- يجمع البيانات من TradingView + Yahoo + EGXPilot + CoinGecko + EGKSCO.
+- يكتب في `data_engine.db` + `intraday.db` + `price_history.db`.
+
+### المحركات الرئيسية
+
+| المحرك | الملف | الدور |
+|--------|------|-------|
+| MasterAnalyzer | `analyzers/master_analyzer.py` | الدماغ — يجمع كل المحللات + `load_merged_history()` |
+| MaestroOrchestrator | `analyzers/maestro_orchestrator.py` | 8 طبقات + 3 شخصيات + expert memory |
+| CoreScoringEngine | `analyzers/core_scoring_engine.py` | RSI/MACD/SMA/ATR/Bollinger |
+| InstitutionalDecisionEngine | `analyzers/institutional_decision_engine.py` | V40 — 6 إثباتات موزونة + kill filters |
+| EngineSettings | `analyzers/engine_settings.py` | مصدر الحقيقة للعتبات (~100 مفتاح) |
+| AdaptiveWeights | `analyzers/adaptive_weights.py` | `PERSONA_INPUT_WEIGHTS` + تكيف حسب الـ regime |
+| V38BacktestEngine | `engines/v38_backtest_engine.py` | باكتست V38/V40.2 + simulate_trade + ATR clamp |
+| FlowSystem | `engine/flow_system.py` | 4 طبقات flow score |
+| StopManager | `portfolio/stop_manager.py` | 7 أنواع ستوب |
+| PositionManager | `portfolio/position_manager.py` | إدارة المراكز (class-based) |
+| RiskManagementAdvanced | `risk_management_advanced.py` | position sizing + STOP_LOSS_EGX/CRYPTO |
+| MarketScheduler | `jobs/market_scheduler.py` | المُجدوِل المركزي |
+| DailyCloser | `jobs/daily_closer.py` | إغلاق التوقعات يوميًا + Hard Loss Ceiling |
+| LearningEngine | `jobs/learning_engine.py` | التعلم من الصفقات المغلقة |
+| V40.2 Generator | `jobs/v40_2_daily_generator.py` | توليد توقعات V40.2 الإنتاجي |
+| PriceHistorySafetyNet | `jobs/price_history_safetynet.py` | ملء فجوات Yahoo |
+| IntradayAggregator | `jobs/intraday_aggregator.py` | intraday → daily |
+| ConfidenceEngine | `analyzers/confidence_engine.py` | 7 عوامل ثقة + 4 tiers |
+| FundamentalDataProvider | `analyzers/fundamental_data_provider.py` | `get_fundamental_score()` الحقيقي 0-100 |
+
+### المهام المجدولة (22 مهمة APScheduler)
+- `incremental` / `full_analysis` / `final_analysis` (تحليل).
+- `daily_closer` (إغلاق يومي، 14:35 Cairo Sun-Thu).
+- `learning_engine` (تعلم تكيفي).
+- `trailing_stop_update` (كل 15 دقيقة، intraday).
+- `bag_holder_alerts` (تنبيهات خسائر ≥15%، كل 15 دقيقة).
+- `price_history_safetynet` (يومي).
+- `intraday_aggregator` (intraday→daily).
+- `v40_2_daily_generator` (توليد V40.2، 07:15 Cairo Sun-Thu).
+
+> تفاصيل كل DB + جداولها + علاقاتها في `01-PROJECT_ANATOMY.md` §5.
+
+---
+
+## ⚠️ القيود الحرجة المعروفة (حلّها مُجدوَل)
+
+> التفاصيل الكاملة سابقًا في `03-REFACTORING_REPORT.md` (مُدمج هنا). هذه قيود يجب أن يعرفها أي وكيل قبل البدء.
+
+| القيد | الموقع | الخطورة | الحل |
+|-------|--------|---------|------|
+| `STOP_LOSS_EGX`/`STOP_LOSS_CRYPTO` hardcoded | `risk_management_advanced.py:87-105` | 🔴 | نقل لـ `engine_settings.py` |
+| `tech_score = 50` hardcoded في مكانين | `professional_analysis_routes.py:163`, `live_prediction_engine.py:257` | 🟠 | استبدال بـ `get_setting('tech_score_base', 50)` |
+| 34 ملف API DEPRECATED في `vps-service/api/` | ~17,000 LOC ميت | 🟡 | VERIFY-BEFORE-DELETE ثم حذف بمراحل |
+| 9 صفحات Next.js ميتة (`/admin/maestro`, `/community`, `/portfolio`, ...) | ~6,000 LOC | 🟡 | VERIFY-BEFORE-DELETE ثم حذف |
+| 71 مكوّن orphan في `src/components/` | 50,442 LOC ميت (26.6%) | 🔴 | حذف 3 من 71 (P3.3-partial)؛ 68 متبقٍ يحتاج refactoring |
+| `garage/` directory بالكامل ميت | 7 ملفات، 8,247 LOC | 🟡 | حذف كامل بعد VERIFY-BEFORE-DELETE |
+| 3 أنظمة تتبع توقعات متوازية | `/api/predictions/tracking/*` + `/api/predictions/honest-tracking/*` + `/api/stored-analysis/live-tracking` | 🟠 | توحيد على `live-tracking` فقط |
+| 163 "tiny proxy" route (~4,700 LOC boilerplate) | `src/app/api/**` | 🟡 | استبدال بـ catch-all proxy |
+| 4 catch-all proxies متداخلة | `/api/[...slug]`, `/api/proxy/*`, `/api/python/*`, `/api/telegram/*` | 🟠 | توحيد على `/api/proxy/[...path]` |
+| `tab_balance_sheet`/`tab_income_statement`/`tab_cash_flow` column-shift bug | `data_engine.db` | 🟠 | migration script (لم يُكتب بعد) |
+| `egx_fundamentals` فارغة (0 rows) | `data_engine.db` | 🟠 | تفعيل `egx_fundamental_fetcher.py` cron بعد إصلاح الـ mapping |
+| 4 tickers unmatched (EG23X, MTEZ, OCIC, TAO) | `predictions.db` | 🟡 | resolver strategy extension |
+| tests ناقصة حرجة | stop_manager / position_manager / institutional_decision_engine / v38_backtest_engine / historical_prediction_generator / engine_settings | 🔴 | كتابة unit tests لكل منهم |
+| `MAX_HOLDING_DAYS` = 30 / 90 / 20 (3 قيم مختلفة) | `engine_settings.py:191`, `multi_target_exit.py:80`, `optimizer_params.json` | 🟠 | توحيد على 30 |
+| توقعات عطلة نهاية الأسبوع من أسعار قديمة | `historical_prediction_generator.py` | 🟠 | market-closed guard قبل التوليد |
+| `pytz` dependency حرج (Cairo timezone) | عابر للملفات | 🟠 | تثبيت `pytz` في `requirements.txt` |
+| Prisma scaffold بدل schema حقيقي | `prisma/schema.prisma` | 🟡 | الـ data الحقيقي في Python SQLite — لا تلمس Prisma |
+| Admin components ضخمة | MaestroCommandCenter 3,748 LOC | 🟡 | تقسيم لوحدات أصغر (P3.x) |
+| 18 ثغرة أمنية حرجة | SEC-01 (admin backdoor), SEC-03 (Paymob bypass), SEC-04 (admin auth bypass via proxy), ... | 🔴 | أولوية قصوى — تحتاج جلسة أمن مستقلة |
+
+---
+
+## ✅ عهد الوكيل
+
+أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ العمل في هذا المشروع **يقرأ هذا الملف**
+ويُقرّ بما يلي:
+
+1. قرأتُ `Documentation/00-CONSTITUTION.md` (هذا الملف) وفهمتُ القواعد المطلقة الـ 25.
+2. سأقرأ `01-PROJECT_ANATOMY.md` + `02-SCREENS_AND_COMPONENTS.md` + `SYSTEM_HOW_IT_THINKS.md` قبل أي تعديل.
+3. لن ألمس قواعد البيانات على الإنتاج (القاعدة 1).
+4. لن ألمس ملفات النظام (القاعدة 2).
+5. سألتزم ببنية المشروع (القاعدة 3).
+6. لن أنشئ شاشات/ملفات/أنظمة جديدة إلا في الطوارئ وبموافقة المالك (القاعدة 4).
+7. كل كود أكتبه سيرتبط ويُستخدم (القاعدة 5).
+8. سألتزم بـ schema-aware (القاعدة 6) و HARD cap (القاعدة 7) و ATR stop [3%,9%] (القاعدة 8) و R:R ≥ 1.5 (القاعدة 18) و Python=Brain (القاعدة 20) و V40.2 evidence-based (القاعدة 21) و dedup-by-ticker (القاعدة 22) و PERSONA-UNIFY-A (القاعدة 23) و fundamentals real (القاعدة 24).
+9. سأحترم مسار التوقعات الرسمي (V40.2) ولا أعيد تصنيف الشخصيات في `predictions.persona`.
+10. سأحدّث التوثيق المتأثر بعد كل مهمة وأرفع على GitHub.
+11. لن أحذف كودًا ميتًا إلا بعد VERIFY-BEFORE-DELETE (القاعدة 16) وموافقة المالك (القاعدة 25).
+
+---
+
+*هذا الدستور ملزم. أي تغيير فيه لازم بموافقة المالك وتوثيقه في `CHANGELOG.md`.*
+*آخر تحديث: 2026-08-17 — توحيد التوثيق (4 ملفات رئيسية) + إصلاح R:R (`65a748f`) + تفعيل fundamentals (`04354a5`).*

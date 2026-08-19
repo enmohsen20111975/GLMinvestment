@@ -1,0 +1,338 @@
+// Predictions Database Schema
+// File: ../db/predictions.db  (consolidated into the single db/ folder)
+// Purpose: AI predictions, expert recommendations, and prediction tracking
+//
+// ⚡ توحيد قواعد البيانات (DB Unification):
+//   - predictions: all predictions (general + persona) — 5000+ rows
+//   - persona_predictions: dual-persona (gambler + investor) — 686 rows
+//   - prediction_logs: verification/outcome logs (moved from stocks.db) — 43 rows
+//   - aiPrediction: DROPPED (was 0 rows, dead table)
+//   - platform_recommendations: DROPPED (was 0 rows, in custom.db)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/predictions-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../db/predictions.db"
+}
+
+/// Unified predictions table — all signals from Python Maestro orchestrator
+model Prediction {
+  id                Int      @id @default(autoincrement())
+  ticker            String
+  signal            String
+  signal_type       String
+  prediction_date   String
+  entry_price       Float
+  target_price      Float?
+  stop_loss         Float?
+  master_score      Float?
+  technical_score   Float?   @default(50)
+  fundamental_score Float?   @default(50)
+  ai_pattern_score  Float?   @default(50)
+  sentiment_score   Float?   @default(50)
+  outcome_date      String?
+  exit_price        Float?
+  actual_return     Float?
+  hit_target        Int      @default(0)
+  hit_stop          Int      @default(0)
+  is_correct        Int?
+  holding_days      Int      @default(0)
+  notes             String?
+  market            String?  @default("EGX")
+  confidence        Float?
+  created_at        String?  @default("datetime('now')")
+
+  @@index([ticker])
+  @@index([prediction_date])
+  @@index([signal])
+  @@index([master_score])
+  @@map("predictions")
+}
+
+/// Dual-persona predictions (gambler + investor) from Python persona engine
+model PersonaPrediction {
+  id                   String   @id
+  ticker               String
+  market               String?
+  persona_type         String
+  signal_type          String?
+  entry_price          Float?
+  target_price         Float?
+  stop_loss            Float?
+  prediction_date      String?
+  status               String   @default("PENDING")
+  final_price          Float?
+  profit_loss_percent  Float?
+  hit_target           Int      @default(0)
+  hit_stop_loss        Int      @default(0)
+  created_at           String?
+  master_score         Float?
+  confidence           Float?
+
+  @@index([ticker])
+  @@index([persona_type])
+  @@index([prediction_date])
+  @@map("persona_predictions")
+}
+
+/// Prediction verification logs — moved from stocks.db to predictions.db
+/// Unified 40+ column schema (merges 4+ competing schemas)
+model PredictionLog {
+  id                    String   @id
+  ticker                String
+  stock_name            String?
+  stock_id              String?
+  sector                String?
+  market                String?  @default("EGX")
+
+  // Prediction
+  prediction_date       String
+  recommendation        String
+  predicted_direction   String?
+  confidence            Float?
+  entry_price           Float?
+  target_price          Float?
+  stop_loss             Float?
+
+  // Scores
+  composite_score       Float?
+  technical_score       Float?
+  fundamental_score     Float?
+  quality_score         Float?
+  momentum_score        Float?
+
+  // Context (JSON blobs)
+  market_regime         String?
+  regime_multiplier     Float?
+  indicators_used       String?
+  weights_snapshot      String?
+  features_snapshot     String?
+  model_version         String?
+  source                String?  @default("system")
+
+  // Predicted prices (for backtesting)
+  predicted_price_5d    Float?
+  predicted_price_10d   Float?
+  predicted_price_20d   Float?
+
+  // Verification (5d)
+  actual_price_5d       Float?
+  direction_correct_5d  Int      @default(0)
+  price_error_5d        Float?
+
+  // Verification (10d)
+  actual_price_10d      Float?
+  direction_correct_10d Int      @default(0)
+  price_error_10d       Float?
+
+  // Verification (20d)
+  actual_price_20d      Float?
+  direction_correct_20d Int      @default(0)
+  price_error_20d       Float?
+
+  // Final outcome
+  target_reached        Int      @default(0)
+  stop_hit              Int      @default(0)
+  verified              Int      @default(0)
+  verified_at           String?
+  verification_date     String?
+  actual_price          Float?
+  price_change_percent  Float?
+  outcome               String?
+  profit_percent        Float?
+  holding_days          Int?
+
+  // Timestamps
+  created_at            String?  @default("datetime('now')")
+  updated_at            String?
+
+  @@index([ticker])
+  @@index([prediction_date])
+  @@index([verified])
+  @@map("prediction_logs")
+}
+
+model ExpertRecommendation {
+  id                     String    @id
+  stock_symbol           String
+  stock_name_ar          String?
+  expert_name            String
+  expert_source          String?
+  action                 String    @default("BUY")
+  recommendation_type    String    @default("detailed")
+  entry_price            Float
+  entry_price_from       Float?
+  entry_price_to         Float?
+  entry_condition        String?
+  target_price           Float?
+  target_price_2         Float?
+  investment_target      Float?
+  stop_loss              Float?
+  stop_loss_condition    String?
+  support_level          Float?
+  resistance_level       Float?
+  expected_profit_min    Float?
+  expected_profit_max    Float?
+  expected_profit_invest Float?
+  technical_analysis     String?
+  fundamental_analysis   String?
+  recommendation_reason  String?
+  session_date           String?
+  session_type           String?
+  expected_duration      String?
+  expected_duration_days Int?
+  status                 String    @default("PENDING")
+  final_price            Float?
+  profit_loss_percent    Float?
+  hit_target             Int       @default(0)
+  hit_stop_loss          Int       @default(0)
+  notes                  String?
+  recommendation_date    String?   @default("datetime('now')")
+  closed_at              String?
+  created_at             String?   @default("datetime('now')")
+  updated_at             DateTime?
+
+  @@index([stock_symbol])
+  @@index([expert_name])
+  @@index([session_date])
+  @@index([status])
+}
+
+model ExpertTrackRecord {
+  id                         String    @id
+  expert_name                String    @unique
+  expert_source              String?
+  total_recommendations      Int       @default(0)
+  successful_recommendations Int       @default(0)
+  failed_recommendations     Int       @default(0)
+  success_rate               Float?    @default(0)
+  avg_return                 Float?    @default(0)
+  total_return               Float?    @default(0)
+  best_return                Float?
+  worst_return               Float?
+  last_recommendation        DateTime?
+  created_at                 String?   @default("datetime('now')")
+  updated_at                 DateTime?
+}
+
+model CachedAnalysis {
+  id             String  @id
+  stock_symbol   String  @unique
+  analysis_data  String
+  last_updated   String  @default("datetime('now')")
+
+  @@index([stock_symbol])
+}
+
+/// Stored Analysis - التحليلات المخزنة من Background Engine
+model StoredAnalysis {
+  id                String   @id @default(uuid())
+  ticker            String
+  market            String   @default("EGX")
+
+  // Maestro Score
+  maestro_score     Float    @default(0)
+  recommendation    String   @default("hold")
+  recommendation_ar String?
+  confidence        Float    @default(0)
+
+  // Trading Details
+  entry_price       Float    @default(0)
+  target_price      Float?
+  stop_loss         Float?
+  risk_reward       Float    @default(0)
+
+  // Regime & Market Context
+  regime            String?
+  regime_score      Float?
+  regime_confidence Float?
+
+  // Timeframe Analysis
+  timeframe_score   Float?
+  timeframe_aligned Boolean  @default(false)
+  timeframe_count   Int      @default(0)
+
+  // Volume Context
+  volume_ratio      Float?
+  liquidity_rating  String?
+
+  // News Context
+  news_risk_level   String?
+  has_cbe_news      Boolean  @default(false)
+
+  // Full Analysis JSON
+  analysis_json     String?
+
+  // Metadata
+  analysis_type     String   @default("scheduled") // scheduled, incremental, manual
+  analysis_version  String   @default("2.0")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@unique([ticker, market])
+  @@index([ticker])
+  @@index([market])
+  @@index([maestro_score])
+  @@index([recommendation])
+  @@index([created_at])
+  @@map("stored_analyses")
+}
+
+/// Analysis Job Queue - قائمة انتظار المهام
+model AnalysisJob {
+  id          String   @id @default(uuid())
+  job_type    String   // full_analysis, incremental, single_stock
+  market      String?
+  ticker      String?
+  priority    String   @default("medium") // high, medium, low
+  status      String   @default("pending") // pending, running, completed, failed
+  progress    Int      @default(0)
+  total       Int      @default(0)
+  result      String?
+  error       String?
+  started_at  DateTime?
+  completed_at DateTime?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([status])
+  @@index([market])
+  @@index([created_at])
+  @@map("analysis_jobs")
+}
+
+/// Analysis Engine Status - حالة محرك التحليل
+model AnalysisEngineStatus {
+  id                 String   @id @default("main")
+  is_running         Boolean  @default(false)
+  current_market     String?
+  current_ticker     String?
+  total_analyzed     Int      @default(0)
+  total_pending      Int      @default(0)
+  last_full_analysis DateTime?
+  last_run           DateTime?
+  next_scheduled_run DateTime?
+  error_count        Int      @default(0)
+  last_error         String?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  @@map("analysis_engine_status")
+}
+
+model TechnicalIndicator {
+  id              String  @id
+  stock_symbol    String
+  indicator_name  String
+  indicator_value Float
+  signal          String
+  timestamp       String
+  created_at      String? @default("datetime('now')")
+
+  @@unique([stock_symbol, indicator_name, timestamp])
+  @@index([stock_symbol])
+}
