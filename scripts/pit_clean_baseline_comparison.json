@@ -1,0 +1,108 @@
+{
+  "task": "PIT-CLEAN-BASELINE-CHALLENGE",
+  "generated_at": "2026-08-19T21:41:15.114522Z",
+  "dataset_md5": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "sample_info": {
+    "n_raw": 153,
+    "n_valid": 152,
+    "n_excluded": 1,
+    "exclusion_breakdown": {
+      "duplicate": 1
+    },
+    "dataset_hash": "3c34a171444be264",
+    "pit_rules": [
+      "Prices: only candles <= prediction_date (from price_history.db)",
+      "Fundamentals: EXCLUDED (all contaminated by future snapshot)",
+      "Stocks snapshot: EXCLUDED (PE/ROE/RSI from August for January predictions)",
+      "News: EXCLUDED (symbol=NULL, cannot verify per-ticker)",
+      "Used: ticker + prediction_date + entry_price + target + stop (from predictions table)",
+      "PIT check: each prediction must have price data <= prediction_date",
+      "PIT check: entry_price must be within 0.5x-2.0x of last close before prediction"
+    ]
+  },
+  "comparison_table": {
+    "glm_fixed_tpsl": {
+      "n": 91,
+      "wr": 46.15,
+      "pf": 1.2713,
+      "exp": 0.8952,
+      "avg_win": 9.0891,
+      "avg_loss": -6.1282,
+      "max_loss": -7.5927,
+      "max_win": 12.2689,
+      "label": "GLM (Fixed TP/SL) [CONTAMINATED — entry/target/stop may use future data]"
+    },
+    "glm_selection_bh_10d": {
+      "n": 108,
+      "wr": 51.85,
+      "pf": 2.3163,
+      "exp": 3.3405,
+      "avg_win": 11.3369,
+      "avg_loss": -5.271,
+      "max_loss": -15.3108,
+      "max_win": 50.0,
+      "label": "GLM Selection→BH 10d [PIT-clean for prices]"
+    },
+    "glm_selection_bh_20d": {
+      "n": 107,
+      "wr": 55.14,
+      "pf": 2.8796,
+      "exp": 6.6825,
+      "avg_win": 18.5669,
+      "avg_loss": -7.9255,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "GLM Selection→BH 20d [PIT-clean for prices]"
+    },
+    "glm_selection_bh_30d": {
+      "n": 102,
+      "wr": 60.78,
+      "pf": 2.5381,
+      "exp": 8.1718,
+      "avg_win": 22.1846,
+      "avg_loss": -13.5482,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "GLM Selection→BH 30d [PIT-clean for prices]"
+    },
+    "random_bh_20d": {
+      "n": 36,
+      "wr": 44.44,
+      "pf": 0.9628,
+      "exp": -0.2773,
+      "avg_win": 16.1336,
+      "avg_loss": -13.406,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "Random (BH 20d, seed=42) [PIT-clean]"
+    },
+    "momentum_top3_bh_20d": {
+      "n": 104,
+      "wr": 51.92,
+      "pf": 2.3362,
+      "exp": 5.7385,
+      "avg_win": 19.3229,
+      "avg_loss": -8.9326,
+      "max_loss": -50.0,
+      "max_win": 50.0,
+      "label": "Momentum top-3 (BH 20d) [PIT-clean]"
+    }
+  },
+  "verdict": {
+    "beats_random": true,
+    "beats_momentum": false,
+    "exit_kills_selection": true,
+    "glm_exp": 0.8952,
+    "bh20_exp": 6.6825,
+    "random_exp": -0.2773,
+    "momentum_exp": 5.7385
+  },
+  "important_notes": [
+    "GLM Fixed TP/SL numbers are CONTAMINATED — entry/target/stop may have been computed using future data",
+    "Selection→BH and Random and Momentum use ONLY price_history (PIT-clean for prices)",
+    "Fundamentals are EXCLUDED entirely (all contaminated)",
+    "Stocks snapshot (PE/ROE/RSI) EXCLUDED (August data for January predictions)",
+    "The selection itself (which ticker to pick) may still be contaminated by retroactive generation",
+    "This is the best available PIT-clean comparison given dataset limitations"
+  ]
+}
