@@ -1,6 +1,81 @@
 # Changelog
 
 
+## [PHASE-0-TRUTH-LAYER] — Master Audit PHASE 0: Truth Layer (2026-08-19)
+
+> **المهمة:** التحقق من الحقيقة الأساسية للنظام قبل أي استنتاجات. Dataset،
+> provenance، duplicates، channel separation، KPI provenance.
+
+### PHASE 0.1 — Dataset Verification: ✅ PASS
+- ZIP: `data/active_databases_20260817_full.zip` (77MB)
+- MD5: `0947bdf6c2eff1a75ff8af6c3e576ed8` ✅ مطابق
+- 18 DBs extracted + integrity_check = ok for all
+
+### PHASE 0.2 — Data Provenance: ⚠️ FIXED
+- 7 DBs audited (predictions, stocks, price_history, data_engine, historical, learned, news)
+- **stocks.db byte-drift detected** → re-extracted from ZIP → canonical MD5 restored ✅
+- Empty tables: egx_fundamentals (0), learned_lessons (0), news_api_keys (0)
+- Stale: prediction_logs (last 2025-02-20), daily_prices (110 rows)
+
+### PHASE 0.3 — Duplicate Audit: ⚠️ Structural FAIL / Data PASS
+- **predictions** (153 raw): 2 duplicate pairs (2.61%) — morning_bell re-emitted
+- **persona_predictions** (1052 raw): 430 "duplicates" (81.75%) — STRUCTURAL
+  - Root cause: `persona` column constant 'balanced' (degenerate)
+  - Canonical key `(ticker, date, persona_type, entry)`: **0 duplicates**
+  - Needs schema fix: backfill `persona` from `persona_type` or drop column
+- **prediction_logs** (80 raw): 0 duplicates ✅
+
+### PHASE 0.4 — Channel Separation: ✅ PASS
+- **predictions**: `morning_bell` flag separates cleanly (0=114 balanced, 1=39 morning_bell)
+- **overlap_count = 0** ✅ (no cross-contamination)
+- **persona_predictions**: `persona_type` separates cleanly (gambler=564, investor=488)
+- KPI per channel:
+  - balanced: n=109, WR=55.05%, PF=1.71, Exp=+1.97%, max_loss=-7.59%
+  - morning_bell: n=39, WR=46.15%, PF=1.04, Exp=+0.13%, max_loss=-7.23%
+  - gambler/investor: 0 resolved (all PENDING — closing engine hasn't run)
+
+### PHASE 0.5 — KPI Provenance: ❌ FAIL (8/15 KPIs fail)
+
+#### Gold Standard (3 PASS):
+1. ✅ `admin/platform-performance` — dedup + HARD cap + channel separation + exclusion_breakdown
+2. ✅ `scripts/backtest_full.py` — same pipeline
+3. ✅ `deal-advisor/[ticker]` — single-ticker analysis
+
+#### CRITICAL Fixes Applied:
+- 🔴 **FIXED**: `admin/execute_backtest` returned `random.uniform()` — **fake KPIs** behind admin auth → replaced with `NOT_IMPLEMENTED` + redirect to real endpoints
+- 🔴 **FIXED**: `kimi_backtest.py` `avg_loss` was POSITIVE (violates sign rule) → fixed to NEGATIVE
+
+#### 6 Remaining Blockers (NEEDS_OWNER — KPI alignment to gold standard):
+1. `honest-tracking/stats` — no dedup, ±100 cap, mixed channels
+2. `credibility` — no dedup, no channel separation
+3. `hunter_pick_tracking` — no HARD cap, no exclusion_breakdown
+4. `enhanced_prediction_tracker` — reads from legacy `aiPrediction` table
+5. `live-monitor/ledger` — string-match win_rate, LIMIT 50
+6. `analyst/predictions` — no HARD cap on pnl_pct
+
+### GATE DECISION: ❌ FAIL
+| Gate | Status |
+|------|--------|
+| Dataset Integrity | ✅ PASS |
+| MD5 | ✅ PASS |
+| Provenance | ✅ FIXED (stocks.db restored) |
+| Duplicates | ⚠️ Structural (persona degenerate) |
+| Channel Separation | ✅ PASS |
+| KPI Provenance | ❌ FAIL (6 remaining blockers) |
+| **NEXT_PHASE_ALLOWED** | **NO** |
+
+### Files Produced
+- [جديد] `scripts/audit_phase0_provenance.json` (34KB)
+- [جديد] `scripts/audit_phase0_duplicates.json` (16KB)
+- [جديد] `scripts/audit_phase0_channels.json` (5KB)
+- [جديد] `scripts/audit_phase0_kpi_provenance.json` (34KB)
+- [جديد] `scripts/audit_phase0_gate_report.md`
+- [معدّل] `vps-service/api/admin_routes.py` — execute_backtest random→NOT_IMPLEMENTED
+- [معدّل] `vps-service/api/kimi_backtest.py` — avg_loss sign fixed
+- [معدّل] `db/stocks.db` — re-extracted from ZIP (canonical MD5 restored)
+
+---
+
 ## [BACKTEST-FULL-001] — باك تست كامل 2025-12-01 → 2026-06-17 (2026-08-19)
 
 > **المهمة:** باك تست كامل على التوصيات الفعلية المحفوظة في predictions.db

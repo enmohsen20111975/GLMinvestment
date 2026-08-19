@@ -1,0 +1,168 @@
+{
+  "audit": "PHASE-0.4-Channel-Separation",
+  "db_path": "/home/z/my-project/db/predictions.db",
+  "db_md5": "16f018ceacf9cb4211ded356f52a580e",
+  "rules": {
+    "hard_cap_abs_return": 50.0,
+    "max_return_ratio": 5.0,
+    "return_formula": "actual_return | exit_price | hit_target=(t-e)/e*100 | hit_stop=(s-e)/e*100 | expired=None"
+  },
+  "predictions": {
+    "table_exists": true,
+    "columns_present": {
+      "persona": true,
+      "morning_bell": true,
+      "channel": false,
+      "persona_type": false
+    },
+    "channel_id_method": "morning_bell column (0=balanced, 1=morning_bell). persona column is uniformly 'balanced' (legacy default, not a channel separator in this table).",
+    "persona_values": {
+      "balanced": 153
+    },
+    "morning_bell_values": {
+      "0": 114,
+      "1": 39
+    },
+    "persona_x_morning_bell": [
+      {
+        "persona": "balanced",
+        "morning_bell": 0,
+        "count": 114
+      },
+      {
+        "persona": "balanced",
+        "morning_bell": 1,
+        "count": 39
+      }
+    ],
+    "overlap_count": 0,
+    "overlap_breakdown": {
+      "morning_bell=1 AND persona!='balanced'": 0,
+      "morning_bell=0 AND persona IN ('gambler','investor')": 0,
+      "morning_bell=1 AND persona='gambler'": 0
+    },
+    "kpis": {
+      "balanced": {
+        "n": 109,
+        "n_raw": 114,
+        "n_excluded": 0,
+        "n_open": 5,
+        "WR": 55.05,
+        "PF": 1.7143,
+        "Exp": 1.9678,
+        "avg_win": 8.5795,
+        "avg_loss": -6.1282,
+        "max_loss": -7.5927,
+        "max_win": 50.0,
+        "tp1_hit_rate": 36.84,
+        "stop_hit_rate": 42.98,
+        "expired_rate": 4.39,
+        "hard_capped_count": 1,
+        "exclusion_breakdown": {}
+      },
+      "morning_bell": {
+        "n": 39,
+        "n_raw": 39,
+        "n_excluded": 0,
+        "n_open": 0,
+        "WR": 46.15,
+        "PF": 1.0396,
+        "Exp": 0.13,
+        "avg_win": 7.3875,
+        "avg_loss": -6.0908,
+        "max_loss": -7.2344,
+        "max_win": 11.2115,
+        "tp1_hit_rate": 35.9,
+        "stop_hit_rate": 53.85,
+        "expired_rate": 0.0,
+        "hard_capped_count": 0,
+        "exclusion_breakdown": {}
+      }
+    }
+  },
+  "persona_predictions": {
+    "table_exists": true,
+    "columns_present": {
+      "persona": true,
+      "persona_type": true
+    },
+    "channel_id_method": "persona_type column (gambler / investor). persona column is uniformly 'balanced' (legacy duplicate of predictions.persona default, NOT the channel separator in this table).",
+    "persona_type_values": {
+      "gambler": 564,
+      "investor": 488
+    },
+    "persona_values": {
+      "balanced": 1052
+    },
+    "persona_type_x_persona": [
+      {
+        "persona_type": "gambler",
+        "persona": "balanced",
+        "count": 564
+      },
+      {
+        "persona_type": "investor",
+        "persona": "balanced",
+        "count": 488
+      }
+    ],
+    "cross_contamination_count": 1052,
+    "cross_contamination_breakdown": {
+      "persona_type != persona (total)": 1052,
+      "persona_type='gambler' AND persona='balanced'": 564,
+      "persona_type='investor' AND persona='balanced'": 488
+    },
+    "kpis": {
+      "gambler": {
+        "n": 0,
+        "n_raw": 564,
+        "n_excluded": 3,
+        "n_open": 564,
+        "WR": 0.0,
+        "PF": 0.0,
+        "Exp": 0.0,
+        "avg_win": 0.0,
+        "avg_loss": 0.0,
+        "max_loss": 0.0,
+        "max_win": 0.0,
+        "tp1_hit_rate": 0.0,
+        "stop_hit_rate": 0.0,
+        "expired_rate": 100.0,
+        "hard_capped_count": 0,
+        "exclusion_breakdown": {
+          "ticker_invalid": 3
+        }
+      },
+      "investor": {
+        "n": 0,
+        "n_raw": 488,
+        "n_excluded": 1,
+        "n_open": 488,
+        "WR": 0.0,
+        "PF": 0.0,
+        "Exp": 0.0,
+        "avg_win": 0.0,
+        "avg_loss": 0.0,
+        "max_loss": 0.0,
+        "max_win": 0.0,
+        "tp1_hit_rate": 0.0,
+        "stop_hit_rate": 0.0,
+        "expired_rate": 100.0,
+        "hard_capped_count": 0,
+        "exclusion_breakdown": {
+          "ticker_invalid": 1
+        }
+      }
+    }
+  },
+  "status": "PASS",
+  "next_phase_allowed": true,
+  "schema_warnings": [
+    {
+      "table": "persona_predictions",
+      "issue": "persona column is uniformly 'balanced' (legacy default) and does not match persona_type (gambler/investor). The actual channel separator persona_type cleanly separates channels; this is a legacy duplicate-column inconsistency, not actual cross-channel data contamination.",
+      "affected_rows": 1052,
+      "recommendation": "Either DROP persona_predictions.persona column OR backfill it to match persona_type (gambler/investor) for consistency."
+    }
+  ]
+}

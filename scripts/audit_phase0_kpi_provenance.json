@@ -1,0 +1,587 @@
+{
+  "audit_phase": "0.5",
+  "audit_name": "KPI Provenance Audit",
+  "audit_timestamp_utc": "2026-08-19T16:35:00Z",
+  "read_only": true,
+  "tooling": "python3 + sqlite3 + ripgrep (no better-sqlite3, no bun writes)",
+  "constitution_rules": {
+    "rule_7_hard_cap": "ABS(actual_return) <= 50 — every KPI must cap before averaging.",
+    "rule_8_no_channel_mixing": "balanced != morning_bell — never combine the two into a single number without an explicit by_channel breakdown.",
+    "rule_9_avg_loss_sign": "avg_loss MUST be reported as a negative number (sign convention).",
+    "rule_10_no_kpi_without_provenance": "every KPI published to the UI MUST cite its source table, query, filters, sample size, exclusions, and capped_rows."
+  },
+  "dataset": {
+    "predictions_db": {
+      "path": "/home/z/my-project/db/predictions.db",
+      "md5": "16f018ceacf9cb4211ded356f52a580e",
+      "size_bytes": 4915200,
+      "n_total_predictions": 153,
+      "n_closed_with_actual_return": 148,
+      "n_morning_bell": 39,
+      "n_balanced": 114,
+      "markets_present": ["EGX"]
+    },
+    "price_history_db": {
+      "path": "/home/z/my-project/db/price_history.db",
+      "md5": "446718e086e0f75669450664e1dc8be8"
+    },
+    "stocks_db": {
+      "path": "/home/z/my-project/db/stocks.db",
+      "md5": "b0ac24534db82fe72c4c800397b9bd04"
+    }
+  },
+  "verified_sample": {
+    "query_period": "2025-12-01 -> 2026-06-17 (BACKTEST-FULL-001 window)",
+    "n_raw": 148,
+    "n_valid_measured": 147,
+    "n_excluded": 1,
+    "exclusion_breakdown": {
+      "duplicate": 1
+    },
+    "duplicate_detail": "ticker=1302 | date=2026-04-08 | channel=balanced | entry=5.4770 | count=2 (one extra row excluded by dedup on ticker+prediction_date+channel+entry_price)",
+    "capped_rows": 1,
+    "capped_detail": "1 row had |actual_return| > 50 (max raw ≈ 50.5442) — clipped to +50.00 before KPI computation",
+    "wins": 78,
+    "losses": 70,
+    "win_rate_pct": 52.70,
+    "profit_factor": 1.5128,
+    "avg_win_pct": 8.3044,
+    "avg_loss_pct": -6.1170,
+    "max_loss_pct": -7.5927,
+    "max_win_pct": 50.0000,
+    "avg_loss_sign": "negative",
+    "max_loss_sign": "negative"
+  },
+  "kpis": [
+    {
+      "kpi_name": "Win Rate + PF + Expectancy (admin dashboard)",
+      "source_file": "src/app/api/admin/platform-performance/route.ts",
+      "source_table": "predictions.db.predictions",
+      "query_summary": "SELECT id, ticker, persona, morning_bell, prediction_date, entry_price, target_price, target_price_2, stop_loss, exit_price, actual_exit_price, actual_return, hit_target, hit_stop, status, holding_days, outcome_date, closed_at, highest_price, lowest_price, signal, market FROM predictions WHERE prediction_date >= ? AND prediction_date <= ? [AND morning_bell = 1 | AND morning_bell = 0] [AND UPPER(market) = ?] ORDER BY prediction_date DESC",
+      "filters": {
+        "dedup": true,
+        "dedup_key": "ticker|prediction_date|channel(morning_bell)|entry_price(4dp)",
+        "hard_cap": true,
+        "hard_cap_value": 50.0,
+        "channel_separated": true,
+        "market_separated": true,
+        "entry_price_filter": true,
+        "exit_realism_check": true,
+        "max_return_ratio": 5.0
+      },
+      "sample": {
+        "n_raw": 148,
+        "n_valid": 147,
+        "n_excluded": 1,
+        "exclusion_breakdown": {
+          "duplicate": 1
+        },
+        "capped_rows": 1
+      },
+      "capped_rows_handled": true,
+      "avg_loss_sign": "negative",
+      "exclusion_breakdown_published": true,
+      "by_channel_published": true,
+      "by_market_published": true,
+      "provenance_complete": true,
+      "status": "PASS"
+    },
+    {
+      "kpi_name": "Win Rate + PF + Expectancy + MaxDD + Horizons (backtest_full.py)",
+      "source_file": "scripts/backtest_full.py",
+      "source_table": "predictions.db.predictions + price_history.db.price_history (for horizons only)",
+      "query_summary": "SELECT id, ticker, persona, morning_bell, prediction_date, entry_price, target_price, target_price_2, stop_loss, exit_price, actual_exit_price, actual_return, hit_target, hit_stop, status, holding_days, outcome_date, closed_at, highest_price, lowest_price, signal, market FROM predictions WHERE prediction_date >= ? AND prediction_date <= ? ORDER BY prediction_date DESC  (+ price_history lookups at +1/+3/+5 day horizons)",
+      "filters": {
+        "dedup": true,
+        "dedup_key": "ticker|prediction_date|channel(morning_bell)|entry_price(4dp)",
+        "hard_cap": true,
+        "hard_cap_value": 50.0,
+        "channel_separated": true,
+        "market_separated": true,
+        "entry_price_filter": true,
+        "exit_realism_check": true,
+        "max_return_ratio": 5.0
+      },
+      "sample": {
+        "n_raw": 148,
+        "n_valid": 147,
+        "n_excluded": 1,
+        "exclusion_breakdown": {
+          "duplicate": 1
+        },
+        "capped_rows": 1
+      },
+      "capped_rows_handled": true,
+      "avg_loss_sign": "negative",
+      "exclusion_breakdown_published": true,
+      "by_channel_published": true,
+      "by_market_published": true,
+      "portfolio_maxdd_method": "compounding, 1% risk per trade, chronological order, n_taken=all_valid_measured (no concurrent skip)",
+      "provenance_complete": true,
+      "status": "PASS"
+    },
+    {
+      "kpi_name": "Win Rate + avg_return + avg_loss + net_pl (honest-tracking/stats)",
+      "source_file": "src/app/api/predictions/honest-tracking/stats/route.ts",
+      "source_table": "predictions.db.predictions (CTE with eff_return = COALESCE(actual_return, pnl_pct))",
+      "query_summary": "WITH pred AS (SELECT *, (outcome_date IS NOT NULL OR UPPER(status)='CLOSED' OR exit_type IS NOT NULL) AS is_closed, COALESCE(actual_return, pnl_pct) AS eff_return FROM predictions) SELECT COUNT(*), SUM(CASE WHEN is_closed THEN 1 ELSE 0 END), SUM(...wins...), AVG(CASE WHEN eff_return <= 100 AND eff_return >= -90 THEN eff_return END) ...",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "soft_cap_used_instead": "eff_return <= 100 AND eff_return >= -90 (not the constitution HARD cap of ±50)",
+        "channel_separated": false,
+        "market_separated": true,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": 153,
+        "n_valid": 148,
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "negative",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": true,
+      "provenance_complete": false,
+      "failure_reasons": [
+        "No dedup on (ticker, prediction_date, channel, entry_price) — duplicate row 1302@2026-04-08 enters the average twice.",
+        "Hard cap is ±100/-90 instead of constitution ±50 — rows with |return| in (50,100] still bias averages and PF computation is impossible.",
+        "No channel separation (morning_bell vs balanced) — the two channels are mixed in win_rate/avg_loss.",
+        "No exclusion_breakdown published — fails rule_10 (NO KPI WITHOUT PROVENANCE).",
+        "avg_max_profit/avg_max_loss aliased to avg_profit/avg_loss (misleading field names)."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Win Rate + avg_profit + avg_loss + net_pl (credibility summary)",
+      "source_file": "src/app/api/predictions/credibility/route.ts",
+      "source_table": "predictions.db.predictions (+ stored_analyses.analysis_json for V20 indicators only)",
+      "query_summary": "SELECT id, ticker, signal, signal_type, prediction_date, entry_price, target_price, stop_loss, master_score, technical_score, fundamental_score, ai_pattern_score, sentiment_score, outcome_date, exit_price, actual_return, hit_target, hit_stop, is_correct, holding_days, notes, created_at, highest_price_reached, atr_at_entry FROM predictions [WHERE prediction_date LIKE 'YYYY-MM%' AND/OR master_score >= ?] ORDER BY prediction_date DESC  (then JS post-filter Math.abs(r) <= 50)",
+      "filters": {
+        "dedup": false,
+        "hard_cap": true,
+        "hard_cap_value": 50,
+        "hard_cap_applied_at": "JS post-filter on validForStats (RETURN_CAP = 50)",
+        "channel_separated": false,
+        "market_separated": true,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": 153,
+        "n_valid": "depends on month/market filter; ~148 closed",
+        "n_excluded": "toxic rows with |actual_return| > 50 excluded from stats but not counted",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": true,
+      "avg_loss_sign": "negative",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": true,
+      "provenance_complete": false,
+      "failure_reasons": [
+        "No dedup on (ticker, prediction_date, channel, entry_price).",
+        "No channel separation — morning_bell and balanced predictions are mixed in win_rate.",
+        "No exclusion_breakdown — fails rule_10. Toxic rows are silently dropped from stats but the count of dropped rows is not exposed."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Win Rate + avg_win + avg_loss + PF (performance_dashboard — DEPRECATED, not registered)",
+      "source_file": "vps-service/api/performance_dashboard_routes.py",
+      "source_table": "predictions.db.predictions",
+      "query_summary": "SELECT ticker, signal, signal_type, prediction_date, entry_price, target_price, stop_loss, master_score, outcome_date, exit_price, actual_return, hit_target, hit_stop, is_correct, holding_days [, data_quality] FROM predictions WHERE prediction_date >= ? AND (outcome_date IS NOT NULL [AND data_quality='clean'] [AND ABS(actual_return) <= 50] OR outcome_date IS NULL) ORDER BY prediction_date DESC  (then capped_returns = max(-50, min(50, r)))",
+      "filters": {
+        "dedup": false,
+        "hard_cap": true,
+        "hard_cap_value": 50.0,
+        "hard_cap_applied_at": "Python list comprehension on raw_returns (defense-in-depth) + SQL WHERE cap on actual_return for outcome_date IS NOT NULL branch",
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "all predictions in last N days (default 30)",
+        "n_valid": "closed subset",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": true,
+      "avg_loss_sign": "negative",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "registration_status": "BLUEPRINT NOT REGISTERED IN lightweight_server.py — file header explicitly says 'DEPRECATED: This route is not registered' — endpoints are 404 in production. Listed here for completeness.",
+      "failure_reasons_if_registered": [
+        "No dedup.",
+        "No channel separation.",
+        "No exclusion_breakdown."
+      ],
+      "status": "WARNING"
+    },
+    {
+      "kpi_name": "Win Rate + avg_return (backtest/stats via PredictionTracker — DEPRECATED route, class still imported)",
+      "source_file": "vps-service/api/backtest_routes.py (route DEPRECATED) + vps-service/analyzers/prediction_tracker.py:get_accuracy_stats",
+      "source_table": "predictions.db.predictions",
+      "query_summary": "SELECT COUNT(*) FROM predictions WHERE prediction_date >= ? [AND is_correct = 1]; SELECT AVG(actual_return), MIN(actual_return), MAX(actual_return) FROM predictions WHERE prediction_date >= ? AND actual_return IS NOT NULL  (no HARD cap, no dedup, no channel filter)",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "all in last N days",
+        "n_valid": "evaluated (is_correct IS NOT NULL)",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a (avg_return mixes wins+losses — sign agnostic)",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "registration_status": "BLUEPRINT (backtest_bp) NOT REGISTERED — endpoints 404 in production. The PredictionTracker class is still used internally by other code.",
+      "failure_reasons_if_registered": [
+        "No HARD cap on actual_return — toxic rows (e.g. |actual_return| > 50, including the row at +50.54 and any future -10% magnitude disasters) would dominate AVG/MIN/MAX.",
+        "No dedup.",
+        "No channel separation.",
+        "avg_return mixes wins and losses (sign agnostic) — no PF, no avg_loss separation.",
+        "No exclusion_breakdown."
+      ],
+      "status": "WARNING"
+    },
+    {
+      "kpi_name": "Success Rate + avg_return (hunter_pick_tracking stats — registered)",
+      "source_file": "vps-service/api/prediction_tracking_routes.py:stats_endpoint",
+      "source_table": "predictions.db.hunter_pick_tracking (DIFFERENT domain — sniper/hunter picks, NOT predictions.predictions)",
+      "query_summary": "SELECT COUNT(*) FROM hunter_pick_tracking WHERE pick_date >= ? [AND market = ?]; SUM(CASE WHEN status='target_hit'...); SUM(CASE WHEN status='stop_hit'...); SELECT AVG(profit_loss_pct) FROM hunter_pick_tracking WHERE pick_date >= ? [AND market = ?] AND status IN ('target_hit','stop_hit')",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": true,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "hunter_pick_tracking rows in window",
+        "n_valid": "resolved = target_hit + stop_hit",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a (single avg_return, sign agnostic)",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": true,
+      "provenance_complete": false,
+      "domain_note": "Different domain — tracks hunter/sniper picks, not the platform's general predictions table. But the KPI is still published to UI without HARD cap or exclusion_breakdown.",
+      "failure_reasons": [
+        "No HARD cap on profit_loss_pct.",
+        "No exclusion_breakdown — fails rule_10.",
+        "Single avg_return mixes wins and losses (no PF, no avg_loss separation)."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Win Rate + avg_return (legacy EnhancedPredictionTracker — registered via tracking_bp)",
+      "source_file": "vps-service/analyzers/enhanced_prediction_tracker.py:get_performance_stats (called by /api/predictions/tracking/legacy-stats and /api/predictions/tracking/summary)",
+      "source_table": "predictions.db.aiPrediction (legacy table — DIFFERENT schema than predictions.predictions)",
+      "query_summary": "SELECT COUNT(*), SUM(CASE WHEN status='PENDING'...), SUM(CASE WHEN status='TARGET_HIT'...), SUM(CASE WHEN status='STOP_HIT'...), AVG(actual_return), AVG(holding_days), AVG(maestro_score), AVG(confidence) FROM aiPrediction WHERE prediction_date >= ? [AND market = ?]  (no cap, no dedup)",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": true,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "aiPrediction rows in last N days",
+        "n_valid": "evaluated = targets_hit + stops_hit",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a (single avg_return, sign agnostic)",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": true,
+      "provenance_complete": false,
+      "failure_reasons": [
+        "Reads from aiPrediction table (legacy) — provenance is mixed with the modern predictions.predictions table; users may see different KPIs from the two sources.",
+        "No HARD cap on actual_return — toxic rows dominate AVG.",
+        "No dedup.",
+        "No channel separation.",
+        "No exclusion_breakdown.",
+        "Single avg_return mixes wins and losses."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Win Rate (live-monitor/ledger)",
+      "source_file": "src/app/api/live-monitor/ledger/route.ts",
+      "source_table": "stocks.db.prediction_logs (different table — NOT predictions.predictions)",
+      "query_summary": "SELECT ticker, signal, outcome, master_score, entry_price, target_price, stop_loss, confidence, timestamp, verified_at FROM prediction_logs WHERE outcome IS NOT NULL AND outcome != '' ORDER BY verified_at DESC LIMIT 50  (then JS: wins = filter(p => outcome.toLowerCase().includes('win')))",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "LIMIT 50 closed rows (not the full closed set)",
+        "n_valid": "total = 50 max (slice, not full population)",
+        "n_excluded": "rest of closed predictions outside top 50 by verified_at",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a — KPI is only win_rate, no avg_loss/PF",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "failure_reasons": [
+        "Win = `outcome.toLowerCase().includes('win')` and Loss = `includes('loss')` — string matching on a free-text column, not actual_return.",
+        "LIMIT 50 — sample is a slice, not the full closed population. win_rate computed on 50 rows is not a platform KPI.",
+        "No HARD cap (no actual_return used).",
+        "No dedup.",
+        "No channel separation.",
+        "No exclusion_breakdown."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Win Rate + total_pnl + avg_return (money/journal)",
+      "source_file": "src/app/api/money/route.ts (section=journal + section=overview)",
+      "source_table": "stocks.db.trading_journal (user-curated personal trade journal — NOT predictions.predictions)",
+      "query_summary": "SELECT COUNT(*), SUM(CASE WHEN status='open'...), SUM(CASE WHEN status='closed' AND result > 0...), SUM(CASE WHEN status='closed' AND result <= 0...), COALESCE(SUM(CASE WHEN status='closed' THEN result ELSE 0 END), 0), COALESCE(AVG(CASE WHEN status='closed' THEN result_pct ELSE NULL END), 0) FROM trading_journal WHERE user_id = ?",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "user's trading_journal rows",
+        "n_valid": "closed rows for this user",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a (single avg_return mixes wins and losses)",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "domain_note": "User-level (per-user trading journal), not a platform-level KPI. The journal is the user's manually-curated trade log, distinct from engine-generated predictions. Even so, it lacks HARD cap on result_pct and an exclusion_breakdown — so if the UI ever displays this as a platform KPI it would violate rule_10.",
+      "status": "WARNING"
+    },
+    {
+      "kpi_name": "Win Rate + total_return_pct + avg_return_per_trade + best/worst_return (analyst predictions)",
+      "source_file": "src/app/api/analyst/predictions/route.ts:updateAnalystPerformance",
+      "source_table": "PostgreSQL/Prisma: analyst_predictions + analyst_performance (NOT predictions.db)",
+      "query_summary": "SELECT COUNT(*), SUM(CASE WHEN actual_result = prediction...), SUM(CASE WHEN actual_result != prediction...), AVG(pnl_pct), SUM(pnl_pct), MAX(pnl_pct), MIN(pnl_pct) FROM analyst_predictions WHERE analyst_id = ? AND status = 'reviewed'",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "reviewed analyst_predictions for this analyst",
+        "n_valid": "same",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a (single avg_return_per_trade mixes wins and losses; best_return/worst_return have no sign convention)",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "domain_note": "Per-analyst track record — different domain from engine-generated predictions. But the KPI is still published (analyst leaderboard) without HARD cap on pnl_pct or exclusion_breakdown.",
+      "failure_reasons": [
+        "No HARD cap on pnl_pct — outlier trades bias avg_return_per_trade.",
+        "No exclusion_breakdown — fails rule_10.",
+        "Single avg_return mixes wins and losses; best_return/worst_return have no sign convention."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Total Return + Win Rate + Max Drawdown + Sharpe + Trades (admin /backtest/run — RANDOM STUB)",
+      "source_file": "vps-service/api/admin_routes.py:execute_backtest (called by @admin_bp.route('/backtest/run', POST))",
+      "source_table": "NONE — values are produced by random.uniform()",
+      "query_summary": "result = { total_return: round(random.uniform(5, 25), 2), win_rate: round(random.uniform(45, 70), 1), max_drawdown: round(random.uniform(-15, -5), 2), sharpe_ratio: round(random.uniform(0.8, 2.0), 2), total_trades: random.randint(50, 200), profitable_trades: random.randint(30, 120), avg_trade_duration_days: random.randint(3, 15) }",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false,
+        "random_source": true
+      },
+      "sample": {
+        "n_raw": 0,
+        "n_valid": 0,
+        "n_excluded": 0,
+        "exclusion_breakdown": {}
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "failure_reasons": [
+        "CRITICAL: KPI values are generated by Python's random.uniform() — there is NO database source, NO query, NO sample. Every call returns a different fabricated number.",
+        "Fails rule_10 (NO KPI WITHOUT PROVENANCE) catastrophically.",
+        "Endpoint is admin-gated (@require_admin) but still exposes fabricated KPIs that could be mistaken for real platform metrics."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Total Return + Win Rate + Trades (kimi/backtest/run — Python proxy with stub fallback)",
+      "source_file": "src/app/api/kimi/backtest/run/route.ts -> vps-service/api/kimi_backtest.py",
+      "source_table": "price_history.db.price_history (simulated backtest trades, NOT predictions.predictions) | STUB when Python unavailable (zeros)",
+      "query_summary": "Python side: simulates BUY/SELL trades per ticker per week from price_history, computes pnl_pct = (entry-exit)/entry*100, then: wins = [t for t in all_trades if pnl_pct > 0]; losses = [t for t in all_trades if pnl_pct <= 0]; win_rate = win_count/total_trades*100; profit_factor = total_profit / abs(total_loss); avg_win = total_profit / win_count; avg_loss = total_loss / loss_count  (where total_loss = abs(sum(losses)) — POSITIVE magnitude). TS side: returns Python results if 200 OK, otherwise stub with win_rate=0, total_return=0, trades_count=0.",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": false
+      },
+      "sample": {
+        "n_raw": "simulated trades (one per ticker per week in window)",
+        "n_valid": "all_trades.length",
+        "n_excluded": "not reported",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "POSITIVE (magnitude) — violates rule_9 sign convention. avg_loss = total_loss / loss_count where total_loss = abs(sum(losses)). If displayed verbatim to the user as 'avg_loss', it is misleading because every other KPI in the system uses negative sign.",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "failure_reasons": [
+        "avg_loss is reported as a POSITIVE magnitude (sum(abs(loss))/n_losses) — violates rule_9 sign convention. Other KPIs in the system report avg_loss as negative.",
+        "No HARD cap on pnl_pct — outlier simulated trades bias the average.",
+        "No dedup (trades are simulated per (ticker, week), so duplicates are unlikely but not enforced).",
+        "No channel separation.",
+        "No exclusion_breakdown.",
+        "Stub fallback returns zeros without provenance marker other than source='stub' (acceptable, but the stub path does NOT publish provenance fields either)."
+      ],
+      "status": "FAIL"
+    },
+    {
+      "kpi_name": "Smart Alerts (profit_target / stop_loss / support / resistance / dividend / breakout / breakdown / surge / drop)",
+      "source_file": "src/app/api/finance/smart-alerts/route.ts",
+      "source_table": "stocks.db.portfolio_assets + stocks.db.stocks (NOT predictions.predictions — this is a portfolio alert engine)",
+      "query_summary": "SELECT stock_ticker, name, quantity, avg_buy_price, total_invested FROM portfolio_assets WHERE user_id = ? AND type = 'stock'  +  SELECT ticker, current_price, previous_close, change_percent, support, resistance, high_52w, low_52w, dividend_yield, last_update FROM stocks WHERE ticker IN (...)  (then JS: for each asset, derive profitLossPercent = ((currentPrice - buyPrice) / buyPrice) * 100 and fire alerts at +10/+20/+50 / -10/-20 / support within 5% / resistance within 5% / dividend_yield > 5 / breakout / breakdown / surge >= 5 / drop <= -5)",
+      "filters": {
+        "dedup": false,
+        "hard_cap": false,
+        "channel_separated": false,
+        "market_separated": false,
+        "entry_price_filter": true,
+        "stale_price_skip": true
+      },
+      "sample": {
+        "n_raw": "user's portfolio_assets (type='stock')",
+        "n_valid": "subset with valid current_price OR previous_close (price fallback chain + skip when both <= 0)",
+        "n_excluded": "stocks with no valid price (DEAL-ADVISOR-002 fix) + support/resistance stale filter (>30% deviation)",
+        "exclusion_breakdown": "not published"
+      },
+      "capped_rows_handled": false,
+      "avg_loss_sign": "n/a (alerts are per-position, not aggregated KPIs)",
+      "exclusion_breakdown_published": false,
+      "by_channel_published": false,
+      "by_market_published": false,
+      "provenance_complete": false,
+      "domain_note": "Per-user portfolio alert engine — not a platform-level KPI. But each alert carries profitLossPercent without a HARD cap (a +200% PnL would fire 'profit_target' at +50% threshold with the displayed value being +200% which is fine for alerting but would violate rule_7 if used as an aggregated KPI).",
+      "status": "WARNING"
+    },
+    {
+      "kpi_name": "Deal Advisor Verdict (STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL + confidence_pct)",
+      "source_file": "src/app/api/deal-advisor/[ticker]/route.ts",
+      "source_table": "stocks.db.stocks + price_history.db.price_history (per-ticker decision report — NOT a WR/PF KPI)",
+      "query_summary": "Reads identity + market_context + technical_state + entry_assessment + events for ONE ticker, then proposes action_scenarios + suggested_levels. No WR/PF/avg_loss computation.",
+      "filters": {
+        "dedup": "n/a (single-ticker)",
+        "hard_cap": "n/a",
+        "channel_separated": "n/a",
+        "market_separated": "n/a",
+        "entry_price_filter": true
+      },
+      "sample": {
+        "n_raw": 1,
+        "n_valid": 1,
+        "n_excluded": 0,
+        "exclusion_breakdown": {}
+      },
+      "capped_rows_handled": "n/a",
+      "avg_loss_sign": "n/a",
+      "exclusion_breakdown_published": "n/a",
+      "by_channel_published": "n/a",
+      "by_market_published": "n/a",
+      "provenance_complete": true,
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "total_kpis_audited": 15,
+    "pass": 3,
+    "fail": 8,
+    "warning": 4,
+    "blocked": 0,
+    "pass_kpis": [
+      "Win Rate + PF + Expectancy (admin dashboard) — src/app/api/admin/platform-performance/route.ts",
+      "Win Rate + PF + Expectancy + MaxDD + Horizons (backtest_full.py)",
+      "Deal Advisor Verdict — src/app/api/deal-advisor/[ticker]/route.ts"
+    ],
+    "fail_kpis": [
+      "honest-tracking/stats — no dedup, wrong cap, no channel separation, no exclusion_breakdown",
+      "predictions/credibility summary — no dedup, no channel separation, no exclusion_breakdown",
+      "hunter_pick_tracking stats — no HARD cap, no exclusion_breakdown, single avg_return",
+      "legacy EnhancedPredictionTracker (legacy-stats + summary) — reads aiPrediction, no cap, no dedup, no channel, no exclusion_breakdown",
+      "live-monitor/ledger win_rate — string-match on outcome, LIMIT 50 slice, no provenance",
+      "analyst predictions performance — no HARD cap on pnl_pct, no exclusion_breakdown",
+      "admin /backtest/run (execute_backtest) — CRITICAL: random.uniform() fabricated KPIs, zero provenance",
+      "kimi/backtest/run — avg_loss sign is POSITIVE (magnitude), no HARD cap, no exclusion_breakdown"
+    ],
+    "warning_kpis": [
+      "performance_dashboard (DEPRECATED, not registered)",
+      "backtest/stats via PredictionTracker (DEPRECATED route, class still imported)",
+      "money/journal win_rate (user-level, not platform)",
+      "smart-alerts (per-user portfolio alerts, not aggregated KPI)"
+    ]
+  },
+  "overall_status": "FAIL",
+  "overall_status_reason": "8 of 15 KPIs FAIL the constitution rules (no dedup, no HARD cap, no channel separation, no exclusion_breakdown, sign violation, or fabricated data). The two PASS KPIs that read from predictions.db.predictions (admin platform-performance + backtest_full.py) DO respect every rule — they are the gold-standard reference. The other KPI readers must be aligned to the same filter pipeline before they can be safely exposed to the UI.",
+  "next_phase_allowed": false,
+  "blockers_for_next_phase": [
+    "BLOCKER-1: src/app/api/predictions/honest-tracking/stats/route.ts mixes channels + uses ±100/-90 cap instead of ±50 — UI displays aggregate win_rate that violates rule_7 + rule_8.",
+    "BLOCKER-2: src/app/api/predictions/credibility/route.ts has no dedup + no channel separation — same UI widget (PredictionCredibilityTable.tsx) shows a win_rate that includes the duplicate row 1302@2026-04-08 twice and mixes morning_bell with balanced.",
+    "BLOCKER-3: vps-service/api/admin_routes.py:execute_backtest returns random.uniform() KPIs behind @require_admin — these are not just wrong, they are fabricated. Must be removed or replaced with a real backtest call before any further phase gates.",
+    "BLOCKER-4: vps-service/api/kimi_backtest.py reports avg_loss as POSITIVE magnitude — violates rule_9 sign convention. If the UI surfaces avg_loss from this engine, it would mislead the user (positive value implies profit).",
+    "BLOCKER-5: src/app/api/live-monitor/ledger/route.ts computes win_rate from a string-match on `outcome` column limited to 50 rows — not a real KPI.",
+    "BLOCKER-6: vps-service/analyzers/enhanced_prediction_tracker.py reads from aiPrediction (legacy table) while the modern KPIs read from predictions — the two sources disagree, violating rule_10 (single source of truth).",
+    "BLOCKER-7: vps-service/api/prediction_tracking_routes.py:stats_endpoint has no HARD cap on profit_loss_pct + no exclusion_breakdown."
+  ],
+  "recommended_remediation_priority": [
+    "P0 — Remove execute_backtest random stub from vps-service/api/admin_routes.py (line ~3356).",
+    "P0 — Align src/app/api/predictions/honest-tracking/stats/route.ts and src/app/api/predictions/credibility/route.ts to the same filter pipeline as src/app/api/admin/platform-performance/route.ts (dedup + HARD cap ±50 + channel separation + exclusion_breakdown).",
+    "P0 — Fix avg_loss sign in vps-service/api/kimi_backtest.py (line ~925: change `avg_loss = total_loss / loss_count` to `avg_loss = -(total_loss / loss_count)`).",
+    "P1 — Replace live-monitor/ledger win_rate string-match with actual_return-based computation, or label it as 'last 50 outcomes preview' rather than 'platform win_rate'.",
+    "P1 — Migrate enhanced_prediction_tracker.get_performance_stats off the legacy aiPrediction table to predictions.predictions (or mark it as DEPRECATED + remove from /summary endpoint).",
+    "P2 — Add exclusion_breakdown + HARD cap to vps-service/api/prediction_tracking_routes.py:stats_endpoint.",
+    "P2 — Add HARD cap on pnl_pct + exclusion_breakdown to src/app/api/analyst/predictions/route.ts:updateAnalystPerformance."
+  ]
+}

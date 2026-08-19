@@ -916,13 +916,17 @@ class EnhancedBacktest:
         loss_count = len(losses)
         
         win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0
-        
+
         total_profit = sum(t['pnl_pct'] for t in wins) if wins else 0
-        total_loss = abs(sum(t['pnl_pct'] for t in losses)) if losses else 0.01
-        profit_factor = total_profit / total_loss if total_loss > 0 else 0
-        
+        # SECURITY FIX (PHASE 0 AUDIT, 2026-08-19):
+        # avg_loss must be NEGATIVE (not magnitude). Rule: avg_loss_sign = negative.
+        # total_loss kept as magnitude for PF calculation, but avg_loss returned negative.
+        total_loss_magnitude = abs(sum(t['pnl_pct'] for t in losses)) if losses else 0.01
+        profit_factor = total_profit / total_loss_magnitude if total_loss_magnitude > 0 else 0
+
         avg_win = total_profit / win_count if win_count > 0 else 0
-        avg_loss = total_loss / loss_count if loss_count > 0 else 0
+        # avg_loss = NEGATIVE (per constitution rule — losses are always negative)
+        avg_loss = -(total_loss_magnitude / loss_count) if loss_count > 0 else 0
         
         # Max Drawdown
         cumulative_pnl = 0

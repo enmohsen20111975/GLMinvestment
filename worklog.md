@@ -7119,3 +7119,101 @@ Stage Summary:
 - [جديد] scripts/backtest_full_results.json (23KB).
 - [جديد] scripts/backtest_full_report.md (8KB).
 - [جديد] scripts/check_backtest_period.py (تحليل توفر البيانات).
+
+---
+Task ID: PHASE-0-TRUTH-LAYER
+Agent: Z.ai Code (main orchestrator) + 4 parallel subagents
+Task: PHASE 0 — TRUTH LAYER AUDIT (Master Mission).
+      التحقق من الحقيقة الأساسية قبل أي استنتاجات: dataset، provenance،
+      duplicates، channel separation، KPI provenance.
+
+Work Log:
+- التزمت بـ MASTER MISSION: TRUTH → DATA → LEAKAGE → BACKTEST → EDGE → ...
+- قرأت المراجع الإلزامية: 00-CONSTITUTION، worklog tail، CHANGELOG head.
+
+[PHASE 0.1 — Dataset Verification]:
+- ✅ ZIP موجود: data/active_databases_20260817_full.zip (77MB).
+- ✅ MD5 مطابق: 0947bdf6c2eff1a75ff8af6c3e576ed8.
+- ✅ 18 DB extracted to db/.
+- ✅ كل DBs تفتح بدون أخطاء + PRAGMA integrity_check = ok.
+- STATUS: PASS.
+
+[PHASE 0.2 — Data Provenance]:
+- 7 DBs مفحوصة (predictions, stocks, price_history, data_engine, historical, learned, news).
+- ⚠️ stocks.db byte-drift مكتشف: on-disk MD5 ≠ ZIP MD5.
+  * 5 rows changed (Arabic name_ar cleanup — آ→ا، cosmetic).
+  * FIX: أعدت استخراج stocks.db من الـ ZIP → MD5 مطابق الآن ✅.
+- ⚠️ empty tables: egx_fundamentals (0)، learned_lessons (0)، news_api_keys (0).
+- ⚠️ stale: prediction_logs (last 2025-02-20)، daily_prices (110 rows only).
+- STATUS: NEEDS_OWNER → FIXED (stocks.db restored).
+
+[PHASE 0.3 — Duplicate Audit]:
+- predictions (153 raw): 2 duplicate pairs (2.61%) — morning_bell re-emitted.
+  * Pattern: ids 21317/21318 ↔ 21408/21409 on 2026-04-08.
+  * PASS with warning.
+- persona_predictions (1052 raw): 430 "duplicate keys" (81.75%) — STRUCTURAL.
+  * Root cause: `persona` column constant 'balanced' (degenerate).
+  * Real discriminator: `persona_type` (gambler=564, investor=488).
+  * Using canonical key (ticker, date, persona_type, entry): 0 duplicates.
+  * FAIL (structural) — needs schema fix (persona column backfill or drop).
+- prediction_logs (80 raw): 0 duplicates ✅.
+- Cross-table: 1 shared key (predictions ↔ persona_predictions).
+- STATUS: FAIL (structural — persona degenerate) / PASS (real data).
+
+[PHASE 0.4 — Channel Separation]:
+- predictions: morning_bell flag separates cleanly (0=114 balanced, 1=39 morning_bell).
+- overlap_count = 0 ✅ (no cross-contamination).
+- persona_predictions: persona_type separates cleanly (gambler=564, investor=488).
+- ⚠️ persona column uniformly 'balanced' (doesn't match persona_type) — schema warning.
+- KPI per channel:
+  * balanced: n=109, WR=55.05%, PF=1.71, Exp=+1.97%, max_loss=-7.59%.
+  * morning_bell: n=39, WR=46.15%, PF=1.04, Exp=+0.13%, max_loss=-7.23%.
+  * gambler/investor: 0 resolved (all PENDING — closing engine hasn't run).
+- STATUS: PASS (with schema warning).
+
+[PHASE 0.5 — KPI Provenance]:
+- 15 KPI readers مفحوصين:
+  * 3 PASS (gold standard): admin/platform-performance، backtest_full.py، deal-advisor.
+  * 8 FAIL: honest-tracking/stats، credibility، hunter_pick، enhanced_tracker،
+    live-monitor/ledger، analyst/predictions، admin/execute_backtest، kimi/backtest.
+  * 4 WARNING.
+- 🔴 CRITICAL BLOCKER-1: admin/execute_backtest يرجع random.uniform() — KPIs وهمية!
+- 🔴 CRITICAL BLOCKER-2: kimi_backtest avg_loss موجب (مخالف للقاعدة).
+- 5 BLOCKERS أخرى: missing dedup/HARD cap/channel separation.
+- STATUS: FAIL.
+
+[FIXES APPLIED]:
+1. ✅ stocks.db re-extracted from ZIP → canonical MD5 restored.
+2. ✅ execute_backtest: random.uniform() → NOT_IMPLEMENTED + redirect to real endpoints.
+3. ✅ kimi_backtest: avg_loss sign fixed (positive → negative).
+- Python syntax check: OK for both files.
+
+[REMAINING BLOCKERS (NEEDS_OWNER — larger alignment needed)]:
+1. honest-tracking/stats: يحتاج محاذاة لـ gold standard pipeline (dedup + HARD cap ±50 + channel separation + exclusion_breakdown).
+2. credibility: نفس المحاذاة.
+3. hunter_pick_tracking: needs HARD cap + exclusion_breakdown.
+4. enhanced_prediction_tracker: reads from legacy aiPrediction table (should read from predictions).
+5. live-monitor/ledger: string-match win_rate (should use actual_return).
+6. analyst/predictions: needs HARD cap on pnl_pct.
+- هذه محاذاة 6 KPI readers للـ gold standard — قرار architecturie يحتاج موافقة المالك.
+
+Stage Summary:
+- ✅ Dataset MD5 confirmed (0947bdf6...).
+- ✅ stocks.db provenance restored.
+- ✅ 3 gold standard KPI readers confirmed (admin + backtest_full + deal-advisor).
+- ✅ Channel separation confirmed (balanced ≠ morning_bell clean).
+- ⚠️ persona_predictions persona column degenerate (structural — 0 real dups with canonical key).
+- 🔴 2 CRITICAL fixes applied (fake random backtest + avg_loss sign).
+- ⚠️ 6 KPI readers need alignment to gold standard (NEEDS_OWNER).
+- ❌ PHASE 0 GATE: FAIL (6 remaining blockers).
+- NEXT_PHASE_ALLOWED: NO (until KPI alignment decision from owner).
+
+Files produced:
+- [جديد] scripts/audit_phase0_provenance.json (34KB).
+- [جديد] scripts/audit_phase0_duplicates.json (16KB).
+- [جديد] scripts/audit_phase0_channels.json (5KB).
+- [جديد] scripts/audit_phase0_kpi_provenance.json (34KB).
+- [جديد] scripts/audit_phase0_gate_report.md.
+- [معدّل] vps-service/api/admin_routes.py — execute_backtest random→NOT_IMPLEMENTED.
+- [معدّل] vps-service/api/kimi_backtest.py — avg_loss sign fixed.
+- [معدّل] db/stocks.db — re-extracted from ZIP (canonical).

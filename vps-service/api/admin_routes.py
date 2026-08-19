@@ -3354,27 +3354,35 @@ def trigger_retrain(model_type):
 
 
 def execute_backtest(params):
-    """تنفيذ اختبار تاريخي."""
-    import random
-    
-    # نتائج محاكاة
+    """تنفيذ اختبار تاريخي.
+
+    SECURITY FIX (PHASE 0 AUDIT, 2026-08-19):
+    Previously this function returned random.uniform() values — completely fake
+    KPIs behind admin auth. This is dangerous and misleading.
+
+    Now returns an honest "NOT_IMPLEMENTED" response instead of fake numbers.
+    Real backtesting is available via:
+    - scripts/backtest_full.py (Node-side, reads from predictions.db)
+    - /api/admin/platform-performance (admin dashboard API)
+    - vps-service/jobs/v40_2_daily_generator.py (V40.2 backtest engine)
+    """
     result = {
         "params": params,
         "results": {
-            "total_return": round(random.uniform(5, 25), 2),
-            "win_rate": round(random.uniform(45, 70), 1),
-            "max_drawdown": round(random.uniform(-15, -5), 2),
-            "sharpe_ratio": round(random.uniform(0.8, 2.0), 2),
-            "total_trades": random.randint(50, 200),
-            "profitable_trades": random.randint(30, 120),
-            "avg_trade_duration_days": random.randint(3, 15)
+            "status": "NOT_IMPLEMENTED",
+            "message": "This endpoint previously returned random fake KPIs. Use /api/admin/platform-performance or scripts/backtest_full.py for real backtest results.",
+            "real_backtest_endpoints": [
+                "/api/admin/platform-performance",
+                "scripts/backtest_full.py",
+                "scripts/backtest_full_report.md"
+            ]
         },
         "timestamp": datetime.now().isoformat()
     }
-    
+
     _admin_settings["backtest_results"].append(result)
     log_admin_action('backtest_executed', params)
-    
+
     return result
 
 

@@ -1,0 +1,1411 @@
+{
+  "audit_phase": "0.2",
+  "audit_name": "Data Provenance Audit",
+  "audit_timestamp_utc": "2026-08-19T16:29:09Z",
+  "read_only": true,
+  "tooling": "python3 + sqlite3 (no better-sqlite3, no bun)",
+  "dataset": {
+    "path": "/home/z/my-project/data/active_databases_20260817_full.zip",
+    "md5": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+    "expected_md5": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+    "md5_match": true,
+    "size_bytes": 77021220
+  },
+  "databases": [
+    {
+      "db_name": "predictions.db",
+      "file_size_bytes": 4915200,
+      "file_mtime": "2026-08-19T16:19:07Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "CachedAnalysis",
+          "type": "table",
+          "columns": 4,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "ExpertRecommendation",
+          "type": "table",
+          "columns": 38,
+          "rows": 42,
+          "date_range": {
+            "column": "recommendation_date",
+            "min": "2026-05-11",
+            "max": "2026-06-03"
+          }
+        },
+        {
+          "name": "ExpertTrackRecord",
+          "type": "table",
+          "columns": 14,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "TechnicalIndicator",
+          "type": "table",
+          "columns": 7,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "aiPrediction",
+          "type": "table",
+          "columns": 23,
+          "rows": 167,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2026-08-09",
+            "max": "2026-08-09"
+          }
+        },
+        {
+          "name": "aiPredictionStats",
+          "type": "table",
+          "columns": 9,
+          "rows": 1,
+          "date_range": {
+            "column": "last_updated",
+            "min": "2026-08-07",
+            "max": "2026-08-07"
+          }
+        },
+        {
+          "name": "analysis_engine_status",
+          "type": "table",
+          "columns": 13,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "analysis_jobs",
+          "type": "table",
+          "columns": 14,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "cached_analysis",
+          "type": "table",
+          "columns": 18,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "crypto_predictions_log",
+          "type": "table",
+          "columns": 9,
+          "rows": 4,
+          "date_range": {
+            "column": "created_at",
+            "min": "2026-08-16",
+            "max": "2026-08-16"
+          }
+        },
+        {
+          "name": "learned_lessons",
+          "type": "table",
+          "columns": 10,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "optimizer_params_history",
+          "type": "table",
+          "columns": 9,
+          "rows": 2,
+          "date_range": {
+            "column": "optimized_at",
+            "min": "2026-08-09",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "persona_predictions",
+          "type": "table",
+          "columns": 26,
+          "rows": 1052,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2026-08-05",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "prediction_lessons",
+          "type": "table",
+          "columns": 9,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "prediction_logs",
+          "type": "table",
+          "columns": 49,
+          "rows": 80,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2025-02-20",
+            "max": "2025-02-20"
+          }
+        },
+        {
+          "name": "prediction_outcomes",
+          "type": "table",
+          "columns": 10,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "predictions",
+          "type": "table",
+          "columns": 62,
+          "rows": 153,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2026-01-01",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "quant_cache",
+          "type": "table",
+          "columns": 10,
+          "rows": 106,
+          "date_range": {
+            "column": "computed_at",
+            "min": "2026-08-07",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "reports",
+          "type": "table",
+          "columns": 10,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "sniper_performance",
+          "type": "table",
+          "columns": 16,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 4,
+          "date_range": null
+        },
+        {
+          "name": "sqlite_stat1",
+          "type": "table",
+          "columns": 3,
+          "rows": 36,
+          "date_range": null
+        },
+        {
+          "name": "stored_analyses",
+          "type": "table",
+          "columns": 47,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "telegram_news",
+          "type": "table",
+          "columns": 8,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "telegram_signals",
+          "type": "table",
+          "columns": 8,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "trade_journal_entries",
+          "type": "table",
+          "columns": 28,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "trade_journal_reflections",
+          "type": "table",
+          "columns": 11,
+          "rows": 0,
+          "date_range": null
+        }
+      ],
+      "tables_count": 27,
+      "key_tables": [
+        {
+          "name": "persona_predictions",
+          "type": "table",
+          "columns": 26,
+          "rows": 1052,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2026-08-05",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "prediction_logs",
+          "type": "table",
+          "columns": 49,
+          "rows": 80,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2025-02-20",
+            "max": "2025-02-20"
+          }
+        },
+        {
+          "name": "predictions",
+          "type": "table",
+          "columns": 62,
+          "rows": 153,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2026-01-01",
+            "max": "2026-08-17"
+          }
+        }
+      ],
+      "data_missing": [],
+      "errors": [],
+      "status": "PASS",
+      "provenance": {
+        "disk_md5": "16f018ceacf9cb4211ded356f52a580e",
+        "zip_md5": "16f018ceacf9cb4211ded356f52a580e",
+        "zip_size": 4915200,
+        "md5_match_zip": true,
+        "row_diff": null
+      }
+    },
+    {
+      "db_name": "stocks.db",
+      "file_size_bytes": 12386304,
+      "file_mtime": "2026-08-19T16:21:13Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "ExpertRecommendation",
+          "type": "table",
+          "columns": 26,
+          "rows": 42,
+          "date_range": {
+            "column": "recommendation_date",
+            "min": "2026-05-11",
+            "max": "2026-06-03"
+          }
+        },
+        {
+          "name": "analytics_events",
+          "type": "table",
+          "columns": 10,
+          "rows": 344,
+          "date_range": {
+            "column": "created_at",
+            "min": "2026-06-03",
+            "max": "2026-07-27"
+          }
+        },
+        {
+          "name": "cached_analysis",
+          "type": "table",
+          "columns": 39,
+          "rows": 373,
+          "date_range": {
+            "column": "created_at",
+            "min": "2026-08-05",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "conjunction_patterns",
+          "type": "table",
+          "columns": 16,
+          "rows": 150,
+          "date_range": {
+            "column": "last_updated",
+            "min": "2026-06-25",
+            "max": "2026-06-25"
+          }
+        },
+        {
+          "name": "context_logs",
+          "type": "table",
+          "columns": 15,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "daily_analytics_summary",
+          "type": "table",
+          "columns": 17,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "egksco_price_history",
+          "type": "table",
+          "columns": 10,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "egksco_stocks",
+          "type": "table",
+          "columns": 17,
+          "rows": 256,
+          "date_range": {
+            "column": "last_update",
+            "min": "2026-07-23",
+            "max": "2026-07-23"
+          }
+        },
+        {
+          "name": "egksco_sync_status",
+          "type": "table",
+          "columns": 10,
+          "rows": 268,
+          "date_range": {
+            "column": "updated_stocks",
+            "min": "1970-01-01",
+            "max": "1970-01-01"
+          }
+        },
+        {
+          "name": "error_logs",
+          "type": "table",
+          "columns": 9,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "feature_usage",
+          "type": "table",
+          "columns": 9,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "financial_obligations",
+          "type": "table",
+          "columns": 16,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "financial_transactions",
+          "type": "table",
+          "columns": 11,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "gold_prices",
+          "type": "table",
+          "columns": 6,
+          "rows": 3,
+          "date_range": {
+            "column": "last_update",
+            "min": "2026-06-03",
+            "max": "2026-06-03"
+          }
+        },
+        {
+          "name": "indicator_trust_scores",
+          "type": "table",
+          "columns": 13,
+          "rows": 10,
+          "date_range": {
+            "column": "last_updated",
+            "min": "2026-05-04",
+            "max": "2026-05-04"
+          }
+        },
+        {
+          "name": "indicator_weights",
+          "type": "table",
+          "columns": 9,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "learned_lessons",
+          "type": "table",
+          "columns": 18,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "macro_indicators",
+          "type": "table",
+          "columns": 11,
+          "rows": 3,
+          "date_range": {
+            "column": "date",
+            "min": "2026-07-21",
+            "max": "2026-07-21"
+          }
+        },
+        {
+          "name": "maestro_personas",
+          "type": "table",
+          "columns": 20,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "market_indices",
+          "type": "table",
+          "columns": 10,
+          "rows": 5,
+          "date_range": {
+            "column": "last_update",
+            "min": "2026-03-11",
+            "max": "2026-03-11"
+          }
+        },
+        {
+          "name": "market_regime_log",
+          "type": "table",
+          "columns": 15,
+          "rows": 23,
+          "date_range": {
+            "column": "date",
+            "min": "2026-06-21",
+            "max": "2026-08-07"
+          }
+        },
+        {
+          "name": "morning_reports",
+          "type": "table",
+          "columns": 7,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "news",
+          "type": "table",
+          "columns": 13,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "news_items",
+          "type": "table",
+          "columns": 12,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "obligation_payments",
+          "type": "table",
+          "columns": 9,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "outcome_logs",
+          "type": "table",
+          "columns": 15,
+          "rows": 8544,
+          "date_range": {
+            "column": "close_date",
+            "min": "2026-01-01",
+            "max": "2026-06-10"
+          }
+        },
+        {
+          "name": "page_views",
+          "type": "table",
+          "columns": 15,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "paper_trades",
+          "type": "table",
+          "columns": 26,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "pending_settlements",
+          "type": "table",
+          "columns": 12,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "portfolio_assets",
+          "type": "table",
+          "columns": 29,
+          "rows": 24,
+          "date_range": {
+            "column": "added_at",
+            "min": "2026-06-14",
+            "max": "2026-07-22"
+          }
+        },
+        {
+          "name": "portfolios",
+          "type": "table",
+          "columns": 11,
+          "rows": 3,
+          "date_range": {
+            "column": "created_at",
+            "min": "2026-07-22",
+            "max": "2026-07-22"
+          }
+        },
+        {
+          "name": "prediction_logs",
+          "type": "table",
+          "columns": 18,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "predictions",
+          "type": "table",
+          "columns": 23,
+          "rows": 4172,
+          "date_range": {
+            "column": "prediction_date",
+            "min": "2026-06-06",
+            "max": "UP"
+          }
+        },
+        {
+          "name": "real_evaluated_predictions",
+          "type": "table",
+          "columns": 10,
+          "rows": 4035,
+          "date_range": {
+            "column": "evaluated_at",
+            "min": "2026-07-23",
+            "max": "2026-07-23"
+          }
+        },
+        {
+          "name": "regime_indicator_weights",
+          "type": "table",
+          "columns": 8,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "scraping_status",
+          "type": "table",
+          "columns": 8,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "screener_presets",
+          "type": "table",
+          "columns": 21,
+          "rows": 350,
+          "date_range": {
+            "column": "computed_at",
+            "min": "2026-07-26",
+            "max": "2026-07-26"
+          }
+        },
+        {
+          "name": "screener_results",
+          "type": "table",
+          "columns": 9,
+          "rows": 173,
+          "date_range": {
+            "column": "scan_date",
+            "min": "2026-07-01",
+            "max": "2026-07-01"
+          }
+        },
+        {
+          "name": "signal_logs",
+          "type": "table",
+          "columns": 22,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 21,
+          "date_range": null
+        },
+        {
+          "name": "stock_adaptive_profiles",
+          "type": "table",
+          "columns": 19,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "stock_daily_prices",
+          "type": "table",
+          "columns": 15,
+          "rows": 36292,
+          "date_range": {
+            "column": "price_date",
+            "min": "2026-06-25",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "stocks",
+          "type": "table",
+          "columns": 57,
+          "rows": 1046,
+          "date_range": {
+            "column": "last_update",
+            "min": "2026-08-07",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "stocks_backup",
+          "type": "table",
+          "columns": 40,
+          "rows": 345,
+          "date_range": {
+            "column": "last_update",
+            "min": "2026-06-04",
+            "max": "2026-06-04"
+          }
+        },
+        {
+          "name": "system_settings",
+          "type": "table",
+          "columns": 7,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "telegram_images",
+          "type": "table",
+          "columns": 7,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "telegram_messages",
+          "type": "table",
+          "columns": 19,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "telegram_news",
+          "type": "table",
+          "columns": 10,
+          "rows": 6,
+          "date_range": {
+            "column": "date",
+            "min": "2026-06-18",
+            "max": "2026-06-18"
+          }
+        },
+        {
+          "name": "telegram_recommendations",
+          "type": "table",
+          "columns": 17,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "ticker_performance",
+          "type": "table",
+          "columns": 12,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "tracked_channels",
+          "type": "table",
+          "columns": 10,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "trading_lessons",
+          "type": "table",
+          "columns": 12,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "trading_rules",
+          "type": "table",
+          "columns": 12,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "tuned_predictions_summary",
+          "type": "table",
+          "columns": 8,
+          "rows": 1,
+          "date_range": {
+            "column": "updated_at",
+            "min": "2026-07-23",
+            "max": "2026-07-23"
+          }
+        },
+        {
+          "name": "user_sessions",
+          "type": "table",
+          "columns": 18,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "user_stock_watchlists",
+          "type": "table",
+          "columns": 12,
+          "rows": 23,
+          "date_range": {
+            "column": "added_at",
+            "min": "2026-06-14",
+            "max": "2026-07-31"
+          }
+        },
+        {
+          "name": "price_history",
+          "type": "view",
+          "columns": 9,
+          "rows": 36292,
+          "date_range": {
+            "column": "date",
+            "min": "2026-06-25",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "stock_price_history",
+          "type": "view",
+          "columns": 10,
+          "rows": 36292,
+          "date_range": {
+            "column": "date",
+            "min": "2026-06-25",
+            "max": "2026-08-17"
+          }
+        }
+      ],
+      "tables_count": 56,
+      "key_tables": [
+        {
+          "name": "stocks",
+          "type": "table",
+          "columns": 57,
+          "rows": 1046,
+          "date_range": {
+            "column": "last_update",
+            "min": "2026-08-07",
+            "max": "2026-08-17"
+          }
+        }
+      ],
+      "data_missing": [
+        {
+          "item": "on_disk_db_byte_match",
+          "reason": "on_disk_db_md5_differs_from_zip_md5_post_restore_modification_detected",
+          "disk_md5": "b0ac24534db82fe72c4c800397b9bd04",
+          "zip_md5": "33a86bcae687c379a447286a48a4fbb0"
+        }
+      ],
+      "errors": [],
+      "status": "NEEDS_OWNER",
+      "provenance": {
+        "disk_md5": "b0ac24534db82fe72c4c800397b9bd04",
+        "zip_md5": "33a86bcae687c379a447286a48a4fbb0",
+        "zip_size": 12386304,
+        "md5_match_zip": false,
+        "row_diff": {
+          "checked_table": "stocks",
+          "rows_only_in_zip": 5,
+          "rows_only_in_disk": 5,
+          "pk_overlap": 5,
+          "modified_rows": [
+            {
+              "pk": {
+                "id": 767
+              },
+              "changed_columns": [
+                {
+                  "column": "name_ar",
+                  "zip_value": "آيكتك",
+                  "disk_value": "يكتك"
+                }
+              ]
+            },
+            {
+              "pk": {
+                "id": 797
+              },
+              "changed_columns": [
+                {
+                  "column": "name_ar",
+                  "zip_value": "آفاق الغذاء",
+                  "disk_value": "فاق الغذاء"
+                }
+              ]
+            },
+            {
+              "pk": {
+                "id": 802
+              },
+              "changed_columns": [
+                {
+                  "column": "name_ar",
+                  "zip_value": "آل منيف",
+                  "disk_value": "ل منيف"
+                }
+              ]
+            },
+            {
+              "pk": {
+                "id": 811
+              },
+              "changed_columns": [
+                {
+                  "column": "name_ar",
+                  "zip_value": "رماث",
+                  "disk_value": "البخور الذكي"
+                }
+              ]
+            },
+            {
+              "pk": {
+                "id": 862
+              },
+              "changed_columns": [
+                {
+                  "column": "name_ar",
+                  "zip_value": "آلات الصيانة",
+                  "disk_value": "لات الصيانة"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "db_name": "price_history.db",
+      "file_size_bytes": 60604416,
+      "file_mtime": "2026-08-19T16:19:07Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "price_history",
+          "type": "table",
+          "columns": 10,
+          "rows": 288194,
+          "date_range": {
+            "column": "date",
+            "min": "2025-01-09",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 1,
+          "date_range": null
+        }
+      ],
+      "tables_count": 2,
+      "key_tables": [
+        {
+          "name": "price_history",
+          "type": "table",
+          "columns": 10,
+          "rows": 288194,
+          "date_range": {
+            "column": "date",
+            "min": "2025-01-09",
+            "max": "2026-08-17"
+          }
+        }
+      ],
+      "data_missing": [],
+      "errors": [],
+      "status": "PASS",
+      "provenance": {
+        "disk_md5": "446718e086e0f75669450664e1dc8be8",
+        "zip_md5": "446718e086e0f75669450664e1dc8be8",
+        "zip_size": 60604416,
+        "md5_match_zip": true,
+        "row_diff": null
+      }
+    },
+    {
+      "db_name": "data_engine.db",
+      "file_size_bytes": 92319744,
+      "file_mtime": "2026-08-19T16:19:07Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "btc_local_prices",
+          "type": "table",
+          "columns": 5,
+          "rows": 30816,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-14",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "crypto_prices",
+          "type": "table",
+          "columns": 12,
+          "rows": 280249,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-27",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "egksco_price_history",
+          "type": "table",
+          "columns": 9,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "egksco_stocks",
+          "type": "table",
+          "columns": 11,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "egx_fundamentals",
+          "type": "table",
+          "columns": 14,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "exchange_rates",
+          "type": "table",
+          "columns": 4,
+          "rows": 45976,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-09",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "gold_prices",
+          "type": "table",
+          "columns": 7,
+          "rows": 173656,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-27",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "gold_prices_clean",
+          "type": "table",
+          "columns": 8,
+          "rows": 28368,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-27",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "historical_data",
+          "type": "table",
+          "columns": 11,
+          "rows": 99076,
+          "date_range": {
+            "column": "date",
+            "min": "2021-06-08",
+            "max": "2026-06-07"
+          }
+        },
+        {
+          "name": "lost_and_found",
+          "type": "table",
+          "columns": 9,
+          "rows": 38,
+          "date_range": null
+        },
+        {
+          "name": "screener_lists",
+          "type": "table",
+          "columns": 8,
+          "rows": 1459,
+          "date_range": {
+            "column": "scraped_at",
+            "min": "2026-08-17",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "silver_prices",
+          "type": "table",
+          "columns": 6,
+          "rows": 45978,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-09",
+            "max": "2026-08-17"
+          }
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 17,
+          "date_range": null
+        },
+        {
+          "name": "stock_prices",
+          "type": "table",
+          "columns": 9,
+          "rows": 2495,
+          "date_range": {
+            "column": "timestamp",
+            "min": "2026-06-07",
+            "max": "2026-07-31"
+          }
+        },
+        {
+          "name": "stocks",
+          "type": "table",
+          "columns": 17,
+          "rows": 970,
+          "date_range": {
+            "column": "created_at",
+            "min": "2026-06-07",
+            "max": "2026-07-21"
+          }
+        },
+        {
+          "name": "tab_balance_sheet",
+          "type": "table",
+          "columns": 14,
+          "rows": 866,
+          "date_range": null
+        },
+        {
+          "name": "tab_cash_flow",
+          "type": "table",
+          "columns": 9,
+          "rows": 866,
+          "date_range": null
+        },
+        {
+          "name": "tab_dividends",
+          "type": "table",
+          "columns": 11,
+          "rows": 858,
+          "date_range": null
+        },
+        {
+          "name": "tab_income_statement",
+          "type": "table",
+          "columns": 12,
+          "rows": 866,
+          "date_range": null
+        },
+        {
+          "name": "tab_performance",
+          "type": "table",
+          "columns": 16,
+          "rows": 858,
+          "date_range": null
+        },
+        {
+          "name": "tab_profitability",
+          "type": "table",
+          "columns": 13,
+          "rows": 858,
+          "date_range": null
+        },
+        {
+          "name": "tab_technical_analysis",
+          "type": "table",
+          "columns": 13,
+          "rows": 863,
+          "date_range": null
+        },
+        {
+          "name": "tab_valuation",
+          "type": "table",
+          "columns": 16,
+          "rows": 858,
+          "date_range": null
+        }
+      ],
+      "tables_count": 23,
+      "key_tables": [
+        {
+          "name": "egx_fundamentals",
+          "type": "table",
+          "columns": 14,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "stocks",
+          "type": "table",
+          "columns": 17,
+          "rows": 970,
+          "date_range": {
+            "column": "created_at",
+            "min": "2026-06-07",
+            "max": "2026-07-21"
+          }
+        },
+        {
+          "name": "tab_balance_sheet",
+          "type": "table",
+          "columns": 14,
+          "rows": 866,
+          "date_range": null
+        },
+        {
+          "name": "tab_cash_flow",
+          "type": "table",
+          "columns": 9,
+          "rows": 866,
+          "date_range": null
+        },
+        {
+          "name": "tab_dividends",
+          "type": "table",
+          "columns": 11,
+          "rows": 858,
+          "date_range": null
+        },
+        {
+          "name": "tab_income_statement",
+          "type": "table",
+          "columns": 12,
+          "rows": 866,
+          "date_range": null
+        },
+        {
+          "name": "tab_performance",
+          "type": "table",
+          "columns": 16,
+          "rows": 858,
+          "date_range": null
+        },
+        {
+          "name": "tab_profitability",
+          "type": "table",
+          "columns": 13,
+          "rows": 858,
+          "date_range": null
+        },
+        {
+          "name": "tab_technical_analysis",
+          "type": "table",
+          "columns": 13,
+          "rows": 863,
+          "date_range": null
+        },
+        {
+          "name": "tab_valuation",
+          "type": "table",
+          "columns": 16,
+          "rows": 858,
+          "date_range": null
+        }
+      ],
+      "data_missing": [],
+      "errors": [],
+      "status": "PASS",
+      "provenance": {
+        "disk_md5": "71271ff5f2f82272557349c65667689e",
+        "zip_md5": "71271ff5f2f82272557349c65667689e",
+        "zip_size": 92319744,
+        "md5_match_zip": true,
+        "row_diff": null
+      }
+    },
+    {
+      "db_name": "historical.db",
+      "file_size_bytes": 45809664,
+      "file_mtime": "2026-08-19T16:19:07Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "daily_prices",
+          "type": "table",
+          "columns": 9,
+          "rows": 110,
+          "date_range": {
+            "column": "price_date",
+            "min": "2026-06-05",
+            "max": "2026-06-07"
+          }
+        },
+        {
+          "name": "historical_prices",
+          "type": "table",
+          "columns": 11,
+          "rows": 175563,
+          "date_range": {
+            "column": "date",
+            "min": "2021-06-08",
+            "max": "2026-06-27"
+          }
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 2,
+          "date_range": null
+        }
+      ],
+      "tables_count": 3,
+      "key_tables": [],
+      "data_missing": [],
+      "errors": [],
+      "status": "PASS",
+      "provenance": {
+        "disk_md5": "d4111ca47f63d6f00779f05f60db42ee",
+        "zip_md5": "d4111ca47f63d6f00779f05f60db42ee",
+        "zip_size": 45809664,
+        "md5_match_zip": true,
+        "row_diff": null
+      }
+    },
+    {
+      "db_name": "learned.db",
+      "file_size_bytes": 12288,
+      "file_mtime": "2026-08-19T16:19:07Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "learned_lessons",
+          "type": "table",
+          "columns": 7,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 0,
+          "date_range": null
+        }
+      ],
+      "tables_count": 2,
+      "key_tables": [],
+      "data_missing": [],
+      "errors": [],
+      "status": "PASS",
+      "provenance": {
+        "disk_md5": "d64c859f3af195a1847b447a2118c5ca",
+        "zip_md5": "d64c859f3af195a1847b447a2118c5ca",
+        "zip_size": 12288,
+        "md5_match_zip": true,
+        "row_diff": null
+      }
+    },
+    {
+      "db_name": "news.db",
+      "file_size_bytes": 13553664,
+      "file_mtime": "2026-08-19T16:19:07Z",
+      "open_ok": true,
+      "integrity_check": "ok",
+      "journal_mode": "delete",
+      "tables": [
+        {
+          "name": "news_api_keys",
+          "type": "table",
+          "columns": 13,
+          "rows": 0,
+          "date_range": null
+        },
+        {
+          "name": "news_articles",
+          "type": "table",
+          "columns": 15,
+          "rows": 7894,
+          "date_range": {
+            "column": "published_at",
+            "min": "2026-05-17",
+            "max": "20260717T215956"
+          }
+        },
+        {
+          "name": "sqlite_sequence",
+          "type": "table",
+          "columns": 2,
+          "rows": 1,
+          "date_range": null
+        }
+      ],
+      "tables_count": 3,
+      "key_tables": [],
+      "data_missing": [],
+      "errors": [],
+      "status": "PASS",
+      "provenance": {
+        "disk_md5": "e96016fbcff4f8d3dba903d8495f6da1",
+        "zip_md5": "e96016fbcff4f8d3dba903d8495f6da1",
+        "zip_size": 13553664,
+        "md5_match_zip": true,
+        "row_diff": null
+      }
+    }
+  ],
+  "summary": {
+    "status": "NEEDS_OWNER",
+    "blocked_any": false,
+    "fail_any": false,
+    "needs_owner_any": true,
+    "databases_audited": 7,
+    "databases_ok": 6,
+    "databases_fail": 0,
+    "databases_blocked": 0,
+    "databases_needs_owner": 1,
+    "next_phase_allowed": false
+  }
+}

@@ -1,0 +1,561 @@
+{
+  "audit": {
+    "phase": "0.3",
+    "name": "Duplicate Detection Audit",
+    "mode": "READ-ONLY",
+    "db": "/home/z/my-project/db/predictions.db",
+    "dataset_zip": "/home/z/my-project/data/active_databases_20260817_full.zip",
+    "dataset_md5": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+    "engine": "python3 + sqlite3 (read-only URI)"
+  },
+  "status": {
+    "status": "FAIL",
+    "fail_kind": "STRUCTURAL_DEGENERATE_KEY",
+    "internal_label": "FAIL",
+    "worst_duplicate_pct": 81.749,
+    "worst_block": "persona_predictions[k1:tdpE]",
+    "rule": ">10% FAIL | 1-10% PASS(warning) | 0% PASS(clean)",
+    "data_integrity_status": "PASS_WITH_WARNING",
+    "data_integrity_worst_pct": 2.6144,
+    "data_integrity_worst_block": "predictions[k1:tdpE]",
+    "data_integrity_note": "Excludes persona_predictions k1 (ticker,date,persona,entry) because the `persona` column is a degenerate constant 'balanced'; the canonical key is (ticker,date,persona_type,entry) which yields 0 duplicates.",
+    "next_phase_allowed": "NO"
+  },
+  "predictions": {
+    "n_raw": 153,
+    "schema_columns": [
+      "id",
+      "ticker",
+      "signal",
+      "signal_type",
+      "prediction_date",
+      "entry_price",
+      "target_price",
+      "stop_loss",
+      "master_score",
+      "technical_score",
+      "fundamental_score",
+      "ai_pattern_score",
+      "sentiment_score",
+      "outcome_date",
+      "exit_price",
+      "actual_return",
+      "hit_target",
+      "hit_stop",
+      "is_correct",
+      "holding_days",
+      "notes",
+      "market",
+      "confidence",
+      "created_at",
+      "stock_ticker",
+      "direction",
+      "score",
+      "risk_reward",
+      "horizon",
+      "persona",
+      "status",
+      "pnl_percent",
+      "closed_at",
+      "analysis_json",
+      "updated_at",
+      "signal_ar",
+      "maestro_score",
+      "actual_exit_price",
+      "highest_price",
+      "lowest_price",
+      "days_to_close",
+      "pnl_pct",
+      "is_trend_following",
+      "exit_type",
+      "trailing_stop_atr_mult",
+      "initial_stop_atr_mult",
+      "atr_at_entry",
+      "highest_price_reached",
+      "lowest_price_reached",
+      "data_quality",
+      "quality_flags",
+      "partial_exit_price",
+      "partial_exit_date",
+      "partial_return_pct",
+      "exit_policy",
+      "exit_reason",
+      "target_price_2",
+      "explosive_score",
+      "explosive_label",
+      "evidence_count",
+      "morning_bell",
+      "kill_filter_result"
+    ],
+    "persona_distribution": {
+      "balanced": 153
+    },
+    "morning_bell_distribution": {
+      "0": 114,
+      "1": 39
+    },
+    "duplicates_by_ticker_date_persona_entry": {
+      "duplicate_keys": 2,
+      "duplicate_rows": 4,
+      "extra_rows_beyond_first": 2,
+      "examples": [
+        {
+          "key": {
+            "ticker": "1302",
+            "prediction_date": "2026-04-08",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "5.477"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "1302",
+              "prediction_date": "2026-04-08",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "5.477",
+              "entry_price": "5.477",
+              "morning_bell": "0",
+              "market": "EGX",
+              "status": "EXPIRED",
+              "id": "21318"
+            },
+            {
+              "ticker": "1302",
+              "prediction_date": "2026-04-08",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "5.477",
+              "entry_price": "5.477",
+              "morning_bell": "0",
+              "market": "EGX",
+              "status": "EXPIRED",
+              "id": "21409"
+            }
+          ]
+        },
+        {
+          "key": {
+            "ticker": "1322",
+            "prediction_date": "2026-04-08",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "1.079"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "1322",
+              "prediction_date": "2026-04-08",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "1.079",
+              "entry_price": "1.079",
+              "morning_bell": "0",
+              "market": "EGX",
+              "status": "EXPIRED",
+              "id": "21317"
+            },
+            {
+              "ticker": "1322",
+              "prediction_date": "2026-04-08",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "1.079",
+              "entry_price": "1.079",
+              "morning_bell": "1",
+              "market": "EGX",
+              "status": "EXPIRED",
+              "id": "21408"
+            }
+          ]
+        }
+      ]
+    },
+    "duplicates_by_ticker_date_entry": {
+      "duplicate_keys": 2,
+      "duplicate_rows": 4,
+      "extra_rows_beyond_first": 2,
+      "examples": [
+        {
+          "key": {
+            "ticker": "1302",
+            "prediction_date": "2026-04-08",
+            "ROUND(entry_price, 4)": "5.477"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "1302",
+              "prediction_date": "2026-04-08",
+              "ROUND(entry_price, 4)": "5.477",
+              "entry_price": "5.477",
+              "persona": "balanced",
+              "morning_bell": "0",
+              "market": "EGX",
+              "id": "21318"
+            },
+            {
+              "ticker": "1302",
+              "prediction_date": "2026-04-08",
+              "ROUND(entry_price, 4)": "5.477",
+              "entry_price": "5.477",
+              "persona": "balanced",
+              "morning_bell": "0",
+              "market": "EGX",
+              "id": "21409"
+            }
+          ]
+        },
+        {
+          "key": {
+            "ticker": "1322",
+            "prediction_date": "2026-04-08",
+            "ROUND(entry_price, 4)": "1.079"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "1322",
+              "prediction_date": "2026-04-08",
+              "ROUND(entry_price, 4)": "1.079",
+              "entry_price": "1.079",
+              "persona": "balanced",
+              "morning_bell": "0",
+              "market": "EGX",
+              "id": "21317"
+            },
+            {
+              "ticker": "1322",
+              "prediction_date": "2026-04-08",
+              "ROUND(entry_price, 4)": "1.079",
+              "entry_price": "1.079",
+              "persona": "balanced",
+              "morning_bell": "1",
+              "market": "EGX",
+              "id": "21408"
+            }
+          ]
+        }
+      ]
+    },
+    "duplicates_by_ticker_date_morning_bell": {
+      "duplicate_keys": 0,
+      "duplicate_rows": 0,
+      "extra_rows_beyond_first": 0,
+      "examples": []
+    }
+  },
+  "persona_predictions": {
+    "n_raw": 1052,
+    "schema_columns": [
+      "id",
+      "ticker",
+      "market",
+      "persona_type",
+      "signal_type",
+      "entry_price",
+      "target_price",
+      "stop_loss",
+      "prediction_date",
+      "status",
+      "final_price",
+      "profit_loss_percent",
+      "hit_target",
+      "hit_stop_loss",
+      "created_at",
+      "master_score",
+      "confidence",
+      "persona",
+      "signal",
+      "signal_ar",
+      "score",
+      "risk_reward",
+      "rationale",
+      "rationale_ar",
+      "story_arc",
+      "analysis_json"
+    ],
+    "persona_distribution": {
+      "balanced": 1052
+    },
+    "persona_type_distribution": {
+      "gambler": 564,
+      "investor": 488
+    },
+    "duplicates_by_ticker_date_persona_entry": {
+      "duplicate_keys": 430,
+      "duplicate_rows": 860,
+      "extra_rows_beyond_first": 430,
+      "examples": [
+        {
+          "key": {
+            "ticker": "AALR",
+            "prediction_date": "2026-08-07",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "291.33"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "AALR",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "291.33",
+              "entry_price": "291.33",
+              "persona_type": "gambler",
+              "status": "PENDING",
+              "market": "EGX",
+              "id": "2546fccb2c80fdd5de6522e40b637e03"
+            },
+            {
+              "ticker": "AALR",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "291.33",
+              "entry_price": "291.33",
+              "persona_type": "investor",
+              "status": "PENDING",
+              "market": "EGX",
+              "id": "2970f06a88a48de6fc7de2cbf054b1ca"
+            }
+          ]
+        },
+        {
+          "key": {
+            "ticker": "AAYAN",
+            "prediction_date": "2026-08-07",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "290.0"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "AAYAN",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "290.0",
+              "entry_price": "290.0",
+              "persona_type": "gambler",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "ce353328b7cdd70d29fa56fee28b8d81"
+            },
+            {
+              "ticker": "AAYAN",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "290.0",
+              "entry_price": "290.0",
+              "persona_type": "investor",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "9eef637b59a8647ecb916e0aeebe7706"
+            }
+          ]
+        },
+        {
+          "key": {
+            "ticker": "AAYANRE",
+            "prediction_date": "2026-08-07",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "195.0"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "AAYANRE",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "195.0",
+              "entry_price": "195.0",
+              "persona_type": "gambler",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "48d45d2a1e5f0928dfed36c64780e1e4"
+            },
+            {
+              "ticker": "AAYANRE",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "195.0",
+              "entry_price": "195.0",
+              "persona_type": "investor",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "820ad2d6f52c4ef93eaf405a8c3d564e"
+            }
+          ]
+        },
+        {
+          "key": {
+            "ticker": "ABAR",
+            "prediction_date": "2026-08-07",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "182.0"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "ABAR",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "182.0",
+              "entry_price": "182.0",
+              "persona_type": "gambler",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "2c7fd257a5e2c585c275aefda28f31f2"
+            },
+            {
+              "ticker": "ABAR",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "182.0",
+              "entry_price": "182.0",
+              "persona_type": "investor",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "06dbe4d8f96ae105056b40b23fb910cb"
+            }
+          ]
+        },
+        {
+          "key": {
+            "ticker": "ABK",
+            "prediction_date": "2026-08-07",
+            "persona": "balanced",
+            "ROUND(entry_price, 4)": "262.0"
+          },
+          "count": 2,
+          "samples": [
+            {
+              "ticker": "ABK",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "262.0",
+              "entry_price": "262.0",
+              "persona_type": "gambler",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "f48c3de218364219734ed66fa6f673e1"
+            },
+            {
+              "ticker": "ABK",
+              "prediction_date": "2026-08-07",
+              "persona": "balanced",
+              "ROUND(entry_price, 4)": "262.0",
+              "entry_price": "262.0",
+              "persona_type": "investor",
+              "status": "PENDING",
+              "market": "KSE",
+              "id": "90cb089f229abffaaf04be0d940e43e8"
+            }
+          ]
+        }
+      ]
+    },
+    "duplicates_by_ticker_date_persona_type_entry": {
+      "duplicate_keys": 0,
+      "duplicate_rows": 0,
+      "extra_rows_beyond_first": 0,
+      "examples": []
+    },
+    "structural_warnings": [
+      {
+        "code": "DEGENERATE_PERSONA_COLUMN",
+        "severity": "HIGH",
+        "message": "persona_predictions.persona is constant ('balanced' = 1052/1052 rows). Every (gambler, investor) pair for the same ticker/date/entry_price is counted as a duplicate group on the (ticker,date,persona,entry) key. The correct discriminator is persona_type, which yields 0 duplicates on (ticker,date,persona_type,entry).",
+        "duplicate_rows_caused_by_structure": 860,
+        "duplicate_pct_caused_by_structure": 81.749
+      }
+    ]
+  },
+  "prediction_logs": {
+    "n_raw": 80,
+    "schema_columns": [
+      "id",
+      "ticker",
+      "stock_name",
+      "stock_id",
+      "sector",
+      "market",
+      "prediction_date",
+      "recommendation",
+      "predicted_direction",
+      "confidence",
+      "entry_price",
+      "target_price",
+      "stop_loss",
+      "composite_score",
+      "technical_score",
+      "fundamental_score",
+      "quality_score",
+      "momentum_score",
+      "market_regime",
+      "regime_multiplier",
+      "indicators_used",
+      "weights_snapshot",
+      "features_snapshot",
+      "model_version",
+      "source",
+      "predicted_price_5d",
+      "predicted_price_10d",
+      "predicted_price_20d",
+      "actual_price_5d",
+      "direction_correct_5d",
+      "price_error_5d",
+      "actual_price_10d",
+      "direction_correct_10d",
+      "price_error_10d",
+      "actual_price_20d",
+      "direction_correct_20d",
+      "price_error_20d",
+      "target_reached",
+      "stop_hit",
+      "verified",
+      "verified_at",
+      "verification_date",
+      "actual_price",
+      "price_change_percent",
+      "outcome",
+      "profit_percent",
+      "holding_days",
+      "created_at",
+      "updated_at"
+    ],
+    "duplicates_by_ticker_date": {
+      "duplicate_keys": 0,
+      "duplicate_rows": 0,
+      "extra_rows_beyond_first": 0,
+      "examples": []
+    },
+    "duplicates_by_ticker_date_source": {
+      "duplicate_keys": 0,
+      "duplicate_rows": 0,
+      "extra_rows_beyond_first": 0,
+      "examples": []
+    }
+  },
+  "cross_table": {
+    "predictions_vs_persona_predictions_on_ticker_date_entry": {
+      "matched_distinct_keys": 1,
+      "rows_in_predictions_matched": 1,
+      "rows_in_persona_predictions_matched": 2,
+      "examples": [
+        {
+          "ticker": "OCIC",
+          "prediction_date": "2026-08-17",
+          "entry_price_r": "2814.588"
+        }
+      ]
+    },
+    "prediction_logs_vs_predictions_on_ticker_date": {
+      "matched_distinct_keys": 0,
+      "rows_in_prediction_logs_matched": 0,
+      "rows_in_predictions_matched": 0,
+      "examples": []
+    },
+    "prediction_logs_vs_persona_predictions_on_ticker_date": {
+      "matched_distinct_keys": 0,
+      "rows_in_prediction_logs_matched": 0,
+      "rows_in_persona_predictions_matched": 0,
+      "examples": []
+    }
+  }
+}
