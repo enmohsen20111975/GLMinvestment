@@ -1,6 +1,79 @@
 # Changelog
 
 
+## [ADMIN-PERFORMANCE-001] — لوحة أدمن «كفاءة المنصة» (Admin Only) (2026-08-19)
+
+> **المهمة:** لوحة أدمن بأرقام حقيقية بدون تجميل — KPIs + أفضل/أسوأ الصفقات +
+> مقارنة القنوات + صندوق جاهزية. لا تظهر للعميل.
+
+### الملخص
+- **API**: `/api/admin/platform-performance` (محمي بـ `requireAdminAsync`، READ-ONLY، 370 LOC)
+  - يقرأ من `predictions.db.predictions` (153 صفقة، 148 مغلقة).
+  - حساب العائد: `actual_return → exit_price → hit_target/target → hit_stop/stop → null`.
+  - HARD cap: `ABS(actual_return) <= 50` (Constitution Rule 7).
+  - لا خلط قنوات: balanced ≠ morning_bell مفصولة.
+  - Query params: `period` (today/7d/30d/all), `channel` (all/balanced/morning_bell), `min_return`.
+
+- **UI**: `PlatformPerformanceView.tsx` (560 LOC، shadcn/ui)
+  - Branding: «دليل الاستثمار» + شارة «Admin Only» + رابط invist.m2y.net.
+  - فلاتر: الفترة + القناة + حد «صفقة محترمة» (+5/+8/+10/+15%).
+  - 8 KPI Cards: n_measured, Win Rate, Profit Factor, Expectancy, avg_win, avg_loss, Max Loss, Max Win.
+  - أفضل الصفقات (Top 20) + تحقق المستهدفات + أسوأ الصفقات (Worst 10).
+  - مقارنة القنوات (balanced vs morning_bell).
+  - صندوق قرار الجاهزية (n ≥ 30 + PF ≥ 1.3 + max_loss معقول).
+  - Mobile responsive.
+
+### الأرقام الحقيقية (period=all، 2026-01-01 → 2026-08-17)
+- **n_measured**: 153 صفقة
+- **Win Rate**: 50.98%
+- **Profit Factor**: 1.51
+- **Expectancy**: +1.44% (متوسط عائد الصفقة)
+- **avg_win**: +8.3% / **avg_loss**: -6.12%
+- **Max Loss**: -7.59% / **Max Win**: +50% (capped)
+- **TP1 hit rate**: 36.6% / **Stop hit rate**: 45.75%
+
+### مقارنة القنوات
+| القناة | n | Win Rate | Profit Factor | Expectancy | Max Loss |
+|--------|-----|----------|---------------|------------|----------|
+| balanced | 114 | 52.6% | 1.71 | +1.96% | -7.59% |
+| morning_bell | 39 | 46.2% | 1.04 | +0.07% | -7.23% |
+
+### صندوق الجاهزية
+- ✅ n ≥ 30 (153 ≥ 30)
+- ✅ PF ≥ 1.3 (1.51 ≥ 1.3)
+- ✅ Max Loss ضمن نطاق الوقف (-7.59% ≥ -20%)
+- **التوصية**: «مرشح لنسخة عميل لاحقاً»
+
+### أمثلة Top 3
+1. **1323** (2026-05-28) | entry=5.35 | target=5.81 | return=**+50.00%** (capped) | balanced
+2. **2090** (2026-05-25) | entry=9.02 | target=9.89 | return=**+31.96%** | balanced
+3. **2090** (2026-05-28) | entry=9.28 | target=10.04 | return=**+29.05%** | balanced
+
+### أمثلة Worst 3
+1. **1030** (2026-04-29) | entry=4.63 | stop=4.27 | return=**-7.59%** | balanced
+2. **1321** (2026-02-01) | entry=9.10 | stop=8.44 | return=**-7.23%** | morning_bell
+3. **1322** (2026-03-10) | entry=1.03 | stop=0.96 | return=**-7.20%** | morning_bell
+
+### الحماية
+- **ADMIN_GATE**: `requireAdminAsync` يتحقق من X-Admin-Token header + admin_session cookie + NextAuth session + localhost bypass (dev only).
+- **CLIENT_VISIBLE**: **NO** — اللوحة موجودة فقط في `AdminView` (تبويب داخل hub «التعلم الذكي»)، غير ظاهرة في Sidebar العميل أو MobileNav.
+- في الإنتاج (`NODE_ENV=production`): localhost bypass معطل، يتطلب تسجيل دخول أدمن.
+
+### حالات n=0
+- لو لا توجد صفقات مغلقة في الفترة:
+  - Alert: «لا توجد بيانات كافية — جرّب توسيع الفترة».
+  - KPIs = 0 (وليس أصفار كاذبة).
+  - top/worst/target_hits = [] (لا جداول فارغة).
+- لو n < 30: sample_note يحذر «العينة أقل من 30 — النتائج إرشادية فقط».
+
+### الملفات المعدّلة/الجديدة
+- [جديد] `src/app/api/admin/platform-performance/route.ts` (370 LOC)
+- [جديد] `src/components/admin/platform-performance/PlatformPerformanceView.tsx` (560 LOC)
+- [معدّل] `src/components/admin/AdminView.tsx` — import + tab type + hub tab + render block
+- [جديد] `scripts/check_predictions.py`, `check_predictions2.py`, `check_predictions3.py`
+
+---
+
 ## [DEAL-ADVISOR-002] — تثبيت مستشار الصفقة + إصلاح ترابط المحفظة/السعر/التنبيهات (2026-08-19)
 
 > **المهمة:** تحقق (Acceptance) مستشار الصفقة + إصلاح بحث المحفظة (تكرار +

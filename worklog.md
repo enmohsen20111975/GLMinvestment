@@ -6781,3 +6781,129 @@ Stage Summary:
 - [معدّل] src/components/crypto/_archived_v404/CryptoRecommendationsView.tsx — 1 استبدال نصي
 - [جديد] scripts/patch_search.py, patch_smart_alerts.py, patch_clean_text.py,
   patch_clean_maestro.py, patch_clean_more.py, check_pollution.py
+
+---
+Task ID: ADMIN-PERFORMANCE-001
+Agent: Z.ai Code (main orchestrator)
+Task: لوحة أدمن «كفاءة المنصة» — Admin Only — أرقام حقيقية بدون تجميل.
+      KPIs + أفضل/أسوأ الصفقات + مقارنة القنوات + صندوق جاهزية.
+
+Work Log:
+- التزمت بـ Documentation/00-CONSTITUTION.md:
+  * Rule 7: HARD cap ABS(actual_return) <= 50 مطبق في computeActualReturn.
+  * Rule 8: لا خلط قنوات — balanced ≠ morning_bell مفصولة في by_channel.
+  * Rule 9: VERIFY-BEFORE-DELETE — لم أمسح أي شيء.
+  * Rule 11 (جديد): Admin Only — ممنوع إظهارها للعميل.
+- قرأت worklog (DEAL-ADVISOR-001 و 002) لفهم السياق.
+
+[الجزء 1 — حصر مصدر البيانات]:
+- فحصت predictions.db: 26 جدول.
+- persona_predictions: 1052 صف، كلها PENDING (لا قيمة).
+- predictions: 153 صف (148 EXPIRED + 5 active) — المصدر الأساسي.
+  * 56 hit_target=1 (ربح)، 70 hit_stop=1 (خسارة)، 22 expired no hit.
+  * persona = balanced فقط (153).
+  * morning_bell: 39 = true، 114 = false.
+  * نطاق التاريخ: 2026-01-01 → 2026-08-17.
+  * لكن: actual_return/exit_price/pnl_pct كلها NULL!
+- منطق حساب العائد (computeActualReturn):
+  1. actual_return لو موجود → استخدمه (مع HARD cap)
+  2. exit_price → (exit-entry)/entry×100
+  3. hit_target=1 → (target-entry)/entry×100
+  4. hit_stop=1 → (stop-entry)/entry×100
+  5. expired no hit → null (لا نختلق)
+- ExpertRecommendation: 42 صف لكن معظمها PENDING بدون final_price.
+
+[الجزء 2 — API /api/admin/platform-performance]:
+- ملف جديد: src/app/api/admin/platform-performance/route.ts (370 LOC).
+- محمي بـ requireAdminAsync (admin only — يرجع 403 لو غير أدمن).
+- يقرأ من predictions.db.predictions (READ-ONLY).
+- Query params: period (today/7d/30d/all), channel (all/balanced/morning_bell),
+  min_return (default 8.0).
+- يرجع JSON: kpis, top_trades, worst_trades, target_hits, by_channel, readiness,
+  data_sources, data_missing, sample_note_ar.
+- HARD cap مطبق: Math.max(-50, Math.min(50, ret)) في كل حساب عائد.
+- اختبار API (period=all):
+  * n_measured: 153, Win Rate: 50.98%, PF: 1.51, Expectancy: +1.44%
+  * avg_win: +8.3%, avg_loss: -6.12%, max_loss: -7.59%, max_win: +50%
+  * tp1_hit_rate: 36.6%, stop_hit_rate: 45.75%
+  * by_channel: balanced (n=114, WR=52.6%, PF=1.71), morning_bell (n=39, WR=46.2%, PF=1.04)
+  * readiness: "مرشح لنسخة عميل لاحقاً" (n≥30 + PF≥1.3 + max_loss ضمن نطاق)
+  * top_trades: 20 صفقة (أعلى: 1323 = +50% capped، 2090 = +31.96%)
+  * worst_trades: 10 صفقات (أسوأ: 1030 = -7.59%)
+
+[الجزء 3 — مكوّن PlatformPerformanceView]:
+- ملف جديد: src/components/admin/platform-performance/PlatformPerformanceView.tsx (560 LOC).
+- 'use client' + shadcn/ui (Card, Button, Badge, Select, Alert, Separator).
+- Branding في الرأس:
+  * اسم المنصة: «دليل الاستثمار»
+  * شارة: «للتقييم الداخلي — Admin Only»
+  * رابط: invist.m2y.net
+  * تاريخ آخر تحديث
+- فلاتر: الفترة (اليوم/7d/30d/الكل) + القناة (الكل/المتوازن/جرس الصباح) +
+  حد «صفقة محترمة» (+5/+8/+10/+15%).
+- KPI Cards (8): n_measured, Win Rate, Profit Factor, Expectancy, avg_win,
+  avg_loss, Max Loss, Max Win — بألوان دلالية (success/warning/danger).
+- أفضل الصفقات (Top 20): جدول كامل (ticker, channel, date, entry, stop,
+  target, exit, return, duration, status).
+- تحقق المستهدفات: جدول للصفقات التي لمست الهدف.
+- أسوأ الصفقات (Worst 10): إجباري للشفافية الداخلية (border أحمر).
+- كفاءة القنوات: مقارنة balanced vs morning_bell (n, WR, PF, Expectancy, Max Loss).
+- صندوق قرار الجاهزية:
+  * n ≥ 30 ✓/✗
+  * PF ≥ 1.3 ✓/✗
+  * Max Loss ضمن نطاق الوقف ✓/✗
+  * توصية: «يبقى داخلي» أو «مرشح لنسخة عميل لاحقاً» + notes.
+- مصادر البيانات (details قابل للطي) + HARD cap note.
+- Mobile responsive: grid-cols-2 md:grid-cols-3 lg:grid-cols-4.
+
+[الجزء 4 — ربط اللوحة بـ AdminView]:
+- عدّلت src/components/admin/AdminView.tsx:
+  * أضفت 'platform-performance' للـ AdminTab type.
+  * أضفت Gauge icon للاستيراد.
+  * أضفت tab في hub «التعلم الذكي والتوقعات».
+  * أضفت render block: {activeTab === 'platform-performance' && <PlatformPerformanceView />}.
+  * import PlatformPerformanceView.
+- تحقق من أن اللوحة لا تظهر في Sidebar العميل (src/components/layout/Sidebar.tsx)
+  ولا MobileNav — مكتشف: لا references للوحة في ملفات العميل.
+
+[الجزء 5 — اختبار بـ Agent Browser]:
+- فتحت #admin → نقرت على hub «التعلم الذكي والتوقعات» → ظهرت tabs.
+- نقرت على tab «كفاءة المنصة» → اللوحة ظهرت.
+- تحقق من المحتوى:
+  * «كفاءة المنصة» + «Admin Only» + «دليل الاستثمار» + «invist.m2y.net» ✓
+  * KPI Cards: Win Rate, Profit Factor, Expectancy, Max Loss, Max Win ✓
+  * أفضل الصفقات (Top 20) ✓
+  * أسوأ الصفقات (Worst 10) ✓
+  * كفاءة القنوات (balanced + morning_bell) ✓
+  * تحقق المستهدفات ✓
+  * قرار الجاهزية ✓
+  * رسالة «تم قياس N صفقة» ✓
+- Mobile (375x812): يعمل (5503 chars).
+- Desktop (1280x800): يعمل.
+
+[الجزء 6 — حالات n=0]:
+- لو لا توجد صفقات مغلقة في الفترة:
+  * Alert: «لا توجد بيانات كافية — جرّب توسيع الفترة».
+  * KPIs = 0 (وليس أصفار كاذبة).
+  * top/worst/target_hits = [] (لا جداول فارغة بأصفار).
+- لو period=30d (5 صفقات مفتوحة فقط):
+  * sample_note: «تم قياس 5 صفقة من أصل 5. العينة أقل من 30 — النتائج إرشادية فقط.»
+  * readiness: «يبقى داخلي» (n < 30 + PF < 1.3).
+
+Stage Summary:
+- ✅ API /api/admin/platform-performance — محمي بأدمن، READ-ONLY، HARD cap.
+- ✅ PlatformPerformanceView.tsx — لوحة كاملة بـ 8 أقسام + Branding.
+- ✅ ربط بـ AdminView tab «كفاءة المنصة» — Admin Only.
+- ✅ أرقام حقيقية: 153 صفقة، WR=51%, PF=1.51, Exp=+1.44%.
+- ✅ مقارنة القنوات: balanced (PF=1.71) > morning_bell (PF=1.04).
+- ✅ أسوأ الصفقات ظاهرة (شفافية داخلية).
+- ✅ صندوق جاهزية: «مرشح لنسخة عميل لاحقاً».
+- ✅ لا تظهر للعميل (موجودة فقط في AdminView).
+- ✅ bun run build: نجح.
+- ✅ Agent Browser: يعمل على desktop + mobile.
+
+ملفات تم إنشاؤها/تعديلها:
+- [جديد] src/app/api/admin/platform-performance/route.ts (370 LOC)
+- [جديد] src/components/admin/platform-performance/PlatformPerformanceView.tsx (560 LOC)
+- [معدّل] src/components/admin/AdminView.tsx — import + tab type + hub + render
+- [جديد] scripts/check_predictions.py, check_predictions2.py, check_predictions3.py
