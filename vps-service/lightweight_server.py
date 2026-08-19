@@ -39,7 +39,7 @@ BLUEPRINTS = [
     ('api.unified_v2_routes', 'unified_v2_bp'),
     ('api.confluence_routes', 'confluence_bp'),
     ('api.screener_routes', 'screener_bp'),
-    ('api.ai_predictions_routes', 'ai_predictions_bp'),
+    ('api.ai_predictions_routes', 'ai_pred_bp'),
     ('api.prediction_tracking_routes', 'prediction_tracking_bp'),
     ('api.prediction_tracking_routes', 'tracking_bp'),
     ('api.maestro_routes', 'maestro_bp'),

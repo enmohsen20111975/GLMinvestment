@@ -82,7 +82,7 @@ function signalToScore(signal: any, baseline = 50): number {
 }
 
 function scoreToRecommendation(score: number): { recommendation: string; recommendation_ar: string } {
-  if (score >= 80) return { recommendation: 'STRONG_BUY',  recommendation_ar: 'شراء قوي'  };
+  if (score >= 75) return { recommendation: 'STRONG_BUY',  recommendation_ar: 'شراء قوي'  };
   if (score >= 70) return { recommendation: 'BUY',         recommendation_ar: 'شراء'      };
   if (score >= 60) return { recommendation: 'HOLD',        recommendation_ar: 'انتظار'    };
   if (score >= 50) return { recommendation: 'REDUCE',      recommendation_ar: 'تقليل'     };

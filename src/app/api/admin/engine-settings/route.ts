@@ -59,8 +59,8 @@ const FALLBACK_SETTINGS: Record<string, number> = {
   min_stop_pct: 0.003,
   // Targets / R/R
   min_rr_bull_market: 2.0,
-  min_rr_bear_market: 1.5,
-  min_rr_range_market: 1.2,
+  min_rr_bear_market: 1.8,
+  min_rr_range_market: 1.5,
   target_rr_bull: 3.0,
   target_rr_range: 1.5,
   // Delayed Data Compensation

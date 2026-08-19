@@ -38,7 +38,7 @@ function buildStubForTicker(ticker: string): StubResult {
   const score = 50 + (hash % 50); // 50..99
   let recommendation = 'شراء';
   let analysis = 'إشارة شراء معتدلة';
-  if (score >= 80) {
+  if (score >= 75) {
     recommendation = 'شراء قوي';
     analysis = 'السهم في وضع صاعد قوي مع زخم إيجابي';
   } else if (score >= 65) {

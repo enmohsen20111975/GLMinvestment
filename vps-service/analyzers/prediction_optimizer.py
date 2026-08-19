@@ -329,7 +329,7 @@ class PredictionOptimizer:
         # bull: عتبة منخفضة (1.2) — السوق صاعد، سيب الرباح يكبر
         # bear: عتبة عالية (2.0) — السوق هابط، لازم ثقة عالية
         # range: عتبة متوسطة (1.5) — تداول عرضي
-        regime_rr_thresholds = {'bull': 1.2, 'bear': 2.0, 'range': 1.5}
+        regime_rr_thresholds = {'bull': 2.0, 'bear': 2.0, 'range': 1.5}
         effective_min_rr = regime_rr_thresholds.get(regime, self.min_rr_ratio)
         # لو فيه باراميترات محسّنة، نستخدمها
         if self.optimized_params and self.optimized_params.get('last_optimized'):

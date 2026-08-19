@@ -113,7 +113,7 @@ PERSONA_PARAMS = {
         'atr_target_mult': 2.0,
         'support_buffer': 0.97,
         'resistance_buffer': 0.97,
-        'min_rr': 1.3,
+        'min_rr': 1.5,
         'default_stop_pct': 0.08,
     },
     'active_trader': {
@@ -121,7 +121,7 @@ PERSONA_PARAMS = {
         'atr_target_mult': 1.8,
         'support_buffer': 0.97,
         'resistance_buffer': 0.98,
-        'min_rr': 1.3,
+        'min_rr': 1.5,
         'default_stop_pct': 0.07,
     },
     'adventurer': {
@@ -129,7 +129,7 @@ PERSONA_PARAMS = {
         'atr_target_mult': 1.5,
         'support_buffer': 0.99,
         'resistance_buffer': 0.99,
-        'min_rr': 1.3,
+        'min_rr': 1.5,
         'default_stop_pct': 0.10,
     },
     'gambler': {
@@ -137,7 +137,7 @@ PERSONA_PARAMS = {
         'atr_target_mult': 1.5,
         'support_buffer': 0.99,
         'resistance_buffer': 1.00,
-        'min_rr': 1.2,
+        'min_rr': 1.5,
         'default_stop_pct': 0.12,
     },
     'hedger': {

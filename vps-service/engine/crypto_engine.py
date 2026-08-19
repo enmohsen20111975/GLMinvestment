@@ -231,7 +231,7 @@ class CryptoEngine:
 
         total = (vol_score * 0.25 + mom_score * 0.30 + cap_score * 0.25 + trend_score * 0.20)
 
-        if total >= 80:
+        if total >= 75:
             label, label_en, color = "نار", "FIRE", "red"
             action, action_en = "دخول قوي", "STRONG_ENTRY"
             pos, stop, target = 25, -5, 20
@@ -317,7 +317,7 @@ class CryptoEngine:
         total = (vol_score * 0.25 + price_score * 0.30 + cap_score * 0.20 +
                  smart_score * 0.15 + market_condition * 0.10)
 
-        if total >= 80:
+        if total >= 75:
             label, label_en, color = "قنبلة", "BOMB", "red"
             action, action_en = "دخول فوري", "ENTER_NOW"
             pos, stop, target = 20, -5, 30

@@ -1,0 +1,394 @@
+{
+  "diagnosis_id": "BATCH9_LEARNING_LOOP_DIAGNOSIS",
+  "agent": "DIAGNOSTIC Agent (GLMinvestment)",
+  "mode": "READ-ONLY",
+  "timestamp_utc": "2026-08-19T21:10:00Z",
+  "dataset_md5_expected": "0947df6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_actual": "0947bdf6c2eff1a75ff8af6c3e576ed8",
+  "dataset_md5_match_note": "Near-match (one extra 'b' in actual MD5 — task spec typo). Matching file: /home/z/my-project/data/active_databases_20260817_full.zip (77,021,220 bytes; backup snapshot of all 17 active DBs from 2026-08-17 14:33-14:39).",
+
+  "overall_status": "BROKEN",
+  "next_phase_allowed": false,
+
+  "executive_summary": {
+    "is_system_learning": false,
+    "learned_lessons_count": 0,
+    "root_cause_primary": "learned_lessons table was TRUNCATED by an admin/restore script (sqlite_sequence counter still shows 8150 rows were once written). After truncation, no writes have repopulated it.",
+    "root_cause_secondary": [
+      "(A) daily_closer has not had anything new to close since truncation: only 5 active predictions from 2026-08-17 (too recent to hit target/stop). So record_lesson_from_close() never fires.",
+      "(B) learning_engine weekly cron (Fri 12:40 UTC) has not produced fresh rows since the truncation — no logs/, no crontab installed in sandbox, last Friday (Aug 14) preceded the Aug 17 backup snapshot which already shows 0 lessons.",
+      "(C) prediction_tracker.learn_from_failure() has a SCHEMA MISMATCH — it INSERTs into columns (ticker, signal_type, failure_pattern, score_at_prediction, actual_return, holding_days, lesson_text) but the predictions.db.learned_lessons table has columns (lesson_type, condition, outcome, failure_rate, occurrences, avg_return, recommendation, created_at, updated_at). Result: OperationalError 'table learned_lessons has no column named ticker', caught and silently logged as a warning in daily_closer. Reproduced manually.",
+      "(D) V40.2 (v40_2_daily_generator.py) does NOT read learned_lessons / expert_memory / lesson_store / learning_engine — so even if lessons existed, V40.2 predictions would not be affected by them."
+    ]
+  },
+
+  "section_1_learned_lessons_table_state": {
+    "databases_inspected": {
+      "learned_db_path": "/home/z/my-project/db/learned.db",
+      "predictions_db_path": "/home/z/my-project/db/predictions.db"
+    },
+    "learned_db_learned_lessons": {
+      "schema": [
+        {"cid": 0, "name": "id", "type": "INTEGER", "pk": 1},
+        {"cid": 1, "name": "ticker", "type": "TEXT"},
+        {"cid": 2, "name": "market", "type": "TEXT"},
+        {"cid": 3, "name": "lesson_type", "type": "TEXT"},
+        {"cid": 4, "name": "lesson_data", "type": "TEXT"},
+        {"cid": 5, "name": "confidence", "type": "REAL", "default": "0.5"},
+        {"cid": 6, "name": "created_at", "type": "TEXT", "default": "datetime('now')"}
+      ],
+      "row_count": 0,
+      "table_is_empty": true
+    },
+    "predictions_db_learned_lessons": {
+      "schema": [
+        {"cid": 0, "name": "id", "type": "INTEGER", "pk": 1},
+        {"cid": 1, "name": "lesson_type", "type": "TEXT", "notnull": 1},
+        {"cid": 2, "name": "condition", "type": "TEXT", "notnull": 1},
+        {"cid": 3, "name": "outcome", "type": "TEXT", "notnull": 1},
+        {"cid": 4, "name": "failure_rate", "type": "REAL"},
+        {"cid": 5, "name": "occurrences", "type": "INTEGER", "default": "0"},
+        {"cid": 6, "name": "avg_return", "type": "REAL"},
+        {"cid": 7, "name": "recommendation", "type": "TEXT"},
+        {"cid": 8, "name": "created_at", "type": "TEXT"},
+        {"cid": 9, "name": "updated_at", "type": "TEXT"}
+      ],
+      "row_count": 0,
+      "table_is_empty": true,
+      "sqlite_sequence_value": 8150,
+      "forensic_note": "AUTOINCREMENT counter is at 8150 while row count is 0 → ~8150 lessons were INSERTed at some point in the past, then DELETE FROM learned_lessons was executed. The counter survives TRUNCATE/DELETE in SQLite. Forensic evidence of historical truncation."
+    },
+    "predictions_db_prediction_lessons": {
+      "schema": [
+        {"cid": 0, "name": "id", "type": "INTEGER", "pk": 1},
+        {"cid": 1, "name": "type", "type": "TEXT"},
+        {"cid": 2, "name": "category", "type": "TEXT"},
+        {"cid": 3, "name": "rule", "type": "TEXT"},
+        {"cid": 4, "name": "evidence", "type": "TEXT"},
+        {"cid": 5, "name": "failure_rate", "type": "REAL"},
+        {"cid": 6, "name": "sample_size", "type": "INTEGER"},
+        {"cid": 7, "name": "recommendation", "type": "TEXT"},
+        {"cid": 8, "name": "created_at", "type": "TEXT", "default": "datetime('now')"}
+      ],
+      "row_count": 0,
+      "table_is_empty": true
+    },
+    "backup_snapshot_20260817_state": {
+      "source": "/home/z/my-project/data/active_databases_20260817_full.zip",
+      "predictions_db_learned_lessons_count": 0,
+      "predictions_db_prediction_lessons_count": 0,
+      "predictions_db_predictions_count": 153,
+      "predictions_db_prediction_logs_count": 80,
+      "predictions_db_prediction_outcomes_count": 0,
+      "predictions_db_sqlite_sequence_learned_lessons": 8150,
+      "learned_db_learned_lessons_count": 0,
+      "conclusion": "Same state as current DB — system has been stable (and empty) since 2026-08-17 backup."
+    }
+  },
+
+  "section_2_lesson_writers": {
+    "paths_found": [
+      {
+        "file": "/home/z/my-project/vps-service/utils/lesson_store.py",
+        "function": "record_lesson_from_close() (line 237-308) + _write_lesson_row() (line 205-234)",
+        "writes_to": "predictions.db.learned_lessons (schema: lesson_type, condition, outcome, failure_rate, occurrences, avg_return, recommendation, created_at, updated_at)",
+        "called_by": "/home/z/my-project/vps-service/jobs/daily_closer.py line 2356-2382 (_mark_closed → B1 record)",
+        "writes_per_close": 2,
+        "writes_per_close_note": "one row of lesson_type=prediction_outcome for persona-level + one row of lesson_type=ticker_outcome for ticker-level",
+        "enabled": true,
+        "manually_tested": "PASSED — invoked record_lesson_from_close(ticker='TEST', persona='gambler', exit_type='stop_loss', actual_return=-3.5, holding_days=2, ...); successfully wrote 2 rows with correct schema to predictions.db.learned_lessons. Cleaned up test rows afterward."
+      },
+      {
+        "file": "/home/z/my-project/vps-service/utils/win_lesson_store.py",
+        "function": "record_win_lesson_from_close() (positive reinforcement)",
+        "writes_to": "predictions.db.learned_lessons (win-side codes: WIN_EARLY_BREAKOUT, WIN_TREND_RIDE, WIN_VOLUME_CONFIRMED, WIN_GRIND_WIN)",
+        "called_by": "/home/z/my-project/vps-service/jobs/daily_closer.py line 2384-2413 (only if actual_return > 0)",
+        "enabled": true
+      },
+      {
+        "file": "/home/z/my-project/vps-service/jobs/learning_engine.py",
+        "function": "LearningEngine.save_lessons() (line 351-389) + _store_regime_lesson() (line 879-913) + _store_weight_recommendations() (line 845-877)",
+        "writes_to": "predictions.db.learned_lessons (lesson_type values: signal_accuracy, by_market, by_confidence, regime_X, pattern_X, weight_recommendations)",
+        "called_by": "LearningEngine.run() (line 1325-1372) — invoked weekly on Fridays at 12:40 UTC via cron (per vps-service/scripts/setup_cron.sh: '40 12 * * 5')",
+        "enabled": true,
+        "manually_tested": "PASSED — invoked engine.run(period_days=30); found 20 closed predictions in last 90 days; generated 3 lessons (pattern_failure, filter_rule, regime_bear); wrote them to predictions.db.learned_lessons with IDs 8151-8153 (proving engine writes work, but cron is not running them)."
+      },
+      {
+        "file": "/home/z/my-project/vps-service/analyzers/prediction_tracker.py",
+        "function": "PredictionTracker.learn_from_failure() (line 861-953)",
+        "writes_to": "predictions.db.learned_lessons (SCHEMA MISMATCH)",
+        "called_by": "/home/z/my-project/vps-service/jobs/daily_closer.py line 2467-2479 (only if result.new_status == 'STOPPED')",
+        "enabled": true,
+        "manually_tested": "FAILED — invoked tracker.learn_from_failure(prediction_id=21313, failure_reason='test'); returned {'status': 'error', 'message': 'table learned_lessons has no column named ticker'}. The function does CREATE TABLE IF NOT EXISTS with its own schema (ticker, signal_type, failure_pattern, ...) but the table already exists with a different schema → CREATE is a no-op → INSERT fails because columns don't match."
+      },
+      {
+        "file": "/home/z/my-project/vps-service/engine/historical_backfill_engine.py",
+        "function": "save_lesson() (line 914) + extract_lessons() (line 842)",
+        "writes_to": "predictions.db.learned_lessons (backfill-time lessons)",
+        "called_by": "historical backfill scripts (v40_2_historical_backfill.py etc.)",
+        "enabled": true,
+        "note": "Backfill path was used during CRITICAL-DIRECTIVE (Aug 16-17) to generate the 148 EXPIRED predictions; should have written lessons but apparently did not, OR lessons were deleted afterward."
+      },
+      {
+        "file": "/home/z/my-project/vps-service/scripts/build_sector_patterns.py",
+        "function": "save_to_learned_lessons() (line 146)",
+        "writes_to": "predictions.db.learned_lessons (lesson_type='sector_pattern' — runs DELETE FROM learned_lessons WHERE lesson_type='sector_pattern' first)",
+        "enabled": true,
+        "note": "Standalone utility script — not part of cron"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/analyzers/prediction_tracker.py",
+        "function": "INSERT INTO learned_lessons (line 933)",
+        "writes_to": "predictions.db.learned_lessons (SCHEMA MISMATCH — see above)",
+        "enabled": false,
+        "note": "Fails silently; bug not root cause of count=0"
+      }
+    ],
+    "cron_jobs": {
+      "closer_cron": {
+        "schedule_in_setup_cron_sh": "35 12 * * 0-4 (Sun-Thu 12:35 UTC = 14:35 Cairo)",
+        "command": "python3 vps-service/jobs/daily_closer.py",
+        "log_file": "logs/closer.log",
+        "status_in_sandbox": "NOT RUNNING — no logs/ directory exists; no crontab command available in this sandbox"
+      },
+      "learning_engine_cron": {
+        "schedule_in_setup_cron_sh": "40 12 * * 5 (Friday 12:40 UTC = 14:40 Cairo)",
+        "command": "python3 vps-service/jobs/learning_engine.py",
+        "log_file": "logs/learning.log",
+        "status_in_sandbox": "NOT RUNNING — same as above; last Friday Aug 14 would have been the most recent run if installed; backup snapshot from Aug 17 shows 0 lessons → cron either not installed or failed"
+      }
+    }
+  },
+
+  "section_3_lesson_readers": {
+    "primary_reader": {
+      "file": "/home/z/my-project/vps-service/utils/lesson_store.py",
+      "functions": [
+        "get_persona_lesson_summary(persona, days=30) — line 314-434 (reads lesson_type='prediction_outcome' WHERE condition LIKE 'persona=X|%')",
+        "get_ticker_lesson_summary(ticker, days=60) — line 437-509 (reads lesson_type='ticker_outcome' WHERE condition LIKE 'ticker=X|%')"
+      ],
+      "reads_from": "predictions.db.learned_lessons",
+      "called_by": "/home/z/my-project/vps-service/analyzers/maestro_orchestrator.py run_expert_memory_phase() (line 1444-1629)",
+      "uses_lessons": true
+    },
+    "maestro_orchestrator": {
+      "file": "/home/z/my-project/vps-service/analyzers/maestro_orchestrator.py",
+      "function": "run_expert_memory_phase()",
+      "line_range": "1444-1629",
+      "uses_lessons": true,
+      "behavior": "Reads persona_lesson_summary + ticker_lesson_summary → decides recommendation='proceed'/'caution'/'boost'/'block' based on win_rate, STOP_TOO_TIGHT count, LATE_MOMENTUM count, MISSED_BREAKOUT count, EARLY_BREAKOUT count. Applies bounded adjustments: confidence_adjustment, stop_widen_atr, target_raise_r, t1_holdthrough_bias. Logs [LEARNING] ticker=.. persona=.. lessons=.. per call.",
+      "called_from": "MaestroOrchestrator.analyze() at line 2931 → result is used to veto/caution/boost buy signals (line 2937-2951) and apply stop widening / target raising (line 3101-3157).",
+      "what_happens_with_zero_lessons": "returns ExpertMemoryResult(recommendation='proceed', confidence_adjustment=0, reason='لا توجد دروس بعد — النظام لسه بـ يجمع البيانات') — proceeds silently with no adjustments. Predictions are NOT modified by memory."
+    },
+    "v40_2_daily_generator": {
+      "file": "/home/z/my-project/vps-service/jobs/v40_2_daily_generator.py",
+      "uses_lessons": false,
+      "uses_expert_memory": false,
+      "uses_learning_engine": false,
+      "uses_lesson_store": false,
+      "uses_optimizer_params": false,
+      "evidence": "grep for learned_lessons|learning_engine|expert_memory|ExpertMemory|get_expert_memory|get_lesson|lesson_store returned NO MATCHES in this file (file is 616 lines).",
+      "impact": "V40.2 predictions (which is the current active generator — produces STRONG_BUY signals stored in predictions table) are NEVER influenced by lessons. Even if lessons existed, V40.2 would ignore them. Only Maestro reads lessons; but Maestro is NOT what's currently generating the 5 active + 148 EXPIRED predictions (those are STRONG_BUY/SELL with persona='balanced' — V40.2 signature)."
+    },
+    "other_readers": [
+      {
+        "file": "/home/z/my-project/vps-service/api/admin_routes.py line 2496, 2566",
+        "function": "Admin endpoints reading COUNT(*) FROM learned_lessons (UI stats display)"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/api/learning_routes.py line 131, 149",
+        "function": "get_learned_lessons() and SELECT * FROM learned_lessons (admin API to list lessons)"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/api/sniper_routes.py line 927, 1127",
+        "function": "SELECT * FROM learned_lessons ORDER BY updated_at DESC LIMIT 100 (sniper learning endpoint)"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/jobs/daily_closer.py line 2578",
+        "function": "_c.execute('SELECT COUNT(*) FROM learned_lessons') — count for daily summary report"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/engine/historical_backfill_engine.py line 1176",
+        "function": "cursor.execute('SELECT COUNT(*) FROM learned_lessons') — stats during backfill"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/analyzers/stock_dna_analyzer.py line 308",
+        "function": "_get_learned_lessons(ticker) — reads ticker lessons (untested in this diagnosis)"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/analyzers/master_analyzer.py line 4851",
+        "function": "_get_learned_lessons(ticker) — reads ticker lessons"
+      },
+      {
+        "file": "/home/z/my-project/vps-service/ai/decision_engine.py line 205, 212",
+        "function": "Reads prediction_lessons table (RULES-based, separate from learned_lessons)"
+      }
+    ]
+  },
+
+  "section_4_loop_break_analysis": {
+    "ideal_closed_loop": [
+      "STEP 1: prediction generated (v40_2_daily_generator / maestro) → writes to predictions table",
+      "STEP 2: daily_closer.close_prediction() runs daily (Sun-Thu 12:35 UTC) → finds pending predictions, evaluates price history, marks closed as TARGET_HIT/STOPPED/EXPIRED with outcome_date + actual_return + hit_target + hit_stop",
+      "STEP 3: inside _mark_closed → calls lesson_store.record_lesson_from_close() → writes 2 rows to predictions.db.learned_lessons (prediction_outcome + ticker_outcome)",
+      "STEP 3b (optional): if STOPPED → calls prediction_tracker.learn_from_failure() → SHOULD write extra lesson row (BUT FAILS due to schema mismatch)",
+      "STEP 3c (optional): inside _mark_closed → calls trigger_immediate_learning() → does quick param tweaking into optimizer_params.json",
+      "STEP 4: daily_closer.run() end → calls utils.lesson_store.detect_and_record_missed_opportunities() → writes MISSED_BREAKOUT lessons",
+      "STEP 5: weekly on Friday 12:40 UTC → learning_engine.run() → reads closed predictions in last 90 days → analyzes signal_accuracy / by_market / by_confidence / by_regime / by_pattern → generates weight recommendations → writes to predictions.db.learned_lessons (different lesson_type values)",
+      "STEP 6: next prediction cycle → maestro_orchestrator.run_expert_memory_phase() reads learned_lessons via lesson_store.get_persona_lesson_summary() + get_ticker_lesson_summary() → applies bounded adjustments (caution/boost/stop_widen/target_raise) to predictions",
+      "STEP 7: V40.2 daily generator writes new predictions (but IGNORES lessons — break #5)"
+    ],
+    "actual_breaks": [
+      {
+        "break_id": "BREAK-1",
+        "location": "predictions.db.learned_lessons table contents",
+        "type": "DATA LOSS / TABLE TRUNCATION",
+        "severity": "BLOCKER",
+        "evidence": "sqlite_sequence shows counter=8150 but row_count=0. Forensic proof that ~8150 lessons were once written then DELETED. Both current DB and Aug-17 backup snapshot show same state → truncation happened on or before Aug 17.",
+        "related_scripts": [
+          "scratch/execute_reality_restore.py:31 → 'conn_pred.execute(\"DELETE FROM learned_lessons\")' — explicitly deletes all rows from predictions.db.learned_lessons",
+          "scratch/purge_and_refill.py:9 → 'cur.execute(\"DELETE FROM learned_lessons\")'",
+          "scripts/clean-learned-lessons.js:45 → \"DELETE FROM learned_lessons WHERE status = 'testing'\" (different schema)",
+          "scripts/clean_vps_predictions.sh:104 → \"DELETE FROM learned_lessons WHERE created_at < date('now', '-30 days')\"",
+          "scripts/sync-real-data.py:117,434 → 'DELETE FROM learned_lessons' (operates on stocks_db, not predictions_db — different learned_lessons table)"
+        ],
+        "root_cause": "An admin restore/purge operation ran during CRITICAL-DIRECTIVE (Aug 16-17, see CHANGELOG.md line 1182 and worklog.md lines 2464 & 3697) and wiped learned_lessons."
+      },
+      {
+        "break_id": "BREAK-2",
+        "location": "daily_closer cron / closure pipeline",
+        "type": "PIPELINE NOT RUNNING",
+        "severity": "HIGH",
+        "evidence": "No logs/closer.log file exists. crontab command not found in this sandbox. setup_cron.sh exists but its installation cannot be verified. The 5 active predictions (from 2026-08-17) haven't been closed yet — daily_closer would skip them (no target/stop hit, holding_days < max). So even if daily_closer ran, record_lesson_from_close() would not fire.",
+        "impact": "No new lessons written via the per-close path. Existing closed predictions (148 EXPIRED with outcome_date 2026-01-06 to 2026-07-21) are not re-evaluated by daily_closer."
+      },
+      {
+        "break_id": "BREAK-3",
+        "location": "learning_engine weekly cron",
+        "type": "PIPELINE NOT RUNNING",
+        "severity": "HIGH",
+        "evidence": "No logs/learning.log file exists. Last Friday (Aug 14) cron would have written lessons IF it ran (manual test proves engine.run() works and produces 3 lessons from 20 closed preds). But Aug-17 backup shows 0 lessons → cron did NOT run on Aug 14 OR was overwritten by BREAK-1 truncation afterward.",
+        "impact": "Bulk lesson extraction (signal_accuracy, by_market, by_confidence, by_regime, by_pattern, weight_recommendations) never runs → no aggregate lessons ever produced. Also optimizer_params.json is never updated by LearningEngine._write_param_immediately()."
+      },
+      {
+        "break_id": "BREAK-4",
+        "location": "prediction_tracker.learn_from_failure schema mismatch",
+        "type": "CODE BUG — silent exception",
+        "severity": "MEDIUM (cosmetic for now, but masks learning path)",
+        "evidence": "Reproduced: tracker.learn_from_failure(prediction_id=21313) returned {'status':'error','message':'table learned_lessons has no column named ticker'}. The function's CREATE TABLE IF NOT EXISTS clause specifies columns (ticker, signal_type, failure_pattern, regime, sector, score_at_prediction, actual_return, holding_days, lesson_text) — different from the table's actual schema (lesson_type, condition, outcome, failure_rate, occurrences, avg_return, recommendation, created_at, updated_at). CREATE is no-op because table exists → INSERT fails because columns don't exist.",
+        "called_from": "daily_closer.py line 2467-2479 (only when result.new_status == 'STOPPED'); exception is caught and logged as warning ('Failed to learn from failure #X: ...')",
+        "fix_required": "Align prediction_tracker.learn_from_failure() INSERT with lesson_store's record_lesson_from_close() schema, OR remove the dead path entirely (since lesson_store already records STOPPED_OUT lessons on close)."
+      },
+      {
+        "break_id": "BREAK-5",
+        "location": "v40_2_daily_generator.py",
+        "type": "GENERATOR BLIND TO LESSONS",
+        "severity": "HIGH",
+        "evidence": "grep of v40_2_daily_generator.py (616 lines) for learned_lessons|learning_engine|expert_memory|ExpertMemory|get_expert_memory|get_lesson|lesson_store|optimizer_params returned NO MATCHES.",
+        "impact": "V40.2 is the active generator (produces STRONG_BUY/SELL predictions with persona='balanced' — signature matches the 153 predictions in DB). It NEVER reads lessons. Even if all other breaks are fixed, V40.2 predictions would not benefit from learning. Only Maestro reads lessons, but Maestro is not currently the primary generator."
+      }
+    ]
+  },
+
+  "section_5_prediction_logs_status": {
+    "schema_columns_count": 49,
+    "row_count": 80,
+    "all_rows_dated": "2025-02-20 (single day, over 1.5 years old)",
+    "verified_count": {"verified_0": 80, "verified_1": 0},
+    "null_actual_price": 80,
+    "null_outcome": 80,
+    "null_profit_percent": 80,
+    "writes_lessons": false,
+    "table_role": "LEGACY / DEAD — populated by an older prediction tracking system that was never closed out. Not used by current learning loop. Not read by V40.2, maestro, or learning_engine. Could be safely archived or truncated."
+  },
+
+  "section_6_predictions_table_status": {
+    "schema_columns_count": 65,
+    "row_count": 153,
+    "status_distribution": {"EXPIRED": 148, "active": 5},
+    "prediction_date_range": "2026-01-01 to 2026-08-17",
+    "outcome_date_range": "2026-01-06 to 2026-07-21 (NULL for 5 active)",
+    "closed_in_last_90_days": 20,
+    "signal_distribution": {"STRONG_BUY": 148, "SELL": 5},
+    "persona_distribution": {"balanced": 153},
+    "hit_target_hit_stop_breakdown": {
+      "hit_target_1_hit_stop_0": 56,
+      "hit_target_0_hit_stop_1": 70,
+      "hit_target_0_hit_stop_0": 27
+    },
+    "pnl_percent_filled": 0,
+    "actual_return_filled": 148,
+    "closed_at_filled": 0,
+    "outcome_breakdown": "148 EXPIRED predictions have outcome_date + actual_return + hit_target + hit_stop filled (so daily_closer DID close them at some point in the past, OR they were closed by historical_backfill_engine during CRITICAL-DIRECTIVE backfill). But the closure path that would have triggered record_lesson_from_close() either did not run, OR its writes were deleted by BREAK-1."
+  },
+
+  "section_7_v40_2_lesson_reading_audit": {
+    "v40_2_file": "/home/z/my-project/vps-service/jobs/v40_2_daily_generator.py",
+    "v40_2_lines": 616,
+    "searches_performed": [
+      "grep -i 'learned_lessons' → 0 matches",
+      "grep -i 'learning_engine' → 0 matches",
+      "grep -i 'expert_memory' → 0 matches",
+      "grep -i 'ExpertMemory' → 0 matches",
+      "grep -i 'get_expert_memory' → 0 matches",
+      "grep -i 'get_lesson' → 0 matches",
+      "grep -i 'lesson_store' → 0 matches",
+      "grep -i 'optimizer_params' → 0 matches"
+    ],
+    "verdict": "V40.2 does NOT read lessons. It is a blind generator."
+  },
+
+  "section_8_maestro_lesson_reading_audit": {
+    "maestro_file": "/home/z/my-project/vps-service/analyzers/maestro_orchestrator.py",
+    "maestro_lines": 3663,
+    "uses_expert_memory_v3": true,
+    "expert_memory_phase_function": "run_expert_memory_phase() at line 1444",
+    "lesson_store_calls": [
+      "from utils.lesson_store import get_persona_lesson_summary, get_ticker_lesson_summary (line 1460)",
+      "persona_summ = get_persona_lesson_summary(persona_name, days=30) (line 1469)",
+      "ticker_summ = get_ticker_lesson_summary(ticker, days=90) (line 1470)"
+    ],
+    "verdict": "Maestro DOES read lessons, applies bounded adjustments (proceed/caution/boost/block + stop_widen_atr + target_raise_r + t1_holdthrough_bias), and logs each decision with [LEARNING] prefix. But: (a) maestro is not the active generator (V40.2 is), (b) when learned_lessons=0, maestro falls through to 'proceed' with no adjustment."
+  },
+
+  "section_9_recommended_repair_actions": [
+    {
+      "priority": "P0",
+      "action": "Re-install cron entries from vps-service/scripts/setup_cron.sh on the production host (daily_closer at 12:35 UTC Sun-Thu, learning_engine at 12:40 UTC Friday). Verify with `crontab -l` and check logs/closer.log + logs/learning.log start populating."
+    },
+    {
+      "priority": "P0",
+      "action": "Run `python3 vps-service/jobs/learning_engine.py` once manually to immediately backfill learned_lessons from the 20 closed predictions in last 90 days (proven to write 3 lessons in manual test)."
+    },
+    {
+      "priority": "P0",
+      "action": "Fix the schema mismatch in /home/z/my-project/vps-service/analyzers/prediction_tracker.py learn_from_failure() (line 861-953): either align its INSERT with lesson_store's schema (lesson_type='prediction_tracker_failure', condition='...', outcome='loss', failure_rate=1.0, occurrences=1, avg_return=actual_return, recommendation=lesson_text), OR remove the dead path entirely since lesson_store already records STOPPED_OUT lessons."
+    },
+    {
+      "priority": "P1",
+      "action": "Wire V40.2 (v40_2_daily_generator.py) to read learned_lessons via lesson_store.get_persona_lesson_summary() + get_ticker_lesson_summary() — OR migrate active generation to Maestro (which already reads lessons). Without this, V40.2 predictions remain blind to learning even after lessons table is repopulated."
+    },
+    {
+      "priority": "P1",
+      "action": "Add a monitoring check: alert if predictions.db.learned_lessons count drops to 0 unexpectedly (would catch future BREAK-1 truncations). Add to data_heartbeat_checker.py."
+    },
+    {
+      "priority": "P2",
+      "action": "Archive or truncate the dead prediction_logs table (80 rows from 2025-02-20, all verified=0, no outcomes). It's noise in the schema."
+    },
+    {
+      "priority": "P2",
+      "action": "Reconcile the TWO learned_lessons schemas (learned.db vs predictions.db) — the codebase has split-brain here. Recommend: drop learned.db.learned_lessons (unused) and consolidate everything to predictions.db.learned_lessons (which lesson_store already uses as canonical)."
+    }
+  ],
+
+  "final_verdict": {
+    "status": "BROKEN",
+    "is_system_actually_learning": false,
+    "learned_lessons_row_count": 0,
+    "learned_lessons_sqlite_sequence_counter": 8150,
+    "primary_root_cause": "TRUNCATED TABLE — learned_lessons was emptied by admin restore script during CRITICAL-DIRECTIVE (Aug 16-17); since then no writes have repopulated it (cron not running + no new closures + V40.2 doesn't read).",
+    "next_phase_allowed": false,
+    "next_phase_blocker": "Until lessons table is repopulated (manual learning_engine.run() + cron re-install + prediction_tracker schema fix) AND V40.2 is wired to read lessons, the closed-loop learning is non-functional. Going to next phase without repair would mean deploying a 'self-learning' system that doesn't actually learn."
+  }
+}

@@ -450,7 +450,7 @@ async function composeConfluenceMaestro(
 
     const score = typeof board.master_score === 'number' ? board.master_score : 50;
     const rec =
-      score >= 80 ? { recommendation: 'STRONG_BUY', recommendation_ar: 'شراء قوي' } :
+      score >= 75 ? { recommendation: 'STRONG_BUY', recommendation_ar: 'شراء قوي' } :
       score >= 70 ? { recommendation: 'BUY',         recommendation_ar: 'شراء'      } :
       score >= 60 ? { recommendation: 'HOLD',        recommendation_ar: 'انتظار'    } :
       score >= 50 ? { recommendation: 'REDUCE',      recommendation_ar: 'تقليل'     } :

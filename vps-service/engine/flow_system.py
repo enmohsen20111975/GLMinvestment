@@ -616,7 +616,7 @@ class FlowSystemEngine:
         total_score = min(100, total_score + fundamentals_bonus['bonus'])
 
         # Label
-        if total_score >= 80:
+        if total_score >= 75:
             label, label_en, color = "نار", "FIRE", "red"
             action, action_en = "دخول قوي", "STRONG_ENTRY"
             position, stop, target = 30, -3, 8

@@ -779,43 +779,55 @@ def track_ticker():
         )
         return None
 
-    # Save as PENDING prediction
+    # Save as PENDING prediction via PredictionTracker.record_prediction()
+    # ─────────────────────────────────────────────────────────────────────
+    # 🔥 BATCH-1.1 (v3.69.x): استبدال الـ INSERT المباشر بـ record_prediction.
+    # قبل كده الـ /track كان بـ يعمل INSERT بـ 13 عمود فقط، فبـ يـ bypass:
+    #   - dedup (ticker, persona) → تراكم صفوف مكررة
+    #   - cap (5 per persona) → 44+ PENDING
+    #   - W-quality rules (data_quality_rules W1–W9)
+    #   - 22+ column (atr_at_entry, target_price_2, explosive_*, evidence_count,
+    #     morning_bell, kill_filter_result, signal_type, master_score, ...)
+    # دلوقتي نفس مسار الـ Maestro: record_prediction بـ يكتب كل الأعمدة ويطبّق
+    # كل الـ guards الـ write-time. لو رجع None → الـ guards رفضت التوقع.
     try:
-        conn = sqlite3.connect(PREDICTIONS_DB, timeout=15.0)
-        cursor = conn.cursor()
-        # P2-CREATED_AT-FIX (v3.69.0): created_at لازم يكون ISO timestamp حقيقي
-        # فيه وقت (مش date-only). قبل كده كان بـ يستخدم get_prediction_date_str
-        # اللي بـ يرجّع YYYY-MM-DD بس (date-only، holiday-shifted) → فلتر
-        # "آخر ساعتين" كان بـ يكسر لأن مفيش time component للمقارنة. الـ holiday
-        # shift لازم يبقى على prediction_date (التوقع لامتى) مش created_at (اتكتب إمتى).
-        now = datetime.now().isoformat()
-        signal_ar = SIGNAL_AR.get(result.signal, result.signal)
+        from analyzers.prediction_tracker import PredictionTracker
+        tracker = PredictionTracker(PREDICTIONS_DB)
+        prediction_id = tracker.record_prediction(
+            ticker=result.ticker,
+            signal=result.signal,
+            entry_price=result.entry_price,
+            target_price=result.target_price,
+            stop_loss=result.stop_loss,
+            master_score=result.sniper_score,
+            technical_score=result.technical_score,
+            fundamental_score=result.fundamental_score,
+            ai_pattern_score=None,   # SniperEngine لا ينتجه → default 50
+            sentiment_score=None,    # SniperEngine لا ينتجه → default 50
+            notes='',
+            persona=persona,
+            atr_at_entry=result.atr,
+            target_price_2=None,     # Sniper لا يحسب T2
+            explosive_score=0.0,
+            explosive_label='',
+            prediction_date=None,    # record_prediction بـ يحسبه
+            evidence_count=0,
+            morning_bell=0,
+            kill_filter_result='',
+        )
 
-        cursor.execute('''
-            INSERT INTO predictions (
-                ticker, market, signal, signal_ar, confidence,
-                entry_price, target_price, stop_loss, risk_reward,
-                persona, status, maestro_score, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            result.ticker,
-            result.market,
-            result.signal,
-            signal_ar,
-            result.confidence,
-            result.entry_price,
-            result.target_price,
-            result.stop_loss,
-            result.risk_reward,
-            persona,
-            'PENDING',
-            result.sniper_score,
-            now,
-        ))
-
-        prediction_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
+        if prediction_id is None:
+            # record_prediction رجع None → الـ guards رفضت (geometry / W-rule /
+            # cap 5-per-persona). نرجع 422 بدل ما نـ record صفحة ناقصة.
+            logger.info(
+                f"[Track] {ticker} NOT saved — record_prediction rejected "
+                f"(geometry/W-rule/cap). signal={result.signal}"
+            )
+            return jsonify({
+                'success': False,
+                'rejected': True,
+                'reason': 'record_prediction guards rejected the prediction',
+            }), 422
 
         logger.info(f"[Track] Saved prediction #{prediction_id} for {ticker} ({result.signal})")
         return jsonify({'success': True, 'prediction_id': prediction_id})

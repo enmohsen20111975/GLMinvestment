@@ -464,7 +464,7 @@ class ExplosiveScanner:
         )
 
         # ============ LABEL ============
-        if total >= 80:
+        if total >= 75:
             label, label_en, color = "قنبلة", "BOMB", "red"
             action, action_en = "دخول فوري", "ENTER_NOW"
             position, stop, target = 25, -5, 20

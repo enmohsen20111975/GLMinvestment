@@ -63,7 +63,7 @@ function buildRulesBasedAnalysis(
   let confidence: 'low' | 'medium' | 'high' = 'medium';
   const reasons: string[] = [];
 
-  if (score >= 80) {
+  if (score >= 75) {
     recommendation = 'STRONG_BUY';
     recommendationAr = 'شراء قوي';
     confidence = 'high';
