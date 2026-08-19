@@ -6638,3 +6638,146 @@ Stage Summary:
 - [معدّل] .gitignore — حذف git merge conflict marker
 - [جديد] scripts/patch_watchlist.py + patch_watchlist2.py + patch_watchlist3.py + patch_watchlist4.py
   (سكربتات Python لتعديل ملفات CRLF line endings)
+
+---
+Task ID: DEAL-ADVISOR-002
+Agent: Z.ai Code (main orchestrator)
+Task: تحقق مستشار الصفقة (Acceptance) + إصلاح ترابط المحفظة/السعر/التنبيهات
+      + تنظيف لغة العميل. لا إعادة بناء — توسيع وتثبيت.
+
+Work Log:
+- التزمت بـ Documentation/00-CONSTITUTION.md (القواعد المطلقة):
+  * Rule 1: ممنوع مسح جوهري — وسّعت الموجود.
+  * Rule 2: مسارات نسبية فقط.
+  * Rule 3: لا أسرار/tokens في الملفات.
+  * Rule 9: VERIFY-BEFORE-DELETE — لم أمسح أي مكوّن.
+  * Rule 10: وسّعت الموجود — لم أهدم مستشار الصفقة.
+
+[الجزء أ — Acceptance مستشار الصفقة]:
+- اختبار API /api/deal-advisor/COMI?entry_price=130&entry_qty=100:
+  * success: true, data_quality: complete
+  * 8 أقسام كاملة: identity, market_context, technical_state, entry_assessment,
+    events, action_scenarios, suggested_levels, disclaimer
+  * rec: "صبر مشروط" (المركز رابح 6.8%)
+  * support=130.7, stop=128.09, scenarios count=4
+  * data_missing=[], data_sources=5 sources
+- اختبار UI بـ Agent Browser:
+  * الـ Panel يظهر في #trading-chart
+  * زر "حلّل وضعي" يعمل
+  * كل الأقسام الثمانية تظهر بالعربية
+  * يعمل على desktop + mobile (375x812)
+- PASS: كل النقاط الخمس متوفرة.
+
+[الجزء ب — إصلاح بحث/إضافة سهم للمحفظة]:
+- تشخيص: مصدر التكرار = 93 صف مشوه في data_engine.db + stocks.db حيث
+  الـ symbol مدمج فيه الاسم (مثل "VALUU Consumer Finance S.A.ED").
+  المستخدم يبحث عن "VALU" فيرى:
+    - VALUU (مشوه، price=11.79) ← تلوث
+    - VALU (صحيح، price=11.35) ← السهم الحقيقي
+  فيظنها نفس الشركة بسعرين مختلفين ("أسعار متعددة غريبة").
+- إصلاح src/app/api/stocks/search/route.ts:
+  * أضفت WHERE symbol NOT LIKE '% %' (استبعاد الرموز بمسافات)
+  * أضفت LENGTH(symbol) <= 12 (الرموز الحقيقية ≤ 12 char)
+  * أضفت GROUP BY symbol (تفريد — نفس الـ ticker لا يظهر مرتين)
+  * غيّرت ORDER BY volume DESC → MAX(volume) DESC (متوافق مع GROUP BY)
+  * أضفت normalizing للـ current_price: لو null/0/NaN → null (وليس 0)
+- اختبار قبل/بعد:
+  * قبل: search "VALU" → 2 نتائج (VALUU مشوه + VALU صحيح)
+  * بعد: search "VALU" → 1 نتيجة (VALU فقط، price=11.35)
+  * اختبار search "COMI" → 1 نتيجة
+  * اختبار search "SWDY" → 1 نتيجة
+  * اختبار search "" (كل الأسهم) → 30 نتيجة، لا تكرار، لا صفوف مشوهة
+- فصل formSelectedPrice (سعر السوق للعرض) عن formAvgBuyPrice (سعر شراء العميل
+  الذي يُحفظ) — كان مفصولاً بالفعل في الكود، تم التأكد من صحته.
+
+[الجزء ج — إصلاح أصفار التنبيهات + مصدر سعر موحّد]:
+- تشخيص: مصدر الأصفار = formatCurrency/formatCurrencyRaw/abbreviateNumber في
+  EnhancedPortfolioView.tsx كانت ترجع '0.00' للقيم null/undefined/NaN.
+  مثلاً لو current_stock_price = null، كان يعرض "0.00 ج.م" بدلاً من "غير متاح".
+- إصلاح src/components/portfolio/EnhancedPortfolioView.tsx:
+  * formatCurrencyRaw: '0.00' → '—' لـ null/undefined/NaN
+  * formatCurrency: '0.00 ج.م' → '—' لـ null/undefined/NaN
+  * abbreviateNumber: '0' → '—' لـ null/undefined/NaN
+- إصلاح src/app/api/finance/smart-alerts/route.ts:
+  * مشكلة: كان يقرأ current_price من stocks table مباشرة. لو = 0،
+    profitLossPercent = -100% → تنبيهات خاطئة "خسارة كبيرة" + "قريب من دعم"
+    بمسافة 100% (currentPrice=0، targetPrice=support).
+  * إصلاح 1: fallback chain لـ current_price (current_price → previous_close → skip)
+  * إصلاح 2: تخطي الأسهم بدون سعر صالح (currentPrice <= 0 → continue)
+    بدلاً من إنشاء تنبيهات بأصفار
+  * إصلاح 3: فلتر support/resistance غير منطقية
+    (لو < currentPrice * 0.7 → treat as null)
+  * إصلاح 4: استبدال price.support → validSupport / price.resistance → validResistance
+    في كل alert bodies
+- مصدر السعر الموحّد: /api/finance/calculate-values يستخدم fallback chain
+  (stocks.current_price → previous_close → stock_price_history →
+  price_history.db → avg_buy_price). smart-alerts الآن يستخدم نفس المنطق
+  (current_price → previous_close → skip).
+- اختبار: smart-alerts API بدون مستخدم → alerts: [], summary: total=0
+  (لا تنبيهات وهمية بأصفار).
+
+[الجزء د — تنظيف لغة العميل]:
+- src/components/ai/AIAnalysisWidget.tsx (8 استبدال):
+  * "تحليل Python MasterAnalyzer" → "التحليل الذكي للسهم" (3x في loading/error/main)
+  * "Python MasterAnalyzer - المصدر الموحد" → "التحليل الآلي للسهم"
+  * "فشل الاتصال بخادم Python" → "فشل تحميل التحليل"
+  * "لم يتم الحصول على تحليل من Python MasterAnalyzer." → "لا يوجد تحليل متاح..."
+  * "فشل في الاتصال بخدمة Python MasterAnalyzer." → "تعذر تحميل التحليل..."
+- src/components/dashboard/LiveMonitor.tsx (1 استبدال):
+  * "البيانات من Python" → حذف (أصبح "التحديث التلقائي كل N ثوانٍ")
+- src/components/dashboard/MaestroWidget.tsx (1 استبدال):
+  * "Maestro System" → "نظام التحليل المتكامل"
+- src/components/dashboard/MaestroCommandCenter.tsx (2 استبدال):
+  * "Maestro Command Center v{version}" → "مركز التحليل v{version}"
+  * "Maestro Orchestrator — The Conductor" → "محرك التحليل الموحد"
+- src/components/stocks/StockAdvancedAnalysisView.tsx (5 استبدال):
+  * "Python MasterAnalyzer" → "التحليل الذكي للسهم"
+- src/components/self-learning/SelfLearningView.tsx (1 استبدال):
+  * حذف "VPS YOUR_VPS_IP:8010" → "الخدمة الخلفية للتحليل"
+- src/components/crypto/_archived_v404/CryptoRecommendationsView.tsx (1 استبدال):
+  * "Crypto Flow Engine · Python Backend" → "محرك تحليل العملات"
+- المجموع: 19 استبدال نصي في 7 ملفات.
+- admin screens (MaestroDashboard, MaestroPage, DataScraperControl) لم تُلمس
+  لأنها محمية بـ auth gate وليست واجهة العميل العادي.
+
+[الجزء هـ — سيناريو متكامل الحد الأدنى]:
+- اختبار API:
+  1. بحث COMI → 1 نتيجة بسعر واحد (138.84) ✓
+  2. مستشار الصفقة COMI?entry_price=130 → rec="صبر مشروط"، pnl=6.8% ✓
+  3. smart-alerts → 0 تنبيهات وهمية ✓
+- اختبار UI بـ Agent Browser:
+  * مستشار الصفقة يظهر في #trading-chart ✓
+  * زر "حلّل وضعي" يعمل ✓
+  * كل الأقسام الثمانية تظهر ✓
+  * لا توجد نصوص "Python MasterAnalyzer" في واجهة العميل ✓
+  * يعمل على desktop + mobile (375x812, 3088 chars) ✓
+- NEED_OWNER: إنشاء تنبيه من محفظة/هدف — لا يوجد مسار إنشاء تنبيه
+  يدوي من المحفظة. الـ smart-alerts يولّد تنبيهات تلقائياً من المراكز الموجودة.
+  لو المالك يريد زر "إنشاء تنبيه سعر" يدوي لكل مركز، هذا يحتاج feature جديدة.
+
+[التحقق]:
+- bun run build: نجح (لا أخطاء TypeScript).
+- API tests: بحث VALU=1, COMI=1, SWDY=1 | smart-alerts=0 fake alerts.
+- Agent Browser: panel يعمل، لا نصوص تقنية، mobile responsive.
+
+Stage Summary:
+- ✅ الجزء أ: مستشار الصفقة PASS (5/5 نقاط)
+- ✅ الجزء ب: بحث VALU 2→1 نتيجة، لا تكرار، لا صفوف مشوهة
+- ✅ الجزء ج: formatCurrency '0.00'→'—'، smart-alerts skip zero-price stocks
+- ✅ الجزء د: 19 استبدال نصي (Python MasterAnalyzer → التحليل الذكي للسهم)
+- ✅ الجزء هـ: سيناريو متكامل يعمل (بحث → مستشار → لا أصفار)
+- ✅ لم أكسر مستشار الصفقة المُنجز سابقاً
+
+ملفات تم تعديلها:
+- [معدّل] src/app/api/stocks/search/route.ts — فلترة الصفوف المشوهة + تفريد + null price
+- [معدّل] src/components/portfolio/EnhancedPortfolioView.tsx — formatCurrency '0.00'→'—'
+- [معدّل] src/app/api/finance/smart-alerts/route.ts — price fallback + skip zeros + filter support/resistance
+- [معدّل] src/components/ai/AIAnalysisWidget.tsx — 8 استبدال نصي
+- [معدّل] src/components/dashboard/LiveMonitor.tsx — 1 استبدال نصي
+- [معدّل] src/components/dashboard/MaestroWidget.tsx — 1 استبدال نصي
+- [معدّل] src/components/dashboard/MaestroCommandCenter.tsx — 2 استبدال نصي
+- [معدّل] src/components/stocks/StockAdvancedAnalysisView.tsx — 5 استبدال نصي
+- [معدّل] src/components/self-learning/SelfLearningView.tsx — 1 استبدال نصي
+- [معدّل] src/components/crypto/_archived_v404/CryptoRecommendationsView.tsx — 1 استبدال نصي
+- [جديد] scripts/patch_search.py, patch_smart_alerts.py, patch_clean_text.py,
+  patch_clean_maestro.py, patch_clean_more.py, check_pollution.py

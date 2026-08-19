@@ -1,6 +1,98 @@
 # Changelog
 
 
+## [DEAL-ADVISOR-002] — تثبيت مستشار الصفقة + إصلاح ترابط المحفظة/السعر/التنبيهات (2026-08-19)
+
+> **المهمة:** تحقق (Acceptance) مستشار الصفقة + إصلاح بحث المحفظة (تكرار +
+> أسعار غريبة) + إصلاح أصفار التنبيهات + تنظيف لغة العميل. لا إعادة بناء —
+> توسيع وتثبيت فقط.
+
+### الجزء أ — Acceptance مستشار الصفقة ✅
+- API /api/deal-advisor/[ticker]: 8 أقسام كاملة (identity, market_context,
+  technical_state, entry_assessment, events, action_scenarios, suggested_levels,
+  disclaimer).
+- اختبار COMI?entry_price=130: data_quality=complete, rec="صبر مشروط",
+  pnl=6.8%, support=130.7, stop=128.09, scenarios=4.
+- Agent Browser: الـ Panel يظهر في #trading-chart، زر "حلّل وضعي" يعمل،
+  كل الأقسام تظهر على desktop + mobile.
+
+### الجزء ب — إصلاح بحث/إضافة سهم للمحفظة ✅
+- **السبب السابق**: 93 صف مشوه في data_engine.db + stocks.db حيث الـ symbol
+  مدمج فيه الاسم (مثل "VALUU Consumer Finance S.A.ED"). المستخدم يبحث عن
+  "VALU" فيرى VALUU (مشوه، 11.79) + VALU (صحيح، 11.35) → "أسعار متعددة غريبة".
+- **الإصلاح** في src/app/api/stocks/search/route.ts:
+  - `WHERE symbol NOT LIKE '% %'` (استبعاد الرموز بمسافات = مشوهة)
+  - `AND LENGTH(symbol) <= 12` (الرموز الحقيقية ≤ 12 char)
+  - `GROUP BY symbol` (تفريد — نفس الـ ticker لا يظهر مرتين)
+  - normalizing: `current_price` null/0/NaN → `null` (وليس 0)
+- **مثال قبل/بعد**:
+  - قبل: search "VALU" → 2 نتائج (VALUU مشوه + VALU صحيح)
+  - بعد: search "VALU" → 1 نتيجة (VALU فقط، price=11.35)
+  - search "" (كل الأسهم) → 30 نتيجة، **لا تكرار**، **لا صفوف مشوهة**
+
+### الجزء ج — إصلاح أصفار التنبيهات + مصدر سعر موحّد ✅
+- **سبب الأصفار**: `formatCurrency`/`formatCurrencyRaw`/`abbreviateNumber` في
+  EnhancedPortfolioView.tsx كانت ترجع `'0.00'` للقيم null/undefined/NaN.
+  لو `current_stock_price = null` → عرض "0.00 ج.م" بدلاً من "غير متاح".
+- **الإصلاح 1** (EnhancedPortfolioView.tsx):
+  - `formatCurrencyRaw`: `'0.00'` → `'—'`
+  - `formatCurrency`: `'0.00 ج.م'` → `'—'`
+  - `abbreviateNumber`: `'0'` → `'—'`
+- **سبب الأصفار في smart-alerts**: كان يقرأ `current_price` من stocks table
+  مباشرة. لو = 0، `profitLossPercent = -100%` → تنبيهات خاطئة "خسارة كبيرة" +
+  "قريب من دعم" بمسافة 100% (currentPrice=0، targetPrice=support).
+- **الإصلاح 2** (smart-alerts/route.ts):
+  - fallback chain: `current_price → previous_close → skip`
+  - تخطي الأسهم بدون سعر صالح (`currentPrice <= 0 → continue`)
+  - فلتر support/resistance غير منطقية (`< currentPrice * 0.7 → null`)
+- **المسار الموحّد للسعر**: `/api/finance/calculate-values` يستخدم fallback
+  chain (stocks.current_price → previous_close → stock_price_history →
+  price_history.db → avg_buy_price). `smart-alerts` الآن يستخدم نفس المنطق.
+- **اختبار**: smart-alerts API بدون مستخدم → `alerts: []`, `summary: total=0`
+  (لا تنبيهات وهمية بأصفار).
+
+### الجزء د — تنظيف لغة العميل ✅
+- 19 استبدال نصي في 7 ملفات:
+  - "تحليل Python MasterAnalyzer" → "التحليل الذكي للسهم" (8x)
+  - "Python MasterAnalyzer - المصدر الموحد" → "التحليل الآلي للسهم"
+  - "Maestro System" → "نظام التحليل المتكامل"
+  - "Maestro Command Center v{version}" → "مركز التحليل v{version}"
+  - "Maestro Orchestrator — The Conductor" → "محرك التحليل الموحد"
+  - "البيانات من Python" → حذف
+  - "VPS YOUR_VPS_IP:8010" → "الخدمة الخلفية للتحليل"
+  - "Crypto Flow Engine · Python Backend" → "محرك تحليل العملات"
+- admin screens لم تُلمس (محمية بـ auth gate، ليست واجهة العميل العادي).
+
+### الجزء هـ — سيناريو متكامل الحد الأدنى ✅
+1. بحث COMI → 1 نتيجة بسعر واحد (138.84) ✓
+2. مستشار الصفقة COMI?entry_price=130 → rec="صبر مشروط"، pnl=6.8% ✓
+3. smart-alerts → 0 تنبيهات وهمية ✓
+4. Agent Browser: panel يعمل، لا نصوص تقنية، mobile responsive ✓
+
+### النتائج
+- ✅ بحث VALU: 2 → 1 نتيجة (لا تكرار)
+- ✅ smart-alerts: 0 تنبيهات بأصفار كاذبة
+- ✅ مستشار الصفقة: يعمل من chart + portfolio + watchlist
+- ✅ لا "Python MasterAnalyzer" في واجهة العميل
+- ✅ bun run build: نجح
+- ✅ لم يُكسر مستشار الصفقة المُنجز في DEAL-ADVISOR-001
+
+### الملفات المعدّلة
+- [معدّل] `src/app/api/stocks/search/route.ts` — فلترة + تفريد + null price
+- [معدّل] `src/components/portfolio/EnhancedPortfolioView.tsx` — formatCurrency '0.00'→'—'
+- [معدّل] `src/app/api/finance/smart-alerts/route.ts` — price fallback + skip zeros
+- [معدّل] `src/components/ai/AIAnalysisWidget.tsx` — 8 استبدال نصي
+- [معدّل] `src/components/dashboard/LiveMonitor.tsx` — 1 استبدال نصي
+- [معدّل] `src/components/dashboard/MaestroWidget.tsx` — 1 استبدال نصي
+- [معدّل] `src/components/dashboard/MaestroCommandCenter.tsx` — 2 استبدال نصي
+- [معدّل] `src/components/stocks/StockAdvancedAnalysisView.tsx` — 5 استبدال نصي
+- [معدّل] `src/components/self-learning/SelfLearningView.tsx` — 1 استبدال نصي
+- [معدّل] `src/components/crypto/_archived_v404/CryptoRecommendationsView.tsx` — 1 استبدال نصي
+- [جديد] `scripts/patch_search.py`, `patch_smart_alerts.py`, `patch_clean_text.py`,
+  `patch_clean_maestro.py`, `patch_clean_more.py`, `check_pollution.py`
+
+---
+
 ## [DEAL-ADVISOR-001] — مستشار الصفقة + إصلاحات أمنية (2026-08-19)
 
 > **المهمة:** مساعد قرار (Trade Advisor) للعميل داخل #trading-chart +

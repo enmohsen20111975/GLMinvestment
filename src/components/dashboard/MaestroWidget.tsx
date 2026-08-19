@@ -85,7 +85,7 @@ export function MaestroWidget() {
             </div>
             <div>
               <CardTitle className="text-base">نظام المايسترو</CardTitle>
-              <CardDescription className="text-xs">Maestro System</CardDescription>
+              <CardDescription className="text-xs">نظام التحليل المتكامل</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">

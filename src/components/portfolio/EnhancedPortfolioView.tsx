@@ -116,9 +116,12 @@ function formatCurrencyRaw(
   usdRate: number,
   sarRate: number
 ): string {
-  if (value === null || value === undefined) return '0.00';
+  // FIX (DEAL-ADVISOR-002): previously returned '0.00' for null/undefined/NaN,
+  // which made the UI show fake "0.00 ج.م" for missing prices/targets/stops.
+  // Now returns '—' (em dash) so the user sees "غير متاح" visually.
+  if (value === null || value === undefined) return '—';
   const numValue = Number(value);
-  if (!Number.isFinite(numValue)) return '0.00';
+  if (!Number.isFinite(numValue)) return '—';
   let converted = numValue;
   let suffix = 'ج.م';
   if (currency === 'USD') {
@@ -139,9 +142,10 @@ function formatCurrencyRaw(
 // EGP-only fallback formatter (kept for any module-scope helper that still
 // needs raw EGP — sub-components shadow this with a currency-aware closure).
 function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '0.00 ج.م';
+  // FIX (DEAL-ADVISOR-002): '0.00 ج.م' → '—' for missing values.
+  if (value === null || value === undefined) return '—';
   const numValue = Number(value);
-  if (!Number.isFinite(numValue)) return '0.00 ج.م';
+  if (!Number.isFinite(numValue)) return '—';
   return new Intl.NumberFormat('ar-EG', {
     style: 'decimal',
     minimumFractionDigits: 2,
@@ -158,9 +162,10 @@ function formatPercent(value: number | null | undefined): string {
 }
 
 function abbreviateNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '0';
+  // FIX (DEAL-ADVISOR-002): '0' → '—' for missing values.
+  if (value === null || value === undefined) return '—';
   const numValue = Number(value);
-  if (!Number.isFinite(numValue)) return '0';
+  if (!Number.isFinite(numValue)) return '—';
   if (Math.abs(numValue) >= 1_000_000) return (numValue / 1_000_000).toFixed(1) + 'M';
   if (Math.abs(numValue) >= 1_000) return (numValue / 1_000).toFixed(1) + 'K';
   return numValue.toFixed(2);

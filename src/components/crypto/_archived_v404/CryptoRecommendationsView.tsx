@@ -678,7 +678,7 @@ export function CryptoRecommendationsView() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">Flow Score — تحليلات العملات الرقمية</h1>
-                <p className="text-xs text-muted-foreground">Crypto Flow Engine · Python Backend</p>
+                <p className="text-xs text-muted-foreground">محرك تحليل العملات</p>
               </div>
             </div>
           </div>

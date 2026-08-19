@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /* ------------------------------------------------------------------ */
-/*  Types - Python MasterAnalyzer Output                               */
+/*  Types - التحليل الذكي للسهم Output                               */
 /* ------------------------------------------------------------------ */
 
 interface PythonAnalysis {
@@ -172,7 +172,7 @@ function PriceChart({ data, analysis }: { data: OHLCVData[]; analysis: PythonAna
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">السعر والتاريخ</span>
-        <Badge variant="outline" className="text-xs">Python MasterAnalyzer</Badge>
+        <Badge variant="outline" className="text-xs">التحليل الذكي للسهم</Badge>
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -369,7 +369,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
             التحليل الموحد
           </h2>
           <p className="text-muted-foreground text-sm">
-            {stockName || ticker} - تحليل Python MasterAnalyzer
+            {stockName || ticker} - تحليل التحليل الذكي للسهم
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -439,7 +439,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
               
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Zap className="w-4 h-4 text-primary" />
-                <span>Python MasterAnalyzer</span>
+                <span>التحليل الذكي للسهم</span>
               </div>
             </div>
           </CardContent>
@@ -670,7 +670,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
         <CardContent className="p-4">
           <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
             ⚠️ هذا التحليل للأغراض التعليمية فقط ولا يُعتبر نصيحة استثمارية. 
-            جميع التحليلات مصدرها Python MasterAnalyzer. قرارات الاستثمار مسؤوليتك الشخصية.
+            جميع التحليلات مصدرها التحليل الذكي للسهم. قرارات الاستثمار مسؤوليتك الشخصية.
           </p>
         </CardContent>
       </Card>

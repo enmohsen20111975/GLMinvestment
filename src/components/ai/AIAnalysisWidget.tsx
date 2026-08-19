@@ -4,7 +4,7 @@
  * AI Stock Analysis Widget - UNIFIED VERSION
  * 
  * Python = Source of Truth
- * هذا المكون يعرض تحليل Python MasterAnalyzer مباشرة
+ * هذا المكون يعرض التحليل الذكي للسهم مباشرة
  * بدون حسابات محلية أو تفسيرات عشوائية
  */
 
@@ -111,7 +111,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
       const response = await fetch(`/api/python/v2/cached-analysis/${ticker}?XTransformPort=8010`);
 
       if (!response.ok) {
-        throw new Error('فشل الاتصال بخادم Python');
+        throw new Error('فشل تحميل التحليل');
       }
 
       const data = await response.json();
@@ -129,7 +129,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
             setAnalysis(analyzeData.data);
             analysisCache.set(ticker, { data: analyzeData.data, timestamp: Date.now() });
           } else {
-            setError('لم يتم الحصول على تحليل من Python MasterAnalyzer.');
+            setError('لا يوجد تحليل متاح لهذا السهم حالياً.');
             setAnalysis(null);
           }
         } catch (analyzeErr) {
@@ -140,7 +140,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
       }
     } catch (err) {
       console.error('Analysis error:', err);
-      setError('فشل في الاتصال بخدمة Python MasterAnalyzer.');
+      setError('تعذر تحميل التحليل. حاول مرة أخرى.');
       setAnalysis(null);
     } finally {
       setLoading(false);
@@ -176,7 +176,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
         <CardHeader className="pb-2 bg-gradient-to-l from-primary/5 to-transparent">
           <CardTitle className="text-base flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary animate-pulse" />
-            تحليل Python MasterAnalyzer
+            التحليل الذكي للسهم
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4 space-y-3">
@@ -198,7 +198,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2 text-amber-600">
             <AlertCircle className="w-5 h-5" />
-            تحليل Python MasterAnalyzer
+            التحليل الذكي للسهم
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
@@ -227,7 +227,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            تحليل Python MasterAnalyzer
+            التحليل الذكي للسهم
             <Badge variant="outline" className="text-[10px] font-normal">
               {analysis.confidence?.toFixed(0) || '--'}% ثقة
             </Badge>
@@ -418,7 +418,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
         {/* Source Badge */}
         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Sparkles className="w-3 h-3 text-primary" />
-          <span>Python MasterAnalyzer - المصدر الموحد</span>
+          <span>التحليل الآلي للسهم</span>
         </div>
       </CardContent>
     </Card>

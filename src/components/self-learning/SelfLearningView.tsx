@@ -513,7 +513,7 @@ export function SelfLearningView() {
                   <div>API Mode: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">Server-side Proxy</code></div>
                   <div>NODE_ENV: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">{process.env.NODE_ENV}</code></div>
                   <div>Next.js Port: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">3000</code></div>
-                  <div>Python Backend: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">VPS YOUR_VPS_IP:8010</code></div>
+                  <div>الخدمة الخلفية للتحليل</div>
                 </div>
               </div>
             </CardContent>

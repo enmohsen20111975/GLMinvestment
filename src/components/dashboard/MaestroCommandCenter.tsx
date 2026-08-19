@@ -272,7 +272,7 @@ export default function MaestroCommandCenter() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{data.system.nameAr}</h1>
-            <p className="text-sm text-muted-foreground">Maestro Command Center v{data.system.version}</p>
+            <p className="text-sm text-muted-foreground">مركز التحليل v{data.system.version}</p>
           </div>
           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-500/20">
             <CheckCircle2 className="w-3 h-3 ml-1" />
@@ -342,7 +342,7 @@ export default function MaestroCommandCenter() {
               </div>
               <div>
                 <CardTitle className="text-lg">🎶 نظام المايسترو — الموحد</CardTitle>
-                <CardDescription>Maestro Orchestrator — The Conductor</CardDescription>
+                <CardDescription>محرك التحليل الموحد</CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">

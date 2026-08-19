@@ -96,11 +96,25 @@ export async function GET(request: NextRequest) {
     // Generate smart alerts
     const alerts: SmartAlert[] = [];
     
+    // FIX (DEAL-ADVISOR-002, 2026-08-19): previously used current_price directly
+    // from stocks table. If current_price was 0/null (stale feed), the code
+    // computed profitLossPercent = -100% and fired fake "stop loss" / "support
+    // near" alerts with currentPrice=0, targetPrice=support, distance=100%.
+    // Now: (1) fallback to previous_close if current_price is 0, (2) skip the
+    // stock entirely if no valid price exists (so the UI shows NO fake alert
+    // instead of a misleading zero alert).
     for (const stock of portfolioStocks) {
       const price = priceMap.get(stock.ticker);
       if (!price) continue;
       
-      const currentPrice = price.current_price || 0;
+      // Fallback chain: current_price → previous_close → skip
+      let currentPrice = Number(price.current_price) || 0;
+      if (currentPrice <= 0) {
+        currentPrice = Number(price.previous_close) || 0;
+      }
+      // SKIP stocks with no valid price — do NOT generate fake zero alerts
+      if (currentPrice <= 0) continue;
+      
       const buyPrice = stock.avg_buy_price || 0;
       const profitLossPercent = buyPrice > 0 ? ((currentPrice - buyPrice) / buyPrice) * 100 : 0;
       
@@ -190,19 +204,25 @@ export async function GET(request: NextRequest) {
         });
       }
       
+      // FIX (DEAL-ADVISOR-002): filter unrealistic support/resistance values.
+      // stocks.db.support can be stale (e.g. support=18.3 while currentPrice=138.84).
+      // If support/resistance is more than 30% below current price, treat as null.
+      const validSupport = (price.support && price.support > currentPrice * 0.7) ? price.support : null;
+      const validResistance = (price.resistance && price.resistance > currentPrice * 0.7 && price.resistance > currentPrice) ? price.resistance : null;
+      
       // 3. Support Near Alert
-      if (price.support && currentPrice <= price.support * 1.05) {
-        const distancePercent = ((currentPrice - price.support) / price.support) * 100;
+      if (validSupport && currentPrice <= validSupport * 1.05) {
+        const distancePercent = ((currentPrice - validSupport) / validSupport) * 100;
         alerts.push({
           id: `support-${stock.ticker}`,
           type: 'support_near',
           severity: 'info',
           ticker: stock.ticker,
           name: stock.name,
-          message: `📥 ${stock.ticker} قريب من دعم ${price.support.toFixed(2)} - مسافة ${distancePercent.toFixed(1)}%`,
+          message: `📥 ${stock.ticker} قريب من دعم ${validSupport.toFixed(2)} - مسافة ${distancePercent.toFixed(1)}%`,
           details: {
             currentPrice,
-            targetPrice: price.support,
+            targetPrice: validSupport,
             buyPrice,
             profitLossPercent,
             distancePercent
@@ -213,18 +233,18 @@ export async function GET(request: NextRequest) {
       }
       
       // 4. Resistance Near Alert
-      if (price.resistance && currentPrice >= price.resistance * 0.95) {
-        const distancePercent = ((price.resistance - currentPrice) / currentPrice) * 100;
+      if (validResistance && currentPrice >= validResistance * 0.95) {
+        const distancePercent = ((validResistance - currentPrice) / currentPrice) * 100;
         alerts.push({
           id: `resistance-${stock.ticker}`,
           type: 'resistance_near',
           severity: 'warning',
           ticker: stock.ticker,
           name: stock.name,
-          message: `📤 ${stock.ticker} قريب من مقاومة ${price.resistance.toFixed(2)} - مسافة ${distancePercent.toFixed(1)}%`,
+          message: `📤 ${stock.ticker} قريب من مقاومة ${validResistance.toFixed(2)} - مسافة ${distancePercent.toFixed(1)}%`,
           details: {
             currentPrice,
-            targetPrice: price.resistance,
+            targetPrice: validResistance,
             buyPrice,
             profitLossPercent,
             distancePercent
@@ -254,18 +274,18 @@ export async function GET(request: NextRequest) {
       }
       
       // 6. Breakout Alert (above resistance)
-      if (price.resistance && currentPrice > price.resistance) {
-        const breakoutPercent = ((currentPrice - price.resistance) / price.resistance) * 100;
+      if (validResistance && currentPrice > validResistance) {
+        const breakoutPercent = ((currentPrice - validResistance) / validResistance) * 100;
         alerts.push({
           id: `breakout-${stock.ticker}`,
           type: 'breakout',
           severity: 'success',
           ticker: stock.ticker,
           name: stock.name,
-          message: `🚀 ${stock.ticker} كسر المقاومة ${price.resistance.toFixed(2)} بصعود ${breakoutPercent.toFixed(1)}%`,
+          message: `🚀 ${stock.ticker} كسر المقاومة ${validResistance.toFixed(2)} بصعود ${breakoutPercent.toFixed(1)}%`,
           details: {
             currentPrice,
-            targetPrice: price.resistance,
+            targetPrice: validResistance,
             buyPrice,
             profitLossPercent,
             distancePercent: breakoutPercent
@@ -276,18 +296,18 @@ export async function GET(request: NextRequest) {
       }
       
       // 7. Breakdown Alert (below support)
-      if (price.support && currentPrice < price.support * 0.98) {
-        const breakdownPercent = ((price.support - currentPrice) / price.support) * 100;
+      if (validSupport && currentPrice < validSupport * 0.98) {
+        const breakdownPercent = ((validSupport - currentPrice) / validSupport) * 100;
         alerts.push({
           id: `breakdown-${stock.ticker}`,
           type: 'breakdown',
           severity: 'danger',
           ticker: stock.ticker,
           name: stock.name,
-          message: `📉 ${stock.ticker} كسر الدعم ${price.support.toFixed(2)} بهبوط ${breakdownPercent.toFixed(1)}%`,
+          message: `📉 ${stock.ticker} كسر الدعم ${validSupport.toFixed(2)} بهبوط ${breakdownPercent.toFixed(1)}%`,
           details: {
             currentPrice,
-            targetPrice: price.support,
+            targetPrice: validSupport,
             buyPrice,
             profitLossPercent,
             distancePercent: -breakdownPercent

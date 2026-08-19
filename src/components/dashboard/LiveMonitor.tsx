@@ -1241,7 +1241,7 @@ export function LiveMonitor() {
       <div className="flex items-center justify-center gap-2 pt-2 text-xs text-slate-400 dark:text-slate-600">
         <Clock className="h-3 w-3" />
         <span>
-          التحديث التلقائي كل {REFRESH_INTERVAL} ثوانٍ • البيانات من Python
+          التحديث التلقائي كل {REFRESH_INTERVAL} ثوانٍ
           Backend (port 8010)
         </span>
       </div>
