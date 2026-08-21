@@ -434,6 +434,26 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         holding_days=sig.get('holding_days', 0),
                         exit_reason=sig['exit_reason'],
                     )
+                    # ── Phase 2 Fix: Read lessons BEFORE finalizing prediction ──
+                    # This connects the closed loop: close → lesson → next prediction reads it.
+                    # Safe-by-design: if lesson_store fails, prediction proceeds normally.
+                    try:
+                        from analyzers.maestro_orchestrator import run_expert_memory_phase
+                        _em = run_expert_memory_phase(
+                            db_path=PREDICTIONS_DB,
+                            ticker=sig['ticker'],
+                            sector=_sector_change if isinstance(_sector_change, str) else '',
+                            regime=result.get('market_regime_trend', 'range') if isinstance(result, dict) else 'range',
+                            rsi=0.0,
+                            month=int(scan_date.split('-')[1]) if '-' in scan_date else 1,
+                            persona_name='balanced',
+                        )
+                        if _em and _em.recommendation == 'block':
+                            # Expert memory says BLOCK this ticker → skip
+                            print(f"🚫 [EXPERT-MEMORY] Block {sig['ticker']} on {scan_date} — lesson-based veto", flush=True)
+                            continue
+                    except Exception:
+                        pass  # Safe-by-design — lessons optional
                     total_generated += 1
                     if sig['morning_bell']:
                         total_morning_bells += 1

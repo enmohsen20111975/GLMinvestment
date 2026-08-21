@@ -1,0 +1,19 @@
+{
+  "winner": "E: fund>=70 + BH 20d (strong)",
+  "winner_kpis": {
+    "n": 56,
+    "wr": 58.93,
+    "pf": 4.6972,
+    "exp": 10.1202,
+    "avg_win": 21.8187,
+    "avg_loss": -6.6646
+  },
+  "current_kpis": {
+    "pf": 1.27,
+    "exp": 0.9
+  },
+  "improvement": {
+    "pf_delta": 3.4272,
+    "exp_delta": 9.2202
+  }
+}
