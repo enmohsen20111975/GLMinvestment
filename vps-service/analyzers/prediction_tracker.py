@@ -862,10 +862,13 @@ class PredictionTracker:
         """
         تعلّم من التوقعات الفاشلة — يكتب في learned_lessons.
 
-        القاعدة:
-        - لما توقع يفشل (ضرب SL)، نسجّل الدرس في جدول learned_lessons
-        - الدرس فيه: التكرار، السبب، السياق (regime, sector, score)
-        - العقل بعدين بيستخدم الدروس دي عشان يخفض score التوقعات المشابهة
+        FIX (Phase 2, 2026-08-21): This function previously used a DIFFERENT schema
+        (ticker, signal_type, failure_pattern, ...) than the actual learned_lessons
+        table (lesson_type, condition, outcome, ...). The INSERT silently failed
+        with "table learned_lessons has no column named ticker".
+
+        Now delegates to lesson_store.record_lesson_from_close() which uses the
+        CORRECT schema and is the canonical writer for learning data.
 
         Args:
             prediction_id: ID التوقع الفاشل
@@ -874,6 +877,16 @@ class PredictionTracker:
         Returns:
             Dict: نتيجة التعلّم
         """
+        try:
+            from utils.lesson_store import record_lesson_from_close
+        except ImportError:
+            try:
+                import sys, os
+                sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+                from utils.lesson_store import record_lesson_from_close
+            except ImportError as ie:
+                return {'status': 'error', 'message': f'Cannot import lesson_store: {ie}'}
+
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -883,7 +896,8 @@ class PredictionTracker:
             cursor.execute('''
                 SELECT ticker, signal_type, entry_price, target_price, stop_loss,
                        master_score, technical_score, fundamental_score,
-                       actual_return, holding_days, prediction_date
+                       actual_return, holding_days, prediction_date,
+                       persona, morning_bell, market, atr_at_entry
                 FROM predictions WHERE id = ?
             ''', (prediction_id,))
             pred = cursor.fetchone()
@@ -891,65 +905,37 @@ class PredictionTracker:
             if not pred:
                 return {'status': 'error', 'message': 'Prediction not found'}
 
-            # إنشاء جدول learned_lessons لو مش موجود
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS learned_lessons (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ticker TEXT NOT NULL,
-                    signal_type TEXT,
-                    failure_pattern TEXT NOT NULL,
-                    regime TEXT,
-                    sector TEXT,
-                    score_at_prediction REAL,
-                    actual_return REAL,
-                    holding_days INTEGER,
-                    lesson_text TEXT,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
-
-            # تحديد نمط الفشل
             actual_return = float(pred['actual_return'] or 0)
             holding_days = int(pred['holding_days'] or 0)
+            entry_price = float(pred['entry_price'] or 0)
+            stop_loss = float(pred['stop_loss'] or 0)
+            target_price = float(pred['target_price'] or 0)
+            atr_at_entry = float(pred['atr_at_entry'] or 0)
 
-            if actual_return < -5:
-                pattern = 'large_loss'
-            elif actual_return < 0:
-                pattern = 'small_loss'
-            elif holding_days > 20:
-                pattern = 'long_holding_no_gain'
-            else:
-                pattern = 'general_failure'
+            # تحديد persona للدرس
+            persona = str(pred['persona'] or 'balanced')
 
-            lesson_text = (
-                f"السهم {pred['ticker']} ضرب وقف الخسارة بعد {holding_days} يوم. "
-                f"التوصية كانت {pred['signal_type']} بـ score={pred['master_score']}. "
-                f"النتيجة: {actual_return:.1f}%. "
-                f"السبب: {failure_reason or 'لا يوجد تحليل سبب'}. "
-                f"الدرس: تجنب التوصيات المشابهة في نفس السياق."
+            # استخدام lesson_store الكنوني (نفس schema الـ table الفعلي)
+            lesson_code = record_lesson_from_close(
+                ticker=str(pred['ticker'] or ''),
+                persona=persona,
+                exit_type='stop_loss',
+                actual_return=actual_return,
+                holding_days=holding_days,
+                entry_price=entry_price,
+                stop_loss=stop_loss,
+                target_price=target_price,
+                atr_at_entry=atr_at_entry,
             )
-
-            cursor.execute('''
-                INSERT INTO learned_lessons
-                (ticker, signal_type, failure_pattern, score_at_prediction,
-                 actual_return, holding_days, lesson_text)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                pred['ticker'],
-                pred['signal_type'],
-                pattern,
-                float(pred['master_score'] or 0),
-                actual_return,
-                holding_days,
-                lesson_text,
-            ))
-            conn.commit()
 
             return {
                 'status': 'learned',
-                'pattern': pattern,
-                'lesson': lesson_text,
+                'lesson_code': lesson_code,
                 'prediction_id': prediction_id,
+                'failure_reason': failure_reason,
+                'ticker': str(pred['ticker'] or ''),
+                'actual_return': actual_return,
+                'holding_days': holding_days,
             }
 
         except Exception as e:
