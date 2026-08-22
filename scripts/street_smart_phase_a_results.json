@@ -1,0 +1,61 @@
+{
+  "task": "STREET_SMART_PHASE_A",
+  "baseline": {
+    "n": 419,
+    "wr": 48.69,
+    "pf": 1.4467,
+    "exp": 1.7576,
+    "avg_win": 11.6924,
+    "avg_loss": -7.6688
+  },
+  "filters": {
+    "rs_rejected": 170,
+    "fk_rejected": 0,
+    "liq_rejected": 0,
+    "total_rejected": 170
+  },
+  "scenarios": {
+    "baseline": {
+      "n": 419,
+      "wr": 48.69,
+      "pf": 1.4467,
+      "exp": 1.7576,
+      "avg_win": 11.6924,
+      "avg_loss": -7.6688
+    },
+    "no_rs<1": {
+      "n": 249,
+      "wr": 47.39,
+      "pf": 1.318,
+      "exp": 1.2753,
+      "avg_win": 11.1523,
+      "avg_loss": -7.6216
+    },
+    "no_falling_knife": {
+      "n": 419,
+      "wr": 48.69,
+      "pf": 1.4467,
+      "exp": 1.7576,
+      "avg_win": 11.6924,
+      "avg_loss": -7.6688
+    },
+    "no_weak_liq": {
+      "n": 419,
+      "wr": 48.69,
+      "pf": 1.4467,
+      "exp": 1.7576,
+      "avg_win": 11.6924,
+      "avg_loss": -7.6688
+    },
+    "all_filters": {
+      "n": 249,
+      "wr": 47.39,
+      "pf": 1.318,
+      "exp": 1.2753,
+      "avg_win": 11.1523,
+      "avg_loss": -7.6216
+    }
+  },
+  "best": "baseline",
+  "verdict": "NO_IMPROVEMENT"
+}

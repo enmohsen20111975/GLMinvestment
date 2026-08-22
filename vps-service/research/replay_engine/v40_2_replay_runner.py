@@ -29,20 +29,18 @@ from dataclasses import asdict
 from typing import Any, Dict, List, Tuple
 
 # ---------------------------------------------------------------------------
-# Path setup — must be first
+# Constants & Path setup — must be first
 # ---------------------------------------------------------------------------
-sys.path.insert(0, '/home/z/my-project/vps-service')
+_BASE = Path(__file__).resolve().parent.parent.parent.parent  # vps-service/research/replay_engine/file.py → project root
+PRICE_HISTORY_DB = str(_BASE / 'db' / 'price_history.db')
+STOCKS_DB = str(_BASE / 'data' / 'db' / 'stocks.db')
+OUTPUT_JSON = str(Path(__file__).resolve().parent / 'results' / 'v40_2_replay_results.json')
+
+sys.path.insert(0, str(_BASE / 'vps-service'))
 
 from engines.v38_backtest_engine import V38BacktestEngine, Trade, BacktestSummary, simulate_trade
 from analyzers.liquidity_filter import set_strict_kill_filters
 from config.unified_config import MarketProfile, MARKET_PROFILES
-
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-PRICE_HISTORY_DB = '/home/z/my-project/db/price_history.db'
-STOCKS_DB = '/home/z/my-project/db/stocks.db'
-OUTPUT_JSON = '/home/z/my-project/vps-service/research/replay_engine/results/v40_2_replay_results.json'
 
 # Protective caps
 POSITION_MAX_STOP_PCT = 10.0   # Reject trades whose stop distance > 10% of entry
@@ -61,11 +59,11 @@ EGX_PROFILE = MarketProfile(
     stop_fixed_pct=2.0,
     stop_max_pct=7.0,
     stop_min_pct=1.5,
-    target_rr_mult=2.0,
+    target_rr_mult=3.0,               # [V40.2 C1] 2.0→3.0
     atr_stop_min_pct=3.0,
     atr_stop_max_pct=9.0,
-    dynamic_rr_normal=1.5,
-    dynamic_rr_outperform=2.0,
+    dynamic_rr_normal=2.5,             # [V40.2 C1] 1.5→2.5
+    dynamic_rr_outperform=3.0,         # [V40.2 C1] 2.0→3.0
 )
 
 
@@ -285,7 +283,7 @@ def main():
     engine = V38BacktestEngine(
         buy_threshold=75,
         use_v393=True,
-        max_holding_days=20,
+        max_holding_days=30,               # [V40.2 C1] 20→30
         market_code='EGX',
     )
 
