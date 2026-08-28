@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
-import { ensureInitialized, getLightDb } from '@/lib/egx-db';
+import { ensureInitialized, getStocksDb } from '@/lib/egx-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +72,7 @@ function readStocksFromLightDb(req: NextRequest): {
   total: number;
   source: string;
 } {
-  const db = getLightDb();
+  const db = getStocksDb();
 
   const { searchParams } = new URL(req.url);
   const market = (searchParams.get('market') || '').trim().toUpperCase();
