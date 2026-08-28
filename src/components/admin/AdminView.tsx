@@ -72,6 +72,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SectorClassificationAdmin } from './SectorClassificationAdmin';
 import { RegimeDetectionWidget } from './RegimeDetectionWidget';
 import { PlatformPerformanceView } from './platform-performance/PlatformPerformanceView';
+import { BacktestTab } from './BacktestTab';
 
 // V38 Backtest Dashboard & HistoricalPredictionsV2 — REMOVED (2026-08-13)
 // Consolidated into نظام التعلم الذكي الموحد (Maestro) — single engine
@@ -339,7 +340,7 @@ interface DataStatus {
   categories: DataStatusItem[];
 }
 
-type AdminTab = 'dashboard' | 'problems' | 'topology' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'maestro' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance';
+type AdminTab = 'dashboard' | 'problems' | 'topology' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'maestro' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -930,6 +931,7 @@ export function AdminView() {
       tabs: [
         { id: 'learning', label: 'التعلم الذكي', icon: <Brain className="w-3.5 h-3.5" /> },
         { id: 'historical-predictions', label: 'التوقعات التاريخية', icon: <History className="w-3.5 h-3.5" /> },
+        { id: 'backtest', label: 'الباك تست', icon: <Activity className="w-3.5 h-3.5" /> },
         { id: 'platform-performance', label: 'كفاءة المنصة', icon: <Gauge className="w-3.5 h-3.5" /> },
       ],
     },
@@ -1389,6 +1391,11 @@ export function AdminView() {
             style={{ minHeight: '80vh', border: 'none', height: '100%' }}
           />
         </div>
+      )}
+
+      {/* ==================== BACKTEST TAB (V40.2 Engine) ==================== */}
+      {activeTab === 'backtest' && (
+        <BacktestTab />
       )}
 
       {/* ==================== PLATFORM PERFORMANCE TAB (Admin Only) ==================== */}

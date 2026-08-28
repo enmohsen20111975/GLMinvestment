@@ -993,6 +993,254 @@ def run_backtest_engine():
         return jsonify(admin_response(False, error=str(e), traceback=traceback.format_exc())), 500
 
 
+@admin_bp.route('/backtest/v40/stats', methods=['GET'])
+@require_admin
+def get_v40_backtest_stats():
+    """إحصائيات V40.2 Backtest من predictions.db (الموجود حالياً).
+
+    Returns:
+        - summary: {total, wins, losses, wr, pf, net, avg_win, avg_loss, expectancy}
+        - by_month: [{month, trades, wr, net}]
+        - by_ticker: [{ticker, trades, wins, net}] (top 15 by net)
+        - explosive_stocks: [{ticker, trades, wins, net}] for analyst-listed stocks
+        - out_of_sample: {last_30d, last_45d} stats
+    """
+    try:
+        import sqlite3 as _sqlite3
+        from collections import defaultdict
+        from pathlib import Path as _Path
+
+        preds_db = str(_Path(__file__).resolve().parents[2] / 'db' / 'predictions.db')
+        if not os.path.exists(preds_db):
+            return jsonify(admin_response(False, error='predictions.db not found')), 404
+
+        conn = _sqlite3.connect(preds_db)
+        conn.row_factory = _sqlite3.Row
+        cur = conn.cursor()
+
+        rows = cur.execute('''
+            SELECT ticker, actual_return, signal, morning_bell, prediction_date, persona
+            FROM predictions
+            WHERE actual_return IS NOT NULL
+            ORDER BY prediction_date
+        ''').fetchall()
+
+        if not rows:
+            return jsonify(admin_response(True, {
+                'summary': {'total': 0, 'message': 'No predictions found. Run V40.2 backtest first.'},
+                'by_month': [], 'by_ticker': [], 'explosive_stocks': [], 'out_of_sample': {}
+            }))
+
+        total = len(rows)
+        wins = sum(1 for r in rows if r['actual_return'] > 0)
+        losses = sum(1 for r in rows if r['actual_return'] < 0)
+        gp = sum(r['actual_return'] for r in rows if r['actual_return'] > 0)
+        gl = abs(sum(r['actual_return'] for r in rows if r['actual_return'] < 0))
+        net = sum(r['actual_return'] for r in rows)
+        wr = wins / total * 100 if total else 0
+        pf = gp / gl if gl > 0 else 0
+        avg_win = gp / wins if wins else 0
+        avg_loss = gl / losses if losses else 0
+        expectancy = net / total if total else 0
+
+        # Morning Bell
+        mb_rows = [r for r in rows if r['morning_bell']]
+        mb_wins = sum(1 for r in mb_rows if r['actual_return'] > 0)
+        mb_stats = {
+            'trades': len(mb_rows),
+            'wins': mb_wins,
+            'wr': mb_wins / len(mb_rows) * 100 if mb_rows else 0,
+            'net': sum(r['actual_return'] for r in mb_rows)
+        } if mb_rows else None
+
+        # By month
+        by_month_dict = defaultdict(list)
+        for r in rows:
+            m = (r['prediction_date'] or '')[:7]
+            by_month_dict[m].append(r['actual_return'])
+        by_month = []
+        for m in sorted(by_month_dict.keys()):
+            vals = by_month_dict[m]
+            w = sum(1 for v in vals if v > 0)
+            by_month.append({
+                'month': m, 'trades': len(vals), 'wins': w,
+                'wr': w / len(vals) * 100 if vals else 0,
+                'net': sum(vals)
+            })
+
+        # By ticker (top 15 by net)
+        by_ticker_dict = defaultdict(lambda: {'trades': 0, 'wins': 0, 'net': 0})
+        for r in rows:
+            by_ticker_dict[r['ticker']]['trades'] += 1
+            if r['actual_return'] > 0:
+                by_ticker_dict[r['ticker']]['wins'] += 1
+            by_ticker_dict[r['ticker']]['net'] += r['actual_return']
+        by_ticker = sorted(
+            [{'ticker': t, **d, 'wr': d['wins'] / d['trades'] * 100 if d['trades'] else 0}
+             for t, d in by_ticker_dict.items()],
+            key=lambda x: -x['net']
+        )[:15]
+
+        # Explosive stocks (analyst list)
+        explosive_list = ['BIOC', 'NIPH', 'AMES', 'GPIM', 'CRST', 'AFMC', 'GTWL',
+                          'TMGH', 'OCDI', 'COMI', 'SWDY', 'ESRS', 'EGAL', 'EFID', 'EAST']
+        explosive_stocks = []
+        for t in explosive_list:
+            t_rows = [r for r in rows if r['ticker'] == t]
+            if t_rows:
+                t_wins = sum(1 for r in t_rows if r['actual_return'] > 0)
+                explosive_stocks.append({
+                    'ticker': t, 'trades': len(t_rows), 'wins': t_wins,
+                    'wr': t_wins / len(t_rows) * 100 if t_rows else 0,
+                    'net': sum(r['actual_return'] for r in t_rows)
+                })
+
+        # Out-of-sample
+        oos30 = [r for r in rows if (r['prediction_date'] or '') >= '2026-07-28']
+        oos45 = [r for r in rows if (r['prediction_date'] or '') >= '2026-07-13']
+
+        def _stats(subset):
+            if not subset:
+                return None
+            w = sum(1 for r in subset if r['actual_return'] > 0)
+            gp_s = sum(r['actual_return'] for r in subset if r['actual_return'] > 0)
+            gl_s = abs(sum(r['actual_return'] for r in subset if r['actual_return'] < 0))
+            return {
+                'trades': len(subset), 'wins': w,
+                'wr': w / len(subset) * 100 if subset else 0,
+                'pf': gp_s / gl_s if gl_s > 0 else 0,
+                'net': sum(r['actual_return'] for r in subset)
+            }
+
+        conn.close()
+
+        return jsonify(admin_response(True, {
+            'summary': {
+                'total': total, 'wins': wins, 'losses': losses,
+                'wr': round(wr, 1), 'pf': round(pf, 2),
+                'net': round(net, 2),
+                'avg_win': round(avg_win, 2), 'avg_loss': round(avg_loss, 2),
+                'expectancy': round(expectancy, 2),
+                'rr_ratio': round(avg_win / avg_loss, 2) if avg_loss else 0,
+            },
+            'morning_bell': mb_stats,
+            'by_month': by_month,
+            'by_ticker': by_ticker,
+            'explosive_stocks': explosive_stocks,
+            'out_of_sample': {
+                'last_30d': _stats(oos30),
+                'last_45d': _stats(oos45),
+            }
+        }))
+    except Exception as e:
+        import traceback
+        return jsonify(admin_response(False, error=str(e), traceback=traceback.format_exc())), 500
+
+
+@admin_bp.route('/backtest/v40/run', methods=['POST'])
+@require_admin
+def run_v40_backtest():
+    """تشغيل V40.2 Backtest على فترة محددة.
+
+    Body: {
+        "start_date": "2025-12-01",
+        "end_date": "2026-08-27",
+        "max_picks": 5,
+        "clear_existing": true  // امسح predictions قبل التشغيل
+    }
+
+    Returns: job_id (النتائج تقرأ من /backtest/v40/stats بعد الانتهاء)
+
+    NOTE: ده بـ يشغل V40.2 generator في subprocess (ممكن ياخد 5-10 دقايق).
+    """
+    try:
+        import subprocess as _subprocess
+        import uuid as _uuid
+        data = request.get_json() or {}
+        start_date = data.get('start_date', '2025-12-01')
+        end_date = data.get('end_date', '2026-08-27')
+        max_picks = data.get('max_picks', 5)
+        clear_existing = data.get('clear_existing', True)
+
+        # امسح predictions القديمة لو طلب
+        if clear_existing:
+            import sqlite3 as _sqlite3
+            from pathlib import Path as _Path
+            preds_db = str(_Path(__file__).resolve().parents[2] / 'db' / 'predictions.db')
+            conn = _sqlite3.connect(preds_db)
+            conn.execute('DELETE FROM predictions')
+            conn.commit()
+            conn.close()
+
+        # شغل V40.2 generator في الخلفية (non-blocking)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        job_id = str(_uuid.uuid4())[:8]
+        cmd = [
+            'python3', os.path.join(project_root, 'vps-service', 'jobs', 'v40_2_daily_generator.py'),
+            '--start', start_date,
+            '--end', end_date,
+            '--scan-interval', '3',
+            '--max-picks', str(max_picks),
+            '--force',
+        ]
+        log_file = f'/tmp/v40_backtest_{job_id}.log'
+        proc = _subprocess.Popen(
+            cmd, stdout=open(log_file, 'w'), stderr=_subprocess.STDOUT,
+            cwd=project_root, start_new_session=True
+        )
+
+        log_admin_action('v40_backtest_started', {
+            'job_id': job_id, 'pid': proc.pid,
+            'start_date': start_date, 'end_date': end_date,
+        })
+
+        return jsonify(admin_response(True, {
+            'job_id': job_id,
+            'pid': proc.pid,
+            'message': f'V40.2 backtest started (job {job_id}). Check status with /backtest/v40/status/{job_id}',
+            'log_file': log_file,
+        }))
+    except Exception as e:
+        import traceback
+        return jsonify(admin_response(False, error=str(e), traceback=traceback.format_exc())), 500
+
+
+@admin_bp.route('/backtest/v40/status/<job_id>', methods=['GET'])
+@require_admin
+def get_v40_backtest_status(job_id):
+    """حالة V40.2 backtest job."""
+    try:
+        import os as _os
+        log_file = f'/tmp/v40_backtest_{job_id}.log'
+        if not _os.path.exists(log_file):
+            return jsonify(admin_response(True, {'status': 'unknown', 'message': 'Job not found'}))
+
+        with open(log_file) as f:
+            content = f.read()
+        # آخر 20 سطر
+        lines = content.strip().split('\n')[-20:]
+
+        # هل العملية لسه شغالة؟
+        import subprocess as _subprocess
+        try:
+            ps_result = _subprocess.run(['pgrep', '-f', f'v40_backtest_{job_id}'],
+                                        capture_output=True, text=True)
+            running = ps_result.returncode == 0
+        except Exception:
+            running = False
+
+        # لو فيه "GENERATION COMPLETE" في اللوج، يبقى خلص
+        completed = 'GENERATION COMPLETE' in content
+
+        return jsonify(admin_response(True, {
+            'status': 'completed' if completed else ('running' if running else 'stopped'),
+            'log_tail': lines,
+            'completed': completed,
+        }))
+    except Exception as e:
+        return jsonify(admin_response(False, error=str(e))), 500
+
+
 @admin_bp.route('/backtest/engine-results', methods=['GET'])
 @require_admin
 def get_backtest_engine_results():
