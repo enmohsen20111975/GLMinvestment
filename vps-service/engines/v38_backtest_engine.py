@@ -133,7 +133,7 @@ def _resolve_price_history_db():
     # Fallback to primary (even if empty) — keeps backward compat
     return primary
 
-PRICE_HISTORY_DB = _resolve_price_history_db()
+PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
 
 
 # ===========================================================================
@@ -1184,10 +1184,10 @@ class V38BacktestEngine:
         conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
         cur = conn.cursor()
         cur.execute("""
-            SELECT date, open_price, high_price, low_price, close_price, volume
-            FROM price_history 
-            WHERE ticker = ? 
-            ORDER BY date ASC
+            SELECT price_date, open_price, high_price, low_price, close_price, volume
+            FROM egksco_price_history 
+            WHERE symbol = ? 
+            ORDER BY price_date ASC
         """, (ticker,))
         rows = cur.fetchall()
         conn.close()
