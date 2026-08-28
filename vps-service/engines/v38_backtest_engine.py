@@ -72,11 +72,55 @@ STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
 PREDICTIONS_DB = str(PROJECT_ROOT / 'db' / 'predictions.db')
 
 def _resolve_price_history_db():
-    """Find price_history.db with actual data (primary → backups). Read-only."""
-    primary = str(PROJECT_ROOT / 'db' / 'price_history.db')
+    """Find the database with actual price data.
+
+    Priority (after DATA-UNIFY-007):
+      1. data_engine.db (primary — egksco_price_history table, 162K+ rows)
+      2. prices.db (unified — egx_prices table)
+      3. price_history.db (legacy — price_history table, with backups fallback)
+
+    Returns the path to the database that has the most recent price data.
+    """
+    # 1. PRIMARY: data_engine.db (egksco_price_history — the canonical source)
+    primary = str(PROJECT_ROOT / 'db' / 'data_engine.db')
     try:
         if os.path.exists(primary) and os.path.getsize(primary) > 1000:
             db = sqlite3.connect(f'file:{primary}?mode=ro', uri=True, timeout=3)
+            tables = [r[0] for r in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()]
+            if 'egksco_price_history' in tables:
+                count = db.execute('SELECT COUNT(*) FROM egksco_price_history').fetchone()[0]
+                db.close()
+                if count >= 100:
+                    return primary
+            db.close()
+    except Exception:
+        pass
+
+    # 2. UNIFIED: prices.db (egx_prices — DATA-UNIFY output)
+    unified = str(PROJECT_ROOT / 'db' / 'prices.db')
+    try:
+        if os.path.exists(unified) and os.path.getsize(unified) > 1000:
+            db = sqlite3.connect(f'file:{unified}?mode=ro', uri=True, timeout=3)
+            tables = [r[0] for r in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()]
+            if 'egx_prices' in tables:
+                count = db.execute('SELECT COUNT(*) FROM egx_prices').fetchone()[0]
+                db.close()
+                if count >= 100:
+                    print(f"[V38Engine] Using unified prices.db (egx_prices)")
+                    return unified
+            db.close()
+    except Exception:
+        pass
+
+    # 3. LEGACY: price_history.db (with backups fallback)
+    primary_legacy = str(PROJECT_ROOT / 'db' / 'price_history.db')
+    try:
+        if os.path.exists(primary_legacy) and os.path.getsize(primary_legacy) > 1000:
+            db = sqlite3.connect(f'file:{primary_legacy}?mode=ro', uri=True, timeout=3)
             tables = [r[0] for r in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()]
@@ -84,27 +128,25 @@ def _resolve_price_history_db():
                 count = db.execute('SELECT COUNT(*) FROM price_history').fetchone()[0]
                 db.close()
                 if count >= 100:
-                    return primary
-            else:
-                db.close()
+                    print(f"[V38Engine] Using legacy price_history.db")
+                    return primary_legacy
+            db.close()
     except Exception:
         pass
 
-    # Try backups — sort by folder name (date) descending, NOT mtime
-    # (mtime can be identical for all backups if copied together)
+    # 4. Try backups
     import glob
     import re
     backup_pattern = str(PROJECT_ROOT / 'db' / 'backups' / 'daily' / '*' / 'price_history.db')
     backup_paths = glob.glob(backup_pattern)
 
     def _backup_date_key(p):
-        """Extract date from folder name like 'db/backups/daily/20260813_030001/'."""
         m = re.search(r'/(\d{8})_(\d{6})/price_history\.db$', p)
         if m:
-            return m.group(1) + m.group(2)  # '20260813' + '030001'
-        return '0'  # unknown → sorts first (oldest)
+            return m.group(1) + m.group(2)
+        return '0'
 
-    backup_paths.sort(key=_backup_date_key, reverse=True)  # newest folder first
+    backup_paths.sort(key=_backup_date_key, reverse=True)
 
     for bp in backup_paths:
         try:
@@ -116,7 +158,6 @@ def _resolve_price_history_db():
             ).fetchall()]
             if 'price_history' in tables:
                 count = db.execute('SELECT COUNT(*) FROM price_history').fetchone()[0]
-                # Also check the max date — prefer backups with recent data
                 max_date = db.execute(
                     'SELECT MAX(date) FROM price_history WHERE date IS NOT NULL'
                 ).fetchone()[0]
@@ -125,12 +166,11 @@ def _resolve_price_history_db():
                     print(f"[V38Engine] Using backup price_history.db: {bp}")
                     print(f"           Rows: {count:,} | Max date: {max_date}")
                     return bp
-            else:
-                db.close()
+            db.close()
         except Exception:
             pass
 
-    # Fallback to primary (even if empty) — keeps backward compat
+    # Final fallback — even if empty
     return primary
 
 PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
@@ -1129,22 +1169,30 @@ class V38BacktestEngine:
     def _load_benchmark(self):
         """V40.2: تحميل EGX30ETF كمؤشر سوق وحساب ROC-14 لكل تاريخ.
         يُستخدم لتمرير benchmark_change حقيقي لـ build_institutional_decision
-        بدل 0.0 الثابت (اللي كان بيخلي فلتر القوة النسبية عديم الفائدة)."""
+        بدل 0.0 الثابت (اللي كان بيخلي فلتر القوة النسبية عديم الفائدة).
+
+        ملاحظة: الرمز الحقيقي لـ EGX30ETF في egksco_price_history هو
+        'EGS30AJ1C016-EGP' (مش 'EGX30ETF'). بنحاول الاثنين."""
         if self._benchmark_loaded:
             return
         self._benchmark_loaded = True
-        try:
-            dates, opens, highs, lows, closes, volumes = self.get_price_data('EGX30ETF')
-            if len(closes) < 15:
-                print("⚠️  EGX30ETF benchmark: أقل من 15 شمعة، هيفضل benchmark_change=0")
-                return
-            for i in range(14, len(closes)):
-                if closes[i - 14] > 0:
-                    roc = (closes[i] - closes[i - 14]) / closes[i - 14] * 100.0
-                    self._benchmark_roc_by_date[dates[i]] = roc
-            print(f"📊 EGX30ETF benchmark loaded: {len(self._benchmark_roc_by_date)} تاريخ مع ROC-14")
-        except Exception as e:
-            print(f"⚠️  EGX30ETF benchmark load فشل ({e}) — هيفضل benchmark_change=0")
+        # الرمز الكنسي الصحيح
+        BENCHMARK_TICKERS = ('EGS30AJ1C016-EGP', 'EGX30ETF')
+        for bench_ticker in BENCHMARK_TICKERS:
+            try:
+                dates, opens, highs, lows, closes, volumes = self.get_price_data(bench_ticker)
+                if len(closes) < 15:
+                    continue
+                for i in range(14, len(closes)):
+                    if closes[i - 14] > 0:
+                        roc = (closes[i] - closes[i - 14]) / closes[i - 14] * 100.0
+                        self._benchmark_roc_by_date[dates[i]] = roc
+                print(f"📊 Benchmark loaded ({bench_ticker}): {len(self._benchmark_roc_by_date)} تاريخ مع ROC-14")
+                return  # نجح، اخرج
+            except Exception as e:
+                print(f"⚠️  Benchmark load ({bench_ticker}) فشل ({e}) — جرب التالي")
+                continue
+        print("⚠️  مفيش بيانات benchmark — هيفضل benchmark_change=0")
     
     def _load_sector_changes(self, date_str: str):
         """تحميل تغيرات القطاع — حساب من الأسهم في نفس القطاع"""
@@ -1170,10 +1218,10 @@ class V38BacktestEngine:
         conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=30.0)
         cur = conn.cursor()
         cur.execute("""
-            SELECT ticker FROM price_history 
-            GROUP BY ticker 
+            SELECT symbol FROM egksco_price_history
+            GROUP BY symbol
             HAVING COUNT(*) >= ?
-            ORDER BY ticker
+            ORDER BY symbol
         """, (min_days,))
         tickers = [row[0] for row in cur.fetchall()]
         conn.close()
@@ -1185,13 +1233,13 @@ class V38BacktestEngine:
         cur = conn.cursor()
         cur.execute("""
             SELECT price_date, open_price, high_price, low_price, close_price, volume
-            FROM egksco_price_history 
-            WHERE symbol = ? 
+            FROM egksco_price_history
+            WHERE symbol = ?
             ORDER BY price_date ASC
         """, (ticker,))
         rows = cur.fetchall()
         conn.close()
-        
+
         dates = [r[0] for r in rows]
         opens = [float(r[1] or 0) for r in rows]
         highs = [float(r[2] or 0) for r in rows]
