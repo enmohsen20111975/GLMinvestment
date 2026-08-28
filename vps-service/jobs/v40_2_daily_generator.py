@@ -58,7 +58,7 @@ PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine
 from analyzers.liquidity_filter import set_strict_kill_filters
 from analyzers.prediction_tracker import PredictionTracker
 from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
-from analyzers.core_scoring_engine import detect_volume_surge_rocket
+from analyzers.core_scoring_engine import detect_volume_surge_rocket, detect_accumulation_phase
 
 # ─── Rule 28: Toxic Ticker Blocklist ───
 _BLOCKLIST_PATH = Path(__file__).resolve().parents[1] / 'config' / 'toxic_ticker_blocklist.json'
@@ -283,6 +283,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     total_tickers = len(tickers)
     processed = 0
     surge_picks_this_run = 0  # AXIS-5b: counter for Volume Surge Hunter picks
+    accum_picks_this_run = 0   # AXIS-5c: counter for Accumulation Detector picks
 
     for ticker in tickers:
         processed += 1
@@ -355,7 +356,35 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     result['proofs'] = _surge_proofs
                     surge_picks_this_run += 1
                 else:
-                    continue
+                    # ─── ACCUMULATION DETECTOR (AXIS-5c): التجميع الهادئ قبل الانفجار ───
+                    # لو surge_hunter ما اكتشفش signal، شغل الـ Accumulation Detector.
+                    # بيدور على: volume accumulation (1.25x لـ 3 أيام) + above SMA20 +
+                    # ROC5 معتدل (+3% to +15%) + RS إيجابي + not in correction.
+                    # بيصطاد الأسهم اللي بتجمع سيولة بهدوء قبل ما تطير (BIOC, NIPH في مراحلها الأولى).
+                    try:
+                        # احصل على benchmark_roc14 من الـ engine
+                        _bench_roc = engine._benchmark_roc_by_date.get(scan_date, 0.0)
+                        accum_result = detect_accumulation_phase(
+                            closes[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1],
+                            opens[:day_idx+1], volumes[:day_idx+1],
+                            benchmark_roc14=_bench_roc,
+                        )
+                    except Exception:
+                        accum_result = {'is_accumulation': False}
+                    if accum_result.get('is_accumulation'):
+                        # accumulation detector اكتشف تجميع — اعتبره STRONG_BUY
+                        signal = 'STRONG_BUY'
+                        result['entry'] = accum_result['entry']
+                        result['target'] = accum_result['target']
+                        result['stop_loss'] = accum_result['stop']
+                        result['score'] = accum_result['score']
+                        result['signal'] = 'STRONG_BUY'
+                        _accum_proofs = {'accumulation_hunter': True}
+                        _accum_proofs.update(accum_result.get('details', {}))
+                        result['proofs'] = _accum_proofs
+                        accum_picks_this_run += 1
+                    else:
+                        continue
 
             entry = result['entry']
             target = result['target']
@@ -398,12 +427,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
             # ─── CORRECTION DETECTION (2026-08-28) ───────────────────────────
             # Analyst advice: if stock fell -5% or more from its 5-day high,
-            # it's in a correction → WAIT instead of BUY (unless surge hunter).
+            # it's in a correction → WAIT instead of BUY (unless surge/accum hunter).
             # Prevents entering mid-correction (RAYA pattern in July).
-            # Exception: if this is a surge_hunter signal (momentum ignition),
-            # allow it — the hunter already verified volume + maker bull.
+            # Exception: surge_hunter + accumulation_hunter bypass (already verified).
             _is_surge_signal = result.get('proofs', {}).get('surge_hunter', False)
-            if not _is_surge_signal and day_idx >= 5:
+            _is_accum_signal = result.get('proofs', {}).get('accumulation_hunter', False)
+            if not _is_surge_signal and not _is_accum_signal and day_idx >= 5:
                 try:
                     _recent_high = max(highs[max(0, day_idx - 5):day_idx + 1])
                     _drawdown_from_high = ((_recent_high - entry) / _recent_high * 100) if _recent_high > 0 else 0

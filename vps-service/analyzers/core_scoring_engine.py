@@ -1388,6 +1388,160 @@ def detect_volume_surge_rocket(
     }
 
 
+def detect_accumulation_phase(
+    closes: List[float],
+    highs: List[float],
+    lows: List[float],
+    opens: List[float],
+    volumes: List[float],
+    benchmark_roc14: float = 0.0,
+) -> Dict[str, Any]:
+    """
+    AXIS-5c: Pre-explosion Accumulation Detector — كشف التجميع الهادئ قبل الانفجار.
+
+    بيدور على الأسهم اللي بتجمع سيولة بهدوء قبل ما تطير (مش surge انفجاري).
+    ده بيكشف الأسهم اللي detect_volume_surge_rocket بيفوتهم (لأنهم لسه ما عملوش surge).
+
+    مستوحى من نصيحة المحلل (2026-08-28):
+      "اللي لسه ناقص هو اكتشاف التجميع الهادئ قبل الانفجار — الحجم يرتفع
+       تدريجياً 3-5 أيام من غير ما يبقى surge انفجاري، والسعر فوق المتوسطات،
+       و RS إيجابي."
+
+    الشروط (5 عوامل تتراكم في score 0-100):
+      1. Accumulation Volume (30pts): متوسط آخر 3 أيام حجم ≥ 1.25× متوسط 20 يوم
+      2. Above SMA20 (20pts): السعر فوق SMA20 (اتجاه صاعد قريب)
+      3. ROC5 معتدل (20pts): ROC5 بين +3% و +15% (زخم معتدل مش انفجار)
+      4. Relative Strength (15pts): ROC14 السهم > benchmark_roc14 + 1.0
+      5. Not in Correction (15pts): السعر نزل أقل من 5% من آخر high
+
+    Returns:
+        {is_accumulation: bool, score: float (0-100), reason: str,
+         entry, target (2.5R), stop (1.25R → R:R=2.0), details: dict}
+    """
+    if not closes or not volumes or len(closes) < 25 or len(volumes) < 25:
+        return {
+            'is_accumulation': False, 'score': 0.0,
+            'reason': 'بيانات غير كافية (< 25 شمعة)',
+            'entry': 0, 'target': 0, 'stop': 0,
+            'details': {'closes_len': len(closes), 'volumes_len': len(volumes)},
+        }
+
+    # ── Compute indicators ────────────────────────────────────────────────
+    # SMA20
+    sma20 = sum(closes[-20:]) / 20 if len(closes) >= 20 else sum(closes) / len(closes)
+
+    # ATR(14)
+    trs = []
+    for i in range(max(1, len(closes) - 14), len(closes)):
+        h, l = highs[i], lows[i]
+        prev_c = closes[i - 1]
+        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+        trs.append(tr)
+    atr_val = sum(trs) / len(trs) if trs else 0.0
+
+    # ROC5 و ROC14
+    roc5 = 0.0
+    if len(closes) >= 6 and closes[-6] > 0:
+        roc5 = (closes[-1] - closes[-6]) / closes[-6] * 100
+    roc14 = 0.0
+    if len(closes) >= 15 and closes[-15] > 0:
+        roc14 = (closes[-1] - closes[-15]) / closes[-15] * 100
+
+    # ── 1) Accumulation Volume: متوسط آخر 3 أيام حجم ≥ 1.25× متوسط 20 يوم ──
+    vol_last_3 = volumes[-3:] if len(volumes) >= 3 else volumes
+    avg_vol_3 = sum(vol_last_3) / len(vol_last_3) if vol_last_3 else 0.0
+    vol_baseline = volumes[-21:-1] if len(volumes) >= 21 else volumes[:-1]
+    avg_vol_20 = sum(vol_baseline) / len(vol_baseline) if vol_baseline else 0.0
+    vol_ratio = avg_vol_3 / avg_vol_20 if avg_vol_20 > 0 else 0.0
+    is_accumulating = vol_ratio >= 1.25
+
+    # ── 2) Above SMA20 ──
+    above_sma20 = closes[-1] > sma20 if sma20 > 0 else False
+
+    # ── 3) ROC5 معتدل (+3% to +15%) ──
+    roc5_moderate = 3.0 <= roc5 <= 15.0
+
+    # ── 4) Relative Strength: ROC14 السهم > benchmark + 1.0 ──
+    rs_value = roc14 - benchmark_roc14
+    rs_positive = rs_value > 1.0
+
+    # ── 5) Not in Correction: نزل أقل من 5% من آخر high ──
+    recent_high_window = highs[-7:] if len(highs) >= 7 else highs
+    recent_high = max(recent_high_window) if recent_high_window else closes[-1]
+    drawdown_from_high = ((recent_high - closes[-1]) / recent_high * 100) if recent_high > 0 else 0.0
+    not_in_correction = drawdown_from_high < 5.0
+
+    # ── Score (0-100) ──────────────────────────────────────────────────────
+    score = 0.0
+    reasons: List[str] = []
+
+    # 1. Accumulation Volume (30 points)
+    if is_accumulating:
+        score += 30
+        reasons.append(f'Vol accumulation {vol_ratio:.2f}x')
+    elif vol_ratio >= 1.15:
+        score += 15
+        reasons.append(f'Vol semi-accum {vol_ratio:.2f}x')
+
+    # 2. Above SMA20 (20 points)
+    if above_sma20:
+        score += 20
+        reasons.append('فوق SMA20')
+
+    # 3. ROC5 معتدل (20 points)
+    if roc5_moderate:
+        score += 20
+        reasons.append(f'ROC5={roc5:+.1f}% (معتدل)')
+    elif 0 < roc5 < 3:
+        score += 8
+        reasons.append(f'ROC5={roc5:+.1f}% (ضعيف)')
+
+    # 4. Relative Strength (15 points)
+    if rs_positive:
+        score += 15
+        reasons.append(f'RS=+{rs_value:.1f}%')
+    elif rs_value > 0:
+        score += 7
+        reasons.append(f'RS=+{rs_value:.1f}% (ضعيف)')
+
+    # 5. Not in Correction (15 points)
+    if not_in_correction:
+        score += 15
+        reasons.append(f'DD={drawdown_from_high:.1f}%')
+
+    # ── Decision: accumulation requires vol + momentum + trend ──────────
+    is_accumulation_signal = (
+        score >= 65 and is_accumulating and above_sma20 and roc5 > 0
+    )
+
+    entry = closes[-1]
+    target = entry + (atr_val * 2.5)  # 2.5R target (موسع شوية للـ accumulation)
+    stop = entry - (atr_val * 1.25)   # 1.25R stop → R:R = 2.0
+
+    return {
+        'is_accumulation': is_accumulation_signal,
+        'score': min(score, 100.0),
+        'reason': ' | '.join(reasons) if reasons else 'لا توجد إشارات',
+        'entry': entry,
+        'target': target,
+        'stop': stop,
+        'atr': atr_val,
+        'details': {
+            'vol_ratio': round(vol_ratio, 2),
+            'avg_vol_3': round(avg_vol_3, 2),
+            'avg_vol_20': round(avg_vol_20, 2),
+            'is_accumulating': is_accumulating,
+            'above_sma20': above_sma20,
+            'roc5': round(roc5, 1),
+            'roc14': round(roc14, 1),
+            'rs_value': round(rs_value, 1),
+            'rs_positive': rs_positive,
+            'drawdown_from_high': round(drawdown_from_high, 2),
+            'not_in_correction': not_in_correction,
+        },
+    }
+
+
 # ============================================================================
 # CORE SCORING ENGINE
 # ============================================================================
