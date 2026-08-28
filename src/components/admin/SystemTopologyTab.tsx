@@ -202,7 +202,6 @@ function getServiceIcon(kind: string) {
         case 'backend': return <Server className="w-5 h-5" />;
         case 'data-engine': return <CircuitBoard className="w-5 h-5" />;
         case 'ws-service': return <Radio className="w-5 h-5" />;
-        case 'glminvestment-engines': return <Brain className="w-5 h-5" />;
         case 'prediction-engine': return <Target className="w-5 h-5" />;
         case 'analytics-engine': return <Cpu className="w-5 h-5" />;
         case 'risk-engine': return <Shield className="w-5 h-5" />;
@@ -232,7 +231,6 @@ const NODE_POSITIONS: Record<string, { x: number; y: number; w: number; h: numbe
     'analytics-engine': { x: 220, y: 545, w: 420, h: 110 },
     'prediction-engine': { x: 680, y: 545, w: 420, h: 110 },
     // Layer 5: GLM Engines + Confluence V3 + Risk + Backtest (4 boxes)
-    'glminvestment-engines': { x: 60, y: 680, w: 290, h: 110 },
     'confluence-engine-v3': { x: 380, y: 680, w: 280, h: 110 },
     'risk-engine': { x: 690, y: 680, w: 280, h: 110 },
     'backtest-engine': { x: 1000, y: 680, w: 280, h: 110 },

@@ -45,7 +45,6 @@ function getServiceIcon(kind: string) {
         case 'backend': return <Server className="w-5 h-5" />;
         case 'data-engine': return <CircuitBoard className="w-5 h-5" />;
         case 'ws-service': return <Radio className="w-5 h-5" />;
-        case 'glminvestment-engines': return <Brain className="w-5 h-5" />;
         case 'prediction-engine': return <Target className="w-5 h-5" />;
         case 'analytics-engine': return <Cpu className="w-5 h-5" />;
         case 'risk-engine': return <Shield className="w-5 h-5" />;
