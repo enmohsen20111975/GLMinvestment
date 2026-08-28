@@ -7519,3 +7519,54 @@ Stage Summary:
 - ✅ كل البيانات سليمة (162K صف، 1047 سهم)
 
 الدرس المستفاد: الساندبوكس ≠ مساحة دائمة. كل شغل لازم يبقى على GitHub. القاعدة 26 تمنع تكرار الكارثة.
+
+---
+Task ID: GEOMETRY-BUG-FIX
+Agent: Z.ai Code (main orchestrator)
+Task: Bug hunting — ليه TMGH و ESRS مش في التوقعات مع إن V38 قال STRONG_BUY؟
+
+Work Log:
+- **التحقيق:** شغلت V38 engine على كل scan_dates لـ TMGH/ESRS/BIOC/NIPH/AFMC.
+  - النتيجة: V38 بيرجع STRONG_BUY لكن النظام بيرفضهم في enforce_geometry_guard.
+  - السبب: تناقض بين engine_settings و prediction_tracker:
+    - engine_settings: atr_stop_max_pct = 9.0 (سمح بـ 9% للأسهم عالية التقلب)
+    - prediction_tracker: _GEOMETRY_STOP_MIN_MULT = 0.93 (وقف ≤ 7%)
+    - prediction_tracker: _GEOMETRY_MIN_RR = 2.0 (R/R ≥ 2.0)
+    - engine_settings: dynamic_rr_normal = 1.5 (R/R ≥ 1.5)
+  - النتيجة: V38 بيرجع stop=9% و R/R=1.997، لكن الـ guard بيرفضهم!
+
+- **الإصلاح:**
+  1. R3: _GEOMETRY_STOP_MIN_MULT 0.93 → 0.905 (matching atr_stop_max_pct=9.0)
+  2. R5: _GEOMETRY_MIN_RR 2.0 → 1.5 (matching dynamic_rr_normal=1.5)
+
+- **النتائج بعد الإصلاح (backtest كامل):**
+  | الإصدار | التوقعات | WR | PF | Net |
+  |---------|----------|-----|-----|------|
+  | v0 (no filter) | 109 | 27.5% | 0.88 | -60% |
+  | v3 (blocklist+hunter) | 233 | 46.8% | 1.89 | +690% |
+  | v4 (+3 filters) | 232 | 47.4% | 1.97 | +728% |
+  | **v5 (+bug fix)** | **532** | **54.3%** | **2.44** | **+2269%** |
+
+- **الأسهم اللي اتصطادت بعد الـ fix:**
+  - ✅ OCDI (سوديك): 7 preds, WR=71%, net=+67.9%
+  - ✅ ESRS (حديد عز): 3 preds, WR=100%, net=+86.6%
+  - ✅ EGAL (مصر للألومنيوم): 4 preds, WR=100%, net=+42.0%
+  - ✅ BIOC (جلاكسو): 1 pred, WR=100%, net=+12.8%
+  - ✅ NIPH (النيل): 2 preds, WR=100%, net=+36.3%
+  - ✅ AFMC (مطاحن الإسكندرية): 1 pred, WR=100%, net=+18.7%
+  - ✅ COMI: 6 preds, WR=50%, net=-10.0%
+
+- **التحسن:**
+  - WR: 47.4% → 54.3% (+6.9 نقطة — فوق هدف 50%!)
+  - PF: 1.97 → 2.44 (+0.47 — فوق هدف 1.5!)
+  - Net: +728% → +2269% (3x تحسن!)
+  - Expectancy: +3.14% → +4.27%/trade
+  - Morning Bell WR: 53.8% (+8.4 نقطة)
+
+Stage Summary:
+- ✅ Bug اتلقي واتصلح (GEOMETRY guard كان بيرفض الأسهم القيادية والانفجارية)
+- ✅ WR تجاوز 50% (54.3%)
+- ✅ PF تجاوز 1.5 بكثير (2.44)
+- ✅ Net ضخم (+2269%)
+- ✅ الأسهم الانفجارية بتتصطاد دلوقتي (BIOC, NIPH, AFMC)
+- ✅ commit 906c1fd9 على GitHub
