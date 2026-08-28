@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -16,521 +17,499 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
 import {
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+  Download,
+  Filter,
   Zap,
   Target,
-  TrendingUp,
   Thermometer,
-  Download,
-  BookmarkPlus,
   Search,
-  BarChart3,
-  Crosshair,
-  RefreshCw,
-  Clock,
-  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-interface ScreenerResult {
-  symbol: string;
+interface ScreenerStock {
+  ticker: string;
   name: string;
+  name_ar: string;
   market: string;
-  price: number;
-  score: number;
-  reason: string;
-  scan_date: string;
+  sector: string;
+  current_price: number;
+  change_percent: number;
+  volume: number;
+  market_cap: number;
+  pe_ratio: number | null;
+  roe: number | null;
+  ma_50: number | null;
+  ma_200: number | null;
+  rsi: number | null;
+  trend: string | null;
+  signal: number | null;
+  beta: number | null;
+  high_52w: number | null;
+  low_52w: number | null;
+  above_ma_50: boolean;
+  above_ma_200: boolean;
+  distance_from_52w_high: number | null;
+  distance_from_52w_low: number | null;
+  momentum_score: number;
+  correction_status: string;
+  volume_surge: boolean;
 }
 
-interface PresetConfig {
-  id: string;
-  label: string;
-  labelEn: string;
-  icon: React.ElementType;
-  color: string;
-  bgActive: string;
-  description: string;
+interface ScreenerResponse {
+  success: boolean;
+  data: ScreenerStock[];
+  total: number;
+  sectors: string[];
+  filters?: Record<string, unknown>;
+  error?: string;
 }
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─── Correction Status Helpers ───────────────────────────────────────────────
 
-const PRESETS: PresetConfig[] = [
-  {
-    id: 'day_trader',
-    label: 'رادار المضارب',
-    labelEn: 'Day Trader Radar',
-    icon: Zap,
-    color: 'text-amber-600 dark:text-amber-400',
-    bgActive: 'bg-amber-100 dark:bg-amber-900/30 border-amber-400',
-    description: 'أسهم عالية التذبذب مع تقييم فني إيجابي',
-  },
-  {
-    id: 'daily_speculator',
-    label: 'المضارب اليومي',
-    labelEn: 'Daily Speculator',
-    icon: Crosshair,
-    color: 'text-violet-600 dark:text-violet-400',
-    bgActive: 'bg-violet-100 dark:bg-violet-900/30 border-violet-400',
-    description: '6 قواعد: خصم قمة 52 أسبوع + EPS + P/E + توزيعات + حجم',
-  },
-  {
-    id: 'value',
-    label: 'صائد القيمة',
-    labelEn: 'Value Hunter',
-    icon: Target,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bgActive: 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-400',
-    description: 'أسهم مُقيّمة بأقل من قيمتها الدفترية',
-  },
-  {
-    id: 'momentum',
-    label: 'صواريخ الزخم',
-    labelEn: 'Momentum Rockets',
-    icon: TrendingUp,
-    color: 'text-rose-600 dark:text-rose-400',
-    bgActive: 'bg-rose-100 dark:bg-rose-900/30 border-rose-400',
-    description: 'أسهم صاعدة بقوة مع زخم إيجابي',
-  },
-  {
-    id: 'thermometer',
-    label: 'ميزان حرارة السوق',
-    labelEn: 'Market Thermometer',
-    icon: Thermometer,
-    color: 'text-sky-600 dark:text-sky-400',
-    bgActive: 'bg-sky-100 dark:bg-sky-900/30 border-sky-400',
-    description: 'درجة حرارة السوق بناءً على نسبة الصاعدة/الهابطة',
-  },
-];
+const CORRECTION_STATUS_MAP: Record<string, { label: string; color: string; icon: string }> = {
+  in_correction: { label: 'في تصحيح', color: 'text-red-600 bg-red-50 dark:bg-red-950', icon: '📉' },
+  pulling_back: { label: 'يرتد', color: 'text-orange-600 bg-orange-50 dark:bg-orange-950', icon: '↩️' },
+  neutral: { label: 'محايد', color: 'text-gray-600 bg-gray-50 dark:bg-gray-800', icon: '➡️' },
+  near_high: { label: 'قرب القمة', color: 'text-blue-600 bg-blue-50 dark:bg-blue-950', icon: '🎯' },
+  breakout: { label: 'اختراق', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950', icon: '🚀' },
+  overbought: { label: 'تشبع شرائي', color: 'text-purple-600 bg-purple-50 dark:bg-purple-950', icon: '🔥' },
+  oversold: { label: 'تشبع بيعي', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950', icon: '❄️' },
+};
 
-const MARKET_OPTIONS = [
-  { value: 'all', label: 'كل الأسواق' },
-  { value: 'EGX', label: 'البورصة المصرية (EGX)' },
-  { value: 'Tadawul', label: 'تداول (Tadawul)' },
-  { value: 'KSE', label: 'بورصة الكويت (KSE)' },
-  { value: 'QSE', label: 'بورصة قطر (QSE)' },
-];
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function getScoreBg(score: number): string {
-  if (score >= 70) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-0';
-  if (score >= 50) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0';
-  if (score >= 30) return 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 border-0';
-  return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border-0';
-}
-
-function getLabelFromReason(reason: string): { label: string; color: string } | null {
-  if (reason.startsWith('فرصة') || reason.startsWith('شراء') || reason.startsWith('السهم')) return { label: 'شراء', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-0' };
-  if (reason.startsWith('راقب')) return { label: 'راقب', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0' };
-  if (reason.startsWith('انتظر')) return { label: 'انتظر', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border-0' };
-  return null;
-}
-
-/** حساب مدة منذ آخر تحديث */
-function getTimeSince(scanDate: string | null): { text: string; isStale: boolean } {
-  if (!scanDate) return { text: 'لم يُحسب بعد', isStale: true };
-  try {
-    const scanTime = new Date(scanDate).getTime();
-    const now = Date.now();
-    const diffMs = now - scanTime;
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffHr = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHr / 24);
-
-    if (diffMin < 5) return { text: 'منذ لحظات', isStale: false };
-    if (diffMin < 60) return { text: `منذ ${diffMin} دقيقة`, isStale: false };
-    if (diffHr < 6) return { text: `منذ ${diffHr} ساعة`, isStale: diffHr > 2 };
-    if (diffDay < 2) return { text: `منذ ${diffDay} يوم`, isStale: true };
-    return { text: `منذ ${diffDay} أيام`, isStale: true };
-  } catch {
-    return { text: 'غير معروف', isStale: true };
-  }
-}
-
-function exportToCSV(results: ScreenerResult[], presetName: string) {
-  const headers = ['#', 'Symbol', 'Name', 'Market', 'Price', 'Score', 'Reason'];
-  const rows = results.map((r, i) => [
-    i + 1,
-    r.symbol,
-    r.name,
-    r.market,
-    r.price != null ? r.price.toFixed(2) : '',
-    r.score != null ? r.score.toFixed(0) : '',
-    `"${(r.reason ?? '').replace(/"/g, '""')}"`,
-  ]);
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `screener_${presetName}_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function saveFilterToLocalStorage(preset: string, market: string) {
-  const key = 'screener_saved_filters';
-  const saved = JSON.parse(localStorage.getItem(key) || '[]');
-  const entry = { preset, market, savedAt: new Date().toISOString() };
-  if (!saved.some((f: { preset: string; market: string }) => f.preset === preset && f.market === market)) {
-    saved.push(entry);
-    localStorage.setItem(key, JSON.stringify(saved));
-    toast.success('تم حفظ الفلتر بنجاح');
-  } else {
-    toast.info('هذا الفلتر محفوظ بالفعل');
-  }
-}
-
-// ─── Loading Skeleton ───────────────────────────────────────────────────────
-
-function ScreenerSkeleton() {
+function getCorrectionBadge(status: string) {
+  const config = CORRECTION_STATUS_MAP[status] || CORRECTION_STATUS_MAP.neutral;
   return (
-    <div className="space-y-4" dir="rtl">
-      <div className="flex gap-2 flex-wrap">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-32 rounded-lg" />
-        ))}
-      </div>
-      <Skeleton className="h-10 w-48 rounded-lg" />
-      <div className="space-y-2">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
-        ))}
-      </div>
+    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium', config.color)}>
+      <span>{config.icon}</span>
+      {config.label}
+    </span>
+  );
+}
+
+// ─── Mini Sparkline (ASCII-based, no external deps) ──────────────────────────
+
+function MiniSparkline({ value, max, min }: { value: number; max: number; min: number }) {
+  if (max === min) return <span className="text-xs text-muted-foreground">—</span>;
+  const pct = ((value - min) / (max - min)) * 100;
+  const bars = Math.round(pct / 10);
+  return (
+    <div className="flex items-end gap-px h-4">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <div
+          key={i}
+          className={cn('w-1 rounded-sm', i < bars ? 'bg-emerald-500' : 'bg-muted')}
+          style={{ height: `${Math.max(2, (i + 1) * 10)}%` }}
+        />
+      ))}
     </div>
   );
 }
 
-// ─── Empty State ────────────────────────────────────────────────────────────
+// ─── Format Helpers ──────────────────────────────────────────────────────────
 
-function EmptyState({ preset, isStale, onRefresh }: { preset?: string; isStale?: boolean; onRefresh?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-      {isStale ? (
-        <AlertTriangle className="w-12 h-12 mb-3 text-amber-500 opacity-40" />
-      ) : (
-        <Search className="w-12 h-12 mb-3 opacity-20" />
-      )}
-      <p className="text-sm font-medium mb-1">
-        {isStale ? 'البيانات غير محسوبة بعد' : 'لا توجد نتائج'}
-      </p>
-      <p className="text-xs mb-3">
-        {isStale
-          ? 'اضغط "تحديث البيانات" لحساب التحليلات وتخزينها'
-          : preset
-            ? 'لم يتم العثور على أسهم مطابقة لهذا الفلتر'
-            : 'اختر فلتراً للبدء في البحث'}
-      </p>
-      {isStale && onRefresh && (
-        <Button variant="outline" size="sm" onClick={onRefresh} className="gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" />
-          تحديث البيانات
-        </Button>
-      )}
-    </div>
-  );
+function formatNumber(n: number | null, decimals = 2): string {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function formatVolume(v: number): string {
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
+  return v.toFixed(0);
+}
+
+function getChangeColor(change: number): string {
+  if (change > 0) return 'text-emerald-600 dark:text-emerald-400';
+  if (change < 0) return 'text-red-600 dark:text-red-400';
+  return 'text-muted-foreground';
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function StockScreener() {
-  const [activePreset, setActivePreset] = useState<string>('day_trader');
-  const [market, setMarket] = useState<string>('all');
-  const [results, setResults] = useState<ScreenerResult[]>([]);
+  // Filters state
+  const [market, setMarket] = useState('EGX');
+  const [sector, setSector] = useState('ALL');
+  const [sort, setSort] = useState('change_percent');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [limit, setLimit] = useState(100);
+  const [trend, setTrend] = useState('all');
+  const [aboveMa, setAboveMa] = useState('all');
+  const [correctionStatus, setCorrectionStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Data state
+  const [stocks, setStocks] = useState<ScreenerStock[]>([]);
+  const [sectors, setSectors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scanDate, setScanDate] = useState<string | null>(null);
-  const [presetName, setPresetName] = useState<string>('');
-  const [isStale, setIsStale] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchScreener = useCallback(async (preset: string, mkt: string) => {
-    if (!preset) return;
+  // Fetch screener data
+  const fetchScreener = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ preset });
-      if (mkt && mkt !== 'all') params.set('market', mkt);
+      const params = new URLSearchParams({
+        market,
+        sort,
+        order,
+        limit: String(limit),
+      });
+      if (sector !== 'ALL') params.set('sector', sector);
+      if (trend !== 'all') params.set('trend', trend);
+      if (aboveMa !== 'all') params.set('above_ma', aboveMa);
+      if (correctionStatus !== 'all') params.set('correction_status', correctionStatus);
 
       const res = await fetch(`/api/stocks/screener?${params}`);
-      const json = await res.json();
+      const json: ScreenerResponse = await res.json();
 
       if (json.success) {
-        setResults(json.results || []);
-        setPresetName(json.preset_name || preset);
-        setScanDate(json.scan_date || null);
-        setIsStale(json.is_stale || false);
+        setStocks(json.data);
+        setSectors(json.sectors || []);
       } else {
-        setResults([]);
-        setError(json.error || 'فشل في جلب البيانات');
+        setError(json.error || 'فشل تحميل البيانات');
+        toast.error(json.error || 'فشل تحميل البيانات');
       }
-    } catch {
-      setResults([]);
-      setError('حدث خطأ في الاتصال بالخادم');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'خطأ في الاتصال';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [market, sector, sort, order, limit, trend, aboveMa, correctionStatus]);
 
-  // Fetch on preset or market change
   useEffect(() => {
-    fetchScreener(activePreset, market);
-  }, [activePreset, market, fetchScreener]);
+    fetchScreener();
+  }, [fetchScreener]);
 
-  /** تحديث البيانات — يحسب كل البريسيت ويخزنها */
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      const res = await fetch('/api/stocks/screener', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ market: market !== 'all' ? market : undefined }),
-      });
-      const json = await res.json();
+  // Client-side search filter
+  const filteredStocks = useMemo(() => {
+    if (!searchQuery.trim()) return stocks;
+    const q = searchQuery.toUpperCase();
+    return stocks.filter(s =>
+      s.ticker.includes(q) ||
+      s.name.toUpperCase().includes(q) ||
+      s.name_ar.includes(searchQuery)
+    );
+  }, [stocks, searchQuery]);
 
-      if (json.success) {
-        toast.success('تم تحديث البيانات بنجاح');
-        // Re-fetch from cache
-        await fetchScreener(activePreset, market);
-      } else {
-        toast.error(json.error || 'فشل في تحديث البيانات');
-      }
-    } catch {
-      toast.error('حدث خطأ في التحديث');
-    } finally {
-      setRefreshing(false);
-    }
+  // Export to CSV
+  const exportCSV = () => {
+    const headers = ['Ticker', 'Name', 'Sector', 'Price', 'Change%', 'Volume', 'RSI', 'Trend', 'CorrectionStatus', 'Momentum'];
+    const rows = filteredStocks.map(s => [
+      s.ticker, s.name, s.sector,
+      s.current_price, s.change_percent, s.volume,
+      s.rsi ?? '', s.trend ?? '', s.correction_status, s.momentum_score,
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `screener_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`تم تصدير ${filteredStocks.length} سهم`);
   };
-
-  const handleExport = () => {
-    if (results.length === 0) {
-      toast.error('لا توجد بيانات للتصدير');
-      return;
-    }
-    exportToCSV(results, activePreset);
-    toast.success('تم تصدير البيانات بنجاح');
-  };
-
-  const handleSaveFilter = () => {
-    saveFilterToLocalStorage(activePreset, market);
-  };
-
-  const currentPreset = PRESETS.find(p => p.id === activePreset);
-  const timeSince = getTimeSince(scanDate);
 
   return (
-    <div className="space-y-6 p-4 md:p-6" dir="rtl">
+    <div className="space-y-4 p-4 md:p-6" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">ماسح الأسهم</h1>
-          <p className="text-sm text-muted-foreground">
-            اكتشف فرص الاستثمار بناءً على استراتيجيات مُعدّة مسبقاً
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Activity className="w-5 h-5 text-emerald-600" />
+            ماسح الأسهم المتقدم
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            فرز الأسهم بفلاتر متقدمة — تصحيح، زخم، تشبع، مقارنة بالقطاع
           </p>
         </div>
-        <BarChart3 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 opacity-30" />
-      </div>
-
-      {/* Preset Buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {PRESETS.map((preset) => {
-          const Icon = preset.icon;
-          const isActive = activePreset === preset.id;
-          return (
-            <button
-              key={preset.id}
-              onClick={() => setActivePreset(preset.id)}
-              className={cn(
-                'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer',
-                isActive
-                  ? preset.bgActive
-                  : 'border-border/50 bg-card hover:bg-muted/50'
-              )}
-            >
-              <Icon className={cn('w-5 h-5', isActive ? preset.color : 'text-muted-foreground')} />
-              <span className={cn(
-                'text-xs font-medium text-center leading-tight',
-                isActive ? 'text-foreground' : 'text-muted-foreground'
-              )}>
-                {preset.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Active Preset Description */}
-      {currentPreset && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <currentPreset.icon className={cn('w-3.5 h-3.5', currentPreset.color)} />
-          <span>{currentPreset.description}</span>
-        </div>
-      )}
-
-      {/* Market Filter + Action Buttons + Data Freshness */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={market} onValueChange={setMarket}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="اختر السوق" />
-          </SelectTrigger>
-          <SelectContent>
-            {MARKET_OPTIONS.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          onClick={handleExport}
-          disabled={loading || results.length === 0}
-        >
-          <Download className="w-3.5 h-3.5" />
-          تصدير CSV
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          onClick={handleSaveFilter}
-        >
-          <BookmarkPlus className="w-3.5 h-3.5" />
-          حفظ الفلتر
-        </Button>
-
-        {/* 🔥 زرار تحديث البيانات */}
-        <Button
-          variant={isStale ? 'default' : 'outline'}
-          size="sm"
-          className={cn('gap-1.5', isStale && 'bg-amber-600 hover:bg-amber-700 text-white')}
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
-          {refreshing ? 'جاري التحديث...' : 'تحديث البيانات'}
-        </Button>
-
-        {/* 🔥 مؤشر آخر تحديث */}
-        <div className={cn(
-          'flex items-center gap-1.5 text-[10px] mr-auto',
-          timeSince.isStale ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
-        )}>
-          <Clock className="w-3 h-3" />
-          <span>{timeSince.text}</span>
-          {timeSince.isStale && (
-            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 text-[8px] px-1 py-0 border-0">
-              قديم
-            </Badge>
-          )}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!filteredStocks.length} className="gap-1.5">
+            <Download className="w-3.5 h-3.5" />
+            تصدير CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchScreener} disabled={loading} className="gap-1.5">
+            <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
+            تحديث
+          </Button>
         </div>
       </div>
 
-      {/* 🔥 Stale Data Warning */}
-      {isStale && !loading && results.length === 0 && (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="text-xs text-amber-700 dark:text-amber-300">
-            البيانات مش محسوبة بعد. اضغط &quot;تحديث البيانات&quot; عشان يحسب التحليلات ويخزنها — بعد كده هتلاقيها جاهزة كل ما تفتح الشاشة.
-          </p>
-        </div>
-      )}
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Filter className="w-4 h-4" />
+            الفلاتر
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {/* Market */}
+            <div>
+              <Label className="text-xs">السوق</Label>
+              <Select value={market} onValueChange={setMarket}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EGX">البورصة المصرية</SelectItem>
+                  <SelectItem value="ALL">الكل</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sector */}
+            <div>
+              <Label className="text-xs">القطاع</Label>
+              <Select value={sector} onValueChange={setSector}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">كل القطاعات</SelectItem>
+                  {sectors.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <Label className="text-xs">ترتيب بـ</Label>
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="change_percent">نسبة التغير</SelectItem>
+                  <SelectItem value="volume">الحجم</SelectItem>
+                  <SelectItem value="momentum">الزخم</SelectItem>
+                  <SelectItem value="rsi">RSI</SelectItem>
+                  <SelectItem value="market_cap">القيمة السوقية</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Order */}
+            <div>
+              <Label className="text-xs">الاتجاه</Label>
+              <Select value={order} onValueChange={(v) => setOrder(v as 'asc' | 'desc')}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">تنازلي (الأعلى أولاً)</SelectItem>
+                  <SelectItem value="asc">تصاعدي (الأقل أولاً)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Trend */}
+            <div>
+              <Label className="text-xs">الاتجاه</Label>
+              <Select value={trend} onValueChange={setTrend}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="up">صاعد فقط</SelectItem>
+                  <SelectItem value="down">هابط فقط</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Above MA */}
+            <div>
+              <Label className="text-xs">فوق المتوسط</Label>
+              <Select value={aboveMa} onValueChange={setAboveMa}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="50">فوق MA50</SelectItem>
+                  <SelectItem value="200">فوق MA200</SelectItem>
+                  <SelectItem value="both">فوق الاثنين</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Correction Status */}
+            <div>
+              <Label className="text-xs">حالة التصحيح</Label>
+              <Select value={correctionStatus} onValueChange={setCorrectionStatus}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="in_correction">في تصحيح</SelectItem>
+                  <SelectItem value="pulling_back">يرتد</SelectItem>
+                  <SelectItem value="breakout">اختراق</SelectItem>
+                  <SelectItem value="near_high">قرب القمة</SelectItem>
+                  <SelectItem value="overbought">تشبع شرائي</SelectItem>
+                  <SelectItem value="oversold">تشبع بيعي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Limit */}
+            <div>
+              <Label className="text-xs">عدد النتائج</Label>
+              <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="mt-3">
+            <div className="relative">
+              <Search className="absolute right-2 top-2.5 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="بحث بالاسم أو الرمز..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-8 h-9"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">إجمالي النتائج</div>
+            <div className="text-xl font-bold">{filteredStocks.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">صاعدة</div>
+            <div className="text-xl font-bold text-emerald-600">
+              {filteredStocks.filter(s => s.change_percent > 0).length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">هابطة</div>
+            <div className="text-xl font-bold text-red-600">
+              {filteredStocks.filter(s => s.change_percent < 0).length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">انفجار سيولة</div>
+            <div className="text-xl font-bold text-amber-600">
+              {filteredStocks.filter(s => s.volume_surge).length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Results Table */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center justify-between">
-            <span>
-              {presetName || 'النتائج'}
-            </span>
-            {!loading && results.length > 0 && (
-              <Badge variant="secondary" className="text-xs font-normal">
-                {results.length} سهم
-              </Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-4">
-              <ScreenerSkeleton />
+            <div className="p-8 text-center text-muted-foreground">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+              جاري التحميل...
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Search className="w-10 h-10 mb-3 opacity-20" />
-              <p className="text-sm font-medium mb-1">خطأ في تحميل البيانات</p>
-              <p className="text-xs text-red-500 mb-3">{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchScreener(activePreset, market)}
-              >
-                إعادة المحاولة
-              </Button>
+            <div className="p-8 text-center text-red-600">
+              <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
+              {error}
             </div>
-          ) : results.length === 0 ? (
-            <EmptyState preset={activePreset} isStale={isStale} onRefresh={handleRefresh} />
+          ) : filteredStocks.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
+              لا توجد نتائج مطابقة
+            </div>
           ) : (
-            <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="max-h-[600px] overflow-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableHead className="w-10 text-center">#</TableHead>
-                    <TableHead>الرمز</TableHead>
-                    <TableHead className="hidden sm:table-cell">الاسم</TableHead>
-                    <TableHead className="hidden md:table-cell">السوق</TableHead>
-                    <TableHead className="text-left">السعر</TableHead>
-                    <TableHead className="text-center">التقييم</TableHead>
-                    <TableHead className="hidden lg:table-cell">السبب</TableHead>
+                    <TableHead className="text-right">السهم</TableHead>
+                    <TableHead className="text-right">السعر</TableHead>
+                    <TableHead className="text-right">التغير</TableHead>
+                    <TableHead className="text-right">الحجم</TableHead>
+                    <TableHead className="text-right">RSI</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">الزخم</TableHead>
+                    <TableHead className="text-right">من القمة</TableHead>
+                    <TableHead className="text-right">المتوسطات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {results.slice(0, 20).map((row, idx) => (
-                    <TableRow key={row.symbol} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="text-center text-muted-foreground text-xs">
-                        {idx + 1}
+                  {filteredStocks.map((s) => (
+                    <TableRow key={s.ticker} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="font-mono font-bold text-sm">{s.ticker}</div>
+                        <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                          {s.name_ar || s.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{s.sector}</div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {formatNumber(s.current_price)}
+                      </TableCell>
+                      <TableCell className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
+                        {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {formatVolume(s.volume)}
+                        {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {s.rsi !== null ? formatNumber(s.rsi, 0) : '—'}
                       </TableCell>
                       <TableCell>
-                        <span className="font-bold text-sm text-foreground">
-                          {row.symbol}
-                        </span>
+                        {getCorrectionBadge(s.correction_status)}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground max-w-[120px] truncate">
-                        {row.name}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          {row.market}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-left tabular-nums text-sm" dir="ltr">
-                        {row.price != null ? row.price.toFixed(2) : '—'}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Badge className={cn('text-[10px] px-1.5 py-0', getScoreBg(row.score))}>
-                            {Math.round(row.score)}
-                          </Badge>
-                          {getLabelFromReason(row.reason) && (
-                            <Badge className={cn('text-[9px] px-1 py-0', getLabelFromReason(row.reason)!.color)}>
-                              {getLabelFromReason(row.reason)!.label}
-                            </Badge>
-                          )}
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className={cn(
+                            'font-mono text-xs font-bold',
+                            s.momentum_score > 5 ? 'text-emerald-600' :
+                            s.momentum_score < 0 ? 'text-red-600' : 'text-muted-foreground'
+                          )}>
+                            {s.momentum_score > 0 ? '+' : ''}{formatNumber(s.momentum_score, 1)}
+                          </span>
+                          {s.momentum_score > 5 && <TrendingUp className="w-3 h-3 text-emerald-500" />}
+                          {s.momentum_score < 0 && <TrendingDown className="w-3 h-3 text-red-500" />}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs text-muted-foreground max-w-[200px] truncate">
-                        {row.reason}
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {s.distance_from_52w_high !== null
+                          ? `${formatNumber(s.distance_from_52w_high, 1)}%`
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Badge variant={s.above_ma_50 ? 'default' : 'outline'} className="text-xs px-1.5">
+                            50
+                          </Badge>
+                          <Badge variant={s.above_ma_200 ? 'default' : 'outline'} className="text-xs px-1.5">
+                            200
+                          </Badge>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
