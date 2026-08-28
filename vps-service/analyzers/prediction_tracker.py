@@ -72,14 +72,18 @@ except Exception as _dq_err:
 # ════════════════════════════════════════════════════════════════════════════
 # ⚡ TIGHTENED (Aug 2026): الـ diagnostic أظهر avg loss -13.15% بسبب أوقاف واسعة.
 #   - R2 من 0.97 لـ 0.95 (وقف ≥ 5% — حماية أقوى)
-#   - R3 من 0.90 لـ 0.93 (وقف ≤ 7% — خسارة محدودة بدل 10%)
+#   - R3 من 0.90 لـ 0.91 (وقف ≤ 9% — matching atr_stop_max_pct=9.0)
 #   - R5 من 1.5 لـ 2.0 (R/R لازم ≥ 2:1 — مخاطرة مجدية)
-# النتيجة المتوقعة: avg loss ≤ -7%, win rate أعلى, profit factor > 1.0
+# النتيجة المتوقعة: avg loss ≤ -9%, win rate أعلى, profit factor > 1.0
+# FIX (2026-08-28): R3 كان 0.93 (7%) لكن atr_stop_max_pct=9.0 — ده كان بيرفض
+# كل الأسهم القيادية والانفجارية (TMGH, BIOC, NIPH, AFMC, ESRS كلها stop=9%).
 _GEOMETRY_TARGET_MIN_MULT   = 1.05   # R1: target لازم > entry × 1.05 (ربح ≥ 5%)
 _GEOMETRY_STOP_MAX_MULT      = 0.95   # R2: stop لازم < entry × 0.95 (وقف ≤ 5%)
-_GEOMETRY_STOP_MIN_MULT      = 0.93   # R3: stop لازم > entry × 0.93 (وقف ≤ 7%)
+_GEOMETRY_STOP_MIN_MULT      = 0.905  # R3: stop لازم > entry × 0.905 (وقف ≤ 9.5% — matching atr_stop_max_pct=9.0 + floating point margin)
 _GEOMETRY_TARGET_MAX_MULT    = 3.0    # R4: target لازم ≤ entry × 3.0 (منع تلوث التجزئة)
-_GEOMETRY_MIN_RR             = 2.0    # R5: R/R لازم ≥ 2.0 (مخاطرة مجدية 2:1)
+_GEOMETRY_MIN_RR             = 1.5    # R5: R/R لازم ≥ 1.5 (matching dynamic_rr_normal — was 2.0, too strict)
+# FIX (2026-08-28): كان 2.0 لكن engine_settings dynamic_rr_normal=1.5.
+# الـ 2.0 كان بيرفض صفقات R/R=1.997 (مثل TMGH) بدون سبب حقيقي.
 
 
 def enforce_geometry_guard(signal, entry_price, target_price, stop_loss):
@@ -133,12 +137,14 @@ def enforce_geometry_guard(signal, entry_price, target_price, stop_loss):
             f"(وقف < 5% — مفيش حماية كافية)"
         )
 
-    # R3: stop لازم > entry × 0.93 (وقف ≤ 7% — منع الأوقاف الواسعة القاتلة)
-    # boundary: stop = entry×0.93 (exactly 7%) مقبول
+    # R3: stop لازم > entry × 0.91 (وقف ≤ 9% — matching atr_stop_max_pct=9.0)
+    # boundary: stop = entry×0.91 (exactly 9%) مقبول
+    # FIX (2026-08-28): كان 0.93 (7%) لكن atr_stop_max_pct=9.0 — ده كان بيرفض
+    # كل الأسهم القيادية والانفجارية (التذبذب المصري عالي → ATR=9% طبيعي).
     if stop < entry * _GEOMETRY_STOP_MIN_MULT:
         raise AssertionError(
-            f"R3: stop={stop:.4f} < entry×0.93={entry*_GEOMETRY_STOP_MIN_MULT:.4f} "
-            f"(وقف > 7% — خسارة قاتلة / تلوث تجزئة)"
+            f"R3: stop={stop:.4f} < entry×0.91={entry*_GEOMETRY_STOP_MIN_MULT:.4f} "
+            f"(وقف > 9% — خسارة قاتلة / تلوث تجزئة)"
         )
 
     # R4: target لازم ≤ entry × 3.0 (منع تلوث التجزئة — أهداف خيالية)
