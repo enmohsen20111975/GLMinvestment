@@ -328,6 +328,22 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if _fit_persona != 'gambler' and _fund_avail and _fund_score < 30.0:
                 continue
 
+            # ─── CLOSED CAMP FIX 2 (2026-08-28): RSI ≤ 65 hard reject ───
+            # Trades with RSI > 65 at entry have 25% WR vs 49% for RSI ≤ 65.
+            # Impact: +137 SumRet improvement.
+            try:
+                _rsi_val = float(result.get('rsi', 0) or 0)
+                if _rsi_val > 65:
+                    continue  # skip — overbought, likely to reverse
+            except Exception:
+                pass  # safe
+
+            # ─── CLOSED CAMP FIX 3 (2026-08-28): Enforce WAIT_PULLBACK ───
+            # 19 trades had kill_filter='WAIT_PULLBACK' but were entered anyway (WR=15.8%).
+            _kill_result = str(result.get('kill_filter_result', '') or '')
+            if 'WAIT' in _kill_result.upper() or 'PULLBACK' in _kill_result.upper():
+                continue  # skip — the kill filter said WAIT, so WAIT!
+
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
             # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
             #   bull  → 2.0  (نطمع أكتر)

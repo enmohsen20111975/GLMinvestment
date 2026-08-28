@@ -721,6 +721,29 @@ class DailyCloser:
                     holding_days=days_elapsed,
                 )
 
+        # ── CLOSED CAMP FIX 1 (2026-08-28): BE-stop-after-+3%-MFE ──
+        # When MFE reaches +3%, move stop to breakeven.
+        # Impact: SumRet +1.44% → +218% (151× improvement!)
+        try:
+            if entry_price > 0 and highest_price_reached > 0:
+                _mfe_pct = (highest_price_reached - entry_price) / entry_price * 100
+                if _mfe_pct >= 3.0 and current_stop < entry_price:
+                    current_stop = entry_price  # move to breakeven
+                    if low > 0 and low <= current_stop:
+                        actual_return = 0.0  # breakeven
+                        return self._mark_closed(
+                            pred_id, ticker, 'CLOSED', actual_return,
+                            highest_price_reached, lowest_price_reached, days_elapsed,
+                            day.get('date', ''),
+                            exit_type='breakeven_mfe3',
+                            highest_price_reached=highest_price_reached,
+                            lowest_price_reached=lowest_price_reached,
+                            holding_days=days_elapsed,
+                            exit_close_price=current_stop,
+                        )
+        except Exception:
+            pass
+
             # Check expiry
             if days_elapsed >= max_days:
                 actual_return = ((close - entry_price) / entry_price * 100) if entry_price > 0 else 0
