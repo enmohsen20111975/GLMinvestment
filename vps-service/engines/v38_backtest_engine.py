@@ -886,6 +886,25 @@ def simulate_trade(
             prev = p
         future_closes = clamped
 
+    # V40.3: Data Gap Guard — carry forward last valid close when price=0.
+    # EGKSCO data has days where O=0, H=0, L=0, C=<last_close> (no trading).
+    # Without this guard, the simulator sees C < stop and triggers a FALSE stop.
+    # Example: ELKA on 2026-07-10 had C=1.24 (stale) while real price was ~1.57.
+    # Fix: replace any price <= 0 with the last known good price.
+    if len(future_closes) > 0:
+        last_good = entry if entry > 0 else (future_closes[0] if future_closes[0] > 0 else 0)
+        gap_filled = []
+        gaps_filled_count = 0
+        for p in future_closes:
+            if p <= 0:
+                gap_filled.append(last_good)
+                gaps_filled_count += 1
+            else:
+                gap_filled.append(p)
+                last_good = p
+        if gaps_filled_count > 0:
+            future_closes = gap_filled
+
     # V40: Partial exit state
     partial_taken = False
     partial_exit_price = 0.0

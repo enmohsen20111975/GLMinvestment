@@ -363,6 +363,56 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if stop >= entry or entry <= 0:
                 continue
 
+            # ─── DON'T CHASE FILTER (2026-08-28) ───────────────────────────────
+            # Analyst advice: reject entry if stock already exploded recently.
+            # Prevents "buying the top" after +20% daily pumps (UNIT, ELSH in July).
+            # Thresholds (EGX-tuned):
+            #   - daily_gain > +12%  → reject (stock exploded today, wait for pullback)
+            #   - ROC3 > +18%       → reject (3-day rally too hot)
+            #   - ROC5 > +28%       → reject (week rally too hot without rest)
+            # Exception: if stock did a base/sweep after the pump → still allowed.
+            try:
+                _prev_close_1 = closes[day_idx - 1] if day_idx >= 1 else entry
+                _prev_close_3 = closes[day_idx - 3] if day_idx >= 3 else entry
+                _prev_close_5 = closes[day_idx - 5] if day_idx >= 5 else entry
+                _daily_gain = ((entry - _prev_close_1) / _prev_close_1 * 100) if _prev_close_1 > 0 else 0
+                _roc3 = ((entry - _prev_close_3) / _prev_close_3 * 100) if _prev_close_3 > 0 else 0
+                _roc5 = ((entry - _prev_close_5) / _prev_close_5 * 100) if _prev_close_5 > 0 else 0
+
+                _chase_rejected = False
+                _chase_reason = ''
+                if _daily_gain > 12.0:
+                    _chase_rejected = True
+                    _chase_reason = f'daily_gain=+{_daily_gain:.1f}% > +12%'
+                elif _roc3 > 18.0:
+                    _chase_rejected = True
+                    _chase_reason = f'ROC3=+{_roc3:.1f}% > +18%'
+                elif _roc5 > 28.0:
+                    _chase_rejected = True
+                    _chase_reason = f'ROC5=+{_roc5:.1f}% > +28%'
+
+                if _chase_rejected:
+                    continue
+            except Exception:
+                pass  # safe fallback — don't block on computation errors
+
+            # ─── CORRECTION DETECTION (2026-08-28) ───────────────────────────
+            # Analyst advice: if stock fell -5% or more from its 5-day high,
+            # it's in a correction → WAIT instead of BUY (unless surge hunter).
+            # Prevents entering mid-correction (RAYA pattern in July).
+            # Exception: if this is a surge_hunter signal (momentum ignition),
+            # allow it — the hunter already verified volume + maker bull.
+            _is_surge_signal = result.get('proofs', {}).get('surge_hunter', False)
+            if not _is_surge_signal and day_idx >= 5:
+                try:
+                    _recent_high = max(highs[max(0, day_idx - 5):day_idx + 1])
+                    _drawdown_from_high = ((_recent_high - entry) / _recent_high * 100) if _recent_high > 0 else 0
+                    # لو السعر نزل أكتر من 5% من آخر high خلال 5 أيام → في تصحيح
+                    if _drawdown_from_high >= 5.0:
+                        continue
+                except Exception:
+                    pass  # safe fallback
+
             future_closes = closes[day_idx + 1:]
             future_dates = dates[day_idx + 1:]
             future_atrs = atrs[day_idx + 1:]
