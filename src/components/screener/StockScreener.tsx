@@ -99,21 +99,98 @@ function getCorrectionBadge(status: string) {
   );
 }
 
-// ─── Mini Sparkline (ASCII-based, no external deps) ──────────────────────────
+// ─── Mini Sparkline (real price data) ────────────────────────────────────────
 
-function MiniSparkline({ value, max, min }: { value: number; max: number; min: number }) {
-  if (max === min) return <span className="text-xs text-muted-foreground">—</span>;
-  const pct = ((value - min) / (max - min)) * 100;
-  const bars = Math.round(pct / 10);
+interface SparklineData {
+  prices: number[];
+  change_pct: number;
+}
+
+function MiniSparkline({ ticker }: { ticker: string }) {
+  const [data, setData] = useState<SparklineData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/stocks/sparkline?ticker=${encodeURIComponent(ticker)}&days=30`)
+      .then(res => res.json())
+      .then(json => {
+        if (!cancelled && json.success && json.prices?.length > 1) {
+          setData({ prices: json.prices, change_pct: json.change_pct });
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [ticker]);
+
+  if (loading) return <div className="w-20 h-8 bg-muted/30 animate-pulse rounded" />;
+  if (!data) return <span className="text-xs text-muted-foreground">—</span>;
+
+  const max = Math.max(...data.prices);
+  const min = Math.min(...data.prices);
+  const range = max - min || 1;
+  const points = data.prices.map((p, i) => {
+    const x = (i / (data.prices.length - 1)) * 80;
+    const y = 20 - ((p - min) / range) * 18;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const isUp = data.change_pct >= 0;
+  const color = isUp ? '#10b981' : '#ef4444';
+
   return (
-    <div className="flex items-end gap-px h-4">
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div
-          key={i}
-          className={cn('w-1 rounded-sm', i < bars ? 'bg-emerald-500' : 'bg-muted')}
-          style={{ height: `${Math.max(2, (i + 1) * 10)}%` }}
+    <div className="flex items-center gap-1">
+      <svg width="80" height="20" className="overflow-visible">
+        <polyline
+          points={points}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-      ))}
+      </svg>
+      <span className={cn('text-xs font-mono', isUp ? 'text-emerald-600' : 'text-red-600')}>
+        {isUp ? '+' : ''}{data.change_pct.toFixed(1)}%
+      </span>
+    </div>
+  );
+}
+
+// ─── Sector Performance Comparison ──────────────────────────────────────────
+
+function SectorComparison({ stockSector, stockChange }: { stockSector: string; stockChange: number }) {
+  const [sectorAvg, setSectorAvg] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!stockSector) return;
+    fetch(`/api/stocks/screener?market=EGX&sector=${encodeURIComponent(stockSector)}&limit=500&sort=change_percent&order=desc`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data?.length > 0) {
+          const avg = json.data.reduce((s: number, r: ScreenerStock) => s + r.change_percent, 0) / json.data.length;
+          setSectorAvg(avg);
+        }
+      })
+      .catch(() => {});
+  }, [stockSector]);
+
+  if (sectorAvg === null) return <span className="text-xs text-muted-foreground">—</span>;
+  const diff = stockChange - sectorAvg;
+  const isOutperform = diff > 0;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">
+        القطاع: <span className={sectorAvg >= 0 ? 'text-emerald-600 font-mono' : 'text-red-600 font-mono'}>
+          {sectorAvg >= 0 ? '+' : ''}{sectorAvg.toFixed(2)}%
+        </span>
+      </span>
+      <span className={cn('text-xs font-mono', isOutperform ? 'text-emerald-600' : 'text-red-600')}>
+        {isOutperform ? '▲' : '▼'} {Math.abs(diff).toFixed(2)}% {isOutperform ? 'أقوى' : 'أضعف'}
+      </span>
     </div>
   );
 }
@@ -449,11 +526,13 @@ export function StockScreener() {
                     <TableHead className="text-right">السهم</TableHead>
                     <TableHead className="text-right">السعر</TableHead>
                     <TableHead className="text-right">التغير</TableHead>
+                    <TableHead className="text-right">الرسم البياني (30 يوم)</TableHead>
                     <TableHead className="text-right">الحجم</TableHead>
                     <TableHead className="text-right">RSI</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الزخم</TableHead>
                     <TableHead className="text-right">من القمة</TableHead>
+                    <TableHead className="text-right">مقارنة بالقطاع</TableHead>
                     <TableHead className="text-right">المتوسطات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -472,6 +551,9 @@ export function StockScreener() {
                       </TableCell>
                       <TableCell className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
                         {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
+                      </TableCell>
+                      <TableCell>
+                        <MiniSparkline ticker={s.ticker} />
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {formatVolume(s.volume)}
@@ -500,6 +582,9 @@ export function StockScreener() {
                         {s.distance_from_52w_high !== null
                           ? `${formatNumber(s.distance_from_52w_high, 1)}%`
                           : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <SectorComparison stockSector={s.sector} stockChange={s.change_percent} />
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
