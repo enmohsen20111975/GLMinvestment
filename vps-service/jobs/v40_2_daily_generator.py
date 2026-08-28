@@ -342,7 +342,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _regime = result.get('market_regime_trend', 'range')
                 _min_rr = get_dynamic_min_rr(_regime)
             except Exception:
-                _min_rr = 1.5  # safe fallback if settings unavailable
+                _min_rr = 2.0  # C1 floor if settings unavailable
             if r_mult < _min_rr:
                 continue
 

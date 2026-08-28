@@ -982,7 +982,7 @@ class V38BacktestEngine:
         w_fund: int = 15,
         w_sector: int = 10,
         buy_threshold: int = 75,
-        rr1: float = 1.5,
+        rr1: float = 2.0,
         rr2: float = 3.0,
         min_confidence: int = 60,
         max_holding_days: int = 30,
@@ -1514,7 +1514,7 @@ class V38BacktestEngine:
             if risk > 0:
                 rr_floor = float(getattr(market_profile, 'dynamic_rr_normal', 1.5))
                 # Rule 18 absolute floor — never go below 1.5 regardless of market
-                rr_floor = max(rr_floor, 1.5)
+                rr_floor = max(rr_floor, 2.0)
                 cur_rr1 = abs(tp1 - entry) / risk
                 if cur_rr1 < rr_floor:
                     tp1 = entry + risk * rr_floor
