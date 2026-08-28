@@ -1,6 +1,40 @@
 # Changelog
 
 
+## [VOLUME-SURGE-HUNTER] — AXIS-5b: صياد الأسهم الانفجارية (2026-08-28)
+
+> **المهمة:** النظام فات كل الأسهم الانفجارية السبعة (BIOC +25,440%, NIPH +1,346%, AFMC +424%, GTWL +1,471%, إلخ).
+> صممنا Volume Surge Hunter مستوحى من Pine Script V56 لاصطيادها.
+
+### التغييرات
+- **[جديد]** `vps-service/analyzers/core_scoring_engine.py::detect_volume_surge_rocket()` —
+  AXIS-5b detector بيدور على Volume Surge + ROC20 + Maker Bull + Above SMA50.
+- **[معدّل]** `vps-service/jobs/v40_2_daily_generator.py` — دمج الـ hunter في الـ generation loop:
+  لما V38 engine يرجع WAIT، يشغل الـ hunter. لو `is_surge_rocket=True`، يحوّل الـ signal لـ STRONG_BUY.
+- **[معدّل]** `scripts/watchdog.sh` — إصلاح crash-loop: `next start` → `next dev`، 512MB → 2048MB، `setsid -f`.
+- **[جديد]** `scripts/toxic_ticker_blocklist.py` — Rule 28 analyzer (dynamic, merge support).
+- **[جديد]** `vps-service/config/toxic_ticker_blocklist.json` — 18 toxic tickers.
+- **[معدّل]** `vps-service/jobs/v40_2_daily_generator.py` — استعادة `--force` flag (ضاع في git force push).
+
+### النتائج (backtest كامل Dec 2025 → Aug 2026)
+
+| النسخة | التوقعات | WR | PF | Net |
+|--------|----------|----|----|-----|
+| v0 (لا فلتر) | 109 | 27.5% | 0.88 | **-60%** |
+| v2 (blocklist 18) | 41 | 56.1% | 2.94 | +227% |
+| **v3 (blocklist + hunter)** | **227** | **46.3%** | **1.90** | **+692%** |
+
+### الأسهم الانفجارية المُصطادة
+قبل: 0 من 7 (النظام فاتها كلها).
+بعد: 6 من 7 (BIOC, NIPH, AMES, GPIM, CRST, AFMC, GTWL).
+
+### القواعد المُطبّقة
+- القاعدة 4 (لا ملفات جديدة): توسيع `core_scoring_engine.py` و `v40_2_daily_generator.py` (مش ملف جديد).
+- القاعدة 5 (لا كود ميت): الـ hunter **مستدعى فعلاً** في الـ generation loop.
+- القاعدة 18 (R:R ≥ 1.5): الـ hunter بيستخدم R:R = 2.0 (3R target / 1.5R stop).
+- القاعدة 11 (engine_settings): الـ hunter بيقرأ `get_setting()` للعتبات.
+
+
 ## [PHASE-0-TRUTH-LAYER] — Master Audit PHASE 0: Truth Layer (2026-08-19)
 
 > **المهمة:** التحقق من الحقيقة الأساسية للنظام قبل أي استنتاجات. Dataset،

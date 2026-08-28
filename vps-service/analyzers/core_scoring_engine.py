@@ -1223,6 +1223,171 @@ def detect_explosive_rocket(
         }
 
 
+def detect_volume_surge_rocket(
+    closes: List[float],
+    highs: List[float],
+    lows: List[float],
+    opens: List[float],
+    volumes: List[float],
+) -> Dict[str, Any]:
+    """
+    AXIS-5b: Volume Surge Hunter — صياد الأسهم الانفجارية بالـ Volume Surge.
+
+    مكمل لـ detect_explosive_rocket (اللي بيدور على VCP/Dry-up).
+    بيدور على نمط مختلف: انفجار السيولة المفاجئ (Volume Surge) قبل ما السهم يطير.
+
+    مستوحى من Pine Script V56:
+      - maker_bull = (volume_surge AND delta_vol > 0) OR imbalance_bull
+      - rs_positive (ROC20 > 0)
+      - not deeply_extended (ext_atr < 2.2)
+      - above SMA50
+
+    الشروط (6 عوامل تتراكم في score 0-100):
+      1. Volume Surge (25pts): vol > MA20 + 1.5×STD20
+      2. ROC20 > +15% (20pts): زخم قوي آخر 20 يوم
+      3. Above SMA50 (15pts): فوق المتوسط
+      4. Maker Bull (20pts): delta_vol > 0 OR imbalance_bull
+      5. Not deeply extended (10pts): ext_atr < 2.2 (لسه مش طار)
+      6. ROC5 > +3% (10pts): زخم قصير المدى
+
+    Returns:
+        {is_surge_rocket: bool, score: float (0-100), reason: str,
+         entry, target (3R), stop (1.5R → R:R=2.0), details: dict}
+    """
+    if not closes or not volumes or len(closes) < 25 or len(volumes) < 25:
+        return {
+            'is_surge_rocket': False, 'score': 0.0,
+            'reason': 'بيانات غير كافية (< 25 شمعة)',
+            'entry': 0, 'target': 0, 'stop': 0,
+            'details': {'closes_len': len(closes), 'volumes_len': len(volumes)},
+        }
+
+    # ── Compute indicators ────────────────────────────────────────────────
+    # EMA20
+    k = 2 / 21
+    ema20 = sum(closes[:20]) / 20
+    for v in closes[20:]:
+        ema20 = v * k + ema20 * (1 - k)
+
+    # SMA50
+    sma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else sum(closes) / len(closes)
+
+    # ATR(14)
+    trs = []
+    for i in range(max(1, len(closes) - 14), len(closes)):
+        h, l = highs[i], lows[i]
+        prev_c = closes[i - 1]
+        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+        trs.append(tr)
+    atr_val = sum(trs) / len(trs) if trs else 0.0
+
+    # ROC20 and ROC5
+    roc20 = 0.0
+    if len(closes) >= 21 and closes[-21] > 0:
+        roc20 = (closes[-1] - closes[-21]) / closes[-21] * 100
+    roc5 = 0.0
+    if len(closes) >= 6 and closes[-6] > 0:
+        roc5 = (closes[-1] - closes[-6]) / closes[-6] * 100
+
+    # Volume surge (V56: vol > ma + 1.5*std)
+    vol_last_20 = volumes[-21:-1] if len(volumes) >= 21 else volumes[:-1]
+    avg_vol = sum(vol_last_20) / len(vol_last_20) if vol_last_20 else 0.0
+    vol_std = 0.0
+    if len(vol_last_20) >= 2 and avg_vol > 0:
+        vol_std = (sum((v - avg_vol) ** 2 for v in vol_last_20) / len(vol_last_20)) ** 0.5
+    dyn_surge = avg_vol + (vol_std * 1.5)
+    vol_surge = volumes[-1] > dyn_surge if avg_vol > 0 else False
+    vol_ratio = volumes[-1] / (avg_vol or 1)
+
+    # Buy/sell volume (V56 logic)
+    denom = highs[-1] - lows[-1] if (highs[-1] - lows[-1]) != 0 else 0.001
+    buy_vol = volumes[-1] * ((closes[-1] - lows[-1]) / denom)
+    sell_vol = volumes[-1] - buy_vol
+    delta_vol = buy_vol - sell_vol
+    imbalance_bull = buy_vol > sell_vol * 3 and closes[-1] > opens[-1]
+    maker_bull = (vol_surge and delta_vol > 0) or imbalance_bull
+
+    above_sma50 = closes[-1] > sma50 if sma50 > 0 else False
+    extension_atr = (closes[-1] - ema20) / atr_val if atr_val > 0 else 0.0
+    deeply_extended = extension_atr > 2.2
+
+    # ── Score (0-100) ──────────────────────────────────────────────────────
+    score = 0.0
+    reasons: List[str] = []
+
+    # 1. Volume surge (25 points)
+    if vol_surge:
+        score += 25
+        reasons.append(f'Volume surge {vol_ratio:.1f}x')
+    elif vol_ratio >= 1.3:
+        score += 12
+        reasons.append(f'Volume semi-surge {vol_ratio:.1f}x')
+
+    # 2. ROC20 (20 points)
+    if roc20 > 15:
+        score += 20
+        reasons.append(f'ROC20=+{roc20:.1f}%')
+    elif roc20 > 10:
+        score += 12
+        reasons.append(f'ROC20=+{roc20:.1f}%')
+    elif roc20 > 5:
+        score += 5
+        reasons.append(f'ROC20=+{roc20:.1f}%')
+
+    # 3. Above SMA50 (15 points)
+    if above_sma50:
+        score += 15
+        reasons.append('فوق SMA50')
+
+    # 4. Maker bull (20 points)
+    if maker_bull:
+        score += 20
+        reasons.append('ميكرز بيشتري')
+    elif delta_vol > 0:
+        score += 8
+        reasons.append('delta +')
+
+    # 5. Not deeply extended (10 points)
+    if not deeply_extended:
+        score += 10
+        reasons.append(f'ext={extension_atr:+.2f}')
+
+    # 6. ROC5 (10 points)
+    if roc5 > 3:
+        score += 10
+        reasons.append(f'ROC5=+{roc5:.1f}%')
+
+    # ── Decision: rocket requires volume surge + positive momentum ──────────
+    is_rocket = score >= 60 and vol_surge and roc20 > 5
+
+    entry = closes[-1]
+    target = entry + (atr_val * 3.0)  # 3R target
+    stop = entry - (atr_val * 1.5)    # 1.5R stop → R:R = 2.0
+
+    return {
+        'is_surge_rocket': is_rocket,
+        'score': min(score, 100.0),
+        'reason': ' | '.join(reasons) if reasons else 'لا توجد إشارات',
+        'entry': entry,
+        'target': target,
+        'stop': stop,
+        'atr': atr_val,
+        'details': {
+            'vol_surge': vol_surge,
+            'vol_ratio': round(vol_ratio, 2),
+            'avg_vol': round(avg_vol, 2),
+            'roc20': round(roc20, 1),
+            'roc5': round(roc5, 1),
+            'above_sma50': above_sma50,
+            'maker_bull': maker_bull,
+            'imbalance_bull': imbalance_bull,
+            'delta_vol': round(delta_vol, 0),
+            'ext_atr': round(extension_atr, 2),
+            'deeply_extended': deeply_extended,
+        },
+    }
+
+
 # ============================================================================
 # CORE SCORING ENGINE
 # ============================================================================

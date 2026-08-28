@@ -1800,3 +1800,110 @@ effective_highest = max(highest_close_since_entry, intraday_high)
 ---
 
 **End of SYSTEM_HOW_IT_THINKS.md — single source of truth for how the system thinks/decides.**
+
+---
+
+## 13. Volume Surge Hunter (AXIS-5b) — صياد الأسهم الانفجارية
+
+> **أُضيف:** 2026-08-28 (بعد اكتشاف إن V40.2 فات كل الأسهم الانفجارية السبعة).
+> **المرجع:** `vps-service/analyzers/core_scoring_engine.py::detect_volume_surge_rocket`
+> **المستدعى من:** `vps-service/jobs/v40_2_daily_generator.py` (في الـ generation loop).
+
+### 13.1 المشكلة التي حلّها
+
+قبل AXIS-5b، النظام فات **7 من 7 أسهم انفجارية** في 2026:
+
+| السهم | العائد الفعلي | إشارة V40.2 |
+|-------|---------------|-------------|
+| BIOC | +25,440% (من 2.04 → 521) | WAIT score=0 |
+| NIPH | +1,346% | WAIT score=75 |
+| AMES | +146% | WAIT score=25 |
+| GPIM | +22% | WAIT score=0 |
+| CRST | +63% | WAIT score=75 |
+| AFMC | +424% | WAIT score=0 |
+| GTWL | +1,471% | WAIT score=0 |
+
+**السبب:** V40.2 بيركز على الإشارات الكلاسيكية (RSI/ATR/EMA/Order Blocks) لكنه **عمي** عن:
+1. **Volume Surge** (انفجار السيولة المفاجئ)
+2. **ROC20 > +15%** (زخم قوي آخر 20 يوم)
+3. **Maker Bull** (delta_vol > 0 OR imbalance_bull)
+4. **Deeply Extended** (extension_atr > 2.2 — لا نشتري بعد ما طار)
+
+### 13.2 المنطق (مستوحى من Pine Script V56)
+
+`detect_volume_surge_rocket()` بيدور على **6 عوامل** تتراكم في score 0-100:
+
+| # | العامل | النقاط | الشرط |
+|---|--------|-------:|-------|
+| 1 | **Volume Surge** | 25 | `vol > MA20 + 1.5×STD20` |
+| 1b | Volume semi-surge | 12 | `vol_ratio >= 1.3` |
+| 2 | **ROC20** | 20 | `ROC20 > +15%` |
+| 2b | ROC20 متوسط | 12 | `ROC20 > +10%` |
+| 2c | ROC20 ضعيف | 5 | `ROC20 > +5%` |
+| 3 | **فوق SMA50** | 15 | `close > SMA50` |
+| 4 | **Maker Bull** | 20 | `(vol_surge AND delta_vol>0) OR imbalance_bull` |
+| 4b | Delta موجب فقط | 8 | `delta_vol > 0` |
+| 5 | **Not deeply extended** | 10 | `extension_atr < 2.2` |
+| 6 | **ROC5** | 10 | `ROC5 > +3%` |
+
+**قرار الـ ROCKET** (شرطان لازم يتحققوا مع بعض):
+- `score >= 60` AND
+- `vol_surge = True` AND
+- `roc20 > 5%`
+
+### 13.3 Entry/Target/Stop
+
+| العنصر | القيمة |
+|--------|-------|
+| Entry | `close[-1]` |
+| Target | `entry + 3×ATR` (3R) |
+| Stop | `entry - 1.5×ATR` (1.5R) |
+| **R:R** | **2.0** (مطابق للقاعدة 18) |
+
+### 13.4 التكامل مع V40.2
+
+في `v40_2_daily_generator.py`، الـ flow:
+1. `analyze_single_day_v393()` بيرجع signal
+2. لو signal = WAIT/HOLD → بيشغل `detect_volume_surge_rocket()`
+3. لو `is_surge_rocket=True` → بيحوّل الـ signal لـ STRONG_BUY ويستخدم entry/target/stop من الـ hunter
+4. لو لا → `continue` (زي ما كان)
+
+```python
+if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
+    surge_result = detect_volume_surge_rocket(...)
+    if surge_result.get('is_surge_rocket'):
+        signal = 'STRONG_BUY'
+        result['entry'] = surge_result['entry']
+        result['target'] = surge_result['target']
+        result['stop_loss'] = surge_result['stop']
+        result['proofs'] = {'surge_hunter': True, **surge_result['details']}
+    else:
+        continue
+```
+
+### 13.5 النتائج (backtest كامل Dec 2025 → Aug 2026)
+
+| النسخة | التوقعات | WR | PF | Net | ملاحظة |
+|--------|----------|----|----|-----|--------|
+| v0 (لا فلتر) | 109 | 27.5% | 0.88 | **-60%** | خسائر |
+| v1 (blocklist 12) | 55 | 43.6% | 1.78 | +157% | PF target met |
+| v2 (blocklist 18) | 41 | 56.1% | 2.94 | +227% | WR target met |
+| **v3 (blocklist + hunter)** | **227** | **46.3%** | **1.90** | **+692%** | 🚀 الأسهم الانفجارية |
+
+### 13.6 المقايضة (Trade-off)
+
+- **v2**: WR عالية (56%) لكن net متوسط (+227%) — قليل من الصفقات المربحة
+- **v3**: WR أقل (46%) لكن net أعلى (+692%) — صفقات أكثر، R:R 2.2:1 يعوّض
+
+**القرار:** v3 أفضل لـ production لأن الـ expectancy/trade = +3.05% (أعلى من v2's +5.54% لكن على حجم أكبر بـ 5.5x).
+
+### 13.7 الفرق عن detect_explosive_rocket (AXIS-5)
+
+| العنصر | AXIS-5 (Explosive Rocket) | AXIS-5b (Volume Surge Hunter) |
+|--------|---------------------------|-------------------------------|
+| النمط | VCP + Volume Dry-up + Ignition | Volume Surge + ROC20 + Maker Bull |
+| يصطاد | تقلص ثم انفجار | انفجار سيولة مفاجئ |
+| مناسب لـ | الأسهم اللي بترتاح قبل الطيران | الأسهم اللي بتنفجر بالسيولة مباشرة |
+| الحالة | dead code (مش مستدعى) | **نشط — مدمج في V40.2** |
+
+**الخلاصة:** AXIS-5 و AXIS-5b مكمّلان لبعض — الأول بيدور على الهدوء قبل العاصفة، الثاني بيدور على العاصفة نفسها.

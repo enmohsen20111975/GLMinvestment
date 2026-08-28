@@ -58,6 +58,7 @@ PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine
 from analyzers.liquidity_filter import set_strict_kill_filters
 from analyzers.prediction_tracker import PredictionTracker
 from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
+from analyzers.core_scoring_engine import detect_volume_surge_rocket
 
 # ─── Rule 28: Toxic Ticker Blocklist ───
 _BLOCKLIST_PATH = Path(__file__).resolve().parents[1] / 'config' / 'toxic_ticker_blocklist.json'
@@ -281,6 +282,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     signals_by_date = defaultdict(list)
     total_tickers = len(tickers)
     processed = 0
+    surge_picks_this_run = 0  # AXIS-5b: counter for Volume Surge Hunter picks
 
     for ticker in tickers:
         processed += 1
@@ -328,7 +330,32 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # الـ R/R >= 1.5 بـ يـ ensure جودة الصفقات (dynamic_rr_normal=1.5).
             # كمان sort بـ evidence_count ↓ → أعلى جودة بتـ pick أولاً.
             if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
-                continue
+                # ─── VOLUME SURGE HUNTER (AXIS-5b): صياد الأسهم الانفجارية ───
+                # لو V38 engine ما اكتشفش signal، شغل الـ Volume Surge Hunter.
+                # بيدور على: Volume Surge + ROC20 + maker_bull + above SMA50.
+                # مستوحى من Pine Script V56 (maker_bull + rs_positive + valid_rr).
+                # بيصطاد الأسهم اللي بتبدأ انفجار بالسيولة (زي BIOC/NIPH/AMES).
+                try:
+                    surge_result = detect_volume_surge_rocket(
+                        closes[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1],
+                        opens[:day_idx+1], volumes[:day_idx+1],
+                    )
+                except Exception:
+                    surge_result = {'is_surge_rocket': False}
+                if surge_result.get('is_surge_rocket'):
+                    # الـ hunter اكتشف surge rocket — اعتبره STRONG_BUY
+                    signal = 'STRONG_BUY'
+                    result['entry'] = surge_result['entry']
+                    result['target'] = surge_result['target']
+                    result['stop_loss'] = surge_result['stop']
+                    result['score'] = surge_result['score']
+                    result['signal'] = 'STRONG_BUY'
+                    _surge_proofs = {'surge_hunter': True}
+                    _surge_proofs.update(surge_result.get('details', {}))
+                    result['proofs'] = _surge_proofs
+                    surge_picks_this_run += 1
+                else:
+                    continue
 
             entry = result['entry']
             target = result['target']
