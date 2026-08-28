@@ -2009,12 +2009,24 @@ class DailyCloser:
                                             exit_type='target_hit', exit_close_price=_exit_px,
                                             highest_price_reached=highest_price_reached,
                                             lowest_price_reached=lowest_price_reached)
-                if stop_loss > 0 and low <= stop_loss:
-                    _exit_px = stop_loss
+                # ── CLOSED CAMP FIX 1 (2026-08-28): BE-stop-after-+3%-MFE ──
+                # BEFORE checking stop_loss, check if MFE reached +3%.
+                # If yes, replace stop_loss with breakeven (entry_price).
+                # This rescues 33% of trades that went up then crashed back.
+                _effective_stop = stop_loss
+                if entry_price > 0 and highest_price_reached > 0:
+                    _mfe_pct = (highest_price_reached - entry_price) / entry_price * 100
+                    if _mfe_pct >= 3.0:
+                        _effective_stop = entry_price  # move to breakeven!
+                
+                if _effective_stop > 0 and low <= _effective_stop:
+                    _exit_px = _effective_stop
                     actual_return = ((_exit_px - entry_price) / entry_price * 100) if entry_price > 0 else 0
-                    return self._mark_closed(pred_id, ticker, 'STOPPED', actual_return,
+                    _exit_status = 'CLOSED' if _effective_stop == entry_price else 'STOPPED'
+                    _exit_type = 'breakeven_mfe3' if _effective_stop == entry_price else 'stop_loss'
+                    return self._mark_closed(pred_id, ticker, _exit_status, actual_return,
                                             highest_price, lowest_price, days_elapsed, day.get('date', ''),
-                                            exit_type='stop_loss', exit_close_price=_exit_px,
+                                            exit_type=_exit_type, exit_close_price=_exit_px,
                                             highest_price_reached=highest_price_reached,
                                             lowest_price_reached=lowest_price_reached)
             else:  # SELL signals: target is below, stop is above
