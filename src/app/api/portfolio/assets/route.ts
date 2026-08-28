@@ -49,19 +49,11 @@ export async function GET(req: NextRequest) {
           value: h.total_value
         }));
       } else {
-        // Generate mock 30-day history if empty to demonstrate functionality
-        const mockHistory = [];
-        const baseValue = data.summary?.total_value || data.summary?.total_current_value || 100000;
-        for(let i=30; i>=0; i--) {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          const noise = (Math.random() - 0.5) * 5000;
-          mockHistory.push({
-            date: d.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
-            value: Math.max(0, baseValue - (i * 1000) + noise)
-          });
-        }
-        data.history = mockHistory;
+        // CRITICAL FIX (2026-08-28): Previously generated Math.random() mock history!
+        // This is a financial platform — fake portfolio history = legal liability.
+        // Now returns empty array with message instead of fake data.
+        data.history = [];
+        data.history_message = 'لا يوجد سجل محفظة تاريخي بعد. سيظهر السجل عند تشغيل cron الـ portfolio tracker.';
       }
     }
 

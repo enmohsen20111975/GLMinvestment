@@ -398,9 +398,10 @@ class HistoricalPredictionGenerator:
                 # Only save predictions with clear signals (not HOLD)
                 # Allow BUY, STRONG BUY, ACCUMULATE, SELL, REDUCE
                 if analysis['signal'] in ['HOLD', '']:
-                    # For HOLD, still save but with lower priority
-                    if random.random() > 0.3:  # 70% chance to skip HOLD
-                        continue
+                    # CRITICAL FIX (2026-08-28): كان random.random() > 0.3 (70% skip HOLD)
+                    # ده معناه 30% من إشارات HOLD كانت بتدخل عشوائياً — مش reproducible!
+                    # دلوقتي: نتجاهل كل إشارات HOLD (deterministic) — لو محتاجينها نضيفها بـ flag
+                    continue  # skip all HOLD signals deterministically
 
                 # Calculate expiry date (1 month from prediction)
                 pred_date = datetime.strptime(date, '%Y-%m-%d')

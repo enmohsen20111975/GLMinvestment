@@ -998,9 +998,11 @@ class UnifiedLearningEngine:
             
             # Apply adjustments
             if no_improvement_count >= 10:
-                # Radical reset
-                params.confidence_threshold = 60 + random.randint(0, 20)
-                iteration['changes'].append(f"Radical reset: confidence -> {params.confidence_threshold}")
+                # Radical reset — بدل random.randint، استخدم قيمة ثابتة (70)
+                # CRITICAL FIX (2026-08-28): random كان بيخلي النظام غير reproducible
+                # لو احتجنا radical reset مختلف كل مرة، لازم يكون deterministic (hash-based)
+                params.confidence_threshold = 70
+                iteration['changes'].append(f"Radical reset: confidence -> {params.confidence_threshold} (deterministic)")
                 no_improvement_count = 0
             else:
                 # Apply impacts and Bayesian

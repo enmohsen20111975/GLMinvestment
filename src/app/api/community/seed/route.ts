@@ -102,11 +102,24 @@ const POST_TEMPLATES: Record<string, string[]> = {
 };
 
 export async function GET(request: NextRequest) {
-  return seedDatabase();
+  // CRITICAL FIX (2026-08-28): Disabled — generates fake community data
+  // (fake users, fake posts, fake success stories). This is a financial platform.
+  return NextResponse.json({
+    success: false,
+    disabled: true,
+    error: 'تم إيقاف توليد بيانات المجتمع المُصطنعة — هذا تطبيق إنتاجي',
+    message: 'Community seeder has been removed. Use real user-generated content only.',
+  }, { status: 410 });
 }
 
 export async function POST(request: NextRequest) {
-  return seedDatabase();
+  // CRITICAL FIX (2026-08-28): Disabled — generates fake community data
+  return NextResponse.json({
+    success: false,
+    disabled: true,
+    error: 'تم إيقاف توليد بيانات المجتمع المُصطنعة — هذا تطبيق إنتاجي',
+    message: 'Community seeder has been removed. Use real user-generated content only.',
+  }, { status: 410 });
 }
 
 async function seedDatabase() {

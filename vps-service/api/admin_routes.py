@@ -2029,9 +2029,10 @@ def _adjust_parameters(current_params: dict, win_rate: float, profit_factor: flo
             # كمل في نفس الاتجاه
             adjustments_made.append('🟢 تحسن! استمر في نفس الاتجاه')
         else:
-            # تعديل بسيط
-            new_params['min_score_for_signal'] = current_params.get('min_score_for_signal', 65) + random.choice([-2, 1, 2])
-            adjustments_made.append('🟡 Fine-tuning للوصول للهدف')
+            # تعديل بسيط — بدل random.choice، زود 1 نقطة ثابتة (deterministic)
+            # CRITICAL FIX (2026-08-28): random.choice كان بيخلي النظام غير reproducible
+            new_params['min_score_for_signal'] = current_params.get('min_score_for_signal', 65) + 1
+            adjustments_made.append('🟡 Fine-tuning للوصول للهدف (+1 deterministic)')
     
     # ========== 3. تطبيق المعاملات المثبتة ==========
     # إذا فشلنا مرات كتير، نرجع للمعاملات المثبتة
@@ -3954,17 +3955,26 @@ def get_sessions_analytics(days):
 
 
 def get_resource_usage_analytics(hours):
-    """استخدام الموارد."""
-    # بيانات محاكاة - يمكن ربطها بـ actual metrics
-    import random
-    
+    """استخدام الموارد.
+
+    CRITICAL FIX (2026-08-28): Previously returned random.randint() fake metrics.
+    This is a financial platform — fake analytics = legal liability.
+    Now returns zeros with NOT_TRACKED status until real metrics are implemented.
+
+    To enable real metrics, integrate with:
+    - psutil for system metrics
+    - sqlite3 for db_queries count
+    - Redis for cache_hits/misses
+    """
     return {
-        "api_calls": random.randint(100, 1000),
-        "db_queries": random.randint(500, 5000),
-        "cache_hits": random.randint(200, 2000),
-        "cache_misses": random.randint(50, 500),
-        "avg_response_time_ms": random.randint(50, 200),
-        "period_hours": hours
+        "api_calls": 0,
+        "db_queries": 0,
+        "cache_hits": 0,
+        "cache_misses": 0,
+        "avg_response_time_ms": 0,
+        "period_hours": hours,
+        "status": "NOT_TRACKED",
+        "message": "Metrics tracking not implemented. All values are 0 (not random)."
     }
 
 

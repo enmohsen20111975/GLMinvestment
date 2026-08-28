@@ -25,9 +25,31 @@ const SAMPLE_RECOMMENDATIONS = [
 ];
 
 export async function POST(request: NextRequest) {
+  // CRITICAL FIX (2026-08-28): Disabled — generates FAKE expert recommendations
+  // (محلل A, محلل B, etc.) with fake prices. This is a financial platform —
+  // fake recommendations = legal liability + mixes with real data in stocks.db.
+  return NextResponse.json({
+    success: false,
+    disabled: true,
+    error: 'تم إيقاف توليد توقعات الخبراء المُصطنعة — هذا تطبيق إنتاجي',
+    message: 'Expert recommendation seeder removed. Use real analyst data only.',
+  }, { status: 410 });
+}
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    disabled: true,
+    error: 'تم إيقاف توليد توقعات الخبراء المُصطنعة — هذا تطبيق إنتاجي',
+  }, { status: 410 });
+}
+
+// ─── OLD CODE (disabled — kept for reference) ─────────────────────────────
+/*
+async function _seedExperts() {
   try {
     const db = new Database(STOCKS_DB);
-    
+
     // Create table if not exists
     db.exec(`
       CREATE TABLE IF NOT EXISTS ExpertRecommendation (
@@ -134,6 +156,8 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+*/
 
 export async function GET(request: NextRequest) {
   return POST(request);
