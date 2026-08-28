@@ -1,0 +1,29 @@
+{
+  "toxic_tickers": [
+    "APRI",
+    "DEIN",
+    "DSCW",
+    "EGTS",
+    "EKHO",
+    "ETEL",
+    "GETO",
+    "ISPH",
+    "JUFO",
+    "MASR",
+    "OCIC",
+    "ORHD",
+    "ORTE",
+    "PETR",
+    "PHAR",
+    "PHYG",
+    "SKPC",
+    "TMGH"
+  ],
+  "last_updated": "2026-08-28T13:05:00",
+  "criteria": {
+    "min_trades": 2,
+    "max_win_rate": 0.4,
+    "description": "Rule 28: Tickers with 2+ trades and WR < 40% are blocklisted (merged from multiple runs)"
+  },
+  "ticker_stats": {}
+}

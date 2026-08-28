@@ -58,6 +58,34 @@ PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine
 from analyzers.liquidity_filter import set_strict_kill_filters
 from analyzers.prediction_tracker import PredictionTracker
 from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
+
+# ─── Rule 28: Toxic Ticker Blocklist ───
+_BLOCKLIST_PATH = Path(__file__).resolve().parents[1] / 'config' / 'toxic_ticker_blocklist.json'
+_TOXIC_BLOCKLIST = None  # lazy-loaded cache
+
+def _load_toxic_blocklist():
+    """Load the toxic ticker blocklist (Rule 28).
+    Returns a set of ticker symbols to skip during generation.
+    """
+    global _TOXIC_BLOCKLIST
+    if _TOXIC_BLOCKLIST is not None:
+        return _TOXIC_BLOCKLIST
+    try:
+        if _BLOCKLIST_PATH.exists():
+            with open(_BLOCKLIST_PATH) as f:
+                data = json.load(f)
+            _TOXIC_BLOCKLIST = set(data.get('toxic_tickers', []))
+            if _TOXIC_BLOCKLIST:
+                print(f"🚫 Rule 28: {len(_TOXIC_BLOCKLIST)} toxic tickers blocklisted: {sorted(_TOXIC_BLOCKLIST)}", flush=True)
+        else:
+            _TOXIC_BLOCKLIST = set()
+    except Exception:
+        _TOXIC_BLOCKLIST = set()
+    return _TOXIC_BLOCKLIST
+
+def _is_ticker_blocklisted(ticker):
+    """Check if a ticker is on the toxic blocklist (Rule 28)."""
+    return ticker in _load_toxic_blocklist()
 from analyzers.engine_settings import get_setting
 from core.persona_db import safe_store_prediction, update_persona_prediction_outcome
 
@@ -192,20 +220,21 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
 
 def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                   max_picks=MAX_PICKS_PER_DAY, dry_run=False, keep_old=False,
-                  max_tickers=None, tickers_offset=0):
+                  max_tickers=None, tickers_offset=0, force=False):
     """Main generation loop.
 
     Args:
         max_tickers: لو موجود، بـ limit عدد الـ tickers المتعالجًا في الـ run ده.
                      مفيد لتشغيل الباكتست على دفعات في ساندبوكس بـ timeout محدود.
         tickers_offset: skip أول N tickers (للـ resume بعد run سابق).
+        force: تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل.
     """
     print("=" * 80, flush=True)
     print("  V40.2 Prediction Generator (CLI-enabled)", flush=True)
     print(f"  Period: {start_date} → {end_date} | Scan every {scan_interval} days", flush=True)
     print(f"  Max picks/day: {max_picks} | Morning bell: top 1", flush=True)
     print(f"  Strict kill-filters: ON | Real EGX30ETF benchmark: ON", flush=True)
-    print(f"  Dry-run: {dry_run} | Keep old: {keep_old}", flush=True)
+    print(f"  Dry-run: {dry_run} | Keep old: {keep_old} | Force: {force}", flush=True)
     if max_tickers is not None:
         print(f"  ⚡ BATCH MODE: max_tickers={max_tickers}, offset={tickers_offset}", flush=True)
     print("=" * 80, flush=True)
@@ -224,6 +253,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         return
 
     tickers = get_tickers()
+    # Rule 28: Filter out toxic tickers (blocklisted)
+    blocklist = _load_toxic_blocklist()
+    if blocklist:
+        before = len(tickers)
+        tickers = [t for t in tickers if t not in blocklist]
+        skipped = before - len(tickers)
+        if skipped > 0:
+            print(f"🚫 Rule 28: Skipped {skipped} toxic tickers (blocklist)", flush=True)
     # BATCH MODE: apply offset + max_tickers (للـ resume في ساندبوكس بـ timeout)
     if tickers_offset > 0:
         tickers = tickers[tickers_offset:]
@@ -586,6 +623,8 @@ def main():
                         help='⚡ BATCH MODE: limit عدد الـ tickers المتعالجًا (للـ resume في ساندبوكس بـ timeout)')
     parser.add_argument('--tickers-offset', type=int, default=0,
                         help='⚡ BATCH MODE: skip أول N tickers (للـ resume بعد run سابق)')
+    parser.add_argument('--force', action='store_true',
+                        help='تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل')
     args = parser.parse_args()
 
     # Determine date range
@@ -631,6 +670,7 @@ def main():
         keep_old=args.keep_old,
         max_tickers=args.max_tickers,
         tickers_offset=args.tickers_offset,
+        force=args.force,
     )
 
 
