@@ -7457,3 +7457,65 @@ Stage Summary:
 - ✅ backtest كامل: Net -60% → +692% (تحسن 10x)
 - ✅ التوثيق محدّث (SYSTEM_HOW_IT_THINKS + CHANGELOG)
 - ✅ الرفع على GitHub
+
+---
+Task ID: SANDBOX-RESET-SAVEREGUARD
+Agent: Z.ai Code (main orchestrator)
+Task: استرداد بعد reset الساندبوكس + إضافة القاعدة 26 للدستور.
+
+Work Log:
+- **الاكتشاف الصادم:** الساندبوكس اترست لـ Aug 22. كل عملي (commit 98cb334c) ضاع.
+  - `data/all.zip` (68MB) اتمسح.
+  - كل `db/*.db` اتمسحت إلا `custom.db`.
+  - الـ git remote token اتمسح.
+  - `scripts/toxic_ticker_blocklist.py`, `volume_surge_hunter_test.py`, إلخ اتمسحت.
+  - تغييرات `v40_2_daily_generator.py` و `core_scoring_engine.py` اتمسحت.
+
+- **الاسترداد:**
+  1. استرجعت `data/all.zip` من `/tmp/my-project/` (نسخة احتياطية).
+  2. استخرجت كل الـ 19 DB من all.zip (310MB total).
+  3. استرجعت كل scripts من `/tmp/my-project/`.
+  4. أعدت تعيين git remote مع GitHub token.
+  5. `git fetch origin` → `git rebase origin/main` لدمج تعديلاتي المحلية فوق آخر تحديث GitHub.
+  6. حلّ تعارض في `v38_backtest_engine.py` (مسافات بسيطة).
+  7. `git push origin main` → commit `73cdc300` (DB resolver fix) اترفع بنجاح.
+
+- **الإصلاحات الإضافية في v38_backtest_engine.py:**
+  - `_resolve_price_history_db()` دلوقتي بـ resolves لـ `data_engine.db` (primary).
+  - `get_price_data()` بيستخدم `egksco_price_history` schema (`symbol`, `price_date`).
+  - `get_tickers()` بيستخدم `symbol` column.
+  - `_load_benchmark()` بـ يجرب `EGS30AJ1C016-EGP` (الرمز الحقيقي) قبل `EGX30ETF`.
+
+- **إضافة القاعدة 26 للدستور:**
+  - `Documentation/00-CONSTITUTION.md`: أضفت القاعدة 26 — SANDBOX-RESET-SAVEREGUARD (50 سطر).
+  - الـ workflow الصحيح:
+    1. git fetch origin (اعرف آخر تحديث GitHub)
+    2. git status (اعرف حالتك المحلية)
+    3. لو في commits محلية → git push (ارفع فورًا)
+    4. اعمل backup في /tmp/ (للملفات المهمة)
+    5. git rebase origin/main (ابنِ فوق آخر تحديث)
+    6. اعمل المهمة
+    7. git commit كل ساعة (مش في الآخر بس)
+    8. git push origin main (ارفع فورًا بعد كل commit)
+  - أضفت قيد للساندبوكس في جدول القيود الحرجة (§15).
+  - حدّثت "آخر تحديث" إلى 2026-08-28.
+
+- **التحقق من الحالة النهائية:**
+  - `git log origin/main..HEAD --oneline` → صفر commits غير مرفوعة.
+  - `db/data_engine.db` → 162,946 صف سعر، 1,047 سهم، 2025-01-09 → 2026-08-27.
+  - `db/predictions.db` → 35 توقع.
+  - `data/all.zip` محفوظ (md5: 3d304a74ccdbfb599d4769e2f10d9471).
+  - `detect_volume_surge_rocket()` موجود في core_scoring_engine.py.
+  - `--force` flag موجود في v40_2_daily_generator.py.
+  - Blocklist (18 tickers) موجود.
+
+Stage Summary:
+- ✅ استرداد كامل بعد reset الساندبوكس
+- ✅ git rebase ناجح + push لـ GitHub (commit 73cdc300)
+- ✅ DB resolver fix (egksco_price_history canonical)
+- ✅ Benchmark ticker fix (EGS30AJ1C016-EGP)
+- ✅ القاعدة 26 مضافة للدستور (SANDBOX-RESET-SAVEREGUARD)
+- ✅ CHANGELOG + worklog محدّثة
+- ✅ كل البيانات سليمة (162K صف، 1047 سهم)
+
+الدرس المستفاد: الساندبوكس ≠ مساحة دائمة. كل شغل لازم يبقى على GitHub. القاعدة 26 تمنع تكرار الكارثة.

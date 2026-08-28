@@ -1,6 +1,44 @@
 # Changelog
 
 
+## [SANDBOX-RESET-SAVEREGUARD] — القاعدة 26: حماية من reset الساندبوكس (2026-08-28)
+
+> **المهمة:** الساندبوكس بـ reset دوريًا لـ `.initial_snapshot.json` (~19-22 أغسطس).
+> فقدنا commit `98cb334c` (Volume Surge Hunter) + `data/all.zip` + كل `db/*.db`
+> بسبب reset مفاجئ. أضفنا القاعدة 26 لمنع تكرار الكارثة.
+
+### التغييرات
+- **[معدّل]** `Documentation/00-CONSTITUTION.md`:
+  - أُضيفت القاعدة 26 — SANDBOX-RESET-SAVEREGUARD (50 سطر).
+  - أُضيفت القيود الحرجة: الساندبوكس بـ reset دوريًا.
+  - حُدّث "آخر تحديث" إلى 2026-08-28.
+- **[معدّل]** `vps-service/engines/v38_backtest_engine.py`:
+  - `_resolve_price_history_db()` دلوقتي بـ resolves لـ `data_engine.db` (primary)
+    مع `egksco_price_history` كـ canonical table.
+  - `get_price_data()` و `get_tickers()` بيستخدموا `egksco_price_history` schema
+    (`symbol`, `price_date`) بدل الـ legacy (`ticker`, `date`).
+  - `_load_benchmark()` بـ يجرب `EGS30AJ1C016-EGP` (الرمز الحقيقي) قبل `EGX30ETF`.
+
+### الاسترداد بعد reset
+- استرجعنا `data/all.zip` (68MB) من `/tmp/my-project/`.
+- استخرجنا كل الـ 19 DB من all.zip (310MB total).
+- استرجعنا كل scripts (toxic_ticker_blocklist.py, volume_surge_hunter_test.py, إلخ).
+- عملنا `git rebase origin/main` لدمج تعديلاتنا المحلية فوق آخر تحديث GitHub.
+
+### القاعدة الجديدة (26) — ملخص
+```
+1. git fetch origin              ← اعرف آخر تحديث على GitHub
+2. git status                     ← اعرف حالتك المحلية
+3. لو في commits محلية → git push ← ارفع فورًا
+4. اعمل backup في /tmp/           ← للملفات المهمة
+5. git rebase origin/main         ← ابنِ فوق آخر تحديث
+6. اعمل المهمة
+7. git commit كل ساعة            ← مش في الآخر بس
+8. git push origin main           ← ارفع فورًا بعد كل commit
+```
+
+---
+
 ## [VOLUME-SURGE-HUNTER] — AXIS-5b: صياد الأسهم الانفجارية (2026-08-28)
 
 > **المهمة:** النظام فات كل الأسهم الانفجارية السبعة (BIOC +25,440%, NIPH +1,346%, AFMC +424%, GTWL +1,471%, إلخ).

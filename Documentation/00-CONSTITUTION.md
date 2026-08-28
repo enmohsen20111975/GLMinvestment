@@ -10,7 +10,7 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث:** 2026-08-17 (بعد commit `65a748f` — إصلاح R:R + تفعيل الـ fundamentals الحقيقية)
+> **آخر تحديث:** 2026-08-28 (إضافة القاعدة 26 — SANDBOX-RESET-SAVEREGUARD بعد فقدان كود بسبب reset الساندبوكس + استعادة DB resolver fix من commit `73cdc300`)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
 > **الإنتاج:** https://invist.m2y.net
@@ -297,6 +297,57 @@
   5. **مراجعة المالك** قبل الـ merge.
 - **الـ rename refactor ملغى**: لا تُغيّر أسماء ملفات لتحسين القراءة فقط (تنتهك القاعدة 3). حل بديل: وثّق اللبس في `01-PROJECT_ANATOMY.md`.
 - الكود الميت يُسجّل في القيود الحرجة (§15)، لا يُحذف إلا بعد VERIFY-BEFORE-DELETE (القاعدة 16).
+
+### القاعدة 26 — الساندبوكس يتعرض لـ RESET دوري (SANDBOX-RESET-SAVEREGUARD)
+> **سبب الإضافة:** الساندبوكس (`/home/z/my-project/`) بـ يـ reset دوريًا لآخر snapshot
+> من الـ `.initial_snapshot.json` (~الـ 19-22 أغسطس). أي كود/DBs/ملفات **غير مرفوعة على GitHub**
+> بتضيع بعد الـ reset. ده حصل فعليًا وفقدنا كود مهم (commit `98cb334c` Volume Surge Hunter)
+> + `data/all.zip` (68MB) + كل `db/*.db`. هذه القاعدة تمنع تكرار الكارثة.
+
+- **القاعدة الذهبية:** الساندبوكس ≠ مساحة دائمة. كل شغل **لازم** يبقى على GitHub.
+- **قبل أي مهمة (بداية الجلسة):**
+  1. `git fetch origin` — اسحب آخر تحديثات GitHub.
+  2. `git log origin/main..HEAD --oneline` — شوف هل عندك commits محلية غير مرفوعة.
+  3. `git status` — شوف هل عندك ملفات modified مش staged.
+  4. لو عندك commits محلية → **push them فورًا** قبل ما تبدأ شغل جديد.
+- **أثناء المهمة:**
+  - commit كل **1-2 ساعة** (مش في آخر المهمة بس).
+  - لو عندك ملفات كبيرة زي `data/all.zip` → احفظها في `/tmp/` كـ backup إضافي.
+  - استخدم `git stash` قبل أي عملية خطرة (rebase / merge / pull).
+- **قبل أي عملية خطرة (rebase/merge/pull/reset):**
+  1. `mkdir -p /tmp/pre-<op>-backup` — أنشئ مجلد backup.
+  2. `cp` الملفات المهمة (الـ engine files، الـ scripts، الـ configs).
+  3. `git stash` أي تغييرات معلقة.
+  4. نفّذ العملية.
+  5. لو فشلت → `git rebase --abort` / `git merge --abort` / استعد من `/tmp/`.
+- **بعد أي reset مفاجئ للساندبوكس:**
+  1. تحقق: `ls data/all.zip` — لو ضاعت، استخرجها من GitHub أو من `/tmp/`.
+  2. `git fetch origin` → `git reset --hard origin/main` — رجّع الكود لآخر حالة على GitHub.
+  3. استخرج الـ DBs من `data/all.zip` (لو كانت موجودة).
+  4. تحقق من الـ worklog آخر إدخال لمعرفة آخر شغل.
+  5. أبلغ المالك قبل أي استرداد.
+- **لا تعتمد على:**
+  - `/tmp/` للـ backup طويل المدى (بيتمسح في الـ reset).
+  - `git reflog` (بيتمسح كله بعد الـ reset).
+  - أي ملف غير مـ commit على GitHub.
+- **DBs مهمة لازم تتـ backup** (قبل أي عملية خطرة):
+  - `data/all.zip` (المصدر الكامل — آخر نسخة من GitHub).
+  - `db/data_engine.db` (125MB — الأسعار).
+  - `db/predictions.db` (التوقعات).
+  - `db/stocks.db` (الميتاداتا).
+- **الـ workflow الصحيح (بدل المنهجية الخطرة):**
+  ```
+  1. git fetch origin              ← اعرف آخر تحديث على GitHub
+  2. git status                     ← اعرف حالتك المحلية
+  3. لو في commits محلية → git push ← ارفع فورًا
+  4. اعمل backup في /tmp/           ← للملفات المهمة
+  5. git rebase origin/main         ← ابنِ فوق آخر تحديث
+  6. اعمل المهمة
+  7. git commit كل ساعة            ← مش في الآخر بس
+  8. git push origin main           ← ارفع فورًا بعد كل commit
+  ```
+- **تحذير صريح:** لو ضاع كود بسبب عدم اتباع هذه القاعدة، المسؤولية على الوكيل.
+  الـ sandbox بـ reset بشكل دوري. الـ GitHub هو المصدر الوحيد للحقيقة الدائمة.
 
 ---
 
@@ -853,6 +904,7 @@ curl -s http://localhost:8010/health
 | Prisma scaffold بدل schema حقيقي | `prisma/schema.prisma` | 🟡 | الـ data الحقيقي في Python SQLite — لا تلمس Prisma |
 | Admin components ضخمة | MaestroCommandCenter 3,748 LOC | 🟡 | تقسيم لوحدات أصغر (P3.x) |
 | 18 ثغرة أمنية حرجة | SEC-01 (admin backdoor), SEC-03 (Paymob bypass), SEC-04 (admin auth bypass via proxy), ... | 🔴 | أولوية قصوى — تحتاج جلسة أمن مستقلة |
+| الساندبوكس بـ reset دوريًا (SANDBOX-RESET) | `/home/z/my-project/` — يـ reset لـ `.initial_snapshot.json` (~19-22 أغسطس) | 🔴 | القاعدة 26 — commit كل ساعة + push على GitHub + backup في `/tmp/` قبل أي عملية خطرة |
 
 ---
 
