@@ -1564,6 +1564,39 @@ class DailyCloser:
                                                       partial_done=True, partial_exit_price=partial_exit_price,
                                                       partial_return_pct=partial_return_pct)
 
+            # 3.5) STUCK TRADE / TIME EXIT (2026-08-28)
+            # Analyst advice: if trade held 5+ days with < 1.5% movement → exit (stuck).
+            # Slow bleed pattern: 19/28 losses in last 30 days were slow bleeds (10-23 days).
+            # These dead trades tie up capital and eventually hit stop.
+            # Exit early to free capital + cut losses.
+            STUCK_MIN_DAYS = 5
+            STUCK_MAX_MOVEMENT_PCT = 1.5  # < 1.5% movement = stuck
+            if days_elapsed >= STUCK_MIN_DAYS:
+                movement_pct = abs((close - entry_price) / entry_price * 100) if entry_price > 0 and close > 0 else 0
+                if movement_pct < STUCK_MAX_MOVEMENT_PCT:
+                    # Trade is stuck — no significant movement in 5+ days
+                    final_return = ((close - entry_price) / entry_price * 100) if close > 0 else 0
+                    if partial_done:
+                        actual_return = (partial_fraction * partial_return_pct
+                                         + (1 - partial_fraction) * final_return)
+                        exit_type = 'partial_stuck'
+                        status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'
+                    else:
+                        actual_return = final_return
+                        exit_type = 'stuck_no_movement'
+                        status = 'EXPIRED'
+                    logger.info(f"[DailyCloser] #{pred_id} {ticker}: STUCK EXIT after {days_elapsed}d "
+                                f"(movement={movement_pct:.2f}% < {STUCK_MAX_MOVEMENT_PCT}%), ret={actual_return:.2f}%")
+                    return self._mark_closed_partial(pred_id, ticker, status, actual_return,
+                                                      highest_price_reached, lowest_price_reached,
+                                                      days_elapsed, day_date, exit_type=exit_type,
+                                                      exit_close_price=close or entry_price,
+                                                      highest_price_reached_val=highest_price_reached,
+                                                      lowest_price_reached_val=lowest_price_reached,
+                                                      partial_done=partial_done,
+                                                      partial_exit_price=partial_exit_price,
+                                                      partial_return_pct=partial_return_pct)
+
             # 4) Check max holding days
             if days_elapsed >= max_holding_days:
                 final_return = ((close - entry_price) / entry_price * 100) if close > 0 else 0

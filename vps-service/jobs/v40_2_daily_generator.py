@@ -392,6 +392,19 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if stop >= entry or entry <= 0:
                 continue
 
+            # ─── ZERO-VOLUME GUARD (2026-08-28) ────────────────────────────────
+            # Analyst advice: reject stocks that are not trading (volume = 0).
+            # ARVA entered 2026-08-04 with V=0 for 10 consecutive days!
+            # Such stocks are "dead" — no liquidity, can't exit, false stop hits.
+            # Reject if today's volume OR yesterday's volume is 0 (or near-zero < 1000).
+            try:
+                _today_vol = volumes[day_idx] if day_idx < len(volumes) else 0
+                _yest_vol = volumes[day_idx - 1] if day_idx >= 1 and day_idx - 1 < len(volumes) else 0
+                if _today_vol < 1000 or _yest_vol < 1000:
+                    continue  # skip dead stocks
+            except Exception:
+                pass  # safe fallback
+
             # ─── DON'T CHASE FILTER (2026-08-28) ───────────────────────────────
             # Analyst advice: reject entry if stock already exploded recently.
             # Prevents "buying the top" after +20% daily pumps (UNIT, ELSH in July).
