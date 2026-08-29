@@ -8891,3 +8891,76 @@ Stage Summary:
 - ✅ 63 جدول فارغ/مكرر محذوف
 - ⚠️ DBs are gitignored — changes are local only (need manual apply on laptop)
 - 🔜 المرحلة 3: توحيد learned_lessons + outcome_logs في predictions.db
+
+---
+Task ID: PHASE4-DB-REORG
+Agent: Z.ai Code (main orchestrator)
+Task: إعادة هيكلة 19 قاعدة بيانات → 4 قواعد فقط + سكربت تشغيلى واحد
+
+Work Log:
+- العميل: "لى 3 او 4 قواعد بيانات بس كل واحدة مسؤلة عن شغل معين"
+- العميل: "ملف تشغيلى واحد يقوم بكل الشغل عالشان لما نرفع على السرفر"
+
+التصميم الجديد (4 قواعد):
+
+1. market.db — بيانات السوق والأسعار والميتاداتا والأساسيات
+   من data_engine.db: egksco_price_history (162K), crypto_prices (429K), gold_prices (220K),
+   tab_* (fundamentals 8 tables), stocks (971), screener_lists (1.5K)
+   من intraday.db: stock_intraday (266K), crypto_intraday (151K), commodity_intraday (22K)
+   من stocks.db: stocks (1,047), stock_daily_prices (46K), screener_presets (350),
+   market_indices, market_regime_log, macro_indicators, cached_analysis, etc.
+   من crypto.db: cryptos (50), crypto_price_history (981), crypto_metrics (30)
+   من macro.db: macro_prices (67), macro_fetch_log (41)
+
+2. predictions.db — التوقعات والتعلم والنتائج (موجود بالفعل)
+   predictions (39), persona_predictions (22), outcome_logs (8,544), learned_lessons (494),
+   conjunction_patterns (150), indicator_trust_scores (10), stored_analyses (12),
+   morning_bell_signals (37), ExpertRecommendation (consolidated from stocks.db + auth.db)
+
+3. auth.db — المستخدمين والاشتراكات (موجود بالفعل)
+   User (90), PromoCode (4), SubscriptionPlan (3), api_tokens (5), task_runs (75)
+   + portfolios (3), portfolio_assets (24), user_stock_watchlists (23) from stocks.db
+
+4. content.db — الأخبار والمحتوى
+   news_articles (7,894) from news.db
+   telegram_messages (58), telegram_news (11), scraping_status (3) from telegram_data.db
+
+القواعد المحذوفة (15): prices.db (stale), analytics.db (empty), community.db (empty),
+crypto_learning.db (mostly empty), crypto-lab.db (small), gold_prices.db (small),
+ai_search_cache.db (empty), learned.db (empty), finance.db (empty), market.db (empty — repurposed),
+telegram_data.db (merged into content.db), news.db (merged into content.db),
+crypto.db (merged into market.db), macro.db (merged into market.db),
+intraday.db (merged into market.db)
+
+الملفات المنتجة:
+1. utils/db_paths.py — REWRITTEN: 4 DBs + backward compat aliases
+2. scripts/migrate_to_4_dbs.py — سكربت تشغيلى واحد (NEW, 280 LOC)
+   - --dry-run: معاينة
+   - تنفيذ: ينسخ الجداول من القواعد القديمة للجديدة
+   - --verify: تحقق من النتائج
+   - لا يحذف القواعد القديمة (backup آمن)
+
+الاختبارات الصارمة:
+1. ✅ Python syntax: db_paths + migrate_to_4_dbs
+2. ✅ dry-run: اكتشف كل الجداول + عدد الصفوف
+3. ✅ DBPaths: 4 DBs defined + aliases work
+4. ✅ LINT: EXIT 0
+5. ✅ HTTP: 200
+6. ✅ V40.2 dry-run: 29 signals (logic intact)
+
+طريقة الاستخدام على السرفر:
+```bash
+cd /root/GLMinvestment
+git pull origin main
+python3 scripts/migrate_to_4_dbs.py --dry-run    # معاينة
+python3 scripts/migrate_to_4_dbs.py               # تنفيذ
+python3 scripts/migrate_to_4_dbs.py --verify      # تحقق
+pm2 restart all
+```
+
+Stage Summary:
+- ✅ تصميم 4 قواعد بيانات (market + predictions + auth + content)
+- ✅ DBPaths updated (single source of truth + backward compat)
+- ✅ سكربت تشغيلى واحد (migrate_to_4_dbs.py)
+- ✅ كل الاختبارات نجحت
+- 🔜 المستخدم ينفذ السكربت على السرفر
