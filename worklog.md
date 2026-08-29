@@ -9770,3 +9770,39 @@ Stage Summary:
 - ✅ Closed predictions زادت 3.3×
 - 🔜 تحسين اصطياد الأسهم الانفجارية (BIOC/NIPH/AMES/GPIM/GTWL ما زالت 0)
 - 🔜 رفع WR من 51.9% لـ 60%+
+
+---
+Task ID: fix-3
+Agent: Z.ai Code (main)
+Task: إصلاح bug في dashboard period filter (أرقام غريبة في الفترات القصيرة)
+
+Work Log:
+- المستخدم لاحظ:
+  * 30 يوم = -8.6%
+  * 14 يوم = -126.3% (مستحيل رياضياً > -100%)
+  * 7 أيام = -56.3%
+  * أمس = -28.2% (في أجازة!)
+  * اليوم = لا يوجد (صحيح — أجازة)
+  * السنوي = +1267% (صحيح)
+- تحليل الـ code في src/app/api/predictions/honest-tracking/live-tracking/route.ts:
+  * السطر 95-97: dayFilter كان بـ uses prediction_date (تاريخ الدخول)
+  * ده معناه: "أمس" بـ يجيب التوقعات اللي دخلت في آخر يومين (مش اتقفلت في آخر يومين)
+  * توقعات دخلها الخميس واتقفلت الجمعة بـ تظهر في "أمس" (السبت الأجازة)
+- bug تاني: date('now') بـ uses UTC، مش توقيت مصر (UTC+2)
+- الإصلاح:
+  * dayFilter بـ uses COALESCE(outcome_date, prediction_date)
+  * التوقعات المقفولة: بـ filter بـ outcome_date (تاريخ الإغلاق)
+  * التوقعات المعلقة: بـ filter بـ prediction_date (تاريخ الدخول)
+  * أضفت 'localtime' عشان توقيت مصر
+- commit + push (4c0c2238)
+
+Stage Summary:
+- ✅ bug اتحل — dashboard period filter دلوقتي بـ uses outcome_date
+- ✅ localtime بدل UTC
+- 🔜 المستخدم يجرب:
+  1. git pull origin main
+  2. يفتح الـ dashboard ويختار فترات مختلفة
+  3. الأرقام المفروض تكون منطقية دلوقتي:
+     * أمس (أجازة) = 0% أو لا يوجد
+     * 7/14/30 يوم = أرقام حقيقية من صفقات اتقفلت في الفترة
+     * السنوي = +1267% (مش هيتأثر)
