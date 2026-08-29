@@ -212,12 +212,13 @@ def mode_detectors():
         print(f'❌ Cannot import detectors: {e}')
         return
 
-    # Try data_engine.db first, then price_history.db (نفس منطق V40.2)
+    # PHASE-2-DB-UNIFY: price_history.db first (1.24M rows, 25 سنة)
+    # data_engine.db.egksco_price_history = 0 rows على الإنتاج → fallback فقط
     db_attempts = [
+        ('price_history.db', PRICE_HISTORY_DB, 'price_history',
+         'ticker', 'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'),
         ('data_engine.db', DATA_ENGINE_DB, 'egksco_price_history',
          'symbol', 'price_date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'),
-        ('price_history.db', PRICE_HISTORY_DB, 'price_history',
-         'ticker', 'date', 'open', 'high', 'low', 'close', 'volume'),
     ]
 
     db_used = None
