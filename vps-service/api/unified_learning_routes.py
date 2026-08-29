@@ -38,7 +38,9 @@ try:
 except ImportError:
     from pathlib import Path
     _base_dir = Path(__file__).parent.parent.parent.resolve()
-    DATABASE_PATH = os.environ.get('DATABASE_PATH', str(_base_dir / 'db' / 'stocks.db'))
+    # PHASE-3-DB-UNIFY (2026-08-29): unified_learning كان يقرأ من stocks.db (فاضي!)
+    # predictions.db هو المصدر الصحيح (outcome_logs=8544 + learned_lessons=494 + conjunction_patterns=150)
+    DATABASE_PATH = os.environ.get('DATABASE_PATH', str(_base_dir / 'db' / 'predictions.db'))
 
 from analyzers.unified_learning_engine import (
     UnifiedLearningEngine,

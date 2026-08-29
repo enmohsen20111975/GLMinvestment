@@ -15,20 +15,26 @@ from pathlib import Path
 # ============================================================================
 
 def get_database_path() -> str:
+    """
+    PHASE-3-DB-UNIFY (2026-08-29): Changed from stocks.db to predictions.db.
+    stocks.db had empty outcome_logs + learned_lessons (0 rows each).
+    predictions.db has the real data: outcome_logs=8544 + learned_lessons=494
+    + conjunction_patterns=150 + indicator_trust_scores=10.
+    """
     # Check environment variable first
     env_path = os.environ.get('DATABASE_PATH', '')
     if env_path:
         print(f"[CONFIG] Using DATABASE_PATH from env: {env_path}")
         return env_path
-    
-    # Use project root /db folder (NOT vps-service/db)
+
+    # Use project root /db folder
     project_root = Path(__file__).parent.parent.parent.resolve()  # Project root (GLMinvestment)
-    db_path = project_root / 'db' / 'stocks.db'
-    
+    db_path = project_root / 'db' / 'predictions.db'
+
     # Ensure db directory exists
     db_dir = project_root / 'db'
     db_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print(f"[CONFIG] Using primary database: {db_path}")
     return str(db_path)
 

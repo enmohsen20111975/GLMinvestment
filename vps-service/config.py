@@ -27,18 +27,17 @@ from pathlib import Path
 
 def get_database_path() -> str:
     """
-    Get the database path - uses stocks.db for stocks data
-    
+    Get the database path — uses predictions.db for learning/tracking data
+
+    PHASE-3-DB-UNIFY (2026-08-29): Changed from stocks.db to predictions.db.
+    stocks.db had empty outcome_logs + learned_lessons (0 rows each).
+    predictions.db has the real data: outcome_logs=8544 + learned_lessons=494
+    + conjunction_patterns=150 + indicator_trust_scores=10.
+
     Priority:
     1. DATABASE_PATH environment variable (if set)
-    2. stocks.db in /db folder (project root)
-    
-    Note: All databases are in /db folder:
-    - stocks.db: Stocks data (1,298 stocks across 7 markets)
-    - price_history.db: Historical price data (273,750 records)
-    - learned.db: ML learning data
-    - auth.db: User authentication
-    
+    2. predictions.db in /db folder (project root)
+
     Returns:
         str: Path to the primary database
     """
@@ -47,15 +46,15 @@ def get_database_path() -> str:
     if env_path:
         print(f"[CONFIG] Using DATABASE_PATH from env: {env_path}")
         return env_path
-    
-    # Use project root /db folder (NOT vps-service/db)
+
+    # Use project root /db folder
     project_root = Path(__file__).parent.parent.resolve()  # Project root (GLMinvestment)
-    db_path = project_root / 'db' / 'stocks.db'
-    
+    db_path = project_root / 'db' / 'predictions.db'
+
     # Ensure db directory exists
     db_dir = project_root / 'db'
     db_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print(f"[CONFIG] Using primary database: {db_path}")
     return str(db_path)
 
