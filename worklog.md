@@ -8685,3 +8685,71 @@ Stage Summary:
 
 **الإجمالي:** 6-7 ساعات لتخفيف 53,288 LOC ميت/DEPRECATED بالكامل.
 
+
+---
+Task ID: PHASE4-DEAD-CODE-CLEANUP
+Agent: Z.ai Code (main orchestrator)
+Task: المرحلة 4: حذف الملفات الميتة (Python DEPRECATED + Next.js dead pages + orphan components) — VERIFY-BEFORE-DELETE صارم
+
+Work Log:
+العميل أعطى إذن صريح: "أعمل كل حاجة أنا واثق فيك" + "لازم أختبارات صارمة بعد كل مرحلة".
+
+التحضير:
+- backup: predictions.db + data_engine.db + stocks.db → /tmp/pre-cleanup-backup/
+- git متزامن 100% (LOCAL = REMOTE = 528d57a9)
+- نقطة البداية: lint EXIT 0، HTTP 200، V40.2 dry-run 98 signals
+
+الـ 3 commits:
+
+1. commit a27263a9 — phase4a: حذف 13 Python DEPRECATED routes (6,629 LOC)
+   - VERIFY-BEFORE-DELETE: 0 external importers + 0 registration in lightweight_server.py
+   - deleted: analysis_engine, backtest, crypto, crypto_simulation, data_engine,
+     educational_cards, hunter, market_status, multi_market, performance_dashboard,
+     smart_confluence, v2_analytics, walk_forward
+   - KEPT: expert_memory_v4 (v4_bp مسجل)، kimi_backtest (EnhancedBacktest مستورد 5x)،
+     analysis_routes (register_analysis_routes في api/__init__.py)，
+     historical_predictions_v2 + unified_v2 + v2 + v38_backtest (blueprints مسجلة)
+   - اختبار: python3 ast.parse OK، BLUEPRINTS count 38، V40.2 dry-run 98 signals
+
+2. commit e0ea0bee — phase4b: حذف 9 Next.js dead pages (5,953 LOC)
+   - VERIFY-BEFORE-DELETE: 0 Link/router/redirect references
+   - deleted: community, education/analysis-types, portfolio, prediction-performance,
+     unified-analysis, stock/[ticker], admin/prediction-performance, admin/maestro，
+     admin/expert-recommendations, payment/fail
+   - KEPT: admin/reports + admin/honest-predictions + admin/educational-cards
+     (مستخدمة كـ src في iframes داخل AdminView.tsx)
+   - اختبار: lint EXIT 0، HTTP 200، V40.2 dry-run 62 signals
+
+3. commit 5bc42a57 — phase4c: حذف 65 orphan components (44,474 LOC)
+   - VERIFY-BEFORE-DELETE: refined Python script يفحص dynamic imports + static imports
+   - 5 batches (10+15+15+15+10) مع lint + HTTP + backtest بعد كل batch
+   - deleted: 65 components من 17+ مجلد (admin, stocks, analysis, crypto, portfolio,
+     screener, ai-analysis, share, performance, reports, recommendations,
+     self-learning, watchlist, command-center, intelligence, analyst, hunter,
+     risk, community, deep-learning, learning, sniper, news, topology, devil,
+     dashboard, predictions, studio, advanced-analysis)
+   - removed empty dirs: devil, _archived_v404, studio, deep-learning,
+     command-center, analyst, community, self-learning, sniper, hunter，
+     topology, advanced-analysis, risk, intelligence
+   - KEPT: كل admin components المستوردة dynamic في AdminView.tsx + كل ui/ primitives
+   - اختبار بعد كل batch: lint EXIT 0، HTTP 200، V40.2 dry-run 62-98 signals
+
+الاختبارات الصارمة النهائية:
+- ✅ git status: clean (لا تغييرات معلقة)
+- ✅ bun run lint: EXIT 0
+- ✅ HTTP 200 (0.15s response time)
+- ✅ V40.2 generator dry-run: 146 signals، 4 dates، 5 picks/day (logic سليم)
+- ✅ daily_closer: يشتغل (exit logic سليم)
+- ✅ python3 ast.parse: lightweight_server.py syntax valid
+- ✅ BLUEPRINTS count: 38 (كل blueprints المسجلة موجودة)
+
+Stage Summary:
+- ✅ المرحلة 4 كاملة: 87 ملف محذوف، ~57,056 LOC مُخفّفة
+  - 4a: 13 Python DEPRECATED (6,629 LOC)
+  - 4b: 9 Next.js dead pages (5,953 LOC)
+  - 4c: 65 orphan components (44,474 LOC)
+- ✅ كل الاختبارات الصارمة نجحت بعد كل batch
+- ✅ logic التداول لم يتأثر (V40.2 + daily_closer سليمين)
+- 📊 commits على GitHub: a27263a9, e0ea0bee, 5bc42a57
+- 🔜 المرحلة 2: توحيد 3 أنظمة تتبع توقعات متوازية + 4 catch-all proxies
+- 🔜 المرحلة 3: استخراج src/lib/v2/ (21k LOC) لـ Python
