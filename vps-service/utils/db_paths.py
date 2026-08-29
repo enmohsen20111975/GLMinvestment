@@ -74,23 +74,45 @@ class DBPaths:
     CONTENT_DB: str = _resolve("CONTENT_DB", "content.db")
 
     # ═══════════════════════════════════════════════════════════════
-    # Backward compatibility aliases (توجيه للمسار الجديد)
+    # Backward compatibility aliases
     # ═══════════════════════════════════════════════════════════════
-    # الكود القديم يستخدم هذه الأسماء — كلها توجّه للمسار الجديد
+    # PHASE-2-DB-UNIFY (2026-08-29):
+    # الـ 4-DB target architecture (market.db + predictions.db + auth.db + content.db) لم يكتمل
+    # بعد على الإنتاج (market.db = 0 بايت). لحين اكتمال الـ migration، كل alias بـ points
+    # لـ DBه الأصلي (اللي فيه بيانات حقيقية على الإنتاج):
+    #   - price_history.db: 1,248,257 rows (25 سنة) — canonical price history
+    #   - data_engine.db: fundamentals (tab_*) + crypto_prices + gold_prices + screener_lists
+    #   - stocks.db: stocks metadata + stock_daily_prices (آخر 30 يوم) + screener_*
+    #   - intraday.db: stock_intraday + crypto_intraday + commodity_intraday
+    #
+    # ملاحظة: market.db_alias = market.db (هدف نهائي)، بس دلوقتي الفاضي.
 
-    # ← market.db
-    DATA_ENGINE_DB: str = MARKET_DB      # was data_engine.db
-    STOCKS_DB: str = MARKET_DB           # was stocks.db
-    PRICE_HISTORY_DB: str = MARKET_DB    # was price_history.db
-    INTRADAY_DB: str = MARKET_DB         # was intraday.db
-    CRYPTO_DB: str = MARKET_DB           # was crypto.db
-    GOLD_PRICES_DB: str = MARKET_DB      # was data_engine.db
-    HISTORICAL_DB: str = MARKET_DB        # was historical.db
-    TELEGRAM_DATA_DB: str = CONTENT_DB   # was telegram_data.db → content.db
-    NEWS_DB: str = CONTENT_DB            # was stocks.db → content.db
-    COMMUNITY_DB: str = CONTENT_DB       # was community.db → content.db
-    ANALYTICS_DB: str = MARKET_DB        # was stocks.db → market.db
-    AI_SEARCH_CACHE_DB: str = MARKET_DB  # was ai_search_cache.db → market.db
+    # Canonical price history (1.24M rows, 25 سنة)
+    PRICE_HISTORY_DB: str = _resolve("PRICE_HISTORY_DB", "price_history.db")
+
+    # data_engine.db: fundamentals (tab_*) + live quotes (crypto, gold, exchange)
+    DATA_ENGINE_DB: str = _resolve("DATA_ENGINE_DB", "data_engine.db")
+
+    # stocks.db: stocks metadata + stock_daily_prices + screener
+    STOCKS_DB: str = _resolve("STOCKS_DB", "stocks.db")
+
+    # intraday.db: tick-level data (1.1M rows)
+    INTRADAY_DB: str = _resolve("INTRADAY_DB", "intraday.db")
+
+    # crypto.db: crypto-specific tables (legacy)
+    CRYPTO_DB: str = _resolve("CRYPTO_DB", "crypto.db")
+
+    # market.db: هدف نهائي (PHASE-4-DB-REORG) — لسه فاضي على الإنتاج
+    MARKET_DB: str = _resolve("MARKET_DB", "market.db")
+
+    # Aliases for legacy code (توجّه للـ canonical source)
+    GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices + gold_prices_clean
+    HISTORICAL_DB: str = DATA_ENGINE_DB   # historical_data (ticker format رقمي)
+    TELEGRAM_DATA_DB: str = CONTENT_DB    # was telegram_data.db → content.db
+    NEWS_DB: str = CONTENT_DB             # was stocks.db → content.db
+    COMMUNITY_DB: str = CONTENT_DB        # was community.db → content.db
+    ANALYTICS_DB: str = STOCKS_DB          # was stocks.db → cached_analysis
+    AI_SEARCH_CACHE_DB: str = STOCKS_DB   # was ai_search_cache.db
     CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # was crypto_learning.db → predictions.db
 
     @classmethod

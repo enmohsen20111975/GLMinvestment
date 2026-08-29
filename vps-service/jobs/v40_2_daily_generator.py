@@ -167,32 +167,18 @@ def compute_persona_fit(proofs):
 def get_scan_dates(start_date, end_date, scan_interval):
     """Get trading dates from price history within [start, end].
     
-    PHASE-1-DB-UNIFY: tries data_engine.db first, then price_history.db fallback.
-    On production, egksco_price_history may be empty — price_history.db is the source.
+    PHASE-2-DB-UNIFY (2026-08-29): price_history.db is the canonical source.
+    - price_history.db.price_history: 1,248,257 rows, 25 سنة بيانات (2001→2026)
+    - data_engine.db.egksco_price_history: 0 rows على الإنتاج (fallback only)
+    - stocks.db.stock_daily_prices: آخر 30 يوم (fallback أخير)
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
     
-    # 1. Try data_engine.db (egksco_price_history)
-    try:
-        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
-            (start_date, end_date),
-        )
-        dates = [row[0] for row in cur.fetchall()]
-        conn.close()
-        if dates:
-            print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
-            return dates[::scan_interval]
-    except Exception:
-        pass
-    
-    # 2. Fallback: price_history.db (price_history table — schema: ticker/date)
+    # 1. price_history.db (المصدر الكامل — 1.24M rows)
     try:
         conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
         cur = conn.cursor()
-        # Check schema
+        # Check schema (column name may be 'date' or 'price_date')
         cur.execute("PRAGMA table_info(price_history)")
         cols = [r[1] for r in cur.fetchall()]
         date_col = 'date' if 'date' in cols else 'price_date' if 'price_date' in cols else None
@@ -210,7 +196,23 @@ def get_scan_dates(start_date, end_date, scan_interval):
     except Exception:
         pass
     
-    # 3. Fallback: stocks.db (stock_daily_prices — schema: ticker/price_date)
+    # 2. Fallback: data_engine.db (egksco_price_history — 0 rows على prod)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            (start_date, end_date),
+        )
+        dates = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if dates:
+            print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
+            return dates[::scan_interval]
+    except Exception:
+        pass
+    
+    # 3. Fallback أخير: stocks.db (stock_daily_prices — آخر 30 يوم)
     try:
         conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
         cur = conn.cursor()
@@ -233,26 +235,14 @@ def get_scan_dates(start_date, end_date, scan_interval):
 def get_tickers(min_days=MIN_TICKER_DAYS):
     """Get tickers with enough historical data.
     
-    PHASE-1-DB-UNIFY: tries data_engine.db first, then price_history.db fallback.
+    PHASE-2-DB-UNIFY (2026-08-29): price_history.db is the canonical source.
+    - price_history.db.price_history: 1,267 tickers, 1.24M rows
+    - data_engine.db.egksco_price_history: 0 rows على الإنتاج (fallback only)
+    - stocks.db.stock_daily_prices: 1,023 tickers (fallback أخير)
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
     
-    # 1. Try data_engine.db (egksco_price_history)
-    try:
-        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
-            (min_days,),
-        )
-        tickers = [row[0] for row in cur.fetchall()]
-        conn.close()
-        if tickers:
-            return tickers
-    except Exception:
-        pass
-    
-    # 2. Fallback: price_history.db (price_history table)
+    # 1. price_history.db (المصدر الكامل — 1,267 tickers)
     try:
         conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
         cur = conn.cursor()
@@ -273,7 +263,22 @@ def get_tickers(min_days=MIN_TICKER_DAYS):
     except Exception:
         pass
     
-    # 3. Fallback: stocks.db (stock_daily_prices)
+    # 2. Fallback: data_engine.db (egksco_price_history — 0 rows على prod)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
+            (min_days,),
+        )
+        tickers = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if tickers:
+            return tickers
+    except Exception:
+        pass
+    
+    # 3. Fallback أخير: stocks.db (stock_daily_prices — 1,023 tickers)
     try:
         conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
         cur = conn.cursor()

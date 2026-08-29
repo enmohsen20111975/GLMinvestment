@@ -21,6 +21,7 @@ Endpoints:
 """
 
 import sqlite3
+from pathlib import Path
 from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 
@@ -30,8 +31,25 @@ top_performers_bp = Blueprint('top_performers', __name__)
 
 
 def _get_data_engine_conn():
-    """Get a connection to data_engine.db (has egksco_price_history)."""
+    """Get a connection to data_engine.db (has egksco_price_history).
+
+    PHASE-2-DB-UNIFY: data_engine.db.egksco_price_history = 0 rows على الإنتاج.
+    Use _get_price_history_conn() (price_history.db) as the canonical source.
+    """
     conn = sqlite3.connect(DBPaths.DATA_ENGINE_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _get_price_history_conn():
+    """Get a connection to price_history.db (the canonical price history source).
+
+    PHASE-2-DB-UNIFY (2026-08-29):
+    - price_history.db.price_history: 1,248,257 rows, 1,267 tickers, 25 سنة بيانات
+    - schema: ticker, date, open_price, high_price, low_price, close_price, volume, source
+    """
+    ph_db = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+    conn = sqlite3.connect(ph_db)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -84,69 +102,128 @@ def get_top_performers():
         if direction not in ('gainers', 'losers', 'both'):
             direction = 'both'
 
-        # === Get the latest date in data_engine.db ===
-        de_conn = _get_data_engine_conn()
+        # === PHASE-2-DB-UNIFY: price_history.db first (1.24M rows), data_engine.db fallback ===
+        rows = []
+        latest_date = None
+        ph_conn = None
+        de_conn = None
+
+        # 1. price_history.db (canonical source — 1,248,257 rows, 25 سنة)
         try:
-            latest_date_row = de_conn.execute(
-                'SELECT MAX(price_date) as max_date FROM egksco_price_history'
+            ph_conn = _get_price_history_conn()
+            latest_date_row = ph_conn.execute(
+                'SELECT MAX(date) as max_date FROM price_history'
             ).fetchone()
             latest_date = latest_date_row['max_date'] if latest_date_row else None
 
-            if not latest_date:
-                return jsonify({
-                    'success': False,
-                    'error': 'No price history data available',
-                }), 500
+            if latest_date:
+                latest_dt = datetime.strptime(latest_date, '%Y-%m-%d')
+                if period == 'YTD':
+                    start_dt = datetime(latest_dt.year, 1, 1)
+                else:
+                    days = PERIOD_DAYS[period]
+                    start_dt = latest_dt - timedelta(days=days)
+                start_date = start_dt.strftime('%Y-%m-%d')
 
-            latest_dt = datetime.strptime(latest_date, '%Y-%m-%d')
-
-            # Compute start date based on period
-            if period == 'YTD':
-                start_dt = datetime(latest_dt.year, 1, 1)
-            else:
-                days = PERIOD_DAYS[period]
-                start_dt = latest_dt - timedelta(days=days)
-
-            start_date = start_dt.strftime('%Y-%m-%d')
-
-            # === Get start price + end price for each ticker ===
-            # For each ticker, find the closest price to start_date and the latest price
-            # Use a single query with window functions for efficiency
-            query = """
-                WITH ranked AS (
+                # query price_history.db (schema: ticker, date, close_price, volume)
+                query = """
+                    WITH ranked AS (
+                        SELECT
+                            ticker,
+                            date,
+                            close_price,
+                            volume,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY ticker
+                                ORDER BY
+                                    CASE WHEN date <= ? THEN 0 ELSE 1 END,
+                                    ABS(julianday(date) - julianday(?)) ASC
+                            ) as start_rank,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY ticker
+                                ORDER BY date DESC
+                            ) as end_rank
+                        FROM price_history
+                        WHERE date <= ?
+                    )
                     SELECT
-                        symbol,
-                        price_date,
-                        close_price,
-                        volume,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY symbol
-                            ORDER BY
-                                CASE WHEN price_date <= ? THEN 0 ELSE 1 END,
-                                ABS(julianday(price_date) - julianday(?)) ASC
-                        ) as start_rank,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY symbol
-                            ORDER BY price_date DESC
-                        ) as end_rank
-                    FROM egksco_price_history
-                    WHERE price_date <= ?
-                )
-                SELECT
-                    s.symbol as start_symbol,
-                    s.price_date as start_date,
-                    s.close_price as start_price,
-                    s.volume as start_volume,
-                    e.price_date as end_date,
-                    e.close_price as end_price,
-                    e.volume as end_volume
-                FROM ranked s
-                JOIN ranked e ON s.symbol = e.symbol
-                WHERE s.start_rank = 1 AND e.end_rank = 1
-            """
-            rows = de_conn.execute(query, (start_date, start_date, latest_date)).fetchall()
+                        s.ticker as start_symbol,
+                        s.date as start_date,
+                        s.close_price as start_price,
+                        s.volume as start_volume,
+                        e.date as end_date,
+                        e.close_price as end_price,
+                        e.volume as end_volume
+                    FROM ranked s
+                    JOIN ranked e ON s.ticker = e.ticker
+                    WHERE s.start_rank = 1 AND e.end_rank = 1
+                """
+                rows = ph_conn.execute(query, (start_date, start_date, latest_date)).fetchall()
+        except Exception:
+            rows = []
         finally:
-            de_conn.close()
+            if ph_conn:
+                ph_conn.close()
+
+        # 2. Fallback: data_engine.db.egksco_price_history (لو price_history.db فاضي)
+        if not rows:
+            try:
+                de_conn = _get_data_engine_conn()
+                latest_date_row = de_conn.execute(
+                    'SELECT MAX(price_date) as max_date FROM egksco_price_history'
+                ).fetchone()
+                latest_date = latest_date_row['max_date'] if latest_date_row else None
+
+                if not latest_date:
+                    return jsonify({
+                        'success': False,
+                        'error': 'No price history data available (both price_history.db and data_engine.db are empty)',
+                    }), 500
+
+                latest_dt = datetime.strptime(latest_date, '%Y-%m-%d')
+                if period == 'YTD':
+                    start_dt = datetime(latest_dt.year, 1, 1)
+                else:
+                    days = PERIOD_DAYS[period]
+                    start_dt = latest_dt - timedelta(days=days)
+                start_date = start_dt.strftime('%Y-%m-%d')
+
+                query = """
+                    WITH ranked AS (
+                        SELECT
+                            symbol,
+                            price_date,
+                            close_price,
+                            volume,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY symbol
+                                ORDER BY
+                                    CASE WHEN price_date <= ? THEN 0 ELSE 1 END,
+                                    ABS(julianday(price_date) - julianday(?)) ASC
+                            ) as start_rank,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY symbol
+                                ORDER BY price_date DESC
+                            ) as end_rank
+                        FROM egksco_price_history
+                        WHERE price_date <= ?
+                    )
+                    SELECT
+                        s.symbol as start_symbol,
+                        s.price_date as start_date,
+                        s.close_price as start_price,
+                        s.volume as start_volume,
+                        e.price_date as end_date,
+                        e.close_price as end_price,
+                        e.volume as end_volume
+                    FROM ranked s
+                    JOIN ranked e ON s.symbol = e.symbol
+                    WHERE s.start_rank = 1 AND e.end_rank = 1
+                """
+                rows = de_conn.execute(query, (start_date, start_date, latest_date)).fetchall()
+            finally:
+                if de_conn:
+                    de_conn.close()
 
         if not rows:
             return jsonify({
