@@ -64,24 +64,18 @@ except ImportError:  # pragma: no cover
 # ---------------------------------------------------------------------------
 # Database paths
 # ---------------------------------------------------------------------------
-# V40.2: Auto-resolve price_history.db — may be in primary location OR in
-# daily backups (db/backups/daily/*/price_history.db). This resolver finds
-# the first DB with actual data, WITHOUT copying or modifying anything.
-# Read-only detection: safe for production databases.
+# V40.2 → PHASE-1-DB-UNIFY (2026-08-29): توحيد مصدر الأسعار
+# data_engine.db هو المصدر الوحيد — prices.db متجمد + price_history.db مفقود
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
 PREDICTIONS_DB = str(PROJECT_ROOT / 'db' / 'predictions.db')
 
 def _resolve_price_history_db():
     """Find the database with actual price data.
 
-    Priority (after DATA-UNIFY-007):
-      1. data_engine.db (primary — egksco_price_history table, 162K+ rows)
-      2. prices.db (unified — egx_prices table)
-      3. price_history.db (legacy — price_history table, with backups fallback)
-
-    Returns the path to the database that has the most recent price data.
+    PHASE-1-DB-UNIFY: data_engine.db is the ONLY source.
+    Removed: prices.db (stale — ends 2026-06-10) + price_history.db (missing).
     """
-    # 1. PRIMARY: data_engine.db (egksco_price_history — the canonical source)
+    # PRIMARY + ONLY: data_engine.db (egksco_price_history — 162K+ rows)
     primary = str(PROJECT_ROOT / 'db' / 'data_engine.db')
     try:
         if os.path.exists(primary) and os.path.getsize(primary) > 1000:
@@ -98,79 +92,24 @@ def _resolve_price_history_db():
     except Exception:
         pass
 
-    # 2. UNIFIED: prices.db (egx_prices — DATA-UNIFY output)
-    unified = str(PROJECT_ROOT / 'db' / 'prices.db')
+    # Fallback: stocks.db (stock_daily_prices — partial but recent)
+    stocks_db = str(PROJECT_ROOT / 'db' / 'stocks.db')
     try:
-        if os.path.exists(unified) and os.path.getsize(unified) > 1000:
-            db = sqlite3.connect(f'file:{unified}?mode=ro', uri=True, timeout=3)
+        if os.path.exists(stocks_db) and os.path.getsize(stocks_db) > 1000:
+            db = sqlite3.connect(f'file:{stocks_db}?mode=ro', uri=True, timeout=3)
             tables = [r[0] for r in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()]
-            if 'egx_prices' in tables:
-                count = db.execute('SELECT COUNT(*) FROM egx_prices').fetchone()[0]
+            if 'stock_daily_prices' in tables:
+                count = db.execute('SELECT COUNT(*) FROM stock_daily_prices').fetchone()[0]
                 db.close()
                 if count >= 100:
-                    print(f"[V38Engine] Using unified prices.db (egx_prices)")
-                    return unified
+                    print(f"[V38Engine] Fallback: stocks.db (stock_daily_prices, {count} rows)")
+                    return stocks_db
             db.close()
     except Exception:
         pass
 
-    # 3. LEGACY: price_history.db (with backups fallback)
-    primary_legacy = str(PROJECT_ROOT / 'db' / 'price_history.db')
-    try:
-        if os.path.exists(primary_legacy) and os.path.getsize(primary_legacy) > 1000:
-            db = sqlite3.connect(f'file:{primary_legacy}?mode=ro', uri=True, timeout=3)
-            tables = [r[0] for r in db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()]
-            if 'price_history' in tables:
-                count = db.execute('SELECT COUNT(*) FROM price_history').fetchone()[0]
-                db.close()
-                if count >= 100:
-                    print(f"[V38Engine] Using legacy price_history.db")
-                    return primary_legacy
-            db.close()
-    except Exception:
-        pass
-
-    # 4. Try backups
-    import glob
-    import re
-    backup_pattern = str(PROJECT_ROOT / 'db' / 'backups' / 'daily' / '*' / 'price_history.db')
-    backup_paths = glob.glob(backup_pattern)
-
-    def _backup_date_key(p):
-        m = re.search(r'/(\d{8})_(\d{6})/price_history\.db$', p)
-        if m:
-            return m.group(1) + m.group(2)
-        return '0'
-
-    backup_paths.sort(key=_backup_date_key, reverse=True)
-
-    for bp in backup_paths:
-        try:
-            if os.path.getsize(bp) < 1000:
-                continue
-            db = sqlite3.connect(f'file:{bp}?mode=ro', uri=True, timeout=3)
-            tables = [r[0] for r in db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()]
-            if 'price_history' in tables:
-                count = db.execute('SELECT COUNT(*) FROM price_history').fetchone()[0]
-                max_date = db.execute(
-                    'SELECT MAX(date) FROM price_history WHERE date IS NOT NULL'
-                ).fetchone()[0]
-                db.close()
-                if count >= 100:
-                    print(f"[V38Engine] Using backup price_history.db: {bp}")
-                    print(f"           Rows: {count:,} | Max date: {max_date}")
-                    return bp
-            db.close()
-        except Exception:
-            pass
-
-    # Final fallback — even if empty
     return primary
 
 PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')

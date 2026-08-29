@@ -8815,3 +8815,46 @@ Stage Summary:
   - الإجمالي: ~70,000 LOC مُخفّضة
 - ✅ logic التداول لم يتأثر (V40.2 + daily_closer سليمين)
 - 🔜 النشر على الإنتاج
+
+---
+Task ID: PHASE1-DB-UNIFY
+Agent: Z.ai Code (main orchestrator)
+Task: توحيد مصدر الأسعار — data_engine.db هو المصدر الوحيد
+
+Work Log:
+- العميل وافق: "موافق جدا بشرط الأختبار الصارم الكامل بعد كل مرحلة"
+- backup: predictions.db + data_engine.db + stocks.db → /tmp/pre-db-cleanup/
+
+المرحلة 1: توحيد مصدر الأسعار
+
+المشكلة:
+- 4 مصادر أسعار مفرقة: price_history.db (مفقود 0 بايت) + vps_real (غير موجود) + data_engine.db (سليم) + stocks.db (جزئي)
+- daily_closer كان يحاول price_history.db أولاً (مفقود!) → يهدر وقت + قد يقرأ أسعار خاطئة
+- V38 كان يحاول prices.db (متجمد — ينتهي 2026-06-10) → يفوت أسهم يوليو/أغسطس
+
+الإصلاح:
+
+1. daily_closer.py (_candidate_price_dbs):
+   - حذف: price_history.db (مفقود) + vps_real (غير موجود)
+   - قبل: 4 مصادر [price_history.db, vps_real, data_engine.db, stocks.db]
+   - بعد: 2 مصادر [data_engine.db (PRIMARY), stocks.db (fallback)]
+
+2. v38_backtest_engine.py (_resolve_price_history_db):
+   - حذف: prices.db (متجمد — ends 2026-06-10) + price_history.db (مفقود) + backups glob
+   - قبل: 4 مستويات [data_engine.db, prices.db, price_history.db, backups/*]
+   - بعد: 2 مستويات [data_engine.db (PRIMARY), stocks.db (fallback)]
+
+الاختبارات الصارمة:
+1. ✅ Python syntax: daily_closer OK + v38_backtest_engine OK
+2. ✅ V40.2 dry-run: 29 signals, 6 dates (logic سليم — نفس عدد الـ +1100% state)
+3. ✅ daily_closer: يشتغل + price_source_stats تشهد إن price_history.db + vps_real اختفوا
+4. ✅ _candidate_price_dbs: 2 candidates فقط (data_engine.db + stocks.db)
+5. ✅ LINT: EXIT 0
+6. ✅ HTTP: 200
+
+Stage Summary:
+- ✅ توحيد مصدر الأسعار: data_engine.db هو المصدر الوحيد
+- ✅ حذف 3 مصادر مشكوك فيها (price_history.db + vps_real + prices.db)
+- ✅ كل الاختبارات الصارمة نجحت
+- 📊 commits: (يتم بعد push)
+- 🔜 المرحلة 2: حذف الجداول الفارغة المكررة

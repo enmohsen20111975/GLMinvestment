@@ -102,22 +102,16 @@ PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
 STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
 
 # ──────────────────────────────────────────────────────────────────────────────
-# P0-v18 (أغسطس 2026): Auto-detect مصدر تاريخ الأسعار
+# P0-v18 → PHASE-1-DB-UNIFY (2026-08-29): توحيد مصدر الأسعار
 # ──────────────────────────────────────────────────────────────────────────────
-# المشكلة: daily_closer كان بـ يقرأ db/price_history.db بس — اللي كتير بيكون
-# فاضي (4KB, no tables) على الـ VPS. النتيجة: 0/1445 متقفلش لأنه مبيلاقيش
-# أى شمعة لأى سهم. الحل: نـ try كل الـ sources المحتملة بالترتيب:
-#   1. db/price_history.db → price_history (الـ canonical)
-#   2. db/vps_real/price_history.db → price_history (نسخة المالك الحقيقية)
-#   3. db/data_engine.db → egksco_price_history (الأسعار الحية من EGKSCO)
-#   4. db/stocks.db → stock_daily_prices (fallback أخير)
-# أول source بـ يرجّع data بـ يـ win. الـ stats بـ تـ track أي source اشتغل.
+# المشكلة: 4 مصادر أسعار مفرقة (price_history.db مفقود، vps_real غير موجود،
+# prices.db متجمد، data_engine.db سليم). النتيجة: تداخل + أسعار خاطئة.
+# الحل: data_engine.db هو المصدر الوحيد + stocks.db كـ fallback أخير فقط.
+# أزلنا: price_history.db (مفقود 0 بايت) + vps_real (غير موجود).
 def _candidate_price_dbs() -> list:
     """رجّع قائمة (db_path, table, schema_kind) مرتّبة بالأولوية."""
     db_dir = _PROJECT_ROOT / 'db'
     return [
-        (str(db_dir / 'price_history.db'), 'price_history', 'ticker_date'),
-        (str(db_dir / 'vps_real' / 'price_history.db'), 'price_history', 'ticker_date'),
         (str(db_dir / 'data_engine.db'), 'egksco_price_history', 'symbol_pricedate'),
         (str(db_dir / 'stocks.db'), 'stock_daily_prices', 'ticker_pricedate'),
     ]
