@@ -8496,3 +8496,192 @@ Stage Summary:
 3. **بيانات كاذبة في AI routes** (`batch-analysis` + `analyze-stock` stubs + `equity/curve` fake snapshots) — يجب حذفها فورًا (8 ساعات) لأنها تخدع المستخدم.
 
 **نقطة بداية آمنة (هذا الأسبوع):** المرحلة 1 (~17 ساعة) تحقق نتائج فورية بدون كسر features — إزالة 7,000 LOC ميت/وهمي. بعد كل ملف: `bun run lint` + backtest verification + commit + push (Rule 26).
+
+---
+Task ID: PHASE4-VERIFY-BEFORE-DELETE
+Agent: Explore (orphan + DEPRECATED audit)
+Task: تحديد دقيق للملفات الميتة للمرحلة 4 (3 جداول: A) orphan components, B) dead Next.js pages, C) DEPRECATED Python routes)
+
+Work Log:
+- قرأت آخر 100 سطر من worklog.md لفهم السياق (آخر قسم تطرّق لـ "كود ميت/orphan: 8 مجموعات، ~50,000 LOC، ~25 ساعة")
+- جردت كل ملفات .tsx في src/components/ (322 ملف، استبعدت ui/ و admin/)
+- كتبت سكربت bash (orphan_check2.sh) يستخرج كل exports (function/const) من كل ملف ويبحث عن 3 أنواع مراجع: identifier-based imports, path-based imports, dynamic imports
+- تحققت يدويًا من 50 مرشح: 2 منها (CandlestickSimulator, LessonPDFExporter) اتضح أنها مستوردة فعلاً من AcademyView/AcademyEncyclopedia → تم استبعادها
+- تحققت من substring false positives (AdvancedAnalysisView vs StockAdvancedAnalysisView, PortfolioView vs EnhancedPortfolioView, WatchlistView vs EnhancedWatchlistView, RecommendationsView vs SimpleRecommendationsView, MaestroCommandCenter dashboard vs admin/, AlertsCenterView intelligence vs alerts/, AIView عبر ai/index.ts barrel) → كلها false positives بسبب substring
+- حدّدت would-be-orphans: AIAssistantChat (مستورد فقط من AIView + ai/index.ts barrel)، devil/{MarketMood, DevilsCalendar, DevilsCard, ScenarioMatrix} (مستوردة فقط من DevilsLayerView)
+- جردت كل page.tsx في src/app/ (20 صفحة)، تحققت من كل href/router.push/redirect/window.location لكل route
+- استخرجت كل Blueprint() definitions من 51 ملف .py في vps-service/api/، قارنتها بـ BLUEPRINTS في lightweight_server.py
+- تحققت من تعليق `# DEPRECATED: This route is not registered in lightweight_server.py` على line 1 من كل ملف غير مسجّل
+- لاحظت أن expert_memory_v4_routes.py يحمل تعليق DEPRECATED قديم لكنه مسجّل فعلاً (تعليق outdated)
+- تحققت من imports خارجية: kimi_backtest.py (5 imports من admin_routes.py لـ EnhancedBacktest class) و analysis_routes.py (lazy-imported من api/__init__.py لكن register_analysis_routes لا يُستدعى خارجياً)
+- قمت بحساب LOC لكل ملف orphan/dead/DEPRECATED
+
+Stage Summary:
+
+### أ. مكوّنات orphan في src/components/ (48 مؤكد + 8 would-be-orphan)
+
+| # | الملف | المكوّن المُصدَّر | LOC | مستوى الثقة | مقترح |
+|---|------|------|----:|:---:|:---:|
+| 1 | `src/components/advanced-analysis/AdvancedAnalysisView.tsx` | AdvancedAnalysisView | 959 | مؤكد | حذف |
+| 2 | `src/components/advanced-analysis/StoredAnalysisView.tsx` | StoredAnalysisView | 1,896 | مؤكد | حذف (comment-only ref في page.tsx: "REMOVED") |
+| 3 | `src/components/ai-analysis/AIAnalysisDashboard.tsx` | AIAnalysisDashboard | 881 | مؤكد | حذف |
+| 4 | `src/components/ai/AIView.tsx` | AIView | 325 | مؤكد* | حذف (مزدوج مع ai/index.ts) |
+| 5 | `src/components/analysis/ConfluencePanel.tsx` | ConfluencePanel | 1,131 | مؤكد | حذف |
+| 6 | `src/components/analysis/RichChartCard.tsx` | RichChartCard | 426 | مؤكد | حذف |
+| 7 | `src/components/analyst/AnalystDashboardView.tsx` | AnalystDashboardView | 615 | مؤكد | حذف |
+| 8 | `src/components/command-center/CommandCenterV6.tsx` | CommandCenterV6 | 646 | مؤكد | حذف |
+| 9 | `src/components/community/CommunityView.tsx` | CommunityView | 581 | مؤكد | حذف |
+| 10 | `src/components/dashboard/DataSyncButton.tsx` | DataSyncButton | 387 | مؤكد | حذف |
+| 11 | `src/components/dashboard/EGXPilotNews.tsx` | EGXPilotNews | 101 | مؤكد | حذف |
+| 12 | `src/components/dashboard/MaestroCommandCenter.tsx` | MaestroCommandCenter (dashboard) | 848 | مؤكد | حذف (admin/MaestroCommandCenter.tsx مختلف ومستخدم) |
+| 13 | `src/components/deep-learning/DeepLearningControl.tsx` | DeepLearningControl | 577 | مؤكد | حذف |
+| 14 | `src/components/devil/DevilsLayerView.tsx` | DevilsLayerView | 114 | مؤكد | حذف (سيسبب 4 would-be-orphans) |
+| 15 | `src/components/hunter/HunterView.tsx` | HunterView | 615 | مؤكد | حذف |
+| 16 | `src/components/intelligence/AlertsCenterView.tsx` | AlertsCenterView (intelligence/) | 497 | مؤكد | حذف (alerts/AlertsCenterView.tsx مختلف ومستخدم) |
+| 17 | `src/components/intelligence/PortfolioIntelligenceSection.tsx` | PortfolioIntelligenceSection | 640 | مؤكد | حذف (comment "removed - feature disabled") |
+| 18 | `src/components/learning/MaestroEducationCenter.tsx` | MaestroEducationCenter | 571 | مؤكد | حذف |
+| 19 | `src/components/market/MarketScreenView.tsx` | MarketScreenView | 1,460 | مؤكد | حذف |
+| 20 | `src/components/news/NewsWidget.tsx` | NewsWidget | 281 | مؤكد | حذف |
+| 21 | `src/components/performance/AdminPredictionGenerator.tsx` | AdminPredictionGenerator | 434 | مؤكد | حذف |
+| 22 | `src/components/performance/PerformanceCharts.tsx` | PerformanceCharts | 353 | مؤكد | حذف |
+| 23 | `src/components/performance/PerformanceStats.tsx` | PerformanceStats | 750 | مؤكد | حذف (PerformanceStats identifier الموجود في CryptoAdminPanel.tsx هو interface محلي مختلف) |
+| 24 | `src/components/performance/UserPerformanceView.tsx` | UserPerformanceView | 488 | مؤكد | حذف |
+| 25 | `src/components/portfolio/InteractivePortfolioManager.tsx` | InteractivePortfolioManager | 1,049 | مؤكد | حذف |
+| 26 | `src/components/portfolio/PortfolioView.tsx` | PortfolioView | 591 | مؤكد | حذف (EnhancedPortfolioView مختلف ومستخدم) |
+| 27 | `src/components/predictions/PredictionAccuracyWidget.tsx` | PredictionAccuracyWidget | 256 | مؤكد | حذف |
+| 28 | `src/components/predictions/PredictionsPerformanceView.tsx` | PredictionsPerformanceView | 341 | مؤكد | حذف |
+| 29 | `src/components/recommendations/RecommendationsTable.tsx` | RecommendationsTable | 729 | مؤكد | حذف |
+| 30 | `src/components/recommendations/RecommendationsView.tsx` | RecommendationsView | 516 | مؤكد | حذف (SimpleRecommendationsView مختلف ومستخدم) |
+| 31 | `src/components/reports/DailyReportImageCard.tsx` | DailyReportImageCard | 747 | مؤكد | حذف |
+| 32 | `src/components/risk/RiskManagementWidget.tsx` | RiskManagementWidget | 589 | مؤكد | حذف |
+| 33 | `src/components/screener/MultiChartScreener.tsx` | MultiChartScreener | 989 | مؤكد | حذف |
+| 34 | `src/components/self-learning/SelfLearningView.tsx` | SelfLearningView | 715 | مؤكد | حذف |
+| 35 | `src/components/share/ShareAllAnalysis.tsx` | ShareAllAnalysis | 866 | مؤكد | حذف |
+| 36 | `src/components/share/ShareDialog.tsx` | ShareDialog | 855 | مؤكد | حذف |
+| 37 | `src/components/share/SocialShareManager.tsx` | SocialShareManager | 691 | مؤكد | حذف |
+| 38 | `src/components/sniper/SniperView.tsx` | SniperView | 418 | مؤكد | حذف (comment "merged into MarketAnalysisView") |
+| 39 | `src/components/stocks/AdvancedStockChart.tsx` | AdvancedStockChart | 1,988 | مؤكد | حذف (refs في route.ts هي comments فقط) |
+| 40 | `src/components/stocks/ConfluenceGauges.tsx` | ConfluenceGauges | 169 | مؤكد | حذف |
+| 41 | `src/components/stocks/LiveStocksTable.tsx` | LiveStocksTable | 828 | مؤكد | حذف |
+| 42 | `src/components/stocks/SimpleStockChart.tsx` | SimpleStockChart | 995 | مؤكد | حذف |
+| 43 | `src/components/stocks/StockAnalysisDashboard.tsx` | StockAnalysisDashboard | 744 | مؤكد | حذف |
+| 44 | `src/components/stocks/StockChart.tsx` | StockChart | 289 | مؤكد | حذف |
+| 45 | `src/components/stocks/StockList.tsx` | StockList | 509 | مؤكد | حذف |
+| 46 | `src/components/studio/EngineStudio.tsx` | EngineStudio | 50 | مؤكد | حذف (studio/FlowCanvas + 7 files مستخدمة من admin/UnifiedCommandCenter — تبقى حية) |
+| 47 | `src/components/topology/LiveTopologyView.tsx` | LiveTopologyView | 212 | مؤكد | حذف |
+| 48 | `src/components/watchlist/WatchlistView.tsx` | WatchlistView | 713 | مؤكد | حذف (EnhancedWatchlistView + ProfessionalWatchlistView مختلفان ومستخدمان) |
+| -- | `src/components/ai/index.ts` (barrel) | re-exports AIView, AIAssistantChat, default | 3 | مؤكد* | حذف (مزدوج مع #4 — لا أحد يستورد `@/components/ai`) |
+| W1 | `src/components/ai/AIAssistantChat.tsx` | AIAssistantChat | 332 | would-be-orphan | حذف بعد AIView + ai/index.ts |
+| W2 | `src/components/devil/MarketMood.tsx` | MarketMood | 186 | would-be-orphan | حذف مع DevilsLayerView |
+| W3 | `src/components/devil/DevilsCalendar.tsx` | DevilsCalendar | 193 | would-be-orphan | حذف مع DevilsLayerView |
+| W4 | `src/components/devil/DevilsCard.tsx` | DevilsCard | 314 | would-be-orphan | حذف مع DevilsLayerView |
+| W5 | `src/components/devil/ScenarioMatrix.tsx` | ScenarioMatrix | 182 | would-be-orphan | حذف مع DevilsLayerView |
+| -- | `src/components/crypto/_archived_v404/CryptoAnalysisView.tsx` | CryptoAnalysisView | 1,090 | مؤكد (archived) | حذف (refs هي comments فقط) |
+| -- | `src/components/crypto/_archived_v404/CryptoRecommendationsView.tsx` | CryptoRecommendationsView | 1,057 | مؤكد (archived) | حذف (refs هي comments فقط) |
+
+**\*AIView:** مستورد فقط من `ai/index.ts` (barrel) والـ barrel نفسه لا يستورده أحد. لذا AIView + ai/index.ts لازم يُحذفا معًا.
+**إجمالي LOC للقائمة أ (48 مؤكد + barrel + 5 would-be + 2 archived):** 34,782 LOC
+
+---
+
+### ب. صفحات Next.js ميتة في src/app/
+
+| # | المسار | موصول في page.tsx الرئيسي؟ | LOC | مستوى الثقة | مقترح |
+|---|------|:---:|----:|:---:|:---:|
+| 1 | `src/app/admin/educational-cards/page.tsx` | NO (لا link من AdminView) | 1,702 | مؤكد | حذف |
+| 2 | `src/app/admin/expert-recommendations/page.tsx` | NO | 1,079 | مؤكد | حذف |
+| 3 | `src/app/admin/honest-predictions/page.tsx` | NO | 1,919 | مؤكد | حذف |
+| 4 | `src/app/admin/maestro/page.tsx` | NO (مختلف عن /maestro) | 747 | مؤكد | حذف |
+| 5 | `src/app/admin/prediction-performance/page.tsx` | NO | 823 | مؤكد | حذف |
+| 6 | `src/app/admin/reports/page.tsx` | NO | 118 | مؤكد | حذف |
+| 7 | `src/app/community/page.tsx` | NO (لا link، self-contained) | 324 | مؤكد | حذف |
+| 8 | `src/app/education/analysis-types/page.tsx` | NO | 469 | مؤكد | حذف |
+| 9 | `src/app/payment/fail/page.tsx` | NO (fail redirect إلى /subscription?payment=failed) | 58 | مؤكد | حذف |
+| 10 | `src/app/portfolio/page.tsx` | NO (تستخدم WealthCommandCenter الحي) | 1,199 | مؤكد | حذف |
+| 11 | `src/app/prediction-performance/page.tsx` | NO (PredictionPerformanceView الحي يُستخدم من page.tsx hash route) | 8 | مؤكد | حذف |
+| 12 | `src/app/unified-analysis/page.tsx` | NO (UnifiedAnalysisView الحي يُستخدم من page.tsx hash route) | 12 | مؤكد | حذف |
+| 13 | `src/app/stock/[ticker]/page.tsx` | NO (المُحيل الوحيد هو HunterView — orphan) | 1,233 | محتمل* | احتفاظ حتى حذف HunterView → ثم حذف |
+
+**\*stock/[ticker]:** لو حُذف HunterView (orphan في القائمة أ) تصبح هذه الصفحة dead أيضًا. حاليًا هي "متوقفة على orphan".
+
+**محتفظ بها (موصولة فعلاً):**
+- `src/app/admin/page.tsx` — redirect إلى `/#admin` (وصول مباشر بالـ URL)
+- `src/app/legal/disclaimer/page.tsx` — Footer link ✓
+- `src/app/legal/privacy/page.tsx` — Footer link ✓
+- `src/app/legal/terms/page.tsx` — Footer link ✓
+- `src/app/maestro/page.tsx` — MaestroWidget.tsx link ✓
+- `src/app/payment/success/page.tsx` — payments API redirect ✓
+- `src/app/page.tsx` — main route (hash router)
+
+**إجمالي LOC للقائمة ب:** 9,691 LOC
+
+---
+
+### ج. Python DEPRECATED routes في vps-service/api/
+
+| # | الملف | اسم blueprint | مسجّل في lightweight_server.py؟ | DEPRECATED comment؟ | imports خارجية؟ | مستوى الثقة | مقترح |
+|---|------|------|:---:|:---:|:---:|:---:|:---:|
+| 1 | `vps-service/api/analysis_engine_routes.py` | `analysis_engine_bp` | NO | YES (line 1) | 0 | مؤكد | حذف |
+| 2 | `vps-service/api/backtest_routes.py` | `backtest_bp` | NO | YES | 0 | مؤكد | حذف |
+| 3 | `vps-service/api/crypto_routes.py` | `crypto_bp` | NO | YES | 0 | مؤكد | حذف |
+| 4 | `vps-service/api/crypto_simulation_routes.py` | `crypto_sim_bp` | NO | YES | 0 | مؤكد | حذف |
+| 5 | `vps-service/api/data_engine_routes.py` | `data_engine_bp` | NO | YES | 0 | مؤكد | حذف |
+| 6 | `vps-service/api/educational_cards_routes.py` | `educational_cards_bp` | NO | YES | 0 | مؤكد | حذف |
+| 7 | `vps-service/api/hunter_routes.py` | `hunter_bp` | NO | YES | 0 | مؤكد | حذف |
+| 8 | `vps-service/api/market_status_routes.py` | `market_status_bp` | NO | YES | 0 | مؤكد | حذف |
+| 9 | `vps-service/api/multi_market_routes.py` | `multi_market_bp` | NO | YES | 0 | مؤكد | حذف |
+| 10 | `vps-service/api/performance_dashboard_routes.py` | `performance_bp` | NO | YES | 0 | مؤكد | حذف |
+| 11 | `vps-service/api/smart_confluence_routes.py` | `smart_bp` | NO | YES | 0 | مؤكد | حذف |
+| 12 | `vps-service/api/v2_analytics_routes.py` | `v2_analytics_bp` | NO | YES | 0 | مؤكد | حذف |
+| 13 | `vps-service/api/walk_forward_backtest.py` | `wf_bp` | NO | YES | 0 | مؤكد | حذف |
+| 14 | `vps-service/api/kimi_backtest.py` | `kimi_bp` | NO | YES | **5** (admin_routes.py يستورد EnhancedBacktest class 5x) | محتمل | **لا حذف مباشر** — استخرج EnhancedBacktest لـ engines/enhanced_backtest.py أولاً ثم حذف |
+| 15 | `vps-service/api/analysis_routes.py` | `analysis_bp` | NO | YES | **1** (api/__init__.py lazy-imports `register_analysis_routes` لكن لا أحد يستدعيها خارجياً) | محتمل | **لا حذف مباشر** — أزل lazy import من `api/__init__.py` (سطرين: `__all__` و `__getattr__`) ثم احذف |
+
+**ملاحظة على ملفات تحتوي تعليق DEPRECATED قديم لكنها مسجّلة فعلاً (OUTDATED — لا تُحذف):**
+- `vps-service/api/expert_memory_v4_routes.py` — line 1 says DEPRECATED، لكن مسجّل في line 96 من lightweight_server.py ✓. التعليق outdated — يُفضّل تنظيفه لكن لا حذف الملف.
+- `vps-service/api/unified_learning_routes.py` — line 2 يقول "بعد ما كان marked DEPRECATED بالغلط" — الملف فعّال ✓.
+- `vps-service/api/optimizer_params_routes.py` — نفس الملاحظة ✓.
+- `vps-service/api/risk_routes.py` — line 857 يقول "LEGACY ENDPOINTS" للـ endpoints داخل الملف، ليس الملف نفسه ✓.
+
+**إجمالي LOC للقائمة ج (15 ملف):** 8,815 LOC (منها 7,481 LOC آمنة للحذف المباشر من #1-#13).
+
+---
+
+## 📊 ملخص الأرقام النهائي للمرحلة 4
+
+| القائمة | عدد الملفات | إجمالي LOC | آمن للحذف المباشر (مؤكد) | يحتاج refactoring قبله (محتمل) |
+|------|---:|---:|---:|---:|
+| أ — مكوّنات orphan | 55 (48 مؤكد + barrel + 5 would-be + 2 archived) | 34,782 | 34,782 (لو حُذفت كـ batch متصل) | 0 |
+| ب — Next.js dead pages | 13 | 9,691 | 8,458 (12 صفحة مؤكد) | 1,233 (stock/[ticker] تنتظر HunterView) |
+| ج — Python DEPRECATED | 15 | 8,815 | 7,481 (13 ملف) | 1,334 (2 ملف: kimi_backtest + analysis_routes) |
+| **الإجمالي** | **83 ملف** | **53,288 LOC** | **50,721 LOC آمن** | **2,567 LOC يحتاج refactoring** |
+
+## ✅ الملفات الآمنة للحذف المباشر (مؤكد) — 80 ملف
+
+**القائمة أ (مؤكد):** 48 component + ai/index.ts + 2 archived = 51 ملف
+**القائمة ب (مؤكد):** 12 صفحة (عدا stock/[ticker])
+**القائمة ج (مؤكد):** 13 ملف Python
+
+## ⚠️ ملفات تحتاج refactoring قبل الحذف (محتمل) — 3 ملفات
+
+1. `vps-service/api/kimi_backtest.py` (1,121 LOC) — استخرج `EnhancedBacktest` class لـ `vps-service/engines/enhanced_backtest.py`، حدّث 5 imports في `admin_routes.py`، ثم احذف.
+2. `vps-service/api/analysis_routes.py` (1,066 LOC) — أزل lazy import من `api/__init__.py` (سطر في `__all__` و branch في `__getattr__`)، ثم احذف.
+3. `src/app/stock/[ticker]/page.tsx` (1,233 LOC) — احذف بعد `src/components/hunter/HunterView.tsx` (orphan مؤكد في القائمة أ #15).
+
+## 🔗 قيود إلزامية قبل الحذف (Rule 16: VERIFY-BEFORE-DELETE)
+
+1. **Batch deletion للـ cluster:** كل من (AIView + ai/index.ts + AIAssistantChat) لازم يُحذفوا معًا. وكذلك (DevilsLayerView + devil/MarketMood + devil/DevilsCalendar + devil/DevilsCard + devil/ScenarioMatrix) كـ batch واحد.
+2. **قبل كل commit:** `bun run lint` + `tsc --noEmit` + `python3 -c "import vps-service.lightweight_server"` للتأكد من عدم كسر import chain.
+3. **بعد كل دفعة:** backtest verification (V40.2) للتأكد من عدم regression (Rule 26 + تصريح المالك).
+4. **لا تُحذف `glminvestment_engines/`** (المستوردة من maestro_orchestrator.py و background_analyzer.py و expert_quality_gate.py) — خارج نطاق هذه القائمة.
+
+## 🎯 توصية التنفيذ
+
+**المرحلة 4a (ساعة واحدة):** حذف 13 ملف Python DEPRECATED مؤكد (القائمة ج #1-#13) → تخفيف 7,481 LOC بدون كسر أي import.
+**المرحلة 4b (ساعة واحدة):** حذف 12 Next.js dead page مؤكد (القائمة ب #1-#12) → تخفيف 8,458 LOC. يشمل إزالة 3 admin sub-routes اللي لم تُربط.
+**المرحلة 4c (3 ساعات):** حذف 48 component orphan مؤكد + barrel + 2 archived + 5 would-be-orphan (القائمة أ) → تخفيف 34,782 LOC. تتطلب batch deletion للـ clusters الذكر أعلاه.
+**المرحلة 4d (ساعتان):** refactoring ثم حذف kimi_backtest.py و analysis_routes.py → تخفيف 2,187 LOC إضافية.
+**المرحلة 4e (15 دقيقة):** حذف stock/[ticker]/page.tsx بعد HunterView → تخفيف 1,233 LOC.
+
+**الإجمالي:** 6-7 ساعات لتخفيف 53,288 LOC ميت/DEPRECATED بالكامل.
+
