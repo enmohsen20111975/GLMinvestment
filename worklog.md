@@ -9683,3 +9683,41 @@ Stage Summary:
 - `scripts/consolidate_prices.py` (4 queries — one-shot migration writer)
 - `scripts/volume_surge_hunter_test.py` (2 queries — test)
 - `scripts/comprehensive_persona_backtest_90d.py` (1 query — backtest script)
+
+---
+Task ID: fix-2
+Agent: Z.ai Code (main)
+Task: PHASE-2-DB-UNIFY — توحيد كل readers لـ price_history.db + توثيق خريطة الـ data flow
+
+Work Log:
+- المستخدم نفّذ audit_backtest.py على الإنتاج — النتائج أكدت 0 signals
+- اكتشف إن audit_backtest.py كان بـ try data_engine.db first (مش price_history.db)
+- المستخدم طلب نظرة عامة على المشروع: فين البيانات بتيجي، فين بتتـ update، فين بتتـ read
+- استخدمت 2 Explore agents بالتوازي:
+  * explore-1: Map data engine ingestion flow (4 writers لـ price_history.db)
+  * explore-2: Map analytics + frontend data flow (top_performers + sparkline مكسورين)
+- كتابة Documentation/DATA_FLOW_MAP.md (NEW) — توثيق كامل لـ 3 layers
+- 5 إصلاحات:
+  1. v40_2_daily_generator.py: get_scan_dates + get_tickers (price_history.db first)
+  2. top_performers_routes.py: _get_price_history_conn() + query fallback
+  3. src/app/api/stocks/sparkline/route.ts: 3-tier fallback
+  4. vps-service/utils/db_paths.py: aliases تـ point للـ DBs الصحيحة
+  5. Documentation/DATA_FLOW_MAP.md (NEW artifact)
+- اختبارات:
+  * syntax OK (ast.parse) — كل الـ 5 ملفات
+  * lint OK (bun run lint EXIT 0)
+  * DBPaths test: PRICE_HISTORY_DB = price_history.db
+  * top_performers: price_history.db first
+- commit + push (05402b53)
+
+Stage Summary:
+- ✅ كل الـ readers بـ uses price_history.db كـ canonical source
+- ✅ Documentation/DATA_FLOW_MAP.md جاهز كـ production reference
+- ✅ خريطة الـ data flow متكاملة (3 layers)
+- ✅ 4 writers لـ price_history.db موثّقين (daily_price_updater + intraday_aggregator + price_history_safetynet + egksco_scraper)
+- ✅ كل cron jobs موثّقة (11 cron)
+- 🔜 المستخدم ينفّذ على الإنتاج:
+  1. git stash + git pull (لأن فيه conflict في scripts/audit_backtest.py)
+  2. python3 scripts/audit_backtest.py all — تأكد إن الـ readers دلوقتي بـ يـ read من price_history.db
+  3. python3 vps-service/jobs/v40_2_daily_generator.py --start 2025-12-01 --end 2026-08-27 --scan-interval 3 --max-picks 5 --force — backtest كامل
+  4. نتائج متوقعة: signals > 0 + الأسهم الانفجارية تـ appear
