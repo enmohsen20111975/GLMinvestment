@@ -1,55 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * GET /api/portfolio/equity/curve
+ *
+ * Pure proxy to Python backend /api/portfolio/equity/curve.
+ *
+ * Rule 20 (Python = brain, Node = display only): NO fake fallback.
+ * Rule 27 (NO-FAKE-DATA): removed previous fake snapshots generation
+ * (was generating Math.random-style equity curve — violating both rules).
+ *
+ * If Python backend is unavailable, returns 502 with clear hint.
+ * The client (WealthCharts.tsx, MasterPortfolioSummary.tsx) must handle
+ * the 502 gracefully (show "data unavailable" message).
+ */
 export const dynamic = 'force-dynamic';
 
+const PY = process.env.EGXPY_SERVICE_URL || process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
+
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const days = searchParams.get('days') || '90';
-
   try {
-    // Attempt proxying to python backend
-    const res = await fetch(`http://localhost:8010/api/portfolio/equity/curve?days=${days}`, {
-      next: { revalidate: 0 },
+    const url = new URL(request.url);
+    const qs = url.searchParams.toString();
+    const targetUrl = `${PY}/api/portfolio/equity/curve${qs ? `?${qs}` : ''}`;
+
+    const res = await fetch(targetUrl, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30000),
     });
-    if (res.ok) {
-      const data = await res.json();
-      return NextResponse.json(data);
-    }
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
   } catch (e) {
-    // Fallback if Python backend is temporarily down
+    const errMsg = e instanceof Error ? e.message : 'Unknown error';
+    const isTimeout = e instanceof Error && e.name === 'AbortError';
+    return NextResponse.json({
+      success: false,
+      error: isTimeout ? 'انتهت مهلة الطلب' : 'فشل في الاتصال بـ Python Backend',
+      details: errMsg,
+      hint: 'تأكد أن Python backend يعمل على ' + PY + '/api/portfolio/equity/curve — لا بيانات كاذبة (Rule 27)',
+    }, { status: isTimeout ? 504 : 502 });
   }
-
-  // Self-contained fallback response
-  const numDays = parseInt(days, 10) || 90;
-  const snapshots = [];
-  const baseDate = new Date();
-  baseDate.setDate(baseDate.getDate() - numDays);
-  let val = 150000;
-
-  for (let i = 0; i < numDays; i++) {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + i);
-    const pct = (i * 0.22) + ((i % 4) - 1.5) * 0.3;
-    const currentVal = Math.round((val * (1 + pct / 100)) * 100) / 100;
-    snapshots.push({
-      date: d.toISOString().split('T')[0],
-      total_value: currentVal,
-      cash: Math.round(currentVal * 0.2),
-      stocks_value: Math.round(currentVal * 0.8),
-      pnl_daily: Math.round(currentVal - val),
-    });
-  }
-
-  const firstVal = snapshots[0]?.total_value || 0;
-  const lastVal = snapshots[snapshots.length - 1]?.total_value || 0;
-
-  return NextResponse.json({
-    success: true,
-    days: numDays,
-    equity_snapshots: snapshots,
-    first_val: firstVal,
-    last_val: lastVal,
-    trend_color: lastVal >= firstVal ? '#16a34a' : '#ef4444',
-    total_change_pct: firstVal > 0 ? Math.round(((lastVal - firstVal) / firstVal) * 10000) / 100 : 0,
-  });
 }
+

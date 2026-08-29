@@ -8303,3 +8303,196 @@ Stage Summary:
 - ✅ الطلب 4: أعلى الأرباح/الخسائر في 8 فترات (1d/7d/15d/1m/3m/6m/YTD/1y)
 - 📊 commits على GitHub: 1f657ef0, 9e2aa54b, c69a4b24, ec3b519c
 - 🔒 كل الـ logic في Python (Rule 20 مُحترم): Node مجرد proxy + display
+
+---
+Task ID: CONSTITUTION-VIOLATIONS-AUDIT
+Agent: Explore (constitution audit)
+Task: مراجعة شاملة لمخالفات الدستور داخل المشروع
+
+Work Log:
+- قرأت `Documentation/00-CONSTITUTION.md` كاملاً (931 سطر) — ركزت على Rule 20 (Python=brain/Node=display only) + 9 قواعد ذهبية + §15 (القيود الحرجة) + سياسة الـ refactoring/الكود الميت + سياسة البيانات الكاذبة.
+- قرأت `Documentation/handOver.text` (أول 200 + آخر 200 + قسم 4000-4449) — ركزت على توجيهات المالك: "ما تعملش قرارات ولا أى منطق ولا أى حسابا فى الفرونت أند كل أعتمادك على البايثون فقط" + "لا بيانات كاذبة" + "لا تكرار شاشات/تبويبات" + "أسلوب التعامل مع العميل" + "مرتب هندسى محترم + شيل التداخل".
+- مسحت `src/app/api/` (602 route) بحثًا عن Node logic + direct SQLite access.
+- مسحت `src/lib/v2/` (30 ملف، 21,154 LOC) — مكدس تحليلي موازٍ في Node يكرر Python.
+- مسحت `src/components/` (322 ملف) بحثًا عن orphan components.
+- مسحت `src/app/` (19 صفحة Next.js) بحثًا عن dead pages.
+- مسحت `vps-service/` بحثًا عن random usage في production paths.
+- فحصت consumers (UI imports) لكل endpoint مخالف لتأكيد حيويته.
+
+Stage Summary:
+
+## 🔴 أهم المخالفات (مرتبة حسب الخطورة)
+
+### 1️⃣ خطرة حرجة (Rule 20 + 21,154 LOC كذالك عقل موازي في Node)
+
+**أ.1 — مكدس `src/lib/v2/` كامل (30 ملف، 21,154 LOC):**
+- `maestro-orchestrator.ts` (1,155) — يكرر Python `maestro_orchestrator.py`
+- `momentum-engine.ts` (421) — يكرر Python momentum analysis
+- `unified-scoring.ts` (504) — يكرر Python `institutional_decision_engine.py`
+- `recommendation-engine.ts` (1,278) — يكرر Python recommendation logic
+- `multi-timeframe-engine.ts` (1,123), `self-learning-engine.ts` (1,975), `expert-analysis.ts` (1,259), `feedback-loop.ts` (1,039), `news-sentiment-engine.ts` (1,149), `paper-trading-engine.ts` (1,057), `prediction-verification.ts` (693), `quality-engine.ts` (658), `iterative-learning.ts` (519), `intelligent-learning.ts` (720), `market-learning-engine.ts` (758), `portfolio-engine.ts` (464), `prediction-logger.ts` (634), `backtesting-engine.ts` (681), `crypto-backtesting-engine.ts` (602), `fair-value.ts` (368), `safety-filter.ts` (454), `scheduled-learning.ts` (264), `special-events.ts` (553), `unified-prediction.ts` (449), `learning-params-store.ts` (321), `market-holidays.ts` (328), `persona-config.ts` (211), `types.ts` (485), `config-service.ts` (580)
+- **مخالفة:** كلها Node logic (scoring/learning/backtest) — يكسر Rule 20 صراحةً.
+- **مقترح الحل:** استبدال الكل بـ Python proxy. كل الـ Node consumers يتم تحويلهم لـ fetch Python endpoint.
+- **الجهد:** 6-8 أسابيع (refactoring ضخم + موافقة المالك إلزامية per Rule 25)
+
+### 2️⃣ خطرة حرجة (Rule 20 — Node يقرأ SQLite مباشرة في production paths)
+
+| # | الملف | LOC | نوع المخالفة | مقترح الحل | الجهد |
+|---|------|----|----|----|----|
+| أ.2 | `src/app/api/deal-advisor/[ticker]/route.ts` | 975 | يقرأ stocks.db + price_history.db مباشرة + يصنف السهم + يحسب RSI state + يحدد action scenarios (hold/reduce/take_profit/exit/add) + يحسب RR. الهيدر صراحةً: "Node-side API (no Python dependency)" | تحويل لـ Python endpoint جديد `vps-service/api/deal_advisor_routes.py` | 16 ساعة |
+| أ.3 | `src/app/api/predictions/honest-tracking/verify-pending/route.ts` | 752 | يقرأ predictions.db + price_history.db، يقفل PENDING predictions بحساب actual_return + direction-aware. الهيدر: "PURE SQLITE — no Python dependency" — يكرر `daily_closer.py` بالكامل | حذف + إعادة توجيه لـ Python `daily_closer.py` (موجود) | 8 ساعات |
+| أ.4 | `src/app/api/predictions/honest-tracking/list/route.ts` | 620 | يقرأ predictions.db، inferMarket + inferStatus + inferPersona، HARD_CAP ±50 | حذف + تحويل UI لـ `/api/stored-analysis/live-tracking` (Python proxy موحد) | 10 ساعات |
+| أ.5 | `src/app/api/predictions/honest-tracking/stats/route.ts` | 579 | يقرأ predictions.db، KPI stats + dedup-by-ticker + by_channel (يكرر `/api/admin/platform-performance`) | حذف + استخدام `/api/admin/platform-performance` (Python) | 6 ساعات |
+| أ.6 | `src/app/api/predictions/honest-tracking/missed-opportunities/route.ts` | 312 | يقرأ predictions.db + يكتشف الصفقات الضائعة (يكرر Python `detect_and_record_missed_opportunities`) | تحويل لـ Python endpoint | 6 ساعات |
+| أ.7 | `src/app/api/predictions/honest-tracking/learn-from-errors/route.ts` | 197 | يقرأ predictions.db + يستخرج دروس (يكرر Python `lesson_store.py`) | حذف + استخدام Python `lesson_store.get_*` | 4 ساعات |
+| أ.8 | `src/app/api/predictions/honest-tracking/live-tracking/route.ts` | 306 | يقرأ predictions.db + يحسب stats لكل شخصية (يكرر `/api/stored-analysis/live-tracking`) | حذف + استخدام Python proxy الموجود | 4 ساعات |
+| أ.9 | `src/app/api/predictions/expert-consensus/route.ts` | 449 | يقرأ predictions.db + stocks.db + يحسب consensus verdict (STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL) + confidence + reasons + dissent — كل logic في Node | تحويل لـ Python endpoint جديد | 12 ساعة |
+| أ.10 | `src/app/api/predictions/credibility/route.ts` | 489 | يقرأ predictions.db + inferMarket + inferPersona + HARD_CAP + dedup + by_channel | حذف + استخدام Python `live-tracking` | 6 ساعات |
+| أ.11 | `src/app/api/unified-analysis/[symbol]/route.ts` | 438 | يجلب بيانات من Python ثم ينفذ `performUnifiedAnalysis` في Node (technical + timing + targets + signal + confidence) | حذف + تحويل UI لـ `/api/smart-confluence/analysis/[symbol]` (Python proxy موجود) | 8 ساعات |
+| أ.12 | `src/app/api/maestro/stock/[ticker]/route.ts` | 481 | يستدعي `runMaestroAnalysis` من `@/lib/v2/maestro-orchestrator` (Node maestro كامل) + يقرأ data_engine.db | تحويل لـ Python `/api/maestro/stock/<ticker>` (موجود) | 10 ساعات |
+| أ.13 | `src/app/api/finance/calculate-values/route.ts` | 633 | يقرأ portfolio_assets من stocks.db + يحسب total_invested/current_value/PnL + يصنف wealth/yield assets | تحويل لـ Python endpoint | 12 ساعة |
+| أ.14 | `src/app/api/finance/portfolio-analysis/route.ts` | 173 | يحلل المحفظة (allocation/risk/diversification/performance) في Node | تحويل لـ Python endpoint | 6 ساعات |
+| أ.15 | `src/app/api/finance/screener/route.ts` | 264 | يقرأ data_engine.db + parsePercent/parseRatio + filter — **يكرر** `/api/stocks/screener` (الذي صار Python proxy) | حذف + تحويل UI لـ `/api/stocks/screener` | 4 ساعات |
+| أ.16 | `src/app/api/finance/smart-alerts/route.ts` | 398 | يولّد alerts استنادًا لتحليل المحفظة في Node | تحويل لـ Python endpoint | 8 ساعات |
+| أ.17 | `src/app/api/finance/smart-analysis/route.ts` | 181 | يولّد توصيات BUY/SELL/HOLD لكل asset في Node | تحويل لـ Python endpoint | 6 ساعات |
+| أ.18 | `src/app/api/finance/smart-watchlist/route.ts` | 268 | يولّد alerts للـ watchlist في Node | تحويل لـ Python endpoint | 6 ساعات |
+| أ.19 | `src/app/api/finance/smart-confluence/route.ts` | 133 | يقرأ stored_analyses من predictions.db + يحسب confluence picks | تحويل لـ Python endpoint | 4 ساعات |
+| أ.20 | `src/app/api/finance/projection/route.ts` | 178 | يحسب projection للثروة (compound/simple interest) في Node | تحويل لـ Python endpoint | 4 ساعات |
+| أ.21 | `src/app/api/finance/real-return/route.ts` | 131 | يحسب Real_Return = Yield - Inflation في Node | تحويل لـ Python endpoint | 3 ساعات |
+| أ.22 | `src/app/api/stocks/sparkline/route.ts` | 63 | يقرأ data_engine.db مباشرة | تحويل لـ Python endpoint | 2 ساعة |
+| أ.23 | `src/app/api/admin/backtest/v40/stats/route.ts` | 167 | يقرأ predictions.db + يحسب WR/PF/expectancy/avg_win/avg_loss/rr_ratio + by_month/by_ticker + explosive_stocks | تحويل لـ Python endpoint | 6 ساعات |
+| أ.24 | `src/app/api/money/route.ts` | — | يقرأ stocks.db مباشرة + dispatch حسب section (overview/portfolio/watchlist/alerts/journal) | تحويل لـ Python endpoint | 8 ساعات |
+| أ.25 | `src/app/api/v2/feedback/status/route.ts` | — | يستدعي `getModelAccuracy` + `getWeightAdjustmentHistory` من `@/lib/v2/feedback-loop` | حذف + تحويل لـ Python learning_engine | 4 ساعات |
+| أ.26 | `src/app/api/v2/feedback/predictions/route.ts` | — | يستدعي `getRecentPredictions` من `@/lib/v2/prediction-logger` | حذف + تحويل لـ Python | 2 ساعة |
+
+### 3️⃣ خطرة عالية (بيانات كاذبة/وهمية متبقية)
+
+| # | الملف | نوع البيانات الكاذبة | مقترح الحل | الجهد |
+|---|------|----|----|----|
+| ج.1 | `src/app/api/ai/batch-analysis/route.ts` | `buildStubForTicker()` يولّد scores 50-99 + توصيات عربية ("شراء قوي"/"شراء"/"تجميع"/"مراقبة") بشكل deterministic عندما Python backend غير متاح — يوهم المستخدم بنتائج تحليل | حذف stub + رجوع 503 مع رسالة واضحة | 2 ساعة |
+| ج.2 | `src/app/api/ai/analyze-stock/route.ts` | `buildRulesBasedAnalysis()` يولّد توصيات عربية + أسباب + score 50-99 + trend عربي — يوهم بالتحليل الحقيقي | حذف fallback + رجوع 503 | 2 ساعة |
+| ج.3 | `src/app/api/portfolio/equity/curve/route.ts` (55 LOC، النسخة `/equity/curve` بالـ slash) | يولّد equity snapshots وهمية بدءًا من 150000 EGP مع نمط نمو deterministic (0.22%/day + noise) عندما Python backend غير متاح — يعرض على المستخدم محفظة وهمية "نامية" | حذف الملف كاملًا + تحويل WealthCharts.tsx لـ `/api/portfolio/equity-curve` (الـ hyphen version الصحيحة) | 2 ساعة |
+| ج.4 | `src/app/api/seed-experts/route.ts` | معطّل (410 Gone) لكن يحتفظ بـ SAMPLE_RECOMMENDATIONS (10 توصيات خبراء وهمية) + Math.random في commented code (lines 116-119) — كود ميت في الـ comments | حذف الكود الميت في الـ comments + SAMPLE_RECOMMENDATIONS array | 1 ساعة |
+| ج.5 | `src/app/api/community/seed/route.ts` | معطّل لكن يحتفظ بـ EGYPTIAN_NAMES (20 اسم) + AVATARS (10) + Math.random لاختيار userId/postId — كود ميت | حذف كل البيانات الوهمية + أبقي فقط الـ 410 response | 1 ساعة |
+
+**ملاحظة:** Math.random في `market/live-data` (shuffle) + `mobile/alerts/*` (ID generation) + `admin/promo-codes` (string generation) + `ui/sidebar.tsx` (skeleton width) — كلها آمنة (مش بيانات مالية).
+
+### 4️⃣ خطرة عالية (تكرار شاشات/تبويبات/أكواد)
+
+| # | التكرار | الملفات المتأثرة | مقترح الحل | الجهد |
+|---|------|----|----|----|
+| ب.1 | 3 أنظمة تتبع توقعات متوازية (مذكور صراحة في §15) | `/api/predictions/tracking/*` (4) + `/api/predictions/honest-tracking/*` (7) + `/api/stored-analysis/live-tracking` (1) | توحيد على `/api/stored-analysis/live-tracking` فقط + حذف 11 ملف من الـ 12 (per VERIFY-BEFORE-DELETE Rule 16) | 40 ساعة |
+| ب.2 | screener مكرر | `/api/stocks/screener` (Python proxy ✅) + `/api/finance/screener` (Node SQLite ❌) | حذف `/api/finance/screener` + تحويل UI لـ `/api/stocks/screener` | 4 ساعات |
+| ب.3 | single-stock analysis مكرر (4 endpoints) | `/api/maestro/stock/[ticker]` (Node ❌) + `/api/unified-analysis/[symbol]` (Node ❌) + `/api/smart-confluence/analysis/[symbol]` (Python ✅) + `/api/stocks/dual-persona/[ticker]` (Python ✅) + `/api/persona/analyze/[ticker]` (wrapper) | توحيد على `/api/smart-confluence/analysis/[symbol]` + `/api/stocks/dual-persona/[ticker]` + حذف 2 endpoints | 16 ساعة |
+| ب.4 | equity-curve مكرر | `/api/portfolio/equity-curve` (Python proxy + real wealth_tracking ✅) + `/api/portfolio/equity/curve` (Node + fake data ❌) | حذف `/equity/curve` + تحويل WealthCharts.tsx | 2 ساعة |
+| ب.5 | paper-trading مكرر | `/api/paper-trading` (Node v1, ميت) + `/api/paper-trading-v2/*` (6 endpoints، نشط) | حذف `/api/paper-trading/route.ts` كاملًا | 1 ساعة |
+| ب.6 | 4 catch-all proxies (مذكور في §15) | `/api/[...slug]` (JSON 404) + `/api/proxy/[...path]` (main + SEC-04) + `/api/python/[...path]` (موحد مع proxy ✅) + `/api/telegram/[...path]` (منفصل لكن مشابه) | توحيد `/api/telegram/*` داخل `/api/proxy/*` بإضافة XTransformPort param اختياري | 4 ساعات |
+| ب.7 | page.tsx hash routes مكررة (legacy aliases) | 'screener' + 'trading-chart' كلاهما → TradingChartView؛ 'portfolio' + 'finance' → EnhancedPortfolioView؛ 'recommendations' + 'analysis' + 'advanced-analysis' + 'v2-analysis' → MarketAnalysisView (4 hash routes لنفس المكون) | إزالة legacy hash routes + احتفظ بالـ hash الرئيسي فقط لكل مكون | 2 ساعة |
+| ب.8 | admin sub-pages مكررة مع AdminView tabs | `/admin/honest-predictions/page.tsx` (1919) + `/admin/maestro/page.tsx` (747) + `/admin/expert-recommendations/page.tsx` (1079) + `/admin/educational-cards/page.tsx` (1702) + `/admin/prediction-performance/page.tsx` (823) + `/admin/reports/page.tsx` (118) — كلها standalone pages لا تُستخدم من AdminView | VERIFY-BEFORE-DELETE + حذف 6 صفحات (6,388 LOC) | 8 ساعات |
+
+### 5️⃣ خطرة متوسطة (كود ميت/orphan — 71+ مكوّن حسب §15)
+
+| # | الملف/المجلد | LOC | مقترح الحل | الجهد |
+|---|------|----|----|----|
+| هـ.1 | `src/components/recommendations/RecommendationsView.tsx` + 5 sub-components (AiRecommendations + RecommendationMonitoring + RecommendationHistory + SocialPostView + PublishedPredictions + RecommendationsTable) | ~4,500 | حذف (لا importer خارجي) | 2 ساعة |
+| هـ.2 | `src/components/analysis/ConfluencePanel.tsx` + InstitutionalDecisionPanel + AlertPanel + ChartControls + InteractiveChart + RichChartCard | ~3,000 | حذف (لا importer) | 1 ساعة |
+| هـ.3 | `src/components/crypto/_archived_v404/` (CryptoAnalysisView + CryptoRecommendationsView) | ~2,000 | حذف الأرشيف | 1 ساعة |
+| هـ.4 | `src/app/community/page.tsx` (324) + `src/app/portfolio/page.tsx` (1199) + `src/app/prediction-performance/page.tsx` (8) + `src/app/unified-analysis/page.tsx` (12) | 1,543 | VERIFY-BEFORE-DELETE + حذف | 2 ساعة |
+| هـ.5 | `src/app/maestro/page.tsx` (122) | 122 | فقط MaestroWidget.tsx يستخدمه — إما حذف الـ widget أو تحويله لـ /#admin view | 1 ساعة |
+| هـ.6 | `scripts/TradingChartView_orig.tsx` | — | حذف (orphan in scripts/) | 1 دقيقة |
+| هـ.7 | `src/lib/v2/` كامل (30 ملف) | 21,154 | يحتاج refactoring ضخم (انظر §1) — ليس "ميت" لكنه مكرر | (ضمن §1) |
+| هـ.8 | 34 ملف API DEPRECATED في `vps-service/api/` | ~17,000 | مذكور في §15 — VERIFY-BEFORE-DELETE + حذف بمراحل | 16 ساعة |
+
+### 6️⃣ خطرة متوسطة (تداخل بين الأنظمة)
+
+| # | التداخل | الملفات المتأثرة | مقترح الحل | الجهد |
+|---|------|----|----|----|
+| و.1 | honest-tracking/verify-pending يكرر daily_closer.py | Node: `src/app/api/predictions/honest-tracking/verify-pending/route.ts` (752 LOC) ↔ Python: `vps-service/jobs/daily_closer.py` | حذف Node + استخدام Python `daily_closer.py` (موجود + مغلق بـ closed-loop) | (ضمن ب.1) |
+| و.2 | deal-advisor logic مكرر | Node: `src/app/api/deal-advisor/[ticker]/route.ts` (975 LOC) ↔ Python: `vps-service/analyzers/maestro_orchestrator.py` + `institutional_decision_engine.py` | إنشاء Python endpoint جديد بـ response matching الـ Node shape + حذف Node | (ضمن أ.2) |
+| و.3 | unified-analysis logic مكرر | Node: `src/app/api/unified-analysis/[symbol]/route.ts` (438 LOC) ↔ Python: `vps-service/analyzers/confluence_engine.py` + `smart_confluence_routes.py` (موجود بالفعل) | حذف Node + تحويل UI لـ `/api/smart-confluence/analysis/[symbol]` الموجود | (ضمن ب.3) |
+| و.4 | 3 أنظمة تتبع توقعات متوازية تقرأ من predictions.db بدون coordination | (ضمن ب.1) | توحيد على `/api/stored-analysis/live-tracking` (Python) | (ضمن ب.1) |
+| و.5 | 4 catch-all proxies — نفس الـ logic مكرر | (ضمن ب.6) | توحيد على `/api/proxy/[...path]` | (ضمن ب.6) |
+| و.6 | Node يقرأ من DBs مختلفة بدون Python coordination | 25+ route تقرأ SQLite مباشرة (stocks.db/predictions.db/price_history.db/data_engine.db) | تحويل الكل لـ Python proxy | (مجموع §2) |
+
+### 7️⃣ خطرة منخفضة (أسلوب العميل — views)
+
+| # | الملاحظة | الملفات المتأثرة | مقترح الحل | الجهد |
+|---|------|----|----|----|
+| د.1 | emojis في UI (🎯💰⚡🔥🚨) — وظيفية كـ Arabic visual indicators، ليست تحميسية | MarketAnalysisView، SingleStockAnalysisView، UnifiedAnalysisView، EnhancedPortfolioView (🚨 للـ alerts فقط) | **لا مخالفة** — هذه visual labels مقبولة في UI عربي احترافي | 0 |
+| د.2 | 'prediction-performance' + 'prediction-credibility' hash routes تعرض UI redirect بـ emoji 🔬 | page.tsx (lines 429-447) | مقبول — admin-only redirect | 0 |
+| د.3 | لا توجد عبارات تحميسية 🚀🎉 في non-admin views | (لا ملاحظات) | — | 0 |
+
+## 📊 ملخص الأرقام
+
+| الفئة | عدد المخالفات | إجمالي LOC المتأثرة | تقدير الجهد |
+|------|---:|---:|---:|
+| Rule 20 violations (API routes) | 26 ملف | ~7,200 LOC | ~150 ساعة |
+| src/lib/v2/ (مكدس Node موازي) | 30 ملف | 21,154 LOC | ~240 ساعة |
+| بيانات كاذبة | 5 ملف | ~700 LOC | ~8 ساعات |
+| تكرار شاشات/تبويبات | 8 حالات | ~12,000 LOC | ~75 ساعة |
+| كود ميت/orphan | 8 مجموعات | ~50,000 LOC | ~25 ساعة |
+| تداخل بين الأنظمة | 6 حالات | (ضمن ما سبق) | (ضمن ما سبق) |
+| **الإجمالي التقريبي** | **~85 نقطة** | **~91,000 LOC** | **~500 ساعة** (12.5 أسبوع) |
+
+## 🎯 أولويات الإصلاح المقترحة (3 مراحل)
+
+**المرحلة 1 (أسبوع 1-2) — إصلاحات سريعة منخفضة المخاطرة:**
+- ج.1 + ج.2 + ج.3: حذف البيانات الوهمية (batch-analysis stub + analyze-stock fallback + equity/curve fake) — 6 ساعات
+- ب.4 + ب.5: حذف `/equity/curve` + `/paper-trading` — 3 ساعات
+- هـ.6: حذف `scripts/TradingChartView_orig.tsx` — 1 دقيقة
+- هـ.1 + هـ.2 + هـ.3: حذف orphan components المؤكدة (لا importers) — 4 ساعات
+- ب.7: تنظيف legacy hash routes في page.tsx — 2 ساعة
+- ج.4 + ج.5: تنظيف seed-experts + community/seed — 2 ساعة
+- **مجموع المرحلة 1:** ~17 ساعة (تخفيف 7,000 LOC ميت/وهمي بدون كسر features)
+
+**المرحلة 2 (أسبوع 3-6) — توحيد الأنظمة المتوازية (بموافقة المالك):**
+- ب.1: توحيد 3 أنظمة تتبع التوقعات على `/api/stored-analysis/live-tracking` — 40 ساعة
+- ب.3: توحيد 4 endpoints لتحليل سهم واحد على 2 Python proxies — 16 ساعة
+- ب.6: توحيد 4 catch-all proxies على `/api/proxy/[...path]` — 4 ساعات
+- ب.8: حذف 6 admin sub-pages (6,388 LOC) — 8 ساعات
+- هـ.4: حذف dead Next.js pages (community + portfolio + prediction-performance + unified-analysis + maestro) — 2 ساعة
+- **مجموع المرحلة 2:** ~70 ساعة (تخفيف 25,000 LOC إضافية)
+
+**المرحلة 3 (أسبوع 7-12) — استخراج Node logic لـ Python (refactoring ضخم):**
+- §1 (src/lib/v2/): 30 ملف → Python proxy — 240 ساعة
+- §2 (26 Node API routes مع logic): تحويل الكل لـ Python endpoints — 150 ساعة
+- ب.2: حذف `/api/finance/screener` المكرر — 4 ساعات
+- و.1 + و.2 + و.3 + و.4: إزالة تداخل Node ↔ Python — (ضمن ما سبق)
+- **مجموع المرحلة 3:** ~395 ساعة (تخفيف 28,000 LOC إضافية، يحوّل المشروع لـ Rule 20-compliant كامل)
+
+## 🔒 قيود إلزامية قبل أي إصلاح
+
+1. **Rule 25:** كل refactoring يحتاج موافقة المالك الصريحة + تنفيذ في فرع منفصل.
+2. **Rule 16 (VERIFY-BEFORE-DELETE):** كل ملف قبل حذفه لازم التحقق الثلاثي (UI imports + blueprint registration + admin confirmation).
+3. **Rule 14:** بعد كل مرحلة، تشغيل `bun run lint` + `tsc --noEmit` + `python3 -c "import ..."` قبل أي commit.
+4. **Rule 26 (SANDBOX-RESET-SAVEREGUARD):** commit كل 1-2 ساعة + push على GitHub + backup في /tmp/ قبل أي عملية خطرة.
+5. **backtest verification:** بعد كل إصلاح، تشغيل backtest (V40.2) للتأكد من عدم الـ regression — العميل صراحةً طلب: "لازم ولابد بعد كل مرحلة تنظيف تعمل باك تست وتشوف النتيجة".
+6. **لا حذف `glminvestment_engines/` (بـ underscore):** المستوردة من `maestro_orchestrator.py` + `background_analyzer.py` + `expert_quality_gate.py` (3 محركات إنتاجية).
+7. **`/api/python/[...path]` موحد بالفعل مع `/api/proxy/[...path]`** — لا حاجة لـ refactoring هناك.
+8. **Math.random في `market/live-data` (shuffle) + `mobile/alerts/*` (ID gen) + `admin/promo-codes` (string gen) + `ui/sidebar.tsx` (skeleton) آمنة** — مش بيانات مالية.
+
+## ✅ نقاط إيجابية (النظام ملتزم بها)
+
+- `/api/stocks/screener/route.ts` — صار pure Python proxy (Rule 20 ✅) — آخر إصلاح في commit 84ee49e5
+- `/api/stocks/top-performers/route.ts` — pure Python proxy ✅
+- `/api/sectors/tracking/route.ts` + `/api/sectors/[sector]/stocks/route.ts` — pure Python proxy ✅
+- `/api/stored-analysis/live-tracking/route.ts` — pure Python proxy ✅ (الـ canonical per §15)
+- `/api/smart-confluence/analysis/[symbol]/route.ts` — pure Python proxy ✅
+- `/api/stocks/dual-persona/[ticker]/route.ts` — pure Python proxy ✅
+- `/api/predictions/tracking/*` (4 ملفات) — pure Python proxy ✅
+- `/api/predictions/seed/route.ts` — 410 Gone (معطّل) ✅
+- `/api/market/auto-seed/route.ts` + `/api/market/seed-historical/route.ts` + `/api/seed-experts/route.ts` + `/api/community/seed/route.ts` — معطّلة 410/403 ✅
+- `/api/portfolio/assets/route.ts` — يرجع [] + رسالة (لا Math.random) ✅
+- `vps-service/api/admin_routes.py` — 4 إصلاحات لـ random → deterministic (lines 2033, 3609, 3960) ✅
+- `vps-service/engines/historical_prediction_generator.py` — إزالة random.random() skip HOLD (line 401) ✅
+- `vps-service/analyzers/unified_learning_engine.py` — deterministic 70 (line 1001) ✅
+- `vps-service/analyzers/*_engine.py` (4 ملفات) — random في `__main__` فقط (test data) ✅
+
+## 💡 التوصية النهائية
+
+النظام فيه **~91,000 LOC** من المخالفات (Rule 20 + duplications + dead code + fake data). أخطر ما فيها:
+1. **مكدس `src/lib/v2/` (21,154 LOC)** — هذا "عقل موازي" في Node يكسر Rule 20 صراحةً. حلها يحتاج 6-8 أسابيع.
+2. **3 أنظمة تتبع توقعات متوازية** — مذكورة صراحة في §15 كقيود حرجة.
+3. **بيانات كاذبة في AI routes** (`batch-analysis` + `analyze-stock` stubs + `equity/curve` fake snapshots) — يجب حذفها فورًا (8 ساعات) لأنها تخدع المستخدم.
+
+**نقطة بداية آمنة (هذا الأسبوع):** المرحلة 1 (~17 ساعة) تحقق نتائج فورية بدون كسر features — إزالة 7,000 LOC ميت/وهمي. بعد كل ملف: `bun run lint` + backtest verification + commit + push (Rule 26).
