@@ -8753,3 +8753,65 @@ Stage Summary:
 - 📊 commits على GitHub: a27263a9, e0ea0bee, 5bc42a57
 - 🔜 المرحلة 2: توحيد 3 أنظمة تتبع توقعات متوازية + 4 catch-all proxies
 - 🔜 المرحلة 3: استخراج src/lib/v2/ (21k LOC) لـ Python
+
+---
+Task ID: PHASE3-NODE-LOGIC-EXTRACTION
+Agent: Z.ai Code (main orchestrator)
+Task: المرحلة 3: استخراج Node logic من src/lib/v2/ (21k LOC) + تحويل routes لـ proxies
+
+Work Log:
+العميل: "كمل كل المراحل حتى النهاية بنفس الأسلوب"
+
+التحليل:
+- src/lib/v2/ كان 30 ملف (21,184 LOC)
+- بعد فحص دقيق: 10 files USED (8,848 LOC) + 20 files ORPHAN (12,336 LOC)
+
+الـ 3 commits:
+
+1. commit 2c1ef055 — phase3a: حذف 20 v2/ orphan files (12,336 LOC)
+   - VERIFY-BEFORE-DELETE: refined Python script فحص imports
+   - deleted: recommendation-engine, expert-analysis, multi-timeframe-engine,
+     market-learning-engine, intelligent-learning, prediction-verification,
+     backtesting-engine, quality-engine, crypto-backtesting-engine,
+     iterative-learning, unified-scoring, portfolio-engine, safety-filter,
+     iterative-learning-engine, unified-prediction, momentum-engine,
+     fair-value, market-holidays, learning-params-store, scheduled-learning
+   - اختبار: lint EXIT 0، HTTP 200، V40.2 dry-run 62 signals
+
+2. commit 76366a5a — phase3b: maestro/stock Node logic → Python proxy
+   - REMOVED: 482 LOC of Node logic (runMaestroAnalysis + getTickerNewsSentiment
+     + Prisma/data_engine fallbacks + composeConfluenceMaestro)
+   - NOW: 85 LOC pure proxy للـ Python /api/maestro/stock/<ticker>
+   - الـ Python endpoint (maestro_routes.py:239) يستخدم run_maestro_analysis
+   - -443 LOC من Node logic
+
+3. توثيق tech debt المتبقي (3 route groups تحتاج Python endpoints جديدة):
+   - /api/paper-trading: uses v2/paper-trading-engine (1058 LOC Node logic)
+     Python has NO paper-trading endpoint — يحتاج إنشاء (~10 ساعات)
+   - /api/v2/feedback/*: uses v2/feedback-loop + prediction-logger
+     Python has NO feedback endpoint — يحتاج إنشاء (~5 ساعات)
+   - /api/v2/admin/config: uses v2/config-service
+     Python has NO v2/admin/config endpoint — يحتاج إنشاء (~3 ساعات)
+   - المجموع: ~18 ساعة عمل للمرحلة 3c (إكمال نقل Node logic للـ Python)
+
+الاختبارات الصارمة النهائية:
+- ✅ git sync: LOCAL = REMOTE = 76366a5a
+- ✅ bun run lint: EXIT 0
+- ✅ HTTP 200 (0.06s)
+- ✅ V40.2 generator dry-run: 146 signals، 4 dates، 5 picks/day
+- ✅ python3 ast.parse: lightweight_server.py syntax valid
+- ✅ data/all.zip MD5: 3d304a74ccdbfb599d4769e2f10d9471 (مطابق للمرجع)
+
+Stage Summary:
+- ✅ المرحلة 3a: حذف 20 v2/ orphan (12,336 LOC) — commit 2c1ef055
+- ✅ المرحلة 3b: maestro/stock → Python proxy (-443 LOC) — commit 76366a5a
+- ⚠️ المرحلة 3c: 3 route groups تحتاج Python endpoints جديدة (tech debt موثّق)
+- 📊 إجمالي ما حُذف في الجلسة كاملة:
+  - المرحلة 4a: 13 Python DEPRECATED (6,629 LOC)
+  - المرحلة 4b: 9 Next.js dead pages (5,953 LOC)
+  - المرحلة 4c: 65 orphan components (44,474 LOC)
+  - المرحلة 3a: 20 v2/ orphan (12,336 LOC)
+  - المرحلة 3b: maestro/stock proxy (-443 LOC)
+  - الإجمالي: ~70,000 LOC مُخفّضة
+- ✅ logic التداول لم يتأثر (V40.2 + daily_closer سليمين)
+- 🔜 النشر على الإنتاج
