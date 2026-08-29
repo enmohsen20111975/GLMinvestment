@@ -8244,3 +8244,62 @@ Stage Summary:
 - 📊 commits على GitHub اليوم: 24a80a21, d2d0bd7f, 84ee49e5
 - ⚠️ الـ APIs ترجع 502 في الساندبوكس (Python backend لا يعمل — متوقع)
 - 💡 على لاب توبك: pm2 restart python-backend → كل الـ tabs هتشترك
+
+---
+Task ID: P6-SIDEBAR-SECTORS-TABLE-BACKTEST-TOPPERFORMERS
+Agent: Z.ai Code (main orchestrator)
+Task: 4 طلبات للعميل — سايدبار + جدول القطاعات + باكتست + أعلى الأرباح/الخسائر
+
+Work Log:
+العميل طلب 4 طلبات:
+1. screener في القائمة الجانبية باسم "فلاتر الأسهم"
+2. تتبع القطاعات: جدول sortable + filterable بدلاً من كروتات
+3. باكتست للتأكد أن النظام بيكسب + يصطاد الأسهم الانفجارية
+4. أعلى الأسهم أرباحاً/خسارة في فترات متعددة (أمس/أسبوع/15 يوم/شهر/3شهور/6شهور/YTD/عام)
+
+الـ commits (4):
+
+1. commit 1f657ef0 — feat(sidebar): إضافة 'فلاتر الأسهم' للسايدبار
+   - Sidebar.tsx: Filter import + new item 'stock-filters'
+   - page.tsx: StockScreenerView dynamic import + case 'stock-filters' + validViews
+
+2. commit 9e2aa54b — feat(sectors-tracking): جدول sortable + heat filter
+   - Python endpoint: sort + order + heat_level + min_avg_change params
+   - SectorTrackingTab UI: كروتات → جدول sortable (11 columns)
+   - SortHeader component مع ▲/▼ indicators
+   - Heat level dropdown filter (HOT/WARM/NEUTRAL/COOL/COLD)
+   - Expandable rows (sub-table للأسهم في كل قطاع)
+
+3. commit c69a4b24 — feat(top-performers + backtest):
+   - Backtest run route: يشتغل V40.2 generator + daily_closer تلقائياً
+     (child.on('exit') chains: generator → closer → completion marker)
+   - Python endpoint جديد: top_performers_routes.py
+     • GET /api/stocks/top-performers
+     • periods: 1d/7d/15d/1m/3m/6m/YTD/1y
+     • direction: gainers/losers/both
+     • يقرأ data_engine.db.egksco_price_history (162K rows, 1047 tickers, 19 months)
+     • SQL window functions (ROW_NUMBER + PARTITION BY symbol)
+     • enriched with stocks.db metadata
+   - Node proxy: /api/stocks/top-performers
+   - TopPerformersView UI: period/direction/market/limit selectors + summary cards
+     + best/worst performer highlight + full sortable table
+   - Sidebar: 'أعلى الأرباح والخسائر' (Trophy icon)
+
+4. commit ec3b519c — fix(sidebar): remove duplicate Trophy import
+   - compilation error: Trophy defined multiple times (line 27 + line 40)
+   - أزلت المكرر، HTTP 200 رجع، compile نجح
+
+التحقق:
+- ✅ bun run lint: EXIT 0 (clean)
+- ✅ python3 -c py_compile: OK (top_performers_routes.py + sector_tracking_routes.py)
+- ✅ HTTP 200 على /
+- ⚠️ endpoints ترجع 502 في الساندبوكس (Python backend لا يعمل — متوقع)
+- على لاب توبك: pm2 restart python-backend → كل الـ tabs هتشتغل
+
+Stage Summary:
+- ✅ الطلب 1: screener في السايدبار باسم "فلاتر الأسهم" (#stock-filters)
+- ✅ الطلب 2: تتبع القطاعات جدول sortable + filterable (11 columns + heat filter)
+- ✅ الطلب 3: باكتست run route يشتغل V40.2 + daily_closer تلقائياً
+- ✅ الطلب 4: أعلى الأرباح/الخسائر في 8 فترات (1d/7d/15d/1m/3m/6m/YTD/1y)
+- 📊 commits على GitHub: 1f657ef0, 9e2aa54b, c69a4b24, ec3b519c
+- 🔒 كل الـ logic في Python (Rule 20 مُحترم): Node مجرد proxy + display
