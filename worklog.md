@@ -8187,3 +8187,60 @@ Stage Summary:
 - ⚠️ الذاكرة ضيقة (1.3Gi متاحة، next-server 2.29GB) — لم أستخدم Agent Browser لتجنب OOM
 - 📊 commits على GitHub اليوم: b7260141, 1baa1b10, 3e85cc20, 37fe9432, d14dfee5, abef9714
 - 🔜 المرحلة 5-6: تحقق بصري بـ Agent Browser + QA نهائي + توثيق
+
+---
+Task ID: P-RULE20-COMPLIANCE-FIX
+Agent: Z.ai Code (main orchestrator)
+Task: إصلاح مخالفة Rule 20 (Python = brain, Node = display only) — حذف Node logic + Python proxy
+
+Work Log:
+- العميل واضح صراحة: "ما تعملش قرارات ولا أى منطق ولا أى حسابا فى الفرونت أند كل أعتمادك على البايثون فقط"
+- راجعت commits السابقة (d14dfee5 + abef9714) — اكتشفت أن screener API + strongest endpoint كانوا Node logic (مخالف لـ Rule 20)
+- الـ logic الموجود في Python: screener.py (5 presets: day_trader, value, momentum, thermometer, daily_speculator) + flow_system.py (get_sector_heatmap, detect_sector_rotation, get_top_flow_stocks)
+
+الإصلاحات (3 commits):
+
+1. commit 24a80a21 — cleanup: remove flutter_app_p40
+   - العميل طلب صراحة: "امسح المجلد دة خاص مالوش أى لزمة flutter_app_p40"
+   - VERIFY-BEFORE-DELETE (Rule 16): تحققت من عدم وجود imports/references
+   - 10 files، 288K، محذوف
+
+2. commit d2d0bd7f — feat(sectors-tracking): تتبع حركة القطاعات + إزالة تبويب الكريبتو
+   - العميل طلب: "امسح تبويب الكريبتو خالص وحط مكانة توبيب تتبع حركة القطاعات"
+   - NEW Python endpoint: vps-service/api/sector_tracking_routes.py
+     • GET /api/sectors/tracking — heatmap + rotation + stocks per sector
+     • GET /api/sectors/<sector>/stocks — stocks in a specific sector
+     • Uses existing engine/flow_system.py::get_sector_heatmap() + detect_sector_rotation()
+   - Blueprint registration في lightweight_server.py
+   - NEW Node proxy routes (DISPLAY ONLY):
+     • src/app/api/sectors/tracking/route.ts
+     • src/app/api/sectors/[sector]/stocks/route.ts
+   - MarketAnalysisView.tsx: استبدل tab 'crypto' بـ 'sectors-tracking'
+   - NEW SectorTrackingTab component (350 LOC) — عرض فقط:
+     • sector cards (heat: HOT/WARM/NEUTRAL/COOL/COLD)
+     • expandable stock lists per sector
+     • toggle لدوران السيولة (entering/leaving sectors)
+     • market summary (advancers, decliners, breadth, turnover)
+
+3. commit 84ee49e5 — refactor(screener): Node → Python proxy (Rule 20 compliance)
+   - حذفت Node logic من src/app/api/stocks/screener/route.ts (453 LOC → 80 LOC proxy)
+   - حذفت src/app/api/stocks/strongest/route.ts بالكامل (267 LOC — كان Node logic)
+   - تبسيط StockScreener.tsx (1061 → 400 LOC):
+     • حذفت StrongestMoversPanel + SectorHeatPanel (كانوا fetch من /api/stocks/strongest)
+     • حذفت 14 correction_status states + 12 stock_class badges (Node logic)
+     • حذفت relative_strength, sector_rank, market_role columns (Node logic)
+     • أضفت preset selector (5 Python presets)
+     • أضفت score color + progress bar
+     • صار pure DISPLAY: fetch /api/stocks/screener (Python proxy) + show results
+
+Stage Summary:
+- ✅ flutter_app_p40 محذوف (10 files، 288K)
+- ✅ تبويب الكريبتو مُستبدل بـ "تتبع القطاعات" (Python logic + Node display)
+- ✅ screener API صار pure proxy للـ Python (5 presets)
+- ✅ strongest endpoint محذوف (كان Node logic)
+- ✅ StockScreener.tsx صار pure DISPLAY (400 LOC بدلاً من 1061)
+- ✅ lint نجح، HTTP 200، Python syntax صحيح
+- ✅ كل الـ logic الجديد في Python (sector_tracking_routes.py + flow_system.py الموجود)
+- 📊 commits على GitHub اليوم: 24a80a21, d2d0bd7f, 84ee49e5
+- ⚠️ الـ APIs ترجع 502 في الساندبوكس (Python backend لا يعمل — متوقع)
+- 💡 على لاب توبك: pm2 restart python-backend → كل الـ tabs هتشترك
