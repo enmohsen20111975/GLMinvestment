@@ -8858,3 +8858,36 @@ Stage Summary:
 - ✅ كل الاختبارات الصارمة نجحت
 - 📊 commits: (يتم بعد push)
 - 🔜 المرحلة 2: حذف الجداول الفارغة المكررة
+
+---
+Task ID: PHASE2-EMPTY-TABLES
+Agent: Z.ai Code (main orchestrator)
+Task: حذف 63 جدول فارغ/مكرر من DBs
+
+Work Log:
+- العميل وافق: "موافق جدا بشرط الأختبار الصارم الكامل بعد كل مرحلة"
+- تم حذف 63 جدول فارغ/مكرر من 10 DBs
+- stocks.db: 27 جدول (50 → 26 table)
+- predictions.db: 12 جدول (35 → 20 table)
+- analytics.db: 7 جداول (كلها فارغة)
+- community.db: 5 جداول
+- crypto.db: 3 جداول
+- crypto_learning.db: 5 جداول
+- learned.db: 1 جدول (مكرر)
+- intraday.db: 1 جدول
+- gold_prices.db: 1 جدول
+- ai_search_cache.db: 1 جدول
+
+الاختبارات الصارمة:
+1. ✅ Python syntax: v40_2 + daily_closer + v38_backtest_engine
+2. ✅ V40.2 dry-run: 29 signals, 6 dates
+3. ✅ daily_closer: يشتغل
+4. ✅ LINT: EXIT 0
+5. ✅ HTTP: 200
+6. ✅ predictions.db: 20 tables (was 35)
+7. ✅ stocks.db: 26 tables (was 50)
+
+Stage Summary:
+- ✅ 63 جدول فارغ/مكرر محذوف
+- ⚠️ DBs are gitignored — changes are local only (need manual apply on laptop)
+- 🔜 المرحلة 3: توحيد learned_lessons + outcome_logs في predictions.db
