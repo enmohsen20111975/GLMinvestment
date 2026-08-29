@@ -165,32 +165,131 @@ def compute_persona_fit(proofs):
 
 
 def get_scan_dates(start_date, end_date, scan_interval):
-    """Get trading dates from price_history.db within [start, end]."""
-    conn = sqlite3.connect(str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db'), timeout=30.0)
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
-        (start_date, end_date),
-    )
-    dates = [row[0] for row in cur.fetchall()]
-    conn.close()
-    if not dates:
-        print(f"⚠️  No trading dates found between {start_date} and {end_date}", flush=True)
-        return []
-    return dates[::scan_interval]
+    """Get trading dates from price history within [start, end].
+    
+    PHASE-1-DB-UNIFY: tries data_engine.db first, then price_history.db fallback.
+    On production, egksco_price_history may be empty — price_history.db is the source.
+    """
+    _db_dir = Path(__file__).resolve().parents[2] / 'db'
+    
+    # 1. Try data_engine.db (egksco_price_history)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            (start_date, end_date),
+        )
+        dates = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if dates:
+            print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
+            return dates[::scan_interval]
+    except Exception:
+        pass
+    
+    # 2. Fallback: price_history.db (price_history table — schema: ticker/date)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
+        cur = conn.cursor()
+        # Check schema
+        cur.execute("PRAGMA table_info(price_history)")
+        cols = [r[1] for r in cur.fetchall()]
+        date_col = 'date' if 'date' in cols else 'price_date' if 'price_date' in cols else None
+        if date_col:
+            cur.execute(
+                f"SELECT DISTINCT {date_col} FROM price_history WHERE {date_col} >= ? AND {date_col} <= ? ORDER BY {date_col} ASC",
+                (start_date, end_date),
+            )
+            dates = [row[0] for row in cur.fetchall()]
+            conn.close()
+            if dates:
+                print(f"[V40.2] Using price_history.db ({date_col}) — {len(dates)} dates", flush=True)
+                return dates[::scan_interval]
+        conn.close()
+    except Exception:
+        pass
+    
+    # 3. Fallback: stocks.db (stock_daily_prices — schema: ticker/price_date)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT price_date FROM stock_daily_prices WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            (start_date, end_date),
+        )
+        dates = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if dates:
+            print(f"[V40.2] Using stocks.db (stock_daily_prices) — {len(dates)} dates", flush=True)
+            return dates[::scan_interval]
+    except Exception:
+        pass
+    
+    print(f"⚠️  No trading dates found between {start_date} and {end_date}", flush=True)
+    return []
 
 
 def get_tickers(min_days=MIN_TICKER_DAYS):
-    """Get tickers with enough historical data."""
-    conn = sqlite3.connect(str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db'), timeout=30.0)
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
-        (min_days,),
-    )
-    tickers = [row[0] for row in cur.fetchall()]
-    conn.close()
-    return tickers
+    """Get tickers with enough historical data.
+    
+    PHASE-1-DB-UNIFY: tries data_engine.db first, then price_history.db fallback.
+    """
+    _db_dir = Path(__file__).resolve().parents[2] / 'db'
+    
+    # 1. Try data_engine.db (egksco_price_history)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
+            (min_days,),
+        )
+        tickers = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if tickers:
+            return tickers
+    except Exception:
+        pass
+    
+    # 2. Fallback: price_history.db (price_history table)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(price_history)")
+        cols = [r[1] for r in cur.fetchall()]
+        ticker_col = 'ticker' if 'ticker' in cols else 'symbol' if 'symbol' in cols else None
+        if ticker_col:
+            cur.execute(
+                f"SELECT DISTINCT {ticker_col} FROM price_history GROUP BY {ticker_col} HAVING COUNT(*) >= ? ORDER BY {ticker_col}",
+                (min_days,),
+            )
+            tickers = [row[0] for row in cur.fetchall()]
+            conn.close()
+            if tickers:
+                print(f"[V40.2] Using price_history.db ({ticker_col}) — {len(tickers)} tickers", flush=True)
+                return tickers
+        conn.close()
+    except Exception:
+        pass
+    
+    # 3. Fallback: stocks.db (stock_daily_prices)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT ticker FROM stock_daily_prices GROUP BY ticker HAVING COUNT(*) >= ? ORDER BY ticker",
+            (min_days,),
+        )
+        tickers = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if tickers:
+            print(f"[V40.2] Using stocks.db (stock_daily_prices) — {len(tickers)} tickers", flush=True)
+            return tickers
+    except Exception:
+        pass
+    
+    return []
 
 
 def delete_old_v40_predictions(start_date=None, end_date=None):
