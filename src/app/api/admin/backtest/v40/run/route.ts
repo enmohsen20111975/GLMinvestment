@@ -55,6 +55,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Spawn V40.2 generator as subprocess (non-blocking)
+    // After V40.2 finishes, run daily_closer to close all pending predictions
+    // (so stats include actual returns)
     const args = [
       generatorPath,
       '--start', startDate,
@@ -63,6 +65,8 @@ export async function POST(req: NextRequest) {
       '--max-picks', String(maxPicks),
       '--force',
     ];
+
+    const closerPath = join(projectRoot, 'vps-service', 'jobs', 'daily_closer.py');
 
     const logStream = createWriteStream(logFile, { flags: 'w' });
     const child = spawn('python3', args, {
@@ -74,6 +78,32 @@ export async function POST(req: NextRequest) {
     // Pipe output to log file
     child.stdout?.pipe(logStream);
     child.stderr?.pipe(logStream);
+
+    // When V40.2 generator finishes, run daily_closer to close all pending
+    child.on('exit', (code) => {
+      logStream.write(`\n[V40.2 GENERATOR] exited with code ${code}\n`);
+      if (code === 0) {
+        logStream.write(`[DAILY_CLOSER] Starting daily_closer to close all pending predictions...\n`);
+        const closerArgs = [closerPath];
+        const closerLogStream = createWriteStream(logFile, { flags: 'a' });
+        const closerChild = spawn('python3', closerArgs, {
+          cwd: projectRoot,
+          detached: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        closerChild.stdout?.pipe(closerLogStream);
+        closerChild.stderr?.pipe(closerLogStream);
+        closerChild.on('exit', (closerCode) => {
+          closerLogStream.write(`\n[DAILY_CLOSER] exited with code ${closerCode}\n`);
+          closerLogStream.write(`[BACKTEST JOB ${jobId}] COMPLETED at ${new Date().toISOString()}\n`);
+          closerLogStream.end();
+        });
+        closerChild.unref();
+      } else {
+        logStream.write(`[BACKTEST JOB ${jobId}] FAILED (generator exited with code ${code}) at ${new Date().toISOString()}\n`);
+        logStream.end();
+      }
+    });
 
     // Detach so it survives the request
     child.unref();

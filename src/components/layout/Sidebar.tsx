@@ -37,6 +37,7 @@ import {
   MessageCircle,
   HelpCircle,
   Filter,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
@@ -93,6 +94,7 @@ function getNavSections(currentMarket: MarketType): NavSection[] {
         { id: 'dashboard', label: 'نظرة عامة', labelEn: 'Overview', icon: LayoutDashboard },
         { id: 'stocks', label: 'الأسهم', labelEn: 'Stocks', icon: CandlestickChart },
         { id: 'stock-filters', label: 'فلاتر الأسهم', labelEn: 'Stock Filters', icon: Filter },
+        { id: 'top-performers', label: 'أعلى الأرباح والخسائر', labelEn: 'Top Performers', icon: Trophy },
         { id: 'trading-chart', label: 'الشارت التفاعلي ومقارنة الأسهم', labelEn: 'Interactive Chart & Comparison', icon: TrendingUp },
         { id: 'recommendations', label: 'متابعة التوقعات', labelEn: 'Predictions Tracking', icon: Target },
         { id: 'picks-management', label: 'إدارة التوصيات', labelEn: 'Picks Management', icon: Crown },

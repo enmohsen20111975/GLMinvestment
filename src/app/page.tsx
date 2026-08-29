@@ -47,6 +47,11 @@ const StockScreenerView = withErrorBoundary(
   dynamic(() => import('@/components/screener/StockScreener').then(m => ({ default: m.StockScreener })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
   'فلاتر الأسهم',
 );
+// أعلى الأسهم أرباحاً/خسارة في فترات متعددة (Python top-performers via proxy)
+const TopPerformersView = withErrorBoundary(
+  dynamic(() => import('@/components/stocks/TopPerformersView').then(m => ({ default: m.TopPerformersView })), { ssr: false, loading: () => <LazyTabLoader label="أعلى الأرباح والخسائر" /> }),
+  'أعلى الأرباح والخسائر',
+);
 const ReportsView = withErrorBoundary(
   dynamic(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
@@ -221,7 +226,7 @@ function UrlHashSync() {
   // Valid views for URL hash
   const validViews = [
     // EGX
-    'dashboard', 'stocks', 'stock-filters', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
+    'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
     'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
     // prediction-performance + prediction-credibility moved to Admin panel only
     // (under development — data quality issues being fixed via backtesting loop)
@@ -354,7 +359,7 @@ function AppShell() {
     if (typeof window === 'undefined') return;
 
     const VALID_VIEWS = new Set([
-      'dashboard', 'stocks', 'stock-filters', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
+      'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
       'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
       'advanced-portfolio', 'seasonality', 'prediction-tracking', 'picks-management', 'smart-confluence',
       'alerts-center', 'trading-memory', 'live-monitor', 'wealth', 'trading-journal',
@@ -397,6 +402,8 @@ function AppShell() {
         return <StocksView />;
       case 'stock-filters':
         return <StockScreenerView />;
+      case 'top-performers':
+        return <TopPerformersView />;
       case 'screener':
       case 'trading-chart':
         return <TradingChartView />;
