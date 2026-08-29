@@ -408,10 +408,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # ─── DON'T CHASE FILTER (2026-08-28) ───────────────────────────────
             # Analyst advice: reject entry if stock already exploded recently.
             # Prevents "buying the top" after +20% daily pumps (UNIT, ELSH in July).
-            # Thresholds (EGX-tuned):
-            #   - daily_gain > +12%  → reject (stock exploded today, wait for pullback)
-            #   - ROC3 > +18%       → reject (3-day rally too hot)
-            #   - ROC5 > +28%       → reject (week rally too hot without rest)
+            # Thresholds (EGX-tuned + RELAXED for explosive stock catching):
+            #   - daily_gain > +15%  → reject (was 12% — too strict, missed pre-explosion entries)
+            #   - ROC3 > +25%       → reject (was 18% — too strict)
+            #   - ROC5 > +35%       → reject (was 28% — too strict)
             # Exception: if stock did a base/sweep after the pump → still allowed.
             try:
                 _prev_close_1 = closes[day_idx - 1] if day_idx >= 1 else entry
@@ -423,15 +423,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
                 _chase_rejected = False
                 _chase_reason = ''
-                if _daily_gain > 12.0:
+                if _daily_gain > 15.0:
                     _chase_rejected = True
-                    _chase_reason = f'daily_gain=+{_daily_gain:.1f}% > +12%'
-                elif _roc3 > 18.0:
+                    _chase_reason = f'daily_gain=+{_daily_gain:.1f}% > +15%'
+                elif _roc3 > 25.0:
                     _chase_rejected = True
-                    _chase_reason = f'ROC3=+{_roc3:.1f}% > +18%'
-                elif _roc5 > 28.0:
+                    _chase_reason = f'ROC3=+{_roc3:.1f}% > +25%'
+                elif _roc5 > 35.0:
                     _chase_rejected = True
-                    _chase_reason = f'ROC5=+{_roc5:.1f}% > +28%'
+                    _chase_reason = f'ROC5=+{_roc5:.1f}% > +35%'
 
                 if _chase_rejected:
                     continue
