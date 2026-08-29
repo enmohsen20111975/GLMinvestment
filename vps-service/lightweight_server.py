@@ -36,6 +36,8 @@ BLUEPRINTS = [
     # Phase P5: Sector tracking — تتبع حركة القطاعات (heatmap + rotation + stocks per sector)
     # الـ logic كله في Python (engine/flow_system.py) — Node مجرد proxy.
     ('api.sector_tracking_routes', 'sector_tracking_bp'),
+    # Phase P6: Advanced screener — شاشة فلترة موحدة (TradingView-style)
+    ('api.advanced_screener_routes', 'advanced_screener_bp'),
     # Phase P6: Top performers — أعلى/أدنى الأسهم في فترات متعددة (للتعلم الذاتي)
     # الـ logic كله في Python (يقرأ data_engine.db.egksco_price_history) — Node مجرد proxy.
     ('api.top_performers_routes', 'top_performers_bp'),
