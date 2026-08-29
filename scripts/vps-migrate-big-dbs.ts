@@ -407,23 +407,8 @@ console.log(`  cached_analysis:    ${cachedAnalysisCount.toLocaleString()} rows`
 console.log(`  technical_indicators: ${techIndicatorsCount.toLocaleString()} rows`);
 console.log(`  learned_lessons:    ${learnedLessonsCount.toLocaleString()} rows`);
 console.log('\n✅ All done! Restart your server with: pm2 restart all');
-#!/usr/bin/env bun
-/**
- * VPS Migration Script
- * ====================
- * 
- * Run this script on the VPS to copy data from egx_investment.db to:
- * - price_history.db (historical prices)
- * - predictions.db (prediction logs, cached analysis, technical indicators)
- * - learned.db (learned lessons)
- * 
- * Usage:
- *   bun run scripts/vps-migrate-big-dbs.ts
- * 
- * This script is meant to be run ONCE on the VPS after pulling the code.
- */
 
-import { Database } from 'bun:sqlite';
+// Duplicate copy removed to prevent a second shebang from appearing after the script body.
 
 const DB_DIR = './db';
 
