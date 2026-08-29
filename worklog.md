@@ -9020,3 +9020,40 @@ Stage Summary:
   * هل price_history.db.price_history هو المصدر الكامل (1.24M rows)
   * هل stocks.db.stock_daily_prices فيه بيانات كافية (29K rows)
 - بناءً على النتائج، نقدر نقرر: نستعمل جدول تاني أو ننسخ البيانات
+
+---
+Task ID: fix-1
+Agent: Z.ai Code (main)
+Task: إصلاح كارثة الـ 0 signals — V38 engine بـ يقرا من price_history.db
+
+Work Log:
+- المستخدم نفّذ audit_dbs_deep.py على الإنتاج
+- النتائج كشفت:
+  * data_engine.db.egksco_price_history = 0 rows (1540 MB فاضي)
+  * price_history.db.price_history = 1,248,257 rows (25 سنة، 30K للأسهم الانفجارية)
+  * data_engine.db.historical_data = 99K rows بس ticker format رقمي (1010, 1020, ...) — مش حرفي
+  * stocks.db.stock_daily_prices = 29K rows (آخر 30 يوم فقط)
+- القرار: price_history.db.price_history هو المصدر الصحيح
+- التعديل:
+  * v38_backtest_engine.py: PRICE_HISTORY_DB_LEGACY constant جديد
+  * get_price_data(): price_history.db first → data_engine.db fallback → stocks.db fallback
+  * audit_backtest.py mode_detectors: price_history.db first
+- اختبارات:
+  * syntax OK (ast.parse)
+  * lint OK (bun run lint EXIT 0)
+  * fallback test: data_engine.db فاضي → price_history.db بـ read 5 rows صح
+  * sandbox test: COMI 439 rows (fallback لـ data_engine.db على sandbox)
+- commit + push (53de8931)
+
+Stage Summary:
+- ✅ v38_backtest_engine.py معدّل (get_price_data بـ uses price_history.db first)
+- ✅ audit_backtest.py معدّل (mode_detectors بـ uses price_history.db first)
+- ✅ كل الاختبارات نجحت
+- 🔜 المستخدم ينفّذ على الإنتاج:
+  1. git pull origin main
+  2. python3 scripts/audit_backtest.py detectors — تأكد إن detectors بـ تكتشف الأسهم
+  3. python3 scripts/audit_backtest.py filters — تأكد إن filters بـ تـ pass signals
+  4. python3 scripts/audit_backtest.py all — فحص شامل
+  5. python3 vps-service/jobs/v40_2_daily_generator.py --start 2025-12-01 --end 2026-08-27 --scan-interval 3 --max-picks 5 --force — backtest كامل
+  6. python3 vps-service/jobs/daily_closer.py — إغلاق التوقعات
+  7. نتائج متوقعة: signals > 0 + الأسهم الانفجارية تـ appear في predictions
