@@ -42,6 +42,11 @@ const MarketAnalysisView = withErrorBoundary(
   dynamic(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
   'التحليل',
 );
+// فلاتر الأسهم — screener مستقل في القائمة الجانبية (Python presets via proxy)
+const StockScreenerView = withErrorBoundary(
+  dynamic(() => import('@/components/screener/StockScreener').then(m => ({ default: m.StockScreener })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
+  'فلاتر الأسهم',
+);
 const ReportsView = withErrorBoundary(
   dynamic(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
@@ -216,7 +221,7 @@ function UrlHashSync() {
   // Valid views for URL hash
   const validViews = [
     // EGX
-    'dashboard', 'stocks', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
+    'dashboard', 'stocks', 'stock-filters', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
     'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
     // prediction-performance + prediction-credibility moved to Admin panel only
     // (under development — data quality issues being fixed via backtesting loop)
@@ -349,7 +354,7 @@ function AppShell() {
     if (typeof window === 'undefined') return;
 
     const VALID_VIEWS = new Set([
-      'dashboard', 'stocks', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
+      'dashboard', 'stocks', 'stock-filters', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
       'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
       'advanced-portfolio', 'seasonality', 'prediction-tracking', 'picks-management', 'smart-confluence',
       'alerts-center', 'trading-memory', 'live-monitor', 'wealth', 'trading-journal',
@@ -390,6 +395,8 @@ function AppShell() {
       case 'stocks':
       case 'stock-detail':
         return <StocksView />;
+      case 'stock-filters':
+        return <StockScreenerView />;
       case 'screener':
       case 'trading-chart':
         return <TradingChartView />;
