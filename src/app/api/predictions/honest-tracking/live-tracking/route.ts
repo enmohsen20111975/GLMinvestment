@@ -92,8 +92,17 @@ export async function GET(request: NextRequest) {
 
     // ── Fetch top-N predictions per persona (lightweight) ──
     // Instead of fetching ALL and processing, we fetch only the top N per persona
+    //
+    // BUG-FIX (2026-08-29): كان الفلتر بـ uses prediction_date (تاريخ الدخول)
+    // بدل outcome_date (تاريخ الإغلاق). ده بـ يسبب أرقام غريبة:
+    //   - "أمس" بـ يظهر خسارة في أجازة (لأن توقعات دخلها الخميس واتقفلت الجمعة)
+    //   - "7 أيام" بـ يظهر خسارة أكبر من -100% (مجموع خسائر أكتر من صفقة)
+    // الحل: نـ filter بـ COALESCE(outcome_date, prediction_date):
+    //   - التوقعات المقفولة: بـ filter بـ outcome_date (تاريخ الإغلاق)
+    //   - التوقعات المعلقة: بـ filter بـ prediction_date (تاريخ الدخول)
+    // كمان نـ uses 'localtime' بدل UTC عشان توقيت مصر (UTC+2).
     const dayFilter = days > 0
-      ? `AND prediction_date >= date('now', '-${days} days')`
+      ? `AND COALESCE(outcome_date, prediction_date) >= date('now', 'localtime', '-${days} days')`
       : '';
     const scoreFilter = minScore > 0
       ? `AND master_score >= ${minScore}`
