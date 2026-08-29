@@ -36,6 +36,12 @@ import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligenceP
 import dynamic from 'next/dynamic';
 import { Dialog, DialogContent, DialogClose, DialogTitle } from '@/components/ui/dialog';
 
+// Phase 4: Advanced Stock Screener — lazy-loaded (screener tab in #recommendations)
+const StockScreenerAdvanced = dynamic(
+  () => import('@/components/screener/StockScreener').then(m => ({ default: m.StockScreener })),
+  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> }
+);
+
 
 function pickValidPrice(...candidates: any[]): number | undefined {
   for (const c of candidates) {
@@ -6510,7 +6516,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       <HorizontalSectorsBar marketCode={marketCode} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 h-auto gap-1">
           {/* التبويب الأول: متابعة التوقعات — كل الشخصيات + جرس الصباح + win/loss */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
@@ -6541,6 +6547,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Bitcoin className="h-4 w-4" />
             <span className="hidden sm:inline">الكريبتو</span>
           </TabsTrigger>
+          {/* Phase 4: الفرز المتقدم — TradingView-style screener داخل #recommendations */}
+          <TabsTrigger value="screener" className="flex items-center gap-1">
+            <Activity className="h-4 w-4 text-emerald-600" />
+            <span className="hidden sm:inline">الفرز المتقدم</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* تبويب متابعة التوقعات — كل الشخصيات بحد أقصى 5 + جرس الصباح فوقه بالفعل */}
@@ -6570,6 +6581,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 
         <TabsContent value="crypto" className="mt-4">
           <CryptoPredictionsTab />
+        </TabsContent>
+
+        {/* Phase 4: الفرز المتقدم — TradingView-style screener مع sector heat + strongest movers */}
+        <TabsContent value="screener" className="mt-4">
+          <StockScreenerAdvanced />
         </TabsContent>
       </Tabs>
 
