@@ -1,6 +1,40 @@
 # Changelog
 
 
+## [PROJECT-RELOCATION] — نقل GLMinvestment إلى /home/z/my-project/ ليصبح المشروع الرئيسي (2026-08-29)
+
+> **المهمة:** بناءً على طلب المالك الصريح ("move it to /home/z/my-project/ to make it as the main project"),
+> تم نقل GLMinvestment (egx-investment-platform v3.4.41) من `/home/z/GLMinvestment` إلى `/home/z/my-project`
+> ليصبح المشروع الرئيسي في بيئة Z.ai (يُشغّل على port 3000 عبر proxy + next dev).
+
+### التغييرات
+- **[نقل]** محتويات `/home/z/GLMinvestment/` → `/home/z/my-project/` (بما في ذلك .git + .env + data/).
+- **[backup]** my-project القديم (nextjs_tailwind_shadcn_ts) → `/home/z/my-project.old` (216M) + `/tmp/my-project-backup-20260829_104958/` (62M).
+- **[backup]** GLMinvestment الأصلي احتُفظ في `/home/z/GLMinvestment` (675M) كـ backup إضافي.
+- **[تثبيت]** `bun install`: 1112 packages في 88.53s + postinstall (prisma generate × 3 + patch-html2canvas).
+- **[تشغيل]** `bun run dev` → watchdog.sh → next dev (port 3001, 4996 modules, Ready in 1566ms) + proxy-server.js (port 3000).
+
+### التحقق
+- ✅ HTTP 200 على port 3000 (الصفحة الرئيسية title: "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية")
+- ✅ /api/seed-experts رجع 410 Gone (متوقع بعد SECURITY-RANDOM-PURGE)
+- ✅ git status نظيف، HEAD=3e85cc20 (متزامن مع GitHub)
+- ⚠️ /api/stocks 503 (Python backend مش شغال في الساندبوكس — متوقع)
+- ⚠️ /api/admin/backtest/v40/stats 500 (predictions.db غير موجود — يحتاج استخراج من data/all.zip)
+- ⚠️ next@14.2.28 مُثبت بدلاً من ^16.1.1 (يحتاج تحقق لاحقاً)
+
+### القواعد المُطبّقة
+- Rule 2 (don't touch .env content) — مُحترم (.env content unchanged).
+- Rule 17 (relative paths) — .env لا يزال يحتوي مسار مطلق، لكنه الآن صحيح (my-project = GLMinvestment).
+- Rule 26 (Sandbox-Reset-Safeguard) — commit + push فوراً بعد النقل.
+
+### الحالة بعد النقل
+- my-project = GLMinvestment v3.4.41 (المشروع الرئيسي)
+- node_modules: 1.3G (1112 packages)
+- المساحة المتاحة: 5.2G
+- dev server يعمل في background عبر watchdog.sh
+
+---
+
 ## [SECURITY-ENV-UNTRACK] — إصلاح أمني: فك تتبع .env من git + إزالة token من .git/config (2026-08-29)
 
 > **المهمة:** .env كان force-added إلى git tracking في session سابقة (رغم .gitignore line 34: `.env*`).

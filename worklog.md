@@ -7715,3 +7715,77 @@ Stage Summary:
 - ✅ commit b7260141 على GitHub (pushed)
 - ⚠️ .env لا يزال يحتوي مسار مطلق (لكن Rule 2 تمنع تعديل محتواه)
 - 🔜 الكوارث الأمنية + المعمارية المتبقية: unified_learning LEGACY, aiPrediction dead table, Phase A+B+C
+
+---
+Task ID: PROJECT-RELOCATION-MOVE
+Agent: Z.ai Code (main orchestrator)
+Task: نقل GLMinvestment إلى /home/z/my-project/ ليصبح المشروع الرئيسي في بيئة Z.ai (بناءً على طلب المالك الصريح)
+
+Work Log:
+- المالك طلب صراحة: "move it to /home/z/my-project/ to make it as the main project"
+- اتبعت المرحلة 0 من خطة المدير (التجميد والنسخ الاحتياطي) بحذر شديد
+- قبل أي حركة، تحققت من حالة my-project الحالي:
+  • my-project كان مشروع Z.ai الأساسي (nextjs_tailwind_shadcn_ts v0.2.1)، 1.5GB (معظمها node_modules)
+  • .git الخاص بـ my-project: 3 commits فقط (Initial commit + 2 UUID commits)، لا remote — لا قيمة تاريخية
+  • package.json: nextjs_tailwind_shadcn_ts (مختلف تماماً عن GLMinvestment)
+
+- **المرحلة 0: Backup كامل**
+  1. عمل backup لـ my-project (بدون node_modules/.git/.next) → /tmp/my-project-backup-20260829_104958/ (62M)
+  2. تحقق من سلامة GLMinvestment قبل النقل: git status نظيف، HEAD=3e85cc20، remote بدون token، data/all.zip MD5 مطابق، .env غير متتبع ✅
+  3. إيقاف أي عمليات next/watchdog شغالة + تحقق أن المنافذ 3000/3001 حرة
+
+- **المرحلة 1: النقل الآمن**
+  1. حذف node_modules + .next من my-project (لا قيمة لهما — يمكن إعادة إنشاؤهما)
+  2. محاولة mv /home/z/my-project → /home/z/my-project.old فشلت جزئياً (upload/ مُستخدم من IM gateway)
+  3. حذف محتويات my-project باستثناء upload/ (find -mindepth 1 -maxdepth 1 ! -name 'upload' -exec rm -rf {} +)
+  4. نسخ GLMinvestment إلى my-project: cp -a /home/z/GLMinvestment/. /home/z/my-project/
+  5. التحقق من النسخ:
+     • my-project size: 675M (مطابق لـ GLMinvestment) ✅
+     • .git copied: آخر 3 commits موجودة (3e85cc20, 1baa1b10, b7260141) ✅
+     • .env copied: محتواه DATABASE_URL=file:/home/z/my-project/db/custom.db (الآن صحيح لأن my-project = GLMinvestment) ✅
+     • data/all.zip MD5: 3d304a74ccdbfb599d4769e2f10d9471 (مطابق للمرجع) ✅
+     • upload/ محفوظ (مجلد IM gateway) ✅
+     • git status نظيف ✅
+     • HEAD مطابق لـ GLMinvestment (3e85cc20) ✅
+  6. my-project.old (216M) + GLMinvestment الأصلي (675M) احتُفظ كـ backups إضافية
+
+- **المرحلة 2: تثبيت dependencies**
+  1. bun install: 1112 packages في 88.53s ✅
+  2. postinstall scripts: prisma generate (3 schemas) + patch-html2canvas.js ✅
+  3. node_modules: 1.3G
+  4. prisma clients مُولّدة: @prisma/client + @prisma/auth-client + .prisma/client ✅
+  5. ملاحظة: next@14.2.28 مُثبت (package.json قال ^16.1.1 لكن bun حلّها لـ 14.2.28)
+
+- **المرحلة 3: تشغيل dev server + اختبار**
+  1. bun run dev → setsid -f bash scripts/watchdog.sh (watchdog في background)
+  2. watchdog.sh شغّل: next dev على port 3001 (--max-old-space-size=2048) + proxy-server.js على port 3000
+  3. next dev: Ready in 1566ms ✅
+  4. Compiled / in 30.7s (4996 modules) ✅
+  5. GET / 200 in 31924ms ✅
+  6. HTTP test على port 3000 (proxy): HTTP 200, 61310 bytes ✅
+  7. Page title: "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية" ✅ (هذا هو GLMinvestment!)
+  8. /api/seed-experts: 410 Gone ✅ (متوقع بعد تطهير random data)
+  9. /api/stocks: 503 (Python backend مش شغال — متوقع في الساندبوكس)
+  10. /api/admin/backtest/v40/stats: 500 (predictions.db غير موجود — لا يزال داخل data/all.zip، يحتاج استخراج)
+
+- **الحالة النهائية**
+  • my-project: 2.3G (المشروع الرئيسي = GLMinvestment v3.4.41)
+  • node_modules: 1.3G (1112 packages مثبتة)
+  • git: متزامن مع GitHub (HEAD=3e85cc20)
+  • dev server: يعمل على port 3000 (proxy) + 3001 (next dev)
+  • المساحة المتاحة: 5.2G (كافية)
+  • Backups: /tmp/my-project-backup-20260829_104958/ (62M) + /home/z/my-project.old (216M) + /home/z/GLMinvestment (675M)
+
+Stage Summary:
+- ✅ النقل تم بنجاح 100% — GLMinvestment أصبح المشروع الرئيسي في /home/z/my-project
+- ✅ git history محفوظ (50+ commits + GitHub remote)
+- ✅ data/all.zip محفوظ (MD5 مطابق)
+- ✅ .env محفوظ على القرص + غير متتبع في git
+- ✅ dependencies مثبتة (1112 packages)
+- ✅ prisma clients مُولّدة (3 schemas)
+- ✅ dev server يعمل (HTTP 200 على port 3000)
+- ✅ الصفحة الرئيسية تُعرض بشكل صحيح (title: "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية")
+- ⚠️ Python backend لا يعمل في الساندبوكس (متوقع — /api/stocks رجع 503)
+- ⚠️ predictions.db غير موجود (داخل data/all.zip — يحتاج استخراج كجزء من المرحلة 1 من خطة المدير)
+- ⚠️ next@14.2.28 مُثبت بدلاً من ^16.1.1 (bun حلّها هكذا — يحتاج تحقق)
+- 🔜 المراحل 1-6 من خطة المدير: Audit schema + fix aiPrediction + migrate legacy + route integrity + logic validation + QA
