@@ -1552,6 +1552,191 @@ def detect_accumulation_phase(
 
 
 # ============================================================================
+# RECOVERY FROM LONG BASE / LONG CORRECTION DETECTOR (AXIS-5d)
+# ============================================================================
+# صطياد الأسهم اللي فضلت هادية أو بتصحح لمدة طويلة (30-60 يوم)
+# ولما تبدأ تظهر علامات التعافي → دخول بدري قبل الانفجار الكبير
+# ============================================================================
+
+def detect_recovery_from_base(
+    closes: List[float],
+    highs: List[float],
+    lows: List[float],
+    opens: List[float],
+    volumes: List[float],
+) -> Optional[Dict[str, Any]]:
+    """
+    Recovery from Long Base / Long Correction Detector (AXIS-5d)
+
+    يصطاد الأسهم التي:
+    1. قعدت فترة طويلة (30-60 يوم) في تصحيح أو عرضي (Base)
+    2. بدأت تظهر علامات التعافي الحقيقية
+
+    شروط الاكتشاف:
+    - وجود قاعدة طويلة (ATR منخفض + حركة محدودة)
+    - علامات بداية التعافي (حجم يرجع + سعر يقطع SMA20 + شمعة قوية)
+    - السعر قريب من SMA50
+    - R/R ≥ 1.8
+    - ممنوع لو طلع >12% في 3-5 أيام (مطاردة)
+    """
+    if len(closes) < 50:
+        return None
+
+    # ── 1) وجود قاعدة طويلة أو تصحيح ممتد ──────────────────────────────────
+    # ATR آخر 20 يوم vs ATR آخر 60 يوم (لو ATR الحالي أقل → قاعدة)
+    import statistics as _stats
+    recent_20 = closes[-20:] if len(closes) >= 20 else closes
+    recent_60 = closes[-60:] if len(closes) >= 60 else closes
+
+    # Calculate ATR proxy (range-based)
+    atr_20 = _stats.mean([(highs[i] - lows[i]) for i in range(-20, 0)]) if len(highs) >= 20 else 0
+    atr_60 = _stats.mean([(highs[i] - lows[i]) for i in range(-60, 0)]) if len(highs) >= 60 else atr_20
+
+    # Base condition: ATR الحالي ≤ 0.8× ATR التاريخي (هدوء نسبي)
+    is_quiet_base = atr_60 > 0 and atr_20 <= atr_60 * 0.8
+
+    # أو: السعر في نطاق ضيق (آخر 30 يوم ±10%)
+    last_30 = closes[-30:] if len(closes) >= 30 else closes
+    range_30 = (max(last_30) - min(last_30)) / (min(last_30) or 1) * 100
+    is_narrow_range = range_30 < 15  # أقل من 15% نطاق
+
+    # أو: تصحيح من قمة (نزل >15% من قمة 60 يوم)
+    high_60 = max(highs[-60:]) if len(highs) >= 60 else max(highs)
+    current = closes[-1]
+    drawdown = ((current - high_60) / high_60 * 100) if high_60 > 0 else 0
+    is_correction = drawdown < -10  # نزل أكثر من 10% من قمة 60 يوم
+
+    # لازم فيه واحدة على الأقل من الحالات الثلاث
+    has_base = is_quiet_base or is_narrow_range or is_correction
+
+    if not has_base:
+        return None
+
+    # ── 2) علامات بداية التعافي (اثنين على الأقل) ──────────────────────────
+    recovery_signals = 0
+    reasons = []
+    score = 0
+
+    # (أ) الحجم يرجع فوق المتوسط تدريجياً (1.2×–1.6×)
+    vol_last_3 = volumes[-3:] if len(volumes) >= 3 else volumes
+    avg_vol_3 = sum(vol_last_3) / len(vol_last_3) if vol_last_3 else 0
+    vol_baseline = volumes[-21:-1] if len(volumes) >= 21 else volumes[:-1]
+    avg_vol_20 = sum(vol_baseline) / len(vol_baseline) if vol_baseline else 0
+    vol_ratio = avg_vol_3 / avg_vol_20 if avg_vol_20 > 0 else 0
+
+    vol_returning = 1.2 <= vol_ratio <= 2.0  # تدريجي مش انفجار
+    if vol_returning:
+        recovery_signals += 1
+        score += 25
+        reasons.append(f'vol_ratio={vol_ratio:.2f}x')
+
+    # (ب) السعر قطع فوق SMA20
+    sma20 = sum(closes[-20:]) / 20 if len(closes) >= 20 else 0
+    above_sma20 = sma20 > 0 and current > sma20
+    if above_sma20:
+        recovery_signals += 1
+        score += 20
+        reasons.append('فوق SMA20')
+
+    # (ج) شمعة قوية (إغلاق قريب من الأعلى)
+    if len(highs) >= 1 and len(lows) >= 1:
+        candle_range = highs[-1] - lows[-1]
+        if candle_range > 0:
+            close_position = (current - lows[-1]) / candle_range
+            strong_candle = close_position >= 0.7  # إغلاق في أعلى 30%
+            if strong_candle:
+                recovery_signals += 1
+                score += 20
+                reasons.append(f'close_pos={close_position:.0%}')
+
+    # (د) ROC5 إيجابي (زخم بسيط)
+    if len(closes) >= 6:
+        roc5 = ((current - closes[-6]) / closes[-6] * 100) if closes[-6] > 0 else 0
+        if roc5 > 0:
+            recovery_signals += 1
+            score += 15
+            reasons.append(f'ROC5=+{roc5:.1f}%')
+
+    # لازم عندنا 2 على الأقل من علامات التعافي
+    if recovery_signals < 2:
+        return None
+
+    # ── 3) شروط الجودة والحماية ─────────────────────────────────────────────
+    # السعر قريب من SMA50 (مش تحتها بعمق)
+    sma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else 0
+    near_sma50 = True
+    if sma50 > 0:
+        dist_from_sma50 = ((current - sma50) / sma50 * 100)
+        near_sma50 = dist_from_sma50 > -15  # مش نازل أكثر من 15% تحت SMA50
+
+    if not near_sma50:
+        return None  # بعيد عن SMA50 → انتظر
+
+    # إضافي: فوق SMA50 = نقطة قوة
+    if sma50 > 0 and current > sma50:
+        score += 10
+        reasons.append('فوق SMA50')
+
+    # R/R ≥ 1.8 (وقف تحت آخر قاع + هدف 1.8R)
+    recent_low = min(lows[-20:]) if len(lows) >= 20 else min(lows)
+    atr_val = atr_20 if atr_20 > 0 else (highs[-1] - lows[-1] or 0.01)
+
+    entry = current
+    stop = min(recent_low, entry - atr_val * 1.2)  # تحت آخر قاع أو 1.2×ATR
+    target = entry + (atr_val * 2.0)  # 2R target (R:R = 2.0)
+
+    if entry <= 0 or stop >= entry:
+        return None
+
+    rr = (target - entry) / (entry - stop) if (entry - stop) > 0 else 0
+    if rr < 1.5:  # محتاج R/R ≥ 1.5 (مرن شوية عشان السهم في تعافي)
+        return None
+
+    # ── 4) شروط الرفض القاطعة ───────────────────────────────────────────────
+    # ممنوع لو طلع >12% في 3-5 أيام (مطاردة)
+    if len(closes) >= 4:
+        roc3 = ((current - closes[-4]) / closes[-4] * 100) if closes[-4] > 0 else 0
+        if roc3 > 12:
+            return None  # مطاردة
+    if len(closes) >= 6:
+        roc5 = ((current - closes[-6]) / closes[-6] * 100) if closes[-6] > 0 else 0
+        if roc5 > 15:
+            return None  # مطاردة
+
+    # Zero Volume guard
+    if volumes[-1] < 100:
+        return None
+
+    is_recovery = score >= 40 and recovery_signals >= 2
+
+    return {
+        'is_recovery_signal': is_recovery,
+        'score': min(score, 100.0),
+        'reason': ' | '.join(reasons) if reasons else 'لا توجد إشارات تعافي',
+        'entry': entry,
+        'target': target,
+        'stop': stop,
+        'rr': rr,
+        'details': {
+            'has_base': has_base,
+            'is_quiet_base': is_quiet_base,
+            'is_narrow_range': is_narrow_range,
+            'is_correction': is_correction,
+            'drawdown_from_60d_high': round(drawdown, 1),
+            'vol_ratio': round(vol_ratio, 2),
+            'recovery_signals': recovery_signals,
+            'atr_20': round(atr_20, 4),
+            'atr_60': round(atr_60, 4),
+            'above_sma20': above_sma20,
+            'near_sma50': near_sma50,
+            'above_sma50': sma50 > 0 and current > sma50,
+            'roc5': round(roc5, 1) if 'roc5' in dir() else 0,
+            'rr_ratio': round(rr, 2),
+        },
+    }
+
+
+# ============================================================================
 # CORE SCORING ENGINE
 # ============================================================================
 

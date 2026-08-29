@@ -58,7 +58,7 @@ PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine
 from analyzers.liquidity_filter import set_strict_kill_filters
 from analyzers.prediction_tracker import PredictionTracker
 from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
-from analyzers.core_scoring_engine import detect_volume_surge_rocket, detect_accumulation_phase
+from analyzers.core_scoring_engine import detect_volume_surge_rocket, detect_accumulation_phase, detect_recovery_from_base
 
 # ─── Rule 28: Toxic Ticker Blocklist ───
 _BLOCKLIST_PATH = Path(__file__).resolve().parents[1] / 'config' / 'toxic_ticker_blocklist.json'
@@ -284,6 +284,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     processed = 0
     surge_picks_this_run = 0  # AXIS-5b: counter for Volume Surge Hunter picks
     accum_picks_this_run = 0   # AXIS-5c: counter for Accumulation Detector picks
+    recovery_picks_this_run = 0  # AXIS-5d: counter for Recovery from Long Base picks
 
     for ticker in tickers:
         processed += 1
@@ -384,7 +385,31 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         result['proofs'] = _accum_proofs
                         accum_picks_this_run += 1
                     else:
-                        continue
+                        # ─── RECOVERY FROM LONG BASE (AXIS-5d): التعافي من قاعدة طويلة ───
+                        # لو surge + accumulation ما اكتشفوش، شغل Recovery Detector.
+                        # بيدور على: قاعدة طويلة (30-60 يوم هدوء) + علامات تعافي (حجم يرجع +
+                        # فوق SMA20 + شمعة قوية + ROC5 إيجابي) + قريب من SMA50 + R/R ≥ 1.5.
+                        # بيصطاد الأسهم اللي فضلت هادية شهور ولما بدأت تصحى ندخل بدري.
+                        try:
+                            recovery_result = detect_recovery_from_base(
+                                closes[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1],
+                                opens[:day_idx+1], volumes[:day_idx+1],
+                            )
+                        except Exception:
+                            recovery_result = {'is_recovery_signal': False}
+                        if recovery_result and recovery_result.get('is_recovery_signal'):
+                            signal = 'STRONG_BUY'
+                            result['entry'] = recovery_result['entry']
+                            result['target'] = recovery_result['target']
+                            result['stop_loss'] = recovery_result['stop']
+                            result['score'] = recovery_result['score']
+                            result['signal'] = 'STRONG_BUY'
+                            _recovery_proofs = {'recovery_hunter': True}
+                            _recovery_proofs.update(recovery_result.get('details', {}))
+                            result['proofs'] = _recovery_proofs
+                            recovery_picks_this_run += 1
+                        else:
+                            continue
 
             entry = result['entry']
             target = result['target']
@@ -442,10 +467,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # Analyst advice: if stock fell -5% or more from its 5-day high,
             # it's in a correction → WAIT instead of BUY (unless surge/accum hunter).
             # Prevents entering mid-correction (RAYA pattern in July).
-            # Exception: surge_hunter + accumulation_hunter bypass (already verified).
+            # Exception: surge_hunter + accumulation_hunter + recovery_hunter bypass (already verified).
             _is_surge_signal = result.get('proofs', {}).get('surge_hunter', False)
             _is_accum_signal = result.get('proofs', {}).get('accumulation_hunter', False)
-            if not _is_surge_signal and not _is_accum_signal and day_idx >= 5:
+            _is_recovery_signal = result.get('proofs', {}).get('recovery_hunter', False)
+            if not _is_surge_signal and not _is_accum_signal and not _is_recovery_signal and day_idx >= 5:
                 try:
                     _recent_high = max(highs[max(0, day_idx - 5):day_idx + 1])
                     _drawdown_from_high = ((_recent_high - entry) / _recent_high * 100) if _recent_high > 0 else 0
