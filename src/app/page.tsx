@@ -42,20 +42,10 @@ const MarketAnalysisView = withErrorBoundary(
   dynamic(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
   'التحليل',
 );
-// فلاتر الأسهم — screener مستقل في القائمة الجانبية (Python presets via proxy)
-const StockScreenerView = withErrorBoundary(
-  dynamic(() => import('@/components/screener/StockScreener').then(m => ({ default: m.StockScreener })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
-  'فلاتر الأسهم',
-);
-// أعلى الأسهم أرباحاً/خسارة في فترات متعددة (Python top-performers via proxy)
-const TopPerformersView = withErrorBoundary(
-  dynamic(() => import('@/components/stocks/TopPerformersView').then(m => ({ default: m.TopPerformersView })), { ssr: false, loading: () => <LazyTabLoader label="أعلى الأرباح والخسائر" /> }),
-  'أعلى الأرباح والخسائر',
-);
-// ماسح السوق — شاشة متعددة الشارتلات شبيهة بـ TradingView (MultiChartScreener)
-const MarketScreenerView = withErrorBoundary(
-  dynamic(() => import('@/components/screener/MultiChartScreener').then(m => ({ default: m.MultiChartScreener })), { ssr: false, loading: () => <LazyTabLoader label="ماسح السوق" /> }),
-  'ماسح السوق',
+// ماسح الأسهم الموحد — TradingView-style screener + أعلى الأرباح/الخسائر في شاشة واحدة
+const UnifiedScreenerView = withErrorBoundary(
+  dynamic(() => import('@/components/screener/UnifiedScreenerView').then(m => ({ default: m.UnifiedScreenerView })), { ssr: false, loading: () => <LazyTabLoader label="ماسح الأسهم" /> }),
+  'ماسح الأسهم',
 );
 const ReportsView = withErrorBoundary(
   dynamic(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
@@ -231,7 +221,7 @@ function UrlHashSync() {
   // Valid views for URL hash
   const validViews = [
     // EGX
-    'dashboard', 'stocks', 'stock-filters', 'top-performers', 'market-screener', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
+    'dashboard', 'stocks', 'stock-screener', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
     'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
     // prediction-performance + prediction-credibility moved to Admin panel only
     // (under development — data quality issues being fixed via backtesting loop)
@@ -364,7 +354,7 @@ function AppShell() {
     if (typeof window === 'undefined') return;
 
     const VALID_VIEWS = new Set([
-      'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
+      'dashboard', 'stocks', 'stock-screener', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
       'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
       'advanced-portfolio', 'seasonality', 'prediction-tracking', 'picks-management', 'smart-confluence',
       'alerts-center', 'trading-memory', 'live-monitor', 'wealth', 'trading-journal',
@@ -405,12 +395,10 @@ function AppShell() {
       case 'stocks':
       case 'stock-detail':
         return <StocksView />;
+      case 'stock-screener':
       case 'stock-filters':
-        return <StockScreenerView />;
       case 'top-performers':
-        return <TopPerformersView />;
-      case 'market-screener':
-        return <MarketScreenerView />;
+        return <UnifiedScreenerView />;
       case 'screener':
       case 'trading-chart':
         return <TradingChartView />;
