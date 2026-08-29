@@ -7789,3 +7789,327 @@ Stage Summary:
 - ⚠️ predictions.db غير موجود (داخل data/all.zip — يحتاج استخراج كجزء من المرحلة 1 من خطة المدير)
 - ⚠️ next@14.2.28 مُثبت بدلاً من ^16.1.1 (bun حلّها هكذا — يحتاج تحقق)
 - 🔜 المراحل 1-6 من خطة المدير: Audit schema + fix aiPrediction + migrate legacy + route integrity + logic validation + QA
+
+---
+Task ID: P1-SCREENER-AUDIT
+Agent: Explore (screener audit)
+Task: تحليل بنية screener الموجودة للمرحلة 1
+
+Work Log:
+- قرأت `/home/z/my-project/src/components/screener/StockScreener.tsx` كاملاً (609 سطر)
+- قرأت `/home/z/my-project/src/app/api/stocks/screener/route.ts` كاملاً (228 سطر)
+- قرأت `/home/z/my-project/src/app/api/stocks/sparkline/route.ts` كاملاً (64 سطر)
+- قرأت `/home/z/my-project/src/app/page.tsx` منطقة الـ view routing (الأسطر 80-576)
+- قرأت أول 100 سطر من `SimpleRecommendationsView.tsx` (1131 سطر إجمالي)
+- قرأت أول 150 سطر من `MarketAnalysisView.tsx` (6599 سطر إجمالي) + بحث sector/screener فيه
+- فحصت `/home/z/my-project/db/` و `/home/z/my-project/data/` ومحتوى all.zip
+- grep على `/home/z/my-project/src` لـ: correction_status (10 hit/2 files), momentum_score (35 hit/11 files), sector_heat (12 hit/2 files), relative_strength (16 hit/6 files), volume_surge (14 hit/6 files)
+- بحثت عن imports لـ StockScreener في كامل src — **لا يوجد import واحد خارج ملفه!**
+
+Stage Summary:
+
+## 📋 1) StockScreener.tsx — المكون الحالي (609 سطر)
+
+**عدد الأسطر:** 609 سطر (609 LOC) — مكون واحد كبير بدون sub-components منفصلة (Sparkline + SectorComparison مُضمّنة inline).
+
+**الـ 8 فلاتر الموجودة في state:**
+| # | الفلتر | القيم |
+|---|---|---|
+| 1 | `market` | 'EGX' / 'ALL' |
+| 2 | `sector` | 'ALL' / قائمة قطاعات ديناميكية من API |
+| 3 | `sort` | change_percent / volume / momentum / rsi / market_cap |
+| 4 | `order` | 'desc' / 'asc' |
+| 5 | `limit` | 50 / 100 / 200 / 500 |
+| 6 | `trend` | 'all' / 'up' / 'down' |
+| 7 | `aboveMa` | 'all' / '50' / '200' / 'both' |
+| 8 | `correctionStatus` | 'all' / in_correction / pulling_back / breakout / near_high / overbought / oversold |
+| (+) | `searchQuery` | text (client-side filter on ticker/name/name_ar) |
+
+**الـ 11 عمود معروضة في الـ table:**
+1. السهم (ticker + name_ar + sector)
+2. السعر (current_price)
+3. التغير (change_percent %)
+4. الرسم البياني (30 يوم) — **MiniSparkline** ✅
+5. الحجم (volume + ⚡ icon لو volume_surge)
+6. RSI
+7. الحالة — correction_status badge
+8. الزخم (momentum_score + سهم TrendingUp/Down)
+9. من القمة (distance_from_52w_high %)
+10. مقارنة بالقطاع — **SectorComparison** ✅ (يعرض avg القطاع + فرق الأداء)
+11. المتوسطات (badge: 50 / 200 ملون لو above_ma)
+
+**State shape الكامل:**
+```
+Filters: market, sector, sort, order, limit, trend, aboveMa, correctionStatus, searchQuery
+Data:    stocks (ScreenerStock[]), sectors (string[]), loading, error
+```
+
+**Sparkline و Sector comparison:**
+- ✅ **Sparkline موجود** — MiniSparkline (سطر 109-160): SVG polyline 80×20px، fetch من `/api/stocks/sparkline?ticker=X&days=30`، ألوان حسب اتجاه التغير، يعرض % change.
+- ✅ **Sector comparison موجود** — SectorComparison (سطر 164-196): fetch من screener API لنفس القطاع، يحسب avg change_percent، يعرض فرق أداء السهم عن القطاع (▲/▼).
+
+**🚨 CRITICAL — المكون ORPHANED (يتيم):**
+- StockScreener.tsx ليس مستورَداً في أي مكان خارج ملفه (تأكدت بـ grep على كامل src)
+- `#screener` hash في page.tsx (سطر 393-395) → يُحمّل `<TradingChartView />` — **وليس StockScreener!**
+- المكون "موجود في الكود لكن لا يصل إليه المستخدم" — كل ميزاته (sparkline + sector comparison + 8 فلاتر + CSV export) **غير مرئية** في UI حي.
+
+---
+
+## 📋 2) screener API — `/api/stocks/screener/route.ts` (228 سطر)
+
+**مصدر البيانات:** `db/stocks.db` (سطر 68) — **⚠️ غير موجود على القرص حالياً** (داخل `data/all.zip` 12MB، يحتاج استخراج). جدول `stocks`، شرط `is_active = 1`.
+
+**الحقول التي يرجعها لكل سهم (24 حقل):**
+
+| # | الحقل | المصدر | ملاحظة |
+|---|---|---|---|
+| 1 | ticker | DB raw | string |
+| 2 | name | DB raw | English name |
+| 3 | name_ar | DB raw (fallback to name) | Arabic name |
+| 4 | market | DB raw | EGX/KSA/... |
+| 5 | sector | DB raw | string |
+| 6 | current_price | DB raw | number |
+| 7 | change_percent | DB raw | number (daily %) |
+| 8 | volume | DB raw | number |
+| 9 | market_cap | DB raw | number |
+| 10 | pe_ratio | DB raw | number\|null |
+| 11 | roe | DB raw | number\|null |
+| 12 | ma_50 | DB raw | number\|null |
+| 13 | ma_200 | DB raw | number\|null |
+| 14 | rsi | DB raw | number\|null |
+| 15 | trend | DB raw | string\|null |
+| 16 | signal | DB raw | number\|null |
+| 17 | beta | DB raw | number\|null |
+| 18 | high_52w | DB raw | number\|null |
+| 19 | low_52w | DB raw | number\|null |
+| 20 | above_ma_50 | **computed** | boolean (current > ma_50) |
+| 21 | above_ma_200 | **computed** | boolean (current > ma_200) |
+| 22 | distance_from_52w_high | **computed** | % (current-high)/high × 100 (دائماً ≤ 0) |
+| 23 | distance_from_52w_low | **computed** | % (current-low)/low × 100 |
+| 24 | momentum_score | **computed** | number (formula أدناه) |
+| 25 | correction_status | **computed** | string (7 states، formula أدناه) |
+| 26 | volume_surge | **computed** | boolean (vol > avgVol × 1.5) |
+
+**correction_status values (7 states) + logic الترتيب:**
+```
+default = 'neutral'
+if (distFromHigh !== null):
+  if (distFromHigh < -10) → 'in_correction'      # أكثر من 10% تحت القمة
+  else if (distFromHigh < -5) → 'pulling_back'    # 5-10% تحت القمة
+  else if (distFromHigh > 95) → 'near_high'      # ⚠️ bug منطقي (>95% فوق القمة غير ممكن لأن القمة = أعلى سعر)
+  else if (distFromHigh > 0) → 'breakout'         # ⚠️ غير ممكن أيضاً (current لا يتجاوز high_52w)
+# ثم RSI ي OVERRIDE:
+if (rsi > 70) → 'overbought'                     # يلغي أي حالة سابقة
+if (rsi < 30) → 'oversold'                       # يلغي أي حالة سابقة
+```
+**⚠️ ملاحظات منطقية:**
+- `near_high` (distFromHigh > 95) و `breakout` (distFromHigh > 0) — منطقياً مستحيل لأن distance = (current-high)/high ≤ 0 دائماً (high = أعلى سعر). الكود سيعطي فقط `in_correction` / `pulling_back` / `neutral` للـ distance-based، و overbought/oversold للـ RSI-based. ⇒ **breakout و near_high في الـ CORRECTION_STATUS_MAP بلا قيمة فعلية!**
+- يجب تصحيح: استخدام % من high (مثلاً 0-2% من القمة = near_high)، أو إضافة high_52w_adjusted.
+
+**momentum_score formula:**
+```
+momentumScore = change_percent
+            + (above_ma_50 ? 2 : 0)
+            + (above_ma_200 ? 1 : 0)
+            + (volume_surge ? 2 : 0)
+```
+بسيط جداً (4 إشارات binary)، لا يستخدم RSI ولا distance ولا trend.
+
+**volume_surge threshold:**
+```
+volSurge = avgVol > 0 && vol > avgVol × 1.5    # 50% فوق متوسط الحجم
+```
+
+**Query parameters المدعومة (10):**
+| # | المعامل | القيم | افتراضي |
+|---|---|---|---|
+| 1 | market | EGX/KSA/KUWAIT/QATAR/ALL | EGX |
+| 2 | sector | string (LIKE %sector%) | '' |
+| 3 | sort | change_percent/volume/momentum/rsi/distance_52w_high/market_cap/pe_ratio | change_percent |
+| 4 | order | asc/desc | desc |
+| 5 | limit | 1-500 | 100 |
+| 6 | min_volume | number | 0 |
+| 7 | min_change | number (ABS) | 0 |
+| 8 | trend | up/down/neutral | '' |
+| 9 | above_ma | 50/200/both | '' |
+| 10 | correction_status | in_correction/pulling_back/breakout/near_high/overbought/oversold | '' |
+
+**نقاط ضعف:**
+- `sort=momentum` → في sortMap يُحوّل لـ `change_percent` (سطر 105) — **ترتيب الزخم لا يعمل** (sortMap bug).
+- لا يوجد `sort=momentum_score` كحقل مستقل.
+- لا يوجد filter على `volume_surge` (computed but not filterable).
+- لا يوجد `relative_strength` field (stock% − sector%).
+- post-query filters (above_ma, correction_status) على result كامل (LIMIT 100-500) → قد يرجع عدد قليل بعد الفلترة.
+
+---
+
+## 📋 3) sparkline API — `/api/stocks/sparkline/route.ts` (64 سطر)
+
+**مصدر البيانات:** `db/data_engine.db` (سطر 22) من جدول `egksco_price_history` — **⚠️ غير موجود على القرص** (داخل all.zip، 131MB).
+
+**البيانات المُرجعة:**
+```
+{ success, ticker, prices: number[], min, max, first, last, change_pct, days }
+```
+- `prices`: array من close_price لآخر N يوم (مرتبة تصاعدي زمنياً بعد reverse)
+- `change_pct`: (last - first) / first × 100
+- `days`: عدد الأسعار الفعلية المُرجعة
+
+**Parameters:**
+- `ticker` (required) — string
+- `days` (optional, default 30, clamped 7-90)
+
+**ملاحظة:** الجدول اسمه `egksco_price_history` — يبدو خاصاً بـ EGX Stocks Company (egksco) — قد لا يغطي كل الأسهم. يحتاج تحقق بعد استخراج DB.
+
+---
+
+## 📋 4) page.tsx — view routing (الأسطر 80-576)
+
+| Hash | المكوّن المُحمّل | ملاحظة |
+|---|---|---|
+| `#recommendations` | `<MarketAnalysisView />` | سطر 401-403 (مع `#analysis`) |
+| `#analysis` | `<MarketAnalysisView />` | نفس المكوّن |
+| `#advanced-analysis` | `<MarketAnalysisView />` | backward-compat (سطر 404-410) |
+| `#v2-analysis` | `<MarketAnalysisView />` | backward-compat |
+| `#screener` | **`<TradingChartView />`** | سطر 393-395 — **وليس StockScreener!** |
+| `#trading-chart` | `<TradingChartView />` | نفس المكوّن |
+| `#crypto-recommendations` | `<MarketAnalysisView initialMarket="CRYPTO" />` | سطر 491-494 |
+| `#crypto-analysis` | `<MarketAnalysisView initialMarket="CRYPTO" />` | سطر 495-496 |
+
+**الإجابة الصريحة:**
+- `#recommendations` يُحمّل **MarketAnalysisView** (وليس SimpleRecommendationsView).
+- `#screener` يُحمّل **TradingChartView** (وليس StockScreener).
+- **StockScreener.tsx (609 سطر) ليس مُسارَّاً (routed) إلى أي hash على الإطلاق — يتيم كامل.**
+- SimpleRecommendationsView (declared سطر 156-159) أيضاً **غير مُسارَّ** — declared لكن غير مُستخدم في `renderView()` switch (بحثت حتى سطر 528).
+
+---
+
+## 📋 5) SimpleRecommendationsView.tsx (1131 LOC)
+
+- **ماذا يعرض:** توصيات AI + human experts + أرشيف توقعات سابقة + إحصائيات أسبوعية + توزيع قطاعي + إشعارات (signal notifications).
+- **هل يستخدم StockScreener؟** لا — grep على "StockScreener" و "screener" و "sparkline" و "mini chart" رجع **0 نتائج**.
+- **هل يستخدم sector؟** نعم لكن فقط لإظهار توزيع التوصيات على القطاعات (سطر 88, 676, 696, 920, 957-996) — ليس مقارنة أداء per-stock.
+- **العنصر معروض حالياً:** **لا** (orphaned — declared لكن غير routed).
+
+---
+
+## 📋 6) MarketAnalysisView.tsx (6599 LOC)
+
+- **الحجم:** 6599 سطر — مكون ضخم جداً.
+- **هل فيه sector classification؟** ✅ نعم، غني جداً:
+  - `sector_heat: 'hot' | 'dead' | 'neutral'` + `sector_heat_boost` (C2-SECTOR-HEAT، سطر 3213-3214) — banner للقطاعات الساخنة/الميتة.
+  - `sector_role: 'leader' | 'mid' | 'laggard'` + `sector_role_boost` (CL7-UI-SECTORS، سطر 3217-3218) — دور السهم داخل قطاعه (قائد/تابع/متأخر).
+  - `sectorSummary` array (state, سطر 4623-4624) — ملخص قطاعي كامل من meta.
+  - `fundamentals.sector` + شارات 🔥/❄️ (sector heat) + 👑 (leader) — سطر 3350-3386.
+- **هل متصل بـ StockScreener؟** لا — لا يستورد StockScreener، لا يستورد /api/stocks/screener، لا يستورد /api/stocks/sparkline. Sector data يجي من `/api/confluence/market-scan` (سطر 4771-4774 يقرأ `storedData.meta?.sectorHeat` و `sectorSummary`).
+- **يحتوي على persona tabs** (gambler/investor/swing) + analyst recommendations + prediction tracking dashboard + executive reports + expert intelligence panel + daily picks poster + market selector.
+- **التوصية:** يعرض توصيات من Python backend (stored-analysis) — لا يعرض screener متقدم بفلاتر.
+
+---
+
+## 📋 7) DBs على القرص
+
+**`/home/z/my-project/db/` يحتوي:**
+| الملف | الحجم | ملاحظة |
+|---|---|---|
+| predictions.db.original | 4.9 MB | ⚠️ لاحقة `.original` — الـ APIs تتوقع `predictions.db` (بدون لاحقة) |
+| screener_lists.json | 162 KB | بيانات screener ثابتة |
+| screener_cards/ | dir | صورة PNG واحدة (screener_card_20260720.png) |
+| schemas/ | dir | SQL schema |
+| historical_status.json | 21 KB | |
+
+**DBs مفقودة (داخل `/home/z/my-project/data/all.zip` 68MB):**
+| DB | الحجم داخل zip |
+|---|---|
+| stocks.db | 12 MB |
+| data_engine.db | 131 MB |
+| predictions.db | 4.9 MB |
+| prices.db | 22 MB |
+| intraday.db | 125 MB |
+| auth.db, crypto.db, news.db, learned.db, ... | أخرى |
+
+**أيضاً يوجد:** `data/active_databases_20260817_full.zip` (77 MB) — أرشيف DBs كامل بتاريخ 2026-08-17.
+
+**🚨 النتيجة:** screener API (يقرأ `db/stocks.db`) و sparkline API (يقرأ `db/data_engine.db`) سيرجعان **500 error** حالياً لأن الـ DBs غير مستخرجة. **استخراج DBs شرط مسبق قبل أي عمل على screener.**
+
+---
+
+## 📋 8) نتائج grep
+
+| المصطلح | عدد | الملفات |
+|---|---|---|
+| `correction_status` | 10 | StockScreener.tsx (4) + screener/route.ts (6) — **معزول في screener فقط** |
+| `momentum_score` | 35 | 11 ملف (MarketAnalysisView, AIAnalysisWidget, InstitutionalDecisionPanel, MarketScreenView, screener/route.ts, feedback-loop.ts, prediction-logger.ts, ...) |
+| `sector_heat` / `sectorHeat` | 12 | MarketAnalysisView.tsx (10) + confluence/market-scan/route.ts (2) |
+| `relative_strength` | 16 | 6 ملفات (sectors/intelligence/route.ts, MaestroDashboard, ExpertIntelligencePanel, expert-consensus/route.ts) |
+| `volume_surge` | 14 | 6 ملفات (screener/route.ts, smart-confluence, InstitutionalDecisionPanel, StockScreener, CryptoAdminPanel, engine-settings) |
+
+**ملاحظة:** `relative_strength` موجود في **admin/expert** APIs فقط — غير موجود في screener API ولا في StockScreener.
+
+---
+
+## 🎯 DELIVERABLES
+
+### أ) قائمة كاملة بحقول screener API (26 حقل)
+(انظر الجدول في القسم 2 أعلاه) — 19 raw + 7 computed.
+
+### ب) classification states الموجودة (7 states)
+- ✅ الموجود: in_correction, pulling_back, neutral, near_high, breakout, overbought, oversold
+- ⚠️ **غير كافٍ** وللأسباب التالية:
+  1. `near_high` و `breakout` غير قابلين للتحقق منطقياً (distFromHigh ≤ 0 دائماً) — dead code.
+  2. RSI يلغي distance — فلو سهم -20% تحت القمة و RSI=75 → يُصنف "overbought" (مُضلِّل).
+  3. **مفقود:** `recovery_from_correction` (ارتفاع من قاع التصحيح)، `consolidation` (تجميع)، `base_building` (بناء قاعدة)، `new_high_breakout` (اختراق قمة تاريخية حقيقية)، `distribution` (توزيع قمي).
+  4. لا يوجد تصنيف مركب (مثلاً "in_correction + oversold" = فرصة شراء).
+- 🔧 **المقترح:** إضافة 5 states جديدة + تصحيح منطق near_high (مثلاً: distFromHigh بين -2 و 0 = near_high) + إضافة multi-dim status (array بدل string).
+
+### ج) الـ 8 فلاتر في StockScreener.tsx
+(انظر الجدول في القسم 1 أعلاه) — market, sector, sort, order, limit, trend, aboveMa, correctionStatus (+ searchQuery client-side).
+
+### د) هل StockScreener معروض في #recommendations أم #screener؟
+- **لا هنا ولا هناك.** StockScreener.tsx **يتيم كامل** (orphaned) — غير مُستورد في أي ملف خارج ملفه، وغير مُسارَّ لأي hash.
+- `#screener` يُحمّل `<TradingChartView />` (شارت تفاعلي، لا فلاتر).
+- `#recommendations` يُحمّل `<MarketAnalysisView />` (6599 سطر، توصيات من Python backend، persona tabs، sector banner — لكن لا screener متقدم).
+- **الاستنتاج:** لو المستخدم يريد screener متقدم في `#recommendations`، يجب **إما**:
+  1. دمج StockScreener داخل MarketAnalysisView كـ tab جديد، أو
+  2. استبدال SimpleRecommendationsView (المتيمة) بـ StockScreener، أو
+  3. إعادة توجيه `#recommendations` إلى StockScreener (لكن سيفقد features توصيات MarketAnalysisView).
+
+### هـ) هل sector comparison و sparkline موجودان؟
+- ✅ **نعم، كلاهما موجود** داخل StockScreener.tsx (commits 28e9d5d6):
+  - **MiniSparkline** (سطر 109-160): SVG polyline 80×20px، fetch من sparkline API (30 يوم)، ألوان green/red.
+  - **SectorComparison** (سطر 164-196): avg change للقطاع، فرق أداء ▲/▼.
+- ⚠️ **لكنهما محتجزان داخل مكون يتيم** — لا يصل إليهما المستخدم حالياً.
+- ⚠️ SectorComparison يفعل fetch لـ 500 row لكل row في الجدول (100 row × 500 = 50K row client-side) — **performance problem**؛ يجب نقل الحساب server-side (إضافة `sector_avg_change` كحقل في screener API).
+
+### و) ما ينقص Screener الحالي (12 gap مقابل 10 متطلبات)
+
+| # | المتطلب | الحالة | Gap |
+|---|---|---|---|
+| 1 | حالة السهم (stock status) | ⚠️ جزئي | correction_status موجود لكن 2 states dead code + RSI يلغي distance + 5 states مفقودة (recovery, consolidation, base_building, new_high_breakout, distribution) |
+| 2 | مقارنة بالقطاع | ⚠️ موجود لكن متيم | SectorComparison داخل StockScreener المتيم + sector_heat/sector_role في MarketAnalysisView من backend meta — **يجب دمج**. |
+| 3 | mini charts (sparklines) | ⚠️ موجود لكن متيم | MiniSparkline داخل StockScreener المتيم + sparkline API يحتاج data_engine.db غير مستخرج. |
+| 4 | strongest movers | ❌ غير موجود | لا يوجد tabs مخصصة Top Gainers / Top Losers / Most Active — sort فقط. |
+| 5 | أعلى زخم (top momentum) | ⚠️ جزئي | momentum_score بسيط (4 إشارات)، `sort=momentum` في API = bug (يُحوّل لـ change_percent)، لا percentile ranking. |
+| 6 | Routing إلى #recommendations | ❌ مفقود | StockScreener غير مُسارَّ — يجب إضافة tab أو استبدال component. |
+| 7 | DBs غير مستخرجة | ❌ مفقود | stocks.db + data_engine.db + predictions.db داخل all.zip — APIs سترجع 500 حتى الاستخراج. |
+| 8 | relative_strength field | ❌ مفقود | موجود في admin/expert فقط، **غير موجود في screener API** — يجب إضافة (stock% − sector%). |
+| 9 | volume_surge filter | ❌ مفقود | volume_surge computed و displayed، لكن **غير قابل للفلترة** — يجب إضافة `volume_surge=true` parameter. |
+| 10 | sector_top mode | ❌ مفقود | لا يوجد "أقوى سهم في كل قطاع" — يجب إضافة `top_per_sector` mode. |
+| 11 | performance | ⚠️ مشكلة | SectorComparison يفعل 100× N fetches client-side — يجب server-side aggregation. |
+| 12 | CSV export | ✅ موجود | في StockScreener — لكن غير مرئي. |
+
+**🚨 3 مشاكل حرجة قبل أي تطوير:**
+1. **DBs غير مستخرجة** → APIs ستفشل (500).
+2. **StockScreener غير مُسارَّ** → ميزاته غير مرئية.
+3. **SimpleRecommendationsView و StockScreener كلاهما متيم** — يجب تقرير أيٌّ يُدمج في `#recommendations`.
+
+**🔧 الترتيب المنطقي للمرحلة 1 المقبلة:**
+1. استخراج DBs (stocks.db + data_engine.db + predictions.db) من all.zip إلى db/ + إعادة تسمية predictions.db.original.
+2. إصلاح bugs في screener API: sort=momentum sortMap + near_high/breakout logic + إضافة volume_surge filter + relative_strength field.
+3. إضافة 5 correction_status states جديدة + تصحيح override logic (distance + RSI لا يلغي أحدهما الآخر، يُدمجان).
+4. توجيه StockScreener إلى `#recommendations` (دمج كـ tab داخل MarketAnalysisView، أو استبدال SimpleRecommendationsView، أو إضافة sub-hash `#recommendations-screener`).
+5. نقل SectorComparison حساب avg إلى server-side (field `sector_avg_change` + `relative_strength`).
+6. إضافة "Strongest Movers" tabs (Top Gainers/Losers/Most Active) كـ presets.
+7. إضافة `top_per_sector` mode.
+8. اختبار E2E: stocks.db + data_engine.db → screener API → StockScreener UI → sparkline render.
+---
