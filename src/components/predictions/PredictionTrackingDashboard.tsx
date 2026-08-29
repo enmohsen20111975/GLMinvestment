@@ -126,6 +126,12 @@ interface PersonaStats {
   profitFactor: number;
   closedCount: number;
   expired?: number;
+  // ما يهم العميل: الفلوس + الحماية
+  netReturn: number;      // صافي الربح/الخسارة = sum(actual_return)
+  grossProfit: number;     // إجمالي الأرباح = sum(positive returns)
+  grossLoss: number;       // إجمالي الخسائر = sum(negative returns, سالب)
+  maxLoss: number;         // أقصى خسارة في صفقة واحدة (سالب)
+  rrRatio: number;         // متوسط الربح ÷ متوسط الخسارة
 }
 
 interface LiveTrackingResponse {
@@ -437,7 +443,13 @@ function computeStatsFromPredictions(preds: LivePrediction[]): PersonaStats {
     ? winReturnsSum / Math.abs(lossReturnsSum)
     : (winReturnsSum > 0 ? 999 : 0);
   const closedCount = settled;
-  return { total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor, closedCount, expired };
+  // ما يهم العميل: الفلوس + الحماية
+  const netReturn = winReturnsSum + lossReturnsSum; // صافي الربح/الخسارة
+  const grossProfit = winReturnsSum; // إجمالي الأرباح (موجب)
+  const grossLoss = lossReturnsSum; // إجمالي الخسائر (سالب)
+  const maxLoss = preds.length > 0 ? Math.min(...preds.filter(p => p.actual_return !== null && p.actual_return !== undefined).map(p => p.actual_return as number)) : 0; // أقصى خسارة (أكثر قيمة سالبة)
+  const rrRatio = avgLossPct < 0 ? avgWinPct / Math.abs(avgLossPct) : 0; // متوسط الربح ÷ متوسط الخسارة
+  return { total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor, closedCount, expired, netReturn, grossProfit, grossLoss, maxLoss, rrRatio };
 }
 
 // ==================== Main Dashboard Component ====================
@@ -713,7 +725,7 @@ export function PredictionTrackingDashboard({
 
   // RL-FIX-13: Computed Persona Stats — من التوقعات المفلترة بالجودة (مش من backend stats)
   const activeStats = useMemo<PersonaStats>(() => {
-    if (!data) return { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 };
+    if (!data) return { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0, netReturn: 0, grossProfit: 0, grossLoss: 0, maxLoss: 0, rrRatio: 0 };
     if (selectedPersona === 'all') return computedStats.overall;
     return computedStats.byPersona[selectedPersona] || computedStats.overall;
   }, [data, selectedPersona, computedStats]);
@@ -947,93 +959,101 @@ export function PredictionTrackingDashboard({
           </div>
         </CardHeader>
 
-        {/* ─── 2. Hero KPI Cards Grid ─── */}
+        {/* ─── 2. Hero KPI Cards Grid — ما يهم العميل: الفلوس + الحماية ─── */}
         <CardContent className="p-4 md:p-6 pt-4">
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
-            {/* Win Rate KPI Card */}
-            <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/30 p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1">
-                <span>نسبة النجاح المؤكدة</span>
-                <Trophy className="w-4 h-4" />
+            {/* صافي الربح/الخسارة — الفلوس الفعلية */}
+            <div className={cn(
+              'col-span-2 sm:col-span-1 p-4 rounded-2xl border flex flex-col justify-between relative overflow-hidden',
+              activeStats.netReturn >= 0
+                ? 'bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-500/30'
+                : 'bg-gradient-to-br from-red-500/15 via-red-500/5 to-transparent border-red-500/30'
+            )}>
+              <div className="flex items-center justify-between text-xs font-bold mb-1">
+                <span className={activeStats.netReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
+                  {activeStats.netReturn >= 0 ? 'صافي الربح' : 'صافي الخسارة'}
+                </span>
+                <TrendingUp className={cn('w-4 h-4', activeStats.netReturn >= 0 ? 'text-emerald-500' : 'text-red-500')} />
               </div>
               <div className="flex items-baseline gap-1 my-1">
-                <span className="text-3xl md:text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">
-                  {activeStats.winRate.toFixed(1)}%
+                <span className={cn(
+                  'text-3xl md:text-4xl font-black tracking-tight font-mono',
+                  activeStats.netReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                )}>
+                  {activeStats.netReturn >= 0 ? '+' : ''}{activeStats.netReturn.toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                محسوبة على {activeStats.settled} صفقة مقفولة رسمياً
+                إجمالي عائد {activeStats.settled} صفقة مقفولة
               </p>
             </div>
 
-            {/* Total & Settled Trades */}
-            <div className="bg-card border border-border/80 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-bold">
-                <span>إجمالي التوصيات</span>
-                <Activity className="w-4 h-4 text-blue-500" />
+            {/* إجمالي الأرباح */}
+            <div className="bg-card border border-emerald-500/20 p-4 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1">
+                <span>إجمالي الأرباح</span>
+                <TrendingUp className="w-4 h-4" />
               </div>
               <div className="my-1">
-                <span className="text-2xl md:text-3xl font-black font-mono text-foreground">
-                  {activeStats.total}
+                <span className="text-2xl md:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                  +{activeStats.grossProfit.toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                موزعة بين مقفول ومعلق
+                من {activeStats.wins} صفقة رابحة
               </p>
             </div>
 
-            {/* Wins & Losses Count */}
-            <div className="bg-card border border-border/80 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-bold">
-                <span>صفقات رابحة / خاسرة</span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            {/* إجمالي الخسائر */}
+            <div className="bg-card border border-red-500/20 p-4 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-red-600 dark:text-red-400 font-bold mb-1">
+                <span>إجمالي الخسائر</span>
+                <TrendingDown className="w-4 h-4" />
               </div>
-              <div className="flex items-center gap-2 my-1 font-mono">
-                <span className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                  {activeStats.wins} 🎯
-                </span>
-                <span className="text-muted-foreground">/</span>
-                <span className="text-xl md:text-2xl font-black text-rose-600 dark:text-rose-400">
-                  {activeStats.losses} 🛑
+              <div className="my-1">
+                <span className="text-2xl md:text-3xl font-black font-mono text-red-600 dark:text-red-400">
+                  {activeStats.grossLoss.toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                الصفقات المعلقة: {activeStats.pending} صفقة ⏳
+                من {activeStats.losses} صفقة خاسرة
               </p>
             </div>
 
-            {/* Profit Factor */}
-            <div className="bg-card border border-border/80 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-bold">
-                <span>معامل الربحية (Profit Factor)</span>
-                <Scale className="w-4 h-4 text-amber-500" />
+            {/* الحماية من الخسائر — أقصى خسارة في صفقة */}
+            <div className="bg-card border border-amber-500/20 p-4 rounded-2xl flex flex-col justify-between">
+              <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 font-bold mb-1">
+                <span>أقصى خسارة (حماية)</span>
+                <Shield className="w-4 h-4" />
               </div>
               <div className="my-1">
                 <span className="text-2xl md:text-3xl font-black font-mono text-amber-600 dark:text-amber-400">
-                  {formatProfitFactor(activeStats.profitFactor)}
+                  {activeStats.maxLoss.toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                نسبة أرباح الناجحة إلى خسائر الخاسرة
+                الحد الأقصى للخسارة في صفقة واحدة
               </p>
             </div>
 
-            {/* Average Return Win vs Loss */}
+            {/* نسبة الربح للخسارة — R:R */}
             <div className="bg-card border border-border/80 p-4 rounded-2xl flex flex-col justify-between">
-              <div className="flex items-center justify-between text-xs text-muted-foreground font-bold">
-                <span>متوسط الربح / الخسارة</span>
-                <Percent className="w-4 h-4 text-emerald-500" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground font-bold mb-1">
+                <span>نسبة الربح/الخسارة</span>
+                <Scale className="w-4 h-4 text-blue-500" />
               </div>
-              <div className="flex items-center justify-between my-1 font-mono text-xs font-bold">
-                <span className="text-emerald-600 dark:text-emerald-400">
-                  +{activeStats.avgWinPct.toFixed(1)}% ربح
-                </span>
-                <span className="text-rose-600 dark:text-rose-400">
-                  {activeStats.avgLossPct.toFixed(1)}% خسارة
+              <div className="my-1">
+                <span className={cn(
+                  'text-2xl md:text-3xl font-black font-mono',
+                  activeStats.rrRatio >= 1.5 ? 'text-emerald-600 dark:text-emerald-400' :
+                  activeStats.rrRatio >= 1.0 ? 'text-amber-600 dark:text-amber-400' :
+                  'text-red-600 dark:text-red-400'
+                )}>
+                  {activeStats.rrRatio.toFixed(2)}:1
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                متوسط العائد المئوي للصفقة الواحدة
+                متوسط الربح ÷ متوسط الخسارة
               </p>
             </div>
           </div>
