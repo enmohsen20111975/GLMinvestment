@@ -8964,3 +8964,35 @@ Stage Summary:
 - ✅ سكربت تشغيلى واحد (migrate_to_4_dbs.py)
 - ✅ كل الاختبارات نجحت
 - 🔜 المستخدم ينفذ السكربت على السرفر
+
+---
+Task ID: audit-1
+Agent: Z.ai Code (main)
+Task: بناء سكربت فحص شامل لتشخيص كارثة الـ 0 signals في V40.2 backtest على الإنتاج
+
+Work Log:
+- تحليل لوج الإنتاج: 744 tickers × 66 dates = 49K iteration → 0 signals
+- تشخيص مبدئي: V38 engine + fallback chain (surge + accum + recovery) كلهم فشلوا
+- كتابة سكربت audit_backtest.py بـ 4 modes:
+  - inventory: فحص كل الـ DBs (price_history + data_engine + stocks + predictions)
+  - detectors: تشغيل 3 detectors على الأسهم الانفجارية (BIOC/NIPH/AMES/GPIM/AFMC/GTWL/CRST)
+  - filters: histogram لكل filter بـ يـ reject كام iteration
+  - engine: signal distribution + score stats من V38 engine
+- اختبار sandbox: كل modes شغالة صح
+  - inventory: data_engine.db 162K rows + 7 exploders بـ 419-439 rows
+  - detectors: surge 3-7% + accum 1-5% + recovery 0-1% (الـ detectors بـ تكتشف!)
+  - filters: all_detectors_failed = 85.9% + final_survivor = 1/85 (1.2%)
+  - engine: WAIT 87.9% + STRONG_BUY 12.1% + score avg 21-65
+- commit على sandbox (5077c24b) — push فشل بسبب credentials
+
+Stage Summary:
+- ✅ سكربت audit_backtest.py (702 LOC) جاهز على sandbox
+- ✅ كل modes شغالة على sandbox بـ data_engine.db
+- ❌ push على git فشل (لا credentials على sandbox)
+- 🔜 المستخدم ينشئ scripts/audit_backtest.py على الإنتاج بـ copy-paste من chat
+- 🔜 المستخدم ينفذ: python3 scripts/audit_backtest.py all
+- النتائج المتوقعة على الإنتاج:
+  * inventory: بـ يورينا لو price_history.db لها rows مختلفة عن data_engine.db
+  * detectors: بـ يورينا لو الـ 3 detectors بـ تكتشف الأسهم الانفجارية
+  * filters: بـ يورينا فين بالظبط الـ 49K iteration بـ تـ reject
+  * engine: بـ يورينا signal distribution من V38 engine
