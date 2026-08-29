@@ -9721,3 +9721,52 @@ Stage Summary:
   2. python3 scripts/audit_backtest.py all — تأكد إن الـ readers دلوقتي بـ يـ read من price_history.db
   3. python3 vps-service/jobs/v40_2_daily_generator.py --start 2025-12-01 --end 2026-08-27 --scan-interval 3 --max-picks 5 --force — backtest كامل
   4. نتائج متوقعة: signals > 0 + الأسهم الانفجارية تـ appear
+
+---
+Task ID: results-1
+Agent: Z.ai Code (main)
+Task: نتائج الـ backtest بعد PHASE-2-DB-UNIFY
+
+Work Log:
+- المستخدم نفّذ على الإنتاج:
+  1. git stash + git pull (نجح بدون conflict)
+  2. python3 scripts/audit_backtest.py all — نتائج ممتازة:
+     * Total iterations: 100 (كان 0)
+     * Final survivors: 8 signals (كان 0)
+     * Extrapolated to 49K: ~3920 signals (كان 0)
+     * V38 STRONG_BUY: 25.4% (كان 12.1%)
+     * Detectors بـ تكتشف: BIOC 823, NIPH 823, AMES 526, AFMC 1154, GTWL 441, GPIM 21, CRST 28
+  3. python3 vps-service/jobs/v40_2_daily_generator.py --start 2025-12-01 --end 2026-08-27 --scan-interval 3 --max-picks 5 --force
+     * [V40.2] Using price_history.db (date) — 196 dates ✅
+     * [V40.2] Using price_history.db (ticker) — 765 tickers ✅
+     * Processed 744 tickers (scan dates: 66)
+  4. python3 vps-service/jobs/daily_closer.py
+     * Total Pending: 68 (الجديدة من الـ backtest)
+     * Still Pending: 68 (سلوك صحيح — بتستنى target/stop)
+     * Price Source: price_history.db 182 (كل الأسعار من canonical source)
+
+النتائج النهائية:
+  Wins: 178 (was 53)        +125
+  Losses: 165 (was 43)      +122
+  Win Rate: 51.9% (was 55.2%)  -3.3%
+  Net Return: +1267.2% (was +358.6%)  +908% 🚀
+  Closed: 379 (was 116)     +263
+  Lessons: 8557 (محفوظة)
+
+الأسهم الانفجارية:
+  AFMC: 8 predictions ✓ (was 2)
+  CRST: 1 prediction ✓ (was 0)
+  BIOC, NIPH, AMES, GPIM, GTWL: 0 ✗ (لسه ما بـ تـ detect)
+
+التحليل:
+- ✅ Net Return تجاوز +1100% (الهدف القديم اللي كان قبل الكارثة)
+- ⚠️ Win Rate نزل 3.3% (مقايضة مقبولة مقابل +908% أرباح)
+- ✅ Closed predictions زادت 3.3× (116 → 379)
+- ⚠️ 5 من 7 أسهم انفجارية لسه ما بـ تـ detect (محتاجين tuning للـ detectors)
+
+Stage Summary:
+- ✅ كارثة الـ 0 signals اتحلّت بالكامل
+- ✅ Net Return رجع لـ +1267% (تجاوز +1100%)
+- ✅ Closed predictions زادت 3.3×
+- 🔜 تحسين اصطياد الأسهم الانفجارية (BIOC/NIPH/AMES/GPIM/GTWL ما زالت 0)
+- 🔜 رفع WR من 51.9% لـ 60%+
