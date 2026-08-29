@@ -5860,12 +5860,17 @@ function formatVolumeShort(v: number): string {
   return String(v);
 }
 
+type SectorSortField = 'avg_change' | 'turnover' | 'stock_count' | 'breadth' | 'gainers' | 'losers' | 'turnover_pct' | 'sector' | 'heat_level';
+
 function SectorTrackingTab({ market }: { market: MarketType }) {
   const [data, setData] = useState<SectorTrackingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSector, setExpandedSector] = useState<string | null>(null);
   const [withRotation, setWithRotation] = useState(false);
+  const [sortBy, setSortBy] = useState<SectorSortField>('turnover');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [heatFilter, setHeatFilter] = useState<string>('');
 
   const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
 
@@ -5876,13 +5881,15 @@ function SectorTrackingTab({ market }: { market: MarketType }) {
       const params = new URLSearchParams({
         market: marketCode,
         with_stocks: '1',
+        sort: sortBy,
+        order: sortOrder,
       });
       if (withRotation) params.set('with_rotation', '1');
+      if (heatFilter) params.set('heat_level', heatFilter);
       const res = await fetch(`/api/sectors/tracking?${params}`, { cache: 'no-store' });
       const json: SectorTrackingResponse = await res.json();
       if (json.success) {
         setData(json);
-        // Auto-expand first sector
         if (json.sectors && json.sectors.length > 0 && !expandedSector) {
           setExpandedSector(json.sectors[0].sector);
         }
@@ -5894,11 +5901,34 @@ function SectorTrackingTab({ market }: { market: MarketType }) {
     } finally {
       setLoading(false);
     }
-  }, [marketCode, withRotation, expandedSector]);
+  }, [marketCode, withRotation, sortBy, sortOrder, heatFilter, expandedSector]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleSort = (field: SectorSortField) => {
+    if (sortBy === field) {
+      setSortOrder(o => o === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const SortHeader = ({ field, label, className }: { field: SectorSortField; label: string; className?: string }) => (
+    <TableHead
+      className={cn('text-right cursor-pointer select-none hover:bg-muted/50 transition-colors', className)}
+      onClick={() => handleSort(field)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortBy === field && (
+          <span className="text-[10px]">{sortOrder === 'desc' ? '▼' : '▲'}</span>
+        )}
+      </span>
+    </TableHead>
+  );
 
   if (loading && !data) {
     return (
@@ -5953,11 +5983,25 @@ function SectorTrackingTab({ market }: { market: MarketType }) {
                 {ms.total_sectors} قطاع | {ms.total_stocks} سهم
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Heat level filter */}
+              <Select value={heatFilter} onValueChange={v => setHeatFilter(v === 'ALL' ? '' : v)}>
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue placeholder="كل الحرارات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">كل الحرارات</SelectItem>
+                  <SelectItem value="HOT">🔥 نار</SelectItem>
+                  <SelectItem value="WARM">☀️ دافئ</SelectItem>
+                  <SelectItem value="NEUTRAL">➖ محايد</SelectItem>
+                  <SelectItem value="COOL">💧 بارد</SelectItem>
+                  <SelectItem value="COLD">❄️ بارد جداً</SelectItem>
+                </SelectContent>
+              </Select>
               <button
                 onClick={() => setWithRotation(v => !v)}
                 className={cn(
-                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors h-8',
                   withRotation
                     ? 'bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950 dark:border-teal-800'
                     : 'bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50'
@@ -6035,99 +6079,134 @@ function SectorTrackingTab({ market }: { market: MarketType }) {
         </Card>
       )}
 
-      {/* Sectors grid — clickable to expand stocks */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {sectors.map(s => {
-          const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
-          const isExpanded = expandedSector === s.sector;
-          return (
-            <Card
-              key={s.sector}
-              className={cn('cursor-pointer transition-all hover:shadow-md', isExpanded && 'ring-2 ring-teal-500/40')}
-              onClick={() => setExpandedSector(isExpanded ? null : s.sector)}
-            >
-              <CardContent className="p-3">
-                {/* Sector header */}
-                <div className={cn('flex items-center justify-between p-2 rounded border', heat.bg)}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-base flex-shrink-0">{heat.icon}</span>
-                    <div className="min-w-0">
-                      <div className={cn('text-sm font-bold truncate', heat.text)}>{s.sector}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {s.stock_count} سهم • {heat.label}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-left flex-shrink-0">
-                    <div className={cn('text-sm font-bold font-mono', s.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                      {s.avg_change >= 0 ? '+' : ''}{s.avg_change}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">{formatVolumeShort(s.turnover)}</div>
-                  </div>
-                </div>
-
-                {/* Sector stats row */}
-                <div className="grid grid-cols-4 gap-1 mt-2 text-xs">
-                  <div className="text-center">
-                    <div className="text-emerald-600 font-mono font-bold">{s.gainers}</div>
-                    <div className="text-muted-foreground text-[10px]">صاعد</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-red-600 font-mono font-bold">{s.losers}</div>
-                    <div className="text-muted-foreground text-[10px]">هابط</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-mono font-bold">{s.breadth}%</div>
-                    <div className="text-muted-foreground text-[10px]">اتساع</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-mono font-bold">{s.turnover_pct}%</div>
-                    <div className="text-muted-foreground text-[10px]">حصة سيولة</div>
-                  </div>
-                </div>
-
-                {/* Leader */}
-                {s.leader_ticker && (
-                  <div className="mt-2 text-xs flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
-                    <span className="text-amber-600">👑</span>
-                    <span className="font-mono font-bold">{s.leader_ticker}</span>
-                    <span className="text-emerald-600 font-mono">
-                      {s.leader_change && s.leader_change >= 0 ? '+' : ''}{s.leader_change}%
-                    </span>
-                  </div>
-                )}
-
-                {/* Stocks list (top 5, expandable) */}
-                {isExpanded && s.stocks && s.stocks.length > 0 ? (
-                  <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
-                    {s.stocks.slice(0, 20).map(st => (
-                      <div key={st.ticker} className="flex items-center justify-between text-xs py-1 border-b border-muted/30 last:border-0">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="font-mono font-bold flex-shrink-0">{st.ticker}</span>
-                          <span className="text-muted-foreground truncate">{st.name_ar || st.name}</span>
-                          {st.volume_surge && <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" />}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={cn('font-mono', st.change_percent >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                            {st.change_percent >= 0 ? '+' : ''}{st.change_percent}%
-                          </span>
-                          <span className="text-muted-foreground font-mono text-[10px]">
-                            {formatVolumeShort(st.volume)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+      {/* Sectors Table — sortable + filterable */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="max-h-[600px] overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <SortHeader field="sector" label="القطاع" />
+                  <SortHeader field="heat_level" label="الحرارة" className="w-24" />
+                  <SortHeader field="stock_count" label="عدد الأسهم" className="w-24" />
+                  <SortHeader field="avg_change" label="متوسط التغير" className="w-28" />
+                  <SortHeader field="turnover" label="التداول" className="w-28" />
+                  <SortHeader field="turnover_pct" label="حصة السيولة" className="w-24" />
+                  <SortHeader field="gainers" label="صاعد" className="w-20" />
+                  <SortHeader field="losers" label="هابط" className="w-20" />
+                  <SortHeader field="breadth" label="اتساع" className="w-20" />
+                  <TableHead className="text-right w-32">👑 القائد</TableHead>
+                  <TableHead className="text-right w-20">الأسهم</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sectors.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                      لا توجد قطاعات مطابقة للفلاتر الحالية
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  <div className="mt-2 text-xs text-muted-foreground text-center">
-                    اضغط لعرض الأسهم ({s.stocks?.length || 0} سهم)
-                  </div>
+                  sectors.map(s => {
+                    const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
+                    const isExpanded = expandedSector === s.sector;
+                    return (
+                      <React.Fragment key={s.sector}>
+                        <TableRow
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedSector(isExpanded ? null : s.sector)}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-1.5">
+                              <span>{heat.icon}</span>
+                              <span>{s.sector}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', heat.bg, heat.text)}>
+                              {heat.label}
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-mono">{s.stock_count}</TableCell>
+                          <TableCell className={cn('font-mono font-bold', s.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                            {s.avg_change >= 0 ? '+' : ''}{s.avg_change}%
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">{formatVolumeShort(s.turnover)}</TableCell>
+                          <TableCell className="font-mono">{s.turnover_pct}%</TableCell>
+                          <TableCell className="font-mono text-emerald-600">{s.gainers}</TableCell>
+                          <TableCell className="font-mono text-red-600">{s.losers}</TableCell>
+                          <TableCell className="font-mono">{s.breadth}%</TableCell>
+                          <TableCell>
+                            {s.leader_ticker && (
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className="text-amber-600">👑</span>
+                                <span className="font-mono font-bold">{s.leader_ticker}</span>
+                                <span className={cn('font-mono', s.leader_change && s.leader_change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                                  {s.leader_change && s.leader_change >= 0 ? '+' : ''}{s.leader_change}%
+                                </span>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedSector(isExpanded ? null : s.sector);
+                              }}
+                            >
+                              {isExpanded ? 'إخفاء' : `عرض (${s.stocks?.length || 0})`}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && s.stocks && s.stocks.length > 0 && (
+                          <TableRow className="bg-muted/20">
+                            <TableCell colSpan={11} className="p-2">
+                              <div className="max-h-48 overflow-y-auto rounded border border-muted/40">
+                                <Table>
+                                  <TableHeader className="bg-muted/30">
+                                    <TableRow>
+                                      <TableHead className="text-right text-xs h-8">السهم</TableHead>
+                                      <TableHead className="text-right text-xs h-8">السعر</TableHead>
+                                      <TableHead className="text-right text-xs h-8">التغير</TableHead>
+                                      <TableHead className="text-right text-xs h-8">الحجم</TableHead>
+                                      <TableHead className="text-right text-xs h-8">⚡</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {s.stocks.slice(0, 20).map(st => (
+                                      <TableRow key={st.ticker} className="hover:bg-muted/50">
+                                        <TableCell className="text-xs py-1">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-mono font-bold">{st.ticker}</span>
+                                            <span className="text-muted-foreground truncate max-w-[150px]">{st.name_ar || st.name}</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs py-1">{formatNumber(st.current_price)}</TableCell>
+                                        <TableCell className={cn('font-mono text-xs font-bold py-1', st.change_percent >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                                          {st.change_percent >= 0 ? '+' : ''}{st.change_percent}%
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs text-muted-foreground py-1">{formatVolumeShort(st.volume)}</TableCell>
+                                        <TableCell className="py-1">{st.volume_surge && <Zap className="w-3 h-3 text-amber-500" />}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
                 )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

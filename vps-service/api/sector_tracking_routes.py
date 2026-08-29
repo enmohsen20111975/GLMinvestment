@@ -46,6 +46,11 @@ def get_sector_tracking():
       - market: فلترة بالسوق (EGX، إلخ) — default: EGX
       - with_rotation: 1 لإضافة detect_sector_rotation (default: 0 — أبطأ)
       - with_stocks: 1 لإضافة قائمة الأسهم لكل قطاع (default: 1)
+      - sort: ترتيب القطاعات (avg_change | turnover | stock_count | breadth |
+              gainers | losers | turnover_pct | sector) — default: turnover
+      - order: asc | desc — default: desc
+      - min_avg_change: فلترة القطاعات بمتوسط تغير ≥ القيمة (default: لا فلتر)
+      - heat_level: فلترة بـ heat level (HOT | WARM | NEUTRAL | COOL | COLD)
 
     Returns:
       - sectors: list of {sector, stock_count, avg_change, turnover, breadth,
@@ -60,6 +65,18 @@ def get_sector_tracking():
         market = request.args.get('market', 'EGX').strip()
         with_rotation = request.args.get('with_rotation', '0') == '1'
         with_stocks = request.args.get('with_stocks', '1') == '1'
+        # NEW: sort + filter params for table view
+        sort_by = request.args.get('sort', 'turnover').strip()
+        order = request.args.get('order', 'desc').strip().lower()
+        min_avg_change = request.args.get('min_avg_change', type=float)
+        heat_level_filter = request.args.get('heat_level', '').strip().upper()
+
+        # Validate sort field
+        valid_sorts = {'avg_change', 'turnover', 'stock_count', 'breadth',
+                       'gainers', 'losers', 'turnover_pct', 'sector', 'heat_level'}
+        if sort_by not in valid_sorts:
+            sort_by = 'turnover'
+        order_dir = 'desc' if order == 'desc' else 'asc'
 
         # === Use the existing FlowSystemEngine.get_sector_heatmap() ===
         from engine.flow_system import FlowSystemEngine
@@ -195,8 +212,15 @@ def get_sector_tracking():
                     'stocks': stocks_list,
                 })
 
-            # Sort sectors by turnover DESC (most active sectors first)
-            enriched_sectors.sort(key=lambda x: x['turnover'], reverse=True)
+            # Sort sectors by requested field (sort + order from query params)
+            reverse = (order_dir == 'desc')
+            enriched_sectors.sort(key=lambda x: x.get(sort_by, 0) if isinstance(x.get(sort_by, 0), (int, float)) else str(x.get(sort_by, '')), reverse=reverse)
+
+            # Apply filters (min_avg_change + heat_level)
+            if min_avg_change is not None:
+                enriched_sectors = [s for s in enriched_sectors if s['avg_change'] >= min_avg_change]
+            if heat_level_filter:
+                enriched_sectors = [s for s in enriched_sectors if s['heat_level'] == heat_level_filter]
 
             # === Optional: rotation detection ===
             rotation = None
@@ -224,6 +248,10 @@ def get_sector_tracking():
                     'market': market,
                     'with_rotation': with_rotation,
                     'with_stocks': with_stocks,
+                    'sort': sort_by,
+                    'order': order_dir,
+                    'min_avg_change': min_avg_change,
+                    'heat_level': heat_level_filter or None,
                 },
             })
         finally:
