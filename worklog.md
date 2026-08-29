@@ -9851,3 +9851,32 @@ Stage Summary:
   3. يفتح #market-screener → المفروض تشوف MultiChartScreener
   4. يفتح #recommendations → المفروض تشوف sectors tab الأصلي
   5. يفتح #stocks → المفروض الـ mini charts تشتغل (لو بتستخدم sparkline API)
+
+---
+Task ID: restore-2
+Agent: Z.ai Code (main)
+Task: إرجاع MiniSparkline لشاشة فلاتر الأسهم (StockScreener.tsx)
+
+Work Log:
+- المستخدم بلّغ: 'هى كانت يوم 28 أو 27 عالشان انت رجعت ملفات تانية تقريبا'
+- فحص git history بدقة:
+  * StocksView.tsx آخر تعديل 19 أغسطس — ما اتغيرش مني
+  * StocksView.tsx ما فيهاش sparkline أصلاً (فيها Mini Price Bar لسه موجود)
+  * StockScreener.tsx (شاشة #stock-filters) كانت فيها MiniSparkline:
+    - commit 28e9d5d6 (28 Aug): أضفت MiniSparkline component + عمود الرسم البياني
+    - commit 84ee49e5 (29 Aug): حذفته في refactor (1061 → 431 LOC) بحجة Rule 20
+- Restore StockScreener.tsx من 28e9d5d6 (609 lines — مع MiniSparkline)
+- MiniSparkline بـ fetch من /api/stocks/sparkline (اللي أصلحته في commit 4c0c2238)
+- اختبارات:
+  * bun run lint: EXIT 0
+  * StockScreener.tsx: 609 lines (matches 28e9d5d6)
+  * MiniSparkline component موجود
+- commit + push (75c9b3a8)
+
+Stage Summary:
+- ✅ MiniSparkline اترجع لشاشة #stock-filters
+- ✅ الـ sparklines هتشتغل لإن الـ API بـ يقرا من price_history.db
+- 🔜 المستخدم يجرب على الإنتاج:
+  1. git pull origin main
+  2. pm2 restart nextjs
+  3. يفتح #stock-filters → المفروض يشوف عمود الرسم البياني المصغر (30 يوم)
