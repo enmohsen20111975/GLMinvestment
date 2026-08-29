@@ -9922,3 +9922,28 @@ Stage Summary:
   2. pm2 restart nextjs
   3. كل الشاشات هتكون زي ما كان شافها قبل ما ألمس أي حاجة
 - 🔜 لو فيه أي شاشة ناقصة، المستخدم يبعت src.zip تاني أو يحدد الملف
+
+---
+Task ID: pending-screens-restore
+Agent: Z.ai Code (main)
+Task: تفاصيل استرجاع الشاشات (مؤجل — المستخدم محتاج يراجعها لاحقاً)
+
+الحالة الحالية (commit ceebe87b):
+- page.tsx: استرجع من 9eedf2aa^ (original — stock-filters + top-performers)
+- Sidebar.tsx: استرجع من 9eedf2aa^ (original — stock-filters + top-performers)
+- StockScreener.tsx: استرجع من 28e9d5d6 (with MiniSparkline)
+- MarketAnalysisView.tsx: من src.zip (production — 7032 lines) + Select import fix
+
+تفاصيل المشاكل المتبقية (للمراجعة لاحقاً):
+1. شاشة #stock-screener: المفروض تظهر StockScreener (مع sparklines) — لا UnifiedScreenerView
+2. شاشة #stocks: المفروض فيها mini chart — محتاج فحص StocksView
+3. شاشة sectors tab: المفروض تشتغل — محتاج فحص MarketAnalysisView tabs
+4. خطأ /api/unified/predictions 503: Python backend مش شغال أو عنده مشكلة
+5. خطأ /socket.io 500: websocket mini-service مش موجود
+
+الخطوات المطلوبة لاحقاً:
+1. فحص StocksView.tsx للـ mini chart (مش sparkline في StockScreener)
+2. فحص MarketAnalysisView tabs (sectors + crypto + screener)
+3. فحص Python backend (port 8010) للـ unified/predictions
+4. إعداد websocket mini-service (port 3005) لو محتاج
+5. تحليل أسباب نزول الأرباح من +1267% لـ +126.7%
