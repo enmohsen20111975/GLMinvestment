@@ -34,13 +34,13 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from config import DATABASE_PATH
-except ImportError:
-    from pathlib import Path
-    _base_dir = Path(__file__).parent.parent.parent.resolve()
-    # PHASE-3-DB-UNIFY (2026-08-29): unified_learning كان يقرأ من stocks.db (فاضي!)
-    # predictions.db هو المصدر الصحيح (outcome_logs=8544 + learned_lessons=494 + conjunction_patterns=150)
-    DATABASE_PATH = os.environ.get('DATABASE_PATH', str(_base_dir / 'db' / 'predictions.db'))
+    # PHASE-3-DB-UNIFY (2026-08-29): unified_learning يستخدم predictions.db مباشرة
+    # مش عبر config.DATABASE_PATH (الذي يرجع stocks.db للـ market data)
+    from pathlib import Path as _P
+    _base_dir = _P(__file__).parent.parent.parent.resolve()
+    LEARNING_DB = os.environ.get('PREDICTIONS_DB', str(_base_dir / 'db' / 'predictions.db'))
+except Exception:
+    LEARNING_DB = str(_base_dir / 'db' / 'predictions.db')
 
 from analyzers.unified_learning_engine import (
     UnifiedLearningEngine,
@@ -59,7 +59,7 @@ def get_engine():
     """Get or create engine instance"""
     global _engine
     if _engine is None:
-        _engine = UnifiedLearningEngine(DATABASE_PATH)
+        _engine = UnifiedLearningEngine(LEARNING_DB)
     return _engine
 
 
@@ -76,7 +76,7 @@ def get_status():
     try:
         import sqlite3
         
-        conn = sqlite3.connect(DATABASE_PATH)
+        conn = sqlite3.connect(LEARNING_DB)
         cursor = conn.cursor()
         
         # Helper function to safely get count

@@ -16,10 +16,15 @@ from pathlib import Path
 
 def get_database_path() -> str:
     """
-    PHASE-3-DB-UNIFY (2026-08-29): Changed from stocks.db to predictions.db.
-    stocks.db had empty outcome_logs + learned_lessons (0 rows each).
-    predictions.db has the real data: outcome_logs=8544 + learned_lessons=494
-    + conjunction_patterns=150 + indicator_trust_scores=10.
+    Get the database path — uses stocks.db for market data (DEFAULT).
+    
+    NOTE: unified_learning_routes.py uses predictions.db directly (not via config).
+    DATABASE_PATH here is used by ~20 modules for market data (stocks, prices, etc.)
+    — it MUST point to stocks.db (or market.db after migration).
+    
+    PHASE-3-DB-UNIFY (2026-08-29): REVERTED from predictions.db back to stocks.db.
+    Changing DATABASE_PATH to predictions.db broke 20 modules that read market data.
+    The learning engine now uses PREDICTIONS_DB directly (not DATABASE_PATH).
     """
     # Check environment variable first
     env_path = os.environ.get('DATABASE_PATH', '')
@@ -29,7 +34,7 @@ def get_database_path() -> str:
 
     # Use project root /db folder
     project_root = Path(__file__).parent.parent.parent.resolve()  # Project root (GLMinvestment)
-    db_path = project_root / 'db' / 'predictions.db'
+    db_path = project_root / 'db' / 'stocks.db'
 
     # Ensure db directory exists
     db_dir = project_root / 'db'

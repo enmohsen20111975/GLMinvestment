@@ -27,19 +27,10 @@ from pathlib import Path
 
 def get_database_path() -> str:
     """
-    Get the database path — uses predictions.db for learning/tracking data
-
-    PHASE-3-DB-UNIFY (2026-08-29): Changed from stocks.db to predictions.db.
-    stocks.db had empty outcome_logs + learned_lessons (0 rows each).
-    predictions.db has the real data: outcome_logs=8544 + learned_lessons=494
-    + conjunction_patterns=150 + indicator_trust_scores=10.
-
-    Priority:
-    1. DATABASE_PATH environment variable (if set)
-    2. predictions.db in /db folder (project root)
-
-    Returns:
-        str: Path to the primary database
+    Get the database path — uses stocks.db for market data (DEFAULT).
+    
+    NOTE: unified_learning_routes.py uses predictions.db directly (not via config).
+    DATABASE_PATH here is used by ~20 modules for market data — MUST be stocks.db.
     """
     # Check environment variable first
     env_path = os.environ.get('DATABASE_PATH', '')
@@ -48,12 +39,8 @@ def get_database_path() -> str:
         return env_path
 
     # Use project root /db folder
-    project_root = Path(__file__).parent.parent.resolve()  # Project root (GLMinvestment)
-    db_path = project_root / 'db' / 'predictions.db'
-
-    # Ensure db directory exists
-    db_dir = project_root / 'db'
-    db_dir.mkdir(parents=True, exist_ok=True)
+    project_root = Path(__file__).parent.parent.resolve()
+    db_path = project_root / 'db' / 'stocks.db'
 
     print(f"[CONFIG] Using primary database: {db_path}")
     return str(db_path)
