@@ -457,51 +457,48 @@ export function SingleStockAnalysisView({
       id={`chart-card-${ticker.toUpperCase()}`}
       ref={cardRef}
       className={cn(
-        'border border-border/80 shadow-md bg-card transition-all duration-200 flex flex-col overflow-hidden rounded-xl',
-        isMaximized ? 'fixed inset-2 z-50 overflow-y-auto bg-background p-4' : 'w-full'
+        'border border-slate-200 shadow-[0_8px_30px_rgba(15,23,42,0.06)] bg-white transition-all duration-200 flex flex-col overflow-hidden rounded-2xl',
+        isMaximized ? 'fixed inset-2 z-50 overflow-y-auto bg-white p-4' : 'w-full'
       )}
     >
       <WhaleAlertListener />
 
-      {/* ─── 1. Header & Controls Bar ─── */}
-      <CardHeader className="p-3 border-b border-border/60 bg-muted/20 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* Ticker Selector & Signal Badge */}
+      <CardHeader className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-emerald-50/50 space-y-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <StockSearchSelector
               value={ticker}
               onSelectStock={handleSelectTicker}
-              placeholder="اختر السهم للتحليل"
+              placeholder="اختر السهم"
               compact
-              buttonClassName="w-[140px] md:w-[170px] bg-background border-border shadow-xs"
+              buttonClassName="w-[140px] md:w-[170px] bg-white border-slate-200 shadow-sm rounded-xl"
             />
 
-            <span className="text-xs md:text-sm font-bold text-foreground truncate max-w-[150px]">
-              {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
-            </span>
+            <div className="min-w-0">
+              <div className="text-sm md:text-base font-black text-slate-900 truncate max-w-[220px]">
+                {data?.name_ar || data?.name || stockInfo?.name_ar || stockInfo?.name || ticker}
+              </div>
+            </div>
 
-            {/* Live Price Badge */}
             <Badge
               variant="outline"
               className={cn(
-                'font-mono text-xs font-bold px-2 py-0.5 border',
+                'font-mono text-xs font-black px-2.5 py-1 border rounded-full',
                 isUp
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
               )}
             >
               {livePrice > 0 ? `${livePrice.toFixed(2)} ${currencyLabel}` : '—'}
               <span className="text-[10px] mr-1">
-                ({isUp ? '+' : ''}
-                {chgPct.toFixed(1)}%)
+                ({isUp ? '+' : ''}{chgPct.toFixed(1)}%)
               </span>
             </Badge>
 
-            {/* Signal Confluence Score Badge */}
             {data?.confluence?.signal && (
               <Badge
                 style={{ backgroundColor: data.confluence.signal_color || '#10b981' }}
-                className="text-white text-[10px] font-bold px-2 py-0.5 shadow-xs"
+                className="text-white text-[10px] font-bold px-2.5 py-1 shadow-sm rounded-full"
               >
                 {data.confluence.signal} ({data.confluence.score?.toFixed(1)}/10)
               </Badge>
@@ -510,30 +507,19 @@ export function SingleStockAnalysisView({
             {isLive && (
               <Badge
                 className={cn(
-                  'text-[9px] font-bold',
-                  // P41-DELAYED-DATA-MODE: لو الـ data متأخرة، غيّر الـ badge لـ
-                  // "DELAYED 5M" باللون البرتقالي الكهرماني بدل ما يكون أحمر نابض.
-                  // كده المستخدم بيعرف إن البيانات المعروضة متأخرة وممكن ما يكونش
-                  // في قرار شراء/بيع اندفاعي بناءً عليها.
+                  'text-[9px] font-bold rounded-full',
                   liveData?.delayed_mode
-                    ? 'bg-amber-500 text-white border border-amber-600 shadow-xs'
+                    ? 'bg-amber-500 text-white border border-amber-600'
                     : 'bg-rose-600 text-white animate-pulse'
                 )}
-                title={
-                  liveData?.delayed_mode
-                    ? `البيانات متأخرة ${liveData.delayed_minutes || 5} دقايق — لا تتخذ قرار شراء/بيع اندفاعي`
-                    : 'بيانات لحظية حقيقية'
-                }
               >
                 {liveData?.delayed_mode ? `DELAYED ${liveData.delayed_minutes || 5}M` : 'LIVE'}
               </Badge>
             )}
           </div>
 
-          {/* Timeframe Selector & Actions */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Timeframe Buttons */}
-            <div className="flex bg-background border border-border rounded-md p-0.5 text-[10px] font-semibold">
+            <div className="flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 text-[10px] font-semibold">
               {[
                 { label: '5M', key: '5M' },
                 { label: '15M', key: '15M' },
@@ -547,10 +533,10 @@ export function SingleStockAnalysisView({
                   type="button"
                   onClick={() => setTimeframe(tf.key)}
                   className={cn(
-                    'px-2 py-1 rounded transition-colors',
+                    'px-2 py-1 rounded-lg transition-colors',
                     timeframe === tf.key
-                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   )}
                 >
                   {tf.label}
@@ -558,16 +544,13 @@ export function SingleStockAnalysisView({
               ))}
             </div>
 
-            {/* Mode Switcher: Simple vs Advanced */}
-            <div className="flex items-center gap-1 bg-background border border-border rounded-md p-0.5 text-[10px]">
+            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl p-0.5 text-[10px]">
               <button
                 type="button"
                 onClick={() => setAdvancedMode(false)}
                 className={cn(
-                  'px-2 py-0.5 rounded transition-all font-semibold',
-                  !advancedMode
-                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold'
-                    : 'text-muted-foreground'
+                  'px-2 py-1 rounded-lg transition-all font-semibold',
+                  !advancedMode ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
                 )}
               >
                 مبسط
@@ -576,157 +559,50 @@ export function SingleStockAnalysisView({
                 type="button"
                 onClick={() => setAdvancedMode(true)}
                 className={cn(
-                  'px-2 py-0.5 rounded transition-all font-semibold',
-                  advancedMode
-                    ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold'
-                    : 'text-muted-foreground'
+                  'px-2 py-1 rounded-lg transition-all font-semibold',
+                  advancedMode ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'
                 )}
               >
                 محترفين
               </button>
             </div>
 
-            {/* Refresh */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fetchData(ticker, timeframe, userState)}
-              disabled={loading}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-              title="تحديث البيانات"
-            >
+            <Button variant="ghost" size="sm" onClick={() => fetchData(ticker, timeframe, userState)} disabled={loading} className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:bg-slate-100">
               <RefreshCw className={cn('h-3.5 w-3.5', loading ? 'animate-spin' : '')} />
             </Button>
-
-            {/* Alert Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAlertPanelOpen(true)}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-amber-500 relative"
-              title="التنبيهات"
-            >
-              {activeAlertsCount > 0 ? (
-                <BellRing className="h-3.5 w-3.5 text-amber-500" />
-              ) : (
-                <Bell className="h-3.5 w-3.5" />
-              )}
+            <Button variant="ghost" size="sm" onClick={() => setAlertPanelOpen(true)} className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:bg-amber-50 hover:text-amber-600 relative">
+              {activeAlertsCount > 0 ? <BellRing className="h-3.5 w-3.5 text-amber-500" /> : <Bell className="h-3.5 w-3.5" />}
             </Button>
-
-            {/* P41-DELAYED-DATA-MODE: Quick-Add Star Button
-                نجمة بتحفظ تنبيه "price_below" بـ -3% تحت السعر الحالي في
-                price_alerts table بـ stocks.db + في الـ alerts-store.
-                لما الـ data متأخرة 5 دقايق، المستخدم يضغط نجمة وينسَى. */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleQuickAddAlert}
-              disabled={quickAdding || livePrice <= 0}
-              className={cn(
-                'h-7 w-7 p-0 relative',
-                quickAdded
-                  ? 'text-emerald-500 hover:text-emerald-600'
-                  : 'text-muted-foreground hover:text-amber-500'
-              )}
-              title={
-                livePrice > 0
-                  ? `تسجيل تنبيه سريع: ${ticker.toUpperCase()} نزل -3% تحت ${livePrice.toFixed(2)} (عتبة ${(livePrice * 0.97).toFixed(2)})`
-                  : 'لا يوجد سعر متاح'
-              }
-            >
-              {quickAdding ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : quickAdded ? (
-                <Check className="h-3.5 w-3.5" />
-              ) : (
-                <Star className="h-3.5 w-3.5" />
-              )}
+            <Button variant="ghost" size="sm" onClick={handleQuickAddAlert} disabled={quickAdding || livePrice <= 0} className={cn('h-8 w-8 p-0 rounded-lg', quickAdded ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-600 hover:bg-amber-50')}>
+              {quickAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : quickAdded ? <Check className="h-3.5 w-3.5" /> : <Star className="h-3.5 w-3.5" />}
             </Button>
-
-            {/* Maximize Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMaximized((v) => !v)}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-              title={isMaximized ? 'تصغير' : 'تعتيم وتكبير'}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setIsMaximized((v) => !v)} className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:bg-slate-100">
               {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </Button>
-
-            {/* Screenshot Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleScreenshot}
-              disabled={screenshotting}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-              title="نسخ صورة التحليل"
-            >
-              {screenshotting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Image className="w-3.5 h-3.5" />
-              )}
+            <Button variant="ghost" size="sm" onClick={handleScreenshot} disabled={screenshotting} className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:bg-slate-100">
+              {screenshotting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Image className="w-3.5 h-3.5" />}
             </Button>
-
-            {/* Remove Card Button */}
             {canRemove && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemove}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500"
-                title="إزالة هذا السهم من اللوحة"
-              >
+              <Button variant="ghost" size="sm" onClick={onRemove} className="h-8 w-8 p-0 rounded-lg text-slate-600 hover:bg-rose-50 hover:text-rose-600">
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
           </div>
         </div>
 
-        {/* User State Toggle: Buyer vs Owner */}
-        <div className="flex items-center gap-2 pt-1 text-[10px]">
-          <span className="text-muted-foreground font-bold">وضعي:</span>
-          <div className="flex bg-background border border-border rounded-md p-0.5">
-            <button
-              type="button"
-              onClick={() => setUserState('buyer')}
-              className={cn(
-                'px-2 py-0.5 rounded transition-all font-semibold',
-                userState === 'buyer'
-                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold'
-                  : 'text-muted-foreground'
-              )}
-            >
-              <ShoppingCart className="w-3 h-3 inline ml-1" />
-              أبحث عن شراء
-            </button>
-            <button
-              type="button"
-              onClick={() => setUserState('owner')}
-              className={cn(
-                'px-2 py-0.5 rounded transition-all font-semibold',
-                userState === 'owner'
-                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold'
-                  : 'text-muted-foreground'
-              )}
-            >
-              <Wallet className="w-3 h-3 inline ml-1" />
-              أملك السهم
-            </button>
+        <div className="flex items-center gap-2 pt-1 text-[10px] flex-wrap">
+          <span className="text-slate-500 font-bold">وضعي:</span>
+          <div className="flex bg-white border border-slate-200 rounded-xl p-0.5">
+            <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
+            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-amber-50 text-amber-700' : 'text-slate-500')}> <Wallet className="w-3 h-3 inline ml-1" /> أملك السهم </button>
           </div>
-
           {data?.adjustment_reason && (
-            <span className="text-muted-foreground truncate max-w-md">
-              💡 {data.adjustment_reason}
-            </span>
+            <span className="text-slate-500 truncate max-w-md">💡 {data.adjustment_reason}</span>
           )}
         </div>
 
-        {/* Quick Indicators Toolbar */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-1.5 border-t border-border/40 text-[10px]">
-          <span className="text-muted-foreground font-bold">المؤشرات:</span>
+        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200 text-[10px]">
+          <span className="text-slate-500 font-bold">المؤشرات:</span>
           {[
             { label: 'MA20', key: 'sma20' },
             { label: 'MA50', key: 'sma50' },
@@ -744,65 +620,36 @@ export function SingleStockAnalysisView({
               type="button"
               onClick={() => toggleIndicator(ind.key)}
               className={cn(
-                'px-1.5 py-0.5 rounded border transition-all font-mono',
+                'px-1.5 py-1 rounded-lg border transition-all font-mono',
                 visibleIndicators[ind.key]
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 font-bold'
-                  : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
+                  : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
               )}
             >
-              {visibleIndicators[ind.key] ? '✓ ' : ''}
-              {ind.label}
+              {visibleIndicators[ind.key] ? '✓ ' : ''}{ind.label}
             </button>
           ))}
         </div>
       </CardHeader>
 
-      {/* ─── 2. Main 3-Section Body (OHLCV Live / Interactive Chart / Accordion Details) ─── */}
-      <CardContent className="p-2 space-y-3">
-        <div className="flex flex-col lg:flex-row gap-2 min-h-[460px]">
-          {/* OHLCV Live Box (أقصى اليسار) */}
-          <div className="hidden lg:flex flex-col w-40 shrink-0 bg-muted/20 border border-border/60 rounded-lg p-2.5 gap-2 text-[10px]">
-            <div className="text-muted-foreground font-bold border-b border-border pb-1 text-center">
-              السعر اللحظي
-            </div>
+      <CardContent className="p-3 space-y-3">
+        <div className="flex flex-col lg:flex-row gap-3 min-h-[440px]">
+          <div className="hidden lg:flex flex-col w-40 shrink-0 rounded-xl bg-slate-50 border border-slate-200 p-3 gap-2 text-[10px]">
+            <div className="text-slate-500 font-bold border-b border-slate-200 pb-1 text-center">السعر اللحظي</div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground">إغلاق</div>
-              <div
-                className={cn(
-                  'text-lg font-bold font-mono',
-                  isUp ? 'text-emerald-500' : 'text-rose-500'
-                )}
-              >
-                {livePrice.toFixed(2)}
-              </div>
-              <div className={cn('font-bold', isUp ? 'text-emerald-500' : 'text-rose-500')}>
-                {isUp ? '+' : ''}
-                {chgPct.toFixed(2)}%
-              </div>
+              <div className="text-[10px] text-slate-500">إغلاق</div>
+              <div className={cn('text-lg font-black font-mono', isUp ? 'text-emerald-600' : 'text-rose-600')}>{livePrice.toFixed(2)}</div>
+              <div className={cn('font-bold', isUp ? 'text-emerald-600' : 'text-rose-600')}>{isUp ? '+' : ''}{chgPct.toFixed(2)}%</div>
             </div>
-
-            <div className="space-y-1 pt-2 border-t border-border/50">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">افتتاح:</span>
-                <span className="font-mono">{(tc?.open ?? 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">أعلى:</span>
-                <span className="font-mono text-emerald-500">{(tc?.high ?? 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">أدنى:</span>
-                <span className="font-mono text-rose-500">{(tc?.low ?? 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">حجم:</span>
-                <span className="font-mono">{(tc?.volume ?? 0).toLocaleString()}</span>
-              </div>
+            <div className="space-y-1 pt-2 border-t border-slate-200">
+              <div className="flex justify-between"><span className="text-slate-500">افتتاح:</span><span className="font-mono">{(tc?.open ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">أعلى:</span><span className="font-mono text-emerald-600">{(tc?.high ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">أدنى:</span><span className="font-mono text-rose-600">{(tc?.low ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">حجم:</span><span className="font-mono">{(tc?.volume ?? 0).toLocaleString()}</span></div>
             </div>
           </div>
 
-          {/* Center: Interactive Chart Canvas */}
-          <div className="flex-1 min-h-[440px] rounded-lg overflow-hidden border border-border/60 bg-background relative">
+          <div className="flex-1 min-h-[440px] rounded-xl overflow-hidden border border-slate-200 bg-white relative">
             {loading ? (
               <div className="flex flex-col justify-center items-center h-full min-h-[440px] gap-2">
                 <RefreshCw className="w-6 h-6 text-emerald-500 animate-spin" />

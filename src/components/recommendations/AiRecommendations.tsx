@@ -162,6 +162,53 @@ function getTimeHorizonLabel(months: number): string {
   return `${months} ${months === 1 ? 'شهر' : months === 2 ? 'شهرين' : months <= 10 ? 'أشهر' : 'شهر'}`;
 }
 
+// ==================== FINANCIAL METRICS HELPERS ====================
+
+function getExpectedReturnPct(stock: StockRecommendation): number {
+  return stock.fairValue?.upsidePotential || 0;
+}
+
+function getRiskPerTradePct(stock: StockRecommendation): number {
+  const entry = stock.entryPrice || stock.currentPrice;
+  const stop = stock.exitStrategy?.stopLoss || 0;
+  if (entry <= 0 || stop <= 0) return 0;
+  const isSell = stock.recommendation === 'Avoid' || stock.recommendation === 'Strong Avoid';
+  if (isSell) {
+    return Math.abs((stop - entry) / entry * 100);
+  }
+  return Math.abs((entry - stop) / entry * 100);
+}
+
+function getRRRatio(stock: StockRecommendation): number {
+  const entry = stock.entryPrice || stock.currentPrice;
+  const target = stock.exitStrategy?.targetPrice || 0;
+  const stop = stock.exitStrategy?.stopLoss || 0;
+  if (entry <= 0 || target <= 0 || stop <= 0) return 0;
+  const isSell = stock.recommendation === 'Avoid' || stock.recommendation === 'Strong Avoid';
+  const reward = isSell ? Math.abs(entry - target) : Math.abs(target - entry);
+  const risk = isSell ? Math.abs(stop - entry) : Math.abs(entry - stop);
+  return risk > 0 ? reward / risk : 0;
+}
+
+function getCapitalProtectionInfo(stock: StockRecommendation): { label: string; color: string; bg: string } {
+  const rr = getRRRatio(stock);
+  const riskPct = getRiskPerTradePct(stock);
+  if (rr >= 2.5 && riskPct <= 3) return { label: 'حماية عالية', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/50' };
+  if (rr >= 1.5 && riskPct <= 5) return { label: 'حماية متوسطة', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-900/50' };
+  return { label: 'حماية منخفضة', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-100 dark:bg-red-900/50' };
+}
+
+function getRiskLevelInfo(stock: StockRecommendation): { label: string; color: string; bg: string } {
+  const level = stock.riskAssessment?.level || 'Medium';
+  switch (level) {
+    case 'Low': return { label: 'منخفض', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/50' };
+    case 'Medium': return { label: 'متوسط', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-900/50' };
+    case 'High': return { label: 'مرتفع', color: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-100 dark:bg-orange-900/50' };
+    case 'Very High': return { label: 'عالي جداً', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-100 dark:bg-red-900/50' };
+    default: return { label: 'متوسط', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-900/50' };
+  }
+}
+
 /** Mini 5-segment confidence breakdown bar for inline display */
 function ConfidenceMiniBar({ breakdown, className }: { breakdown: ConfidenceBreakdown; className?: string }) {
   const segments = [
@@ -560,22 +607,15 @@ function V2StocksTable() {
                 <TableHead className="w-10 text-center">#</TableHead>
                 <TableHead className="w-20">الرمز</TableHead>
                 <TableHead className="hidden md:table-cell min-w-[120px]">الاسم</TableHead>
-                <TableHead className="hidden lg:table-cell">القطاع</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">القيمة السوقية</TableHead>
-                <TableHead className="text-center">السعر</TableHead>
-                <TableHead className="text-center">التغير</TableHead>
-                <TableHead className="text-center hidden md:table-cell">القيمة العادلة</TableHead>
-                <TableHead className="text-center hidden md:table-cell">التقييم</TableHead>
-                <TableHead className="text-center hidden lg:table-cell min-w-[80px]">الجودة</TableHead>
-                <TableHead className="text-center hidden lg:table-cell min-w-[80px]">الزخم</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">حجم التداول</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">جودة البيانات</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">نقطة الدخول</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">الهدف</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">وقف الخسارة</TableHead>
-                <TableHead className="text-center hidden xl:table-cell">المخاطرة</TableHead>
-                <TableHead className="text-center w-24">التحليل</TableHead>
+                <TableHead className="text-center">العائد المتوقع</TableHead>
+                <TableHead className="text-center">المخاطرة %</TableHead>
+                <TableHead className="text-center">R/R</TableHead>
+                <TableHead className="text-center hidden lg:table-cell">الهدف</TableHead>
+                <TableHead className="text-center hidden lg:table-cell">وقف الخسارة</TableHead>
+                <TableHead className="text-center hidden lg:table-cell">الحماية</TableHead>
+                <TableHead className="text-center hidden lg:table-cell">مستوى المخاطرة</TableHead>
                 <TableHead className="text-center hidden sm:table-cell w-16">الثقة</TableHead>
+                <TableHead className="text-center w-24">التحليل</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -583,12 +623,15 @@ function V2StocksTable() {
                 const rec = getV2RecommendationBadge(stock.recommendation);
                 const globalRank = (page - 1) * PAGE_SIZE + idx + 1;
                 const changePct = getChangePercent(stock);
-                const verdict = getVerdictBadge(stock.fairValue.verdict);
                 const riskCol = getRiskColor(stock.riskAssessment.level);
                 const capBadge = stock.marketCapCategory ? getCapBadge(stock.marketCapCategory) : null;
                 const liqBadge = stock.volume ? getLiquidityBadge(stock.volume.liquidityRating) : null;
                 const volRatio = stock.volume ? stock.volume.volumeRatio : 0;
                 const dqBadge = stock.dataQuality ? getDataQualityBadge(stock.dataQuality.level) : null;
+                const expectedReturn = getExpectedReturnPct(stock);
+                const riskPerTrade = getRiskPerTradePct(stock);
+                const rrRatio = getRRRatio(stock);
+                const capitalProtection = getCapitalProtectionInfo(stock);
 
                 return (
                   <TableRow
@@ -608,121 +651,45 @@ function V2StocksTable() {
                     <TableCell className="hidden md:table-cell">
                       <span className="text-xs text-muted-foreground truncate max-w-[140px] block">{stock.nameAr}</span>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs font-normal">{stock.sector}</Badge>
+                    {/* Expected Return - FINANCIAL FIRST */}
+                    <TableCell className="text-center">
+                      <span className={cn('text-xs font-bold', expectedReturn >= 10 ? 'text-emerald-600' : expectedReturn >= 5 ? 'text-amber-600' : 'text-red-600')}>
+                        +{expectedReturn.toFixed(1)}%
+                      </span>
                     </TableCell>
-                    {/* Market Cap Category */}
-                    <TableCell className="text-center hidden xl:table-cell">
-                      {capBadge ? (
-                        <Badge variant="outline" className={cn('text-[8px] font-bold border-0', capBadge.bg, capBadge.color)}>
-                          {stock.marketCapCategoryAr || capBadge.labelAr}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                    {/* Risk per Trade - FINANCIAL FIRST */}
+                    <TableCell className="text-center">
+                      <span className="text-xs font-medium text-red-600">
+                        {riskPerTrade.toFixed(1)}%
+                      </span>
                     </TableCell>
-                    <TableCell className="text-center font-mono text-xs">{safeNum(stock.currentPrice).toFixed(2)}</TableCell>
-                    <TableCell className={cn('text-center font-mono text-xs font-medium', changePct >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                      {changePct >= 0 ? '+' : ''}{safeNum(changePct).toFixed(2)}%
-                    </TableCell>
-                    <TableCell className="text-center hidden md:table-cell font-mono text-xs">
-                      {stock.fairValue.averageFairValue > 0
-                        ? safeNum(stock.fairValue.averageFairValue).toFixed(2)
-                        : <span className="text-muted-foreground text-xs">غير متوفر</span>}
-                    </TableCell>
-                    <TableCell className="text-center hidden md:table-cell">
-                      <Badge variant="outline" className={cn('text-xs font-bold border-0', verdict.bg, verdict.color)}>
-                        {stock.fairValue.verdictAr}
-                      </Badge>
-                    </TableCell>
-                    {/* Quality Score */}
-                    <TableCell className="text-center hidden lg:table-cell">
-                      <div className="flex items-center gap-1 justify-center">
-                        <Progress value={stock.qualityScore.total} className={cn('h-1.5 w-14', getScoreBarColor(stock.qualityScore.total))} />
-                        <span className="text-xs font-bold text-muted-foreground">{stock.qualityScore.total}</span>
-                      </div>
-                    </TableCell>
-                    {/* Momentum Score */}
-                    <TableCell className="text-center hidden lg:table-cell">
-                      <div className="flex items-center gap-1 justify-center">
-                        <Progress value={stock.momentumScore.score} className={cn('h-1.5 w-14', getScoreBarColor(stock.momentumScore.score))} />
-                        <span className="text-xs font-bold text-muted-foreground">{stock.momentumScore.score}</span>
-                      </div>
-                    </TableCell>
-                    {/* Volume Ratio */}
-                    <TableCell className="text-center hidden xl:table-cell">
-                      {stock.volume ? (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="text-xs font-bold tabular-nums" dir="ltr">
-                            {formatVolume(stock.volume.currentVolume)}
-                          </span>
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className={cn('text-[8px] tabular-nums', volRatio >= 1.5 ? 'text-emerald-600 font-bold' : volRatio >= 0.7 ? 'text-muted-foreground' : 'text-red-500')}>
-                                  {safeNum(volRatio).toFixed(1)}x
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs">
-                                <span>متوسط 20 يوم: {formatVolume(stock.volume.avgVolume20)}</span>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    {/* Data Quality */}
-                    <TableCell className="text-center hidden xl:table-cell">
-                      {dqBadge ? (
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="outline" className={cn('text-[8px] font-bold border', dqBadge.bg, dqBadge.color, dqBadge.border)}>
-                                {dqBadge.label}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[200px] text-xs">
-                              <div className="text-right">
-                                <p className="font-bold mb-1">جودة البيانات: {stock.dataQuality?.score}/100</p>
-                                {stock.dataQuality?.reasons.map((r, i) => (
-                                  <p key={i}>• {r}</p>
-                                ))}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    {/* Entry Price */}
-                    <TableCell className="text-center hidden xl:table-cell font-mono text-xs">
-                      <span className="text-emerald-600 dark:text-emerald-400">{safeNum(stock.entryPrice).toFixed(2)}</span>
+                    {/* R/R Ratio - FINANCIAL FIRST */}
+                    <TableCell className="text-center">
+                      <span className={cn('text-xs font-bold', rrRatio >= 2 ? 'text-emerald-600' : rrRatio >= 1.2 ? 'text-amber-600' : 'text-red-600')}>
+                        {rrRatio.toFixed(2)}
+                      </span>
                     </TableCell>
                     {/* Target Price */}
-                    <TableCell className="text-center hidden xl:table-cell font-mono text-xs">
+                    <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
                       <span className="text-emerald-600 dark:text-emerald-400 font-medium">{safeNum(stock.exitStrategy.targetPrice).toFixed(2)}</span>
                     </TableCell>
                     {/* Stop Loss */}
-                    <TableCell className="text-center hidden xl:table-cell font-mono text-xs">
+                    <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
                       <span className="text-red-600 dark:text-red-400">{safeNum(stock.exitStrategy.stopLoss).toFixed(2)}</span>
                     </TableCell>
+                    {/* Capital Protection Badge */}
+                    <TableCell className="text-center hidden lg:table-cell">
+                      <Badge variant="outline" className={cn('text-[8px] font-bold border-0', capitalProtection.bg, capitalProtection.color)}>
+                        {capitalProtection.label}
+                      </Badge>
+                    </TableCell>
                     {/* Risk Level Badge */}
-                    <TableCell className="text-center hidden xl:table-cell">
+                    <TableCell className="text-center hidden lg:table-cell">
                       <Badge variant="outline" className={cn('text-[8px] font-bold border-0', riskCol.bg, riskCol.color)}>
                         {stock.riskAssessment.levelAr || stock.riskAssessment.level}
                       </Badge>
                     </TableCell>
-                    {/* Recommendation */}
-                    <TableCell className="text-center">
-                      <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-bold', rec.bg, rec.color, rec.border)}>
-                        {rec.icon}
-                        <span>{rec.label}</span>
-                      </div>
-                    </TableCell>
-                    {/* Confidence */}
+                    {/* Confidence - SECONDARY */}
                     <TableCell className="text-center hidden sm:table-cell">
                       <Badge variant="outline" className={cn(
                         'text-xs font-bold border-0',
@@ -732,6 +699,13 @@ function V2StocksTable() {
                       )}>
                         {safeNum(stock.confidence).toFixed(0)}%
                       </Badge>
+                    </TableCell>
+                    {/* Recommendation */}
+                    <TableCell className="text-center">
+                      <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-bold', rec.bg, rec.color, rec.border)}>
+                        {rec.icon}
+                        <span>{rec.label}</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -756,7 +730,85 @@ function V2StocksTable() {
   );
 }
 
-// ==================== V2: SECTION 3 — RECOMMENDATION DISTRIBUTION ====================
+// ==================== V2: SECTION 2 — FINANCIAL KPIs (NEW) ====================
+
+function V2FinancialKPIs() {
+  const { v2Data } = useAppStore();
+  if (!v2Data) return null;
+
+  const { stocks } = v2Data;
+  const validStocks = stocks.filter(s => s != null && s.ticker);
+
+  if (validStocks.length === 0) return null;
+
+  const buyStocks = validStocks.filter(s => s.recommendation === 'Strong Buy' || s.recommendation === 'Buy');
+  const avgUpside = buyStocks.length > 0 ? buyStocks.reduce((sum, s) => sum + (s.fairValue?.upsidePotential || 0), 0) / buyStocks.length : 0;
+  const avgConfidence = validStocks.length > 0 ? validStocks.reduce((sum, s) => sum + (s.confidence || 0), 0) / validStocks.length : 0;
+  const avgMaxDrawdown = validStocks.length > 0 ? validStocks.reduce((sum, s) => sum + (s.riskAssessment?.maxExpectedDrawdown || 0), 0) / validStocks.length : 0;
+  const avgRiskPerStock = validStocks.length > 0 ? validStocks.reduce((sum, s) => sum + (s.positionSizing?.maxRiskPerStock || 0), 0) / validStocks.length : 0;
+  const highRiskCount = validStocks.filter(s => s.riskAssessment?.level === 'High' || s.riskAssessment?.level === 'Very High').length;
+
+  return (
+    <Card className="border-2 border-primary/10">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <CardTitle className="text-lg">المؤشرات المالية الأساسية</CardTitle>
+          <Badge variant="outline" className="text-xs">أولوية عالية</Badge>
+        </div>
+        <CardDescription className="text-xs">
+          العائد المتوقع، حماية رأس المال، المخاطرة لكل صفقة — وليس فقط دقة التنبؤ
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">متوسط العائد المتوقع</p>
+            <p className={cn('text-xl font-bold', avgUpside >= 10 ? 'text-emerald-600' : avgUpside >= 5 ? 'text-amber-600' : 'text-red-600')}>
+              +{avgUpside.toFixed(1)}%
+            </p>
+            <p className="text-[10px] text-muted-foreground">لأسهم الشراء</p>
+          </div>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">متوسط أقصى تراجع</p>
+            <p className={cn('text-xl font-bold', avgMaxDrawdown <= 5 ? 'text-emerald-600' : avgMaxDrawdown <= 10 ? 'text-amber-600' : 'text-red-600')}>
+              {avgMaxDrawdown.toFixed(1)}%
+            </p>
+            <p className="text-[10px] text-muted-foreground">متوقع لكل سهم</p>
+          </div>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">متوسط المخاطرة/صفقة</p>
+            <p className="text-xl font-bold text-foreground">
+              {avgRiskPerStock > 0 ? `${avgRiskPerStock.toFixed(0)} ج.م` : '—'}
+            </p>
+            <p className="text-[10px] text-muted-foreground">بأقصى خسارة مسموحة</p>
+          </div>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">أسهم مخاطرة عالية</p>
+            <p className={cn('text-xl font-bold', highRiskCount === 0 ? 'text-emerald-600' : highRiskCount <= 2 ? 'text-amber-600' : 'text-red-600')}>
+              {highRiskCount}
+            </p>
+            <p className="text-[10px] text-muted-foreground">من {validStocks.length} سهم</p>
+          </div>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">متوسط الثقة</p>
+            <p className={cn('text-xl font-bold', avgConfidence >= 70 ? 'text-emerald-600' : avgConfidence >= 50 ? 'text-amber-600' : 'text-red-600')}>
+              {avgConfidence.toFixed(0)}%
+            </p>
+            <p className="text-[10px] text-muted-foreground">دقة التنبؤ (ثانوي)</p>
+          </div>
+          <div className="rounded-xl border p-3 text-center">
+            <p className="text-xs text-muted-foreground mb-1">فرص الشراء</p>
+            <p className="text-xl font-bold text-emerald-600">{buyStocks.length}</p>
+            <p className="text-[10px] text-muted-foreground">من {validStocks.length} سهم</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ==================== V2: SECTION 3 — STOCK RECOMMENDATIONS TABLE (ENHANCED) ====================
 
 function V2RecommendationDistribution() {
   const { v2Data } = useAppStore();
@@ -1031,12 +1083,14 @@ function V2QuickSummary() {
   const regime = getRegimeInfo(market.regime);
   const buyStocks = stocks.filter(s => s.recommendation === 'Strong Buy' || s.recommendation === 'Buy');
   const avgConfidence = buyStocks.length > 0 ? buyStocks.reduce((sum, s) => sum + s.confidence, 0) / buyStocks.length : 0;
-  const avgUpside = buyStocks.length > 0 ? buyStocks.reduce((sum, s) => sum + s.fairValue.upsidePotential, 0) / buyStocks.length : 0;
+  const avgUpside = buyStocks.length > 0 ? buyStocks.reduce((sum, s) => sum + (s.fairValue?.upsidePotential || 0), 0) / buyStocks.length : 0;
+  const avgMaxDrawdown = stocks.length > 0 ? stocks.reduce((sum, s) => sum + (s.riskAssessment?.maxExpectedDrawdown || 0), 0) / stocks.length : 0;
+  const avgRiskPerStock = stocks.length > 0 ? stocks.reduce((sum, s) => sum + (s.positionSizing?.maxRiskPerStock || 0), 0) / stocks.length : 0;
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">ملخص سريع</CardTitle>
+        <CardTitle className="text-lg">ملخص مالي سريع</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -1049,18 +1103,22 @@ function V2QuickSummary() {
               </div>
             </div>
             <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">مضاعف النظام</p>
-              <p className="text-2xl font-bold text-foreground">{safeNum(market.regimeMultiplier).toFixed(2)}x</p>
-            </div>
-            <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">متوسط ثقة التحليلات الشرائية</p>
-              <p className={cn('text-2xl font-bold', avgConfidence >= 70 ? 'text-emerald-600' : avgConfidence >= 50 ? 'text-amber-600' : 'text-red-600')}>
-                {safeNum(avgConfidence).toFixed(0)}%
+              <p className="text-xs text-muted-foreground mb-1">متوسط العائد المتوقع</p>
+              <p className={cn('text-2xl font-bold', avgUpside >= 10 ? 'text-emerald-600' : avgUpside >= 5 ? 'text-amber-600' : 'text-red-600')}>
+                +{avgUpside.toFixed(1)}%
               </p>
             </div>
             <div className="rounded-xl border p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">متوسط إمكانية النمو</p>
-              <p className="text-2xl font-bold text-emerald-600">+{safeNum(avgUpside).toFixed(1)}%</p>
+              <p className="text-xs text-muted-foreground mb-1">متوسط أقصى تراجع</p>
+              <p className={cn('text-2xl font-bold', avgMaxDrawdown <= 5 ? 'text-emerald-600' : avgMaxDrawdown <= 10 ? 'text-amber-600' : 'text-red-600')}>
+                {avgMaxDrawdown.toFixed(1)}%
+              </p>
+            </div>
+            <div className="rounded-xl border p-3 text-center">
+              <p className="text-xs text-muted-foreground mb-1">متوسط المخاطرة/صفقة</p>
+              <p className="text-2xl font-bold text-foreground">
+                {avgRiskPerStock > 0 ? `${avgRiskPerStock.toFixed(0)} ج.م` : '—'}
+              </p>
             </div>
           </div>
 
@@ -1068,16 +1126,16 @@ function V2QuickSummary() {
 
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+              <p className="text-xs text-muted-foreground">فرص الشراء</p>
+              <p className="text-sm font-bold text-emerald-600">{buyStocks.length}</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+              <p className="text-xs text-muted-foreground">متوسط الثقة</p>
+              <p className="text-sm font-bold">{avgConfidence.toFixed(0)}%</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-2.5 text-center">
               <p className="text-xs text-muted-foreground">إجمالي محلل</p>
               <p className="text-sm font-bold">{market.totalStocksAnalyzed}</p>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-              <p className="text-xs text-muted-foreground">اجتاز الأمان</p>
-              <p className="text-sm font-bold text-emerald-600">{market.passedSafetyFilter}</p>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-              <p className="text-xs text-muted-foreground">تحليلات شراء</p>
-              <p className="text-sm font-bold text-emerald-600">{market.recommendations.strongBuy + market.recommendations.buy}</p>
             </div>
           </div>
 
@@ -1988,7 +2046,12 @@ export function AiRecommendations() {
           <V2MarketOverview />
         </section>
 
-        {/* Section 2: Stock Recommendations Table (Enhanced with new columns) */}
+        {/* Section 2: Financial KPIs (NEW - Financial metrics first) */}
+        <section aria-label="مؤشرات مالية">
+          <V2FinancialKPIs />
+        </section>
+
+        {/* Section 3: Stock Recommendations Table (Enhanced with new columns) */}
         <section aria-label="تحليلات الأسهم">
           <V2StocksTable />
         </section>

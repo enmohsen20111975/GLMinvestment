@@ -234,18 +234,76 @@ function FlashingPrice({ price, className }: { price: number; className?: string
 }
 
 // ============================================================================
+// Financial Metrics Helpers
+// ============================================================================
+
+function getRiskPerTradePct(rec: StockRecommendation): number {
+  const entry = rec.entry_price || rec.current_price;
+  const stop = rec.stop_loss;
+  if (entry <= 0 || stop <= 0) return 0;
+  const isSell = detectIsSellSignal(rec.signal, rec.target_price, stop, entry);
+  if (isSell) {
+    return Math.abs((stop - entry) / entry * 100);
+  }
+  return Math.abs((entry - stop) / entry * 100);
+}
+
+function getCapitalProtectionInfo(rec: StockRecommendation): { label: string; color: string; bg: string } {
+  const rr = Number(rec.risk_reward_ratio) || 0;
+  const riskPct = getRiskPerTradePct(rec);
+  if (rr >= 2.5 && riskPct <= 3) return { label: 'حماية عالية', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/50' };
+  if (rr >= 1.5 && riskPct <= 5) return { label: 'حماية متوسطة', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-900/50' };
+  return { label: 'حماية منخفضة', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-100 dark:bg-red-900/50' };
+}
+
+function getRiskLevelInfo(rec: StockRecommendation): { label: string; color: string; bg: string } {
+  const rr = Number(rec.risk_reward_ratio) || 0;
+  const riskPct = getRiskPerTradePct(rec);
+  if (rr >= 2 && riskPct <= 3) return { label: 'منخفض', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/50' };
+  if (rr >= 1.2 && riskPct <= 5) return { label: 'متوسط', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-900/50' };
+  return { label: 'مرتفع', color: 'text-red-700 dark:text-red-300', bg: 'bg-red-100 dark:bg-red-900/50' };
+}
+
+function getExpectedReturnColor(pct: number | string | undefined): string {
+  const val = Number(pct) || 0;
+  if (val >= 10) return 'text-emerald-600 dark:text-emerald-400';
+  if (val >= 5) return 'text-green-600 dark:text-green-400';
+  if (val >= 0) return 'text-amber-600 dark:text-amber-400';
+  return 'text-red-600 dark:text-red-400';
+}
+
+function getRRColor(rr: number | string | undefined): string {
+  const val = Number(rr) || 0;
+  if (val >= 2.5) return 'text-emerald-600 dark:text-emerald-400';
+  if (val >= 1.5) return 'text-amber-600 dark:text-amber-400';
+  return 'text-red-600 dark:text-red-400';
+}
+
+function formatPct(val: number | undefined | null, decimals = 1): string {
+  if (val === null || val === undefined || isNaN(val)) return '0.0';
+  return val.toFixed(decimals);
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
 export function SimpleRecommendationsView() {
   const [recommendations, setRecommendations] = useState<StockRecommendation[]>([]);
-  // ROBO-ADVISOR-P1: أرشيف التوقعات السابقة
   const [previousPredictions, setPreviousPredictions] = useState<PreviousPrediction[]>([]);
   const [humanRecs, setHumanRecs] = useState<HumanRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [activeTab, setActiveTab] = useState<'experts' | 'analysis' | 'smart'>('analysis');
+  const [portfolioStats, setPortfolioStats] = useState<{
+    winRate: number;
+    avgPnl: number;
+    winCount: number;
+    lossCount: number;
+    closedCount: number;
+    totalPredictions: number;
+  } | null>(null);
   const currentMarket = useAppStore((s) => s.currentMarket);
 
   // ROBO-ADVISOR-P2: التنبيهات الحية (Service Worker + Web Audio beep)
@@ -254,8 +312,8 @@ export function SimpleRecommendationsView() {
   // BRIEF-050: فلاتر التوصيات
   const [signalFilter, setSignalFilter] = useState<'ALL' | 'STRONG_BUY' | 'BUY' | 'ACCUMULATE' | 'HOLD' | 'SELL' | 'STRONG_SELL'>('ALL');
   const [minScore, setMinScore] = useState(0);
-  // ROBO-ADVISOR-P1: الترتيب الافتراضي بالثقة (confidence) تنازلياً
-  const [sortBy, setSortBy] = useState<'score' | 'confidence' | 'risk_reward'>('confidence');
+  // FINANCIAL-FIRST: الترتيب الافتراضي حسب العائد المتجه (risk_reward) بدلاً من الثقة
+  const [sortBy, setSortBy] = useState<'score' | 'confidence' | 'risk_reward'>('risk_reward');
   const [showFilters, setShowFilters] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -263,18 +321,13 @@ export function SimpleRecommendationsView() {
     setError(null);
 
     try {
-      // REALITY-CHECK-023: cache: 'no-store' + Cache-Control header
-      // عشان الـ fetch ما يـ cacheش الـ response — الشاشة لازم تعكس السوق الحقيقي
-      // كل 5 دقايق (الـ interval تحت بيشغل fetchData كل 300000ms)
       const noCacheHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
-      // Fetch AI recommendations from unified predictions API (stored predictions)
       const analysisResponse = await fetch(
         `/api/unified/predictions?market=${currentMarket === 'KSA' ? 'TADAWUL' : currentMarket}&limit=50&_t=${Date.now()}`,
         { cache: 'no-store' as RequestCache, headers: noCacheHeaders }
       );
 
-      // Fetch human recommendations
       const humanResponse = await fetch(
         `/api/expert-recommendations?limit=7&market=${currentMarket}&_t=${Date.now()}`,
         { cache: 'no-store' as RequestCache, headers: noCacheHeaders }
@@ -283,24 +336,14 @@ export function SimpleRecommendationsView() {
       const analysisResult = await analysisResponse.json();
       const humanResult = await humanResponse.json();
 
-      // Process AI recommendations from stored predictions
       let aiRecs: StockRecommendation[] = [];
       if (analysisResult.success && analysisResult.predictions && analysisResult.predictions.length > 0) {
-        // P28-SHOW-ALL: اعرض كل التوقعات اللي راجعة من الـ API (stored_analyses)
-        // قبل كده كنا بنقصّها لأعلى 5 بس — ده كان بيخبي الأسهم اللي إشاراتها HOLD/SELL.
-        // المستخدم لازم يشوف كل الأسهم وتوصياتها عشان ياخد قرار.
         const allPredictions = [...analysisResult.predictions];
-        
-        // ترتيب حسب الـ score (الأعلى الأول) بس بدون قص — كل التوقعات تتعرض
         const topPredictions = allPredictions
           .sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
-        
+
         aiRecs = topPredictions.map((item: any) => {
           const price = Number(item.entry_price) || Number(item.current_price) || 10;
-
-          // FRONTEND-026: كشف اتجاه الإشارة بالتسمية (SELL/STRONG_SELL/REDUCE/...)
-          // أو بالقيم. ده بيمنع الـ BUY fallback من إنه يلغي قيم العقل الصحيحة
-          // للـ REDUCE (اللي هي بيع فعلي بس مش بتسمية SELL حرفياً).
           const isSell = detectIsSellSignal(
             item.signal,
             Number(item.target_price) || 0,
@@ -308,11 +351,6 @@ export function SimpleRecommendationsView() {
             price
           );
 
-          // BACKEND-025 + FRONTEND-026: العقل (الباك إند) بيطلع الـ target/stop صح
-          // حسب اتجاه الإشارة:
-          //   - شراء: الهدف فوق الدخول، الوقف تحت الدخول
-          //   - بيع:  الهدف تحت الدخول، الوقف فوق الدخول
-          // الواجهة بس تعرض اللي العقل بعتله — fallback direction-aware بس لو القيمة ناقصة (صفر).
           const defTarget     = isSell ? price * 0.95 : price * 1.05;
           const defTarget2    = isSell ? price * 0.90 : price * 1.10;
           const defInvTarget  = isSell ? price * 0.85 : price * 1.15;
@@ -320,7 +358,6 @@ export function SimpleRecommendationsView() {
           const defSupport    = isSell ? price * 1.03 : price * 0.97;
 
           const targetPrice = Number(item.target_price) || Number(defTarget.toFixed(2));
-          // targetPct direction-aware: موجب = مكسب متوقع (بيع: entry-target، شراء: target-entry)
           const targetPct = price > 0
             ? (isSell
                 ? ((price - targetPrice) / price * 100)
@@ -349,10 +386,8 @@ export function SimpleRecommendationsView() {
             rsi: Number(item.rsi) || 50,
             fallback_tier: (item.fallback_tier as StockRecommendation['fallback_tier']) || 'strict',
             fallback_tier_ar: item.fallback_tier_ar || '',
-            // ROBO-ADVISOR-P1: وسم الجديد/المستمر من العقل
             is_new: item.is_new === true,
             is_continuous: item.is_continuous === true,
-            // P1-MAXHIGH-MINLOW: مسار السهم منذ التوقع
             peak_high: item.peak_high ?? null,
             trough_low: item.trough_low ?? null,
             source: 'ai' as const,
@@ -362,19 +397,29 @@ export function SimpleRecommendationsView() {
 
       setRecommendations(aiRecs);
 
-      // ROBO-ADVISOR-P1: التقاط أرشيف التوقعات السابقة من العقل
       if (Array.isArray(analysisResult.previous_predictions)) {
         setPreviousPredictions(analysisResult.previous_predictions as PreviousPrediction[]);
       } else {
         setPreviousPredictions([]);
       }
 
-      // Process human recommendations
       if (humanResult.success && humanResult.recommendations) {
         setHumanRecs(humanResult.recommendations);
       }
 
-      // Show error only if both are empty
+      if (analysisResult.success && analysisResult.stats) {
+        setPortfolioStats({
+          winRate: Number(analysisResult.stats.win_rate) || 0,
+          avgPnl: Number(analysisResult.stats.avg_pnl) || 0,
+          winCount: Number(analysisResult.stats.win_count) || 0,
+          lossCount: Number(analysisResult.stats.loss_count) || 0,
+          closedCount: Number(analysisResult.stats.closed_count) || 0,
+          totalPredictions: Number(analysisResult.stats.total) || 0,
+        });
+      } else {
+        setPortfolioStats(null);
+      }
+
       if (aiRecs.length === 0 && (!humanResult.recommendations || humanResult.recommendations.length === 0)) {
         setError('لا توجد توقعات متاحة حالياً');
       }
@@ -756,7 +801,7 @@ ${OFFICIAL_LINKS_BLOCK}`;
                 />
                 <span className="text-xs font-bold">{minScore}%</span>
               </div>
-              <div className="flex items-center gap-2">
+               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-muted-foreground">ترتيب:</span>
                 <Button
                   size="sm"
@@ -772,7 +817,7 @@ ${OFFICIAL_LINKS_BLOCK}`;
                   className="h-7 text-xs"
                   onClick={() => setSortBy('confidence')}
                 >
-                  الثقة
+                  ثقة
                 </Button>
                 <Button
                   size="sm"
@@ -813,13 +858,65 @@ ${OFFICIAL_LINKS_BLOCK}`;
 
       {/* Content */}
       <ScrollArea className="flex-1">
-        <div className="p-4">
+        <div className="p-4 space-y-4">
           {error && (
             <Card className="mb-4 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
                   <AlertTriangle className="h-5 w-5" />
                   <span>{error}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Portfolio Financial KPIs - Financial metrics FIRST */}
+          {portfolioStats && portfolioStats.closedCount > 0 && (
+            <Card className="border-2 border-primary/10">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-bold">الأداء المالي للمحفظة</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="rounded-xl border p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">نسبة النجاح</p>
+                    <p className={cn('text-xl font-bold', portfolioStats.winRate >= 60 ? 'text-emerald-600' : portfolioStats.winRate >= 45 ? 'text-amber-600' : 'text-red-600')}>
+                      {formatPct(portfolioStats.winRate, 1)}%
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{portfolioStats.winCount} ربح / {portfolioStats.lossCount} خسارة</p>
+                  </div>
+                  <div className="rounded-xl border p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">متوسط العائد</p>
+                    <p className={cn('text-xl font-bold', portfolioStats.avgPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      {portfolioStats.avgPnl >= 0 ? '+' : ''}{formatPct(portfolioStats.avgPnl, 2)}%
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">لكل صفقة</p>
+                  </div>
+                  <div className="rounded-xl border p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">الصفقات المغلقة</p>
+                    <p className="text-xl font-bold text-foreground">{portfolioStats.closedCount}</p>
+                    <p className="text-[10px] text-muted-foreground">من أصل {portfolioStats.totalPredictions}</p>
+                  </div>
+                  <div className="rounded-xl border p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">الربح الكلي</p>
+                    <p className="text-xl font-bold text-emerald-600">{portfolioStats.winCount}</p>
+                    <p className="text-[10px] text-muted-foreground">صفقة رابحة</p>
+                  </div>
+                  <div className="rounded-xl border p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">الخسارة الكلية</p>
+                    <p className="text-xl font-bold text-red-600">{portfolioStats.lossCount}</p>
+                    <p className="text-[10px] text-muted-foreground">صفقة خاسرة</p>
+                  </div>
+                  <div className="rounded-xl border p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">معامل الربحية</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {portfolioStats.winCount > 0 && portfolioStats.lossCount > 0
+                        ? (portfolioStats.winCount / portfolioStats.lossCount).toFixed(2)
+                        : portfolioStats.winCount > 0 ? '∞' : '0.00'}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">إجمالي الربح / الخسارة</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -967,64 +1064,69 @@ ${OFFICIAL_LINKS_BLOCK}`;
                             )}
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">السعر:</span>{' '}
-                              {/* ROBO-ADVISOR-P1: وميض السعر اللحظي */}
-                              <FlashingPrice price={rec.current_price} />
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">الهدف:</span>{' '}
-                              <span className="font-medium text-green-600">
-                                {formatPrice(rec.target_price)} ({rec.target_pct || '0.0'}%)
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">وقف الخسارة:</span>{' '}
-                              <span className="font-medium text-red-600">{formatPrice(rec.stop_loss)}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">R/R:</span>{' '}
-                              <span className="font-medium">{Number(rec.risk_reward_ratio).toFixed(2)}</span>
-                            </div>
-                          </div>
+                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                             <div>
+                               <span className="text-muted-foreground">العائد المتوقع:</span>{' '}
+                               <span className={cn('font-bold', getExpectedReturnColor(rec.target_pct))}>
+                                 {Number(rec.target_pct) >= 0 ? '+' : ''}{rec.target_pct || '0.0'}%
+                               </span>
+                             </div>
+                             <div>
+                               <span className="text-muted-foreground">المخاطرة:</span>{' '}
+                               <span className="font-medium text-red-600">
+                                 {formatPct(getRiskPerTradePct(rec))}%
+                               </span>
+                             </div>
+                             <div>
+                               <span className="text-muted-foreground">R/R:</span>{' '}
+                               <span className={cn('font-bold', getRRColor(rec.risk_reward_ratio))}>
+                                 {Number(rec.risk_reward_ratio).toFixed(2)}
+                               </span>
+                             </div>
+                             <div>
+                               <span className="text-muted-foreground">الحماية:</span>{' '}
+                               <Badge variant="outline" className={cn('text-[10px] font-bold border-0', getCapitalProtectionInfo(rec).bg, getCapitalProtectionInfo(rec).color)}>
+                                 {getCapitalProtectionInfo(rec).label}
+                               </Badge>
+                             </div>
+                           </div>
 
-                          {/* P1-MAXHIGH-MINLOW: مسار السهم منذ التوقع (أعلى/أقل سعر) */}
-                          {(rec.peak_high != null || rec.trough_low != null) && (
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
-                              {rec.peak_high != null && (
-                                <span className="text-muted-foreground">
-                                  أعلى سعر منذ التوقع:{' '}
-                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                    ▲ {formatPrice(rec.peak_high)}
-                                  </span>
-                                </span>
-                              )}
-                              {rec.trough_low != null && (
-                                <span className="text-muted-foreground">
-                                  أقل سعر منذ التوقع:{' '}
-                                  <span className="font-semibold text-rose-600 dark:text-rose-400">
-                                    ▼ {formatPrice(rec.trough_low)}
-                                  </span>
-                                </span>
-                              )}
-                            </div>
-                          )}
+                           {/* P1-MAXHIGH-MINLOW: مسار السهم منذ التوقع (أعلى/أقل سعر) */}
+                           {(rec.peak_high != null || rec.trough_low != null) && (
+                             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+                               {rec.peak_high != null && (
+                                 <span className="text-muted-foreground">
+                                   أعلى سعر منذ التوقع:{' '}
+                                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                     ▲ {formatPrice(rec.peak_high)}
+                                   </span>
+                                 </span>
+                               )}
+                               {rec.trough_low != null && (
+                                 <span className="text-muted-foreground">
+                                   أقل سعر منذ التوقع:{' '}
+                                   <span className="font-semibold text-rose-600 dark:text-rose-400">
+                                     ▼ {formatPrice(rec.trough_low)}
+                                   </span>
+                                 </span>
+                               )}
+                             </div>
+                           )}
 
-                          {/* Scores - مثل advanced-analysis */}
-                          <div className="flex gap-4 mt-2 text-xs">
-                            <span className="text-muted-foreground">
-                              تقني: <span className="font-medium">{Number(rec.technical_score || 0).toFixed(0)}%</span>
-                            </span>
-                            <span className="text-muted-foreground">
-                              ثقة: <span className="font-medium">{Number(rec.confidence || 0).toFixed(0)}%</span>
-                            </span>
-                            <span className="text-muted-foreground">
-                              RSI: <span className={Number(rec.rsi || 50) > 70 ? 'text-red-500' : Number(rec.rsi || 50) < 30 ? 'text-green-500' : ''}>
-                                {Number(rec.rsi || 50).toFixed(0)}
-                              </span>
-                            </span>
-                          </div>
+                           {/* Financial Secondary Metrics */}
+                           <div className="flex gap-4 mt-2 text-xs">
+                             <span className="text-muted-foreground">
+                               ثقة: <span className="font-medium">{Number(rec.confidence || 0).toFixed(0)}%</span>
+                             </span>
+                             <span className="text-muted-foreground">
+                               تقني: <span className="font-medium">{Number(rec.technical_score || 0).toFixed(0)}%</span>
+                             </span>
+                             <span className="text-muted-foreground">
+                               RSI: <span className={Number(rec.rsi || 50) > 70 ? 'text-red-500' : Number(rec.rsi || 50) < 30 ? 'text-green-500' : ''}>
+                                 {Number(rec.rsi || 50).toFixed(0)}
+                               </span>
+                             </span>
+                           </div>
 
                           {/* أزرار النسخ والمشاركة */}
                           <div className="flex gap-2 mt-3">
