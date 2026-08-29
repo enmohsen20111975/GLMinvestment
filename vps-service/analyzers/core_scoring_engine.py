@@ -1171,7 +1171,7 @@ def detect_explosive_rocket(
         close_ratio = (last_close - last_low) / (last_high - last_low)
     cond_upper_close = close_ratio >= 0.75  # >= لتسامح الحدود
 
-    cond_ignition_vol = avg_20 > 0 and last_vol > 1.2 * avg_20  # lowered 1.5→1.2 for low-float stocks
+    cond_ignition_vol = avg_20 > 0 and last_vol > 1.5 * avg_20  # RESTORED to original (was 1.2 — too low)
 
     details['last_close'] = round(last_close, 4)
     details['prev_close'] = round(prev_close, 4)
@@ -1295,11 +1295,8 @@ def detect_volume_surge_rocket(
     vol_std = 0.0
     if len(vol_last_20) >= 2 and avg_vol > 0:
         vol_std = (sum((v - avg_vol) ** 2 for v in vol_last_20) / len(vol_last_20)) ** 0.5
-    dyn_surge = avg_vol + (vol_std * 1.0)  # lowered 1.5→1.0 stddev for low-float stocks
+    dyn_surge = avg_vol + (vol_std * 1.5)  # RESTORED to original (was 1.0 — too low)
     vol_surge = volumes[-1] > dyn_surge if avg_vol > 0 else False
-    # Also accept simple 1.2x ratio as vol_surge (for low-volume stocks)
-    if not vol_surge and avg_vol > 0 and volumes[-1] > avg_vol * 1.2:
-        vol_surge = True
     vol_ratio = volumes[-1] / (avg_vol or 1)
 
     # Buy/sell volume (V56 logic)
@@ -1361,10 +1358,8 @@ def detect_volume_surge_rocket(
         reasons.append(f'ROC5=+{roc5:.1f}%')
 
     # ── Decision: rocket requires volume surge + positive momentum ──────────
-    # threshold lowered from 60 → 30 (was too high — missed BIOC +14395%, NIPH, AMES)
-    # vol_surge relaxed: also accept vol_ratio >= 1.05 (any slight volume increase)
-    # roc20 relaxed: > -10 (allow stock in downtrend before explosion)
-    is_rocket = score >= 30 and (vol_surge or vol_ratio >= 1.05) and roc20 > -10
+    # RESTORED to original thresholds (was lowered to 30 — caused false signals + quality drop)
+    is_rocket = score >= 60 and vol_surge and roc20 > 5
 
     entry = closes[-1]
     target = entry + (atr_val * 3.0)  # 3R target
@@ -1459,7 +1454,7 @@ def detect_accumulation_phase(
     vol_baseline = volumes[-21:-1] if len(volumes) >= 21 else volumes[:-1]
     avg_vol_20 = sum(vol_baseline) / len(vol_baseline) if vol_baseline else 0.0
     vol_ratio = avg_vol_3 / avg_vol_20 if avg_vol_20 > 0 else 0.0
-    is_accumulating = vol_ratio >= 1.1  # lowered 1.25→1.1 for low-float pre-explosion detection
+    is_accumulating = vol_ratio >= 1.25  # RESTORED to original (was 1.1 — too low)
 
     # ── 2) Above SMA20 ──
     above_sma20 = closes[-1] > sma20 if sma20 > 0 else False
@@ -1516,11 +1511,9 @@ def detect_accumulation_phase(
         reasons.append(f'DD={drawdown_from_high:.1f}%')
 
     # ── Decision: accumulation requires vol + momentum + trend ──────────
-    # threshold lowered from 65 → 40 (was too high — missed accumulation before explosion)
-    # relaxed: removed is_accumulating requirement (low-float stocks accumulate silently)
-    # relaxed: allow roc5 > -10 (stock may be in deep dip before final explosion)
+    # RESTORED to original thresholds (was lowered to 40 — caused false signals)
     is_accumulation_signal = (
-        score >= 40 and roc5 > -10  # very relaxed for pre-explosion detection
+        score >= 65 and is_accumulating and above_sma20 and roc5 > 0
     )
 
     entry = closes[-1]
