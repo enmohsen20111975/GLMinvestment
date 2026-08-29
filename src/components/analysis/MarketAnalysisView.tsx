@@ -5791,6 +5791,347 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
   );
 }
 
+// ============================================================================
+// Phase P5: Sector Tracking Tab — تتبع حركة القطاعات (السيولة + الزخم + الحركة)
+// Node = DISPLAY ONLY. كل logic في Python (engine/flow_system.py).
+// ============================================================================
+interface SectorTrackingStock {
+  ticker: string;
+  name: string;
+  name_ar: string;
+  current_price: number;
+  change_percent: number;
+  volume: number;
+  market_cap: number;
+  avg_volume: number;
+  volume_surge: boolean;
+  rsi: number | null;
+  trend: string | null;
+  high_52w: number | null;
+  low_52w: number | null;
+}
+
+interface SectorTrackingEntry {
+  sector: string;
+  stock_count: number;
+  avg_change: number;
+  turnover: number;
+  turnover_pct: number;
+  gainers: number;
+  losers: number;
+  breadth: number;
+  heat_level: string;  // HOT | WARM | NEUTRAL | COOL | COLD
+  heat_ar: string;
+  leader_ticker: string | null;
+  leader_change: number | null;
+  stocks: SectorTrackingStock[];
+}
+
+interface SectorTrackingResponse {
+  success: boolean;
+  market: string;
+  sectors: SectorTrackingEntry[];
+  market_summary: {
+    total_stocks: number;
+    total_sectors: number;
+    advancers: number;
+    decliners: number;
+    breadth: number;
+    avg_change: number;
+    total_turnover: number;
+  };
+  rotation?: any;
+  error?: string;
+  hint?: string;
+}
+
+const HEAT_LEVEL_STYLE: Record<string, { bg: string; text: string; icon: string; label: string }> = {
+  HOT:     { bg: 'bg-red-500/10 border-red-500/30',      text: 'text-red-700 dark:text-red-300',       icon: '🔥', label: 'نار' },
+  WARM:    { bg: 'bg-orange-500/10 border-orange-500/30', text: 'text-orange-700 dark:text-orange-300', icon: '☀️', label: 'دافئ' },
+  NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30',  text: 'text-slate-700 dark:text-slate-300',   icon: '➖', label: 'محايد' },
+  COOL:    { bg: 'bg-sky-500/10 border-sky-500/30',      text: 'text-sky-700 dark:text-sky-300',       icon: '💧', label: 'بارد' },
+  COLD:    { bg: 'bg-blue-500/10 border-blue-500/30',    text: 'text-blue-700 dark:text-blue-300',     icon: '❄️', label: 'بارد جداً' },
+};
+
+function formatVolumeShort(v: number): string {
+  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
+  return String(v);
+}
+
+function SectorTrackingTab({ market }: { market: MarketType }) {
+  const [data, setData] = useState<SectorTrackingResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedSector, setExpandedSector] = useState<string | null>(null);
+  const [withRotation, setWithRotation] = useState(false);
+
+  const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        market: marketCode,
+        with_stocks: '1',
+      });
+      if (withRotation) params.set('with_rotation', '1');
+      const res = await fetch(`/api/sectors/tracking?${params}`, { cache: 'no-store' });
+      const json: SectorTrackingResponse = await res.json();
+      if (json.success) {
+        setData(json);
+        // Auto-expand first sector
+        if (json.sectors && json.sectors.length > 0 && !expandedSector) {
+          setExpandedSector(json.sectors[0].sector);
+        }
+      } else {
+        setError(json.error || json.hint || 'فشل في تحميل البيانات');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
+    } finally {
+      setLoading(false);
+    }
+  }, [marketCode, withRotation, expandedSector]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (loading && !data) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <RefreshCw className="w-4 h-4 animate-spin" />
+          جاري تحميل تتبع القطاعات...
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-3">
+        <Card className="border-rose-500/30 bg-rose-500/5">
+          <CardContent className="p-4 text-center">
+            <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-rose-500" />
+            <div className="text-sm font-medium text-rose-700 dark:text-rose-300">
+              {error}
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              تأكد أن Python backend يعمل على port 8010 (محتاج: <code className="font-mono">/api/sectors/tracking</code>)
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchData} className="mt-3">
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> إعادة المحاولة
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const ms = data.market_summary;
+  const sectors = data.sectors || [];
+  const rotation = data.rotation;
+
+  return (
+    <div className="space-y-4">
+      {/* Header: Market Summary */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-teal-600" />
+              <h3 className="text-base font-bold">تتبع حركة القطاعات — {marketCode}</h3>
+              <Badge variant="outline" className="text-xs">
+                {ms.total_sectors} قطاع | {ms.total_stocks} سهم
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setWithRotation(v => !v)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+                  withRotation
+                    ? 'bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950 dark:border-teal-800'
+                    : 'bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50'
+                )}
+                title="تفعيل كشف دوران السيولة (أبطأ لكن predictive)"
+              >
+                <RefreshCw className="w-3 h-3" />
+                دوران السيولة
+              </button>
+              <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5 h-8">
+                <RefreshCw className="w-3.5 h-3.5" />
+                تحديث
+              </Button>
+            </div>
+          </div>
+
+          {/* Market breadth row */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3">
+            <div className="text-xs">
+              <div className="text-muted-foreground">صاعدة</div>
+              <div className="text-emerald-600 font-bold font-mono">{ms.advancers}</div>
+            </div>
+            <div className="text-xs">
+              <div className="text-muted-foreground">هابطة</div>
+              <div className="text-red-600 font-bold font-mono">{ms.decliners}</div>
+            </div>
+            <div className="text-xs">
+              <div className="text-muted-foreground">متوسط التغير</div>
+              <div className={cn('font-bold font-mono', ms.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                {ms.avg_change >= 0 ? '+' : ''}{ms.avg_change}%
+              </div>
+            </div>
+            <div className="text-xs">
+              <div className="text-muted-foreground">اتساع السوق</div>
+              <div className="font-bold font-mono">{ms.breadth}%</div>
+            </div>
+            <div className="text-xs">
+              <div className="text-muted-foreground">إجمالي التداول</div>
+              <div className="font-bold font-mono">{formatVolumeShort(ms.total_turnover)}</div>
+            </div>
+            <div className="text-xs">
+              <div className="text-muted-foreground">القطاعات</div>
+              <div className="font-bold font-mono">{ms.total_sectors}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Rotation signals (optional) */}
+      {rotation && !rotation.error && (rotation.entering?.length > 0 || rotation.leaving?.length > 0) && (
+        <Card className="border-teal-500/30 bg-teal-500/5">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-4 h-4 text-teal-600" />
+              <span className="text-sm font-semibold">إشارات دوران السيولة</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {rotation.entering?.map((r: any, i: number) => (
+                <span key={`en-${i}`} className="text-xs px-2 py-1 rounded border bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
+                  🔥 {r.sector} — السيولة راجعة ({r.days_rising} أيام صعود)
+                </span>
+              ))}
+              {rotation.leaving?.map((r: any, i: number) => (
+                <span key={`lv-${i}`} className="text-xs px-2 py-1 rounded border bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300">
+                  ❄️ {r.sector} — السيولة بتهرب ({r.days_falling} أيام هبوط)
+                </span>
+              ))}
+              {rotation.rotation_signals?.map((sig: string, i: number) => (
+                <span key={`sig-${i}`} className="text-xs px-2 py-1 rounded border bg-slate-500/10 border-slate-500/30 text-slate-700 dark:text-slate-300">
+                  {sig}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sectors grid — clickable to expand stocks */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {sectors.map(s => {
+          const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
+          const isExpanded = expandedSector === s.sector;
+          return (
+            <Card
+              key={s.sector}
+              className={cn('cursor-pointer transition-all hover:shadow-md', isExpanded && 'ring-2 ring-teal-500/40')}
+              onClick={() => setExpandedSector(isExpanded ? null : s.sector)}
+            >
+              <CardContent className="p-3">
+                {/* Sector header */}
+                <div className={cn('flex items-center justify-between p-2 rounded border', heat.bg)}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base flex-shrink-0">{heat.icon}</span>
+                    <div className="min-w-0">
+                      <div className={cn('text-sm font-bold truncate', heat.text)}>{s.sector}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {s.stock_count} سهم • {heat.label}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-left flex-shrink-0">
+                    <div className={cn('text-sm font-bold font-mono', s.avg_change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      {s.avg_change >= 0 ? '+' : ''}{s.avg_change}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">{formatVolumeShort(s.turnover)}</div>
+                  </div>
+                </div>
+
+                {/* Sector stats row */}
+                <div className="grid grid-cols-4 gap-1 mt-2 text-xs">
+                  <div className="text-center">
+                    <div className="text-emerald-600 font-mono font-bold">{s.gainers}</div>
+                    <div className="text-muted-foreground text-[10px]">صاعد</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-red-600 font-mono font-bold">{s.losers}</div>
+                    <div className="text-muted-foreground text-[10px]">هابط</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-mono font-bold">{s.breadth}%</div>
+                    <div className="text-muted-foreground text-[10px]">اتساع</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-mono font-bold">{s.turnover_pct}%</div>
+                    <div className="text-muted-foreground text-[10px]">حصة سيولة</div>
+                  </div>
+                </div>
+
+                {/* Leader */}
+                {s.leader_ticker && (
+                  <div className="mt-2 text-xs flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
+                    <span className="text-amber-600">👑</span>
+                    <span className="font-mono font-bold">{s.leader_ticker}</span>
+                    <span className="text-emerald-600 font-mono">
+                      {s.leader_change && s.leader_change >= 0 ? '+' : ''}{s.leader_change}%
+                    </span>
+                  </div>
+                )}
+
+                {/* Stocks list (top 5, expandable) */}
+                {isExpanded && s.stocks && s.stocks.length > 0 ? (
+                  <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+                    {s.stocks.slice(0, 20).map(st => (
+                      <div key={st.ticker} className="flex items-center justify-between text-xs py-1 border-b border-muted/30 last:border-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-mono font-bold flex-shrink-0">{st.ticker}</span>
+                          <span className="text-muted-foreground truncate">{st.name_ar || st.name}</span>
+                          {st.volume_surge && <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" />}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={cn('font-mono', st.change_percent >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                            {st.change_percent >= 0 ? '+' : ''}{st.change_percent}%
+                          </span>
+                          <span className="text-muted-foreground font-mono text-[10px]">
+                            {formatVolumeShort(st.volume)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-muted-foreground text-center">
+                    اضغط لعرض الأسهم ({s.stocks?.length || 0} سهم)
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CryptoPredictionsTab() {
   const [data, setData] = useState<CryptoPredictionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -6543,14 +6884,10 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <span className="text-base">🎯</span>
             <span className="hidden sm:inline">المضارب</span>
           </TabsTrigger>
-          <TabsTrigger value="crypto" className="flex items-center gap-1">
-            <Bitcoin className="h-4 w-4" />
-            <span className="hidden sm:inline">الكريبتو</span>
-          </TabsTrigger>
-          {/* Phase 4: الفرز المتقدم — TradingView-style screener داخل #recommendations */}
-          <TabsTrigger value="screener" className="flex items-center gap-1">
-            <Activity className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">الفرز المتقدم</span>
+          {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو (Python logic في flow_system.py) */}
+          <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
+            <Layers className="h-4 w-4 text-teal-600" />
+            <span className="hidden sm:inline">تتبع القطاعات</span>
           </TabsTrigger>
         </TabsList>
 
@@ -6579,8 +6916,9 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <PersonaTab market={currentMarket} persona="gambler" />
         </TabsContent>
 
-        <TabsContent value="crypto" className="mt-4">
-          <CryptoPredictionsTab />
+        {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو */}
+        <TabsContent value="sectors-tracking" className="mt-4">
+          <SectorTrackingTab market={currentMarket} />
         </TabsContent>
 
         {/* Phase 4: الفرز المتقدم — TradingView-style screener مع sector heat + strongest movers */}

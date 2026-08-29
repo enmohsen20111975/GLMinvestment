@@ -1,0 +1,316 @@
+"""
+Sector Tracking Routes Blueprint
+=================================
+Endpoints لتتبع حركة القطاعات (السيولة + الزخم + الحركة)
+
+الـ logic كله في Python (engine/flow_system.py + analyzers) — Node مجرد proxy.
+
+Endpoints:
+- GET /api/sectors/tracking — تتبع شامل للقطاعات (heatmap + rotation + stocks per sector)
+- GET /api/sectors/<sector_name>/stocks — الأسهم المنتمية لقطاع محدد
+"""
+
+import sqlite3
+from flask import Blueprint, request, jsonify
+
+from utils.db_paths import DBPaths
+
+sector_tracking_bp = Blueprint('sector_tracking', __name__)
+
+
+def _get_stocks_conn():
+    """Get a connection to stocks.db."""
+    conn = sqlite3.connect(DBPaths.STOCKS_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _safe_float(val, default=0.0):
+    try:
+        if val is None:
+            return default
+        f = float(val)
+        if f != f:  # NaN check
+            return default
+        return f
+    except (TypeError, ValueError):
+        return default
+
+
+@sector_tracking_bp.route('/api/sectors/tracking', methods=['GET'])
+def get_sector_tracking():
+    """
+    تتبع شامل لحركة القطاعات — يجمع heatmap + rotation + stocks per sector.
+
+    Query params:
+      - market: فلترة بالسوق (EGX، إلخ) — default: EGX
+      - with_rotation: 1 لإضافة detect_sector_rotation (default: 0 — أبطأ)
+      - with_stocks: 1 لإضافة قائمة الأسهم لكل قطاع (default: 1)
+
+    Returns:
+      - sectors: list of {sector, stock_count, avg_change, turnover, breadth,
+                          heat_level, heat_ar, gainers, losers, leader_ticker,
+                          leader_change, stocks: [...]}
+      - rotation (optional): {entering: [...], leaving: [...], stable: [...],
+                              rotation_signals: [...]}
+      - market_summary: {total_stocks, total_sectors, advancers, decliners,
+                         avg_change, total_turnover}
+    """
+    try:
+        market = request.args.get('market', 'EGX').strip()
+        with_rotation = request.args.get('with_rotation', '0') == '1'
+        with_stocks = request.args.get('with_stocks', '1') == '1'
+
+        # === Use the existing FlowSystemEngine.get_sector_heatmap() ===
+        from engine.flow_system import FlowSystemEngine
+        engine = FlowSystemEngine(DBPaths.STOCKS_DB)
+        heatmap = engine.get_sector_heatmap()
+
+        # Filter by market if specified (heatmap returns all markets)
+        # Note: heatmap groups by sector across all markets. For per-market,
+        # we filter the stocks per sector below.
+
+        # === Get stocks per sector (with all the data: liquidity, momentum, change) ===
+        conn = _get_stocks_conn()
+        try:
+            # Get all active stocks with their sector + key fields
+            stocks_query = """
+                SELECT ticker, name, name_ar, market, sector,
+                       current_price, change_percent, volume, market_cap,
+                       avg_volume, rsi, ma_50, ma_200, high_52w, low_52w,
+                       trend, is_active
+                FROM stocks
+                WHERE is_active = 1
+                  AND current_price > 0
+                  AND sector IS NOT NULL AND sector != ''
+            """
+            if market and market != 'ALL':
+                stocks_query += " AND market = ?"
+                params = (market,)
+            else:
+                params = ()
+
+            all_stocks = conn.execute(stocks_query, params).fetchall()
+
+            # Group stocks by sector
+            stocks_by_sector = {}
+            for s in all_stocks:
+                sector = s['sector']
+                if sector not in stocks_by_sector:
+                    stocks_by_sector[sector] = []
+                stocks_by_sector[sector].append(dict(s))
+
+            # Sort each sector's stocks by change_percent DESC (top movers first)
+            for sector in stocks_by_sector:
+                stocks_by_sector[sector].sort(
+                    key=lambda x: _safe_float(x.get('change_percent')),
+                    reverse=True
+                )
+
+            # === Compute market summary ===
+            total_stocks = len(all_stocks)
+            advancers = sum(1 for s in all_stocks if _safe_float(s['change_percent']) > 0)
+            decliners = sum(1 for s in all_stocks if _safe_float(s['change_percent']) < 0)
+            avg_change = sum(_safe_float(s['change_percent']) for s in all_stocks) / total_stocks if total_stocks > 0 else 0
+            total_turnover = sum(_safe_float(s['volume']) * _safe_float(s['current_price']) for s in all_stocks)
+
+            # === Enrich heatmap with: leader_ticker, stocks list (per market filter) ===
+            enriched_sectors = []
+            for h in heatmap:
+                sector_name = h['sector']
+                sector_stocks = stocks_by_sector.get(sector_name, [])
+
+                # Filter heatmap by market if specified (recompute sector stats
+                # from the market-filtered stocks)
+                if market and market != 'ALL' and sector_stocks:
+                    # Recompute heatmap stats from filtered stocks
+                    stock_count = len(sector_stocks)
+                    avg_ch = sum(_safe_float(s['change_percent']) for s in sector_stocks) / stock_count if stock_count > 0 else 0
+                    turnover = sum(_safe_float(s['volume']) * _safe_float(s['current_price']) for s in sector_stocks)
+                    gainers = sum(1 for s in sector_stocks if _safe_float(s['change_percent']) > 0)
+                    losers = sum(1 for s in sector_stocks if _safe_float(s['change_percent']) < 0)
+                    breadth = (gainers / stock_count * 100) if stock_count > 0 else 0
+
+                    # Heat level (same logic as FlowSystemEngine)
+                    if avg_ch > 2 and turnover > total_turnover * 0.15:
+                        heat = "HOT"; heat_ar = "نار 🔥"
+                    elif avg_ch > 0.5:
+                        heat = "WARM"; heat_ar = "دافئ"
+                    elif avg_ch < -2:
+                        heat = "COLD"; heat_ar = "بارد ❄️"
+                    elif avg_ch < -0.5:
+                        heat = "COOL"; heat_ar = "بارد"
+                    else:
+                        heat = "NEUTRAL"; heat_ar = "محايد"
+                else:
+                    stock_count = h['stock_count']
+                    avg_ch = h['avg_change']
+                    turnover = h['turnover']
+                    gainers = h['gainers']
+                    losers = h['losers']
+                    breadth = h['breadth']
+                    heat = h['heat']
+                    heat_ar = h['heat_ar']
+
+                # Leader ticker (top stock in sector)
+                leader_ticker = sector_stocks[0]['ticker'] if sector_stocks else None
+                leader_change = _safe_float(sector_stocks[0]['change_percent']) if sector_stocks else None
+
+                # Stocks list (limited to top 20 per sector for performance)
+                stocks_list = []
+                if with_stocks and sector_stocks:
+                    for s in sector_stocks[:20]:
+                        vol = _safe_float(s['volume'])
+                        avg_vol = _safe_float(s.get('avg_volume'))
+                        vol_surge = (avg_vol > 0 and vol > avg_vol * 1.5)
+                        stocks_list.append({
+                            'ticker': s['ticker'],
+                            'name': s['name'] or s['ticker'],
+                            'name_ar': s.get('name_ar') or s['name'] or s['ticker'],
+                            'current_price': _safe_float(s['current_price']),
+                            'change_percent': round(_safe_float(s['change_percent']), 2),
+                            'volume': int(vol) if vol else 0,
+                            'market_cap': _safe_float(s.get('market_cap')),
+                            'avg_volume': int(avg_vol) if avg_vol else 0,
+                            'volume_surge': vol_surge,
+                            'rsi': _safe_float(s.get('rsi')) if s.get('rsi') else None,
+                            'trend': s.get('trend'),
+                            'high_52w': _safe_float(s.get('high_52w')) if s.get('high_52w') else None,
+                            'low_52w': _safe_float(s.get('low_52w')) if s.get('low_52w') else None,
+                        })
+
+                enriched_sectors.append({
+                    'sector': sector_name,
+                    'stock_count': stock_count,
+                    'avg_change': round(avg_ch, 2),
+                    'turnover': round(turnover, 0),
+                    'turnover_pct': round((turnover / total_turnover * 100) if total_turnover > 0 else 0, 1),
+                    'gainers': gainers,
+                    'losers': losers,
+                    'breadth': round(breadth, 1),
+                    'heat_level': heat,
+                    'heat_ar': heat_ar,
+                    'leader_ticker': leader_ticker,
+                    'leader_change': round(leader_change, 2) if leader_change is not None else None,
+                    'stocks': stocks_list,
+                })
+
+            # Sort sectors by turnover DESC (most active sectors first)
+            enriched_sectors.sort(key=lambda x: x['turnover'], reverse=True)
+
+            # === Optional: rotation detection ===
+            rotation = None
+            if with_rotation:
+                try:
+                    rotation = engine.detect_sector_rotation(lookback_days=5, min_turnover_change=0.3)
+                except Exception as rot_e:
+                    rotation = {'error': str(rot_e)}
+
+            return jsonify({
+                'success': True,
+                'market': market,
+                'sectors': enriched_sectors,
+                'market_summary': {
+                    'total_stocks': total_stocks,
+                    'total_sectors': len(enriched_sectors),
+                    'advancers': advancers,
+                    'decliners': decliners,
+                    'breadth': round((advancers - decliners) / total_stocks * 100, 1) if total_stocks > 0 else 0,
+                    'avg_change': round(avg_change, 2),
+                    'total_turnover': round(total_turnover, 0),
+                },
+                'rotation': rotation,
+                'filters': {
+                    'market': market,
+                    'with_rotation': with_rotation,
+                    'with_stocks': with_stocks,
+                },
+            })
+        finally:
+            conn.close()
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc(),
+        }), 500
+
+
+@sector_tracking_bp.route('/api/sectors/<path:sector_name>/stocks', methods=['GET'])
+def get_sector_stocks(sector_name):
+    """الأسهم المنتمية لقطاع محدد (مع كل البيانات: سيولة، زخم، تغير)."""
+    try:
+        market = request.args.get('market', 'EGX').strip()
+        limit = min(int(request.args.get('limit', '100')), 500)
+        sort_by = request.args.get('sort', 'change_percent')  # change_percent, volume, market_cap
+        order = request.args.get('order', 'desc')
+
+        # Validate sort field
+        valid_sorts = {'change_percent', 'volume', 'market_cap', 'current_price'}
+        if sort_by not in valid_sorts:
+            sort_by = 'change_percent'
+        order_dir = 'DESC' if order.lower() == 'desc' else 'ASC'
+
+        conn = _get_stocks_conn()
+        try:
+            query = f"""
+                SELECT ticker, name, name_ar, market, sector,
+                       current_price, change_percent, volume, market_cap,
+                       avg_volume, rsi, ma_50, ma_200, high_52w, low_52w, trend
+                FROM stocks
+                WHERE is_active = 1
+                  AND current_price > 0
+                  AND sector LIKE ?
+            """
+            params = [f"%{sector_name}%"]
+            if market and market != 'ALL':
+                query += " AND market = ?"
+                params.append(market)
+
+            query += f" ORDER BY {sort_by} {order_dir} LIMIT ?"
+            params.append(limit)
+
+            rows = conn.execute(query, params).fetchall()
+
+            stocks = []
+            for s in rows:
+                vol = _safe_float(s['volume'])
+                avg_vol = _safe_float(s.get('avg_volume'))
+                vol_surge = (avg_vol > 0 and vol > avg_vol * 1.5)
+                stocks.append({
+                    'ticker': s['ticker'],
+                    'name': s['name'] or s['ticker'],
+                    'name_ar': s.get('name_ar') or s['name'] or s['ticker'],
+                    'market': s['market'],
+                    'sector': s['sector'],
+                    'current_price': _safe_float(s['current_price']),
+                    'change_percent': round(_safe_float(s['change_percent']), 2),
+                    'volume': int(vol) if vol else 0,
+                    'market_cap': _safe_float(s.get('market_cap')),
+                    'avg_volume': int(avg_vol) if avg_vol else 0,
+                    'volume_surge': vol_surge,
+                    'rsi': _safe_float(s.get('rsi')) if s.get('rsi') else None,
+                    'ma_50': _safe_float(s.get('ma_50')) if s.get('ma_50') else None,
+                    'ma_200': _safe_float(s.get('ma_200')) if s.get('ma_200') else None,
+                    'high_52w': _safe_float(s.get('high_52w')) if s.get('high_52w') else None,
+                    'low_52w': _safe_float(s.get('low_52w')) if s.get('low_52w') else None,
+                    'trend': s.get('trend'),
+                })
+
+            return jsonify({
+                'success': True,
+                'sector': sector_name,
+                'market': market,
+                'count': len(stocks),
+                'stocks': stocks,
+            })
+        finally:
+            conn.close()
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def register_sector_tracking_routes(app):
+    """Register the sector tracking blueprint."""
+    app.register_blueprint(sector_tracking_bp)

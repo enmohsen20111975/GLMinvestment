@@ -33,6 +33,9 @@ BLUEPRINTS = [
     ('api.stock_analysis_routes', 'stock_analysis_bp'),
     ('api.public_routes', 'public_bp'),
     ('api.stored_analysis_routes', 'stored_analysis_bp'),
+    # Phase P5: Sector tracking — تتبع حركة القطاعات (heatmap + rotation + stocks per sector)
+    # الـ logic كله في Python (engine/flow_system.py) — Node مجرد proxy.
+    ('api.sector_tracking_routes', 'sector_tracking_bp'),
     # P17 Morning Bell: /api/market/morning-bell (top 3 EGX opportunities)
     ('api.stored_analysis_routes', 'market_bp'),
     ('api.v2_routes', 'v2_bp'),
