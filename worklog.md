@@ -9806,3 +9806,48 @@ Stage Summary:
      * أمس (أجازة) = 0% أو لا يوجد
      * 7/14/30 يوم = أرقام حقيقية من صفقات اتقفلت في الفترة
      * السنوي = +1267% (مش هيتأثر)
+
+---
+Task ID: restore-1
+Agent: Z.ai Code (main)
+Task: إرجاع الـ 3 شاشات اللي ضيعتها في commits سابقة
+
+Work Log:
+- المستخدم بلّغ عن 3 شاشات ضيعتها:
+  1. #market-screener — دمجتها في UnifiedScreenerView + حذفت MultiChartScreener.tsx
+  2. sectors tab — عدّلت MarketAnalysisView.tsx
+  3. #stocks mini chart — StocksView ما اتغيرش، بس sparkline API كان مكسور
+- فحص git history:
+  * MultiChartScreener.tsx اتحذف في 5bc42a57 (phase4c) كـ orphan (989 lines)
+  * MarketAnalysisView.tsx اتعدّل في d2d0bd7f + 9e2aa54b (sectors-tracking)
+  * page.tsx اتعدّل في 9eedf2aa (unified-screener) — دمج stock-filters + top-performers
+  * Sidebar.tsx اتعدّل في 9eedf2aa — دمج 2 items → 1 item
+- restore من git history:
+  1. MultiChartScreener.tsx — restore من 5bc42a57^ (989 lines)
+  2. MarketAnalysisView.tsx — restore من d2d0bd7f^ (6615 lines)
+  3. page.tsx — restore من 9eedf2aa^ + إضافة market-screener mapping
+  4. Sidebar.tsx — restore من 9eedf2aa^ + إضافة market-screener item
+- إضافة market-screener hash:
+  * validViews: إضافة 'market-screener'
+  * case 'market-screener': return <MarketScreenerView />
+  * Sidebar: { id: 'market-screener', label: 'ماسح السوق', icon: LayoutGrid }
+- اختبارات:
+  * bun run lint: EXIT 0
+  * MultiChartScreener.tsx: 989 lines
+  * MarketAnalysisView.tsx: 6615 lines
+  * page.tsx: 595 lines
+  * Sidebar.tsx: 609 lines
+- commit + push (98cd1806)
+
+Stage Summary:
+- ✅ MultiChartScreener.tsx اترجع (شاشة market-screener)
+- ✅ MarketAnalysisView.tsx اترجع (sectors tab)
+- ✅ page.tsx اترجع (stock-filters + top-performers + market-screener)
+- ✅ Sidebar.tsx اترجع (3 items بدل 1)
+- ✅ sparkline API fix بـ يقرا من price_history.db (commit 4c0c2238)
+- 🔜 المستخدم يجرب على الإنتاج:
+  1. git pull origin main
+  2. pm2 restart nextjs (أو pm2 restart all)
+  3. يفتح #market-screener → المفروض تشوف MultiChartScreener
+  4. يفتح #recommendations → المفروض تشوف sectors tab الأصلي
+  5. يفتح #stocks → المفروض الـ mini charts تشتغل (لو بتستخدم sparkline API)
