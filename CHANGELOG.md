@@ -1,6 +1,71 @@
 # Changelog
 
 
+## [SCREENER-ADVANCED-PHASE-1-4] — ماسح أسهم متقدم داخل تب Recommendations (Phase 1-4) (2026-08-29)
+
+> **المهمة:** بناء TradingView-style screener داخل #recommendations مع فرز متقدم، تصنيف حالة، مقارنة بالقطاع، رسومات مصغرة، strongest movers، حرارة القطاعات.
+> تم تنفيذ Phase 1-4 من البرمبت (Audit + Sort + Classify + UI). Phase 5-6 (QA بصري + تحقق منطقي) يلي.
+
+### التغييرات (commits d14dfee5 + abef9714)
+
+#### Phase 1: Audit (subagent P1-SCREENER-AUDIT)
+- اكتشاف أن StockScreener.tsx (609 LOC) **يتيم** — غير معروض في أي view
+- اكتشاف أن #recommendations يحمل MarketAnalysisView (6599 LOC) وليس screener
+- اكتشاف أن #screener يحمل TradingChartView (تضليل اسمي)
+- اكتشاف 3 bugs في screener API + 12 gap في Screener الحالي
+
+#### Phase 2-3: screener API + strongest endpoint (commit d14dfee5)
+- **[مُصلَح]** `screener/route.ts`: 3 bugs (sort=momentum، near_high/breakout dead، RSI override)
+- **[مُصلَح]** priority-ordered stock_class (dangerous > breakout > sector_leader > ...)
+- **[جديد]** 7 fields: relative_strength, stock_class, sector_change, sector_rank, market_role, state_label, state_color
+- **[جديد]** 6 correction states: recovery, consolidation, distribution, advancing, lagging, stable, dangerous (الإجمالي 14 state)
+- **[جديد]** 3 filters: stock_class, volume_surge_only, min_relative_strength
+- **[جديد]** `/api/stocks/strongest` endpoint: 8 aggregates (movers, weakest, active, volume_surge, accumulators, breakdowns, sector_heat, market_summary)
+  - strongest_accumulators يقرأ data_engine.db.egksco_price_history (25-day volume history)
+
+#### Phase 4: StockScreener UI + Integration (commit abef9714)
+- **[مُعاد كتابة]** `StockScreener.tsx` (609 → 800+ LOC):
+  - 14 state badges (Arabic + colored)
+  - 12 stock_class badges (sector_leader 👑، breakout_candidate 🎯، إلخ)
+  - **StrongestMoversPanel** (NEW): 4 sub-tabs (movers/active/accumulators/breakdowns)
+  - **SectorHeatPanel** (NEW): 12 clickable sector cards (hot/warm/neutral/cool/cold)
+  - 6 stats cards (total, advancers, decliners, volume_surge, sector_leaders, breakout_candidates)
+  - Sparkline + volume_surge ⚡ + sector_rank #1 badges
+- **[مُعدّل]** `MarketAnalysisView.tsx`:
+  - Lazy-loaded `StockScreenerAdvanced` (dynamic, ssr:false)
+  - Tab جديد "الفرز المتقدم" في TabsList (grid-cols-7 → grid-cols-8)
+  - TabsContent جديد يحمّل StockScreener
+
+### التحقق (sandbox)
+- ✅ `bun run lint`: EXIT 0 (clean)
+- ✅ HTTP 200 على `/` (title: "دليل الاستثمار | تحليلات الأسهم والعملات الرقمية")
+- ✅ screener API: sector_leaders (APPC, GPIM, AMER) مع state_label + RS
+- ✅ strongest API: 452 stocks، 146 advancers / 141 decliners، accumulators (TWSA 4.42×)، breakdowns (EBSC 3.03×)
+- ✅ next.log: "Compiled / in 21385ms (4996 modules)"، لا runtime errors
+- ⚠️ الذاكرة ضيقة (1.3Gi متاحة، next-server 2.29GB) — Agent Browser مُؤجل لتجنب OOM
+
+### القواعد المُطبّقة
+- Rule 4 (no new files if existing can be extended): StockScreener.tsx + MarketAnalysisView.tsx مُوسّعان
+- Rule 17 (relative paths): كل المسارات نسبية (db/stocks.db، db/data_engine.db)
+- Rule 20 (Python brain, Node display): standalone API reads (no Python needed)
+- Rule 26 (Sandbox-Reset-Safeguard): commit + push فوراً بعد كل phase
+
+### الميزات في tab "الفرز المتقدم" (#recommendations)
+1. **StrongestMoversPanel**: أقوى/أضعف الصاعدات + الأكثر نشاطاً + تجميع هادئ + توزيع/تصريف
+2. **SectorHeatPanel**: 12 قطاع clickable مع حرارة (🔥 ساخن / ☀️ دافئ / ❄️ بارد)
+3. **8 فلاتر**: market, sector, sort (7 options), order, trend, above_ma, correction_status (14 states), stock_class (12 categories), limit
+4. **toggle**: انفجار سيولة فقط (volume > 1.5× avg)
+5. **بحث**: بالاسم أو الرمز (client-side)
+6. **CSV export**: 13 columns
+7. **6 stats cards**: إجمالي، صاعدة، هابطة، انفجار سيولة، قادة القطاعات، مرشحو اختراق
+8. **Table columns**: السهم، السعر، التغير، الرسم (30 يوم sparkline)، الحجم، القوة النسبية، الحالة، التصنيف، الزخم، ترتيب القطاع، من القمة، المتوسطات (MA50/MA200)
+
+### 🔜 Phase 5-6 (يحتاج إذن المالك + بيئة أكبر)
+- Phase 5: دمج logic التنبؤ (signal + risk + momentum من predictions.db) مع screener
+- Phase 6: QA بصري بـ Agent Browser + tsc + lint على لاب توبك (الساندبوكس ذاكرته ضيقة)
+
+---
+
 ## [PROJECT-RELOCATION] — نقل GLMinvestment إلى /home/z/my-project/ ليصبح المشروع الرئيسي (2026-08-29)
 
 > **المهمة:** بناءً على طلب المالك الصريح ("move it to /home/z/my-project/ to make it as the main project"),

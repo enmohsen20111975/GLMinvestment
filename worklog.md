@@ -8113,3 +8113,77 @@ volSurge = avgVol > 0 && vol > avgVol × 1.5    # 50% فوق متوسط الحج
 7. إضافة `top_per_sector` mode.
 8. اختبار E2E: stocks.db + data_engine.db → screener API → StockScreener UI → sparkline render.
 ---
+
+---
+Task ID: P23-SCREENER-API-ENHANCEMENT
+Agent: Z.ai Code (main orchestrator)
+Task: المرحلة 2-3: تحديث screener API + بناء endpoint strongest (relative_strength + stock_class + sector_heat)
+
+Work Log:
+- استخرجت DBs من data/all.zip إلى db/ (310MB، 19 .db files، gitignored)
+- اختبرت screener API الحالي: اكتشفت 3 bugs (sort=momentum aliased to change_percent، near_high/breakout dead code، RSI override يلغي distance check)
+- أعدت كتابة screener API (route.ts) بالكامل:
+  • إصلاح sort=momentum (post-query sort على momentum_score)
+  • إصلاح near_high/breakout (distFromHigh ≥ -2 = breakout, -5 to -2 = near_high)
+  • إصلاح RSI override (combined: oversold = RSI<30 AND in_correction، overbought = RSI>70 AND near_high)
+  • إضافة 6 classification states جديدة: recovery, consolidation, distribution, advancing, lagging, stable, dangerous
+  • إضافة relative_strength (change - marketAvgChange)
+  • إضافة stock_class (11 category، priority-ordered: dangerous > breakout > sector_leader > sector_weak > advancing > ...)
+  • إضافة sector_change + sector_rank (1 = best in sector)
+  • إضافة market_role (leader/lagger/neutral)
+  • إضافة state_label (عربي) + state_color (tailwind classes)
+  • إضافة filters: stock_class, volume_surge_only, min_relative_strength
+  • إضافة market_avg_change + sector_averages في response
+- بنيت endpoint جديد /api/stocks/strongest:
+  • market_summary (total, advancers, decliners, breadth, avg_change)
+  • strongest_movers / weakest_movers (top gainers/losers)
+  • most_active (top volume)
+  • volume_surge (vol > 1.5× avg_volume)
+  • strongest_accumulators (3-day vol ≥ 1.25× 20-day avg + price up — reads data_engine.db.egksco_price_history)
+  • strongest_breakdowns (vol surge + price drop = distribution)
+  • sector_heat (per-sector avg_change, breadth, heat_level: hot/warm/neutral/cool/cold, leader_ticker)
+- اختبرت كل الفلاتر: sector_leader (5 أسهم: APPC, GPIM, AMER, OFH, DAPH)، recovery (GPPL)، volume_surge_only (5 أسهم)
+- commit d14dfee5 + push على GitHub
+
+Stage Summary:
+- ✅ screener API محدث (3 bugs مُصلَحة + 7 fields جديدة + 6 states جديدة)
+- ✅ strongest API جديد (8 aggregates من stocks.db + data_engine.db)
+- ✅ كل الفلاتر تعمل (sector_leader, recovery, volume_surge_only, stock_class)
+- ✅ lint نجح، HTTP 200، APIs ترجع بيانات حقيقية (452 سهم EGX)
+- 📊 النتائج: market_avg=0.09%, APPC RS=+20.35%, GPIM RS=+12.32%, TWSA accumulator 4.42× buildup
+- 🔜 المرحلة 4: بناء UI
+
+---
+Task ID: P4-SCREENER-UI-INTEGRATION
+Agent: Z.ai Code (main orchestrator)
+Task: المرحلة 4: بناء StockScreener UI متقدم + دمج في #recommendations كـ tab جديد
+
+Work Log:
+- أعدت كتابة StockScreener.tsx بالكامل (609 → 800+ LOC):
+  • 14 correction_status states مع Arabic labels + colored badges
+  • 12 stock_class categories مع badges (sector_leader 👑, breakout_candidate 🎯, إلخ)
+  • StrongestMoversPanel (مكون جديد): 4 sub-tabs (movers/active/accumulators/breakdowns)
+  • SectorHeatPanel (مكون جديد): 12 sector cards clickable → filter Screener
+  • filters جديدة: stock_class, volume_surge_only toggle, trend=neutral
+  • sort جديد: relative_strength, sector_rank
+  • columns جديدة: relative_strength, stock_class badge, sector_rank (#1)
+  • stats summary موسّع: 6 cards (total, advancers, decliners, volume_surge, sector_leaders, breakout_candidates)
+  • server-provided state_label + state_color (fallback to local map)
+  • أزلت SectorComparison (كان يعمل 100×500 fetches client-side) — استبدلته بـ server-provided sector_change
+  • أصلحت duplicate TableCell import bug
+- دمجت StockScreener في MarketAnalysisView.tsx:
+  • import dynamic لـ StockScreenerAdvanced (ssr:false, lazy)
+  • TabsTrigger جديد "screener" (الفرز المتقدم) في TabsList
+  • تحديث grid-cols-7 → grid-cols-8
+  • TabsContent جديد يحمّل StockScreenerAdvanced
+- اختبرت: bun run lint EXIT 0، HTTP 200 على /، screener API + strongest API يعملان
+- commit abef9714 + push على GitHub
+
+Stage Summary:
+- ✅ StockScreener.tsx محدّث (14 states + 12 classes + 2 panels جديدة)
+- ✅ MarketAnalysisView.tsx مدمج (tab "الفرز المتقدم" جديد)
+- ✅ lint نجح، HTTP 200، لا runtime errors في next.log
+- ✅ tab "الفرز المتقدم" يظهر في #recommendations (جانب 7 tabs الأخرى)
+- ⚠️ الذاكرة ضيقة (1.3Gi متاحة، next-server 2.29GB) — لم أستخدم Agent Browser لتجنب OOM
+- 📊 commits على GitHub اليوم: b7260141, 1baa1b10, 3e85cc20, 37fe9432, d14dfee5, abef9714
+- 🔜 المرحلة 5-6: تحقق بصري بـ Agent Browser + QA نهائي + توثيق
