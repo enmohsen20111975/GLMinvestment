@@ -8996,3 +8996,27 @@ Stage Summary:
   * detectors: بـ يورينا لو الـ 3 detectors بـ تكتشف الأسهم الانفجارية
   * filters: بـ يورينا فين بالظبط الـ 49K iteration بـ تـ reject
   * engine: بـ يورينا signal distribution من V38 engine
+
+---
+Task ID: audit-2
+Agent: Z.ai Code (main)
+Task: فحص أعمق للـ DBs — البحث عن جدول أسعار تاريخية بديل
+
+Work Log:
+- المستخدم نبّه: لا تتسرع — راجع كل الجداول في كل الـ DBs قبل القرار
+- كتابة scripts/audit_dbs_deep.py:
+  - يدور على كل جدول في 12 DB (data_engine + price_history + stocks + market + ...)
+  - يصنّف الجداول: PRICE_HISTORY_CANDIDATE لو فيه ticker + date + price
+  - يفحص الأسهم الانفجارية في كل candidate
+  - يطبع ملخص نهائي بكل الـ candidates
+- اختبار sandbox: 3 candidates في data_engine.db (egksco_price_history + stock_prices + stocks)
+- commit + push (3f00acf1)
+
+Stage Summary:
+- ✅ scripts/audit_dbs_deep.py جاهز على GitHub
+- 🔜 المستخدم ينفذ على الإنتاج: python3 scripts/audit_dbs_deep.py all
+- 🔜 النتائج هتورينا:
+  * هل في جدول تاني في data_engine.db فيه الأسعار (مش egksco_price_history)
+  * هل price_history.db.price_history هو المصدر الكامل (1.24M rows)
+  * هل stocks.db.stock_daily_prices فيه بيانات كافية (29K rows)
+- بناءً على النتائج، نقدر نقرر: نستعمل جدول تاني أو ننسخ البيانات
