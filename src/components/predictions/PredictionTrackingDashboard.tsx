@@ -28,7 +28,7 @@ import {
 import { cn, fmtPrice } from '@/lib/utils';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { BarChart, Bar, Cell as RechartsCell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 
 // ==================== Types ====================
 
@@ -1192,13 +1192,7 @@ export function PredictionTrackingDashboard({
           <CardContent className="p-2 md:p-4">
             <div className="h-56 md:h-64 w-full dir-ltr">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={cumulativeProfitData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
-                  <defs>
-                    <linearGradient id="cumProfitGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={cumulativeProfitData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} interval="preserveStartEnd" minTickGap={20} angle={-20} textAnchor="end" height={48} />
                   <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={48} tickFormatter={(v) => `${v}%`} />
@@ -1208,8 +1202,12 @@ export function PredictionTrackingDashboard({
                     labelStyle={{ fontWeight: 700, marginBottom: 4 }}
                     formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name === 'cumulative' ? 'التراكمي' : 'الصفقة']}
                   />
-                  <Area type="monotone" dataKey="cumulative" stroke="#10b981" strokeWidth={2.5} fill="url(#cumProfitGrad)" name="cumulative" />
-                </AreaChart>
+                  <Bar dataKey="cumulative" name="cumulative" radius={[4, 4, 0, 0]}>
+                    {cumulativeProfitData.map((entry, idx) => (
+                      <RechartsCell key={`cell-${idx}`} fill={entry.cumulative >= 0 ? '#10b981' : '#f43f5e'} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
