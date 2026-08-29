@@ -37,7 +37,6 @@ import {
   MessageCircle,
   HelpCircle,
   Filter,
-  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
