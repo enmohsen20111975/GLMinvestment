@@ -829,6 +829,49 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 # safe-by-design: لو الـ gate فشل، سيب الإشارة تكمّل (مش نوقف النظام)
                 pass
 
+            # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
+            # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
+            # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
+            # - الهدف: أقرب مقاومة (swing_high) أو ATR fallback.
+            # - target_2 (Runner): max(target×1.5, entry+5×ATR).
+            # لو مفيش swing low/high → fallback للمنطق القديم (ATR).
+            try:
+                from core.opportunity_quality import enforce_atr_based_stop, compute_dynamic_target
+                _atr_val = float(result.get('atr', 0) or 0)
+                if _atr_val <= 0:
+                    _atr_val = entry * 0.05  # fallback 5%
+                _lows_dyn = lows[:day_idx+1] if 'lows' in dir() else []
+                _highs_dyn = highs[:day_idx+1] if 'highs' in dir() else []
+
+                # وقف ديناميكي
+                _stop_check = enforce_atr_based_stop(
+                    signal, entry, stop, _atr_val, 'balanced', lows=_lows_dyn
+                )
+                if _stop_check['action'] == 'replace_stop' and _stop_check['fixed']:
+                    _old_stop = stop
+                    stop = _stop_check['fixed']['stop_loss']
+                    if stop != _old_stop:
+                        print(f"[DYN-STOP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"entry={entry:.2f} stop {_old_stop:.2f}→{stop:.2f} "
+                              f"({_stop_check.get('stop_source', '?')})", flush=True)
+
+                # هدف ديناميكي
+                _target_check = compute_dynamic_target(
+                    entry, stop, _atr_val, highs=_highs_dyn, min_rr=1.8
+                )
+                if _target_check['target'] > 0:
+                    _old_target = target
+                    target = _target_check['target']
+                    target_2 = _target_check['target_2']
+                    r_mult = _target_check['rr']
+                    result['target_2'] = target_2
+                    if target != _old_target:
+                        print(f"[DYN-TARGET] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"target {_old_target:.2f}→{target:.2f} (R:R={r_mult:.2f}) "
+                              f"target_2={target_2:.2f} ({_target_check.get('source', '?')})", flush=True)
+            except Exception as _dyn_err:
+                pass  # safe-by-design: لو فشل، سيب الـ stop/target القديم
+
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
             # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
             #   bull  → 2.0  (نطمع أكتر)

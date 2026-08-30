@@ -11666,3 +11666,76 @@ Stage Summary:
 - ✅ lint نظيف + Python + Next.js شغّالين.
 - ✅ النظام جاهز للإنتاج (بعد المراجعة).
 - ⚠️ متطلبات تشغيل: Python backend على port 8010 + predictions.db + stocks.db + data_engine.db.
+
+---
+Task ID: DYNAMIC-STOP-TARGET-STAGE1-2026-08-30
+Agent: Z.ai Code (main)
+Task: المرحلة 1 — جعل الوقف والأهداف أكثر ديناميكية (swing low/high + ATR)
+
+Work Log:
+- **السياق**: المالك طلب المرحلة 1 من تطوير النظام: "الوقف والهدف ما يبقاش معتمدين على نسب ثابتة، بل يرتبطوا بسلوك السهم الفعلي."
+
+- **التعديلات** (2 ملفات):
+
+  1. **`vps-service/core/opportunity_quality.py`**:
+     - **تعديل `enforce_atr_based_stop`**: أضفت parameter `lows` للـ swing low detection.
+       - لو في swing low واضح (أقل قاع في آخر 10 شموع، تحت الدخول، مش بعيد أكتر من 12%) → stop = swing_low - 0.5×ATR (buffer).
+       - لو مفيش → fallback لـ ATR stop (entry - 1.5×ATR).
+       - clamp لـ [5%, 9%] (PILLAR-3).
+     - **[جديد] `compute_dynamic_target`**: دالة جديدة لحساب هدف ديناميكي.
+       - لو في swing high (مقاومة) واضح قريب (فوق الدخول، مش بعيد أكتر من 30%) → target = swing_high.
+       - لو R:R < 1.8 → fallback لـ entry + 2×ATR.
+       - target_2 (Runner) = max(target×1.5, entry+5×ATR).
+
+  2. **`vps-service/jobs/v40_2_daily_generator.py`**:
+     - بعد الـ entry_gate check + قبل الـ regime-RR:
+       - استدعاء `enforce_atr_based_stop` بـ lows.
+       - استدعاء `compute_dynamic_target` بـ highs.
+       - log `[DYN-STOP]` + `[DYN-TARGET]` للـ audit.
+     - safe-by-design: لو فشل، سيب الـ stop/target القديم.
+
+- **اختبار الدوال** (5 حالات):
+  - swing_low=91 + ATR=2 → stop=91.00 (clamp 9%).
+  - swing_high=120 → target=120.00 (R:R=2.222), target_2=180.00.
+  - كل الحالات شغّالة صح.
+
+- **Backtest 6 شهور (56 صفقة بعد التعديل الديناميكي)**:
+
+  | المقياس | قبل (ثابت 1.5×ATR + 3×ATR) | بعد (ديناميكي swing low/high) | التغيير |
+  |---|---|---|---|
+  | Total Trades | 217 | **56** | -161 (صفقات أقل) |
+  | Win Rate | 65.1% | **57.1%** | -8.0% |
+  | Profit Factor | 3.955 | **3.396** | -0.559 |
+  | Max Drawdown | -16.27% | **-4.54%** | **-11.73%** ✅ |
+  | Total Return | +319.62% | **+20.56%** | -299.06% |
+
+  **القواعد ما اتنكسرتش**:
+  - Max DD = -4.54% (تحت 25% ✅)
+  - PF = 3.396 (فوق 2.0 ✅)
+  - WR = 57.1% (فوق 50% ✅)
+
+- **أمثلة على 10 صفقات (بعد التعديل)**:
+  - CPME: entry=32.67, target=44.81 (R:R=4.13!), ret=+17.16% ✅
+  - UTOP: entry=143.78, target=185.74 (R:R=3.24), ret=-9.00% ❌
+  - RREI: entry=4.75, target=6.35 (R:R=3.75), ret=-9.00% ❌
+  - SDTI: entry=69.70, target=89.02 (R:R=3.08), ret=+0.43% ✅
+  - SIPC: entry=4.76, target=6.04 (R:R=2.98), ret=+2.94% ✅
+
+- **تحليل صادق**:
+  - ✅ **Max DD نزل من -16.27% لـ -4.54%** — تحسن كبير (-11.73%).
+  - ✅ **PF لسه فوق 2.0** (3.396).
+  - ✅ **WR لسه فوق 50%** (57.1%).
+  - ⚠️ **Total Return نزل من +319% لـ +20.56%** — لأن:
+    - الـ dynamic stop/target بـ يـ change الـ R:R → صفقات كتير بـ تـ continue (R:R < 1.8).
+    - 56 صفقة بدل 217 (نزلت 74%).
+  - ⚠️ **WR نزل من 65.1% لـ 57.1%** — لأن الـ targets دلوقتي أعلى (swing high بدل 3×ATR ثابت).
+  - **الخلاصة**: الديناميكية حسّنت الحماية (Max DD نزل) بس قلّلت الصفقات + Return. ده مقبول لأن الجودة أهم من الكمية (Rule 7).
+
+Stage Summary:
+- ✅ المرحلة 1 اتعملت: وقف + هدف ديناميكي (swing low/high + ATR).
+- ✅ Max DD: -16.27% → -4.54% (-11.73% تحسن).
+- ✅ PF: 3.396 (فوق 2.0 ✅).
+- ✅ WR: 57.1% (فوق 50% ✅).
+- ⚠️ Total Return نزل (+319% → +20.56%) بسبب صفقات أقل (56 بدل 217).
+- ✅ القواعد ما اتنكسرتش.
+- 🔜 مستني موافقة المالك قبل المرحلة 2.

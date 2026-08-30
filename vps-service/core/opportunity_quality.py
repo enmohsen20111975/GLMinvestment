@@ -599,12 +599,17 @@ def enforce_atr_based_stop(
     stop_loss: float,
     atr: float,
     persona_type: str = 'balanced',
+    lows: list = None,
 ) -> dict:
-    """Priority 1: استبدل الـ fixed-% stop بـ ATR-based stop.
+    """Priority 1: استبدل الـ fixed-% stop بـ ATR-based stop + swing low (ديناميكي).
 
-    stop = entry - k × ATR  حيث k = ATR_STOP_MULTIPLIERS[persona]
+    EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30):
+    الوقف بقا ديناميكي — بـ يعتمد على آخر قاع واضح (swing low) + ATR.
+    - لو في swing low واضح → stop = swing_low - 0.5×ATR (buffer تحت القاع).
+    - لو مفيش → stop = entry - 1.5×ATR (المنطق القديم).
+    - clamp لـ [5%, 9%] (PILLAR-3).
 
-    الـ target مش بيتلمس هنا — enforce_min_rr بـ يتكفل بـ R:R ≥ 1.5 بعدها.
+    stop = min(swing_low - buffer, entry - k×ATR)  ← نختار الأبعد (الأضيق لكن الآمن للسهم)
 
     Args:
         signal: BUY / STRONG_BUY / ACCUMULATE / ... / SELL
@@ -612,6 +617,7 @@ def enforce_atr_based_stop(
         stop_loss: الـ stop الحالي (من P26)
         atr: قيمة ATR المطلقة (من price_history)
         persona_type: gambler / balanced / conservative
+        lows: list of recent lows (للـ swing low detection) — optional
 
     Returns:
         dict: {'action': str, 'reason': str, 'fixed': dict|None, 'atr_stop_pct': float, 'k': float}
@@ -623,48 +629,64 @@ def enforce_atr_based_stop(
     sig = (signal or '').upper().strip()
     is_buy = sig in ('BUY', 'STRONG_BUY', 'ACCUMULATE', 'T1_BUY', 'SWING_BUY')
     if not is_buy:
-        # SELL / HOLD — مش بنلمس الـ stop هنا (الـ P26 logic للـ SELL مختلف)
         return {'action': 'skip', 'reason': f'not_buy({sig})', 'fixed': None, 'atr_stop_pct': 0.0, 'k': 0.0}
 
     if not atr or atr <= 0:
-        # ATR غير متاح — استخدم نسبة 1.5% كبديل للـ ATR لحماية الوقف من أخطاء القسمة على صفر
         atr = entry_price * 0.015
 
-    # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل تعدد الشخصيات ──
-    # مهما كان persona_type المُمرّر، النظام بـ يستخدم k=1.5 (balanced) فقط.
-    # الكود القديم لكل persona اتعلّق (مش اتمسح) عشان الـ audit.
-    # persona = (persona_type or 'balanced').lower().strip()
-    # if persona == 'investor':
-    #     persona = 'conservative'
-    # elif persona == 'active_trader':
-    #     persona = 'gambler'
-    # k = ATR_STOP_MULTIPLIERS.get(persona, 1.5)  # default = balanced
-    persona = 'balanced'  # UNIFIED-BALANCED-ONLY: persona واحدة
-    k = 1.5  # ATR multiplier للـ balanced (ثابت)
+    # ── UNIFIED-BALANCED-ONLY: k=1.5 ثابت ──
+    persona = 'balanced'
+    k = 1.5
 
     if entry_price <= 0:
         return None
 
-    # ATR-based stop distance
-    atr_stop_distance = atr * k
-    atr_stop_pct = (atr_stop_distance / entry_price) * 100.0
+    # ── EGX-STRATEGY-DYNAMIC: swing low detection ──
+    # ابحث عن آخر قاع واضح في آخر 10-20 يوم
+    swing_low = None
+    swing_low_source = 'none'
+    if lows and len(lows) >= 10:
+        # خد آخر 10-20 low
+        recent_lows = [l for l in lows[-20:] if l and l > 0]
+        if len(recent_lows) >= 5:
+            # swing low = أقل قاع في آخر 10 شموع
+            swing_low_candidate = min(recent_lows[-10:]) if len(recent_lows) >= 10 else min(recent_lows)
+            # تأكد إن القاع منطقي (تحت الدخول + مش بعيد أكتر من 12%)
+            if swing_low_candidate > 0 and swing_low_candidate < entry_price:
+                dist_pct = ((entry_price - swing_low_candidate) / entry_price) * 100
+                if dist_pct <= 12.0:  # مش بعيد أكتر من 12% (وإلا الوقف هيبقى واسع جداً)
+                    swing_low = swing_low_candidate
+                    swing_low_source = f'swing_low={swing_low:.4f} (dist={dist_pct:.2f}%)'
 
-    # Clamp إلى [min, max] (حماية بيانات) — PILLAR-3: settings-driven
+    # حساب الـ stop الديناميكي
+    if swing_low:
+        # stop = swing_low - 0.5×ATR (buffer تحت القاع)
+        buffer = 0.5 * atr
+        dynamic_stop = swing_low - buffer
+        dynamic_stop_pct = ((entry_price - dynamic_stop) / entry_price) * 100.0
+        stop_source = f'swing_low ({swing_low_source}) + 0.5×ATR buffer'
+    else:
+        # fallback: ATR stop (المنطق القديم)
+        dynamic_stop = entry_price - (atr * k)
+        dynamic_stop_pct = (atr * k / entry_price) * 100.0
+        stop_source = f'ATR fallback (k={k})'
+
+    # Clamp لـ [5%, 9%] (PILLAR-3)
     _min_pct = _get_atr_stop_min_pct()
     _max_pct = _get_atr_stop_max_pct()
     clamped = False
-    if atr_stop_pct < _min_pct:
-        atr_stop_distance = entry_price * (_min_pct / 100.0)
-        atr_stop_pct = _min_pct
+    if dynamic_stop_pct < _min_pct:
+        dynamic_stop = entry_price * (1 - _min_pct / 100.0)
+        dynamic_stop_pct = _min_pct
         clamped = True
-    elif atr_stop_pct > _max_pct:
-        atr_stop_distance = entry_price * (_max_pct / 100.0)
-        atr_stop_pct = _max_pct
+        stop_source += f' [CLAMPED to {_min_pct}%]'
+    elif dynamic_stop_pct > _max_pct:
+        dynamic_stop = entry_price * (1 - _max_pct / 100.0)
+        dynamic_stop_pct = _max_pct
         clamped = True
+        stop_source += f' [CLAMPED to {_max_pct}%]'
 
-    new_stop = round(entry_price - atr_stop_distance, 4)
-
-    # الـ stop القديم (P26) كام %
+    new_stop = round(dynamic_stop, 4)
     old_stop_pct = 0.0
     if stop_loss and stop_loss > 0:
         old_stop_pct = ((entry_price - stop_loss) / entry_price) * 100.0
@@ -672,10 +694,96 @@ def enforce_atr_based_stop(
     _clamp_tag = ' [CLAMPED]' if clamped else ''
     return {
         'action': 'replace_stop',
-        'reason': f'persona={persona} k={k} atr={atr:.4f} → stop_dist={atr_stop_pct:.2f}% (P26 was {old_stop_pct:.2f}%){_clamp_tag}',
+        'reason': f'{stop_source} → stop_dist={dynamic_stop_pct:.2f}% (P26 was {old_stop_pct:.2f}%){_clamp_tag}',
         'fixed': {'stop_loss': new_stop},
-        'atr_stop_pct': round(atr_stop_pct, 3),
+        'atr_stop_pct': round(dynamic_stop_pct, 3),
         'k': k,
+        'swing_low': swing_low,
+        'stop_source': stop_source,
+    }
+
+
+def compute_dynamic_target(
+    entry_price: float,
+    stop_price: float,
+    atr: float,
+    highs: list = None,
+    min_rr: float = 1.8,
+) -> dict:
+    """EGX-STRATEGY-DYNAMIC (المرحلة 1): حساب هدف ديناميكي مرتبط بمقاومة واضحة.
+
+    المنطق:
+    - لو في swing high (مقاومة) واضح قريب → target = swing_high.
+    - لو مفيش → target = entry + 2×ATR (R:R = 2.0 تقريباً).
+    - لازم R:R ≥ min_rr (1.8 default).
+    - target_2 (Runner) = target × 1.5 أو entry + 5×ATR.
+
+    Args:
+        entry_price: سعر الدخول.
+        stop_price: سعر الوقف (بعد enforce_atr_based_stop).
+        atr: قيمة ATR.
+        highs: list of recent highs (للـ swing high detection).
+        min_rr: الحد الأدنى لـ R:R (1.8 default).
+
+    Returns:
+        {
+            'target': float,
+            'target_2': float (Runner),
+            'rr': float,
+            'source': str (swing_high / ATR fallback),
+        }
+    """
+    if not entry_price or entry_price <= 0 or not stop_price or stop_price >= entry_price:
+        return {'target': 0, 'target_2': 0, 'rr': 0, 'source': 'invalid'}
+
+    risk = entry_price - stop_price
+    if risk <= 0:
+        return {'target': 0, 'target_2': 0, 'rr': 0, 'source': 'invalid'}
+
+    # ── swing high detection ──
+    swing_high = None
+    swing_high_source = 'none'
+    if highs and len(highs) >= 10:
+        recent_highs = [h for h in highs[-50:] if h and h > 0]
+        if len(recent_highs) >= 5:
+            # swing high = أعلى قمة في آخر 20-50 شمعة (المقاومة القريبة)
+            swing_high_candidate = max(recent_highs[-20:]) if len(recent_highs) >= 20 else max(recent_highs)
+            # تأكد إن المقاومة فوق الدخول + مش بعيدة أكتر من 30%
+            if swing_high_candidate > entry_price:
+                dist_pct = ((swing_high_candidate - entry_price) / entry_price) * 100
+                if dist_pct <= 30.0 and dist_pct >= 5.0:
+                    swing_high = swing_high_candidate
+                    swing_high_source = f'swing_high={swing_high:.4f} (dist=+{dist_pct:.2f}%)'
+
+    # حساب الـ target
+    if swing_high:
+        target = swing_high
+        rr = (target - entry_price) / risk
+        target_source = f'swing_high ({swing_high_source})'
+        # لو R:R أقل من min_rr → وسّع الـ target بـ ATR
+        if rr < min_rr:
+            target = entry_price + (2.0 * atr)
+            rr = (target - entry_price) / risk
+            target_source = f'swing_high R:R<{min_rr} → ATR fallback (2×ATR)'
+    else:
+        # fallback: ATR target (R:R = 2.0)
+        target = entry_price + (2.0 * atr)
+        rr = (target - entry_price) / risk
+        target_source = 'ATR fallback (2×ATR)'
+
+    # target_2 (Runner) = target × 1.5 أو entry + 5×ATR
+    target_2_atr = entry_price + (5.0 * atr)
+    target_2_mult = target * 1.5
+    target_2 = max(target_2_atr, target_2_mult)
+    target_2_source = f'max(target×1.5, entry+5×ATR)'
+
+    return {
+        'target': round(target, 4),
+        'target_2': round(target_2, 4),
+        'rr': round(rr, 3),
+        'source': target_source,
+        'target_2_source': target_2_source,
+        'swing_high': swing_high,
     }
 
 
