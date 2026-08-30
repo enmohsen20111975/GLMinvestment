@@ -240,6 +240,7 @@ function UrlHashSync() {
     // Crypto
     'crypto', 'crypto-live', 'crypto-portfolio', 'crypto-watchlist', 'crypto-recommendations',
     'crypto-analysis', 'crypto-learning', 'crypto-simulation',
+    'crypto-trading-chart', 'crypto-prediction-tracking', 'crypto-screener',
     // Islamic
     'zakat', 'tithes',
     // Other
@@ -360,6 +361,7 @@ function AppShell() {
       'alerts-center', 'trading-memory', 'live-monitor', 'wealth', 'trading-journal',
       'publishing', 'crypto', 'crypto-live', 'crypto-portfolio', 'crypto-watchlist',
       'crypto-recommendations', 'crypto-analysis', 'crypto-learning', 'crypto-simulation',
+      'crypto-trading-chart', 'crypto-prediction-tracking', 'crypto-screener',
       'zakat', 'tithes', 'subscription', 'settings', 'auth', 'admin', 'trading-chart',
       'about', 'finance', 'backtesting', 'analysis', 'v2-analysis',
     ]);
@@ -508,6 +510,12 @@ function AppShell() {
         return CryptoLearningView ? <CryptoLearningView /> : <div className="p-4">Loading...</div>;
       case 'crypto-simulation':
         return CryptoSimulationView ? <CryptoSimulationView /> : <div className="p-4">Loading...</div>;
+      case 'crypto-trading-chart':
+        return <TradingChartView initialTicker="BTC" />;
+      case 'crypto-prediction-tracking':
+        return <PredictionTrackingView />;
+      case 'crypto-screener':
+        return <StockScreenerAdvancedView />;
       
       // === حسابات دينية ===
       case 'zakat':
