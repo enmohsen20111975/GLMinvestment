@@ -7157,12 +7157,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       </div>
 
       {/* 🔔 P17 جرس الصباح — أعلى 3 فرص EGX فوق التبويبات */}
-      <MorningBellSection marketCode={marketCode} />
+      {/* MorningBellSection — UNIFIED-BALANCED-ONLY: متعطل */}
       <HorizontalSectorsBar marketCode={marketCode} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 h-auto gap-1">
-          {/* التبويب الأول: متابعة التوقعات — كل الشخصيات + جرس الصباح + win/loss */}
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 h-auto gap-1">
+          {/* التبويب الأول: متابعة التوقعات */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
             <span className="hidden sm:inline">متابعة التوقعات</span>
@@ -7175,18 +7175,10 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">حالة السوق</span>
           </TabsTrigger>
-          {/* P26-FIX-D: 3 persona tabs (conservative / balanced / gambler) بدل 2 */}
-          <TabsTrigger value="conservative" className="flex items-center gap-1">
-            <span className="text-base">🛡️</span>
-            <span className="hidden sm:inline">المستثمر</span>
-          </TabsTrigger>
+          {/* UNIFIED-BALANCED-ONLY: tab واحد بس */}
           <TabsTrigger value="balanced" className="flex items-center gap-1">
             <span className="text-base">⚖️</span>
-            <span className="hidden sm:inline">المتوازن</span>
-          </TabsTrigger>
-          <TabsTrigger value="gambler" className="flex items-center gap-1">
-            <span className="text-base">🎯</span>
-            <span className="hidden sm:inline">المضارب</span>
+            <span className="hidden sm:inline">التوصيات</span>
           </TabsTrigger>
           {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو (Python logic في flow_system.py) */}
           <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
@@ -7208,16 +7200,8 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <MarketStatusTab market={currentMarket} />
         </TabsContent>
 
-        <TabsContent value="conservative" className="mt-4">
-          <PersonaTab market={currentMarket} persona="conservative" />
-        </TabsContent>
-
         <TabsContent value="balanced" className="mt-4">
           <PersonaTab market={currentMarket} persona="balanced" />
-        </TabsContent>
-
-        <TabsContent value="gambler" className="mt-4">
-          <PersonaTab market={currentMarket} persona="gambler" />
         </TabsContent>
 
         {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو */}

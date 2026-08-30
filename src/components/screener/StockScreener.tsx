@@ -99,65 +99,8 @@ function getCorrectionBadge(status: string) {
   );
 }
 
-// ─── Mini Sparkline (real price data) ────────────────────────────────────────
-
-interface SparklineData {
-  prices: number[];
-  change_pct: number;
-}
-
-function MiniSparkline({ ticker }: { ticker: string }) {
-  const [data, setData] = useState<SparklineData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`/api/stocks/sparkline?ticker=${encodeURIComponent(ticker)}&days=30`)
-      .then(res => res.json())
-      .then(json => {
-        if (!cancelled && json.success && json.prices?.length > 1) {
-          setData({ prices: json.prices, change_pct: json.change_pct });
-        }
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [ticker]);
-
-  if (loading) return <div className="w-20 h-8 bg-muted/30 animate-pulse rounded" />;
-  if (!data) return <span className="text-xs text-muted-foreground">—</span>;
-
-  const max = Math.max(...data.prices);
-  const min = Math.min(...data.prices);
-  const range = max - min || 1;
-  const points = data.prices.map((p, i) => {
-    const x = (i / (data.prices.length - 1)) * 80;
-    const y = 20 - ((p - min) / range) * 18;
-    return `${x},${y}`;
-  }).join(' ');
-
-  const isUp = data.change_pct >= 0;
-  const color = isUp ? '#10b981' : '#ef4444';
-
-  return (
-    <div className="flex items-center gap-1">
-      <svg width="80" height="20" className="overflow-visible">
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span className={cn('text-xs font-mono', isUp ? 'text-emerald-600' : 'text-red-600')}>
-        {isUp ? '+' : ''}{data.change_pct.toFixed(1)}%
-      </span>
-    </div>
-  );
-}
+// ─── Mini Sparkline — UNIFIED-BALANCED-ONLY: متعطل ──
+// المالك طلب: ماأستخدمش sparklines in all screens
 
 // ─── Sector Performance Comparison ──────────────────────────────────────────
 
@@ -552,9 +495,7 @@ export function StockScreener() {
                       <TableCell className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
                         {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
                       </TableCell>
-                      <TableCell>
-                        <MiniSparkline ticker={s.ticker} />
-                      </TableCell>
+                      
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {formatVolume(s.volume)}
                         {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}

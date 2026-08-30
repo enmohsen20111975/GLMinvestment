@@ -143,34 +143,8 @@ export function SettingsView() {
           </CardContent>
         </Card>
 
-        {/* Investor Persona Selection */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <CardTitle className="text-base">شخصية المستثمر</CardTitle>
-            </div>
-            <CardDescription>اختر الشخصية الاستثمارية المناسبة لك (7 شخصيات)</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Persona Grid */}
-            <PersonaSelector showDescription />
-            
-            {/* Current Selection Info */}
-            <div className="mt-4 p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{personaInfo.emoji}</span>
-                <span className="font-semibold">{personaInfo.name}</span>
-                <Badge variant="outline" className="mr-auto">{personaInfo.nameEn}</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-2">{personaInfo.description}</p>
-              <div className="flex items-center gap-4 text-xs">
-                <span>عتبة الشراء: <strong className="text-emerald-600">{personaInfo.buyThreshold}%+</strong></span>
-                <span>تحمل المخاطر: <strong>{personaInfo.riskTolerance}/10</strong></span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Investor Persona Selection — UNIFIED-BALANCED-ONLY: متعطل */}
+        {/* النظام بيشتغل بـ Balanced فقط — مش محتاج اختيار شخصية */}
 
         {/* Language */}
         <Card>

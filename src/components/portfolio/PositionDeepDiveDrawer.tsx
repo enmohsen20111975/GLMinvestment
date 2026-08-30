@@ -93,7 +93,7 @@ export const PositionDeepDiveDrawer: React.FC<PositionDeepDiveDrawerProps> = ({
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-100">تفاصيل الموقف والغرفة الرقمية</h2>
-                <p className="text-xs text-slate-400">Position Deep-Dive & Smart AI Analysis</p>
+                <p className="text-xs text-slate-400">تحليل مفصل للمركز</p>
               </div>
             </div>
 
@@ -156,7 +156,7 @@ export const PositionDeepDiveDrawer: React.FC<PositionDeepDiveDrawerProps> = ({
                   </div>
                 </div>
 
-                {/* 2. AI & Risk Signals Section */}
+                {/* 2. مؤشرات المخاطر */}
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -194,7 +194,7 @@ export const PositionDeepDiveDrawer: React.FC<PositionDeepDiveDrawerProps> = ({
                 <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
                     <Sparkles className="w-4 h-4 text-purple-400" />
-                    <span>تحليل الـ AI للوضع الحالي (Narrative):</span>
+                    <span>تحليل الوضع الحالي:</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed font-medium">
                     {data.ai_narrative}
