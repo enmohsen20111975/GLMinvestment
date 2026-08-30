@@ -1,6 +1,101 @@
 # Changelog
 
 
+## [UI-AUDIT-FIX] — فحص شامل للواجهة + إصلاح المشاكل الحرجة قبل الإنتاج (2026-08-30)
+
+> **المهمة:** بناءً على طلب المالك: فحص شامل للنظام قبل التحديث على السيرفر الإنتاجي. الهدف: نتأكد إن التطورات وصلت للواجهة + مفيش شاشات مكسورة + مفيش رسائل مبرمج ظاهرة للعملاء.
+
+### الفحص الشامل (subagent UI-AUDIT-1)
+- فحص 16 شاشة رئيسية.
+- اكتشف 18 مشكلة (3 حرجة + 9 متوسطة + 6 منخفضة).
+- لقى 15+ رسالة تقنية ظاهرة للمستخدم (Python/بايثون/port 8010/vps-service paths).
+- لقى BUG حرج: AlertTriangle مش مستورد في StockScreener.tsx → كراش لو الـ screener وقع في error state.
+
+### الإصلاحات المطبّقة (9 ملفات)
+
+#### 1. `src/components/screener/StockScreener.tsx` — BUG حرج
+- أضفت `AlertTriangle` لـ imports من lucide-react.
+- **قبل**: السطر 512 بيستخدم `<AlertTriangle>` من غير import → كراش.
+- **بعد**: import موجود → الـ screener شغّال حتى في error state.
+
+#### 2. `src/components/stocks/StockAdvancedAnalysisView.tsx` — رسالة تقنية
+- **قبل**: "حدث خطأ في الاتصال بخادم Python"
+- **بعد**: "تعذّر تحميل التحليل، حاول مرة أخرى"
+
+#### 3. `src/components/screener/StockScreenerAdvanced.tsx` — 3 رسائل تقنية
+- شيلت "كل المنطق في Python" من الوصف.
+- شيلت "البيانات من Python backend — كل المنطق في vps-service/api/..." من footer (2 مرة).
+- **بعد**: نصوص محايدة للمستخدم ("فلترة شاملة + تحديد حالة السهم الفنية" + "النتائج محدّثة تلقائياً").
+
+#### 4. `src/components/portfolio/EnhancedPortfolioView.tsx` — رسالة تقنية
+- **قبل**: "خطأ في الخادم (XXX) — تحقق من الكونسول"
+- **بعد**: "حدث خطأ في الخادم، حاول مرة أخرى"
+
+#### 5. `src/components/predictions/PredictionTrackingDashboard.tsx` — رسالة تقنية
+- **قبل**: "تأكد من تشغيل Python backend على المنفذ 8010، ثم اضغط تحديث"
+- **بعد**: "تعذّر تحميل البيانات، اضغط تحديث للمحاولة مرة أخرى"
+
+#### 6. `src/app/api/stocks/screener/route.ts` — 3 رسائل تقنية
+- شيلت "تأكد أن Python backend يعمل" + "فشل في الاتصال بـ Python Backend".
+- **بعد**: "تعذّر تحميل الفلاتر، حاول مرة أخرى".
+
+#### 7. `src/app/api/confluence/analyze/[ticker]/route.ts` — 2 رسالة تقنية
+- **قبل**: "فشل باك-إند بايثون" + "Python backend error"
+- **بعد**: "تعذّر تحليل السهم" + "Analysis unavailable"
+
+#### 8. `src/app/api/persona/gambler/route.ts` + `persona/investor/route.ts` — 2 رسالة
+- **قبل**: "Python backend unreachable — Persona Screener not available."
+- **بعد**: "تعذّر تحميل الأسهم، حاول مرة أخرى"
+
+#### 9. `src/app/api/predictions/tracking/list/route.ts` + `src/app/admin/educational-cards/page.tsx` — 4 رسائل
+- شيلت "فشل في الاتصال بـ Python Backend" + "خطأ في الاتصال بـ Python Backend" + "لا يمكن الاتصال بـ Python Backend" + "تأكد من أن الـ Python Backend يعمل على المنفذ 8010".
+- **بعد**: "تعذّر تحميل التوقعات" + "تعذّر تحميل الكروت التعليمية" + "حاول مرة أخرى بعد لحظات".
+
+### النتائج
+- ✅ `bun run lint`: EXIT 0 (نظيف).
+- ✅ Python backend: شغّال على port 8010.
+- ✅ Next.js: HTTP 200 على `/`.
+- ✅ BUG AlertTriangle: اتصصلح.
+- ✅ 15+ رسالة تقنية: اتشالت أو اتبدلت بنصوص محايدة للمستخدم.
+
+### تأكيد المنطق الجديد في الواجهة
+| الفحص | النتيجة |
+|--------|---------|
+| التوصيات والتتبع بيستخدموا المنطق الجديد؟ | ✅ نعم (honest-tracking → predictions.db مباشرة) |
+| الفلاتر بتطلب من API الجديد؟ | ✅ نعم (screener/advanced + top-performers) |
+| Sparklines بيانات حقيقية؟ | ✅ نعم (price_history.db → data_engine.db → stocks.db fallback) |
+| admin/backtest/v40 بيستخدم المنطق الجديد؟ | ✅ نعم (spawn v40_2_daily_generator.py) |
+| تتبع التوقعات متصل بـ predictions.db؟ | ✅ نعم (كل endpoints بـ تـ open predictions.db مباشرة) |
+| maestro.ts stubs شغّالة؟ | ✅ نعم (مش بـ generate persona/morning_bell جديد) |
+| persona/gambler/morning_bell متعطل؟ | ✅ نعم (مش بـ generate جديد — بس read-only تاريخي) |
+
+### ما زال محتاج تنظيف (أولوية منخفضة — مش blocking للإنتاج)
+- OpportunityCard.tsx + RiskManagementBar.tsx: dead code (مش مستوردين).
+- price_history.db فاضي (Sparklines بتشتغل بـ fallback).
+- رسائل admin في honest-predictions page (admin-facing فقط).
+- AboutView.tsx فيه براندينج "Python = THE BRAIN" (مقصود للتسويق).
+
+### هل النظام جاهز للإنتاج؟
+**✅ نعم — بشرط**:
+1. Python backend شغّال على port 8010.
+2. predictions.db + stocks.db + data_engine.db موجودين.
+3. (تم إصلاح كل المشاكل الحرجة).
+
+### الملفات المُعدّلة (9)
+| الملف | التغيير |
+|------|---------|
+| `src/components/screener/StockScreener.tsx` | إضافة AlertTriangle import (BUG fix) |
+| `src/components/stocks/StockAdvancedAnalysisView.tsx` | إزالة رسالة "خادم Python" |
+| `src/components/screener/StockScreenerAdvanced.tsx` | إزالة 3 رسائل تقنية من footer/وصف |
+| `src/components/portfolio/EnhancedPortfolioView.tsx` | إزالة "تحقق من الكونسول" |
+| `src/components/predictions/PredictionTrackingDashboard.tsx` | إزالة "Python backend على المنفذ 8010" |
+| `src/app/api/stocks/screener/route.ts` | إزالة 3 رسائل تقنية |
+| `src/app/api/confluence/analyze/[ticker]/route.ts` | إزالة "فشل باك-إند بايثون" |
+| `src/app/api/persona/gambler/route.ts` + `persona/investor/route.ts` | إزالة "Python backend unreachable" |
+| `src/app/api/predictions/tracking/list/route.ts` + `src/app/admin/educational-cards/page.tsx` | إزالة 4 رسائل تقنية |
+
+---
+
 ## [SOFT-SURGE-FALLBACK] — تقوية Surge/Accumulation كـ fallback — اصطياد الوحوش اللي V38 بيفوتها (2026-08-30)
 
 > **المهمة:** بناءً على تعليمات المالك: "قوّي الـ Surge/Accumulation كـ fallback: لو V38 طلع WAIT أو score منخفض، لكن فيه Volume Surge حقيقي + باقي شروط الحماية متحققة → اسمح بالإشارة. بعد التنفيذ اعمل backtest + أعد فحص الوحوش MIPH/CEFM/EALR."

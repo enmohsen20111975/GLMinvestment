@@ -744,7 +744,7 @@ function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: n
       } catch {
         const text = await res.text().catch(() => '');
         console.error('[Asset Add] Non-JSON response:', res.status, text);
-        toast.error(`خطأ في الخادم (${res.status}) — تحقق من الكونسول`, { duration: 10000 });
+        toast.error('حدث خطأ في الخادم، حاول مرة أخرى', { duration: 10000 });
         return;
       }
       if (data.success) {

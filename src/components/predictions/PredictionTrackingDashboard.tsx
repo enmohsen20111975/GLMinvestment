@@ -1359,7 +1359,7 @@ export function PredictionTrackingDashboard({
               <p className="font-bold text-sm text-foreground">تعذّر تحميل بيانات التوقعات</p>
               <p className="text-xs">{error}</p>
               <p className="text-[11px] text-muted-foreground/70">
-                تأكد من تشغيل Python backend على المنفذ 8010، ثم اضغط تحديث
+                تعذّر تحميل البيانات، اضغط تحديث للمحاولة مرة أخرى
               </p>
               <Button
                 variant="outline"

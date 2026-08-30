@@ -309,7 +309,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
       
     } catch (err) {
       console.error('Error fetching stock analysis:', err);
-      setError('حدث خطأ في الاتصال بخادم Python');
+      setError('تعذّر تحميل التحليل، حاول مرة أخرى');
     } finally {
       setLoading(false);
     }

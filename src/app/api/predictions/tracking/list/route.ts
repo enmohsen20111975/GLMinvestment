@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'فشل في الاتصال بـ Python Backend',
+        error: 'تعذّر تحميل التوقعات',
         details: error?.message,
         data: [],
       },

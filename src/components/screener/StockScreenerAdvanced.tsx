@@ -328,7 +328,7 @@ export function StockScreenerAdvanced({ initialTab = 'advanced' }: StockScreener
             فلاتر الأسهم المتقدمة
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            فلترة شاملة + تحديد حالة السهم الفنية (تصحيح / تعافي / قمة / قرب كسر) — كل المنطق في Python
+            فلترة شاملة + تحديد حالة السهم الفنية (تصحيح / تعافي / قمة / قرب كسر)
           </p>
         </div>
       </div>
@@ -1010,8 +1010,7 @@ function AdvancedFiltersTab() {
 
       {/* Footer hint */}
       <div className="text-xs text-muted-foreground text-center pt-1">
-        البيانات من Python backend — كل المنطق في <code className="font-mono">vps-service/api/advanced_screener_routes.py</code> +{' '}
-        <code className="font-mono">vps-service/utils/stock_state.py</code> (Node = عرض فقط — Rule 20)
+        فلترة شاملة + تحديد حالة السهم الفنية — النتائج محدّثة تلقائياً
       </div>
     </div>
   );
@@ -1320,7 +1319,7 @@ function TopPerformersTab() {
 
       {/* Footer hint */}
       <div className="text-xs text-muted-foreground text-center pt-1">
-        البيانات من Python backend — المنطق في <code className="font-mono">vps-service/api/top_performers_routes.py</code> (Node = عرض فقط — Rule 20)
+        أعلى الأرباح والخسائر — النتائج محدّثة تلقائياً
       </div>
     </div>
   );

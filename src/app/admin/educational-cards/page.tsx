@@ -538,7 +538,7 @@ export default function AdminEducationalCardsPage() {
         // Connection error (network failure) = الباك اند فعلاً مش متاح
         setBackendOnline(false);
         console.error('[admin/educational-cards] fetchCards error:', err);
-        toast.error('خطأ في الاتصال بـ Python Backend');
+        toast.error('تعذّر تحميل الكروت التعليمية');
       } finally {
         if (mode === 'initial') {
           setLoading(false);
@@ -934,10 +934,10 @@ export default function AdminEducationalCardsPage() {
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="font-semibold text-red-800 dark:text-red-300">
-                لا يمكن الاتصال بـ Python Backend
+                تعذّر تحميل الكروت التعليمية
               </p>
               <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-                تأكد من أن الـ Python Backend يعمل على المنفذ 8010. الكروت لا يمكن
+                حاول مرة أخرى بعد لحظات. الكروت لا يمكن
                 جلبها أو توليدها الآن.
               </p>
             </div>

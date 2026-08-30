@@ -32,6 +32,7 @@ import {
   Target,
   Thermometer,
   Search,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

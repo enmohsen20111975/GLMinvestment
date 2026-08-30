@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       stocks: [],
       timestamp: new Date().toISOString(),
       source: 'fallback',
-      disclaimer: 'Python backend unreachable — Persona Screener not available.',
+      disclaimer: 'تعذّر تحميل الأسهم، حاول مرة أخرى',
     });
   }
 }

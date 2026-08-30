@@ -54,8 +54,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         ...data,
         hint: preset
-          ? `تأكد أن Python backend يعمل وأن preset "${preset}" موجود في /api/screener/presets`
-          : 'تأكد أن Python backend يعمل على port 8010 (محتاج: /api/screener/presets)',
+          ? `تعذّر تحميل الفلتر "${preset}"، حاول مرة أخرى`
+          : 'تعذّر تحميل الفلاتر، حاول مرة أخرى',
       }, { status: res.status || 502 });
     }
 
@@ -65,9 +65,9 @@ export async function GET(req: NextRequest) {
     const isTimeout = e instanceof Error && e.name === 'AbortError';
     return NextResponse.json({
       success: false,
-      error: isTimeout ? 'انتهت مهلة الطلب' : 'فشل في الاتصال بـ Python Backend',
+      error: isTimeout ? 'انتهت مهلة الطلب' : 'تعذّر تحميل الفلاتر',
       details: errMsg,
-      hint: 'تأكد أن Python backend يعمل على ' + PY + '/api/screener/presets',
+      hint: 'حاول مرة أخرى بعد لحظات',
     }, { status: isTimeout ? 504 : 502 });
   }
 }
