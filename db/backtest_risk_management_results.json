@@ -1,18 +1,18 @@
 {
   "baseline_ps_only": {
     "initial_capital": 100000,
-    "final_equity": 146490.1188848099,
-    "total_return_pct": 46.49,
+    "final_equity": 130377.62791503414,
+    "total_return_pct": 30.38,
     "metrics": {
-      "total": 56,
-      "wins": 32,
-      "losses": 24,
-      "wr": 57.1,
-      "pf": 3.396,
-      "avg_win": 1.72,
-      "avg_loss": 0.68,
+      "total": 49,
+      "wins": 26,
+      "losses": 23,
+      "wr": 53.1,
+      "pf": 2.699,
+      "avg_win": 1.66,
+      "avg_loss": 0.69,
       "max_dd": 4.54,
-      "total_ret": 38.9
+      "total_ret": 27.12
     },
     "cb_stats": {
       "total_blocks": 4,
@@ -27,18 +27,18 @@
   },
   "ps_plus_cb_block": {
     "initial_capital": 100000,
-    "final_equity": 120556.60017450407,
-    "total_return_pct": 20.56,
+    "final_equity": 107296.54047626247,
+    "total_return_pct": 7.3,
     "metrics": {
-      "total": 24,
-      "wins": 16,
-      "losses": 8,
-      "wr": 66.7,
-      "pf": 3.493,
-      "avg_win": 1.66,
-      "avg_loss": 0.95,
+      "total": 17,
+      "wins": 10,
+      "losses": 7,
+      "wr": 58.8,
+      "pf": 1.984,
+      "avg_win": 1.46,
+      "avg_loss": 1.05,
       "max_dd": 3.56,
-      "total_ret": 19.01
+      "total_ret": 7.23
     },
     "cb_stats": {
       "total_blocks": 2,
@@ -53,18 +53,18 @@
   },
   "ps_plus_cb_reduce": {
     "initial_capital": 100000,
-    "final_equity": 146490.1188848099,
-    "total_return_pct": 46.49,
+    "final_equity": 130377.62791503414,
+    "total_return_pct": 30.38,
     "metrics": {
-      "total": 56,
-      "wins": 32,
-      "losses": 24,
-      "wr": 57.1,
-      "pf": 3.396,
-      "avg_win": 1.72,
-      "avg_loss": 0.68,
+      "total": 49,
+      "wins": 26,
+      "losses": 23,
+      "wr": 53.1,
+      "pf": 2.699,
+      "avg_win": 1.66,
+      "avg_loss": 0.69,
       "max_dd": 4.54,
-      "total_ret": 38.9
+      "total_ret": 27.12
     },
     "cb_stats": {
       "total_blocks": 2,

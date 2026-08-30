@@ -1373,12 +1373,35 @@ class DailyCloser:
             # ── Rule 1.5: RL-FIX-17 PROFIT_LOCK (OWNER-MANDATE) ──────────────
             # المالك: "مجرد السهم يجيب المستهدف أو المكسب المطلوب نقفل الصفة"
             # لو gain_pct >= persona profit lock threshold → إغلاق كـ trailing_profit
-            # هذا يحل مشكلة "avg_win=+2.44% فقط" — الآن المضارب يغلق عند +4%،
-            # المتوازن عند +7%، المستثمر عند +12% (بدل الانتظار للـ target الكامل).
-            # استثناء: لو في زخم قوي + ترند سليم + target_price_2 موجود → نكمل لـ T2
+            #
+            # ── EGX-STRATEGY-STAGE3 (2026-08-30): "هل الحركة لسه مستمرة؟" ──
+            # المالك طلب: "قبل ما النظام يقفل ربح صغير، يفحص إذا الحركة لسه حية."
+            # المنطق الجديد:
+            # 1. لو gain >= profit_lock + الحركة لسه مستمرة (زخم + حجم + ترند) → نكمل (Runner)
+            # 2. لو gain >= profit_lock + الحركة بدأت تضعف → نقفل جزء أكبر
+            # 3. لو gain >= profit_lock + الحركة ماتت → نقفل كامل
+            # فحص الاستمرارية: momentum_5d > 2 + volume > avg + trend_intact
+            _vol_today = float(day.get('volume', 0) or 0)
+            _vol_avg_20 = 0
+            try:
+                _vol_window = [float(full_history[k].get('volume', 0) or 0) for k in range(max(0, j-20), j)]
+                _vol_avg_20 = sum(_vol_window) / len(_vol_window) if _vol_window else 0
+            except Exception:
+                pass
+            _vol_ratio_today = (_vol_today / _vol_avg_20) if _vol_avg_20 > 0 else 1.0
+            _momentum_alive = (m5 > 2.0) and (_vol_ratio_today > 0.8) and trend_intact
+            _momentum_weakening = (m5 < 0) or (not trend_intact) or (_vol_ratio_today < 0.6)
+
             _should_lock_profit = (
                 gain_pct >= _profit_lock_pct
                 and not (momentum_strong and trend_intact and target_price_2 > 0)
+                # STAGE3: لو الحركة لسه مستمرة → نكمل (مش نقفل)
+                and not (_momentum_alive and target_price_2 > 0)
+            )
+            # STAGE3: لو الحركة بتضعف + ربح >= profit_lock → نقفل كامل (مش جزئي)
+            _should_full_exit = (
+                gain_pct >= _profit_lock_pct
+                and _momentum_weakening
             )
             if _should_lock_profit:
                 actual_return = (close - entry_price) / entry_price * 100 if entry_price > 0 else 0
