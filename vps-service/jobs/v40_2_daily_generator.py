@@ -888,6 +888,23 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if r_mult < _min_rr:
                 continue
 
+            # ── EGX-STRATEGY-STAGE2: تصنيف نوع السيولة ──
+            # المالك طلب: "النظام يفرق أكتر بين السيولة الذكية والسيولة المضاربية الهشة"
+            # classify_liquidity بترجع: type + score + position_size_mult + hold_multiplier
+            _liquidity = None
+            try:
+                from core.opportunity_quality import classify_liquidity
+                _liquidity = classify_liquidity(
+                    closes[:day_idx+1], volumes[:day_idx+1],
+                    opens[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1]
+                )
+                if _liquidity['type'] != 'neutral':
+                    print(f"[LIQUIDITY] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"type={_liquidity['type']} score={_liquidity['score']} "
+                          f"vol_ratio={_liquidity['vol_ratio']} pos_mult={_liquidity['position_size_mult']}", flush=True)
+            except Exception:
+                _liquidity = None
+
             signals_by_date[scan_date].append({
                 'ticker': ticker,
                 'signal': signal,
@@ -908,7 +925,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 'r_multiple_actual': trade.r_multiple,
                 'persona_fit': persona_fit['persona_fit'],
                 'persona_fit_scores': persona_fit['fit_scores'],
-                'proofs': result.get('proofs', {}),  # ← أضفت ده عشان kill_filter_result يـ detect soft_surge
+                'proofs': result.get('proofs', {}),
+                'liquidity_type': _liquidity['type'] if _liquidity else 'neutral',
+                'liquidity_score': _liquidity['score'] if _liquidity else 50,
+                'liquidity_pos_mult': _liquidity['position_size_mult'] if _liquidity else 1.0,
+                'liquidity_hold_mult': _liquidity['hold_multiplier'] if _liquidity else 1.0,
                 # PHASE-C FIX: خزّن الـ fundamental_score الحقيقي في DB بدل placeholder 50.0.
                 # لما fundamentals تكون متاحة → الدرجة الحقيقية (0-100).
                 # لما غير متاحة → 50.0 (neutral، نفس السلوك السابق — safe-by-design).
@@ -972,7 +993,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     atr_at_entry=sig['atr'], target_price_2=sig['target_2'],
                     prediction_date=scan_date, evidence_count=sig['evidence'],
                     morning_bell=sig['morning_bell'],
-                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else ""),
+                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}",
                 )
                 if pred_id:
                     tracker.set_verified_outcome(

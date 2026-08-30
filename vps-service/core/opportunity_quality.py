@@ -788,6 +788,167 @@ def compute_dynamic_target(
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# EGX-STRATEGY-STAGE2: رادار نوع السيولة (ميكرز vs مضاربة)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def classify_liquidity(
+    closes: list,
+    volumes: list,
+    opens: list = None,
+    highs: list = None,
+    lows: list = None,
+) -> dict:
+    """EGX-STRATEGY-STAGE2 (المرحلة 2): تصنيف نوع السيولة.
+
+    يفرّق بين:
+    - smart_accumulation: تجميع ذكي (ميكرز/مؤسسي) — حجم متدرج + سعر مستقر/صاعد
+    - speculative_pump: ضخ مضاربي — حجم مفاجئ + سعر طلع بسرعة (هش)
+    - neutral: سيولة عادية
+    - weak: سيولة ضعيفة
+
+    المنطق:
+    1. حجم متدرج (3 أيام تصاعدي + فوق المتوسط) → smart_accumulation
+    2. حجم مفاجئ (vol_ratio > 3x + ROC5 > 10%) → speculative_pump
+    3. حجم ضعيف (vol_ratio < 0.7) → weak
+    4. غير كده → neutral
+
+    Returns:
+        {
+            'type': str (smart_accumulation / speculative_pump / neutral / weak),
+            'type_ar': str,
+            'score': float (0-100),  # قوة السيولة
+            'vol_ratio': float,
+            'vol_trend': str (increasing / decreasing / stable),
+            'delta_vol': float,  # فرق الحجم الصاعد عن الهابط
+            'recommendation': str,  # نصيحة للتعامل
+            'position_size_mult': float,  # مضاعف حجم الصفقة
+            'hold_multiplier': float,  # مضاعف مدة الاحتفاظ
+        }
+    """
+    if not closes or not volumes or len(closes) < 10 or len(volumes) < 10:
+        return {
+            'type': 'neutral', 'type_ar': 'محايد', 'score': 50,
+            'vol_ratio': 1.0, 'vol_trend': 'stable', 'delta_vol': 0,
+            'recommendation': 'بيانات غير كافية', 'position_size_mult': 1.0, 'hold_multiplier': 1.0,
+        }
+
+    # حسابات أساسية
+    avg_vol_20 = sum(volumes[-20:]) / min(20, len(volumes)) if len(volumes) >= 20 else sum(volumes) / len(volumes)
+    last_vol = volumes[-1] if volumes[-1] else 0
+    vol_ratio = (last_vol / avg_vol_20) if avg_vol_20 > 0 else 1.0
+
+    # اتجاه الحجم (آخر 3 أيام)
+    vols_3 = volumes[-3:] if len(volumes) >= 3 else volumes
+    vol_trend = 'stable'
+    if len(vols_3) >= 3:
+        if vols_3[0] > 0 and vols_3[1] > 0 and vols_3[2] > 0:
+            if vols_3[0] < vols_3[1] < vols_3[2]:
+                vol_trend = 'increasing'
+            elif vols_3[0] > vols_3[1] > vols_3[2]:
+                vol_trend = 'decreasing'
+
+    # delta_vol: فرق الحجم في الشموع الصاعدة عن الهابطة (آخر 5 أيام)
+    delta_vol = 0
+    if opens and len(opens) >= 5 and len(closes) >= 5:
+        buy_vol = 0
+        sell_vol = 0
+        for i in range(-5, 0):
+            if abs(i) <= len(volumes) and abs(i) <= len(closes) and abs(i) <= len(opens):
+                is_green = closes[i] >= opens[i]
+                vol = volumes[i] if volumes[i] else 0
+                if is_green:
+                    buy_vol += vol
+                else:
+                    sell_vol += vol
+        delta_vol = buy_vol - sell_vol
+
+    # ROC5
+    roc5 = 0
+    if len(closes) >= 6 and closes[-6] > 0:
+        roc5 = ((closes[-1] - closes[-6]) / closes[-6]) * 100
+
+    # تقييم الاستمرارية (هل الحركة مستمرة ولا هشة؟)
+    # استمرارية = حجم متدرج + سعر مستقر (مش نزل بعد الصعود)
+    sustained = False
+    if vol_trend == 'increasing' and len(closes) >= 5:
+        # آخر 3 شموع: مفيش نزلة كبيرة بعد الصعود
+        max_drop = 0
+        for i in range(-3, 0):
+            if abs(i) <= len(closes) and closes[i-1] > 0:
+                drop = ((closes[i-1] - closes[i]) / closes[i-1]) * 100
+                if drop > max_drop:
+                    max_drop = drop
+        sustained = max_drop < 3.0  # مفيش نزلة أكبر من 3%
+
+    # ── التصنيف ──
+    liquidity_type = 'neutral'
+    type_ar = 'محايد'
+    score = 50
+    recommendation = 'سيولة عادية'
+    position_size_mult = 1.0
+    hold_multiplier = 1.0
+
+    # 1) smart_accumulation: حجم متدرج + استمرارية + vol_ratio > 1.2
+    if vol_trend == 'increasing' and sustained and vol_ratio > 1.2:
+        liquidity_type = 'smart_accumulation'
+        type_ar = 'تجميع ذكي'
+        score = 80
+        recommendation = 'سيولة مؤسسية — دخول كامل + احتفاظ أطول'
+        position_size_mult = 1.0  # حجم كامل
+        hold_multiplier = 1.3  # احتفاظ أطول (الحركة مستمرة)
+
+    # 2) speculative_pump: حجم مفاجئ + ROC5 > 10% (هش)
+    elif vol_ratio > 3.0 and roc5 > 10.0:
+        liquidity_type = 'speculative_pump'
+        type_ar = 'ضخ مضاربي'
+        score = 40
+        recommendation = 'سيولة مضاربية هشة — حجم مقلل + خروج مبكر'
+        position_size_mult = 0.6  # حجم مقلل 40%
+        hold_multiplier = 0.7  # خروج مبكر (الحركة هشة)
+
+    # 3) speculative_pump (أخف): vol_ratio > 2.5 + ROC5 > 7%
+    elif vol_ratio > 2.5 and roc5 > 7.0:
+        liquidity_type = 'speculative_pump'
+        type_ar = 'ضخ مضاربي'
+        score = 55
+        recommendation = 'سيولة مضاربية — حجم مقلل قليلاً'
+        position_size_mult = 0.8  # حجم مقلل 20%
+        hold_multiplier = 0.85  # خروج مبكر نسبياً
+
+    # 4) weak: حجم ضعيف
+    elif vol_ratio < 0.7:
+        liquidity_type = 'weak'
+        type_ar = 'سيولة ضعيفة'
+        score = 25
+        recommendation = 'سيولة ضعيفة — حذر شديد'
+        position_size_mult = 0.5  # حجم مقلل 50%
+        hold_multiplier = 0.8
+
+    # 5) smart_accumulation (أخف): delta_vol > 0 + vol_ratio > 1.0 + استمرارية
+    elif delta_vol > 0 and vol_ratio > 1.0 and sustained:
+        liquidity_type = 'smart_accumulation'
+        type_ar = 'تجميع ذكي'
+        score = 70
+        recommendation = 'سيولة إيجابية — حجم طبيعي'
+        position_size_mult = 1.0
+        hold_multiplier = 1.15
+
+    return {
+        'type': liquidity_type,
+        'type_ar': type_ar,
+        'score': score,
+        'vol_ratio': round(vol_ratio, 2),
+        'vol_trend': vol_trend,
+        'delta_vol': round(delta_vol, 0),
+        'roc5': round(roc5, 2),
+        'sustained': sustained,
+        'recommendation': recommendation,
+        'position_size_mult': position_size_mult,
+        'hold_multiplier': hold_multiplier,
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # C1.3 — Investor fallback (when pe_ratio missing)
 # ──────────────────────────────────────────────────────────────────────────────
 # واقع البيانات EGX: pe_ratio = NULL/0 لـ 1036/1039 سهم، roe=15.0 (default placeholder)

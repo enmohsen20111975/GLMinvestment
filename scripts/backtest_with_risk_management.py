@@ -54,7 +54,25 @@ def load_predictions() -> list:
         print(f'SQL error: {e}')
         rows = []
     conn.close()
-    return [dict(r) for r in rows]
+    results = []
+    for r in rows:
+        d = dict(r)
+        # parse liquidity from kill_filter_result
+        kfr = d.get('kill_filter_result', '') or ''
+        d['liquidity_pos_mult'] = 1.0
+        d['liquidity_type'] = 'neutral'
+        if 'LIQUIDITY:' in kfr:
+            try:
+                liq_part = kfr.split('LIQUIDITY:')[1].split('|')[0].strip()
+                # format: "smart_accumulation(80) pos_mult=1.0"
+                ltype = liq_part.split('(')[0].strip()
+                pos_mult_str = liq_part.split('pos_mult=')[1].strip() if 'pos_mult=' in liq_part else '1.0'
+                d['liquidity_type'] = ltype
+                d['liquidity_pos_mult'] = float(pos_mult_str)
+            except:
+                pass
+        results.append(d)
+    return results
 
 
 def compute_metrics(returns: list, equity_curve: list = None) -> dict:
@@ -157,8 +175,13 @@ def run_backtest(initial_capital: float = 100000, risk_pct: float = 1.2,
             # skip لو position sizing رفض
             continue
 
+        # ── EGX-STRATEGY-STAGE2: تعديل حجم المركز حسب نوع السيولة ──
+        _liq_pos_mult = float(p.get('liquidity_pos_mult', 1.0))
+        _liq_type = p.get('liquidity_type', 'neutral')
+        # position_value النهائي = position_value × liquidity_pos_mult
+        position_value = pos['position_value'] * _liq_pos_mult
+
         # الربح/الخسارة المطلق = position_value × return_pct / 100
-        position_value = pos['position_value']
         abs_return = position_value * ret_pct / 100
 
         # لو الصفقة خسارة، max loss = risk_amount (stop loss)
