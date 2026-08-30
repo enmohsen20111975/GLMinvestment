@@ -2742,6 +2742,23 @@ class DailyCloser:
             conn.close()
             logger.info(f"Closed prediction #{pred_id} ({ticker}): {status}/{exit_type}, return={actual_return:.2f}%, days={days}")
 
+            # ── TELEGRAM NOTIFIER (2026-08-30) ──
+            # المالك: "لو توقع جاب الهدف نعمل حفلة ونبعت على التليجرام"
+            try:
+                from telegram.telegram_notifier import TelegramNotifier
+                _notifier = TelegramNotifier()
+                if _notifier.enabled:
+                    if status == 'TARGET_HIT' and actual_return > 0:
+                        _notifier.notify_target_hit(
+                            ticker=ticker,
+                            entry=float(_entry_price_db),
+                            target=exit_close_price or highest_price_reached,
+                            return_pct=actual_return,
+                            target_num=1 if exit_type in ('target_hit', 'trailing_profit') else 2,
+                        )
+            except Exception:
+                pass  # safe-by-design
+
             # ── CRITICAL-DIRECTIVE: write data_quality for SPLIT_EXCLUDED / LOSS_CAPPED ──
             # لو الـ guard اللي فوق عمل split_excluded أو cap للخسارة → نكتب data_quality
             # علشان الـ P&L queries + dashboard يقدروا يـ exclude/handle الصفوف دي.
