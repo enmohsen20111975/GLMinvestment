@@ -463,7 +463,7 @@ export default function CryptoScreenerView() {
                 <SelectItem value="losers">📉 الهابطات فقط</SelectItem>
                 <SelectItem value="top10">⭐ أعلى 10</SelectItem>
                 <SelectItem value="high_volume">💧 حجم تداول عالي</SelectItem>
-                <SelectItem value="large_cap">的大型 (Large Cap ≥10B)</SelectItem>
+                <SelectItem value="large_cap"> Large Cap (≥10B)</SelectItem>
                 <SelectItem value="mid_cap">Mid Cap (1B-10B)</SelectItem>
                 <SelectItem value="small_cap">Small Cap (&lt;1B)</SelectItem>
               </SelectContent>

@@ -187,10 +187,12 @@ const STATE_BADGE_COLORS: Record<string, string> = {
   CORRECTION_END: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
   BALANCED_MOMENTUM: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800',
   NEAR_BREAKOUT: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-  AT_PEAK: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  AT_PEAK: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
+  NEAR_PEAK: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   NEUTRAL: 'bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300 border-gray-200 dark:border-gray-700',
   CORRECTION: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
-  DECLINING: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
+  DECLINING: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+  INSUFFICIENT_DATA: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 border-slate-200 dark:border-slate-700',
 };
 
 const STATE_LABELS_AR: Record<string, string> = {
@@ -198,29 +200,35 @@ const STATE_LABELS_AR: Record<string, string> = {
   BALANCED_MOMENTUM: 'زخم متزن',
   NEAR_BREAKOUT: 'قرب يكسر',
   AT_PEAK: 'في قمة',
+  NEAR_PEAK: 'قرب قمة',
   NEUTRAL: 'محايد',
   CORRECTION: 'في تصحيح',
   DECLINING: 'لسة نازل',
+  INSUFFICIENT_DATA: 'بيانات غير كافية',
 };
 
 const STATE_EXPLANATIONS_AR: Record<string, string> = {
-  CORRECTION_END: 'السعر رجع فوق المتوسط (MA20) والحجم يرتفع — مؤشر تعافي بعد تصحيح.',
-  BALANCED_MOMENTUM: 'فوق المتوسط + حجم مرتفع + RSI معتدل (40-70) — زخم صحي مستمر.',
+  CORRECTION_END: 'RSI بين 40-45 + فوق MA50 + صاعد اليوم — مؤشر تعافي بعد تصحيح.',
+  BALANCED_MOMENTUM: 'RSI بين 55-65 + فوق MA50 — زخم صحي مستمر.',
   NEAR_BREAKOUT: 'السعر قرب من المتوسط من تحت (within 2%) — مرشح للكسر للأعلى.',
-  AT_PEAK: 'السعر قريب من أعلى 52 أسبوع + RSI > 70 — قد يتراجع بعد القمة.',
-  NEUTRAL: 'لا شرط فني واضح — يحتاج مراقبة إضافية.',
-  CORRECTION: 'تحت المتوسط + نازل اليوم — في مرحلة تصحيح. لو RSI < 30 وقريب من أدنى 52 أسبوع → تشبع بيعي (قد يرتد).',
-  DECLINING: 'تحت المتوسط + RSI < 45 + نازل اليوم — لسه في هبوط.',
+  AT_PEAK: 'RSI ≥ 70 — تشبع شرائي، قد يتراجع بعد القمة.',
+  NEAR_PEAK: 'RSI بين 65-70 — قرب التشبع الشرائي، حذر.',
+  NEUTRAL: 'RSI بين 45-55 + حجم تداول مناسب — بانتظار اتجاه واضح.',
+  CORRECTION: 'RSI < 40 + تحت MA50 — في مرحلة تصحيح. لو RSI < 30 وقريب من أدنى 52 أسبوع → تشبع بيعي (قد يرتد).',
+  DECLINING: 'RSI < 40 + تحت MA50 + نازل اليوم — لسه في هبوط.',
+  INSUFFICIENT_DATA: 'بيانات غير كافية للتصنيف (RSI أو MA50 مفقود) — يحتاج تحديث البيانات.',
 };
 
 const STATE_ORDER: Record<string, number> = {
   CORRECTION_END: 1,
   BALANCED_MOMENTUM: 2,
   NEAR_BREAKOUT: 3,
-  AT_PEAK: 4,
-  NEUTRAL: 5,
-  CORRECTION: 6,
-  DECLINING: 7,
+  NEUTRAL: 4,
+  NEAR_PEAK: 5,
+  AT_PEAK: 6,
+  CORRECTION: 7,
+  DECLINING: 8,
+  INSUFFICIENT_DATA: 9,
 };
 
 function StateBadge({ state, reason }: { state: string; reason?: string }) {
@@ -1101,10 +1109,12 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                     <SelectItem value="CORRECTION_END">التصحيح خلص (تعافي)</SelectItem>
                     <SelectItem value="BALANCED_MOMENTUM">زخم متزن</SelectItem>
                     <SelectItem value="NEAR_BREAKOUT">قرب يكسر (للأعلى)</SelectItem>
-                    <SelectItem value="AT_PEAK">في قمة</SelectItem>
                     <SelectItem value="NEUTRAL">محايد</SelectItem>
+                    <SelectItem value="NEAR_PEAK">قرب قمة</SelectItem>
+                    <SelectItem value="AT_PEAK">في قمة</SelectItem>
                     <SelectItem value="CORRECTION">في تصحيح</SelectItem>
                     <SelectItem value="DECLINING">لسة نازل</SelectItem>
+                    <SelectItem value="INSUFFICIENT_DATA">بيانات غير كافية</SelectItem>
                   </SelectContent>
                 </Select>
               </FilterField>

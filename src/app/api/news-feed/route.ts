@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // Cache
 const CACHE_DURATION = 300; // 5 minutes
 let newsCache: { timestamp: number; data: NewsItem[] } | null = null;
+// separate cache per market filter (crypto vs all)
+let cryptoCache: Record<string, { timestamp: number; data: NewsItem[] }> = {};
 
 interface NewsItem {
   id: string;
@@ -211,15 +213,22 @@ async function getGlobalMarketData(): Promise<NewsItem | null> {
 
 export async function GET(request: NextRequest) {
   try {
-    // Check cache
+    const { searchParams } = new URL(request.url);
+    const marketFilter = (searchParams.get('market') || 'all').toLowerCase();
+    const isCryptoMode = marketFilter === 'crypto';
+
+    // Check cache (separate cache per market filter)
     const now = Date.now();
-    if (newsCache && (now - newsCache.timestamp) < CACHE_DURATION * 1000) {
+    const cacheKey = isCryptoMode ? 'crypto' : 'all';
+    const cached = cryptoCache[cacheKey];
+    if (cached && (now - cached.timestamp) < CACHE_DURATION * 1000) {
       return NextResponse.json({
         success: true,
         cached: true,
-        timestamp: new Date(newsCache.timestamp).toISOString(),
-        news: newsCache.data,
-        cache_duration: CACHE_DURATION
+        timestamp: new Date(cached.timestamp).toISOString(),
+        news: cached.data,
+        cache_duration: CACHE_DURATION,
+        market_filter: marketFilter,
       });
     }
 
@@ -234,37 +243,44 @@ export async function GET(request: NextRequest) {
     // Combine news
     const news: NewsItem[] = [];
 
-    // Add EGX news first (priority)
-    news.push(...egxNews);
-
-    // Add sentiment
-    if (fearGreed) news.push(fearGreed);
-
-    // Add crypto prices
-    news.push(...cryptoPrices);
-
-    // Add global market
-    if (globalMarket) news.push(globalMarket);
+    if (isCryptoMode) {
+      // وضع الكريبتو: ممنوع EGX — أخبار كريبتو + sentiment + global market فقط
+      if (fearGreed) news.push(fearGreed);
+      news.push(...cryptoPrices);
+      if (globalMarket) news.push(globalMarket);
+    } else {
+      // الوضع الافتراضي: EGX + كريبتو + sentiment
+      news.push(...egxNews);
+      if (fearGreed) news.push(fearGreed);
+      news.push(...cryptoPrices);
+      if (globalMarket) news.push(globalMarket);
+    }
 
     // Sort by importance and category
     const importanceOrder = { high: 0, medium: 1, low: 2 };
-    const categoryOrder = { egx: 0, sentiment: 1, market: 2, crypto: 3 };
-    
+    const categoryOrder = isCryptoMode
+      ? { sentiment: 0, crypto: 1, market: 2, egx: 3 }
+      : { egx: 0, sentiment: 1, market: 2, crypto: 3 };
+
     news.sort((a, b) => {
-      // EGX news always first
-      if (a.category === 'egx' && b.category !== 'egx') return -1;
-      if (b.category === 'egx' && a.category !== 'egx') return 1;
-      
-      // Then by importance
+      // In default mode, EGX first; in crypto mode, sentiment first
+      if (!isCryptoMode) {
+        if (a.category === 'egx' && b.category !== 'egx') return -1;
+        if (b.category === 'egx' && a.category !== 'egx') return 1;
+      } else {
+        if (a.category === 'sentiment' && b.category !== 'sentiment') return -1;
+        if (b.category === 'sentiment' && a.category !== 'sentiment') return 1;
+      }
+
       if (importanceOrder[a.importance] !== importanceOrder[b.importance]) {
         return importanceOrder[a.importance] - importanceOrder[b.importance];
       }
-      
+
       return categoryOrder[a.category] - categoryOrder[b.category];
     });
 
     // Update cache
-    newsCache = { timestamp: now, data: news };
+    cryptoCache[cacheKey] = { timestamp: now, data: news };
 
     return NextResponse.json({
       success: true,
@@ -273,9 +289,10 @@ export async function GET(request: NextRequest) {
       news,
       summary: {
         total: news.length,
-        egx: egxNews.length,
+        egx: isCryptoMode ? 0 : egxNews.length,
         crypto: cryptoPrices.length,
-        sentiment: fearGreed ? 1 : 0
+        sentiment: fearGreed ? 1 : 0,
+        market_filter: marketFilter,
       },
       cache_duration: CACHE_DURATION
     });
@@ -292,6 +309,6 @@ export async function GET(request: NextRequest) {
 
 // Force refresh
 export async function POST(request: NextRequest) {
-  newsCache = null;
+  cryptoCache = {};
   return GET(request);
 }

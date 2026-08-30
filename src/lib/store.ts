@@ -739,6 +739,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   currentMarket: 'EGX' as MarketType,
   setCurrentMarket: (market) => {
     set({ currentMarket: market });
+    // expose currentMarket على window عشان الـ widgets اللي مش بتستخدم store تقدر تقراه
+    if (typeof window !== 'undefined') {
+      (window as any).__currentMarket = market;
+    }
     // Crypto uses a unified loader that adapts coins into the stocks array
     if (market === 'CRYPTO') {
       get().loadCryptoList();

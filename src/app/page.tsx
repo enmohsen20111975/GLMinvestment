@@ -197,6 +197,10 @@ const CryptoTradingChartView = withErrorBoundary(
   'شارت العملات',
   { height: 'h-[600px]' },
 );
+const CryptoAdvancedAnalysisView = withErrorBoundary(
+  dynamic(() => import('@/components/crypto/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
+  'التحليل المتقدم للعملات',
+);
 
 /**
  * DbSchemaInit — ensures finance tables exist on first load (once per session)
@@ -527,7 +531,7 @@ function AppShell() {
         // MarketAnalysisView shell as stocks, with initialMarket="CRYPTO".
         return <MarketAnalysisView initialMarket="CRYPTO" />;
       case 'crypto-analysis':
-        return <MarketAnalysisView initialMarket="CRYPTO" />;
+        return <CryptoAdvancedAnalysisView />;
       case 'crypto-learning':
         return CryptoLearningView ? <CryptoLearningView /> : <div className="p-4">Loading...</div>;
       case 'crypto-simulation':

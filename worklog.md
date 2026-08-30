@@ -11989,3 +11989,86 @@ Stage Summary:
 - ✅ 6 APIs معطوبة اتصلحت
 - ✅ اختبار browser صارم: الـ 3 شاشات بتـ render ببيانات حقيقية
 - ⚠️ ملاحظة: الـ sandbox عندي 17 commit محلي مش متدفعة لـ GitHub (مش قادر أدفع من هنا — مفيش credentials). المالك لازم يدفع من الـ VPS أو يعطي credentials.
+
+---
+Task ID: CRYPTO+RSI-FIX-2026-08-30
+Agent: Z.ai Code (main)
+Task: إصلاح شاشات الكريبتو اللي لسه غلط + إصلاح 5 أخطاء في تصنيف RSI لفلتر الأسهم
+
+Work Log:
+- **audit شامل** (subagent CRYPTO+RSI-AUDIT-2):
+  - `#crypto-analysis` = `#crypto-recommendations` (الاتنين MarketAnalysisView initialMarket=CRYPTO)
+  - `#crypto` فيها أخبار أس EGX (NewsFeedWidget بيجيب من EGXPilot دايماً)
+  - `#crypto-screener` الكود سليم، بس فيه نص صيني بالغلط
+  - RSI: 108 سهم "محايد" بدون RSI، تناقض AMER vs SUGR، مفيش فلاتر حجم/سعر أدنى
+
+- **إصلاحات شاشات الكريبتو**:
+  1. إنشاء `CryptoAdvancedAnalysisView.tsx` (650 LOC) — مكون مستقل لـ #crypto-analysis:
+     - بيجيب OHLC من CoinGecko لكل عملة (batch of 3)
+     - بيحسب RSI + MA50 + MA200 + Trend + Volatility + Signal
+     - بيصنف الحالة بنفس معايير RSI الجديدة
+     - Stats cards: 7 states + buy/sell signals
+     - Filters: search + state + trend
+  2. ربط `#crypto-analysis` في page.tsx → `<CryptoAdvancedAnalysisView />` (بدل MarketAnalysisView)
+  3. تعديل `/api/news-feed` عشان يقبل `?market=crypto`:
+     - crypto mode: ممنوع EGX — أخبار كريبتو + sentiment + global market بس
+     - default mode: EGX + كريبتو + sentiment (زي قبل)
+     - separate cache per market filter
+  4. تعديل `NewsFeedWidget.tsx` عشان يبعت `?market=crypto` لو currentMarket=CRYPTO
+  5. تعديل `store.ts` setCurrentMarket عشان ي expose currentMarket على window.__currentMarket
+  6. إصلاح نص صيني في CryptoScreenerView ("的大型" → "Large Cap")
+
+- **إصلاحات تصنيف RSI (Python backend)**:
+  1. `vps-service/utils/stock_state.py` compute_stock_state() — إعادة كتابة كاملة:
+     - state جديد `INSUFFICIENT_DATA` للأسهم بدون RSI أو MA50 (بدل ما يتصنف "محايد")
+     - إزالة شرط `near_52w_high` من AT_PEAK (بيحل تناقض AMER vs SUGR)
+     - state جديد `NEAR_PEAK` لـ 65 ≤ RSI < 70
+     - CORRECTION_END دلوقتي لازم RSI بين 40-45 (مش بس above_ma50 + vol_surge + change>0)
+     - NEUTRAL دلوقتي لازم RSI بين 45-55 + حجم مناسب (مش fallback)
+     - ترتيب الشروط حسب RSI أولاً
+  2. `STATE_COLORS` + `STATE_ORDER`: إضافة NEAR_PEAK + INSUFFICIENT_DATA
+  3. `vps-service/api/advanced_screener_routes.py`:
+     - إضافة `NEAR_PEAK` + `INSUFFICIENT_DATA` لـ _valid_states
+     - default min_price = 0.50 جنيه (يستبعد penny stocks زي AIH 0.26-0.79)
+     - default min_volume = 1000 سهم (يستبعد DCRC 3600 سهم)
+     - default min_turnover = 50,000 ج.م (يستبعد MILS 103K سهم)
+  4. `StockScreenerAdvanced.tsx`:
+     - إضافة NEAR_PEAK + INSUFFICIENT_DATA لـ STATE_BADGE_COLORS + STATE_LABELS_AR + STATE_EXPLANATIONS_AR + STATE_ORDER
+     - إضافة options في Select للحالات الجديدة
+
+- **اختبار Python logic** (8 حالات):
+  | الحالة | RSI | متوقع | النتيجة |
+  |---|---|---|---|
+  | سهم بدون RSI | None | INSUFFICIENT_DATA | ✅ |
+  | AMER | 74.6 | AT_PEAK | ✅ |
+  | SUGR | 73.1 | AT_PEAK (مش CORRECTION_END) | ✅ |
+  | RSI=67 | 67 | NEAR_PEAK | ✅ |
+  | RSI=60 above_ma50 | 60 | BALANCED_MOMENTUM | ✅ |
+  | RSI=50 vol_surge | 50 | NEUTRAL | ✅ |
+  | RSI=42 above_ma50 change>0 | 42 | CORRECTION_END | ✅ |
+  | RSI=35 below_ma50 change<0 | 35 | DECLINING | ✅ |
+  | ARAB (no RSI) | None | INSUFFICIENT_DATA | ✅ |
+
+- **اختبار browser** (Playwright headless):
+  - #crypto: ✅ "نظرة عامة على العملات الرقمية" + BTC + مفيش أخبار EGX
+  - #crypto-recommendations: ✅ MarketAnalysisView CRYPTO
+  - #crypto-analysis: ✅ CryptoAdvancedAnalysisView (RSI + BTC)
+  - #crypto-screener: ✅ 50 عملة حقيقية (BTC=$79,996, ETH=$2,506)
+  - #stock-filters: ✅ شغّال (Python backend على VPS)
+
+- **lint**: EXIT 0 ✅
+- **Python syntax**: ✅ كلا الملفين يـ compile بدون أخطاء
+
+Stage Summary:
+- ✅ #crypto-analysis مستقل تماماً (مش نسخة من recommendations)
+- ✅ #crypto مفيهاش أخبار أس EGX (market=crypto filter)
+- ✅ #crypto-screener اتصصلح (نص صيني + بيانات crypto_prices حقيقية)
+- ✅ تصنيف RSI: 5 أخطاء اتصصلحت
+  - INSUFFICIENT_DATA state جديد (108 سهم هيتصنفوا صح)
+  - AMER + SUGR الاتنين AT_PEAK (تناقض اتصصلح)
+  - CORRECTION_END لازم RSI 40-45 (مش بدون RSI)
+  - default min_volume=1000 + min_turnover=50K (يستبعد DCRC + MILS)
+  - default min_price=0.50 (يستبعد AIH 0.26-0.79)
+- ✅ NEAR_PEAK state جديد (65-70)
+- ✅ Python tests: 8/8 نجحوا
+- ✅ lint: EXIT 0

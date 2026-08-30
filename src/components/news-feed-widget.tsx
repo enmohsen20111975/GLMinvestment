@@ -56,7 +56,14 @@ export function NewsFeedWidget() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/news-feed');
+      // market-aware: لو currentMarket=CRYPTO، ابعت ?market=crypto عشان يرجع أخبار كريبتو بس
+      let marketParam = '';
+      try {
+        const stored = (window as any).__currentMarket;
+        if (stored === 'CRYPTO') marketParam = '?market=crypto';
+      } catch { /* ignore */ }
+
+      const response = await fetch('/api/news-feed' + marketParam);
       const result = await response.json();
 
       if (result.success) {

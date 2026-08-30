@@ -143,8 +143,8 @@ def compute_stock_state(stock: Dict[str, Any]) -> Dict[str, Any]:
     price = _safe_float(stock.get('current_price'))
     if price is None or price <= 0:
         return {
-            'state': 'NEUTRAL',
-            'state_ar': 'محايد',
+            'state': 'INSUFFICIENT_DATA',
+            'state_ar': 'بيانات غير كافية',
             'state_reason': 'بيانات السعر غير متاحة',
             'momentum_score': 0,
         }
@@ -167,69 +167,120 @@ def compute_stock_state(stock: Dict[str, Any]) -> Dict[str, Any]:
     below_ma50 = (ma50 is not None and price < ma50)
     dist_from_ma50 = ((price - ma50) / ma50 * 100) if ma50 and ma50 > 0 else 0
 
-    # 1) AT_PEAK: قريب من 52w high + RSI > 70
-    if near_52w_high and rsi is not None and rsi > 70:
+    # ─── 0) INSUFFICIENT_DATA: لو مفيش RSI أو MA50 → تصنيف غير كافي (مش "محايد") ───
+    # ده بيحل مشكلة 108 سهم "محايد" بدون RSI
+    if rsi is None or ma50 is None:
+        return {
+            'state': 'INSUFFICIENT_DATA',
+            'state_ar': 'بيانات غير كافية',
+            'state_reason': f'بيانات غير كافية للتصنيف (RSI={"مفقود" if rsi is None else f"{rsi:.0f}"}, MA50={"مفقود" if ma50 is None else "متاح"})',
+            'momentum_score': 0,
+        }
+
+    # ─── التصنيف حسب RSI أولاً (مطابق للمعايير المقترحة من المالك) ───
+    # المعايير:
+    #   RSI ≥ 70            → AT_PEAK (في قمة)
+    #   65 ≤ RSI < 70       → NEAR_PEAK (قرب قمة)  ← state جديد
+    #   55 < RSI < 65       → BALANCED_MOMENTUM (زخم متزن)
+    #   45 ≤ RSI ≤ 55       → NEUTRAL (محايد) — بس لو حجم كويس
+    #   40 ≤ RSI < 45       → CORRECTION_END (تصحيح خلص)
+    #   RSI < 40            → DECLINING (لسة نازل)
+
+    # 1) AT_PEAK: RSI ≥ 70 (مش لازم near_52w_high — ده بيحل تناقض AMER vs SUGR)
+    if rsi >= 70:
         return {
             'state': 'AT_PEAK',
             'state_ar': 'في قمة',
-            'state_reason': f'السعر قريب من أعلى 52 أسبوع (RSI={rsi:.0f}) — قد يتراجع',
+            'state_reason': f'RSI={rsi:.0f} ≥ 70 — تشبع شرائي، قد يتراجع',
             'momentum_score': 75,
         }
 
-    # 2) CORRECTION_END: رجع فوق MA20 (proxy=MA50) + حجم يرتفع + change > 0
-    if above_ma50 and vol_surge and change > 0:
+    # 2) NEAR_PEAK: 65 ≤ RSI < 70
+    if rsi >= 65:
         return {
-            'state': 'CORRECTION_END',
-            'state_ar': 'التصحيح خلص',
-            'state_reason': 'السعر كسر المتوسط + الحجم يرتفع — مؤشر تعافي',
-            'momentum_score': 80,
-        }
-
-    # 3) BALANCED_MOMENTUM: فوق MA20 + حجم مرتفع + RSI معتدل (40-70)
-    if above_ma50 and vol_surge and rsi is not None and 40 <= rsi <= 70:
-        return {
-            'state': 'BALANCED_MOMENTUM',
-            'state_ar': 'زخم متزن',
-            'state_reason': 'فوق المتوسط + حجم مرتفع + RSI معتدل — زخم صحي',
+            'state': 'NEAR_PEAK',
+            'state_ar': 'قرب قمة',
+            'state_reason': f'RSI={rsi:.0f} قرب التشبع الشرائي — قرب القمة',
             'momentum_score': 70,
         }
 
-    # 4) NEAR_BREAKOUT: قرب من MA20 من تحت (within 2% below MA50) — check قبل CORRECTION
-    if below_ma50 and dist_from_ma50 > -2:
+    # 3) BALANCED_MOMENTUM: 55 < RSI < 65 + فوق MA50
+    if rsi > 55 and rsi < 65 and above_ma50:
         return {
-            'state': 'NEAR_BREAKOUT',
-            'state_ar': 'قرب يكسر',
-            'state_reason': f'السعر قرب من المتوسط ({dist_from_ma50:+.1f}%) — مرشح للكسر',
-            'momentum_score': 55,
+            'state': 'BALANCED_MOMENTUM',
+            'state_ar': 'زخم متزن',
+            'state_reason': f'RSI={rsi:.0f} + فوق MA50 — زخم صحي',
+            'momentum_score': 65,
         }
 
-    # 5) DECLINING: تحت MA20 + RSI < 45 + change < 0
-    if below_ma50 and rsi is not None and rsi < 45 and change < 0:
+    # 4) NEUTRAL: 45 ≤ RSI ≤ 55 + حجم تداول مناسب
+    # ده بياخد "محايد" الحقيقي — مش fallback للي معندهوش RSI
+    if rsi >= 45 and rsi <= 55:
+        if vol_surge or (avg_vol > 0 and vol >= avg_vol * 0.8):
+            return {
+                'state': 'NEUTRAL',
+                'state_ar': 'محايد',
+                'state_reason': f'RSI={rsi:.0f} (محايد) + حجم تداول مناسب — بانتظار اتجاه',
+                'momentum_score': 50,
+            }
+        # لو الحجم ضعيف → لسه محايد بس مع تحذير
         return {
-            'state': 'DECLINING',
-            'state_ar': 'لسة نازل',
-            'state_reason': f'تحت المتوسط (RSI={rsi:.0f}) + نازل اليوم — لسه في هبوط',
-            'momentum_score': 20,
+            'state': 'NEUTRAL',
+            'state_ar': 'محايد',
+            'state_reason': f'RSI={rsi:.0f} محايد + حجم ضعيف — غير نشط',
+            'momentum_score': 45,
         }
 
-    # 6) CORRECTION: change < 0 + تحت MA20 (proxy)
-    if below_ma50 and change < 0:
-        # لو قريب من 52w low → تشبع بيعي (محايد)
-        if near_52w_low and rsi is not None and rsi < 30:
+    # 5) CORRECTION_END: 40 ≤ RSI < 45 + above_ma50 + change > 0
+    # ده بيحل مشكلة "تصحيح خلص" بدون RSI — دلوقتي لازم RSI في النطاق
+    if rsi >= 40 and rsi < 45:
+        if above_ma50 and change > 0:
+            return {
+                'state': 'CORRECTION_END',
+                'state_ar': 'التصحيح خلص',
+                'state_reason': f'RSI={rsi:.0f} + فوق MA50 + صاعد اليوم — مؤشر تعافي',
+                'momentum_score': 60,
+            }
+        # لو تحت MA50 → لسه في تصحيح
+        if below_ma50:
             return {
                 'state': 'CORRECTION',
-                'state_ar': 'في تصحيح (تشبع بيعي)',
-                'state_reason': f'تحت المتوسط + قريب من أدنى 52 أسبوع (RSI={rsi:.0f}) — قد يرتد',
+                'state_ar': 'في تصحيح',
+                'state_reason': f'RSI={rsi:.0f} + تحت MA50 — لسه في تصحيح',
                 'momentum_score': 30,
             }
         return {
-            'state': 'CORRECTION',
-            'state_ar': 'في تصحيح',
-            'state_reason': 'تحت المتوسط + نازل اليوم — في مرحلة تصحيح',
-            'momentum_score': 35,
+            'state': 'CORRECTION_END',
+            'state_ar': 'التصحيح خلص',
+            'state_reason': f'RSI={rsi:.0f} قرب التشبع البيعي — قد يرتد',
+            'momentum_score': 55,
         }
 
-    # 7) NEUTRAL: لا شرط واضح
+    # 6) DECLINING: RSI < 40
+    if rsi < 40:
+        if below_ma50 and change < 0:
+            return {
+                'state': 'DECLINING',
+                'state_ar': 'لسة نازل',
+                'state_reason': f'RSI={rsi:.0f} + تحت MA50 + نازل اليوم — لسه في هبوط',
+                'momentum_score': 20,
+            }
+        # لو RSI < 30 + قريب من 52w low → تشبع بيعي شديد
+        if rsi < 30 and near_52w_low:
+            return {
+                'state': 'CORRECTION',
+                'state_ar': 'في تصحيح (تشبع بيعي)',
+                'state_reason': f'RSI={rsi:.0f} + قريب من أدنى 52 أسبوع — قد يرتد',
+                'momentum_score': 25,
+            }
+        return {
+            'state': 'DECLINING',
+            'state_ar': 'لسة نازل',
+            'state_reason': f'RSI={rsi:.0f} < 40 — لسه في ضغط بيعي',
+            'momentum_score': 25,
+        }
+
+    # 7) Fallback NEUTRAL (نادر يوصل هنا بعد كل الشروط فوق)
     return {
         'state': 'NEUTRAL',
         'state_ar': 'محايد',
@@ -575,23 +626,27 @@ def confirm_recovery_starting(stock: Dict[str, Any],
 # ─── Helpers للـ display ────────────────────────────────────────────────────
 
 STATE_COLORS = {
-    'AT_PEAK': 'amber',
+    'AT_PEAK': 'red',
+    'NEAR_PEAK': 'orange',
     'CORRECTION_END': 'emerald',
     'BALANCED_MOMENTUM': 'green',
-    'DECLINING': 'red',
+    'DECLINING': 'rose',
     'CORRECTION': 'orange',
     'NEAR_BREAKOUT': 'blue',
     'NEUTRAL': 'gray',
+    'INSUFFICIENT_DATA': 'slate',
 }
 
 STATE_ORDER = {
     'CORRECTION_END': 1,    # الأفضل — تعافي
     'BALANCED_MOMENTUM': 2,  # زخم صحي
     'NEAR_BREAKOUT': 3,      # مرشح للكسر
-    'AT_PEAK': 4,            # قمة — حذر
-    'NEUTRAL': 5,            # محايد
-    'CORRECTION': 6,        # تصحيح
-    'DECLINING': 7,          # نازل
+    'NEUTRAL': 4,            # محايد
+    'NEAR_PEAK': 5,          # قرب قمة — حذر
+    'AT_PEAK': 6,            # قمة — حذر
+    'CORRECTION': 7,         # تصحيح
+    'DECLINING': 8,          # نازل
+    'INSUFFICIENT_DATA': 9,  # بيانات غير كافية (في الآخر)
 }
 
 # ألوان لمراحل التصحيح (المنطق الموحد)

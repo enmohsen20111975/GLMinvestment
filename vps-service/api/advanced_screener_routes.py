@@ -116,7 +116,8 @@ def advanced_screener():
         # stock_state filter (Python-side post-filter)
         stock_state_filter = request.args.get('stock_state', '').strip().upper()
         _valid_states = {'CORRECTION', 'CORRECTION_END', 'DECLINING', 'NEAR_BREAKOUT',
-                         'AT_PEAK', 'BALANCED_MOMENTUM', 'NEUTRAL'}
+                         'AT_PEAK', 'NEAR_PEAK', 'BALANCED_MOMENTUM', 'NEUTRAL',
+                         'INSUFFICIENT_DATA'}
         if stock_state_filter and stock_state_filter not in _valid_states:
             stock_state_filter = ''  # ignore invalid value
 
@@ -145,8 +146,22 @@ def advanced_screener():
         conn = _get_stocks_conn()
         try:
             # Build query
-            where_clauses = ['is_active = 1', 'current_price > 0']
-            params = []
+            # ─── Default filters لمنع الأسهم غير النشطة وأسهم الفلس ───────────────
+            # 1) min_price default = 0.50 جنيه (يستبعد penny stocks الخطيرة)
+            # 2) min_volume default = 1000 سهم (يستبعد الأسهم الميتة زي DCRC)
+            # 3) min_turnover default = 50,000 ج.م (يستبعد الأسهم غير النشطة زي MILS)
+            # لو المستخدم مرّر قيمة صريحة → نحترمها (حتى لو 0)
+            effective_min_price = 0.50 if min_price is None else min_price
+            effective_min_volume = 1000 if min_volume is None else min_volume
+            effective_min_turnover = 50000.0 if min_turnover is None else min_turnover
+
+            where_clauses = [
+                'is_active = 1',
+                'current_price >= ?',    # default 0.50 (penny stock filter)
+                'volume >= ?',            # default 1000 (dead stock filter)
+                '(turnover_egp IS NULL OR turnover_egp >= ?)',  # default 50K
+            ]
+            params = [effective_min_price, effective_min_volume, effective_min_turnover]
 
             if market and market != 'ALL':
                 where_clauses.append('market = ?')
@@ -156,21 +171,14 @@ def advanced_screener():
                 where_clauses.append('sector LIKE ?')
                 params.append(f'%{sector}%')
 
-            if min_price is not None:
-                where_clauses.append('current_price >= ?')
-                params.append(min_price)
-
+            # min_price/max_price تم تطبيق min_price كـ default فوق
+            # لو max_price موجود نطبقه
             if max_price is not None:
                 where_clauses.append('current_price <= ?')
                 params.append(max_price)
 
-            if min_volume is not None:
-                where_clauses.append('volume >= ?')
-                params.append(min_volume)
-
-            if min_turnover is not None:
-                where_clauses.append('turnover_egp >= ?')
-                params.append(min_turnover)
+            # min_volume تم تطبيقه كـ default فوق
+            # min_turnover تم تطبيقه كـ default فوق
 
             if min_change is not None:
                 where_clauses.append('ABS(change_percent) >= ?')
