@@ -294,13 +294,13 @@ export function ExpertIntelligencePanel({
                 </div>
                 <div className="bg-orange-50 dark:bg-orange-950/20 p-2 sm:p-3 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-orange-600">{missedOpp.summary.false_positives}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">توصية غلط</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">توقع خاطئ</div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-950/20 p-2 sm:p-3 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-green-600">
                     {missedOpp.summary.correct_buys + missedOpp.summary.correct_sells}
                   </div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">توصية صحيحة</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">توقع صحيح</div>
                 </div>
                 <div className="bg-teal-50 dark:bg-teal-950/20 p-2 sm:p-3 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-teal-600">{missedOpp.summary.accuracy_rate_pct}%</div>

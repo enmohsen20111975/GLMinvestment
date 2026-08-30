@@ -179,7 +179,7 @@ export function applyPaywallToChartAnalysis(
     locked.humanized_reason = locked.humanized_reason.substring(0, 30) + '... 🔒';
   }
   if (locked.recommendation_message) {
-    locked.recommendation_message = '🔒 ميزة المدفوع — اشترك لرؤية التوصية الكاملة';
+    locked.recommendation_message = '🔒 ميزة المدفوع — اشترك لرؤية التوقع الكاملة';
   }
 
   // علامة Paywall

@@ -247,7 +247,7 @@ export function ExecutiveReportView({
   const [showFilters, setShowFilters] = useState(false);
 
   // RL-FIX-10: فلترة الجودة — افتراضي 'top_picks' (أفضل 5/يوم) + minConfidence 70
-  // ده بيخلي الملخص يعرض أرقام منطقية بدل 310 توصية في أسبوع.
+  // ده بيخلي الملخص يعرض أرقام منطقية بدل 310 توقع في أسبوع.
   const [qualityMode, setQualityMode] = useState<QualityMode>('top_picks');
   const [minConfidence, setMinConfidence] = useState<number>(70);
 
@@ -593,7 +593,7 @@ export function ExecutiveReportView({
   // ═══════════════════════════════════════════════════════════════════════
   // المشكلة: generate_persona_predictions.py بيولّد 3 توقعات لكل سهم يومياً
   // (مضارب/متوازن/مستثمر). لو حسبنا الأداء على الـ 3، نفس السهم بيتحسب 3 مرات
-  // → الأرقام منفوخة 3× (41 توصية = في الحقيقة ~14 سهم).
+  // → الأرقام منفوخة 3× (41 توقع = في الحقيقة ~14 سهم).
   //
   // الحل: طبقتين قياس:
   // (1) uniqueStocks — نُجمّع التوقعات الـ 3 لنفس (سهم، يوم دخول) في توقع واحد

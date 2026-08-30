@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { LegalDisclaimerFooter } from '@/components/legal/DisclaimerBanner';
 import {
   Select,
   SelectContent,
@@ -456,6 +457,9 @@ export default function CryptoPredictionTrackingView() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* إخلاء مسؤولية قانوني */}
+      <LegalDisclaimerFooter />
     </div>
   );
 }

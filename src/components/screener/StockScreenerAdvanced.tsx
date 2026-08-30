@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { LegalDisclaimerFooter } from '@/components/legal/DisclaimerBanner';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -427,6 +428,9 @@ export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }
           <TopPerformersTab />
         </TabsContent>
       </Tabs>
+
+      {/* إخلاء مسؤولية قانوني */}
+      <LegalDisclaimerFooter />
     </div>
   );
 }

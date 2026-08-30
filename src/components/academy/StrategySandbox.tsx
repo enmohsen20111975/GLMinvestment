@@ -2178,7 +2178,7 @@ export function StrategySandbox() {
       <div className="text-center text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <BookOpen className="size-3" />
-          محتوى تعليمي لأغراض التعلّم فقط — ليس توصية استثمارية. تداول بمسؤوليتك الكاملة.
+          محتوى تعليمي لأغراض التعلّم فقط — ليس توقع استثمارية. تداول بمسؤوليتك الكاملة.
         </span>
       </div>
     </div>

@@ -99,7 +99,7 @@ interface StockData {
   stop_loss?: number;
   risk_reward?: number;
   // P16-DELAY-COMPENSATION: flag من الـ backend (chart_routes / stored_analysis_routes)
-  // بيكون true بس لو السوق المصري مفتوح (intraday) والتوصية BUY → الـ backend نقلّل
+  // بيكون true بس لو السوق المصري مفتوح (intraday) والتوقع BUY → الـ backend نقلّل
   // الـ stop 15% ووسّع الـ target 5% عشان يعوّض تأخير البيانات 5 دقايق.
   delay_compensation_applied?: boolean;
   // P15-ATH-BREAKOUT: flag لأسهم الاختراق التاريخي (من sniper scan)
@@ -560,7 +560,7 @@ function formatComprehensiveStockText(item: StoredAnalysisItem, market: MarketTy
   // ── سيناريو المستثمر ──
   if (inv.verdict || inv.entry || inv.target) {
     text += `🏦 سيناريو المستثمر (مدى طويل):\n`;
-    text += `- التوصية: ${inv.verdict || 'متابعة'}\n`;
+    text += `- التوقع: ${inv.verdict || 'متابعة'}\n`;
     const invEntry = inv.entry;
     if (invEntry) text += `- الدخول: ${invEntry.toFixed(2)}`;
     if (inv.target) {
@@ -580,7 +580,7 @@ function formatComprehensiveStockText(item: StoredAnalysisItem, market: MarketTy
   // ── سيناريو المضارب ──
   if (gam.verdict || gam.entry || gam.target) {
     text += `🎯 سيناريو المضارب (مدى قصير):\n`;
-    text += `- التوصية: ${gam.verdict || 'متابعة'}\n`;
+    text += `- التوقع: ${gam.verdict || 'متابعة'}\n`;
     const gamEntry = gam.entry;
     if (gamEntry) text += `- الدخول: ${gamEntry.toFixed(2)}`;
     if (gam.target) {
@@ -3473,7 +3473,7 @@ function PersonaCard({
           </div>
         )}
 
-        {/* ══════ التوصية — المحور الأساسي ══════ */}
+        {/* ══════ التوقع — المحور الأساسي ══════ */}
         {(data.entry || data.target || data.stop) && (
           <div className={cn(
             'rounded-lg p-3 border-2',
@@ -3484,7 +3484,7 @@ function PersonaCard({
               : 'bg-muted/50 border-border'
           )}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-foreground">🎯 التوصية</span>
+              <span className="text-sm font-bold text-foreground">🎯 التوقع</span>
               {data.risk_reward && data.risk_reward > 0 && (
                 <span className={cn(
                   'text-lg font-black',
@@ -3918,8 +3918,8 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
             const rr = computeRR(pd);
             const score = pd.score ?? it.maestroScore ?? 0;
             // 🔥 P0-UI FIX: STALE/MISMATCH flags من الـ backend
-            // it.stale = السعر الحي بعيد عن entry بـ >20% (توصية قديمة)
-            // it.priceTargetMismatch = السعر الحالي ≥ target (الهدف محقّق، التوصية منتهية)
+            // it.stale = السعر الحي بعيد عن entry بـ >20% (توقع قديمة)
+            // it.priceTargetMismatch = السعر الحالي ≥ target (الهدف محقّق، التوقع منتهية)
             const isStale = Boolean(it.stale);
             const isMismatch = Boolean(it.priceTargetMismatch);
             const staleReason = (it.staleReason as string) || '';
@@ -3941,7 +3941,7 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
                     <span>{cleanTicker}</span>
                     {(isStale || isMismatch) && (
                       <span
-                        title={staleReason || (isMismatch ? 'الهدف محقّق — التوصية منتهية' : 'توصية قديمة')}
+                        title={staleReason || (isMismatch ? 'الهدف محقّق — التوقع منتهية' : 'توقع قديمة')}
                         className={cn(
                           "text-[10px] px-1 rounded font-bold cursor-help",
                           isMismatch
@@ -4339,7 +4339,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="details">بيانات السهم</TabsTrigger>
           <TabsTrigger value="chart">الشارت</TabsTrigger>
-          <TabsTrigger value="verdict">التوصية</TabsTrigger>
+          <TabsTrigger value="verdict">التوقع</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
@@ -4406,7 +4406,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="space-y-2">
-                <h4 className="font-semibold">التوصية</h4>
+                <h4 className="font-semibold">التوقع</h4>
                 <p className="text-lg font-bold">{pd.verdict || 'متابعة'}</p>
                 <p className="text-sm text-muted-foreground">{pd.reason}</p>
               </div>

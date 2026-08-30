@@ -520,7 +520,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
 
       {/* Legal Disclaimer */}
       <p className="text-[11px] text-muted-foreground/80 italic text-center mb-6 print:mb-4">
-        ⚠️ المنصة لأغراض تعليمية وتحليلية فقط. المحتوى لا يُعد تحليل استثمارية أو نصيحة مالية. جميع التحليلات مبينة على بيانات تاريخية وقد لا تعكس الأداء المستقبلي.
+        ⚠️ ⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا شخصيًا آليًا لأغراض تعليمية وتحليلية فقط، وليست توصية استثمارية. القرار مسؤولية العميل وحده. لا ضمان للنتائج. استشر مستشارًا ماليًا مرخصًا.
       </p>
 
       {/* Print button - hidden when printing */}

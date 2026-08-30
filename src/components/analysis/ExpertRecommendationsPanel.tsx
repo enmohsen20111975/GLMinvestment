@@ -393,7 +393,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
       }
       const imported = data.imported ?? recs.length;
       const errs: string[] = data.errors || [];
-      toast.success(`تم استيراد ${imported} توصية بنجاح`);
+      toast.success(`تم استيراد ${imported} توقع بنجاح`);
       if (errs.length > 0) {
         toast.warning(`${errs.length} صف تم تخطيه`);
       }
@@ -434,7 +434,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
       if (recs.length === 0) {
         toast.info('لم يتم العثور على توصيات في النص — تأكد من التنسيق');
       } else {
-        toast.success(`تم تحليل ${recs.length} توصية من النص`);
+        toast.success(`تم تحليل ${recs.length} توقع من النص`);
       }
     } catch (e) {
       toast.error('خطأ في التحليل: ' + String(e));
@@ -507,7 +507,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
         throw new Error(data.error || 'فشل الاستيراد');
       }
       const imported = data.imported ?? recs.length;
-      toast.success(`تم استيراد ${imported} توصية من النص المحلَّل`);
+      toast.success(`تم استيراد ${imported} توقع من النص المحلَّل`);
       // Reset text mode
       setRawText('');
       setParsedRecs(null);
@@ -847,7 +847,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                     className="rounded-lg border border-emerald-100 bg-emerald-50/30 p-3 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">توصية #{idx + 1}</span>
+                      <span className="text-xs text-muted-foreground">توقع #{idx + 1}</span>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -986,7 +986,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                   <span className="font-bold text-emerald-700">
                     {buildImportFromTable().length}
                   </span>{' '}
-                  توصية للخبير{' '}
+                  توقع للخبير{' '}
                   <span className="font-bold">{expertName || '—'}</span> في جلسة{' '}
                   <span className="font-bold">{sessionType}</span> بتاريخ{' '}
                   <span className="font-bold">{sessionDate}</span>.
@@ -1071,7 +1071,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       معاينة النتائج المحلَّلة
                       <Badge variant="secondary" className="mr-1">
-                        {parsedRecs.length} توصية
+                        {parsedRecs.length} توقع
                       </Badge>
                     </h4>
                     {parsedRecs.length > 0 && (
@@ -1176,7 +1176,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
             </Button>
           </CardTitle>
           <CardDescription>
-            آخر 50 توصية مستوردة. اضغط على أي صف لعرض التفاصيل الكاملة.
+            آخر 50 توقع مستوردة. اضغط على أي صف لعرض التفاصيل الكاملة.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -1302,7 +1302,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
           <SheetHeader className="p-4 border-b bg-emerald-50/60">
             <SheetTitle className="flex items-center gap-2 text-emerald-800">
               <Target className="w-4 h-4" />
-              تفاصيل التوصية
+              تفاصيل التوقع
             </SheetTitle>
           </SheetHeader>
           {selectedRec && (
@@ -1402,7 +1402,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                 <div className="space-y-1">
                   <div className="text-xs font-semibold flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    سبب التوصية
+                    سبب التوقع
                   </div>
                   <div className="rounded-md bg-emerald-50/50 p-3 text-xs leading-relaxed text-foreground">
                     {selectedRec.recommendation_reason}

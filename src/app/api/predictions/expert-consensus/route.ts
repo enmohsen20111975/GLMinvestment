@@ -233,14 +233,14 @@ function computeConsensus(
   // ── Dissent (signals against the verdict) ──
   if (verdict.includes('BUY')) {
     if (stock && (stock.change_percent ?? 0) < -1)
-      dissent.push(`السهم نازل اليوم رغم توصية الشراء`);
+      dissent.push(`السهم نازل اليوم رغم توقع الشراء`);
     if (stock && stock.rsi != null && stock.rsi > 70)
       dissent.push(`RSI overbought — ممكن تصحيح قريب`);
     if (pred && pred.master_score < 50)
       dissent.push(`master_score ضعيف (${pred.master_score})`);
   } else if (verdict.includes('SELL')) {
     if (stock && (stock.change_percent ?? 0) > 1)
-      dissent.push(`السهم طالع اليوم رغم توصية البيع`);
+      dissent.push(`السهم طالع اليوم رغم توقع البيع`);
     if (stock && stock.rsi != null && stock.rsi < 30)
       dissent.push(`RSI oversold — ممكن ارتداد قريب`);
   }

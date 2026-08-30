@@ -114,7 +114,7 @@ const FALLBACK_DESCRIPTIONS: Record<string, { description: string; category: str
   free_float_critical_mult: { description: 'معامل السيولة لو free float حرج (0.2)', category: 'free_float' },
   free_float_risky_mult: { description: 'معامل السيولة لو free float مخاطر (0.5)', category: 'free_float' },
   max_analysis_age_minutes: { description: 'عمر التحليل قبل ما يعتبر قديم (دقايق)', category: 'limits' },
-  min_confidence_pct: { description: 'أقل ثقة مسموح بيها لعرض توصية (%)', category: 'limits' },
+  min_confidence_pct: { description: 'أقل ثقة مسموح بيها لعرض توقع (%)', category: 'limits' },
 };
 
 // ============== Helpers ==============

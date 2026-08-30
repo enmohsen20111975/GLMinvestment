@@ -5,6 +5,7 @@ import { SingleStockAnalysisView } from '@/components/analysis/SingleStockAnalys
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { LegalDisclaimerFooter } from '@/components/legal/DisclaimerBanner';
 import {
   Plus,
   Trash2,
@@ -264,6 +265,9 @@ export function CryptoTradingChartView({
           </Card>
         ))}
       </div>
+
+      {/* إخلاء مسؤولية قانوني */}
+      <LegalDisclaimerFooter />
     </div>
   );
 }

@@ -49,7 +49,7 @@ export interface PersonaFactors {
   rescueBehavior: {
     cutLossThresholdPct: number;   // لو الخسارة تجاوزت ده → CUT_LOSS فوراً
     averageDownMaxPct: number;     // أقصى متوسط مسموح به من رأس المال
-    holdPatienceDays: number;      // عدد أيام الصبر قبل توصية بيع
+    holdPatienceDays: number;      // عدد أيام الصبر قبل توقع بيع
   };
   // سداد الديون (Dynamic Debt Engine)
   debtBehavior: {
@@ -381,12 +381,12 @@ export function checkWealthAllocationMatrix(
 // ==================== DYNAMIC RESCUE & DEBT ENGINE ====================
 
 /**
- * يحسب التوصية المكيّفة للشخصية لإنقاذ السهم المزنوق.
+ * يحسب التوقع المكيّفة للشخصية لإنقاذ السهم المزنوق.
  *
  * @param lossPct        نسبة الخسارة الحالية (سالب إذا ربح)
  * @param holdingDays    عدد أيام الاحتفاظ
  * @param persona        الشخصية النشطة
- * @returns              توصية + ملاحظة بالعربية
+ * @returns              توقع + ملاحظة بالعربية
  */
 export function computePersonaRescueAdvice(
   lossPct: number,

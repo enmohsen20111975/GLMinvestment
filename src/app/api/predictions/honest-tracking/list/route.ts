@@ -262,7 +262,7 @@ export async function GET(request: NextRequest) {
   // 518 سهم)، بس أفضل التوقعات بس. ده بيخلي الأرقام منطقية:
   //   - minScore: أقل درجة ثقة (master_score) يقبلها. افتراضي 70 (قوي).
   //   - topPerDay: أقصى عدد توصيات لكل (يوم، شخصية). افتراضي 5.
-  // كده بدل 310 توصية في 7 أيام، بيبقى ~20-35 توصية (5/يوم × 3 personas تقريباً).
+  // كده بدل 310 توقع في 7 أيام، بيبقى ~20-35 توقع (5/يوم × 3 personas تقريباً).
   const minScoreRaw = parseInt(searchParams.get('minScore') || '70');
   const minScore = isNaN(minScoreRaw) ? 70 : Math.max(0, Math.min(100, minScoreRaw));
   const topPerDayRaw = parseInt(searchParams.get('topPerDay') || '5');
@@ -516,7 +516,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // RL-FIX-10: فلترة topPerDay — لكل (يوم، شخصية)، خد أعلى N توصية حسب
+    // RL-FIX-10: فلترة topPerDay — لكل (يوم، شخصية)، خد أعلى N توقع حسب
     // confidence (master_score). ده بيقلل التوصيات من ~310/أسبوع لـ ~20-35/أسبوع.
     // السبب: العميل ما يقدرش يشترى 310 سهم في أسبوع — أقصى 5 توصيات/يوم منطقي.
     // بنطبّقها بعد فلترة market/status/signal علشان الفلاتر تتم على البيانات الكاملة.

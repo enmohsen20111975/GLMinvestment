@@ -434,7 +434,7 @@ export function PredictionTrackingView() {
                 سجل التوصيات
               </CardTitle>
               <CardDescription className="mt-1">
-                {picks.length} توصية — {MARKET_NAMES_AR[currentMarket]}
+                {picks.length} توقع — {MARKET_NAMES_AR[currentMarket]}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -479,7 +479,7 @@ export function PredictionTrackingView() {
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableHead className="text-right">السهم</TableHead>
-                      <TableHead className="text-right">تاريخ التوصية</TableHead>
+                      <TableHead className="text-right">تاريخ التوقع</TableHead>
                       <TableHead className="text-right">الدخول</TableHead>
                       <TableHead className="text-right">الوقف</TableHead>
                       <TableHead className="text-right">الهدف</TableHead>
@@ -587,7 +587,7 @@ export function PredictionTrackingView() {
       <Card className="bg-muted/30">
         <CardContent className="p-3 text-xs text-muted-foreground text-center">
           <p>
-            💡 يتم حفظ كل توصية تلقائياً عند توليدها،
+            💡 يتم حفظ كل توقع تلقائياً عند توليدها،
             ويتم التحقق منها يومياً مقابل السعر الحالي لمعرفة ما إذا كانت وصلت للهدف أو ضربت الوقف.
           </p>
         </CardContent>

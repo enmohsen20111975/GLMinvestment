@@ -1097,7 +1097,7 @@ export function ReportsView() {
             </h2>
             <p className="text-xs text-muted-foreground">تقارير شاملة لسوق الأوراق المالية المصرية</p>
             <p className="text-[10px] text-muted-foreground/70 italic mt-0.5">
-              ⚠️ المحتوى لأغراض تعليمية وتحليلية فقط وليس تحليل استثمارية
+              ⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا شخصيًا آليًا لأغراض تعليمية وتحليلية فقط، وليست توصية استثمارية. القرار مسؤولية العميل.
             </p>
           </div>
         </div>

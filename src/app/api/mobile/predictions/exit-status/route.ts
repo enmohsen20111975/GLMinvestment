@@ -4,7 +4,7 @@
  * P41 Exit Engine (Mobile) — حالة الخروج اللحظي للتوصيات النشطة.
  * Proxy to Python /api/market/exit-status
  *
- * بيرجّع لكل توصية نشطة:
+ * بيرجّع لكل توقع نشطة:
  * - action: EXIT | TAKE_PROFIT | REDUCE | HOLD
  * - reason_code + reason_ar
  * - new_stop / new_tp (لو اتغيّروا)
@@ -14,7 +14,7 @@
  *
  * + summary: {HOLD: n, TAKE_PROFIT: n, REDUCE: n, EXIT: n}
  *
- * ممنوع الصمت بعد الدخول: كل توصية نشطة لها حالة خروج محدثة.
+ * ممنوع الصمت بعد الدخول: كل توقع نشطة لها حالة خروج محدثة.
  */
 
 import { NextRequest, NextResponse } from 'next/server';

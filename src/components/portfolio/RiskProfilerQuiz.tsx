@@ -76,7 +76,7 @@ const QUESTIONS: Question[] = [
     id: 'allocation',
     text: 'لو معاك 100 ألف جنيه، هتوزعها إزاي؟',
     options: [
-      { value: 1, label: 'كلها شهادات إيداع / بنك (عائد ثابت ومضمون)' },
+      { value: 1, label: 'كلها شهادات إيداع / بنك (عائد ثابت)' },
       { value: 2, label: '70% بنك + 30% أسهم' },
       { value: 3, label: '50% أسهم + 30% بنك + 20% ذهب' },
       { value: 4, label: '70% أسهم + 20% ذهب + 10% بنك بس للطوارئ' },
@@ -461,11 +461,11 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
             </div>
           )}
 
-          {/* توصية Rebalancing (static hint — kept for context) */}
+          {/* توقع Rebalancing (static hint — kept for context) */}
           {!currentAllocation && (
             <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
-                💡 <strong>توصية الروبو-أدفايزر:</strong> قارن التوزيع الحالي لمحفظتك بالتوزيع المثالي فوق.
+                💡 <strong>توقع الروبو-أدفايزر:</strong> قارن التوزيع الحالي لمحفظتك بالتوزيع المثالي فوق.
                 لو فرق أي أصل أكتر من 10%، اعمل Rebalancing (بيع الزايد واشتري الناقص) عشان تفضل في نطاق شخصيتك الاستثمارية.
               </p>
             </div>

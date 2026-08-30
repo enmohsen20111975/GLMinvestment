@@ -173,7 +173,7 @@ const PERSONA_INFO: Record<string, {
   conservative: {
     ar: 'المستثمر',
     en: 'Conservative',
-    description: 'حماية رأس المال هي الأولوية القصوى. صفقات قليلة لكن مضمونة.',
+    description: 'حماية رأس المال هي الأولوية القصوى. صفقات قليلة ومدروسة المخاطر.',
     risk_level: 'low',
     color: 'blue',
     icon: 'Shield'

@@ -750,7 +750,7 @@ export async function GET(
     });
   }
 
-  // التوصية الحالية (محسوبة من البيانات)
+  // التوقع الحالية (محسوبة من البيانات)
   let currentRec: DealAdvisorResponse['action_scenarios']['current_recommendation'] = {
     action: 'wait',
     action_ar: 'انتظار',

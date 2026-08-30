@@ -438,7 +438,7 @@ export function DealAdvisorPanel({
         {/* التقرير */}
         {data && !error && (
           <div className="space-y-4">
-            {/* التوصية الحالية (أبرز جزء) */}
+            {/* التوقع الحالي (أبرز جزء) */}
             <Alert
               className={
                 data.action_scenarios.current_recommendation.action === 'exit'
@@ -452,7 +452,7 @@ export function DealAdvisorPanel({
             >
               <Target className="h-4 w-4" />
               <AlertTitle className="text-base">
-                التوصية الحالية:{' '}
+                التوقع الحالي:{' '}
                 <span className={actionColor(data.action_scenarios.current_recommendation.action)}>
                   {data.action_scenarios.current_recommendation.action_ar}
                 </span>

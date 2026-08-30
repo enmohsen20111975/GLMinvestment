@@ -1315,7 +1315,7 @@ function AITab({ professional, ticker }: { professional: any; ticker: string }) 
             <div className="space-y-3">
               {professional.recommendation && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">التوصية:</span>
+                  <span className="text-xs text-muted-foreground">التوقع:</span>
                   <Badge className={signalBadge(professional.recommendation).className}>
                     {professional.recommendation_ar || professional.recommendation}
                   </Badge>

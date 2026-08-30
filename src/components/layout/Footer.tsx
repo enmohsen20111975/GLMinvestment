@@ -92,9 +92,12 @@ export function Footer() {
             </Link>
           </nav>
 
-          {/* Disclaimer note */}
-          <p className="text-xs text-muted-foreground text-center sm:text-left max-w-[400px] leading-relaxed">
-            المنصة لأغراض تعليمية وتحليلية فقط. المحتوى لا يُعد تحليل استثمارية أو نصيحة مالية. استشر متخصصًا ماليًا قبل اتخاذ أي قرار استثمار.
+          {/* Disclaimer note — أمان قانوني */}
+          <p className="text-xs text-muted-foreground text-center sm:text-left max-w-[500px] leading-relaxed">
+            <strong>إخلاء مسؤولية:</strong> المنصة تقدم رأيًا شخصيًا آليًا لأغراض
+            تعليمية وتحليلية فقط، وليست توصية استثمارية أو نصيحة مالية. القرار
+            مسؤولية العميل وحده. لا يوجد ضمان للنتائج، والخسارة ممكنة. استشر
+            مستشارًا ماليًا مرخصًا قبل أي قرار.
           </p>
 
           {/* Powered by */}

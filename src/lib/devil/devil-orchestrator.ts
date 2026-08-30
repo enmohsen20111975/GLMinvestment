@@ -300,7 +300,7 @@ export async function buildDevilCard(input: DevilCardInput): Promise<DevilCard> 
     gamblerPlay = `لو مغامر: السوق عرضي — مفيش لعبة واضحة`;
   }
 
-  // إضافة توصية السلسلة لو موجودة
+  // إضافة توقع السلسلة لو موجودة
   if (chainBeneficiaries.find(b => b.ticker === ticker)) {
     investorPlay += ` ✅ ${ticker} مستفيد من الحدث`;
   } else if (chainSufferers.find(s => s.ticker === ticker)) {

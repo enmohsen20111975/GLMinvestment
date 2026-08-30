@@ -1847,7 +1847,7 @@ export function PredictionTrackingDashboard({
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-xs gap-1">
                     <Shield className="w-3.5 h-3.5" />
-                    بطاقة إثبات التوصية الموثقة
+                    بطاقة إثبات التوقع الموثقة
                   </Badge>
                   <Badge className={cn('text-xs font-bold', OUTCOME_CONFIG[selectedProofTrade.outcome].badge)}>
                     {OUTCOME_CONFIG[selectedProofTrade.outcome].label}
@@ -1861,7 +1861,7 @@ export function PredictionTrackingDashboard({
                   </span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  توصية شخصية {PERSONA_CONFIG[selectedProofTrade.persona].emoji} {PERSONA_CONFIG[selectedProofTrade.persona].nameAr} — صدرت بتاريخ {formatDateShort(selectedProofTrade.entryDate)} — التنفيذ: {(selectedProofTrade.executionDate || selectedProofTrade.closedAt) ? formatDateShort(selectedProofTrade.executionDate || selectedProofTrade.closedAt) : 'معلّقة'}
+                  توقع شخصي {PERSONA_CONFIG[selectedProofTrade.persona].emoji} {PERSONA_CONFIG[selectedProofTrade.persona].nameAr} — صدرت بتاريخ {formatDateShort(selectedProofTrade.entryDate)} — التنفيذ: {(selectedProofTrade.executionDate || selectedProofTrade.closedAt) ? formatDateShort(selectedProofTrade.executionDate || selectedProofTrade.closedAt) : 'معلّقة'}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1907,7 +1907,7 @@ export function PredictionTrackingDashboard({
 
               {/* Reason / Proof Rationale */}
               <div className="space-y-1 text-xs">
-                <span className="font-bold text-foreground">دليل وتحليل التوصية:</span>
+                <span className="font-bold text-foreground">دليل وتحليل التوقع:</span>
                 <p className="p-3 bg-background border border-border/60 rounded-xl text-muted-foreground text-xs leading-relaxed">
                   {selectedProofTrade.reason || 'تم إغلاق الصفقة بناءً على تحقق الهدف الفني وحساب حركة السعر المباشرة.'}
                 </p>

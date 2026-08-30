@@ -4,7 +4,7 @@
    ROBO-ADVISOR-P4: BagHolderRescuePanel — محرك إنقاذ الأسهم المزنوقة
    ============================================================
    - العميل يدخل السهم + سعر الشراء + الكمية
-   - النظام بيحلل: القمة التاريخية + الأساسيات + التوصية
+   - النظام بيحلل: القمة التاريخية + الأساسيات + التوقع
    - بيطلع: اصبر / اعمل متوسط / اقطع خسارة + سبب بأسلوب بشري
    ============================================================ */
 
@@ -360,7 +360,7 @@ export function BagHolderRescuePanel({
               {/* Header: recommendation + urgency */}
               <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-lg bg-muted/50 border border-border">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">التوصية:</span>
+                  <span className="text-sm text-muted-foreground">التوقع:</span>
                   <Badge className={cn('border', REC_COLORS[result.recommendation])}>
                     {result.recommendation_ar}
                   </Badge>

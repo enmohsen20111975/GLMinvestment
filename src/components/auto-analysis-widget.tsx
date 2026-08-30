@@ -61,7 +61,7 @@ export function AutoAnalysisWidget() {
           results: Array.isArray(data.results) ? data.results : [],
           overallAccuracy: safeNum(data.overallAccuracy ?? data.aggregate?.accuracy, 0),
           improvement: safeNum(data.improvement ?? data.aggregate?.improvement, 0),
-          recommendation: data.recommendation ?? data.decision ?? 'لا توجد توصية',
+          recommendation: data.recommendation ?? data.decision ?? 'لا يوجد توقع',
           auto_analysis_eligible: data.auto_analysis_eligible ?? data.aggregate?.accuracy >= 55,
         });
       } else {
@@ -243,7 +243,7 @@ export function AutoAnalysisWidget() {
               التحليل
             </span>
           </div>
-          <p className="text-sm text-slate-300">{testResult.recommendation ?? 'لا توجد توصية'}</p>
+          <p className="text-sm text-slate-300">{testResult.recommendation ?? 'لا يوجد توقع'}</p>
         </div>
 
         {/* Info */}

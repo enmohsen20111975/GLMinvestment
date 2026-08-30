@@ -86,7 +86,7 @@ export function isDuplicatePrediction(ticker: string, days = 7): boolean {
  *
  * المعطيات:
  * - ticker: رمز السهم
- * - signal: التوصية (BUY, SELL, HOLD, etc.)
+ * - signal: التوقع (BUY, SELL, HOLD, etc.)
  * - confidence: الثقة الأصلية (0-100)
  * - entryPrice, targetPrice, stopLoss
  * - historicalPrices: تاريخ الأسعار (آخر 30 يوم)
