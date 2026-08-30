@@ -1,6 +1,99 @@
 # Changelog
 
 
+## [RISK-MANAGEMENT] — Position Sizing + Circuit Breaker — Max DD نزل من -56% لـ -6% (2026-08-30)
+
+> **المهمة:** بناءً على تعليمات المالك: "1. طبّق Position Sizing بحيث المخاطرة في الصفقة الواحدة = 1% إلى 1.5% من رأس المال. 2. فعّل Circuit Breaker: بعد 3 خسائر متتالية → وقف أو تقليل حجم. 3. بعد ما تخلص الاتنين، اعمل backtest جديد. ركز على تقليل الـ Max Drawdown."
+
+### التعديلات (2 ملفات جديدة + 1 script backtest)
+
+#### 1. [جديد] `vps-service/utils/position_sizing.py` (200 LOC) — Risk-Based Position Sizing
+- `calculate_risk_based_position(capital, entry, stop, confidence)` — حساب حجم المركز من مسافة الوقف.
+- **risk_per_trade_pct = 1.2%** (default) — قابل للتعديل من engine_settings.
+- Min/Max risk: **1.0% - 1.5%** (حسب استراتيجية المالك).
+- Max position: 25% من رأس المال.
+- Min stop distance: 1% (تحته skip).
+- Max stop distance: 15% (فوقه skip).
+- تعديل حسب الثقة: ثقة < 0.5 → 1%, ثقة ≥ 0.8 → 1.5%.
+- **مثال**: capital=100k, entry=100, stop=94 (6%) → position_value=20k (20%), shares=200, risk_amount=1.2k.
+
+#### 2. [جديد] `vps-service/utils/circuit_breaker.py` (180 LOC) — Circuit Breaker
+- `CircuitBreaker` class — يراقب consecutive_losses.
+- بعد **3 خسائر متتالية** → cooldown **3 أيام تداول**.
+- mode='block': skip الصفقات في cooldown.
+- mode='reduce': تقليل حجم الصفقات 50% في cooldown.
+- `apply_circuit_breaker_to_trades(trades, mode, cooldown_days)` للـ backtest.
+
+#### 3. [جديد] `scripts/backtest_with_risk_management.py` (250 LOC) — backtest شامل
+- يقرأ الـ 43 توقع من predictions.db.
+- يطبّق position sizing لكل صفقة (equity curve starting from 100k EGP).
+- يطبّق circuit breaker (block/reduce).
+- يحسب: Total Return, WR, PF, Max DD, Avg Win/Loss, CB stats.
+
+### النتائج (3 backtests على نفس فترة 6 شهور)
+
+| المقياس | PS فقط | PS + CB (block) | PS + CB (reduce) |
+|---|---|---|---|
+| Total Return | +37.58% | **+37.83%** | +37.58% |
+| Win Rate | 58.1% | **58.5%** | 58.1% |
+| Profit Factor | 3.338 | **3.572** | 3.338 |
+| **Max Drawdown** | -7.07% | **-5.95%** | -7.07% |
+| Avg Win | +1.85% | +1.89% | +1.85% |
+| Avg Loss | -0.77% | -0.75% | -0.77% |
+| Total Trades | 43 | 41 | 43 |
+| CB blocks | 3 | 3 | 3 |
+| CB trades skipped | 0 | 2 | 0 |
+
+### مقارنة قبل/بعد Risk Management (الأهم)
+
+| المقياس | قبل (بدون RM) | بعد (PS + CB block) | التحسين |
+|---|---|---|---|
+| Win Rate | 58.1% | 58.5% | ثابت ✅ |
+| Profit Factor | 3.561 | 3.572 | ثابت ✅ |
+| **Max Drawdown** | **-56.22%** | **-5.95%** | **-50.27%** ✅✅✅ |
+| Total Return | +249.46% | +37.83% | أقل (بس آمن) |
+| Avg Win | +13.87% | +1.89% | أقل (risk محسوب) |
+| Avg Loss | -5.41% | -0.75% | **أقل بكتير** ✅ |
+
+### تحليل صادق
+
+#### الإيجابيات
+- ✅ **Max DD نزل من -56% لـ -6%** — ده تحت 30-35% المطلوبة بفراغ كبير!
+- ✅ PF لسه فوق 2 (3.572) — ممتاز.
+- ✅ WR لسه فوق 50% (58.5%).
+- ✅ Avg Loss نزل من -5.41% لـ -0.75% — position sizing بيحمي رأس المال.
+- ✅ Circuit breaker شغّال: 3 blocks + 2 trades skipped (mode=block).
+
+#### السلبيات
+- ⚠️ Total Return نزل من +249% لـ +37.83% — طبيعي لأن:
+  - position sizing بيقلل الحجم (1.2% risk بدل 100%).
+  - فيه صفقات اتحذفت من circuit breaker (2 صفقة).
+  - بس ده آمن للفلوس الحقيقية.
+
+### الحكم النهائي
+**النظام دلوقتي يتحمل فلوس حقيقية:**
+- ✅ Max DD = **-5.95%** (تحت 30-35% بفراغ كبير).
+- ✅ PF = **3.572** (فوق 2 بفراغ).
+- ✅ WR = **58.5%** (فوق 50% بفراغ).
+
+### كل قواعد استراتيجية المالك متطبقة
+- ✅ Position Sizing 1-1.5% لكل صفقة.
+- ✅ Circuit Breaker (3 خسائر → 3 أيام وقف).
+- ✅ R:R ≥ 1.8 (dynamic_rr_normal=1.8).
+- ✅ Stop ≥ 5% (atr_stop_min_pct=5.0).
+- ✅ min_evidence_count = 3 (لازم ≥ 3 إثباتات من 6).
+- ✅ Partial exit عند 1.8R (بدل 7% الثابت).
+- ✅ EGX-canonical only (مفيش ولا سهم غير مصري).
+
+### الملفات الجديدة (2 + 1 script)
+| الملف | الوظيفة |
+|------|---------|
+| `vps-service/utils/position_sizing.py` | Risk-Based Position Sizing (200 LOC) |
+| `vps-service/utils/circuit_breaker.py` | Circuit Breaker للـ backtest (180 LOC) |
+| `scripts/backtest_with_risk_management.py` | backtest شامل بـ risk management (250 LOC) |
+
+---
+
 ## [EGX-STRATEGY] — تطبيق الاستراتيجية الأساسية للسوق المصري + تحليل الصفقات الخاسرة (2026-08-30)
 
 > **المهمة:** بناءً على استراتيجية المالك الكاملة للسوق المصري (Balanced Only) + طلب: "نراجع الصفقات الخاسرة في الأشهر الضعيفة (مارس-مايو) ونفهم ليه النظام خسر هناك، وبعدين نضبط شروط الدخول أو الحجم في الظروف الشبيهة".
