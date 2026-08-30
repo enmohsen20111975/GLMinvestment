@@ -12344,3 +12344,64 @@ Stage Summary:
 - ✅ disclaimers في كل شاشات الكريبتو + الأسهم + Footer
 - ✅ أخطاء نحوية اتصصلحت
 - ✅ المنصة دلوقتي محمية قانونياً: "رأي شخصي آلي" + "القرار مسؤولية العميل" + "لا ضمان للنتائج"
+
+---
+Task ID: TOMORROW-PREDICTIONS-2026-08-30
+Agent: Z.ai Code (main)
+Task: نظام توقعات الغد — 3 أجزاء (توقعات شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) + توثيق منفصل
+
+Work Log:
+- **التوثيق في فولدر Documentation** (مش worklog بس):
+  - `Documentation/AUDIT_REPORT_2026-08-30.md` — تقرير شامل بكل المشاكل + الإصلاحات
+  - `Documentation/LEGAL_PROTECTION.md` — توثيق الحماية القانونية
+
+- **الجزء 1: Python script لتوليد توقعات الغد**:
+  - `vps-service/jobs/tomorrow_predictions_generator.py` (650 LOC)
+  - 3 أجزاء:
+    1. `generate_tomorrow_predictions()` — توقعات شراء/بيع (MaestroOrchestrator أو simple_analysis)
+    2. `update_active_status()` — حالة الأسهم النشطة (وصلت لفين + الإجراء المتوقع)
+    3. `generate_watchlist()` — أسهم تحت المراقبة (volume surge + RSI + near 52w + top movers)
+  - يدعم EGX + CRYPTO
+  - 3 جداول جديدة في predictions.db:
+    - `tomorrow_predictions` (الجزء 1)
+    - `tomorrow_active_status` (الجزء 2)
+    - `tomorrow_watchlist` (الجزء 3)
+  - التشغيل: `python vps-service/jobs/tomorrow_predictions_generator.py --market EGX`
+  - Cron job بعد إغلاق السوق: `0 15 * * 1-5`
+
+- **الجزء 2: API endpoint**:
+  - `src/app/api/tomorrow-predictions/route.ts` (GET) — بيرجع 3 أجزاء + stats
+  - `src/app/api/tomorrow-predictions/generate/route.ts` (POST) — بيـ spawn السكربت Python
+
+- **الجزء 3: Frontend View**:
+  - `src/components/predictions/TomorrowPredictionsView.tsx` (650 LOC)
+  - 3 Tabs:
+    1. "التوقعات" — توقعات شراء/بيع (ticker + signal + entry + target + stop + R/R + confidence + reason)
+    2. "الأسهم النشطة" — حالة الأسهم اللي كانت معانا (progress bar + status + expected_action)
+    3. "تحت المراقبة" — أسهم ممكن تعمل شغل حلو (watch_type + priority + RSI + volume_surge)
+  - Stats cards: 6 cards (توقعات + شراء + بيع + نشطة + حققت الهدف + تحت المراقبة)
+  - زر "توليد يدوي" للأدمن
+  - Market filter (all/EGX/CRYPTO)
+  - LegalDisclaimerFooter في الأسفل
+
+- **الربط في page.tsx + Sidebar**:
+  - route جديد: `#tomorrow-predictions`
+  - Sidebar item: "توقعات الغد" (Calendar icon)
+  - in validViews + VALID_VIEWS Set
+
+- **اختبار السكربت** (dry-run + actual):
+  - ✅ تم توليد 3 توقعات (HELI, DCRC, ELKA)
+  - ✅ تم تحديد 15 سهم تحت المراقبة (APPC, EGREF, TWSA, GPIM, AMER مع volume surge)
+  - ✅ API بيرجع بيانات حقيقية
+
+- **lint**: EXIT 0 ✅
+- **Python syntax**: ✅
+
+Stage Summary:
+- ✅ Documentation/AUDIT_REPORT_2026-08-30.md + LEGAL_PROTECTION.md
+- ✅ tomorrow_predictions_generator.py (3 أجزاء + 3 جداول)
+- ✅ /api/tomorrow-predictions (GET + POST generate)
+- ✅ TomorrowPredictionsView (3 tabs + stats + admin button)
+- ✅ Sidebar + page.tsx ربط
+- ✅ اختبار: 3 توقعات + 15 تحت المراقبة
+- 🔜 المستخدم يقدر يولد توقعات من الأدمن بنل أو تلقائياً بـ cron job
