@@ -2191,6 +2191,75 @@ class MaestroOrchestrator:
             warnings.append(f'Entry gate veto: {_entry_veto_reason}')
             warnings_ar.append(f'بوابة الدخول: {_entry_veto_reason}')
 
+        # =====================================================================
+        # PRODUCTION-WIRING (2026-08-30): ربط sector filter + BOS/ChoCH + liquidity
+        # في MaestroOrchestrator (الإنتاج الحقيقي) — مش بس v40_2_daily_generator.
+        # =====================================================================
+        # 1) Sector Liquidity Filter
+        try:
+            import sqlite3 as _prod_sec_sql
+            _prod_sec_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')
+            _prod_conn = _prod_sec_sql.connect(_prod_sec_db, timeout=5.0)
+            _prod_conn.row_factory = _prod_sec_sql.Row
+            _prod_sec_row = _prod_conn.execute(
+                "SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1", (ticker,)
+            ).fetchone()
+            _prod_sector = _prod_sec_row['sector'] if _prod_sec_row and _prod_sec_row['sector'] else None
+            if _prod_sector and _prod_sector not in ('', '—', None, 'Diversified', 'diversified', 'غير مصنف'):
+                _prod_stats = _prod_conn.execute(
+                    "SELECT COUNT(*) as n, AVG(change_percent) as avg_chg, SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising FROM stocks WHERE market = 'EGX' AND sector = ? AND change_percent IS NOT NULL",
+                    (_prod_sector,)
+                ).fetchone()
+                if _prod_stats and _prod_stats['n'] >= 3:
+                    _prod_avg = float(_prod_stats['avg_chg'] or 0)
+                    _prod_rising_pct = int(_prod_stats['rising'] or 0) / _prod_stats['n']
+                    if _prod_avg <= -1.0 and _prod_rising_pct <= 0.25:
+                        if recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy'):
+                            recommendation = 'hold'
+                            recommendation_ar = f'احتفاظ (قطاع ميت: {_prod_sector[:20]})'
+                            warnings.append(f'Sector dead: {_prod_sector} avg={_prod_avg:+.2f}%')
+                            warnings_ar.append(f'القطاع ميت: {_prod_sector} (متوسط {_prod_avg:+.2f}%)')
+                            print(f"[PROD-SECTOR-DEAD] {ticker}: sector={_prod_sector[:20]} → HOLD", flush=True)
+            _prod_conn.close()
+        except Exception:
+            pass
+
+        # 2) BOS/ChoCH
+        try:
+            from engines.v38_backtest_engine import detect_order_blocks_and_sweeps
+            _prod_ob = detect_order_blocks_and_sweeps(
+                [to_num(p.get('high', p.get('high_price', 0))) for p in price_history[-50:]],
+                [to_num(p.get('low', p.get('low_price', 0))) for p in price_history[-50:]],
+                [to_num(p.get('close', p.get('close_price', 0))) for p in price_history[-50:]],
+                lookback=5
+            )
+            if _prod_ob.broke_support and not _prod_ob.sweep_low:
+                if recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy'):
+                    recommendation = 'hold'
+                    recommendation_ar = 'احتفاظ (كسر دعم — ChoCH bear)'
+                    warnings.append(f'ChoCH bear: broke support {_prod_ob.last_support:.2f}')
+                    warnings_ar.append(f'كسر دعم: {_prod_ob.last_support:.2f} — ترند هابط')
+                    print(f"[PROD-CHOCH-BEAR] {ticker}: broke support={_prod_ob.last_support:.2f} → HOLD", flush=True)
+        except Exception:
+            pass
+
+        # 3) Liquidity Classification
+        try:
+            from core.opportunity_quality import classify_liquidity
+            _prod_liq = classify_liquidity(
+                [to_num(p.get('close', p.get('close_price', 0))) for p in price_history[-30:]],
+                [to_num(p.get('volume', p.get('volume_traded', 0))) for p in price_history[-30:]],
+                [to_num(p.get('open', p.get('open_price', 0))) for p in price_history[-30:]],
+                [to_num(p.get('high', p.get('high_price', 0))) for p in price_history[-30:]],
+                [to_num(p.get('low', p.get('low_price', 0))) for p in price_history[-30:]],
+            )
+            if _prod_liq['type'] == 'weak' and recommendation in ('buy', 'strong_buy'):
+                maestro_score = max(0, maestro_score - 5)
+                warnings.append(f'Weak liquidity: vol_ratio={_prod_liq["vol_ratio"]:.2f}')
+                warnings_ar.append(f'سيولة ضعيفة: حجم منخفض')
+        except Exception:
+            pass
+
         # 🔥 P0-v6 FIX #2 (VCP force-strong-buy):
         #    VCP score ≥ 85 = إشارة اختراق عالية الثقة → force strong_buy مهما
         #    كانت التوصية الأصلية (حتى لو hold/reduce). + confidence boost.
