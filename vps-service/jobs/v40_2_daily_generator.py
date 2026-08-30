@@ -871,6 +871,32 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _sec_err:
                 pass  # safe-by-design: لو sector filter فشل، سيب الإشارة تكمّل
 
+            # ── BOS/ChoCH FILTER (مرحلة منفصلة 2 — 2026-08-30) ──
+            # من Pine Script V56: BOS = كسر مقاومة → ترند صاعد مؤكد
+            # ChoCH = كسر دعم → ترند هابط → خروج فوري
+            # sweep_low = نزل تحت الدعم وقفل فوقه → ميكرز بيمتص السيولة
+            # المنطق: لو في ChoCH bear (كسر دعم) → ارفض الدخول
+            # لو في BOS bull أو sweep_low → boost الثقة
+            try:
+                from engines.v38_backtest_engine import detect_order_blocks_and_sweeps
+                _ob_state = detect_order_blocks_and_sweeps(
+                    highs[:day_idx+1], lows[:day_idx+1], closes[:day_idx+1], lookback=5
+                )
+                # ChoCH bear: السعر كسر آخر دعم → ترند هابط → رفض
+                if _ob_state.broke_support and not _ob_state.sweep_low:
+                    print(f"[CHOCH-BEAR] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"close={closes[day_idx]:.2f} broke support={_ob_state.last_support:.2f} → رفض", flush=True)
+                    continue
+                # BOS bull أو sweep_low → log للـ audit (boost ضمني)
+                if _ob_state.broke_resistance:
+                    print(f"[BOS-BULL] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"close={closes[day_idx]:.2f} broke resistance={_ob_state.last_resistance:.2f} → boost", flush=True)
+                if _ob_state.sweep_low:
+                    print(f"[SWEEP-LOW] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"low={lows[day_idx]:.2f} swept support={_ob_state.last_support:.2f} → boost", flush=True)
+            except Exception as _bos_err:
+                pass  # safe-by-design
+
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
             # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
