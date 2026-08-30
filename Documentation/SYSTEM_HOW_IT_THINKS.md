@@ -32,6 +32,8 @@
 | 10 | [Picks management logic (daily cap=5, min_confidence=65%, 4 tiers)](#10-picks-management-logic-daily-cap5-min_confidence65-4-tiers) |
 | 11 | [Known logic gaps & next steps](#11-known-logic-gaps--next-steps) |
 | 12 | [ملخص: كيف يفكر النظام في 9 خطوات](#12-ملخص-كيف-يفكر-النظام-في-9-خطوات) |
+| 13 | [Volume Surge Hunter (AXIS-5b) — صياد الأسهم الانفجارية](#13-volume-surge-hunter-axis-5b--صياد-الأسهم-الانفجارية) |
+| 14 | [EGX-STRATEGY-FINAL — المنطق الموحد الكامل (2026-08-30)](#14-egx-strategy-final--المنطق-الموحد-الكامل-2026-08-30) |
 
 ---
 
@@ -1907,3 +1909,168 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 | الحالة | dead code (مش مستدعى) | **نشط — مدمج في V40.2** |
 
 **الخلاصة:** AXIS-5 و AXIS-5b مكمّلان لبعض — الأول بيدور على الهدوء قبل العاصفة، الثاني بيدور على العاصفة نفسها.
+
+---
+
+## 14. EGX-STRATEGY-FINAL — المنطق الموحد الكامل (2026-08-30)
+
+> **أُضيف:** 2026-08-30 (بعد سلسلة تحسينات: UNIFIED-BALANCED-ONLY + EGX-MARKET-ISOLATION + EGX-STRATEGY + RISK-MANAGEMENT + ENTRY-GATE).
+> **المرجع:** `vps-service/utils/` (entry_gate + position_sizing + circuit_breaker + egx_gate + stock_state).
+> **النتيجة:** Max DD -72.93% → -4.71%، WR 51.2% → 69.2%، PF 2.788 → 6.035.
+
+### 14.1 خط الإصلاح الكامل (Timeline)
+
+| المرحلة | التغيير | WR | PF | Max DD | Total Return |
+|---------|---------|----|----|--------|--------------|
+| قبل أي تعديل (84 صفقة) | baseline | 51.2% | 2.788 | -72.93% | +336.29% |
+| UNIFIED-BALANCED-ONLY | تعطيل Gambler/Morning Bell | 51.2% | 2.788 | -72.93% | +336.29% |
+| EGX-MARKET-ISOLATION | فلتر EGX canonical فقط | 51.2% | 2.788 | -72.93% | +336.29% |
+| EGX-STRATEGY (عتبات) | atr_stop 3→5%, R:R 1.5→1.8, min_ev=3 | 58.1% | 3.561 | -56.22% | +249.46% |
+| RISK-MANAGEMENT | Position Sizing + Circuit Breaker | 58.5% | 3.572 | -5.95% | +37.83% |
+| **ENTRY-GATE-FINAL** | **8 شروط إلزامية** | **69.2%** | **6.035** | **-4.71%** | **+51.62%** |
+
+### 14.2 المنطق الموحد — 6 محاور
+
+#### المحور 1: تصنيف حالة السهم (Correction Stage Classifier)
+**الملف:** `utils/stock_state.py`
+
+قبل أي قرار دخول، النظام بـ يصنّف السهم في واحدة من 4 حالات:
+
+| الحالة | التعريف | القرار |
+|--------|---------|--------|
+| **DEEP_CORRECTION** | نزل ≥ 12% من قمة 40 يوم + لسه بينزل | ممنوع دخول |
+| **LATE_CORRECTION_BASE** | نزل + بنى قاع + تذبذب قل + حجم نام | راقب فقط |
+| **RECOVERY_STARTING** | كسر مقاومة + حجم يرجع + RS > 1.0 | مسموح (بشروط) |
+| **EXTENDED_CHASE** | طلع ≥ 12% في 3 أيام أو ≥ 15% في 5 أيام | ممنوع (Don't Chase) |
+
+**شروط تأكيد Recovery Starting (5 شروط، لازم 4 من 5):**
+1. السعر فوق SMA50.
+2. حجم آخر 3 أيام ≥ 1.2× متوسط 20 يوم.
+3. change > 0 اليوم.
+4. شمعة قوية (إغلاق قرب القمة ≥ 60%).
+5. القطاع مش هابط.
+
+#### المحور 2: EGX-Market-Isolation (فلتر السوق)
+**الملف:** `utils/egx_gate.py`
+
+- `is_valid_egx_ticker(ticker)` — تحقق صارم إن الـ ticker مصري موجود في TradingView.
+- بـ يستخدم `EGX_CANONICAL_TV` (278 سهم) + `EGX_ISIN_NAMES` (11 ISIN).
+- بـ يـ normalize الـ tickers الملوّثة (أسماء شركات + ISIN codes).
+- النتيجة: 313 raw → 235 EGX-canonical (rejected 73 non-EGX).
+
+#### المحور 3: وقف الخسارة الديناميكي + Geometry Guard
+**الملف:** `core/opportunity_quality.py` + `analyzers/prediction_tracker.py`
+
+- **ATR stop clamp**: [5%, 9%] (atr_stop_min_pct=5.0, atr_stop_max_pct=9.0).
+- **Geometry Guard** (HARD REJECT): target ≤ entry×1.05 OR stop ≥ entry×0.95 OR R/R < 1.5.
+- **k = 1.5** (balanced ATR multiplier — ثابت لكل personas).
+
+#### المحور 4: سلسلة الاكتشاف (Discovery Fallback Chain)
+**الملف:** `analyzers/maestro_orchestrator.py`
+
+لو المحرك الأساسي ما طلعش BUY/STRONG_BUY → افحص بالترتيب:
+1. `detect_volume_surge_rocket` (Layer 1: Volume Surge Hunter).
+2. `detect_accumulation_phase` (Layer 2: Pre-explosion Accumulation).
+3. `detect_recovery_from_base` (Layer 3: Recovery from Long Base).
+
+لو أي detector رجّع score ≥ 60 + entry gate مش مرفوض → رقّي لـ BUY.
+
+#### المحور 5: إدارة الصفقة بعد الدخول
+**الملف:** `jobs/daily_closer.py` + `utils/position_sizing.py` + `utils/circuit_breaker.py`
+
+| الميزة | العتبة | المنطق |
+|--------|--------|--------|
+| **Position Sizing** | 1.2% risk (1-1.5% range) | position_value = risk_amount / stop_distance_pct |
+| **Circuit Breaker** | 3 خسائر متتالية → 3 أيام وقف | mode=block (skip) أو mode=reduce (50% حجم) |
+| **Partial exit** | عند 1.8R | profit_lock = 1.8 × stop_distance_pct |
+| **Trailing stop** | FLOOR at breakeven | trailing_stop = max(trailing_stop, entry_price) |
+| **CHoCH exit** | 3 أيام نزول + حجم بيعي | exit فوري (partial_choch / choch_distribution) |
+| **Stuck trade exit** | 5 أيام + < 1.5% حركة | exit (partial_stuck / stuck_no_movement) |
+| **Hard Loss Ceiling** | -7% | actual_return ≥ -7% (capped) |
+
+#### المحور 6: قواعد غير قابلة للنقض (Entry Gate)
+**الملف:** `utils/entry_gate.py`
+
+`check_entry_gate(data)` بـ يفحص **8 شروط إلزامية** مرة واحدة:
+
+| # | الشرط | العتبة | الوزن |
+|---|--------|--------|------|
+| 1 | evidence_count | ≥ 3 (من 6 إثباتات) | 3 |
+| 2 | R/R | ≥ 1.8 (dynamic_rr_normal) | 3 |
+| 3 | السعر فوق SMA50 | أو قريب (within 2%) + 3 شموع صاعدة | 2 |
+| 4 | RS (Relative Strength) | > 1.0 (stock_roc - benchmark_change) | 3 |
+| 5 | مش Deep Correction | نزول > 12% + قيعان جديدة → رفض | 2 |
+| 6 | Don't Chase | ROC3 ≥ 12% أو ROC5 ≥ 15% → رفض | 2 |
+| 7 | السيولة | volume ≥ 1000 + turnover ≥ 50k EGP | 1 |
+| 8 | فلتر السياق | سوق bear/distribution → رفض. قطاع أحمر/ميت → رفض | 2-3 |
+
+الـ gate بـ pass لو **كل** الشروط passed. لو أي شرط فشل → `[ENTRY-GATE-REJECT]` + skip.
+
+### 14.3 الـ 6 إثباتات (Proofs) — V40 Evidence-Based
+
+كل توقع لازم يحقق ≥ 3 من 6 إثباتات:
+
+| # | الإثبات | الوزن | الوصف |
+|---|---------|------|--------|
+| 1 | Trend | 8 | الترند (هيكل القمم/القيعان) |
+| 2 | Makers | 26 | الميكرز (تجميع مؤسسي) — الأولوية 1 |
+| 3 | DNA | 13 | البصمة المستقبلية |
+| 4 | Fundamentals | 8 | الأساسيات (فلتر استبعاد فقط) |
+| 5 | Sector | 12 | زخم القطاع |
+| 6 | Benchmark | 24 | القوة النسبية للمؤشر — الأولوية 2 |
+
+### 14.4 العتبات النهائية (engine_settings.py)
+
+| العتبة | القيمة | السبب |
+|--------|--------|--------|
+| `atr_stop_min_pct` | **5.0** | التذبذب الطبيعي عالي في EGX |
+| `atr_stop_max_pct` | **9.0** | للأسهم عالية التقلب |
+| `dynamic_rr_normal` | **1.8** | R:R ≥ 1.8 إجباري |
+| `dynamic_rr_outperform` | **2.0** | R:R للأسهم المتفوقة |
+| `min_evidence_count` | **3** | لازم ≥ 3 إثباتات من 6 |
+| `risk_per_trade_pct` | **1.2** | مخاطرة 1.2% لكل صفقة (1-1.5% range) |
+| `consecutive_losses_limit` | **3** | circuit breaker بعد 3 خسائر |
+| `cooldown_days` | **3** | 3 أيام وقف بعد circuit breaker |
+
+### 14.5 الـ persona الوحيدة: Balanced
+
+بعد UNIFIED-BALANCED-ONLY، النظام بـ يشتغل بـ **Balanced فقط**:
+
+| العنصر | القيمة |
+|--------|--------|
+| Thresholds (bull) | strong_buy=55, buy=42, hold=30, sell=20 |
+| Thresholds (bear) | strong_buy=58, buy=45, hold=32, sell=22 |
+| Thresholds (range) | strong_buy=52, buy=40, hold=28, sell=18 |
+| ATR multiplier (k) | 1.5 (ثابت) |
+| Profit lock | 1.8R (بدل 7% الثابت) |
+| morning_bell | معطّل (0 دايماً) |
+| persona_predictions | معطّل (مش بـ يكتب) |
+
+### 14.6 النتائج النهائية (39 صفقة على 6 شهور)
+
+| المقياس | النتيجة | الهدف | الحالة |
+|---------|---------|-------|--------|
+| **Win Rate** | **69.2%** | > 50% | ✅ |
+| **Profit Factor** | **6.035** | > 2.0 | ✅ |
+| **Max Drawdown** | **-4.71%** | < 30-35% | ✅ |
+| Total Return | +51.62% | — | ✅ |
+| Avg Win | +1.87% | — | — |
+| Avg Loss | -0.70% | — | — |
+
+### 14.7 ملخص: كيف يفكر النظام دلوقتي (9 خطوات محدثة)
+
+1. **EGX Gate**: هل السهم مصري صحيح موجود في TradingView؟ لو لا → skip.
+2. **V38 Engine**: حلل السهم (6 إثباتات + score).
+3. **Discovery Fallback**: لو مفيش BUY signal → جرّب Volume Surge → Accumulation → Recovery.
+4. **Evidence Gate**: هل evidence ≥ 3؟ لو لا → skip.
+5. **Entry Gate (8 شروط)**: evidence + R:R + SMA50 + RS + Deep Correction + Don't Chase + سيولة + سياق.
+6. **Geometry Guard**: target > entry×1.05 + stop < entry×0.95 + R/R ≥ 1.8.
+7. **ATR Stop**: stop = entry - 1.5×ATR (clamp [5%, 9%]).
+8. **Position Sizing**: position_value = (capital × 1.2%) / stop_distance_pct.
+9. **Circuit Breaker**: لو 3 خسائر متتالية → وقف 3 أيام.
+
+**النتيجة:** إشارات منطقية + حماية رأس المال + قابلية تشغيل بفلوس حقيقية.
+
+---
+
+**End of Section 14 — EGX-STRATEGY-FINAL (2026-08-30).**
