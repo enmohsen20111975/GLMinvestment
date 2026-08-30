@@ -200,7 +200,12 @@ DEFAULT_SETTINGS: Dict[str, float] = {
     # نطاق الـ stop distance كـ % من entry. كان 3%-7% (P0-v3) → رفعنا لـ 3%-9% (PILLAR-3)
     # عشان الأسهم المضاربية المصرية (HRHO/MFPC/COMI) بتتحرك 7-9% ATR في news sessions.
     # الـ 7% cap كان بـ يـ reject صفقات بـ R/R كويسة (6 صفقات فقط في 8 أشهر).
-    "atr_stop_min_pct": 3.0,                # stop distance ≥ 3% (تحت كده العمولات بـ تاكل الـ edge)
+    #
+    # ── EGX-STRATEGY (2026-08-30): رفعنا atr_stop_min_pct من 3.0 لـ 5.0 ──
+    # السبب: استراتيجية المالك بتقول "الحد الأدنى للوقف في EGX: مش أقل من 5% في
+    # معظم الحالات (التذبذب الطبيعي عالي)". تحليل مارس-مايو أظهر إن وقف 3% بـ
+    # يضرب من ضجيج السوق العادي. الـ 5% بـ يـ give breathing room للصفقة.
+    "atr_stop_min_pct": 5.0,                # EGX-STRATEGY: stop distance ≥ 5% (التذبذب الطبيعي عالي في EGX)
     "atr_stop_max_pct": 9.0,                 # stop distance ≤ 9% (كان 7% — للأسهم عالية التقلب)
     # ===== تعويض تأخير الـ 5 دقائق (Delayed Data Compensation) =====
     # Close-Confirmation: استنى الشمعة تقفل فوق المقاومة بدل ما نطلب اختراق لحظي.
@@ -245,7 +250,18 @@ DEFAULT_SETTINGS: Dict[str, float] = {
     "base_buy_threshold": 75,           # V39: حد الشراء الأساسي (سيتم تكييفه)
     "self_learning_adjustment_pct": 10, # V39: نسبة تعديل الحد من التعلم الذاتي
     "dynamic_rr_outperform": 2.0,       # V39: R:R لما السهم أقوى من المؤشر
-    "dynamic_rr_normal": 1.5,           # V39: R:R عادي
+    # ── EGX-STRATEGY (2026-08-30): رفعنا dynamic_rr_normal من 1.5 لـ 1.8 ──
+    # السبب: استراتيجية المالك بتقول "R/R لا يقل عن 1.8 (يفضل 2.0)".
+    # تحليل مارس-مايو أظهر إن R:R=2.0 مع evidence=0/6 بـ يخسر — المشكلة كانت في
+    # جودة الإشارة مش في R:R. بس رفعنا الـ floor لـ 1.8 عشان نضمن مخاطرة مجدية.
+    "dynamic_rr_normal": 1.8,           # EGX-STRATEGY: R:R عادي (رفعناها من 1.5 لـ 1.8)
+
+    # ── EGX-STRATEGY (2026-08-30): الحد الأدنى للإثباتات ──
+    # استراتيجية المالك: "ندخل فقط عندما يكون الاحتمال لصالحنا بوضوح".
+    # تحليل مارس-مايو أظهر إن 4 من 9 خسائر كان evidence=0/6 (بدون أي إثباتات).
+    # الـ 6 إثباتات: Trend + Makers + DNA + Fundamentals + Sector + Benchmark.
+    # min_evidence_count=3 يعني لازم نعلى على الأقل 3 إثباتات من 6 (50%) للدخول.
+    "min_evidence_count": 3,            # EGX-STRATEGY: لازم ≥ 3 إثباتات من 6 للدخول
     "atr_stop_mult_default": 1.5,       # V39: مضاعف ATR للوقف الافتراضي
     "atr_stop_mult_high_vol": 2.5,      # V39: مضاعف ATR للوقف في تذبذب عالي
     "atr_stop_mult_low_vol": 1.0,       # V39: مضاعف ATR للوقف في تذبذب منخفض

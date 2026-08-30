@@ -651,6 +651,18 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             r_mult = compute_r_multiple(entry, target, stop)
             persona_fit = compute_persona_fit(result.get('proofs', {}))
 
+            # ── EGX-STRATEGY (2026-08-30): الحد الأدنى للإثباتات ──
+            # استراتيجية المالك: "ندخل فقط عندما يكون الاحتمال لصالحنا بوضوح".
+            # تحليل مارس-مايو أظهر إن 4 من 9 خسائر كان evidence=0/6 (بدون أي إثباتات).
+            # الحل: رفض أي إشارة evidence < min_evidence_count (default=3).
+            try:
+                from analyzers.engine_settings import get_setting
+                _min_ev = int(get_setting('min_evidence_count', default=3))
+            except Exception:
+                _min_ev = 3
+            if evidence < _min_ev:
+                continue
+
             # ─── FUNDAMENTALS-VETO (2026-08-17): hard reject weak-fundamentals stocks ───
             # Owner directive: if persona_fit != 'gambler' AND fundamentals are available
             # AND fundamental_score < 30.0 → REJECT the trade.

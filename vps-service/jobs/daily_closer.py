@@ -1216,7 +1216,19 @@ class DailyCloser:
         # }
         # _profit_lock_pct = _PERSONA_PROFIT_LOCK.get(_persona, 7.0)
         _persona = 'balanced'  # UNIFIED-BALANCED-ONLY: persona واحدة
-        _profit_lock_pct = 7.0  # balanced profit lock (ثابت)
+        # ── EGX-STRATEGY (2026-08-30): ربط partial exit بـ R بدل الـ 7% الثابت ──
+        # استراتيجية المالك: "خروج جزئي عند 1.8R – 2R (خذ جزء من الربح)".
+        # الحل: partial exit عند 1.8R (نسبة الربح = 1.8 × stop_distance).
+        # لو stop_distance = 5% → partial exit عند +9% (1.8 × 5%).
+        # لو stop_distance = 9% → partial exit عند +16.2% (1.8 × 9%).
+        # ده بـ يـ adapt مع تذبذب السهم بدل الـ 7% الثابت.
+        _stop_distance_pct = 0.0
+        if entry_price > 0 and stop_loss_orig > 0 and entry_price > stop_loss_orig:
+            _stop_distance_pct = ((entry_price - stop_loss_orig) / entry_price) * 100
+        if _stop_distance_pct > 0:
+            _profit_lock_pct = 1.8 * _stop_distance_pct  # 1.8R (EGX-STRATEGY)
+        else:
+            _profit_lock_pct = 7.0  # fallback لو stop مش متاح
 
         if entry_price <= 0 or stop_loss_orig <= 0 or stop_loss_orig >= entry_price:
             return None
