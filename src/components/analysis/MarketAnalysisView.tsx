@@ -14,7 +14,7 @@ import {
   BarChart3, Target, AlertTriangle, CheckCircle,
   Activity, ArrowUpRight, ArrowDownRight, Info,
   RefreshCw, Moon, Copy, Share2, ShieldCheck, ShieldX, Crosshair, Gauge, Facebook, ArrowRight, ArrowLeft,
-  Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers
+  Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers, Send
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { Radio } from 'lucide-react';
@@ -7043,20 +7043,135 @@ function _isEgxIntradayNow(): boolean {
   }
 }
 
-// ─── توقعات الغد — 3 أجزاء (شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) ─────
-// FIX (Aug 2026): دمج شاشة توقعات الغد كـ tab جوه #recommendations
-// بدل ما تكون شاشة منفصلة — مشروع واحد متكامل (Rule: NO_DUPLICATE_SCREENS)
-function TomorrowPredictionsTab({ market }: { market: MarketType }) {
+// ─── تبويب المتابعة الحية أثناء الجلسة ───────────────────────────────────────
+// أثناء الجلسة: بيعرض التوقعات النشطة (اللي وصلت لفين) + أسهم تحت المراقبة (ممكن فرص)
+// بعد الإغلاق: بنفسلم توقعات الغد ونعرضها في تبويب "التوقعات"
+function LiveTrackingTab({ market }: { market: MarketType }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [subTab, setSubTab] = useState<'predictions' | 'active' | 'watchlist'>('predictions');
+  const [subTab, setSubTab] = useState<'active' | 'watchlist'>('active');
   const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/tomorrow-predictions?market=${marketCode}`, { cache: 'no-store' });
+      const res = await fetch(`/api/tomorrow-predictions?market=${marketCode}&part=active_status,watchlist`, { cache: 'no-store' });
+      const json = await res.json();
+      if (json.success) setData(json);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [marketCode]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const activeStatus = data?.active_status || [];
+  const watchlist = data?.watchlist || [];
+
+  return (
+    <div className="space-y-4">
+      {/* Status banner */}
+      <Card className="bg-muted/30">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Activity className="h-4 w-4 text-emerald-600" />
+            <span className="font-semibold">متابعة حية أثناء الجلسة</span>
+            <span className="text-muted-foreground">— توقعات نشطة وصلت لفين + أسهم تحت المراقبة ممكن تطلع فرص</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Activity className="h-4 w-4" />
+            <span className="text-xs">توقعات نشطة</span>
+          </div>
+          <div className="text-lg font-bold">{activeStatus.length}</div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <CheckCircle className="h-4 w-4" />
+            <span className="text-xs">حققت الهدف</span>
+          </div>
+          <div className="text-lg font-bold text-emerald-600">
+            {activeStatus.filter((s: any) => s.status === 'TARGET_HIT').length}
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="text-xs">قرب الهدف</span>
+          </div>
+          <div className="text-lg font-bold text-amber-600">
+            {activeStatus.filter((s: any) => s.status === 'NEAR_TARGET').length}
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TrendingUp className="h-4 w-4" />
+            <span className="text-xs">تحت المراقبة</span>
+          </div>
+          <div className="text-lg font-bold">{watchlist.length}</div>
+        </Card>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex items-center justify-between">
+        <Tabs value={subTab} onValueChange={(v) => setSubTab(v as typeof subTab)}>
+          <TabsList>
+            <TabsTrigger value="active">
+              <Activity className="h-4 w-4 ml-1" />
+              التوقعات النشطة ({activeStatus.length})
+            </TabsTrigger>
+            <TabsTrigger value="watchlist">
+              <AlertTriangle className="h-4 w-4 ml-1" />
+              تحت المراقبة ({watchlist.length})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+          <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
+          تحديث
+        </Button>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <Card>
+          <CardContent className="py-12 flex items-center justify-center">
+            <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">جاري التحميل...</span>
+          </CardContent>
+        </Card>
+      ) : subTab === 'active' ? (
+        <ActiveStatusTable activeStatus={activeStatus} />
+      ) : (
+        <WatchlistTable watchlist={watchlist} />
+      )}
+
+      <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+        ⚠️ إخلاء مسؤولية: هذه المتابعة رأي آلي تعليمي وليست توصية استثمارية. القرار مسؤولية العميل.
+      </p>
+    </div>
+  );
+}
+
+// ─── تبويب التوقعات — أثناء الجلسة: متابعة حية. بعد الإغلاق: توقعات الغد ────
+function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [sendingTelegram, setSendingTelegram] = useState(false);
+  const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/tomorrow-predictions?market=${marketCode}&part=predictions`, { cache: 'no-store' });
       const json = await res.json();
       if (json.success) setData(json);
     } catch (e) {
@@ -7087,92 +7202,91 @@ function TomorrowPredictionsTab({ market }: { market: MarketType }) {
     }
   }, [marketCode, fetchData]);
 
-  const stats = data?.stats;
+  const handleSendTelegram = useCallback(async () => {
+    setSendingTelegram(true);
+    try {
+      const res = await fetch('/api/tomorrow-predictions/send-telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ market: marketCode }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        // toast success
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSendingTelegram(false);
+    }
+  }, [marketCode]);
+
   const predictions = data?.predictions || [];
-  const activeStatus = data?.active_status || [];
-  const watchlist = data?.watchlist || [];
+  const sessionDate = data?.session_date;
 
   return (
     <div className="space-y-4">
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Target className="h-4 w-4" />
-              <span className="text-xs">توقعات الغد</span>
-            </div>
-            <div className="text-lg font-bold">{stats.predictions_count}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-xs">شراء</span>
-            </div>
-            <div className="text-lg font-bold text-emerald-600">{stats.buy_signals}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendingDown className="h-4 w-4" />
-              <span className="text-xs">بيع</span>
-            </div>
-            <div className="text-lg font-bold text-red-600">{stats.sell_signals}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Activity className="h-4 w-4" />
-              <span className="text-xs">أسهم نشطة</span>
-            </div>
-            <div className="text-lg font-bold">{stats.active_status_count}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <CheckCircle className="h-4 w-4" />
-              <span className="text-xs">حققت الهدف</span>
-            </div>
-            <div className="text-lg font-bold text-emerald-600">{stats.target_hit}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-xs">تحت المراقبة</span>
-            </div>
-            <div className="text-lg font-bold text-amber-600">{stats.watchlist_count}</div>
-          </Card>
-        </div>
-      )}
+      {/* Status banner */}
+      <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4 text-amber-600" />
+            <span className="font-semibold text-amber-800 dark:text-amber-200">
+              توقعات جلسة {sessionDate || 'الغد'}
+            </span>
+            <span className="text-amber-700 dark:text-amber-300">
+              — تتولد بعد إغلاق السوق وتتبعت على تليجرام تلقائياً
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Sub-tabs + Generate button */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <Tabs value={subTab} onValueChange={(v) => setSubTab(v as typeof subTab)}>
-          <TabsList>
-            <TabsTrigger value="predictions">
-              <Target className="h-4 w-4 ml-1" />
-              التوقعات ({predictions.length})
-            </TabsTrigger>
-            <TabsTrigger value="active">
-              <Activity className="h-4 w-4 ml-1" />
-              الأسهم النشطة ({activeStatus.length})
-            </TabsTrigger>
-            <TabsTrigger value="watchlist">
-              <AlertTriangle className="h-4 w-4 ml-1" />
-              تحت المراقبة ({watchlist.length})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
-            تحديث
-          </Button>
-          <Button variant="default" size="sm" onClick={handleGenerate} disabled={generating}>
-            <Zap className={cn('h-4 w-4 ml-2', generating && 'animate-pulse')} />
-            {generating ? 'جاري التوليد...' : 'توليد يدوي'}
-          </Button>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Target className="h-4 w-4" />
+            <span className="text-xs">إجمالي التوقعات</span>
+          </div>
+          <div className="text-lg font-bold">{predictions.length}</div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TrendingUp className="h-4 w-4" />
+            <span className="text-xs">شراء</span>
+          </div>
+          <div className="text-lg font-bold text-emerald-600">
+            {predictions.filter((p: any) => ['BUY', 'STRONG_BUY'].includes(p.signal)).length}
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TrendingDown className="h-4 w-4" />
+            <span className="text-xs">بيع</span>
+          </div>
+          <div className="text-lg font-bold text-red-600">
+            {predictions.filter((p: any) => ['SELL', 'STRONG_SELL'].includes(p.signal)).length}
+          </div>
+        </Card>
       </div>
 
-      {/* Content */}
+      {/* Action buttons */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+          <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
+          تحديث
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleSendTelegram} disabled={sendingTelegram || predictions.length === 0}>
+          <Send className={cn('h-4 w-4 ml-2', sendingTelegram && 'animate-pulse')} />
+          {sendingTelegram ? 'جاري الإرسال...' : 'إرسال لتليجرام'}
+        </Button>
+        <Button variant="default" size="sm" onClick={handleGenerate} disabled={generating}>
+          <Zap className={cn('h-4 w-4 ml-2', generating && 'animate-pulse')} />
+          {generating ? 'جاري التوليد...' : 'توليد يدوي'}
+        </Button>
+      </div>
+
+      {/* Predictions table */}
       {loading ? (
         <Card>
           <CardContent className="py-12 flex items-center justify-center">
@@ -7180,12 +7294,8 @@ function TomorrowPredictionsTab({ market }: { market: MarketType }) {
             <span className="ml-2 text-muted-foreground">جاري التحميل...</span>
           </CardContent>
         </Card>
-      ) : subTab === 'predictions' ? (
-        <TomorrowPredictionsTable predictions={predictions} />
-      ) : subTab === 'active' ? (
-        <TomorrowActiveStatusTable activeStatus={activeStatus} />
       ) : (
-        <TomorrowWatchlistTable watchlist={watchlist} />
+        <PredictionsTable predictions={predictions} />
       )}
 
       <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
@@ -7195,8 +7305,8 @@ function TomorrowPredictionsTab({ market }: { market: MarketType }) {
   );
 }
 
-// ─── جدول توقعات الغد (شراء/بيع) ────────────────────────────────────────────
-function TomorrowPredictionsTable({ predictions }: { predictions: any[] }) {
+// ─── جدول التوقعات (شراء/بيع) ────────────────────────────────────────────────
+function PredictionsTable({ predictions }: { predictions: any[] }) {
   if (predictions.length === 0) {
     return (
       <Card>
@@ -7260,7 +7370,7 @@ function TomorrowPredictionsTable({ predictions }: { predictions: any[] }) {
 }
 
 // ─── جدول حالة الأسهم النشطة ────────────────────────────────────────────────
-function TomorrowActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
+function ActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
   if (activeStatus.length === 0) {
     return (
       <Card>
@@ -7330,7 +7440,7 @@ function TomorrowActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
 }
 
 // ─── جدول أسهم تحت المراقبة ─────────────────────────────────────────────────
-function TomorrowWatchlistTable({ watchlist }: { watchlist: any[] }) {
+function WatchlistTable({ watchlist }: { watchlist: any[] }) {
   if (watchlist.length === 0) {
     return (
       <Card>
@@ -7514,11 +7624,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       <HorizontalSectorsBar marketCode={marketCode} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 h-auto gap-1">
-          {/* التبويب الأول: متابعة التوقعات */}
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 h-auto gap-1">
+          {/* التبويب الأول: متابعة حية أثناء الجلسة (توقعات نشطة + أسهم تحت المراقبة) */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">متابعة التوقعات</span>
+            <span className="hidden sm:inline">متابعة حية</span>
           </TabsTrigger>
           <TabsTrigger value="executive-report" className="flex items-center gap-1">
             <Layers className="h-4 w-4" />
@@ -7528,15 +7638,10 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">حالة السوق</span>
           </TabsTrigger>
-          {/* UNIFIED-BALANCED-ONLY: tab واحد بس */}
+          {/* التوقعات — أثناء الجلسة: متابعة حية. بعد الإغلاق: توقعات الغد */}
           <TabsTrigger value="balanced" className="flex items-center gap-1">
             <span className="text-base">⚖️</span>
             <span className="hidden sm:inline">التوقعات</span>
-          </TabsTrigger>
-          {/* توقعات الغد — 3 أجزاء (شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) */}
-          <TabsTrigger value="tomorrow" className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">توقعات الغد</span>
           </TabsTrigger>
           {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو (Python logic في flow_system.py) */}
           <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
@@ -7545,9 +7650,9 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           </TabsTrigger>
         </TabsList>
 
-        {/* تبويب متابعة التوقعات — كل الشخصيات بحد أقصى 5 + جرس الصباح فوقه بالفعل */}
+        {/* تبويب متابعة حية — أثناء الجلسة: توقعات نشطة + أسهم تحت المراقبة */}
         <TabsContent value="tracking" className="mt-4">
-          <PredictionTrackingDashboard market={currentMarket} />
+          <LiveTrackingTab market={currentMarket} />
         </TabsContent>
 
         <TabsContent value="executive-report" className="mt-4">
@@ -7558,13 +7663,9 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <MarketStatusTab market={currentMarket} />
         </TabsContent>
 
+        {/* تبويب التوقعات — أثناء الجلسة: متابعة حية. بعد الإغلاق: توقعات الغد */}
         <TabsContent value="balanced" className="mt-4">
-          <PersonaTab market={currentMarket} persona="balanced" />
-        </TabsContent>
-
-        {/* توقعات الغد — 3 أجزاء (شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) */}
-        <TabsContent value="tomorrow" className="mt-4">
-          <TomorrowPredictionsTab market={currentMarket} />
+          <TomorrowPredictionsPanel market={currentMarket} />
         </TabsContent>
 
         {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو */}

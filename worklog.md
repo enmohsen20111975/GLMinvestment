@@ -12464,3 +12464,61 @@ Stage Summary:
 - ✅ القاعدة 34 (NO_DUPLICATE_SCREENS) في الدستور
 - ✅ تعديلات المبرمج التاني اتمسحت (git pull)
 - 🔜 المشكلة العشوائية محتاجة مراجعة Python backend (cache ثابت لما السوق مقفول)
+
+---
+Task ID: MERGE-TABS-2026-08-30
+Agent: Z.ai Code (main)
+Task: دمج توقعات الغد في الـ tabs الموجودة (مش tab منفصل) + ربط Telegram
+
+Work Log:
+- **المشكلة**: أنا عملت tab "tomorrow" منفصل، بس المستخدم قال:
+  "لية شاشة جديدة دة مجرد التوقعات الى هاتظهر بعد الأغلاق"
+  "فى نفس الشاشة القديمة موجود التوقعات والمتابعة طوال الجلسة"
+  "لية شاشتين او تبويبين؟"
+
+- **الحل**: دمج الخدمات في الـ tabs الموجودة:
+  1. tab "tracking" → renamed لـ "متابعة حية" — بيعرض:
+     - التوقعات النشطة (اللي وصلت لفين) + الإجراء المتوقع
+     - أسهم تحت المراقبة (ممكن تطلع فرص)
+  2. tab "balanced" → renamed لـ "التوقعات" — بيعرض:
+     - توقعات الغد بعد الإغلاق
+     - زر "توليد يدوي"
+     - زر "إرسال لتليجرام"
+
+- **التعديلات في MarketAnalysisView.tsx**:
+  - شيلت TabsTrigger value="tomorrow" + TabsContent
+  - رجعت الـ grid لـ 6 columns (بدل 7)
+  - renamed tab "tracking" → "متابعة حية"
+  - renamed tab "balanced" → "التوقعات" (كان "التوصيات" قبل كده)
+  - شيلت TomorrowPredictionsTab function
+  - ضفت LiveTrackingTab (بيجيب active_status + watchlist)
+  - ضفت TomorrowPredictionsPanel (بيجيب predictions + generate + send-telegram)
+  - ضفت PredictionsTable + ActiveStatusTable + WatchlistTable (sub-components)
+
+- **API endpoint للـ Telegram**:
+  - `src/app/api/tomorrow-predictions/send-telegram/route.ts` (POST)
+  - بيجيب التوقعات + active_status + watchlist من DB
+  - بيبني رسالة تليجرام احترافية (3 أقسام + إخلاء مسؤولية)
+  - بيـ spawn Python script: `vps-service/telegram/send_message.py`
+  - بيـ partition الرسالة لو أطول من 4000 حرف
+
+- **Python script للـ Telegram**:
+  - `vps-service/telegram/send_message.py`
+  - بيقرأ الرسالة من stdin
+  - بيستخدم TelegramNotifier
+  - بيـ partition لـ chunks لو الرسالة طويلة
+
+- **إصلاح duplicate PredictionsTab**:
+  - لقيت إن فيه PredictionsTab قديمة في سطر 2328 (كانت بتخدم tab "balanced" قديم)
+  - غيرت اسم اللي أنشأتها لـ TomorrowPredictionsPanel عشان مفيش تعارض
+
+- **lint**: EXIT 0 ✅
+- **Python syntax**: ✅
+- **API**: شغّال (3 توقعات + 15 تحت المراقبة)
+
+Stage Summary:
+- ✅ مفيش tab منفصل لتوقعات الغد — اتحطت في tab "التوقعات" الموجود
+- ✅ tab "متابعة حية" بيجمع: التوقعات النشطة + أسهم تحت المراقبة
+- ✅ زر "إرسال لتليجرام" للإرسال اليدوي
+- ✅ Python script للـ Telegram
+- ✅ lint + Python syntax: EXIT 0
