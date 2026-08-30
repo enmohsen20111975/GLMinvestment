@@ -183,6 +183,21 @@ const cryptoViewsPromise = import('@/components/crypto/CryptoAdditionalViews').t
   CryptoSimulationView = m.CryptoSimulationView;
 });
 
+// ─── مكونات الكريبتو المستقلة (بيانات crypto_prices حقيقية) ────────────────────────
+const CryptoScreenerView = withErrorBoundary(
+  dynamic(() => import('@/components/crypto/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
+  'فلتر العملات الرقمية',
+);
+const CryptoPredictionTrackingView = withErrorBoundary(
+  dynamic(() => import('@/components/crypto/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
+  'تتبّع توقعات الكريبتو',
+);
+const CryptoTradingChartView = withErrorBoundary(
+  dynamic(() => import('@/components/crypto/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
+  'شارت العملات',
+  { height: 'h-[600px]' },
+);
+
 /**
  * DbSchemaInit — ensures finance tables exist on first load (once per session)
  * Also initializes database with VPS data if empty
@@ -518,11 +533,11 @@ function AppShell() {
       case 'crypto-simulation':
         return CryptoSimulationView ? <CryptoSimulationView /> : <div className="p-4">Loading...</div>;
       case 'crypto-trading-chart':
-        return <TradingChartView initialTicker="BTC" />;
+        return <CryptoTradingChartView initialTicker="BTC" />;
       case 'crypto-prediction-tracking':
-        return <PredictionTrackingView />;
+        return <CryptoPredictionTrackingView />;
       case 'crypto-screener':
-        return <StockScreenerAdvancedView initialMarket="CRYPTO" />;
+        return <CryptoScreenerView />;
       
       // === حسابات دينية ===
       case 'zakat':

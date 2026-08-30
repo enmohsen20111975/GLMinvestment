@@ -11921,3 +11921,71 @@ Stage Summary:
 - ✅ القواعد ما اتنكسرتش.
 - ✅ آخر تحديثات GitHub اتسحبت.
 - 🔜 مستني قرار المالك: فلتر سيولة القطاع ولا BOS/ChoCH ولا لوحة قرار شفافة.
+
+---
+Task ID: CRYPTO-SCREENS-FIX-2026-08-30
+Agent: Z.ai Code (main)
+Task: إصلاح شاشات العملات الرقمية بشكل صحيح (مش نسخ أعمى) — مكونات منفصلة ببيانات crypto_prices حقيقية
+
+Work Log:
+- **مراجعة صادقة للحالة**: آخر commit `93077106` كان بس تعديلين صغيرين (page.tsx + StockScreenerAdvanced.tsx) على الـ routing، مش إصلاح حقيقي. شاشات الكريبتو كانت لسه بتستخدم مكونات الأسهم.
+
+- **audit شامل** (subagent): لقيت إن:
+  - `crypto-trading-chart` → بيستخدم TradingChartView (مكون أسهم) + initialTicker="BTC". شغّال بـ CoinGecko OHLC فعلاً بس shell أسهم.
+  - `crypto-prediction-tracking` → بيستخدم PredictionTrackingView (مكون أسهم) بدون prop.
+  - `crypto-screener` → بيستخدم StockScreenerAdvancedView مع initialMarket="CRYPTO". الفلاتر كلها أسهم (P/E, ROE, dividend) — ملوش معنى في الكريبتو!
+  - 6 APIs معطوبة بتنادي `/api/crypto/live` بالغلط (copy-paste).
+
+- **الإصلاحات (6 APIs)**:
+  1. `/api/data-engine/crypto` → بقرأ من crypto_prices فعلاً (مش Python proxy)
+  2. `/api/crypto-predictions` → بقرأ من predictions.db WHERE market='CRYPTO'
+  3. `/api/crypto/stats` → أسماء أعمدة صح (price_usd, price_change_24h) + بيانات حقيقية
+  4. `/api/crypto/recommendations` → بقرأ من predictions.db (pending فقط)
+  5. `/api/crypto/mr-signals` → بيحسب z-score لتغيير 24h من crypto_prices (OVERSOLD/OVERBOUGHT)
+  6. `/api/crypto/ohlc` → بيجيب OHLC من CoinGecko /coins/{id}/ohlc مع mapping من symbol لـ coinId
+
+- **المكونات الجديدة المستقلة** (في src/components/crypto/):
+  1. `CryptoScreenerView.tsx` (650 LOC):
+     - بيانات من `/api/data-engine/crypto` (crypto_prices فقط)
+     - فلاتر كريبتو حقيقية: Market Cap, Volume 24h, Change 24h/7d
+     - Presets: gainers/losers/top10/high_volume/large_cap/mid_cap/small_cap
+     - Search + Sort + CSV export
+     - Stats cards: 50 عملة، 43 صاعد، 6 هابط، $2.68T، $159.61B volume
+  2. `CryptoPredictionTrackingView.tsx` (440 LOC):
+     - بيانات من `/api/crypto-predictions` (predictions.db WHERE market='CRYPTO')
+     - Tabs: all/pending/closed
+     - أعمدة: العملة، الإشارة، التاريخ، سعر الدخول، الهدف، الوقف، عائد محتمل، R:R، الثقة، الحالة
+     - Stats: 3 توقعات، 0 pending، 3 closed، نسبة نجاح
+  3. `CryptoTradingChartView.tsx` (250 LOC):
+     - shell كريبتو مستقل (مش TradingChartView بتاع الأسهم)
+     - selector للكريبتو من crypto_prices (search + dropdown)
+     - Quick-add chips: BTC, ETH, BNB, SOL, XRP, ADA, DOGE
+     - بيمرر ticker لـ SingleStockAnalysisView مع setCurrentMarket('CRYPTO')
+     - OHLC من CoinGecko عبر /api/crypto/full-analysis
+     - يعمل 1/2 columns layout
+
+- **ربط في page.tsx**:
+  - `crypto-trading-chart` → `<CryptoTradingChartView initialTicker="BTC" />`
+  - `crypto-prediction-tracking` → `<CryptoPredictionTrackingView />`
+  - `crypto-screener` → `<CryptoScreenerView />`
+  - imports جديدة بـ dynamic() + withErrorBoundary
+
+- **تعديل SingleStockAnalysisView**: نص "أملك السهم" → "أملك العملة" لو isCrypto=true.
+
+- **اختبار صارم بـ Playwright** (headless Chromium):
+
+  | الشاشة | النتيجة | بيانات حقيقية؟ |
+  |---|---|---|
+  | crypto-screener | ✅ 50 عملة معروضة (BTC=$79,996, ETH=$2,506, BNB=$710, XRP=$1.45, SOL=$109) | ✅ من crypto_prices |
+  | crypto-prediction-tracking | ✅ 3 توقعات (XRP: entry $1.43 target $1.64, BTC: entry $79,461 target $91,380, SOL: entry $104.29 target $119.93) | ✅ من predictions.db |
+  | crypto-trading-chart | ✅ شارت BTC=$79,100 + كل المؤشرات (MA20/50/200, EMA, RSI, Bollinger, MACD, Volume, SMC/BOS) | ✅ من CoinGecko OHLC |
+
+- **lint**: EXIT 0 ✅
+
+Stage Summary:
+- ✅ 3 شاشات كريبتو مستقلة تماماً (مش نسخ أعمى من الأسهم)
+- ✅ كل بياناتها من مصادر كريبتو حقيقية: crypto_prices + predictions.db (market=CRYPTO) + CoinGecko OHLC
+- ✅ ممنوع خلط بيانات EGX مع Crypto — كل query بـ WHERE market='CRYPTO'
+- ✅ 6 APIs معطوبة اتصلحت
+- ✅ اختبار browser صارم: الـ 3 شاشات بتـ render ببيانات حقيقية
+- ⚠️ ملاحظة: الـ sandbox عندي 17 commit محلي مش متدفعة لـ GitHub (مش قادر أدفع من هنا — مفيش credentials). المالك لازم يدفع من الـ VPS أو يعطي credentials.

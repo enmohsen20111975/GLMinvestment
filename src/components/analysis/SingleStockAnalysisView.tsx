@@ -594,7 +594,7 @@ export function SingleStockAnalysisView({
           <span className="text-slate-500 font-bold">وضعي:</span>
           <div className="flex bg-white border border-slate-200 rounded-xl p-0.5">
             <button type="button" onClick={() => setUserState('buyer')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'buyer' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500')}> <ShoppingCart className="w-3 h-3 inline ml-1" /> أبحث عن شراء </button>
-            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-amber-50 text-amber-700' : 'text-slate-500')}> <Wallet className="w-3 h-3 inline ml-1" /> أملك السهم </button>
+            <button type="button" onClick={() => setUserState('owner')} className={cn('px-2 py-1 rounded-lg transition-all font-semibold', userState === 'owner' ? 'bg-amber-50 text-amber-700' : 'text-slate-500')}> <Wallet className="w-3 h-3 inline ml-1" /> {isCrypto ? 'أملك العملة' : 'أملك السهم'} </button>
           </div>
           {data?.adjustment_reason && (
             <span className="text-slate-500 truncate max-w-md">💡 {data.adjustment_reason}</span>
