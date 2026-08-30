@@ -3480,13 +3480,33 @@ class MaestroOrchestrator:
                         logger.debug(f"Geometry guard wiring failed for {ticker}: {_geom_err}")
 
                     # Priority 1: ATR-based stop (يحل محل الـ fixed-% P26 stop)
+                    # PRODUCTION-WIRING: بتمرير lows للـ swing low detection
+                    _prod_lows = [to_num(p.get('low', p.get('low_price', 0))) for p in price_history[-60:]]
                     _atr_stop_check = enforce_atr_based_stop(
-                        _sig_upper, entry_price, stop_loss, _atr_val, persona_type
+                        _sig_upper, entry_price, stop_loss, _atr_val, persona_type,
+                        lows=_prod_lows
                     )
                     if _atr_stop_check['action'] == 'replace_stop' and _atr_stop_check['fixed']:
                         _old_s = stop_loss
                         stop_loss = _atr_stop_check['fixed']['stop_loss']
                         print(f"[ATR_STOP] ticker={ticker} {_atr_stop_check['reason']} → stop {_old_s}->{stop_loss}", flush=True)
+
+                    # ── PRODUCTION-WIRING: Dynamic Target (swing high) ──
+                    try:
+                        from core.opportunity_quality import compute_dynamic_target
+                        _prod_highs = [to_num(p.get('high', p.get('high_price', 0))) for p in price_history[-60:]]
+                        _dyn_target = compute_dynamic_target(entry_price, stop_loss, _atr_val, highs=_prod_highs, min_rr=1.8)
+                        if _dyn_target['target'] > 0 and _dyn_target['rr'] >= 1.8:
+                            _old_t = target
+                            target = _dyn_target['target']
+                            if _dyn_target.get('target_2', 0) > 0:
+                                target_price_2 = _dyn_target['target_2']
+                            risk_reward = _dyn_target['rr']
+                            print(f"[DYN-TARGET-PROD] ticker={ticker} target {_old_t}->{target} "
+                                  f"target_2={_dyn_target.get('target_2', 0):.2f} rr={risk_reward:.2f} "
+                                  f"({_dyn_target.get('source', '?')})", flush=True)
+                    except Exception as _dt_err:
+                        logger.debug(f"Dynamic target failed for {ticker}: {_dt_err}")
                     # 1ب: direction guard (الآن بـ validate الـ ATR stop)
                     _dir_check = validate_target_stop_direction(
                         _sig_upper, entry_price, target, stop_loss
@@ -3757,6 +3777,55 @@ class MaestroOrchestrator:
                                 _rl_expl_score = 55.0
                 except Exception as _rl_t2_err:
                     print(f"[RL-FIX-18] T2/explosive calc failed for {ticker}: {_rl_t2_err}", flush=True)
+
+                # =====================================================================
+                # PRODUCTION-WIRING (2026-08-30): Entry Gate + Position Sizing
+                # ربط كل تحسينات الباك تست في الإنتاج الحقيقي.
+                # 1) Entry Gate: 8 شروط إلزامية قبل تسجيل التوقع.
+                # 2) Position Sizing: حساب حجم المركز من مسافة الوقف.
+                # =====================================================================
+                try:
+                    from utils.entry_gate import check_entry_gate
+                    _gate_closes = [to_num(p.get('close', p.get('close_price', 0))) for p in price_history[-60:]]
+                    _gate_vols = [to_num(p.get('volume', p.get('volume_traded', 0))) for p in price_history[-60:]]
+                    _gate_proofs = {}
+                    if hasattr(result, 'proofs') and isinstance(result.proofs, dict):
+                        _gate_proofs = result.proofs
+                    _gate_data = {
+                        'entry_price': entry_price,
+                        'target_price': target,
+                        'stop_price': stop_loss,
+                        'evidence_count': sum(1 for v in _gate_proofs.values() if '✅' in str(v)),
+                        'proofs': _gate_proofs,
+                        'closes': _gate_closes,
+                        'volumes': _gate_vols,
+                        'market_regime_trend': regime_phase.phase if regime_phase else 'range',
+                        'stock_roc': float(stock.get('change_percent', 0) or 0),
+                        'benchmark_change': float(options.get('benchmark_change', 0) or 0),
+                    }
+                    _gate_result = check_entry_gate(_gate_data)
+                    if not _gate_result['passed']:
+                        _fail = '; '.join(_gate_result['reasons_failed'][:3])
+                        print(f"[PROD-ENTRY-GATE-REJECT] {ticker}: score={_gate_result['score']}/{_gate_result['total_checks']} | {_fail}", flush=True)
+                        result.signal_id = None
+                        return result
+                except Exception as _gate_err:
+                    logger.debug(f"Entry gate failed for {ticker}: {_gate_err}")
+
+                # Position Sizing
+                try:
+                    from utils.position_sizing import calculate_risk_based_position
+                    _pos_result = calculate_risk_based_position(
+                        capital=float(options.get('capital', 100000)),
+                        entry_price=entry_price,
+                        stop_price=stop_loss,
+                        confidence=confidence / 100.0 if confidence > 1 else 0.8,
+                    )
+                    if _pos_result['action'] == 'enter':
+                        warnings.append(f"Position size: {_pos_result['position_pct']:.1f}% ({_pos_result['shares']} shares)")
+                        warnings_ar.append(f"حجم المركز: {_pos_result['position_pct']:.1f}% ({_pos_result['shares']} سهم)")
+                except Exception as _pos_err:
+                    logger.debug(f"Position sizing failed for {ticker}: {_pos_err}")
 
                 signal_id = self.prediction_tracker.record_prediction(
                     ticker=ticker,

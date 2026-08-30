@@ -1024,8 +1024,30 @@ curl -s http://localhost:8010/health
 14. سأبني نظام متكامل واحد مرتبط (القاعدة 29) — لا موديولات منفصلة.
 15. سأوجه كل شاشات العميل بأسلوب احترافي (القاعدة 30) — لا عبارات تحميسية (القاعدة 31).
 16. سأفصل بين عرض العميل و logic النظام (القاعدة 32) — Node = display only، Python = brain.
+17. سأربط كل تحسينات الباك تست في الإنتاج (القاعدة 33) — الباك تست بيتعمل عشان نحسن الإنتاج، مش عشان نلعب.
+18. سأختبر كل تعديل بـ backtest قبل اعتماده (القاعدة 14) — واللي يرفع الأداء نعتمده واللي ينقصه نلغيه.
+
+---
+
+### القاعدة 33 — ربط تحسينات الباك تست في الإنتاج (PRODUCTION-WIRING — 2026-08-30)
+
+> **سبب الإضافة:** توجيه صريح من المالك (2026-08-30): "الباك تست بيتعمل عشان نحسن الحاضر والمستقبل. اربط كل حاجة الآن وأتأكد إنها مظبوطة 100%. ده أهم جزء وحط ده عندك في الدستور."
+
+- **كل تحسين بيتعمل في الباك تست لازم يتربط في الإنتاج الحقيقي فوراً** — في `MaestroOrchestrator.analyze()` و/أو `daily_closer.py`.
+- **ممنوع** ترك تحسينات في `v40_2_daily_generator.py` (سكربت backtest) بدون ربطها في `MaestroOrchestrator.analyze()` (الإنتاج).
+- **الملفات اللي لازم تكون مربوطة في الإنتاج دائماً:**
+  1. `utils/entry_gate.py` — في `MaestroOrchestrator.analyze()` قبل `record_prediction`.
+  2. `utils/position_sizing.py` — في `MaestroOrchestrator.analyze()` لحساب حجم المركز.
+  3. `utils/circuit_breaker.py` — في `daily_closer.py::run()` لوقف التداول بعد 3 خسائر.
+  4. `core/opportunity_quality.py::compute_dynamic_target` — في `MaestroOrchestrator.analyze()` لحساب الهدف الديناميكي.
+  5. `core/opportunity_quality.py::enforce_atr_based_stop` — في `MaestroOrchestrator.analyze()` (مع `lows` للـ swing low).
+  6. `core/opportunity_quality.py::classify_liquidity` — في `MaestroOrchestrator.analyze()` لتصنيف السيولة.
+  7. Sector filter — في `MaestroOrchestrator.analyze()` لحرارة القطاع.
+  8. BOS/ChoCH — في `MaestroOrchestrator.analyze()` لكشف بنية السوق.
+- **التحقق:** بعد كل تعديل، لازم نتأكد إن الـ `grep` بيرجّع نتائج إن الملف مربوط في `maestro_orchestrator.py` و/أو `daily_closer.py`.
+- **العقوبة:** أي تحسين يفضل في الباك تست بس بدون ربط في الإنتاج = مخالفة دستورية.
 
 ---
 
 *هذا الدستور ملزم. أي تغيير فيه لازم بموافقة المالك وتوثيقه في `CHANGELOG.md`.*
-*آخر تحديث: 2026-08-29 — إضافة القواعد 27-32 (NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM) بعد توجيهات المالك حول فصل عرض العميل عن logic النظام + تحديث عهد الوكيل لـ 32 قاعدة.*
+*آخر تحديث: 2026-08-30 — إضافة القاعدة 33 (PRODUCTION-WIRING) بعد توجيهات المالك حول ربط كل تحسينات الباك تست في الإنتاج + تحديث عهد الوكيل لـ 34 بند.*

@@ -2920,15 +2920,40 @@ class DailyCloser:
         pending = self.get_pending_predictions()
         logger.info(f"[DailyCloser] Found {len(pending)} pending predictions")
 
+        # ── PRODUCTION-WIRING: Circuit Breaker ──
+        # لو فيه 3 خسائر متتالية → وقف الإغلاق المؤقت للوقاية
+        _cb = None
+        try:
+            from utils.circuit_breaker import CircuitBreaker
+            _cb = CircuitBreaker(consecutive_losses_limit=3, cooldown_days=3, mode='block')
+        except Exception:
+            _cb = None
+
         results = {'TARGET_HIT': 0, 'STOPPED': 0, 'EXPIRED': 0, 'CLOSED': 0, 'STILL_PENDING': 0, 'ERROR': 0}
         close_results = []
+        _consecutive_losses = 0
 
         for pred in pending:
             try:
+                # Circuit breaker: لو 3 خسائر متتالية → skip
+                if _cb and _cb.is_blocked(pred.get('prediction_date', '')):
+                    logger.info(f"[CB-BLOCK] Skipping {pred.get('ticker')} — circuit breaker active")
+                    results['STILL_PENDING'] += 1
+                    continue
+
                 result = self.close_prediction(pred)
                 if result:
                     results[result.new_status] += 1
                     close_results.append(result)
+
+                    # تحديث circuit breaker
+                    if _cb:
+                        _ret = float(result.actual_return or 0)
+                        _cb.record_trade(pred.get('prediction_date', ''), _ret)
+                        if _ret <= 0:
+                            _consecutive_losses += 1
+                        else:
+                            _consecutive_losses = 0
                     # Trigger immediate learning after each close
                     # — تعلّم فوري بعد كل إغلاق: النظام يتحسّن من كل نتيجة
                     try:
