@@ -23,6 +23,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Tabs,
   TabsList,
   TabsTrigger,
@@ -57,10 +65,14 @@ import {
   Target,
   Shield,
   Crown,
+  Facebook,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
+import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -257,6 +269,52 @@ function getChangeColor(change: number): string {
   if (change > 0) return 'text-emerald-600 dark:text-emerald-400';
   if (change < 0) return 'text-red-600 dark:text-red-400';
   return 'text-muted-foreground';
+}
+
+// ─── Export text generators ────────────────────────────────────────────────────
+
+function generateScreenerText(
+  stocks: ScreenerStock[],
+  market: string,
+  sector: string,
+): string {
+  if (!stocks.length) return '';
+  const header = `📊 فلاتر الأسهم المتقدمة — ${market === 'EGX' ? 'البورصة المصرية' : 'كل الأسواق'}${sector !== 'ALL' ? ` / ${sector}` : ''}`;
+  const lines: string[] = [header, `📋 عدد النتائج: ${stocks.length}`, ''];
+  stocks.forEach((s) => {
+    const pct = s.change_percent > 0 ? '+' : '';
+    lines.push(
+      `• ${s.ticker} — ${s.name_ar || s.name}`,
+      `  💰 السعر: ${formatNumber(s.current_price)} ج.م | ⚡ التغير: ${pct}${formatNumber(s.change_percent)}%`,
+      `  📊 الحجم: ${formatVolume(s.volume)} | 💸 السيولة: ${formatEGP(s.turnover_egp)} ج.م`,
+      `  📈 P/E: ${formatNumber(s.pe_ratio, 1)} | 🏦 ROE: ${s.roe !== null ? formatNumber(s.roe, 1) : '—'}% | 📍 RSI: ${formatNumber(s.rsi, 0)}`,
+      `  🏷️ الحالة: ${s.stock_state_ar || s.stock_state} | 🔥 الزخم: ${s.momentum_score}`,
+    );
+  });
+  lines.push('', '⚠️ هذا التحليل لأغراض تعليمية فقط — ليس نصيحة استثمارية', OFFICIAL_LINKS_BLOCK);
+  return lines.join('\n');
+}
+
+function generateTopPerformersText(data: TopPerformersResponse): string {
+  const results = data.results || [];
+  if (!results.length) return '';
+  const periodLabel = PERIODS.find((p) => p.value === data.period)?.label || data.period;
+  const lines: string[] = [
+    `🏆 أعلى الأرباح / الخسائر`,
+    `📋 الفترة: ${periodLabel} (${data.direction === 'gainers' ? 'أرباح' : data.direction === 'losers' ? 'خسائر' : 'كل'}) | عدد النتائج: ${results.length}`,
+    `📅 من ${data.start_date} إلى ${data.end_date}`,
+    '',
+  ];
+  results.forEach((s) => {
+    const pct = s.change_pct >= 0 ? '+' : '';
+    lines.push(
+      `• ${s.ticker} — ${s.name_ar || s.name}${s.sector ? ` (${s.sector})` : ''}`,
+      `  💰 من ${formatNumber(s.start_price)} → ${formatNumber(s.end_price)} ج.م | ⚡ التغير: ${pct}${s.change_pct}%`,
+      `  📅 الفترة: ${s.period_days} يوم`,
+    );
+  });
+  lines.push('', '⚠️ هذا التحليل لأغراض تعليمية فقط — ليس نصيحة استثمارية', OFFICIAL_LINKS_BLOCK);
+  return lines.join('\n');
 }
 
 // ─── Sort field types ────────────────────────────────────────────────────────
@@ -849,8 +907,13 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
     a.download = `screener_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`تم تصدير ${filteredStocks.length} سهم`);
-  };
+     toast.success(`تم تصدير ${filteredStocks.length} سهم`);
+   };
+
+  const screenerShareText = useMemo(
+    () => generateScreenerText(filteredStocks, market, sector),
+    [filteredStocks, market, sector],
+  );
 
   return (
     <div className="space-y-3">
@@ -870,10 +933,12 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             <RefreshCw className="w-3.5 h-3.5" />
             إعادة الضبط
           </Button>
-          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!filteredStocks.length} className="gap-1.5">
-            <Download className="w-3.5 h-3.5" />
-            تصدير CSV
-          </Button>
+          <ExportDropdown
+            shareText={screenerShareText}
+            disabled={!filteredStocks.length}
+            showCsv
+            onExportCsv={exportCSV}
+          />
           <Button variant="default" size="sm" onClick={fetchScreener} disabled={loading} className="gap-1.5">
             <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
             تحديث
@@ -1411,6 +1476,10 @@ function TopPerformersTab() {
     }
   };
 
+  const topPerformersShareText = useMemo(() => {
+    return data ? generateTopPerformersText(data) : '';
+  }, [data]);
+
   return (
     <div className="space-y-3">
       {/* Filters Card */}
@@ -1480,10 +1549,11 @@ function TopPerformersTab() {
                 </>
               )}
             </div>
-            <Button variant="default" size="sm" onClick={fetchData} disabled={loading} className="gap-1.5">
+             <Button variant="default" size="sm" onClick={fetchData} disabled={loading} className="gap-1.5">
               <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
               تحديث
             </Button>
+            <ExportDropdown shareText={topPerformersShareText} disabled={!topPerformersShareText} />
           </div>
         </CardContent>
       </Card>
@@ -1748,5 +1818,95 @@ function SortableTh({
         )}
       </span>
     </TableHead>
+  );
+}
+
+// ─── WhatsApp icon (inline SVG — lucide has no WhatsApp export) ─────────────────
+
+function WhatsAppIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 01 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
+// ─── Reusable export dropdown (نص / WhatsApp / Facebook / CSV) ──────────────────
+
+interface ExportDropdownProps {
+  shareText: string;
+  disabled?: boolean;
+  showCsv?: boolean;
+  onExportCsv?: () => void;
+}
+
+function ExportDropdown({
+  shareText,
+  disabled = false,
+  showCsv = false,
+  onExportCsv,
+}: ExportDropdownProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyText = useCallback(async () => {
+    if (!shareText) return;
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      toast.success('تم نسخ النص إلى الحافظة');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('فشل نسخ النص');
+    }
+  }, [shareText]);
+
+  const handleShareWhatsApp = useCallback(() => {
+    if (!shareText) return;
+    const url = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    window.open(url, '_blank', 'width=600,height=400');
+  }, [shareText]);
+
+  const handleShareFacebook = useCallback(() => {
+    if (!shareText) return;
+    const platformUrl = encodeURIComponent(window.location.href);
+    const quote = encodeURIComponent(shareText.slice(0, 200));
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${platformUrl}&quote=${quote}`;
+    window.open(url, '_blank', 'width=600,height=400');
+  }, [shareText]);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5" disabled={disabled}>
+          <Download className="w-3.5 h-3.5" />
+          تصدير
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48" dir="rtl">
+        <DropdownMenuLabel>تصدير النتائج</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleCopyText} className="gap-2 cursor-pointer">
+          {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+          نسخ النص
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleShareWhatsApp} className="gap-2 cursor-pointer">
+          <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
+          واتساب
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleShareFacebook} className="gap-2 cursor-pointer">
+          <Facebook className="w-4 h-4 text-[#1877F2]" />
+          فيسبوك
+        </DropdownMenuItem>
+        {showCsv && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onExportCsv} className="gap-2 cursor-pointer">
+              <Download className="w-4 h-4" />
+              CSV
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
