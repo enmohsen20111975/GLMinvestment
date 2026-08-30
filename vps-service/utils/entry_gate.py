@@ -101,8 +101,16 @@ def _check_rr(entry_price: float, target_price: float, stop_price: float) -> Dic
     }
 
 
-def _check_above_sma50(closes: List[float]) -> Dict[str, Any]:
-    """شرط 3: السعر فوق SMA50 أو قريب جدًا مع تأكيد قوة."""
+def _check_above_sma50(closes: List[float], volumes: List[float] = None) -> Dict[str, Any]:
+    """شرط 3: السعر فوق SMA50 أو قريب جدًا مع تأكيد قوة.
+
+    EGX-STRATEGY-FINAL (2026-08-30 — ترطيب):
+    قبل كده كان لازم 3 شموع صاعدة متتالية قرب SMA50 — ده كان قاسي وبيفوت وحوش.
+    دلوقتي بنقبل أي واحد من التلاتة:
+      (أ) 2 من آخر 3 شموع صاعدة (مش لازم متتالية)، أو
+      (ب) شمعة قوية واحدة: جسم حقيقي ≥ 1.5% + حجم > متوسط آخر 10 شموع، أو
+      (ج) السعر فوق SMA50 مباشرةً (الشرط الأساسي — بدون تغيير).
+    """
     if not closes or len(closes) < 50:
         return {'name': 'sma50', 'passed': False, 'reason': 'بيانات غير كافية لـ SMA50', 'weight': 2}
     sma50 = sum(closes[-50:]) / 50
@@ -112,10 +120,27 @@ def _check_above_sma50(closes: List[float]) -> Dict[str, Any]:
     # قريب جدًا (within 2% below)
     dist_pct = ((sma50 - price) / sma50) * 100
     if dist_pct <= SMA50_PROXIMITY_PCT:
-        # تأكيد قوة: آخر 3 شموع صاعدة
-        if len(closes) >= 4 and closes[-1] > closes[-2] > closes[-3]:
-            return {'name': 'sma50', 'passed': True, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) + 3 شموع صاعدة', 'weight': 2}
-        return {'name': 'sma50', 'passed': False, 'reason': f'قريب من SMA50 بس مفيش تأكيد قوة', 'weight': 2}
+        # ── EGX-STRATEGY-FINAL (ترطيب): تأكيد قوة بأي طريقة من التلاتة ──
+        # (أ) 2 من آخر 3 شموع صاعدة
+        if len(closes) >= 4:
+            up_count = sum(1 for i in range(-3, 0) if closes[i] > closes[i-1])
+            if up_count >= 2:
+                return {'name': 'sma50', 'passed': True, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) + 2/3 شموع صاعدة', 'weight': 2}
+        # (ب) شمعة قوية: جسم ≥ 1.5% + حجم > متوسط 10
+        if len(closes) >= 2 and closes[-2] > 0:
+            body_pct = abs(closes[-1] - closes[-2]) / closes[-2] * 100
+            # شمعة صاعدة (close > prev close)
+            is_bullish = closes[-1] > closes[-2]
+            if is_bullish and body_pct >= 1.5:
+                # فحص الحجم
+                vol_ok = True
+                if volumes and len(volumes) >= 11:
+                    avg_vol_10 = sum(volumes[-11:-1]) / 10 if len(volumes) >= 11 else 0
+                    last_vol = volumes[-1] if volumes else 0
+                    vol_ok = avg_vol_10 > 0 and last_vol > avg_vol_10
+                if vol_ok:
+                    return {'name': 'sma50', 'passed': True, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) + شمعة قوية ({body_pct:.1f}% + حجم)', 'weight': 2}
+        return {'name': 'sma50', 'passed': False, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) بس مفيش تأكيد قوة', 'weight': 2}
     return {'name': 'sma50', 'passed': False, 'reason': f'تحت SMA50 بـ {dist_pct:.1f}%', 'weight': 2}
 
 
@@ -238,7 +263,7 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
     checks = [
         _check_evidence_count(evidence_count),
         _check_rr(entry_price, target_price, stop_price),
-        _check_above_sma50(closes),
+        _check_above_sma50(closes, volumes),
         _check_relative_strength(proofs, stock_roc, benchmark_change),
         _check_deep_correction(closes),
         _check_dont_chase(closes),
