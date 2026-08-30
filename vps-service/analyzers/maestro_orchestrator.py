@@ -1774,6 +1774,22 @@ class MaestroOrchestrator:
         force_regime = options.get('force_regime')
         warnings, warnings_ar = [], []
 
+        # CRYPTO-SUPPORT: لو العملة رقمية → persona='crypto_balanced' (مش mix مع EGX)
+        _is_crypto = False
+        try:
+            import sqlite3 as _crypto_init_sql
+            _crypto_init_db = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
+            _crypto_init_conn = _crypto_init_sql.connect(_crypto_init_db, timeout=3.0)
+            _crypto_init_row = _crypto_init_conn.execute(
+                "SELECT 1 FROM crypto_prices WHERE symbol = ? LIMIT 1", (ticker,)
+            ).fetchone()
+            _crypto_init_conn.close()
+            if _crypto_init_row:
+                _is_crypto = True
+                persona_type = 'crypto_balanced'
+        except Exception:
+            pass
+
         # =====================================================================
         # EGX-MARKET-ISOLATION (2026-08-30): فلتر صارم لـ EGX canonical فقط.
         # المشكلة: النظام كان بـ يعالج أسهم من 4 أسواق (EGX + TADAWUL + KSE + QSE)
@@ -1781,23 +1797,41 @@ class MaestroOrchestrator:
         # غير مصرية + tickers غلط مش موجودة في TradingView.
         # الحل: لو الـ ticker مش EGX canonical صحيح → ارجع None (skip).
         # التفاصيل في utils/egx_gate.py.
+        #
+        # CRYPTO-SUPPORT (2026-08-30): العملات الرقمية بتعدّي الـ EGX Gate.
+        # لو الـ ticker من العملات الرقمية (في crypto_prices) → نسمّيه يعدي.
+        # ما بنخلطش البيانات — كل عملة بـ يتسجل بـ persona='crypto_balanced'.
         # =====================================================================
+        _is_crypto_ticker = False
         try:
-            from utils.egx_gate import is_valid_egx_ticker
-            if not is_valid_egx_ticker(ticker):
-                print(f"[EGX-GATE-REJECT] ticker={ticker} — not EGX canonical → skip analysis", flush=True)
-                result = MaestroResult(
-                    ticker=ticker,
-                    recommendation='hold',
-                    recommendation_ar='احتفاظ (غير مصري — تم رفضه)',
-                    entry_price=0, target_price=0, stop_loss=0,
-                    confidence=0, maestro_score=0,
-                )
-                result.signal_id = None
-                return result
-        except Exception as _egx_gate_err:
-            # لو الـ gate فشل للسبب ما، سيب النظام يكمّل (safe-by-design)
-            logger.debug(f"EGX gate check failed for {ticker}: {_egx_gate_err}")
+            import sqlite3 as _crypto_check_sql
+            _crypto_db = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
+            _crypto_conn = _crypto_check_sql.connect(_crypto_db, timeout=3.0)
+            _crypto_row = _crypto_conn.execute(
+                "SELECT 1 FROM crypto_prices WHERE symbol = ? LIMIT 1", (ticker,)
+            ).fetchone()
+            _crypto_conn.close()
+            if _crypto_row:
+                _is_crypto_ticker = True
+        except Exception:
+            pass
+
+        if not _is_crypto_ticker:
+            try:
+                from utils.egx_gate import is_valid_egx_ticker
+                if not is_valid_egx_ticker(ticker):
+                    print(f"[EGX-GATE-REJECT] ticker={ticker} — not EGX canonical → skip analysis", flush=True)
+                    result = MaestroResult(
+                        ticker=ticker,
+                        recommendation='hold',
+                        recommendation_ar='احتفاظ (غير مصري — تم رفضه)',
+                        entry_price=0, target_price=0, stop_loss=0,
+                        confidence=0, maestro_score=0,
+                    )
+                    result.signal_id = None
+                    return result
+            except Exception as _egx_gate_err:
+                logger.debug(f"EGX gate check failed for {ticker}: {_egx_gate_err}")
 
         closes = [to_num(p.get('close', p.get('close_price', 0))) for p in price_history]
         closes = [c for c in closes if c > 0]
@@ -2194,37 +2228,40 @@ class MaestroOrchestrator:
         # =====================================================================
         # PRODUCTION-WIRING (2026-08-30): ربط sector filter + BOS/ChoCH + liquidity
         # في MaestroOrchestrator (الإنتاج الحقيقي) — مش بس v40_2_daily_generator.
+        # CRYPTO-SUPPORT: كل الفلاتر دي بتتخطى للعملات الرقمية (مفيش قطاعات).
         # =====================================================================
-        # 1) Sector Liquidity Filter
-        try:
-            import sqlite3 as _prod_sec_sql
-            _prod_sec_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')
-            _prod_conn = _prod_sec_sql.connect(_prod_sec_db, timeout=5.0)
-            _prod_conn.row_factory = _prod_sec_sql.Row
-            _prod_sec_row = _prod_conn.execute(
-                "SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1", (ticker,)
-            ).fetchone()
-            _prod_sector = _prod_sec_row['sector'] if _prod_sec_row and _prod_sec_row['sector'] else None
-            if _prod_sector and _prod_sector not in ('', '—', None, 'Diversified', 'diversified', 'غير مصنف'):
-                _prod_stats = _prod_conn.execute(
-                    "SELECT COUNT(*) as n, AVG(change_percent) as avg_chg, SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising FROM stocks WHERE market = 'EGX' AND sector = ? AND change_percent IS NOT NULL",
-                    (_prod_sector,)
+        # 1) Sector Liquidity Filter — للأسهم فقط (العملات بـ تتخطى)
+        # =====================================================================
+        if not _is_crypto:
+            try:
+                import sqlite3 as _prod_sec_sql
+                _prod_sec_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')
+                _prod_conn = _prod_sec_sql.connect(_prod_sec_db, timeout=5.0)
+                _prod_conn.row_factory = _prod_sec_sql.Row
+                _prod_sec_row = _prod_conn.execute(
+                    "SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1", (ticker,)
                 ).fetchone()
-                if _prod_stats and _prod_stats['n'] >= 3:
-                    _prod_avg = float(_prod_stats['avg_chg'] or 0)
-                    _prod_rising_pct = int(_prod_stats['rising'] or 0) / _prod_stats['n']
-                    if _prod_avg <= -1.0 and _prod_rising_pct <= 0.25:
-                        if recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy'):
-                            recommendation = 'hold'
-                            recommendation_ar = f'احتفاظ (قطاع ميت: {_prod_sector[:20]})'
-                            warnings.append(f'Sector dead: {_prod_sector} avg={_prod_avg:+.2f}%')
-                            warnings_ar.append(f'القطاع ميت: {_prod_sector} (متوسط {_prod_avg:+.2f}%)')
-                            print(f"[PROD-SECTOR-DEAD] {ticker}: sector={_prod_sector[:20]} → HOLD", flush=True)
-            _prod_conn.close()
-        except Exception:
-            pass
+                _prod_sector = _prod_sec_row['sector'] if _prod_sec_row and _prod_sec_row['sector'] else None
+                if _prod_sector and _prod_sector not in ('', '—', None, 'Diversified', 'diversified', 'غير مصنف'):
+                    _prod_stats = _prod_conn.execute(
+                        "SELECT COUNT(*) as n, AVG(change_percent) as avg_chg, SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising FROM stocks WHERE market = 'EGX' AND sector = ? AND change_percent IS NOT NULL",
+                        (_prod_sector,)
+                    ).fetchone()
+                    if _prod_stats and _prod_stats['n'] >= 3:
+                        _prod_avg = float(_prod_stats['avg_chg'] or 0)
+                        _prod_rising_pct = int(_prod_stats['rising'] or 0) / _prod_stats['n']
+                        if _prod_avg <= -1.0 and _prod_rising_pct <= 0.25:
+                            if recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy'):
+                                recommendation = 'hold'
+                                recommendation_ar = f'احتفاظ (قطاع ميت: {_prod_sector[:20]})'
+                                warnings.append(f'Sector dead: {_prod_sector} avg={_prod_avg:+.2f}%')
+                                warnings_ar.append(f'القطاع ميت: {_prod_sector} (متوسط {_prod_avg:+.2f}%)')
+                                print(f"[PROD-SECTOR-DEAD] {ticker}: sector={_prod_sector[:20]} → HOLD", flush=True)
+                _prod_conn.close()
+            except Exception:
+                pass
 
-        # 2) BOS/ChoCH
+        # 2) BOS/ChoCH — للأسهم والعملات (Technical pattern)
         try:
             from engines.v38_backtest_engine import detect_order_blocks_and_sweeps
             _prod_ob = detect_order_blocks_and_sweeps(
