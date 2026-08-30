@@ -76,13 +76,15 @@ class TelegramNotifier:
 ⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M')}"""
         return self._send(msg)
 
-    def notify_daily_report(self, predictions: List[Dict] = None) -> bool:
-        """تقرير يومي احترافي."""
+    def notify_daily_report(self, predictions: List[Dict] = None, market: str = 'EGX') -> bool:
+        """تقرير يومي احترافي. market='EGX' or 'CRYPTO'."""
         if predictions is None:
-            predictions = self._get_today_predictions()
+            predictions = self._get_today_predictions(market=market)
 
         if not predictions:
             return False
+
+        market_label = 'العملات الرقمية' if market == 'CRYPTO' else 'البورصة المصرية'
 
         # إحصائيات
         total = len(predictions)
@@ -96,7 +98,7 @@ class TelegramNotifier:
         best = max(closed, key=lambda x: float(x['actual_return'])) if closed else None
         worst = min(closed, key=lambda x: float(x['actual_return'])) if closed else None
 
-        msg = f"""📊 <b>التقرير اليومي — {datetime.now().strftime('%Y-%m-%d')}</b>
+        msg = f"""📊 <b>التقرير اليومي — {market_label} — {datetime.now().strftime('%Y-%m-%d')}</b>
 
 📈 <b>إحصائيات اليوم:</b>
 • إجمالي التوقعات: {total}
@@ -157,18 +159,24 @@ class TelegramNotifier:
 
         return self._send(msg)
 
-    def _get_today_predictions(self) -> List[Dict]:
-        """جيب توقعات اليوم."""
+    def _get_today_predictions(self, market: str = 'EGX') -> List[Dict]:
+        """جيب توقعات اليوم. market='EGX' or 'CRYPTO'."""
         db_path = str(_DB_DIR / 'predictions.db')
         if not os.path.exists(db_path):
             return []
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         today = datetime.now().strftime('%Y-%m-%d')
-        rows = conn.execute(
-            "SELECT * FROM predictions WHERE date(prediction_date) = ? ORDER BY id DESC",
-            (today,)
-        ).fetchall()
+        if market == 'CRYPTO':
+            rows = conn.execute(
+                "SELECT * FROM predictions WHERE date(prediction_date) = ? AND persona LIKE '%crypto%' ORDER BY id DESC",
+                (today,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM predictions WHERE date(prediction_date) = ? AND (persona NOT LIKE '%crypto%' OR persona IS NULL) ORDER BY id DESC",
+                (today,)
+            ).fetchall()
         conn.close()
         return [dict(r) for r in rows]
 
