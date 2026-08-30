@@ -829,6 +829,48 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 # safe-by-design: لو الـ gate فشل، سيب الإشارة تكمّل (مش نوقف النظام)
                 pass
 
+            # ── SECTOR-LIQUIDITY FILTER (مرحلة منفصلة 1 — 2026-08-30) ──
+            # المالك: "السيولة والميكرز بتخش في السوق على القطاع مش أسهم منفصلة"
+            # المنطق: احسب حرارة القطاع من كل أسهم EGX في نفس اليوم.
+            # لو القطاع "dead" (أغب أسهمه هابطة) → ارفض الدخول حتى لو السهم قوي.
+            # لو القطاع "hot" (أغب أسهمه صاعدة) → اسمح الدخول (boost).
+            try:
+                import sqlite3 as _sec_sql
+                _sec_db = str(Path(__file__).resolve().parents[2] / 'db' / 'stocks.db')
+                _sec_conn = _sec_sql.connect(_sec_db, timeout=5.0)
+                _sec_conn.row_factory = _sec_sql.Row
+                # جيب sector السهم
+                _sec_row = _sec_conn.execute(
+                    "SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1",
+                    (ticker,)
+                ).fetchone()
+                _stock_sector = _sec_row['sector'] if _sec_row and _sec_row['sector'] else None
+                if _stock_sector and _stock_sector not in ('', '—', None, 'Diversified', 'diversified', 'غير مصنف', 'N/A', 'nan'):
+                    # احسب حرارة القطاع: متوسط change_percent + rising_ratio
+                    _sec_stats = _sec_conn.execute("""
+                        SELECT 
+                            COUNT(*) as n,
+                            AVG(change_percent) as avg_chg,
+                            SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising,
+                            SUM(CASE WHEN change_percent < 0 THEN 1 ELSE 0 END) as falling
+                        FROM stocks 
+                        WHERE market = 'EGX' AND sector = ? AND change_percent IS NOT NULL
+                    """, (_stock_sector,)).fetchone()
+                    if _sec_stats and _sec_stats['n'] >= 3:
+                        _n = _sec_stats['n']
+                        _avg_chg = float(_sec_stats['avg_chg'] or 0)
+                        _rising = int(_sec_stats['rising'] or 0)
+                        _rising_pct = _rising / _n
+                        # sector dead: avg ≤ -1% AND rising ≤ 25%
+                        if _avg_chg <= -1.0 and _rising_pct <= 0.25:
+                            print(f"[SECTOR-DEAD] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                                  f"sector={_stock_sector[:20]} avg={_avg_chg:+.2f}% rising={_rising}/{_n} → رفض", flush=True)
+                            _sec_conn.close()
+                            continue
+                _sec_conn.close()
+            except Exception as _sec_err:
+                pass  # safe-by-design: لو sector filter فشل، سيب الإشارة تكمّل
+
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
             # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
