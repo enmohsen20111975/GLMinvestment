@@ -17,7 +17,7 @@ const SECTIONS = [
   {
     icon: Brain,
     color: 'emerald',
-    title: 'عقل بايثون الجبّار.. اللي مبيغفلش',
+    title: 'منظومة تحليل متكاملة.. بتراقب السوق باستمرار',
     subtitle: 'The Core Brain',
     body: 'المنصة مبنية على الفصل الصارم بين العقل والعرض؛ الباك-إند شغال بلغة Python كمحرك تحليلي عملاق يراقب ويحلل ويدير البيانات الضخمة. المنصة بتعمل سكرابينج وتحديث دائم للأسعار كل 5 دقائق من حركات التداول اللحظية، يعني مفيش شمعة بتتحرك ولا مليم بيدخل السوق إلا والسيستم لقطه وسجله في داتابيز حية.',
     points: [
@@ -103,7 +103,7 @@ const SECTIONS = [
     color: 'sky',
     title: 'فلتر الأسهم الحرة (Free Float Filter)',
     subtitle: 'Free Float Gate — Safe Liquidity Only',
-    body: 'إنت قفلت باب "اللزوق" في الأسهم المحبوسة. الـ Persona بتاع المضارب بقى بيعمل Veto لأي سهم الـ Free Float بتاعه أقل من 15% (زي SWDY و EKHO). ده معناه إن النظام بقى بيحمي المستخدم من صانع السهم اللي ممكن يمسك السهم كله ويقفله على إسفل.',
+    body: 'إنت قفلت باب "اللزوق" في الأسهم المحبوسة. النظام بقى بيعمل Veto لأي سهم الـ Free Float بتاعه أقل من 15% (زي SWDY و EKHO). ده معناه إن النظام بقى بيحمي المستخدم من صانع السهم اللي ممكن يمسك السهم كله ويقفله على إسفل.',
     points: [
       'Veto تلقائي لأي سهم Free Float < 15%',
       'حماية من التلاعب بالسهم وصانع السوق المحبوس',
@@ -118,7 +118,7 @@ const SECTIONS = [
     body: 'النظام بيراقب السوق بشكل مستمر أثناء الجلسة. مش بس بيحلل كل فترة، ده بيكتشف الأسهم النشطة وبيحللها، وبعدين بيسجل النتائج عشان يتعلم منها ويسيب قراراته. ده نظام بيحسّن أداءه باستمرار.',
     points: [
       'Background Analyzer يعمل كل 15 دقيقة لاكتشاف الفرص الساخنة',
-      'RAG Engine يبحث في التاريخ لأفضل القياسات المشابهة لكل سهم',
+      'المحرك بيبحث في التاريخ لأفضل القياسات المشابهة لكل سهم',
       'Learning Loop: كل صفقة مغلقة → tweak params → quick backtest 30d → كتابة فوراً',
     ],
   },
@@ -414,7 +414,7 @@ export function AboutView() {
                   </div>
                 </div>
 
-                {/* AI Methodology */}
+                {/* منهجية التحليل */}
                 <div className="rounded-xl border border-border/60 bg-background/50 p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Brain className="w-4 h-4 text-fuchsia-600" />
@@ -423,7 +423,7 @@ export function AboutView() {
                   <div className="space-y-2 text-xs text-muted-foreground">
                     <div className="flex items-start gap-2">
                       <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-fuchsia-500" />
-                      <span>RAG: Retrieval-Augmented Generation على historical_trades</span>
+                      <span>محرك بحث تاريخي في الصفقات السابقة لأفضل القياسات</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-fuchsia-500" />

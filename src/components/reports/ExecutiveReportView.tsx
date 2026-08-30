@@ -179,7 +179,7 @@ const TIMEFRAME_OPTIONS: Array<{ value: ReportTimeframe; label: string; badge: s
 // RL-FIX-7: خيارات فلتر الشخصية
 const PERSONA_FILTER_OPTIONS: Array<{ value: FilterPersona; label: string; emoji?: string }> = [
   { value: 'all', label: 'الكل' },
-  { value: 'gambler', label: 'المضارب', emoji: '🔥' },
+  // { value: 'gambler', label: 'المضارب', emoji: '🔥' },  // معطل
   { value: 'balanced', label: 'المتوازن', emoji: '⚖️' },
   { value: 'conservative', label: 'المستثمر', emoji: '🛡️' },
 ];
@@ -1499,9 +1499,8 @@ export function ExecutiveReportView({
                             fontSize: '12px',
                           }}
                         />
-                        <Radar name="المضارب" dataKey="gambler" stroke="#fb923c" fill="#fb923c" fillOpacity={0.3} />
+                        {/* <Radar name="المضارب" dataKey="gambler" stroke="#fb923c" fill="#fb923c" fillOpacity={0.3} /> */}
                         <Radar name="المتوازن" dataKey="balanced" stroke="#2dd4bf" fill="#2dd4bf" fillOpacity={0.3} />
-                        <Radar name="المستثمر" dataKey="conservative" stroke="#34d399" fill="#34d399" fillOpacity={0.3} />
                         <Legend
                           wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
                           iconType="circle"

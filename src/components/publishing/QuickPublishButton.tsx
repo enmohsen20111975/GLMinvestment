@@ -72,7 +72,7 @@ export function QuickPublishButton({
   const [analysis, setAnalysis] = useState('');
   const [timeframe, setTimeframe] = useState('1w');
 
-  // Generate comprehensive AI report text automatically
+  // Generate comprehensive report text automatically
   const generateFullReportText = React.useCallback(() => {
     const targetVal = targetPrice || analysisData?.targetPrice?.toString() || (currentPrice ? (currentPrice * 1.08).toFixed(2) : '');
     const signalText = analysisData?.signalAr || SIGNAL_OPTIONS.find(s => s.value === predictionType)?.label || 'تجميع';

@@ -90,7 +90,7 @@ const MARKET_FLAGS: Record<string, { flag: string; name_ar: string }> = {
 const PERSONA_LABELS: Record<Persona, string> = {
   all: 'الكل',
   investor: '🏦 المستثمر',
-  gambler: '🎲 المضارب',
+  gambler: '',  // معطل
   general: '🎯 عام',
 };
 

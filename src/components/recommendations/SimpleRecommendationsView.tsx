@@ -1013,7 +1013,7 @@ ${OFFICIAL_LINKS_BLOCK}`;
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>{recommendations.length === 0 ? 'لا توجد تحليلات ذكاء اصطناعي حالياً' : 'لا توجد نتائج مطابقة للفلاتر'}</p>
+                    <p>{recommendations.length === 0 ? 'لا توجد تحليلات حالياً' : 'لا توجد نتائج مطابقة للفلاتر'}</p>
                     {recommendations.length > 0 && (
                       <Button variant="outline" size="sm" className="mt-3" onClick={() => { setSignalFilter('ALL'); setMinScore(0); }}>
                         إلغاء الفلاتر

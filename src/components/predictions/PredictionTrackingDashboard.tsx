@@ -168,7 +168,7 @@ const PERSONA_CONFIG: Record<'gambler' | 'balanced' | 'conservative', {
   gambler: {
     id: 'gambler',
     emoji: '🔥',
-    nameAr: 'المضارب',
+    nameAr: 'المضارب',  // UNIFIED-BALANCED-ONLY: معطل
     horizonAr: 'صفقات خاطفة (1-5 أيام)',
     color: 'text-orange-500 dark:text-orange-400',
     badgeBg: 'bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/20',
@@ -1265,7 +1265,7 @@ export function PredictionTrackingDashboard({
                   )}
                 >
                   {pKey === 'all' && 'الكل'}
-                  {pKey === 'gambler' && '🔥 المضارب'}
+                  {pKey === 'gambler' && ''}  // معطل
                   {pKey === 'balanced' && '⚖️ المتوازن'}
                   {pKey === 'conservative' && '🛡️ المستثمر'}
                 </button>
@@ -1916,7 +1916,7 @@ export function PredictionTrackingDashboard({
               {/* Footer Proof Metadata */}
               <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border/40">
                 <span>تاريخ التوثيق: {new Date().toLocaleDateString('ar-EG')}</span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">M2Y INVESTMENT AI VERIFIED</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">M2Y INVESTMENT VERIFIED</span>
               </div>
 
               {/* Modal Actions */}

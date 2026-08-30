@@ -309,12 +309,12 @@ function PersonaLabel() {
   if (!personaId) return null;
 
   const PERSONA_LABELS: Record<string, { emoji: string; label: string }> = {
-    conservative:  { emoji: '🛡️', label: 'المستثمر' },
+    conservative:  { emoji: '🛡️', label: 'المستثمر'  // معطل  // معطل },
     cautious:      { emoji: '🐢', label: 'الحذر' },
     balanced:      { emoji: '⚖️', label: 'المتوازن' },
-    active_trader: { emoji: '🎯', label: 'المضارب' },
-    adventurer:    { emoji: '🎲', label: 'المضارب' },
-    gambler:       { emoji: '🔥', label: 'المضارب' },
+    active_trader: { emoji: '🎯', label: 'المضارب'  // معطل  // معطل },
+    adventurer:    { emoji: '🎲', label: 'المضارب'  // معطل  // معطل },
+    gambler:       { emoji: '🔥', label: 'المضارب'  // معطل  // معطل },
     hedger:        { emoji: '🏛️', label: 'المتحوط' },
   };
   const p = PERSONA_LABELS[personaId];

@@ -553,10 +553,8 @@ export function PicksManagementView() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل الشخصيات</SelectItem>
-              <SelectItem value="gambler">🔥 المضارب</SelectItem>
+              <SelectItem value="all">كل التوصيات</SelectItem>
               <SelectItem value="balanced">⚖️ المتوازن</SelectItem>
-              <SelectItem value="conservative">🛡️ المستثمر</SelectItem>
             </SelectContent>
           </Select>
           <Button

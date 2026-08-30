@@ -11739,3 +11739,44 @@ Stage Summary:
 - ⚠️ Total Return نزل (+319% → +20.56%) بسبب صفقات أقل (56 بدل 217).
 - ✅ القواعد ما اتنكسرتش.
 - 🔜 مستني موافقة المالك قبل المرحلة 2.
+
+---
+Task ID: VISUAL-TEST-1
+Agent: Agent Browser
+Task: فحص بصري شامل
+
+Work Log:
+- فحصت http://127.0.0.1:3000/ — HTTP 200 ✅ (61KB initial HTML، skeleton placeholders طبيعية، لا errors في الـ HTML الأولي).
+- فحصت الـ API endpoints:
+  • /api/predictions/honest-tracking/list → 200 ✅ (فيه predictions فعلية)
+  • /api/predictions/honest-tracking/live-tracking → 200 ✅ (بيانات balanced/ACGC ظاهرة)
+  • /api/stocks → 200 ✅ (482KB JSON، فيه بيانات أسهم حقيقية)
+  • /api/stocks/screener → 502 ❌ (Python backend على بورت 8010 مش شغال)
+  • /api/screener/advanced → 502 ❌ (نفس السبب — "فشل في الاتصال بـ Python Backend")
+  • /api/data-engine/health → 200 ✅ (status: degraded، stocks DB OK بـ 971 سهم)
+- Persona tabs: لسه موجودين في الكود/UI:
+  • PersonaSelector (compact) موجود في Header.tsx (line 69، `hidden md:block`) — بيورّد 3 خيارات (المحافظ/المتوازن/المقامر المحسّن) للمستخدم.
+  • AiRecommendations.tsx (lines 311-319) لسه فيه PERSONA_LABELS بالأسماء القديمة: 'المستثمر' / 'المضارب' — بتظهر كـ PersonaLabel جنب "محرك التحليلات V2".
+  • ملاحظة: sidebar.tsx نفسه مفيهوش persona selector ✅.
+- AI / ذكاء اصطناعي / Python keywords لسه ظاهرة:
+  • FloatingAssistant.tsx line 162: `title="مساعد AI"` — الزرار العائم في الصفحة الرئيسية فيه "AI" في الـ tooltip (شفته فعلًا في الـ HTML المُعروض).
+  • SimpleRecommendationsView.tsx line 1016: "لا توجد تحليلات ذكاء اصطناعي حالياً" — بيظهر للمستخدم لما مفيش توصيات.
+- Sparklines: مفيش ✅ — StockScreener.tsx (lines 102-103) معلّق عليه "متعطل" بطلب المالك. كل الـ references في الكود comment فقط، مفيش rendering فعلي.
+- البيانات بتظهر ✅ (توصيات + أسهم + تتبع حي).
+- Screener page: الصفحة نفسها بتفتح (HTTP 200) لكن الفلاتر مش شغالة لأن Python backend (port 8010) مش شغال — كل queries بترجع 502.
+
+Stage Summary:
+- ✅ الصفحة الرئيسية بتفتح (HTTP 200) بدون errors.
+- ✅ مفيش sparklines في الجداول (متعطّل كما طلب المالك).
+- ✅ البيانات بتظهر (توصيات + أسهم + honest-tracking).
+- ✅ Sidebar نفسه مفيهوش persona selector.
+- ❌ Persona tabs لسه موجودة: PersonaSelector في Header (3 خيارات) + PersonaLabel في AiRecommendations بيستخدم أسماء "مضارب/مستثمر".
+- ❌ "AI" ظاهر في tooltip زرار FloatingAssistant ("مساعد AI").
+- ❌ "ذكاء اصطناعي" ظاهر في SimpleRecommendationsView لما مفيش توصيات.
+- ⚠️ Screener: الصفحة بتفتح بس الفلاتر بتفشل (Python backend مش شغال → 502).
+- الإصلاحات المطلوبة:
+  1. شيل/خفي PersonaSelector من Header.tsx أو ثبّته على "balanced".
+  2. شيل PERSONA_LABELS من AiRecommendations.tsx (أو استبدلها بـ "المتوازن" فقط).
+  3. غيّر title زرار FloatingAssistant من "مساعد AI" لـ "مساعد الاستثمار" (نفس اسم الـ popup header).
+  4. غيّر نص SimpleRecommendationsView.tsx line 1016 من "تحليلات ذكاء اصطناعي" لـ "تحليلات" فقط.
+  5. شغّل Python backend (port 8010) أو اعمل fallback للـ screener من غير Python.

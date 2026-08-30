@@ -9,7 +9,7 @@ import { useNotificationStore } from '@/lib/notification-store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PersonaSelector } from '@/components/persona/PersonaSelector';
+// // PersonaSelector import — UNIFIED-BALANCED-ONLY: معطل
 import { MobileMoreButton } from '@/components/layout/MobileMoreSheet';
 
 interface HeaderProps {
@@ -66,7 +66,7 @@ export function Header({ title, subtitle }: HeaderProps) {
 
         {/* Persona Selector - Compact */}
         <div className="hidden md:block">
-          <PersonaSelector compact />
+          {/* PersonaSelector — معطل */}
         </div>
 
         {/* Dark/Light mode toggle - only render after mount to avoid hydration error */}
