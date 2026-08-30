@@ -685,6 +685,45 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if _fund_avail and _fund_score < 30.0:
                 continue
 
+            # ── EGX-STRATEGY-FINAL (2026-08-30): Entry Gate الشامل ──
+            # المالك طلب: "شروط الدخول الإلزامية (كلها مع مع بعض):
+            #   - evidence_count ≥ 3
+            #   - السعر فوق SMA50 أو قريب جدًا مع تأكيد قوة
+            #   - RS > 1.0
+            #   - مش في Deep Correction
+            #   - مش ممتد (Don't Chase)
+            #   - R/R ≥ 1.8
+            #   - السيولة مقبولة
+            #   - السهم مصري فقط (EGX Gate موجود)
+            # فلتر السياق:
+            #   - لو السوق العام هابط بوضوح → ارفض
+            #   - لو القطاع بارد → ارفض"
+            # الـ entry_gate بـ يفحص كل الشروط دي مرة واحدة. لو أي شرط فشل → continue.
+            try:
+                from utils.entry_gate import check_entry_gate
+                _gate_data = {
+                    'entry_price': entry,
+                    'target_price': target,
+                    'stop_price': stop,
+                    'evidence_count': evidence,
+                    'proofs': result.get('proofs', {}),
+                    'closes': closes[:day_idx+1],
+                    'volumes': volumes[:day_idx+1],
+                    'market_regime_trend': result.get('market_regime_trend', ''),
+                    'stock_roc': float(result.get('stock_roc', 0) or 0),
+                    'benchmark_change': float(result.get('benchmark_change', 0) or 0),
+                }
+                _gate_result = check_entry_gate(_gate_data)
+                if not _gate_result['passed']:
+                    # log الـ rejection للـ audit
+                    _fail_reasons = '; '.join(_gate_result['reasons_failed'][:3])
+                    print(f"[ENTRY-GATE-REJECT] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"score={_gate_result['score']}/{_gate_result['total_checks']} | {_fail_reasons}", flush=True)
+                    continue
+            except Exception as _gate_err:
+                # safe-by-design: لو الـ gate فشل، سيب الإشارة تكمّل (مش نوقف النظام)
+                pass
+
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
             # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
             #   bull  → 2.0  (نطمع أكتر)
