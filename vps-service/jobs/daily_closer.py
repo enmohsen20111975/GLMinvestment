@@ -1835,6 +1835,69 @@ class DailyCloser:
                                                       partial_done=True, partial_exit_price=partial_exit_price,
                                                       partial_return_pct=partial_return_pct)
 
+            # 3.45) CHANGE OF CHARACTER (CHoCH) — UNIFIED-LOGIC (2026-08-30)
+            # المنطق الموحد المطلوب من المالك: "لو حصل تصريف واضح أو Change of Character → خروج".
+            # كشف تغيّر السلوك: لو في 3 أيام متتالية نزول + حجم بيعي (vol > avg × 1.2 + change < 0)
+            # أو لو السهم نزل تحت lower Bollinger Band → تصريف واضح → exit فوري.
+            # ده بـ يحمي الصفقة من الـ slow bleed ويطلّع رأس المال بدري.
+            try:
+                CHOCH_MIN_DAYS = 3  # 3 أيام متتالية نزول
+                CHOCH_VOL_SELL_RATIO = 1.2  # vol > avg × 1.2 + change < 0 = بيعي
+                if days_elapsed >= CHOCH_MIN_DAYS and len(daily_history) >= CHOCH_MIN_DAYS:
+                    _last_3 = daily_history[-3:] if len(daily_history) >= 3 else daily_history
+                    _choch_dropping = all(
+                        (float(d.get('close', d.get('close_price', 0)) or 0) <
+                         float(daily_history[-4].get('close', daily_history[-4].get('close_price', 0)) or 0))
+                        if i > 0 or len(daily_history) > 3 else False
+                        for i, d in enumerate(_last_3)
+                    )
+                    # طريقة أبسط: لو آخر 3 closes كلها نازلة مقارنة بـ close[-4]
+                    if len(daily_history) >= 4:
+                        _c0 = float(daily_history[-4].get('close', daily_history[-4].get('close_price', 0)) or 0)
+                        _c1 = float(daily_history[-3].get('close', daily_history[-3].get('close_price', 0)) or 0)
+                        _c2 = float(daily_history[-2].get('close', daily_history[-2].get('close_price', 0)) or 0)
+                        _c3 = float(daily_history[-1].get('close', daily_history[-1].get('close_price', 0)) or 0)
+                        # 3 أيام نزول متتالية (c1<c0, c2<c1, c3<c2)
+                        _choch_dropping = (_c0 > 0 and _c1 > 0 and _c2 > 0 and _c3 > 0
+                                           and _c1 < _c0 and _c2 < _c1 and _c3 < _c2)
+                        # فلتر الحجم البيعي: vol آخر 3 أيام > avg × 1.2
+                        _vols_3 = [
+                            float(d.get('volume', d.get('volume_traded', 0)) or 0)
+                            for d in daily_history[-3:]
+                        ]
+                        _avg_vol_20_arr = [
+                            float(d.get('volume', d.get('volume_traded', 0)) or 0)
+                            for d in daily_history[-20:]
+                        ] if len(daily_history) >= 20 else _vols_3
+                        _avg_vol_20 = (sum(_avg_vol_20_arr) / len(_avg_vol_20_arr)) if _avg_vol_20_arr else 0
+                        _vol_sellish = (_avg_vol_20 > 0 and
+                                        sum(_vols_3) / 3 > _avg_vol_20 * CHOCH_VOL_SELL_RATIO)
+                        # لو نزول 3 أيام + حجم بيعي → CHoCH → exit
+                        if _choch_dropping and _vol_sellish:
+                            final_return = ((close - entry_price) / entry_price * 100) if close > 0 and entry_price > 0 else 0
+                            if partial_done:
+                                actual_return = (partial_fraction * partial_return_pct
+                                                 + (1 - partial_fraction) * final_return)
+                                exit_type = 'partial_choch'
+                                status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'
+                            else:
+                                actual_return = final_return
+                                exit_type = 'choch_distribution'
+                                status = 'EXPIRED'
+                            logger.info(f"[DailyCloser] #{pred_id} {ticker}: CHoCH EXIT "
+                                        f"(3d drop + vol>{CHOCH_VOL_SELL_RATIO}× avg) → ret={actual_return:.2f}%")
+                            return self._mark_closed_partial(pred_id, ticker, status, actual_return,
+                                                              highest_price_reached, lowest_price_reached,
+                                                              days_elapsed, day_date, exit_type=exit_type,
+                                                              exit_close_price=close or entry_price,
+                                                              highest_price_reached_val=highest_price_reached,
+                                                              lowest_price_reached_val=lowest_price_reached,
+                                                              partial_done=partial_done,
+                                                              partial_exit_price=partial_exit_price,
+                                                              partial_return_pct=partial_return_pct)
+            except Exception as _choch_err:
+                logger.debug(f"CHoCH check failed for #{pred_id} {ticker}: {_choch_err}")
+
             # 3.5) STUCK TRADE / TIME EXIT (2026-08-28)
             # Analyst advice: if trade held 5+ days with < 1.5% movement → exit (stuck).
             # Slow bleed pattern: 19/28 losses in last 30 days were slow bleeds (10-23 days).

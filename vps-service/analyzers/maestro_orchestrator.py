@@ -2075,12 +2075,96 @@ class MaestroOrchestrator:
         except Exception as _lf_err:
             logger.debug(f"LiquidityFilter wiring failed for {ticker}: {_lf_err}")
 
+        # =====================================================================
+        # UNIFIED-LOGIC (2026-08-30): Correction Stage Classifier + Entry Gate
+        # المنطق الموحد المطلوب من المالك: تصنيف حالة السهم قبل أي قرار دخول.
+        # 4 حالات: DEEP_CORRECTION / LATE_CORRECTION_BASE / RECOVERY_STARTING / EXTENDED_CHASE
+        # + entry gate يرفض BUY لو السهم في تصحيح نشط أو مطاردة.
+        # التفاصيل في utils/stock_state.py:classify_correction_stage.
+        # =====================================================================
+        _correction_stage = None
+        _recovery_confirmed = False
+        _entry_vetoed = False
+        _entry_veto_reason = ''
+        try:
+            from utils.stock_state import (
+                classify_correction_stage as _classify_stage,
+                is_in_active_correction as _is_in_active_corr,
+                is_extended_chase as _is_extended_chase,
+                confirm_recovery_starting as _confirm_recovery,
+            )
+            # بناء stock dict للـ classifier
+            _cls_stock = dict(stock) if isinstance(stock, dict) else {}
+            _cls_stock['current_price'] = current_price
+            _cls_stock['change_percent'] = (float(stock.get('change_percent') or 0) if isinstance(stock, dict) and stock.get('change_percent') is not None else 0)
+            if not _cls_stock.get('ma_50') and len(closes) >= 50:
+                _cls_stock['ma_50'] = sum(closes[-50:]) / 50.0
+            if not _cls_stock.get('avg_volume') and price_history:
+                _vols = [to_num(p.get('volume', p.get('volume_traded', 0))) for p in price_history[-20:]]
+                _vols = [v for v in _vols if v > 0]
+                if _vols:
+                    _cls_stock['avg_volume'] = sum(_vols) / len(_vols)
+            if not _cls_stock.get('volume') and price_history:
+                _cls_stock['volume'] = to_num(price_history[-1].get('volume', price_history[-1].get('volume_traded', 0)))
+
+            _correction_stage = _classify_stage(_cls_stock, price_history)
+
+            # Entry gate: رفض BUY لو السهم في DEEP_CORRECTION أو EXTENDED_CHASE
+            if _correction_stage and _correction_stage.get('stage') in ('DEEP_CORRECTION', 'EXTENDED_CHASE'):
+                _entry_vetoed = True
+                _entry_veto_reason = _correction_stage.get('reason', 'السهم في مرحلة غير مناسبة للدخول')
+                print(f"[ENTRY-GATE] ticker={ticker} stage={_correction_stage.get('stage')} "
+                      f"→ BUY vetoed ({_entry_veto_reason})", flush=True)
+
+            # Entry gate إضافي: رفض BUY لو في تصحيح نشط (is_in_active_correction)
+            if not _entry_vetoed and _is_in_active_corr(_cls_stock):
+                _entry_vetoed = True
+                _entry_veto_reason = 'السهم في تصحيح نشط (تحت MA50 + change<0 + RSI<45)'
+                print(f"[ENTRY-GATE] ticker={ticker} active_correction → BUY vetoed", flush=True)
+
+            # Don't Chase: فلتر إضافي مستقل (حتى لو stage مش EXTENDED_CHASE)
+            if not _entry_vetoed and _is_extended_chase(_cls_stock, price_history):
+                _entry_vetoed = True
+                _entry_veto_reason = "Don't Chase: طلع كتير بدري (≥12% في 3 أيام أو ≥15% في 5 أيام)"
+                print(f"[ENTRY-GATE] ticker={ticker} extended_chase → BUY vetoed", flush=True)
+
+            # Recovery confirmation: تأكيد بدء التعافي (لو stage=RECOVERY_STARTING)
+            if _correction_stage and _correction_stage.get('stage') == 'RECOVERY_STARTING':
+                _sector_chng = options.get('sector_change')
+                _rec_result = _confirm_recovery(_cls_stock, price_history, sector_change=_sector_chng)
+                _recovery_confirmed = bool(_rec_result.get('confirmed'))
+                if not _recovery_confirmed:
+                    # لو stage قال RECOVERY_STARTING بس confirmation فشل → نشيل الـ allow_entry
+                    _correction_stage['allow_entry'] = False
+                    _correction_stage['reason'] = _rec_result.get('failed', ['تأكيد التعافي غير مكتمل'])
+                    if isinstance(_correction_stage['reason'], list):
+                        _correction_stage['reason'] = '؛ '.join(_correction_stage['reason'])
+                    print(f"[RECOVERY-CONFIRM] ticker={ticker} recovery NOT confirmed: "
+                          f"score={_rec_result.get('score')}/5 failed={_rec_result.get('failed')}", flush=True)
+                else:
+                    print(f"[RECOVERY-CONFIRM] ticker={ticker} recovery CONFIRMED "
+                          f"score={_rec_result.get('score')}/5", flush=True)
+        except Exception as _cs_err:
+            logger.debug(f"Correction stage classifier failed for {ticker}: {_cs_err}")
+
         recommendation, recommendation_ar = determine_recommendation(
             maestro_score, regime_phase.phase, volume_ratio, price_position,
             distance_to_support_pct, persona_type=persona_type,
             stock_profile=_verdict_profile,
             threshold_boost=dna_threshold_boost,
         )
+
+        # =====================================================================
+        # UNIFIED-LOGIC (2026-08-30): Entry Gate Hard Veto
+        # لو الـ entry gate رفض BUY → حول أي إشارة شراء لـ HOLD.
+        # السبب: المنطق الموحد بيقول "ممنوع دخول" لو السهم في DEEP_CORRECTION أو
+        # EXTENDED_CHASE أو تصحيح نشط. أي BUY/STRONG_BUY → HOLD.
+        # =====================================================================
+        if _entry_vetoed and recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy'):
+            recommendation = 'hold'
+            recommendation_ar = f'احتفاظ ({_entry_veto_reason})'
+            warnings.append(f'Entry gate veto: {_entry_veto_reason}')
+            warnings_ar.append(f'بوابة الدخول: {_entry_veto_reason}')
 
         # 🔥 P0-v6 FIX #2 (VCP force-strong-buy):
         #    VCP score ≥ 85 = إشارة اختراق عالية الثقة → force strong_buy مهما
@@ -2159,6 +2243,35 @@ class MaestroOrchestrator:
                 warnings_ar.append(f'بوابة القطاع: حظر الشراء ({_vetoed_rec}→احتفاظ) — القطاع ميت')
                 print(f"[SECTOR_VETO_HARD] ticker={ticker} {_vetoed_rec}→hold "
                       f"(dead sector, role={_cl7_role})", flush=True)
+
+        # =====================================================================
+        # UNIFIED-LOGIC (2026-08-30): Market Breadth Hard Veto
+        # المنطق الموحد: "ممنوع دخول ضد الاتجاه (تحت SMA50 أو السوق هابط بقوة)".
+        # Sector Confirmation + Market regime veto — لو السوق هابط بقوة → HOLD.
+        # التفاصيل في analyzers/institutional_decision_engine.py:_check_market_breadth_veto.
+        # =====================================================================
+        try:
+            from analyzers.institutional_decision_engine import _check_market_breadth_veto
+            # بناء market_regime dict من regime_phase
+            _market_regime = {
+                'trend': regime_phase.phase,
+                'confidence': regime_phase.confidence,
+            }
+            _breadth_pct = options.get('breadth_pct')
+            _benchmark_change = float(options.get('benchmark_change') or 0.0)
+            _vetoed, _veto_reason = _check_market_breadth_veto(
+                _market_regime, _benchmark_change, _breadth_pct
+            )
+            if _vetoed and recommendation in ('buy', 'strong_buy', 't1_buy', 'swing_buy'):
+                _vetoed_rec = recommendation
+                recommendation = 'hold'
+                recommendation_ar = f'احتفاظ (سوق هابط — {_veto_reason})'
+                warnings.append(f'Market breadth veto: {_vetoed_rec}→hold ({_veto_reason})')
+                warnings_ar.append(f'حظر السوق الهابط: {_veto_reason}')
+                print(f"[MARKET-VETO] ticker={ticker} {_vetoed_rec}→hold "
+                      f"({_veto_reason})", flush=True)
+        except Exception as _mb_err:
+            logger.debug(f"Market breadth veto wiring failed for {ticker}: {_mb_err}")
 
         # P1 fix (يوليو 2026): round(..., 0) بيرجّع 1.0 → 1.0*100=100 (غلط)
         # الصح: round(..., 2) * 100 عشان يبقى 94% مش 100%
@@ -2389,6 +2502,75 @@ class MaestroOrchestrator:
 
         # Fix entry/sl/target: for sells, target must be below price (consistency rule)
         is_buy = recommendation in ['buy', 'strong_buy', 't1_buy', 'swing_buy']
+
+        # =====================================================================
+        # UNIFIED-LOGIC (2026-08-30): Discovery Fallback Chain (3-layer)
+        # المنطق الموحد المطلوب من المالك:
+        #   1. المحرك الأساسي يطلع الإشارة.
+        #   2. لو الإشارة ضعيفة أو WAIT → افحص Volume Surge / Maker.
+        #   3. لو مفيش Surge → افحص Accumulation (تجميع هادئ 3 أيام).
+        #   4. لو مفيش Accumulation → افحص Recovery from Long Base / Late Correction.
+        # الـ 3 detectors موجودة في analyzers/core_scoring_engine.py (بدون ملفات جديدة).
+        # التفعيل: لو recommendation مش BUY/STRONG_BUY + في signal قوي من أي detector → رقّي.
+        # =====================================================================
+        _discovery_fallback_signal = None
+        if not is_buy and price_history and len(price_history) >= 20:
+            try:
+                from analyzers.core_scoring_engine import (
+                    detect_volume_surge_rocket as _detect_surge,
+                    detect_accumulation_phase as _detect_acc,
+                    detect_recovery_from_base as _detect_recovery,
+                )
+                # بناء OHLCV list للـ detectors
+                _ohlcv = []
+                for p in price_history[-60:]:
+                    _ohlcv.append({
+                        'close': float(p.get('close', p.get('close_price', 0)) or 0),
+                        'high': float(p.get('high', p.get('high_price', 0)) or 0),
+                        'low': float(p.get('low', p.get('low_price', 0)) or 0),
+                        'open': float(p.get('open', p.get('open_price', 0)) or 0),
+                        'volume': float(p.get('volume', p.get('volume_traded', 0)) or 0),
+                    })
+
+                # Layer 1: Volume Surge Hunter
+                _surge = _detect_surge(_ohlcv) if len(_ohlcv) >= 20 else None
+                if _surge and _surge.get('is_surge_rocket'):
+                    _discovery_fallback_signal = ('surge_rocket', _surge)
+                    print(f"[FALLBACK-L1] ticker={ticker} Volume Surge Rocket detected "
+                          f"(score={_surge.get('score', 0)})", flush=True)
+
+                # Layer 2: Pre-explosion Accumulation
+                if not _discovery_fallback_signal:
+                    _acc = _detect_acc(_ohlcv) if len(_ohlcv) >= 20 else None
+                    if _acc and _acc.get('is_accumulation'):
+                        _discovery_fallback_signal = ('accumulation', _acc)
+                        print(f"[FALLBACK-L2] ticker={ticker} Accumulation detected "
+                              f"(score={_acc.get('score', 0)})", flush=True)
+
+                # Layer 3: Recovery from Long Base
+                if not _discovery_fallback_signal:
+                    _rec = _detect_recovery(_ohlcv) if len(_ohlcv) >= 30 else None
+                    if _rec and _rec.get('is_recovery_signal'):
+                        _discovery_fallback_signal = ('recovery', _rec)
+                        print(f"[FALLBACK-L3] ticker={ticker} Recovery from Base detected "
+                              f"(score={_rec.get('score', 0)})", flush=True)
+
+                # رقّي التوصية لو في signal قوي + الـ entry gate مش مرفوض
+                if _discovery_fallback_signal and not _entry_vetoed:
+                    _df_kind, _df_data = _discovery_fallback_signal
+                    _df_score = float(_df_data.get('score', 0) or 0)
+                    if _df_score >= 60:
+                        recommendation = 'buy'
+                        recommendation_ar = f'شراء ({_df_kind}: score={_df_score:.0f})'
+                        is_buy = True
+                        maestro_score = max(maestro_score, _df_score)
+                        warnings.append(f'Discovery fallback: {_df_kind} (score={_df_score:.0f})')
+                        warnings_ar.append(f'سلسلة الاكتشاف: {_df_kind} — رفع التوصية لشراء')
+                        print(f"[DISCOVERY-UPGRADE] ticker={ticker} hold→buy "
+                              f"({_df_kind}, score={_df_score:.0f})", flush=True)
+            except Exception as _df_err:
+                logger.debug(f"Discovery fallback chain failed for {ticker}: {_df_err}")
+
         entry_price = round2(current_price * 0.995) if is_buy else current_price
         
         # Fallback values
@@ -3167,10 +3349,12 @@ class MaestroOrchestrator:
 
                 # ── PRIORITY-1 / PHASE-1A/1B/1C: Guards قبل record_prediction ──
                 # ترتيب الـ guards (كل واحد بـ يشتغل على ناتج اللي قبله):
-                #   0) ATR-based stop  (Priority 1) — استبدل الـ fixed-% P26 stop بـ ATR stop
-                #   1) direction guard (1ب) — منع target ≤ entry (بيـ validate الـ ATR stop الجديد)
-                #   2) R:R enforcement (1ج) — وسّع الـ target لـ R:R ≥ 1.5 (نسبًا للـ ATR stop)
-                #   3) Stock Alive     (1أ) — LOG ONLY (ENFORCE=False)
+                #   0) Geometry Guard (UNIFIED-LOGIC 2026-08-30) — HARD REJECT لو target≤entry*1.05
+                #      أو stop≥entry*0.95 أو R/R<1.5 (منع التوقعات المعكوسة قبل الكتابة)
+                #   1) ATR-based stop  (Priority 1) — استبدل الـ fixed-% P26 stop بـ ATR stop
+                #   2) direction guard (1ب) — منع target ≤ entry (بيـ validate الـ ATR stop الجديد)
+                #   3) R:R enforcement (1ج) — وسّع الـ target لـ R:R ≥ 1.5 (نسبًا للـ ATR stop)
+                #   4) Stock Alive     (1أ) — LOG ONLY (ENFORCE=False)
                 try:
                     from core.opportunity_quality import (
                         validate_target_stop_direction,
@@ -3180,6 +3364,27 @@ class MaestroOrchestrator:
                         STOCK_ALIVE_ENFORCE,
                     )
                     _sig_upper = recommendation.upper()
+
+                    # =====================================================================
+                    # UNIFIED-LOGIC (2026-08-30): Geometry Guard (HARD REJECT)
+                    # المنطق الموحد: "R/R ≥ 1.5 إجباري (يفضل 1.8+)" + منع التوقعات المعكوسة.
+                    # لو أي قاعدة من R1-R5 فشلت → ارفض التوقع قبل الكتابة.
+                    # التفاصيل في analyzers/prediction_tracker.py:enforce_geometry_guard.
+                    # =====================================================================
+                    try:
+                        from analyzers.prediction_tracker import enforce_geometry_guard
+                        _geom_check = enforce_geometry_guard(_sig_upper, entry_price, target, stop_loss)
+                        if _geom_check is None:
+                            print(f"[GEOMETRY-REJECT] ticker={ticker} HARD REJECT — "
+                                  f"entry={entry_price} target={target} stop={stop_loss} "
+                                  f"signal={_sig_upper}", flush=True)
+                            warnings.append('Geometry guard: HARD REJECT (هندسة معكوسة أو R/R<1.5)')
+                            warnings_ar.append('حارس الهندسة: رفض قاطع (هندسة الصفقة غير صحيحة)')
+                            result.signal_id = None
+                            return result
+                    except Exception as _geom_err:
+                        logger.debug(f"Geometry guard wiring failed for {ticker}: {_geom_err}")
+
                     # Priority 1: ATR-based stop (يحل محل الـ fixed-% P26 stop)
                     _atr_stop_check = enforce_atr_based_stop(
                         _sig_upper, entry_price, stop_loss, _atr_val, persona_type

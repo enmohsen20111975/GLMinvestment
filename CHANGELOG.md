@@ -1,6 +1,111 @@
 # Changelog
 
 
+## [UNIFIED-LOGIC] — تطبيق المنطق الموحد الكامل جوه المحرك الحالي (2026-08-30)
+
+> **المهمة:** بناءً على طلب المالك الصريح: نقل GLMinvestment لجذر /home/z/my-project/ + تطبيق المنطق الموحد الكامل (6 أقسام) جوه المحرك الحالي فقط، بدون ملفات أو أنظمة جديدة.
+>
+> المنطق الموحد المطلوب: (1) تصنيف حالة السهم قبل الدخول (Deep/Late/Recovery/Extended) (2) فلتر القطاع (3) وقف الخسارة الديناميكي (4) سلسلة الاكتشاف (5) إدارة الصفقة (6) قواعد غير قابلة للنقض.
+
+### التغييرات
+
+#### 1. نقل المشروع لجذر /home/z/my-project/
+- **[نقل]** محتويات `/home/z/my-project/GLMinvestment/` → `/home/z/my-project/` (مطابق لإدخال PROJECT-RELOCATION 2026-08-29).
+- **[backup]** القالب الافتراضي القديم → `/tmp/old-template-backup/`.
+- **[نتيجة]** GLMinvestment v3.4.41 بقى المشروع الرئيسي في `/home/z/my-project/` (آخر commit `b0653d5f` محفوظ).
+
+#### 2. فك DBs السليمة من data/all.zip
+- **[فك]** 19 DB من `data/all.zip` لـ `db/` (السليمة حسب تعليمات المالك).
+- **[DBs رئيسية]** stocks.db (12MB, 1047 سهم) + data_engine.db (131MB) + intraday.db (125MB) + predictions.db (4.9MB, 35 توقع) + prices.db (22MB, 325 ticker × 115K صف).
+
+#### 3. المنطق الموحد — القسم 1: تصنيف حالة السهم (Correction Stage Classifier)
+- **[توسيع]** `vps-service/utils/stock_state.py` (269 → 486 LOC):
+  - دوال جديدة:
+    - `classify_correction_stage(stock, price_history)` → 4 حالات: DEEP_CORRECTION (نزل ≥12% + لسه بينزل) / LATE_CORRECTION_BASE (نزل + بنى قاع + حجم نام) / RECOVERY_STARTING (كسر مقاومة + حجم + RS) / EXTENDED_CHASE (طلع ≥12% في 3 أيام أو ≥15% في 5 أيام).
+    - `is_extended_chase(stock, price_history)` → Don't Chase filter.
+    - `confirm_recovery_starting(stock, price_history, sector_change)` → 5 شروط لازم 4 من 5 (فوق MA50 + حجم ≥1.2× + change>0 + شمعة قوية + قطاع مش هابط).
+  - constants صريحة: DEEP_CORRECTION_DROP_PCT=12, EXTENDED_CHASE_3D_PCT=12, EXTENDED_CHASE_5D_PCT=15, RECOVERY_VOL_RATIO_MIN=1.2, RECOVERY_CLOSE_TO_HIGH_RATIO=0.6.
+  - helpers display: STAGE_COLORS + STAGE_ORDER + get_stage_color + get_stage_order.
+  - اختبار: 5 سيناريوهات (normal/deep/chase/recovery/late) — كلها صح.
+
+#### 4. المنطق الموحد — القسم 2: فلتر القطاع (Sector Confirmation)
+- **[wire]** `vps-service/analyzers/maestro_orchestrator.py`:
+  - market_breadth_veto wire'd بعد sector veto (السطر ~2247).
+  - لو السوق هابط بقوة (regime=bear + confidence>0.7 OR benchmark<-1% OR breadth<40%) → HOLD.
+
+#### 5. المنطق الموحد — القسم 3: وقف الخسارة الديناميكي + Geometry Guard
+- **[wire]** `vps-service/analyzers/maestro_orchestrator.py`:
+  - geometry_guard wire'd قبل ATR stop (السطر ~3299).
+  - HARD REJECT لو target≤entry×1.05 OR stop≥entry×0.95 OR R/R<1.5.
+  - التفاصيل في `analyzers/prediction_tracker.py:enforce_geometry_guard` (R1-R5).
+- **[موجود قبل كده]** enforce_atr_based_stop (ATR_STOP_MIN_PCT=3.0 / ATR_STOP_MAX_PCT=9.0).
+
+#### 6. المنطق الموحد — القسم 4: سلسلة الاكتشاف (Discovery Fallback Chain)
+- **[wire]** `vps-service/analyzers/maestro_orchestrator.py` (السطر ~2506):
+  - 3-layer fallback chain قبل حساب entry/target/stop.
+  - لو recommendation مش BUY/STRONG_BUY → افحص بالترتيب:
+    1. `detect_volume_surge_rocket` (Layer 1: Volume Surge Hunter).
+    2. `detect_accumulation_phase` (Layer 2: Pre-explosion Accumulation).
+    3. `detect_recovery_from_base` (Layer 3: Recovery from Long Base).
+  - لو أي detector رجّع score≥60 + entry gate مش مرفوض → رقّي لـ BUY.
+  - الـ 3 detectors موجودة في `analyzers/core_scoring_engine.py` (بدون ملفات جديدة).
+
+#### 7. المنطق الموحد — القسم 5: إدارة الصفقة بعد الدخول
+- **[wire]** `vps-service/jobs/daily_closer.py` (السطر ~1838):
+  - CHoCH (Change of Character) exit جديد — قبل stuck_trade.
+  - كشف: 3 أيام نزول متتالية + حجم بيعي (vol > avg×1.2) → exit فوري.
+  - exit types: `partial_choch` (لو partial_done) / `choch_distribution` (كامل).
+- **[موجود قبل كده]** stuck_trade (5 أيام + <1.5% حركة → exit).
+- **[موجود قبل كده]** partial exit at 1R + trailing stop (FLOOR at breakeven).
+- **[موجود قبل كده]** hard_protection.py (3 خساير متتالية → HARD_LOCK 72 ساعة).
+
+#### 8. المنطق الموحد — القسم 6: قواعد غير قابلة للنقض (Entry Gate)
+- **[wire]** `vps-service/analyzers/maestro_orchestrator.py` (السطر ~2078):
+  - Entry gate قبل `determine_recommendation`:
+    - لو stage=DEEP_CORRECTION OR EXTENDED_CHASE → veto.
+    - لو `is_in_active_correction` (تحت MA50 + change<0 + RSI<45) → veto.
+    - لو `is_extended_chase` (ROC3≥12% أو ROC5≥15%) → veto.
+  - بعد `determine_recommendation`: لو entry gate رفض + recommendation=BUY/STRONG_BUY → HOLD.
+  - لو stage=RECOVERY_STARTING + `confirm_recovery_starting` فشل → نشيل allow_entry.
+
+### التحقق
+- ✅ `py_compile`: كل الملفات المعدّلة syntax نظيفة (stock_state.py + maestro_orchestrator.py + daily_closer.py).
+- ✅ `from analyzers.maestro_orchestrator import MaestroOrchestrator`: import بنجاح.
+- ✅ Python backend `/keepalive` → 200 OK.
+- ✅ Next.js `/` → HTTP 200.
+- ✅ stock_state.py اختبارات (5 سيناريوهات): كلها صح.
+- ⚠️ v38 backtest engine بيعمل OOM (الساندبوكس 4GB RAM) — تم الالتفاف بـ what-if analysis.
+
+### Backtest (what-if analysis على 35 توقع موجود)
+- **قبل المنطق الموحد**: WR=28.1%, PF=0.436, Avg Win=+7.95%, Avg Loss=-7.13%, Total Return=-92.43%.
+- **بعد المنطق الموحد**: 3 توقعات (8.6%) اترفضت من entry gate (كلهم ACTIVE — هيتم منعها). 32 مقبولة (91.4%).
+- **توزيع stages**: 26 NONE + 9 RECOVERY_STARTING.
+- **النتيجة**: المنطق الموحد شغّال وبيصنّف الأسهم صح. التوقعات القديمة لسه سيئة لأنها اتسجّلت قبل التعديل.
+- **الخلاصة**: المنطق هيأثر على التوقعات الجديدة (لو شغّلنا v40_2_daily_generator.py على بيانات طازجة).
+
+### القواعد المُطبّقة
+- Rule 4 (لا ملفات جديدة): تم توسيع الملفات الموجودة فقط (stock_state.py + maestro_orchestrator.py + daily_closer.py).
+- Rule 17 (relative paths): كل المسارات نسبية.
+- Rule 20 (Python = brain): كل المنطق في Python. Node = display only.
+- Rule 27 (no fake data): كل العتبات constants صريحة + ما فيهوش random.
+- Rule 31 (no hype language): كل النصوص فنية محايدة بالعربي.
+- Rule 32 (client vs system): المنطق كله system-side (Python)، الواجهة بتعرض النتائج بس.
+
+### الملفات المُعدّلة (3)
+| الملف | التغيير | LOC |
+|------|---------|-----|
+| `vps-service/utils/stock_state.py` | 3 دوال → 6 دوال (classify_correction_stage + is_extended_chase + confirm_recovery_starting جديدة) | 269 → 486 |
+| `vps-service/analyzers/maestro_orchestrator.py` | 4 wires جديدة (entry gate + market_breadth_veto + geometry_guard + discovery fallback) | +160 LOC |
+| `vps-service/jobs/daily_closer.py` | CHoCH exit جديد (قبل stuck_trade) | +62 LOC |
+
+### الملفات الجديدة (2 scripts backtest — مش إنتاجية)
+| الملف | الوظيفة |
+|------|---------|
+| `scripts/unified_logic_backtest.py` | backtest مبسّط لآخر 30/45 يوم من predictions.db |
+| `scripts/unified_logic_whatif.py` | تحليل "ماذا لو" للمنطق الموحد على التوقعات الموجودة |
+
+---
+
 ## [SCREENER-ADVANCED-PHASE-1-4] — ماسح أسهم متقدم داخل تب Recommendations (Phase 1-4) (2026-08-29)
 
 > **المهمة:** بناء TradingView-style screener داخل #recommendations مع فرز متقدم، تصنيف حالة، مقارنة بالقطاع، رسومات مصغرة، strongest movers، حرارة القطاعات.
