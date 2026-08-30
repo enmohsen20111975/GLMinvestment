@@ -258,6 +258,13 @@ function UrlHashSync() {
     const hash = window.location.hash.slice(1); // Remove #
     if (hash && validViews.includes(hash)) {
       setCurrentViewFromHash(hash as typeof currentView);
+      // CRYPTO-SUPPORT: لو الـ hash يبدأ بـ crypto → setCurrentMarket('CRYPTO')
+      const { setCurrentMarket, currentMarket } = useAppStore.getState();
+      if (hash.startsWith('crypto') && currentMarket !== 'CRYPTO') {
+        setCurrentMarket('CRYPTO');
+      } else if (!hash.startsWith('crypto') && currentMarket === 'CRYPTO' && ['stocks', 'dashboard', 'recommendations', 'portfolio', 'watchlist', 'trading-chart'].includes(hash)) {
+        setCurrentMarket('EGX');
+      }
     }
   }, [setCurrentViewFromHash]);
 
@@ -515,7 +522,7 @@ function AppShell() {
       case 'crypto-prediction-tracking':
         return <PredictionTrackingView />;
       case 'crypto-screener':
-        return <StockScreenerAdvancedView />;
+        return <StockScreenerAdvancedView initialMarket="CRYPTO" />;
       
       // === حسابات دينية ===
       case 'zakat':

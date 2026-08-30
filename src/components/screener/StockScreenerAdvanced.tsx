@@ -312,9 +312,10 @@ const DIRECTIONS = [
 
 interface StockScreenerAdvancedProps {
   initialTab?: 'advanced' | 'top-performers';
+  initialMarket?: string;
 }
 
-export function StockScreenerAdvanced({ initialTab = 'advanced' }: StockScreenerAdvancedProps) {
+export function StockScreenerAdvanced({ initialTab = 'advanced', initialMarket }: StockScreenerAdvancedProps) {
   const [tab, setTab] = useState<'advanced' | 'top-performers'>(initialTab);
 
   // Read ?tab= query param on mount (for redirects from #top-performers).
@@ -354,7 +355,7 @@ export function StockScreenerAdvanced({ initialTab = 'advanced' }: StockScreener
         </TabsList>
 
         <TabsContent value="advanced">
-          <AdvancedFiltersTab />
+          <AdvancedFiltersTab initialMarket={initialMarket} />
         </TabsContent>
         <TabsContent value="top-performers">
           <TopPerformersTab />
@@ -366,11 +367,11 @@ export function StockScreenerAdvanced({ initialTab = 'advanced' }: StockScreener
 
 // ─── Tab 1: Advanced Filters ──────────────────────────────────────────────────
 
-function AdvancedFiltersTab() {
+function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
   const loadStockDetail = useAppStore((s) => s.loadStockDetail);
 
-  // Filter state
-  const [market, setMarket] = useState('EGX');
+  // Filter state — لو initialMarket='CRYPTO' → ابدأ بـ CRYPTO
+  const [market, setMarket] = useState(initialMarket || 'EGX');
   const [sector, setSector] = useState('ALL');
   const [sort, setSort] = useState('turnover_egp');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
