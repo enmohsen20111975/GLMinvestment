@@ -49,6 +49,14 @@ import {
   ArrowUpDown,
   AlertTriangle,
   Trophy,
+  BarChart3,
+  Gauge,
+  Flame,
+  Snowflake,
+  PiggyBank,
+  Target,
+  Shield,
+  Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
@@ -463,22 +471,310 @@ function AdvancedFiltersTab() {
     fetchScreener();
   }, [fetchScreener]);
 
-  // Reset filters
-  const resetFilters = () => {
-    setMarket('EGX');
-    setSector('ALL');
-    setSort('turnover_egp');
-    setOrder('desc');
-    setLimit(100);
-    setMinPrice(''); setMaxPrice(''); setMinVolume(''); setMinTurnover('');
-    setTrend('all'); setAboveMa('all'); setRsi('all');
-    setVolumeSurge(false); setNear52wHigh(false); setNear52wLow(false);
-    setMinPe(''); setMaxPe(''); setMinRoe('');
-    setMinDividendYield(''); setMinMarketCap(''); setMaxMarketCap('');
-    setStockState('ALL');
-    setSearchQuery('');
-    toast.success('تم إعادة ضبط الفلاتر');
-  };
+   // Reset filters
+   const resetFilters = () => {
+     setMarket('EGX');
+     setSector('ALL');
+     setSort('turnover_egp');
+     setOrder('desc');
+     setLimit(100);
+     setMinPrice(''); setMaxPrice(''); setMinVolume(''); setMinTurnover('');
+     setTrend('all'); setAboveMa('all'); setRsi('all');
+     setVolumeSurge(false); setNear52wHigh(false); setNear52wLow(false);
+     setMinPe(''); setMaxPe(''); setMinRoe('');
+     setMinDividendYield(''); setMinMarketCap(''); setMaxMarketCap('');
+     setStockState('ALL');
+     setSearchQuery('');
+     toast.success('تم إعادة ضبط الفلاتر');
+   };
+
+   // Presets
+   const presets = [
+     {
+       label: 'تعافي بعد تصحيح',
+       icon: TrendingUp,
+       color: 'emerald',
+       apply: () => {
+         setStockState('CORRECTION_END');
+         setTrend('up');
+         setVolumeSurge(true);
+         setSort('momentum_score');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'زخم متزن',
+       icon: Gauge,
+       color: 'blue',
+       apply: () => {
+         setStockState('BALANCED_MOMENTUM');
+         setAboveMa('above');
+         setSort('turnover_egp');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'قرب كسر للأعلى',
+       icon: Zap,
+       color: 'amber',
+       apply: () => {
+         setNear52wHigh(true);
+         setAboveMa('above');
+         setSort('momentum_score');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'في قمة',
+       icon: Trophy,
+       color: 'orange',
+       apply: () => {
+         setStockState('AT_PEAK');
+         setRsi('overbought');
+         setSort('change_percent');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'أسهم نشطة',
+       icon: Flame,
+       color: 'red',
+       apply: () => {
+         setVolumeSurge(true);
+         setMinVolume('500000');
+         setSort('volume');
+         setOrder('desc');
+         setLimit(200);
+       },
+     },
+     {
+       label: 'أسهم ميتة',
+       icon: Snowflake,
+       color: 'gray',
+       apply: () => {
+         setVolumeSurge(false);
+         setMinVolume('10000');
+         setMaxVolume('100000');
+         setSort('volume');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'مقيّمة (PE منخفض)',
+       icon: PiggyBank,
+       color: 'purple',
+       apply: () => {
+         setMaxPe('10');
+         setMinRoe('15');
+         setSort('pe_ratio');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'تشبع بيعي',
+       icon: TrendingDown,
+       color: 'rose',
+       apply: () => {
+         setRsi('oversold');
+         setNear52wLow(true);
+         setSort('rsi');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'أسهم أرباح عالية',
+       icon: BarChart3,
+       color: 'green',
+       apply: () => {
+         setMinDividendYield('5');
+         setMinRoe('10');
+         setSort('dividend_yield');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'أسهم نمو',
+       icon: TrendingUp,
+       color: 'teal',
+       apply: () => {
+         setMinRoe('20');
+         setAboveMa('above');
+         setSort('roe');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'أسهم قيمة',
+       icon: Shield,
+       color: 'indigo',
+       apply: () => {
+         setMaxPe('12');
+         setMinDividendYield('3');
+         setMaxMarketCap('50000000000');
+         setSort('pe_ratio');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'كبار القيمة',
+       icon: Crown,
+       color: 'yellow',
+       apply: () => {
+         setMinMarketCap('100000000000');
+         setSort('market_cap');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'سيولة عالية',
+       icon: Activity,
+       color: 'cyan',
+       apply: () => {
+         setMinTurnover('50000000');
+         setMinVolume('1000000');
+         setSort('turnover_egp');
+         setOrder('desc');
+         setLimit(200);
+       },
+     },
+     {
+       label: 'انخفاض حاد',
+       icon: TrendingDownIcon,
+       color: 'red',
+       apply: () => {
+         setTrend('down');
+         setRsi('oversold');
+         setNear52wLow(true);
+         setSort('change_percent');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'قاع 52 أسبوع',
+       icon: Target,
+       color: 'violet',
+       apply: () => {
+         setNear52wLow(true);
+         setRsi('oversold');
+         setStockState('CORRECTION');
+         setSort('distance_from_52w_low');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'أعلى 52 أسبوع',
+       icon: Trophy,
+       color: 'gold',
+       apply: () => {
+         setNear52wHigh(true);
+         setStockState('AT_PEAK');
+         setSort('distance_from_52w_high');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'فوق المتوسطات',
+       icon: TrendingUp,
+       color: 'emerald',
+       apply: () => {
+         setAboveMa('above');
+         setTrend('up');
+         setSort('momentum_score');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'تحت المتوسطات',
+       icon: TrendingDown,
+       color: 'slate',
+       apply: () => {
+         setAboveMa('below');
+         setTrend('down');
+         setSort('momentum_score');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'RSI معتدل',
+       icon: Gauge,
+       color: 'blue',
+       apply: () => {
+         setRsi('neutral');
+         setStockState('BALANCED_MOMENTUM');
+         setSort('rsi');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'فرص انعكاس',
+       icon: Shield,
+       color: 'teal',
+       apply: () => {
+         setVolumeSurge(true);
+         setStockState('CORRECTION_END');
+         setTrend('up');
+         setSort('momentum_score');
+         setOrder('desc');
+         setLimit(100);
+       },
+     },
+     {
+       label: 'مستقرة (لا تذبذب)',
+       icon: Shield,
+       color: 'gray',
+       apply: () => {
+         setTrend('neutral');
+         setRsi('neutral');
+         setAboveMa('both');
+         setStockState('NEUTRAL');
+         setSort('volatility');
+         setOrder('asc');
+         setLimit(100);
+       },
+     },
+   ];
+
+   const colorMap: Record<string, string> = {
+     emerald: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300',
+     blue: 'border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300',
+     amber: 'border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300',
+     orange: 'border-orange-500/40 bg-orange-500/10 text-orange-700 hover:bg-orange-500/20 dark:text-orange-300',
+     red: 'border-red-500/40 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-300',
+     gray: 'border-gray-500/40 bg-gray-500/10 text-gray-700 hover:bg-gray-500/20 dark:text-gray-300',
+     purple: 'border-purple-500/40 bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 dark:text-purple-300',
+     rose: 'border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300',
+     green: 'border-green-500/40 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-300',
+     teal: 'border-teal-500/40 bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 dark:text-teal-300',
+     indigo: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 hover:bg-indigo-500/20 dark:text-indigo-300',
+     yellow: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 dark:text-yellow-300',
+     gold: 'border-yellow-600/40 bg-yellow-600/10 text-yellow-800 hover:bg-yellow-600/20 dark:text-yellow-400',
+     cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',
+     violet: 'border-violet-500/40 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:text-violet-300',
+     slate: 'border-slate-500/40 bg-slate-500/10 text-slate-700 hover:bg-slate-500/20 dark:text-slate-300',
+   };
+
+   const applyPreset = (preset: typeof presets[0]) => {
+     resetFilters();
+     preset.apply();
+     toast.success(`تم تطبيق: ${preset.label}`);
+   };
 
   // Client-side search + sort
   const filteredStocks = useMemo(() => {
@@ -583,6 +879,35 @@ function AdvancedFiltersTab() {
           </Button>
         </div>
       </div>
+
+      {/* Presets */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-600" />
+            فلاتر جاهزة
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {presets.map((preset) => {
+              const Icon = preset.icon;
+              return (
+                <Button
+                  key={preset.label}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyPreset(preset)}
+                  className={cn('gap-1.5 border', colorMap[preset.color])}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {preset.label}
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters Panel */}
       {showFilters && (
