@@ -1,0 +1,80 @@
+{
+  "baseline_ps_only": {
+    "initial_capital": 100000,
+    "final_equity": 137575.55435313415,
+    "total_return_pct": 37.58,
+    "metrics": {
+      "total": 43,
+      "wins": 25,
+      "losses": 18,
+      "wr": 58.1,
+      "pf": 3.338,
+      "avg_win": 1.85,
+      "avg_loss": 0.77,
+      "max_dd": 7.07,
+      "total_ret": 32.47
+    },
+    "cb_stats": {
+      "total_blocks": 3,
+      "total_reductions": 0,
+      "trades_skipped": 0,
+      "current_consecutive_losses": 1,
+      "currently_blocked": false,
+      "blocked_until": null,
+      "mode": "reduce",
+      "cooldown_days": 0
+    }
+  },
+  "ps_plus_cb_block": {
+    "initial_capital": 100000,
+    "final_equity": 137831.31401226003,
+    "total_return_pct": 37.83,
+    "metrics": {
+      "total": 41,
+      "wins": 24,
+      "losses": 17,
+      "wr": 58.5,
+      "pf": 3.572,
+      "avg_win": 1.89,
+      "avg_loss": 0.75,
+      "max_dd": 5.95,
+      "total_ret": 32.64
+    },
+    "cb_stats": {
+      "total_blocks": 3,
+      "total_reductions": 0,
+      "trades_skipped": 2,
+      "current_consecutive_losses": 1,
+      "currently_blocked": false,
+      "blocked_until": null,
+      "mode": "block",
+      "cooldown_days": 3
+    }
+  },
+  "ps_plus_cb_reduce": {
+    "initial_capital": 100000,
+    "final_equity": 137575.55435313415,
+    "total_return_pct": 37.58,
+    "metrics": {
+      "total": 43,
+      "wins": 25,
+      "losses": 18,
+      "wr": 58.1,
+      "pf": 3.338,
+      "avg_win": 1.85,
+      "avg_loss": 0.77,
+      "max_dd": 7.07,
+      "total_ret": 32.47
+    },
+    "cb_stats": {
+      "total_blocks": 3,
+      "total_reductions": 2,
+      "trades_skipped": 0,
+      "current_consecutive_losses": 1,
+      "currently_blocked": false,
+      "blocked_until": null,
+      "mode": "reduce",
+      "cooldown_days": 3
+    }
+  }
+}
