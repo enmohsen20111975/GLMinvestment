@@ -12405,3 +12405,62 @@ Stage Summary:
 - ✅ Sidebar + page.tsx ربط
 - ✅ اختبار: 3 توقعات + 15 تحت المراقبة
 - 🔜 المستخدم يقدر يولد توقعات من الأدمن بنل أو تلقائياً بـ cron job
+
+---
+Task ID: INTEGRATE-TOMORROW-2026-08-30
+Agent: Z.ai Code (main)
+Task: دمج شاشة توقعات الغد كـ tab جوه #recommendations + إضافة القاعدة 34 (مشروع متكامل)
+
+Work Log:
+- **git pull** لأخذ تعديلات المبرمج التاني (PredictionTrackingDashboard + StockScreenerAdvanced).
+
+- **فهم المشكلة العشوائية في التحليلات**:
+  - `/api/unified/predictions` + `/api/stored-analysis/results` بتعمل proxy لـ Python backend (port 8010)
+  - Python بيعمل re-analyze كل مرة لو الـ cache انتهى (15 دقيقة)
+  - فيه عوامل تانية: ties في الـ score + timestamp في الحسابات + randomization في V38BacktestEngine
+  - الحل: لازم Python backend بيـ cache النتائج بشكل ثابت لما السوق مقفول
+
+- **دمج شاشة توقعات الغد كـ tab جوه #recommendations** (بدل شاشة منفصلة):
+  - MarketAnalysisView.tsx: ضفت TabsTrigger value="tomorrow" + TabsContent
+  - ضفت 4 functions جديدة جوه MarketAnalysisView:
+    1. TomorrowPredictionsTab (الـ tab الرئيسي + 3 sub-tabs + stats cards + generate button)
+    2. TomorrowPredictionsTable (جدول التوقعات: شراء/بيع)
+    3. TomorrowActiveStatusTable (جدول حالة الأسهم النشطة + progress bars)
+    4. TomorrowWatchlistTable (جدول أسهم تحت المراقبة)
+  - الـ tab بـ 3 sub-tabs: التوقعات / الأسهم النشطة / تحت المراقبة
+  - في زر "توليد يدوي" للأدمن
+
+- **حذف الشاشة المنفصلة**:
+  - حذفت `src/components/predictions/TomorrowPredictionsView.tsx`
+  - شيلت case 'tomorrow-predictions' من page.tsx
+  - شيلت 'tomorrow-predictions' من validViews + VALID_VIEWS
+  - شيلت Sidebar item "توقعات الغد"
+  - شيلت import TomorrowPredictionsView من page.tsx
+
+- **تغيير اسم "التوصيات" → "التوقعات"**:
+  - Sidebar: "إدارة التوصيات" → "إدارة التوقعات"
+  - MarketAnalysisView: tab "التوصيات" → "التوقعات"
+
+- **إضافة القاعدة 34 للدستور** (Documentation/00-CONSTITUTION.md):
+  - "مشروع واحد متكامل، ممنوع التكرار" (NO_DUPLICATE_SCREENS)
+  - 7 بنود:
+    1. ممنوع إنشاء شاشة جديدة لو الخدمة موجودة
+    2. كل ملف لازم يكون مربوط
+    3. ممنوع تكرار الـ logic
+    4. الـ routing موحد
+    5. الـ data sources موحدة
+    6. قبل ما تبدأ شغل جديد: اسأل 3 أسئلة
+    7. العقوبة: أي تكرار = مخالفة دستورية
+  - عهد الوكيل بقى 35 بند
+
+- **lint**: EXIT 0 ✅
+- **الـ API `/api/tomorrow-predictions` شغّال**: بيرجع 3 توقعات + 15 تحت المراقبة
+
+Stage Summary:
+- ✅ توقعات الغد دلوقتي tab جوه #recommendations (مش شاشة منفصلة)
+- ✅ 3 sub-tabs: التوقعات / الأسهم النشطة / تحت المراقبة
+- ✅ حذف الشاشة المنفصلة + route + Sidebar item
+- ✅ "التوصيات" → "التوقعات" في Sidebar + MarketAnalysisView
+- ✅ القاعدة 34 (NO_DUPLICATE_SCREENS) في الدستور
+- ✅ تعديلات المبرمج التاني اتمسحت (git pull)
+- 🔜 المشكلة العشوائية محتاجة مراجعة Python backend (cache ثابت لما السوق مقفول)

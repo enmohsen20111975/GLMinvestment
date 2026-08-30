@@ -96,8 +96,7 @@ function getNavSections(currentMarket: MarketType): NavSection[] {
         // top-performers merged into #stock-filters (Tab 2 — أعلى الأرباح/الخسائر)
         { id: 'trading-chart', label: 'الشارت التفاعلي ومقارنة الأسهم', labelEn: 'Interactive Chart & Comparison', icon: TrendingUp },
         { id: 'recommendations', label: 'متابعة التوقعات', labelEn: 'Predictions Tracking', icon: Target },
-        { id: 'tomorrow-predictions', label: 'توقعات الغد', labelEn: 'Tomorrow Predictions', icon: Calendar },
-        { id: 'picks-management', label: 'إدارة التوصيات', labelEn: 'Picks Management', icon: Crown },
+        { id: 'picks-management', label: 'إدارة التوقعات', labelEn: 'Picks Management', icon: Crown },
         // sniper merged into analysis tabs (opportunities engine)
         // prediction-performance + prediction-credibility moved to Admin panel only
         // (under development — data quality issues being fixed via backtesting loop)

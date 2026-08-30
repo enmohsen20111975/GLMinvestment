@@ -7043,6 +7043,363 @@ function _isEgxIntradayNow(): boolean {
   }
 }
 
+// ─── توقعات الغد — 3 أجزاء (شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) ─────
+// FIX (Aug 2026): دمج شاشة توقعات الغد كـ tab جوه #recommendations
+// بدل ما تكون شاشة منفصلة — مشروع واحد متكامل (Rule: NO_DUPLICATE_SCREENS)
+function TomorrowPredictionsTab({ market }: { market: MarketType }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [subTab, setSubTab] = useState<'predictions' | 'active' | 'watchlist'>('predictions');
+  const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/tomorrow-predictions?market=${marketCode}`, { cache: 'no-store' });
+      const json = await res.json();
+      if (json.success) setData(json);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [marketCode]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleGenerate = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/tomorrow-predictions/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ market: marketCode }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        fetchData();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGenerating(false);
+    }
+  }, [marketCode, fetchData]);
+
+  const stats = data?.stats;
+  const predictions = data?.predictions || [];
+  const activeStatus = data?.active_status || [];
+  const watchlist = data?.watchlist || [];
+
+  return (
+    <div className="space-y-4">
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Target className="h-4 w-4" />
+              <span className="text-xs">توقعات الغد</span>
+            </div>
+            <div className="text-lg font-bold">{stats.predictions_count}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-xs">شراء</span>
+            </div>
+            <div className="text-lg font-bold text-emerald-600">{stats.buy_signals}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <TrendingDown className="h-4 w-4" />
+              <span className="text-xs">بيع</span>
+            </div>
+            <div className="text-lg font-bold text-red-600">{stats.sell_signals}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Activity className="h-4 w-4" />
+              <span className="text-xs">أسهم نشطة</span>
+            </div>
+            <div className="text-lg font-bold">{stats.active_status_count}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-xs">حققت الهدف</span>
+            </div>
+            <div className="text-lg font-bold text-emerald-600">{stats.target_hit}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-xs">تحت المراقبة</span>
+            </div>
+            <div className="text-lg font-bold text-amber-600">{stats.watchlist_count}</div>
+          </Card>
+        </div>
+      )}
+
+      {/* Sub-tabs + Generate button */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <Tabs value={subTab} onValueChange={(v) => setSubTab(v as typeof subTab)}>
+          <TabsList>
+            <TabsTrigger value="predictions">
+              <Target className="h-4 w-4 ml-1" />
+              التوقعات ({predictions.length})
+            </TabsTrigger>
+            <TabsTrigger value="active">
+              <Activity className="h-4 w-4 ml-1" />
+              الأسهم النشطة ({activeStatus.length})
+            </TabsTrigger>
+            <TabsTrigger value="watchlist">
+              <AlertTriangle className="h-4 w-4 ml-1" />
+              تحت المراقبة ({watchlist.length})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+            <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
+            تحديث
+          </Button>
+          <Button variant="default" size="sm" onClick={handleGenerate} disabled={generating}>
+            <Zap className={cn('h-4 w-4 ml-2', generating && 'animate-pulse')} />
+            {generating ? 'جاري التوليد...' : 'توليد يدوي'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <Card>
+          <CardContent className="py-12 flex items-center justify-center">
+            <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">جاري التحميل...</span>
+          </CardContent>
+        </Card>
+      ) : subTab === 'predictions' ? (
+        <TomorrowPredictionsTable predictions={predictions} />
+      ) : subTab === 'active' ? (
+        <TomorrowActiveStatusTable activeStatus={activeStatus} />
+      ) : (
+        <TomorrowWatchlistTable watchlist={watchlist} />
+      )}
+
+      <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+        ⚠️ إخلاء مسؤولية: هذه التوقعات رأي آلي تعليمي وليست توصية استثمارية. القرار مسؤولية العميل.
+      </p>
+    </div>
+  );
+}
+
+// ─── جدول توقعات الغد (شراء/بيع) ────────────────────────────────────────────
+function TomorrowPredictionsTable({ predictions }: { predictions: any[] }) {
+  if (predictions.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <Target className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          مفيش توقعات متاحة — اضغط "توليد يدوي"
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="max-h-[600px] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background z-10">
+              <TableRow>
+                <TableHead>السهم</TableHead>
+                <TableHead className="text-center">الإشارة</TableHead>
+                <TableHead className="text-right">سعر الدخول</TableHead>
+                <TableHead className="text-right">الهدف</TableHead>
+                <TableHead className="text-right">الوقف</TableHead>
+                <TableHead className="text-center">R/R</TableHead>
+                <TableHead className="text-center">الثقة</TableHead>
+                <TableHead className="text-right">السبب</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {predictions.map((p) => (
+                <TableRow key={p.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="font-semibold text-sm">{p.ticker}</div>
+                    <div className="text-xs text-muted-foreground">{p.name}</div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={cn(
+                      'text-xs',
+                      p.signal === 'BUY' || p.signal === 'STRONG_BUY'
+                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                        : 'text-red-700 bg-red-50 border-red-200'
+                    )}>
+                      {p.signal === 'STRONG_BUY' ? 'شراء قوي' : p.signal === 'BUY' ? 'شراء' : p.signal === 'STRONG_SELL' ? 'بيع قوي' : p.signal}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">{p.entry_price?.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm text-emerald-600">{p.target_price?.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm text-red-600">{p.stop_loss?.toFixed(2)}</TableCell>
+                  <TableCell className="text-center font-mono text-sm">{p.r_multiple?.toFixed(2)}</TableCell>
+                  <TableCell className="text-center">
+                    {p.confidence && <Badge variant="secondary" className="text-xs">{p.confidence.toFixed(0)}%</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right text-xs text-muted-foreground max-w-xs">{p.reason?.slice(0, 80)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── جدول حالة الأسهم النشطة ────────────────────────────────────────────────
+function TomorrowActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
+  if (activeStatus.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          مفيش توقعات نشطة حالياً
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="max-h-[600px] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background z-10">
+              <TableRow>
+                <TableHead>السهم</TableHead>
+                <TableHead className="text-center">الإشارة</TableHead>
+                <TableHead className="text-right">دخول</TableHead>
+                <TableHead className="text-right">السعر الحالي</TableHead>
+                <TableHead className="text-center">التقدم</TableHead>
+                <TableHead className="text-center">الحالة</TableHead>
+                <TableHead className="text-right">الإجراء المتوقع</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {activeStatus.map((s) => (
+                <TableRow key={s.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="font-semibold text-sm">{s.ticker}</div>
+                    <div className="text-xs text-muted-foreground">{s.name}</div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="text-xs">{s.original_signal}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">{s.original_entry_price?.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{s.current_price?.toFixed(2)}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex flex-col items-center">
+                      <span className={cn(
+                        'font-mono text-sm font-bold',
+                        s.progress_percent >= 70 ? 'text-emerald-600' : s.progress_percent >= 30 ? 'text-amber-600' : s.progress_percent < 0 ? 'text-red-600' : 'text-muted-foreground'
+                      )}>
+                        {s.progress_percent > 0 ? '+' : ''}{s.progress_percent?.toFixed(1)}%
+                      </span>
+                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className={cn(
+                          'h-full',
+                          s.progress_percent >= 70 ? 'bg-emerald-500' : s.progress_percent >= 30 ? 'bg-amber-500' : s.progress_percent < 0 ? 'bg-red-500' : 'bg-blue-500'
+                        )} style={{ width: `${Math.max(0, Math.min(100, s.progress_percent))}%` }} />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="text-xs">{s.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-medium">{s.expected_action}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── جدول أسهم تحت المراقبة ─────────────────────────────────────────────────
+function TomorrowWatchlistTable({ watchlist }: { watchlist: any[] }) {
+  if (watchlist.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          مفيش أسهم تحت المراقبة حالياً
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="max-h-[600px] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background z-10">
+              <TableRow>
+                <TableHead>السهم</TableHead>
+                <TableHead className="text-center">النوع</TableHead>
+                <TableHead className="text-center">الأولوية</TableHead>
+                <TableHead className="text-right">السعر</TableHead>
+                <TableHead className="text-right">التغير</TableHead>
+                <TableHead className="text-center">RSI</TableHead>
+                <TableHead className="text-center">حجم</TableHead>
+                <TableHead className="text-right">السبب</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {watchlist.map((w) => (
+                <TableRow key={w.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="font-semibold text-sm">{w.ticker}</div>
+                    <div className="text-xs text-muted-foreground">{w.name}</div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="text-xs">{w.watch_type}</Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={cn(
+                      'text-xs',
+                      w.priority === 'HIGH' ? 'text-red-700 bg-red-50 border-red-200' : w.priority === 'MEDIUM' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-gray-700 bg-gray-50 border-gray-200'
+                    )}>
+                      {w.priority === 'HIGH' ? 'عالية' : w.priority === 'MEDIUM' ? 'متوسطة' : 'منخفضة'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">{w.current_price?.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline" className={cn(
+                      'font-mono text-xs',
+                      w.change_percent >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+                    )}>
+                      {w.change_percent >= 0 ? '+' : ''}{w.change_percent?.toFixed(2)}%
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center font-mono text-xs">{w.rsi?.toFixed(0) || '—'}</TableCell>
+                  <TableCell className="text-center font-mono text-xs">
+                    {w.volume_surge > 1 ? `${w.volume_surge.toFixed(1)}x` : '—'}
+                  </TableCell>
+                  <TableCell className="text-right text-xs text-muted-foreground max-w-xs">{w.watch_reason}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface MarketAnalysisViewProps {
   /** V40.4 §5 UI Mirror Protocol — when set, syncs the store to this market
    * on mount so the unified shell renders crypto/stock data identically. */
@@ -7157,7 +7514,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       <HorizontalSectorsBar marketCode={marketCode} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 h-auto gap-1">
           {/* التبويب الأول: متابعة التوقعات */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
@@ -7174,7 +7531,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           {/* UNIFIED-BALANCED-ONLY: tab واحد بس */}
           <TabsTrigger value="balanced" className="flex items-center gap-1">
             <span className="text-base">⚖️</span>
-            <span className="hidden sm:inline">التوصيات</span>
+            <span className="hidden sm:inline">التوقعات</span>
+          </TabsTrigger>
+          {/* توقعات الغد — 3 أجزاء (شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) */}
+          <TabsTrigger value="tomorrow" className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">توقعات الغد</span>
           </TabsTrigger>
           {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو (Python logic في flow_system.py) */}
           <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
@@ -7198,6 +7560,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 
         <TabsContent value="balanced" className="mt-4">
           <PersonaTab market={currentMarket} persona="balanced" />
+        </TabsContent>
+
+        {/* توقعات الغد — 3 أجزاء (شراء/بيع + حالة الأسهم النشطة + تحت المراقبة) */}
+        <TabsContent value="tomorrow" className="mt-4">
+          <TomorrowPredictionsTab market={currentMarket} />
         </TabsContent>
 
         {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو */}

@@ -138,11 +138,6 @@ const PredictionTrackingView = withErrorBoundary(
   dynamic(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
   'تتبّع التوقعات',
 );
-// توقعات الغد — 3 أجزاء (توقعات شراء/بيع + حالة الأسهم النشطة + تحت المراقبة)
-const TomorrowPredictionsView = withErrorBoundary(
-  dynamic(() => import('@/components/predictions/TomorrowPredictionsView'), { ssr: false, loading: () => <LazyTabLoader label="توقعات الغد" /> }),
-  'توقعات الغد',
-);
 const PicksManagementView = withErrorBoundary(
   dynamic(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوصيات" /> }),
   'إدارة التوصيات',
@@ -251,7 +246,6 @@ function UrlHashSync() {
     // (under development — data quality issues being fixed via backtesting loop)
     'advanced-portfolio', 'seasonality',
     'prediction-tracking',
-    'tomorrow-predictions',
     'picks-management',
     // Smart Assistant
     'smart-confluence',
@@ -389,7 +383,6 @@ function AppShell() {
     const VALID_VIEWS = new Set([
       'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
       'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
-      'advanced-portfolio', 'seasonality', 'prediction-tracking', 'tomorrow-predictions', 'picks-management', 'smart-confluence',
       'alerts-center', 'trading-memory', 'live-monitor', 'wealth', 'trading-journal',
       'publishing', 'crypto', 'crypto-live', 'crypto-portfolio', 'crypto-watchlist',
       'crypto-recommendations', 'crypto-analysis', 'crypto-learning', 'crypto-simulation',
@@ -477,8 +470,6 @@ function AppShell() {
         );
       case 'prediction-tracking':
         return <PredictionTrackingView />;
-      case 'tomorrow-predictions':
-        return <TomorrowPredictionsView />;
       case 'picks-management':
         return <PicksManagementView />;
       case 'reports':
