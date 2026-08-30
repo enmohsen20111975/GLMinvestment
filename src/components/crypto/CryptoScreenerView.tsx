@@ -463,9 +463,9 @@ export default function CryptoScreenerView() {
                 <SelectItem value="losers">📉 الهابطات فقط</SelectItem>
                 <SelectItem value="top10">⭐ أعلى 10</SelectItem>
                 <SelectItem value="high_volume">💧 حجم تداول عالي</SelectItem>
-                <SelectItem value="large_cap"> Large Cap (≥10B)</SelectItem>
-                <SelectItem value="mid_cap">Mid Cap (1B-10B)</SelectItem>
-                <SelectItem value="small_cap">Small Cap (&lt;1B)</SelectItem>
+                <SelectItem value="large_cap">قيمة كبيرة (≥10B)</SelectItem>
+                <SelectItem value="mid_cap">قيمة متوسطة (1B-10B)</SelectItem>
+                <SelectItem value="small_cap">قيمة صغيرة (&lt;1B)</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="ghost" size="sm" onClick={resetFilters}>
@@ -477,7 +477,7 @@ export default function CryptoScreenerView() {
           {/* Numeric Filters */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Market Cap ≥ (B)</Label>
+              <Label className="text-xs">القيمة السوقية ≥ (B)</Label>
               <Input
                 type="number"
                 placeholder="مثال: 1"
@@ -486,7 +486,7 @@ export default function CryptoScreenerView() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Volume 24h ≥ (M)</Label>
+              <Label className="text-xs">حجم التداول ≥ (M)</Label>
               <Input
                 type="number"
                 placeholder="مثال: 100"
@@ -495,7 +495,7 @@ export default function CryptoScreenerView() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Change 24h ≥ %</Label>
+              <Label className="text-xs">تغير 24h ≥ %</Label>
               <Input
                 type="number"
                 placeholder="مثال: 0"
@@ -504,7 +504,7 @@ export default function CryptoScreenerView() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Change 24h ≤ %</Label>
+              <Label className="text-xs">تغير 24h ≤ %</Label>
               <Input
                 type="number"
                 placeholder="مثال: 10"
@@ -513,7 +513,7 @@ export default function CryptoScreenerView() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Change 7d ≥ %</Label>
+              <Label className="text-xs">تغير 7d ≥ %</Label>
               <Input
                 type="number"
                 placeholder="مثال: 5"
@@ -578,7 +578,7 @@ export default function CryptoScreenerView() {
               </Button>
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-y-auto -mx-2">
+            <div className="max-h-[600px] overflow-auto -mx-2">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>

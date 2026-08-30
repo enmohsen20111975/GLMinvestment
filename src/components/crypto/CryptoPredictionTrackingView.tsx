@@ -316,7 +316,7 @@ export default function CryptoPredictionTrackingView() {
                   </p>
                 </div>
               ) : (
-                <div className="max-h-[600px] overflow-y-auto -mx-2">
+                <div className="max-h-[600px] overflow-auto -mx-2">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>

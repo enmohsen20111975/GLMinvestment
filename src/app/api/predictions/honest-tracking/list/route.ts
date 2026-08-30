@@ -346,6 +346,9 @@ export async function GET(request: NextRequest) {
     const targetPrice2Sel = hasTargetPrice2 ? ', target_price_2' : '';
     // V40.1: evidence_count + morning_bell + kill_filter_result (schema-aware)
     const v40Sel = hasV40Fields ? ', evidence_count, morning_bell, kill_filter_result' : '';
+    // FIX (Aug 2026): ضيف LIMIT في الـ SQL بدل ما نـ fetch كل الصفوف ونعمل pagination في JS
+    // عشان نمنع OOM على 5000+ توقع
+    const maxRows = 500; // حد أقصى للصفوف اللي بترجع من DB
     // Fetch predictions — CLOSED first (more interesting), then PENDING by date
     allRows = db.prepare(`
       SELECT
@@ -361,6 +364,7 @@ export async function GET(request: NextRequest) {
       FROM predictions
       ${whereClause}
       ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) ASC, outcome_date DESC, closed_at DESC, prediction_date DESC, master_score DESC, id DESC
+      LIMIT ${maxRows}
     `).all() as any[];
     db.close();
   } catch (dbErr) {

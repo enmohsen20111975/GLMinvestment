@@ -186,7 +186,7 @@ interface TopPerformersResponse {
 const STATE_BADGE_COLORS: Record<string, string> = {
   CORRECTION_END: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
   BALANCED_MOMENTUM: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800',
-  NEAR_BREAKOUT: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  NEAR_BREAKOUT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800',
   AT_PEAK: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800',
   NEAR_PEAK: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   NEUTRAL: 'bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300 border-gray-200 dark:border-gray-700',
@@ -540,7 +540,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
 
    // Reset filters
    const resetFilters = () => {
-     setMarket('EGX');
+     setMarket(initialMarket || 'EGX');
      setSector('ALL');
      setSort('turnover_egp');
      setOrder('desc');
@@ -573,7 +573,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      {
        label: 'زخم متزن',
        icon: Gauge,
-       color: 'blue',
+       color: 'teal',
        apply: () => {
          setStockState('BALANCED_MOMENTUM');
          setAboveMa('above');
@@ -682,7 +682,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      {
        label: 'أسهم قيمة',
        icon: Shield,
-       color: 'indigo',
+       color: 'cyan',
        apply: () => {
          setMaxPe('12');
          setMinDividendYield('3');
@@ -780,7 +780,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      {
        label: 'RSI معتدل',
        icon: Gauge,
-       color: 'blue',
+       color: 'teal',
        apply: () => {
          setRsi('neutral');
          setStockState('BALANCED_MOMENTUM');
@@ -820,7 +820,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
 
    const colorMap: Record<string, string> = {
      emerald: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300',
-     blue: 'border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 dark:text-blue-300',
+     teal: 'border-teal-500/40 bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 dark:text-teal-300',
      amber: 'border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300',
      orange: 'border-orange-500/40 bg-orange-500/10 text-orange-700 hover:bg-orange-500/20 dark:text-orange-300',
      red: 'border-red-500/40 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-300',
@@ -829,7 +829,6 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      rose: 'border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300',
      green: 'border-green-500/40 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-300',
      teal: 'border-teal-500/40 bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 dark:text-teal-300',
-     indigo: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-700 hover:bg-indigo-500/20 dark:text-indigo-300',
      yellow: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 dark:text-yellow-300',
      gold: 'border-yellow-600/40 bg-yellow-600/10 text-yellow-800 hover:bg-yellow-600/20 dark:text-yellow-400',
      cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',

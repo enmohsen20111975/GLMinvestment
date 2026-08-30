@@ -35,6 +35,38 @@ export async function GET(
     );
 
     if (!response.ok) {
+      // fallback لـ crypto_prices DB لو CoinGecko rate-limited
+      try {
+        const { getCryptoBySymbol } = await import('@/lib/data-engine-db');
+        const symbol = coinId.toUpperCase();
+        const coin = getCryptoBySymbol(symbol);
+        if (coin && coin.price_usd) {
+          const fallbackData = {
+            id: coinId,
+            symbol: coin.symbol,
+            name: coin.name,
+            image: { large: '', small: '', thumb: '' },
+            description: { en: `${coin.name} — بيانات من crypto_prices (fallback)` },
+            market_data: {
+              current_price: { usd: coin.price_usd },
+              market_cap: { usd: coin.market_cap },
+              total_volume: { usd: coin.total_volume },
+              price_change_percentage_24h: coin.price_change_24h,
+              price_change_percentage_7d_in_currency: { usd: coin.price_change_7d },
+            },
+            market_cap_rank: coin.market_cap_rank,
+            fallback: 'crypto_prices_db',
+          };
+          return NextResponse.json({
+            success: true,
+            data: fallbackData,
+            cached: false,
+            fallback: true,
+          });
+        }
+      } catch (e) {
+        console.error('[crypto/[id]] fallback error:', e);
+      }
       return NextResponse.json({
         success: false,
         error: `Coin '${coinId}' not found`

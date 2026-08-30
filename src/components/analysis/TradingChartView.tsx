@@ -150,26 +150,26 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
   return (
     <div
       dir="rtl"
-      className="w-full min-h-screen overflow-y-auto bg-slate-50 text-foreground p-2 md:p-5 pb-28 space-y-5"
+      className="w-full min-h-screen overflow-y-auto bg-background text-foreground p-2 md:p-5 pb-28 space-y-5"
     >
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.06)] overflow-hidden">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-white to-sky-50 px-4 py-4 md:px-5 md:py-5">
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="border-b border-border bg-gradient-to-r from-emerald-50 via-background to-sky-50 dark:from-emerald-950/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-emerald-600">
                 <LayoutGrid className="w-5 h-5" />
                 <span className="text-[10px] font-bold tracking-[0.22em] uppercase">Trading Desk</span>
               </div>
-              <h1 className="text-xl md:text-2xl font-black text-slate-900">
+              <h1 className="text-xl md:text-2xl font-black text-foreground">
                 الشارت التفاعلي والتحليل المتقدم
               </h1>
-              <p className="text-xs text-slate-500 max-w-2xl">
+              <p className="text-xs text-muted-foreground max-w-2xl">
                 مقارنة فورية للأسهم مع تحليل السعر، مستويات الدعم والمقاومة، المخاطرة، ومؤشرات التوافق الفني.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <ExchangeSelector compact className="h-9 text-xs rounded-xl border-slate-200 bg-white" />
+              <ExchangeSelector compact className="h-9 text-xs rounded-xl border-border bg-card" />
               {marketOverview && (
                 <div className="hidden lg:flex items-center gap-2 text-[10px]">
                   <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 px-2.5 py-1">
@@ -193,19 +193,19 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                 mode="add"
                 placeholder="إدراج سهم آخر للتحليل..."
                 onSelectStock={(ticker) => handleAddStock(ticker)}
-                buttonClassName="w-full border-slate-200 bg-slate-50 hover:bg-white text-slate-700 rounded-xl shadow-sm"
+                buttonClassName="w-full border-border bg-muted hover:bg-card text-foreground rounded-xl shadow-sm"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <div className="flex bg-muted p-1 rounded-xl border border-border">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setColumns(1)}
                   className={cn(
                     'h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all',
-                    columns === 1 ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
+                    columns === 1 ? 'bg-card text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-muted-foreground'
                   )}
                 >
                   1 عمود
@@ -216,7 +216,7 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                   onClick={() => setColumns(2)}
                   className={cn(
                     'h-8 px-2.5 text-[11px] font-bold rounded-lg transition-all',
-                    columns === 2 ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
+                    columns === 2 ? 'bg-card text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-muted-foreground'
                   )}
                 >
                   2 عمود
@@ -253,8 +253,8 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
           </div>
 
           {selectedTickers.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200">
-              <span className="text-[10px] md:text-xs font-bold text-slate-500">الأوراق المعروضة:</span>
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+              <span className="text-[10px] md:text-xs font-bold text-muted-foreground">الأوراق المعروضة:</span>
               {selectedTickers.map((tk, idx) => {
                 const st = stocks.find((s) => s.ticker === tk);
                 const isPrimary = idx === 0;
@@ -266,11 +266,11 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
                       'text-[11px] font-mono py-1 px-2.5 flex items-center gap-1.5 rounded-full',
                       isPrimary
                         ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : 'bg-white text-slate-700 border border-slate-200'
+                        : 'bg-card text-foreground border border-border'
                     )}
                   >
                     <span>{st?.name_ar || tk}</span>
-                    <span className="text-[9px] text-slate-500 font-bold">({tk})</span>
+                    <span className="text-[9px] text-muted-foreground font-bold">({tk})</span>
                     {!isPrimary && (
                       <button
                         type="button"

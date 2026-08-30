@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 // Using system fonts instead of Google Fonts to avoid network issues
 // import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
+// FIX (Aug 2026): شيلنا Toaster القديم — Sonner هو النظام الموحد
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
 import { DisclaimerBanner } from "@/components/legal/DisclaimerBanner";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
@@ -68,7 +69,7 @@ export default function RootLayout({
           <DisclaimerBanner />
           {children}
           <FeedbackWidget />
-          <Toaster />
+          <SonnerToaster position="top-center" dir="rtl" />
         </Providers>
       </body>
     </html>

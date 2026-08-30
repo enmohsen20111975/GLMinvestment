@@ -18,11 +18,13 @@ function isMarketOpen(market: string): boolean {
   const config = MARKET_HOURS[market];
   if (!config) return false;
 
+  // FIX (Aug 2026): استخدم toLocaleString مع timeZone بدل hardcoded +2
+  // ده بيـ handle DST صح لكل سوق
   const now = new Date();
+  const marketTime = new Date(now.toLocaleString('en-US', { timeZone: config.timezone }));
 
-  // Convert to market timezone (simplified - using Egypt time as base)
-  const localHour = now.getUTCHours() + 2; // Egypt is UTC+2
-  const localMinute = now.getUTCMinutes();
+  const localHour = marketTime.getHours();
+  const localMinute = marketTime.getMinutes();
   const currentTime = localHour * 60 + localMinute;
 
   const [openHour, openMin] = config.open.split(':').map(Number);
@@ -32,7 +34,7 @@ function isMarketOpen(market: string): boolean {
   const closeTime = closeHour * 60 + closeMin;
 
   // Check if it's a weekday (Sunday = 0, Thursday = 4 in Arab markets)
-  const dayOfWeek = now.getUTCDay();
+  const dayOfWeek = marketTime.getDay();
   const isWeekday = dayOfWeek >= 0 && dayOfWeek <= 4; // Sunday to Thursday
 
   return isWeekday && currentTime >= openTime && currentTime <= closeTime;

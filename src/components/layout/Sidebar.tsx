@@ -270,7 +270,23 @@ export function Sidebar() {
 
   const renderNavItem = (item: NavItem, depth: number = 0) => {
     const Icon = item.icon;
-    const isActive = currentView === item.id;
+    // FIX (Aug 2026): خريطة من الـ views الموجهة للـ nav item الأصلي
+    // عشان الـ active state يشتغل صح لما المستخدم يفتح stock-detail, advanced-analysis, إلخ
+    const VIEW_TO_NAV_MAP: Record<string, string> = {
+      'stock-detail': 'stocks',
+      'advanced-analysis': 'recommendations',
+      'v2-analysis': 'recommendations',
+      'top-performers': 'stock-filters',
+      'prediction-tracking': 'recommendations',
+      'unified-analysis': 'recommendations',
+      'trading-journal': 'portfolio',
+      'publishing': 'portfolio',
+      'advanced-portfolio': 'portfolio',
+      'seasonality': 'recommendations',
+      'backtesting': 'recommendations',
+    };
+    const activeNavId = VIEW_TO_NAV_MAP[currentView] || currentView;
+    const isActive = activeNavId === item.id;
     
     // Handle external links (like Maestro)
     if (item.external) {
@@ -343,7 +359,22 @@ export function Sidebar() {
   const renderNavSection = (section: NavSection) => {
     const Icon = section.icon;
     const isOpen = openSections[section.id];
-    const hasActiveChild = section.items.some((item) => currentView === item.id);
+    // FIX (Aug 2026): استخدم VIEW_TO_NAV_MAP عشان hasActiveChild يشتغل للمواقع الموجهة
+    const VIEW_TO_NAV_MAP_SECTION: Record<string, string> = {
+      'stock-detail': 'stocks',
+      'advanced-analysis': 'recommendations',
+      'v2-analysis': 'recommendations',
+      'top-performers': 'stock-filters',
+      'prediction-tracking': 'recommendations',
+      'unified-analysis': 'recommendations',
+      'trading-journal': 'portfolio',
+      'publishing': 'portfolio',
+      'advanced-portfolio': 'portfolio',
+      'seasonality': 'recommendations',
+      'backtesting': 'recommendations',
+    };
+    const activeNavIdForSection = VIEW_TO_NAV_MAP_SECTION[currentView] || currentView;
+    const hasActiveChild = section.items.some((item) => activeNavIdForSection === item.id);
 
     // Determine color class
     const colorClass = {

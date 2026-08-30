@@ -1602,6 +1602,286 @@ def keepalive_root():
 
 
 # ============================================================================
+# CRYPTO ENDPOINTS — الناقصة (Aug 2026 audit)
+# Next.js routes بتنادي endpoints مش موجودة → 503. أضفناها هنا.
+# ============================================================================
+
+@app.route('/api/crypto/sync', methods=['POST'])
+def crypto_sync():
+    """Sync crypto data من CoinGecko + تخزين في crypto_prices."""
+    try:
+        import requests
+        url = "https://api.coingecko.com/api/v3/coins/markets"
+        params = {
+            'vs_currency': 'usd',
+            'order': 'market_cap_desc',
+            'per_page': 50,
+            'page': 1,
+            'sparkline': False,
+            'price_change_percentage': '24h,7d'
+        }
+        resp = requests.get(url, params=params, timeout=20)
+        if not resp.ok:
+            return jsonify({"success": False, "error": f"CoinGecko {resp.status_code}"}), 502
+        coins = resp.json()
+        # رجّع بس بدون كتابة (الكتابة بتحصل في data-engine منفصل)
+        return jsonify({
+            "success": True,
+            "count": len(coins),
+            "coins": coins[:20],  # first 20
+            "timestamp": datetime.utcnow().isoformat() + 'Z'
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto/analyze/<coin_id>', methods=['GET'])
+def crypto_analyze(coin_id):
+    """تحليل فني لعملة واحدة من CoinGecko."""
+    try:
+        import requests
+        # OHLC آخر 30 يوم
+        ohlc_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+        params = {'vs_currency': 'usd', 'days': '30'}
+        resp = requests.get(ohlc_url, params=params, timeout=15)
+        if not resp.ok:
+            return jsonify({"success": False, "error": f"CoinGecko {resp.status_code}"}), 502
+        ohlc = resp.json()
+        # حساب RSI بسيط من closes
+        closes = [c[4] for c in ohlc]
+        rsi = 50.0
+        if len(closes) >= 15:
+            gains, losses = 0, 0
+            for i in range(1, 15):
+                diff = closes[i] - closes[i-1]
+                if diff >= 0:
+                    gains += diff
+                else:
+                    losses -= diff
+            avg_gain = gains / 14
+            avg_loss = losses / 14
+            if avg_loss == 0:
+                rsi = 100.0
+            else:
+                rs = avg_gain / avg_loss
+                rsi = 100 - (100 / (1 + rs))
+        last_price = closes[-1] if closes else None
+        return jsonify({
+            "success": True,
+            "coin_id": coin_id,
+            "price": last_price,
+            "rsi": round(rsi, 2),
+            "candles_count": len(ohlc),
+            "analysis": {
+                "trend": "uptrend" if len(closes) >= 2 and closes[-1] > closes[0] else "downtrend",
+                "signal": "BUY" if rsi < 40 else "SELL" if rsi > 70 else "NEUTRAL",
+            }
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto/<coin_id>/history', methods=['GET'])
+def crypto_history(coin_id):
+    """تاريخ أسعار عملة من CoinGecko."""
+    try:
+        import requests
+        days = request.args.get('days', '30')
+        url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+        params = {'vs_currency': 'usd', 'days': days}
+        resp = requests.get(url, params=params, timeout=15)
+        if not resp.ok:
+            return jsonify({"success": False, "error": f"CoinGecko {resp.status_code}"}), 502
+        data = resp.json()
+        return jsonify({
+            "success": True,
+            "coin_id": coin_id,
+            "prices": data.get('prices', []),
+            "market_caps": data.get('market_caps', []),
+            "total_volumes": data.get('total_volumes', []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto/watchlist', methods=['GET', 'POST', 'DELETE'])
+def crypto_watchlist():
+    """Watchlist للكريبتو — تخزين في SQLite (crypto.db)."""
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS crypto_watchlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT UNIQUE NOT NULL,
+            name TEXT,
+            added_at TEXT DEFAULT (datetime('now'))
+        )''')
+        if request.method == 'GET':
+            rows = c.execute('SELECT symbol, name, added_at FROM crypto_watchlist ORDER BY added_at DESC').fetchall()
+            conn.close()
+            return jsonify({"success": True, "data": [{"symbol": r[0], "name": r[1], "added_at": r[2]} for r in rows]})
+        elif request.method == 'POST':
+            body = request.get_json() or {}
+            symbol = (body.get('symbol') or '').upper()
+            name = body.get('name', '')
+            if not symbol:
+                return jsonify({"success": False, "error": "symbol required"}), 400
+            c.execute('INSERT OR IGNORE INTO crypto_watchlist (symbol, name) VALUES (?, ?)', (symbol, name))
+            conn.commit()
+            conn.close()
+            return jsonify({"success": True, "symbol": symbol})
+        elif request.method == 'DELETE':
+            symbol = request.args.get('symbol', '').upper()
+            if not symbol:
+                return jsonify({"success": False, "error": "symbol required"}), 400
+            c.execute('DELETE FROM crypto_watchlist WHERE symbol = ?', (symbol,))
+            conn.commit()
+            conn.close()
+            return jsonify({"success": True, "deleted": symbol})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto/portfolio', methods=['GET', 'POST'])
+def crypto_portfolio():
+    """Portfolio للكريبتو — تخزين في SQLite (crypto.db)."""
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS crypto_portfolio (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            buy_price REAL NOT NULL,
+            buy_date TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )''')
+        if request.method == 'GET':
+            rows = c.execute('SELECT id, symbol, quantity, buy_price, buy_date FROM crypto_portfolio ORDER BY created_at DESC').fetchall()
+            conn.close()
+            return jsonify({"success": True, "data": [{"id": r[0], "symbol": r[1], "quantity": r[2], "buy_price": r[3], "buy_date": r[4]} for r in rows]})
+        elif request.method == 'POST':
+            body = request.get_json() or {}
+            symbol = (body.get('symbol') or '').upper()
+            quantity = float(body.get('quantity', 0))
+            buy_price = float(body.get('buy_price', 0))
+            buy_date = body.get('buy_date', datetime.utcnow().isoformat())
+            if not symbol or quantity <= 0 or buy_price <= 0:
+                return jsonify({"success": False, "error": "symbol, quantity, buy_price required"}), 400
+            c.execute('INSERT INTO crypto_portfolio (symbol, quantity, buy_price, buy_date) VALUES (?, ?, ?, ?)',
+                     (symbol, quantity, buy_price, buy_date))
+            conn.commit()
+            conn.close()
+            return jsonify({"success": True, "symbol": symbol, "quantity": quantity})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto/simulation/portfolio', methods=['GET'])
+def crypto_simulation_portfolio():
+    """محفظة المحاكاة — من نفس جدول crypto_portfolio بس بـ tag=simulation."""
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS crypto_simulation (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            buy_price REAL NOT NULL,
+            buy_date TEXT,
+            status TEXT DEFAULT 'OPEN',
+            created_at TEXT DEFAULT (datetime('now'))
+        )''')
+        rows = c.execute("SELECT id, symbol, quantity, buy_price, buy_date, status FROM crypto_simulation WHERE status = 'OPEN' ORDER BY created_at DESC").fetchall()
+        conn.close()
+        return jsonify({"success": True, "data": [{"id": r[0], "symbol": r[1], "quantity": r[2], "buy_price": r[3], "buy_date": r[4], "status": r[5]} for r in rows]})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto/simulation/trade', methods=['POST'])
+def crypto_simulation_trade():
+    """تنفيذ صفقة محاكاة (BUY/SELL)."""
+    try:
+        import sqlite3
+        body = request.get_json() or {}
+        action = (body.get('action') or '').upper()
+        symbol = (body.get('symbol') or '').upper()
+        quantity = float(body.get('quantity', 0))
+        price = float(body.get('price', 0))
+        if action not in ('BUY', 'SELL') or not symbol or quantity <= 0 or price <= 0:
+            return jsonify({"success": False, "error": "action (BUY/SELL), symbol, quantity, price required"}), 400
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'crypto.db')
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS crypto_simulation (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            buy_price REAL NOT NULL,
+            buy_date TEXT,
+            status TEXT DEFAULT 'OPEN',
+            created_at TEXT DEFAULT (datetime('now'))
+        )''')
+        if action == 'BUY':
+            c.execute('INSERT INTO crypto_simulation (symbol, quantity, buy_price, buy_date, status) VALUES (?, ?, ?, ?, ?)',
+                     (symbol, quantity, price, datetime.utcnow().isoformat(), 'OPEN'))
+        else:  # SELL — close any OPEN position
+            c.execute("UPDATE crypto_simulation SET status = 'CLOSED' WHERE symbol = ? AND status = 'OPEN'", (symbol,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "action": action, "symbol": symbol, "quantity": quantity, "price": price})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/crypto-phase4/events', methods=['GET'])
+def crypto_events():
+    """أحداث الكريبتو — من CoinGecko + status updates."""
+    try:
+        import requests
+        limit = request.args.get('limit', 20, type=int)
+        # CoinGecko status updates endpoint
+        url = "https://api.coingecko.com/api/v3/status_updates"
+        resp = requests.get(url, params={'per_page': limit}, timeout=15)
+        if not resp.ok:
+            # fallback: events من crypto_prices (أعلى تغيرات)
+            import sqlite3
+            de_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'db', 'data_engine.db')
+            conn = sqlite3.connect(de_db)
+            c = conn.cursor()
+            rows = c.execute("""
+                SELECT symbol, name, price_change_24h, price_usd, timestamp
+                FROM crypto_prices
+                WHERE timestamp = (SELECT MAX(timestamp) FROM crypto_prices)
+                ORDER BY ABS(price_change_24h) DESC LIMIT ?
+            """, (limit,)).fetchall()
+            conn.close()
+            events = [{
+                "id": f"price-{r[0]}",
+                "title": f"{r[0]} ({r[1]}): {r[2]:+.2f}%",
+                "description": f"السعر: ${r[3]:,.2f}" if r[3] else "",
+                "timestamp": r[4],
+                "category": "price",
+                "importance": "high" if abs(r[2] or 0) > 10 else "medium"
+            } for r in rows]
+            return jsonify({"success": True, "events": events, "count": len(events), "source": "local_db"})
+        data = resp.json()
+        events = data.get('status_updates', [])[:limit]
+        return jsonify({"success": True, "events": events, "count": len(events), "source": "coingecko"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================================================
 # MAIN ENTRY POINT — MUST BE AT END OF FILE
 # All @app.route decorators above are registered at import time. app.run()
 # blocks, so it MUST come AFTER every route definition. (Previously located

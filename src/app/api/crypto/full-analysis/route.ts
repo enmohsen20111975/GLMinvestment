@@ -164,6 +164,32 @@ export async function GET(request: NextRequest) {
       { next: { revalidate: 300 }, headers: { Accept: 'application/json' } }
     );
     if (!ohlcRes.ok) {
+      // fallback لـ crypto_prices DB لو CoinGecko rate-limited
+      try {
+        const { getCryptoBySymbol } = await import('@/lib/data-engine-db');
+        const coin = getCryptoBySymbol(ticker);
+        if (coin && coin.price_usd) {
+          return NextResponse.json({
+            success: true,
+            ticker,
+            coin_id: coinId,
+            timeframe,
+            fallback: 'crypto_prices_db',
+            candles: [{
+              date: new Date().toISOString().slice(0, 10),
+              open: coin.price_usd, high: coin.price_usd,
+              low: coin.price_usd, close: coin.price_usd,
+              volume: coin.total_volume || 0,
+            }],
+            currentPrice: coin.price_usd,
+            indicators: { sma20: null, sma50: null, sma200: null, rsi: null, atr: null },
+            signal: 'NEUTRAL',
+            message: 'CoinGecko OHLC unavailable — using latest crypto_prices snapshot',
+          });
+        }
+      } catch (e) {
+        console.error('[crypto/full-analysis] fallback error:', e);
+      }
       return NextResponse.json(
         { success: false, error: `CoinGecko OHLC error: ${ohlcRes.status}`, ticker },
         { status: 502 }
@@ -171,13 +197,37 @@ export async function GET(request: NextRequest) {
     }
     const raw = (await ohlcRes.json()) as Array<[number, number, number, number, number]>;
 
-    // Build OHLCV candles (CoinGecko OHLC has no volume — set to 0)
+    // FIX (Aug 2026): Fetch volume from CoinGecko market_chart (OHLC endpoint مابيرجعش volume)
+    let volumesByDate: Record<string, number> = {};
+    try {
+      const volRes = await fetch(
+        `${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`,
+        { next: { revalidate: 300 }, headers: { Accept: 'application/json' } }
+      );
+      if (volRes.ok) {
+        const volData = await volRes.json() as { total_volumes?: Array<[number, number]> };
+        if (volData.total_volumes) {
+          for (const [ts, vol] of volData.total_volumes) {
+            const dateKey = new Date(ts).toISOString().slice(0, 10);
+            volumesByDate[dateKey] = vol;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[crypto/full-analysis] volume fetch failed:', e);
+    }
+
+    // Build OHLCV candles (الـ volume من market_chart)
     const candles: OHLCVCandle[] = raw
       .filter(r => Array.isArray(r) && r.length >= 5)
-      .map(r => ({
-        date: new Date(r[0]).toISOString().slice(0, 10),
-        open: r[1], high: r[2], low: r[3], close: r[4], volume: 0,
-      }));
+      .map(r => {
+        const date = new Date(r[0]).toISOString().slice(0, 10);
+        return {
+          date,
+          open: r[1], high: r[2], low: r[3], close: r[4],
+          volume: volumesByDate[date] || 0,
+        };
+      });
 
     if (candles.length < 30) {
       return NextResponse.json(

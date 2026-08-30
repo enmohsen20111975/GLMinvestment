@@ -7204,11 +7204,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         <TabsContent value="sectors-tracking" className="mt-4">
           <SectorTrackingTab market={currentMarket} />
         </TabsContent>
-
-        {/* Phase 4: الفرز المتقدم — TradingView-style screener مع sector heat + strongest movers */}
-        <TabsContent value="screener" className="mt-4">
-          <StockScreenerAdvanced />
-        </TabsContent>
       </Tabs>
 
       {/* Social Share Footer */}

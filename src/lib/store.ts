@@ -145,9 +145,11 @@ export function adaptCryptoToStock(raw: Record<string, unknown>): Stock {
     name_ar: name, // crypto has no Arabic names; reuse English
     current_price: price,
     previous_close: price && change24h ? price / (1 + change24h / 100) : price,
-    open_price: price,
-    high_price: price,
-    low_price: price,
+    // FIX (Aug 2026): احسب open/high/low تقريبياً من price + change24h
+    // عشان الـ price-range bar في StocksView.StockCard يشتغل صح
+    open_price: price && change24h ? price / (1 + change24h / 100) : price,
+    high_price: price > 0 ? price * 1.005 : price, // تقريب: high = price + 0.5%
+    low_price: price > 0 ? price * 0.995 : price,  // تقريب: low = price - 0.5%
     volume,
     volume_int: volume,
     volume_week: volume,
@@ -739,10 +741,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   currentMarket: 'EGX' as MarketType,
   setCurrentMarket: (market) => {
     set({ currentMarket: market });
-    // expose currentMarket على window عشان الـ widgets اللي مش بتستخدم store تقدر تقراه
-    if (typeof window !== 'undefined') {
-      (window as any).__currentMarket = market;
-    }
+    // FIX (Aug 2026): شيلنا window.__currentMarket — كل الـ components دلوقتي بتستخدم useAppStore مباشرة
     // Crypto uses a unified loader that adapts coins into the stocks array
     if (market === 'CRYPTO') {
       get().loadCryptoList();

@@ -12,7 +12,7 @@ import { RealtimeTicker } from '@/components/dashboard/RealtimeTicker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
 import { CentralAlertMonitor } from '@/components/notifications/CentralAlertMonitor';
-import { Toaster } from '@/components/ui/sonner';
+
 import { FloatingAssistant } from '@/components/ai/FloatingAssistant';
 import { Footer } from '@/components/layout/Footer';
 import { PlatformGuide, usePlatformGuide } from '@/components/help/PlatformGuide';
@@ -601,7 +601,6 @@ function AppShell() {
           <RoboNotifierToggle />
         </div>
         <NotificationCenter />
-        <Toaster position="top-center" dir="rtl" />
       </div>
     </AuthGate>
   );

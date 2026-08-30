@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 type FeedbackType = 'bug' | 'suggestion' | 'opinion' | 'praise';
@@ -48,7 +48,7 @@ const TYPES: {
 ];
 
 export function FeedbackWidget() {
-  const { toast } = useToast();
+  
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<FeedbackType>('bug');
   const [message, setMessage] = useState('');
@@ -65,7 +65,7 @@ export function FeedbackWidget() {
 
   const handleSubmit = async () => {
     if (message.trim().length < 3) {
-      toast({ title: 'الرجاء كتابة التفاصيل', variant: 'destructive' });
+      toast.error('الرجاء كتابة التفاصيل');
       return;
     }
     setSubmitting(true);
@@ -88,14 +88,12 @@ export function FeedbackWidget() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'فشل الإرسال');
       }
-      toast({ title: 'شكراً لك! تم إرسال رأيك بنجاح' });
+      toast.success('شكراً لك! تم إرسال رأيك بنجاح');
       reset();
       setOpen(false);
     } catch (err) {
-      toast({
-        title: 'تعذّر الإرسال',
+      toast.error('تعذّر الإرسال', {
         description: String((err as Error)?.message || err),
-        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);

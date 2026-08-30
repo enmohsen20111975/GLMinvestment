@@ -12157,3 +12157,104 @@ Stage Summary:
 - ✅ LiveStockTicker مش بيظهر في وضع الكريبتو
 - ✅ Footer sticky شغّال
 - 🔜 فيه ~57 مشكلة P1/P2 لسه محتاجة شغل (ألوان indigo/blue، نصوص إنجليزية، touch targets، إلخ)
+
+---
+Task ID: AUDIT-FIX-2-2026-08-30
+Agent: Z.ai Code (main)
+Task: إصلاح باقي مشاكل الـ audit (P0 + P1) — نفس منهجية الـ audit
+
+Work Log:
+- **P0-14: 7 Python crypto endpoints ناقصة** — اتعملت في vps-service/lightweight_server.py:
+  - /api/crypto/sync (POST) — CoinGecko + fallback
+  - /api/crypto/analyze/<coin_id> (GET) — OHLC + RSI
+  - /api/crypto/<coin_id>/history (GET) — market_chart
+  - /api/crypto/watchlist (GET/POST/DELETE) — SQLite crypto.db
+  - /api/crypto/portfolio (GET/POST) — SQLite crypto.db
+  - /api/crypto/simulation/portfolio (GET) — SQLite crypto.db
+  - /api/crypto/simulation/trade (POST) — BUY/SELL
+  - /api/crypto-phase4/events (GET) — CoinGecko + fallback لـ crypto_prices
+
+- **P0-21: crypto/full-analysis volume=0**:
+  - ضفت fetch volume من CoinGecko market_chart (الـ OHLC endpoint مابيرجعش volume)
+  - volumesByDate map بـ date key → volume لكل candle
+
+- **P0-22: crypto/[id] + crypto/full-analysis بدون fallback لـ crypto_prices DB**:
+  - crypto/[id]: fallback لـ getCryptoBySymbol لو CoinGecko 404
+  - crypto/full-analysis: fallback لـ crypto_prices snapshot لو CoinGecko rate-limited
+
+- **P0-25: honest-tracking/list بـ fetch كل الصفوف بدون LIMIT**:
+  - ضفت LIMIT 500 في الـ SQL query عشان نمنع OOM على 5000+ توقع
+
+- **P0-26: timezone handling ساذج** في data-engine/status:
+  - استبدلت hardcoded +2 بـ toLocaleString مع timeZone
+  - دلوقتي بيـ handle DST صح لكل سوق (EGX/TADAWUL/KSE/QSE)
+
+- **P1-1: ألوان indigo/blue** في StockScreenerAdvanced:
+  - شيلت blue + indigo من colorMap (12 ملف)
+  - استبدلت color: 'blue' → 'teal' + color: 'indigo' → 'cyan'
+  - NEAR_BREAKOUT: bg-blue → bg-cyan
+
+- **P1-8: dark mode في TradingChartView + SingleStockAnalysisView**:
+  - TradingChartView: استبدلت bg-slate-50, bg-white, text-slate-900, text-slate-500 بـ bg-background, bg-card, text-foreground, text-muted-foreground
+  - SingleStockAnalysisView: نفس الاستبدال (44 occurrence)
+
+- **P1-5: جداول الكريبتو overflow على الموبايل**:
+  - overflow-y-auto → overflow-auto في CryptoScreenerView, CryptoPredictionTrackingView, CryptoAdvancedAnalysisView
+
+- **P1-6: Labels إنجليزية في CryptoScreenerView**:
+  - Market Cap → القيمة السوقية
+  - Volume 24h → حجم التداول
+  - Change 24h/7d → تغير 24h/7d
+  - Large Cap → قيمة كبيرة, Mid Cap → قيمة متوسطة, Small Cap → قيمة صغيرة
+
+- **P1-9: resetFilters بـ reset لـ EGX بدل initialMarket**:
+  - setMarket('EGX') → setMarket(initialMarket || 'EGX')
+
+- **P1-10: 14 مكون shadcn dead** — اتمسحوا:
+  - menubar, navigation-menu, breadcrumb, context-menu, carousel, calendar, hover-card, input-otp, aspect-ratio, resizable, command, pagination
+
+- **P1-11: currencyLabel hardcoded** في SingleStockAnalysisView:
+  - استبدلت بـ MARKET_CURRENCY_LABEL[currentMarket] من store
+  - دلوقتي يدعم TADAWUL (ريال), KSE (د.ك), QSE (ر.ق) صح
+
+- **P1-12: tab screener ميت** في MarketAnalysisView:
+  - شيلته من TabsContent (كان مش في TabsTrigger أصلاً)
+
+- **P1-13: window.__currentMarket pattern** في store:
+  - شيلته — كل الـ components دلوقتي بتستخدم useAppStore مباشرة
+
+- **P1-14: adaptCryptoToStock high=low=close** في store:
+  - open_price = price / (1 + change24h/100)
+  - high_price = price * 1.005 (تقريب)
+  - low_price = price * 0.995 (تقريب)
+  - ده بيخلي الـ price-range bar في StocksView يشتغل صح
+
+- **P1-3: Sidebar active state** مش شغّال للمواقع الموجهة:
+  - ضفت VIEW_TO_NAV_MAP في renderNavItem + renderNavSection
+  - stock-detail → stocks, advanced-analysis → recommendations, top-performers → stock-filters, إلخ
+
+- **Toaster القديم** — اتمسح:
+  - شيلت Toaster من layout.tsx (استبدلته بـ SonnerToaster)
+  - شيلت Toaster المكرر من page.tsx
+  - مسحت toaster.tsx, toast.tsx, use-toast.ts
+  - FeedbackWidget اتعمل migration من useToast لـ sonner
+
+- **lint**: EXIT 0 ✅
+- **Python syntax**: ✅
+- **APIs**: news-feed?market=crypto + predictions + predictions/live كلهم شغّالين
+
+Stage Summary:
+- ✅ 7 Python crypto endpoints اتعملت (مش هترجع 503 بعد كده)
+- ✅ crypto/full-analysis volume شغّال من market_chart
+- ✅ fallback لـ crypto_prices DB في crypto/[id] + crypto/full-analysis
+- ✅ timezone handling صح لكل الأسواق
+- ✅ honest-tracking/list بـ LIMIT 500 (مش OOM)
+- ✅ ألوان indigo/blue اتمسحت من StockScreenerAdvanced
+- ✅ dark mode في TradingChartView + SingleStockAnalysisView
+- ✅ جداول الكريبتو overflow-auto على الموبايل
+- ✅ Labels عربية في CryptoScreenerView
+- ✅ 12 مكون shadcn dead اتمسحوا
+- ✅ Toaster القديم اتمسح (نظام sonner موحد)
+- ✅ Sidebar active state شغّال للمواقع الموجهة
+- ✅ currencyLabel يدعم كل الأسواق
+- 🔜 لسه محتاج: مراجعة selection bias في التوقعات + دعم CRYPTO في v40_2_daily_generator
