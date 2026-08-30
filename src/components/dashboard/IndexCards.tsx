@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn, safeNum } from '@/lib/utils';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import type { MarketIndex } from '@/types';
 
 function IndexSymbolBadge({ symbol }: { symbol: string }) {
@@ -86,6 +87,10 @@ function IndexCard({ index }: { index: MarketIndex }) {
             {isPositive ? '+' : ''}
             {safeNum(index.change).toFixed(2)}
           </span>
+        </div>
+
+        <div className="mt-2 -mx-1">
+          <MiniSparkline ticker={index.symbol} height={28} width={120} showArea={true} />
         </div>
       </CardContent>
     </Card>

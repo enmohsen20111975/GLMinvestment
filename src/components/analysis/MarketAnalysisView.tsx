@@ -77,7 +77,6 @@ import { ExpertPredictionsImageCard } from '@/components/market/ExpertPrediction
 import { PredictionsImageCard } from '@/components/market/PredictionsImageCard';
 import { ExpertRecommendationsPanel } from '@/components/analysis/ExpertRecommendationsPanel';
 import { ImageCardExport } from '@/components/market/ImageCardExport';
-import { AnalysisFlowDiagram } from '@/components/analysis/AnalysisFlowDiagram';
 
 // ============================================================================
 // Types
@@ -5416,9 +5415,6 @@ function PersonaTab({ market, persona }: { market: MarketType; persona: 'conserv
           </Button>
         </div>
       )}
-
-      {/* مخطط خطوات التحليل — engineering logic diagram (إعلاني هندسي) */}
-      <AnalysisFlowDiagram persona={persona} className="mt-4" />
 
       {/* P6-PREDICTIONS: أرشيف التوقعات السابقة — اتنقل هنا من التبويب العام */}
       <PreviousPredictionsArchive

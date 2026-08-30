@@ -8,6 +8,7 @@ import { StockDetail } from './StockDetail';
 import { ShareButton } from '@/components/share/ShareButton';
 import { TreasuryBondsView } from './TreasuryBondsView';
 import { cn, safeNum } from '@/lib/utils';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
