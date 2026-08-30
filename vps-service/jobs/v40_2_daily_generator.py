@@ -1230,6 +1230,8 @@ def main():
                         help='⚡ BATCH MODE: skip أول N tickers (للـ resume بعد run سابق)')
     parser.add_argument('--force', action='store_true',
                         help='تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل')
+    parser.add_argument('--market', default='EGX', choices=['EGX', 'CRYPTO'],
+                        help='السوق: EGX (افتراضي) أو CRYPTO (Aug 2026 — جديد)')
     args = parser.parse_args()
 
     # Determine date range
@@ -1266,17 +1268,198 @@ def main():
         print(f"❌ تاريخ البداية ({start_date}) بعد تاريخ النهاية ({end_date})", flush=True)
         sys.exit(1)
 
-    run_generator(
-        start_date=start_date,
-        end_date=end_date,
-        scan_interval=scan_interval,
-        max_picks=args.max_picks,
-        dry_run=args.dry_run,
-        keep_old=args.keep_old,
-        max_tickers=args.max_tickers,
-        tickers_offset=args.tickers_offset,
-        force=args.force,
-    )
+    # FIX (Aug 2026): route لـ CRYPTO generator لو --market CRYPTO
+    if args.market == 'CRYPTO':
+        run_crypto_generator(
+            start_date=start_date,
+            end_date=end_date,
+            scan_interval=scan_interval,
+            max_picks=args.max_picks,
+            dry_run=args.dry_run,
+            keep_old=args.keep_old,
+            max_tickers=args.max_tickers,
+            tickers_offset=args.tickers_offset,
+            force=args.force,
+        )
+    else:
+        run_generator(
+            start_date=start_date,
+            end_date=end_date,
+            scan_interval=scan_interval,
+            max_picks=args.max_picks,
+            dry_run=args.dry_run,
+            keep_old=args.keep_old,
+            max_tickers=args.max_tickers,
+            tickers_offset=args.tickers_offset,
+            force=args.force,
+        )
+
+
+def get_crypto_tickers(min_days=30):
+    """Get crypto tickers from crypto_prices table (data_engine.db).
+
+    FIX (Aug 2026): دعم CRYPTO في v40_2_daily_generator.
+    بيرجع بس العملات اللي ليها تاريخ كافي في crypto_prices.
+    """
+    _db_dir = Path(__file__).resolve().parents[2] / 'db'
+    tickers = []
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        # شوف عدد snapshots المختلفة لكل symbol
+        cur.execute("""
+            SELECT symbol, COUNT(DISTINCT timestamp) as cnt
+            FROM crypto_prices
+            GROUP BY symbol
+            HAVING cnt >= ?
+            ORDER BY market_cap_rank ASC
+            LIMIT 50
+        """, (min_days,))
+        tickers = [row[0] for row in cur.fetchall()]
+        conn.close()
+        print(f"[V40.2-CRYPTO] crypto_prices — {len(tickers)} coins with >= {min_days} snapshots", flush=True)
+    except Exception as e:
+        print(f"[V40.2-CRYPTO] ⚠️ Failed to load crypto tickers: {e}", flush=True)
+    return tickers
+
+
+def run_crypto_generator(start_date, end_date, scan_interval=1,
+                          max_picks=5, dry_run=False, keep_old=False,
+                          max_tickers=None, tickers_offset=0, force=False):
+    """Crypto prediction generator — نسخة مبسطة من run_generator للكريبتو.
+
+    FIX (Aug 2026): إضافة دعم CRYPTO لـ v40_2_daily_generator.
+
+    الكريبتو 24/7 فمفيش session restrictions. بنفسلم OHLC من CoinGecko
+    لكل عملة ونعمل تحليل فني مبسط (RSI + MA + trend).
+    """
+    print("=" * 80, flush=True)
+    print("  V40.2-CRYPTO Prediction Generator", flush=True)
+    print(f"  Period: {start_date} → {end_date} | Scan every {scan_interval} days", flush=True)
+    print(f"  Max picks/day: {max_picks}", flush=True)
+    print("=" * 80, flush=True)
+
+    # CoinGecko symbol → coin_id mapping
+    SYMBOL_TO_COIN_ID = {
+        'BTC': 'bitcoin', 'ETH': 'ethereum', 'BNB': 'binancecoin',
+        'SOL': 'solana', 'XRP': 'ripple', 'ADA': 'cardano',
+        'DOGE': 'dogecoin', 'AVAX': 'avalanche-2', 'DOT': 'polkadot',
+        'LINK': 'chainlink', 'MATIC': 'matic-network', 'LTC': 'litecoin',
+        'TRX': 'tron', 'UNI': 'uniswap', 'ATOM': 'cosmos',
+    }
+
+    import requests as _requests
+
+    tickers = get_crypto_tickers(min_days=30)
+    if max_tickers is not None:
+        tickers = tickers[tickers_offset:tickers_offset + max_tickers]
+
+    if not tickers:
+        print("[V40.2-CRYPTO] ⚠️ No crypto tickers available. Exiting.", flush=True)
+        return
+
+    # للتوليد الحقيقي، نحتاج Python backend prediction_tracker
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from core.prediction_tracker import PredictionTracker
+        tracker = PredictionTracker()
+    except Exception as e:
+        print(f"[V40.2-CRYPTO] ⚠️ PredictionTracker not available: {e}", flush=True)
+        tracker = None
+
+    # نمشي على كل scan_date
+    from datetime import datetime as _dt, timedelta as _td
+    start_dt = _dt.strptime(start_date, '%Y-%m-%d')
+    end_dt = _dt.strptime(end_date, '%Y-%m-%d')
+    current = start_dt
+    total_generated = 0
+
+    while current <= end_dt:
+        scan_date = current.strftime('%Y-%m-%d')
+        print(f"\n[V40.2-CRYPTO] Scanning {scan_date}...", flush=True)
+        daily_picks = 0
+
+        for ticker in tickers:
+            if daily_picks >= max_picks:
+                break
+            coin_id = SYMBOL_TO_COIN_ID.get(ticker.upper())
+            if not coin_id:
+                continue
+            try:
+                # جلب OHLC من CoinGecko
+                url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+                params = {'vs_currency': 'usd', 'days': '30'}
+                resp = _requests.get(url, params=params, timeout=15)
+                if not resp.ok:
+                    continue
+                ohlc = resp.json()
+                if len(ohlc) < 15:
+                    continue
+                closes = [c[4] for c in ohlc]
+                last_price = closes[-1]
+
+                # حساب RSI بسيط
+                rsi = 50.0
+                if len(closes) >= 15:
+                    gains, losses = 0, 0
+                    for i in range(1, 15):
+                        diff = closes[i] - closes[i-1]
+                        if diff >= 0:
+                            gains += diff
+                        else:
+                            losses -= diff
+                    avg_gain = gains / 14
+                    avg_loss = losses / 14
+                    if avg_loss == 0:
+                        rsi = 100.0
+                    else:
+                        rs = avg_gain / avg_loss
+                        rsi = 100 - (100 / (1 + rs))
+
+                # حساب MA50 (proxy: آخر 30 closes)
+                ma50 = sum(closes) / len(closes) if closes else last_price
+
+                # إشارة بسيطة
+                if rsi < 40 and last_price > ma50:
+                    signal = 'BUY'
+                    entry = last_price
+                    target = last_price * 1.15  # +15%
+                    stop = last_price * 0.92     # -8%
+                elif rsi > 70:
+                    signal = 'SELL'
+                    entry = last_price
+                    target = last_price * 0.85
+                    stop = last_price * 1.08
+                else:
+                    continue  # NEUTRAL — skip
+
+                # تخزين التوقع
+                if tracker and not dry_run:
+                    try:
+                        pred_id = tracker.record_prediction(
+                            ticker=ticker, signal=signal,
+                            entry_price=entry, target_price=target,
+                            stop_loss=stop, master_score=60 + (100 - rsi),
+                            technical_score=rsi, persona='crypto_balanced',
+                            prediction_date=scan_date,
+                        )
+                        if pred_id:
+                            total_generated += 1
+                            daily_picks += 1
+                            print(f"  ✓ {ticker} {signal} entry=${entry:.2f} target=${target:.2f} RSI={rsi:.0f}", flush=True)
+                    except Exception as e:
+                        print(f"  ⚠️ Store error {ticker}: {e}", flush=True)
+                else:
+                    print(f"  [DRY] {ticker} {signal} entry=${entry:.2f} RSI={rsi:.0f}", flush=True)
+                    daily_picks += 1
+
+            except Exception as e:
+                print(f"  ⚠️ {ticker}: {e}", flush=True)
+                continue
+
+        current += _td(days=scan_interval)
+
+    print(f"\n[V40.2-CRYPTO] Done. Total predictions: {total_generated}", flush=True)
 
 
 if __name__ == '__main__':
