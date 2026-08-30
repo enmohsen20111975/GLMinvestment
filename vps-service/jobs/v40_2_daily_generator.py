@@ -562,12 +562,116 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             result['proofs'] = _recovery_proofs
                             recovery_picks_this_run += 1
                         else:
-                            continue
+                            # ── SOFT-SURGE FALLBACK (EGX-STRATEGY-FINAL — 2026-08-30) ──
+                            # المالك طلب: "لو V38 طلع WAIT أو score منخفض، لكن فيه Volume Surge
+                            # حقيقي أو Accumulation واضح + باقي شروط الحماية متحققة → اسمح بالإشارة."
+                            #
+                            # ده بـ يصطاد الوحوش اللي V38 بيفوتها (MIPH/CEFM/EALR).
+                            # شروط الحماية الصارمة (بتُفحص في entry_gate بعدين):
+                            #   - volume surge قوي (vol_ratio ≥ 2.0)
+                            #   - ROC5 > 3% (زخم إيجابي حقيقي)
+                            #   - فوق أو قريب من SMA50
+                            #   - R:R ≥ 1.8 (هيتبنى في entry_gate)
+                            #   - + كل شروط entry_gate (evidence + RS + Deep Correction + Don't Chase + سيولة + سياق)
+                            try:
+                                import numpy as _np_soft
+                                _closes_soft = closes[:day_idx+1]
+                                _vols_soft = volumes[:day_idx+1]
+                                if len(_closes_soft) >= 25 and len(_vols_soft) >= 25:
+                                    # volume ratio (اليوم / متوسط 20 يوم)
+                                    _avg_vol_20 = sum(_vols_soft[-21:-1]) / 20 if len(_vols_soft) >= 21 else 0
+                                    _today_vol_soft = _vols_soft[-1]
+                                    _vol_ratio_soft = (_today_vol_soft / _avg_vol_20) if _avg_vol_20 > 0 else 0
+                                    # ROC5
+                                    _roc5_soft = ((_closes_soft[-1] - _closes_soft[-6]) / _closes_soft[-6] * 100) if len(_closes_soft) >= 6 and _closes_soft[-6] > 0 else 0
+                                    # SMA50
+                                    _sma50_soft = sum(_closes_soft[-50:]) / 50 if len(_closes_soft) >= 50 else (_closes_soft[-1] if _closes_soft else 0)
+                                    _above_sma50_soft = _closes_soft[-1] > _sma50_soft
+                                    _near_sma50_soft = abs((_closes_soft[-1] - _sma50_soft) / _sma50_soft * 100) <= 3 if _sma50_soft > 0 else False
+
+                                    # SOFT-SURGE: vol_ratio ≥ 2.0 + ROC5 > 3% + (فوق أو قريب SMA50)
+                                    if _vol_ratio_soft >= 2.0 and _roc5_soft > 3.0 and (_above_sma50_soft or _near_sma50_soft):
+                                        # احسب ATR للـ entry/target/stop
+                                        _highs_soft = highs[:day_idx+1]
+                                        _lows_soft = lows[:day_idx+1]
+                                        _atr_soft = 0.0
+                                        if len(_closes_soft) >= 15:
+                                            _tr_list = []
+                                            for i in range(1, min(15, len(_closes_soft))):
+                                                _h = _highs_soft[-i] if abs(_highs_soft[-i]) > 0 else _closes_soft[-i]
+                                                _l = _lows_soft[-i] if abs(_lows_soft[-i]) > 0 else _closes_soft[-i]
+                                                _pc = _closes_soft[-i-1] if abs(_closes_soft[-i-1]) > 0 else _closes_soft[-i]
+                                                # skip لو فيه قيم غلط
+                                                if _h <= 0 or _l <= 0 or _pc <= 0 or _h < _l:
+                                                    continue
+                                                _tr = max(
+                                                    _h - _l,
+                                                    abs(_h - _pc),
+                                                    abs(_l - _pc)
+                                                )
+                                                if _tr > 0 and _tr < _closes_soft[-1] * 0.20:  # skip TR > 20% (غالباً غلط)
+                                                    _tr_list.append(_tr)
+                                            _atr_soft = sum(_tr_list) / len(_tr_list) if _tr_list else 0
+                                        if _atr_soft <= 0:
+                                            _atr_soft = _closes_soft[-1] * 0.05  # fallback 5%
+                                        # clamp ATR لـ [2%, 10%] من entry
+                                        _atr_soft = max(_closes_soft[-1] * 0.02, min(_closes_soft[-1] * 0.10, _atr_soft))
+
+                                        _entry_soft = _closes_soft[-1]
+                                        _stop_soft = _entry_soft - (1.5 * _atr_soft)  # 1.5 ATR (balanced)
+                                        _target_soft = _entry_soft + (3.0 * _atr_soft)  # 3 ATR → R:R = 2.0
+
+                                        # تأكد R:R ≥ 1.8
+                                        _rr_soft = (_target_soft - _entry_soft) / (_entry_soft - _stop_soft) if (_entry_soft - _stop_soft) > 0 else 0
+                                        if _rr_soft >= 1.8:
+                                            signal = 'STRONG_BUY'
+                                            result['entry'] = round(_entry_soft, 4)
+                                            result['target'] = round(_target_soft, 4)
+                                            result['stop_loss'] = round(_stop_soft, 4)
+                                            result['score'] = 50  # score وسط (الـ entry_gate هـ يفحص الباقي)
+                                            result['signal'] = 'STRONG_BUY'
+                                            # أضف stock_roc + benchmark_change عشان entry_gate يفحص RS
+                                            result['stock_roc'] = round(_roc5_soft, 2)
+                                            _bench_roc_soft = engine._benchmark_roc_by_date.get(scan_date, 0.0)
+                                            result['benchmark_change'] = float(_bench_roc_soft)
+                                            # market_regime من V38 result الأصلي (fallback 'range' لو None)
+                                            _regime_soft = result.get('market_regime_trend') or 'range'
+                                            result['market_regime_trend'] = _regime_soft
+                                            _soft_proofs = {
+                                                'soft_surge': True,
+                                                'vol_ratio': round(_vol_ratio_soft, 2),
+                                                'roc5': round(_roc5_soft, 2),
+                                                'atr': round(_atr_soft, 4),
+                                                'rr': round(_rr_soft, 2),
+                                                # ✅ markers عشان count_evidence يعدّهم (مطلوب ≥ 3)
+                                                'volume': f'✅ حجم غير طبيعي (vol_ratio={_vol_ratio_soft:.2f}x)',
+                                                'momentum': f'✅ زخم إيجابي (ROC5={_roc5_soft:.2f}%)',
+                                                'trend': f'✅ فوق/قريب SMA50' if (_above_sma50_soft or _near_sma50_soft) else '⚠️ بعيد عن SMA50',
+                                            }
+                                            # RS marker لو stock_roc > benchmark
+                                            if _roc5_soft > _bench_roc_soft:
+                                                _soft_proofs['benchmark'] = f'✅ أقوى من السوق (ROC5={_roc5_soft:.2f}% vs bench={_bench_roc_soft:.2f}%)'
+                                            else:
+                                                _soft_proofs['benchmark'] = f'⚠️ أضعف من السوق (ROC5={_roc5_soft:.2f}% vs bench={_bench_roc_soft:.2f}%)'
+                                            result['proofs'] = _soft_proofs
+                                            print(f"[SOFT-SURGE] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                                                  f"vol_ratio={_vol_ratio_soft:.2f} roc5={_roc5_soft:.2f}% rr={_rr_soft:.2f} "
+                                                  f"entry={_entry_soft:.2f} stop={_stop_soft:.2f} target={_target_soft:.2f}", flush=True)
+                                        else:
+                                            continue
+                                    else:
+                                        continue
+                                else:
+                                    continue
+                            except Exception:
+                                continue
 
             entry = result['entry']
             target = result['target']
             stop = result['stop_loss']
             if stop >= entry or entry <= 0:
+                if result.get('proofs', {}).get('soft_surge'):
+                    print(f"[SOFT-SURGE-DEBUG] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: REJECTED stop>=entry (stop={stop} entry={entry})", flush=True)
                 continue
 
             # ─── ZERO-VOLUME GUARD (2026-08-28) ────────────────────────────────
@@ -624,7 +728,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             _is_surge_signal = result.get('proofs', {}).get('surge_hunter', False)
             _is_accum_signal = result.get('proofs', {}).get('accumulation_hunter', False)
             _is_recovery_signal = result.get('proofs', {}).get('recovery_hunter', False)
-            if not _is_surge_signal and not _is_accum_signal and not _is_recovery_signal and day_idx >= 5:
+            _is_soft_surge_signal = result.get('proofs', {}).get('soft_surge', False)  # EGX-STRATEGY-FINAL
+            if not _is_surge_signal and not _is_accum_signal and not _is_recovery_signal and not _is_soft_surge_signal and day_idx >= 5:
                 try:
                     _recent_high = max(highs[max(0, day_idx - 5):day_idx + 1])
                     _drawdown_from_high = ((_recent_high - entry) / _recent_high * 100) if _recent_high > 0 else 0
@@ -750,7 +855,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 'tech_score': result['score'],
                 'evidence': evidence,
                 'r_multiple': r_mult,
-                'atr': result.get('atr', 0),
+                'atr': result.get('atr', 0) or (_atr_soft if '_atr_soft' in dir() else 0),
                 'exit_price': trade.exit_price,
                 'exit_date': trade.exit_date,
                 'exit_reason': trade.exit_reason,
@@ -760,6 +865,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 'r_multiple_actual': trade.r_multiple,
                 'persona_fit': persona_fit['persona_fit'],
                 'persona_fit_scores': persona_fit['fit_scores'],
+                'proofs': result.get('proofs', {}),  # ← أضفت ده عشان kill_filter_result يـ detect soft_surge
                 # PHASE-C FIX: خزّن الـ fundamental_score الحقيقي في DB بدل placeholder 50.0.
                 # لما fundamentals تكون متاحة → الدرجة الحقيقية (0-100).
                 # لما غير متاحة → 50.0 (neutral، نفس السلوك السابق — safe-by-design).
@@ -823,7 +929,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     atr_at_entry=sig['atr'], target_price_2=sig['target_2'],
                     prediction_date=scan_date, evidence_count=sig['evidence'],
                     morning_bell=sig['morning_bell'],
-                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})",
+                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else ""),
                 )
                 if pred_id:
                     tracker.set_verified_outcome(

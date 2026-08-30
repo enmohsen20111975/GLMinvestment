@@ -110,38 +110,44 @@ def _check_above_sma50(closes: List[float], volumes: List[float] = None) -> Dict
       (أ) 2 من آخر 3 شموع صاعدة (مش لازم متتالية)، أو
       (ب) شمعة قوية واحدة: جسم حقيقي ≥ 1.5% + حجم > متوسط آخر 10 شموع، أو
       (ج) السعر فوق SMA50 مباشرةً (الشرط الأساسي — بدون تغيير).
+
+    EGX-STRATEGY-FINAL (2026-08-30 — fallback SMA20):
+    لو مفيش 50 يوم متاحين، استخدم SMA20 بدلاً من SMA50. ده بـ يصطاد الأسهم الجديدة
+    اللي لسه متاحة في البيانات (زي MIPH/CEFM اللي بياناتهم تبدأ من 2026-06-01).
     """
-    if not closes or len(closes) < 50:
-        return {'name': 'sma50', 'passed': False, 'reason': 'بيانات غير كافية لـ SMA50', 'weight': 2}
-    sma50 = sum(closes[-50:]) / 50
+    if not closes or len(closes) < 20:
+        return {'name': 'sma50', 'passed': False, 'reason': f'بيانات غير كافية ({len(closes)} يوم)', 'weight': 2}
+
+    # fallback لـ SMA20 لو مفيش 50 يوم
+    sma_period = 50 if len(closes) >= 50 else 20
+    sma_label = 'SMA50' if sma_period == 50 else 'SMA20'
+    sma_val = sum(closes[-sma_period:]) / sma_period
     price = closes[-1]
-    if price > sma50:
-        return {'name': 'sma50', 'passed': True, 'reason': f'فوق SMA50 ({price:.2f} > {sma50:.2f})', 'weight': 2}
+    if price > sma_val:
+        return {'name': 'sma50', 'passed': True, 'reason': f'فوق {sma_label} ({price:.2f} > {sma_val:.2f})', 'weight': 2}
     # قريب جدًا (within 2% below)
-    dist_pct = ((sma50 - price) / sma50) * 100
+    dist_pct = ((sma_val - price) / sma_val) * 100
     if dist_pct <= SMA50_PROXIMITY_PCT:
         # ── EGX-STRATEGY-FINAL (ترطيب): تأكيد قوة بأي طريقة من التلاتة ──
         # (أ) 2 من آخر 3 شموع صاعدة
         if len(closes) >= 4:
             up_count = sum(1 for i in range(-3, 0) if closes[i] > closes[i-1])
             if up_count >= 2:
-                return {'name': 'sma50', 'passed': True, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) + 2/3 شموع صاعدة', 'weight': 2}
+                return {'name': 'sma50', 'passed': True, 'reason': f'قريب من {sma_label} ({dist_pct:.1f}%) + 2/3 شموع صاعدة', 'weight': 2}
         # (ب) شمعة قوية: جسم ≥ 1.5% + حجم > متوسط 10
         if len(closes) >= 2 and closes[-2] > 0:
             body_pct = abs(closes[-1] - closes[-2]) / closes[-2] * 100
-            # شمعة صاعدة (close > prev close)
             is_bullish = closes[-1] > closes[-2]
             if is_bullish and body_pct >= 1.5:
-                # فحص الحجم
                 vol_ok = True
                 if volumes and len(volumes) >= 11:
                     avg_vol_10 = sum(volumes[-11:-1]) / 10 if len(volumes) >= 11 else 0
                     last_vol = volumes[-1] if volumes else 0
                     vol_ok = avg_vol_10 > 0 and last_vol > avg_vol_10
                 if vol_ok:
-                    return {'name': 'sma50', 'passed': True, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) + شمعة قوية ({body_pct:.1f}% + حجم)', 'weight': 2}
-        return {'name': 'sma50', 'passed': False, 'reason': f'قريب من SMA50 ({dist_pct:.1f}%) بس مفيش تأكيد قوة', 'weight': 2}
-    return {'name': 'sma50', 'passed': False, 'reason': f'تحت SMA50 بـ {dist_pct:.1f}%', 'weight': 2}
+                    return {'name': 'sma50', 'passed': True, 'reason': f'قريب من {sma_label} ({dist_pct:.1f}%) + شمعة قوية ({body_pct:.1f}% + حجم)', 'weight': 2}
+        return {'name': 'sma50', 'passed': False, 'reason': f'قريب من {sma_label} ({dist_pct:.1f}%) بس مفيش تأكيد قوة', 'weight': 2}
+    return {'name': 'sma50', 'passed': False, 'reason': f'تحت {sma_label} بـ {dist_pct:.1f}%', 'weight': 2}
 
 
 def _check_relative_strength(proofs: Dict, stock_roc: float = 0, benchmark_change: float = 0) -> Dict[str, Any]:
@@ -260,6 +266,19 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
     benchmark_change = _safe_float(data.get('benchmark_change'))
 
     # تنفيذ كل الفحوصات
+    # EGX-STRATEGY-FINAL: لو soft_surge=True، نتخطى شرط market_context (السوق الهابط)
+    # لأن soft_surge بيصطاد وحوش بتنفجر رغم السوق الهابط (vol_ratio ≥ 2.0 + ROC5 > 3%).
+    _is_soft_surge = bool(proofs.get('soft_surge', False)) if isinstance(proofs, dict) else False
+    _market_ctx_check = _check_market_context(market_regime, proofs)
+    if _is_soft_surge and not _market_ctx_check['passed']:
+        # soft_surge: تجاوز شرط السوق الهابط (الوحوش بتنفجر رغم السوق)
+        _market_ctx_check = {
+            'name': 'market_context',
+            'passed': True,
+            'reason': f'soft_surge: تجاوز شرط السوق ({market_regime}) — وحش بتنفجر رغم السوق',
+            'weight': 2,
+        }
+
     checks = [
         _check_evidence_count(evidence_count),
         _check_rr(entry_price, target_price, stop_price),
@@ -268,7 +287,7 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
         _check_deep_correction(closes),
         _check_dont_chase(closes),
         _check_liquidity(volumes, closes),
-        _check_market_context(market_regime, proofs),
+        _market_ctx_check,
     ]
 
     # تجميع النتائج
