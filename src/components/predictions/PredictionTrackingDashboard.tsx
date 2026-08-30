@@ -28,6 +28,8 @@ import {
 import { cn, fmtPrice } from '@/lib/utils';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
+import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { ExportDropdown } from '@/components/screener/StockScreenerAdvanced';
 import { BarChart, Bar, Cell as RechartsCell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 
 // ==================== Types ====================
@@ -410,6 +412,44 @@ function computeHoldingDays(entryDate?: string | null, closedAt?: string | null)
   }
 }
 
+// ─── Export text generator — builds shareable plain-text from the predictions table ─
+
+function generatePredictionsText(
+  predictions: LivePrediction[],
+  data: LiveTrackingResponse | null,
+): string {
+  if (!predictions.length) return '';
+  const daysLabel = data?.daysWindow != null ? DAYS_OPTIONS.find((d) => d.value === data.daysWindow)?.label : '';
+  const lines: string[] = [
+    '📊 سجل أداء التوقعات — تتبع القصاعات بين الشخصيات',
+    `📋 عدد الصفقات: ${predictions.length}${daysLabel ? ` | الفترة: ${daysLabel}` : ''}`,
+    `🕒 آخر تحديث: ${data?.last_updated || '—'}`,
+    '',
+  ];
+  predictions.forEach((p) => {
+    const personaCfg = PERSONA_CONFIG[p.persona as keyof typeof PERSONA_CONFIG];
+    const trailing = isTrailingProfit(p);
+    const outcomeLabel = trailing
+      ? TRAILING_PROFIT_CONFIG.label
+      : OUTCOME_CONFIG[p.outcome as keyof typeof OUTCOME_CONFIG]?.label || p.outcome || '—';
+    const lastPrice = !p.outcome || p.outcome === 'PENDING' ? p.currentPrice : p.exitPrice;
+    const pct = p.returnPct != null ? (p.returnPct >= 0 ? '+' : '') + p.returnPct.toFixed(2) + '%' : '—';
+    const holding = computeHoldingDays(p.entryDate, p.closedAt);
+    lines.push(
+      `• ${p.ticker} — ${p.nameAr || p.ticker}`,
+      `  🔥 الشخصية: ${personaCfg?.nameAr || p.persona}`,
+      `  📅 التاريخ: ${formatDateShort(p.entryDate)}`,
+      `  📥 دخول: ${fmtPrice(p.entryPrice)} ج.م | 🛑 وقف: ${fmtPrice(p.stopLoss)}`,
+      `  🎯 هدف 1: ${fmtPrice(p.targetPrice)} ج.م${p.targetPrice2 != null ? ` | 🎯 هدف 2: ${fmtPrice(p.targetPrice2)}` : ''}`,
+      `  💰 ${!p.outcome || p.outcome === 'PENDING' ? 'حالي' : 'نهائي'}: ${fmtPrice(lastPrice ?? 0)} ج.م`,
+      `  🏷️ الحالة: ${outcomeLabel} | 📈 العائد: ${pct}`,
+      `  📆 المدة: ${holding != null ? `${holding} يوم` : (p.daysSinceEntry != null ? `${p.daysSinceEntry} يوم` : '—')}`,
+    );
+  });
+  lines.push('', '⚠️ هذا التحليل لأغراض تعليمية فقط — ليس نصيحة استثمارية', OFFICIAL_LINKS_BLOCK);
+  return lines.join('\n');
+}
+
 // RL-FIX-13: أعِد حساب الإحصائيات من قائمة توقعات مفلترة (بدلاً من استخدام stats الـ backend
 // اللي بتعكس كل التوقعات بما فيها الضعيفة). دي الدالة اللي بتخلي الـ KPI cards والـ persona
 // cards يتحدثوا مع تغيير فلتر الجودة.
@@ -788,6 +828,11 @@ export function PredictionTrackingDashboard({
       });
   }, [qualityFilteredPredictions, selectedPersona, selectedOutcome, searchQuery, sortBy, entryPeriod, days]);
 
+  const predictionsShareText = useMemo(
+    () => generatePredictionsText(filteredPredictions, data),
+    [filteredPredictions, data],
+  );
+
   // Handle Exporting Proof Image
   const handleExportProofImage = useCallback(async () => {
     if (!proofCardRef.current || !selectedProofTrade) return;
@@ -890,6 +935,7 @@ export function PredictionTrackingDashboard({
                 {refreshing ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 ml-1" />}
                 تحقق من المعلقة
               </Button>
+              <ExportDropdown shareText={predictionsShareText} disabled={!predictionsShareText} />
             </div>
           </div>
 
