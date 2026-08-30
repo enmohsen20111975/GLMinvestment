@@ -42,15 +42,10 @@ const MarketAnalysisView = withErrorBoundary(
   dynamic(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
   'التحليل',
 );
-// فلاتر الأسهم — screener مستقل في القائمة الجانبية (Python presets via proxy)
-const StockScreenerView = withErrorBoundary(
-  dynamic(() => import('@/components/screener/StockScreener').then(m => ({ default: m.StockScreener })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
+// فلاتر الأسهم — شاشة موحّدة (فلاتر متقدمة + أعلى الأرباح/الخسائر) — Python screener via proxy
+const StockScreenerAdvancedView = withErrorBoundary(
+  dynamic(() => import('@/components/screener/StockScreenerAdvanced').then(m => ({ default: m.StockScreenerAdvanced })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
   'فلاتر الأسهم',
-);
-// أعلى الأسهم أرباحاً/خسارة في فترات متعددة (Python top-performers via proxy)
-const TopPerformersView = withErrorBoundary(
-  dynamic(() => import('@/components/stocks/TopPerformersView').then(m => ({ default: m.TopPerformersView })), { ssr: false, loading: () => <LazyTabLoader label="أعلى الأرباح والخسائر" /> }),
-  'أعلى الأرباح والخسائر',
 );
 const ReportsView = withErrorBoundary(
   dynamic(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
@@ -401,9 +396,10 @@ function AppShell() {
       case 'stock-detail':
         return <StocksView />;
       case 'stock-filters':
-        return <StockScreenerView />;
+        return <StockScreenerAdvancedView />;
+      // #top-performers merged into #stock-filters (Tab 2). Redirect safely.
       case 'top-performers':
-        return <TopPerformersView />;
+        return <StockScreenerAdvancedView initialTab="top-performers" />;
       case 'screener':
       case 'trading-chart':
         return <TradingChartView />;

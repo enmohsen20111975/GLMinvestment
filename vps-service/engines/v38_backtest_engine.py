@@ -51,6 +51,19 @@ except ImportError:
     def set_strict_kill_filters(enabled: bool) -> None:
         pass
 
+# ─── Task part4-stop-loss: stock_state helper (entry gate) ───────────────
+# المالك: "أحنا لازم نركز جدا فى وقت الدخول عالشان نقلل من وقف الخسائر"
+# is_in_active_correction(stock) → True لو السهم في تصحيح نشط (تحت MA50 +
+# change < 0 + RSI < 45 + مش قريب من 52w low) → V38 entry gate يـ reject BUY.
+try:
+    from utils.stock_state import is_in_active_correction
+    _STOCK_STATE_AVAILABLE = True
+except ImportError as _ss_e:  # pragma: no cover
+    _STOCK_STATE_AVAILABLE = False
+    print(f"[V38Engine] stock_state helper unavailable (entry gate disabled): {_ss_e}")
+    def is_in_active_correction(stock):  # type: ignore[no-redef]
+        return False
+
 # V40.4: MarketProfile injection (Unified Multi-Market Architecture, Directive §2)
 # Lazy import — avoids circular dependency at module load time.
 try:
@@ -1623,7 +1636,65 @@ class V38BacktestEngine:
         
         maker_state = decision.get('maker_state', {})
         flight_state = decision.get('flight_state', {})
-        
+
+        # ─── Task part4-stop-loss: entry gate — reject BUY لو السهم في تصحيح نشط ──
+        # المالك: "أحنا لازم نركز جدا فى وقت الدخول عالشان نقلل من وقف الخسائر"
+        # R4.2: فقط يـ reject signal == 'BUY' (مش STRONG_BUY أو INSTITUTIONAL_BUY)
+        # — الصفقات القوية ممكن تـ survive correction.
+        if signal == 'BUY' and _STOCK_STATE_AVAILABLE:
+            try:
+                # change_percent من آخر closesين
+                _gate_change_pct = 0.0
+                if len(sl_closes) >= 2 and sl_closes[-2] > 0:
+                    _gate_change_pct = ((sl_closes[-1] - sl_closes[-2]) / sl_closes[-2] * 100)
+
+                # rsi_14 — Wilder's smoothing
+                _gate_rsi = 50.0
+                if len(sl_closes) >= 15:
+                    _g_gains, _g_losses = [], []
+                    for _gi in range(1, len(sl_closes)):
+                        _chg = sl_closes[_gi] - sl_closes[_gi - 1]
+                        if _chg >= 0:
+                            _g_gains.append(_chg); _g_losses.append(0.0)
+                        else:
+                            _g_gains.append(0.0); _g_losses.append(-_chg)
+                    if len(_g_gains) >= 14:
+                        _ag = sum(_g_gains[-14:]) / 14
+                        _al = sum(_g_losses[-14:]) / 14
+                        _gate_rsi = 100.0 if _al == 0 else 100.0 - (100.0 / (1.0 + _ag / _al))
+
+                # low_52w — min of last 252 closes (أو as many as available)
+                _low_52w_lookback = min(252, len(sl_closes))
+                _gate_low_52w = min(sl_closes[-_low_52w_lookback:]) if _low_52w_lookback > 0 else 0.0
+
+                # ma_50 — simple SMA of last 50 closes (helper بـ uses ma_50 كـ proxy لـ MA20)
+                _ma_50_window = sl_closes[-50:] if len(sl_closes) >= 50 else sl_closes
+                _gate_ma_50 = (sum(_ma_50_window) / len(_ma_50_window)) if _ma_50_window else 0.0
+
+                _gate_stock = {
+                    'current_price': last_close,
+                    'change_percent': _gate_change_pct,
+                    'ma_50': _gate_ma_50,
+                    'rsi': _gate_rsi,
+                    'low_52w': _gate_low_52w,
+                }
+
+                if is_in_active_correction(_gate_stock):
+                    _gate_date = dates[day_idx] if day_idx < len(dates) else ''
+                    print(
+                        f"[V38 entry-gate] {ticker} {_gate_date}: BUY → WAIT "
+                        f"(in active correction: price={last_close:.2f} < ma50={_gate_ma_50:.2f}, "
+                        f"rsi={_gate_rsi:.1f} < 45, change={_gate_change_pct:+.2f}%)"
+                    )
+                    return {
+                        'signal': 'WAIT',
+                        'score': 0,
+                        'proofs': proofs_dict,
+                        'reason': 'in_active_correction',
+                    }
+            except Exception as _gate_e:  # safe-by-design: gate errors تـ skip الـ gate
+                print(f"[V38 entry-gate] {ticker}: gate check failed ({_gate_e}) → BUY retained")
+
         return {
             'signal': signal,
             'score': decision.get('tech_score', 0),

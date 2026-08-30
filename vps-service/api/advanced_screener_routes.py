@@ -13,6 +13,7 @@ import sqlite3
 from flask import Blueprint, request, jsonify
 
 from utils.db_paths import DBPaths
+from utils.stock_state import compute_stock_state, get_state_order
 
 advanced_screener_bp = Blueprint('advanced_screener', __name__)
 
@@ -59,10 +60,28 @@ def advanced_screener():
       - volume_surge: 1 (volume > 1.5× avg_volume)
       - near_52w_high: 1 (within 5% of high_52w)
       - near_52w_low: 1 (within 5% of low_52w)
+      - min_pe / max_pe: P/E range (مكرر الربحية)
+      - min_roe: minimum ROE (العائد على حقوق الملكية %)
+      - min_dividend_yield: minimum dividend yield (توزيعات الأرباح %)
+      - min_market_cap / max_market_cap: market cap range (القيمة السوقية)
+      - stock_state: filter by computed state (Python-side post-filter):
+          CORRECTION | CORRECTION_END | DECLINING | NEAR_BREAKOUT |
+          AT_PEAK | BALANCED_MOMENTUM | NEUTRAL
+
+      sort also accepts computed fields (sorted in Python after fetch):
+        - stock_state (best→worst by STATE_ORDER)
+        - momentum_score (0-100)
+
+    Returns per stock (new computed fields):
+      - stock_state: state key (CORRECTION / CORRECTION_END / DECLINING /
+                  NEAR_BREAKOUT / AT_PEAK / BALANCED_MOMENTUM / NEUTRAL)
+      - stock_state_ar: Arabic display name (e.g. "في تصحيح")
+      - stock_state_reason: short technical reason (Arabic)
+      - momentum_score: 0-100 (composite momentum)
 
     Returns:
-      - stocks: list of full stock data
-      - total: count
+      - stocks: list of full stock data + stock_state + momentum_score
+      - total: count (after post-filter)
       - sectors: list of distinct sectors for filter dropdown
       - summary: {total, advancers, decliners, avg_change, total_turnover}
     """
@@ -87,13 +106,41 @@ def advanced_screener():
         near_52w_high = request.args.get('near_52w_high', '0') == '1'
         near_52w_low = request.args.get('near_52w_low', '0') == '1'
 
+        # ── Part 2 — Fundamental filters ──────────────────────────────────────
+        min_pe = request.args.get('min_pe', type=float)
+        max_pe = request.args.get('max_pe', type=float)
+        min_roe = request.args.get('min_roe', type=float)
+        min_dividend_yield = request.args.get('min_dividend_yield', type=float)
+        min_market_cap = request.args.get('min_market_cap', type=float)
+        max_market_cap = request.args.get('max_market_cap', type=float)
+        # stock_state filter (Python-side post-filter)
+        stock_state_filter = request.args.get('stock_state', '').strip().upper()
+        _valid_states = {'CORRECTION', 'CORRECTION_END', 'DECLINING', 'NEAR_BREAKOUT',
+                         'AT_PEAK', 'BALANCED_MOMENTUM', 'NEUTRAL'}
+        if stock_state_filter and stock_state_filter not in _valid_states:
+            stock_state_filter = ''  # ignore invalid value
+
         # Validate sort field (prevent SQL injection)
         valid_sorts = {'ticker', 'change_percent', 'volume', 'market_cap', 'pe_ratio',
                        'roe', 'rsi', 'turnover_egp', 'dividend_yield', 'high_52w',
                        'low_52w', 'avg_volume', 'current_price', 'name'}
-        if sort_by not in valid_sorts:
+        # Post-sorts = computed fields (not in SQL columns) — sorted in Python after fetch
+        post_sorts = {'stock_state', 'momentum_score'}
+        needs_post_sort = sort_by in post_sorts
+        if needs_post_sort:
+            sql_sort_by = 'turnover_egp'  # placeholder SQL ordering (Python re-sorts after)
+        elif sort_by not in valid_sorts:
             sort_by = 'turnover_egp'
+            sql_sort_by = sort_by
+        else:
+            sql_sort_by = sort_by
         order_dir = 'DESC' if order == 'desc' else 'ASC'
+
+        # Post-processing needed if user passed stock_state filter OR sort by computed field.
+        # In that case we fetch up to 500 rows so we have a pool to filter/sort from,
+        # then slice to the user's requested limit after post-processing.
+        needs_post_processing = bool(stock_state_filter) or needs_post_sort
+        internal_limit = 500 if needs_post_processing else limit
 
         conn = _get_stocks_conn()
         try:
@@ -156,6 +203,26 @@ def advanced_screener():
             if near_52w_low:
                 where_clauses.append('low_52w IS NOT NULL AND low_52w > 0 AND current_price <= low_52w * 1.05')
 
+            # ── Part 2 — Fundamental filters ──────────────────────────────────
+            if min_pe is not None:
+                where_clauses.append('pe_ratio IS NOT NULL AND pe_ratio >= ?')
+                params.append(min_pe)
+            if max_pe is not None:
+                where_clauses.append('pe_ratio IS NOT NULL AND pe_ratio <= ?')
+                params.append(max_pe)
+            if min_roe is not None:
+                where_clauses.append('roe IS NOT NULL AND roe >= ?')
+                params.append(min_roe)
+            if min_dividend_yield is not None:
+                where_clauses.append('dividend_yield IS NOT NULL AND dividend_yield >= ?')
+                params.append(min_dividend_yield)
+            if min_market_cap is not None:
+                where_clauses.append('market_cap IS NOT NULL AND market_cap >= ?')
+                params.append(min_market_cap)
+            if max_market_cap is not None:
+                where_clauses.append('market_cap IS NOT NULL AND market_cap <= ?')
+                params.append(max_market_cap)
+
             where_sql = ' AND '.join(where_clauses)
 
             # Fetch stocks
@@ -170,10 +237,10 @@ def advanced_screener():
                        support, resistance
                 FROM stocks
                 WHERE {where_sql}
-                ORDER BY {sort_by} {order_dir}
+                ORDER BY {sql_sort_by} {order_dir}
                 LIMIT ?
             """
-            params.append(limit)
+            params.append(internal_limit)
 
             rows = conn.execute(query, params).fetchall()
 
@@ -188,6 +255,22 @@ def advanced_screener():
                 low52 = _safe_float(r['low_52w'])
                 dist_high = ((current - high52) / high52 * 100) if (high52 and high52 > 0 and current > 0) else None
                 dist_low = ((current - low52) / low52 * 100) if (low52 and low52 > 0 and current > 0) else None
+
+                # ── Part 2 — Compute stock_state (Python = brain) ──────────────
+                # Build a dict with the fields compute_stock_state() expects.
+                stock_dict_for_state = {
+                    'current_price': current,
+                    'change_percent': _safe_float(r['change_percent'], 0) or 0,
+                    'ma_50': _safe_float(r['ma_50']),
+                    'ma_200': _safe_float(r['ma_200']),
+                    'rsi': _safe_float(r['rsi']),
+                    'high_52w': high52,
+                    'low_52w': low52,
+                    'avg_volume': avg_vol,
+                    'volume': vol,
+                    'trend': r['trend'] or '',
+                }
+                state_info = compute_stock_state(stock_dict_for_state)
 
                 stocks.append({
                     'ticker': r['ticker'],
@@ -232,7 +315,36 @@ def advanced_screener():
                     'above_ma_200': bool(r['ma_200'] and current > r['ma_200']),
                     'distance_from_52w_high': round(dist_high, 1) if dist_high is not None else None,
                     'distance_from_52w_low': round(dist_low, 1) if dist_low is not None else None,
+                    # ── Part 2 — Stock state + momentum (computed fields) ──────
+                    'stock_state': state_info['state'],
+                    'stock_state_ar': state_info['state_ar'],
+                    'stock_state_reason': state_info['state_reason'],
+                    'momentum_score': round(_safe_float(state_info.get('momentum_score'), 0) or 0, 1),
                 })
+
+            # ── Part 2 — Post-processing (Python-side) ─────────────────────────
+            # 1) Apply stock_state filter (computed field, not in SQL).
+            if stock_state_filter:
+                stocks = [s for s in stocks if s['stock_state'] == stock_state_filter]
+
+            # 2) Python-side sort for computed fields (stock_state / momentum_score).
+            if sort_by == 'momentum_score':
+                stocks.sort(
+                    key=lambda s: float(s.get('momentum_score') or 0),
+                    reverse=(order_dir == 'DESC'),
+                )
+            elif sort_by == 'stock_state':
+                # STATE_ORDER: 1 = best (CORRECTION_END) ... 7 = worst (DECLINING).
+                # DESC = best first (ascending by state_order).
+                # ASC  = worst first (descending by state_order).
+                stocks.sort(
+                    key=lambda s: get_state_order(s.get('stock_state', 'NEUTRAL')),
+                    reverse=(order_dir == 'ASC'),
+                )
+
+            # 3) Slice to user's requested limit (after post-filtering / post-sort).
+            if needs_post_processing:
+                stocks = stocks[:limit]
 
             # Get sectors list
             sector_rows = conn.execute("""
@@ -269,6 +381,7 @@ def advanced_screener():
                     'sort': sort_by,
                     'order': order_dir,
                     'limit': limit,
+                    'stock_state': stock_state_filter or None,
                 },
             })
         finally:

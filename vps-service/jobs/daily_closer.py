@@ -178,6 +178,20 @@ except ImportError as _e:
     _LESSON_STORE_AVAILABLE = False
     logger.warning(f"[DailyCloser] lesson_store unavailable (B1 disabled): {_e}")
 
+# ─── Task part4-stop-loss: stock_state helper ─────────────────────────────
+# المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة لانة لسة هايزيد
+# هانحتفظ بية ونأجل البيع أو الشراء"
+# is_near_correction_end(stock) → True لو السهم بدأ يتعافى فوق MA50 + حجم يرتفع
+# + RSI > 45 + change > 0 → نأجل stop-loss ليوم واحد (R4.1 + R4.2).
+try:
+    from utils.stock_state import is_near_correction_end
+    _STOCK_STATE_AVAILABLE = True
+except ImportError as _ss_e:
+    _STOCK_STATE_AVAILABLE = False
+    logger.warning(f"[DailyCloser] stock_state helper unavailable (defer-stop disabled): {_ss_e}")
+    def is_near_correction_end(stock):  # type: ignore[no-redef]
+        return False
+
 def get_max_holding_days(regime: str = 'range', conviction: float = 50) -> int:
     """Dynamic max holding days based on market regime and conviction.
     
@@ -680,6 +694,21 @@ class DailyCloser:
 
             days_elapsed = i + 1 if not (i == 0 and day.get('date') == start_date) else i
 
+            # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──
+            # المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة"
+            # تحقق قبل ما نـ trigger trailing stop — لو السهم بدأ يتعافى، نأجل ليوم واحد.
+            try:
+                _ts_gain_pct = (close - entry_price) / entry_price * 100 if entry_price > 0 else 0
+                if self._should_defer_stop_for_correction_end(
+                    pred_id, ticker, day.get('date', ''), close,
+                    float(day.get('volume', 0) or 0), _ts_gain_pct
+                ):
+                    continue  # skip stop-loss check for today — defer to next day
+            except Exception as _defer_e:
+                logger.warning(
+                    f"[DailyCloser] #{pred_id} {ticker} {day.get('date','')}: defer-check failed: {_defer_e}"
+                )
+
             # Check if trailing stop breached (skip on ex-dividend day)
             if close < trailing_stop_level and not _is_ex_dividend_day:
                 # Exit at next day's open if available, otherwise current close
@@ -933,6 +962,209 @@ class DailyCloser:
             result['days_below_sma20'] = 0
         return result
 
+    # ─── Task part4-stop-loss: تأجيل stop-loss لو السهم قرب ينهي التصحيح ──────
+    def _should_defer_stop_for_correction_end(
+        self,
+        pred_id: int,
+        ticker: str,
+        day_date: str,
+        close: float,
+        day_volume: float,
+        gain_pct: float,
+    ) -> bool:
+        """حدد هل نؤجل stop-loss اليوم لأن السهم بدأ يتعافى.
+
+        المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة لانة لسة هايزيد
+        هانحتفظ بية ونأجل البيع أو الشراء"
+
+        القيود (من الـ plan):
+          - R4.1: فقط لو gain_pct < 0 AND > -15% (لو خسارة كبيرة جداً، بـ sell)
+          - R4.2: فقط ليوم واحد (next day re-check — لو فضل نازل، بـ sell)
+
+        المنطق:
+          1. تحقق من الـ preconditions (gain_pct في النطاق، helper متاح)
+          2. fetch 120 يوم lookback history ending at day_date
+          3. compute ma_50, rsi_14, avg_volume, change_percent
+          4. call is_near_correction_end(stock_dict) — يـ return True لو:
+             - price > ma_50 (فوق المتوسط)
+             - volume > avg_volume * 1.2 (حجم يرتفع)
+             - rsi > 45 (بدأ يتعافى)
+             - change_percent > 0 اليوم (إيجابي)
+          5. لو True:
+             - لو already deferred before (HOLD_CORRECTION_ENDING exists for this pred_id)
+               → رجّع False (لا تـ defer تاني، نـ trigger stop)
+             - لو أول مرة → سجل HOLD_CORRECTION_ENDING + رجّع True (defer)
+
+        Args:
+            pred_id: ID التوقع
+            ticker: رمز السهم
+            day_date: تاريخ اليوم اللي بنفحصه (YYYY-MM-DD)
+            close: سعر الإغلاق اليوم
+            day_volume: حجم التداول اليوم
+            gain_pct: نسبة الربح/الخسارة الحالية (position-direction aware)
+
+        Returns:
+            True = defer (skip stop-loss اليوم — استنى يوم تاني)
+            False = proceed with stop (مفيش مؤشر تعافي OR خسارة كبيرة OR مـ اتـ defer قبل كده)
+        """
+        if not _STOCK_STATE_AVAILABLE:
+            return False
+
+        # R4.1: فقط لو gain_pct < 0 AND > -15%
+        # لو gain >= 0 → مش خسارة، لا تـ defer
+        # لو gain <= -15% → خسارة كبيرة جداً، بـ sell فوراً
+        if gain_pct >= 0 or gain_pct <= -15.0:
+            return False
+
+        if close <= 0 or not day_date:
+            return False
+
+        # ── Fetch 120 يوم lookback ending at day_date ──
+        try:
+            _dt = datetime.strptime(str(day_date), '%Y-%m-%d')
+            _lookback_start = (_dt - timedelta(days=180)).strftime('%Y-%m-%d')
+        except Exception:
+            _lookback_start = str(day_date)
+
+        try:
+            history = self.get_price_history(ticker, _lookback_start, str(day_date))
+        except Exception as _h_e:
+            logger.warning(
+                f"[DailyCloser] #{pred_id} {ticker} {day_date}: history fetch for defer-check failed: {_h_e}"
+            )
+            return False
+
+        if not history or len(history) < 30:
+            # not enough data → can't compute indicators → don't defer (safe fallback)
+            return False
+
+        # Locate the current day index in history
+        cur_idx = -1
+        for _i, _bar in enumerate(history):
+            if str(_bar.get('date', '')) == str(day_date):
+                cur_idx = _i
+                break
+
+        if cur_idx < 5:
+            # current day not found, or too early to compute indicators
+            return False
+
+        # ── Compute indicators from history[0..cur_idx] ──
+        closes_arr = []
+        volumes_arr = []
+        for _b in history[:cur_idx + 1]:
+            _c = float(_b.get('close', 0) or 0)
+            _v = float(_b.get('volume', 0) or 0)
+            if _c > 0:
+                closes_arr.append(_c)
+            volumes_arr.append(_v)
+
+        if len(closes_arr) < 5:
+            return False
+
+        current_price = closes_arr[-1]
+        prev_close = closes_arr[-2] if len(closes_arr) >= 2 else 0.0
+        change_percent = ((current_price - prev_close) / prev_close * 100) if prev_close > 0 else 0.0
+
+        # ma_50 — avg of last 50 closes (proxy for MA20 per helper docs)
+        _ma_window = closes_arr[-50:] if len(closes_arr) >= 50 else closes_arr
+        ma_50 = (sum(_ma_window) / len(_ma_window)) if _ma_window else 0.0
+
+        # rsi_14 — Wilder's smoothing
+        rsi_val = 50.0  # neutral default
+        if len(closes_arr) >= 15:
+            gains = []
+            losses = []
+            for _i in range(1, len(closes_arr)):
+                _chg = closes_arr[_i] - closes_arr[_i - 1]
+                if _chg >= 0:
+                    gains.append(_chg)
+                    losses.append(0.0)
+                else:
+                    gains.append(0.0)
+                    losses.append(-_chg)
+            if len(gains) >= 14:
+                avg_g = sum(gains[-14:]) / 14
+                avg_l = sum(losses[-14:]) / 14
+                if avg_l == 0:
+                    rsi_val = 100.0
+                else:
+                    rsi_val = 100.0 - (100.0 / (1.0 + avg_g / avg_l))
+
+        # avg_volume — avg of last 50 days volumes
+        _vol_window = volumes_arr[-50:] if len(volumes_arr) >= 50 else volumes_arr
+        avg_volume = (sum(_vol_window) / len(_vol_window)) if _vol_window else 0.0
+
+        stock_state_dict = {
+            'current_price': current_price,
+            'change_percent': change_percent,
+            'ma_50': ma_50,
+            'rsi': rsi_val,
+            'volume': float(day_volume if day_volume and day_volume > 0 else (volumes_arr[-1] if volumes_arr else 0)),
+            'avg_volume': avg_volume,
+        }
+
+        try:
+            near_end = bool(is_near_correction_end(stock_state_dict))
+        except Exception as _ne_e:
+            logger.warning(
+                f"[DailyCloser] #{pred_id} {ticker} {day_date}: is_near_correction_end failed: {_ne_e}"
+            )
+            return False
+
+        if not near_end:
+            return False
+
+        # ── R4.2: only defer ONCE per prediction (persistent state) ──
+        # لو already deferred before + still in loss → take the stop
+        try:
+            self._ensure_exit_notifications_table()
+            conn = self._conn(self.predictions_db)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM exit_notifications "
+                "WHERE prediction_id = ? AND notification_type = ?",
+                (pred_id, 'HOLD_CORRECTION_ENDING')
+            )
+            row = cursor.fetchone()
+            already_deferred = (int(row[0]) if row else 0) > 0
+            conn.close()
+        except Exception as _q_e:
+            logger.warning(
+                f"[DailyCloser] #{pred_id} {ticker}: exit_notifications query failed: {_q_e}"
+            )
+            already_deferred = False
+
+        if already_deferred:
+            logger.info(
+                f"[DailyCloser] #{pred_id} {ticker} {day_date}: correction-ending defer already used → "
+                f"proceed with stop (one-shot rule R4.2)"
+            )
+            return False
+
+        # ── First-time defer: log HOLD_CORRECTION_ENDING + return True ──
+        try:
+            self._log_exit_notification(
+                pred_id, ticker, 'HOLD_CORRECTION_ENDING',
+                "تأجيل وقف الخسارة — السهم قرب ينهي التصحيح (فوق MA50 + حجم يرتفع + RSI > 45 + إيجابي اليوم). "
+                "نحتفظ بالصفقة ليوم واحد حتى يرتد السهم (R4.2).",
+                current_price=current_price, gain_pct=gain_pct,
+                sma20=ma_50, rsi=rsi_val,
+                day_number=0,
+            )
+        except Exception as _log_e:
+            logger.warning(
+                f"[DailyCloser] #{pred_id} {ticker}: HOLD_CORRECTION_ENDING log failed: {_log_e}"
+            )
+
+        logger.info(
+            f"[DailyCloser] #{pred_id} {ticker} {day_date}: HOLD_CORRECTION_ENDING — "
+            f"defer stop-loss (gain={gain_pct:.2f}%, ma50={ma_50:.2f}, rsi={rsi_val:.1f}, "
+            f"change={change_percent:+.2f}%, vol_ratio={(stock_state_dict['volume']/avg_volume if avg_volume>0 else 0):.2f}). "
+            f"Stock near correction end — keep pending one more day."
+        )
+        return True
+
     def _close_with_dynamic_exit(self, prediction: Dict, price_history: List[Dict]) -> Optional[CloseResult]:
         """P0-v16: السياسة الديناميكية الشاملة — لكل الأسهم مش بس الانفجارية.
 
@@ -1067,6 +1299,21 @@ class DailyCloser:
                 highest = max(highest, high)
             if low > 0:
                 lowest = min(lowest, low)
+
+            # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──
+            # المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة لانة لسة هايزيد"
+            # تحقق قبل Rule 1 HARD/DYNAMIC STOP — لو السهم بدأ يتعافى، نأجل ليوم واحد.
+            try:
+                _dyn_gain_pct = (close - entry_price) / entry_price * 100 if entry_price > 0 else 0
+                if self._should_defer_stop_for_correction_end(
+                    pred_id, ticker, day_date, close,
+                    float(day.get('volume', 0) or 0), _dyn_gain_pct
+                ):
+                    continue  # skip stop-loss check for today — defer to next day
+            except Exception as _defer_e:
+                logger.warning(
+                    f"[DailyCloser] #{pred_id} {ticker} {day_date}: defer-check failed: {_defer_e}"
+                )
 
             # ── Rule 1: HARD/DYNAMIC STOP ──
             if low > 0 and low <= current_stop:
@@ -1354,6 +1601,21 @@ class DailyCloser:
             except Exception:
                 _is_ex_date = False
 
+            # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──
+            # المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة لانة لسة هايزيد"
+            # تحقق قبل hard stop الأسهم الانفجارية — لو السهم بدأ يتعافى، نأجل ليوم واحد.
+            try:
+                _exp_gain_pct = (close - entry_price) / entry_price * 100 if entry_price > 0 else 0
+                if self._should_defer_stop_for_correction_end(
+                    pred_id, ticker, day_date, close,
+                    float(day.get('volume', 0) or 0), _exp_gain_pct
+                ):
+                    continue  # skip stop-loss check for today — defer to next day
+            except Exception as _defer_e:
+                logger.warning(
+                    f"[DailyCloser] #{pred_id} {ticker} {day_date}: defer-check failed: {_defer_e}"
+                )
+
             if low > 0 and low <= stop_loss and not _is_ex_date:
                 actual_return = ((stop_loss - entry_price) / entry_price * 100) if entry_price > 0 else 0
                 return self._mark_closed(
@@ -1484,6 +1746,21 @@ class DailyCloser:
                 lowest_price_reached = min(lowest_price_reached, low)
 
             days_elapsed = i + 1
+
+            # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──
+            # المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة لانة لسة هايزيد"
+            # تحقق قبل partial pre-stop — لو السهم بدأ يتعافى، نأجل ليوم واحد.
+            try:
+                _part_gain_pct = (close - entry_price) / entry_price * 100 if entry_price > 0 else 0
+                if self._should_defer_stop_for_correction_end(
+                    pred_id, ticker, day_date, close,
+                    float(day.get('volume', 0) or 0), _part_gain_pct
+                ):
+                    continue  # skip stop-loss check for today — defer to next day
+            except Exception as _defer_e:
+                logger.warning(
+                    f"[DailyCloser] #{pred_id} {ticker} {day_date}: defer-check failed: {_defer_e}"
+                )
 
             # 1) Check stop FIRST (before partial) — conservative
             if not partial_done and low <= stop_loss:
@@ -2045,7 +2322,23 @@ class DailyCloser:
                     _mfe_pct = (highest_price_reached - entry_price) / entry_price * 100
                     if _mfe_pct >= 3.0:
                         _effective_stop = entry_price  # move to breakeven!
-                
+
+                # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──
+                # المالك: "لو السهم قرب على أنهاء التصحيح مش هانوقف خسارة لانة لسة هايزيد"
+                # تحقق قبل stop_loss لـ BUY positions — لو السهم بدأ يتعافى، نأجل ليوم واحد.
+                # (شرط is_buy — SELL positions ما بـ نـ deferهاش لأن التعافي ضدنا)
+                try:
+                    _mr_gain_pct = (close - entry_price) / entry_price * 100 if entry_price > 0 else 0
+                    if self._should_defer_stop_for_correction_end(
+                        pred_id, ticker, day.get('date', ''), close,
+                        float(day.get('volume', 0) or 0), _mr_gain_pct
+                    ):
+                        continue  # skip stop-loss check for today — defer to next day
+                except Exception as _defer_e:
+                    logger.warning(
+                        f"[DailyCloser] #{pred_id} {ticker} {day.get('date','')}: defer-check failed: {_defer_e}"
+                    )
+
                 if _effective_stop > 0 and low <= _effective_stop:
                     _exit_px = _effective_stop
                     actual_return = ((_exit_px - entry_price) / entry_price * 100) if entry_price > 0 else 0

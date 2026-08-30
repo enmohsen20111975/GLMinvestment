@@ -47,15 +47,21 @@ def get_sector_tracking():
       - with_rotation: 1 لإضافة detect_sector_rotation (default: 0 — أبطأ)
       - with_stocks: 1 لإضافة قائمة الأسهم لكل قطاع (default: 1)
       - sort: ترتيب القطاعات (avg_change | turnover | stock_count | breadth |
-              gainers | losers | turnover_pct | sector) — default: turnover
+              gainers | losers | turnover_pct | sector | heat_level |
+              total_market_cap | leader_change) — default: turnover
       - order: asc | desc — default: desc
       - min_avg_change: فلترة القطاعات بمتوسط تغير ≥ القيمة (default: لا فلتر)
       - heat_level: فلترة بـ heat level (HOT | WARM | NEUTRAL | COOL | COLD)
 
     Returns:
-      - sectors: list of {sector, stock_count, avg_change, turnover, breadth,
-                          heat_level, heat_ar, gainers, losers, leader_ticker,
-                          leader_change, stocks: [...]}
+      - sectors: list of {sector, stock_count, avg_change, turnover, turnover_pct,
+                          breadth, heat_level, heat_ar, gainers, losers,
+                          leader_ticker, leader_change, total_market_cap,
+                          stocks: [...]}
+          - stocks[]: {ticker, name, name_ar, current_price, change_percent,
+                       volume, turnover_egp, market_cap, avg_volume, volume_surge,
+                       rsi, ma_50, ma_200, above_ma50, trend,
+                       high_52w, low_52w, distance_from_52w_high, distance_from_52w_low}
       - rotation (optional): {entering: [...], leaving: [...], stable: [...],
                               rotation_signals: [...]}
       - market_summary: {total_stocks, total_sectors, advancers, decliners,
@@ -73,7 +79,8 @@ def get_sector_tracking():
 
         # Validate sort field
         valid_sorts = {'avg_change', 'turnover', 'stock_count', 'breadth',
-                       'gainers', 'losers', 'turnover_pct', 'sector', 'heat_level'}
+                       'gainers', 'losers', 'turnover_pct', 'sector', 'heat_level',
+                       'total_market_cap', 'leader_change'}
         if sort_by not in valid_sorts:
             sort_by = 'turnover'
         order_dir = 'desc' if order == 'desc' else 'asc'
@@ -173,27 +180,52 @@ def get_sector_tracking():
                 leader_ticker = sector_stocks[0]['ticker'] if sector_stocks else None
                 leader_change = _safe_float(sector_stocks[0]['change_percent']) if sector_stocks else None
 
+                # Total market cap for the sector (sum of all sector stocks' market_cap)
+                sector_market_cap = sum(_safe_float(s.get('market_cap')) for s in sector_stocks)
+
                 # Stocks list (limited to top 20 per sector for performance)
                 stocks_list = []
                 if with_stocks and sector_stocks:
                     for s in sector_stocks[:20]:
                         vol = _safe_float(s['volume'])
+                        price = _safe_float(s['current_price'])
                         avg_vol = _safe_float(s.get('avg_volume'))
                         vol_surge = (avg_vol > 0 and vol > avg_vol * 1.5)
+                        turnover_egp = vol * price
+                        # Distance from 52-week high / low (in %)
+                        high_52w = _safe_float(s.get('high_52w'))
+                        low_52w = _safe_float(s.get('low_52w'))
+                        if high_52w > 0 and price > 0:
+                            dist_from_high = round(((high_52w - price) / high_52w) * 100, 1)
+                        else:
+                            dist_from_high = None
+                        if low_52w > 0 and price > 0:
+                            dist_from_low = round(((price - low_52w) / low_52w) * 100, 1)
+                        else:
+                            dist_from_low = None
+                        # Above / below MA50
+                        ma_50_val = _safe_float(s.get('ma_50'))
+                        above_ma50 = (ma_50_val > 0 and price > ma_50_val) if ma_50_val else None
                         stocks_list.append({
                             'ticker': s['ticker'],
                             'name': s['name'] or s['ticker'],
                             'name_ar': s.get('name_ar') or s['name'] or s['ticker'],
-                            'current_price': _safe_float(s['current_price']),
+                            'current_price': round(price, 4),
                             'change_percent': round(_safe_float(s['change_percent']), 2),
                             'volume': int(vol) if vol else 0,
+                            'turnover_egp': round(turnover_egp, 0),
                             'market_cap': _safe_float(s.get('market_cap')),
                             'avg_volume': int(avg_vol) if avg_vol else 0,
                             'volume_surge': vol_surge,
                             'rsi': _safe_float(s.get('rsi')) if s.get('rsi') else None,
+                            'ma_50': _safe_float(s.get('ma_50')) if s.get('ma_50') else None,
+                            'ma_200': _safe_float(s.get('ma_200')) if s.get('ma_200') else None,
+                            'above_ma50': above_ma50,
                             'trend': s.get('trend'),
-                            'high_52w': _safe_float(s.get('high_52w')) if s.get('high_52w') else None,
-                            'low_52w': _safe_float(s.get('low_52w')) if s.get('low_52w') else None,
+                            'high_52w': high_52w if high_52w else None,
+                            'low_52w': low_52w if low_52w else None,
+                            'distance_from_52w_high': dist_from_high,
+                            'distance_from_52w_low': dist_from_low,
                         })
 
                 enriched_sectors.append({
@@ -209,12 +241,28 @@ def get_sector_tracking():
                     'heat_ar': heat_ar,
                     'leader_ticker': leader_ticker,
                     'leader_change': round(leader_change, 2) if leader_change is not None else None,
+                    'total_market_cap': round(sector_market_cap, 0),
                     'stocks': stocks_list,
                 })
 
             # Sort sectors by requested field (sort + order from query params)
             reverse = (order_dir == 'desc')
-            enriched_sectors.sort(key=lambda x: x.get(sort_by, 0) if isinstance(x.get(sort_by, 0), (int, float)) else str(x.get(sort_by, '')), reverse=reverse)
+
+            # Mixed-type sort: separate numeric and string keys to avoid Python
+            # comparing str vs float. We sort by (type_rank, value) where
+            # numbers rank first (0), strings second (1), None/unknown last (2).
+            def _typed_sort_key(x):
+                v = x.get(sort_by)
+                if isinstance(v, bool):
+                    return (0, int(v))
+                if isinstance(v, (int, float)) and v == v:  # not NaN
+                    return (0, v)
+                if isinstance(v, str):
+                    return (1, v.lower())
+                # None / unknown → last
+                return (2, '')
+
+            enriched_sectors.sort(key=_typed_sort_key, reverse=reverse)
 
             # Apply filters (min_avg_change + heat_level)
             if min_avg_change is not None:

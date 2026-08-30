@@ -254,7 +254,7 @@ export function StockScreener() {
       const json: ScreenerResponse = await res.json();
 
       if (json.success) {
-        setStocks(json.data);
+        setStocks(json.data || []);
         setSectors(json.sectors || []);
       } else {
         setError(json.error || 'فشل تحميل البيانات');
