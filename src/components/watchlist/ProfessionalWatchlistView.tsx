@@ -30,6 +30,7 @@ import {
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 
 // Types
 interface TradingViewData {
@@ -194,6 +195,10 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
             </div>
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
+        </div>
+
+        <div className="mt-2">
+          <MiniSparkline ticker={item.ticker} height={24} width={140} showArea />
         </div>
         
         {/* Expanded Details */}

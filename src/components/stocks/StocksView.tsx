@@ -463,6 +463,10 @@ function StockCard({
           </div>
         </div>
 
+        <div className="mb-3">
+          <MiniSparkline ticker={stock.ticker} height={32} width={160} showArea />
+        </div>
+
         {/* Mini Price Bar */}
         <div className="mb-3">
           <div className="h-1.5 bg-muted rounded-full overflow-hidden relative">
@@ -1897,6 +1901,9 @@ export function StocksView() {
                             {formatPercent(change)}
                           </p>
                         </div>
+                      </div>
+                      <div className="mt-2">
+                        <MiniSparkline ticker={item.ticker} height={24} width={120} showArea />
                       </div>
                       {/* Secondary row: 1w change + fair_value + upside */}
                       <div className="grid grid-cols-3 gap-2 mt-2">

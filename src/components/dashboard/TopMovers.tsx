@@ -6,6 +6,7 @@ import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn, safeNum } from '@/lib/utils';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import type { StockMini } from '@/types';
 
 function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser' }) {
@@ -70,6 +71,9 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
           {changeValue >= 0 ? '+' : ''}
           {safeNum(changeValue).toFixed(2)}%
         </p>
+        <div className="mt-1">
+          <MiniSparkline ticker={stock.ticker} height={16} width={64} showArea={false} />
+        </div>
       </div>
     </div>
   );

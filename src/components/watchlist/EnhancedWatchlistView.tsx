@@ -54,6 +54,7 @@ import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import type { EnhancedWatchlistItem } from '@/types';
 import { WatchlistIntelligenceSection } from '@/components/intelligence/WatchlistIntelligenceSection';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 
 // ==================== TYPES ====================
 
@@ -673,6 +674,10 @@ function WatchlistMobileCard({
               </Badge>
             </div>
           )}
+        </div>
+
+        <div className="mb-3">
+          <MiniSparkline ticker={item.ticker} height={28} width={160} showArea />
         </div>
 
         {/* Details Row */}
