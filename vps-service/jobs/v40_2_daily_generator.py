@@ -610,10 +610,18 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # Safe-by-design: when fundamentals are UNAVAILABLE (available=False, e.g. during
             # the egx_fundamentals empty period), the veto does NOT fire — picks pass through
             # so the pipeline isn't choked while the fundamentals fetcher is unscheduled.
-            _fit_persona = persona_fit.get('persona_fit', 'balanced')
+            #
+            # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل تعدد الشخصيات ──
+            # مهما كان persona_fit، النظام بـ يطبّق veto بتاع الـ balanced بس
+            # (يعني أي سهم fundamentals_score < 30 هيترفض). الـ gambler exemption
+            # اتعلّق عشان كل التوقعات بـ تستخدم منطق الـ balanced.
+            _fit_persona = 'balanced'  # UNIFIED-BALANCED-ONLY: persona واحدة
             _fund_score = float(result.get('fundamental_score', 0.0) or 0.0)
             _fund_avail = bool(result.get('fundamentals_available', False))
-            if _fit_persona != 'gambler' and _fund_avail and _fund_score < 30.0:
+            # if _fit_persona != 'gambler' and _fund_avail and _fund_score < 30.0:
+            #     continue
+            # UNIFIED-BALANCED-ONLY: veto دايماً (balanced logic)
+            if _fund_avail and _fund_score < 30.0:
                 continue
 
             # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
@@ -692,7 +700,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         picks = day_signals[:max_picks]
 
         for rank, sig in enumerate(picks):
-            sig['morning_bell'] = 1 if rank == 0 else 0
+            # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل morning_bell ──
+            # morning_bell كان بيميّز "أقوى توقع في اليوم" كـ persona-specific feature.
+            # دلوقتي كل التوقعات balanced، فالـ morning_bell بـ يبقى 0 لكل التوقعات.
+            # الكود القديم: sig['morning_bell'] = 1 if rank == 0 else 0
+            sig['morning_bell'] = 0  # UNIFIED-BALANCED-ONLY: معطّل
 
         for sig in picks:
             hit_target = 1 if sig['exit_reason'] == 'hit_target' else 0
@@ -746,30 +758,31 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     if sig['morning_bell']:
                         total_morning_bells += 1
                     all_stored.append(sig)
-                    # Phase 2 (Option A — Safe): اكتب persona_predictions من نفس
-                    # الـ pool القوي للأسهم اللي strongly fit gambler/conservative.
-                    # persona='balanced' في predictions لا يتغير (baseline محمي).
-                    # persona_predictions منفصل ولا يؤثر على overall KPI (dedup بالـ ticker).
-                    # الـ row بـ يتـ closed فورًا بـ outcome المحاكى من V40.2 (مفيش orphans).
-                    if fit_tag in ('gambler', 'conservative') and fit_score >= PERSONA_FIT_MIN_SCORE:
-                        try:
-                            safe_store_prediction(
-                                ticker=sig['ticker'], market='EGX',
-                                persona_type=fit_tag,
-                                signal_type=sig['signal'],
-                                entry_price=sig['entry'],
-                                target_price=sig['target'],
-                                stop_loss=sig['stop'],
-                                prediction_date=scan_date,
-                            )
-                            update_persona_prediction_outcome(
-                                ticker=sig['ticker'],
-                                persona_type=fit_tag,
-                                final_price=sig['exit_price'],
-                                prediction_date=scan_date,
-                            )
-                        except Exception as pe:
-                            print(f"  ⚠️ persona_predictions {sig['ticker']}/{fit_tag}: {pe}", flush=True)
+                    # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل persona_predictions writing ──
+                    # المنطق الموحد: مفيش persona تانية غير balanced. الكود القديم
+                    # بـ يكتب persona_predictions للأسهم اللي strongly fit gambler/conservative.
+                    # دلوقتي ده معطّل (مش بـ يكتب حاجة) عشان النظام يفضل unified.
+                    #
+                    # Phase 2 (Option A — Safe) [LEGACY — معطّل]:
+                    # if fit_tag in ('gambler', 'conservative') and fit_score >= PERSONA_FIT_MIN_SCORE:
+                    #     try:
+                    #         safe_store_prediction(
+                    #             ticker=sig['ticker'], market='EGX',
+                    #             persona_type=fit_tag,
+                    #             signal_type=sig['signal'],
+                    #             entry_price=sig['entry'],
+                    #             target_price=sig['target'],
+                    #             stop_loss=sig['stop'],
+                    #             prediction_date=scan_date,
+                    #         )
+                    #         update_persona_prediction_outcome(
+                    #             ticker=sig['ticker'],
+                    #             persona_type=fit_tag,
+                    #             final_price=sig['exit_price'],
+                    #             prediction_date=scan_date,
+                    #         )
+                    #     except Exception as pe:
+                    #         print(f"  ⚠️ persona_predictions {sig['ticker']}/{fit_tag}: {pe}", flush=True)
             except Exception as e:
                 print(f"  ⚠️ Store error {sig['ticker']}: {e}", flush=True)
 

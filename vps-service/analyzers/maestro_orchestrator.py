@@ -1274,40 +1274,40 @@ def determine_recommendation(maestro_score: float, regime: str, volume_ratio: fl
     if price_position in ['at_support', 'near_support'] and volume_ratio >= 1.0 and maestro_score >= 55:
         return 'swing_buy', 'شراء متأرجح'
 
-    # ── Persona-specific thresholds ──
+    # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل تعدد الشخصيات ──
+    # المنطق الموحد المطلوب من المالك: "ألغي تعدد الشخصيات تمامًا. خلي النظام
+    # يشتغل بأسلوب المتوازن (Balanced) فقط كأساس وحيد."
+    #
+    # التغيير: مهما كان persona_type المُمرّر (gambler/conservative/investor/...),
+    # النظام بـ يستخدم thresholds الـ balanced فقط. الكود القديم لكل persona
+    # اتعلّق (مش اتمسح) عشان لو المالك رجع للشخصيات تاني، بس دلوقتي ما بيأثرش
+    # على القرارات. الـ persona_type بـ يـ log بس للـ audit.
+    #
+    # الـ thresholds الـ balanced (من P0-v13-OPPORTUNITY):
+    #   - bull:   strong_buy=55, buy=42, hold=30, sell=20
+    #   - bear:   strong_buy=58, buy=45, hold=32, sell=22
+    #   - range:  strong_buy=52, buy=40, hold=28, sell=18
     # الترتيب: (strong_buy, buy, hold, sell) — strong_sell = أي شيء أقل من sell
-    # P21: كل persona ليها عتباتها اللي بتعكس المخاطرة المقبولة.
     _persona = (persona_type or 'balanced').lower().strip()
+    # ── legacy persona thresholds (معطّلة — مش بـ تـ affect القرار) ──
+    # محتفظين بالكود للـ audit لو المالك رجع للشخصيات تاني.
+    # if _persona in ('gambler', 'active_trader'):
+    #     thresholds = (45, 28, 18, 12) if regime == 'bull' else \
+    #                  (50, 32, 22, 15) if regime == 'bear' else \
+    #                  (42, 25, 16, 10)  # range/sideways
+    # elif _persona in ('conservative', 'investor'):
+    #     thresholds = (62, 50, 38, 28) if regime == 'bull' else \
+    #                  (68, 55, 42, 32) if regime == 'bear' else \
+    #                  (58, 48, 36, 26)  # range/sideways
+    # else:
+    #     thresholds = (55, 42, 30, 20) if regime == 'bull' else \
+    #                  (58, 45, 32, 22) if regime == 'bear' else \
+    #                  (52, 40, 28, 18)  # range/sideways
 
-    if _persona in ('gambler', 'active_trader'):
-        # المضارب = "المعلم اللي ما بيخافش" (P0-v11-PROD-PORT):
-        # عتبات متخفّضة جداً عشان يلتقط الأسهم الانفجارية قبل ما تطير.
-        # قبل: strong_buy=55, buy=35 → دلوقتي: strong_buy=45, buy=28 (فرص أكتر).
-        # السبب: الـ backtest أثبت إن العتبات القديمة بتـ filter out أسهم
-        # عملت +50%/+100% (gambler coverage = 33% بس). العتبات الجديدة بـ ترفع
-        # الـ coverage لـ ~70% مع الحفاظ على PF=1.19+ (R:R بيعوّض).
-        # مفيش veto على السوق الهابط (المضارب بيلعب على الـ bounce).
-        thresholds = (45, 28, 18, 12) if regime == 'bull' else \
-                     (50, 32, 22, 15) if regime == 'bear' else \
-                     (42, 25, 16, 10)  # range/sideways
-    elif _persona in ('conservative', 'investor'):
-        # المحافظ: عتبات معتدلة (P0-v13-OPPORTUNITY — owner: "الفرص كتيييييييير جدا").
-        # قبل: buy=62 → المحافظ بـ يـ miss 99% من الأسهم الانفجارية (بتـ score 46-62).
-        # دلوقتي: buy=50 → بـ يلتقط النص الأقوى من الأسهم الانفجارية + الفرص الواضحة.
-        # لسه أعلى من gambler (28) و balanced (42) عشان يحافظ على الحذر الاستثماري،
-        # بس بـ ما يـ missش الفرص الذهبية تاني (owner: "مش ممكن نسمح تانى بلوضع دة").
-        thresholds = (62, 50, 38, 28) if regime == 'bull' else \
-                     (68, 55, 42, 32) if regime == 'bear' else \
-                     (58, 48, 36, 26)  # range/sideways
-    else:
-        # المتوازن (default) — P0-v13-OPPORTUNITY (owner: "ما تفتناش الفرص"):
-        # قبل: buy=55 → المتوازن بـ يـ miss 84% من الأسهم الانفجارية (بتـ score 46-62).
-        # دلوقتي: buy=42 → بـ يلتقط أغلب الأسهم الانفجارية + الفرص الجيدة.
-        # لسه أعلى من gambler (28) عشان يفلتر الـ noise، بس بـ يـ catch الفرص الحقيقية.
-        # الـ hierarchy: gambler(28) < balanced(42) < conservative(50) — كلهم بـ يـ catch.
-        thresholds = (55, 42, 30, 20) if regime == 'bull' else \
-                     (58, 45, 32, 22) if regime == 'bear' else \
-                     (52, 40, 28, 18)  # range/sideways
+    # المتوازن هو الأساس الوحيد (UNIFIED-BALANCED-ONLY):
+    thresholds = (55, 42, 30, 20) if regime == 'bull' else \
+                 (58, 45, 32, 22) if regime == 'bear' else \
+                 (52, 40, 28, 18)  # range/sideways
 
     # ── P40-DNA-WIRING + P0-v7 TASK #2 (DNA-DRIVEN THRESHOLDS): ──────────
     # الـ DNA بيقول للعقل: "ده سهم متقلب/قوي → خفّف العتبات عشان يقدر يطلع BUY".

@@ -630,12 +630,17 @@ def enforce_atr_based_stop(
         # ATR غير متاح — استخدم نسبة 1.5% كبديل للـ ATR لحماية الوقف من أخطاء القسمة على صفر
         atr = entry_price * 0.015
 
-    persona = (persona_type or 'balanced').lower().strip()
-    if persona == 'investor':
-        persona = 'conservative'
-    elif persona == 'active_trader':
-        persona = 'gambler'
-    k = ATR_STOP_MULTIPLIERS.get(persona, 1.5)  # default = balanced
+    # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل تعدد الشخصيات ──
+    # مهما كان persona_type المُمرّر، النظام بـ يستخدم k=1.5 (balanced) فقط.
+    # الكود القديم لكل persona اتعلّق (مش اتمسح) عشان الـ audit.
+    # persona = (persona_type or 'balanced').lower().strip()
+    # if persona == 'investor':
+    #     persona = 'conservative'
+    # elif persona == 'active_trader':
+    #     persona = 'gambler'
+    # k = ATR_STOP_MULTIPLIERS.get(persona, 1.5)  # default = balanced
+    persona = 'balanced'  # UNIFIED-BALANCED-ONLY: persona واحدة
+    k = 1.5  # ATR multiplier للـ balanced (ثابت)
 
     if entry_price <= 0:
         return None

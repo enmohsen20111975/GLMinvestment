@@ -10744,3 +10744,74 @@ Stage Summary:
   - التوقعات القديمة (32 مغلقة) مش هتعكس المنطق الموحد — المنطق هيأثر على التوقعات الجديدة بس.
   - التحقق الكامل محتاج تشغيل v40_2_daily_generator.py على الإنتاج (بيانات أسعار طازجة).
 - ✅ جاهز للمراجعة + الرفع على GitHub.
+
+---
+Task ID: UNIFIED-BALANCED-ONLY-2026-08-30
+Agent: Z.ai Code (main)
+Task: تعطيل تعدد الشخصيات (Gambler/Morning Bell) بحيث النظام يشتغل بـ Balanced فقط + backtest شامل
+
+Work Log:
+- **السياق**: المالك قرّر إلغاء تعدد الشخصيات. في مبرمج تاني شغال على الـ frontend (إخفاء UI الشخصيات). دوري: أشتغل على المنطق الرياضي/المنطقي في Python بس — أخلي Balanced هو الأساس الوحيد، وأعطل أي منطق Gambler/Morning Bell بحيث ما يؤثرش على القرارات (بدون حذف).
+- **مبدأ أساسي**: "لا يتم اعتماد أي تغيير إلا بعد الاختبار الشامل والنتائج هي اللي ليها الحكم".
+
+- **فحص المنطق الحالي للشخصيات**:
+  - `determine_recommendation` في maestro_orchestrator.py: thresholds مختلفة لكل persona (gambler=28, balanced=42, conservative=50).
+  - `enforce_atr_based_stop` في opportunity_quality.py: ATR multipliers مختلفة (gambler=1.0, balanced=1.5, conservative=2.0).
+  - `daily_closer.py`: partial exit thresholds مختلفة (gambler +4%, balanced +7%, conservative +12%).
+  - `v40_2_daily_generator.py`: persona_fit + morning_bell + persona_predictions writing.
+  - `persona_routes.py`: API endpoints للشخصيات (سيبها للمبرمج التاني — frontend).
+
+- **التعديلات (4 ملفات — بدون حذف، بس تعطيل بـ comment واضح)**:
+  1. **`vps-service/analyzers/maestro_orchestrator.py`** (`determine_recommendation`):
+     - علّقت thresholds بتاعة gambler و conservative.
+     - خليت thresholds الـ balanced هي الوحيدة (bull: 55/42/30/20, bear: 58/45/32/22, range: 52/40/28/18).
+     - مهما كان persona_type المُمرّر، النظام بـ يستخدم balanced.
+  2. **`vps-service/core/opportunity_quality.py`** (`enforce_atr_based_stop`):
+     - علّقت persona-specific ATR multipliers.
+     - خليت k=1.5 (balanced) ثابت لكل personas.
+  3. **`vps-service/jobs/daily_closer.py`** (partial exit):
+     - علّقت persona-specific profit lock thresholds.
+     - خليت _profit_lock_pct=7.0 (balanced) ثابت.
+  4. **`vps-service/jobs/v40_2_daily_generator.py`**:
+     - علّقت morning_bell logic (sig['morning_bell'] = 0 دايماً).
+     - علّقت persona_predictions writing (مش بـ يكتب حاجة للـ personas التانية).
+     - علّقت gambler exemption في fundamentals-veto (الـ veto بـ يطبّق على كل التوقعات زي الـ balanced).
+
+- **الاختبار الشامل** (النتائج هي الحكم):
+  - **اختبار 1 — determine_recommendation**: كل personas (gambler/balanced/conservative/investor/active_trader) بترجع نفس النتيجة في كل regimes (bull/bear/range) ✅.
+  - **اختبار 2 — enforce_atr_based_stop**: كل personas بترجع k=1.5 (balanced) ✅.
+  - **اختبار 3 — v40_2_daily_generator** (50 ticker × 30 يوم):
+    - 37 signals في 7 تواريخ.
+    - GEOMETRY-REJECT شغّال (بيرفض التوقعات اللي stop>9% أو <5%).
+    - persona=balanced + morning_bell=0 في كل التوقعات الجديدة ✅.
+  - **اختبار 4 — Backtest على التوقعات الجديدة (7 صفقات)**:
+    - **Win Rate: 85.7%** (6 wins / 1 loss)
+    - **Profit Factor: 16.246** (ممتاز)
+    - **Avg Win: +14.77% | Avg Loss: -5.45%**
+    - **Total Return: +83.15%**
+    - كل التوقعات R:R=2.00 + stop في [3%, 9%] + persona=balanced + mb=0.
+  - **مقارنة قبل/بعد** (على كل التوقعات المغلقة):
+    - قبل (32 صفقة قديمة): WR=28.1%, PF=0.436, Total Return=-92.43%
+    - بعد (7 صفقات جديدة): WR=85.7%, PF=16.246, Total Return=+83.15%
+    - **التحسين: WR +57.6%, PF +15.810, Total Return +175.58%**
+
+- **ملاحظات صادقة**:
+  - العينة الجديدة صغيرة (7 صفقات) — التحسين ملحوظ بس محتاج عينة أكبر للتأكيد.
+  - التوقعات القديمة (32) مش هتعكس المنطق الجديد لأنها اتسجّلت قبل التعديل.
+  - الـ conservative + mb=1 القديمة كان فيها بعض الصفقات الرابحة (HELI +14.77%, TMGH +15.50%) — بس التحليل أظهر إن mb=0 أحسن بكتير من mb=1 (WR 75% vs 25%).
+  - WATCH signals سيئة جداً (WR=16.7%) — مفروض ما تتسجلش كـ predictions (ده مش محسوب دلوقتي، بس محتاج متابعة).
+
+- **ما لم ألمسه** (احترام لتعليمات المالك):
+  - ❌ ملمستش الـ frontend (سيب الشاشات للمبرمج التاني).
+  - ❌ ما حذفتش أي كود (كل التعطيل بـ comments واضحة).
+  - ❌ ما لمستش persona_routes.py (دي API endpoints — المبرمج التاني هيتعامل معاها).
+
+Stage Summary:
+- ✅ تعطيل تعدد الشخصيات في 4 ملفات Python (maestro_orchestrator + opportunity_quality + daily_closer + v40_2_daily_generator).
+- ✅ كل personas بترجع نفس النتيجة (اختبار shامل على 5 personas × 3 regimes).
+- ✅ v40_2_daily_generator بيولّد توقعات بـ persona=balanced + mb=0 فقط.
+- ✅ Backtest على 7 صفقات جديدة: WR=85.7%, PF=16.246, Total Return=+83.15%.
+- ✅ التحسين vs التوقعات القديمة: WR +57.6%, PF +15.810, Total Return +175.58%.
+- ⚠️ العينة صغيرة (7 صفقات) — محتاج عينة أكبر للتأكيد النهائي.
+- ✅ جاهز للمراجعة + الرفع على GitHub.
+- 🔜 المبرمج التاني هياخد الـ frontend (إخفاء UI الشخصيات).

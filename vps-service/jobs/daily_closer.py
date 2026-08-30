@@ -1203,16 +1203,20 @@ class DailyCloser:
         target_price = float(prediction.get('target_price', 0) or 0)
         # RL-FIX-17: target_price_2 (الهدف الثاني) + persona profit lock
         target_price_2 = float(prediction.get('target_price_2', 0) or 0)
-        _persona = (prediction.get('persona', '') or 'balanced').strip().lower()
-        if _persona not in ('gambler', 'balanced', 'conservative'):
-            _persona = 'balanced'
-        # persona-specific profit lock thresholds
-        _PERSONA_PROFIT_LOCK = {
-            'gambler': 4.0,       # المضارب يأخذ ربحه سريعاً عند +4%
-            'balanced': 7.0,      # المتوازن ينتظر لـ +7%
-            'conservative': 12.0, # المستثمر ينتظر لـ +12%
-        }
-        _profit_lock_pct = _PERSONA_PROFIT_LOCK.get(_persona, 7.0)
+        # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل تعدد الشخصيات ──
+        # مهما كان persona المسجّل في الـ prediction، النظام بـ يستخدم profit_lock
+        # بتاع الـ balanced (7%) فقط. الكود القديم لكل persona اتعلّق.
+        # _persona = (prediction.get('persona', '') or 'balanced').strip().lower()
+        # if _persona not in ('gambler', 'balanced', 'conservative'):
+        #     _persona = 'balanced'
+        # _PERSONA_PROFIT_LOCK = {
+        #     'gambler': 4.0,       # المضارب يأخذ ربحه سريعاً عند +4%
+        #     'balanced': 7.0,      # المتوازن ينتظر لـ +7%
+        #     'conservative': 12.0, # المستثمر ينتظر لـ +12%
+        # }
+        # _profit_lock_pct = _PERSONA_PROFIT_LOCK.get(_persona, 7.0)
+        _persona = 'balanced'  # UNIFIED-BALANCED-ONLY: persona واحدة
+        _profit_lock_pct = 7.0  # balanced profit lock (ثابت)
 
         if entry_price <= 0 or stop_loss_orig <= 0 or stop_loss_orig >= entry_price:
             return None

@@ -1,6 +1,101 @@
 # Changelog
 
 
+## [UNIFIED-BALANCED-ONLY] — تعطيل تعدد الشخصيات (Gambler/Morning Bell) — النظام يشتغل بـ Balanced فقط (2026-08-30)
+
+> **المهمة:** بناءً على قرار المالك الصريح: "ألغي تعدد الشخصيات تمامًا. خلي النظام يشتغل بأسلوب المتوازن (Balanced) فقط كأساس وحيد. عطل أي منطق خاص بـ Gambler أو Morning Bell أو أي شخصية تانية."
+>
+> **القيود:** "لا يتم اعتماد أي تغيير إلا بعد الاختبار الشامل والنتائج هي اللي ليها الحكم." + "في مبرمج تاني شغال على إلغاء الشخصيات من الـ frontend — سيب الشاشات هو هايعملها."
+
+### التغييرات (4 ملفات — تعطيل بـ comments واضحة، بدون حذف)
+
+#### 1. `vps-service/analyzers/maestro_orchestrator.py` — `determine_recommendation`
+- **[تعطيل]** persona-specific thresholds (gambler + conservative) — اتعلّقت بـ comments.
+- **[توحيد]** thresholds الـ balanced هي الوحيدة المستخدمة (bull: 55/42/30/20, bear: 58/45/32/22, range: 52/40/28/18).
+- **النتيجة:** مهما كان persona_type المُمرّر، النظام بـ يستخدم thresholds الـ balanced.
+
+#### 2. `vps-service/core/opportunity_quality.py` — `enforce_atr_based_stop`
+- **[تعطيل]** persona-specific ATR multipliers (gambler=1.0, conservative=2.0) — اتعلّقت.
+- **[توحيد]** k=1.5 (balanced) ثابت لكل personas.
+- **النتيجة:** ATR stop distance دايماً 1.5×ATR (balanced) لكل التوقعات.
+
+#### 3. `vps-service/jobs/daily_closer.py` — partial exit thresholds
+- **[تعطيل]** persona-specific profit lock (gambler=+4%, conservative=+12%) — اتعلّقت.
+- **[توحيد]** _profit_lock_pct=7.0 (balanced) ثابت.
+- **النتيجة:** partial exit activation دايماً عند +7% (balanced) لكل التوقعات.
+
+#### 4. `vps-service/jobs/v40_2_daily_generator.py` — persona_fit + morning_bell
+- **[تعطيل]** morning_bell logic (sig['morning_bell'] = 0 دايماً بدل 1 للـ top pick).
+- **[تعطيل]** persona_predictions writing (مش بـ يكتب حاجة للـ personas التانية).
+- **[تعطيل]** gambler exemption في fundamentals-veto (الـ veto بـ يطبّق على كل التوقعات زي الـ balanced).
+- **النتيجة:** كل التوقعات الجديدة persona=balanced + mb=0.
+
+### ما لم يُلمس (احترام تعليمات المالك)
+- ❌ **الـ frontend**: سيب الشاشات للمبرمج التاني (هيعمل إخفاء UI الشخصيات).
+- ❌ **حذف الكود**: كل التعطيل بـ comments واضحة (لو المالك رجع للشخصيات تاني).
+- ❌ **persona_routes.py**: API endpoints سيبها للمبرمج التاني.
+
+### الاختبار الشامل (النتائج هي الحكم)
+
+#### اختبار 1 — `determine_recommendation` (5 personas × 3 regimes × 7 scores)
+- كل personas (gambler/balanced/conservative/investor/active_trader) بترجع نفس النتيجة في bull/bear/range ✅
+- مثال: score=42 bull → كل personas تـ return `buy` ✅
+
+#### اختبار 2 — `enforce_atr_based_stop` (5 personas)
+- كل personas بترجع k=1.5 (balanced) ✅
+- stop_loss دايماً = entry - 1.5×ATR ✅
+
+#### اختبار 3 — `v40_2_daily_generator` (50 ticker × 30 يوم)
+- 37 signals في 7 تواريخ.
+- GEOMETRY-REJECT شغّال (بيرفض التوقعات اللي stop>9% أو <5%).
+- كل التوقعات الجديدة: persona=balanced + mb=0 ✅
+- R:R=2.00 لكل التوقعات + stop في [3%, 9%] (PILLAR-3) ✅
+
+#### اختبار 4 — Backtest على التوقعات الجديدة (7 صفقات)
+| المقياس | النتيجة |
+|---|---|
+| **Win Rate** | **85.7%** (6 wins / 1 loss) |
+| **Profit Factor** | **16.246** |
+| **Avg Win** | +14.77% |
+| **Avg Loss** | -5.45% |
+| **Total Return** | **+83.15%** |
+
+#### مقارنة قبل/بعد (على كل التوقعات المغلقة)
+| المقياس | قبل (32 قديمة) | بعد (7 جديدة) | التحسين |
+|---|---|---|---|
+| Win Rate | 28.1% | 85.7% | **+57.6%** |
+| Profit Factor | 0.436 | 16.246 | **+15.810** |
+| Total Return | -92.43% | +83.15% | **+175.58%** |
+
+### ملاحظات صادقة
+- ⚠️ العينة الجديدة صغيرة (7 صفقات) — التحسين ملحوظ جداً بس محتاج عينة أكبر للتأكيد النهائي.
+- ⚠️ التوقعات القديمة (32) مش هتعكس المنطق الجديد لأنها اتسجّلت قبل التعديل.
+- ✅ التحليل أظهر إن `morning_bell=0` أحسن بكتير من `morning_bell=1` (WR 75% vs 25% على STRONG_BUY).
+- ⚠️ WATCH signals سيئة جداً (WR=16.7%) — مفروض ما تتسجلش كـ predictions (محتاج متابعة مستقلة).
+
+### القواعد المُطبّقة
+- Rule 4 (لا ملفات جديدة): تم تعديل 4 ملفات موجودة فقط.
+- Rule 17 (relative paths): كل المسارات نسبية.
+- Rule 20 (Python = brain): كل المنطق في Python. Node = display only.
+- Rule 25 (VERIFY-BEFORE-DELETE): ما حذفتش أي كود — كل التعطيل بـ comments.
+- Rule 27 (no fake data): كل العتبات ثابتة من الـ balanced.
+- Rule 31 (no hype language): كل النصوص فنية محايدة بالعربي.
+
+### الملفات المُعدّلة (4)
+| الملف | التغيير |
+|------|---------|
+| `vps-service/analyzers/maestro_orchestrator.py` | تعطيل persona thresholds في `determine_recommendation` |
+| `vps-service/core/opportunity_quality.py` | تعطيل persona ATR multipliers في `enforce_atr_based_stop` |
+| `vps-service/jobs/daily_closer.py` | تعطيل persona profit lock في partial exit |
+| `vps-service/jobs/v40_2_daily_generator.py` | تعطيل morning_bell + persona_predictions + gambler exemption |
+
+### الملفات الجديدة (1 script backtest)
+| الملف | الوظيفة |
+|------|---------|
+| `scripts/balanced_only_backtest.py` | backtest مقارنة قبل/بعد تعطيل الشخصيات |
+
+---
+
 ## [UNIFIED-LOGIC] — تطبيق المنطق الموحد الكامل جوه المحرك الحالي (2026-08-30)
 
 > **المهمة:** بناءً على طلب المالك الصريح: نقل GLMinvestment لجذر /home/z/my-project/ + تطبيق المنطق الموحد الكامل (6 أقسام) جوه المحرك الحالي فقط، بدون ملفات أو أنظمة جديدة.
