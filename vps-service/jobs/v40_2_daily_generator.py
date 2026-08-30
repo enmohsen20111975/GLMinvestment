@@ -485,6 +485,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # الـ R/R >= 1.5 بـ يـ ensure جودة الصفقات (dynamic_rr_normal=1.5).
             # كمان sort بـ evidence_count ↓ → أعلى جودة بتـ pick أولاً.
             if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
+                # ── T-0/T-1/T-2 DETECTION (مرحلة منفصلة 4 — 2026-08-30) ──
+                # تم الإلغاء: backtest أظهر إنه ينقص الأداء (WR -4%, PF -0.69, Return -88%)
+                # الكود محفوظ كـ comment للـ audit
+                # _t_signal = None
+                # ... (T-0/T-1/T-2 detection logic — معطل)
                 # ─── VOLUME SURGE HUNTER (AXIS-5b): صياد الأسهم الانفجارية ───
                 # لو V38 engine ما اكتشفش signal، شغل الـ Volume Surge Hunter.
                 # بيدور على: Volume Surge + ROC20 + maker_bull + above SMA50.

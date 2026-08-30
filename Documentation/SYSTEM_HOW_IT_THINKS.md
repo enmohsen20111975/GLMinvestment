@@ -2074,3 +2074,68 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 ---
 
 **End of Section 14 — EGX-STRATEGY-FINAL (2026-08-30).**
+
+---
+
+## 15. تطور النظام — المراحل المنفصلة (2026-08-30)
+
+> **أُضيف:** 2026-08-30 (بعد سلسلة مراحل منفصلة: sector liquidity + BOS/ChoCH + T-0/T-1/T-2 + لوحة قرار شفافة).
+> **النتيجة:** من 217 صفقة WR=65.1% MaxDD=-16.27% → 56 صفقة WR=57.1% PF=3.393 MaxDD=-4.54% Return=+291%.
+
+### 15.1 خط التطور الكامل (Timeline)
+
+| المرحلة | التعديل | الصفقات | WR | PF | MaxDD | Return | الحكم |
+|---------|---------|---------|----|----|-------|--------|-------|
+| baseline | قبل أي تعديل | 217 | 65.1% | 3.955 | -16.27% | +319% | — |
+| المرحلة 1 | وقف/هدف ديناميكي (swing low/high) | 56 | 57.1% | 3.396 | -4.54% | +20.56% | ✅ نعتمده |
+| المرحلة 2 | تصنيف السيولة (smart/speculative/weak) | 56 | 57.1% | 3.396 | -4.54% | +20.56% | ✅ نعتمده |
+| المرحلة 3 | فحص استمرارية الحركة قبل الخروج | 49 | 53.1% | 2.702 | -4.54% | +203% | ✅ نعتمده |
+| **sector filter** | حرارة القطاع (dead → رفض) | **56** | **57.1%** | **3.393** | **-4.54%** | **+291%** | ✅ **نعتمده** |
+| BOS/ChoCH | كشف بنية السوق (كسر دعم → رفض) | 56 | 57.1% | 3.393 | -4.54% | +291% | ⚠️ neutral (ما أثرش) |
+| T-0/T-1/T-2 | صفقات شبه يومية | 49 | 53.1% | 2.702 | -4.54% | +203% | ❌ **نلغيه** (أنقص الأداء) |
+| لوحة قرار شفافة | تقرير مرتب في #trading-chart | — | — | — | — | — | ✅ UI (مش backtest) |
+
+### 15.2 الفلاتر النشطة (الترتيب من الأول للأخير)
+
+| # | الفلتر | الملف | المنطق |
+|---|--------|------|--------|
+| 1 | **EGX Gate** | utils/egx_gate.py | سهم مصري فقط (289 canonical) |
+| 2 | **Evidence Gate** | v40_2_daily_generator | evidence ≥ 3/6 |
+| 3 | **Entry Gate** (8 شروط) | utils/entry_gate.py | evidence + R:R + SMA50 + RS + Deep Correction + Don't Chase + سيولة + سياق |
+| 4 | **Sector Liquidity** | v40_2_daily_generator | القطاع dead → رفض |
+| 5 | **BOS/ChoCH** | v40_2_daily_generator | كسر دعم (ChoCH bear) → رفض |
+| 6 | **Dynamic Stop/Target** | core/opportunity_quality | swing low + ATR + clamp [5%, 9%] |
+| 7 | **Geometry Guard** | analyzers/prediction_tracker | target > entry×1.05 + stop < entry×0.95 + R:R ≥ 1.8 |
+| 8 | **Position Sizing** | utils/position_sizing | risk 1.2% × liquidity_pos_mult |
+| 9 | **Circuit Breaker** | utils/circuit_breaker | 3 خسائر → 3 أيام وقف |
+| 10 | **Liquidity Classification** | core/opportunity_quality | smart/neutral/speculative/weak → pos_mult |
+| 11 | **Momentum Check (المرحلة 3)** | jobs/daily_closer | لو الحركة لسه مستمرة → Runner |
+
+### 15.3 لوحة القرار الشفافة (#trading-chart)
+
+أضفنا تقرير مرتب وجميل (زي Pine Script V56) في `SingleStockAnalysisView.tsx`:
+- الحالة + القرار
+- الأساسيات (PE, ROE, D/E)
+- الفني (نظام السوق, القوة النسبية, عدد الإثباتات)
+- خطة التداول (دخول, وقف, هدف 1, R:R)
+
+### 15.4 ملخص: كيف يفكر النظام دلوقتي (محدث)
+
+1. **EGX Gate**: سهم مصري؟
+2. **V38 Engine**: 6 إثباتات + score
+3. **Discovery Fallback**: Volume Surge → Accumulation → Recovery → Soft Surge
+4. **Evidence Gate**: ≥ 3 إثباتات؟
+5. **Entry Gate**: 8 شروط إلزامية
+6. **Sector Filter**: القطاع مش dead؟
+7. **BOS/ChoCH**: مفيش كسر دعم؟
+8. **Dynamic Stop/Target**: swing low/high + ATR
+9. **Geometry Guard**: R:R ≥ 1.8
+10. **Position Sizing**: 1.2% × liquidity
+11. **Circuit Breaker**: 3 خسائر → وقف
+12. **Momentum Check**: لو الحركة مستمرة → Runner
+
+**النتيجة**: 56 صفقة | WR=57.1% | PF=3.393 | MaxDD=-4.54% | Return=+291%
+
+---
+
+**End of Section 15 — تطور النظام (2026-08-30).**

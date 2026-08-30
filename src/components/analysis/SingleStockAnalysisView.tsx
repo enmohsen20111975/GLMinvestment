@@ -774,7 +774,89 @@ export function SingleStockAnalysisView({
               />
             )}
 
-            {/* ── P42-FRONTEND-1: Row 1.5 — AI Insight Cards (Candle Probability + Stock DNA) ──
+            {/* ── لوحة القرار الشفافة (مرحلة منفصلة 3 — 2026-08-30) ──
+                تقرير مرتب وجميل زي Pine Script V56 — يعرض:
+                الحالة + القرار + الأساسيات + الفني + السيولة + خطة التداول
+                مرئي لما فيه institutional_decision */}
+            {data.institutional_decision && (() => {
+              const d = data.institutional_decision;
+              const sig = d.signal || '—';
+              const sigColor = sig.includes('BUY') || sig.includes('شراء') ? 'text-emerald-600' : sig.includes('SELL') || sig.includes('بيع') ? 'text-rose-600' : 'text-amber-600';
+              return (
+                <Card className="border border-slate-200 bg-white shadow-sm overflow-hidden mt-2" dir="rtl">
+                  <CardHeader className="p-3 pb-2 border-b border-slate-200 bg-slate-50">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-slate-800">تقرير القرار الشفاف</span>
+                      <Badge variant="outline" className="text-[10px] font-mono">{ticker}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-3 space-y-2 text-xs">
+                    {/* الحالة + القرار */}
+                    <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
+                      <div>
+                        <span className="text-slate-500">الحالة: </span>
+                        <span className="font-medium text-slate-800">{d.reason || d.path || '—'}</span>
+                      </div>
+                      <div className="text-left">
+                        <span className="text-slate-500">القرار: </span>
+                        <span className={`font-bold ${sigColor}`}>{sig}</span>
+                      </div>
+                    </div>
+                    {/* الأساسيات */}
+                    <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
+                      <div>
+                        <span className="text-slate-500">مكرر الربحية: </span>
+                        <span className="font-medium">{d.pe_ratio ? d.pe_ratio.toFixed(1) : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">العائد (ROE): </span>
+                        <span className="font-medium">{d.roe != null ? d.roe.toFixed(1) + '%' : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">الديون: </span>
+                        <span className="font-medium">{d.debt_to_equity != null ? d.debt_to_equity.toFixed(1) + '%' : '—'}</span>
+                      </div>
+                    </div>
+                    {/* الفني */}
+                    <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
+                      <div>
+                        <span className="text-slate-500">نظام السوق: </span>
+                        <span className="font-medium">{d.market_regime || d.regime || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">القوة النسبية: </span>
+                        <span className="font-medium">{d.relative_strength != null ? d.relative_strength.toFixed(2) + '%' : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">عدد الإثباتات: </span>
+                        <span className="font-medium">{d.evidence_count ?? '—'}/6</span>
+                      </div>
+                    </div>
+                    {/* خطة التداول */}
+                    <div className="grid grid-cols-4 gap-2">
+                      <div>
+                        <span className="text-slate-500">الدخول: </span>
+                        <span className="font-medium font-mono">{d.entry_price ? d.entry_price.toFixed(2) : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">الوقف: </span>
+                        <span className="font-medium font-mono text-rose-600">{d.stop_loss ? d.stop_loss.toFixed(2) : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">الهدف 1: </span>
+                        <span className="font-medium font-mono text-emerald-600">{d.target_price ? d.target_price.toFixed(2) : '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">R:R: </span>
+                        <span className="font-medium font-mono">{d.rr_ratio ? d.rr_ratio.toFixed(2) : '—'}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
+            {/* ── P42-FRONTEND-1: Row 1.5 — Insight Cards ──
                 Visible in both simple and advanced modes. Each card renders only when its
                 backend payload is non-null. RTL Arabic layout, fully responsive. */}
             {(data.candle_probabilities || data.stock_dna) && (
