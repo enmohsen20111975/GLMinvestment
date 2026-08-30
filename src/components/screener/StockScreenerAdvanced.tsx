@@ -832,7 +832,6 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      purple: 'border-purple-500/40 bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 dark:text-purple-300',
      rose: 'border-rose-500/40 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 dark:text-rose-300',
      green: 'border-green-500/40 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-300',
-     teal: 'border-teal-500/40 bg-teal-500/10 text-teal-700 hover:bg-teal-500/20 dark:text-teal-300',
      yellow: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-700 hover:bg-yellow-500/20 dark:text-yellow-300',
      gold: 'border-yellow-600/40 bg-yellow-600/10 text-yellow-800 hover:bg-yellow-600/20 dark:text-yellow-400',
      cyan: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 hover:bg-cyan-500/20 dark:text-cyan-300',

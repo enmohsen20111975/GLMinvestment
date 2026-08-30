@@ -4,6 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
+import { VALID_VIEWS, VALID_VIEWS_SET } from '@/lib/valid-views';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { DashboardView } from '@/components/dashboard/DashboardView';
@@ -100,8 +101,7 @@ const SpecialistAnalysisView = withErrorBoundary(
   dynamic(() => import('@/components/advanced-analysis/SpecialistAnalysisView').then(m => ({ default: m.SpecialistAnalysisView })), { ssr: false }),
   'التحليل التخصصي',
 );
-const PredictionPerformanceView = dynamic(() => import('@/components/performance/PredictionPerformanceView').then(m => ({ default: m.PredictionPerformanceView })), { ssr: false });
-const PredictionCredibilityTable = dynamic(() => import('@/components/performance/PredictionCredibilityTable').then(m => ({ default: m.PredictionCredibilityTable })), { ssr: false });
+// PredictionPerformanceView + PredictionCredibilityTable معطّلين (admin-only)
 const AdvancedPortfolioManager = withErrorBoundary(
   dynamic(() => import('@/components/portfolio/AdvancedPortfolioManager').then(m => ({ default: m.AdvancedPortfolioManager })), { ssr: false }),
   'المحفظة المتقدمة',
@@ -150,18 +150,12 @@ const WealthCharts = withErrorBoundary(
   dynamic(() => import('@/components/admin/WealthCharts').then(m => ({ default: m.WealthCharts })), { ssr: false }),
   'رسوم الثروة',
 );
-const IterativeLearningView = withErrorBoundary(
-  dynamic(() => import('@/components/backtesting/IterativeLearningView').then(m => ({ default: m.IterativeLearningView })), { ssr: false }),
-  'التعلّم التكراري',
-);
+// IterativeLearningView + SimpleRecommendationsView معطّلين (مش مستخدمين في switch)
 const EGXBacktestDashboard = withErrorBoundary(
   dynamic(() => import('@/components/backtesting/EGXBacktestDashboard').then(m => ({ default: m.EGXBacktestDashboard })), { ssr: false }),
   'لوحة الـ Backtest',
 );
-const SimpleRecommendationsView = withErrorBoundary(
-  dynamic(() => import('@/components/recommendations/SimpleRecommendationsView').then(m => ({ default: m.SimpleRecommendationsView })), { ssr: false }),
-  'التوصيات',
-);
+
 const TradingChartView = withErrorBoundary(
   dynamic(() => import('@/components/analysis/TradingChartView').then(m => ({ default: m.TradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="الشارت التفاعلي" height="h-[600px]" /> }),
   'الشارت التفاعلي',
@@ -237,38 +231,8 @@ function UrlHashSync() {
   const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
   const currentView = useAppStore((s) => s.currentView);
 
-  // Valid views for URL hash
-  const validViews = [
-    // EGX
-    'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
-    'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
-    // prediction-performance + prediction-credibility moved to Admin panel only
-    // (under development — data quality issues being fixed via backtesting loop)
-    'advanced-portfolio', 'seasonality',
-    'prediction-tracking',
-    'picks-management',
-    // Smart Assistant
-    'smart-confluence',
-    // Intelligence
-    'alerts-center', 'trading-memory',
-    'live-monitor', 'wealth',
-    // Trading Journal
-    'trading-journal',
-    // Publishing
-    'publishing',
-    // Crypto
-    'crypto', 'crypto-live', 'crypto-portfolio', 'crypto-watchlist', 'crypto-recommendations',
-    'crypto-analysis', 'crypto-learning', 'crypto-simulation',
-    'crypto-trading-chart', 'crypto-prediction-tracking', 'crypto-screener',
-    // Islamic
-    'zakat', 'tithes',
-    // Other
-    'subscription', 'settings', 'auth', 'admin',
-    // Trading Chart (interactive)
-    'trading-chart',
-    // Hidden/Legacy
-    'finance', 'backtesting', 'analysis', 'v2-analysis'
-  ];
+  // Valid views for URL hash (موحد من src/lib/valid-views.ts)
+  const validViews = VALID_VIEWS;
 
   // Initialize from URL hash on mount
   React.useEffect(() => {
@@ -380,20 +344,9 @@ function AppShell() {
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const VALID_VIEWS = new Set([
-      'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener', 'portfolio', 'watchlist', 'recommendations', 'reports',
-      'learning', 'simulation', 'academy', 'advanced-analysis', 'unified-analysis', 'specialist-analysis',
-      'alerts-center', 'trading-memory', 'live-monitor', 'wealth', 'trading-journal',
-      'publishing', 'crypto', 'crypto-live', 'crypto-portfolio', 'crypto-watchlist',
-      'crypto-recommendations', 'crypto-analysis', 'crypto-learning', 'crypto-simulation',
-      'crypto-trading-chart', 'crypto-prediction-tracking', 'crypto-screener',
-      'zakat', 'tithes', 'subscription', 'settings', 'auth', 'admin', 'trading-chart',
-      'about', 'finance', 'backtesting', 'analysis', 'v2-analysis',
-    ]);
-
     const applyHash = () => {
       const hash = window.location.hash.slice(1);
-      if (hash && VALID_VIEWS.has(hash)) {
+      if (hash && VALID_VIEWS_SET.has(hash)) {
         const { currentView: cur } = useAppStore.getState();
         if (cur !== hash) {
           setCurrentViewFromHash(hash as typeof currentView);

@@ -7045,9 +7045,10 @@ function _isEgxIntradayNow(): boolean {
 
 // ─── تبويب المتابعة الحية أثناء الجلسة ───────────────────────────────────────
 // أثناء الجلسة: بيعرض التوقعات النشطة (اللي وصلت لفين) + أسهم تحت المراقبة (ممكن فرص)
-// بعد الإغلاق: بنفسلم توقعات الغد ونعرضها في تبويب "التوقعات"
+// يستخدم canonical endpoints: /api/stored-analysis/live-tracking + /api/screener/advanced
 function LiveTrackingTab({ market }: { market: MarketType }) {
-  const [data, setData] = useState<any>(null);
+  const [activeStatus, setActiveStatus] = useState<any[]>([]);
+  const [watchlist, setWatchlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<'active' | 'watchlist'>('active');
   const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
@@ -7055,9 +7056,20 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/tomorrow-predictions?market=${marketCode}&part=active_status,watchlist`, { cache: 'no-store' });
-      const json = await res.json();
-      if (json.success) setData(json);
+      // canonical: تتبع التوقعات النشطة من Python
+      const [trackingRes, screenerRes] = await Promise.all([
+        fetch(`/api/stored-analysis/live-tracking?market=${marketCode}&days=30&limit=20`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ predictions: { balanced: [] }, stats: {} })),
+        // canonical: أسهم تحت المراقبة من Python screener (volume_surge + RSI extremes + near 52w)
+        fetch(`/api/screener/advanced?market=${marketCode}&volume_surge=1&rsi_oversold=1&rsi_overbought=1&near_52w_high=1&near_52w_low=1&limit=15&sort=change_percent&order=desc`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ stocks: [] })),
+      ]);
+
+      // الـ predictions من live-tracking (نشطة)
+      const activePredictions = trackingRes?.predictions?.balanced || trackingRes?.predictions || [];
+      setActiveStatus(Array.isArray(activePredictions) ? activePredictions : []);
+
+      // الـ watchlist من screener
+      const screenerStocks = screenerRes?.stocks || [];
+      setWatchlist(Array.isArray(screenerStocks) ? screenerStocks : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -7066,9 +7078,6 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
   }, [marketCode]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const activeStatus = data?.active_status || [];
-  const watchlist = data?.watchlist || [];
 
   return (
     <div className="space-y-4">
@@ -7098,7 +7107,7 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
             <span className="text-xs">حققت الهدف</span>
           </div>
           <div className="text-lg font-bold text-emerald-600">
-            {activeStatus.filter((s: any) => s.status === 'TARGET_HIT').length}
+            {activeStatus.filter((s: any) => s.hit_target === 1 || s.status === 'TARGET_HIT').length}
           </div>
         </Card>
         <Card className="p-3">
@@ -7107,7 +7116,10 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
             <span className="text-xs">قرب الهدف</span>
           </div>
           <div className="text-lg font-bold text-amber-600">
-            {activeStatus.filter((s: any) => s.status === 'NEAR_TARGET').length}
+            {activeStatus.filter((s: any) => {
+              const progress = s.progress_percent || 0;
+              return progress >= 70 && progress < 100;
+            }).length}
           </div>
         </Card>
         <Card className="p-3">
@@ -7160,20 +7172,23 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
   );
 }
 
-// ─── تبويب التوقعات — أثناء الجلسة: متابعة حية. بعد الإغلاق: توقعات الغد ────
+// ─── تبويب التوقعات — توقعات V40.2 الإنتاجية (canonical) ─────────────────────
+// يستخدم /api/unified/predictions (canonical endpoint لـ V40.2 picks)
+// زر الإرسال لتليجرام يستخدم Python TelegramNotifier عبر proxy
 function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
-  const [data, setData] = useState<any>(null);
+  const [predictions, setPredictions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [sendingTelegram, setSendingTelegram] = useState(false);
   const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/tomorrow-predictions?market=${marketCode}&part=predictions`, { cache: 'no-store' });
+      // canonical: توقعات V40.2 من Python
+      const res = await fetch(`/api/unified/predictions?market=${marketCode}&limit=20`, { cache: 'no-store' });
       const json = await res.json();
-      if (json.success) setData(json);
+      const preds = json?.predictions || [];
+      setPredictions(Array.isArray(preds) ? preds : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -7183,29 +7198,11 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleGenerate = useCallback(async () => {
-    setGenerating(true);
-    try {
-      const res = await fetch('/api/tomorrow-predictions/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ market: marketCode }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        fetchData();
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setGenerating(false);
-    }
-  }, [marketCode, fetchData]);
-
   const handleSendTelegram = useCallback(async () => {
     setSendingTelegram(true);
     try {
-      const res = await fetch('/api/tomorrow-predictions/send-telegram', {
+      // canonical: Python TelegramNotifier عبر proxy
+      const res = await fetch('/api/telegram/send-daily-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ market: marketCode }),
@@ -7221,9 +7218,6 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
     }
   }, [marketCode]);
 
-  const predictions = data?.predictions || [];
-  const sessionDate = data?.session_date;
-
   return (
     <div className="space-y-4">
       {/* Status banner */}
@@ -7232,7 +7226,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-amber-600" />
             <span className="font-semibold text-amber-800 dark:text-amber-200">
-              توقعات جلسة {sessionDate || 'الغد'}
+              توقعات V40.2 الإنتاجية
             </span>
             <span className="text-amber-700 dark:text-amber-300">
               — تتولد بعد إغلاق السوق وتتبعت على تليجرام تلقائياً
@@ -7256,7 +7250,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
             <span className="text-xs">شراء</span>
           </div>
           <div className="text-lg font-bold text-emerald-600">
-            {predictions.filter((p: any) => ['BUY', 'STRONG_BUY'].includes(p.signal)).length}
+            {predictions.filter((p: any) => ['BUY', 'STRONG_BUY'].includes(p.signal || p.signal_type)).length}
           </div>
         </Card>
         <Card className="p-3">
@@ -7265,7 +7259,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
             <span className="text-xs">بيع</span>
           </div>
           <div className="text-lg font-bold text-red-600">
-            {predictions.filter((p: any) => ['SELL', 'STRONG_SELL'].includes(p.signal)).length}
+            {predictions.filter((p: any) => ['SELL', 'STRONG_SELL'].includes(p.signal || p.signal_type)).length}
           </div>
         </Card>
       </div>
@@ -7279,10 +7273,6 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
         <Button variant="outline" size="sm" onClick={handleSendTelegram} disabled={sendingTelegram || predictions.length === 0}>
           <Send className={cn('h-4 w-4 ml-2', sendingTelegram && 'animate-pulse')} />
           {sendingTelegram ? 'جاري الإرسال...' : 'إرسال لتليجرام'}
-        </Button>
-        <Button variant="default" size="sm" onClick={handleGenerate} disabled={generating}>
-          <Zap className={cn('h-4 w-4 ml-2', generating && 'animate-pulse')} />
-          {generating ? 'جاري التوليد...' : 'توليد يدوي'}
         </Button>
       </div>
 
