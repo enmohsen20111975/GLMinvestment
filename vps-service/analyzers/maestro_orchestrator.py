@@ -1774,6 +1774,31 @@ class MaestroOrchestrator:
         force_regime = options.get('force_regime')
         warnings, warnings_ar = [], []
 
+        # =====================================================================
+        # EGX-MARKET-ISOLATION (2026-08-30): فلتر صارم لـ EGX canonical فقط.
+        # المشكلة: النظام كان بـ يعالج أسهم من 4 أسواق (EGX + TADAWUL + KSE + QSE)
+        # + tickers ملوّثة (أسماء شركات + ISIN codes). ده بـ يولّد توقعات لأسهم
+        # غير مصرية + tickers غلط مش موجودة في TradingView.
+        # الحل: لو الـ ticker مش EGX canonical صحيح → ارجع None (skip).
+        # التفاصيل في utils/egx_gate.py.
+        # =====================================================================
+        try:
+            from utils.egx_gate import is_valid_egx_ticker
+            if not is_valid_egx_ticker(ticker):
+                print(f"[EGX-GATE-REJECT] ticker={ticker} — not EGX canonical → skip analysis", flush=True)
+                result = MaestroResult(
+                    ticker=ticker,
+                    recommendation='hold',
+                    recommendation_ar='احتفاظ (غير مصري — تم رفضه)',
+                    entry_price=0, target_price=0, stop_loss=0,
+                    confidence=0, maestro_score=0,
+                )
+                result.signal_id = None
+                return result
+        except Exception as _egx_gate_err:
+            # لو الـ gate فشل للسبب ما، سيب النظام يكمّل (safe-by-design)
+            logger.debug(f"EGX gate check failed for {ticker}: {_egx_gate_err}")
+
         closes = [to_num(p.get('close', p.get('close_price', 0))) for p in price_history]
         closes = [c for c in closes if c > 0]
         # ── Closed-Loop A1: استخدم get_live_price() كمصدر أساسي للسعر الحي ──

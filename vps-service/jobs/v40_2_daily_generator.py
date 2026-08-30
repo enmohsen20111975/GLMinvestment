@@ -234,14 +234,29 @@ def get_scan_dates(start_date, end_date, scan_interval):
 
 def get_tickers(min_days=MIN_TICKER_DAYS):
     """Get tickers with enough historical data.
-    
+
     PHASE-2-DB-UNIFY (2026-08-29): price_history.db is the canonical source.
     - price_history.db.price_history: 1,267 tickers, 1.24M rows
     - data_engine.db.egksco_price_history: 0 rows على الإنتاج (fallback only)
     - stocks.db.stock_daily_prices: 1,023 tickers (fallback أخير)
+
+    EGX-MARKET-ISOLATION (2026-08-30): فلتر صارم لـ EGX canonical فقط.
+    المشكلة: المصادر دي بتحتوي على tickers من 4 أسواق (EGX + TADAWUL + KSE + QSE)
+    + tickers ملوّثة (أسماء شركات + ISIN codes). قبل كده النظام بـ يعالج كل الأسهم
+    دي → 65% من التوقعات ممكن تكون لأسهم غير مصرية + tickers غلط.
+    الحل: filter_egx_tickers بيرجّع بس الـ tickers المصرية الصحيحة (289 سهم من
+    EGX_CANONICAL_TV + EGX_ISIN_NAMES). كل ticker بيتطبّع لـ رمز نظيف موجود في
+    TradingView.
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
-    
+
+    # EGX-MARKET-ISOLATION: استيراد الـ gate
+    try:
+        from utils.egx_gate import filter_egx_tickers_detailed
+        _egx_gate_available = True
+    except Exception:
+        _egx_gate_available = False
+
     # 1. price_history.db (المصدر الكامل — 1,267 tickers)
     try:
         conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
@@ -254,15 +269,27 @@ def get_tickers(min_days=MIN_TICKER_DAYS):
                 f"SELECT DISTINCT {ticker_col} FROM price_history GROUP BY {ticker_col} HAVING COUNT(*) >= ? ORDER BY {ticker_col}",
                 (min_days,),
             )
-            tickers = [row[0] for row in cur.fetchall()]
+            raw_tickers = [row[0] for row in cur.fetchall()]
             conn.close()
-            if tickers:
-                print(f"[V40.2] Using price_history.db ({ticker_col}) — {len(tickers)} tickers", flush=True)
+            if raw_tickers:
+                # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
+                if _egx_gate_available:
+                    result = filter_egx_tickers_detailed(raw_tickers)
+                    tickers = result['accepted']
+                    stats = result['stats']
+                    print(f"[V40.2] price_history.db ({ticker_col}) — {len(raw_tickers)} raw → "
+                          f"{len(tickers)} EGX-canonical "
+                          f"(rejected {stats['rejected_count']} non-EGX, "
+                          f"removed {stats['duplicates_removed']} dups)", flush=True)
+                else:
+                    tickers = raw_tickers
+                    print(f"[V40.2] Using price_history.db ({ticker_col}) — {len(tickers)} tickers "
+                          f"(⚠️ EGX gate not available — no filtering)", flush=True)
                 return tickers
         conn.close()
     except Exception:
         pass
-    
+
     # 2. Fallback: data_engine.db (egksco_price_history — 0 rows على prod)
     try:
         conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
@@ -271,13 +298,24 @@ def get_tickers(min_days=MIN_TICKER_DAYS):
             "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
             (min_days,),
         )
-        tickers = [row[0] for row in cur.fetchall()]
+        raw_tickers = [row[0] for row in cur.fetchall()]
         conn.close()
-        if tickers:
+        if raw_tickers:
+            # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
+            if _egx_gate_available:
+                result = filter_egx_tickers_detailed(raw_tickers)
+                tickers = result['accepted']
+                stats = result['stats']
+                print(f"[V40.2] data_engine.db (egksco_price_history) — {len(raw_tickers)} raw → "
+                      f"{len(tickers)} EGX-canonical "
+                      f"(rejected {stats['rejected_count']} non-EGX, "
+                      f"removed {stats['duplicates_removed']} dups)", flush=True)
+            else:
+                tickers = raw_tickers
             return tickers
     except Exception:
         pass
-    
+
     # 3. Fallback أخير: stocks.db (stock_daily_prices — 1,023 tickers)
     try:
         conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
@@ -286,14 +324,25 @@ def get_tickers(min_days=MIN_TICKER_DAYS):
             "SELECT DISTINCT ticker FROM stock_daily_prices GROUP BY ticker HAVING COUNT(*) >= ? ORDER BY ticker",
             (min_days,),
         )
-        tickers = [row[0] for row in cur.fetchall()]
+        raw_tickers = [row[0] for row in cur.fetchall()]
         conn.close()
-        if tickers:
-            print(f"[V40.2] Using stocks.db (stock_daily_prices) — {len(tickers)} tickers", flush=True)
+        if raw_tickers:
+            # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
+            if _egx_gate_available:
+                result = filter_egx_tickers_detailed(raw_tickers)
+                tickers = result['accepted']
+                stats = result['stats']
+                print(f"[V40.2] stocks.db (stock_daily_prices) — {len(raw_tickers)} raw → "
+                      f"{len(tickers)} EGX-canonical "
+                      f"(rejected {stats['rejected_count']} non-EGX, "
+                      f"removed {stats['duplicates_removed']} dups)", flush=True)
+            else:
+                tickers = raw_tickers
+                print(f"[V40.2] Using stocks.db (stock_daily_prices) — {len(tickers)} tickers", flush=True)
             return tickers
     except Exception:
         pass
-    
+
     return []
 
 
