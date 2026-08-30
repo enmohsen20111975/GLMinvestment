@@ -650,7 +650,7 @@ function AdvancedFiltersTab() {
      },
      {
        label: 'انخفاض حاد',
-       icon: TrendingDownIcon,
+        icon: TrendingDown,
        color: 'red',
        apply: () => {
          setTrend('down');
