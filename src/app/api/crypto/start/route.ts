@@ -80,8 +80,12 @@ export async function POST() {
     // Spawn Python process
     const pythonProcess = spawn('python3', [FETCHER_SCRIPT], {
       cwd: process.cwd(),
-      env: { ...process.env }
+      env: { ...process.env },
+      detached: true, // عشان نقدر نـ kill الـ process tree
     })
+
+    // احفظ الـ PID عشان نقدر نوقفه بعدين في /api/crypto/stop
+    updateStatus({ pid: pythonProcess.pid })
 
     pythonProcess.stdout.on('data', (data) => {
       const output = data.toString()
@@ -95,13 +99,15 @@ export async function POST() {
     pythonProcess.on('close', (code) => {
       updateStatus({
         running: false,
+        pid: undefined,
         logs: [`[END] Crypto fetcher finished with code ${code}`]
       })
     })
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Crypto fetcher started' 
+    return NextResponse.json({
+      success: true,
+      message: 'Crypto fetcher started',
+      pid: pythonProcess.pid,
     })
   } catch (error) {
     return NextResponse.json({ 

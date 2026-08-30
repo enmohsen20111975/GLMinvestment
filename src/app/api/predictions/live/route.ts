@@ -62,9 +62,17 @@ export async function GET(request: NextRequest) {
     // التاريخ الحالي
     const today = new Date().toISOString().split('T')[0];
 
+    // FIX (Aug 2026): aiPrediction table فاضي (0 صفوف) — استخدم predictions table
+    // predictions table فيها 91 صف، والـ schema فيها: prediction_date, signal, signal_type,
+    // market, master_score, confidence, entry_price, target_price, stop_loss, etc.
     // بناء الاستعلام
     let query = `
-      SELECT * FROM aiPrediction 
+      SELECT ticker, signal, signal_type, prediction_date, entry_price,
+             target_price, stop_loss, master_score, technical_score,
+             fundamental_score, ai_pattern_score, sentiment_score,
+             market, confidence, outcome_date, exit_price, actual_return,
+             hit_target, hit_stop, is_correct, holding_days
+      FROM predictions
       WHERE prediction_date = ?
     `;
     const params: (string | number)[] = [today];
@@ -75,25 +83,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (signal !== 'all') {
-      query += ` AND signal_type = ?`;
-      params.push(signal);
+      query += ` AND signal = ?`;
+      params.push(signal.toUpperCase());
     }
 
-    query += ` ORDER BY maestro_score DESC LIMIT ?`;
+    query += ` ORDER BY master_score DESC LIMIT ?`;
     params.push(limit);
 
     const predictions = db.prepare(query).all(...params) as Prediction[];
 
     // إحصائيات
     const statsQuery = `
-      SELECT 
+      SELECT
         COUNT(*) as total,
-        AVG(maestro_score) as avg_score,
+        AVG(master_score) as avg_score,
         AVG(confidence) as avg_confidence,
-        SUM(CASE WHEN signal_type IN ('BUY', 'STRONG_BUY') THEN 1 ELSE 0 END) as buy_signals,
-        SUM(CASE WHEN signal_type IN ('SELL', 'STRONG_SELL') THEN 1 ELSE 0 END) as sell_signals,
-        SUM(CASE WHEN signal_type = 'HOLD' THEN 1 ELSE 0 END) as hold_signals
-      FROM aiPrediction 
+        SUM(CASE WHEN signal IN ('BUY', 'STRONG_BUY') THEN 1 ELSE 0 END) as buy_signals,
+        SUM(CASE WHEN signal IN ('SELL', 'STRONG_SELL') THEN 1 ELSE 0 END) as sell_signals,
+        SUM(CASE WHEN signal = 'HOLD' THEN 1 ELSE 0 END) as hold_signals
+      FROM predictions
       WHERE prediction_date = ?
     `;
     const stats = db.prepare(statsQuery).get(today) as any;
@@ -101,7 +109,7 @@ export async function GET(request: NextRequest) {
     // توزيع الأسواق
     const marketStats = db.prepare(`
       SELECT market, COUNT(*) as count
-      FROM aiPrediction
+      FROM predictions
       WHERE prediction_date = ?
       GROUP BY market
     `).all(today) as any[];

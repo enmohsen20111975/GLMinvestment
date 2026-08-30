@@ -587,8 +587,8 @@ function AppShell() {
         <AppGuideAutoOpen />
         <div className="flex-1 flex flex-col lg:flex-row">
           <Sidebar />
-          <div className="flex-1 min-w-0 w-full lg:mr-64 transition-all duration-300 flex flex-col">
-            <main className="pb-24 lg:pb-8 flex-1 min-h-screen overflow-y-auto">
+          <div className="flex-1 min-w-0 w-full lg:mr-64 transition-all duration-300 flex flex-col min-h-screen">
+            <main className="pb-24 lg:pb-8 flex-1">
               {renderView()}
             </main>
             <Footer />
@@ -596,8 +596,8 @@ function AppShell() {
           <MobileNav />
         </div>
         <FloatingAssistant />
-        {/* ROBO-ADVISOR-P2: زر التنبيهات الحية — عائم في أسفل اليسار */}
-        <div className="fixed bottom-4 left-4 z-40">
+        {/* ROBO-ADVISOR-P2: زر التنبيهات الحية — عائم فوق الـ MobileNav على الموبايل */}
+        <div className="fixed bottom-20 lg:bottom-4 left-4 z-40">
           <RoboNotifierToggle />
         </div>
         <NotificationCenter />

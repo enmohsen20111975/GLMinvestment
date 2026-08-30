@@ -213,6 +213,16 @@ def compute_stock_state(stock: Dict[str, Any]) -> Dict[str, Any]:
             'momentum_score': 65,
         }
 
+    # 3.5) NEAR_BREAKOUT: تحت MA50 بقرب 2% + RSI بين 45-60 + volume surge
+    # سهم مرشح للكسر للأعلى لو بيكسر MA50
+    if below_ma50 and dist_from_ma50 > -2 and rsi >= 45 and rsi <= 60 and vol_surge:
+        return {
+            'state': 'NEAR_BREAKOUT',
+            'state_ar': 'قرب يكسر',
+            'state_reason': f'RSI={rsi:.0f} + قرب MA50 ({dist_from_ma50:+.1f}%) + حجم مرتفع — مرشح للكسر',
+            'momentum_score': 55,
+        }
+
     # 4) NEUTRAL: 45 ≤ RSI ≤ 55 + حجم تداول مناسب
     # ده بياخد "محايد" الحقيقي — مش fallback للي معندهوش RSI
     if rsi >= 45 and rsi <= 55:

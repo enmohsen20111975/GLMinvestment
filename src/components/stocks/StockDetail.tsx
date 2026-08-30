@@ -313,7 +313,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
           dir="rtl"
         >
           <span aria-hidden>ℹ️</span>
-          <span>بعض القيم مُقدّرة هيكلياً من القيمة السوقية ومكررات السعر — 见 raw data unavailable.</span>
+          <span>بعض القيم مُقدّرة هيكلياً من القيمة السوقية ومكررات السعر — البيانات الخام غير متاحة.</span>
         </div>
       )}
 

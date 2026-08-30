@@ -72,22 +72,32 @@ export async function GET(request: NextRequest) {
       db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
     }
 
+    // FIX (Aug 2026): aiPrediction table فاضي (0 صفوف) — استخدم predictions table
+    // الـ schema: ticker, signal, prediction_date, entry_price, target_price, stop_loss,
+    // master_score, confidence, market, outcome_date, exit_price, actual_return
     let query = `
-      SELECT 
-        id, 
-        stock_symbol as ticker, 
-        stock_name_ar as name, 
-        maestro_score as master_score, 
-        confidence, 
-        signal_type as signal, 
-        entry_price, 
-        target_price, 
-        stop_loss, 
-        prediction_date, 
-        status, 
-        created_at 
-      FROM aiPrediction 
-      ORDER BY prediction_date DESC, maestro_score DESC 
+      SELECT
+        id,
+        ticker,
+        signal,
+        signal_type,
+        prediction_date,
+        entry_price,
+        target_price,
+        stop_loss,
+        master_score,
+        confidence,
+        market,
+        outcome_date,
+        exit_price,
+        actual_return,
+        hit_target,
+        hit_stop,
+        is_correct,
+        holding_days,
+        created_at
+      FROM predictions
+      ORDER BY prediction_date DESC, master_score DESC
       LIMIT ?`;
     const predictions = db.prepare(query).all(parseInt(limit)) as any[];
     db.close();

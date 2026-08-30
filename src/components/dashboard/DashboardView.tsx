@@ -317,10 +317,12 @@ export function DashboardView() {
       <div className="px-3 md:px-4 print:hidden">
         <DevelopmentNotice />
       </div>
-      {/* Live Stock Ticker - شريط الأسعار الحي */}
-      <div className="px-3 md:px-4 print:hidden">
-        <LiveStockTicker />
-      </div>
+      {/* Live Stock Ticker - شريط الأسعار الحي (EGX فقط — مخفي في وضع الكريبتو) */}
+      {currentMarket !== 'CRYPTO' && (
+        <div className="px-3 md:px-4 print:hidden">
+          <LiveStockTicker />
+        </div>
+      )}
 
       <main className="flex-1">
         {!mounted || isLoading ? (

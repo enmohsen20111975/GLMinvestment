@@ -1,33 +1,22 @@
 'use client';
 
-import React, { useSyncExternalStore, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const STORAGE_KEY = 'egx_disclaimer_dismissed';
 
-function subscribe(callback: () => void) {
-  window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
-}
-
-function getSnapshot() {
-  // During SSR, we return true to avoid hydration mismatch
-  // The actual value will be checked client-side only
-  if (typeof window === 'undefined') return true;
-  return sessionStorage.getItem(STORAGE_KEY) !== 'true';
-}
-
-function getServerSnapshot() {
-  return true;
-}
-
 export function DisclaimerBanner() {
-  const visible = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  // استخدم useState + sessionStorage مباشرة (مش useSyncExternalStore + storage event
+  // لأن storage event بيشغل بين الـ tabs بس، مش على نفس الـ tab)
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return sessionStorage.getItem(STORAGE_KEY) !== 'true';
+  });
 
   const handleDismiss = useCallback(() => {
     sessionStorage.setItem(STORAGE_KEY, 'true');
-    window.dispatchEvent(new Event('storage'));
+    setVisible(false);
   }, []);
 
   return (

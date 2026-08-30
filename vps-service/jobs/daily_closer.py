@@ -298,19 +298,36 @@ class DailyCloser:
         except Exception as e:
             logger.warning(f"Migration check failed: {e}")
 
-    def get_pending_predictions(self) -> List[Dict]:
-        """جلب كل التوقعات المعلقة"""
+    def get_pending_predictions(self, market_filter: str = None) -> List[Dict]:
+        """جلب كل التوقعات المعلقة.
+
+        Args:
+            market_filter: لو 'EGX' → بيرجع بس توقعات EGX.
+                           لو 'CRYPTO' → بيرجع بس توقعات CRYPTO.
+                           لو None → بيرجع الكل.
+        """
         try:
             conn = self._conn(self.predictions_db)
             cursor = conn.cursor()
             # FIX (July 2026): predictions table has NO 'status' column.
             # Use outcome_date IS NULL to find pending predictions.
-            cursor.execute("""
-                SELECT *
-                FROM predictions
-                WHERE outcome_date IS NULL
-                ORDER BY created_at ASC
-            """)
+            # FIX (Aug 2026): لو market_filter محدد، بـ يـ filter على market column
+            # عشان نمنع ghost closures لتوقعات CRYPTO من مصادر أس EGX.
+            if market_filter:
+                cursor.execute("""
+                    SELECT *
+                    FROM predictions
+                    WHERE outcome_date IS NULL
+                      AND market = ?
+                    ORDER BY created_at ASC
+                """, (market_filter,))
+            else:
+                cursor.execute("""
+                    SELECT *
+                    FROM predictions
+                    WHERE outcome_date IS NULL
+                    ORDER BY created_at ASC
+                """)
             rows = cursor.fetchall()
             conn.close()
             return [dict(r) for r in rows]

@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Newspaper, 
-  TrendingUp, 
+import { useAppStore } from '@/lib/store';
+import {
+  Newspaper,
+  TrendingUp,
   TrendingDown, 
   Activity, 
   AlertCircle,
@@ -50,18 +51,15 @@ export function NewsFeedWidget() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const currentMarket = useAppStore((s) => s.currentMarket);
 
   const fetchNews = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // market-aware: لو currentMarket=CRYPTO، ابعت ?market=crypto عشان يرجع أخبار كريبتو بس
-      let marketParam = '';
-      try {
-        const stored = (window as any).__currentMarket;
-        if (stored === 'CRYPTO') marketParam = '?market=crypto';
-      } catch { /* ignore */ }
+      // market-aware: استخدم currentMarket من store مباشرة (reactive)
+      const marketParam = currentMarket === 'CRYPTO' ? '?market=crypto' : '';
 
       const response = await fetch('/api/news-feed' + marketParam);
       const result = await response.json();
@@ -76,7 +74,7 @@ export function NewsFeedWidget() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentMarket]);
 
   useEffect(() => {
     fetchNews();

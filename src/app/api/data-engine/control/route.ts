@@ -8,8 +8,8 @@ import { exec } from 'child_process';
 const DATA_DIR = path.join(process.cwd(), 'db');
 const DATA_ENGINE_DB = path.join(DATA_DIR, 'data_engine.db');
 const STOCKS_DB = path.join(DATA_DIR, 'stocks.db');
-const NEWS_DB = path.join(DATA_DIR, 'stocks.db');  // Consolidated July 2026
-const HISTORICAL_DB = path.join(DATA_DIR, 'historical.db');
+const NEWS_DB = path.join(DATA_DIR, 'news.db');  // news_articles table موجودة في news.db
+const HISTORICAL_DB = path.join(DATA_DIR, 'data_engine.db');  // historical في data_engine.db (egksco_price_history)
 const ENGINE_STATUS_FILE = path.join(DATA_DIR, 'engine_status.json');
 const HISTORICAL_STATUS_FILE = path.join(DATA_DIR, 'historical_status.json');
 
