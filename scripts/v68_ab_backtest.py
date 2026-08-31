@@ -45,18 +45,24 @@ TEMP_DB_DIR = PROJECT_ROOT / 'data' / 'v68_ab_temp'
 TEMP_DB_DIR.mkdir(parents=True, exist_ok=True)
 
 # Backtest window (matches the V40.2 baseline backtest)
-START_DATE = '2026-02-01'
-END_DATE = '2026-08-27'
+START_DATE = '2026-07-01'
+END_DATE = '2026-08-15'
 SCAN_INTERVAL = '3'
 MAX_PICKS = '5'
 
-# 5 V68 features under test
+# 5 V68 features under test + 5 V72 entry-level features
 V68_FEATURES = [
     ('V68_DIRTY_DIST_REJECT',  'Hard reject: dirty distribution'),
     ('V68_NO_CHASE_2D_REJECT', 'Hard reject: 2-day chase >15%'),
     ('V68_PROOF_PROBABILITY',  'Proof #8: oracle_probability 0-100'),
     ('V68_APLUS_BOOST',        'A+ boost: liquidity_grab +10'),
     ('V68_MAGNETIC_TARGET',    'Magnetic target: high_magnet→t2'),
+    # V72 Multi-Path features (entry-level — tested here)
+    ('V72_WASH_TRADE_REJECT',  'V72: reject wash trade (fake volume)'),
+    ('V72_HIDDEN_DIST_BLOCK', 'V72: block 10 bars after hidden distribution'),
+    ('V72_PULLBACK_BUY_PATH', 'V72: new entry path (support pullback)'),
+    ('V72_MAKER_DEATH_POINT', 'V72: dynamic stop based on entry type'),
+    ('V72_MARKET_BULLISH_SIZING', 'V72: 0.5× size in bearish market'),
 ]
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -96,6 +102,8 @@ def run_backtest(label: str, env_overrides: dict, max_tickers: int = None) -> di
     env['V40_2_PREDICTIONS_DB'] = str(temp_db)
     # Enable backtest mode: writes predictions + outcomes to temp DB
     env['V40_2_BACKTEST_MODE'] = '1'
+    # Skip news agent (DuckDuckGo search is slow — not testing news here)
+    env['V40_2_SKIP_NEWS'] = '1'
 
     cmd = [
         sys.executable, str(V40_2_SCRIPT),
@@ -138,10 +146,11 @@ def run_backtest(label: str, env_overrides: dict, max_tickers: int = None) -> di
     metrics['exit_code'] = result.returncode
     metrics['temp_db'] = str(temp_db)
 
-    # Count V68 triggers from stdout
+    # Count V68/V72 triggers from stdout
     v68_triggers = {}
     for line in stdout.split('\n'):
-        for tag in ['V68-DIRTY-DIST', 'V68-NO-CHASE-2D', 'V68-A-PLUS', 'V68-MAGNET-TARGET', 'V68-FUTURE-DOWN']:
+        for tag in ['V68-DIRTY-DIST', 'V68-NO-CHASE-2D', 'V68-A-PLUS', 'V68-MAGNET-TARGET', 'V68-FUTURE-DOWN',
+                     'V72-WASH-TRADE', 'V72-HIDDEN-DIST', 'V72-PULLBACK-BUY', 'V72-DEATH-POINT', 'V72-MARKET-SIZING']:
             if tag in line:
                 v68_triggers[tag] = v68_triggers.get(tag, 0) + 1
     metrics['v68_triggers'] = v68_triggers

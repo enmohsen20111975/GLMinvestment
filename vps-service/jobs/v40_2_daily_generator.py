@@ -117,6 +117,24 @@ V68_PROOF_PROBABILITY = os.environ.get('V68_PROOF_PROBABILITY', '0') == '1'     
 V68_APLUS_BOOST = os.environ.get('V68_APLUS_BOOST', '0') == '1'                 # ❌ KILL — no effect
 V68_MAGNETIC_TARGET = os.environ.get('V68_MAGNETIC_TARGET', '0') == '1'         # ❌ KILL — 0 triggers
 
+# ── V72 MULTI-PATH FEATURE TOGGLES (A/B testing — 2026-08-31) ──
+# كل ميزة V72 default = '0' (OFF) حتى الباك-تست يقرر.
+# القاعدة: النتائج هي اللي تقرر - بـ نـ keep الكويس ونمسيح الوحش.
+#
+# A/B BACKTEST RESULTS (200 tickers, Jul-Aug 2026):
+#   ✅ KEEP  V72_HIDDEN_DIST_BLOCK   : +36.5% Return (rejected توزيع خفي)
+#   ❌ KILL  V72_WASH_TRADE_REJECT   : -12.2% WR (رفض فرص رابحة!)
+#   ❌ KILL  V72_PULLBACK_BUY_PATH   : 0 triggers (low_magnet نادر في EGX)
+#   ❌ KILL  V72_MAKER_DEATH_POINT   : 8 triggers, 0 تأثير (stop changes لا تؤثر على outcome)
+#   ❌ KILL  V72_MARKET_BULLISH_SIZING: 0 triggers (market_regime دايماً bull/range في الفترة)
+#   ⏸️ PENDING V72_KILL_SWITCH_EXIT  : exit-level feature (needs daily_closer backtest)
+V72_WASH_TRADE_REJECT = os.environ.get('V72_WASH_TRADE_REJECT', '0') == '1'     # ❌ KILL — -12.2% WR
+V72_HIDDEN_DIST_BLOCK = os.environ.get('V72_HIDDEN_DIST_BLOCK', '1') == '1'    # ✅ KEEP — +36.5% return
+V72_PULLBACK_BUY_PATH = os.environ.get('V72_PULLBACK_BUY_PATH', '0') == '1'    # ❌ KILL — 0 triggers
+V72_MAKER_DEATH_POINT = os.environ.get('V72_MAKER_DEATH_POINT', '0') == '1'    # ❌ KILL — no effect
+V72_KILL_SWITCH_EXIT = os.environ.get('V72_KILL_SWITCH_EXIT', '0') == '1'      # ⏸️ PENDING — exit-level
+V72_MARKET_BULLISH_SIZING = os.environ.get('V72_MARKET_BULLISH_SIZING', '0') == '1'  # ❌ KILL — 0 triggers
+
 
 def count_evidence(proofs):
     """Count ✅ markers in proofs dict."""
@@ -1168,6 +1186,99 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _v68_err:
                 pass  # safe-by-design: لو V68 فشل → نكمّل بدونه
 
+            # ── V72 MULTI-PATH ENGINE (المرحلة 5 — 2026-08-31): 6 ميزات جديدة ──
+            # كل ميزة toggleable via env var (default=0 — الباك-تست يقرر)
+            # 1. wash_trade reject: حجم ضخم بدون حركة سعر = فخ → رفض
+            # 2. hidden_dist block: توزيع خفي → block 10 شموع
+            # 3. pullback_buy: مسار دخول جديد (ارتداد على الدعم)
+            # 4. maker_death_point: وقف ديناميكي حسب نوع الدخول
+            # 5. kill_switch exit: في daily_closer (مش هنا)
+            # 6. market_bullish sizing: تقليل الحجم في السوق الهابط
+            try:
+                from analyzers.v72_multi_path import (
+                    detect_wash_trade, detect_hidden_distribution,
+                    detect_pullback_buy, compute_maker_death_point,
+                    detect_choch_bear, compute_market_bullish_sizing
+                )
+                _v72_closes = closes[:day_idx + 1] if 'closes' in dir() and day_idx < len(closes) else []
+                _v72_highs = highs[:day_idx + 1] if 'highs' in dir() and day_idx < len(highs) else []
+                _v72_lows = lows[:day_idx + 1] if 'lows' in dir() and day_idx < len(lows) else []
+                _v72_vols = volumes[:day_idx + 1] if 'volumes' in dir() and day_idx < len(volumes) else []
+                _v72_opens = opens[:day_idx + 1] if 'opens' in dir() and day_idx < len(opens) else []
+                _v72_atr = float(result.get('atr', 0) or 0) or (entry * 0.05)
+
+                # ── V72-1: Wash Trade Reject ──
+                if V72_WASH_TRADE_REJECT:
+                    _v72_wash = detect_wash_trade(_v72_highs, _v72_lows, _v72_closes, _v72_vols, _v72_atr)
+                    result['v72_wash_trade'] = _v72_wash
+                    if _v72_wash:
+                        print(f"[V72-WASH-TRADE] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"حجم ضخم بدون حركة سعر = تدوير وهمي → رفض", flush=True)
+                        continue
+
+                # ── V72-2: Hidden Distribution Block ──
+                if V72_HIDDEN_DIST_BLOCK:
+                    _v72_hd = detect_hidden_distribution(_v72_highs, _v72_lows, _v72_vols, len(_v72_highs))
+                    result['v72_hidden_dist'] = _v72_hd
+                    if _v72_hd.get('block_active'):
+                        print(f"[V72-HIDDEN-DIST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"توزيع خفي (higher high + lower volume) → block "
+                              f"{_v72_hd.get('block_remaining', 0)} bars → رفض", flush=True)
+                        continue
+
+                # ── V72-3: Pullback Buy (new entry path) ──
+                # لو مفيش signal من V40.2 الأساسي، جرّب pullback_buy
+                if V72_PULLBACK_BUY_PATH:
+                    # نحتاج nearest_support — نستخدم low_magnet من V68 كـ support
+                    _v72_support = result.get('v68_low_magnet')
+                    _v72_delta = result.get('v68_delta_vol', 0)
+                    # trend_state من V68 (1=صاعد)
+                    _v72_trend = result.get('v68_trend_state', 0)
+                    _v72_pb = detect_pullback_buy(
+                        _v72_closes, _v72_highs, _v72_lows, _v72_opens, _v72_vols,
+                        _v72_support, _v72_atr, _v72_delta, _v72_trend
+                    )
+                    result['v72_pullback_buy'] = _v72_pb
+                    if _v72_pb:
+                        print(f"[V72-PULLBACK-BUY] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"ارتداد على الدعم (trend=1 + touch support + green + delta+) → boost", flush=True)
+                        # boost: +8 points للـ tech_score
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = min(100, result['score'] + 8)
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['pullback_buy'] = '✅ V72 ارتداد على الدعم (multi-path)'
+
+                # ── V72-4: Maker Death Point (dynamic stop) ──
+                # لو مفعّل، نستبدل الـ stop بـ death_point (لو أقرب للسعر = أكثر حماية)
+                if V72_MAKER_DEATH_POINT:
+                    _v72_sweep = result.get('v68_liquidity_grab', False)
+                    _v72_sweep_low = _v72_lows[-1] if _v72_sweep and _v72_lows else None
+                    _v72_support = result.get('v68_low_magnet')
+                    _v72_dp = compute_maker_death_point(
+                        entry, _v72_atr, _v72_sweep, _v72_sweep_low, _v72_support
+                    )
+                    result['v72_death_point'] = _v72_dp
+                    # استخدم death_point لو أعلى من stop الحالي (أقرب للسعر = tighter)
+                    if 0 < _v72_dp < entry and _v72_dp > stop:
+                        print(f"[V72-DEATH-POINT] {ticker}: stop {stop:.2f} → {_v72_dp:.2f} "
+                              f"(sweep={_v72_sweep}, support={_v72_support})", flush=True)
+                        stop = _v72_dp
+
+                # ── V72-6: Market Bullish Sizing ──
+                # بـ يؤثر على liquidity_pos_mult (لو السوق هابط → نصّف الحجم)
+                if V72_MARKET_BULLISH_SIZING:
+                    # market_bullish = market_regime in (bull, range) — V40.2 عندها market_regime_trend
+                    _v72_regime = result.get('market_regime_trend', 'range')
+                    _v72_bullish = _v72_regime in ('bull', 'range')  # range = neutral (مش هابط)
+                    if not _v72_bullish:
+                        print(f"[V72-MARKET-SIZING] {ticker}: السوق {_v72_regime} → "
+                              f"نصّف الحجم (0.5×)", flush=True)
+                        result['v72_market_bearish'] = True
+
+            except Exception as _v72_err:
+                pass  # safe-by-design: لو V72 فشل → نكمّل بدونه
+
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
             # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
@@ -1291,11 +1402,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             })
 
             # ── AI NEWS AGENT (المرحلة 3 — 2026-08-31): الإثبات السابع ──
-            # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (Ollama + DuckDuckGo)
+            # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (keyword fallback)
             # لو الأخبار سلبية → تقليل الثقة
             # لو الأخبار إيجابية → boost الثقة
             # safe-by-design: لو الـ Agent فشل → نتجاهل ونكمّل
+            # A/B TESTING: V40_2_SKIP_NEWS env var to skip news (faster backtest)
             try:
+                if os.environ.get('V40_2_SKIP_NEWS', '0') == '1':
+                    raise RuntimeError('news skipped for A/B backtest')
                 from ai.news_agent import NewsAgent
                 if not hasattr(engine, '_news_agent'):
                     engine._news_agent = NewsAgent()

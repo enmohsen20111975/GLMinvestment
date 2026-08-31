@@ -13839,3 +13839,165 @@ Stage Summary:
 - ✅ V40.2 defaults updated per A/B results
 - ✅ daily_closer MFE trailing default=0 (pending backtest)
 - ✅ V68 Oracle module محفوظ كامل (كل functions شغّالة، بس اللي proven بـ يـ used)
+
+---
+Task ID: V72-AB-BACKTEST + KILL-OLLAMA-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: KILL-OLLAMA + تحليل V72 Multi-Path Engine بـ A/B backtest
+
+Work Log:
+
+### Phase 0: KILL-OLLAMA (مهمة عاجلة)
+- المشكلة: news_agent.py بـ يحاول ollama.Client.list() على كل __init__
+- النتيجة: warning على كل run + إبطاء startup
+- الإصلاح:
+  - `vps-service/ai/news_agent.py`: خبراء `NEWS_USE_OLLAMA=1` env var (default=0)
+  - default=0 → skip Ollama connection entirely → keyword fallback is production
+  - `is_ready()` بقى مش بـ يتطلب Ollama
+- النتيجة: مفيش warning، الـ keyword fallback (120+ words) شغّال كـ production
+
+### Phase 1: تحليل V72 vs V68+V40.2+V62
+- قارنت V72 Pine Script مع كل اللي عندنا
+- identified 6 ميزات GENUINELY NEW:
+  1. is_wash_trade: حجم ضخم + مدى صغير = فخ
+  2. is_hidden_dist: pivot high أعلى + volume أقل = توزيع خفي
+  3. pullback_buy: مسار دخول جديد (ارتداد على الدعم)
+  4. maker_death_point: وقف ديناميكي حسب نوع الدخول
+  5. kill_switch exit: خروج فوري على dirty_dist/choch_bear
+  6. market_bullish sizing: 0.5× في السوق الهابط
+- ميزات تانية كتير في V72 = duplicate (موجودة في V68/V40.2)
+
+### Phase 2: بناء V72 Multi-Path Module
+- `vps-service/analyzers/v72_multi_path.py` (470 LOC)
+- 8 functions:
+  - `detect_wash_trade()`: vol > 2×MA + range < 0.5×ATR
+  - `detect_hidden_distribution()`: ph1 > ph2 + vol1 < vol2 → block 10 bars
+  - `detect_pullback_buy()`: trend=1 + touch support + green + delta+
+  - `compute_maker_death_point()`: dynamic stop (sweep/support/fallback)
+  - `check_kill_switch()`: dirty_dist OR choch_bear → exit
+  - `detect_choch_bear()`: close breaks under support
+  - `compute_market_bullish_sizing()`: 0.5× if bearish
+  - `analyze_v72()`: main entry point
+- Self-test: كل functions شغّالة (wash_trade, hidden_dist, pullback_buy, death_point, kill_switch, sizing)
+- safe-by-design: كل function بـ return neutral لو بيانات ناقصة
+
+### Phase 3: دمج V72 في V40.2 (A/B toggles)
+- `vps-service/jobs/v40_2_daily_generator.py`:
+  - 6 V72 env var toggles (default=0 — الباك-تست يقرر)
+  - V72 block بـ يـ run بعد V68، قبل EGX-STRATEGY-DYNAMIC
+  - V72_WASH_TRADE_REJECT: hard reject
+  - V72_HIDDEN_DIST_BLOCK: hard reject (10-bar block)
+  - V72_PULLBACK_BUY_PATH: boost (+8 tech_score)
+  - V72_MAKER_DEATH_POINT: tighter stop
+  - V72_MARKET_BULLISH_SIZING: flag for 0.5× size
+- `vps-service/jobs/daily_closer.py`:
+  - V72_KILL_SWITCH_EXIT: exit على dirty_dist/choch_bear (A/B toggle)
+  - بـ يـ run قبل أي stop check → خروج فوري
+
+### Phase 4: A/B Backtest (200 tickers, Jul-Aug 2026)
+الـ baseline: 15 trades, WR 73.3%, PF 9.80, Return +66.2%
+
+| Feature                          | Trades | WR%   | PF    | Return% | Δ WR   | Δ Ret  | Verdict |
+|----------------------------------|--------|-------|-------|---------|--------|--------|---------|
+| BASELINE (V68 OFF)               | 15     | 73.3  | 9.80  | +66.2   | -      | -      | -       |
+| +V68_DIRTY_DIST_REJECT           | 17     | 76.5  | 12.79 | +88.7   | +3.2   | +22.5  | ✅ KEEP  |
+| +V72_WASH_TRADE_REJECT           | 18     | 61.1  | 5.84  | +82.6   | -12.2  | +16.4  | ❌ KILL  |
+| +V72_HIDDEN_DIST_BLOCK           | 14     | 71.4  | 14.64 | +102.7  | -1.9   | +36.5  | ✅ KEEP  |
+| +V72_PULLBACK_BUY_PATH           | 15     | 73.3  | 9.80  | +66.2   | 0      | 0      | ❌ KILL  |
+| +V72_MAKER_DEATH_POINT           | 15     | 73.3  | 9.80  | +66.2   | 0      | 0      | ❌ KILL  |
+| +V72_MARKET_BULLISH_SIZING       | 15     | 73.3  | 9.80  | +66.2   | 0      | 0      | ❌ KILL  |
+
+### Phase 5: تحليل النتائج
+
+**✅ KEEP: V72_HIDDEN_DIST_BLOCK** (+36.5% Return)
+- رفض توزيع خفي (higher high + lower volume = الكبار بيبيعوا)
+- 14 صفقة بدل 15 (رفض صفقة واحدة سيئة)
+- Return: +66.2% → +102.7% (+36.5%)
+- PF: 9.80 → 14.64 (+49%)
+- WR: -1.9% (acceptable — رفض صفقة رابحة بس الـ return الإجمالي زاد)
+
+**❌ KILL: V72_WASH_TRADE_REJECT** (-12.2% WR)
+- رفض 18 صفقة بدل 15، بس WR نزل من 73.3% → 61.1%
+- الـ wash_trade filter بـ يرفض صفقات رابحة! (حجم كبير + مدى صغير = normal في EGX قبل الانفجار)
+- Return زاد +16.4% بس WR هبط -12.2% → risk/reward سيء
+- القرار: default=0
+
+**❌ KILL: V72_PULLBACK_BUY_PATH** (0 triggers)
+- pullback_buy بـ يحتاج low_magnet من V68
+- low_magnet نادر في EGX → 0 triggers
+- القرار: default=0
+
+**❌ KILL: V72_MAKER_DEATH_POINT** (8 triggers, 0 تأثير)
+- بـ يـ tighten الـ stop، بس الـ outcome مابيتغيرش
+- السبب: V40.2 عنده dynamic stop بالفعل (EGX-STRATEGY-DYNAMIC)
+- الـ death_point بـ يـ tighten أكتر بس مش بـ يـ change أي outcome
+- القرار: default=0
+
+**❌ KILL: V72_MARKET_BULLISH_SIZING** (0 triggers)
+- market_regime دايماً bull/range في فترة الاختبار
+- مفيش bearish period → 0 triggers
+- القرار: default=0
+
+**⏸️ PENDING: V72_KILL_SWITCH_EXIT** (exit-level)
+- دي exit feature (daily_closer) → محتاج backtest منفصل
+- القرار: default=0 حتى يتعمله backtest منفصل
+
+### Phase 6: COMBO TEST (الفائزين الاتنين مع بعض)
+**V68_DIRTY_DIST_REJECT + V72_HIDDEN_DIST_BLOCK:**
+- 15 trades | WR=73.3% | Return=+106.9% | avg=+7.12%
+- مقارنة بـ baseline (+66.2%): **+40.7% return improvement!**
+- نفس عدد الصفقات، نفس WR → الفلاتر شالوا فخاخ بدون ما يخسروا فرص
+
+### Phase 7: تطبيق القرارات
+**V40.2 defaults updated:**
+```python
+# V68 (from previous A/B)
+V68_DIRTY_DIST_REJECT  = '1'  # ✅ KEEP — +22.5% return
+V68_NO_CHASE_2D_REJECT = '0'  # ❌ KILL
+V68_PROOF_PROBABILITY  = '0'  # ❌ KILL
+V68_APLUS_BOOST        = '0'  # ❌ KILL
+V68_MAGNETIC_TARGET    = '0'  # ❌ KILL
+# V72 (this A/B)
+V72_WASH_TRADE_REJECT      = '0'  # ❌ KILL — -12.2% WR
+V72_HIDDEN_DIST_BLOCK     = '1'  # ✅ KEEP — +36.5% return
+V72_PULLBACK_BUY_PATH     = '0'  # ❌ KILL — 0 triggers
+V72_MAKER_DEATH_POINT     = '0'  # ❌ KILL — no effect
+V72_KILL_SWITCH_EXIT      = '0'  # ⏸️ PENDING — exit-level
+V72_MARKET_BULLISH_SIZING = '0'  # ❌ KILL — 0 triggers
+```
+
+### Phase 8: التحقق
+- ✅ Python syntax OK (4 files)
+- ✅ Dev server HTTP 200
+- ✅ V72 self-test passed (all functions)
+- ✅ A/B harness شغّال (11 runs completed)
+- ✅ COMBO test: +106.9% return (vs baseline +66.2%)
+- ✅ KILL-OLLAMA: مفيش warning، keyword fallback شغّال
+
+### الحكم النهائي:
+**من 11 ميزة (V68+V72)، 2 بس اللي proved valuable:**
+- ✅ V68_DIRTY_DIST_REJECT (ظهر + حجم + delta سالب)
+- ✅ V72_HIDDEN_DIST_BLOCK (higher high + lower volume)
+- ❌ 8 ميزات killed (0 triggers, no effect, أو ضرر)
+- ⏸️ 1 ميزة pending (kill_switch exit — exit-level)
+
+**COMBO (الفائزين الاتنين):**
+- Return: +66.2% → +106.9% (+40.7% improvement)
+- WR: 73.3% (محفوظ)
+- نفس عدد الصفقات (الفلاتر بتشيل فخاخ بدون ما تفرط في فرص)
+
+**الدرس:**
+- V72 wash_trade بـ يرفض فرص رابحة (EGX حجم كبير + مدى صغير = normal قبل الانفجار)
+- V72 hidden_dist بـ يكشف توزيع خفي V68 مش بـ يكشفه (delta- independent)
+- النظرية بتقول 6 ميزات كويسة، الباك-تست قال 1 بس
+- النتائج هي اللي تقرر
+
+Stage Summary:
+- ✅ KILL-OLLAMA: مفيش warning، keyword fallback = production
+- ✅ V72 Multi-Path module مبني ومختبر (470 LOC، 8 functions)
+- ✅ A/B backtest completed (11 runs، 200 tickers each)
+- ✅ 1 V72 feature KEEP (hidden_dist: +36.5% return)
+- ✅ 4 V72 features KILL (wash_trade hurt WR, others no effect)
+- ⏸️ 1 V72 feature pending (kill_switch exit — exit-level)
+- ✅ COMBO (V68 dirty_dist + V72 hidden_dist): +106.9% return (+40.7% vs baseline)
+- ✅ Build نظيف، dev server شغّال

@@ -751,6 +751,55 @@ class DailyCloser:
                 except Exception:
                     pass  # safe-by-design: لو V68 فشل → استخدم ATR trailing العادي
 
+            # ── V72 KILL SWITCH EXIT (المرحلة 5 — 2026-08-31) ──
+            # Pine V72: kill_switch = is_dirty_dist or choch_bear → exit immediately
+            # ده EXIT trigger (مش entry reject زي V68 dirty_dist).
+            # لو ظهر توزيع قاتل OR كسر هيكل هابط → خروج فوري بغض النظر عن R:R.
+            # A/B TOGGLE: V72_KILL_SWITCH_EXIT env var (default=0 — الباك-تست يقرر)
+            if os.environ.get('V72_KILL_SWITCH_EXIT', '0') == '1' and not _is_ex_dividend_day:
+                try:
+                    from analyzers.v72_multi_path import detect_choch_bear
+                    from analyzers.v68_oracle import detect_dirty_distribution, compute_delta
+                    # نحتاج آخر شموع من price_history (من day 0 إلى i)
+                    _v72_ph_closes = [float(d.get('close', 0) or 0) for d in price_history[:i+1] if d.get('close')]
+                    _v72_ph_highs = [float(d.get('high', 0) or 0) for d in price_history[:i+1] if d.get('high')]
+                    _v72_ph_lows = [float(d.get('low', 0) or 0) for d in price_history[:i+1] if d.get('low')]
+                    _v72_ph_vols = [float(d.get('volume', 0) or 0) for d in price_history[:i+1] if d.get('volume')]
+                    _v72_ph_opens = [float(d.get('open', 0) or 0) for d in price_history[:i+1] if d.get('open')]
+
+                    # ChoCH bear: نحتاج nearest_support — نستخدم entry_price كـ reference
+                    # (لو السعر نزل تحت entryPrice بنسبة كبيرة = كسر هيكل)
+                    _v72_choch = False
+                    if len(_v72_ph_closes) >= 2 and entry_price > 0:
+                        # أبسط تعريف: لو close كسر تحت stop_loss الأصلي = choch_bear
+                        _v72_orig_stop = float(prediction.get('stop_loss', 0) or 0)
+                        if _v72_orig_stop > 0:
+                            _v72_choch = _v72_ph_closes[-1] < _v72_orig_stop
+
+                    # Dirty distribution: re-check على الشمعة الحالية
+                    _v72_delta = compute_delta(_v72_ph_highs, _v72_ph_lows, _v72_ph_closes, _v72_ph_vols)
+                    _v72_dirty = detect_dirty_distribution(
+                        _v72_ph_highs, _v72_ph_lows, _v72_ph_closes, _v72_ph_opens,
+                        _v72_ph_vols, _v72_delta
+                    )
+
+                    if _v72_dirty or _v72_choch:
+                        _v72_reason = 'dirty_dist_kill' if _v72_dirty else 'choch_bear_kill'
+                        _v72_exit_ret = ((close - entry_price) / entry_price * 100) if entry_price > 0 else 0
+                        print(f"[V72-KILL-SWITCH] {ticker} {day.get('date','')}: "
+                              f"{_v72_reason} → خروج فوري (return={_v72_exit_ret:.1f}%)", flush=True)
+                        return self._mark_closed(
+                            pred_id, ticker, 'CLOSED', _v72_exit_ret,
+                            highest_price_reached, lowest_price_reached, days_elapsed,
+                            day.get('date', ''),
+                            exit_type=f'v72_kill_switch_{_v72_reason}',
+                            highest_price_reached=highest_price_reached,
+                            lowest_price_reached=lowest_price_reached,
+                            holding_days=days_elapsed,
+                        )
+                except Exception:
+                    pass  # safe-by-design
+
             days_elapsed = i + 1 if not (i == 0 and day.get('date') == start_date) else i
 
             # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──

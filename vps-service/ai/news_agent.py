@@ -66,7 +66,11 @@ class NewsAgent:
         self.ollama_host = ollama_host
         self.ollama_client = None
 
-        if OLLAMA_AVAILABLE:
+        # ── KILL-OLLAMA (2026-08-31): Ollama crashes on server CPU (no AVX) ──
+        # الـ keyword fallback proven شغّال (120+ weighted words).
+        # مفيش لزوم نـ try Ollama ونعطل الـ startup بـ connection attempt فاشل.
+        # لو المالك ثبّت Ollama وOK، يـ set NEWS_USE_OLLAMA=1 يدوياً.
+        if OLLAMA_AVAILABLE and os.environ.get('NEWS_USE_OLLAMA', '0') == '1':
             try:
                 self.ollama_client = ollama.Client(host=ollama_host)
                 # اختبر الاتصال
@@ -75,10 +79,14 @@ class NewsAgent:
             except Exception as e:
                 logger.warning(f"⚠️ Ollama مش شغال على {ollama_host}: {e}")
                 self.ollama_client = None
+        else:
+            # KILL-OLLAMA: skip connection attempt entirely — keyword fallback is production
+            self.ollama_client = None
 
     def is_ready(self) -> bool:
-        """هل الـ Agent جاهز للعمل؟"""
-        return DDGS_AVAILABLE and TRAFILATURA_AVAILABLE and self.ollama_client is not None
+        """هل الـ Agent جاهز للعمل؟ (keyword fallback = production)"""
+        # KILL-OLLAMA: keyword fallback شغّال بدون Ollama
+        return DDGS_AVAILABLE and TRAFILATURA_AVAILABLE
 
     def search_news(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
         """ابحث عن الأخبار باستخدام DuckDuckGo.
