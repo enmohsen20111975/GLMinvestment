@@ -1124,15 +1124,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             sig['morning_bell'] = 0  # UNIFIED-BALANCED-ONLY: معطّل
 
         for sig in picks:
-            # ── RECOMMENDATION 1: فلتر حرارة القطاع ──────────────────────────
-            # باك-تست: رفض التوقع لو القطاع هابط → رفع WR +1.5% + عائد +12.56%
-            sector_heat = load_sector_heat()
-            ticker_sector = get_ticker_sector(sig['ticker'])
-            if ticker_sector and ticker_sector in sector_heat:
-                _heat = sector_heat[ticker_sector]
-                if _heat < 0:
-                    print(f"  🚫 [SECTOR-FILTER] {sig['ticker']} — قطاع '{ticker_sector}' هابط ({_heat:+.2f}%) → رفض", flush=True)
-                    continue
+            # ── RECOMMENDATION 1: فلتر حرارة القطاع — معطّل ──────────────────
+            # باك-تست على بيانات الإنتاج (68 صفقة): فلتر القطاع الهابط نقص العائد -37.6%
+            # لأنه رفض 5 رابحة + 5 خاسرة (50/50). ألغي.
+            # sector_heat = load_sector_heat()
+            # ticker_sector = get_ticker_sector(sig['ticker'])
+            # if ticker_sector and ticker_sector in sector_heat:
+            #     _heat = sector_heat[ticker_sector]
+            #     if _heat < 0:
+            #         continue
 
             hit_target = 1 if sig['exit_reason'] == 'hit_target' else 0
             hit_stop = 1 if sig['exit_reason'] == 'hit_stop' else 0
