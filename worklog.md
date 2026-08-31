@@ -13181,3 +13181,73 @@ Stage Summary:
 - ❌ Maestro الحالي خاسر (PF=0.93, Return=-8.9%)
 - ❌ الفارق عن V40.2 القوي: WR -25.7, PF -5.10, Return -60.5
 - 🔜 لازم نرجع الجودة قبل أي تطوير جديد
+
+---
+Task ID: MAESTRO-FIX-001-002-003-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: ترميم Maestro — إصلاح 3 مشاكل جذرية لرجوع جودة V40.2
+
+Work Log:
+- **السياق**: المالك طلب ترميم Maestro بعد ما أكدنا إنه خاسر (PF=0.93, Return=-8.9%)
+
+### السبب الجذري المكتشف
+`MaestroResult` dataclass مفيهوش `proofs` field → `evidence_count = 0` دائماً →
+Entry Gate إما بيرفض كل حاجة أو بيتخطى بـ exception handler.
+
+### FIX-001: بناء proofs (6 إثباتات) في Maestro
+- **الملف**: `vps-service/analyzers/maestro_orchestrator.py` (سطر 4023-4065)
+- بناء 6 إثباتات من بيانات Maestro الموجودة:
+  1. trend_aligned (فوق SMA20 + SMA20 ≥ SMA50)
+  2. above_sma50 (فوق SMA50 أو within 2%)
+  3. volume_surge (vol ≥ 1.2× MA20)
+  4. rs_positive (ROC20 > 0)
+  5. liquidity_ok (avg_vol ≥ 50K)
+  6. momentum_up (ROC5 > 0)
+- `evidence_count` بيتحسب صح دلوقتي (was always 0)
+
+### FIX-002: رفع عتبة Discovery Fallback
+- **الملف**: `vps-service/analyzers/maestro_orchestrator.py` (سطر 2880)
+- `_df_score >= 60` → `_df_score >= 70`
+- كان بيدخل إشارات ضعيفة (score 60-69) → دلوقتي بس score ≥ 70
+
+### FIX-003: Entry Gate exception → SKIP
+- **الملف**: `vps-service/analyzers/maestro_orchestrator.py` (سطر 4088-4091)
+- كان: `except → logger.debug → continue` (التجارة تعدّي بأي شكل!)
+- دلوقتي: `except → print error → return result` (fail-safe، التجارة تترفض)
+
+### النتائج (MaestroOrchestrator الحقيقي على الساندبوكس)
+- 666 (ticker × day) تم تحليلهم
+- 266 buy signals من Maestro
+- **266 rejected by Entry Gate (100% رفض!)**
+- 0 صفقات نهائية
+
+### ليه 0 صفقات؟
+1. **Entry Gate بقى صارم** (ده الصح) — بس بيرفض كل حاجة لأن:
+   - الـ evidence بـ marginal مع البيانات المتاحة
+   - فيه checks تانية في Maestro بتـ veto (CHOCH, MARKET-VETO, DEEP_CORRECTION)
+2. **الساندبوكس ناقص DB tables**:
+   - `no such table: price_history` → TechnicalTargetEngine فاشل
+   - `no such column: ticker` → MaestroHuman sector context فاشل
+   - `no such table: news_items` → NewsStopFilter فاشل
+   - `no such table: stock_daily_prices` → SeasonalityV2 فاشل
+3. **على السيرفر الحقيقي** (بكل الـ tables) النتائج هتكون مختلفة
+
+### المقارنة
+| المحرك | صفقات | WR | PF | Max DD | Return |
+|---|---|---|---|---|---|
+| V40.2 (الهدف) | 39 | 69.2% | 6.04 | -4.71% | +51.6% |
+| Maestro قبل الإصلاح | 115 | 43.5% | 0.93 | 17.17% | -8.9% |
+| Maestro بعد الإصلاح (ساندبوكس) | 0 | 0% | 0 | 0% | 0% |
+
+### الحكم
+- ✅ الإصلاحات الـ 3 مطبقة على الكود الحقيقي
+- ⚠️ الساندبوكس ما يقدرش يختبرها بشكل كامل (ناقص tables)
+- 🔜 المالك يشغل `scripts/run_maestro_real_backtest.py` على السيرفر الحقيقي
+
+Stage Summary:
+- ✅ تم اكتشاف السبب الجذري: proofs مفقودة → evidence_count=0
+- ✅ FIX-001: بناء 6 proofs في Maestro
+- ✅ FIX-002: رفع Discovery Fallback من 60 لـ 70
+- ✅ FIX-003: Entry Gate exception → SKIP (fail-safe)
+- ⚠️ الساندبوكس: 0 صفقات (Gate صارم + ناقص tables)
+- 🔜 المالك يشغل على السيرفر الحقيقي للحصول على أرقام حقيقية
