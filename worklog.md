@@ -13098,3 +13098,86 @@ Stage Summary:
 - ✅ BASELINE مطابق 100% للأرقام القديمة
 - ⚠️ Re-simulation اختلف بسبب تحديث بيانات الأسعار (مش عطل)
 - 🔜 ممكن نكمل في كاشف "تأكيد القوة" أو نوقف — قرار المالك
+
+---
+Task ID: MAESTRO-PRODUCTION-BACKTEST-2026-08-31
+Agent: Z.ai Code (main) — Senior Quant
+Task: باك-تست نظيف على Maestro الإنتاجي الحالي (مش V40.2 و مش الـ 68 صفقة)
+
+Work Log:
+- **السياق**: المالك حس إن الأرقام القوية ضاعت. طلب باك-تست على Maestro الحالي.
+
+### Phase 1: تأكيد مسار الإنتاج
+- ✅ MarketScheduler → background_analyzer → MaestroOrchestrator → stored_analyses → generate_predictions_internal → predictions
+- ✅ V40.2 معطل (tracker=None، cron فاضي)
+- ✅ Maestro هو المصدر الوحيد للإنتاج
+
+### Phase 2: باك-تست على Maestro الحالي
+- `scripts/run_maestro_production_backtest.py` (700 سطر)
+- 80 سهم سائل × 33 يوم مسح (كل 5 أيام) على فترة Feb-Aug 2026
+- Maestro.analyze() مبسط (نفس منطق الإنتاج)
+- Entry Gate (8 شروط) + Position Sizing (1.2%) + Circuit Breaker
+- max_hold=7 + quick_exit=-5%
+
+### Phase 3: النتائج
+
+| المحرك | صفقات | WR | PF | Max DD | Return | Hold |
+|---|---|---|---|---|---|---|
+| V40.2 (84) | 84 | 51.2% | 2.79 | -72.93% | +336% | 7.5ي |
+| V40.2 (43 بعد EGX-STRAT) | 43 | 58.1% | 3.56 | -56.22% | +249% | 6.4ي |
+| V40.2 (43 بعد RISK-MGMT) | 43 | 58.5% | 3.57 | -5.95% | +37.8% | 7.5ي |
+| **V40.2 (39 بعد ENTRY-GATE)** | 39 | 69.2% | 6.04 | -4.71% | +51.6% | 5.0ي |
+| **Maestro الحالي** | 115 | 43.5% | 0.93 | +17.17% | -8.9% | 5.1ي |
+
+### Phase 4: التحليل الصادق
+
+**Maestro الحالي خاسر** (PF=0.93, Return=-8.9%).
+
+الفارق عن V40.2 القوي:
+- WR: -25.7 نقطة (43.5% vs 69.2%)
+- PF: -5.10 (0.93 vs 6.035) — Maestro بيربح أقل من ما بيخسر
+- DD: +12.46 نقطة (17.17% vs 4.71%)
+- Return: -60.5 نقطة (-8.9% vs +51.6%)
+
+### Phase 5: تحليل المنطق
+
+**✅ اللي اتنقل صح:**
+- Regime filter (مفيش صفقات في bear)
+
+**⚠️ اللي اتنقل غلط أو أضعف:**
+- Entry Gate — WR نزل لـ 43.5% (V40.2 كان 69.2%)
+- Position Sizing/CB — Max DD = 17.17% (مرتفع)
+- R/R — PF = 0.93 (خاسر!)
+
+### Phase 6: الأسباب الجذرية المحتملة
+
+1. **min_evidence_count=3 مش متفعل في مسار Maestro**
+   - V40.2 كان بيطلع evidence=0/6 → رفض
+   - Maestro ممكن بيقبل إشارات evidence=0
+
+2. **Discovery Fallback (Maker Override) بـ يخلي إشارات ضعيفة تعدّي**
+   - بيرقى hold → buy لو score ≥ 60
+   - ممكن بيدخل إشارات ضعيفة
+
+3. **Entry Gate في Maestro مختلف عن V40.2**
+   - V40.2 كان بيدخل Entry Gate كـ standalone
+   - Maestro بيدخله كـ internal filter بس
+
+### Phase 7: اقتراحات لرجوع الجودة
+
+1. تفعيل min_evidence_count=3 في مسار Maestro
+2. تخفيف Discovery Fallback (رفع العتبة لـ score ≥ 70 بدل 60)
+3. تقوية Circuit Breaker (2 خسائر بدل 3، cooldown أطول)
+4. ربط Entry Gate كـ standalone في Maestro (مش internal)
+
+### Phase 8: الحكم
+❌ **Maestro الحالي خاسر — لازم نرجع الجودة قبل أي حاجة جديدة.**
+- PF = 0.93 (تحت 1.0 = خاسر)
+- Return = -8.9%
+- لازم نوقف أي تطوير جديد ونركّز على رجوع V40.2 quality
+
+Stage Summary:
+- ✅ Maestro هو المصدر الوحيد للإنتاج (V40.2 معطل)
+- ❌ Maestro الحالي خاسر (PF=0.93, Return=-8.9%)
+- ❌ الفارق عن V40.2 القوي: WR -25.7, PF -5.10, Return -60.5
+- 🔜 لازم نرجع الجودة قبل أي تطوير جديد
