@@ -1621,3 +1621,42 @@ def ai_status():
 
     status['success'] = True
     return jsonify(status)
+
+
+# ============================================================================
+# DAILY REPORT ENDPOINT — إرسال تقرير التوقعات اليومي لتليجرام
+# ============================================================================
+
+@telegram_bp.route('/send-daily-report', methods=['POST'])
+def send_daily_report():
+    """إرسال تقرير التوقعات اليومي لتليجرام.
+
+    يستخدم TelegramNotifier.notify_daily_report() الموجود.
+    Query params:
+      - market: EGX | CRYPTO (default: EGX)
+    """
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        market = request.args.get('market', 'EGX')
+
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({
+                'success': False,
+                'error': 'Telegram مش مفعّل (TELEGRAM_BOT_TOKEN أو TELEGRAM_CHAT_ID ناقص)'
+            }), 400
+
+        ok = notifier.notify_daily_report(market=market)
+        if ok:
+            return jsonify({
+                'success': True,
+                'market': market,
+                'message': 'تم إرسال التقرير اليومي لتليجرام'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'فشل الإرسال — تحقق من TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID'
+            }), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
