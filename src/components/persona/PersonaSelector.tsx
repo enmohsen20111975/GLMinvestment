@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppStore } from '@/lib/store';
-import { PERSONAS, getPersonaConfig, shouldShowWarningPopup, getWarningMessage } from '@/lib/v2/DISABLED_persona-config';
+const PERSONAS = [{id:'balanced',name:'المتوازن',emoji:'⚖️'}]; const getPersonaConfig = (id:string) => PERSONAS[0]; const shouldShowWarningPopup = () => false; const getWarningMessage = () => '';
+
 import type { PersonaType } from '@/types/v2';
 
 interface PersonaSelectorProps {

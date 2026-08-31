@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadWeights, getWeightsByGroup, updateWeight, detectMarketRegime, clearCache } from '@/lib/v2/DISABLED_config-service';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
 /**

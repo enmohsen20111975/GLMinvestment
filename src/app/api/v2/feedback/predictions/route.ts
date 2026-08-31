@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecentPredictions } from '@/lib/v2/DISABLED_prediction-logger';
 import { ensureInitialized } from '@/lib/egx-db';
 
 export const dynamic = 'force-dynamic';
