@@ -13375,3 +13375,64 @@ Stage Summary:
 - ✅ BE-stop-after-+3%-MFE شغّال (7 breakeven exits)
 - ✅ partial_1r_trailing exit policy شغّال
 - 🔜 اختبر picks_management + باقي الخدمات
+
+---
+Task ID: PHASE-3-4-5-COMPLETE-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: المراحل 3+4+5 — V62 logic + سحب Maestro + اختبار شامل
+
+Work Log:
+
+### المرحلة 3: V62 Logic (4 ميزات مضافة)
+أضفت 4 ميزات من Pine Script V62 لـ v40_2_daily_generator.py:
+1. **fake_pump**: طلع +3% بس حجم ضعيف → رفض (فخ الميكرز)
+2. **is_dist**: توزيع (شمعة حمراء + ظهر >50% + حجم >2× MA) → رفض
+3. **is_story_stock**: P/E > 50 → تقليل الحجم (من data_engine.db.tab_valuation)
+4. **maker_sweep**: sweep_low + delta موجب → boost
+
+نتائج الاختبار:
+- V62 رفض EGAS (توزيع: ظهر 78%، حجم 4.0×)
+- V62 رفض ELKA (fake_pump: +6% بس حجم ضعيف)
+- نفس 15 صفقة → 12 مغلقة (V62 ما أثرش على الصفقات الموجودة)
+
+### المرحلة 4: سحب إمكانيات Maestro
+فحصت كل ميزات Maestro — V40.2 عندها كلها بالفعل:
+- ✅ expert_memory (يستدعي run_expert_memory_phase من Maestro)
+- ✅ regime detection (من V38 engine)
+- ✅ trailing stop + partial_1r (في daily_closer)
+- ✅ EGX30 benchmark + RS check (في entry_gate)
+- ✅ BOS/CHOCH (موجود في V40.2 سطر 953-977)
+**مفيش حاجة محتاجة تنقل.**
+
+### المرحلة 5: اختبار شامل
+- ✅ V40.2 كمصدر وحيد للتوقعات (15 توقع، كلها balanced)
+- ✅ daily_closer شغّال (12 مغلقة، 3 pending)
+- ✅ learning_engine شغّال (551 درس)
+- ✅ Maestro معطل من الكتابة (signal_id = None)
+- ✅ V62 logic مفعّل (4 ميزات)
+- ✅ كل الخدمات المدمجة شغّالة
+
+### المقاييس النهائية:
+| المقياس | القيمة |
+|---|---|
+| الصفقات | 12 |
+| Wins | 4 |
+| Losses | 1 |
+| Breakeven | 7 |
+| Win Rate | 33.3% |
+| Profit Factor | 51.42 |
+| إجمالي العائد | +56.5% |
+| متوسط مدة الاحتفاظ | 14.5 يوم |
+
+### Exit types:
+- breakeven: 9 (BE-stop-after-+3%-MFE شغّال)
+- partial_expired: 1
+- partial_stuck: 1
+- stuck_no_movement: 1
+
+Stage Summary:
+- ✅ V40.2 هو مولّد التوقعات الأساسي
+- ✅ Maestro خلي للتحليل/UI فقط
+- ✅ V62 logic مضاف (4 ميزات: fake_pump, is_dist, story_stock, maker_sweep)
+- ✅ كل الخدمات المدمجة شغّالة
+- ✅ كل المراحل (1-5) اكتملت بنجاح
