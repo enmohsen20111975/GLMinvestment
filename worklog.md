@@ -12961,3 +12961,62 @@ Stage Summary:
 - ✅ الفلاتر حسّنت PF و Max DD بس قتلت Recall
 - ✅ Trade-off واضح: أمان vs اكتشاف
 - 🔜 نرجع للمختبر بفكرة مختلفة (clusters أو ML أو تأكيد قوة)
+
+---
+Task ID: STRENGTH-CONFIRMATION-2026-08-31
+Agent: Z.ai Code (main) — Senior Quant
+Task: كاشف "تأكيد القوة" (Strength Confirmation) — بديل V4-Daily بعد فشله
+
+Work Log:
+- **السياق**: المالك قرر قتل V4-Daily (Recall 1-3% مع الفلاتر) وتغيير الفلسفة لـ "تأكيد القوة"
+- **الفلسفة الجديدة**: مش بنحاول نتنبأ بالتجميع قبل الانفجار. بنستنى الميكرز يبينوا نيتهم (momentum + volume) وبعدين ندخل معاهم.
+
+### Phase 1: بناء الكاشف
+- `scripts/run_strength_confirmation_test.py` (1305 سطر، مستقل تماماً)
+- 8 إشارات + 2 anti-signals:
+  - Signals: roc5_strong, roc10_strong, roc20_strong, vol_surge, above_sma20, above_sma50, sma_aligned, not_overbought, not_extended, strong_close
+  - Anti-signals: falling_knife (roc5 < -10%), vol_collapse (< 0.5x)
+- شروط is_strong: (ROC5 قوي OR ROC10 قوي) + vol_surge + above_sma20 + not_overbought + score ≥ 50
+
+### Phase 2: النتائج على البيانات الحقيقية (db/data_engine.db, 302 يوم انفجار)
+
+| المقياس | V4-Daily (best) | Strength Confirmation | التحسن |
+|---|---|---|---|
+| Recall % | 1.1-3.7% (مع فلاتر) | 34.9% | +31 نقطة |
+| Precision % | 3.6-11.9% | 21.1% | +9 نقطة |
+| Profit Factor | 0.55-0.85 | 1.39 | +0.54 |
+| Max DD % | 0.51-1.06 | 0.70% | ممتاز |
+| عدد الصفقات | 21-42 | 57 | |
+| Win Rate % | 36-45 | 49.1% | +4-13 نقطة |
+
+### Phase 3: معايير النجاح
+- Recall ≥ 35%: ✗ (34.9% — قريب جداً)
+- Precision ≥ 25%: ✗ (21.1% — قريب)
+- PF ≥ 1.5: ✗ (1.39 — قريب)
+- Max DD ≤ 15%: ✓ (0.70% — ممتاز)
+
+**الحكم**: ⚠️ قريب من كل المعايير بس مش كامل. ده تحسن ضخم عن V4-Daily.
+
+### Phase 4: 5 أمثلة مفصّلة
+- GTWL @ 2026-08-16 (+66.7%): score=100, كل الإشارات اشتغلت
+- PHAR @ 2026-08-05 (+50.3%): score=100, كل الإشارات
+- CRST @ 2026-08-05 (+54.0%): score=96
+- HBCO @ 2026-08-04 (+57.5%): score=78
+- CPME @ 2026-08-05 (+68.4%): score=96
+
+### Phase 5: ملاحظات على جودة البيانات
+- فيه أسهم كويتية (JAZEERA, HUMANSOFT, MEZZAN) فيها data errors (سعر بيقفز من 1 لـ 1700)
+- ده على الأرجح stock split misrecorded أو data corruption
+- أثرت على الـ Recall (اصطادت إشارات وهمية على فجوات البيانات)
+
+### Phase 6: التحسينات المحتملة
+1. تخفيف min_vol_ratio من 1.5x لـ 1.3x (هيزيد Recall)
+2. تخفيف min_roc5 من 5% لـ 4% (هيزيد Recall)
+3. فلتر data quality: نرفض الأسهم اللي فيها قفزات > 1000% في يوم (هينظف البيانات)
+4. إضافة score ≥ 55 كـ tier أعلى (هيزيد Precision)
+
+Stage Summary:
+- ✅ Strength Confirmation أحسن بكتير من V4-Daily (Recall 34.9% vs 1-3%, PF 1.39 vs 0.55)
+- ✅ Max DD ممتاز (0.70%)
+- ⚠️ قريب من المعايير بس مش كامل (محتاج tuning بسيط)
+- 🔜 نجرّب tuning: min_vol_ratio=1.3 + فلتر data quality
