@@ -13507,3 +13507,37 @@ Stage Summary:
 - ✅ DuckDuckGo + Trafilatura شغّالين
 - ⚠️ Ollama محتاج تثبيت على السيرفر
 - ✅ Keyword fallback شغّال كـ backup
+
+---
+Task ID: DOCS-UPDATE + CORPORATE-ACTIONS-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تحديث التوثيق + بناء Corporate Actions fetcher
+
+Work Log:
+
+### Phase 1: تحديث التوثيق
+- `Documentation/01-PROJECT_ANATOMY.md`:
+  - header محدّث لـ 2026-08-31
+  - قسم جديد "⚡ تغييرات جوهرية" في المقدمة (KILL-MAESTRO + V62 + News Agent + إصلاحات)
+  - Engine map: Maestro → DISABLED، V40.2 → THE ONLY ENGINE
+  - قسم 12 جديد: AI News Agent + Corporate Actions (خطة 4 مراحل)
+
+- `Documentation/SYSTEM_HOW_IT_THINKS.md`:
+  - header محدّث لـ 2026-08-31
+  - قسم جديد "⚡ تغييرات جوهرية" (KILL-MAESTRO + V62 + News Agent + إصلاحات + مشاكل)
+
+### Phase 2: بناء Corporate Actions fetcher
+- `vps-service/jobs/fetch_corporate_actions.py` (250 سطر)
+- يجلب 3 أنواع:
+  1. توزيعات الأرباح (من data_engine.db.tab_dividends)
+  2. أخبار الاكتتاب (من DuckDuckGo)
+  3. الجمعيات العمومية (من DuckDuckGo)
+- يخزن في predictions.db.corporate_actions
+- helper: get_upcoming_actions(ticker, days_ahead)
+- اختبار: 9 أخبار اكتتاب جابت من DuckDuckGo ✅
+
+### Phase 3: النتائج
+- ✅ التوثيق محدّث بالكامل
+- ✅ Corporate Actions fetcher شغّال
+- ✅ 9 أخبار اكتتاب في DB
+- 🔜 دمج get_upcoming_actions في V40.2 entry gate
