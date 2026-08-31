@@ -29,6 +29,10 @@
 #     Applies Hard Loss Ceiling (-7%) + Split Guard (-35% → excluded)
 30 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python vps-service/jobs/daily_closer.py >> /root/GLMinvestment/logs/daily_closer.log 2>&1
 
+# 3b2) Gainer Scan: 16:00 Cairo = 14:00 UTC (30 min after closer)
+#      يفحص أعلى 10 صاعدات + يحدد النظام اكتشفهم ولا لا + يكتب ملاحظات في النوتبوك
+0 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python vps-service/jobs/daily_gainer_scan.py >> /root/GLMinvestment/logs/gainer_scan.log 2>&1
+
 # 3c) Learning engine: Saturday 15:40 Cairo = 13:40 UTC (weekend, no market)
 40 13 * * 5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python vps-service/jobs/learning_engine.py >> /root/GLMinvestment/logs/learning.log 2>&1
 

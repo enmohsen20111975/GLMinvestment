@@ -1792,6 +1792,7 @@ class MaestroOrchestrator:
             self._max_picks_per_day = 5
         self._picks_today = 0
         self._picks_date = ''
+        self._sector_picks = {}  # {sector: count} per day — max 2/sector/day
 
         # 5) Engine source tag (للتمييز في predictions table)
         self.engine_source = 'maestro_unified'
@@ -1850,13 +1851,21 @@ class MaestroOrchestrator:
             self._load_egx30_benchmark()
         return self._benchmark_roc_by_date.get(date_str, 0.0)
 
-    def _check_max_picks(self, scan_date: str) -> bool:
-        """Check if we've hit the max picks limit for today."""
+    def _check_max_picks(self, scan_date: str, sector: str = None) -> bool:
+        """Check if we've hit the max picks limit for today + sector cap."""
         if self._picks_date != scan_date:
             self._picks_date = scan_date
             self._picks_today = 0
+            self._sector_picks = {}
         if self._picks_today >= self._max_picks_per_day:
-            return False  # limit reached
+            return False  # daily limit reached
+        # SECTOR-CAP: max 2 صفقات في نفس القطاع في نفس اليوم
+        if sector:
+            _sec_count = self._sector_picks.get(sector, 0)
+            if _sec_count >= 2:
+                print(f"[SECTOR-CAP] قطاع '{sector}' وصل لـ 2 صفقات → رفض", flush=True)
+                return False
+            self._sector_picks[sector] = _sec_count + 1
         self._picks_today += 1
         return True
 
@@ -1980,6 +1989,21 @@ class MaestroOrchestrator:
             current_price = to_num(stock.get('current_price', closes[-1] if closes else 0))
 
         regime_phase = run_regime_phase(closes, force_regime)
+
+        # ── REGIME-GATE: السوق البارد = قلل الصفقات ──────────────────────
+        # لو السوق في bear/weak_bear → قلل max_picks لـ 1-2 (بدل 5)
+        # لو السوق في range → قلل لـ 3
+        # لو السوق في bull → خليها 5 (عادي)
+        _regime_str = regime_phase.phase.lower() if regime_phase.phase else 'range'
+        if 'bear' in _regime_str or 'weak_bear' in _regime_str:
+            self._max_picks_per_day = 1  # السوق البارد = صفقة واحدة فقط
+            print(f"[REGIME-GATE] السوق بارد ({_regime_str}) → max_picks=1", flush=True)
+        elif 'range' in _regime_str or 'sideways' in _regime_str:
+            self._max_picks_per_day = 3  # السوق العرضي = 3 صفقات
+            print(f"[REGIME-GATE] السوق عرضي ({_regime_str}) → max_picks=3", flush=True)
+        else:
+            self._max_picks_per_day = 5  # السوق الساخن = 5 صفقات
+
         timeframe_phase = run_timeframe_phase(ticker, price_history)
         volume_phase = run_volume_phase(stock, price_history)
         news_phase = run_news_phase(ticker, self.db_path)
@@ -4030,9 +4054,10 @@ class MaestroOrchestrator:
                 except Exception as _pos_err:
                     logger.debug(f"Position sizing failed for {ticker}: {_pos_err}")
 
-                # ── ENGINE-UNIFY Phase 2: max_picks cap + engine_source tag ──
+                # ── ENGINE-UNIFY Phase 2: max_picks cap + sector cap + engine_source tag ──
                 _today_str = options.get('scan_date', '') or datetime.now().strftime('%Y-%m-%d')
-                if not self._check_max_picks(_today_str):
+                _stock_sector = stock.get('sector', '') if isinstance(stock, dict) else ''
+                if not self._check_max_picks(_today_str, _stock_sector):
                     warnings.append(f'Max picks limit reached ({self._max_picks_per_day}/day)')
                     warnings_ar.append(f'وصلنا للحد الأقصى ({self._max_picks_per_day}/يوم)')
                     result.warnings = warnings
