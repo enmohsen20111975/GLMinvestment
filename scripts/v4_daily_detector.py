@@ -271,6 +271,145 @@ def detect_v4_daily(closes, highs, lows, volumes):
 
 
 # ═══════════════════════════════════════════════════════════════════
+# 2b) V4-Daily v2 — مع الفلاتر التلاتة (المرحلة 1)
+# ═══════════════════════════════════════════════════════════════════
+
+def detect_v4_daily_v2(closes, highs, lows, volumes, min_score=45,
+                        vol_confirm_min=1.5, vol_confirm_max=5.0,
+                        require_multi_day=True):
+    """V4-Daily v2 — مع 3 فلاتر إضافية (المرحلة 1):
+
+    1. اتجاه مؤكد: السعر فوق SMA20 + SMA20 ≥ SMA50 (أو قريب جداً ≤ -3%)
+    2. حجم يوم الإشارة بين vol_confirm_min× و vol_confirm_max× MA20
+       (default: 1.5x - 5x — نرفض القليل جداً والكثير جداً)
+    3. تأكيد على يومين متتاليين: الإشارة لازم تكررت يومين قبل كده
+
+    Returns:
+        {
+            'is_hot': bool,
+            'score': float,
+            'signals': list,
+            'reason': str,
+            'filters': dict,
+        }
+    """
+    if not closes or len(closes) < 60:
+        return {'is_hot': False, 'score': 0, 'signals': [], 'reason': 'بيانات غير كافية (< 60 يوم)', 'filters': {}}
+
+    # شغل V4-Daily الأصلي على آخر يوم
+    base_result = detect_v4_daily(closes, highs, lows, volumes)
+    if not base_result['is_hot']:
+        return {
+            'is_hot': False,
+            'score': base_result['score'],
+            'signals': base_result['signals'],
+            'reason': 'base V4-Daily not hot',
+            'filters': {'base_rejected': True},
+        }
+
+    score = base_result['score']
+    if score < min_score:
+        return {
+            'is_hot': False,
+            'score': score,
+            'signals': base_result['signals'],
+            'reason': f'score {score:.0f} < {min_score}',
+            'filters': {'score_rejected': True},
+        }
+
+    filters = {}
+    filter_reasons = []
+
+    # ─── Filter 1: Trend Confirmation ───
+    sma20_val = sma(closes, 20) if len(closes) >= 20 else 0
+    sma50_val = sma(closes, 50) if len(closes) >= 50 else 0
+    last_close = closes[-1]
+
+    trend_ok = False
+    trend_reason = ''
+    if sma20_val > 0 and sma50_val > 0:
+        price_above_sma20 = last_close > sma20_val
+        sma_ratio = (sma20_val - sma50_val) / sma50_val * 100
+        sma20_above_or_near = sma_ratio >= -3.0
+        if price_above_sma20 and sma20_above_or_near:
+            trend_ok = True
+            trend_reason = f'price>sma20 + sma20/sma50={sma_ratio:+.1f}%'
+        else:
+            trend_reason = f'price={"above" if price_above_sma20 else "below"} sma20, sma20/sma50={sma_ratio:+.1f}%'
+    filters['trend_ok'] = trend_ok
+    filters['trend_reason'] = trend_reason
+    if not trend_ok:
+        filter_reasons.append(f'trend_rejected: {trend_reason}')
+
+    # ─── Filter 2: Signal-day Volume في نطاق [min, max] ───
+    vol_confirm_ok = False
+    vol_reason = ''
+    if len(volumes) >= 20:
+        ma20_vol = sum(volumes[-20:]) / 20
+        last_vol = volumes[-1]
+        vol_ratio = last_vol / (ma20_vol or 1)
+        if vol_ratio >= vol_confirm_min and vol_ratio <= vol_confirm_max:
+            vol_confirm_ok = True
+            vol_reason = f'vol={vol_ratio:.2f}x MA20 (in [{vol_confirm_min}, {vol_confirm_max}])'
+        elif vol_ratio < vol_confirm_min:
+            vol_reason = f'vol={vol_ratio:.2f}x MA20 (< {vol_confirm_min}x — too low)'
+        else:
+            vol_reason = f'vol={vol_ratio:.2f}x MA20 (> {vol_confirm_max}x — already exploded)'
+        filters['vol_confirm_ok'] = vol_confirm_ok
+        filters['vol_confirm_reason'] = vol_reason
+        filters['vol_ratio'] = vol_ratio
+        if not vol_confirm_ok:
+            filter_reasons.append(f'vol_rejected: {vol_reason}')
+
+    # ─── Filter 3: Multi-day Confirmation ───
+    multi_day_ok = False
+    multi_day_reason = ''
+    confirm_count = 1
+    if len(closes) >= 62:
+        for offset in [1, 2]:
+            sub_closes = closes[:-offset] if offset > 0 else closes
+            sub_highs = highs[:-offset] if offset > 0 else highs
+            sub_lows = lows[:-offset] if offset > 0 else lows
+            sub_vols = volumes[:-offset] if offset > 0 else volumes
+            if len(sub_closes) < 60:
+                continue
+            sub_result = detect_v4_daily(sub_closes, sub_highs, sub_lows, sub_vols)
+            if sub_result['is_hot'] and sub_result['score'] >= min_score:
+                confirm_count += 1
+        if confirm_count >= 2:
+            multi_day_ok = True
+            multi_day_reason = f'confirm_count={confirm_count}/3'
+        else:
+            multi_day_reason = f'confirm_count={confirm_count}/3 (need ≥2)'
+        filters['multi_day_ok'] = multi_day_ok
+        filters['multi_day_reason'] = multi_day_reason
+        if not multi_day_ok:
+            filter_reasons.append(f'multi_day_rejected: {multi_day_reason}')
+    else:
+        multi_day_ok = True
+        multi_day_reason = 'insufficient data, allowed'
+        filters['multi_day_ok'] = True
+        filters['multi_day_reason'] = multi_day_reason
+
+    # لو require_multi_day=False، نعفي الـ multi_day
+    if not require_multi_day:
+        multi_day_ok = True
+
+    # ─── القرار النهائي ───
+    is_hot_final = trend_ok and vol_confirm_ok and multi_day_ok
+    final_reason = ' | '.join(filter_reasons) if filter_reasons else 'all filters passed'
+
+    return {
+        'is_hot': is_hot_final,
+        'score': score,
+        'signals': base_result['signals'],
+        'reason': final_reason,
+        'filters': filters,
+        'base_reason': base_result['reason'],
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════
 # 3) تحميل البيانات اليومية
 # ═══════════════════════════════════════════════════════════════════
 
