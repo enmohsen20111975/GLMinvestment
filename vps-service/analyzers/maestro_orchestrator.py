@@ -4027,6 +4027,11 @@ class MaestroOrchestrator:
                 # بـ exit_policy='multi_target' عشان الـ daily_closer يـ route
                 # للـ MultiTargetExitManager (T1/T2/T3 + dynamic stop + hold-through).
                 # الـ column exit_policy موجود في الـ schema بس ما كانش بـ يتكتب أبداً.
+                #
+                # ENGINE-UNIFY Phase 3: exit_policy='partial_1r_trailing' كـ default
+                # (ported from V40.2 — كان بيتطبق بس لما daily_closer بـ يـ update)
+                # دلوقتي Maestro بـ يكتبها من البداية.
+                _default_exit_policy = 'partial_1r_trailing'
                 if signal_id and (_rl_exit_policy == 'multi_target' or _rl_t2 > 0):
                     try:
                         import sqlite3 as _rl_sql
@@ -4042,6 +4047,21 @@ class MaestroOrchestrator:
                         _rl_conn.close()
                     except Exception as _rl_upd_err:
                         logger.warning(f"[Maestro] Failed to set exit_policy=multi_target for #{signal_id}: {_rl_upd_err}")
+                elif signal_id:
+                    # ENGINE-UNIFY Phase 3: set default exit_policy='partial_1r_trailing'
+                    # لو مفيش multi_target → نكتب partial_1r_trailing كـ default
+                    try:
+                        import sqlite3 as _def_sql
+                        _def_db = self.prediction_tracker.db_path
+                        _def_conn = _def_sql.connect(_def_db, timeout=5.0)
+                        _def_conn.execute(
+                            'UPDATE predictions SET exit_policy = ? WHERE id = ? AND (exit_policy IS NULL OR exit_policy = ?)',
+                            (_default_exit_policy, signal_id, 'fixed')
+                        )
+                        _def_conn.commit()
+                        _def_conn.close()
+                    except Exception:
+                        pass
             except Exception as e:
                 print(f"[Maestro] Failed to track prediction: {e}")
 
