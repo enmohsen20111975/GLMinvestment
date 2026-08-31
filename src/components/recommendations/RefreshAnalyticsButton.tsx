@@ -21,7 +21,7 @@ export function RefreshAnalyticsButton({
   size = 'default',
   className,
   showLabel = true,
-  customLabel = 'تحديث التحليلات',
+  customLabel = 'تحديث التوقعات',
   onRefreshed,
 }: RefreshAnalyticsButtonProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -31,52 +31,38 @@ export function RefreshAnalyticsButton({
     if (isRefreshing) return;
 
     setIsRefreshing(true);
-    const toastId = toast.loading('جاري إعادة فحص وتحديث التحليلات والتوقعات...', {
-      description: 'يتم الآن تحليل البيانات الفنية والأساسية وتوليد التوقعات لجميع الأسهم.',
+    const toastId = toast.loading('جاري تحميل التوقعات الحالية...', {
+      description: 'يتم عرض أحدث التوقعات من قاعدة البيانات.',
     });
 
     try {
-      const res = await fetch(`/api/predictions/generate-all?market=${currentMarket}&all_markets=true`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ market: currentMarket, all_markets: true }),
+      // KILL-MAESTRO (2026-08-31): لا نولّد توقعات جديدة عند الضغط على الزرار
+      // التوقعات تُولّد تلقائياً بـ V40.2 عبر cron (3:00 صباحاً + 3:30 عصراً)
+      // الزرار ده بس بيـ reload التوقعات الموجودة من DB
+      //
+      // قبل كده كان بيستدعي /api/predictions/generate-all اللي بيولّد توقعات
+      // جديدة كل مرة → كان بيدّي إحساس إن التوقعات عشوائية.
+      // دلوقتي بس بيـ reload من DB → نفس التوقعات تتعرض.
+
+      // Trigger store reloads — يقرأ من DB بدون توليد جديد
+      loadV2Recommendations();
+      loadAiInsights();
+
+      // Dispatch window event for listening components
+      window.dispatchEvent(new CustomEvent('analyticsRefreshed'));
+
+      toast.success('تم تحميل أحدث التوقعات', {
+        id: toastId,
+        description: 'التوقعات تتولّد تلقائياً بعد إغلاق السوق. اضغط لتحديث العرض.',
+        icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
+        duration: 3000,
       });
 
-      const data = await res.json();
-
-      if (data.success) {
-        // REALITY-CHECK-025: الرسالة كانت بتقول "توليد 100 توقع" (كذب)
-        // الحقيقة: المنصة بتحلل كل الأسهم لكن بتعرض بس أعلى 5 توقعات دقة للعميل
-        const displayedCount = Math.min(
-          data.predictions_count || data.performance?.total_predictions || data.stats?.today || data.activePredictions?.length || 0,
-          5
-        );
-        toast.success('تم تحديث التحليلات واختيار أعلى 5 توقعات دقة ⚡', {
-          id: toastId,
-          description: `تم فحص السوق واختيار أفضل ${displayedCount} توقعات بناءً على درجة الثقة والـ Score.`,
-          icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
-          duration: 4000,
-        });
-
-        // Trigger store reloads immediately
-        loadV2Recommendations();
-        loadAiInsights();
-
-        // Dispatch window event for listening components
-        window.dispatchEvent(new CustomEvent('analyticsRefreshed', { detail: data }));
-
-        if (onRefreshed) {
-          onRefreshed();
-        }
-      } else {
-        toast.error('حدث خطأ أثناء تحديث التحليلات', {
-          id: toastId,
-          description: data.error || 'يرجى المحاولة مرة أخرى.',
-          icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
-        });
+      if (onRefreshed) {
+        onRefreshed();
       }
     } catch (err: any) {
-      toast.error('تعذر الاتصال بمحرك التحليلات', {
+      toast.error('تعذر تحميل التوقعات', {
         id: toastId,
         description: err?.message || 'يرجى المحاولة مرة أخرى لاحقاً.',
         icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
@@ -111,7 +97,7 @@ export function RefreshAnalyticsButton({
 
       {showLabel && (
         <span className="truncate">
-          {isRefreshing ? 'جاري التحديث...' : customLabel}
+          {isRefreshing ? 'جاري التحميل...' : customLabel}
         </span>
       )}
     </Button>
