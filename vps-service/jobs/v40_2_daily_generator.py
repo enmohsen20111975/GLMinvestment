@@ -1104,7 +1104,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         return
 
     # Store: sort each date's signals, take top N, morning bell = top 1
-    tracker = PredictionTracker(PREDICTIONS_DB)
+    # ENGINE-UNIFY Phase 4: V40.2 بـ backtest-only — مفيش كتابة في DB
+    # tracker = PredictionTracker(PREDICTIONS_DB)  # معطّل — Maestro هو المصدر الوحيد
+    tracker = None
+    _dry_run_no_write = True  # منع أي كتابة في DB
     total_generated = 0
     total_morning_bells = 0
     daily_summary = []
@@ -1151,8 +1154,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     prediction_date=scan_date, evidence_count=sig['evidence'],
                     morning_bell=sig['morning_bell'],
                     kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}",
-                )
-                if pred_id:
+                ) if tracker else None
+                if pred_id and tracker:
                     tracker.set_verified_outcome(
                         prediction_id=pred_id, outcome_date=sig['exit_date'],
                         exit_price=sig['exit_price'], actual_return=sig['return_pct'],
