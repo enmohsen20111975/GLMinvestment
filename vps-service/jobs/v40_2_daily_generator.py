@@ -976,6 +976,77 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _bos_err:
                 pass  # safe-by-design
 
+            # ── V62 LOGIC (المرحلة 3 — 2026-08-31): 4 ميزات من Pine Script V62 ──
+            # 1. fake_pump: شدّ وهمي (سعر بطلع بس حجم ضعيف) = فخ → رفض
+            # 2. is_dist: توزيع (شمعة حمراء + ظهر علوي كبير + حجم عالي) = خروج/رفض
+            # 3. is_story_stock: P/E > 50 = سهم قصة = تقليل الحجم
+            # 4. maker_sweep: مسح سيولة (نزل تحت الدعم وقفل فوقه + delta موجب) = boost
+            try:
+                _v62_atr = float(result.get('atr', 0) or 0)
+                if _v62_atr <= 0:
+                    _v62_atr = entry * 0.05
+                _v62_vol_ma = sum(volumes[max(0,day_idx-20):day_idx]) / max(1, min(20, day_idx)) if day_idx > 0 else 0
+                _v62_last_vol = volumes[day_idx] if day_idx < len(volumes) else 0
+                _v62_candle_range = (highs[day_idx] - lows[day_idx]) if day_idx < len(highs) else 0
+                _v62_body = abs(closes[day_idx] - opens[day_idx]) if day_idx < len(closes) and day_idx < len(opens) else 0
+                _v62_upper_wick = (highs[day_idx] - max(closes[day_idx], opens[day_idx])) if day_idx < len(highs) else 0
+
+                # 1. fake_pump: طلع +3% بس حجم < MA → فخ
+                _v62_is_pump = (closes[day_idx] > opens[day_idx]
+                                and _v62_body > _v62_candle_range * 0.7
+                                and ((closes[day_idx] - opens[day_idx]) / opens[day_idx] * 100) > 3
+                                ) if day_idx < len(closes) and day_idx < len(opens) and opens[day_idx] > 0 else False
+                _v62_fake_pump = _v62_is_pump and _v62_last_vol < _v62_vol_ma * 1.0 and _v62_vol_ma > 0
+                if _v62_fake_pump:
+                    print(f"[V62-FAKE-PUMP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"طلع +{((closes[day_idx]-opens[day_idx])/opens[day_idx]*100):.1f}% بس حجم ضعيف "
+                          f"({_v62_last_vol:.0f} < {_v62_vol_ma:.0f}) → رفض", flush=True)
+                    continue
+
+                # 2. is_dist: توزيع (شمعة حمراء + ظهر علوي > 50% من المدى + حجم > 2× MA)
+                _v62_is_dist = (closes[day_idx] < opens[day_idx]
+                                and _v62_upper_wick > _v62_candle_range * 0.5
+                                and _v62_last_vol > _v62_vol_ma * 2.0
+                                ) if day_idx < len(closes) and day_idx < len(opens) and _v62_vol_ma > 0 else False
+                if _v62_is_dist:
+                    print(f"[V62-DISTRIBUTION] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"توزيع واضح (ظهر={_v62_upper_wick/_v62_candle_range*100:.0f}% حجم={_v62_last_vol/_v62_vol_ma:.1f}×) → رفض", flush=True)
+                    continue
+
+                # 3. is_story_stock: P/E > 50 → تقليل الحجم (مش رفض)
+                _v62_story_stock = False
+                try:
+                    import sqlite3 as _v62_sql
+                    _v62_de_conn = _v62_sql.connect(str(_PROJECT_ROOT / 'db' / 'data_engine.db'))
+                    _v62_pe = _v62_de_conn.execute(
+                        "SELECT pe_ratio FROM tab_valuation WHERE symbol = ? ORDER BY date DESC LIMIT 1",
+                        (ticker,)
+                    ).fetchone()
+                    _v62_de_conn.close()
+                    if _v62_pe and _v62_pe[0] and float(_v62_pe[0]) > 50:
+                        _v62_story_stock = True
+                        print(f"[V62-STORY-STOCK] {ticker}: P/E={float(_v62_pe[0]):.0f} > 50 → تقليل الحجم", flush=True)
+                except Exception:
+                    pass  # safe-by-design
+
+                # 4. maker_sweep: لو فيه sweep_low + delta موجب → boost
+                # (ده موجود بالفعل في BOS/ChoCH فوق — بس نضيف delta check)
+                _v62_delta_vol = 0
+                if day_idx < len(closes) and day_idx < len(highs) and day_idx < len(lows) and _v62_candle_range > 0:
+                    _v62_buy_vol = _v62_last_vol * ((closes[day_idx] - lows[day_idx]) / _v62_candle_range)
+                    _v62_sell_vol = _v62_last_vol - _v62_buy_vol
+                    _v62_delta_vol = _v62_buy_vol - _v62_sell_vol
+
+                # خزن V62 flags في result للـ audit
+                result['v62_fake_pump'] = _v62_fake_pump
+                result['v62_distribution'] = _v62_is_dist
+                result['v62_story_stock'] = _v62_story_stock
+                result['v62_delta_vol'] = _v62_delta_vol
+                result['v62_maker_sweep'] = (_ob_state.sweep_low if '_ob_state' in dir() else False) and _v62_delta_vol > 0
+
+            except Exception as _v62_err:
+                pass  # safe-by-design
+
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
             # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
