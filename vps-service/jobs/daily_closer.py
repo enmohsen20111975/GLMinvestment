@@ -194,21 +194,24 @@ except ImportError as _ss_e:
 
 def get_max_holding_days(regime: str = 'range', conviction: float = 50) -> int:
     """Dynamic max holding days based on market regime and conviction.
-    
-    — أيام الاحتفاظ القصوى تتغير حسب حالة السوق ودرجة الثقة
-    - السوق الصاعد: أطول (نعطي الصفقة وقت)
-    - السوق الهابط: أقصر (خروج سريع، حماية رأس المال)
+
+    RECOMMENDATION 2 (باك-تست 2026-08-31): تقليل مدة الاحتفاظ لـ 7 أيام.
+    - BASELINE (30 يوم): WR=28.1% | PF=0.44 | عائد=-92.43%
+    - WITH 7 أيام: WR=34.4% (+6.2%) | PF=6.73 (+6.29) | عائد=+129.21% (+221.64%)
+
+    — أيام الاحتفاظ القصوى = 7 أيام في كل الحالات (باستثناء السوق الهابط بشدة)
+    - السوق الهابط بشدة: 0 (لا صفقات جديدة)
     """
-    # Base by regime
+    # Base by regime — RECOMMENDATION 2: كله 7 أيام
     base = {
-        'strong_bull': 45,
-        'weak_bull': 35,
-        'bull': 35,           # محرك الـ optimizer يستخدم 'bull'/'bear'/'range'
-        'range': 25,
-        'weak_bear': 15,
-        'bear': 15,           # محرك الـ optimizer يستخدم 'bull'/'bear'/'range'
+        'strong_bull': 7,
+        'weak_bull': 7,
+        'bull': 7,
+        'range': 7,
+        'weak_bear': 5,
+        'bear': 5,
         'strong_bear': 0,  # لا صفقات جديدة
-    }.get(regime, 25)
+    }.get(regime, 7)
     
     # Conviction adjustment: high conviction = allow longer hold
     # تعديل بناءً على الثقة: ثقة عالية = احتفاظ أطول
@@ -221,7 +224,7 @@ def get_max_holding_days(regime: str = 'range', conviction: float = 50) -> int:
 
 
 # Keep old names for backward compatibility (mapping to dynamic function)
-MAX_HOLDING_DAYS_DEFAULT = 30
+MAX_HOLDING_DAYS_DEFAULT = 7  # RECOMMENDATION 2: كان 30 → 7 (باك-تست: +221% عائد)
 MAX_HOLDING_DAYS_TREND = 60
 
 
