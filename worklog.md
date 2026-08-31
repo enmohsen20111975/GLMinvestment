@@ -13329,3 +13329,49 @@ Stage Summary:
 - ✅ الأرقام أقوى من القديم (WR +4.1, PF +3.76)
 - ✅ جاهز للمرحلة 2 (دمج الخدمات)
 - 🔜 المرحلة 2: دمج V40.2 مع morning bell, daily_closer, learning_engine, picks_management
+
+---
+Task ID: PHASE-2-DAILY-CLOSER-FIX-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: المرحلة 2 — دمج daily_closer مع V40.2
+
+Work Log:
+- **المشكلة**: daily_closer كان يطلع 0 pending لأن V40.2 يسجل outcome_date بنفسه + created_at = now() (مش prediction_date) + data.prices بيسبب recursion.
+- **الإصلاحات الـ 3**:
+  1. V40.2: سجل outcome بس في dry_run (خلي daily_closer يقفل في الإنتاج)
+  2. prediction_tracker: created_at = prediction_date (مش now())
+  3. daily_closer: اقرأ مباشرة من data_engine.db (تجاوز data.prices recursion)
+
+### النتائج بعد الإصلاح:
+- 15 توقع → 12 مغلقة بواسطة daily_closer
+- found_data_engine: 124 (كل الأسعار من data_engine.db)
+- not_found_anywhere: 0
+
+### المقاييس:
+| المقياس | القيمة |
+|---|---|
+| الصفقات المغلقة | 12 |
+| Wins | 4 |
+| Losses | 1 |
+| Breakeven | 7 |
+| Win Rate | 33.3% (7 breakeven = 0%) |
+| Profit Factor | 51.42 |
+| إجمالي العائد | +56.5% |
+| متوسط مدة الاحتفاظ | 14.5 يوم |
+
+### Exit types:
+- breakeven: 7 (BE-stop-after-+3%-MFE شغّال)
+- target_hit: 2
+- partial_expired: 1
+- partial_stuck: 1
+- stuck_no_movement: 1
+
+### ملاحظة:
+7 breakeven exits = الـ BE-stop-after-+3%-MFE شغّال صح (الصفقات اللي طلعت +3% ثم رجعت بتخرج عند breakeven مش خسارة).
+
+Stage Summary:
+- ✅ daily_closer شغّال مع V40.2
+- ✅ data_engine.db كمصدر أسعار (found_data_engine: 124)
+- ✅ BE-stop-after-+3%-MFE شغّال (7 breakeven exits)
+- ✅ partial_1r_trailing exit policy شغّال
+- 🔜 اختبر picks_management + باقي الخدمات
