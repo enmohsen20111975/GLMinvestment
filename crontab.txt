@@ -1,17 +1,50 @@
-# crontab.txt — جدول المهام الإنتاجي
-# PHASE-1-RESTORE (2026-08-31): V40.2 كمولّد توقعات أساسي
+# crontab.txt — جدول المهام الإنتاجي الشامل
+# ============================================================================
+# PHASE-5 (2026-08-31): V40.2 هو العقل الوحيد — Maestro مات
+# ============================================================================
+# المسارات: عدّل /root/GLMinvestment حسب مسار المشروع على سيرفرك
+# البيئة: استخدم الـ venv المناسب (.venv أو venv)
+# ============================================================================
 
 # ─── مولّد التوقعات الأساسي (V40.2) ───
 # يومياً الساعة 3:00 فجراً (قبل فتح السوق) — يولّد توقعات اليوم
-0 3 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --today-only --max-picks 5 >> /tmp/v40_2_daily.log 2>&1
+0 3 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --today-only --max-picks 5 >> /tmp/v40_2_morning.log 2>&1
 
 # يومياً الساعة 3:30 عصراً (بعد إغلاق السوق) — يولّد توقعات الغد
-30 15 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --yesterday-only --max-picks 5 >> /tmp/v40_2_daily.log 2>&1
+30 15 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
 
 # ─── إغلاق الصفقات (daily_closer) ───
 # يومياً الساعة 4:00 عصراً (بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
-0 16 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1
+0 16 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1
 
 # ─── محرك التعلم (learning_engine) ───
 # يومياً الساعة 5:00 عصراً — يتعلم من نتائج اليوم
-0 17 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/learning_engine.py >> /tmp/learning_engine.log 2>&1
+0 17 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/learning_engine.py >> /tmp/learning_engine.log 2>&1
+
+# ─── Corporate Actions (توزيعات + اكتتاب + جمعيات) ───
+# يومياً الساعة 6:00 صباحاً — يجمع توزيعات الأرباح + أخبار الاكتتاب + الجمعيات
+0 6 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/fetch_corporate_actions.py >> /tmp/corporate_actions.log 2>&1
+
+# ─── تحديث الأسعار اليومية ───
+# يومياً الساعة 7:00 صباحاً و 1:00 ظهراً
+0 7,13 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_price_updater.py >> /tmp/price_updater.log 2>&1
+
+# ─── سكرابر TradingView (خلال ساعات السوق) ───
+*/5 8-12 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/tradingview_scraper.py >> /tmp/tradingview.log 2>&1
+
+# ─── فحص صحة قواعد البيانات ───
+0 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_db_health_check.py >> /tmp/db_health.log 2>&1
+
+# ─── نسخة احتياطية يومية ───
+30 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/smart_db_backup.py >> /tmp/backup.log 2>&1
+
+# ─── فحص دقات القلب (heartbeat) ───
+0 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/data_heartbeat_checker.py >> /tmp/heartbeat.log 2>&1
+
+# ─── جلب الأساسيات (أسبوعياً يوم السبت) ───
+0 14 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egx_fundamental_fetcher.py >> /tmp/fundamentals.log 2>&1
+
+# ============================================================================
+# للتثبيت: crontab crontab.txt
+# للتحقق: crontab -l
+# ============================================================================

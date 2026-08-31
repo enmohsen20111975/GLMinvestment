@@ -772,40 +772,79 @@ class DailyCloser:
         # ── CLOSED CAMP FIX 1 (2026-08-28): BE-stop-after-+3%-MFE ──
         # When MFE reaches +3%, move stop to breakeven.
         # Impact: SumRet +1.44% → +218% (151× improvement!)
+        #
+        # SMART-STOP (2026-08-31): وقف خسارة ذكي — لا تبع عند أي خسارة!
+        # المالك: "سهم اتخسف الأرض نزل جامد بس خلاص دخل تصحيح وخلص وهاينفجر
+        #          لية أبيع؟ ممكن أخليه لأن عليه أخبار حلوة أو خلص التصحيح"
+        #
+        # المنطق الجديد:
+        # 1. لو السهم تحت breakeven بس فيه T2 (هدف ثاني) → لا تبع (احتمال يطلع)
+        # 2. لو السهم نزل -5% في 3 أيام بس فيه T2 → لا تبع (استني)
+        # 3. لو السهم نزل -10% في يوم واحد → بِع فوراً (انهيار)
+        # 4. لو السهم نزل -5% في 3 أيام + مفيش T2 → بِع (البيع صح)
         try:
             if entry_price > 0 and highest_price_reached > 0:
                 _mfe_pct = (highest_price_reached - entry_price) / entry_price * 100
                 if _mfe_pct >= 3.0 and current_stop < entry_price:
                     current_stop = entry_price  # move to breakeven
                     if low > 0 and low <= current_stop:
-                        actual_return = 0.0  # breakeven
-                        return self._mark_closed(
-                            pred_id, ticker, 'CLOSED', actual_return,
-                            highest_price_reached, lowest_price_reached, days_elapsed,
-                            day.get('date', ''),
-                            exit_type='breakeven_mfe3',
-                            highest_price_reached=highest_price_reached,
-                            lowest_price_reached=lowest_price_reached,
-                            holding_days=days_elapsed,
-                            exit_close_price=current_stop,
-                        )
+                        # SMART-STOP: قبل ما تقفل breakeven، افحص هل السهم يستاهل الفرصة
+                        _smart_hold = False
+                        # لو فيه T2 (هدف ثاني) → استني (ممكن يطلع)
+                        if target_price_2 > 0 and target_price_2 > entry_price:
+                            _smart_hold = True
+
+                        if not _smart_hold:
+                            actual_return = 0.0  # breakeven
+                            return self._mark_closed(
+                                pred_id, ticker, 'CLOSED', actual_return,
+                                highest_price_reached, lowest_price_reached, days_elapsed,
+                                day.get('date', ''),
+                                exit_type='breakeven_mfe3',
+                                highest_price_reached=highest_price_reached,
+                                lowest_price_reached=lowest_price_reached,
+                                holding_days=days_elapsed,
+                                exit_close_price=current_stop,
+                            )
+                        else:
+                            # SMART-HOLD: لا تبع — السهم يستاهل الفرصة
+                            print(f"[SMART-HOLD] {ticker}: تحت breakeven بس فيه T2={target_price_2:.2f} → استني", flush=True)
         except Exception:
             pass
 
-            # RECOMMENDATION 7: خروج سريع من الخسائر (-5% في ≤3 أيام)
-            # باك-تست: +4.66% عائد — لو السهم هبط 5% في 3 أيام → اخرج فوراً
+            # RECOMMENDATION 7: خروج سريع من الخسائر — SMART version
+            # -10% في 3 أيام = انهيار → بِع فوراً
+            # -5% في 3 أيام + فيه T2 → استني (ممكن يرتد)
+            # -5% في 3 أيام + مفيش T2 → بِع
             if days_elapsed <= 3 and entry_price > 0:
                 fast_return = ((close - entry_price) / entry_price * 100)
-                if fast_return <= -5.0:
+                if fast_return <= -10.0:
+                    # -10% = انهيار → بِع فوراً
                     return self._mark_closed(
                         pred_id, ticker, 'FAST_STOP', fast_return,
                         highest_price_reached, lowest_price, days_elapsed,
                         day.get('date', ''),
-                        exit_type='fast_stop',
+                        exit_type='fast_stop_crash',
                         highest_price_reached=highest_price_reached,
-                        lowest_price_reached=lowest_price_reached,
+                        lowest_price_reached=lowest_price,
                         holding_days=days_elapsed,
                     )
+                elif fast_return <= -5.0:
+                    # -5% — افحص هل يستاهل الفرصة
+                    if target_price_2 > 0 and target_price_2 > entry_price:
+                        # فيه T2 → استني (ممكن يرتد)
+                        print(f"[SMART-HOLD] {ticker}: نزل {fast_return:.1f}% بس فيه T2={target_price_2:.2f} → استني", flush=True)
+                    else:
+                        # مفيش T2 → بِع
+                        return self._mark_closed(
+                            pred_id, ticker, 'FAST_STOP', fast_return,
+                            highest_price_reached, lowest_price, days_elapsed,
+                            day.get('date', ''),
+                            exit_type='fast_stop',
+                            highest_price_reached=highest_price_reached,
+                            lowest_price_reached=lowest_price,
+                            holding_days=days_elapsed,
+                        )
 
             # Check expiry
             if days_elapsed >= max_days:
