@@ -90,7 +90,7 @@ def _is_ticker_blocklisted(ticker):
 from analyzers.engine_settings import get_setting
 from core.persona_db import safe_store_prediction, update_persona_prediction_outcome
 
-PREDICTIONS_DB = os.path.join(PROJECT_ROOT, 'db', 'predictions.db')
+PREDICTIONS_DB = os.environ.get('V40_2_PREDICTIONS_DB') or os.path.join(PROJECT_ROOT, 'db', 'predictions.db')
 # PRICE_HISTORY_DB is now imported from the engine — it auto-resolves to the
 # correct location (primary db/ or daily backup db/backups/daily/*/) without
 # copying or modifying any database file. Read-only detection.
@@ -100,6 +100,22 @@ DEFAULT_END = '2026-06-10'  # historical default (sandbox run)
 SCAN_INTERVAL = 3
 MAX_PICKS_PER_DAY = 5
 MIN_TICKER_DAYS = 200
+
+# ── V68 ORACLE FEATURE TOGGLES (A/B testing — 2026-08-31) ──
+# كل ميزة V68 ممكن تتعطل/تتفعل عبر env var عشان نعمل A/B backtest.
+# القاعدة: النتائج هي اللي تقرر - بـ نـ keep الكويس ونمسيح الوحش.
+#
+# A/B BACKTEST RESULTS (200 tickers, Feb-Aug 2026):
+#   ✅ KEEP  V68_DIRTY_DIST_REJECT   : +3.2% WR, +22.5% Return (rejected 6 فخاخ)
+#   ❌ KILL  V68_NO_CHASE_2D_REJECT  : 0 triggers (EGX لا يقفز 15% في يومين)
+#   ❌ KILL  V68_PROOF_PROBABILITY   : avg prob=31.7 → أغلب الإثباتات ❌ (عديم الفائدة)
+#   ❌ KILL  V68_APLUS_BOOST         : 1 trigger, 0 تأثير (boost صغير لا يغير picks)
+#   ❌ KILL  V68_MAGNETIC_TARGET     : 0 triggers (high_magnet بـ R:R≥2 نادر)
+V68_DIRTY_DIST_REJECT = os.environ.get('V68_DIRTY_DIST_REJECT', '1') == '1'     # ✅ KEEP — proven +22.5% return
+V68_NO_CHASE_2D_REJECT = os.environ.get('V68_NO_CHASE_2D_REJECT', '0') == '1'   # ❌ KILL — 0 triggers
+V68_PROOF_PROBABILITY = os.environ.get('V68_PROOF_PROBABILITY', '0') == '1'     # ❌ KILL — avg prob 31.7 useless
+V68_APLUS_BOOST = os.environ.get('V68_APLUS_BOOST', '0') == '1'                 # ❌ KILL — no effect
+V68_MAGNETIC_TARGET = os.environ.get('V68_MAGNETIC_TARGET', '0') == '1'         # ❌ KILL — 0 triggers
 
 
 def count_evidence(proofs):
@@ -1088,15 +1104,15 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 result['v68_trend_state'] = _v68['trend_state']
                 result['v68_delta_vol'] = _v68['delta_vol']
 
-                # ── V68 REJECT GATES (hard rejects) ──
+                # ── V68 REJECT GATES (hard rejects) — A/B toggleable ──
                 # 1. dirty_distribution: الحوت بيفرغ → ممنوع الدخول
-                if _v68['dirty_distribution']:
+                if V68_DIRTY_DIST_REJECT and _v68['dirty_distribution']:
                     print(f"[V68-DIRTY-DIST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                           f"توزيع قاتل (ظهر علوي + حجم انفجاري + delta سالب) → رفض", flush=True)
                     continue
 
                 # 2. no_chase_2d: قفز 15% في يومين → ممنوع الدخول
-                if _v68['no_chase_2d']:
+                if V68_NO_CHASE_2D_REJECT and _v68['no_chase_2d']:
                     print(f"[V68-NO-CHASE-2D] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                           f"قفز >15% في يومين (توزيع) → رفض", flush=True)
                     continue
@@ -1106,26 +1122,29 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     print(f"[V68-FUTURE-DOWN] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                           f"البصمة المستقبلية هابطة (momentum={_v68['future_momentum']:.3f}%) → تقليل ثقة", flush=True)
 
-                # ── V68 PROOF #8: oracle_probability ──
+                # ── V68 PROOF #8: oracle_probability — A/B toggleable ──
                 # ✅ لو probability >= 50 → إثبات قوي
                 # ⚠️ لو probability 25-50 → إثبات ضعيف
                 # ❌ لو probability < 25 → مفيش إثبات
-                _v68_proof_str = ''
-                if _v68['probability'] >= 70:
-                    _v68_proof_str = f'✅ احتمالية عالية ({_v68["probability"]}/100)'
-                elif _v68['probability'] >= 50:
-                    _v68_proof_str = f'⚠️ احتمالية متوسطة ({_v68["probability"]}/100)'
-                else:
-                    _v68_proof_str = f'❌ احتمالية ضعيفة ({_v68["probability"]}/100)'
+                if V68_PROOF_PROBABILITY:
+                    _v68_proof_str = ''
+                    if _v68['probability'] >= 70:
+                        _v68_proof_str = f'✅ احتمالية عالية ({_v68["probability"]}/100)'
+                    elif _v68['probability'] >= 50:
+                        _v68_proof_str = f'⚠️ احتمالية متوسطة ({_v68["probability"]}/100)'
+                    else:
+                        _v68_proof_str = f'❌ احتمالية ضعيفة ({_v68["probability"]}/100)'
 
-                if 'proofs' not in result or result['proofs'] is None:
-                    result['proofs'] = {}
-                result['proofs']['oracle_probability'] = _v68_proof_str
+                    if 'proofs' not in result or result['proofs'] is None:
+                        result['proofs'] = {}
+                    result['proofs']['oracle_probability'] = _v68_proof_str
 
-                # ── V68 A+ GATE: liquidity_grab يتطلب probability >= 70% ──
+                # ── V68 A+ GATE: liquidity_grab يتطلب probability >= 70% — A/B toggleable ──
                 # Pine V68: A+ Liquidity Grab signal بـ يتطلب probability >= 70%
-                if _v68['liquidity_grab'] and _v68['probability'] >= 70:
+                if V68_APLUS_BOOST and _v68['liquidity_grab'] and _v68['probability'] >= 70:
                     # A+ signal: boost الـ tech_score ونضيف إثبات
+                    if 'proofs' not in result or result['proofs'] is None:
+                        result['proofs'] = {}
                     result['proofs']['liquidity_grab_a_plus'] = '✅ A+ Liquidity Grab (probability ≥ 70%)'
                     print(f"[V68-A-PLUS] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                           f"A+ Liquidity Grab! probability={_v68['probability']}/100 "
@@ -1134,10 +1153,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     if isinstance(result.get('score'), (int, float)):
                         result['score'] = min(100, result['score'] + 10)
 
-                # ── V68 MAGNETIC TARGET: لو فيه high_magnet → استخدمه كـ target ──
+                # ── V68 MAGNETIC TARGET: high_magnet → target_2 — A/B toggleable ──
                 # Pine V68: tp2 = active_high_magnet (الهدف المستقبلي = المغناطيس العلوي)
                 # ده بـ يحسن الـ R:R لو المغناطيس أعلى من الـ target الحالي
-                if _v68['high_magnet'] and _v68['high_magnet'] > entry:
+                if V68_MAGNETIC_TARGET and _v68['high_magnet'] and _v68['high_magnet'] > entry:
                     _v68_mag_target = _v68['high_magnet']
                     _v68_mag_rr = (_v68_mag_target - entry) / max(0.01, entry - stop)
                     # لو المغناطيس بـ يدي R:R >= 2 → استخدمه كـ target_2 (runner)
@@ -1305,7 +1324,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
     print(f"\n✅ Processed {total_tickers} tickers. Signals found on {len(signals_by_date)} dates.", flush=True)
 
-    if dry_run:
+    # ── V40_2_BACKTEST_MODE (2026-08-31): A/B testing harness ──
+    # لما V40_2_BACKTEST_MODE=1: مش بـ return early في dry-run، وبـ نـ set outcomes.
+    # ده بـ يـ allow الـ A/B harness يقرأ WR/PF من temp DB.
+    _backtest_mode = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
+
+    if dry_run and not _backtest_mode:
         total_signals = sum(len(v) for v in signals_by_date.values())
         print(f"🔍 DRY-RUN: would have generated {total_signals} signals across {len(signals_by_date)} dates.", flush=True)
         # Still print the summary of what would have been picked
@@ -1321,7 +1345,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     # PHASE-1-RESTORE (2026-08-31): V40.2 رجع كمولّد توقعات أساسي
     # Maestro اتعلّل واتعطل من الكتابة — V40.2 هو المصدر الوحيد دلوقتي
     tracker = PredictionTracker(PREDICTIONS_DB)  # مفعّل — V40.2 يكتب في predictions
-    _dry_run_no_write = False  # سماح بالكتابة في DB
+    # V40_2_BACKTEST_MODE: set _dry_run_no_write=True عشان يـ set outcomes
+    _dry_run_no_write = _backtest_mode  # لو backtest mode → set outcomes
     total_generated = 0
     total_morning_bells = 0
     daily_summary = []

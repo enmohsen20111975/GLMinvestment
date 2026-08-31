@@ -13734,3 +13734,108 @@ Stage Summary:
 - ✅ daily_closer بـ يستخدم V68 MFE trailing stop
 - ✅ Build نظيف، dev server شغّال، page renders بدون errors
 - مفيش frontend changes مطلوبة (V68 data بتظهر في kill_filter_result audit string)
+
+---
+Task ID: V68-AB-BACKTEST-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: A/B backtest لكل ميزة V68 لوحدها — النتائج هي اللي تقرر (keep good, kill bad)
+
+Work Log:
+
+### Phase 1: بناء A/B Harness
+- `scripts/v68_ab_backtest.py` (400 LOC)
+- كل ميزة V68 بقت toggleable عبر env var:
+  - V68_DIRTY_DIST_REJECT, V68_NO_CHASE_2D_REJECT, V68_PROOF_PROBABILITY
+  - V68_APLUS_BOOST, V68_MAGNETIC_TARGET
+- V40.2 modifications:
+  - `V40_2_PREDICTIONS_DB` env var (temp DB per run)
+  - `V40_2_BACKTEST_MODE` env var (writes predictions + outcomes, no early return)
+- كل run بـ يستخدم temp DB منفصل (schema منسوخ من real predictions.db، data مفرغة)
+- read_metrics_from_db بـ يحسب: trades, WR, PF, total return, avg return, V68 triggers
+
+### Phase 2: A/B Backtest (200 tickers, Feb-Aug 2026)
+الـ baseline: 15 trades, WR 73.3%, PF 9.80, Return +66.2% (يطابق الأصلي!)
+
+| Feature                    | Trades | WR%   | PF    | Return% | Δ WR  | Δ Ret  | Verdict |
+|----------------------------|--------|-------|-------|---------|-------|--------|---------|
+| BASELINE (V68 OFF)         | 15     | 73.3  | 9.80  | +66.2   | -     | -      | -       |
+| +V68_DIRTY_DIST_REJECT     | 17     | 76.5  | 12.79 | +88.7   | +3.2  | +22.5  | ✅ KEEP  |
+| +V68_NO_CHASE_2D_REJECT    | 15     | 73.3  | 9.80  | +66.2   | 0     | 0      | ❌ KILL  |
+| +V68_PROOF_PROBABILITY     | 15     | 73.3  | 9.80  | +66.2   | 0     | 0      | ❌ KILL  |
+| +V68_APLUS_BOOST           | 15     | 73.3  | 9.80  | +66.2   | 0     | 0      | ❌ KILL  |
+| +V68_MAGNETIC_TARGET       | 15     | 73.3  | 9.80  | +66.2   | 0     | 0      | ❌ KILL  |
+
+### Phase 3: تحليل النتائج
+
+**✅ KEEP: V68_DIRTY_DIST_REJECT** (الفائز الوحيد)
+- رفض 6 إشارات dirty distribution (ظهر علوي + حجم انفجاري + delta سالب)
+- الـ replacement signals كانت أقوى → +3.2% WR, +22.5% Return
+- PF: 9.80 → 12.79 (+30% improvement)
+- السبب: dirty_dist بـ يكشف فخاخ الـ distribution اللي V62 بـ يفوتها (V62 بـ يفحص ظهر + حجم بس، V68 بـ يضيف delta سالب)
+
+**❌ KILL: V68_NO_CHASE_2D_REJECT** (0 triggers)
+- مفيش سهم قفز >15% في يومين في الفترة دي
+- EGX سوق أقل تقلب من الـ global markets
+- V40.2 عنده dont_chase 3-day/5-day filter بـ يغطي نفس الحاجة
+- القرار: default=0
+
+**❌ KILL: V68_PROOF_PROBABILITY** (avg prob=31.7)
+- probability avg = 31.7/100 → أغلب الإثباتات ❌ (probability < 50)
+- الإثبات ❌ مش بـ يـ count كـ evidence → مفيش تأثير على min_evidence filter
+- probability score بـ يعتمد على delta_vol + quiet_acc + trend_state + high_magnet
+- كلهم نادرين في EGX → probability دايماً منخفضة
+- القرار: default=0
+
+**❌ KILL: V68_APLUS_BOOST** (1 trigger, 0 effect)
+- liquidity_grab + probability>=70% = تركيبة نادرة جداً
+- 1 trigger بس في 200 سهم، والـ +10 boost مش غيّر الـ picks (already in top 5)
+- القرار: default=0
+
+**❌ KILL: V68_MAGNETIC_TARGET** (0 triggers)
+- high_magnet بـ R:R>=2 = نادر في EGX
+- 0 triggers في 200 سهم
+- القرار: default=0
+
+### Phase 4: تطبيق القرارات
+
+**V40.2 defaults updated:**
+```python
+V68_DIRTY_DIST_REJECT  = '1'  # ✅ KEEP — proven +22.5% return
+V68_NO_CHASE_2D_REJECT = '0'  # ❌ KILL — 0 triggers
+V68_PROOF_PROBABILITY  = '0'  # ❌ KILL — avg prob 31.7 useless
+V68_APLUS_BOOST        = '0'  # ❌ KILL — no effect
+V68_MAGNETIC_TARGET    = '0'  # ❌ KILL — 0 triggers
+```
+
+**daily_closer V68 MFE trailing stop:**
+- default = '0' (KILLED pending backtest)
+- الـ MFE trailing بـ يؤثر على EXIT مش ENTRY → محتاج A/B test منفصل
+- القرار: default=0 حتى يتعمله backtest منفصل
+
+### Phase 5: التحقق
+- ✅ Python syntax OK (3 files)
+- ✅ Dev server HTTP 200
+- ✅ V68 Oracle module شغّال (self-test passed)
+- ✅ A/B harness شغّال (6 runs completed)
+- ✅ الـ baseline بـ يـ reproduce الأرقام الأصلية (WR 73.3%, Return +66.2%)
+- ✅ dirty_dist_reject بـ يحسّن فعلاً (+22.5% return)
+
+### الحكم النهائي:
+**من 8 ميزات V68، 1 بس اللي proved valuable:**
+- ✅ dirty_distribution reject (with delta check) = الفائز الوحيد
+- ❌ 4 ميزات entry-level = killed (0 triggers أو no effect)
+- ⏸️ 1 ميزة exit-level (MFE trailing) = pending backtest منفصل
+
+**الدرس: النظرية بتقول حاجات كتير كويسة، بس الباك-تست هو اللي بـ يقرر.**
+- Pine Script V68 متصمم لـ global markets (crypto/forex) → فيهم triggers أكتر
+- EGX سوق مختلف: أقل تقلب، مفيش liquidity grabs كبيرة، probability score دايماً منخفضة
+- بس dirty_distribution موجود في EGX → ده الوحيد اللي شغّال
+
+Stage Summary:
+- ✅ A/B backtest completed (6 runs, 200 tickers each, Feb-Aug 2026)
+- ✅ 1 feature KEEP (dirty_dist_reject: +22.5% return)
+- ✅ 4 features KILL (0 triggers or no effect)
+- ⏸️ 1 feature pending (MFE trailing — needs separate exit-level backtest)
+- ✅ V40.2 defaults updated per A/B results
+- ✅ daily_closer MFE trailing default=0 (pending backtest)
+- ✅ V68 Oracle module محفوظ كامل (كل functions شغّالة، بس اللي proven بـ يـ used)

@@ -720,13 +720,11 @@ class DailyCloser:
             # ── V68 ORACLE: MFE-based Trailing Stop (المرحلة 4 — 2026-08-31) ──
             # Pine V68 The Dirty Exit: بعد partial TP عند 1.5R، الوقف بـ يـ trail
             # خلف الـ MFE بـ R-multiple distance بدل ATR الثابت.
-            # المنطق:
-            #   1. لو MFE >= 1.5R (partial TP threshold) → فعّل R-multiple trailing
-            #   2. new_trail_sl = entry + (current_r × (r_mult - 1.0))
-            #   3. خد max(ATR_trailing, R-multiple_trailing) = الأقرب للسعر (أكثر حماية)
-            # الفايدة: الوقف بـ يـ trail بشكل ذكي حسب الـ R-multiple اللي حققه السهم،
-            # مش بس ATR ثابت. ده بـ يحافظ على أرباح أكتر في الـ runners.
-            if not _is_ex_dividend_day:
+            # A/B TOGGLE: V68_MFE_TRAILING env var (default=0 — KILLED pending backtest)
+            #   - default=0: استخدم ATR trailing العادي فقط
+            #   - =1: فعّل R-multiple trailing (يحتاج A/B backtest منفصل)
+            # القاعدة: النتائج هي اللي تقرر — لو الميزة وحّشت، default يفضل 0.
+            if not _is_ex_dividend_day and os.environ.get('V68_MFE_TRAILING', '0') == '1':
                 try:
                     from analyzers.v68_oracle import compute_mfe_trailing_stop
                     _v68_original_stop = float(prediction.get('stop_loss', 0) or 0)
