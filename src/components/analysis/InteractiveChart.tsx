@@ -90,7 +90,7 @@ interface FullChartProps {
     // BRIEF-045: zones for box drawing
     smc_zones?: Array<{ type: string; top: number; bottom: number; zone_type: string }>;
   };
-  // PHASE 11: V20 Ultimate Fusion Engine (LuxAlgo + BigBeluga + SMC)
+  // PHASE 11: محرك التحليل الموحد (Multi-Source Confluence)
   fusionMetrics?: {
     score: number;
     signal: string;

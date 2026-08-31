@@ -190,7 +190,7 @@ export function DashboardView() {
     },
     {
       id: 'maestro',
-      title: 'نظام المايسترو',
+      title: 'لوحة القيادة',
       visible: (p) => p !== 'crypto',
       render: () => <MaestroWidget />,
     },
@@ -402,14 +402,14 @@ export function DashboardView() {
               );
             })()}
 
-            {/* 5. الأكثر تحركاً ونظام المايسترو */}
+            {/* 5. الأكثر تحركاً ولوحة القيادة */}
             {(() => {
               const items = layout.filter((x) => x.id === 'top-movers' || x.id === 'maestro');
               const visible = items.filter((x) => !x.pinned);
               if (visible.length === 0) return null;
               return (
                 <section
-                  aria-label="الأكثر تحركاً ونظام المايسترو"
+                  aria-label="الأكثر تحركاً ولوحة القيادة"
                   className="grid grid-cols-1 lg:grid-cols-2 gap-4"
                 >
                   {visible.map((w) => (
