@@ -1,7 +1,7 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-08-17
-> (بعد R:R fix commit `65a748f` + fundamentals activation commit `04354a5`).
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-08-31
+> (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
 > **كل ملفات التوثيق السابقة في `/Documentation/*.md` دُمجت في الـ 4 ملفات الرئيسية:**
 > 1. `Documentation/00-CONSTITUTION.md` — الحوكمة والقواعد.
 > 2. `Documentation/01-PROJECT_ANATOMY.md` — التشريح الكامل (المعمارية، المحركات، DBs، تدفق البيانات).
@@ -11,8 +11,70 @@
 > **المنهجية:** كل رقم/صيغة/مسار/سلوك مُتحقَّق منه ضد الكود الفعلي + الأرشيف الإنتاجي
 > (`active_databases_20260817_full.zip`, md5 `0947bdf6c2eff1a75ff8af6c3e576ed8`).
 >
-> **النتيجة على الإنتاج الحالي:** Backtest 539 صفقة (WR 51.0%, PF 1.584) · Live 26 صفقة مقفولة
-> (WR ≈ 69.2%, PF ≈ 4.46) · Fair re-sim post R:R fix (148 صفقة): PF 1.398 → 1.453, Exp +0.189%/trade.
+> **النتيجة على الإنتاج الحالي (2026-08-31):** V40.2 هو العقل الوحيد.
+> Backtest (ساندبوكس): 12 صفقة مغلقة | WR 33.3% (7 breakeven) | PF 51.42 | Return +56.5%.
+> Dry-run: 15 صفقة | WR 73.3% | PF 9.80 | Return +66.2%.
+
+---
+
+## ⚡ تغييرات جوهرية (2026-08-31)
+
+### 🔥 KILL-MAESTRO: V40.2 هو العقل الوحيد
+
+**Maestro مات بالكامل.** V40.2 هو مولّد التوقعات الأساسي والوحيد.
+
+**ما تغيّر في منطق التفكير:**
+- قبل: Maestro (8-layer confluence, 138 pts) → predictions.db
+- بعد: V40.2 (6 proofs + evidence-based) → predictions.db
+- Maestro لسه موجود في الكود (للـ UI/queries) بس مش بيكتب توقعات
+
+**الفارق الجوهري:**
+| المقياس | Maestro (مات) | V40.2 (العقل الوحيد) |
+|---|---|---|
+| المنطق | 8-layer confluence (138 pts) | 6 proofs + evidence-based (82-91 pts) |
+| البقاء | معطل (signal_id = None) | مفعّل (tracker = PredictionTracker) |
+| التوقعات | مش بيكتب | يكتب في predictions.db |
+| الـ UI | للتحليل فقط | المصدر الوحيد للتوقعات |
+
+### 🧠 V62 Logic (4 ميزات جديدة في V40.2)
+
+أضفنا 4 ميزات من Pine Script V62 لـ V40.2 (سطر 979-1048 في v40_2_daily_generator.py):
+
+1. **fake_pump** (رفض): طلع +3% بس حجم < MA → فخ الميكرز
+2. **is_dist** (رفض): توزيع (شمعة حمراء + ظهر >50% + حجم >2× MA)
+3. **is_story_stock** (تقليل حجم): P/E > 50 من data_engine.db.tab_valuation
+4. **maker_sweep** (boost): sweep_low + delta موجب
+
+BOS/CHOCH كان موجود بالفعل (سطر 953-977).
+
+### 📰 AI News Agent (الإثبات السابع)
+
+**الملف:** `vps-service/ai/news_agent.py`
+
+بعد كل signal في V40.2، الـ News Agent:
+1. يبحث عن أخبار السهم (DuckDuckGo)
+2. يستخرج نص المقال (Trafilatura)
+3. يحلل بالكلمات المفتاحية (120+ كلمة بأوزان 1-3)
+4. لو score < 30 → يرفض الإشارة
+
+**حالة Ollama:** crash على السيرفر (CPU بلا AVX/SSE). Keyword fallback هو الإنتاج.
+
+### 🔧 إصلاحات daily_closer
+
+1. **data_engine.db مباشر:** يقرأ من egksco_price_history (تجاوز data.prices recursion)
+2. **created_at = prediction_date:** في backtest، لحساب days_elapsed صحيح
+3. **V40.2 dry_run:** outcome_date يسجل بس في dry_run — daily_closer يقفل في الإنتاج
+
+### ⚠️ مشاكل معروفة (2026-08-31)
+
+| المشكلة | التفاصيل | الحل |
+|---|---|---|
+| Ollama crash | CPU السيرفر مش بيدعم AVX/SSE | keyword fallback شغّال |
+| 7 breakeven exits | BE-stop-after-+3%-MFE بيخرج صفقات كتير عند breakeven | مراجعة threshold |
+| DuckDuckGo rate limit | أحياناً 403 Ratelimit | retry + delay |
+| أخبار الاكتتاب/توزيع الأرباح | مش موجودة | مطلوب إضافتها (انظر 01-PROJECT_ANATOMY.md §12) |
+
+---
 
 ---
 

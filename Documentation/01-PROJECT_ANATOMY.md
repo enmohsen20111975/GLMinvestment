@@ -5,7 +5,7 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث:** 2026-08-17 (post R:R fix — commit `65a748f` + تفعيل الأساسيات المرحلة A–F).
+> **آخر تحديث:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
 > **كل ملفات `Documentation/*.md` السابقة دُمجت في الملفات الأربعة الرئيسية:**
 > `00-CONSTITUTION.md` (الدستور) · `01-PROJECT_ANATOMY.md` (هذا الملف) ·
 > `02-SCREENS_AND_COMPONENTS.md` (الشاشات والمكونات) · `SYSTEM_HOW_IT_THINKS.md` (منطق التحليل).
@@ -15,6 +15,70 @@
 >
 > ⚠️ هذا الملف **يلزم الواقع الحالي للكود**. كل رقم/مسار/منفذ متحقَّق منه ضد الكود الفعلي.
 > أي تغيير في البنية = تحديث هذا الملف فورًا.
+
+---
+
+## ⚡ تغييرات جوهرية (2026-08-31) — اقرأ هذا أولاً
+
+### 🔥 KILL-MAESTRO: V40.2 هو العقل الوحيد
+
+**Maestro مات بالكامل.** V40.2 هو مولّد التوقعات الأساسي والوحيد.
+
+| التغيير | التفاصيل |
+|---|---|
+| **V40.2 = المصدر الوحيد** | `v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل |
+| **Maestro = معطل** | `maestro_orchestrator.py` signal_id = None — مش بيكتب أي توقعات |
+| **background_analyzer** | `self.orchestrator = None` — مش بـ init Maestro |
+| **maestro_routes** | `orchestrator = None` — مش بـ analyze |
+| **analysis_runner** | `run_analysis_batch` returns immediately — Maestro init DISABLED |
+| **day_trading_scanner** | `self.orchestrator = None` — skip |
+| **ai_predictions_routes** | يقرأ من `predictions` (V40.2) مش `stored_analyses` (Maestro) |
+
+### 🧠 V62 Logic (4 ميزات من Pine Script)
+
+| الميزة | الوصف | المصدر |
+|---|---|---|
+| **fake_pump** | طلع +3% بس حجم ضعيف → رفض (فخ الميكرز) | V62 line 80-83 |
+| **is_dist** | توزيع (شمعة حمراء + ظهر >50% + حجم >2× MA) → رفض | V62 line 85-87 |
+| **is_story_stock** | P/E > 50 → تقليل الحجم | V62 line 90 |
+| **maker_sweep** | sweep_low + delta موجب → boost | V62 line 89 |
+
+### 📰 AI News Agent
+
+| الميزة | الوصف |
+|---|---|
+| **DuckDuckGo Search** | بحث مجاني عن أخبار السهم (بدون API key) |
+| **Trafilatura** | استخلاص نص المقال من HTML |
+| **Keyword Fallback** | 120+ كلمة مفتاحية (عربي + إنجليزي) بأوزان 1-3 |
+| **Ollama** | محاولة تحليل بالـ AI (crash على السيرفر الحالي — CPU بلا AVX) |
+| **التكامل مع V40.2** | بعد كل signal → تحليل أخبار → لو score < 30 → رفض |
+
+### 🔧 إصلاحات daily_closer
+
+| الإصلاح | الوصف |
+|---|---|
+| **data_engine.db مباشر** | daily_closer يقرأ من `egksco_price_history` مباشرة (تجاوز data.prices recursion) |
+| **created_at = prediction_date** | في backtest، created_at = prediction_date (مش now()) عشان days_elapsed صحيح |
+| **V40.2 dry_run فقط** | outcome_date يسجل بس في dry_run — daily_closer يقفل في الإنتاج |
+
+### 📊 نتائج Backtest (الساندبوكس — data/all.zip)
+
+| المقياس | V40.2 القديم | V40.2 الحالي |
+|---|---|---|
+| عدد الصفقات | 39 | 12 (scan-interval=3) |
+| Win Rate | 69.2% | 73.3% (dry_run) / 33.3% (daily_closer) |
+| Profit Factor | 6.04 | 9.80 (dry_run) / 51.42 (daily_closer) |
+| Return | +51.6% | +66.2% (dry_run) / +56.5% (daily_closer) |
+
+### ⚠️ مشاكل معروفة
+
+| المشكلة | الوصف | الحل المقترح |
+|---|---|---|
+| **Ollama crash** | CPU السيرفر مش بيدعم AVX/SSE → كل النماذج crash | keyword fallback شغّال (120+ كلمة) |
+| **7 breakeven exits** | BE-stop-after-+3%-MFE بيخرج صفقات كتير عند breakeven | مراجعة threshold (+3% → +5%؟) |
+| **DuckDuckGo rate limit** | أحياناً بيرفض البحث (403 Ratelimit) | إضافة retry + delay |
+| **أخبار الاكتتاب/توزيع الأرباح** | مش موجودة في النظام حالياً | مطلوب إضافتها (انظر القسم 12) |
+| **market.db = 0 بايت** | الـ 4-DB target architecture مش مكتمل | استخدام data_engine.db كـ canonical |
 
 ---
 
@@ -31,6 +95,7 @@
 9. [audit_map.json — Machine-Generated File Map](#9-audit_mapjson--machine-generated-file-map)
 10. [Known Architectural Gaps](#10-known-architectural-gaps)
 11. [References & Merged Sources](#11-references--merged-sources)
+12. [AI News Agent + Corporate Actions (جديد 2026-08-31)](#12-ai-news-agent--corporate-actions)
 
 ---
 
@@ -441,8 +506,8 @@ Actual:    symbol=السعودية | market=2025-Q3 | fiscal_period=2025-12-31 |
 | Engine | File | LOC | الوصف | Status |
 |---|---|---:|---|---|
 | **V38 Backtest Engine** | `engines/v38_backtest_engine.py` | 1,817 | walk-forward backtest — NOW reads canonical `sl`/`tp1`/`tp2` + ATR clamp `[3%, 9%]` (commit `65a748f`) | ✅ ACTIVE |
-| **V39/V40.2 Institutional Decision Engine** | `analyzers/institutional_decision_engine.py` | ~520 | 6 proofs + Tech Score (base 25, max 100) + portfolio_advice + dynamic R:R (1.5/2.0) — returns `sl`/`tp1`/`tp2` keys | ✅ ACTIVE |
-| **Maestro Orchestrator** | `engines/maestro_orchestrator.py` = `analyzers/maestro_orchestrator.py` | 3,545 | 8-layer confluence (138 pts max، BUY threshold 68) + 15+ modifier بعد الفازات | ✅ ACTIVE |
+| **V39/V40.2 Institutional Decision Engine** | `analyzers/institutional_decision_engine.py` | ~520 | 6 proofs + Tech Score (base 25, max 100) + portfolio_advice + dynamic R:R (1.5/2.0) — returns `sl`/`tp1`/`tp2` keys | ✅ ACTIVE — THE ONLY ENGINE |
+| **Maestro Orchestrator** | `engines/maestro_orchestrator.py` = `analyzers/maestro_orchestrator.py` | 3,545 | 8-layer confluence (138 pts max، BUY threshold 68) + 15+ modifier بعد الفازات | ❌ DISABLED (KILL-MAESTRO 2026-08-31) — signal_id = None، مش بيكتب توقعات |
 | **Stock Fundamentals** | `analyzers/stock_fundamentals.py` | — | reads `tab_balance_sheet` (with `symbol ≠ ticker` gap resolver — Arabic prefix match) | ✅ ACTIVE (with gap) |
 | **EGX Fundamental Fetcher** | `vps-service/data/egx_fundamental_fetcher.py` | 573 | fetches from **EGXPilot FREE API** — writes to `egx_fundamentals` table. HARDENED (4cde9f0): ticker guard + no-args cron fix + `verify` integrity check | ✅ SCHEDULED (a268957) |
 | **Persona Engine** | `analyzers/persona_engine.py` | — | 4 personas (gambler/balanced/conservative/expert) + `PERSONA_CONFIGS` + `_ADAPTIVE_RR_TABLE` + `PERSONA_INPUT_WEIGHTS` | ✅ ACTIVE |
@@ -477,7 +542,7 @@ if r_mult < get_setting('dynamic_rr_normal', default=1.5):
 ```
 1. live_price.py            ← يجمع سعر الإغلاق اليومي
    ↓
-2. maestro_orchestrator.py  ← يولّد التوصيات
+2. v40_2_daily_generator.py ← يولّد التوصيات (V40.2 هو العقل الوحيد — KILL-MAESTRO)
    ↓
 3. daily_closer.py          ← يقفل الصفقات + يحسب profit_loss (SELL sign-flip fix + -20% cap)
    ↓
@@ -1154,6 +1219,128 @@ sqlite3 db/predictions.db "SELECT ticker, entry_price, target_price, stop_loss,
 
 ---
 
-> **END OF FILE** — `01-PROJECT_ANATOMY.md` v3.4.43 (post R:R fix `65a748f`, post fundamentals Stage A-F `04354a5`, post PERSONA-UNIFY-A `c14597d`).
-> للتفاصيل الكاملة عن أي قسم: ابحث في الـ source files المُدرجة في §11.2 (pending deletion by main agent).
+## 12. AI News Agent + Corporate Actions (جديد 2026-08-31)
+
+### 12.1 AI News Agent
+
+**الملف:** `vps-service/ai/news_agent.py` (340 LOC)
+
+وكيل ذكي لجلب وتحليل الأخبار باستخدام أدوات مجانية:
+
+| المكون | الحزمة | الوصف | الحالة |
+|---|---|---|---|
+| **DuckDuckGo Search** | `ddgs` | بحث مجاني عن أخبار السهم (بدون API key) | ✅ شغّال |
+| **Trafilatura** | `trafilatura` | استخلاص نص المقال من HTML → نص نقي | ✅ شغّال |
+| **Ollama** | `ollama` | تحليل بالـ AI المحلي (qwen2.5:1.5b) | ❌ crash (CPU بلا AVX) |
+| **Keyword Fallback** | (مدمج) | 120+ كلمة مفتاحية (عربي + إنجليزي) بأوزان 1-3 | ✅ شغّال (الإنتاج) |
+
+**كيف يعمل:**
+```
+V40.2 يولّد signal
+  ↓
+News Agent يبحث (DuckDuckGo) عن أخبار السهم
+  ↓
+يستخرج نص المقال (Trafilatura)
+  ↓
+يحاول Ollama → crash → keyword fallback
+  ↓
+يرجع: sentiment (positive/negative/neutral) + score (0-100) + summary
+  ↓
+لو score < 30 (سلبي جداً) → ارفض الإشارة
+```
+
+**التكامل مع V40.2:** `v40_2_daily_generator.py` (سطر 1159-1185)
+- بعد بناء كل signal → شغل News Agent
+- خزّن `news_sentiment` + `news_score` + `news_summary` في signal
+- لو `score < 30 AND confidence > 0.5` → ارفض الإشارة
+- safe-by-design: لو فشل → تجاهل (لا تأثير على التوقعات)
+
+**اختبار الإنتاج (2026-08-31):**
+```
+SWDY (Ezz Steel):    positive, score=90/100, 3 كلمات إيجابية (وزن 8)
+HRHO (Hassan Allam): positive, score=80/100, 2 كلمات إيجابية (وزن 6)
+COMI (CIB):          neutral, score=50/100, لا توجد أخبار (DuckDuckGo rate limit)
+```
+
+### 12.2 Corporate Actions — أخبار الاكتتاب وتوزيع الأرباح (مطلوب تنفيذه)
+
+**المشكلة:** النظام الحالي ما بيجيبش أخبار الاكتتاب (IPO) ولا توزيع الأرباح (Dividends) ولا مواعيدها.
+دي معلومات بتقلب تحليلات السهم بشكل كبير:
+
+| الحدث | التأثير على السهم | المصدر المقترح |
+|---|---|---|
+| **اكتتاب جديد (IPO)** | سهم جديد يدخل السوق → سيولة بتتحرك | DuckDuckGo + EGX website |
+| **توزيع أرباح (Dividend)** | ex-div date → السعر ينزل بقيمة التوزيع | EGXPilot + data_engine.db.tab_dividends |
+| **split/reverse split** | تغيير عدد الأسهم → السعر يتغير | EGX announcements |
+| **general assembly** | قرارات مهمة (توزيع/زيادة رأس مال) | EGX website |
+
+**الخطة المقترحة (4 مراحل):**
+
+#### المرحلة 1: جدول توزيع الأرباح (Dividend Calendar)
+```
+المصدر: data_engine.db.tab_dividends (موجود بالفعل — 858 صف)
+المنطق:
+  - قبل كل توقع، افحص هل السهم عنده ex-div date خلال 7 أيام
+  - لو ex-div قريب → خزّن كـ warning (مش رفض)
+  - لو ex-div خلال 2 يوم → رفض الدخول (السعر هينزل)
+```
+
+#### المرحلة 2: أخبار الاكتتاب (IPO News)
+```
+المصدر: DuckDuckGo search "EGX IPO Egypt stock"
+المنطق:
+  - ابحث عن أخبار الاكتتاب الجديد
+  - لو فيه اكتتاب جديد → تأثير على سيولة السوق
+  - خزّن في news_agent كـ "ipo_alert"
+```
+
+#### المرحلة 3: General Assembly Calendar
+```
+المصدر: EGX website scraping
+المنطق:
+  - اجمع مواعيد الجمعيات العمومية
+  - قبل كل توقع، افحص هل السهم عنده جمعية قريبة
+  - لو الجمعية خلال 3 أيام → warning (قرارات ممكن تقلب السعر)
+```
+
+#### المرحلة 4: دمج Corporate Actions في V40.2
+```
+في v40_2_daily_generator.py، بعد Entry Gate:
+  1. فحص Dividend Calendar → warning/reject
+  2. فحص IPO News → warning
+  3. فحص General Assembly → warning/reject
+  4. خزّن كل corporate actions في signal للـ audit
+```
+
+**DB tables المطلوبة:**
+```sql
+-- جدول جديد في predictions.db
+CREATE TABLE IF NOT EXISTS corporate_actions (
+    id TEXT PRIMARY KEY,
+    ticker TEXT,
+    action_type TEXT,  -- 'dividend', 'ipo', 'split', 'assembly'
+    action_date TEXT,
+    details TEXT,      -- JSON بتفاصيل الحدث
+    source TEXT,       -- 'egx', 'duckduckgo', 'egxpilot'
+    created_at TEXT
+);
+```
+
+### 12.3 الـ Cron المقترح للـ Corporate Actions
+
+```bash
+# جلب توزيعات الأرباح يومياً (من EGXPilot)
+0 6 * * 1-5 cd /root/GLMinvestment && python3 vps-service/jobs/fetch_dividends.py >> /tmp/dividends.log 2>&1
+
+# جلب أخبار الاكتتاب كل 6 ساعات
+0 */6 * * * cd /root/GLMinvestment && python3 vps-service/jobs/fetch_ipo_news.py >> /tmp/ipo_news.log 2>&1
+
+# جلب مواعيد الجمعيات العمومية يومياً
+30 6 * * 1-5 cd /root/GLMinvestment && python3 vps-service/jobs/fetch_assembly_calendar.py >> /tmp/assembly.log 2>&1
+```
+
+---
+
+> **END OF FILE** — `01-PROJECT_ANATOMY.md` v3.5.0 (KILL-MAESTRO + V40.2 sole engine + V62 logic + AI News Agent).
+> للتفاصيل الكاملة عن أي قسم: ابحث في الـ source files المُدرجة في §11.2.
 > للتحديث: عدّل هذا الملف مباشرة + حدّث الـ "last updated" في الـ header.
