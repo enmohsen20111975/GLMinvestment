@@ -3992,6 +3992,15 @@ class MaestroOrchestrator:
                 except Exception as _pos_err:
                     logger.debug(f"Position sizing failed for {ticker}: {_pos_err}")
 
+                # ── ENGINE-UNIFY Phase 2: max_picks cap + engine_source tag ──
+                _today_str = options.get('scan_date', '') or datetime.now().strftime('%Y-%m-%d')
+                if not self._check_max_picks(_today_str):
+                    warnings.append(f'Max picks limit reached ({self._max_picks_per_day}/day)')
+                    warnings_ar.append(f'وصلنا للحد الأقصى ({self._max_picks_per_day}/يوم)')
+                    result.warnings = warnings
+                    result.warnings_ar = warnings_ar
+                    return result
+
                 signal_id = self.prediction_tracker.record_prediction(
                     ticker=ticker,
                     signal=recommendation.upper(),
@@ -4001,7 +4010,7 @@ class MaestroOrchestrator:
                     master_score=maestro_score,
                     technical_score=quality_score,
                     fundamental_score=quality_score,
-                    notes=f"Confidence: {confidence}%",
+                    notes=f"Confidence: {confidence}% | engine={self.engine_source}",
                     persona=persona_type,
                     atr_at_entry=_atr_val,
                     target_price_2=_rl_t2,
