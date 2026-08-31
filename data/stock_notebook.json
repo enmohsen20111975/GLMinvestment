@@ -2,7 +2,7 @@
   "_meta": {
     "description": "دفتر ملاحظات الأسهم — ذاكرة دائمة للمحللين",
     "version": "1.0",
-    "last_updated": "2026-08-31",
+    "last_updated": "2026-08-03",
     "rules": [
       "الملف ده ثابت — بيتعدّل عليه مش بيتمسح",
       "كل سهم له entry خاص بكل الملاحظات التراكمية",
@@ -188,11 +188,18 @@
           "note": "إشارة: STRONG_BUY | دخول: 8.75 | عائد: +14.04% | مدة: 7ي | ربح سريع — توقيت جيد",
           "signal": "✅ ربح",
           "confidence": 75.0
+        },
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.37x | delta=677338.29 | price_change=+8.5%",
+          "signal": "hot_candidate",
+          "confidence": 20
         }
       ],
       "status": "ضرب الوقف مرتين",
-      "trend": "عرضي",
-      "maker_activity": "نشط جداً (دخول سيولة)",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
       "sector_heat": "⚠️ محايد",
       "last_entry_price": 13.74,
       "last_target": 17.45,
@@ -291,11 +298,18 @@
           "note": "إشارة: STRONG_BUY | دخول: 33.16 | عائد: -10.00% | مدة: 61ي | أمسك 61 يوم — مدة طويلة جداً",
           "signal": "❌ خسارة",
           "confidence": 90.0
+        },
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.1x | delta=1319.34 | vol_surge=2.1x + delta=+1319.3 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
         }
       ],
       "status": "أداء متفاوت",
-      "trend": "ترند صاعد",
-      "maker_activity": "نشط جداً (دخول سيولة)",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
       "sector_heat": "🔥 صاعد",
       "last_entry_price": 32.89,
       "last_target": 37.33,
@@ -441,11 +455,18 @@
           "note": "إشارة: STRONG_BUY | دخول: 17.88 | عائد: -7.87% | مدة: 11ي | توقيت خاطئ",
           "signal": "❌ خسارة",
           "confidence": 75.0
+        },
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.08x | delta=-845.51 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
         }
       ],
       "status": "",
-      "trend": "عرضي",
-      "maker_activity": "نشط جداً (دخول سيولة)",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
       "sector_heat": "🔥 صاعد"
     },
     "DEIN": {
@@ -499,11 +520,18 @@
           "note": "إشارة: WATCH | دخول: 48.59 | عائد: -7.50% | مدة: 15ي | أمسك 15 يوم — مدة طويلة جداً",
           "signal": "❌ خسارة",
           "confidence": 100.0
+        },
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.52x | delta=6186.67 | vol_surge=2.5x + delta=+6186.7 | absorption (vol=2.5x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
         }
       ],
       "status": "",
-      "trend": "عرضي",
-      "maker_activity": "نشط جداً (دخول سيولة)",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
       "sector_heat": "🔥 صاعد"
     },
     "CLHO": {
@@ -522,6 +550,618 @@
       "trend": "ترند صاعد",
       "maker_activity": "نشط جداً (دخول سيولة)",
       "sector_heat": "⚠️ محايد"
+    },
+    "BTFH": {
+      "name": "BTFH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.12x | delta=158805.24 | vol_surge=2.1x + delta=+158805.2 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "EFID": {
+      "name": "EFID",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.04x | delta=639.96 | vol_surge=2.0x + delta=+640.0 | absorption (vol=2.0x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "EGSA": {
+      "name": "EGSA",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.28x | delta=2.27 | vol_surge=2.3x + delta=+2.3 | absorption (vol=2.3x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "IFAP": {
+      "name": "IFAP",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.01x | delta=2151.74 | vol_surge=2.0x + delta=+2151.7 | absorption (vol=2.0x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ORWE": {
+      "name": "ORWE",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=70 | surge=2.09x | delta=280.07 | vol_surge=2.1x + delta=+280.1 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 70
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "AREH": {
+      "name": "AREH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=60 | surge=2.34x | delta=349990.63 | vol_surge=2.3x + delta=+349990.6 | price_change=+7.7%",
+          "signal": "hot_candidate",
+          "confidence": 60
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "MICH": {
+      "name": "MICH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=60 | surge=2.53x | delta=9533.11 | vol_surge=2.5x + delta=+9533.1 | price_change=+7.2%",
+          "signal": "hot_candidate",
+          "confidence": 60
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "MIPH": {
+      "name": "MIPH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=60 | surge=2.42x | delta=141.77 | vol_surge=2.4x + delta=+141.8 | price_change=+5.1%",
+          "signal": "hot_candidate",
+          "confidence": 60
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "RMDA": {
+      "name": "RMDA",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=45 | surge=1.93x | delta=856674.57 | vol_accel=2.4x + momentum=+1.6% | price_change=+9.8%",
+          "signal": "hot_candidate",
+          "confidence": 45
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ALUM": {
+      "name": "ALUM",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=40 | surge=3.1x | delta=829.24 | vol_surge=3.1x + delta=+829.2",
+          "signal": "hot_candidate",
+          "confidence": 40
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "AXPH": {
+      "name": "AXPH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=40 | surge=2.32x | delta=63.52 | vol_surge=2.3x + delta=+63.5",
+          "signal": "hot_candidate",
+          "confidence": 40
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "CPCI": {
+      "name": "CPCI",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=40 | surge=2.01x | delta=127.21 | vol_surge=2.0x + delta=+127.2",
+          "signal": "hot_candidate",
+          "confidence": 40
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "DOMT": {
+      "name": "DOMT",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=40 | surge=3.27x | delta=3338.35 | vol_surge=3.3x + delta=+3338.3",
+          "signal": "hot_candidate",
+          "confidence": 40
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "OCPH": {
+      "name": "OCPH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=40 | surge=2.05x | delta=292.17 | vol_surge=2.0x + delta=+292.2",
+          "signal": "hot_candidate",
+          "confidence": 40
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ACTF": {
+      "name": "ACTF",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.31x | delta=-6249.62 | absorption (vol=2.3x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ADPC": {
+      "name": "ADPC",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=3.31x | delta=-9695.74 | absorption (vol=3.3x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "AIDC": {
+      "name": "AIDC",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.69x | delta=-34363.43 | absorption (vol=2.7x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ATQA": {
+      "name": "ATQA",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.15x | delta=-3808.29 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "CNFN": {
+      "name": "CNFN",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.33x | delta=0.0 | absorption (vol=2.3x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "CSAG": {
+      "name": "CSAG",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.1x | delta=-524.42 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "EGS370O1C0": {
+      "name": "EGS370O1C013",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.11x | delta=0.0 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ETRS": {
+      "name": "ETRS",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.34x | delta=-618.54 | absorption (vol=2.3x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "FAITA": {
+      "name": "FAITA",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.59x | delta=-12.67 | absorption (vol=2.6x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "FWRY": {
+      "name": "FWRY",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.03x | delta=-7788.5 | absorption (vol=2.0x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ISMQ": {
+      "name": "ISMQ",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.18x | delta=-8482.12 | absorption (vol=2.2x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "MPRC": {
+      "name": "MPRC",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.23x | delta=-555.8 | absorption (vol=2.2x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "TANM": {
+      "name": "TANM",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.09x | delta=0.0 | absorption (vol=2.1x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "UPMS": {
+      "name": "UPMS",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=30 | surge=2.86x | delta=-71.41 | absorption (vol=2.9x + change≤2%)",
+          "signal": "hot_candidate",
+          "confidence": 30
+        }
+      ],
+      "status": "",
+      "trend": "محايد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "CRST": {
+      "name": "CRST",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=25 | surge=1.56x | delta=121675.01 | vol_accel=1.6x + momentum=+1.5%",
+          "signal": "hot_candidate",
+          "confidence": 25
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "GTEX": {
+      "name": "GTEX",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=25 | surge=1.42x | delta=29.32 | vol_accel=2.2x + momentum=+2.7%",
+          "signal": "hot_candidate",
+          "confidence": 25
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "ADCI": {
+      "name": "ADCI",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.66x | delta=1550.95 | price_change=+5.3%",
+          "signal": "hot_candidate",
+          "confidence": 20
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "EITP": {
+      "name": "EITP",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.04x | delta=8.29 | price_change=+8.2%",
+          "signal": "hot_candidate",
+          "confidence": 20
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "MPCI": {
+      "name": "MPCI",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.85x | delta=12746.59 | price_change=+12.9%",
+          "signal": "hot_candidate",
+          "confidence": 20
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "NINH": {
+      "name": "NINH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.51x | delta=26559.96 | price_change=+6.1%",
+          "signal": "hot_candidate",
+          "confidence": 20
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "NIPH": {
+      "name": "NIPH",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.89x | delta=33159.34 | price_change=+16.5%",
+          "signal": "hot_candidate",
+          "confidence": 20
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
+    },
+    "SNFI": {
+      "name": "SNFI",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-08-03",
+          "source": "hot_candidate_detector",
+          "note": "🔥 Hot Candidate | score=20 | surge=1.39x | delta=251.16 | price_change=+12.5%",
+          "signal": "hot_candidate",
+          "confidence": 20
+        }
+      ],
+      "status": "",
+      "trend": "صاعد",
+      "maker_activity": "نشط جداً (Hot)",
+      "sector_heat": ""
     }
   },
   "sector_notes": {
@@ -614,6 +1254,12 @@
       "lesson": "الأسهم الخاسرة: 17 سهم — أغلبها أمسك >14 يوم أو دخل في قمة (RSI>65)",
       "impact": "high",
       "action": "خروج سريع (-5% في 3 أيام) + فلتر القمة (RSI>65 + قرب 52w high)"
+    },
+    {
+      "date": "2026-08-03",
+      "lesson": "Hot Candidates: 40 سهم فيه نشاط ميكرز على 5 دقائق",
+      "impact": "high",
+      "action": "مراجعة Hot Candidates + ربط مع Discovery Fallback"
     }
   ]
 }
