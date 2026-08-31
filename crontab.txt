@@ -1,0 +1,17 @@
+# crontab.txt — جدول المهام الإنتاجي
+# PHASE-1-RESTORE (2026-08-31): V40.2 كمولّد توقعات أساسي
+
+# ─── مولّد التوقعات الأساسي (V40.2) ───
+# يومياً الساعة 3:00 فجراً (قبل فتح السوق) — يولّد توقعات اليوم
+0 3 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --today-only --max-picks 5 >> /tmp/v40_2_daily.log 2>&1
+
+# يومياً الساعة 3:30 عصراً (بعد إغلاق السوق) — يولّد توقعات الغد
+30 15 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --yesterday-only --max-picks 5 >> /tmp/v40_2_daily.log 2>&1
+
+# ─── إغلاق الصفقات (daily_closer) ───
+# يومياً الساعة 4:00 عصراً (بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
+0 16 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1
+
+# ─── محرك التعلم (learning_engine) ───
+# يومياً الساعة 5:00 عصراً — يتعلم من نتائج اليوم
+0 17 * * 1-5 cd /home/z/my-project && /home/z/my-project/.venv/bin/python3 vps-service/jobs/learning_engine.py >> /tmp/learning_engine.log 2>&1

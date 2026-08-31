@@ -4116,22 +4116,27 @@ class MaestroOrchestrator:
                     result.warnings_ar = warnings_ar
                     return result
 
-                signal_id = self.prediction_tracker.record_prediction(
-                    ticker=ticker,
-                    signal=recommendation.upper(),
-                    entry_price=entry_price,
-                    target_price=target,
-                    stop_loss=stop_loss,
-                    master_score=maestro_score,
-                    technical_score=quality_score,
-                    fundamental_score=quality_score,
-                    notes=f"Confidence: {confidence}% | engine={self.engine_source}",
-                    persona=persona_type,
-                    atr_at_entry=_atr_val,
-                    target_price_2=_rl_t2,
-                    explosive_score=_rl_expl_score,
-                    explosive_label=_rl_expl_label,
-                )
+                # PHASE-1-RESTORE (2026-08-31): Maestro لا يكتب توقعات
+                # V40.2 هو مولّد التوقعات الأساسي. Maestro خليه للتحليل فقط.
+                # بنرجع signal_id = None عشان أي check على signal_id يعرف إن مفيش تسجيل.
+                signal_id = None
+                if False:  # معطّل — V40.2 هو المصدر الوحيد
+                    signal_id = self.prediction_tracker.record_prediction(
+                        ticker=ticker,
+                        signal=recommendation.upper(),
+                        entry_price=entry_price,
+                        target_price=target,
+                        stop_loss=stop_loss,
+                        master_score=maestro_score,
+                        technical_score=quality_score,
+                        fundamental_score=quality_score,
+                        notes=f"Confidence: {confidence}% | engine={self.engine_source}",
+                        persona=persona_type,
+                        atr_at_entry=_atr_val,
+                        target_price_2=_rl_t2,
+                        explosive_score=_rl_expl_score,
+                        explosive_label=_rl_expl_label,
+                    )
                 if _rl_t2 > 0:
                     print(
                         f"[RL-FIX-18] ticker={ticker} T1={target:.2f} T2={_rl_t2:.2f} "

@@ -1104,10 +1104,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         return
 
     # Store: sort each date's signals, take top N, morning bell = top 1
-    # ENGINE-UNIFY Phase 4: V40.2 بـ backtest-only — مفيش كتابة في DB
-    # tracker = PredictionTracker(PREDICTIONS_DB)  # معطّل — Maestro هو المصدر الوحيد
-    tracker = None
-    _dry_run_no_write = True  # منع أي كتابة في DB
+    # PHASE-1-RESTORE (2026-08-31): V40.2 رجع كمولّد توقعات أساسي
+    # Maestro اتعلّل واتعطل من الكتابة — V40.2 هو المصدر الوحيد دلوقتي
+    tracker = PredictionTracker(PREDICTIONS_DB)  # مفعّل — V40.2 يكتب في predictions
+    _dry_run_no_write = False  # سماح بالكتابة في DB
     total_generated = 0
     total_morning_bells = 0
     daily_summary = []
