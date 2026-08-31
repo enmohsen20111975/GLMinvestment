@@ -151,9 +151,9 @@ const SuperLearningSystem = withErrorBoundary(
 const MaestroDashboard = withErrorBoundary(
   dynamic(
     () => import('./MaestroDashboard').then(m => ({ default: m.MaestroDashboard })),
-    { ssr: false, loading: () => <LazyTabLoader label="لوحة المايسترو" /> }
+    { ssr: false, loading: () => <LazyTabLoader label="لوحة المحركات" /> }
   ),
-  'لوحة المايسترو',
+  'لوحة المحركات',
 );
 
 const CryptoAdminPanel = withErrorBoundary(
@@ -191,9 +191,9 @@ const DatabaseManagerFull = withErrorBoundary(
 const MaestroCommandCenter = withErrorBoundary(
   dynamic(
     () => import('./MaestroCommandCenter').then(m => ({ default: m.MaestroCommandCenter })),
-    { ssr: false, loading: () => <LazyTabLoader label="مركز قيادة المايسترو" /> }
+    { ssr: false, loading: () => <LazyTabLoader label="لوحة التحكم" /> }
   ),
-  'مركز قيادة المايسترو',
+  'لوحة التحكم',
 );
 
 const SystemControlPanel = withErrorBoundary(
@@ -340,7 +340,7 @@ interface DataStatus {
   categories: DataStatusItem[];
 }
 
-type AdminTab = 'dashboard' | 'problems' | 'topology' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'maestro' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance';
+type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -908,16 +908,14 @@ export function AdminView() {
       tabs: [
         { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" /> },
         { id: 'problems', label: 'مشاكل النظام', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
-        { id: 'topology', label: 'مركز القيادة', icon: <Zap className="w-3.5 h-3.5" /> },
       ],
     },
     {
       id: 'maestro',
-      label: 'المايسترو والمحركات',
+      label: 'المحركات',
       icon: <Zap className="w-4 h-4" />,
       accent: 'border-amber-500/40 bg-amber-500/5',
       tabs: [
-        { id: 'maestro', label: 'المايسترو', icon: <Zap className="w-3.5 h-3.5" /> },
         { id: 'general', label: 'المحركات', icon: <Server className="w-3.5 h-3.5" /> },
         { id: 'engine-settings', label: 'إعدادات المحرك', icon: <Settings className="w-3.5 h-3.5" /> },
         { id: 'data-engine', label: 'المحرك', icon: <span className="text-sm">🔥</span> },
@@ -1235,7 +1233,7 @@ export function AdminView() {
                   <span>التعلم الذكي</span>
                   <span className="text-[10px] opacity-70">تحسين التحليل</span>
                 </Button>
-                <Button variant="outline" onClick={() => setActiveTab('topology')} className="h-auto py-4 flex-col gap-2 relative">
+                <Button variant="outline" onClick={() => setActiveTab('dashboard')} className="h-auto py-4 flex-col gap-2 relative">
                   <Zap className="w-6 h-6" />
                   <span>مركز القيادة</span>
                   <span className="text-[10px] opacity-70">Maestro Command Center</span>
@@ -1257,7 +1255,7 @@ export function AdminView() {
                   <Server className="w-5 h-5 text-blue-500" />
                   حالة الخدمات
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('topology')}>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('dashboard')}>
                   المخطط الكامل
                 </Button>
               </div>
@@ -1291,9 +1289,9 @@ export function AdminView() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Zap className="w-5 h-5 text-emerald-500" />
-                  مركز قيادة المايسترو
+                  لوحة التحكم
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('topology')}>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('dashboard')}>
                   عرض كامل
                 </Button>
               </div>
@@ -1327,7 +1325,7 @@ export function AdminView() {
                     <div className="font-bold text-emerald-600">{healthScore}%</div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab('topology')} className="h-auto py-3">
+                <Button variant="outline" size="sm" onClick={() => setActiveTab('dashboard')} className="h-auto py-3">
                   <Zap className="w-4 h-4 ml-1" />
                   مركز القيادة
                 </Button>
@@ -1355,7 +1353,7 @@ export function AdminView() {
       )}
 
       {/* ==================== MAESTRO COMMAND CENTER ==================== */}
-      {activeTab === 'topology' && (
+      {false && (
         <MaestroCommandCenter />
       )}
 
@@ -1404,7 +1402,7 @@ export function AdminView() {
       )}
 
       {/* ==================== MAESTRO TAB ==================== */}
-      {activeTab === 'maestro' && (
+      {false && (
         <MaestroDashboard />
       )}
 
