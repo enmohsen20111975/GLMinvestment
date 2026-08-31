@@ -2310,10 +2310,30 @@ class MaestroOrchestrator:
                 print(f"[ENTRY-GATE] ticker={ticker} active_correction → BUY vetoed", flush=True)
 
             # Don't Chase: فلتر إضافي مستقل (حتى لو stage مش EXTENDED_CHASE)
+            # MAKER-EXCEPTION: لو فيه volume surge قوي → نسمح بـ ROC أعلى (لحد 18-20%)
             if not _entry_vetoed and _is_extended_chase(_cls_stock, price_history):
-                _entry_vetoed = True
-                _entry_veto_reason = "Don't Chase: طلع كتير بدري (≥12% في 3 أيام أو ≥15% في 5 أيام)"
-                print(f"[ENTRY-GATE] ticker={ticker} extended_chase → BUY vetoed", flush=True)
+                # فحص Volume Surge قبل الرفض
+                _vol_ratio = 0.0
+                try:
+                    _vols_20 = [to_num(p.get('volume', p.get('volume_traded', 0))) for p in price_history[-20:]]
+                    _vols_20 = [v for v in _vols_20 if v > 0]
+                    if len(_vols_20) >= 10:
+                        _avg_vol = sum(_vols_20) / len(_vols_20)
+                        _today_vol = to_num(price_history[-1].get('volume', price_history[-1].get('volume_traded', 0)))
+                        if _avg_vol > 0 and _today_vol > 0:
+                            _vol_ratio = _today_vol / _avg_vol
+                except Exception:
+                    pass
+
+                # لو volume surge قوي (≥ 2.5x) → نسمح بـ ROC أعلى (متلغيش الفلتر)
+                if _vol_ratio >= 2.5:
+                    print(f"[MAKER-CHASE-EXCEPTION] ticker={ticker} vol_ratio={_vol_ratio:.1f}x "
+                          f"→ تجاوز Don't Chase (الميكرز نشط)", flush=True)
+                else:
+                    _entry_vetoed = True
+                    _entry_veto_reason = "Don't Chase: طلع كتير بدري (≥12% في 3 أيام أو ≥15% في 5 أيام)"
+                    print(f"[ENTRY-GATE] ticker={ticker} extended_chase → BUY vetoed "
+                          f"(vol_ratio={_vol_ratio:.1f}x)", flush=True)
 
             # Recovery confirmation: تأكيد بدء التعافي (لو stage=RECOVERY_STARTING)
             if _correction_stage and _correction_stage.get('stage') == 'RECOVERY_STARTING':
@@ -2814,19 +2834,37 @@ class MaestroOrchestrator:
                         print(f"[FALLBACK-L3] ticker={ticker} Recovery from Base detected "
                               f"(score={_rec.get('score', 0)})", flush=True)
 
-                # رقّي التوصية لو في signal قوي + الـ entry gate مش مرفوض
-                if _discovery_fallback_signal and not _entry_vetoed:
+                # رقّي التوصية لو في signal قوي
+                # MAKER-OVERRIDE: لو السهم فيه Volume Surge قوي (score ≥ 70)
+                # والميكرز واضحين → اسمح بـ upgrade حتى لو entry_vetoed
+                # بس بحجم صغير (0.5-0.7% مخاطرة) عشان نحمي رأس المال
+                if _discovery_fallback_signal:
                     _df_kind, _df_data = _discovery_fallback_signal
                     _df_score = float(_df_data.get('score', 0) or 0)
-                    if _df_score >= 60:
+                    _maker_override = False
+
+                    # Maker Override: لو surge score ≥ 70 → نسمح حتى لو vetoed
+                    if _df_kind == 'surge_rocket' and _df_score >= 70:
+                        _maker_override = True
+                        warnings.append(f'MAKER-OVERRIDE: surge score={_df_score:.0f} ≥ 70 → تجاوز entry gate')
+                        warnings_ar.append(f'تجاوز الميكرز: surge قوي → سماح بالدخول بحجم صغير')
+                        print(f"[MAKER-OVERRIDE] ticker={ticker} surge score={_df_score:.0f} ≥ 70 "
+                              f"→ تجاوز entry_vetoed={_entry_vetoed}", flush=True)
+
+                    # Upgrade لو (مش vetoed) OR (maker_override)
+                    if (_df_score >= 60) and (not _entry_vetoed or _maker_override):
                         recommendation = 'buy'
                         recommendation_ar = f'شراء ({_df_kind}: score={_df_score:.0f})'
                         is_buy = True
                         maestro_score = max(maestro_score, _df_score)
                         warnings.append(f'Discovery fallback: {_df_kind} (score={_df_score:.0f})')
                         warnings_ar.append(f'سلسلة الاكتشاف: {_df_kind} — رفع التوصية لشراء')
+                        # لو maker_override → علّم عشان Position Sizing يقلل الحجم
+                        if _maker_override:
+                            warnings.append('MAKER-OVERRIDE: استخدم حجم صغير (0.5% مخاطرة)')
+                            result._maker_override = True
                         print(f"[DISCOVERY-UPGRADE] ticker={ticker} hold→buy "
-                              f"({_df_kind}, score={_df_score:.0f})", flush=True)
+                              f"({_df_kind}, score={_df_score:.0f}, override={_maker_override})", flush=True)
             except Exception as _df_err:
                 logger.debug(f"Discovery fallback chain failed for {ticker}: {_df_err}")
 
