@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -21,7 +21,7 @@ export function RefreshAnalyticsButton({
   size = 'default',
   className,
   showLabel = true,
-  customLabel = 'تحديث التوقعات',
+  customLabel = 'توليد التوقعات',
   onRefreshed,
 }: RefreshAnalyticsButtonProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -31,38 +31,53 @@ export function RefreshAnalyticsButton({
     if (isRefreshing) return;
 
     setIsRefreshing(true);
-    const toastId = toast.loading('جاري تحميل التوقعات الحالية...', {
-      description: 'يتم عرض أحدث التوقعات من قاعدة البيانات.',
+    const toastId = toast.loading('جاري توليد توقعات جديدة...', {
+      description: 'محرك التوقعات (V40.2) بيفحص السوق ويولّد أحدث الفرص.',
     });
 
     try {
-      // KILL-MAESTRO (2026-08-31): لا نولّد توقعات جديدة عند الضغط على الزرار
-      // التوقعات تُولّد تلقائياً بـ V40.2 عبر cron (3:00 صباحاً + 3:30 عصراً)
-      // الزرار ده بس بيـ reload التوقعات الموجودة من DB
-      //
-      // قبل كده كان بيستدعي /api/predictions/generate-all اللي بيولّد توقعات
-      // جديدة كل مرة → كان بيدّي إحساس إن التوقعات عشوائية.
-      // دلوقتي بس بيـ reload من DB → نفس التوقعات تتعرض.
-
-      // Trigger store reloads — يقرأ من DB بدون توليد جديد
-      loadV2Recommendations();
-      loadAiInsights();
-
-      // Dispatch window event for listening components
-      window.dispatchEvent(new CustomEvent('analyticsRefreshed'));
-
-      toast.success('تم تحميل أحدث التوقعات', {
-        id: toastId,
-        description: 'التوقعات تتولّد تلقائياً بعد إغلاق السوق. اضغط لتحديث العرض.',
-        icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
-        duration: 3000,
+      // KILL-MAESTRO: V40.2 هو المحرك الوحيد
+      // الزرار ده بيولّد توقعات جديدة من V40.2 (مش بيقرأ بس)
+      // بيستدعي Python backend اللي بيشغل v40_2_daily_generator.py
+      const res = await fetch(`/api/proxy/predictions/generate-all?market=${currentMarket}&all_markets=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ market: currentMarket, all_markets: true }),
       });
 
-      if (onRefreshed) {
-        onRefreshed();
+      const data = await res.json();
+
+      if (data.success) {
+        const displayedCount = Math.min(
+          data.predictions_count || data.performance?.total_predictions || data.stats?.today || data.activePredictions?.length || 0,
+          5
+        );
+        toast.success('تم توليد التوقعات بنجاح', {
+          id: toastId,
+          description: `تم فحص السوق وتوليد ${displayedCount} توقعات جديدة.`,
+          icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
+          duration: 4000,
+        });
+
+        // Reload from DB
+        loadV2Recommendations();
+        loadAiInsights();
+
+        // Dispatch window event for listening components
+        window.dispatchEvent(new CustomEvent('analyticsRefreshed', { detail: data }));
+
+        if (onRefreshed) {
+          onRefreshed();
+        }
+      } else {
+        toast.error('حدث خطأ أثناء توليد التوقعات', {
+          id: toastId,
+          description: data.error || 'يرجى المحاولة مرة أخرى.',
+          icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
+        });
       }
     } catch (err: any) {
-      toast.error('تعذر تحميل التوقعات', {
+      toast.error('تعذر الاتصال بمحرك التوقعات', {
         id: toastId,
         description: err?.message || 'يرجى المحاولة مرة أخرى لاحقاً.',
         icon: <AlertCircle className="w-5 h-5 text-rose-500" />,
@@ -86,18 +101,15 @@ export function RefreshAnalyticsButton({
         className
       )}
     >
-      <RefreshCw
-        className={cn(
-          'w-4 h-4 text-emerald-500 transition-transform duration-500',
-          isGlow && 'text-white',
-          isRefreshing ? 'animate-spin' : 'group-hover:rotate-180',
-          showLabel && 'ml-2'
-        )}
-      />
+      {isRefreshing ? (
+        <RefreshCw className={cn('w-4 h-4 animate-spin', isGlow && 'text-white', showLabel && 'ml-2')} />
+      ) : (
+        <Zap className={cn('w-4 h-4 text-emerald-500 transition-transform duration-300 group-hover:scale-110', isGlow && 'text-white', showLabel && 'ml-2')} />
+      )}
 
       {showLabel && (
         <span className="truncate">
-          {isRefreshing ? 'جاري التحميل...' : customLabel}
+          {isRefreshing ? 'جاري التوليد...' : customLabel}
         </span>
       )}
     </Button>
