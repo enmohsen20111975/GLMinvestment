@@ -13251,3 +13251,44 @@ Stage Summary:
 - ✅ FIX-003: Entry Gate exception → SKIP (fail-safe)
 - ⚠️ الساندبوكس: 0 صفقات (Gate صارم + ناقص tables)
 - 🔜 المالك يشغل على السيرفر الحقيقي للحصول على أرقام حقيقية
+
+---
+Task ID: PHASE-1-RESTORE-V402-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: المرحلة 1 — رجوع V40.2 كمولّد توقعات أساسي
+
+Work Log:
+- **السياق**: المالك قرر رجوع V40.2 (الرابح) كمصدر وحيد للتوقعات، وتعطيل Maestro من الكتابة.
+
+### التغييرات الـ 3:
+
+1. **vps-service/jobs/v40_2_daily_generator.py** (سطر 1106-1110):
+   - `tracker = None` → `tracker = PredictionTracker(PREDICTIONS_DB)`
+   - `_dry_run_no_write = True` → `_dry_run_no_write = False`
+   - V40.2 دلوقتي بيكتب توقعات في DB تاني
+
+2. **vps-service/analyzers/maestro_orchestrator.py** (سطر 4119-4139):
+   - `signal_id = self.prediction_tracker.record_prediction(...)` → `signal_id = None`
+   - Maestro بقى للتحليل فقط (UI/queries) — مش بيكتب توقعات
+
+3. **crontab.txt** (جديد):
+   - V40.2 يومياً 3:00 فجراً + 3:30 عصراً
+   - daily_closer 4:00 عصراً
+   - learning_engine 5:00 عصراً
+
+### التحقق (dry-run على Feb-Aug 2026):
+- 75 إشارة على 9 أيام
+- 35 صفقة (max 5/يوم)
+- كلهم evidence ≥ 3 (أغلبيتهم ev=4)
+- التركيز في يوليو-أغسطس (نفس النمط الأصلي)
+
+### الخطوة التالية:
+- باك-تست كامل للتأكد من WR/PF/DD
+- لو الأرقام رجعت → نبدأ المرحلة 2 (دمج الخدمات)
+
+Stage Summary:
+- ✅ V40.2 رجع كمولّد توقعات أساسي
+- ✅ Maestro تعطل من الكتابة (تحليل فقط)
+- ✅ cron جاهز للتشغيل اليومي
+- ✅ 75 إشارة بـ evidence ≥ 3 على 9 أيام
+- 🔜 باك-تست كامل للتأكد من الأرقام
