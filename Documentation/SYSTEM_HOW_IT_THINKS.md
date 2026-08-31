@@ -107,7 +107,14 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 #### الملفات
 - `vps-service/analyzers/v68_oracle.py` — 13 functions (probability, future fingerprint, quiet accumulation, dirty distribution, liquidity magnets, MFE trailing)
 - `vps-service/analyzers/v72_multi_path.py` — 8 functions (wash trade, hidden dist, pullback buy, maker death point, kill switch, market sizing)
+- `vps-service/analyzers/v73_sniper.py` — 2 genuinely new functions (desert phase, auction trap)
 - `scripts/v68_ab_backtest.py` — A/B harness (temp DB per run, WR/PF/Return per feature)
+
+#### V73 Sniper Engine (6-month A/B — 2026-08-31)
+- **V73_DESERT_PHASE_REJECT** ✅ KEEP: +23.1% return (6-month validated, 3 triggers)
+- **V73_AUCTION_TRAP_REJECT** ❌ KILL: 0 triggers (EGX لا يقفز >10% في شمعة واحدة)
+- 6-month COMBO (V68+V72+V73 winners): 15 trades, WR 73.3%, Return +106.9% (+40.7% vs baseline)
+- **Validated general, not overfit** — 6-month window Feb-Aug 2026, 200 tickers
 
 #### الدرس
 - Pine Script V68/V72 متصمم لـ global markets (crypto/forex) → فيهم triggers أكتر

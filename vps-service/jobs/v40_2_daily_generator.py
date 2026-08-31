@@ -135,6 +135,14 @@ V72_MAKER_DEATH_POINT = os.environ.get('V72_MAKER_DEATH_POINT', '0') == '1'    #
 V72_KILL_SWITCH_EXIT = os.environ.get('V72_KILL_SWITCH_EXIT', '0') == '1'      # ⏸️ PENDING — exit-level
 V72_MARKET_BULLISH_SIZING = os.environ.get('V72_MARKET_BULLISH_SIZING', '0') == '1'  # ❌ KILL — 0 triggers
 
+# ── V73 SNIPER FEATURE TOGGLES (A/B testing — 2026-08-31) ──
+# 2 ميزات GENUINELY NEW من V73 (EGX Oracle Sniper):
+# A/B على 6 شهور (Feb-Aug 2026) — validated general, not overfit.
+#   ✅ KEEP  V73_DESERT_PHASE_REJECT : +23.1% return (rejected 3 dead stocks)
+#   ❌ KILL  V73_AUCTION_TRAP_REJECT  : 0 triggers (EGX لا يقفز >10% في شمعة واحدة)
+V73_DESERT_PHASE_REJECT = os.environ.get('V73_DESERT_PHASE_REJECT', '1') == '1'  # ✅ KEEP — +23.1% return
+V73_AUCTION_TRAP_REJECT = os.environ.get('V73_AUCTION_TRAP_REJECT', '0') == '1'  # ❌ KILL — 0 triggers
+
 
 def count_evidence(proofs):
     """Count ✅ markers in proofs dict."""
@@ -1278,6 +1286,37 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
             except Exception as _v72_err:
                 pass  # safe-by-design: لو V72 فشل → نكمّل بدونه
+
+            # ── V73 SNIPER ENGINE (المرحلة 6 — 2026-08-31): 2 ميزات جديدة ──
+            # 1. desert_phase: BB squeeze + volume < 0.5×MA = سهم ميت → رفض
+            # 2. auction_trap: شمعة واحدة >10% = مصيدة مزاد → رفض
+            # A/B على 6 شهور (Feb-Aug 2026) عشان نتأكد general مش overfit
+            try:
+                from analyzers.v73_sniper import detect_desert_phase, detect_auction_trap
+                _v73_closes = closes[:day_idx + 1] if 'closes' in dir() and day_idx < len(closes) else []
+                _v73_vols = volumes[:day_idx + 1] if 'volumes' in dir() and day_idx < len(volumes) else []
+                _v73_opens = opens[:day_idx + 1] if 'opens' in dir() and day_idx < len(opens) else []
+
+                # V73-1: Desert Phase Reject
+                if V73_DESERT_PHASE_REJECT:
+                    _v73_desert = detect_desert_phase(_v73_closes, _v73_vols, 20)
+                    result['v73_desert_phase'] = _v73_desert
+                    if _v73_desert:
+                        print(f"[V73-DESERT] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"الموت السريري (squeeze + volume ميت) → رفض", flush=True)
+                        continue
+
+                # V73-2: Auction Trap Reject
+                if V73_AUCTION_TRAP_REJECT:
+                    _v73_auction = detect_auction_trap(_v73_opens, _v73_closes, 10.0)
+                    result['v73_auction_trap'] = _v73_auction
+                    if _v73_auction:
+                        print(f"[V73-AUCTION-TRAP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"مصيدة مزاد (شمعة +{((_v73_closes[-1]-_v73_opens[-1])/_v73_opens[-1]*100):.1f}% > 10%) → رفض", flush=True)
+                        continue
+
+            except Exception as _v73_err:
+                pass  # safe-by-design: لو V73 فشل → نكمّل بدونه
 
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."

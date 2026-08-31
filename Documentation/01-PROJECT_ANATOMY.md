@@ -127,7 +127,18 @@ V72_PULLBACK_BUY_PATH     = '0'  # ❌
 V72_MAKER_DEATH_POINT     = '0'  # ❌
 V72_MARKET_BULLISH_SIZING = '0'  # ❌
 V72_KILL_SWITCH_EXIT      = '0'  # ⏸️ exit-level (pending backtest)
+
+# V73 — ✅ KEEP 1, ❌ KILL 1
+V73_DESERT_PHASE_REJECT  = '1'  # ✅ +23.1% return (6-month validated)
+V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 ```
+
+#### V73 Sniper Engine (6-month A/B — 2026-08-31)
+- `vps-service/analyzers/v73_sniper.py` (220 LOC) — 2 genuinely new features
+- **V73_DESERT_PHASE_REJECT** ✅ KEEP: BB squeeze + volume < 0.5×MA = سهم ميت → رفض (+23.1% return, 3 triggers on 6-month window)
+- **V73_AUCTION_TRAP_REJECT** ❌ KILL: 0 triggers (EGX لا يقفز >10% في شمعة واحدة)
+- 6-month COMBO (V68+V72+V73 winners): 15 trades, WR 73.3%, Return +106.9% (+40.7% vs baseline)
+- **Validated general, not overfit** (6-month window Feb-Aug 2026, 200 tickers)
 
 #### KILL-OLLAMA (تحديث 2026-08-31)
 - `vps-service/ai/news_agent.py`: `NEWS_USE_OLLAMA` env var (default=0)

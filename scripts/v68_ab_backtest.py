@@ -45,8 +45,8 @@ TEMP_DB_DIR = PROJECT_ROOT / 'data' / 'v68_ab_temp'
 TEMP_DB_DIR.mkdir(parents=True, exist_ok=True)
 
 # Backtest window (matches the V40.2 baseline backtest)
-START_DATE = '2026-07-01'
-END_DATE = '2026-08-15'
+START_DATE = '2026-02-01'
+END_DATE = '2026-08-27'
 SCAN_INTERVAL = '3'
 MAX_PICKS = '5'
 
@@ -63,6 +63,9 @@ V68_FEATURES = [
     ('V72_PULLBACK_BUY_PATH', 'V72: new entry path (support pullback)'),
     ('V72_MAKER_DEATH_POINT', 'V72: dynamic stop based on entry type'),
     ('V72_MARKET_BULLISH_SIZING', 'V72: 0.5× size in bearish market'),
+    # V73 Sniper features (entry-level — tested here)
+    ('V73_DESERT_PHASE_REJECT', 'V73: reject desert phase (dead volume + squeeze)'),
+    ('V73_AUCTION_TRAP_REJECT', 'V73: reject auction trap (>10% single candle)'),
 ]
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -146,11 +149,12 @@ def run_backtest(label: str, env_overrides: dict, max_tickers: int = None) -> di
     metrics['exit_code'] = result.returncode
     metrics['temp_db'] = str(temp_db)
 
-    # Count V68/V72 triggers from stdout
+    # Count V68/V72/V73 triggers from stdout
     v68_triggers = {}
     for line in stdout.split('\n'):
         for tag in ['V68-DIRTY-DIST', 'V68-NO-CHASE-2D', 'V68-A-PLUS', 'V68-MAGNET-TARGET', 'V68-FUTURE-DOWN',
-                     'V72-WASH-TRADE', 'V72-HIDDEN-DIST', 'V72-PULLBACK-BUY', 'V72-DEATH-POINT', 'V72-MARKET-SIZING']:
+                     'V72-WASH-TRADE', 'V72-HIDDEN-DIST', 'V72-PULLBACK-BUY', 'V72-DEATH-POINT', 'V72-MARKET-SIZING',
+                     'V73-DESERT', 'V73-AUCTION-TRAP']:
             if tag in line:
                 v68_triggers[tag] = v68_triggers.get(tag, 0) + 1
     metrics['v68_triggers'] = v68_triggers
