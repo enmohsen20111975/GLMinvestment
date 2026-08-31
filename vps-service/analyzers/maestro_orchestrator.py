@@ -1768,6 +1768,98 @@ class MaestroOrchestrator:
             except Exception as e:
                 print(f"[Maestro] Failed to init Prediction Tracker: {e}")
 
+        # ── ENGINE-UNIFY Phase 1: نقل ميزات V40.2 لـ Maestro ──────────────
+        # 1) Strict kill-filters (كانت في V40.2 بس)
+        try:
+            from analyzers.liquidity_filter import set_strict_kill_filters
+            set_strict_kill_filters(True)
+        except Exception:
+            pass
+
+        # 2) Toxic Ticker Blocklist (Rule 28)
+        self._toxic_blocklist = set()
+        self._load_toxic_blocklist()
+
+        # 3) EGX30ETF Benchmark lazy-load
+        self._benchmark_roc_by_date = {}
+        self._benchmark_loaded = False
+
+        # 4) max_picks per day cap
+        try:
+            from analyzers.engine_settings import get_setting
+            self._max_picks_per_day = int(get_setting('max_picks_per_day', default=5))
+        except Exception:
+            self._max_picks_per_day = 5
+        self._picks_today = 0
+        self._picks_date = ''
+
+        # 5) Engine source tag (للتمييز في predictions table)
+        self.engine_source = 'maestro_unified'
+
+    def _load_toxic_blocklist(self):
+        """Load toxic ticker blocklist (Rule 28)."""
+        blocklist_path = _PROJECT_ROOT / 'data' / 'toxic_blocklist.json'
+        try:
+            if blocklist_path.exists():
+                with open(blocklist_path) as f:
+                    data = json.load(f)
+                self._toxic_blocklist = set(data.get('toxic_tickers', []))
+                if self._toxic_blocklist:
+                    print(f"[Maestro] Rule 28: {len(self._toxic_blocklist)} toxic tickers blocklisted")
+        except Exception:
+            self._toxic_blocklist = set()
+
+    def _is_ticker_blocklisted(self, ticker: str) -> bool:
+        """Check if ticker is on toxic blocklist."""
+        return ticker.upper() in self._toxic_blocklist
+
+    def _load_egx30_benchmark(self):
+        """Load EGX30ETF benchmark ROC-14 (ported from V38BacktestEngine)."""
+        if self._benchmark_loaded:
+            return
+        self._benchmark_loaded = True
+        BENCHMARK_TICKERS = ('EGS30AJ1C016-EGP', 'EGX30ETF')
+        import sqlite3 as _bench_sql
+        for bench_ticker in BENCHMARK_TICKERS:
+            try:
+                conn = _bench_sql.connect(DATA_ENGINE_DB, timeout=5.0)
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT date, close_price FROM egksco_price_history WHERE symbol = ? ORDER BY date",
+                    (bench_ticker,)
+                )
+                rows = cur.fetchall()
+                conn.close()
+                if len(rows) < 15:
+                    continue
+                closes = [r[1] for r in rows if r[1] and r[1] > 0]
+                dates = [r[0] for r in rows if r[1] and r[1] > 0]
+                for i in range(14, len(closes)):
+                    if closes[i - 14] > 0:
+                        roc = (closes[i] - closes[i - 14]) / closes[i - 14] * 100.0
+                        self._benchmark_roc_by_date[dates[i]] = roc
+                print(f"[Maestro] Benchmark loaded ({bench_ticker}): {len(self._benchmark_roc_by_date)} dates")
+                return
+            except Exception as e:
+                print(f"[Maestro] Benchmark load ({bench_ticker}) failed: {e}")
+                continue
+
+    def _get_benchmark_roc(self, date_str: str) -> float:
+        """Get EGX30ETF ROC-14 for a specific date."""
+        if not self._benchmark_loaded:
+            self._load_egx30_benchmark()
+        return self._benchmark_roc_by_date.get(date_str, 0.0)
+
+    def _check_max_picks(self, scan_date: str) -> bool:
+        """Check if we've hit the max picks limit for today."""
+        if self._picks_date != scan_date:
+            self._picks_date = scan_date
+            self._picks_today = 0
+        if self._picks_today >= self._max_picks_per_day:
+            return False  # limit reached
+        self._picks_today += 1
+        return True
+
     def analyze(self, ticker: str, stock: Dict, price_history: List[Dict], options: Dict = None) -> MaestroResult:
         options = options or {}
         persona_type = options.get('persona_type', 'balanced')
@@ -1815,6 +1907,42 @@ class MaestroOrchestrator:
                 _is_crypto_ticker = True
         except Exception:
             pass
+
+        # ── ENGINE-UNIFY Phase 1: Toxic Blocklist check ──────────────────
+        if self._is_ticker_blocklisted(ticker):
+            result = MaestroResult(
+                ticker=ticker,
+                recommendation='hold',
+                recommendation_ar='احتفاظ (سهم سام — Rule 28)',
+                entry_price=0, target_price=0, stop_loss=0,
+                confidence=0, maestro_score=0,
+            )
+            result.warnings = ['Toxic ticker blocklisted (Rule 28)']
+            return result
+
+        # ── ENGINE-UNIFY Phase 1: Peak Entry Filter ──────────────────────
+        # منع الدخول في القمة (ported from V40.2)
+        _is_hunter_signal = False  # هتتحدد بعدين لو فيه proofs
+        if not _is_crypto and not _is_hunter_signal:
+            try:
+                _highs_60 = [ph.get('high', ph.get('high_price', 0)) for ph in price_history[-60:]] if price_history else []
+                _high_60d = max(_highs_60) if _highs_60 and any(h > 0 for h in _highs_60) else 0
+                _entry_approx = stock.get('current_price', 0)
+                if _high_60d > 0 and _entry_approx > 0:
+                    _near_peak = (_entry_approx / _high_60d) * 100
+                    _rsi_val = stock.get('rsi', 50) or 50
+                    if _near_peak >= 95 and _rsi_val > 65:
+                        result = MaestroResult(
+                            ticker=ticker,
+                            recommendation='hold',
+                            recommendation_ar='احتفاظ (تشبع شرائي — قرب القمة)',
+                            entry_price=_entry_approx, target_price=0, stop_loss=0,
+                            confidence=0, maestro_score=0,
+                        )
+                        result.warnings = [f'Peak entry filter: near 60d high ({_near_peak:.0f}%) + RSI={_rsi_val:.0f}']
+                        return result
+            except Exception:
+                pass
 
         if not _is_crypto_ticker:
             try:
