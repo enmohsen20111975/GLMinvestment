@@ -787,6 +787,21 @@ class DailyCloser:
         except Exception:
             pass
 
+            # RECOMMENDATION 7: خروج سريع من الخسائر (-5% في ≤3 أيام)
+            # باك-تست: +4.66% عائد — لو السهم هبط 5% في 3 أيام → اخرج فوراً
+            if days_elapsed <= 3 and entry_price > 0:
+                fast_return = ((close - entry_price) / entry_price * 100)
+                if fast_return <= -5.0:
+                    return self._mark_closed(
+                        pred_id, ticker, 'FAST_STOP', fast_return,
+                        highest_price_reached, lowest_price, days_elapsed,
+                        day.get('date', ''),
+                        exit_type='fast_stop',
+                        highest_price_reached=highest_price_reached,
+                        lowest_price_reached=lowest_price_reached,
+                        holding_days=days_elapsed,
+                    )
+
             # Check expiry
             if days_elapsed >= max_days:
                 actual_return = ((close - entry_price) / entry_price * 100) if entry_price > 0 else 0
