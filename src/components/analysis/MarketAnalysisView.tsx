@@ -6884,7 +6884,7 @@ function MorningBellSection({ marketCode }: { marketCode: string }) {
         )}
         {isLive && stocks.length > 0 && (
           <Badge className="text-[10px] font-semibold border-0 bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300" title={`دورة تجديد كل ${refreshMin} دقيقة`}>
-            ⚡ تجديد {refreshMin}د
+            تجديد {refreshMin}د
             {cacheAge !== null && <span className="opacity-70"> · {Math.floor(cacheAge / 60)}د مضت</span>}
           </Badge>
         )}

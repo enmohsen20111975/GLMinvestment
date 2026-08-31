@@ -5,7 +5,7 @@ import "./globals.css";
 // FIX (Aug 2026): شيلنا Toaster القديم — Sonner هو النظام الموحد
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
-import { DisclaimerBanner } from "@/components/legal/DisclaimerBanner";
+// DisclaimerBanner العلوي معطّل — الاكتفاء بـ Footer + LegalDisclaimerFooter (P2: توحيد)
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 
 // Force dynamic rendering to prevent CDN caching stale HTML.
@@ -66,7 +66,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          <DisclaimerBanner />
+          
           {children}
           <FeedbackWidget />
           <SonnerToaster position="top-center" dir="rtl" />
