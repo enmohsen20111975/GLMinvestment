@@ -36,12 +36,33 @@
           "note": "حقق الهدف +14.77%. سيولة لا تزال قوية. الميكرز قد يكون في مرحلة توزيع.",
           "signal": "مراقبة",
           "confidence": 60
+        },
+        {
+          "date": "2026-04-26",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 5.96 | عائد: +11.84% | مدة: 14ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-04-21",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 5.98 | عائد: +14.77% | مدة: 18ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-03-31",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 6.18 | عائد: -8.65% | مدة: 4ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
         }
       ],
       "status": "حقق الهدف",
-      "trend": "صاعد",
-      "maker_activity": "نشط",
-      "sector_heat": "صاعد",
+      "trend": "ترند صاعد",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "🔥 صاعد",
       "last_entry_price": 5.98,
       "last_target": 6.79,
       "last_result": "+14.77%"
@@ -70,12 +91,47 @@
           "note": "دخل في قمة عند 105 ثم هبط بسرعة (-9.66% في 3 أيام). توقيت الدخول كان متأخر.",
           "signal": "تجنب",
           "confidence": 80
+        },
+        {
+          "date": "2026-05-20",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 105.27 | عائد: -9.66% | مدة: 3ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-04-26",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 95.96 | عائد: +0.00% | مدة: 20ي | أمسك 20 يوم — مدة طويلة جداً",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-04-08",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 90.48 | عائد: +0.00% | مدة: 14ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 100.0
+        },
+        {
+          "date": "2026-03-31",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 85.42 | عائد: +15.50% | مدة: 16ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-01-22",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 86.01 | عائد: -10.00% | مدة: 17ي | أمسك 17 يوم — مدة طويلة جداً",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
         }
       ],
       "status": "ضرب الوقف",
-      "trend": "هابط بعد قمة",
-      "maker_activity": "توزيع",
-      "sector_heat": "محايد",
+      "trend": "عرضي",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد",
       "last_entry_price": 105.27,
       "last_target": 132.15,
       "last_result": "-9.66%"
@@ -104,12 +160,33 @@
           "note": "نفس المشكلة — دخول متأخر. القطاع لسه هابط. يجب رفض أي توقع في قطاع هابط.",
           "signal": "تجنب",
           "confidence": 90
+        },
+        {
+          "date": "2026-05-12",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 13.74 | عائد: -9.23% | مدة: 8ي | قطاع هابط — لازم كان يترفض",
+          "signal": "❌ خسارة",
+          "confidence": 75.0
+        },
+        {
+          "date": "2026-05-07",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 13.35 | عائد: -8.57% | مدة: 13ي | قطاع هابط — لازم كان يترفض",
+          "signal": "❌ خسارة",
+          "confidence": 75.0
+        },
+        {
+          "date": "2026-01-06",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 8.75 | عائد: +14.04% | مدة: 7ي | ربح سريع — توقيت جيد",
+          "signal": "✅ ربح",
+          "confidence": 75.0
         }
       ],
       "status": "ضرب الوقف مرتين",
-      "trend": "هابط",
-      "maker_activity": "خروج",
-      "sector_heat": "هابط",
+      "trend": "عرضي",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد",
       "last_entry_price": 13.74,
       "last_target": 17.45,
       "last_result": "-9.23%"
@@ -138,12 +215,40 @@
           "note": "حقق الهدف بس بعود ضعيف (+0.63%). مدة طويلة (5 أيام) لعائد ضعيف.",
           "signal": "نتيجة ضعيفة",
           "confidence": 50
+        },
+        {
+          "date": "2026-05-12",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 307.31 | عائد: +0.63% | مدة: 5ي | ربح سريع — توقيت جيد",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-05-04",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 300.90 | عائد: +0.51% | مدة: 16ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-04-29",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 298.97 | عائد: +0.96% | مدة: 19ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-01-22",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 350.01 | عائد: -9.37% | مدة: 9ي | دخل في القمة — توقيت متأخر",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
         }
       ],
       "status": "أداء ضعيف",
-      "trend": "عرضي",
-      "maker_activity": "ضعيف",
-      "sector_heat": "محايد",
+      "trend": "قرب القمة (تشبع شرائي)",
+      "maker_activity": "متوسط",
+      "sector_heat": "⚠️ محايد",
       "last_entry_price": 307.31,
       "last_target": 338.67,
       "last_result": "+0.63%"
@@ -165,12 +270,26 @@
           "note": "توقع تاني عند 32.89. هذه المرة حقق +11.80% في 16 يوم. توقيت أفضل.",
           "signal": "فرصة دخول",
           "confidence": 70
+        },
+        {
+          "date": "2026-02-09",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 32.89 | عائد: +11.80% | مدة: 16ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 100.0
+        },
+        {
+          "date": "2026-02-04",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 33.16 | عائد: -10.00% | مدة: 61ي | أمسك 61 يوم — مدة طويلة جداً",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
         }
       ],
       "status": "أداء متفاوت",
-      "trend": "عرضي",
-      "maker_activity": "متقطع",
-      "sector_heat": "صاعد",
+      "trend": "ترند صاعد",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "🔥 صاعد",
       "last_entry_price": 32.89,
       "last_target": 37.33,
       "last_result": "+11.80%"
@@ -192,15 +311,210 @@
           "note": "توقع تاني عند 99.81. خسر -9.21% في 21 يوم. نفس النمط — دخول متأخر.",
           "signal": "تجنب",
           "confidence": 80
+        },
+        {
+          "date": "2026-04-13",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 99.81 | عائد: -9.21% | مدة: 21ي | دخل في القمة — توقيت متأخر",
+          "signal": "❌ خسارة",
+          "confidence": 100.0
+        },
+        {
+          "date": "2026-01-01",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 98.51 | عائد: -9.98% | مدة: 27ي | دخل في القمة — توقيت متأخر",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
         }
       ],
       "status": "ضرب الوقف مرتين",
-      "trend": "هابط رغم قطاع صاعد",
-      "maker_activity": "توزيع",
-      "sector_heat": "صاعد",
+      "trend": "قرب القمة (تشبع شرائي)",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "🔥 صاعد",
       "last_entry_price": 99.81,
       "last_target": 113.29,
       "last_result": "-9.21%"
+    },
+    "HRHO": {
+      "name": "EFG Holding S.A.E.",
+      "sector": "Finance",
+      "observations": [
+        {
+          "date": "2026-05-25",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 28.90 | عائد: -8.89% | مدة: 10ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        }
+      ],
+      "status": "",
+      "trend": "عرضي",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد"
+    },
+    "OCDI": {
+      "name": "Six of October Development & Investment (SODIC)",
+      "sector": "Finance",
+      "observations": [
+        {
+          "date": "2026-05-20",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 21.75 | عائد: -1.18% | مدة: 11ي | دخل في القمة — توقيت متأخر",
+          "signal": "❌ خسارة",
+          "confidence": 100.0
+        },
+        {
+          "date": "2026-05-12",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 20.93 | عائد: +1.48% | مدة: 17ي | ربح بطيء — السهم طلع بس خد وقت",
+          "signal": "✅ ربح",
+          "confidence": 90.0
+        }
+      ],
+      "status": "",
+      "trend": "قرب القمة (تشبع شرائي)",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد"
+    },
+    "ALCN": {
+      "name": "Alexandria Containers & Goods",
+      "sector": "Transportation",
+      "observations": [
+        {
+          "date": "2026-05-04",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 28.85 | عائد: -0.46% | مدة: 11ي | قطاع هابط — لازم كان يترفض",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        }
+      ],
+      "status": "",
+      "trend": "ترند صاعد",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد"
+    },
+    "MASR": {
+      "name": "Madinet Masr for Housing & Development",
+      "sector": "Finance",
+      "observations": [
+        {
+          "date": "2026-04-26",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 788.94 | عائد: -8.70% | مدة: 11ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        },
+        {
+          "date": "2026-03-10",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 718.20 | عائد: -5.69% | مدة: 18ي | أمسك 18 يوم — مدة طويلة جداً",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        }
+      ],
+      "status": "",
+      "trend": "عرضي",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد"
+    },
+    "SKPC": {
+      "name": "Sidi Kerir Petrochemicals",
+      "sector": "Process Industries",
+      "observations": [
+        {
+          "date": "2026-04-16",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 17.14 | عائد: -9.38% | مدة: 13ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 75.0
+        },
+        {
+          "date": "2026-03-15",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 17.88 | عائد: -7.87% | مدة: 11ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 75.0
+        }
+      ],
+      "status": "",
+      "trend": "عرضي",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "🔥 صاعد"
+    },
+    "DEIN": {
+      "name": "Delta Insurance",
+      "sector": "Finance",
+      "observations": [
+        {
+          "date": "2026-04-08",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 339.04 | عائد: -4.24% | مدة: 5ي | لا سيولة — الميكرز خارج",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        }
+      ],
+      "status": "",
+      "trend": "ترند هابط",
+      "maker_activity": "ضعيف/خروج",
+      "sector_heat": "⚠️ محايد"
+    },
+    "CIEB": {
+      "name": "Credit Agricole Egypt",
+      "sector": "Finance",
+      "observations": [
+        {
+          "date": "2026-02-09",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 32.38 | عائد: -8.09% | مدة: 8ي | توقيت خاطئ",
+          "signal": "❌ خسارة",
+          "confidence": 100.0
+        },
+        {
+          "date": "2026-01-27",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 29.69 | عائد: -8.95% | مدة: 27ي | أمسك 27 يوم — مدة طويلة جداً",
+          "signal": "❌ خسارة",
+          "confidence": 90.0
+        }
+      ],
+      "status": "",
+      "trend": "ترند صاعد",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد"
+    },
+    "ORHD": {
+      "name": "Orascom Development Egypt (S.A.E)",
+      "sector": "Consumer Durables",
+      "observations": [
+        {
+          "date": "2026-02-01",
+          "source": "backtest_analysis",
+          "note": "إشارة: WATCH | دخول: 48.59 | عائد: -7.50% | مدة: 15ي | أمسك 15 يوم — مدة طويلة جداً",
+          "signal": "❌ خسارة",
+          "confidence": 100.0
+        }
+      ],
+      "status": "",
+      "trend": "عرضي",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "🔥 صاعد"
+    },
+    "CLHO": {
+      "name": "Cleopatra Hospital Company",
+      "sector": "Health Services",
+      "observations": [
+        {
+          "date": "2026-01-27",
+          "source": "backtest_analysis",
+          "note": "إشارة: STRONG_BUY | دخول: 247.98 | عائد: -8.34% | مدة: 48ي | قطاع هابط — لازم كان يترفض",
+          "signal": "❌ خسارة",
+          "confidence": 95.0
+        }
+      ],
+      "status": "",
+      "trend": "ترند صاعد",
+      "maker_activity": "نشط جداً (دخول سيولة)",
+      "sector_heat": "⚠️ محايد"
     }
   },
   "sector_notes": {
@@ -208,14 +522,20 @@
       "status": "صاعد",
       "avg_change": "+1.28%",
       "notes": "قطاع الأدوية في صعود. فيه سيولة. لكن التوقعات فاتت AXPH (+8.76%) — لازم تتبع الصاعدات.",
-      "opportunity_stocks": ["AXPH", "APPC"],
+      "opportunity_stocks": [
+        "AXPH",
+        "APPC"
+      ],
       "last_updated": "2026-08-31"
     },
     "Consumer Durables": {
       "status": "صاعد",
       "avg_change": "+1.30%",
       "notes": "قطاع العقارات/الاستهلاك في صعود. HELI أدى كويس. ORHD متوسط.",
-      "opportunity_stocks": ["HELI", "ORHD"],
+      "opportunity_stocks": [
+        "HELI",
+        "ORHD"
+      ],
       "last_updated": "2026-08-31"
     },
     "Finance": {
@@ -269,6 +589,12 @@
       "lesson": "البيانات في الساندبوكس ناقصة (32 صفقة) vs الإنتاج (64 صفقة). الباك-تست لازم على بيانات كاملة.",
       "impact": "high",
       "action": "طلب بيانات الإنتاج الكاملة قبل أي تعديل"
+    },
+    {
+      "date": "2026-08-31",
+      "lesson": "تحليل 32 صفقة: 8 دخل في القمة، 5 في قطاع هابط، 15 مدة > 14 يوم",
+      "impact": "high",
+      "action": "فلتر ميكرز + قطاع + خروج ديناميكي"
     }
   ]
 }
