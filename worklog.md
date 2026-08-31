@@ -12814,3 +12814,77 @@ Stage Summary:
 - ✅ السبب الجذري معروف: precision 6.4% + الانفجارات عند الفتح
 - ✅ Maestro Baseline قوي: 80% WR، 9.47 PF، 0.88% DD
 - 🔜 نرجع للمختبر: نطوّر V4 (daily + فلتر زخم) قبل أي ربط بالإنتاج
+
+---
+Task ID: STAGE3-V4-DAILY-2026-08-31
+Agent: Z.ai Code (main) — Senior Quant
+Task: المرحلة 3 — V4-Daily (تجميع هادئ على بيانات يومية) بعد فشل V4-Intraday
+
+Work Log:
+- **السياق**: المالك قرر رجوع V4-Intraday (precision 6.4%) وتطبيق الفكرة على الإطار اليومي.
+- **تأكيد**: V4-Intraday module موجود (`vps-service/analyzers/v4_predictive_detector.py`) بس مش مربوط فعلياً بـ Maestro في الإنتاج. مفيش حاجة للرجوع.
+
+### Phase 1: بناء V4-Daily
+- `scripts/v4_daily_detector.py` (~770 سطر)
+- 9 إشارات + 4 anti-signals:
+  - Signals: compression (3 مستويات), vol_buildup, tight_closes, VCP, base_above_sma20/50, calm_buildup, multi_week_base, near_support, vol_dryup_surge
+  - Anti-signals: extended (>40% above 50d high), falling_knife (>-20% in 5d), already_exploded (vol_ratio>5x), overbought (RSI>85)
+- عتبة is_hot: score ≥ 35 + (compression OR volume_signal) + last_vol > 10K
+
+### Phase 2: الاختبار على بيانات EGX الكاملة (يناير 2025 - أغسطس 2026)
+
+**Recall على الأسهم الانفجارية (302 يوم انفجار):**
+- تم اختبار: 244 يوم
+- V4-Daily اصطاد: 106 يوم
+- **Recall: 43.4%** (تحسّن من V4-Intraday 34.8% بـ +8.6 نقطة)
+
+**Precision (4 تواريخ × 142 سهم سائل):**
+- Tier 1 (score ≥ 35): 365 إشارة، 48 صحيحة، precision = 13.2%
+- Tier 2 (score ≥ 50): 262 إشارة، 34 صحيحة، precision = 13.0%
+- **Best Precision: 13.2%** (تحسّن من V4-Intraday 6.4% بـ +6.8 نقطة)
+
+**محاكاة الصفقات (وقف -8%، هدف +15%، 10 أيام):**
+- 262 صفقة (Tier 2)
+- Win Rate: 50.8%
+- Profit Factor: 0.97 (تحت breakeven)
+- متوسط العائد: -0.11%
+- متوسط مدة الاحتفاظ: 7.7 يوم
+
+### Phase 3: 5 أمثلة مفصّلة (V4-Daily قبل الانفجار)
+1. **SCTS @ 2026-08-06 (+1348.1%)**: score=94، 7 إشارات (vol_buildup 2.31x + tight_closes sd=1.5% + VCP 0.08)
+2. **PHAR @ 2026-08-05 (+50.3%)**: score=35، vol_buildup 2.56x + VCP
+3. **EGREF @ 2026-08-11 (+45.2%)**: score=37، vol_buildup + dryup_surge
+4. **ODIN @ 2026-08-05 (+39.5%)**: score=69، vol_buildup + VCP + base_above_sma50
+5. **KZPC @ 2026-08-16 (+37.1%)**: score=37، vol_buildup + dryup_surge
+
+### Phase 4: مقارنة V4-Daily vs V4-Intraday
+- Recall: 34.8% → 43.4% (+8.6)
+- Precision: 6.4% → 13.2% (+6.8)
+- نوع الكشف: أثناء الانفجار → قبل الانفجار ✓
+- vulnerable to gap: نعم → لا ✓
+
+### Phase 5: الحكم
+- ✅ Recall ≥ 40%: ✓ (43.4%)
+- ❌ Precision ≥ 30%: ✗ (13.2%)
+- ❌ PF ≥ 1.5: ✗ (0.97)
+
+**الحكم: ⚠️ Recall كويس بس Precision ضعيف — يحتاج فلتر إضافي**
+
+### تحليل المشكلة
+V4-Daily بيكتشف التجميع صح (43.4% recall + 5 أمثلة واضحة قبل الانفجار)،
+بس الـ precision ضعيف لأن:
+1. في أسهم بتطلع إشارات "تجميع" وهي في الحقيقة bear flag (بتنزل بعد كده)
+2. معظم الصفقات بتوصل stop_loss في يوم 1-2 (إشارة مبكرة على سهم لسه هابط)
+3. الـ PF = 0.97 يعني بالكاد breakeven (مش ربح)
+
+### الطريق لقدام
+1. **فلتر إضافي - مؤكدات اتجاه**: نطلب trend up (SMA20 > SMA50) قبل أي إشارة
+2. **فلتر حجم مؤكد**: نطلب آخر يوم حجمه > 1.5x متوسط 20 يوم (مش بس vol_buildup في 5 أيام)
+3. **Multi-day confirmation**: الإشارة لازم تكرر يومين متتاليين
+4. **Risk management أقوى**: stop أضيق (-5%) + target أعلى (+20%)
+
+Stage Summary:
+- ✅ V4-Daily أحسن من V4-Intraday في كل المقاييس (recall +8.6, precision +6.8)
+- ✅ بيكشف قبل الانفجار مش أثناءه (5 أمثلة واضحة)
+- ⚠️ Precision 13.2% لسه ضعيف (هدف 30%) + PF 0.97 (تحت breakeven)
+- 🔜 محتاج فلتر اتجاه إضافي قبل أي ربط بـ Maestro
