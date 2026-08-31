@@ -265,7 +265,7 @@ export function ExpertIntelligencePanel({
               <AlertOctagon className="h-5 w-5 text-red-500 flex-shrink-0" />
               <span>الفرص الضائعة والتوصيات الغلط</span>
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchMissedOpportunities} disabled={missedOppLoading} className="flex-shrink-0 h-8 w-8 p-0">
+            <Button variant="ghost" size="sm" onClick={fetchMissedOpportunities} disabled={missedOppLoading} className="flex-shrink-0 h-9 w-9 p-0">
               <RefreshCw className={cn('h-4 w-4', missedOppLoading && 'animate-spin')} />
             </Button>
           </div>
@@ -435,7 +435,7 @@ export function ExpertIntelligencePanel({
               <Layers className="h-5 w-5 text-teal-500 flex-shrink-0" />
               <span>ذكاء القطاعات</span>
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchSectorIntel} disabled={sectorIntelLoading} className="flex-shrink-0 h-8 w-8 p-0">
+            <Button variant="ghost" size="sm" onClick={fetchSectorIntel} disabled={sectorIntelLoading} className="flex-shrink-0 h-9 w-9 p-0">
               <RefreshCw className={cn('h-4 w-4', sectorIntelLoading && 'animate-spin')} />
             </Button>
           </div>
@@ -592,7 +592,7 @@ export function ExpertIntelligencePanel({
                   <SelectItem value="STRONG_SELL">بيع قوي</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="sm" onClick={() => fetchConsensusList(consensusVerdict)} disabled={consensusLoading} className="flex-shrink-0 h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" onClick={() => fetchConsensusList(consensusVerdict)} disabled={consensusLoading} className="flex-shrink-0 h-9 w-9 p-0">
                 <RefreshCw className={cn('h-4 w-4', consensusLoading && 'animate-spin')} />
               </Button>
             </div>

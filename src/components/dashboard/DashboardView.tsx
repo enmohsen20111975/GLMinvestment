@@ -136,10 +136,6 @@ export function DashboardView() {
     }
   };
 
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
-
   // Get market name for subtitle
   const marketNameAr = MARKET_NAMES_AR[currentMarket];
 

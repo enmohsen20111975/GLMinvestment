@@ -1320,7 +1320,7 @@ function MarketStatusTab({ market }: { market: MarketType }) {
                 </span>
                 {autoRefresh ? 'مباشر' : 'متوقف'}
               </Badge>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => fetchData()} title="تحديث الآن">
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => fetchData()} title="تحديث الآن">
                 <RefreshCw className={cn("h-4 w-4", loading ? "animate-spin" : "")} />
               </Button>
               <Badge variant={marketStatus.isOpen ? "default" : "destructive"} className="text-sm">
@@ -7508,7 +7508,7 @@ interface MarketAnalysisViewProps {
 }
 
 export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = {}) {
-  const [activeTab, setActiveTab] = useState('tracking');
+  const [activeTab, setActiveTab] = useState('balanced');
   const { currentMarket, loadStockDetail, setCurrentMarket } = useAppStore();
   const marketCode = MARKET_CODES[currentMarket];
   // V40.4 §5: derive the currency label dynamically (EGP/SAR/KWD/QAR/USDT)
@@ -7615,7 +7615,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       <HorizontalSectorsBar marketCode={marketCode} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 h-auto gap-1">
+        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
           {/* التبويب الأول: متابعة حية أثناء الجلسة (توقعات نشطة + أسهم تحت المراقبة) */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />

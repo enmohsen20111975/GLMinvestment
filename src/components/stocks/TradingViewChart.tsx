@@ -1573,19 +1573,19 @@ export function TradingViewChart({
 
         {/* Controls */}
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomIn}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleZoomIn}>
             <ZoomIn className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleZoomOut}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleZoomOut}>
             <ZoomOut className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleFit}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleFit}>
             <Maximize2 className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleScreenshot}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleScreenshot}>
             <Camera className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleFullscreen}>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleFullscreen}>
             <Maximize2 className="size-3.5" />
           </Button>
         </div>

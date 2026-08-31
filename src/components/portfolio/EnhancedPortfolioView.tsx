@@ -1351,7 +1351,7 @@ function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: n
                                   مستشار
                                 </Button>
                               )}
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title="تعديل"><Pencil className="w-3.5 h-3.5" /></Button>
+                              <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title="تعديل"><Pencil className="w-3.5 h-3.5" /></Button>
                               <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title="حذف"><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
                           </div>
@@ -2183,7 +2183,7 @@ function IncomeExpenseTab() {
                       <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{t.description || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground" dir="ltr">{t.transaction_date}</TableCell>
                       <TableCell className="text-center">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => handleDelete(t.id!)}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-red-500" onClick={() => handleDelete(t.id!)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </TableCell>
@@ -2500,8 +2500,8 @@ function ObligationsTab() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="outline" size="sm" onClick={() => openPayment(ob)}>تسجيل دفعة</Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500" onClick={() => setDeleteId(ob.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => openEdit(ob)}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-red-500" onClick={() => setDeleteId(ob.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
