@@ -795,7 +795,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
 // ============================================================================
 
 function MarketStatusTab({ market }: { market: MarketType }) {
-  const currencyLabel = "ج.م";
+  const currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م';
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -2020,7 +2020,7 @@ function ProofPredictionsTableView({
 }: {
   stocks: StockData[];
 }) {
-  const currencyLabel = "ج.م";
+  const currencyLabel = MARKET_CURRENCY_LABEL[useAppStore.getState().currentMarket] || "ج.م";
   const storeStocks = useAnalysisStore((state) => state.stocks) || [];
 
   const stocksMap = React.useMemo(() => {
@@ -4182,7 +4182,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
   onBack: () => void;
   stockDetail: any;
 }) {
-  const currencyLabel = "ج.م";
+  const currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م';
   // P26: خريطة الشخصية المعروضة لمفتاح analysisJson + fallback للحقول العلوية للسهم
   const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
   const pd: PersonaData = item.analysisJson?.[_personaKey] || {
