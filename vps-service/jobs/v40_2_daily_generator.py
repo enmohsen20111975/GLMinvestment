@@ -528,6 +528,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # عشان نوصل للهدف التشغيلي 60-150 صفقة في 8 أشهر بدل 6 فقط.
             # الـ R/R >= 1.5 بـ يـ ensure جودة الصفقات (dynamic_rr_normal=1.5).
             # كمان sort بـ evidence_count ↓ → أعلى جودة بتـ pick أولاً.
+            # RECOMMENDATION 3: إلغاء WATCH نهائياً (باك-تست: WR +6.9% + عائد +73.47%)
+            # WATCH نسبة نجاحها 16.7% بس — أسوأ من العشوائي
+            if signal in ('WATCH', 'HOLD', 'WAIT', 'NEUTRAL'):
+                continue
             if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
                 # ── T-0/T-1/T-2 DETECTION (مرحلة منفصلة 4 — 2026-08-30) ──
                 # تم الإلغاء: backtest أظهر إنه ينقص الأداء (WR -4%, PF -0.69, Return -88%)
