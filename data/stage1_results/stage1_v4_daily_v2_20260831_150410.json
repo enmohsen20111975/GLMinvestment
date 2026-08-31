@@ -1,0 +1,176 @@
+{
+  "timestamp": "20260831_150410",
+  "db_path": "/home/z/my-project/db/data_engine.db",
+  "table_name": "egksco_price_history",
+  "columns": [
+    "id",
+    "symbol",
+    "price_date",
+    "open_price",
+    "high_price",
+    "low_price",
+    "close_price",
+    "volume",
+    "turnover"
+  ],
+  "total_explosive": 302,
+  "testable_explosive": 302,
+  "scan_dates": [
+    "2026-06-07",
+    "2026-07-13",
+    "2026-07-29",
+    "2026-08-15"
+  ],
+  "configs": {
+    "A": {
+      "label": "v1 baseline (≥35)",
+      "kwargs": {},
+      "min_score": 35,
+      "recall_pct": 43.44262295081967,
+      "caught": 106,
+      "prec_pct": 17.586206896551722,
+      "total_signals": 290,
+      "true_signals": 51,
+      "false_signals": 239,
+      "n_trades": 290,
+      "wr": 48.96551724137931,
+      "pf": 0.5503599538086943,
+      "avg_ret": -3.0197798219237337,
+      "avg_hold": 7.682758620689655,
+      "max_dd": 14.18293185291562,
+      "wins": 142,
+      "losses": 140
+    },
+    "B": {
+      "label": "v2 (≥45, vol≥1.5x, md)",
+      "kwargs": {
+        "vol_confirm_min": 1.5,
+        "vol_confirm_max": 5.0,
+        "require_multi_day": true
+      },
+      "min_score": 45,
+      "recall_pct": 1.0638297872340425,
+      "caught": 2,
+      "prec_pct": 3.571428571428571,
+      "total_signals": 28,
+      "true_signals": 1,
+      "false_signals": 27,
+      "n_trades": 28,
+      "wr": 39.285714285714285,
+      "pf": 0.6013192999292648,
+      "avg_ret": -1.0814147124026618,
+      "avg_hold": 9.5,
+      "max_dd": 0.6290452136502006,
+      "wins": 11,
+      "losses": 17
+    },
+    "C": {
+      "label": "v2 (≥55, vol≥1.5x, md)",
+      "kwargs": {
+        "vol_confirm_min": 1.5,
+        "vol_confirm_max": 5.0,
+        "require_multi_day": true
+      },
+      "min_score": 55,
+      "recall_pct": 0.5319148936170213,
+      "caught": 1,
+      "prec_pct": 4.761904761904762,
+      "total_signals": 21,
+      "true_signals": 1,
+      "false_signals": 20,
+      "n_trades": 21,
+      "wr": 38.095238095238095,
+      "pf": 0.6206952820141435,
+      "avg_ret": -1.0060975240983352,
+      "avg_hold": 9.714285714285714,
+      "max_dd": 0.5068321344003108,
+      "wins": 8,
+      "losses": 13
+    },
+    "D": {
+      "label": "v2 (≥45, vol≥1.2x, md)",
+      "kwargs": {
+        "vol_confirm_min": 1.2,
+        "vol_confirm_max": 5.0,
+        "require_multi_day": true
+      },
+      "min_score": 45,
+      "recall_pct": 1.0638297872340425,
+      "caught": 2,
+      "prec_pct": 6.0606060606060606,
+      "total_signals": 33,
+      "true_signals": 2,
+      "false_signals": 31,
+      "n_trades": 33,
+      "wr": 36.36363636363637,
+      "pf": 0.6608833579038327,
+      "avg_ret": -0.9433736874099964,
+      "avg_hold": 9.090909090909092,
+      "max_dd": 0.7621201591956429,
+      "wins": 12,
+      "losses": 21
+    },
+    "E": {
+      "label": "v2 (≥45, vol≥1.2x, no-md)",
+      "kwargs": {
+        "vol_confirm_min": 1.2,
+        "vol_confirm_max": 5.0,
+        "require_multi_day": false
+      },
+      "min_score": 45,
+      "recall_pct": 3.723404255319149,
+      "caught": 7,
+      "prec_pct": 11.904761904761903,
+      "total_signals": 42,
+      "true_signals": 5,
+      "false_signals": 37,
+      "n_trades": 42,
+      "wr": 38.095238095238095,
+      "pf": 0.8534756898961291,
+      "avg_ret": -0.4415929699499571,
+      "avg_hold": 8.19047619047619,
+      "max_dd": 0.7102086541682587,
+      "wins": 16,
+      "losses": 26
+    }
+  },
+  "criteria": {
+    "A": {
+      "prec": false,
+      "pf": false,
+      "recall": true,
+      "dd": true,
+      "all": false
+    },
+    "B": {
+      "prec": false,
+      "pf": false,
+      "recall": false,
+      "dd": true,
+      "all": false
+    },
+    "C": {
+      "prec": false,
+      "pf": false,
+      "recall": false,
+      "dd": true,
+      "all": false
+    },
+    "D": {
+      "prec": false,
+      "pf": false,
+      "recall": false,
+      "dd": true,
+      "all": false
+    },
+    "E": {
+      "prec": false,
+      "pf": false,
+      "recall": false,
+      "dd": true,
+      "all": false
+    }
+  },
+  "verdict": "❌ نرجع — مفيش تحسن حقيقي",
+  "next_step": "نقتل الفكرة مؤقتاً ونرجع للمختبر بفكرة جديدة"
+}
