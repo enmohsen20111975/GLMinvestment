@@ -1,4 +1,5 @@
 'use client';
+import { StatCard } from '@/components/ui/stat-card';
 
 /**
  * PicksManagementView — فن إدارة التوصيات
@@ -396,30 +397,6 @@ function ManagementRow({ advice }: { advice: ManagementAdvice }) {
         />
       </div>
     </div>
-  );
-}
-
-function StatCard({
-  title, value, hint, icon, iconBg, valueColor,
-}: {
-  title: string; value: string | number; hint?: string;
-  icon: React.ReactNode; iconBg: string; valueColor?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">{title}</p>
-            <p className={cn('text-2xl font-bold', valueColor)}>{value}</p>
-            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-          </div>
-          <div className={cn('rounded-lg p-2', iconBg)}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

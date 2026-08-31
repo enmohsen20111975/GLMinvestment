@@ -1,4 +1,5 @@
 'use client';
+import { StatCard } from '@/components/ui/stat-card';
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -64,42 +65,6 @@ function ReportHeader() {
         </div>
       </div>
     </div>
-  );
-}
-
-/* ========== Stat Card ========== */
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  color,
-  bg,
-  subtext,
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bg: string;
-  subtext?: string;
-}) {
-  return (
-    <Card className="overflow-hidden border shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
-            <p className={cn('text-2xl font-bold tabular-nums', color)}>{value}</p>
-            {subtext && (
-              <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
-            )}
-          </div>
-          <div className={cn('flex-shrink-0 p-2.5 rounded-xl', bg)}>
-            <Icon className={cn('w-5 h-5', color)} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

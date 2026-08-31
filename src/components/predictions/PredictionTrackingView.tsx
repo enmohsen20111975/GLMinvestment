@@ -1,4 +1,5 @@
 'use client';
+import { StatCard } from '@/components/ui/stat-card';
 
 /**
  * PredictionTrackingView — تتبع التوصيات (Feature 3)
@@ -157,28 +158,6 @@ interface StatCardProps {
   valueColor?: string;
 }
 
-function StatCard({ title, value, hint, icon, iconBg, valueColor }: StatCardProps) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm text-muted-foreground truncate">{title}</p>
-            <p className={cn('text-2xl sm:text-3xl font-bold mt-1', valueColor)}>
-              {value}
-            </p>
-            {hint && (
-              <p className="text-xs text-muted-foreground mt-1 truncate">{hint}</p>
-            )}
-          </div>
-          <div className={cn('rounded-xl p-2.5 shrink-0', iconBg)}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 // ============================================================
 // Main Component
