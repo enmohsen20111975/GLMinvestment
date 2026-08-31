@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAppStore } from '@/lib/store';
-import { PERSONAS, getPersonaConfig, shouldShowWarningPopup, getWarningMessage } from '@/lib/v2/persona-config';
+import { PERSONAS, getPersonaConfig, shouldShowWarningPopup, getWarningMessage } from '@/lib/v2/DISABLED_persona-config';
 import type { PersonaType } from '@/types/v2';
 
 interface PersonaSelectorProps {

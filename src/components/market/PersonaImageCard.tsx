@@ -109,7 +109,7 @@ export const PersonaImageCard = forwardRef<
 >(function PersonaImageCard({ market, persona, picks, lastUpdate }, ref) {
   const isInvestor = persona === 'investor';
 
-  // ثيم البرسونا (لا أزرق indigo، بس أزرق عادي للمستثمر وبنفسجي للصياد)
+  // ثيم البرسونا (لا أزرق teal، بس أزرق عادي للمستثمر وبنفسجي للصياد)
   const theme = isInvestor
     ? {
         emoji: '🏦',

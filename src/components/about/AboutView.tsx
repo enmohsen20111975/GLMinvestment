@@ -76,7 +76,7 @@ const SECTIONS = [
   },
   {
     icon: Globe,
-    color: 'indigo',
+    color: 'teal',
     title: 'محرك الاقتصاد الكلي (Macro Veto)',
     subtitle: 'The Macro Veto Engine — Behind The Chart',
     body: 'إنت مبقاش بتبيع السهم بناءً على الشارت بس، إنت بتبص وراء الشارت. ربط البنوك (COMI) بارتفاع الفائدة (+10 Boost)، وربط العقارات (ORHD) بارتفاع الفائدة (Veto)، وربط الاستيراد (AUTO) بالدولار، ده منطق "صندوق التحوط" (Hedge Fund) مش منطق برنامج تداول عادي. إنت بقيت بتلعب مع السوق مش ضده.',
@@ -130,7 +130,7 @@ const COLOR_MAP: Record<string, { bg: string; text: string; border: string; grad
   amber: { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', gradient: 'from-amber-500 to-orange-600', dot: 'bg-amber-500' },
   rose: { bg: 'bg-rose-50 dark:bg-rose-950/30', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-800', gradient: 'from-rose-500 to-pink-600', dot: 'bg-rose-500' },
   purple: { bg: 'bg-purple-50 dark:bg-purple-950/30', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-800', gradient: 'from-purple-500 to-fuchsia-600', dot: 'bg-purple-500' },
-  indigo: { bg: 'bg-teal-50 dark:bg-teal-950/30', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-800', gradient: 'from-teal-500 to-purple-600', dot: 'bg-teal-500' },
+  teal: { bg: 'bg-teal-50 dark:bg-teal-950/30', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-800', gradient: 'from-teal-500 to-purple-600', dot: 'bg-teal-500' },
   orange: { bg: 'bg-orange-50 dark:bg-orange-950/30', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800', gradient: 'from-orange-500 to-red-600', dot: 'bg-orange-500' },
   sky: { bg: 'bg-sky-50 dark:bg-sky-950/30', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-200 dark:border-sky-800', gradient: 'from-sky-500 to-cyan-600', dot: 'bg-sky-500' },
   fuchsia: { bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30', text: 'text-fuchsia-600 dark:text-fuchsia-400', border: 'border-fuchsia-200 dark:border-fuchsia-800', gradient: 'from-fuchsia-500 to-pink-600', dot: 'bg-fuchsia-500' },
@@ -246,7 +246,7 @@ export function AboutView() {
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-0">
                 {[
                   { title: 'مصادر البيانات', sub: 'Data Sources', icon: Database, color: 'emerald', bg: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-400' },
-                  { title: 'المحرك المركزي', sub: 'Core Engine', icon: Cpu, color: 'indigo', bg: 'bg-teal-500/10 border-teal-500/30', text: 'text-teal-400' },
+                  { title: 'المحرك المركزي', sub: 'Core Engine', icon: Cpu, color: 'teal', bg: 'bg-teal-500/10 border-teal-500/30', text: 'text-teal-400' },
                   { title: 'طبقات التحليل', sub: 'Analysis Layers', icon: Layers, color: 'cyan', bg: 'bg-cyan-500/10 border-cyan-500/30', text: 'text-cyan-400' },
                   { title: 'النتيجة النهائية', sub: 'Final Output', icon: Target, color: 'amber', bg: 'bg-amber-500/10 border-amber-500/30', text: 'text-amber-400' },
                 ].map((node, i) => {

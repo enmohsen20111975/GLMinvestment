@@ -125,7 +125,7 @@ const TIER_STYLES: Record<string, { bg: string; text: string; border: string; ic
     icon: <Star className="h-4 w-4" />,
   },
   WATCH: {
-    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    bg: 'bg-teal-50 dark:bg-teal-950/30',
     text: 'text-teal-700 dark:text-teal-300',
     border: 'border-teal-300 dark:border-teal-700',
     icon: <Eye className="h-4 w-4" />,
@@ -143,7 +143,7 @@ const ACTION_STYLES: Record<string, { color: string; bg: string; icon: React.Rea
   TRAILING_STOP: { color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-950/50', icon: <TrendingUp className="h-4 w-4" /> },
   TAKE_PROFIT_T1: { color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-950/50', icon: <DollarSign className="h-4 w-4" /> },
   TAKE_PROFIT_T2: { color: 'text-emerald-800 dark:text-emerald-200', bg: 'bg-emerald-200 dark:bg-emerald-900/50', icon: <Trophy className="h-4 w-4" /> },
-  ADD: { color: 'text-teal-700 dark:text-teal-300', bg: 'bg-teal-100 dark:bg-blue-950/50', icon: <Plus className="h-4 w-4" /> },
+  ADD: { color: 'text-teal-700 dark:text-teal-300', bg: 'bg-teal-100 dark:bg-teal-950/50', icon: <Plus className="h-4 w-4" /> },
   REDUCE: { color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-950/50', icon: <Minus className="h-4 w-4" /> },
   EXIT: { color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-100 dark:bg-rose-950/50', icon: <AlertTriangle className="h-4 w-4" /> },
 };

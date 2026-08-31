@@ -115,7 +115,7 @@ const SECTIONS = [
               السهم غالباً هيكمل هبوط بعد الارتداد الوهمي ده.
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-blue-950/30 border border-teal-800/50">
+          <div className="p-3 rounded-lg bg-teal-950/30 border border-teal-800/50">
             <div className="flex items-center gap-2 mb-1">
               <Badge className="bg-teal-900 text-teal-300 border border-teal-700">📊 تباعد إيجابي</Badge>
               <span className="text-xs text-muted-foreground">Boost +5 نقاط</span>

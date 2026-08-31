@@ -367,7 +367,7 @@ function TitheCalculator() {
               </div>
               
               <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="text-center p-4 rounded-xl bg-blue-50 dark:bg-teal-900/30">
+                <div className="text-center p-4 rounded-xl bg-teal-50 dark:bg-teal-900/30">
                   <p className="text-xs text-muted-foreground mb-1">إجمالي الدخل</p>
                   <p className="text-lg font-bold text-teal-600">{formatCurrency(totalIncome)}</p>
                 </div>
@@ -567,7 +567,7 @@ function AutoTithesCard() {
               size="sm"
               onClick={() => load(true)}
               disabled={refreshing}
-              className="border-teal-300 text-teal-700 hover:bg-blue-50 dark:border-teal-700 dark:text-teal-300"
+              className="border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
             >
               <RefreshCw className={cn('w-4 h-4 ml-1', refreshing && 'animate-spin')}/>
               تحديث
@@ -603,7 +603,7 @@ function AutoTithesCard() {
               <Separator/>
 
               {/* Note: tithe is on NET income after deducting installments */}
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800/50">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/50">
                 <Info className="w-4 h-4 text-teal-600 mt-0.5 shrink-0"/>
                 <p className="text-xs text-teal-800 dark:text-teal-200 leading-relaxed">
                   العُشر يُحتسب على صافي الدخل الشهري بعد خصم الأقساط.
@@ -612,7 +612,7 @@ function AutoTithesCard() {
               </div>
 
               {/* Tithable income summary */}
-              <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800/50">
+              <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/50">
                 <div className="flex items-center gap-2">
                   <Scale className="w-5 h-5 text-teal-600"/>
                   <div>
@@ -645,7 +645,7 @@ function AutoTithesCard() {
                   </div>
                 </div>
               ) : (
-                <Alert className="border-teal-300 bg-blue-50 dark:bg-blue-950/30">
+                <Alert className="border-teal-300 bg-teal-50 dark:bg-teal-950/30">
                   <Info className="w-5 h-5 text-teal-600"/>
                   <AlertDescription className="text-sm text-teal-800 dark:text-teal-200">
                     سجّل دخلك الشهري أو أضف أصولاً ذات عائد لمحفظتك ليتم حساب العُشر تلقائياً.

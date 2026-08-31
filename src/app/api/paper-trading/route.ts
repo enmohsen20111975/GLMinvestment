@@ -22,7 +22,7 @@ import {
   openPaperTrade,
   checkOpenTrades,
   type MarketRegime
-} from '@/lib/v2/paper-trading-engine';
+} from '@/lib/v2/DISABLED_paper-trading-engine';
 
 // VPS API for price history - use local Python backend by default
 const VPS_API_URL = process.env.PYTHON_API_URL || process.env.EGX_VPS_API_URL || 'http://127.0.0.1:8010';

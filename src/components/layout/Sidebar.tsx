@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
-import { isCryptoVisible } from '@/lib/v2/persona-config';
+import { isCryptoVisible } from '@/lib/v2/DISABLED_persona-config';
 import { useNotificationStore } from '@/lib/notification-store';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { cn } from '@/lib/utils';

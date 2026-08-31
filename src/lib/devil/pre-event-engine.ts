@@ -13,7 +13,7 @@
  */
 
 import type { PreEventAnalysis, ScenarioOutcome } from './types';
-import { checkUpcomingEvents, getStockEvents, analyzeEventImpact } from '@/lib/v2/special-events';
+import { checkUpcomingEvents, getStockEvents, analyzeEventImpact } from '@/lib/v2/DISABLED_special-events';
 
 // ==================== سيناريوهات الأحداث المعروفة ====================
 

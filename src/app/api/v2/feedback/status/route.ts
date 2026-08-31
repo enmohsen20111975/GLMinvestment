@@ -5,8 +5,8 @@
  * last run info, model accuracy, and weight adjustment history.
  */
 import { NextResponse } from 'next/server';
-import { getPredictionStats, getAccuracyHistory, getWeightAdjustmentHistory } from '@/lib/v2/prediction-logger';
-import { getModelAccuracy } from '@/lib/v2/feedback-loop';
+import { getPredictionStats, getAccuracyHistory, getWeightAdjustmentHistory } from '@/lib/v2/DISABLED_prediction-logger';
+import { getModelAccuracy } from '@/lib/v2/DISABLED_feedback-loop';
 import { ensureInitialized } from '@/lib/egx-db';
 
 export const dynamic = 'force-dynamic';
