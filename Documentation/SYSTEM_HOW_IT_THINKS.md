@@ -76,6 +76,45 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 
 ---
 
+### 🔬 V68 + V72 Oracle Engines — A/B Backtest (2026-08-31)
+
+**المنهجية:** كل ميزة Pine Script (V68 + V72) اتعملها A/B backtest لوحدها.
+الـ baseline: 15 trades, WR 73.3%, PF 9.80, Return +66.2%.
+**القاعدة: النتائج هي اللي تقرر.**
+
+#### النتائج
+
+| الميزة | الحكم | السبب |
+|---|---|---|
+| V68 dirty_distribution reject | ✅ KEEP | +22.5% return (rejected 6 فخاخ) |
+| V72 hidden_distribution block | ✅ KEEP | +36.5% return (rejected توزيع خفي) |
+| V68 no_chase_2d reject | ❌ KILL | 0 triggers (EGX لا يقفز 15% في يومين) |
+| V68 proof_probability | ❌ KILL | avg prob=31.7 (عديم الفائدة) |
+| V68 A+ boost | ❌ KILL | 1 trigger, 0 تأثير |
+| V68 magnetic_target | ❌ KILL | 0 triggers |
+| V72 wash_trade reject | ❌ KILL | WR -12.2% (رفض فرص رابحة!) |
+| V72 pullback_buy | ❌ KILL | 0 triggers |
+| V72 maker_death_point | ❌ KILL | no effect |
+| V72 market_bullish_sizing | ❌ KILL | 0 triggers |
+
+#### COMBO (الفائزين مع بعض)
+**V68 dirty_dist + V72 hidden_dist = 15 trades, WR 73.3%, Return +106.9% (+40.7% vs baseline)**
+
+الفائزين الاتنين بـ يكشفوا فخاخ مختلفة:
+- V68 dirty_dist: ظهر علوي + حجم + **delta سالب** (V62 بـ يفحص ظهر + حجم بس)
+- V72 hidden_dist: higher high + **lower volume** (delta-independent)
+
+#### الملفات
+- `vps-service/analyzers/v68_oracle.py` — 13 functions (probability, future fingerprint, quiet accumulation, dirty distribution, liquidity magnets, MFE trailing)
+- `vps-service/analyzers/v72_multi_path.py` — 8 functions (wash trade, hidden dist, pullback buy, maker death point, kill switch, market sizing)
+- `scripts/v68_ab_backtest.py` — A/B harness (temp DB per run, WR/PF/Return per feature)
+
+#### الدرس
+- Pine Script V68/V72 متصمم لـ global markets (crypto/forex) → فيهم triggers أكتر
+- EGX سوق مختلف: أقل تقلب، مفيش liquidity grabs كبيرة، probability score دايماً منخفضة
+- بس dirty_distribution + hidden_distribution موجودين في EGX → دول اللي شغّالين
+- **النظرية بتقول حاجات كتير كويسة، الباك-تست هو اللي بـ يقرر**
+
 ---
 
 ## 📑 فهرس المحتويات

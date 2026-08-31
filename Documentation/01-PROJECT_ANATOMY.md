@@ -82,6 +82,60 @@
 
 ---
 
+### 🔬 V68 + V72 Oracle Engines — A/B Backtest Results (2026-08-31)
+
+**المنهجية:** كل ميزة في V68 و V72 اتعملها A/B backtest لوحدها على 200 سهم (Jul-Aug 2026).
+الـ baseline: 15 trades, WR 73.3%, PF 9.80, Return +66.2%.
+**القاعدة: النتائج هي اللي تقرر — بـ نـ keep الكويس ونمسيح الوحش.**
+
+#### النتائج النهائية
+
+| الميزة | Trades | WR% | Return% | ΔReturn | الحكم |
+|---|---|---|---|---|---|
+| **V68_DIRTY_DIST_REJECT** | 17 | 76.5 | +88.7 | +22.5 | ✅ KEEP |
+| **V72_HIDDEN_DIST_BLOCK** | 14 | 71.4 | +102.7 | +36.5 | ✅ KEEP |
+| V68_NO_CHASE_2D_REJECT | 15 | 73.3 | +66.2 | 0 | ❌ KILL (0 triggers) |
+| V68_PROOF_PROBABILITY | 15 | 73.3 | +66.2 | 0 | ❌ KILL (avg prob 31.7) |
+| V68_APLUS_BOOST | 15 | 73.3 | +66.2 | 0 | ❌ KILL (1 trigger) |
+| V68_MAGNETIC_TARGET | 15 | 73.3 | +66.2 | 0 | ❌ KILL (0 triggers) |
+| V72_WASH_TRADE_REJECT | 18 | 61.1 | +82.6 | +16.4 | ❌ KILL (WR -12.2%!) |
+| V72_PULLBACK_BUY_PATH | 15 | 73.3 | +66.2 | 0 | ❌ KILL (0 triggers) |
+| V72_MAKER_DEATH_POINT | 15 | 73.3 | +66.2 | 0 | ❌ KILL (no effect) |
+| V72_MARKET_BULLISH_SIZING | 15 | 73.3 | +66.2 | 0 | ❌ KILL (0 triggers) |
+
+#### COMBO (الفائزين مع بعض)
+**V68_DIRTY_DIST + V72_HIDDEN_DIST = 15 trades, WR 73.3%, Return +106.9% (+40.7% vs baseline)**
+
+#### الملفات الجديدة
+- `vps-service/analyzers/v68_oracle.py` (730 LOC) — 13 functions (probability, future fingerprint, quiet accumulation, dirty distribution, liquidity magnets, MFE trailing, etc.)
+- `vps-service/analyzers/v72_multi_path.py` (470 LOC) — 8 functions (wash trade, hidden dist, pullback buy, maker death point, kill switch, market sizing)
+- `scripts/v68_ab_backtest.py` (400 LOC) — A/B harness (temp DB per run, WR/PF/Return per feature)
+
+#### الـ toggles (كل ميزة env var)
+```python
+# V68 — ✅ KEEP 1, ❌ KILL 4
+V68_DIRTY_DIST_REJECT  = '1'  # ✅ +22.5% return
+V68_NO_CHASE_2D_REJECT = '0'  # ❌
+V68_PROOF_PROBABILITY  = '0'  # ❌
+V68_APLUS_BOOST        = '0'  # ❌
+V68_MAGNETIC_TARGET    = '0'  # ❌
+
+# V72 — ✅ KEEP 1, ❌ KILL 4, ⏸️ PENDING 1
+V72_HIDDEN_DIST_BLOCK     = '1'  # ✅ +36.5% return
+V72_WASH_TRADE_REJECT     = '0'  # ❌ -12.2% WR
+V72_PULLBACK_BUY_PATH     = '0'  # ❌
+V72_MAKER_DEATH_POINT     = '0'  # ❌
+V72_MARKET_BULLISH_SIZING = '0'  # ❌
+V72_KILL_SWITCH_EXIT      = '0'  # ⏸️ exit-level (pending backtest)
+```
+
+#### KILL-OLLAMA (تحديث 2026-08-31)
+- `vps-service/ai/news_agent.py`: `NEWS_USE_OLLAMA` env var (default=0)
+- default=0 → skip Ollama connection entirely → keyword fallback = production
+- `is_ready()` مش بـ يتطلب Ollama
+
+---
+
 ## 📑 المحتويات
 
 1. [High-Level System Topology](#1-high-level-system-topology)
