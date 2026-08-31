@@ -6,6 +6,11 @@
  */
 import { NextResponse } from 'next/server';
 import { ensureInitialized } from '@/lib/egx-db';
+// v2/prediction-logger + feedback-loop deleted (CLOSED CAMP). Stubs:
+const getPredictionStats = () => ({});
+const getAccuracyHistory = () => [];
+const getWeightAdjustmentHistory = () => [];
+const getModelAccuracy = () => ({});
 
 export const dynamic = 'force-dynamic';
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureInitialized } from '@/lib/egx-db';
+// v2/prediction-logger deleted (CLOSED CAMP). Stub:
+const getRecentPredictions = () => [];
 
 export const dynamic = 'force-dynamic';
 

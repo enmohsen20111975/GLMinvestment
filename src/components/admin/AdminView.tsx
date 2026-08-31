@@ -148,9 +148,9 @@ import { PurgeCacheButton } from './PurgeCacheButton';
 //  'نظام التعلّم الموحّد',
 //);
 //
-// const MaestroDashboard = withErrorBoundary(
+// // const MaestroDashboard = withErrorBoundary(
 //   dynamic(
-//     () => import('./MaestroDashboard').then(m => ({ default: m.MaestroDashboard })),
+//     // () => import('./MaestroDashboard').then(m => ({ default: m.MaestroDashboard })),
 //     { ssr: false, loading: () => <LazyTabLoader label="لوحة المحركات" /> }
 //   ),
 //   'لوحة المحركات',
@@ -188,9 +188,9 @@ import { PurgeCacheButton } from './PurgeCacheButton';
 //   'مدير قاعدة البيانات الكامل',
 // );
 // 
-// const MaestroCommandCenter = withErrorBoundary(
+// // const MaestroCommandCenter = withErrorBoundary(
 //   dynamic(
-//     () => import('./MaestroCommandCenter').then(m => ({ default: m.MaestroCommandCenter })),
+//     // () => import('./MaestroCommandCenter').then(m => ({ default: m.MaestroCommandCenter })),
 //     { ssr: false, loading: () => <LazyTabLoader label="لوحة التحكم" /> }
 //   ),
 //   'لوحة التحكم',
@@ -343,7 +343,7 @@ import { PurgeCacheButton } from './PurgeCacheButton';
 // type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance';
 // 
 // // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
-// type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
+// type HubId = 'health' | 'learning' | 'data' | 'users' | 'telegram';
 // 
 // // ==================== COMPONENT ====================
 // 
@@ -1647,280 +1647,280 @@ import { PurgeCacheButton } from './PurgeCacheButton';
 //                       for (const p of (u.top_pages || [])) {
 //                         const key = String(p.page || '');
 //                         pageCounts.set(key, (pageCounts.get(key) || 0) + Number(p.count || 0));
-                      }
-                    }
-                    const sorted = Array.from(pageCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
-                    if (sorted.length === 0) return <p className="text-xs text-muted-foreground">لا توجد بيانات</p>;
-                    return (
-                      <div className="space-y-2">
-                        {sorted.map(([page, count]) => (
-                          <div key={page} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
-                            <span className="truncate ml-2">{page || 'غير محدد'}</span>
-                            <Badge variant="secondary" className="text-xs">{count}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    الميزات الأكثر استخداماً
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const featureCounts = new Map<string, number>();
-                    for (const u of userBehavior) {
-                      for (const f of (u.top_features || [])) {
-                        const key = String(f.feature || '');
-                        featureCounts.set(key, (featureCounts.get(key) || 0) + Number(f.count || 0));
-                      }
-                    }
-                    const sorted = Array.from(featureCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
-                    if (sorted.length === 0) return <p className="text-xs text-muted-foreground">لا توجد بيانات</p>;
-                    return (
-                      <div className="space-y-2">
-                        {sorted.map(([feature, count]) => (
-                          <div key={feature} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
-                            <span className="truncate ml-2">{feature || 'غير محدد'}</span>
-                            <Badge variant="secondary" className="text-xs">{count}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-      )}
+//                       }
+//                     }
+//                     const sorted = Array.from(pageCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+//                     if (sorted.length === 0) return <p className="text-xs text-muted-foreground">لا توجد بيانات</p>;
+//                     return (
+//                       <div className="space-y-2">
+//                         {sorted.map(([page, count]) => (
+//                           <div key={page} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
+//                             <span className="truncate ml-2">{page || 'غير محدد'}</span>
+//                             <Badge variant="secondary" className="text-xs">{count}</Badge>
+//                           </div>
+//                         ))}
+//                       </div>
+//                     );
+//                   })()}
+//                 </CardContent>
+//               </Card>
+// 
+//               <Card>
+//                 <CardHeader>
+//                   <CardTitle className="text-base flex items-center gap-2">
+//                     <Zap className="w-4 h-4" />
+//                     الميزات الأكثر استخداماً
+//                   </CardTitle>
+//                 </CardHeader>
+//                 <CardContent>
+//                   {(() => {
+//                     const featureCounts = new Map<string, number>();
+//                     for (const u of userBehavior) {
+//                       for (const f of (u.top_features || [])) {
+//                         const key = String(f.feature || '');
+//                         featureCounts.set(key, (featureCounts.get(key) || 0) + Number(f.count || 0));
+//                       }
+//                     }
+//                     const sorted = Array.from(featureCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+//                     if (sorted.length === 0) return <p className="text-xs text-muted-foreground">لا توجد بيانات</p>;
+//                     return (
+//                       <div className="space-y-2">
+//                         {sorted.map(([feature, count]) => (
+//                           <div key={feature} className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded">
+//                             <span className="truncate ml-2">{feature || 'غير محدد'}</span>
+//                             <Badge variant="secondary" className="text-xs">{count}</Badge>
+//                           </div>
+//                         ))}
+//                       </div>
+//                     );
+//                   })()}
+//                 </CardContent>
+//               </Card>
+//             </div>
+//           )}
+//         </div>
+//       )}
 
       {/* historical-predictions-v2 & v38-backtest tabs REMOVED (2026-08-13) — consolidated into نظام التعلم الذكي الموحد (Maestro) */}
 
       {/* ==================== EXPERT RECOMMENDATIONS TAB (توصيات الخبراء) ==================== */}
-      {activeTab === 'expert-recs' && (
-        <div className="bg-background rounded-lg p-2">
-          <HumanRecommendationsAdmin />
-        </div>
-      )}
+//       {activeTab === 'expert-recs' && (
+//         <div className="bg-background rounded-lg p-2">
+//           <HumanRecommendationsAdmin />
+//         </div>
+//       )}
 
       {/* ==================== TELEGRAM TAB ==================== */}
-      {activeTab === 'telegram' && (
-        <div className="bg-background rounded-lg">
-          <TelegramTab />
-        </div>
-      )}
+//       {activeTab === 'telegram' && (
+//         <div className="bg-background rounded-lg">
+//           <TelegramTab />
+//         </div>
+//       )}
 
       {/* ==================== REPORTS TAB ==================== */}
-      {activeTab === 'reports' && (
-        <div className="bg-background rounded-lg">
-          <iframe
-            src="/admin/reports"
-            className="w-full"
-            style={{ minHeight: '80vh', border: 'none' }}
-            title="التقارير الذكية"
-          />
-        </div>
-      )}
+//       {activeTab === 'reports' && (
+//         <div className="bg-background rounded-lg">
+//           <iframe
+//             src="/admin/reports"
+//             className="w-full"
+//             style={{ minHeight: '80vh', border: 'none' }}
+//             title="التقارير الذكية"
+//           />
+//         </div>
+//       )}
 
       {/* ==================== DATABASES TAB (Full Database Manager) ==================== */}
-      {activeTab === 'databases' && (
-        <DatabaseManagerFull />
-      )}
+//       {activeTab === 'databases' && (
+//         <DatabaseManagerFull />
+//       )}
 
       {/* ==================== SYSTEM CONTROL TAB ==================== */}
-      {activeTab === 'system-control' && (
-        <div className="space-y-6">
-          <DataScraperControl />
-          <SystemControlPanel />
-        </div>
-      )}
+//       {activeTab === 'system-control' && (
+//         <div className="space-y-6">
+//           <DataScraperControl />
+//           <SystemControlPanel />
+//         </div>
+//       )}
 
       {/* ==================== EDUCATIONAL CARDS TAB ==================== */}
-      {activeTab === 'educational-cards' && (
-        <div className="bg-background rounded-lg">
-          <iframe
-            src="/admin/educational-cards"
-            className="w-full"
-            style={{ minHeight: '80vh', border: 'none' }}
-            title="الكروت التعليمية"
-          />
-        </div>
-      )}
+//       {activeTab === 'educational-cards' && (
+//         <div className="bg-background rounded-lg">
+//           <iframe
+//             src="/admin/educational-cards"
+//             className="w-full"
+//             style={{ minHeight: '80vh', border: 'none' }}
+//             title="الكروت التعليمية"
+//           />
+//         </div>
+//       )}
 
       {/* ==================== USER FEEDBACK TAB ==================== */}
-      {activeTab === 'promo-codes' && <PromoCodesAdmin />}
-      {activeTab === 'feedback' && (
-        <UserFeedbackTab
-          feedback={feedback}
-          loading={feedbackLoading}
-          onRefresh={fetchFeedback}
-          onStatusChange={async (id, status) => {
+//       {activeTab === 'promo-codes' && <PromoCodesAdmin />}
+//       {activeTab === 'feedback' && (
+//         <UserFeedbackTab
+//           feedback={feedback}
+//           loading={feedbackLoading}
+//           onRefresh={fetchFeedback}
+//           onStatusChange={async (id, status) => {
             // Persist status locally only (simple review workflow)
-            setFeedback((prev) =>
-              prev.map((f) => (f.id === id ? { ...f, status } : f)),
-            );
-          }}
-        />
-      )}
-    </div>
-  );
-}
+//             setFeedback((prev) =>
+//               prev.map((f) => (f.id === id ? { ...f, status } : f)),
+//             );
+//           }}
+//         />
+//       )}
+//     </div>
+//   );
+// }
 
 // ==================== USER FEEDBACK TAB ====================
 
-const FEEDBACK_TYPE_META: Record<string, { label: string; cls: string }> = {
-  bug: { label: 'مشكلة', cls: 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
-  suggestion: { label: 'اقتراح', cls: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
-  opinion: { label: 'رأي / ملاحظة', cls: 'border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' },
-  praise: { label: 'إشادة', cls: 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
-};
+// const FEEDBACK_TYPE_META: Record<string, { label: string; cls: string }> = {
+//   bug: { label: 'مشكلة', cls: 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
+//   suggestion: { label: 'اقتراح', cls: 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
+//   opinion: { label: 'رأي / ملاحظة', cls: 'border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' },
+//   praise: { label: 'إشادة', cls: 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
+// };
 
-const FEEDBACK_STATUS_META: Record<string, { label: string; cls: string }> = {
-  new: { label: 'جديد', cls: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400' },
-  reviewed: { label: 'تمت المراجعة', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400' },
-  resolved: { label: 'تم الحل', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' },
-};
+// const FEEDBACK_STATUS_META: Record<string, { label: string; cls: string }> = {
+//   new: { label: 'جديد', cls: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400' },
+//   reviewed: { label: 'تمت المراجعة', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400' },
+//   resolved: { label: 'تم الحل', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' },
+// };
 
-function UserFeedbackTab({
-  feedback,
-  loading,
-  onRefresh,
-  onStatusChange,
-}: {
-  feedback: any[];
-  loading: boolean;
-  onRefresh: () => void;
-  onStatusChange: (id: string, status: 'new' | 'reviewed' | 'resolved') => void;
-}) {
-  const total = feedback.length;
-  const byType = (t: string) => feedback.filter((f) => f.type === t).length;
-  const newCount = feedback.filter((f) => f.status === 'new').length;
+// function UserFeedbackTab({
+//   feedback,
+//   loading,
+//   onRefresh,
+//   onStatusChange,
+// }: {
+//   feedback: any[];
+//   loading: boolean;
+//   onRefresh: () => void;
+//   onStatusChange: (id: string, status: 'new' | 'reviewed' | 'resolved') => void;
+// }) {
+//   const total = feedback.length;
+//   const byType = (t: string) => feedback.filter((f) => f.type === t).length;
+//   const newCount = feedback.filter((f) => f.status === 'new').length;
 
-  if (loading && total === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquareText className="w-5 h-5 text-primary" />
-            آراء المستخدمين
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
+//   if (loading && total === 0) {
+//     return (
+//       <Card>
+//         <CardHeader>
+//           <CardTitle className="flex items-center gap-2">
+//             <MessageSquareText className="w-5 h-5 text-primary" />
+//             آراء المستخدمين
+//           </CardTitle>
+//         </CardHeader>
+//         <CardContent className="space-y-3">
+//           {Array.from({ length: 3 }).map((_, i) => (
+//             <Skeleton key={i} className="h-24 w-full" />
+//           ))}
+//         </CardContent>
+//       </Card>
+//     );
+//   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquareText className="w-5 h-5 text-primary" />
-              آراء المستخدمين
-              {newCount > 0 && (
-                <Badge variant="destructive" className="mr-1">{newCount} جديد</Badge>
-              )}
-            </CardTitle>
-            <CardDescription className="mt-1">
-              البلاغات والآراء التي أرسلها المستخدمون من داخل المنصة.
-            </CardDescription>
-          </div>
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="gap-1">
-            <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
-            تحديث
-          </Button>
-        </div>
-        {total > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-            {(['bug', 'suggestion', 'opinion', 'praise'] as const).map((t) => (
-              <div key={t} className={cn('rounded-lg border px-3 py-2 text-center', FEEDBACK_TYPE_META[t].cls)}>
-                <div className="text-lg font-bold">{byType(t)}</div>
-                <div className="text-xs">{FEEDBACK_TYPE_META[t].label}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardHeader>
-      <CardContent>
-        {total === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-            <MessageSquareText className="w-12 h-12 mb-3 opacity-40" />
-            <p>لا توجد آراء أو بلاغات حتى الآن.</p>
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-[40rem] overflow-y-auto pr-1
-                          [&::-webkit-scrollbar]:w-2
-                          [&::-webkit-scrollbar-track]:bg-transparent
-                          [&::-webkit-scrollbar-thumb]:rounded-full
-                          [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30">
-            {feedback.map((f) => {
-              const typeMeta = FEEDBACK_TYPE_META[f.type] || FEEDBACK_TYPE_META.opinion;
-              const statusMeta = FEEDBACK_STATUS_META[f.status] || FEEDBACK_STATUS_META.new;
-              return (
-                <div key={f.id} className="rounded-lg border p-4">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className={cn('text-[11px]', typeMeta.cls)}>
-                        {typeMeta.label}
-                      </Badge>
-                      <Badge className={cn('text-[11px]', statusMeta.cls)}>
-                        {statusMeta.label}
-                      </Badge>
-                      {typeof f.rating === 'number' && f.rating > 0 && (
-                        <span className="flex items-center gap-0.5 text-amber-500">
-                          {Array.from({ length: f.rating }).map((_, i) => (
-                            <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground" dir="ltr">
-                      {new Date(f.createdAt).toLocaleString('ar-EG')}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                    {f.message}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                    {f.contact && (
-                      <span dir="ltr">تواصل: {f.contact}</span>
-                    )}
-                    {f.page && (
-                      <span className="font-mono opacity-70" dir="ltr">صفحة: {f.page}</span>
-                    )}
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">تحديث الحالة:</span>
-                    {(['new', 'reviewed', 'resolved'] as const).map((s) => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant={f.status === s ? 'default' : 'outline'}
-                        className="h-7 text-[11px]"
-                        onClick={() => onStatusChange(f.id, s)}
-                      >
-                        {FEEDBACK_STATUS_META[s].label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+//   return (
+//     <Card>
+//       <CardHeader>
+//         <div className="flex items-center justify-between gap-2 flex-wrap">
+//           <div>
+//             <CardTitle className="flex items-center gap-2">
+//               <MessageSquareText className="w-5 h-5 text-primary" />
+//               آراء المستخدمين
+//               {newCount > 0 && (
+//                 <Badge variant="destructive" className="mr-1">{newCount} جديد</Badge>
+//               )}
+//             </CardTitle>
+//             <CardDescription className="mt-1">
+//               البلاغات والآراء التي أرسلها المستخدمون من داخل المنصة.
+//             </CardDescription>
+//           </div>
+//           <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="gap-1">
+//             <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
+//             تحديث
+//           </Button>
+//         </div>
+//         {total > 0 && (
+//           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+//             {(['bug', 'suggestion', 'opinion', 'praise'] as const).map((t) => (
+//               <div key={t} className={cn('rounded-lg border px-3 py-2 text-center', FEEDBACK_TYPE_META[t].cls)}>
+//                 <div className="text-lg font-bold">{byType(t)}</div>
+//                 <div className="text-xs">{FEEDBACK_TYPE_META[t].label}</div>
+//               </div>
+//             ))}
+//           </div>
+//         )}
+//       </CardHeader>
+//       <CardContent>
+//         {total === 0 ? (
+//           <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+//             <MessageSquareText className="w-12 h-12 mb-3 opacity-40" />
+//             <p>لا توجد آراء أو بلاغات حتى الآن.</p>
+//           </div>
+//         ) : (
+//           <div className="space-y-3 max-h-[40rem] overflow-y-auto pr-1
+//                           [&::-webkit-scrollbar]:w-2
+//                           [&::-webkit-scrollbar-track]:bg-transparent
+//                           [&::-webkit-scrollbar-thumb]:rounded-full
+//                           [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30">
+//             {feedback.map((f) => {
+//               const typeMeta = FEEDBACK_TYPE_META[f.type] || FEEDBACK_TYPE_META.opinion;
+//               const statusMeta = FEEDBACK_STATUS_META[f.status] || FEEDBACK_STATUS_META.new;
+//               return (
+//                 <div key={f.id} className="rounded-lg border p-4">
+//                   <div className="flex items-start justify-between gap-3 flex-wrap">
+//                     <div className="flex items-center gap-2 flex-wrap">
+//                       <Badge variant="outline" className={cn('text-[11px]', typeMeta.cls)}>
+//                         {typeMeta.label}
+//                       </Badge>
+//                       <Badge className={cn('text-[11px]', statusMeta.cls)}>
+//                         {statusMeta.label}
+//                       </Badge>
+//                       {typeof f.rating === 'number' && f.rating > 0 && (
+//                         <span className="flex items-center gap-0.5 text-amber-500">
+//                           {Array.from({ length: f.rating }).map((_, i) => (
+//                             <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+//                           ))}
+//                         </span>
+//                       )}
+//                     </div>
+//                     <span className="text-[11px] text-muted-foreground" dir="ltr">
+//                       {new Date(f.createdAt).toLocaleString('ar-EG')}
+//                     </span>
+//                   </div>
+//                   <p className="mt-2 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+//                     {f.message}
+//                   </p>
+//                   <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+//                     {f.contact && (
+//                       <span dir="ltr">تواصل: {f.contact}</span>
+//                     )}
+//                     {f.page && (
+//                       <span className="font-mono opacity-70" dir="ltr">صفحة: {f.page}</span>
+//                     )}
+//                   </div>
+//                   <div className="mt-3 flex items-center gap-2">
+//                     <span className="text-xs text-muted-foreground">تحديث الحالة:</span>
+//                     {(['new', 'reviewed', 'resolved'] as const).map((s) => (
+//                       <Button
+//                         key={s}
+//                         size="sm"
+//                         variant={f.status === s ? 'default' : 'outline'}
+//                         className="h-7 text-[11px]"
+//                         onClick={() => onStatusChange(f.id, s)}
+//                       >
+//                         {FEEDBACK_STATUS_META[s].label}
+//                       </Button>
+//                     ))}
+//                   </div>
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         )}
+//       </CardContent>
+//     </Card>
+//   );
+// }

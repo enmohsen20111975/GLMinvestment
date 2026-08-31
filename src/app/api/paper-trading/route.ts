@@ -11,17 +11,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { initialize as initSqlJs } from '@/lib/sqlite-wrapper';
-import {
-  initializePaperTradingTables,
-  getTradingStats,
-  getOpenTrades,
-  getRecentClosedTrades,
-  getLessons,
-  calculateTechnicalIndicators,
-  makeTradeDecision,
-  openPaperTrade,
-  checkOpenTrades,
-  type MarketRegime
+// v2/paper-trading-engine deleted (CLOSED CAMP). Stubs:
+const initializePaperTradingTables = async () => {};
+const getTradingStats = async () => ({ totalTrades: 0, wins: 0, losses: 0, winRate: 0, totalReturn: 0 });
+const getOpenTrades = async () => [];
+const getRecentClosedTrades = async () => [];
+const getLessons = async () => [];
+const calculateTechnicalIndicators = async () => ({});
+const makeTradeDecision = async () => ({ action: 'hold' });
+const openPaperTrade = async () => null;
+const checkOpenTrades = async () => [];
+type MarketRegime = string;
 
 // VPS API for price history - use local Python backend by default
 const VPS_API_URL = process.env.PYTHON_API_URL || process.env.EGX_VPS_API_URL || 'http://127.0.0.1:8010';

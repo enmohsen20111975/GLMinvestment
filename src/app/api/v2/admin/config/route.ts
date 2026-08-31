@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
+// v2/config-service deleted (CLOSED CAMP). Stubs:
+const loadWeights = () => new Map();
+const getWeightsByGroup = () => ({});
+const updateWeight = () => false;
+const detectMarketRegime = () => "range";
+const clearCache = () => {};
 
 /**
  * GET /api/v2/admin/config

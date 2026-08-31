@@ -13,6 +13,10 @@
  */
 
 import type { PreEventAnalysis, ScenarioOutcome } from './types';
+// v2/special-events deleted (CLOSED CAMP). Stubs:
+const checkUpcomingEvents = async () => [];
+const getStockEvents = async () => [];
+const analyzeEventImpact = async () => null;
 
 // ==================== سيناريوهات الأحداث المعروفة ====================
 
