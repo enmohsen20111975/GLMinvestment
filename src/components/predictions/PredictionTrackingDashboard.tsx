@@ -1106,9 +1106,10 @@ export function PredictionTrackingDashboard({
         </CardContent>
       </Card>
 
-      {/* ─── 3. Persona Breakdown Cards Showcase (3 Persona Cards) ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {(['gambler', 'balanced', 'conservative'] as const).map((pId) => {
+      {/* ─── 3. Persona Breakdown Cards Showcase (UNIFIED — balanced only) ─── */}
+      {/* KILL-MAESTRO (2026-08-31): V40.2 = balanced فقط — لا كروت للمضارب/المستثمر */}
+      <div className="grid grid-cols-1 gap-4">
+        {(['balanced'] as const).map((pId) => {
           const cfg = PERSONA_CONFIG[pId];
           const pStats = computedStats.byPersona[pId];
           const Icon = cfg.icon;
