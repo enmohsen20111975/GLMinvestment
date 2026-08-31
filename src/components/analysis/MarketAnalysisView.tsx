@@ -795,6 +795,7 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
 // ============================================================================
 
 function MarketStatusTab({ market }: { market: MarketType }) {
+  const currencyLabel = "ج.م";
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1537,6 +1538,7 @@ function MarketStatusTab({ market }: { market: MarketType }) {
             </div>
             <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950">
               <p className="text-muted-foreground text-xs mb-1">متوسط السعر</p>
+              {/* currencyLabel fix */}
               <p className="text-xl font-bold text-purple-600">{weekStats.avgPrice.toFixed(2)} {currencyLabel}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950">
@@ -2018,6 +2020,7 @@ function ProofPredictionsTableView({
 }: {
   stocks: StockData[];
 }) {
+  const currencyLabel = "ج.م";
   const storeStocks = useAnalysisStore((state) => state.stocks) || [];
 
   const stocksMap = React.useMemo(() => {
@@ -4179,6 +4182,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
   onBack: () => void;
   stockDetail: any;
 }) {
+  const currencyLabel = "ج.م";
   // P26: خريطة الشخصية المعروضة لمفتاح analysisJson + fallback للحقول العلوية للسهم
   const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
   const pd: PersonaData = item.analysisJson?.[_personaKey] || {
@@ -7616,10 +7620,10 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
-          {/* التبويب الأول: متابعة حية أثناء الجلسة (توقعات نشطة + أسهم تحت المراقبة) */}
+          {/* التبويب الأول: متابعة التوقعات — كل تفاصيل التوقعات السابقة */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
-            <span className="hidden sm:inline">متابعة حية</span>
+            <span className="hidden sm:inline">متابعة التوقعات</span>
           </TabsTrigger>
           <TabsTrigger value="executive-report" className="flex items-center gap-1">
             <Layers className="h-4 w-4" />
@@ -7629,21 +7633,21 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">حالة السوق</span>
           </TabsTrigger>
-          {/* التوقعات — أثناء الجلسة: متابعة حية. بعد الإغلاق: توقعات الغد */}
+          {/* التوقعات الحية أثناء الجلسة + توقعات لحظية + متابعة حية */}
           <TabsTrigger value="balanced" className="flex items-center gap-1">
             <span className="text-base">⚖️</span>
             <span className="hidden sm:inline">التوقعات</span>
           </TabsTrigger>
-          {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو (Python logic في flow_system.py) */}
+          {/* Phase P5: تتبع حركة القطاعات */}
           <TabsTrigger value="sectors-tracking" className="flex items-center gap-1">
             <Layers className="h-4 w-4 text-teal-600" />
             <span className="hidden sm:inline">تتبع القطاعات</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* تبويب متابعة حية — أثناء الجلسة: توقعات نشطة + أسهم تحت المراقبة */}
+        {/* تبويب متابعة التوقعات — PredictionTrackingDashboard (كل التوقعات + من جاب الهدف + وقف الخسارة) */}
         <TabsContent value="tracking" className="mt-4">
-          <LiveTrackingTab market={currentMarket} />
+          <PredictionTrackingDashboard market={currentMarket} />
         </TabsContent>
 
         <TabsContent value="executive-report" className="mt-4">
@@ -7654,12 +7658,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <MarketStatusTab market={currentMarket} />
         </TabsContent>
 
-        {/* تبويب التوقعات — أثناء الجلسة: متابعة حية. بعد الإغلاق: توقعات الغد */}
+        {/* تبويب التوقعات — PersonaTab (التوقعات الحية + اللحظية + المتابعة) */}
         <TabsContent value="balanced" className="mt-4">
-          <TomorrowPredictionsPanel market={currentMarket} />
+          <PersonaTab market={currentMarket} persona="balanced" />
         </TabsContent>
 
-        {/* Phase P5: تتبع حركة القطاعات — استبدال تبويب الكريبتو */}
+        {/* Phase P5: تتبع حركة القطاعات */}
         <TabsContent value="sectors-tracking" className="mt-4">
           <SectorTrackingTab market={currentMarket} />
         </TabsContent>
