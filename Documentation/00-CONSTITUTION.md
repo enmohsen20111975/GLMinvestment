@@ -1098,3 +1098,20 @@ curl -s http://localhost:8010/health
 ---
 
 *آخر تحديث: 2026-08-30 — إضافة القاعدة 34 (NO_DUPLICATE_SCREENS) بعد توجيهات المالك حول المشروع المتكامل + تحديث عهد الوكيل لـ 35 بند.*
+
+---
+
+### القاعدة 35 — محرك واحد للتوقعات (ENGINE-UNIFY — 2026-08-31)
+
+> **سبب الإضافة:** كان فيه محركين بيكتبوا في نفس جدول `predictions` = توقعات مكررة + متضاربة. تم التوحيد على `MaestroOrchestrator` كمصدر وحيد.
+
+- **MaestroOrchestrator** هو المحرك الوحيد المسموح له بكتابة توقعات في `predictions` table.
+- **V40.2** (`v40_2_daily_generator.py`) يعمل كـ **backtest runner فقط** — مفيش كتابة في DB.
+- **cron V40.2 معطّل** — Maestro بيتولد التوقعات عبر `MarketScheduler` (كل 15 دقيقة).
+- **daily_closer** engine-agnostic — بيقفل أي row في `predictions` بـ `outcome_date IS NULL`.
+- **ممنوع** إعادة تفعيل cron V40.2 أو إنشاء محرك جديد بيكتب في `predictions`.
+- **engine_source tag**: كل توقع جديد في `notes` فيه `engine=maestro_unified`.
+
+---
+
+*آخر تحديث: 2026-08-31 — إضافة القاعدة 35 (ENGINE-UNIFY) + تحديث عهد الوكيل لـ 36 بند.*

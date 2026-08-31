@@ -12596,3 +12596,47 @@ Stage Summary:
 - ✅ "كل التوصيات معاً": WR 52.9%→60.4% | PF 2.79→6.20 | عائد +404.8%→+440.5%
 - ❌ فلتر القطاع الهابط ألغي (نقص العائد)
 - 🔜 محتاجين بيانات أحدث (أغسطس) + تحليل ليه أبريل كان ممتاز ويناير سيء
+
+---
+Task ID: ENGINE-UNIFY-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer + Project Manager
+Task: توحيد المحركين (V40.2 + Maestro) في محرك واحد بدون فقدان أي ميزة
+
+Work Log:
+- **المشكلة**: محركين بيكتبوا في نفس الجدول (predictions) = توقعات مكررة + متضاربة
+- **القرار**: التوحيد على MaestroOrchestrator (32 ميزة) بدلاً من V40.2 (12 ميزة)
+
+### Phase 1: نقل 5 ميزات من V40.2 لـ Maestro ✅
+1. Strict kill-filters — set_strict_kill_filters(True) في __init__
+2. Toxic Ticker Blocklist (Rule 28) — _load_toxic_blocklist + _is_ticker_blocklisted
+3. EGX30ETF Benchmark — _load_egx30_benchmark + _get_benchmark_roc
+4. max_picks=5/day cap — _check_max_picks
+5. Peak Entry Filter — رفض لو قرب 60d high (≥95%) + RSI > 65
+6. engine_source tag — 'maestro_unified' للتمييز
+
+### Phase 2: تعطيل cron V40.2 + Maestro المصدر الوحيد ✅
+1. crontab.txt: V40.2 cron معطّل
+2. maestro_orchestrator.py: max_picks cap قبل record_prediction
+3. engine_source tag في notes
+
+### Phase 3: partial_1r_trailing exit_policy ✅
+- exit_policy='partial_1r_trailing' كـ default في Maestro
+- لو مفيش multi_target → نكتب partial_1r_trailing
+- daily_closer بـ route للـ partial exit logic
+
+### Phase 4: V40.2 backtest runner فقط ✅
+- tracker = None (معطّل — مش بيكتب في predictions)
+- tracker.record_prediction → if tracker else None
+- V40.2 بيشتغل كـ backtest runner بس (للاختبارات)
+- Maestro هو المصدر الوحيد للتوقعات في الإنتاج
+
+### Phase 5: توثيق ✅
+- تحديث worklog.md
+- تحديث الدستور (القاعدة 35)
+
+Stage Summary:
+- ✅ محرك واحد (MaestroOrchestrator) بيكتب في predictions
+- ✅ V40.2 backtest runner بس (بدون كتابة في DB)
+- ✅ مفيش فقدان لأي ميزة — كل ميزات V40.2 اتنقلت لـ Maestro
+- ✅ 5 ميزات منقولة: strict kill-filters + toxic blocklist + EGX30ETF benchmark + max_picks + peak entry filter + partial_1r_trailing
+- ✅ cron V40.2 معطّل — Maestro بيتولد التوقعات عبر MarketScheduler
