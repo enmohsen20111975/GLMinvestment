@@ -220,10 +220,58 @@ def maestro_analyze(closes, highs, lows, volumes):
 # Entry Gate (نفس منطق الإنتاج)
 # ═══════════════════════════════════════════════════════════════════
 
+def build_proofs(closes, volumes):
+    """بناء 6 إثباتات (proofs) من البيانات — نفس FIX-001 في Maestro."""
+    proofs = {}
+    if len(closes) < 20:
+        return proofs, 0
+
+    last = closes[-1]
+    sma20 = sma(closes, 20)
+    sma50 = sma(closes, 50) if len(closes) >= 50 else 0
+    avg_vol = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else 0
+    last_vol = volumes[-1] if volumes else 0
+    roc5 = roc(closes, 5)
+    roc20 = roc(closes, 20)
+
+    # 1. trend_aligned
+    trend_ok = (last > sma20 > 0 and sma50 > 0 and sma20 >= sma50 * 0.97)
+    proofs['trend_aligned'] = '✅ اتجاه صاعد' if trend_ok else '❌ اتجاه غير محاذي'
+
+    # 2. above_sma50
+    above_ok = (sma50 > 0 and last >= sma50 * 0.98)
+    proofs['above_sma50'] = '✅ فوق SMA50' if above_ok else '❌ تحت SMA50'
+
+    # 3. volume_surge
+    vol_ratio = last_vol / (avg_vol or 1) if avg_vol > 0 else 0
+    vol_ok = vol_ratio >= 1.2
+    proofs['volume_surge'] = f'✅ حجم مرتفع ({vol_ratio:.2f}×)' if vol_ok else f'❌ حجم عادي ({vol_ratio:.2f}×)'
+
+    # 4. rs_positive
+    rs_ok = roc20 > 0
+    proofs['rs_positive'] = f'✅ زخم موجب (ROC20={roc20:+.1f}%)' if rs_ok else f'❌ زخم سالب'
+
+    # 5. liquidity_ok
+    liq_ok = avg_vol >= 50000
+    proofs['liquidity_ok'] = f'✅ سيولة كافية' if liq_ok else f'❌ سيولة ضعيفة'
+
+    # 6. momentum_up
+    mom_ok = roc5 > 0
+    proofs['momentum_up'] = f'✅ زخم قصير موجب (ROC5={roc5:+.1f}%)' if mom_ok else f'❌ زخم قصير سالب'
+
+    evidence_count = sum(1 for v in proofs.values() if '✅' in str(v))
+    return proofs, evidence_count
+
+
 def check_entry_gate(closes, volumes, maestro_result):
-    """Entry Gate — 8 شروط (نفس vps-service/utils/entry_gate.py)."""
+    """Entry Gate — 8 شروط (نفس vps-service/utils/entry_gate.py) + evidence_count ≥ 3."""
     if len(closes) < 50:
-        return False, 'بيانات غير كافية'
+        return False, 'بيانات غير كافية', 0
+
+    # ── FIX-001: بناء proofs + فحص evidence_count ≥ 3 ──
+    proofs, evidence_count = build_proofs(closes, volumes)
+    if evidence_count < 3:
+        return False, f'evidence={evidence_count}/6 (مطلوب ≥ 3)', evidence_count
 
     last = closes[-1]
     sma50_val = maestro_result['sma50']
@@ -231,48 +279,48 @@ def check_entry_gate(closes, volumes, maestro_result):
 
     # 1. فوق SMA50 (أو قريب جداً within 2%)
     if last < sma50_val * 0.98:
-        return False, f'تحت SMA50 ({last:.2f} < {sma50_val:.2f})'
+        return False, f'تحت SMA50 ({last:.2f} < {sma50_val:.2f})', evidence_count
 
     # 2. RSI مش overbought شديد
     if rsi_val > 78:
-        return False, f'overbought RSI={rsi_val:.0f}'
+        return False, f'overbought RSI={rsi_val:.0f}', evidence_count
 
     # 3. سيولة
     avg_vol = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else 0
     if avg_vol < 50000:
-        return False, f'سيولة ضعيفة (avg_vol={avg_vol:.0f})'
+        return False, f'سيولة ضعيفة (avg_vol={avg_vol:.0f})', evidence_count
 
     # 4. مش deep correction (نزول > 12% في 5 أيام)
     if len(closes) >= 6:
         roc5 = roc(closes, 5)
         if roc5 < -12:
-            return False, f'deep correction roc5={roc5:+.1f}%'
+            return False, f'deep correction roc5={roc5:+.1f}%', evidence_count
 
-    # 5. Don't Chase (ROC3 ≥ 12% أو ROC5 ≥ 15%)
+    # 5. Don't Chase (ROC5 ≥ 15%)
     if len(closes) >= 6:
         roc5 = roc(closes, 5)
         if roc5 >= 15:
-            return False, f'dont chase roc5={roc5:+.1f}%'
+            return False, f'dont chase roc5={roc5:+.1f}%', evidence_count
 
     # 6. R/R ≥ 1.5
     entry = maestro_result['entry']
     target = maestro_result['target']
     stop = maestro_result['stop']
-    if entry <= 0 or stop <= 0: return False, 'invalid prices'
+    if entry <= 0 or stop <= 0: return False, 'invalid prices', evidence_count
     risk = abs(entry - stop)
     reward = abs(target - entry)
     if risk <= 0 or (reward / risk) < 1.5:
-        return False, f'R/R < 1.5'
+        return False, f'R/R < 1.5', evidence_count
 
     # 7. Geometry (target > entry > stop for buys)
     if not (target > entry > stop):
-        return False, 'geometry invalid'
+        return False, 'geometry invalid', evidence_count
 
-    # 8. Regime مش bear (تم التحقق في Maestro بس نتأكد)
+    # 8. Regime مش bear
     if maestro_result['regime'] == 'bear':
-        return False, 'bear regime'
+        return False, 'bear regime', evidence_count
 
-    return True, 'OK'
+    return True, 'OK', evidence_count
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -471,8 +519,8 @@ def main():
             if maestro['recommendation'] != 'buy' or maestro['vetoed']:
                 continue
 
-            # Entry Gate
-            gate_ok, gate_reason = check_entry_gate(hist['closes'], hist['volumes'], maestro)
+            # Entry Gate (FIX-001: now includes evidence_count check)
+            gate_ok, gate_reason, evidence_count = check_entry_gate(hist['closes'], hist['volumes'], maestro)
             if not gate_ok:
                 continue
 

@@ -2876,7 +2876,8 @@ class MaestroOrchestrator:
                               f"→ تجاوز entry_vetoed={_entry_vetoed}", flush=True)
 
                     # Upgrade لو (مش vetoed) OR (maker_override)
-                    if (_df_score >= 60) and (not _entry_vetoed or _maker_override):
+                    # FIX-002 (2026-08-31): رفع العتبة من 60 لـ 70 — كان بيدخل إشارات ضعيفة
+                    if (_df_score >= 70) and (not _entry_vetoed or _maker_override):
                         recommendation = 'buy'
                         recommendation_ar = f'شراء ({_df_kind}: score={_df_score:.0f})'
                         is_buy = True
@@ -4010,19 +4011,66 @@ class MaestroOrchestrator:
                 # ربط كل تحسينات الباك تست في الإنتاج الحقيقي.
                 # 1) Entry Gate: 8 شروط إلزامية قبل تسجيل التوقع.
                 # 2) Position Sizing: حساب حجم المركز من مسافة الوقف.
+                #
+                # FIX-001 (2026-08-31): بناء proofs في Maestro (6 إثباتات)
+                # كانت مفقودة → evidence_count=0 دائماً → Entry Gate بيرفض كل حاجة
+                # أو بيتخطى بـ exception. دلوقتي بنبني proofs من بيانات Maestro.
                 # =====================================================================
                 try:
                     from utils.entry_gate import check_entry_gate
                     _gate_closes = [to_num(p.get('close', p.get('close_price', 0))) for p in price_history[-60:]]
                     _gate_vols = [to_num(p.get('volume', p.get('volume_traded', 0))) for p in price_history[-60:]]
+
+                    # ── FIX-001: بناء 6 إثباتات (proofs) من بيانات Maestro ──
                     _gate_proofs = {}
                     if hasattr(result, 'proofs') and isinstance(result.proofs, dict):
                         _gate_proofs = result.proofs
+
+                    # لو مفيش proofs (الحالة الطبيعية في Maestro)، ابدأهم من البيانات
+                    if not _gate_proofs and len(_gate_closes) >= 20:
+                        _gc = _gate_closes
+                        _gv = _gate_vols
+                        _g_last = _gc[-1] if _gc else 0
+                        _g_sma20 = sum(_gc[-20:]) / 20 if len(_gc) >= 20 else 0
+                        _g_sma50 = sum(_gc[-50:]) / 50 if len(_gc) >= 50 else 0
+                        _g_avg_vol = sum(_gv[-20:]) / 20 if len(_gv) >= 20 else 0
+                        _g_last_vol = _gv[-1] if _gv else 0
+                        # ROC5
+                        _g_roc5 = ((_gc[-1] - _gc[-6]) / _gc[-6] * 100) if len(_gc) >= 6 and _gc[-6] > 0 else 0
+                        # ROC20
+                        _g_roc20 = ((_gc[-1] - _gc[-21]) / _gc[-21] * 100) if len(_gc) >= 21 and _gc[-21] > 0 else 0
+
+                        # 1. trend_aligned: فوق SMA20 + SMA20 > SMA50
+                        _trend_ok = (_g_last > _g_sma20 > 0 and _g_sma50 > 0 and _g_sma20 >= _g_sma50 * 0.97)
+                        _gate_proofs['trend_aligned'] = '✅ اتجاه صاعد (فوق SMA20 + SMA20≥SMA50)' if _trend_ok else '❌ اتجاه غير محاذي'
+
+                        # 2. above_sma50: فوق SMA50 (أو قريب جداً within 2%)
+                        _above_sma50 = (_g_sma50 > 0 and _g_last >= _g_sma50 * 0.98)
+                        _gate_proofs['above_sma50'] = '✅ فوق SMA50' if _above_sma50 else '❌ تحت SMA50'
+
+                        # 3. volume_surge: حجم آخر يوم > 1.2× متوسط 20 يوم
+                        _vol_ratio = _g_last_vol / (_g_avg_vol or 1) if _g_avg_vol > 0 else 0
+                        _vol_ok = _vol_ratio >= 1.2
+                        _gate_proofs['volume_surge'] = f'✅ حجم مرتفع ({_vol_ratio:.2f}×)' if _vol_ok else f'❌ حجم عادي ({_vol_ratio:.2f}×)'
+
+                        # 4. rs_positive: زخم موجب (ROC20 > 0 كـ proxy للـ relative strength)
+                        _rs_ok = _g_roc20 > 0
+                        _gate_proofs['rs_positive'] = f'✅ زخم موجب (ROC20={_g_roc20:+.1f}%)' if _rs_ok else f'❌ زخم سالب (ROC20={_g_roc20:+.1f}%)'
+
+                        # 5. liquidity_ok: متوسط حجم ≥ 50K
+                        _liq_ok = _g_avg_vol >= 50000
+                        _gate_proofs['liquidity_ok'] = f'✅ سيولة كافية (avg_vol={_g_avg_vol:.0f})' if _liq_ok else f'❌ سيولة ضعيفة (avg_vol={_g_avg_vol:.0f})'
+
+                        # 6. momentum_up: ROC5 > 0
+                        _mom_ok = _g_roc5 > 0
+                        _gate_proofs['momentum_up'] = f'✅ زخم قصير موجب (ROC5={_g_roc5:+.1f}%)' if _mom_ok else f'❌ زخم قصير سالب (ROC5={_g_roc5:+.1f}%)'
+
+                    _gate_evidence = sum(1 for v in _gate_proofs.values() if '✅' in str(v))
                     _gate_data = {
                         'entry_price': entry_price,
                         'target_price': target,
                         'stop_price': stop_loss,
-                        'evidence_count': sum(1 for v in _gate_proofs.values() if '✅' in str(v)),
+                        'evidence_count': _gate_evidence,
                         'proofs': _gate_proofs,
                         'closes': _gate_closes,
                         'volumes': _gate_vols,
@@ -4033,11 +4081,15 @@ class MaestroOrchestrator:
                     _gate_result = check_entry_gate(_gate_data)
                     if not _gate_result['passed']:
                         _fail = '; '.join(_gate_result['reasons_failed'][:3])
-                        print(f"[PROD-ENTRY-GATE-REJECT] {ticker}: score={_gate_result['score']}/{_gate_result['total_checks']} | {_fail}", flush=True)
+                        print(f"[PROD-ENTRY-GATE-REJECT] {ticker}: score={_gate_result['score']}/{_gate_result['total_checks']} | evidence={_gate_evidence}/6 | {_fail}", flush=True)
                         result.signal_id = None
                         return result
+                    else:
+                        print(f"[PROD-ENTRY-GATE-PASS] {ticker}: evidence={_gate_evidence}/6 | score={_gate_result['score']}/{_gate_result['total_checks']}", flush=True)
                 except Exception as _gate_err:
-                    logger.debug(f"Entry gate failed for {ticker}: {_gate_err}")
+                    print(f"[PROD-ENTRY-GATE-ERROR] {ticker}: {_gate_err} → SKIP (fail-safe)", flush=True)
+                    result.signal_id = None
+                    return result
 
                 # Position Sizing
                 try:
