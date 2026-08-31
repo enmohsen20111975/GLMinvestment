@@ -360,30 +360,35 @@ class DailyCloser:
         results: List[Dict] = []
 
         # ---- Rule #12 (2026-08-15): canonical source FIRST ----
-        # data.prices.load_price_history delegates to master_analyzer.load_merged_history
-        # which normalizes yahoo_clean + egksco + migration + stock_daily_prices.
+        # PHASE-2-RESTORE (2026-08-31): data.prices.load_price_history بيرجع آخر 400 bar
+        # بس + بيسبب recursion. الحل: اقرأ مباشرة من data_engine.db.
+        # ---- Direct data_engine.db query (PHASE-2-RESTORE) ----
         try:
-            from data.prices import load_price_history as _lph
-            # fetch more bars than needed, then filter to [start_date, end_date]
-            all_bars = _lph(ticker, limit=400) or []
-            for bar in all_bars:
-                d = bar.get('date') or ''
-                if d and start_date <= d <= end_date:
-                    results.append({
-                        'date': d,
-                        'high': float(bar.get('high') or 0),
-                        'low': float(bar.get('low') or 0),
-                        'close': float(bar.get('close') or 0),
-                        'open': float(bar.get('open') or 0),
-                    })
-            if results:
-                self._ph_stats['found_price_history'] += 1
-                return results
-        except ImportError:
-            pass  # data.prices module not available — fall through to legacy sources
+            import sqlite3 as _sqlite3_mod
+            _de_path = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
+            if os.path.exists(_de_path):
+                _de_conn = _sqlite3_mod.connect(_de_path, timeout=30.0)
+                _de_conn.row_factory = _sqlite3_mod.Row
+                _de_rows = _de_conn.execute("""
+                    SELECT price_date as date, high_price as high, low_price as low,
+                           close_price as close, open_price as open
+                    FROM egksco_price_history
+                    WHERE symbol=? AND price_date >= ? AND price_date <= ?
+                    ORDER BY price_date
+                """, (ticker, start_date, end_date)).fetchall()
+                _de_conn.close()
+                if _de_rows:
+                    results = [{
+                        'date': str(r['date'])[:10],
+                        'high': float(r['high'] or r['close'] or 0),
+                        'low': float(r['low'] or r['close'] or 0),
+                        'close': float(r['close'] or 0),
+                        'open': float(r['open'] or r['close'] or 0),
+                    } for r in _de_rows]
+                    self._ph_stats['found_data_engine'] += 1
+                    return results
         except Exception as e:
-            logger.warning(f"[Rule #12] data.prices.load_price_history failed for {ticker}: {e}")
-            # fall through to legacy sources
+            logger.warning(f"Direct data_engine.db query failed for {ticker}: {e}")
 
         # ---- Legacy fallbacks (kept for backward compatibility) ----
         for db_path, table_name, schema_kind in _candidate_price_dbs():

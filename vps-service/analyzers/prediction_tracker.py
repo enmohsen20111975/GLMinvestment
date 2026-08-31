@@ -508,13 +508,12 @@ class PredictionTracker:
         cursor = conn.cursor()
 
         # P2-CREATED_AT-FIX (v3.69.0): اكتب created_at كـ ISO timestamp حقيقي
-        # من Python بدل الاعتماد على schema DEFAULT. قبل كده الـ INSERT كان بـ
-        # يحذف created_at من column list → كان بـ يعتمد على DEFAULT CURRENT_TIMESTAMP.
-        # المشكلة: على بعض التثبيتات (محلي المالك) الـ schema DEFAULT اتكتب مرة
-        # بـ 'datetime(\'now\')' كنص حرفي (literal) بدل function call → كل صف
-        # بقى created_at = "datetime('now')" كنص → فلتر "آخر ساعتين" بـ يكسر.
-        # الحل: اكتب القيمة صراحةً من Python → مستقلة عن الـ schema DEFAULT.
-        _created_at_iso = datetime.now().isoformat()
+        # من Python بدل الاعتماد على schema DEFAULT.
+        # PHASE-2-RESTORE (2026-08-31): في backtest، created_at لازم = prediction_date
+        # عشان daily_closer يحسب days_elapsed صح. لو created_at = now()،
+        # daily_closer هـ يقول days_elapsed=0 → STAYS PENDING.
+        _pred_date_for_created = prediction_date if prediction_date else get_prediction_date_str(datetime.now())
+        _created_at_iso = _pred_date_for_created + 'T09:00:00.000000'
         # PHASE-1C: اكتب atr_at_entry لو موجود (للـ trailing + القياس الدائم).
         # safe insert: لو العمود مش موجود في schema قديم، الـ try بـ يـ fallback
         # للـ INSERT الـ 15-column القديم.
