@@ -199,34 +199,76 @@ JSON:"""
             return self._keyword_fallback(ticker, news_texts)
 
     def _keyword_fallback(self, ticker: str, news_texts: List[str]) -> Dict[str, Any]:
-        """تحليل بالكلمات المفتاحية لو Ollama مش متاح."""
+        """تحليل بالكلمات المفتاحية — محسّن بقاموس أوسع + أوزان."""
         combined = " ".join(news_texts).lower()
 
-        positive_words = ['أرباح', 'نمو', 'توسع', 'عقد', 'توزيع', 'زيادة', 'ارتفاع',
-                          'تحسن', 'نجاح', 'طلب', 'شراكة', 'استحواذ', 'إيجابي', 'قوي',
-                          'profit', 'growth', 'increase', 'rise', 'gain', 'positive', 'bullish']
-        negative_words = ['خسارة', 'انخفاض', 'تراجع', 'هبوط', 'ديون', 'مشاكل', 'تحقيق',
-                          'تخفيض', 'سلبي', 'ضعف', 'بيع', 'خروج', 'loss', 'decline', 'drop',
-                          'fall', 'debt', 'negative', 'bearish', 'sell']
+        # قاموس موسّع — كلمات إيجابية (مع وزن لكل كلمة)
+        positive_words = {
+            # عربي
+            'أرباح': 3, 'نمو': 2, 'توسع': 2, 'عقد': 3, 'توزيع': 3, 'زيادة': 2,
+            'ارتفاع': 2, 'تحسن': 2, 'نجاح': 2, 'طلب': 1, 'شراكة': 3, 'استحواذ': 3,
+            'إيجابي': 2, 'قوي': 1, 'ربحية': 3, 'منتظم': 1, 'تاريخي': 1, 'قمة': 1,
+            'طفرة': 3, 'انطلاق': 2, 'طموح': 1, 'فرصة': 2, 'صعود': 2, 'ممتاز': 2,
+            'استثنائي': 3, 'تحقيق': 1, 'منح': 2, 'موافقة': 2, 'ترقية': 2, 'توصية': 1,
+            'تجميع': 2, 'شراء': 2, 'دعم': 1, 'اختراق': 2, 'مقاومة': 1, 'كسر': 1,
+            'سيولة': 1, 'استثمار': 1, 'تطوير': 2, 'مشروع': 2, 'افتتاح': 2, 'إطلاق': 2,
+            # إنجليزي
+            'profit': 3, 'growth': 2, 'increase': 2, 'rise': 2, 'gain': 2,
+            'positive': 2, 'bullish': 3, 'buy': 2, 'upgrade': 3, 'beat': 3,
+            'surge': 3, 'soar': 3, 'rally': 2, 'breakout': 3, 'support': 1,
+            'acquisition': 3, 'partnership': 3, 'dividend': 3, 'expansion': 2,
+            'strong': 2, 'record': 2, 'high': 1, 'award': 3, 'contract': 3,
+        }
 
-        pos_count = sum(1 for w in positive_words if w in combined)
-        neg_count = sum(1 for w in negative_words if w in combined)
+        # قاموس موسّع — كلمات سلبية (مع وزن لكل كلمة)
+        negative_words = {
+            # عربي
+            'خسارة': 3, 'انخفاض': 2, 'تراجع': 2, 'هبوط': 2, 'ديون': 3, 'مشاكل': 2,
+            'تحقيق': 1, 'تخفيض': 2, 'سلبي': 2, 'ضعف': 2, 'بيع': 2, 'خروج': 2,
+            'انهيار': 3, 'أزمة': 3, 'تأجيل': 2, 'إلغاء': 3, 'تأخر': 1, 'تعثر': 3,
+            'إفلاس': 3, 'تخفيض': 2, 'تصريف': 3, 'فخ': 2, 'وهمي': 2, 'هبوط': 2,
+            'نزول': 2, 'انخفاض': 2, 'خسائر': 3, 'مخاطر': 2, 'تحذير': 3, 'مخالفة': 2,
+            'غرامة': 3, 'قضية': 2, 'محكمة': 2, 'شكوى': 2, 'توقف': 3, 'إيقاف': 3,
+            'تجميد': 3, 'حرج': 2, 'أزمة': 3, 'تخبط': 2, 'فشل': 3, 'تسريح': 2,
+            # إنجليزي
+            'loss': 3, 'decline': 2, 'drop': 2, 'fall': 2, 'debt': 3,
+            'negative': 2, 'bearish': 3, 'sell': 2, 'downgrade': 3, 'miss': 3,
+            'crash': 3, 'plunge': 3, 'suspend': 3, 'investigation': 3,
+            'lawsuit': 3, 'fraud': 3, 'warning': 2, 'risk': 1, 'weak': 2,
+            'concern': 2, 'halt': 3, 'freeze': 3, 'cancel': 3, 'delay': 2,
+            'cut': 2, 'reduce': 2, 'close': 1, 'shut': 2, 'fired': 2,
+        }
 
-        if pos_count > neg_count:
+        # احسب النقاط الموزونة
+        pos_score = sum(weight for word, weight in positive_words.items() if word in combined)
+        neg_score = sum(weight for word, weight in negative_words.items() if word in combined)
+
+        # احسب عدد الكلمات (للـ summary)
+        pos_count = sum(1 for word in positive_words if word in combined)
+        neg_count = sum(1 for word in negative_words if word in combined)
+
+        # القرار
+        if pos_score > neg_score:
             sentiment = 'positive'
-            score = 50 + min(pos_count * 10, 40)
-        elif neg_count > pos_count:
+            score = 50 + min(pos_score * 5, 45)  # max 95
+        elif neg_score > pos_score:
             sentiment = 'negative'
-            score = 50 - min(neg_count * 10, 40)
+            score = 50 - min(neg_score * 5, 40)  # min 10
         else:
             sentiment = 'neutral'
             score = 50
 
+        # summary بالعربية
+        if pos_count > 0 or neg_count > 0:
+            summary = f'تحليل آلي: {pos_count} كلمات إيجابية (وزن {pos_score}) / {neg_count} كلمات سلبية (وزن {neg_score})'
+        else:
+            summary = 'لا توجد كلمات مؤثرة في الأخبار'
+
         return {
             'sentiment': sentiment,
             'score': score,
-            'summary': f'تحليل بالكلمات المفتاحية: {pos_count} إيجابي / {neg_count} سلبي',
-            'confidence': 0.3,
+            'summary': summary,
+            'confidence': min(0.3 + (pos_count + neg_count) * 0.1, 0.8),
             'source': 'keyword',
         }
 
