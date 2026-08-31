@@ -92,8 +92,8 @@ function StatsDonut({ percentage, size = 80, strokeWidth = 6, color = 'stroke-pu
 }
 
 function LevelBadge({ level, index, isActive, isUnlocked }: { level: string; index: number; isActive: boolean; isUnlocked: boolean }) {
-  const colors = ['bg-purple-500', 'bg-violet-500', 'bg-indigo-500', 'bg-fuchsia-500', 'bg-pink-500'];
-  const glowColors = ['shadow-purple-500/40', 'shadow-violet-500/40', 'shadow-indigo-500/40', 'shadow-fuchsia-500/40', 'shadow-pink-500/40'];
+  const colors = ['bg-purple-500', 'bg-violet-500', 'bg-teal-500', 'bg-fuchsia-500', 'bg-pink-500'];
+  const glowColors = ['shadow-purple-500/40', 'shadow-violet-500/40', 'shadow-teal-500/40', 'shadow-fuchsia-500/40', 'shadow-pink-500/40'];
 
   return (
     <motion.div
@@ -160,7 +160,7 @@ function ConfettiBurst({ show }: { show: boolean }) {
     id: i,
     x: Math.random() * 100 - 50,
     y: -(Math.random() * 80 + 20),
-    color: ['bg-purple-400', 'bg-violet-400', 'bg-fuchsia-400', 'bg-pink-400', 'bg-indigo-400'][i % 5],
+    color: ['bg-purple-400', 'bg-violet-400', 'bg-fuchsia-400', 'bg-pink-400', 'bg-teal-400'][i % 5],
     delay: Math.random() * 0.3,
     size: Math.random() * 4 + 3,
   }));
@@ -286,7 +286,7 @@ export function CryptoLearningView() {
     store.markLessonComplete(courseId, idx);
     setConfetti(true);
     setTimeout(() => setConfetti(false), 1000);
-    toast.success('تم إكمال الدرس بنجاح! +10 XP 🎉');
+    toast.success('تم إكمال الدرس بنجاح');
     setTimeout(() => {
       store.checkBadges(cryptoCourses.length, completedCourseIds, cryptoArticles.length, cryptoQuizzes.length, avgScore);
     }, 100);

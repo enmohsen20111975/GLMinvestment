@@ -854,7 +854,7 @@ export function SuperLearningSystem() {
         }
         
         if (learningResult.target_achieved) {
-          toast.success(`🎉 تم الوصول للهدف! نسبة النجاح: ${safeToFixed(learningResult?.final_win_rate)}%`);
+          toast.success(`تم الوصول للهدف نسبة النجاح: ${safeToFixed(learningResult?.final_win_rate)}%`);
         } else {
           toast.info(`أفضل نتيجة: ${safeToFixed(learningResult?.final_win_rate)}% بعد ${learningResult?.total_iterations || 0} دورة`);
         }
@@ -886,7 +886,7 @@ export function SuperLearningSystem() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`🎉 تم تطبيق وحفظ الإعدادات بنجاح للماركت ${assetType.toUpperCase()}!`);
+        toast.success(`تم تطبيق وحفظ الإعدادات بنجاح للماركت ${assetType.toUpperCase()}!`);
       } else {
         toast.error(data.error || 'فشل في تطبيق وحفظ الإعدادات');
       }
@@ -917,7 +917,7 @@ export function SuperLearningSystem() {
       if (data.success) {
         setLessons(data.lessons || []);
         setAdjustments(data.adjustments || {});
-        toast.success('🎉 اكتمل تحليل الأخطاء وتعدين الدروس وتحديث البارامترات!');
+        toast.success('اكتمل تحليل الأخطاء وتعدين الدروس وتحديث البارامترات!');
         if (data.adjustments && Object.keys(data.adjustments).length > 0) {
           setParameters(prev => ({
             ...prev,
@@ -973,7 +973,7 @@ export function SuperLearningSystem() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-600 rounded-xl shadow-lg">
+          <div className="p-2.5 bg-gradient-to-br from-violet-500 via-purple-600 to-teal-600 rounded-xl shadow-lg">
             <Brain className="h-6 w-6 text-white" />
           </div>
           <div>

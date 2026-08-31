@@ -382,7 +382,7 @@ export function Sidebar() {
       emerald: 'text-emerald-600 dark:text-emerald-400',
       orange: 'text-orange-600 dark:text-orange-400',
       purple: 'text-purple-600 dark:text-purple-400',
-      blue: 'text-blue-600 dark:text-blue-400',
+      blue: 'text-teal-600 dark:text-teal-400',
       amber: 'text-amber-600 dark:text-amber-400',
       cyan: 'text-cyan-600 dark:text-cyan-400',
     }[section.color || 'emerald'];

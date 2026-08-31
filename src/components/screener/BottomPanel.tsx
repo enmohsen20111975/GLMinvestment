@@ -307,7 +307,7 @@ function ScreenerTab({
           </Button>
         </div>
 
-        {/* 🚀 استراتيجيات الصيد بنقرة واحدة */}
+        {/* استراتيجيات الصيد بنقرة واحدة */}
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold text-purple-700 dark:text-purple-300 block">🎯 استراتيجيات الصيد الآلي:</label>
           <div className="grid grid-cols-2 gap-1.5">
@@ -325,7 +325,7 @@ function ScreenerTab({
               onClick={() => applyStrategyPreset('oversold_dip')}
               className={`p-1.5 rounded-lg text-[10px] font-bold transition-all border text-right flex items-center justify-between ${
                 filters.strategyPreset === 'oversold_dip'
-                  ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-600/30'
+                  ? 'bg-teal-600 text-white border-teal-400 shadow-md shadow-blue-600/30'
                   : 'bg-muted/50 border-border text-foreground hover:bg-muted'
               }`}
             >

@@ -165,8 +165,8 @@ export function RealtimeTicker() {
               </>
             ) : (
               <>
-                <Database className="w-3 h-3 text-blue-500" />
-                <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 hidden xs:inline">بيانات</span>
+                <Database className="w-3 h-3 text-teal-500" />
+                <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400 hidden xs:inline">بيانات</span>
               </>
             )}
           </div>

@@ -162,7 +162,7 @@ export function SmartAssistantPanel() {
       case 'BUY_MORE':
         return { color: 'bg-green-500 text-white', icon: <TrendingUp className="h-3 w-3" />, text: 'شراء زيادة' };
       case 'AVERAGE_DOWN':
-        return { color: 'bg-blue-500 text-white', icon: <Target className="h-3 w-3" />, text: 'متوسط' };
+        return { color: 'bg-teal-500 text-white', icon: <Target className="h-3 w-3" />, text: 'متوسط' };
       default:
         return { color: 'bg-yellow-500 text-white', icon: <Minus className="h-3 w-3" />, text: 'احتفاظ' };
     }
@@ -221,10 +221,10 @@ export function SmartAssistantPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
           <div className="flex items-center gap-2 mb-1">
-            <Wallet className="h-4 w-4 text-blue-600" />
+            <Wallet className="h-4 w-4 text-teal-600" />
             <span className="text-sm text-muted-foreground">إجمالى الاستثمار</span>
           </div>
-          <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+          <div className="text-xl font-bold text-teal-700 dark:text-teal-300">
             {data.summary.totalInvested.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
           </div>
         </Card>
@@ -435,7 +435,7 @@ export function SmartAssistantPanel() {
                             </Badge>
                           )}
                           {stock.stockInfo?.dividend_yield && stock.stockInfo.dividend_yield > 4 && (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                            <Badge variant="outline" className="bg-blue-50 text-teal-700 border-teal-300">
                               يوزع {stock.stockInfo.dividend_yield.toFixed(1)}% أرباح
                             </Badge>
                           )}

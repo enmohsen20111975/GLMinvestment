@@ -297,11 +297,11 @@ export function AdvancedPortfolioManager() {
               {portfolioState.recommendations.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-blue-500" />
+                    <Lightbulb className="w-4 h-4 text-teal-500" />
                     تحليلات
                   </h4>
                   {portfolioState.recommendations.map((rec: string, i: number) => (
-                    <div key={i} className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
+                    <div key={i} className="p-2 bg-blue-50 dark:bg-teal-900/20 rounded text-sm">
                       {rec}
                     </div>
                   ))}

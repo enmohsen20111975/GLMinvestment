@@ -1363,7 +1363,7 @@ function WalletPaymentModal({
               </p>
               <a
                 href={redirectUrl}
-                className="text-sm text-blue-500 underline"
+                className="text-sm text-teal-500 underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >

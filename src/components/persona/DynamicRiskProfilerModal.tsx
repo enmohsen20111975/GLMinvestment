@@ -271,7 +271,7 @@ export function DynamicRiskProfilerModal({
               <div className="flex flex-col items-center gap-2 py-2">
                 <div className="text-sm text-muted-foreground">الشخصية المُستنتَجة:</div>
                 <div className="flex items-center gap-2 text-lg font-bold">
-                  {derivedPersona === 'conservative' && <Shield className="h-5 w-5 text-blue-500" />}
+                  {derivedPersona === 'conservative' && <Shield className="h-5 w-5 text-teal-500" />}
                   {derivedPersona === 'balanced' && <Scale className="h-5 w-5 text-yellow-500" />}
                   {derivedPersona === 'gambler' && <Flame className="h-5 w-5 text-red-500" />}
                   {personaLabelAr(derivedPersona)}

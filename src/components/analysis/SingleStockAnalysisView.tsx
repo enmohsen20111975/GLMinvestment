@@ -562,7 +562,7 @@ export function SingleStockAnalysisView({
                 onClick={() => setAdvancedMode(true)}
                 className={cn(
                   'px-2 py-1 rounded-lg transition-all font-semibold',
-                  advancedMode ? 'bg-card text-blue-700 shadow-sm' : 'text-muted-foreground'
+                  advancedMode ? 'bg-card text-teal-700 shadow-sm' : 'text-muted-foreground'
                 )}
               >
                 محترفين
@@ -756,7 +756,7 @@ export function SingleStockAnalysisView({
             </div>
 
             {/* ── V34: Institutional Decision Panel (محرك القرار المؤسسي) ──
-                لوحة موحّدة بأسلوب V34 (LuxAlgo + BigBeluga) بتجمع:
+                لوحة موحّدة بتجمع:
                 - حالة الميكرز (تجميع/تصريف/هدوء)
                 - حالة الطيران (طائر/واقع/عرضي)
                 - 5 إثباتات + Tech Score + الإشارة النهائية
@@ -1206,13 +1206,13 @@ export function SingleStockAnalysisView({
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 pt-1">
                 {/* SMC & Order Blocks */}
                 {data.smc_analysis && (
-                  <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30 space-y-1">
-                    <span className="font-bold text-[11px] block border-b border-indigo-500/30 text-indigo-700 dark:text-indigo-300">
+                  <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 space-y-1">
+                    <span className="font-bold text-[11px] block border-b border-teal-500/30 text-teal-700 dark:text-teal-300">
                       🏛️ تحليل سلوك السيولة (SMC):
                     </span>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-muted-foreground">الاتجاه الهيكلي:</span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{data.smc_analysis.bias_ar || 'متوازن'}</span>
+                      <span className="font-bold text-teal-600 dark:text-teal-400">{data.smc_analysis.bias_ar || 'متوازن'}</span>
                     </div>
                     {data.smc_analysis.nearest_ob && (
                       <div className="flex justify-between text-[10px]">
@@ -1260,14 +1260,14 @@ export function SingleStockAnalysisView({
                 {data.fusion_metrics && (
                   <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 space-y-1">
                     <span className="font-bold text-[11px] block border-b border-purple-500/30 text-purple-700 dark:text-purple-300">
-                      ⚡ نموذج V20 Ultimate Fusion:
+                      التحليل الفني الموحد:
                     </span>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-muted-foreground">درجة النموذج:</span>
                       <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{data.fusion_metrics.fusion_score?.toFixed(1) || '0.0'}/10</span>
                     </div>
                     <div className="text-[10px] text-muted-foreground leading-tight pt-0.5">
-                      {data.fusion_metrics.summary_ar || 'دمج خوارزميات LuxAlgo + BigBeluga + SMC'}
+                      {data.fusion_metrics.summary_ar || 'تحليل فني شامل'}
                     </div>
                   </div>
                 )}

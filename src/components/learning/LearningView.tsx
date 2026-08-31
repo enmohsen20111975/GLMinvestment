@@ -268,7 +268,7 @@ export function LearningView() {
     store.markLessonComplete(courseId, idx);
     setConfetti(true);
     setTimeout(() => setConfetti(false), 1000);
-    toast.success('تم إكمال الدرس بنجاح! +10 XP 🎉');
+    toast.success('تم إكمال الدرس بنجاح');
     // Check badges
     setTimeout(() => {
       store.checkBadges(courses.length, completedCourseIds, articles.length, quizzes.length, avgScore);

@@ -198,7 +198,7 @@ function actionColor(action: string): string {
     case 'take_profit':
       return 'text-emerald-600 font-semibold';
     case 'hold_conditional':
-      return 'text-blue-600 font-semibold';
+      return 'text-teal-600 font-semibold';
     case 'add':
       return 'text-emerald-600 font-medium';
     case 'wait':
@@ -447,7 +447,7 @@ export function DealAdvisorPanel({
                     ? 'border-emerald-300 bg-emerald-50'
                     : data.action_scenarios.current_recommendation.action === 'reduce'
                       ? 'border-orange-300 bg-orange-50'
-                      : 'border-blue-300 bg-blue-50'
+                      : 'border-teal-300 bg-blue-50'
               }
             >
               <Target className="h-4 w-4" />

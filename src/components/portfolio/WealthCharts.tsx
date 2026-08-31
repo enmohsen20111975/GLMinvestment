@@ -229,7 +229,7 @@ export const WealthCharts: React.FC = () => {
         {/* Asset Allocation (PieChart) */}
         <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-md flex flex-col justify-between">
           <div className="flex items-center gap-2.5 mb-2">
-            <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+            <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
               <PieIcon className="w-5 h-5" />
             </div>
             <div>

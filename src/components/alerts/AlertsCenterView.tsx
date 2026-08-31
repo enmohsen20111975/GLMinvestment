@@ -185,13 +185,13 @@ function PriceAlertCard({ alert }: { alert: PriceAlert }) {
 
 function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
   const severityColors = {
-    info: 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20',
+    info: 'border-teal-200 dark:border-teal-800 bg-blue-50/50 dark:bg-blue-950/20',
     warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
     danger: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
   };
 
   const severityIconColors = {
-    info: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30',
+    info: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30',
     warning: 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30',
     danger: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30',
   };
@@ -247,7 +247,7 @@ function PortfolioAlertCard({ alert }: { alert: PortfolioAlert }) {
 
 function MarketAlertCard({ alert }: { alert: MarketAlert }) {
   const severityColors = {
-    info: 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20',
+    info: 'border-teal-200 dark:border-teal-800 bg-blue-50/50 dark:bg-blue-950/20',
     warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20',
     danger: 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20',
   };
@@ -281,14 +281,14 @@ function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
     overdue: 'border-red-500 dark:border-red-400 bg-red-50/60 dark:bg-red-950/30',
     critical: 'border-red-400 dark:border-red-500 bg-red-50/40 dark:bg-red-950/20',
     warning: 'border-amber-400 dark:border-amber-500 bg-amber-50/60 dark:bg-amber-950/20',
-    info: 'border-blue-400 dark:border-blue-500 bg-blue-50/60 dark:bg-blue-950/20',
+    info: 'border-teal-400 dark:border-teal-500 bg-blue-50/60 dark:bg-blue-950/20',
   };
 
   const severityBadge: Record<ObligationAlert['severity'], string> = {
     overdue: 'bg-red-500 text-white',
     critical: 'bg-red-500 text-white',
     warning: 'bg-amber-500 text-white',
-    info: 'bg-blue-500 text-white',
+    info: 'bg-teal-500 text-white',
   };
 
   const dueLabel = alert.daysUntilDue < 0
@@ -549,10 +549,10 @@ export function AlertsCenterView() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Target className="w-4 h-4 text-blue-500" />
+            <Target className="w-4 h-4 text-teal-500" />
             <span className="text-xs font-medium">تنبيهات المحفظة</span>
           </div>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.portfolio}</p>
+          <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">{stats.portfolio}</p>
         </Card>
       </div>
 
@@ -668,7 +668,7 @@ export function AlertsCenterView() {
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-3" />
-                <h3 className="text-lg font-semibold mb-1">لا توجد التزامات مستحقة قريباً 🎉</h3>
+                <h3 className="text-lg font-semibold mb-1">لا توجد التزامات مستحقة قريباً</h3>
                 <p className="text-sm text-muted-foreground">جميع الالتزامات النشطة تستحق بعد أكثر من 30 يوماً</p>
               </CardContent>
             </Card>

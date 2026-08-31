@@ -115,13 +115,13 @@ const SECTIONS = [
               السهم غالباً هيكمل هبوط بعد الارتداد الوهمي ده.
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-blue-950/30 border border-blue-800/50">
+          <div className="p-3 rounded-lg bg-blue-950/30 border border-teal-800/50">
             <div className="flex items-center gap-2 mb-1">
-              <Badge className="bg-blue-900 text-blue-300 border border-blue-700">📊 تباعد إيجابي</Badge>
+              <Badge className="bg-teal-900 text-teal-300 border border-teal-700">📊 تباعد إيجابي</Badge>
               <span className="text-xs text-muted-foreground">Boost +5 نقاط</span>
             </div>
             <p className="text-xs">
-              السعر نزل بس الـ RSI طلع. معناها <strong className="text-blue-400">البائعين خلصوا</strong>
+              السعر نزل بس الـ RSI طلع. معناها <strong className="text-teal-400">البائعين خلصوا</strong>
               والسهم ممكن يقلب لصعود قريب.
             </p>
           </div>

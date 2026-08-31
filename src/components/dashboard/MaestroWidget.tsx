@@ -84,7 +84,7 @@ export function MaestroWidget() {
               <Zap className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-base">نظام المايسترو</CardTitle>
+              <CardTitle className="text-base">حالة السوق المُجمّعة</CardTitle>
               <CardDescription className="text-xs">نظام التحليل المتكامل</CardDescription>
             </div>
           </div>
@@ -142,11 +142,11 @@ export function MaestroWidget() {
           </div>
         </div>
 
-        {/* 6 Phases Preview */}
+        {/* مراحل التحليل */}
         <div className="mt-4 pt-3 border-t">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium">المراحل الست</span>
-            <Badge variant="outline" className="text-[10px]">6 Phases</Badge>
+            <Badge variant="outline" className="text-[10px]">تحليل شامل</Badge>
           </div>
           <div className="flex gap-1">
             {['الحالة', 'الأطر', 'الحجم', 'الأخبار', 'الدرجة', 'الشخصيات'].map((phase, i) => (

@@ -64,7 +64,7 @@ function OrnamentDivider() {
   return (
     <div className="flex items-center justify-center gap-2 py-2">
       <div className="flex-1 h-px bg-gradient-to-l from-transparent via-blue-500/50 to-transparent"/>
-      <Cross className="w-4 h-4 text-blue-500/50"/>
+      <Cross className="w-4 h-4 text-teal-500/50"/>
       <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"/>
     </div>
   );
@@ -119,14 +119,14 @@ function formatCurrency(num: number): string {
 
 function BiblicalBasis() {
   return (
-    <Card className="relative overflow-hidden border-blue-500/30 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-950/30 dark:via-background dark:to-indigo-950/30">
+    <Card className="relative overflow-hidden border-teal-500/30 bg-gradient-to-br from-blue-50 via-white to-teal-50 dark:from-blue-950/30 dark:via-background dark:to-teal-950/30">
       <ChristianPattern />
       <div className="relative z-10">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-2">
-            <Cross className="w-8 h-8 text-blue-600"/>
+            <Cross className="w-8 h-8 text-teal-600"/>
           </div>
-          <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-blue-700 dark:text-blue-400">
+          <CardTitle className="flex items-center justify-center gap-2 text-xl font-bold text-teal-700 dark:text-teal-400">
             <BookOpen className="w-6 h-6"/>
             الأساس الكتابي للعُشر
           </CardTitle>
@@ -134,7 +134,7 @@ function BiblicalBasis() {
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div className="space-y-3">
-            <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-xl border border-purple-200 dark:border-purple-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-teal-50 dark:from-purple-950/30 dark:to-teal-950/30 rounded-xl border border-purple-200 dark:border-purple-800/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">ع.ق</div>
                 <span className="font-bold text-purple-700 dark:text-purple-400">من العهد القديم</span>
@@ -147,15 +147,15 @@ function BiblicalBasis() {
               </p>
             </div>
             
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl border border-teal-200 dark:border-teal-800/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">ع.ج</div>
-                <span className="font-bold text-blue-700 dark:text-blue-400">من العهد الجديد</span>
+                <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">ع.ج</div>
+                <span className="font-bold text-teal-700 dark:text-teal-400">من العهد الجديد</span>
               </div>
-              <p className="text-base leading-relaxed text-blue-800 dark:text-blue-200">
+              <p className="text-base leading-relaxed text-teal-800 dark:text-teal-200">
                 "أَعْطُوا الَّذِي لِقَيْصَرَ لِقَيْصَرَ وَالَّذِي لِلَّهِ لِلَّهِ" (متى 22: 21)
               </p>
-              <p className="text-base leading-relaxed text-blue-800 dark:text-blue-200 mt-2">
+              <p className="text-base leading-relaxed text-teal-800 dark:text-teal-200 mt-2">
                 "مُبَارَكٌ الْعَطَاءُ أَكْثَرَ مِنَ الأَخْذِ" (أعمال الرسل 20: 35)
               </p>
             </div>
@@ -182,12 +182,12 @@ function BiblicalBasis() {
 
 function TitheInfo() {
   return (
-    <Card className="relative overflow-hidden border-blue-500/30 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/50 dark:from-blue-950/20 dark:via-background dark:to-indigo-950/20">
+    <Card className="relative overflow-hidden border-teal-500/30 bg-gradient-to-br from-blue-50/50 via-white to-teal-50/50 dark:from-blue-950/20 dark:via-background dark:to-teal-950/20">
       <ChristianPattern />
       <div className="relative z-10">
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-2 text-xl">
-            <Scale className="w-6 h-6 text-blue-600"/>
+            <Scale className="w-6 h-6 text-teal-600"/>
             ما هو العُشر؟
           </CardTitle>
           <CardDescription className="text-base">الإيمان بالعطاء بنعمة</CardDescription>
@@ -196,13 +196,13 @@ function TitheInfo() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
-              <div className="relative p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 rounded-2xl border-2 border-blue-300 dark:border-blue-700/50 shadow-lg text-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-lg mx-auto mb-4">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-teal-500 rounded-2xl opacity-10 group-hover:opacity-15 transition-opacity"/>
+              <div className="relative p-6 bg-gradient-to-br from-blue-50 to-teal-50 dark:from-blue-950/40 dark:to-teal-950/40 rounded-2xl border-2 border-teal-300 dark:border-teal-700/50 shadow-lg text-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center shadow-lg mx-auto mb-4">
                   <Coins className="w-8 h-8 text-white"/>
                 </div>
-                <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-2">العُشر</h3>
-                <p className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">10%</p>
+                <h3 className="text-lg font-bold text-teal-700 dark:text-teal-300 mb-2">العُشر</h3>
+                <p className="text-4xl font-bold text-teal-600 dark:text-teal-400 mb-2">10%</p>
                 <p className="text-sm text-muted-foreground">من إجمالي الدخل</p>
               </div>
             </div>
@@ -220,10 +220,10 @@ function TitheInfo() {
             </div>
           </div>
           
-          <Alert className="mt-6 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-            <Dove className="w-5 h-5 text-blue-600"/>
-            <AlertTitle className="text-blue-700 dark:text-blue-400 font-bold">بركة العطاء</AlertTitle>
-            <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+          <Alert className="mt-6 border-teal-300 bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-950/30 dark:to-teal-950/30">
+            <Dove className="w-5 h-5 text-teal-600"/>
+            <AlertTitle className="text-teal-700 dark:text-teal-400 font-bold">بركة العطاء</AlertTitle>
+            <AlertDescription className="text-sm text-teal-800 dark:text-teal-200">
               "اِحْفَظُوا الْخَمِيرَةَ الْقَدِيمَةَ" (1 كورنثوس 5: 8)
             </AlertDescription>
           </Alert>
@@ -265,22 +265,22 @@ function TitheCalculator() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="relative overflow-hidden border-2 border-blue-300 dark:border-blue-700/50 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+        <Card className="relative overflow-hidden border-2 border-teal-300 dark:border-teal-700/50 bg-gradient-to-br from-blue-50/50 to-teal-50/50 dark:from-blue-950/20 dark:to-teal-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center">
                 <CircleDollarSign className="w-5 h-5 text-white"/>
               </div>
               <div>
-                <span className="text-blue-700 dark:text-blue-300">الراتب الشهري</span>
+                <span className="text-teal-700 dark:text-teal-300">الراتب الشهري</span>
                 <p className="text-xs text-muted-foreground font-normal">الدخل الرئيسي</p>
               </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-blue-700 dark:text-blue-300">الراتب الشهري (ج.م)</label>
-              <Input type="number" placeholder="0" value={inputs.monthlySalary || ''} onChange={(e) => updateInput('monthlySalary', parseFloat(e.target.value) || 0)} className="border-blue-200 focus:border-blue-400"/>
+              <label className="text-xs font-medium text-teal-700 dark:text-teal-300">الراتب الشهري (ج.م)</label>
+              <Input type="number" placeholder="0" value={inputs.monthlySalary || ''} onChange={(e) => updateInput('monthlySalary', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
             </div>
           </CardContent>
         </Card>
@@ -321,12 +321,12 @@ function TitheCalculator() {
       </div>
       
       {results.length > 0 && (
-        <Card className="relative overflow-hidden border-2 border-blue-300 dark:border-blue-700/50 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20">
+        <Card className="relative overflow-hidden border-2 border-teal-300 dark:border-teal-700/50 bg-gradient-to-br from-blue-50/30 to-teal-50/30 dark:from-blue-950/20 dark:to-teal-950/20">
           <ChristianPattern />
           <div className="relative z-10">
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2 text-xl">
-                <Calculator className="w-6 h-6 text-blue-600"/>
+                <Calculator className="w-6 h-6 text-teal-600"/>
                 نتيجة حساب العُشر
               </CardTitle>
               <OrnamentDivider />
@@ -334,10 +334,10 @@ function TitheCalculator() {
             <CardContent>
               <div className="space-y-3">
                 {results.map((result, index) => (
-                  <div key={index} className="p-4 rounded-xl border-2 bg-gradient-to-l from-blue-100 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-blue-300 dark:border-blue-700">
+                  <div key={index} className="p-4 rounded-xl border-2 bg-gradient-to-l from-blue-100 to-teal-50 dark:from-blue-900/30 dark:to-teal-900/30 border-teal-300 dark:border-teal-700">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center">
                           <CheckCircle2 className="w-5 h-5 text-white"/>
                         </div>
                         <div>
@@ -346,8 +346,8 @@ function TitheCalculator() {
                         </div>
                       </div>
                       <div className="text-left">
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatCurrency(result.amount)}</p>
-                        <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">عُشر شهري</Badge>
+                        <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">{formatCurrency(result.amount)}</p>
+                        <Badge className="text-xs bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300">عُشر شهري</Badge>
                       </div>
                     </div>
                   </div>
@@ -356,7 +356,7 @@ function TitheCalculator() {
               
               <Separator className="my-6"/>
               
-              <div className="relative p-8 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
+              <div className="relative p-8 bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
                 <Dove className="w-10 h-10 mx-auto mb-2 opacity-80"/>
                 <p className="text-sm opacity-90 mb-1">العُشر الشهري</p>
                 <p className="text-4xl font-bold mb-2">{formatCurrency(totalTithe)}</p>
@@ -367,13 +367,13 @@ function TitheCalculator() {
               </div>
               
               <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="text-center p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                <div className="text-center p-4 rounded-xl bg-blue-50 dark:bg-teal-900/30">
                   <p className="text-xs text-muted-foreground mb-1">إجمالي الدخل</p>
-                  <p className="text-lg font-bold text-blue-600">{formatCurrency(totalIncome)}</p>
+                  <p className="text-lg font-bold text-teal-600">{formatCurrency(totalIncome)}</p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
+                <div className="text-center p-4 rounded-xl bg-teal-50 dark:bg-teal-900/30">
                   <p className="text-xs text-muted-foreground mb-1">العُشر الشهري</p>
-                  <p className="text-lg font-bold text-indigo-600">{formatCurrency(totalTithe)}</p>
+                  <p className="text-lg font-bold text-teal-600">{formatCurrency(totalTithe)}</p>
                 </div>
                 <div className="text-center p-4 rounded-xl bg-purple-50 dark:bg-purple-900/30">
                   <p className="text-xs text-muted-foreground mb-1">العُشر السنوي</p>
@@ -428,7 +428,7 @@ function GivingGuide() {
               <div className="flex items-center gap-3">
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center',
-                  guide.color === 'blue' && 'bg-blue-500',
+                  guide.color === 'blue' && 'bg-teal-500',
                   guide.color === 'red' && 'bg-red-500',
                   guide.color === 'amber' && 'bg-amber-500',
                   guide.color === 'purple' && 'bg-purple-500',
@@ -548,17 +548,17 @@ function AutoTithesCard() {
   const titheDue = tithable * TITHE.rate;
 
   return (
-    <Card className="relative overflow-hidden border-2 border-blue-400 dark:border-blue-700/50 bg-gradient-to-br from-blue-50/60 via-white to-indigo-50/60 dark:from-blue-950/30 dark:via-background dark:to-indigo-950/30 shadow-lg">
+    <Card className="relative overflow-hidden border-2 border-teal-400 dark:border-teal-700/50 bg-gradient-to-br from-blue-50/60 via-white to-teal-50/60 dark:from-blue-950/30 dark:via-background dark:to-teal-950/30 shadow-lg">
       <ChristianPattern />
       <div className="relative z-10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow">
                 <Sparkles className="w-5 h-5 text-white"/>
               </div>
               <div>
-                <span className="text-blue-700 dark:text-blue-300 text-lg">العُشر التلقائي من محفظتك</span>
+                <span className="text-teal-700 dark:text-teal-300 text-lg">العُشر التلقائي من محفظتك</span>
                 <p className="text-xs text-muted-foreground font-normal">محسوب من دخلك الشهري — بعد خصم الأقساط</p>
               </div>
             </div>
@@ -567,7 +567,7 @@ function AutoTithesCard() {
               size="sm"
               onClick={() => load(true)}
               disabled={refreshing}
-              className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300"
+              className="border-teal-300 text-teal-700 hover:bg-blue-50 dark:border-teal-700 dark:text-teal-300"
             >
               <RefreshCw className={cn('w-4 h-4 ml-1', refreshing && 'animate-spin')}/>
               تحديث
@@ -603,32 +603,32 @@ function AutoTithesCard() {
               <Separator/>
 
               {/* Note: tithe is on NET income after deducting installments */}
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50">
-                <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0"/>
-                <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800/50">
+                <Info className="w-4 h-4 text-teal-600 mt-0.5 shrink-0"/>
+                <p className="text-xs text-teal-800 dark:text-teal-200 leading-relaxed">
                   العُشر يُحتسب على صافي الدخل الشهري بعد خصم الأقساط.
                   المعادلة: (راتب + عائد استثمار + دخل آخر − أقساط شهرية) × 10%.
                 </p>
               </div>
 
               {/* Tithable income summary */}
-              <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50">
+              <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800/50">
                 <div className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-blue-600"/>
+                  <Scale className="w-5 h-5 text-teal-600"/>
                   <div>
                     <p className="text-xs text-muted-foreground">صافي الدخل الشهري الخاضع للعُشر</p>
-                    <p className="font-bold text-blue-700 dark:text-blue-300">{formatCurrency(tithable)}</p>
+                    <p className="font-bold text-teal-700 dark:text-teal-300">{formatCurrency(tithable)}</p>
                   </div>
                 </div>
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground">نسبة العُشر</p>
-                  <p className="font-bold text-blue-700 dark:text-blue-300">10%</p>
+                  <p className="font-bold text-teal-700 dark:text-teal-300">10%</p>
                 </div>
               </div>
 
               {/* Result block — green gradient if tithe due, blue info if no income */}
               {tithable > 0 ? (
-                <div className="relative p-6 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
+                <div className="relative p-6 bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
                   <div className="absolute inset-0 opacity-20">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <pattern id="autoTithesStars" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -645,9 +645,9 @@ function AutoTithesCard() {
                   </div>
                 </div>
               ) : (
-                <Alert className="border-blue-300 bg-blue-50 dark:bg-blue-950/30">
-                  <Info className="w-5 h-5 text-blue-600"/>
-                  <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+                <Alert className="border-teal-300 bg-blue-50 dark:bg-blue-950/30">
+                  <Info className="w-5 h-5 text-teal-600"/>
+                  <AlertDescription className="text-sm text-teal-800 dark:text-teal-200">
                     سجّل دخلك الشهري أو أضف أصولاً ذات عائد لمحفظتك ليتم حساب العُشر تلقائياً.
                   </AlertDescription>
                 </Alert>
@@ -662,7 +662,7 @@ function AutoTithesCard() {
 
 function BreakdownRow({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
   const colorMap: Record<string, string> = {
-    blue: 'text-blue-600 dark:text-blue-400',
+    blue: 'text-teal-600 dark:text-teal-400',
     green: 'text-green-600 dark:text-green-400',
     purple: 'text-purple-600 dark:text-purple-400',
     red: 'text-red-600 dark:text-red-400',
@@ -686,19 +686,19 @@ export function TithesView() {
   const [activeTab, setActiveTab] = useState('calculator');
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50/30 via-white to-indigo-50/30 dark:from-blue-950/10 dark:via-background dark:to-indigo-950/10" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50/30 via-white to-teal-50/30 dark:from-blue-950/10 dark:via-background dark:to-teal-950/10" dir="rtl">
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
         <ChristianPattern />
       </div>
       
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-50/95 via-white/95 to-indigo-50/95 dark:from-blue-950/95 dark:via-background/95 dark:to-indigo-950/95 backdrop-blur border-b border-blue-200 dark:border-blue-800/50">
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-50/95 via-white/95 to-teal-50/95 dark:from-blue-950/95 dark:via-background/95 dark:to-teal-950/95 backdrop-blur border-b border-teal-200 dark:border-teal-800/50">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 flex items-center justify-center shadow-lg">
                 <Cross className="w-7 h-7 text-white"/>
               </div>
-              <Dove className="absolute -top-1 -left-1 w-5 h-5 text-blue-500"/>
+              <Dove className="absolute -top-1 -left-1 w-5 h-5 text-teal-500"/>
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">حاسبة العُشر</h1>
@@ -734,16 +734,16 @@ export function TithesView() {
           </TabsContent>
         </Tabs>
         
-        <Card className="relative overflow-hidden border-blue-300/50 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+        <Card className="relative overflow-hidden border-teal-300/50 bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-950/30 dark:to-teal-950/30">
           <ChristianPattern />
           <CardContent className="relative z-10 p-6">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                <Info className="w-6 h-6 text-blue-600"/>
+              <div className="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
+                <Info className="w-6 h-6 text-teal-600"/>
               </div>
               <div>
-                <p className="font-bold text-blue-700 dark:text-blue-400 text-lg mb-2">ملاحظة</p>
-                <p className="text-blue-800 dark:text-blue-200 leading-relaxed">
+                <p className="font-bold text-teal-700 dark:text-teal-400 text-lg mb-2">ملاحظة</p>
+                <p className="text-teal-800 dark:text-teal-200 leading-relaxed">
                   هذه الحاسبة أداة مساعدة. العطاء بقلب فرح وإيمان أهم من النسبة المحددة.
                   "اَللَّهَ يُحِبُّ الْمُعْطِيَ الْمَسْرُورَ" (2 كورنثوس 9: 7)
                 </p>

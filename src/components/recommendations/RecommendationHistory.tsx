@@ -62,7 +62,7 @@ export function RecommendationHistory({ limit = 20, showShareButton = true }: Re
       case 'stopped':
         return <XCircle className="h-4 w-4 text-red-500" />;
       case 'active':
-        return <Clock className="h-4 w-4 text-blue-500" />;
+        return <Clock className="h-4 w-4 text-teal-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-yellow-500" />;
     }

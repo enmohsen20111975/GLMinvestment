@@ -1568,7 +1568,7 @@ export function AcademyEncyclopedia() {
         <div className="mt-1.5 text-xs text-muted-foreground">
           {hydrated
             ? progressPercent === 100
-              ? '🎉 ممتاز! أكملت كل الدروس — أنت مستثمر مُعلَّم جيداً'
+              ? 'أكملت كل الدروس'
               : `بقي ${totalLessons - completedCount} درس لإكمال الأكاديمية`
             : 'جارٍ تحميل تقدّمك…'}
         </div>

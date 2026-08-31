@@ -86,7 +86,7 @@ function IndicatorEquations() {
     <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Calculator className="w-5 h-5 text-blue-600" />
+          <Calculator className="w-5 h-5 text-teal-600" />
           المعادلات العلمية للمؤشرات
         </CardTitle>
         <CardDescription>
@@ -96,7 +96,7 @@ function IndicatorEquations() {
       <CardContent className="space-y-6">
         {/* RSI */}
         <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border">
-          <h4 className="font-bold text-blue-600 mb-2">1. RSI - مؤشر القوة النسبية</h4>
+          <h4 className="font-bold text-teal-600 mb-2">1. RSI - مؤشر القوة النسبية</h4>
           <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded font-mono text-sm mb-3">
             RSI = 100 - (100 / (1 + RS))
             <br />
@@ -337,7 +337,7 @@ function SupportResistanceChart({
 }) {
   const levels = [
     { price: resistance, label: 'مقاومة', labelEn: 'Resistance', color: 'bg-red-500' },
-    { price: pivot, label: 'نقطة ارتكاز', labelEn: 'Pivot', color: 'bg-blue-500' },
+    { price: pivot, label: 'نقطة ارتكاز', labelEn: 'Pivot', color: 'bg-teal-500' },
     { price: currentPrice, label: 'السعر الحالي', labelEn: 'Current', color: 'bg-green-500' },
     { price: support, label: 'دعم', labelEn: 'Support', color: 'bg-emerald-500' },
   ].sort((a, b) => b.price - a.price);
@@ -377,8 +377,8 @@ function SupportResistanceChart({
           <p className="text-red-600 font-bold">{resistance.toFixed(2)}</p>
           <p className="text-muted-foreground">مقاومة</p>
         </div>
-        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
-          <p className="text-blue-600 font-bold">{pivot.toFixed(2)}</p>
+        <div className="p-2 bg-blue-50 dark:bg-teal-900/20 rounded">
+          <p className="text-teal-600 font-bold">{pivot.toFixed(2)}</p>
           <p className="text-muted-foreground">نقطة ارتكاز</p>
         </div>
         <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded">
@@ -435,7 +435,7 @@ ${OFFICIAL_LINKS_BLOCK}
   return (
     <Card className="p-4">
       <h4 className="font-bold mb-4 flex items-center gap-2">
-        <Share2 className="w-5 h-5 text-blue-600" />
+        <Share2 className="w-5 h-5 text-teal-600" />
         مشاركة التحليل
       </h4>
       
@@ -450,7 +450,7 @@ ${OFFICIAL_LINKS_BLOCK}
         
         <Button 
           onClick={handleFacebookShare}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+          className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
         >
           <Facebook className="w-4 h-4" />
           Facebook
@@ -704,7 +704,7 @@ export function SpecialistAnalysisView() {
 
             {/* Scores Grid */}
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <ScoreCard label="تحليل فني" score={analysisData.analysis.scores.technical} color="text-blue-600" />
+              <ScoreCard label="تحليل فني" score={analysisData.analysis.scores.technical} color="text-teal-600" />
               <ScoreCard label="القيمة" score={analysisData.analysis.scores.value} color="text-purple-600" />
               <ScoreCard label="الجودة" score={analysisData.analysis.scores.quality} color="text-green-600" />
               <ScoreCard label="الزخم" score={analysisData.analysis.scores.momentum} color="text-amber-600" />
@@ -740,9 +740,9 @@ export function SpecialistAnalysisView() {
                       {analysisData.analysis.recommendation.target_price}
                     </p>
                   </div>
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-center p-4 bg-blue-50 dark:bg-teal-900/20 rounded-lg">
                     <p className="text-sm text-muted-foreground">مخاطرة/عائد</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-2xl font-bold text-teal-600">
                       {analysisData.analysis.recommendation.risk_reward_ratio}
                     </p>
                   </div>
@@ -837,7 +837,7 @@ export function SpecialistAnalysisView() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">المتوسط</span>
-                      <span className="font-bold text-blue-600">
+                      <span className="font-bold text-teal-600">
                         {analysisData.analysis.indicators.bollinger.middle?.toFixed(2) || 'N/A'}
                       </span>
                     </div>
@@ -942,7 +942,7 @@ export function SpecialistAnalysisView() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Info className="w-5 h-5 text-blue-600" />
+                  <Info className="w-5 h-5 text-teal-600" />
                   تقرير التحليل المتكامل
                 </CardTitle>
               </CardHeader>

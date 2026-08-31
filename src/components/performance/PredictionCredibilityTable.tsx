@@ -165,7 +165,7 @@ function returnColor(val: number | null): string {
 
 function daysColor(days: number | null, isClosed: boolean): string {
   if (days === null || days === undefined) return 'text-gray-400';
-  if (!isClosed) return 'text-blue-600 dark:text-blue-400';
+  if (!isClosed) return 'text-teal-600 dark:text-teal-400';
   if (days <= 7) return 'text-emerald-600 dark:text-emerald-400';
   if (days <= 21) return 'text-yellow-600 dark:text-yellow-400';
   return 'text-orange-600 dark:text-orange-400';
@@ -173,7 +173,7 @@ function daysColor(days: number | null, isClosed: boolean): string {
 
 function personaBadge(persona: Persona): string {
   switch (persona) {
-    case 'investor': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400';
+    case 'investor': return 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400';
     case 'gambler': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400';
     default: return 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400';
   }
@@ -391,11 +391,11 @@ export function PredictionCredibilityTable() {
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <Card className="border-emerald-200 dark:border-emerald-800/50"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">توقعات الشهر</p><p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{summary.total}</p></CardContent></Card>
-          <Card className="border-blue-200 dark:border-blue-800/50"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">نسبة النجاح</p><p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{summary.win_rate.toFixed(1)}%</p></CardContent></Card>
+          <Card className="border-teal-200 dark:border-teal-800/50"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">نسبة النجاح</p><p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{summary.win_rate.toFixed(1)}%</p></CardContent></Card>
           <Card className="border-green-200 dark:border-green-800/50"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">متوسط الربح</p><p className="text-2xl font-bold text-green-600 dark:text-green-400">+{summary.avg_profit.toFixed(1)}%</p></CardContent></Card>
           <Card className="border-red-200 dark:border-red-800/50"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">متوسط الخسارة</p><p className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.avg_loss.toFixed(1)}%</p></CardContent></Card>
           <Card className={cn('border', summary.net_pl >= 0 ? 'border-emerald-300 dark:border-emerald-700' : 'border-red-300 dark:border-red-700')}><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">صافي المكسب/الخسارة</p><p className={cn('text-2xl font-bold', summary.net_pl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>{summary.net_pl >= 0 ? '+' : ''}{summary.net_pl.toFixed(1)}%</p></CardContent></Card>
-          <Card className="border-muted"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">مفتوحة / مغلقة</p><p className="text-2xl font-bold"><span className="text-blue-500">{summary.active}</span><span className="text-muted-foreground mx-1">/</span><span>{summary.closed}</span></p></CardContent></Card>
+          <Card className="border-muted"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground mb-1">مفتوحة / مغلقة</p><p className="text-2xl font-bold"><span className="text-teal-500">{summary.active}</span><span className="text-muted-foreground mx-1">/</span><span>{summary.closed}</span></p></CardContent></Card>
         </div>
       )}
 
@@ -596,7 +596,7 @@ export function PredictionCredibilityTable() {
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-yellow-50 dark:bg-yellow-950/30 border" /> منتهي الصلاحية</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-gray-50 dark:bg-gray-900/20 border" /> مفتوح</span>
         <span className="flex items-center gap-1 mr-auto">
-          <span className="text-blue-500">●</span> أيام الانتظار (مفتوح) ·
+          <span className="text-teal-500">●</span> أيام الانتظار (مفتوح) ·
           <span className="text-emerald-500">●</span> ≤7 أيام ·
           <span className="text-yellow-500">●</span> 8-21 يوم ·
           <span className="text-orange-500">●</span> {'>'}21 يوم

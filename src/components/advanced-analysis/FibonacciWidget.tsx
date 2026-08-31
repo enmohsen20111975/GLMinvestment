@@ -78,7 +78,7 @@ export function FibonacciWidget({ ticker, currentPrice, compact = false }: Fibon
       <div className="rounded-lg p-3 border border-border/60 bg-muted/30">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-blue-500" />
+            <BarChart3 className="w-4 h-4 text-teal-500" />
             <span className="font-medium text-sm">فيبوناتشي</span>
           </div>
           {data.price_at_golden && (
@@ -107,7 +107,7 @@ export function FibonacciWidget({ ticker, currentPrice, compact = false }: Fibon
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-blue-500" />
+            <BarChart3 className="w-4 h-4 text-teal-500" />
             مستويات فيبوناتشي
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={fetchAnalysis}>

@@ -185,7 +185,7 @@ const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
   stock: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  bank: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  bank: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   certificate: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   fund: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   crypto: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -246,7 +246,7 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  paid: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  paid: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
@@ -2101,10 +2101,10 @@ function IncomeExpenseTab() {
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <PiggyBank className="w-4 h-4 text-blue-500" />
+              <PiggyBank className="w-4 h-4 text-teal-500" />
               <span className="text-xs font-medium">صافي الادخار</span>
             </div>
-            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(summary.net_savings)}</p>
+            <p className="text-lg font-bold text-teal-600 dark:text-teal-400">{formatCurrency(summary.net_savings)}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -2697,9 +2697,9 @@ function ReportsTab() {
               <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(totalLiabilities)}</p>
               <p className="text-[10px] text-muted-foreground mt-1">قروض + أقساط + ديون</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+            <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20">
               <p className="text-xs text-muted-foreground mb-1">صافي الثروة</p>
-              <p className={cn('text-lg font-bold', netWorth >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400')}>
+              <p className={cn('text-lg font-bold', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(netWorth)}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1">الأصول - الالتزامات</p>
@@ -2727,9 +2727,9 @@ function ReportsTab() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {investmentReturns.bank_monthly > 0 && (
-                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 text-center">
                   <p className="text-xs text-muted-foreground mb-1">عائد البنك الشهري</p>
-                  <p className="text-base font-bold text-blue-600 dark:text-blue-400">{formatCurrency(investmentReturns.bank_monthly)}</p>
+                  <p className="text-base font-bold text-teal-600 dark:text-teal-400">{formatCurrency(investmentReturns.bank_monthly)}</p>
                 </div>
               )}
               {investmentReturns.certificate_monthly > 0 && (
@@ -2826,12 +2826,12 @@ function ReportsTab() {
                   'flex items-start gap-3 p-3 rounded-lg border',
                   alert.type === 'danger' && 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/50',
                   alert.type === 'warning' && 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900/50',
-                  alert.type === 'info' && 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/50'
+                  alert.type === 'info' && 'bg-blue-50 border-teal-200 dark:bg-blue-950/20 dark:border-teal-900/50'
                 )}
               >
                 {alert.type === 'danger' && <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />}
                 {alert.type === 'warning' && <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />}
-                {alert.type === 'info' && <CheckCircle2 className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />}
+                {alert.type === 'info' && <CheckCircle2 className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium" dir="rtl">{alert.message}</p>
                 </div>
@@ -2857,7 +2857,7 @@ function ReportsTab() {
                 const pct = totalAssets > 0 ? (value / totalAssets) * 100 : 0;
                 const label = ASSET_TYPE_LABELS[type as AssetType] || type;
                 const colorClass = ASSET_TYPE_COLORS[type as AssetType] || 'bg-gray-400';
-                const barColor = type === 'stock' ? 'bg-emerald-400' : type === 'gold' ? 'bg-yellow-400' : type === 'bank' ? 'bg-blue-400' : type === 'certificate' ? 'bg-purple-400' : type === 'fund' ? 'bg-orange-400' : 'bg-teal-400';
+                const barColor = type === 'stock' ? 'bg-emerald-400' : type === 'gold' ? 'bg-yellow-400' : type === 'bank' ? 'bg-teal-400' : type === 'certificate' ? 'bg-purple-400' : type === 'fund' ? 'bg-orange-400' : 'bg-teal-400';
                 return (
                   <div key={type} className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -2933,10 +2933,10 @@ function ReportsTab() {
 
                     {/* Good: High Bank Returns */}
                     {bankPercent > 60 && investmentReturns && investmentReturns.bank_monthly > 0 && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                        <CheckCircle2 className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
+                        <CheckCircle2 className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">عوائد بنكية ممتازة</p>
+                          <p className="text-sm font-medium text-teal-800 dark:text-teal-200">عوائد بنكية ممتازة</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             لديك {formatCurrency(investmentReturns.bank_monthly)} دخل شهري من البنك. هذا يوفر استقرار مالي جيد.
                           </p>
@@ -2987,7 +2987,7 @@ function ReportsTab() {
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.5)}</p>
                 </div>
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
-                  <p className="font-bold text-blue-600">20%</p>
+                  <p className="font-bold text-teal-600">20%</p>
                   <p className="text-muted-foreground">ادخار واستثمار</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.2)}</p>
                 </div>

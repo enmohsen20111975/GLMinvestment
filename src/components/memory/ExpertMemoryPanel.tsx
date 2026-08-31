@@ -203,7 +203,7 @@ export function ExpertMemoryPanel({
               <div className="text-xs text-muted-foreground">خسارة</div>
             </div>
             <div className="space-y-1">
-              <div className="text-2xl font-bold text-blue-600">{insight.open_positions}</div>
+              <div className="text-2xl font-bold text-teal-600">{insight.open_positions}</div>
               <div className="text-xs text-muted-foreground">مفتوح</div>
             </div>
           </div>

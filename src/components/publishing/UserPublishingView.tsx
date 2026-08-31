@@ -231,7 +231,7 @@ export function UserPublishingView() {
   const getLevelIcon = (level: number) => {
     if (level >= 5) return <Crown className="w-5 h-5 text-yellow-400" />;
     if (level >= 4) return <Trophy className="w-5 h-5 text-purple-400" />;
-    if (level >= 3) return <Award className="w-5 h-5 text-blue-400" />;
+    if (level >= 3) return <Award className="w-5 h-5 text-teal-400" />;
     if (level >= 2) return <Medal className="w-5 h-5 text-green-400" />;
     return <Star className="w-5 h-5 text-gray-400" />;
   };
@@ -344,9 +344,9 @@ export function UserPublishingView() {
                       </div>
                     )}
                     {post.currentPrice && (
-                      <div className="bg-blue-500/10 rounded-lg p-2 text-center">
-                        <div className="text-xs text-blue-600">السعر الحالي</div>
-                        <div className="font-bold text-blue-600">
+                      <div className="bg-teal-500/10 rounded-lg p-2 text-center">
+                        <div className="text-xs text-teal-600">السعر الحالي</div>
+                        <div className="font-bold text-teal-600">
                           {post.currentPrice.toFixed(2)}
                           {post.priceChange && (
                             <span className={post.priceChange >= 0 ? 'text-green-500 mr-1' : 'text-red-500 mr-1'}>
@@ -530,7 +530,7 @@ export function UserPublishingView() {
                 className="w-full"
                 size="lg"
               >
-                {submitting ? 'جاري النشر...' : '🚀 نشر التوقع'}
+                {submitting ? 'جاري النشر...' : 'نشر التوقع'}
               </Button>
             </CardContent>
           </Card>
@@ -607,7 +607,7 @@ export function UserPublishingView() {
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span>نقاط من الشراء</span>
-                    <span className="font-bold text-blue-500">+{userPoints.purchase_points}</span>
+                    <span className="font-bold text-teal-500">+{userPoints.purchase_points}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-amber-500/10 rounded-lg border border-amber-200">
                     <span className="font-semibold">إجمالي النقاط المتاحة</span>

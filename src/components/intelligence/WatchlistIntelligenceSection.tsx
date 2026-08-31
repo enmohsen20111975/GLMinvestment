@@ -246,10 +246,10 @@ export function WatchlistIntelligenceSection() {
 
         <Card className="p-4 gap-2 bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-950/20">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Target className="w-4 h-4 text-blue-500" />
+            <Target className="w-4 h-4 text-teal-500" />
             <span className="text-xs font-medium">قرب الدعم</span>
           </div>
-          <p className="text-2xl font-bold text-blue-600">{summary.near_support_count}</p>
+          <p className="text-2xl font-bold text-teal-600">{summary.near_support_count}</p>
         </Card>
 
         <Card className="p-4 gap-2 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-950/20">

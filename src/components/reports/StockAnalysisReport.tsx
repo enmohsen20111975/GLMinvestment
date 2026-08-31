@@ -652,9 +652,9 @@ function RecommendationCard({ analysis }: { analysis: ProfessionalAnalysis }) {
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50">
+          <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-900/50">
             <p className="text-[10px] text-muted-foreground mb-1">سعر الدخول</p>
-            <p className="text-lg font-bold text-blue-600 dark:text-blue-400 tabular-nums">{rec.entry_price.toFixed(2)}</p>
+            <p className="text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums">{rec.entry_price.toFixed(2)}</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
             <p className="text-[10px] text-muted-foreground mb-1">الهدف</p>

@@ -243,11 +243,11 @@ export function TreasuryBondsView() {
       </div>
 
       {/* Info Banner */}
-      <Card className="py-0 gap-0 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+      <Card className="py-0 gap-0 bg-blue-50 dark:bg-blue-950/20 border-teal-200 dark:border-teal-900">
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
-            <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-blue-700 dark:text-blue-300">
+            <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-teal-700 dark:text-teal-300">
               <strong>تنبيه:</strong> الأسعار المعروضة هي آخر أسعار التداول وقد تختلف عن الأسعار الحالية.
               يرجى التحقق من الأسعار من مصادرك المعتادة قبل اتخاذ أي قرار استثماري.
             </div>
@@ -331,8 +331,8 @@ export function TreasuryBondsView() {
           <Card className="py-0 gap-0">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <FileText className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                  <FileText className="w-5 h-5 text-teal-600" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">شهادات الاستثمار</p>

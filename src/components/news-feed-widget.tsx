@@ -42,7 +42,7 @@ const categoryIcons: Record<string, any> = {
 
 const importanceColors: Record<string, string> = {
   'high': 'bg-red-500/20 text-red-400 border-red-500/50',
-  'medium': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+  'medium': 'bg-teal-500/20 text-teal-400 border-teal-500/50',
   'low': 'bg-slate-500/20 text-slate-400 border-slate-500/50'
 };
 
@@ -99,7 +99,7 @@ export function NewsFeedWidget() {
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Newspaper className="h-5 w-5 text-blue-400" />
+            <Newspaper className="h-5 w-5 text-teal-400" />
             <Skeleton className="h-6 w-32" />
           </div>
         </CardHeader>
@@ -147,7 +147,7 @@ export function NewsFeedWidget() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Newspaper className="h-5 w-5 text-blue-400" />
+            <Newspaper className="h-5 w-5 text-teal-400" />
             <CardTitle className="text-white text-lg">آخر الأخبار</CardTitle>
           </div>
           <Button

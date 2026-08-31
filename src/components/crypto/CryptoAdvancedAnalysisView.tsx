@@ -133,7 +133,7 @@ function classifyCryptoState(
     return {
       state: 'NEUTRAL',
       state_ar: 'محايد',
-      color: 'bg-blue-50 text-blue-700 border-blue-200',
+      color: 'bg-blue-50 text-teal-700 border-teal-200',
     };
   }
   if (rsi >= 40) {

@@ -41,7 +41,7 @@ function getNotificationColor(type: Notification['type']) {
     case 'portfolio_update':
       return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30';
     case 'market_event':
-      return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30';
+      return 'text-teal-600 dark:text-teal-400 bg-blue-50 dark:bg-blue-950/30';
     case 'system':
       return 'text-muted-foreground bg-muted';
     default:

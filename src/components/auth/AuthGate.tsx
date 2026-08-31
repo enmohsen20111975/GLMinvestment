@@ -6,7 +6,7 @@
  * Client-side gate that nudges unauthenticated visitors to register.
  *
  * Behaviour:
- *  1. Renders a sticky top banner: "🚀 سجل مجاناً للوصول لكل المميزات".
+ *  1. Renders a sticky top banner: "سجّل الدخول للوصول إلى المزايا الكاملة".
  *  2. Every 30s, fires a Sonner toast reminding the user to register
  *     (only once at a time, only when the tab is visible, and only if the
  *     user is not authenticated).
@@ -105,7 +105,7 @@ function AuthGateBanner() {
           <p className="flex-1 text-sm sm:text-base font-semibold leading-tight">
             <span className="inline-flex items-center gap-1.5">
               <Sparkles className="size-3.5 inline sm:hidden" />
-              🚀 سجل مجاناً للوصول لكل المميزات
+              سجّل الدخول للوصول إلى المزايا الكاملة
             </span>
             <span className="hidden sm:inline mr-2 text-white/85 font-normal">
               — توقعات ذكية، تحليلات متقدمة، ومتابعة محفظتك في مكان واحد

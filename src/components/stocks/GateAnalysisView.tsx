@@ -18,7 +18,7 @@ interface GateAnalysisViewProps {
 
 const signalColors: Record<string, string> = {
   BUY_STRONG: 'bg-lime-600', BUY: 'bg-green-600', BUY_CONTRARIAN: 'bg-teal-600',
-  ACCUMULATE: 'bg-blue-600', SELL: 'bg-red-600', SELL_STRONG: 'bg-rose-800',
+  ACCUMULATE: 'bg-teal-600', SELL: 'bg-red-600', SELL_STRONG: 'bg-rose-800',
   WAIT: 'bg-amber-600', AVOID: 'bg-gray-600',
 };
 const signalBanners: Record<string, string> = {

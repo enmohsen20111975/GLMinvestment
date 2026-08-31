@@ -16,7 +16,7 @@ export function HeartbeatStatusBar() {
     healthy: 'bg-emerald-500',
     stale: 'bg-amber-500',
     error: 'bg-red-500',
-    loading: 'bg-blue-500',
+    loading: 'bg-teal-500',
   };
 
   const messages = {

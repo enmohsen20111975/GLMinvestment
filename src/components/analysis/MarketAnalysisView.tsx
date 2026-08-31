@@ -554,7 +554,7 @@ function formatComprehensiveStockText(item: StoredAnalysisItem, market: MarketTy
   // ── الخلاصة التنفيذية ──
   text += `📌 الخلاصة التنفيذية:\n`;
   const summary = inv.reason || gam.reason || item.analysisJson?.narrative?.line1 ||
-    'تحليل شامل للسهم بناءً على نظام الـ 8 طبقات ومفاهيم المال الذكي.';
+    'تحليل شامل للسهم بناءً على المؤشرات الفنية والمفاهيم الاستثمارية.';
   text += `${summary}\n\n`;
 
   // ── سيناريو المستثمر ──
@@ -597,7 +597,8 @@ function formatComprehensiveStockText(item: StoredAnalysisItem, market: MarketTy
   }
 
   // ── التحليل الفني (8 طبقات) ──
-  text += `🧠 التحليل الفني (نظام الـ 8 طبقات):\n`;
+  text += `التحليل الفني الشامل:
+`;
   const gates = inv.gates || gam.gates;
   if (gates) {
     text += `${gates.trend ? '✅' : '❌'} الاتجاه العام: ${gates.trend ? 'صاعد (مؤكد)' : 'هابط/عرضي'}\n`;
@@ -1171,10 +1172,10 @@ function MarketStatusTab({ market }: { market: MarketType }) {
 
       {/* وصف تفصيلي لحالة السوق (لى حصل ولى بيحصل) — يوليو 2026 */}
       {stocks.length > 0 && marketNarrative && (
-        <Card className="border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/20">
+        <Card className="border-teal-200 dark:border-teal-900 bg-blue-50/40 dark:bg-blue-950/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Radio className="h-4 w-4 text-blue-600" />
+              <Radio className="h-4 w-4 text-teal-600" />
               التقرير اليومي للسوق
             </CardTitle>
             <CardDescription>
@@ -1233,7 +1234,7 @@ function MarketStatusTab({ market }: { market: MarketType }) {
           <Card>
             <CardHeader className="pb-1">
               <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-blue-600" />
+                <BarChart3 className="h-4 w-4 text-teal-600" />
                 أبرز الرابحين والخاسرين
               </CardTitle>
             </CardHeader>
@@ -1532,7 +1533,7 @@ function MarketStatusTab({ market }: { market: MarketType }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2">
             <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950">
               <p className="text-muted-foreground text-xs mb-1">إجمالي الأسهم</p>
-              <p className="text-xl font-bold text-blue-600">{weekStats.totalStocks}</p>
+              <p className="text-xl font-bold text-teal-600">{weekStats.totalStocks}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950">
               <p className="text-muted-foreground text-xs mb-1">متوسط السعر</p>
@@ -1618,14 +1619,14 @@ function MarketStatusTab({ market }: { market: MarketType }) {
           <div className="grid md:grid-cols-2 gap-4">
             {/* Most Active */}
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-1 text-blue-600">
+              <h4 className="font-semibold mb-2 flex items-center gap-1 text-teal-600">
                 <Activity className="h-4 w-4" />
                 الأكثر نشاطاً (حجم التداول)
               </h4>
               <div className="space-y-2">
                 {weekStats.mostActive.length > 0 ? (
                   weekStats.mostActive.map((stock, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-950 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
+                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-blue-50 dark:bg-blue-950 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
                       <div className="flex items-center gap-2 min-w-0">
                         {stock.logo_url ? (
                           <img
@@ -1640,7 +1641,7 @@ function MarketStatusTab({ market }: { market: MarketType }) {
                           <span className="text-muted-foreground text-xs mr-2">{stock.name_ar || stock.name}</span>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-blue-600">
+                      <Badge variant="outline" className="text-teal-600">
                         {stock.volume || '-'}
                       </Badge>
                     </div>
@@ -2105,7 +2106,7 @@ function ProofPredictionsTableView({
                       ⚡ مضارب
                     </Badge>
                   ) : (
-                    <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
+                    <Badge className="bg-teal-100 text-teal-700 dark:bg-blue-950 dark:text-teal-300 border border-teal-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
                       📊 مستثمر
                     </Badge>
                   )}
@@ -3021,7 +3022,7 @@ function ExpertPredictionsTab({ market }: { market: MarketType }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1 h-7 text-xs flex-1 border-blue-400 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  className="gap-1 h-7 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
                   onClick={() => {
                     const text = formatSingleExpertPredictionText(stock);
                     navigator.clipboard.writeText(text);
@@ -3084,7 +3085,7 @@ function ExpertPredictionsTab({ market }: { market: MarketType }) {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 h-7 text-xs border-blue-400 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
                         onClick={() => {
                           navigator.clipboard.writeText(singleText);
                           window.open('https://www.facebook.com/', '_blank');
@@ -3807,7 +3808,7 @@ function PersonaCard({
           <Button
             variant="outline"
             size="sm"
-            className="gap-1 h-8 text-xs flex-1 border-blue-400 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            className="gap-1 h-8 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
             onClick={() => {
               const text = formatSinglePersonaPickText({
                 ticker,
@@ -4269,7 +4270,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
       try {
         await navigator.clipboard.writeText(text);
         toast.success('تم نسخ النص وتحميل بطاقة التحليل ✓', {
-          description: 'شاركها الآن على تليجرام / فيسبوك! 🚀',
+          description: 'شارك التوقع على تليجرام أو فيسبوك',
         });
       } catch {
         toast.success('تم تحميل بطاقة التحليل ✓');
@@ -5365,7 +5366,7 @@ function PersonaTab({ market, persona }: { market: MarketType; persona: 'conserv
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 h-7 text-xs border-blue-400 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
                         onClick={() => {
                           navigator.clipboard.writeText(singleText);
                           window.open('https://www.facebook.com/', '_blank');
@@ -5859,7 +5860,7 @@ const HEAT_LEVEL_STYLE: Record<string, { bg: string; text: string; icon: string;
   WARM:    { bg: 'bg-orange-500/10 border-orange-500/30', text: 'text-orange-700 dark:text-orange-300', icon: '☀️', label: 'دافئ' },
   NEUTRAL: { bg: 'bg-slate-500/10 border-slate-500/30',  text: 'text-slate-700 dark:text-slate-300',   icon: '➖', label: 'محايد' },
   COOL:    { bg: 'bg-sky-500/10 border-sky-500/30',      text: 'text-sky-700 dark:text-sky-300',       icon: '💧', label: 'بارد' },
-  COLD:    { bg: 'bg-blue-500/10 border-blue-500/30',    text: 'text-blue-700 dark:text-blue-300',     icon: '❄️', label: 'بارد جداً' },
+  COLD:    { bg: 'bg-teal-500/10 border-teal-500/30',    text: 'text-teal-700 dark:text-teal-300',     icon: '❄️', label: 'بارد جداً' },
 };
 
 function formatVolumeShort(v: number): string {
@@ -7410,7 +7411,7 @@ function ActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
                       <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div className={cn(
                           'h-full',
-                          s.progress_percent >= 70 ? 'bg-emerald-500' : s.progress_percent >= 30 ? 'bg-amber-500' : s.progress_percent < 0 ? 'bg-red-500' : 'bg-blue-500'
+                          s.progress_percent >= 70 ? 'bg-emerald-500' : s.progress_percent >= 30 ? 'bg-amber-500' : s.progress_percent < 0 ? 'bg-red-500' : 'bg-teal-500'
                         )} style={{ width: `${Math.max(0, Math.min(100, s.progress_percent))}%` }} />
                       </div>
                     </div>

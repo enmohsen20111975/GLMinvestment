@@ -130,7 +130,7 @@ const COLOR_MAP: Record<string, { bg: string; text: string; border: string; grad
   amber: { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', gradient: 'from-amber-500 to-orange-600', dot: 'bg-amber-500' },
   rose: { bg: 'bg-rose-50 dark:bg-rose-950/30', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-800', gradient: 'from-rose-500 to-pink-600', dot: 'bg-rose-500' },
   purple: { bg: 'bg-purple-50 dark:bg-purple-950/30', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-800', gradient: 'from-purple-500 to-fuchsia-600', dot: 'bg-purple-500' },
-  indigo: { bg: 'bg-indigo-50 dark:bg-indigo-950/30', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-800', gradient: 'from-indigo-500 to-purple-600', dot: 'bg-indigo-500' },
+  indigo: { bg: 'bg-teal-50 dark:bg-teal-950/30', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-800', gradient: 'from-teal-500 to-purple-600', dot: 'bg-teal-500' },
   orange: { bg: 'bg-orange-50 dark:bg-orange-950/30', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800', gradient: 'from-orange-500 to-red-600', dot: 'bg-orange-500' },
   sky: { bg: 'bg-sky-50 dark:bg-sky-950/30', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-200 dark:border-sky-800', gradient: 'from-sky-500 to-cyan-600', dot: 'bg-sky-500' },
   fuchsia: { bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/30', text: 'text-fuchsia-600 dark:text-fuchsia-400', border: 'border-fuchsia-200 dark:border-fuchsia-800', gradient: 'from-fuchsia-500 to-pink-600', dot: 'bg-fuchsia-500' },
@@ -152,7 +152,7 @@ export function AboutView() {
             منصة الاستثمار الذكية
           </Badge>
           <h1 className="text-3xl md:text-5xl font-extrabold mb-4 bg-gradient-to-l from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent leading-tight">
-            🚀 ورا كل شمعة على الشارت..<br />
+            ورا كل شمعة على الشارت<br />
             فيه ميزانيات وملايين بتتحسب!
           </h1>
           <p className="text-base md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -238,7 +238,7 @@ export function AboutView() {
                   <Layers className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-base md:text-lg font-bold text-white">🏗️ البنية المعمارية للنظام</h3>
+                  <h3 className="text-base md:text-lg font-bold text-white">البنية المعمارية للنظام</h3>
                   <p className="text-xs text-slate-400 font-mono">System Architecture — 4-Layer Pipeline</p>
                 </div>
               </div>
@@ -246,7 +246,7 @@ export function AboutView() {
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-0">
                 {[
                   { title: 'مصادر البيانات', sub: 'Data Sources', icon: Database, color: 'emerald', bg: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-400' },
-                  { title: 'المحرك المركزي', sub: 'Core Engine', icon: Cpu, color: 'indigo', bg: 'bg-indigo-500/10 border-indigo-500/30', text: 'text-indigo-400' },
+                  { title: 'المحرك المركزي', sub: 'Core Engine', icon: Cpu, color: 'indigo', bg: 'bg-teal-500/10 border-teal-500/30', text: 'text-teal-400' },
                   { title: 'طبقات التحليل', sub: 'Analysis Layers', icon: Layers, color: 'cyan', bg: 'bg-cyan-500/10 border-cyan-500/30', text: 'text-cyan-400' },
                   { title: 'النتيجة النهائية', sub: 'Final Output', icon: Target, color: 'amber', bg: 'bg-amber-500/10 border-amber-500/30', text: 'text-amber-400' },
                 ].map((node, i) => {
@@ -267,9 +267,9 @@ export function AboutView() {
                           )}
                           {i === 1 && (
                             <>
-                              <span className="inline-block text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">Python</span>
-                              <span className="inline-block text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">Flask</span>
-                              <span className="inline-block text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">Background</span>
+                              <span className="inline-block text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">Python</span>
+                              <span className="inline-block text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">Flask</span>
+                              <span className="inline-block text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full border border-teal-500/30">Background</span>
                             </>
                           )}
                           {i === 2 && (
@@ -391,24 +391,24 @@ export function AboutView() {
                 {/* Calculation Logic */}
                 <div className="rounded-xl border border-border/60 bg-background/50 p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Cpu className="w-4 h-4 text-indigo-600" />
+                    <Cpu className="w-4 h-4 text-teal-600" />
                     <h4 className="font-bold text-sm">منطق الحسابات</h4>
                   </div>
                   <div className="space-y-2 text-xs text-muted-foreground">
                     <div className="flex items-start gap-2">
-                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-indigo-500" />
+                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-teal-500" />
                       <span>MACD: 12/26/9 EMA seeded (Wilder smoothing)</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-indigo-500" />
+                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-teal-500" />
                       <span>RSI: Wilder smoothing على 14 فترة</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-indigo-500" />
+                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-teal-500" />
                       <span>ATR: فترة 14 — Wilder smoothing لاحتساب الوقف</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-indigo-500" />
+                      <ExternalLink className="w-3 h-3 mt-0.5 shrink-0 text-teal-500" />
                       <span>Position Sizing: Risk Formula × T+2 Settlement</span>
                     </div>
                   </div>

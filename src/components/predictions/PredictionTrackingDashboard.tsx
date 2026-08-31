@@ -1086,7 +1086,7 @@ export function PredictionTrackingDashboard({
             <div className="bg-card border border-border/80 p-4 rounded-2xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-xs text-muted-foreground font-bold mb-1">
                 <span>نسبة الربح/الخسارة</span>
-                <Scale className="w-4 h-4 text-blue-500" />
+                <Scale className="w-4 h-4 text-teal-500" />
               </div>
               <div className="my-1">
                 <span className={cn(

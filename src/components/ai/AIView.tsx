@@ -277,7 +277,7 @@ export function AIView({ initialTab = 'chat' }: AIViewProps) {
               const Icon = feature.icon;
               const colorClass = {
                 emerald: 'from-emerald-500 to-teal-600',
-                blue: 'from-blue-500 to-indigo-600',
+                blue: 'from-blue-500 to-teal-600',
                 purple: 'from-purple-500 to-pink-600',
                 orange: 'from-orange-500 to-red-600',
                 red: 'from-red-500 to-rose-600',

@@ -14,7 +14,7 @@ export function Footer() {
             href="https://www.facebook.com/profile.php?id=61590600300048"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-blue-600 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-teal-600 transition-colors min-h-[44px] py-2"
             title="تابعنا على فيسبوك"
           >
             <Facebook className="w-4 h-4" />
@@ -34,7 +34,7 @@ export function Footer() {
             href="https://t.me/REDACTED_CHANNEL_NAME"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-blue-500 transition-colors min-h-[44px] py-2"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-teal-500 transition-colors min-h-[44px] py-2"
             title="انضم لقناتنا على تليجرام"
           >
             <Send className="w-4 h-4" />

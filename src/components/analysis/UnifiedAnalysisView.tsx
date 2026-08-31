@@ -93,7 +93,7 @@ const MARKET_FLAGS: Record<string, string> = {
   CRYPTO: '₿',
 }
 
-function ScoreBar({ value, label, color = 'bg-blue-500' }: {
+function ScoreBar({ value, label, color = 'bg-teal-500' }: {
   value: number; label: string; color?: string
 }) {
   return (
@@ -266,7 +266,7 @@ export default function UnifiedAnalysisView() {
                   onClick={() => setSelectedMarket(m.code)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                     selectedMarket === m.code
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-teal-600 text-white'
                       : 'bg-white/5 text-gray-300 hover:bg-white/10'
                   }`}
                 >
@@ -335,7 +335,7 @@ export default function UnifiedAnalysisView() {
                 onClick={() => { setActiveTab(tab); setError(null) }}
                 className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-all ${
                   activeTab === tab
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-teal-600 text-white'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -353,7 +353,7 @@ export default function UnifiedAnalysisView() {
                   onChange={e => setTicker(e.target.value.toUpperCase())}
                   onKeyDown={e => e.key === 'Enter' && (activeTab === 'analyze' ? handleAnalyze() : handleCompare())}
                   placeholder="رمز السهم (مثال: COMI)"
-                  className="sm:col-span-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                  className="sm:col-span-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 text-sm"
                 />
                 {activeTab === 'analyze' && (
                   <>
@@ -362,14 +362,14 @@ export default function UnifiedAnalysisView() {
                       onChange={e => setSupport(e.target.value)}
                       placeholder="مستوى الدعم (اختياري)"
                       type="number"
-                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 text-sm"
                     />
                     <input
                       value={resistance}
                       onChange={e => setResistance(e.target.value)}
                       placeholder="مستوى المقاومة (اختياري)"
                       type="number"
-                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-teal-500 text-sm"
                     />
                   </>
                 )}
@@ -459,7 +459,7 @@ export default function UnifiedAnalysisView() {
               {/* Scores */}
               <div className="space-y-2.5">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">تفاصيل الدرجات</h3>
-                <ScoreBar value={Number(result.score || 0)}           label="الدرجة الكلية"   color="bg-blue-500" />
+                <ScoreBar value={Number(result.score || 0)}           label="الدرجة الكلية"   color="bg-teal-500" />
                 <ScoreBar value={Number(result.technical_score || 0)} label="تقني"            color="bg-purple-500" />
                 <ScoreBar value={Number(result.volume_score || 0)}    label="حجم"             color="bg-cyan-500" />
                 <ScoreBar value={Number(result.candle_score || 0)}    label="شموع"            color="bg-yellow-500" />
@@ -498,7 +498,7 @@ export default function UnifiedAnalysisView() {
                   { label: 'شراء',     value: scanStats.buy || 0,        color: 'text-green-400' },
                   { label: 'تجميع',    value: scanStats.accumulate || 0, color: 'text-teal-400' },
                   { label: 'احتفاظ',   value: scanStats.hold || 0,       color: 'text-yellow-400' },
-                  { label: 'Avg Score',value: scanStats.avg_score || 0,  color: 'text-blue-400', suffix:'%' },
+                  { label: 'Avg Score',value: scanStats.avg_score || 0,  color: 'text-teal-400', suffix:'%' },
                   { label: 'Avg R/R',  value: scanStats.avg_rr || 0,     color: 'text-purple-400' },
                 ].map(s => (
                   <div key={s.label} className="bg-gray-900 border border-white/10 rounded-xl p-3 text-center">
@@ -534,7 +534,7 @@ export default function UnifiedAnalysisView() {
                             {r.signal_ar}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center font-bold text-blue-400">{Number(r.score || 0).toFixed(0)}</td>
+                        <td className="px-4 py-3 text-center font-bold text-teal-400">{Number(r.score || 0).toFixed(0)}</td>
                         <td className="px-4 py-3 text-center text-gray-300 font-mono">{Number(r.current_price || 0).toFixed(3)}</td>
                         <td className="px-4 py-3 text-center text-green-400 font-mono">+{r.target_pct}%</td>
                         <td className="px-4 py-3 text-center text-purple-400 font-mono">{Number(r.risk_reward || 0).toFixed(2)}</td>

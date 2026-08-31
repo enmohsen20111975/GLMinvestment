@@ -163,10 +163,10 @@ export function DevilsCard({ ticker }: DevilsCardProps) {
 
         {/* اللعبة لكل شخصية */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+          <div className="rounded-lg bg-teal-500/5 border border-teal-500/20 p-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <Shield className="h-4 w-4 text-blue-500" />
-              <span className="text-xs font-bold text-blue-600">لو مستثمر</span>
+              <Shield className="h-4 w-4 text-teal-500" />
+              <span className="text-xs font-bold text-teal-600">لو مستثمر</span>
             </div>
             <p className="text-xs text-foreground/80">{card.investorPlay}</p>
           </div>
@@ -241,9 +241,9 @@ export function DevilsCard({ ticker }: DevilsCardProps) {
 
             {/* محرك اللعب قبل الحدث */}
             {card.preEvent && (
-              <div className="rounded-lg bg-indigo-500/5 border border-indigo-500/20 p-3">
+              <div className="rounded-lg bg-teal-500/5 border border-teal-500/20 p-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Calendar className="h-4 w-4 text-indigo-500" />
+                  <Calendar className="h-4 w-4 text-teal-500" />
                   <span className="text-sm font-bold">اللعب قبل الحدث</span>
                   <Badge variant="outline" className="text-xs">
                     {card.preEvent.eventName.slice(0, 30)}

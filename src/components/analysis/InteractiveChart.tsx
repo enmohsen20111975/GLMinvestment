@@ -1008,8 +1008,7 @@ export function InteractiveChart(props: FullChartProps) {
 
         // لو السعر داخل الجيب الذهبي → اطبع badge في الـ title
         if (bb.in_pocket) {
-          // eslint-disable-next-line no-console
-          console.log(`[V20] ${bb.trend === 1 ? '🚀' : '🎯'} Golden Pocket active — fusion_score=${fusionMetrics.score}`);
+          // console.log removed (Rule 31: no hype in console)
         }
       }
 

@@ -424,12 +424,12 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   <div>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">هامش الربح التشغيلي (Operating Margin)</span>
-                      <span className="font-bold text-blue-600">
+                      <span className="font-bold text-teal-600">
                         {prof?.operating_margin ? `${prof.operating_margin.toFixed(2)}%` : 'N/A'}
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.operating_margin || 0, 0), 100)}%` }}></div>
+                      <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${Math.min(Math.max(prof?.operating_margin || 0, 0), 100)}%` }}></div>
                     </div>
                   </div>
 
@@ -565,8 +565,8 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
             </div>
 
             {(!bs?.total_assets && !inc?.revenue && !cf?.operating_cf) && (
-              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 flex-shrink-0 text-blue-500" />
+              <div className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/20 text-xs text-teal-700 dark:text-teal-300 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 flex-shrink-0 text-teal-500" />
                 <span>تم احتساب الهيكل المالي والالتزامات تقديرياً بناءً على القيمة السوقية الرسمية ($1.37B$) ومكرر القيمة الدفترية المعرّف بالبورصة.</span>
               </div>
             )}

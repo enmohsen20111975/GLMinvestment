@@ -54,7 +54,7 @@ function getPnlIcon(pnl: number) {
 
 function getBrokerIcon(broker: string) {
   if (broker === 'Binance') return <Bitcoin className="h-4 w-4 text-amber-400" />;
-  return <Building2 className="h-4 w-4 text-blue-400" />;
+  return <Building2 className="h-4 w-4 text-teal-400" />;
 }
 
 export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: MasterPortfolioSummaryProps) {

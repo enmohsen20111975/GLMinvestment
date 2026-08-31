@@ -152,7 +152,7 @@ const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; 
   orange: { bg: 'bg-orange-500', border: 'border-orange-500/30', text: 'text-orange-600 dark:text-orange-400', light: 'bg-orange-50 dark:bg-orange-950/30' },
   red: { bg: 'bg-red-500', border: 'border-red-500/30', text: 'text-red-600 dark:text-red-400', light: 'bg-red-50 dark:bg-red-950/30' },
   purple: { bg: 'bg-purple-500', border: 'border-purple-500/30', text: 'text-purple-600 dark:text-purple-400', light: 'bg-purple-50 dark:bg-purple-950/30' },
-  blue: { bg: 'bg-blue-500', border: 'border-blue-500/30', text: 'text-blue-600 dark:text-blue-400', light: 'bg-blue-50 dark:bg-blue-950/30' },
+  blue: { bg: 'bg-teal-500', border: 'border-teal-500/30', text: 'text-teal-600 dark:text-teal-400', light: 'bg-blue-50 dark:bg-blue-950/30' },
   yellow: { bg: 'bg-yellow-500', border: 'border-yellow-500/30', text: 'text-yellow-600 dark:text-yellow-400', light: 'bg-yellow-50 dark:bg-yellow-950/30' },
 };
 
@@ -341,7 +341,7 @@ export default function MaestroCommandCenter() {
                 <Cpu className="w-5 h-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-lg">🎶 نظام المايسترو — الموحد</CardTitle>
+                <CardTitle className="text-lg">حالة السوق المُجمّعة</CardTitle>
                 <CardDescription>محرك التحليل الموحد</CardDescription>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function MaestroCommandCenter() {
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                المايسترو هو القائد الأوركسترالي للنظام — ينسق بين جميع مراحل التحليل الستة ويخرج بالتوقع النهائي لكل شخصية.
+                النظام بيجمع كل مراحل التحليل ويخرج بالتوقع النهائي.
                 يبدأ بكشف حالة السوق، ثم يوافق الإشارات عبر الأطر الزمنية، يحلل الحجم والأخبار، يحسب الدرجة النهائية، ويخصصها لكل شخصية.
               </p>
               
@@ -412,7 +412,7 @@ export default function MaestroCommandCenter() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-lg">🧠 محركات التوقع الأربعة</CardTitle>
+                <CardTitle className="text-lg">محركات التحليل</CardTitle>
                 <CardDescription>4 Prediction Engines — The Analysis Core</CardDescription>
               </div>
             </div>
@@ -502,7 +502,7 @@ export default function MaestroCommandCenter() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">عتبة الشراء</span>
-                        <span className={cn('font-bold', persona.buyThreshold >= 70 ? 'text-blue-600' : persona.buyThreshold >= 60 ? 'text-amber-600' : 'text-red-600')}>
+                        <span className={cn('font-bold', persona.buyThreshold >= 70 ? 'text-teal-600' : persona.buyThreshold >= 60 ? 'text-amber-600' : 'text-red-600')}>
                           {persona.buyThreshold}%
                         </span>
                       </div>
@@ -537,7 +537,7 @@ export default function MaestroCommandCenter() {
                 <Layers className="w-5 h-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-lg">⚡ مراحل التحليل الست</CardTitle>
+                <CardTitle className="text-lg">مراحل التحليل</CardTitle>
                 <CardDescription>6 Analysis Phases — Pipeline Architecture</CardDescription>
               </div>
             </div>

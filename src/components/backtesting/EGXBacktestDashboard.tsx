@@ -175,7 +175,7 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
               {Object.entries(strategy.exit_breakdown).map(([reason, count]) => {
                 const pct = (count / strategy.total_trades) * 100;
                 const bgColor = reason === 'target' ? 'bg-emerald-500' :
-                  reason === 'trailing_stop' ? 'bg-blue-500' :
+                  reason === 'trailing_stop' ? 'bg-teal-500' :
                   reason === 'stop' ? 'bg-red-500' : 'bg-gray-400';
                 return (
                   <div
@@ -190,7 +190,7 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
             <div className="flex flex-wrap gap-2 text-[10px]">
               {Object.entries(strategy.exit_breakdown).map(([reason, count]) => {
                 const dotColor = reason === 'target' ? 'bg-emerald-500' :
-                  reason === 'trailing_stop' ? 'bg-blue-500' :
+                  reason === 'trailing_stop' ? 'bg-teal-500' :
                   reason === 'stop' ? 'bg-red-500' : 'bg-gray-400';
                 return (
                   <div key={reason} className="flex items-center gap-1">

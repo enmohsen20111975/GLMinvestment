@@ -125,8 +125,8 @@ const TIER_STYLES: Record<string, { bg: string; text: string; border: string; ic
   },
   WATCH: {
     bg: 'bg-blue-50 dark:bg-blue-950/30',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-300 dark:border-blue-700',
+    text: 'text-teal-700 dark:text-teal-300',
+    border: 'border-teal-300 dark:border-teal-700',
     icon: <Eye className="h-4 w-4" />,
   },
   SKIP: {
@@ -142,7 +142,7 @@ const ACTION_STYLES: Record<string, { color: string; bg: string; icon: React.Rea
   TRAILING_STOP: { color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-950/50', icon: <TrendingUp className="h-4 w-4" /> },
   TAKE_PROFIT_T1: { color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-950/50', icon: <DollarSign className="h-4 w-4" /> },
   TAKE_PROFIT_T2: { color: 'text-emerald-800 dark:text-emerald-200', bg: 'bg-emerald-200 dark:bg-emerald-900/50', icon: <Trophy className="h-4 w-4" /> },
-  ADD: { color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-100 dark:bg-blue-950/50', icon: <Plus className="h-4 w-4" /> },
+  ADD: { color: 'text-teal-700 dark:text-teal-300', bg: 'bg-teal-100 dark:bg-blue-950/50', icon: <Plus className="h-4 w-4" /> },
   REDUCE: { color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-950/50', icon: <Minus className="h-4 w-4" /> },
   EXIT: { color: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-100 dark:bg-rose-950/50', icon: <AlertTriangle className="h-4 w-4" /> },
 };
@@ -229,7 +229,7 @@ function DailyPickCard({ pick, rank }: { pick: DailyPick; rank: number }) {
             indicatorClassName={cn(
               pick.confidence >= 80 ? 'bg-amber-500' :
               pick.confidence >= 65 ? 'bg-emerald-500' :
-              pick.confidence >= 50 ? 'bg-blue-500' : 'bg-zinc-400'
+              pick.confidence >= 50 ? 'bg-teal-500' : 'bg-zinc-400'
             )}
           />
         </div>
@@ -391,7 +391,7 @@ function ManagementRow({ advice }: { advice: ManagementAdvice }) {
           className="h-1"
           indicatorClassName={
             advice.target_progress_pct >= 100 ? 'bg-emerald-500' :
-            advice.target_progress_pct >= 50 ? 'bg-amber-500' : 'bg-blue-500'
+            advice.target_progress_pct >= 50 ? 'bg-amber-500' : 'bg-teal-500'
           }
         />
       </div>

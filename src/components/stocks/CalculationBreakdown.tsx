@@ -514,7 +514,7 @@ function ScoreCalculationsSection() {
       {/* Score Bars */}
       <div className="space-y-2">
         {[
-          { label: 'الفني', score: technical, color: 'bg-blue-500' },
+          { label: 'الفني', score: technical, color: 'bg-teal-500' },
           { label: 'القيمة', score: value, color: 'bg-emerald-500' },
           { label: 'الجودة', score: quality, color: 'bg-purple-500' },
           { label: 'الزخم', score: momentum, color: 'bg-amber-500' },
@@ -574,7 +574,7 @@ export function CalculationBreakdown() {
           <AccordionItem value="technical">
             <AccordionTrigger className="text-sm font-bold">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-blue-600" />
+                <BarChart3 className="w-4 h-4 text-teal-600" />
                 <span>الحسابات الفنية</span>
               </div>
             </AccordionTrigger>

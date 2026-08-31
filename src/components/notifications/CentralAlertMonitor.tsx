@@ -100,7 +100,7 @@ function pickEmoji(signal: string): string {
     case 'STRONG_BUY':
       return '🔥';
     case 'BUY':
-      return '🚀';
+      return '📈';
     case 'STRONG_SELL':
       return '🔻';
     case 'SELL':

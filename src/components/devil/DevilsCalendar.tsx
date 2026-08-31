@@ -20,7 +20,7 @@ import type { DevilsCalendar as DevilsCalendarType, CalendarEvent } from '@/lib/
 
 const categoryConfig = {
   cbe: { label: 'CBE', color: 'bg-red-500/15 text-red-700 dark:text-red-400', icon: '🏦' },
-  earnings: { label: 'أرباح', color: 'bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: '📊' },
+  earnings: { label: 'أرباح', color: 'bg-teal-500/15 text-teal-700 dark:text-teal-400', icon: '📊' },
   regulatory: { label: 'تنظيمي', color: 'bg-purple-500/15 text-purple-700 dark:text-purple-400', icon: '⚖️' },
   seasonality: { label: 'موسمية', color: 'bg-amber-500/15 text-amber-700 dark:text-amber-400', icon: '📅' },
   macro: { label: 'ماكرو', color: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400', icon: '🌍' },

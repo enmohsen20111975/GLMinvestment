@@ -41,7 +41,7 @@ const SECTOR_COLORS: Record<string, string> = {
   'Technology': 'bg-cyan-500',
   'Tourism & Entertainment': 'bg-pink-500',
   'Retail & Consumer Services': 'bg-lime-500',
-  'Education': 'bg-indigo-500',
+  'Education': 'bg-teal-500',
   'Diversified': 'bg-slate-400',
 };
 

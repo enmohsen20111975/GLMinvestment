@@ -393,7 +393,7 @@ function QuickStatsRow({ price, tech, metrics, maestro }: { price: any; tech: an
       value: formatPrice(price.current_price),
       sub: `إغلاق سابق: ${formatPrice(price.previous_close)}`,
       icon: DollarSign,
-      color: 'text-blue-600 dark:text-blue-400',
+      color: 'text-teal-600 dark:text-teal-400',
     },
     {
       label: 'RSI (14)',

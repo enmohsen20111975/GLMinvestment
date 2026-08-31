@@ -41,7 +41,7 @@ interface SocialPostViewProps {
 
 // Signal colors and labels
 const SIGNAL_CONFIG: Record<string, { color: string; bg: string; label: string; emoji: string }> = {
-  STRONG_BUY: { color: 'text-emerald-600', bg: 'bg-emerald-500', label: 'شراء قوي', emoji: '🚀' },
+  STRONG_BUY: { color: 'text-emerald-600', bg: 'bg-emerald-500', label: 'شراء قوي', emoji: '🟢' },
   BUY: { color: 'text-green-600', bg: 'bg-green-500', label: 'شراء', emoji: '🟢' },
   ACCUMULATE: { color: 'text-teal-600', bg: 'bg-teal-500', label: 'تجميع', emoji: '📊' },
   HOLD: { color: 'text-gray-600', bg: 'bg-gray-500', label: 'احتفاظ', emoji: '⏸️' },

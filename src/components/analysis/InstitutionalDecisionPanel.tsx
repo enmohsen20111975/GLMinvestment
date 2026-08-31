@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * InstitutionalDecisionPanel — V39 Full Dynamic Adaptive
+ * InstitutionalDecisionPanel — لوحة القرار المؤسسي
  * =======================================================
  * محرك القرار المؤسسي (مستوحى من LuxAlgo & BigBeluga V39 Pine Script)
  *
@@ -540,7 +540,7 @@ export function InstitutionalDecisionPanel({
                 <div className="text-[10px] font-mono font-bold text-emerald-400">{risk_profile.tp1?.toFixed(2)}</div>
               </div>
               <div className="rounded bg-emerald-500/15 p-1">
-                <div className="text-[8px] text-muted-foreground">🚀 TP2</div>
+                <div className="text-[8px] text-muted-foreground">TP2</div>
                 <div className="text-[10px] font-mono font-bold text-emerald-300">{risk_profile.tp2?.toFixed(2)}</div>
               </div>
             </div>

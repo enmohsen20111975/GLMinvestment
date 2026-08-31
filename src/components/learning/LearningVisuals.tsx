@@ -118,7 +118,7 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
 /* ── 3. Market Hours Timeline (ساعات التداول) ── */
 export function MarketHoursTimeline() {
   const sessions = [
-    { time: '9:00', label: 'الجلسة الاستباقية', desc: 'إدخال الأوامر', color: 'bg-blue-500', active: false },
+    { time: '9:00', label: 'الجلسة الاستباقية', desc: 'إدخال الأوامر', color: 'bg-teal-500', active: false },
     { time: '9:45', label: 'فتح التداول', desc: 'بداية التنفيذ', color: 'bg-emerald-500', active: true },
     { time: '10:00', label: 'الجلسة الرئيسية', desc: 'أعلى سيولة', color: 'bg-emerald-600', active: true },
     { time: '14:30', label: 'إغلاق التداول', desc: 'نهاية الجلسة', color: 'bg-orange-500', active: false },
@@ -163,7 +163,7 @@ export function MarketHoursTimeline() {
 export function PortfolioDiversification() {
   const allocations = [
     { sector: 'البنوك', percent: 30, color: 'bg-emerald-500' },
-    { sector: 'العقارات', percent: 25, color: 'bg-blue-500' },
+    { sector: 'العقارات', percent: 25, color: 'bg-teal-500' },
     { sector: 'الاتصالات', percent: 20, color: 'bg-purple-500' },
     { sector: 'الصناعة', percent: 15, color: 'bg-amber-500' },
     { sector: 'نقدية', percent: 10, color: 'bg-gray-400' },
@@ -233,7 +233,7 @@ export function RiskPyramid() {
 /* ── 6. Callout Box (صناديق ملاحظات) ── */
 export function CalloutBox({ type, title, children }: { type: 'tip' | 'warning' | 'key' | 'example'; title: string; children: React.ReactNode }) {
   const config = {
-    tip: { icon: Lightbulb, color: 'border-blue-500/30 bg-blue-500/5', iconColor: 'text-blue-500', titleColor: 'text-blue-700 dark:text-blue-400' },
+    tip: { icon: Lightbulb, color: 'border-teal-500/30 bg-teal-500/5', iconColor: 'text-teal-500', titleColor: 'text-teal-700 dark:text-teal-400' },
     warning: { icon: AlertTriangle, color: 'border-amber-500/30 bg-amber-500/5', iconColor: 'text-amber-500', titleColor: 'text-amber-700 dark:text-amber-400' },
     key: { icon: Key, color: 'border-emerald-500/30 bg-emerald-500/5', iconColor: 'text-emerald-500', titleColor: 'text-emerald-700 dark:text-emerald-400' },
     example: { icon: BookOpen, color: 'border-purple-500/30 bg-purple-500/5', iconColor: 'text-purple-500', titleColor: 'text-purple-700 dark:text-purple-400' },
@@ -291,10 +291,10 @@ export function ExampleCard({ title, scenario, calculation, result, takeaway }: 
             <p className="text-sm">{result}</p>
           </div>
         </div>
-        <div className="flex items-start gap-2 p-2 rounded bg-blue-500/10">
-          <Lightbulb className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 p-2 rounded bg-teal-500/10">
+          <Lightbulb className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">الدرس المستفاد:</p>
+            <p className="text-xs font-semibold text-teal-700 dark:text-teal-400">الدرس المستفاد:</p>
             <p className="text-sm">{takeaway}</p>
           </div>
         </div>
@@ -408,7 +408,7 @@ export function MACDVisual() {
         <text x="165" y="40" fontSize="9" fill="#10b981" fontWeight="bold">تقاطع ذهبي</text>
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500" /> MACD</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> MACD</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" /> خط الإشارة</span>
         <span className="flex items-center gap-1"><span className="w-3 h-2 bg-emerald-500/50" /> الهيستوجرام</span>
       </div>
@@ -514,7 +514,7 @@ export function MovingAveragesVisual() {
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs">
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-amber-500" /> MA 5 (سريع)</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500" /> MA 10 (بطيء)</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> MA 10 (بطيء)</span>
       </div>
       <p className="text-xs text-muted-foreground mt-2 text-center">
         التقاطع الذهبي: MA السريع يقطع البطيء صعوداً = إشارة شراء
@@ -563,7 +563,7 @@ export function BollingerBandsVisual() {
         <text x="150" y="35" fontSize="9" fill="#f59e0b" fontWeight="bold">Squeeze (تضييق)</text>
       </svg>
       <div className="flex justify-center gap-4 mt-2 text-xs flex-wrap">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500" /> السعر</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-teal-500" /> السعر</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gray-500" /> المتوسط (SMA20)</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500" /> النطاق العلوي</span>
         <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500" /> النطاق السفلي</span>
@@ -590,12 +590,12 @@ export function DCFFlowVisual() {
         {/* Step 2 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="flex-1 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-center"
+          className="flex-1 p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-center"
         >
-          <p className="text-xs font-bold text-blue-600 mb-1">2. معدل الخصم</p>
+          <p className="text-xs font-bold text-teal-600 mb-1">2. معدل الخصم</p>
           <p className="text-[10px]">خصم للتضخم والمخاطر</p>
         </motion.div>
-        <span className="text-blue-500 text-center rotate-90 sm:rotate-0">←</span>
+        <span className="text-teal-500 text-center rotate-90 sm:rotate-0">←</span>
         {/* Step 3 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
@@ -637,9 +637,9 @@ export function ROEDuPontVisual() {
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
-          className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-center"
+          className="p-3 rounded-lg bg-teal-500/10 border border-teal-500/30 text-center"
         >
-          <p className="text-xs font-bold text-blue-600">دوران الأصول</p>
+          <p className="text-xs font-bold text-teal-600">دوران الأصول</p>
           <p className="text-[10px] text-muted-foreground mb-1">الإيرادات ÷ الأصول</p>
           <p className="text-lg font-bold">1.2x</p>
         </motion.div>
@@ -668,7 +668,7 @@ export function EmotionalCycleVisual() {
   const emotions = [
     { phase: 'التفاؤل', color: 'bg-emerald-500', icon: '😊' },
     { phase: 'الحماس', color: 'bg-teal-500', icon: '🤩' },
-    { phase: 'النشوة', color: 'bg-blue-500', icon: '🤑' },
+    { phase: 'النشوة', color: 'bg-teal-500', icon: '🤑' },
     { phase: 'القلق', color: 'bg-amber-500', icon: '😰' },
     { phase: 'الإنكار', color: 'bg-orange-500', icon: '😨' },
     { phase: 'الذعر', color: 'bg-red-500', icon: '😱' },

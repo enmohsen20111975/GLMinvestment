@@ -437,7 +437,7 @@ export function PromoCodesAdmin() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-indigo-500" />
+              <Gift className="w-5 h-5 text-teal-500" />
               سجل أكواد الخصم المفوضة ({codes.length})
             </span>
           </CardTitle>

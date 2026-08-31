@@ -65,7 +65,7 @@ interface AlertSummary {
 const typeIcons: Record<string, React.ReactNode> = {
   profit_target: <Target className="h-4 w-4 text-green-600" />,
   stop_loss: <ShieldAlert className="h-4 w-4 text-red-600" />,
-  support_near: <ArrowDownRight className="h-4 w-4 text-blue-600" />,
+  support_near: <ArrowDownRight className="h-4 w-4 text-teal-600" />,
   resistance_near: <ArrowUpRight className="h-4 w-4 text-orange-600" />,
   dividend_soon: <DollarSign className="h-4 w-4 text-purple-600" />,
   breakout: <Zap className="h-4 w-4 text-green-600" />,
@@ -90,14 +90,14 @@ const severityColors: Record<string, string> = {
   danger: 'border-red-300 bg-red-50 dark:bg-red-950/20',
   warning: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20',
   success: 'border-green-300 bg-green-50 dark:bg-green-950/20',
-  info: 'border-blue-300 bg-blue-50 dark:bg-blue-950/20'
+  info: 'border-teal-300 bg-blue-50 dark:bg-blue-950/20'
 };
 
 const severityBadgeColors: Record<string, string> = {
   danger: 'bg-red-500 text-white',
   warning: 'bg-yellow-500 text-white',
   success: 'bg-green-500 text-white',
-  info: 'bg-blue-500 text-white'
+  info: 'bg-teal-500 text-white'
 };
 
 export function SmartAlertsPanel() {
@@ -205,11 +205,11 @@ export function SmartAlertsPanel() {
         </Card>
         <Card className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter(filter === 'info' ? 'all' : 'info')}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <Info className="h-4 w-4 text-blue-600" />
+            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
+              <Info className="h-4 w-4 text-teal-600" />
             </div>
             <div>
-              <div className="text-lg font-bold text-blue-600">{summary.by_severity.info}</div>
+              <div className="text-lg font-bold text-teal-600">{summary.by_severity.info}</div>
               <div className="text-xs text-muted-foreground">معلومة</div>
             </div>
           </div>
@@ -287,7 +287,7 @@ export function SmartAlertsPanel() {
               </Badge>
             )}
             {summary.by_type.support_near > 0 && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              <Badge variant="outline" className="bg-blue-50 text-teal-700">
                 📥 {summary.by_type.support_near} قريب من دعم
               </Badge>
             )}
@@ -303,7 +303,7 @@ export function SmartAlertsPanel() {
             )}
             {summary.by_type.breakout > 0 && (
               <Badge variant="outline" className="bg-green-50 text-green-700">
-                🚀 {summary.by_type.breakout} كسر مقاومة
+                {summary.by_type.breakout} كسر مقاومة
               </Badge>
             )}
             {summary.by_type.breakdown > 0 && (

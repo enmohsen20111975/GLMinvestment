@@ -732,8 +732,8 @@ export function CryptoSimulationView() {
                     <p className="text-xs text-muted-foreground">الرصيد النقدي</p>
                     <p className="text-lg font-bold">{formatCurrency(simState.balance)}</p>
                   </div>
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                    <Wallet className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                   </div>
                 </div>
               </CardContent>

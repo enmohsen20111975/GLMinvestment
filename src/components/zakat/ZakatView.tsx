@@ -200,12 +200,12 @@ function IslamicBasis() {
               <p className="text-xs text-muted-foreground mt-2 text-left">سورة البقرة: 43</p>
             </div>
             
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-950/30 dark:to-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">س</div>
-                <span className="font-bold text-blue-700 dark:text-blue-400">من السنة النبوية</span>
+                <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">س</div>
+                <span className="font-bold text-teal-700 dark:text-teal-400">من السنة النبوية</span>
               </div>
-              <p className="text-base leading-relaxed text-blue-800 dark:text-blue-200">
+              <p className="text-base leading-relaxed text-teal-800 dark:text-teal-200">
                 "بُنِيَ الإِسْلَامُ عَلَى خَمْسٍ: شَهَادَةِ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَنَّ مُحَمَّدًا رَسُولُ اللَّهِ، وَإِقَامِ الصَّلَاةِ، وَإِيتَاءِ الزَّكَاةِ، وَالْحَجِّ، وَصَوْمِ رَمَضَانَ"
               </p>
               <p className="text-xs text-muted-foreground mt-2 text-left">متفق عليه</p>
@@ -576,15 +576,15 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
         </Card>
         
         {/* Stocks & Trade Section */}
-        <Card className="relative overflow-hidden border-2 border-blue-300 dark:border-blue-700/50 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
+        <Card className="relative overflow-hidden border-2 border-teal-300 dark:border-teal-700/50 bg-gradient-to-br from-blue-50/50 to-teal-50/50 dark:from-blue-950/20 dark:to-teal-950/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-teal-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white"/>
               </div>
               <div>
-                <span className="text-blue-700 dark:text-blue-300">الأسهم والتجارة</span>
+                <span className="text-teal-700 dark:text-teal-300">الأسهم والتجارة</span>
                 <p className="text-xs text-muted-foreground font-normal">يختلف الحكم حسب النية</p>
               </div>
             </CardTitle>
@@ -592,20 +592,20 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-blue-700 dark:text-blue-300">أسهم للتجارة</label>
-                <Input type="number" placeholder="0" value={inputs.stocksForTrade || ''} onChange={(e) => updateInput('stocksForTrade', parseFloat(e.target.value) || 0)} className="border-blue-200 focus:border-blue-400"/>
+                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">أسهم للتجارة</label>
+                <Input type="number" placeholder="0" value={inputs.stocksForTrade || ''} onChange={(e) => updateInput('stocksForTrade', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-blue-700 dark:text-blue-300">أسهم استثمارية</label>
-                <Input type="number" placeholder="0" value={inputs.stocksForInvestment || ''} onChange={(e) => updateInput('stocksForInvestment', parseFloat(e.target.value) || 0)} className="border-blue-200 focus:border-blue-400"/>
+                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">أسهم استثمارية</label>
+                <Input type="number" placeholder="0" value={inputs.stocksForInvestment || ''} onChange={(e) => updateInput('stocksForInvestment', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-blue-700 dark:text-blue-300">بضاعة تجارية</label>
-                <Input type="number" placeholder="0" value={inputs.tradeGoods || ''} onChange={(e) => updateInput('tradeGoods', parseFloat(e.target.value) || 0)} className="border-blue-200 focus:border-blue-400"/>
+                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">بضاعة تجارية</label>
+                <Input type="number" placeholder="0" value={inputs.tradeGoods || ''} onChange={(e) => updateInput('tradeGoods', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-blue-700 dark:text-blue-300">ديون لك</label>
-                <Input type="number" placeholder="0" value={inputs.receivables || ''} onChange={(e) => updateInput('receivables', parseFloat(e.target.value) || 0)} className="border-blue-200 focus:border-blue-400"/>
+                <label className="text-xs font-medium text-teal-700 dark:text-teal-300">ديون لك</label>
+                <Input type="number" placeholder="0" value={inputs.receivables || ''} onChange={(e) => updateInput('receivables', parseFloat(e.target.value) || 0)} className="border-teal-200 focus:border-teal-400"/>
               </div>
               <div className="col-span-2 space-y-1">
                 <label className="text-xs font-medium text-red-600 dark:text-red-400">ديون عليك (تُطرح)</label>
@@ -764,7 +764,7 @@ function CalculationMethods() {
                   'w-10 h-10 rounded-xl flex items-center justify-center',
                   method.color === 'yellow' && 'bg-yellow-500',
                   method.color === 'green' && 'bg-green-500',
-                  method.color === 'blue' && 'bg-blue-500',
+                  method.color === 'blue' && 'bg-teal-500',
                   method.color === 'purple' && 'bg-purple-500',
                   method.color === 'emerald' && 'bg-emerald-500',
                 )}>
@@ -966,9 +966,9 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert className="border-blue-300 bg-blue-50 dark:bg-blue-950/30">
-                  <Info className="w-5 h-5 text-blue-600"/>
-                  <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+                <Alert className="border-teal-300 bg-blue-50 dark:bg-blue-950/30">
+                  <Info className="w-5 h-5 text-teal-600"/>
+                  <AlertDescription className="text-sm text-teal-800 dark:text-teal-200">
                     أضف أصولاً لمحفظتك (نقد، أسهم، ذهب، كريبتو) من قسم المحفظة ليتم حساب الزكاة تلقائياً.
                   </AlertDescription>
                 </Alert>
@@ -985,7 +985,7 @@ function BreakdownRow({ icon, label, value, color }: { icon: React.ReactNode; la
   const colorMap: Record<string, string> = {
     green: 'text-green-600 dark:text-green-400',
     emerald: 'text-emerald-600 dark:text-emerald-400',
-    blue: 'text-blue-600 dark:text-blue-400',
+    blue: 'text-teal-600 dark:text-teal-400',
     yellow: 'text-yellow-600 dark:text-yellow-400',
     orange: 'text-orange-600 dark:text-orange-400',
     red: 'text-red-600 dark:text-red-400',

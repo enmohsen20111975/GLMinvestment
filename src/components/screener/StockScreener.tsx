@@ -83,10 +83,10 @@ const CORRECTION_STATUS_MAP: Record<string, { label: string; color: string; icon
   in_correction: { label: 'في تصحيح', color: 'text-red-600 bg-red-50 dark:bg-red-950', icon: '📉' },
   pulling_back: { label: 'يرتد', color: 'text-orange-600 bg-orange-50 dark:bg-orange-950', icon: '↩️' },
   neutral: { label: 'محايد', color: 'text-gray-600 bg-gray-50 dark:bg-gray-800', icon: '➡️' },
-  near_high: { label: 'قرب القمة', color: 'text-blue-600 bg-blue-50 dark:bg-blue-950', icon: '🎯' },
-  breakout: { label: 'اختراق', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950', icon: '🚀' },
+  near_high: { label: 'قرب القمة', color: 'text-teal-600 bg-blue-50 dark:bg-blue-950', icon: '🎯' },
+  breakout: { label: 'اختراق', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950', icon: '📈' },
   overbought: { label: 'تشبع شرائي', color: 'text-purple-600 bg-purple-50 dark:bg-purple-950', icon: '🔥' },
-  oversold: { label: 'تشبع بيعي', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950', icon: '❄️' },
+  oversold: { label: 'تشبع بيعي', color: 'text-teal-600 bg-teal-50 dark:bg-teal-950', icon: '❄️' },
 };
 
 function getCorrectionBadge(status: string) {

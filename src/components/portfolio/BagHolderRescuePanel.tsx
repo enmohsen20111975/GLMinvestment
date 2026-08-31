@@ -314,7 +314,7 @@ export function BagHolderRescuePanel({
       <Card className="border-border">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
-            <LifeBuoy className="h-5 w-5 text-blue-500" />
+            <LifeBuoy className="h-5 w-5 text-teal-500" />
             <h3 className="font-bold text-base">محرك إنقاذ الأسهم المزنوقة</h3>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -395,7 +395,7 @@ export function BagHolderRescuePanel({
 
               {/* Buy zone + historical */}
               <div className="flex items-center gap-2 flex-wrap text-sm">
-                <Badge variant="outline" className="border-blue-300 text-blue-700 dark:text-blue-300">
+                <Badge variant="outline" className="border-teal-300 text-teal-700 dark:text-teal-300">
                   📍 {result.buy_zone_ar}
                 </Badge>
                 {result.all_time_high > 0 && (

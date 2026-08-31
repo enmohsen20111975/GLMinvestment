@@ -101,7 +101,7 @@ function getActionColor(type: string): string {
     case 'SELL':
     case 'TAKE_PROFIT': return 'bg-red-500 text-white';
     case 'BUY_MORE': return 'bg-green-500 text-white';
-    case 'AVERAGE_DOWN': return 'bg-blue-500 text-white';
+    case 'AVERAGE_DOWN': return 'bg-teal-500 text-white';
     default: return 'bg-yellow-500 text-white';
   }
 }
@@ -141,7 +141,7 @@ function getSeverityColor(severity: string): string {
     case 'danger': return 'border-red-300 bg-red-50 dark:bg-red-950/20';
     case 'warning': return 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20';
     case 'success': return 'border-green-300 bg-green-50 dark:bg-green-950/20';
-    default: return 'border-blue-300 bg-blue-50 dark:bg-blue-950/20';
+    default: return 'border-teal-300 bg-blue-50 dark:bg-blue-950/20';
   }
 }
 
@@ -228,7 +228,7 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
             {item.type === 'stock' && (
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-4 w-4 text-blue-600" />
+                  <Zap className="h-4 w-4 text-teal-600" />
                   <span className="font-medium text-sm">TradingView</span>
                 </div>
                 

@@ -425,8 +425,8 @@ function PriceLevelsVisual({ levels, currentPrice }: { levels: ProfessionalAnaly
                 <div className="flex-1 flex items-center justify-center gap-2">
                   <div className="w-4 h-4 rounded-full border-2 border-background shadow-sm ring-2 ring-blue-400 ring-offset-1 flex-shrink-0" style={{ backgroundColor: item.color }} />
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">{item.label}</span>
-                    <span className="text-xs font-bold tabular-nums text-blue-600 dark:text-blue-400" dir="ltr">{fmt(item.price)}</span>
+                    <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">{item.label}</span>
+                    <span className="text-xs font-bold tabular-nums text-teal-600 dark:text-teal-400" dir="ltr">{fmt(item.price)}</span>
                   </div>
                 </div>
               )}
@@ -693,8 +693,8 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
           </Badge>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-            <p className="text-[11px] text-blue-600 dark:text-blue-400 mb-1 flex items-center justify-center gap-1">
+          <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
+            <p className="text-[11px] text-teal-600 dark:text-teal-400 mb-1 flex items-center justify-center gap-1">
               <ArrowLeftRight className="w-3 h-3" />
               سعر الدخول
             </p>

@@ -15,8 +15,8 @@ function OrchestratorNodeComponent({ data, selected }: NodeProps) {
     <div
       className={`
         min-w-[200px] rounded-xl border-2 shadow-lg p-3
-        bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-violet-950/30
-        border-indigo-300 dark:border-indigo-700
+        bg-gradient-to-br from-teal-50 to-violet-50 dark:from-teal-950/30 dark:to-violet-950/30
+        border-teal-300 dark:border-teal-700
         ${selected ? 'ring-2 ring-primary ring-offset-2' : ''}
       `}
     >
@@ -51,8 +51,8 @@ function OrchestratorNodeComponent({ data, selected }: NodeProps) {
       />
 
       <div className="flex items-center gap-2 mb-2">
-        <div className="h-8 w-8 rounded-lg bg-indigo-200 dark:bg-indigo-800 flex items-center justify-center">
-          <CircuitBoard className="h-4 w-4 text-indigo-700 dark:text-indigo-200" />
+        <div className="h-8 w-8 rounded-lg bg-teal-200 dark:bg-teal-800 flex items-center justify-center">
+          <CircuitBoard className="h-4 w-4 text-teal-700 dark:text-teal-200" />
         </div>
         <div>
           <div className="font-semibold text-sm">{nodeData.label}</div>
@@ -61,13 +61,13 @@ function OrchestratorNodeComponent({ data, selected }: NodeProps) {
       </div>
 
       {/* Pipeline info */}
-      <div className="px-2 py-1 rounded bg-indigo-100/50 dark:bg-indigo-900/30 text-center mb-2">
-        <span className="text-[10px] text-indigo-700 dark:text-indigo-300">{nodeData.pipelineDisplayName}</span>
+      <div className="px-2 py-1 rounded bg-teal-100/50 dark:bg-teal-900/30 text-center mb-2">
+        <span className="text-[10px] text-teal-700 dark:text-teal-300">{nodeData.pipelineDisplayName}</span>
       </div>
 
       {/* Combined result */}
       {nodeData.signal && (
-        <div className="flex items-center justify-between mt-1 pt-2 border-t border-indigo-200 dark:border-indigo-800">
+        <div className="flex items-center justify-between mt-1 pt-2 border-t border-teal-200 dark:border-teal-800">
           {signalVisual && (
             <Badge className={`${signalVisual.bgClass} ${signalVisual.colorClass} text-xs font-bold`}>
               {signalVisual.emoji} {nodeData.signal}
@@ -89,7 +89,7 @@ function OrchestratorNodeComponent({ data, selected }: NodeProps) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-indigo-500 !border-2 !border-white"
+        className="!w-3 !h-3 !bg-teal-500 !border-2 !border-white"
         style={{ top: '50%' }}
       />
     </div>

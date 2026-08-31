@@ -376,7 +376,7 @@ export function ShareButton({
     // === التوقيع والروابط الرسمية ===
     text += `\n━━━━━━━━━━━━━━━━━`;
     text += `\n⚠️ هذا التحليل لأغراض تعليمية فقط - ليس نصيحة استثمارية`;
-    text += `\n🚀 دليل الاستثمار — تحليل ذكي للبورصة المصرية`;
+    text += `\nدليل الاستثمار — تحليل ذكي للبورصة المصرية`;
     text += OFFICIAL_LINKS_BLOCK;
 
     // === الهاشتاجات ===
@@ -465,7 +465,7 @@ export function ShareButton({
 
   const shareText = getShareText();
   const platformUrl = typeof window !== 'undefined' ? window.location.origin : 'https://invist.m2y.net';
-  const shortText = `📈 ${stockData.ticker} - ${stockData.nameAr || stockData.name}\n💰 السعر: ${stockData.price.toFixed(2)} ج.م\n🎯 التحليل: ${stockData.recommendationAr || stockData.recommendation || 'غير محدد'}\n\n🚀 دليل الاستثمار${OFFICIAL_LINKS_BLOCK}`;
+  const shortText = `${stockData.ticker} - ${stockData.nameAr || stockData.name}\nالسعر: ${stockData.price.toFixed(2)} ج.م\nالتحليل: ${stockData.recommendationAr || stockData.recommendation || 'غير محدد'}\n\ndليل الاستثمار${OFFICIAL_LINKS_BLOCK}`;
   
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,

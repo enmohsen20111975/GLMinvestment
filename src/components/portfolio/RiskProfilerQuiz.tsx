@@ -117,7 +117,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
   let type: RiskProfile['type'] = 'balanced';
   let typeAr = 'متوازن';
   let Icon = Gauge;
-  let color = 'text-blue-600';
+  let color = 'text-teal-600';
   let description = '';
   let idealAllocation: RiskProfile['idealAllocation'] = [];
 
@@ -137,7 +137,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
     type = 'balanced';
     typeAr = 'متوازن';
     Icon = Gauge;
-    color = 'text-blue-600';
+    color = 'text-teal-600';
     description =
       'أنت مستثمر متوازن — بتعرف تخاطب المخاطر بس مش بتقمط. التوزيع المثالي ليك توازن بين الأسهم والثابت، مع نسبة ذهب كتحوّط.';
     idealAllocation = [
@@ -386,7 +386,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                       <Progress value={a.pct} className="h-2" />
                       {currentPct !== null && (
                         <div
-                          className="absolute top-0 h-2 w-1 bg-blue-600 rounded"
+                          className="absolute top-0 h-2 w-1 bg-teal-600 rounded"
                           style={{ right: `${100 - currentPct}%` }}
                           title={`الحالي: ${currentPct.toFixed(0)}%`}
                         />
@@ -463,8 +463,8 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
           {/* توقع Rebalancing (static hint — kept for context) */}
           {!currentAllocation && (
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-              <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800">
+              <p className="text-xs text-teal-800 dark:text-teal-300 leading-relaxed">
                 💡 <strong>توقع الروبو-أدفايزر:</strong> قارن التوزيع الحالي لمحفظتك بالتوزيع المثالي فوق.
                 لو فرق أي أصل أكتر من 10%، اعمل Rebalancing (بيع الزايد واشتري الناقص) عشان تفضل في نطاق شخصيتك الاستثمارية.
               </p>

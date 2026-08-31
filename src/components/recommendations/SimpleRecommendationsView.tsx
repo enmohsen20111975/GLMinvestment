@@ -1058,7 +1058,7 @@ ${OFFICIAL_LINKS_BLOCK}`;
                               </Badge>
                             )}
                             {rec.is_continuous && (
-                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-300">
+                              <Badge className="bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300 border border-teal-300">
                                 🔄 مستمرة
                               </Badge>
                             )}

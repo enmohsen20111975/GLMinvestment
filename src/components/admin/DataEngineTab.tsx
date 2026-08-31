@@ -280,9 +280,9 @@ export function DataEngineTab() {
           <div className="text-2xl font-bold text-purple-600">{formatNum(counts?.historical_records || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">HIST. DATA</div>
         </div>
-        <div className="bg-white rounded-xl p-4 text-center border border-indigo-200 shadow-sm hover:shadow-md transition-shadow">
-          <Calendar className="w-6 h-6 mx-auto text-indigo-600 mb-2" />
-          <div className="text-2xl font-bold text-indigo-600">{formatNum(counts?.daily_prices || 0)}</div>
+        <div className="bg-white rounded-xl p-4 text-center border border-teal-200 shadow-sm hover:shadow-md transition-shadow">
+          <Calendar className="w-6 h-6 mx-auto text-teal-600 mb-2" />
+          <div className="text-2xl font-bold text-teal-600">{formatNum(counts?.daily_prices || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">DAILY PRICES</div>
         </div>
       </div>

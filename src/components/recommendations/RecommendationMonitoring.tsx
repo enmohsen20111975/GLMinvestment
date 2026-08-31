@@ -95,7 +95,7 @@ const STATUS_AR: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-blue-500', HIT_TARGET: 'bg-emerald-500',
+  PENDING: 'bg-teal-500', HIT_TARGET: 'bg-emerald-500',
   STOPPED: 'bg-red-500', CLOSED: 'bg-gray-500',
 };
 
@@ -222,7 +222,7 @@ export function RecommendationMonitoring() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Shield className="w-5 h-5 text-blue-600" />
+            <Shield className="w-5 h-5 text-teal-600" />
             مراقبة التحليلات
           </h2>
           {lastUpdated && (
@@ -251,7 +251,7 @@ export function RecommendationMonitoring() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         <Card className="p-3 text-center">
-          <p className="text-2xl font-bold text-blue-600">{expertStats?.total || 0}</p>
+          <p className="text-2xl font-bold text-teal-600">{expertStats?.total || 0}</p>
           <p className="text-xs text-muted-foreground">إجمالي الخبراء</p>
         </Card>
         <Card className="p-3 text-center">
@@ -482,7 +482,7 @@ export function RecommendationMonitoring() {
                         <div className="mt-3 pt-3 border-t space-y-2 text-sm">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {rec.target_price_2 && <div><span className="text-muted-foreground">هدف 2:</span> <span className="font-mono text-emerald-500">{rec.target_price_2.toFixed(2)}</span></div>}
-                            {rec.investment_target && <div><span className="text-muted-foreground">استثماري:</span> <span className="font-mono text-blue-600">{rec.investment_target.toFixed(2)}</span></div>}
+                            {rec.investment_target && <div><span className="text-muted-foreground">استثماري:</span> <span className="font-mono text-teal-600">{rec.investment_target.toFixed(2)}</span></div>}
                             {rec.support_level && <div><span className="text-muted-foreground">دعم:</span> <span className="font-mono">{rec.support_level.toFixed(2)}</span></div>}
                             {rec.resistance_level && <div><span className="text-muted-foreground">مقاومة:</span> <span className="font-mono">{rec.resistance_level.toFixed(2)}</span></div>}
                             {rec.expected_profit_min && <div><span className="text-muted-foreground">ربح أدنى:</span> {rec.expected_profit_min}%</div>}
@@ -522,7 +522,7 @@ export function RecommendationMonitoring() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
-                      <p className="text-2xl font-bold text-blue-600">{platformStats.total}</p>
+                      <p className="text-2xl font-bold text-teal-600">{platformStats.total}</p>
                       <p className="text-xs text-muted-foreground">إجمالي</p>
                     </div>
                     <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20">
