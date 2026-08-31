@@ -210,17 +210,15 @@ def run_analysis_batch(
         return result
 
     # ── 1) Initialize orchestrator (or reuse caller's) ──
+    # KILL-MAESTRO: Maestro معطل — V40.2 هو العقل الوحيد
     _owns_orchestrator = False
     if orchestrator is None:
-        try:
-            from analyzers.maestro_orchestrator import MaestroOrchestrator
-            orchestrator = MaestroOrchestrator(stocks_db)
-            _owns_orchestrator = True
-        except Exception as e:
-            result.insert_errors.append(f"MaestroOrchestrator init failed: {e}")
-            print(f"[{log_prefix}] ❌ MaestroOrchestrator init failed: {e}")
-            result.duration_seconds = (datetime.now() - start_time).total_seconds()
-            return result
+        # Maestro معطل بالكامل — مش بنعمل init
+        orchestrator = None
+        result.insert_errors.append("MaestroOrchestrator DISABLED — V40.2 is the only engine")
+        print(f"[{log_prefix}] ⚠️ MaestroOrchestrator DISABLED — V40.2 is the only engine")
+        result.duration_seconds = (datetime.now() - start_time).total_seconds()
+        return result
 
     # ── 2) Open predictions.db connection (owned by this function) ──
     # PHASE 5 (v3.54.0): wrap with set_trace_callback to count queries.

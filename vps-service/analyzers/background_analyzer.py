@@ -818,27 +818,18 @@ class BackgroundAnalyzer:
             'errors': 0,
             'last_error': None
         }
-        
-        # Initialize Maestro Orchestrator (Human) — الأولوية الأولى
-        if MAESTRO_ORCHESTRATOR_AVAILABLE:
-            try:
-                self.orchestrator = MaestroOrchestrator(self.db_path)
-                self.uses_human = True
-                print("[BackgroundAnalyzer] MaestroOrchestrator (Human) initialized ✅")
-            except Exception as e:
-                print(f"[BackgroundAnalyzer] Failed to init MaestroOrchestrator: {e}")
-        
-        # Fallback: Unified Maestro (بدون Human data)
-        if not self.orchestrator and UNIFIED_MAESTRO_AVAILABLE:
-            try:
-                self.unified_maestro = UnifiedMaestroEngine(self.db_path)
-                print("[BackgroundAnalyzer] Unified Maestro initialized (fallback - بدون Human)")
-            except Exception as e:
-                print(f"[BackgroundAnalyzer] Failed to init UnifiedMaestro: {e}")
-        
+
+        # KILL-MAESTRO (2026-08-31): V40.2 هو العقل الوحيد
+        # Maestro معطل بالكامل — مش بنـ init ولا بنـ analyze
+        # stored_analyses بتيجي من V40.2 predictions مش من Maestro
+        self.orchestrator = None
+        self.unified_maestro = None
+        self.uses_human = False
+        print("[BackgroundAnalyzer] Maestro DISABLED — V40.2 is the only engine ✅")
+
         # Initialize tables
         init_tables()
-    
+
     def start(self):
         """Start the background analyzer."""
         if self.running:
@@ -1385,8 +1376,16 @@ class BackgroundAnalyzer:
                             if _cl7_status != 'neutral':
                                 _cl7_opts['sector_status'] = _cl7_status
                                 _cl7_opts['sector_role'] = _cl7_role
-                result = self.orchestrator.analyze(ticker, stock_data, history, _cl7_opts)
-                
+                # KILL-MAESTRO: مش بنستدعي Maestro.analyze() — V40.2 هو العقل الوحيد
+                # background_analyzer دلوقتي بيقفل stored_analyses من V40.2 predictions
+                # مش من Maestro
+                return None  # Maestro disabled — V40.2 is the only engine
+
+                # الكود ده مش هيشتغل (Maestro = None) بس متروك للـ audit
+                result = None
+                if self.orchestrator:
+                    result = self.orchestrator.analyze(ticker, stock_data, history, _cl7_opts)
+
                 if not result:
                     return None
                 

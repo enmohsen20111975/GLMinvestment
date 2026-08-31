@@ -848,7 +848,7 @@ def quick_scan():
         stocks = [dict(row) for row in cursor.fetchall()]
         
         results = []
-        orchestrator = MaestroOrchestrator(DATABASE_PATH)
+        orchestrator = None  # KILL-MAESTRO: MaestroOrchestrator DISABLED — V40.2 is the only engine
         
         for stock in stocks:
             ticker = stock['ticker']
@@ -866,7 +866,8 @@ def quick_scan():
                 continue
             
             try:
-                result = orchestrator.analyze(ticker, stock, history, {})
+                # KILL-MAESTRO: orchestrator = None — skip analyze
+                result = None  # Maestro disabled — V40.2 is the only engine
                 
                 if result.recommendation in ['buy', 'strong_buy']:
                     results.append({
@@ -957,7 +958,7 @@ def get_maestro_results():
         stocks = [dict(row) for row in cursor.fetchall()]
         
         results = []
-        orchestrator = MaestroOrchestrator(DATABASE_PATH)
+        orchestrator = None  # KILL-MAESTRO: MaestroOrchestrator DISABLED — V40.2 is the only engine
         
         for stock in stocks:
             ticker = stock['ticker']
@@ -975,7 +976,8 @@ def get_maestro_results():
                 continue
             
             try:
-                result = orchestrator.analyze(ticker, stock, history, {})
+                # KILL-MAESTRO: orchestrator = None — skip analyze
+                result = None  # Maestro disabled — V40.2 is the only engine
                 
                 # Extract phases with safe defaults
                 phases = result.phases if result.phases else {}

@@ -181,7 +181,8 @@ class DayTradingScanner:
     
     def __init__(self, pipeline_name: str = DEFAULT_PIPELINE):
         self.pipeline_name = pipeline_name
-        self.orchestrator = get_orchestrator()
+        # KILL-MAESTRO: Maestro معطل — V40.2 هو العقل الوحيد
+        self.orchestrator = None  # get_orchestrator() — DISABLED
         self.last_scan_time = None
         self.cached_results = None
     
@@ -224,6 +225,9 @@ class DayTradingScanner:
                 continue
             
             try:
+                # KILL-MAESTRO: orchestrator = None — skip
+                if not self.orchestrator:
+                    continue
                 result = self.orchestrator.analyze(ticker, pipeline, stock)
                 
                 if result.get('score', 0) >= threshold:

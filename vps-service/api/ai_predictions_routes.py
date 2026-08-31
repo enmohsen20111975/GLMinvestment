@@ -585,18 +585,22 @@ def generate_predictions_internal(
         # جمع البيانات من كل الأسواق المطلوبة
         for current_market in markets:
             if use_cached:
+                # KILL-MAESTRO: اقرأ من predictions (V40.2) بدل stored_analyses (Maestro)
+                # V40.2 هو العقل الوحيد — predictions.db.predictions هو المصدر
                 try:
                     if current_market == 'ALL':
                         cached = query_db(PREDICTIONS_DB, """
-                            SELECT * FROM stored_analyses 
-                            WHERE maestro_score >= ?
-                            ORDER BY maestro_score DESC
+                            SELECT * FROM predictions
+                            WHERE outcome_date IS NULL
+                              AND master_score >= ?
+                            ORDER BY master_score DESC
                         """, (min_score,))
                     else:
                         cached = query_db(PREDICTIONS_DB, """
-                            SELECT * FROM stored_analyses 
-                            WHERE market = ? AND maestro_score >= ?
-                            ORDER BY maestro_score DESC
+                            SELECT * FROM predictions
+                            WHERE market = ? AND outcome_date IS NULL
+                              AND master_score >= ?
+                            ORDER BY master_score DESC
                         """, (current_market, min_score))
                     
                     print(f"[AI Generate Internal] Found {len(cached)} records in stored_analyses for {current_market} with score >= {min_score}")
