@@ -1156,6 +1156,34 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 'fundamental_score': _fund_score if _fund_avail else 50.0,
             })
 
+            # ── AI NEWS AGENT (المرحلة 3 — 2026-08-31): الإثبات السابع ──
+            # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (Ollama + DuckDuckGo)
+            # لو الأخبار سلبية → تقليل الثقة
+            # لو الأخبار إيجابية → boost الثقة
+            # safe-by-design: لو الـ Agent فشل → نتجاهل ونكمّل
+            try:
+                from ai.news_agent import NewsAgent
+                if not hasattr(engine, '_news_agent'):
+                    engine._news_agent = NewsAgent()
+                if engine._news_agent.is_ready() or DDGS_AVAILABLE:
+                    _news_result = engine._news_agent.analyze_stock_news(
+                        ticker, max_articles=2
+                    )
+                    _news_score = _news_result.get('score', 50)
+                    _news_sentiment = _news_result.get('sentiment', 'neutral')
+                    # خزّن في آخر signal
+                    if signals_by_date[scan_date]:
+                        signals_by_date[scan_date][-1]['news_sentiment'] = _news_sentiment
+                        signals_by_date[scan_date][-1]['news_score'] = _news_score
+                        signals_by_date[scan_date][-1]['news_summary'] = _news_result.get('summary', '')
+                    # لو الأخبار سلبية جداً (score < 30) → ارفض
+                    if _news_score < 30 and _news_result.get('confidence', 0) > 0.5:
+                        print(f"[NEWS-REJECT] {ticker} on {scan_date}: أخبار سلبية "
+                              f"(score={_news_score}/100) → رفض", flush=True)
+                        signals_by_date[scan_date].pop()  # شيل آخر signal
+            except Exception as _news_err:
+                pass  # safe-by-design: لو الـ Agent فشل → نتجاهل
+
         del dates, opens, highs, lows, closes, volumes, atrs, date_to_idx
         if processed % 100 == 0:
             gc.collect()
