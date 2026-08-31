@@ -818,7 +818,7 @@ def simulate_trade(
     4. return_pct محسوبة كمتوسط مرجح (partial portion + remaining portion)
     """
     if max_holding is None:
-        max_holding = int(get_setting('max_holding_days', default=30))
+        max_holding = int(get_setting('max_holding_days', default=7))
     if not future_closes:
         trade.exit_reason = 'no_data'
         return trade
@@ -911,6 +911,14 @@ def simulate_trade(
             _finalize(price, 'expired', i - 1 if i > 0 else 0, i, price > entry)
             break
 
+        # RECOMMENDATION 7: خروج سريع — لو هبط 5% في أول 3 أيام → اخرج فوراً
+        # مش هنستنى الوقف الكامل (-8% لـ -10%) لو السهم بيهبط بسرعة
+        if i < 3 and entry > 0:
+            fast_return = ((price - entry) / entry) * 100
+            if fast_return <= -5.0:
+                _finalize(price, 'fast_stop', i, i + 1, False)
+                break
+
         # Update highest price
         highest_price = max(highest_price, price)
         atr_i = future_atrs[i] if (future_atrs and i < len(future_atrs)) else 0.0
@@ -1002,7 +1010,7 @@ class V38BacktestEngine:
         rr1: float = 2.0,
         rr2: float = 3.0,
         min_confidence: int = 60,
-        max_holding_days: int = 30,
+        max_holding_days: int = 7,  # RECOMMENDATION 2: كان 30 → 7
         use_v393: bool = False,
         market_code: Optional[str] = None,
     ):

@@ -782,6 +782,32 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             _is_accum_signal = result.get('proofs', {}).get('accumulation_hunter', False)
             _is_recovery_signal = result.get('proofs', {}).get('recovery_hunter', False)
             _is_soft_surge_signal = result.get('proofs', {}).get('soft_surge', False)  # EGX-STRATEGY-FINAL
+
+            # ── PEAK ENTRY FILTER — منع الدخول في القمة ──────────────────
+            # لو السعر قرب 52w high (≥95%) + RSI > 65 → ارفض (تشبع شرائي)
+            # استثناء: surge/accum/recovery hunters (هم بيدخلوا في بداية الحركة)
+            if not _is_surge_signal and not _is_accum_signal and not _is_recovery_signal and not _is_soft_surge_signal:
+                try:
+                    _highs_60 = highs[max(0, day_idx - 60):day_idx + 1]
+                    _high_60d = max(_highs_60) if _highs_60 else entry
+                    _near_peak = ((entry / _high_60d) * 100) if _high_60d > 0 else 0
+                    # حساب RSI سريع
+                    _rsi_quick = 50.0
+                    if len(closes[:day_idx+1]) >= 15:
+                        _gains, _losses = 0, 0
+                        for _ri in range(1, 15):
+                            _diff = closes[_ri] - closes[_ri-1] if _ri < len(closes[:day_idx+1]) else 0
+                            if _diff >= 0: _gains += _diff
+                            else: _losses -= _diff
+                        _avg_g = _gains / 14
+                        _avg_l = _losses / 14
+                        _rsi_quick = 100 - (100 / (1 + (_avg_g / _avg_l if _avg_l > 0 else 999))) if _avg_l > 0 else 100
+                    # رفض لو قرب القمة + RSI مرتفع
+                    if _near_peak >= 95 and _rsi_quick > 65:
+                        continue
+                except Exception:
+                    pass
+
             if not _is_surge_signal and not _is_accum_signal and not _is_recovery_signal and not _is_soft_surge_signal and day_idx >= 5:
                 try:
                     _recent_high = max(highs[max(0, day_idx - 5):day_idx + 1])
@@ -803,7 +829,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 target_price=target, stop_loss=stop, score=result['score'],
                 signal=signal, proofs=result['proofs'],
             )
-            trade = simulate_trade(trade, future_closes, future_dates, 30, future_atrs)
+            trade = simulate_trade(trade, future_closes, future_dates, 7, future_atrs)
 
             evidence = count_evidence(result['proofs'])
             r_mult = compute_r_multiple(entry, target, stop)
