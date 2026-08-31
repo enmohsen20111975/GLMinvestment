@@ -12745,3 +12745,72 @@ Stage Summary:
 - ✅ 4 أيام مصرية مرفوضة (snapshot/حجم ثابت) — معروفة الآن
 - ❌ السوق السعودي 0% بيانات صالحة — السكرابر مكسور
 - 🔜 المرحلة 2: ربط V4 مع Maestro + Maker Override على الأسهم الانفجارية
+
+---
+Task ID: STAGE2-V4-MAESTRO-INTEGRATION-2026-08-31
+Agent: Z.ai Code (main) — Senior Quant
+Task: المرحلة 2 — ربط V4 مع Maestro + Backtest قبل/بعد
+
+Work Log:
+- **السياق**: المالك اعتمد V4 (74.7% recall) وطلب ربطه مع Maestro + Maker Override،
+  مع فلاتر إجبارية (R/R, Sector Cap, Regime, Geometry Guard, Position Sizing)،
+  وممنوع دخول بحجم كامل على إشارة داخل اليوم.
+
+### Phase 1: بناء V4 module
+- `vps-service/analyzers/v4_predictive_detector.py` (347 سطر)
+- 3 دوال: `detect_v4_predictive`, `is_hot_candidate`, `detect_v4_from_ohlcv`
+- `normalize_intraday_bars`: يحوّل volume التراكمي لـ per-bar volume (معالجة resets)
+- اختبار: V4 على NIPH @ 2026-08-16 → ما اشتغلش (الانفجار عند الفتح)
+
+### Phase 2: Backtest Engine
+- `scripts/stage2_v4_maestro_integration.py` (743 سطر)
+- 3 سيناريوهات: Baseline / Integrated-A (score≥40) / Integrated-B (score≥55)
+- فلاتر إجبارية: R/R≥1.5, Entry Gate (SMA50+liquidity+RSI<78), Geometry Guard
+- V4: حجم مخفّض (0.5-0.7%)، capped 12%، لا يتجاوز Maestro veto
+- Sector Cap: 2 picks/سهم/يوم، 5 Maestro + 3 V4 (تخصيص منفصل)
+
+### Phase 3: النتائج
+
+| المقياس | BASELINE | INT-A (≥40) | INT-B (≥55) |
+|---|---|---|---|
+| عدد الصفقات | 35 | 40 | 37 |
+| Win Rate | 80.0% | 72.5% | 78.4% |
+| Profit Factor | 9.47 | 8.77 | 9.47 |
+| Max Drawdown | 0.88% | 0.88% | 0.88% |
+| Total Return | +25.61% | +25.35% | +25.62% |
+| الصواريخ المُصطادة | 4/79 | 4/79 | 4/79 |
+
+- **INT-A**: أضاف 5 صفقات V4، 0 انفجارية، WR=20% → ضرّ الأداء
+- **INT-B**: أضاف 2 صفقات V4، 0 انفجارية، WR=50% → تعادل بسيط
+
+### Phase 4: تحليل السبب الجذري
+1. **الانفجارات عند الفتح**: NIPH قفز 263→410 في 1.5 دقيقة. V4 محتاج 20 شريطة.
+2. **V4 precision = 6.4%**: 110 إشارة، بس 7 انفجارية. 103 إشارة كاذبة.
+3. **Entry Gate بيمنع الدخول بعد الانفجار**: RSI > 78 → رفض (تصرف صح).
+4. **الـ 5 صفقات V4 اللي دخلت كلها مش انفجارية**: DSCW, CERA, EBSC, PHDC, FWRY.
+5. **Maestro daily أحسن من V4 intraday**: Baseline بيصطاد 4 بـ 80% WR.
+
+### Phase 5: أمثلة أسهم انفجارية (كلها فائتة)
+- ICID +82.8%: Baseline ✗ / V4 ✗ (ما اشتغلش)
+- GTWL +66.7%: Baseline ✗ / V4 ✗
+- NIPH +55.9%: Baseline ✗ / V4 ✗
+- SCEM +41.6%: Baseline ✗ / V4 ✗
+- ARCC +42.8%: Baseline ✗ / V4 ✗
+
+### Phase 6: الحكم النهائي
+❌ **ارجع التعديل** — V4 في شكله الحالي بيضرّ مش ينفع.
+- ΔWR: -7.5% (INT-A) / -1.6% (INT-B)
+- ΔPF: -0.70 / +0.00
+- ΔDD: +0.00% (مستقر)
+- Δصواريخ: +0 (مفيش تحسن في الاكتشاف)
+
+### الطريق لقدام (3 خيارات)
+1. V4 + فلتر زخم يومي (ROC20 ≥ +5%) — يفلتر الـ 103 إشارة كاذبة
+2. V4 كـ confirmation مش trigger — بيأكد صفقات Maestro بس
+3. V4 daily مش intraday — يكتشف التجميع قبل الانفجار
+
+Stage Summary:
+- ❌ V4 integration فشل: -7.5% WR، +0 صواريخ، 5 صفقات كلها مش انفجارية
+- ✅ السبب الجذري معروف: precision 6.4% + الانفجارات عند الفتح
+- ✅ Maestro Baseline قوي: 80% WR، 9.47 PF، 0.88% DD
+- 🔜 نرجع للمختبر: نطوّر V4 (daily + فلتر زخم) قبل أي ربط بالإنتاج
