@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     updateStatus({
       running: true,
       progress: { current: 0, total: 0, symbol: '' },
-      logs: ['🚀 بدء سحب البيانات التاريخية...'],
+      logs: [' بدء سحب البيانات التاريخية...'],
       results: []
     })
     

@@ -22,13 +22,13 @@ export async function POST(request: NextRequest) {
     
     if (market && market !== 'all') {
       // حذف حسب السوق
-      const result = await dbAny.aiPrediction?.deleteMany({
+      const result = await dbAny.prediction?.deleteMany({
         where: { market },
       });
       deletedCount = result?.count || 0;
     } else {
       // حذف الكل
-      const result = await dbAny.aiPrediction?.deleteMany({});
+      const result = await dbAny.prediction?.deleteMany({});
       deletedCount = result?.count || 0;
     }
     

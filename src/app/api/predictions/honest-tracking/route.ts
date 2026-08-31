@@ -27,7 +27,7 @@ export async function GET() {
         SUM(CASE WHEN status = 'TARGET_HIT' THEN 1 ELSE 0 END) as wins,
         SUM(CASE WHEN status = 'STOPPED' THEN 1 ELSE 0 END) as losses,
         SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending
-      FROM aiPrediction
+      FROM predictions
     `).get() as any;
 
     const lessonsCount = db.prepare('SELECT COUNT(*) as count FROM prediction_lessons').get() as any;

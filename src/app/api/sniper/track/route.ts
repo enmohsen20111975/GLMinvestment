@@ -40,23 +40,22 @@ export async function POST(request: NextRequest) {
 
     const predDb = openDb('predictions.db');
 
-    // Insert a new prediction into aiPrediction with basic tracking data
+    // Insert a new prediction into predictions with basic tracking data
     const now = new Date().toISOString();
     const today = now.split('T')[0];
-    const id = `track_${bodyTicker}_${Date.now()}`;
 
     const result = predDb.prepare(`
-      INSERT INTO aiPrediction (
-        id, stock_symbol, signal_type, confidence, maestro_score,
+      INSERT INTO predictions (
+        ticker, signal, signal_type, confidence, master_score,
         entry_price, target_price, stop_loss, risk_reward,
-        market, status, prediction_date, created_at, data_source
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        market, status, prediction_date, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      id,
       bodyTicker.toUpperCase(),
-      'HOLD',        // Default signal — will be updated by the Python backend
+      'HOLD',        // signal — will be updated by the Python backend
+      'HOLD',        // signal_type — will be updated by the Python backend
       50,            // Default confidence
-      50,            // Default maestro score
+      50,            // Default master score
       0,             // entry_price — to be filled
       0,             // target_price — to be filled
       0,             // stop_loss — to be filled
@@ -64,15 +63,16 @@ export async function POST(request: NextRequest) {
       bodyMarket,
       'PENDING',
       today,
-      now,
-      'nextjs_track'
+      now
     );
+
+    const newId = result.lastInsertRowid;
 
     predDb.close();
 
     return NextResponse.json({
       success: true,
-      prediction_id: id,
+      prediction_id: newId,
       ticker: bodyTicker.toUpperCase(),
       market: bodyMarket,
       message: 'Prediction tracking started — Python backend will fill in analysis data',

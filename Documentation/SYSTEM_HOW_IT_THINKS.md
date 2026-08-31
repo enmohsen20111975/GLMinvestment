@@ -2028,9 +2028,9 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 - **k = 1.5** (balanced ATR multiplier — ثابت لكل personas).
 
 #### المحور 4: سلسلة الاكتشاف (Discovery Fallback Chain)
-**الملف:** `analyzers/maestro_orchestrator.py`
+**الملف:** `v40_2_daily_generator.py` (Maestro معطّل — KILL-MAESTRO 2026-08-31)
 
-لو المحرك الأساسي ما طلعش BUY/STRONG_BUY → افحص بالترتيب:
+لو المحرك الأساسي (V40.2) ما طلعش BUY/STRONG_BUY → افحص بالترتيب:
 1. `detect_volume_surge_rocket` (Layer 1: Volume Surge Hunter).
 2. `detect_accumulation_phase` (Layer 2: Pre-explosion Accumulation).
 3. `detect_recovery_from_base` (Layer 3: Recovery from Long Base).
@@ -2123,7 +2123,7 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 
 1. **EGX Gate**: هل السهم مصري صحيح موجود في TradingView؟ لو لا → skip.
 2. **V38 Engine**: حلل السهم (6 إثباتات + score).
-3. **Discovery Fallback**: لو مفيش BUY signal → جرّب Volume Surge → Accumulation → Recovery.
+3. **Discovery Fallback** (V40.2): لو مفيش BUY signal → جرّب Volume Surge → Accumulation → Recovery.
 4. **Evidence Gate**: هل evidence ≥ 3؟ لو لا → skip.
 5. **Entry Gate (8 شروط)**: evidence + R:R + SMA50 + RS + Deep Correction + Don't Chase + سيولة + سياق.
 6. **Geometry Guard**: target > entry×1.05 + stop < entry×0.95 + R/R ≥ 1.8.

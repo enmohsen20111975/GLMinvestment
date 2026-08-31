@@ -282,7 +282,7 @@ export async function GET(request: NextRequest) {
           severity: 'success',
           ticker: stock.ticker,
           name: stock.name,
-          message: `🚀 ${stock.ticker} كسر المقاومة ${validResistance.toFixed(2)} بصعود ${breakoutPercent.toFixed(1)}%`,
+          message: ` ${stock.ticker} كسر المقاومة ${validResistance.toFixed(2)} بصعود ${breakoutPercent.toFixed(1)}%`,
           details: {
             currentPrice,
             targetPrice: validResistance,

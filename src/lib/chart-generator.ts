@@ -303,7 +303,7 @@ export function generateAnalysisCard(options: {
   if (topStocks.length > 0) {
     const stocksY = statsY + 90;
     svg += `<text x="${width - 30}" y="${stocksY}" font-family="Arial, sans-serif" font-size="14" font-weight="bold" 
-                 fill="#10b981" text-anchor="end">🚀 أفضل الفرص</text>`;
+                 fill="#10b981" text-anchor="end"> أفضل الفرص</text>`;
     
     topStocks.forEach((stock, i) => {
       const y = stocksY + 30 + i * 45;

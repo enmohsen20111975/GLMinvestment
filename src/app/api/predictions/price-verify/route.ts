@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
 
     // Build query for PENDING predictions
     let query = `
-      SELECT id, stock_symbol, market, signal_type, entry_price, target_price, stop_loss,
-             prediction_date, days_to_target
-      FROM aiPrediction
+      SELECT id, ticker, market, signal, entry_price, target_price, stop_loss,
+             prediction_date
+      FROM predictions
       WHERE status IN ('PENDING', 'STALE')
     `;
     const params: any[] = [];
@@ -71,47 +71,46 @@ export async function POST(request: NextRequest) {
 
     // Statement for closing a prediction (TARGET_HIT or STOPPED)
     const updateClosedStmt = db.prepare(`
-      UPDATE aiPrediction
-      SET status = ?, final_price = ?, profit_loss_percent = ?, actual_return = ?,
-          hit_target = ?, hit_stop_loss = ?, days_to_target = ?,
-          target_hit_date = ?, stop_hit_date = ?, evaluation_date = ?,
-          max_profit_percent = ?, max_loss_percent = ?, notes = ?, updated_at = datetime('now')
+      UPDATE predictions
+      SET status = ?, exit_price = ?, actual_return = ?,
+          hit_target = ?, hit_stop = ?, holding_days = ?,
+          outcome_date = ?, notes = ?, updated_at = datetime('now')
       WHERE id = ?
     `);
 
     // Statement for updating a still-PENDING prediction (price tracking)
     const updatePendingStmt = db.prepare(`
-      UPDATE aiPrediction
-      SET max_profit_percent = ?, max_loss_percent = ?, notes = ?,
+      UPDATE predictions
+      SET notes = ?,
           updated_at = datetime('now')
       WHERE id = ?
     `);
 
     // Statement for marking a prediction as STALE
     const updateStaleStmt = db.prepare(`
-      UPDATE aiPrediction
-      SET status = 'STALE', max_profit_percent = ?, max_loss_percent = ?,
-          notes = ?, updated_at = datetime('now')
+      UPDATE predictions
+      SET status = 'STALE', notes = ?,
+          updated_at = datetime('now')
       WHERE id = ?
     `);
 
     // Statement for recovering a STALE prediction back to PENDING
     const recoverStaleStmt = db.prepare(`
-      UPDATE aiPrediction
-      SET status = 'PENDING', max_profit_percent = ?, max_loss_percent = ?,
-          notes = ?, updated_at = datetime('now')
+      UPDATE predictions
+      SET status = 'PENDING', notes = ?,
+          updated_at = datetime('now')
       WHERE id = ?
     `);
 
     for (const pred of pending) {
       checked++;
-      const isBuy = pred.signal_type === 'BUY';
+      const isBuy = pred.signal === 'BUY';
       const wasStale = pred.status === 'STALE';
 
       // Get prices from prediction_date to now
       const predDate = pred.prediction_date?.split(' ')[0] || pred.prediction_date;
       const daysSince = Math.ceil((Date.now() - new Date(predDate).getTime()) / 86400000);
-      const prices = getPriceHistory(pred.stock_symbol, pred.market, Math.min(daysSince + 5, 365));
+      const prices = getPriceHistory(pred.ticker, pred.market, Math.min(daysSince + 5, 365));
 
       // Filter to only prices AFTER prediction date
       const futurePrices = prices.filter(p => p.date > predDate);
@@ -121,13 +120,12 @@ export async function POST(request: NextRequest) {
         if (daysSince >= 60 && !wasStale) {
           stale++;
           updateStaleStmt.run(
-            0, 0,
             `STALE: لا بيانات سعر منذ ${daysSince} يوم — يحتاج مراجعة`,
             pred.id
           );
           details.push({
             id: pred.id,
-            ticker: pred.stock_symbol,
+            ticker: pred.ticker,
             market: pred.market,
             result: 'STALE',
             days_since: daysSince,
@@ -137,7 +135,7 @@ export async function POST(request: NextRequest) {
           stillPending++;
           details.push({
             id: pred.id,
-            ticker: pred.stock_symbol,
+            ticker: pred.ticker,
             market: pred.market,
             result: wasStale ? 'still_stale' : 'no_data',
             days_since: daysSince,
@@ -222,24 +220,19 @@ export async function POST(request: NextRequest) {
           status,
           finalPriceUsed,
           pnl !== null ? Math.round(pnl * 100) / 100 : null,
-          pnl !== null ? Math.round(pnl * 100) / 100 : null,
           status === 'TARGET_HIT' ? 1 : 0,
           status === 'STOPPED' ? 1 : 0,
           daysToTarget,
-          status === 'TARGET_HIT' ? outcomeDate : null,
-          status === 'STOPPED' ? outcomeDate : null,
           outcomeDate,
-          Math.round(maxProfit * 100) / 100,
-          Math.round(maxLoss * 100) / 100,
-          `${status} بعد ${daysToTarget} يوم — السعر هو الحكم`,
+          `${status} بعد ${daysToTarget} يوم — max P/L: ${Math.round(maxProfit * 100) / 100}%/${Math.round(maxLoss * 100) / 100}% — السعر هو الحكم`,
           pred.id
         );
 
         details.push({
           id: pred.id,
-          ticker: pred.stock_symbol,
+          ticker: pred.ticker,
           market: pred.market,
-          signal: pred.signal_type,
+          signal: pred.signal,
           result: status,
           entry: pred.entry_price,
           final: finalPriceUsed,
@@ -263,14 +256,12 @@ export async function POST(request: NextRequest) {
         // Mark as STALE — needs attention but NOT closed
         stale++;
         updateStaleStmt.run(
-          Math.round(maxProfit * 100) / 100,
-          Math.round(maxLoss * 100) / 100,
-          `STALE: آخر بيانات سعر منذ ${dataAgeDays} يوم — مفتوح ${daysSince} يوم — السعر الحالي: ${latestPrice}`,
+          `STALE: آخر بيانات سعر منذ ${dataAgeDays} يوم — مفتوح ${daysSince} يوم — السعر الحالي: ${latestPrice} — max P/L: ${Math.round(maxProfit * 100) / 100}%/${Math.round(maxLoss * 100) / 100}%`,
           pred.id
         );
         details.push({
           id: pred.id,
-          ticker: pred.stock_symbol,
+          ticker: pred.ticker,
           market: pred.market,
           result: 'STALE',
           current_price: latestPrice,
@@ -283,14 +274,12 @@ export async function POST(request: NextRequest) {
         // STALE prediction got new data — recover to PENDING
         recovered++;
         recoverStaleStmt.run(
-          Math.round(maxProfit * 100) / 100,
-          Math.round(maxLoss * 100) / 100,
-          `تم التعافي من STALE — مفتوح ${daysSince} يوم — السعر الحالي: ${latestPrice}`,
+          `تم التعافي من STALE — مفتوح ${daysSince} يوم — السعر الحالي: ${latestPrice} — max P/L: ${Math.round(maxProfit * 100) / 100}%/${Math.round(maxLoss * 100) / 100}%`,
           pred.id
         );
         details.push({
           id: pred.id,
-          ticker: pred.stock_symbol,
+          ticker: pred.ticker,
           market: pred.market,
           result: 'RECOVERED',
           current_price: latestPrice,
@@ -302,14 +291,12 @@ export async function POST(request: NextRequest) {
         // Still actively PENDING — update price tracking data
         stillPending++;
         updatePendingStmt.run(
-          Math.round(maxProfit * 100) / 100,
-          Math.round(maxLoss * 100) / 100,
-          `PENDING: مفتوح ${daysSince} يوم — السعر الحالي: ${latestPrice}`,
+          `PENDING: مفتوح ${daysSince} يوم — السعر الحالي: ${latestPrice} — max P/L: ${Math.round(maxProfit * 100) / 100}%/${Math.round(maxLoss * 100) / 100}%`,
           pred.id
         );
         details.push({
           id: pred.id,
-          ticker: pred.stock_symbol,
+          ticker: pred.ticker,
           market: pred.market,
           result: 'still_pending',
           current_price: latestPrice,
@@ -348,11 +335,11 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   const db = openDb();
   try {
-    const pending = db.prepare("SELECT COUNT(*) as c FROM aiPrediction WHERE status = 'PENDING'").get() as any;
-    const stale = db.prepare("SELECT COUNT(*) as c FROM aiPrediction WHERE status = 'STALE'").get() as any;
-    const targetHit = db.prepare("SELECT COUNT(*) as c FROM aiPrediction WHERE status = 'TARGET_HIT'").get() as any;
-    const stopped = db.prepare("SELECT COUNT(*) as c FROM aiPrediction WHERE status = 'STOPPED'").get() as any;
-    const total = db.prepare("SELECT COUNT(*) as c FROM aiPrediction").get() as any;
+    const pending = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'PENDING'").get() as any;
+    const stale = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'STALE'").get() as any;
+    const targetHit = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'TARGET_HIT'").get() as any;
+    const stopped = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'STOPPED'").get() as any;
+    const total = db.prepare("SELECT COUNT(*) as c FROM predictions").get() as any;
 
     return NextResponse.json({
       success: true,

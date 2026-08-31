@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const authError = await requireAdminAsync(request);
   if (authError) return authError;
   try {
-    const total = await predictionsDb.aiPrediction.count();
+    const total = await predictionsDb.prediction.count();
 
     if (total === 0) {
       return NextResponse.json({
@@ -44,10 +44,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get predictions grouped by date
-    const predictions = await predictionsDb.aiPrediction.findMany({
+    const predictions = await predictionsDb.prediction.findMany({
       select: {
         prediction_date: true,
-        stock_symbol: true
+        ticker: true
       }
     });
 
@@ -104,10 +104,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
 
-    // Handle clearAll option for aiPrediction table
+    // Handle clearAll option for predictions table
     if (body.clearAll) {
-      const before = await predictionsDb.aiPrediction.count();
-      await predictionsDb.aiPrediction.deleteMany({});
+      const before = await predictionsDb.prediction.count();
+      await predictionsDb.prediction.deleteMany({});
       return NextResponse.json({
         success: true,
         before,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     const maxPerDay = body.max_per_day || MAX_PREDICTIONS_PER_DAY;
 
     // Get current predictions
-    const before = await predictionsDb.aiPrediction.count();
+    const before = await predictionsDb.prediction.count();
 
     if (before === 0) {
       return NextResponse.json({
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Handle dry run
     if (body.dry_run !== false) {
-      const predictions = await predictionsDb.aiPrediction.findMany({
+      const predictions = await predictionsDb.prediction.findMany({
         select: { prediction_date: true }
       });
 
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     const steps: any[] = [];
 
     // 1. Delete weekend predictions
-    const allPredictions = await predictionsDb.aiPrediction.findMany({
+    const allPredictions = await predictionsDb.prediction.findMany({
       select: { id: true, prediction_date: true }
     });
 
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       .map(p => p.id);
 
     if (weekendIds.length > 0) {
-      await predictionsDb.aiPrediction.deleteMany({
+      await predictionsDb.prediction.deleteMany({
         where: { id: { in: weekendIds } }
       });
       totalDeleted += weekendIds.length;
@@ -190,12 +190,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Limit predictions per day
-    const remainingPredictions = await predictionsDb.aiPrediction.findMany({
+    const remainingPredictions = await predictionsDb.prediction.findMany({
       select: { id: true, prediction_date: true, confidence: true },
       orderBy: { confidence: 'desc' }
     });
 
-    const dateGroups: Record<string, string[]> = {};
+    const dateGroups: Record<string, number[]> = {};
     for (const p of remainingPredictions) {
       const date = p.prediction_date?.split('T')[0] || '';
       if (!dateGroups[date]) dateGroups[date] = [];
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
     for (const [date, ids] of Object.entries(dateGroups)) {
       if (ids.length > maxPerDay) {
         const toDelete = ids.slice(maxPerDay);
-        await predictionsDb.aiPrediction.deleteMany({
+        await predictionsDb.prediction.deleteMany({
           where: { id: { in: toDelete } }
         });
         deletedOverLimit += toDelete.length;
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     totalDeleted += deletedOverLimit;
     steps.push({ step: 2, action: `تقليل لـ ${maxPerDay} توقعات لكل يوم`, deleted: deletedOverLimit });
 
-    const after = await predictionsDb.aiPrediction.count();
+    const after = await predictionsDb.prediction.count();
 
     return NextResponse.json({
       success: true,

@@ -565,7 +565,7 @@ export default function HonestPredictionsPage() {
           </Button>
           <Button onClick={handleFullTest} disabled={testing} variant="default" size="sm">
             {testing ? <RefreshCw className="h-4 w-4 animate-spin ml-2" /> : <PlayCircle className="h-4 w-4 ml-2" />}
-            {testing ? 'جارٍ الاختبار الكامل...' : '🚀 اختبار كامل'}
+            {testing ? 'جارٍ الاختبار الكامل...' : ' اختبار كامل'}
           </Button>
         </div>
       </div>

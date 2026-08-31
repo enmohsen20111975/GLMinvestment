@@ -237,7 +237,7 @@ async function runScraper(scraperName: string): Promise<{ success: boolean; mess
   
   // Add log entry
   const timestamp = new Date().toLocaleTimeString('en-GB');
-  fallbackState.logs.push(`[${timestamp}] 🚀 Running ${scraperName} scraper...`);
+  fallbackState.logs.push(`[${timestamp}]  Running ${scraperName} scraper...`);
   if (fallbackState.logs.length > 100) fallbackState.logs = fallbackState.logs.slice(-100);
   saveStatus();
   

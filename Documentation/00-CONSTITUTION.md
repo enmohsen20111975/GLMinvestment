@@ -1033,18 +1033,18 @@ curl -s http://localhost:8010/health
 
 > **سبب الإضافة:** توجيه صريح من المالك (2026-08-30): "الباك تست بيتعمل عشان نحسن الحاضر والمستقبل. اربط كل حاجة الآن وأتأكد إنها مظبوطة 100%. ده أهم جزء وحط ده عندك في الدستور."
 
-- **كل تحسين بيتعمل في الباك تست لازم يتربط في الإنتاج الحقيقي فوراً** — في `MaestroOrchestrator.analyze()` و/أو `daily_closer.py`.
-- **ممنوع** ترك تحسينات في `v40_2_daily_generator.py` (سكربت backtest) بدون ربطها في `MaestroOrchestrator.analyze()` (الإنتاج).
+- **كل تحسين بيتعمل في الباك تست لازم يتربط في الإنتاج الحقيقي فوراً** — في `v40_2_daily_generator.py` و/أو `daily_closer.py`.
+- **ممنوع** ترك تحسينات في `v40_2_daily_generator.py` بدون ربطها في الإنتاج (V40.2 هو المحرك الوحيد — القاعدة 35).
 - **الملفات اللي لازم تكون مربوطة في الإنتاج دائماً:**
-  1. `utils/entry_gate.py` — في `MaestroOrchestrator.analyze()` قبل `record_prediction`.
-  2. `utils/position_sizing.py` — في `MaestroOrchestrator.analyze()` لحساب حجم المركز.
+  1. `utils/entry_gate.py` — في `v40_2_daily_generator.py` قبل `record_prediction`.
+  2. `utils/position_sizing.py` — في `v40_2_daily_generator.py` لحساب حجم المركز.
   3. `utils/circuit_breaker.py` — في `daily_closer.py::run()` لوقف التداول بعد 3 خسائر.
-  4. `core/opportunity_quality.py::compute_dynamic_target` — في `MaestroOrchestrator.analyze()` لحساب الهدف الديناميكي.
-  5. `core/opportunity_quality.py::enforce_atr_based_stop` — في `MaestroOrchestrator.analyze()` (مع `lows` للـ swing low).
-  6. `core/opportunity_quality.py::classify_liquidity` — في `MaestroOrchestrator.analyze()` لتصنيف السيولة.
-  7. Sector filter — في `MaestroOrchestrator.analyze()` لحرارة القطاع.
-  8. BOS/ChoCH — في `MaestroOrchestrator.analyze()` لكشف بنية السوق.
-- **التحقق:** بعد كل تعديل، لازم نتأكد إن الـ `grep` بيرجّع نتائج إن الملف مربوط في `maestro_orchestrator.py` و/أو `daily_closer.py`.
+  4. `core/opportunity_quality.py::compute_dynamic_target` — في `v40_2_daily_generator.py` لحساب الهدف الديناميكي.
+  5. `core/opportunity_quality.py::enforce_atr_based_stop` — في `v40_2_daily_generator.py` (مع `lows` للـ swing low).
+  6. `core/opportunity_quality.py::classify_liquidity` — في `v40_2_daily_generator.py` لتصنيف السيولة.
+  7. Sector filter — في `v40_2_daily_generator.py` لحرارة القطاع.
+  8. BOS/ChoCH — في `v40_2_daily_generator.py` لكشف بنية السوق.
+- **التحقق:** بعد كل تعديل، لازم نتأكد إن الـ `grep` بيرجّع نتائج إن الملف مربوط في `v40_2_daily_generator.py` و/أو `daily_closer.py`.
 - **العقوبة:** أي تحسين يفضل في الباك تست بس بدون ربط في الإنتاج = مخالفة دستورية.
 
 ---
@@ -1103,14 +1103,15 @@ curl -s http://localhost:8010/health
 
 ### القاعدة 35 — محرك واحد للتوقعات (ENGINE-UNIFY — 2026-08-31)
 
-> **سبب الإضافة:** كان فيه محركين بيكتبوا في نفس جدول `predictions` = توقعات مكررة + متضاربة. تم التوحيد على `MaestroOrchestrator` كمصدر وحيد.
+> **سبب الإضافة:** كان فيه محركين بيكتبوا في نفس جدول `predictions` = توقعات مكررة + متضاربة. تم التوحيد على `V40.2` كمصدر وحيد (KILL-MAESTRO — 2026-08-31).
 
-- **MaestroOrchestrator** هو المحرك الوحيد المسموح له بكتابة توقعات في `predictions` table.
-- **V40.2** (`v40_2_daily_generator.py`) يعمل كـ **backtest runner فقط** — مفيش كتابة في DB.
-- **cron V40.2 معطّل** — Maestro بيتولد التوقعات عبر `MarketScheduler` (كل 15 دقيقة).
+- **V40.2** (`v40_2_daily_generator.py`) هو **المحرك الوحيد** المسموح له بكتابة توقعات في `predictions` table (production prediction writer).
+- **MaestroOrchestrator معطّل** (`signal_id=None`) — مش بيكتب أي توقعات في DB. لسه موجود في الكود للـ UI/queries فقط.
+- **Maestro cron معطّل** — Maestro بلا جدولة.
+- **V40.2 tracker مفعّل** (`PredictionTracker`) — بيكتب التوقعات في `predictions.db`.
 - **daily_closer** engine-agnostic — بيقفل أي row في `predictions` بـ `outcome_date IS NULL`.
-- **ممنوع** إعادة تفعيل cron V40.2 أو إنشاء محرك جديد بيكتب في `predictions`.
-- **engine_source tag**: كل توقع جديد في `notes` فيه `engine=maestro_unified`.
+- **ممنوع** إعادة تفعيل Maestro/Maestro cron أو إنشاء محرك جديد بيكتب في `predictions`.
+- **engine_source tag**: كل توقع جديد في `notes` فيه `engine=v40_2`.
 
 ---
 

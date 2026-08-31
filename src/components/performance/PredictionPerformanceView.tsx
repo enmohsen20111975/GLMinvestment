@@ -495,7 +495,7 @@ export function PredictionPerformanceView({ isAdmin = false }: { isAdmin?: boole
   const fetchTrackingData = useCallback(async () => {
     setTrackingLoading(true);
     try {
-      const res = await fetch('/api/python/predictions/tracking/history?days=365&limit=5000');
+      const res = await fetch('/api/python/predictions/tracking/history?days=365&limit=100');
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setTrackingPredictions(json.data as TrackingPrediction[]);

@@ -29,7 +29,7 @@ export async function POST() {
     const newStatus = {
       running: true,
       progress: { current: 0, total: 20 },
-      logs: ['🚀 بدء سحب بيانات الذهب والعملات...'],
+      logs: [' بدء سحب بيانات الذهب والعملات...'],
       results: null
     }
     saveStatus(newStatus)

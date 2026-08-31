@@ -78,7 +78,7 @@ export function formatPickForSharing(
       : '—';
 
   const lines: string[] = [];
-  lines.push(`🚀 توقعات الصياد — ${market}`);
+  lines.push(` توقعات الصياد — ${market}`);
   lines.push(SEP);
   lines.push(`📊 ${ticker}${name ? ` — ${name}` : ''}`);
   lines.push(`💰 السعر: ${fmt(pick.price)} | الدخول: ${entryDisplay}`);

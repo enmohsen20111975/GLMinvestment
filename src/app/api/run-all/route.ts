@@ -64,20 +64,20 @@ export async function POST() {
     updateStatus('metals_forex_status.json', {
       running: true,
       progress: { current: 0, total: 3 },
-      logs: ['🚀 بدء سحب الذهب والعملات...']
+      logs: [' بدء سحب الذهب والعملات...']
     })
     
     updateStatus('crypto_status.json', {
       running: true,
       progress: { current: 0, total: 60 },
-      logs: ['🚀 بدء سحب العملات الرقمية...']
+      logs: [' بدء سحب العملات الرقمية...']
     })
     
     updateStatus('scraper_status.json', {
       running: true,
       currentMarket: '',
       progress: {},
-      logs: ['🚀 بدء سحب الأسهم...']
+      logs: [' بدء سحب الأسهم...']
     })
     
     // Run all scripts in parallel

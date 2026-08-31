@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get pending predictions
-    const predictions = await dbAny.aiPrediction.findMany({
+    const predictions = await dbAny.prediction.findMany({
       where: whereClause,
       orderBy: { prediction_date: 'desc' },
       take: 50 // Limit to avoid timeout

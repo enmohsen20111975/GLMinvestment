@@ -290,31 +290,31 @@ async function checkPredictionEngine() {
 
         const total = safeDbQuery<{ count: number }>(
             PREDICTIONS_DB,
-            'SELECT COUNT(*) as count FROM aiPrediction'
+            'SELECT COUNT(*) as count FROM predictions'
         );
         predictionCount = total?.count || 0;
 
         const todayRes = safeDbQuery<{ count: number }>(
             PREDICTIONS_DB,
-            'SELECT COUNT(*) as count FROM aiPrediction WHERE prediction_date = ?',
+            'SELECT COUNT(*) as count FROM predictions WHERE prediction_date = ?',
             [today]
         );
         todayCount = todayRes?.count || 0;
 
         const latest = safeDbQuery<{ latest: string; created: string }>(
             PREDICTIONS_DB,
-            'SELECT prediction_date as latest, MAX(created_at) as created FROM aiPrediction'
+            'SELECT prediction_date as latest, MAX(created_at) as created FROM predictions'
         );
         if (latest) {
             lastUpdate = latest.created || latest.latest || null;
         }
 
         // Get signal distribution
-        const signals = safeDbQueryAll<{ signal_type: string; count: number }>(
+        const signals = safeDbQueryAll<{ signal: string; count: number }>(
             PREDICTIONS_DB,
-            `SELECT signal_type, COUNT(*) as count FROM aiPrediction 
-       WHERE prediction_date = ? 
-       GROUP BY signal_type`,
+            `SELECT signal, COUNT(*) as count FROM predictions
+       WHERE prediction_date = ?
+       GROUP BY signal`,
             [today]
         );
 

@@ -7,14 +7,14 @@ export async function GET() {
   try {
     const predDb = openDb('predictions.db');
 
-    // Get pending predictions from aiPrediction table
+    // Get pending predictions from predictions table
     const predictions = safeQuery<any>(
       predDb,
       `      SELECT
-        id, stock_symbol, stock_name_ar, signal_type, confidence, maestro_score,
-        entry_price, target_price, stop_loss, regime,
+        id, ticker, signal, signal_type, confidence, master_score,
+        entry_price, target_price, stop_loss,
         prediction_date, status, created_at
-      FROM aiPrediction
+      FROM predictions
       WHERE status = 'PENDING' OR status IS NULL OR status = ''
       ORDER BY prediction_date DESC
       LIMIT 50`

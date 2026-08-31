@@ -13541,3 +13541,110 @@ Work Log:
 - ✅ Corporate Actions fetcher شغّال
 - ✅ 9 أخبار اكتتاب في DB
 - 🔜 دمج get_upcoming_actions في V40.2 entry gate
+
+---
+Task ID: P0-DOCS-CONSTITUTION
+Agent: Documentation Engineer (Z.ai Code)
+Task: P0-9 to P0-11 — Fix Constitution docs to reflect KILL-MAESTRO / V40.2 as sole engine
+
+Work Log:
+
+### P0-9: Rule 35 (00-CONSTITUTION.md) — Flipped from Maestro→V40.2
+- Read Rule 35 at line 1104.
+- Old (WRONG): "MaestroOrchestrator هو المحرك الوحيد... V40.2 backtest runner فقط... cron V40.2 معطّل... engine=maestro_unified"
+- New (CORRECT): V40.2 (v40_2_daily_generator.py) is the SOLE production prediction writer.
+  MaestroOrchestrator معطّل (signal_id=None) — UI/queries only.
+  Maestro cron معطّل.
+  V40.2 tracker (PredictionTracker) مفعّل — يكتب في predictions.db.
+  engine_source tag → engine=v40_2.
+
+### P0-10: Rule 33 (00-CONSTITUTION.md) — Re-targeted to v40_2_daily_generator.py
+- Read Rule 33 at line 1032 (PRODUCTION-WIRING).
+- Replaced 8 occurrences of `MaestroOrchestrator.analyze()` with `v40_2_daily_generator.py` across the 8 wiring requirements.
+- Also updated the grep-verification line: `maestro_orchestrator.py` → `v40_2_daily_generator.py`.
+- Added cross-reference "(V40.2 هو المحرك الوحيد — القاعدة 35)" to the prohibition line for consistency.
+- Verified: grep for `MaestroOrchestrator\.analyze` in 00-CONSTITUTION.md returns NO matches.
+
+### P0-11: SYSTEM_HOW_IT_THINKS.md — Section 14.2 Axis 4 + Section 14.7 step 3
+- Section 14.2 Axis 4 (Discovery Fallback Chain): changed `**الملف:** analyzers/maestro_orchestrator.py` → `**الملف:** v40_2_daily_generator.py (Maestro معطّل — KILL-MAESTRO 2026-08-31)`. Also clarified the fallback intro line to read "لو المحرك الأساسي (V40.2)...".
+- Section 14.7 step 3: changed `**Discovery Fallback**: ...` → `**Discovery Fallback** (V40.2): ...` to reflect V40.2 as the active engine (not Maestro).
+
+Stage Summary:
+- ✅ Rule 35 now correctly states V40.2 is the sole production prediction writer; Maestro is DISABLED.
+- ✅ Rule 33 now wires all 8 files into v40_2_daily_generator.py (not MaestroOrchestrator.analyze()).
+- ✅ SYSTEM_HOW_IT_THINKS.md sections 14.2 Axis 4 and 14.7 step 3 now reflect V40.2 as the active engine.
+- ✅ No stray `MaestroOrchestrator.analyze` or stale "cron V40.2 معطّل / engine=maestro_unified" left in 00-CONSTITUTION.md.
+- ✅ Style/format preserved; edits were surgical (no whole-section rewrites).
+- Note: Other historical `analyzers/maestro_orchestrator.py` references at lines 1276/1428/1435 (Maestro persona comparison + expert-memory phase history) are OUTSIDE the scope of P0-11 and were intentionally left untouched per task precision rules.
+
+---
+Task ID: P0-BACKEND-AI
+Agent: Backend Engineer (Z.ai Code)
+Task: Fix 7 broken Node.js API routes that query the DROPPED `aiPrediction` table — migrate them to query the `predictions` table instead.
+
+Work Log:
+
+### Context Verification
+- Confirmed `predictions` table in `db/predictions.db` (6 rows live) has columns: ticker, signal, signal_type, entry_price, target_price, stop_loss, master_score, confidence, prediction_date, status, market, outcome_date, actual_return, exit_type, target_price_2, evidence_count, persona, exit_price, hit_target, hit_stop, holding_days, notes, created_at, updated_at, risk_reward, etc.
+- Confirmed `aiPrediction` table exists but is EMPTY (0 rows) — declared DROPPED in `predictions-schema.prisma` (line 9).
+- Column mapping per task: stock_symbol→ticker, stock_name_ar→(use ticker), signal_type→signal, maestro_score→master_score.
+- Additional column mapping required by schema differences: final_price→exit_price, profit_loss_percent→actual_return, hit_stop_loss→hit_stop, days_to_target→holding_days, target_hit_date/stop_hit_date/evaluation_date→outcome_date, max_profit_percent/max_loss_percent→(moved to notes since predictions stores prices not percents in highest_price_reached/lowest_price_reached).
+
+### 7 Files Fixed
+
+1. **`src/app/api/predictions/price-verify/route.ts`** (POST + GET)
+   - SELECT: `aiPrediction`→`predictions`, `stock_symbol`→`ticker`, `signal_type`→`signal`, dropped `days_to_target`
+   - UPDATE closed: `final_price`→`exit_price`, dropped redundant `profit_loss_percent` (already had `actual_return`), `hit_stop_loss`→`hit_stop`, `days_to_target`→`holding_days`, collapsed `target_hit_date`/`stop_hit_date`/`evaluation_date`→`outcome_date`, dropped `max_profit_percent`/`max_loss_percent` (preserved max P/L in `notes` for audit)
+   - UPDATE pending/stale/recover: dropped `max_profit_percent`/`max_loss_percent` (preserved in `notes`)
+   - Loop refs: `pred.signal_type`→`pred.signal`, `pred.stock_symbol`→`pred.ticker`
+   - GET counts: all 5 `FROM aiPrediction`→`FROM predictions`
+
+2. **`src/app/api/predictions/honest-tracking/route.ts`** (GET)
+   - Summary query: `FROM aiPrediction`→`FROM predictions`
+
+3. **`src/app/api/sniper/track/route.ts`** (POST)
+   - INSERT: `aiPrediction`→`predictions`, `stock_symbol`→`ticker`, `maestro_score`→`master_score`, removed `id` (predictions uses INTEGER autoincrement — use `result.lastInsertRowid`), removed `data_source` (no such column), added `signal` column alongside `signal_type` (both NOT NULL)
+   - Response: `prediction_id` now returns the auto-incremented integer ID
+
+4. **`src/app/api/sniper/closer/pending/route.ts`** (GET)
+   - SELECT: `aiPrediction`→`predictions`, `stock_symbol`→`ticker`, `stock_name_ar`→removed, `maestro_score`→`master_score`, dropped `regime` (no such column), added `signal` column to SELECT
+
+5. **`src/app/api/admin/clean-predictions/route.ts`** (GET + POST)
+   - Prisma accessor: `predictionsDb.aiPrediction.*`→`predictionsDb.prediction.*` (8 references: count, findMany, deleteMany ×3, findMany ×3)
+   - select field: `stock_symbol`→`ticker`
+   - Type annotation: `Record<string, string[]>`→`Record<string, number[]>` (predictions.id is INTEGER not TEXT)
+   - Comment: "for aiPrediction table"→"for predictions table"
+
+6. **`src/app/api/admin/engines-status/route.ts`** (GET)
+   - 4 SQL queries changed: `FROM aiPrediction`→`FROM predictions`
+   - Signal distribution query: `signal_type`→`signal` (both in SELECT and GROUP BY), type param `{ signal_type: string }`→`{ signal: string }`
+
+7. **`src/app/api/admin/ai-predictions/evaluate-range/route.ts`** (POST)
+   - Prisma accessor: `dbAny.aiPrediction.findMany()`→`dbAny.prediction.findMany()` (where/orderBy clauses use `status` and `prediction_date` which both exist on predictions — no further mapping needed)
+
+### Verification
+- ✅ `rg "aiPrediction"` in 7 modified files: 0 matches
+- ✅ `rg "stock_symbol|stock_name_ar|maestro_score"` in 7 modified files: 0 matches
+- ✅ Project-wide `npx tsc --noEmit` reports zero errors in any of the 7 files (only pre-existing errors in unrelated `src/components/recommendations/AiRecommendations.tsx`)
+- ✅ All SQL queries prepared and executed successfully against live `predictions` table (6 rows, schema verified)
+- ✅ All 4 UPDATE prepared statements in price-verify compile against predictions
+- ✅ INSERT statement in sniper/track compiles against predictions
+- ✅ Logic/flow preserved in every file — only table name + column names changed
+
+### Side-finding (not in task scope, NOT modified)
+- `src/app/api/admin/clear-predictions/route.ts` ALSO has 2 `dbAny.aiPrediction?.deleteMany()` references (lines 25, 31). This file was NOT in the task list. Recommend follow-up task to migrate it.
+
+### Rules Compliance
+- ✅ Read each file FIRST before editing (all 7 read in full)
+- ✅ Replaced ALL `aiPrediction` references in the 7 listed files
+- ✅ Mapped column names per task spec
+- ✅ Kept the same logic/flow
+- ✅ Did NOT delete any files
+- ✅ Did NOT change any Python files
+
+Stage Summary:
+- 7 API routes migrated from dead `aiPrediction` table to live `predictions` table
+- All TypeScript type-checks pass for the 7 modified files
+- All SQL prepared statements compile and execute against the real predictions table
+- One adjacent file (`admin/clear-predictions/route.ts`) flagged for follow-up
+---
