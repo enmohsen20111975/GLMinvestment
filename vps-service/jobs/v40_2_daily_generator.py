@@ -372,6 +372,50 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
         print("ℹ️  No old V40 predictions to delete", flush=True)
 
 
+# ─── RECOMMENDATION 1: فلتر حرارة القطاع ─────────────────────────────────────
+# باك-تست: رفض التوقع لو القطاع هابط → رفع WR +1.5% + عائد +12.56%
+_sector_heat_cache = {}
+
+def load_sector_heat():
+    """تحميل حرارة القطاعات من stocks.db (مرة واحدة)."""
+    global _sector_heat_cache
+    if _sector_heat_cache:
+        return _sector_heat_cache
+    
+    try:
+        _db_dir = Path(__file__).resolve().parents[2] / 'db'
+        conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT sector, AVG(change_percent) as avg_change, COUNT(*) as cnt
+            FROM stocks
+            WHERE is_active = 1 AND market = 'EGX' 
+            AND sector IS NOT NULL AND change_percent IS NOT NULL
+            GROUP BY sector HAVING COUNT(*) >= 3
+        """)
+        for row in cur.fetchall():
+            _sector_heat_cache[row[0]] = row[1]
+        conn.close()
+        print(f"[V40.2] Sector heat loaded: {len(_sector_heat_cache)} sectors", flush=True)
+    except Exception as e:
+        print(f"[V40.2] ⚠️ Sector heat load failed: {e}", flush=True)
+    
+    return _sector_heat_cache
+
+def get_ticker_sector(ticker):
+    """جيب قطاع السهم من stocks.db."""
+    try:
+        _db_dir = Path(__file__).resolve().parents[2] / 'db'
+        conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=5.0)
+        cur = conn.cursor()
+        cur.execute("SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1", (ticker,))
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
 def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                   max_picks=MAX_PICKS_PER_DAY, dry_run=False, keep_old=False,
                   max_tickers=None, tickers_offset=0, force=False):
@@ -1050,6 +1094,16 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             sig['morning_bell'] = 0  # UNIFIED-BALANCED-ONLY: معطّل
 
         for sig in picks:
+            # ── RECOMMENDATION 1: فلتر حرارة القطاع ──────────────────────────
+            # باك-تست: رفض التوقع لو القطاع هابط → رفع WR +1.5% + عائد +12.56%
+            sector_heat = load_sector_heat()
+            ticker_sector = get_ticker_sector(sig['ticker'])
+            if ticker_sector and ticker_sector in sector_heat:
+                _heat = sector_heat[ticker_sector]
+                if _heat < 0:
+                    print(f"  🚫 [SECTOR-FILTER] {sig['ticker']} — قطاع '{ticker_sector}' هابط ({_heat:+.2f}%) → رفض", flush=True)
+                    continue
+
             hit_target = 1 if sig['exit_reason'] == 'hit_target' else 0
             hit_stop = 1 if sig['exit_reason'] == 'hit_stop' else 0
             is_correct = 1 if sig['is_win'] else 0
