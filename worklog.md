@@ -13648,3 +13648,89 @@ Stage Summary:
 - All SQL prepared statements compile and execute against the real predictions table
 - One adjacent file (`admin/clear-predictions/route.ts`) flagged for follow-up
 ---
+
+---
+Task ID: V68-ORACLE-ENGINE-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تحليل V68 Pine Script (The Oracle Engine) ودمج الميزات المفيدة في V40.2
+
+Work Log:
+
+### Phase 1: تحليل V68 vs V40.2
+- قارنت V68 Pine Script مع V40.2 + V62 الموجودين عندنا
+- identified 8 ميزات GENUINELY NEW (مش موجودة عندنا):
+  1. البصمة المستقبلية (Future Fingerprint): Linear Regression slope للزخم
+  2. احتمالية النجاح (Probability Score 0-100): 4 عوامل × 25 نقطة
+  3. التراكم الصامت (Quiet Accumulation): BB Squeeze + حجم ضعيف
+  4. خريطة الجثث (Liquidity Magnets): Pivots متجمعة خلال 0.4×ATR
+  5. مسح السيولة (Liquidity Grab): sweep + reclaim + delta موجب
+  6. الزخم الديناميكي (Dynamic Volume Surge): mean + 1.5σ
+  7. حظر المطاردة 2-day (No Chase Zone 2D): عائد يومين > 15%
+  8. التوزيع القاتل (Dirty Distribution): ظهر + حجم + delta سالب
+
+### Phase 2: بناء V68 Oracle Module
+- `vps-service/analyzers/v68_oracle.py` (730 LOC)
+- 13 functions:
+  - `analyze_oracle()`: الـ entry point الرئيسي (ينفّذ كل التحليلات دفعة واحدة)
+  - `compute_probability_score()`: 0-100 based on 4 factors
+  - `compute_future_fingerprint()`: linreg slope + direction + momentum
+  - `detect_quiet_accumulation()`: BB squeeze + low volume
+  - `detect_dirty_distribution()`: upper wick + volume + negative delta
+  - `detect_no_chase_zone_2d()`: 2-day return > 15%
+  - `detect_liquidity_magnets()`: ATR-clustered pivots
+  - `detect_liquidity_grab()`: sweep + reclaim + positive delta
+  - `compute_delta()`: CMF-style buy_vol/sell_vol
+  - `compute_dynamic_volume_surge()`: mean + 1.5σ
+  - `compute_mfe_trailing_stop()`: R-multiple based trailing
+  - `should_partial_take_profit()`: 1.5R threshold
+  - `compute_position_size_multiplier()`: story stock + consecutive losses
+- Self-test passed: كل الـ functions شغّالة صح
+- safe-by-design: كل function بـ return neutral لو بيانات ناقصة
+
+### Phase 3: دمج V68 في V40.2 Generator
+- `vps-service/jobs/v40_2_daily_generator.py` (lines 1050-1150):
+  - V68 Oracle بـ يـ run بعد V62 logic وقبل EGX-STRATEGY-DYNAMIC
+  - Hard rejects (continue):
+    1. `dirty_distribution` → رفض (الحوت بيفرغ)
+    2. `no_chase_2d` → رفض (قفز 15% في يومين)
+  - Proof #8: `oracle_probability` بـ يـ add للـ proofs dict
+    - ✅ >= 70: احتمالية عالية
+    - ⚠️ 50-69: احتمالية متوسطة
+    - ❌ < 50: احتمالية ضعيفة
+  - A+ Gate: `liquidity_grab` + `probability >= 70%` → +10 tech_score boost
+  - Magnetic Target: `high_magnet` → `target_2` (لو R:R >= 2)
+  - 11 V68 fields مخزنة في signal dict للـ audit
+  - kill_filter_result audit string بتشمل V68 info
+
+### Phase 4: دمج V68 في daily_closer (MFE Trailing Stop)
+- `vps-service/jobs/daily_closer.py` (lines 720-754):
+  - V68 MFE-based trailing stop بـ يـ run بعد ATR trailing
+  - لو MFE >= 1.5R → فعّل R-multiple trailing
+  - `new_trail_sl = entry + (current_r × (r_mult - 1.0))`
+  - خد max(ATR_trailing, R-multiple_trailing) = الأقرب للسعر
+  - Ex-dividend protection محفوظة (الـ check اتعمل قبل V68)
+  - safe-by-design: لو V68 فشل → ATR trailing العادي بـ يشتغل
+
+### Phase 5: التحقق
+- ✅ Python syntax OK لـ 3 files (v68_oracle.py, v40_2_daily_generator.py, daily_closer.py)
+- ✅ V68 self-test passed (كل functions شغّالة)
+- ✅ Integration test passed (synthetic data + exit logic)
+- ✅ Dev server responding HTTP 200 على port 3001
+- ✅ Agent Browser: page renders correctly، no errors، no console errors
+- ✅ Screenshot saved (217KB)
+
+### الحكم:
+**V68 Oracle Engine بقت جزء من V40.2.**
+- 8 ميزات جديدة من Pine Script V68 اتدمجت
+- probability score (0-100) بـ يـ rank التوقعات
+- A+ liquidity grab بـ يتطلب probability >= 70% (زي Pine)
+- dirty_distribution + no_chase_2d = hard rejects
+- MFE trailing stop ذكي في daily_closer
+- كل شيء safe-by-design + backwards-compatible
+
+Stage Summary:
+- ✅ V68 Oracle module مبني ومختبر (730 LOC، 13 functions)
+- ✅ V40.2 بـ يستخدم V68 كـ proof #8 + 2 hard rejects + A+ boost + magnetic target
+- ✅ daily_closer بـ يستخدم V68 MFE trailing stop
+- ✅ Build نظيف، dev server شغّال، page renders بدون errors
+- مفيش frontend changes مطلوبة (V68 data بتظهر في kill_filter_result audit string)

@@ -717,6 +717,42 @@ class DailyCloser:
             except Exception:
                 _is_ex_dividend_day = False
 
+            # ── V68 ORACLE: MFE-based Trailing Stop (المرحلة 4 — 2026-08-31) ──
+            # Pine V68 The Dirty Exit: بعد partial TP عند 1.5R، الوقف بـ يـ trail
+            # خلف الـ MFE بـ R-multiple distance بدل ATR الثابت.
+            # المنطق:
+            #   1. لو MFE >= 1.5R (partial TP threshold) → فعّل R-multiple trailing
+            #   2. new_trail_sl = entry + (current_r × (r_mult - 1.0))
+            #   3. خد max(ATR_trailing, R-multiple_trailing) = الأقرب للسعر (أكثر حماية)
+            # الفايدة: الوقف بـ يـ trail بشكل ذكي حسب الـ R-multiple اللي حققه السهم،
+            # مش بس ATR ثابت. ده بـ يحافظ على أرباح أكتر في الـ runners.
+            if not _is_ex_dividend_day:
+                try:
+                    from analyzers.v68_oracle import compute_mfe_trailing_stop
+                    _v68_original_stop = float(prediction.get('stop_loss', 0) or 0)
+                    _v68_risk = entry_price - _v68_original_stop if _v68_original_stop > 0 and _v68_original_stop < entry_price else 0
+                    if _v68_risk > 0 and _effective_highest > entry_price:
+                        _v68_mfe_r = (_effective_highest - entry_price) / _v68_risk
+                        # لو MFE >= 1.5R → فعّل partial TP mode (stop = breakeven)
+                        if _v68_mfe_r >= 1.5:
+                            _v68_trail_sl = compute_mfe_trailing_stop(
+                                entry=entry_price,
+                                original_stop=_v68_original_stop,
+                                mfe=_effective_highest,
+                                partial_taken=True,
+                                current_stop=max(current_stop, entry_price)  # breakeven baseline
+                            )
+                            # خد الأقرب للسعر (أكثر حماية للأرباح)
+                            if _v68_trail_sl > trailing_stop_level:
+                                trailing_stop_level = _v68_trail_sl
+                                if close < trailing_stop_level:
+                                    # V68 trailing triggered — log it
+                                    print(f"[V68-TRAIL] {ticker} {day.get('date','')}: "
+                                          f"MFE={_v68_mfe_r:.2f}R → trail_sl={trailing_stop_level:.2f} "
+                                          f"(ATR_sl={_effective_highest - atr_at_entry * trail_mult:.2f})", flush=True)
+                except Exception:
+                    pass  # safe-by-design: لو V68 فشل → استخدم ATR trailing العادي
+
             days_elapsed = i + 1 if not (i == 0 and day.get('date') == start_date) else i
 
             # ── Task part4-stop-loss: تأجيل stop لو قرب ينهي التصحيح ──

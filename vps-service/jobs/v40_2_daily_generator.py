@@ -1047,6 +1047,108 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _v62_err:
                 pass  # safe-by-design
 
+            # ── V68 ORACLE ENGINE (المرحلة 4 — 2026-08-31): البصمة المستقبلية + الاحتمالات ──
+            # 8 ميزات جديدة من Pine Script V68 (The Oracle Engine):
+            #   1. probability (0-100): احتمالية نجاح الصفقة (4 عوامل × 25)
+            #   2. future_direction: توقع الزخم (up/down/flat) عبر linreg slope
+            #   3. quiet_accumulation: تراكم صامت (BB squeeze + حجم ضعيف)
+            #   4. dirty_distribution: توزيع قاتل (ظهر + حجم + delta سالب) — رفض
+            #   5. no_chase_2d: حظر مطاردة (عائد يومين > 15%) — رفض
+            #   6. liquidity_grab: مسح سيولة (A+ signal trigger)
+            #   7. low_magnet / high_magnet: خريطة الجثث (مستويات سيولة)
+            #   8. trend_state: 1=صاعد / -1=هابط / 0=محايد
+            # الإثبات الثامن (proof #8): oracle_probability ≥ 50 → ✅
+            # A+ Gate: liquidity_grab يتطلب probability ≥ 70% (زي Pine V68)
+            try:
+                from analyzers.v68_oracle import analyze_oracle
+                _v68_closes = closes[:day_idx + 1] if 'closes' in dir() and day_idx < len(closes) else []
+                _v68_highs = highs[:day_idx + 1] if 'highs' in dir() and day_idx < len(highs) else []
+                _v68_lows = lows[:day_idx + 1] if 'lows' in dir() and day_idx < len(lows) else []
+                _v68_vols = volumes[:day_idx + 1] if 'volumes' in dir() and day_idx < len(volumes) else []
+                _v68_opens = opens[:day_idx + 1] if 'opens' in dir() and day_idx < len(opens) else []
+                _v68_atr = float(result.get('atr', 0) or 0)
+                if _v68_atr <= 0:
+                    _v68_atr = entry * 0.05
+
+                _v68 = analyze_oracle(
+                    _v68_closes, _v68_highs, _v68_lows, _v68_vols, _v68_opens,
+                    atr=_v68_atr, entry=entry
+                )
+
+                # خزّن V68 flags في result للـ audit
+                result['v68_probability'] = _v68['probability']
+                result['v68_future_direction'] = _v68['future_direction']
+                result['v68_future_momentum'] = _v68['future_momentum']
+                result['v68_quiet_accumulation'] = _v68['quiet_accumulation']
+                result['v68_dirty_distribution'] = _v68['dirty_distribution']
+                result['v68_no_chase_2d'] = _v68['no_chase_2d']
+                result['v68_liquidity_grab'] = _v68['liquidity_grab']
+                result['v68_low_magnet'] = _v68['low_magnet']
+                result['v68_high_magnet'] = _v68['high_magnet']
+                result['v68_trend_state'] = _v68['trend_state']
+                result['v68_delta_vol'] = _v68['delta_vol']
+
+                # ── V68 REJECT GATES (hard rejects) ──
+                # 1. dirty_distribution: الحوت بيفرغ → ممنوع الدخول
+                if _v68['dirty_distribution']:
+                    print(f"[V68-DIRTY-DIST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"توزيع قاتل (ظهر علوي + حجم انفجاري + delta سالب) → رفض", flush=True)
+                    continue
+
+                # 2. no_chase_2d: قفز 15% في يومين → ممنوع الدخول
+                if _v68['no_chase_2d']:
+                    print(f"[V68-NO-CHASE-2D] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"قفز >15% في يومين (توزيع) → رفض", flush=True)
+                    continue
+
+                # 3. future_direction هابط بقوة → تقليل الثقة (مش رفض)
+                if _v68['future_direction'] == 'down' and _v68['future_momentum'] < -0.3:
+                    print(f"[V68-FUTURE-DOWN] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"البصمة المستقبلية هابطة (momentum={_v68['future_momentum']:.3f}%) → تقليل ثقة", flush=True)
+
+                # ── V68 PROOF #8: oracle_probability ──
+                # ✅ لو probability >= 50 → إثبات قوي
+                # ⚠️ لو probability 25-50 → إثبات ضعيف
+                # ❌ لو probability < 25 → مفيش إثبات
+                _v68_proof_str = ''
+                if _v68['probability'] >= 70:
+                    _v68_proof_str = f'✅ احتمالية عالية ({_v68["probability"]}/100)'
+                elif _v68['probability'] >= 50:
+                    _v68_proof_str = f'⚠️ احتمالية متوسطة ({_v68["probability"]}/100)'
+                else:
+                    _v68_proof_str = f'❌ احتمالية ضعيفة ({_v68["probability"]}/100)'
+
+                if 'proofs' not in result or result['proofs'] is None:
+                    result['proofs'] = {}
+                result['proofs']['oracle_probability'] = _v68_proof_str
+
+                # ── V68 A+ GATE: liquidity_grab يتطلب probability >= 70% ──
+                # Pine V68: A+ Liquidity Grab signal بـ يتطلب probability >= 70%
+                if _v68['liquidity_grab'] and _v68['probability'] >= 70:
+                    # A+ signal: boost الـ tech_score ونضيف إثبات
+                    result['proofs']['liquidity_grab_a_plus'] = '✅ A+ Liquidity Grab (probability ≥ 70%)'
+                    print(f"[V68-A-PLUS] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"A+ Liquidity Grab! probability={_v68['probability']}/100 "
+                          f"low_magnet={_v68['low_magnet']:.2f} → boost", flush=True)
+                    # A+ boost: +10 points للـ tech_score (max 100)
+                    if isinstance(result.get('score'), (int, float)):
+                        result['score'] = min(100, result['score'] + 10)
+
+                # ── V68 MAGNETIC TARGET: لو فيه high_magnet → استخدمه كـ target ──
+                # Pine V68: tp2 = active_high_magnet (الهدف المستقبلي = المغناطيس العلوي)
+                # ده بـ يحسن الـ R:R لو المغناطيس أعلى من الـ target الحالي
+                if _v68['high_magnet'] and _v68['high_magnet'] > entry:
+                    _v68_mag_target = _v68['high_magnet']
+                    _v68_mag_rr = (_v68_mag_target - entry) / max(0.01, entry - stop)
+                    # لو المغناطيس بـ يدي R:R >= 2 → استخدمه كـ target_2 (runner)
+                    if _v68_mag_rr >= 2.0 and _v68_mag_target > target:
+                        result['target_2'] = _v68_mag_target
+                        print(f"[V68-MAGNET-TARGET] {ticker}: high_magnet={_v68_mag_target:.2f} "
+                              f"(R:R={_v68_mag_rr:.2f}) → target_2", flush=True)
+
+            except Exception as _v68_err:
+                pass  # safe-by-design: لو V68 فشل → نكمّل بدونه
+
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
             # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
@@ -1148,6 +1250,19 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 'liquidity_score': _liquidity['score'] if _liquidity else 50,
                 'liquidity_pos_mult': _liquidity['position_size_mult'] if _liquidity else 1.0,
                 'liquidity_hold_mult': _liquidity['hold_multiplier'] if _liquidity else 1.0,
+                # ── V68 ORACLE FIELDS (المرحلة 4 — 2026-08-31) ──
+                # احتمالية النجاح + البصمة المستقبلية + خريطة الجثث
+                'v68_probability': result.get('v68_probability', 0),
+                'v68_future_direction': result.get('v68_future_direction', 'flat'),
+                'v68_future_momentum': result.get('v68_future_momentum', 0.0),
+                'v68_quiet_accumulation': result.get('v68_quiet_accumulation', False),
+                'v68_dirty_distribution': result.get('v68_dirty_distribution', False),
+                'v68_no_chase_2d': result.get('v68_no_chase_2d', False),
+                'v68_liquidity_grab': result.get('v68_liquidity_grab', False),
+                'v68_low_magnet': result.get('v68_low_magnet'),
+                'v68_high_magnet': result.get('v68_high_magnet'),
+                'v68_trend_state': result.get('v68_trend_state', 0),
+                'v68_delta_vol': result.get('v68_delta_vol', 0.0),
                 # PHASE-C FIX: خزّن الـ fundamental_score الحقيقي في DB بدل placeholder 50.0.
                 # لما fundamentals تكون متاحة → الدرجة الحقيقية (0-100).
                 # لما غير متاحة → 50.0 (neutral، نفس السلوك السابق — safe-by-design).
@@ -1252,7 +1367,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     atr_at_entry=sig['atr'], target_price_2=sig['target_2'],
                     prediction_date=scan_date, evidence_count=sig['evidence'],
                     morning_bell=sig['morning_bell'],
-                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}",
+                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
                 ) if tracker else None
                 if pred_id and tracker:
                     # PHASE-2-RESTORE (2026-08-31): لا نسجل outcome في backtest
