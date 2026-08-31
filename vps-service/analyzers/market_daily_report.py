@@ -206,46 +206,84 @@ class MarketDailyReport:
     def get_buy_recommendations(self, market: str = 'EGX', limit: int = 5) -> List[Dict]:
         """
         توقعات الشراء للجلسة القادمة
+        KILL-MAESTRO (2026-08-31): اقرأ من predictions (V40.2) مش aiPrediction (Maestro)
+        + ممنوع SELL في EGX (Rule 19)
         """
         conn = self._get_predictions_connection()
         cursor = conn.cursor()
-        
+
         try:
-            # Get predictions with BUY signals
+            # KILL-MAESTRO: اقرأ من predictions (V40.2) مش aiPrediction
+            # + بس BUY/STRONG_BUY (ممنوع SELL في EGX)
+            # + بس اللي عندهم entry_price > 0 (مش 0.00)
             cursor.execute('''
-                SELECT stock_symbol, stock_name_ar, signal_type, entry_price, 
-                       target_price, stop_loss, maestro_score, confidence,
-                       prediction_date
-                FROM aiPrediction
-                WHERE (market = ? OR stock_symbol LIKE ?)
-                  AND signal_type IN ('BUY', 'STRONG_BUY')
-                  AND status = 'PENDING'
-                  AND maestro_score >= 50
-                ORDER BY maestro_score DESC, confidence DESC
+                SELECT ticker, signal, entry_price,
+                       target_price, stop_loss, target_price_2,
+                       master_score, confidence, prediction_date,
+                       persona, evidence_count
+                FROM predictions
+                WHERE market = ?
+                  AND signal IN ('BUY', 'STRONG_BUY', 'STRONG BUY')
+                  AND status = 'active'
+                  AND outcome_date IS NULL
+                  AND entry_price > 0
+                  AND target_price > 0
+                  AND stop_loss > 0
+                ORDER BY master_score DESC, evidence_count DESC
                 LIMIT ?
-            ''', (market, f'%{market}%', limit))
-            
+            ''', (market, limit))
+
             rows = cursor.fetchall()
-            
+
             recommendations = []
             for row in rows:
                 recommendations.append({
                     'symbol': row[0],
-                    'name': row[1],
-                    'signal': row[2],
-                    'entry_price': row[3],
-                    'target_price': row[4],
-                    'stop_loss': row[5],
+                    'name': row[0],  # V40.2 ما بيكتبش name — نستخدم ticker
+                    'signal': row[1],
+                    'entry_price': row[2],
+                    'target_price': row[3],
+                    'stop_loss': row[4],
+                    'target_price_2': row[5],
                     'score': row[6],
-                    'confidence': row[7],
-                    'date': row[8]
+                    'confidence': row[7] or 0,
+                    'date': row[8],
+                    'persona': row[9],
+                    'evidence_count': row[10],
                 })
-            
+
             return recommendations
-            
+
         except Exception as e:
             print(f"Error getting buy recommendations: {e}")
-            return []
+            # Fallback: جرّب aiPrediction (لو predictions table مش موجود)
+            try:
+                cursor.execute('''
+                    SELECT stock_symbol, stock_name_ar, signal_type, entry_price,
+                           target_price, stop_loss, maestro_score, confidence,
+                           prediction_date
+                    FROM aiPrediction
+                    WHERE (market = ? OR stock_symbol LIKE ?)
+                      AND signal_type IN ('BUY', 'STRONG_BUY')
+                      AND status = 'PENDING'
+                      AND entry_price > 0
+                      AND target_price > 0
+                      AND stop_loss > 0
+                    ORDER BY maestro_score DESC, confidence DESC
+                    LIMIT ?
+                ''', (market, f'%{market}%', limit))
+                rows = cursor.fetchall()
+                recommendations = []
+                for row in rows:
+                    recommendations.append({
+                        'symbol': row[0], 'name': row[1], 'signal': row[2],
+                        'entry_price': row[3], 'target_price': row[4],
+                        'stop_loss': row[5], 'score': row[6],
+                        'confidence': row[7], 'date': row[8],
+                    })
+                return recommendations
+            except:
+                return []
         finally:
             conn.close()
     
