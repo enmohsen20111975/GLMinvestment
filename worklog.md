@@ -13464,3 +13464,46 @@ Work Log:
 - Constitution Rule 21: V40.2 هو المصدر الوحيد للتوقعات
 - مفيش MaestroOrchestrator() في أي مسار إنتاجي
 - الـ UI بيقرأ من predictions (V40.2) مش stored_analyses (Maestro)
+
+---
+Task ID: AI-NEWS-AGENT-2026-08-31
+Agent: Z.ai Code (main) — Senior Engineer
+Task: ربط الذكاء الاصطناعي المحلي بالإنترنت + جلب الأخبار
+
+Work Log:
+- **القرار**: محلي فقط (بدون Cloudflare) + duckduckgo (مجاني) + Python مباشر
+
+### Phase 1: تثبيت Packages
+- ddgs (DuckDuckGo Search) ✅
+- trafilatura (استخلاص النصوص) ✅
+- ollama (Python SDK) ✅
+- openai (SDK متوافق) ✅
+
+### Phase 2: بناء News Agent
+- `vps-service/ai/news_agent.py` (250 سطر)
+- NewsAgent class:
+  - search_news(): DuckDuckGo search
+  - extract_article(): Trafilatura extraction
+  - analyze_with_llm(): Ollama qwen2.5 analysis
+  - _keyword_fallback(): keyword analysis (لو Ollama مش شغال)
+  - analyze_stock_news(): full pipeline
+
+### Phase 3: دمج مع V40.2
+- في v40_2_daily_generator.py (سطر 1159-1185):
+  - بعد بناء كل signal → شغل News Agent
+  - خزّن news_sentiment + news_score + news_summary
+  - لو score < 30 AND confidence > 0.5 → ارفض الإشارة
+  - safe-by-design: لو فشل → تجاهل
+
+### النتائج:
+- ✅ DuckDuckGo بيجيب نتائج
+- ✅ Trafilatura بيستخرج نصوص
+- ✅ Keyword fallback شغّال (SWDY: positive 60/100)
+- ⚠️ Ollama مش مثبت (محتاج sudo على السيرفر)
+- 🔜 المالك يثبت Ollama: bash vps-service/scripts/setup_ollama.sh
+
+Stage Summary:
+- ✅ News Agent مبني ومدمج مع V40.2
+- ✅ DuckDuckGo + Trafilatura شغّالين
+- ⚠️ Ollama محتاج تثبيت على السيرفر
+- ✅ Keyword fallback شغّال كـ backup
