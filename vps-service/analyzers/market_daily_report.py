@@ -214,8 +214,8 @@ class MarketDailyReport:
 
         try:
             # KILL-MAESTRO: اقرأ من predictions (V40.2) مش aiPrediction
-            # + بس BUY/STRONG_BUY (ممنوع SELL في EGX)
-            # + بس اللي عندهم entry_price > 0 (مش 0.00)
+            # بيع = جنى أرباح / خروج (مش بيع على المكشوف)
+            # بس اللي عندهم entry_price > 0 (مش 0.00)
             cursor.execute('''
                 SELECT ticker, signal, entry_price,
                        target_price, stop_loss, target_price_2,
@@ -223,7 +223,7 @@ class MarketDailyReport:
                        persona, evidence_count
                 FROM predictions
                 WHERE market = ?
-                  AND signal IN ('BUY', 'STRONG_BUY', 'STRONG BUY')
+                  AND signal IN ('BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL', 'STRONG BUY')
                   AND status = 'active'
                   AND outcome_date IS NULL
                   AND entry_price > 0
