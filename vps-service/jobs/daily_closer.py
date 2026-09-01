@@ -689,6 +689,54 @@ class DailyCloser:
                 lowest_price_reached = min(lowest_price_reached, low)
                 lowest_price = min(lowest_price, low)
 
+            # ── SHORT HOLDING + DISTRIBUTION EXIT (2026-09-01) ──
+            # توجيه المالك: "فرض مدة احتفاظ قصيرة (7 أيام max + خروج لو مفيش حركة
+            # في 3 أيام). + إضافة منطق توزيع واضح كإشارة خروج (SELL / Force Exit)."
+            # الـ module: vps-service/analyzers/short_holding_exit.py
+            # الترتيب: distribution (1) > max_holding_7d (2) > no_move_3d (3) > early_drop (4)
+            # (Disclosure VETO بـ يتعامل معاه في V40.2 قبل ما نوصل هنا)
+            _enable_holding = os.environ.get('V40_2_SHORT_HOLDING', '0') == '1'
+            _enable_dist = os.environ.get('V40_2_DISTRIBUTION_EXIT', '0') == '1'
+            if _enable_holding or _enable_dist:
+                try:
+                    from analyzers.short_holding_exit import evaluate_force_exit
+                    # Build slices up to current day
+                    _sh_closes = [float(d.get('close', 0) or 0) for d in price_history[:i+1] if float(d.get('close', 0) or 0) > 0]
+                    _sh_opens = [float(d.get('open', 0) or 0) for d in price_history[:i+1] if float(d.get('open', 0) or 0) > 0]
+                    _sh_highs = [float(d.get('high', 0) or 0) for d in price_history[:i+1] if float(d.get('high', 0) or 0) > 0]
+                    _sh_lows = [float(d.get('low', 0) or 0) for d in price_history[:i+1] if float(d.get('low', 0) or 0) > 0]
+                    _sh_vols = [float(d.get('volume', 0) or 0) for d in price_history[:i+1]]
+                    _sh_history = [{'date': d.get('date', ''), 'close': float(d.get('close', 0) or 0)}
+                                    for d in price_history[:i+1]]
+                    _sh_current_date = day.get('date', '')
+
+                    _force = evaluate_force_exit(
+                        entry_date=start_date,
+                        current_date=_sh_current_date,
+                        entry_price=entry_price,
+                        current_price=close,
+                        price_history=_sh_history,
+                        opens=_sh_opens, highs=_sh_highs, lows=_sh_lows,
+                        closes=_sh_closes, volumes=_sh_vols,
+                        enable_holding=_enable_holding,
+                        enable_distribution=_enable_dist,
+                    )
+                    if _force['should_exit']:
+                        _exit_code = _force['exit_code']
+                        print(f"[FORCE-EXIT-{_exit_code}] {ticker} on {_sh_current_date}: "
+                              f"{_force['reason'][:90]}", flush=True)
+                        return self._mark_closed(
+                            pred_id, ticker, 'FORCE_EXIT', ((close - entry_price) / entry_price * 100),
+                            highest_price_reached, lowest_price, days_elapsed,
+                            _sh_current_date,
+                            exit_type=_exit_code,  # max_holding_7d | no_move_3d | early_drop | distribution_exit
+                            highest_price_reached=highest_price_reached,
+                            lowest_price_reached=lowest_price,
+                            holding_days=days_elapsed,
+                        )
+                except Exception as _force_err:
+                    pass  # safe-by-design: لو force exit فشل → نكمّل بالـ trailing stop
+
             # Phase 2 (V40): الـ trailing stop لازم يتعامل مع أعلى سعر لحظي
             # (intraday high من intraday.db) مش بس الـ daily close.
             # السهم يوصل +10% لحظياً ويغسل سالب — الـ trailing لازم يتبع القمة.

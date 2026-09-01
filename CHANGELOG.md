@@ -1,6 +1,84 @@
 # Changelog
 
 
+## [SHORT-HOLDING-DISTRIBUTION-EXIT] — مدة احتفاظ قصيرة + منطق التوزيع + تفعيل آمن (2026-09-01)
+
+> **توجيه المالك:** "فرض مدة احتفاظ قصيرة (7 أيام max + خروج لو مفيش حركة في 3 أيام).
+> إضافة منطق توزيع واضح كإشارة خروج (SELL / Force Exit). + تجهيز طريقة تفعيل آمنة
+> للفلاتر الجديدة (Strict Entry + Disclosure + Holding + Exit)."
+
+### التعديلات (2 ملفات)
+
+#### 1. `vps-service/analyzers/short_holding_exit.py` (جديد — 480 LOC)
+دالتان رئيسيتان + قرار نهائي:
+- `should_force_exit_by_time()`: 3 شروط إغلاق إجباري:
+  - `max_holding_7d`: تجاوز 7 أيام → إغلاق
+  - `no_move_3d`: 3 أيام مفيش حركة +3% → إغلاق
+  - `early_drop`: نزل -5% في أول 3 أيام → إغلاق
+- `detect_distribution()`: كشف شمعة التوزيع (5 شروط):
+  - شمعة حمراء/ضعيفة + ظل علوي طويل (≥ الجسم)
+  - حجم عالي (>1.8× متوسط) + قريب من قمة 20 يوم (≤8%)
+  - RSI مرتفع (>65)
+- `evaluate_force_exit()`: القرار النهائي بترتيب الأولوية
+
+Thresholds (EGX-calibrated):
+- Holding: max=7d, no_move=3d (≤+3%), early_drop=3d (≤-5%)
+- Distribution: upper_wick≥1×body, vol≥1.8×, near_high≤8%, RSI≥65
+
+اختبارات: 12/12 سيناريو نجح ✅
+
+#### 2. `vps-service/jobs/daily_closer.py` (تعديل — دمج)
+دمج في السطر 692-738 (قبل الـ trailing stop logic):
+- `V40_2_SHORT_HOLDING=1` → max_holding + no_move + early_drop
+- `V40_2_DISTRIBUTION_EXIT=1` → distribution_exit
+- لو force exit → `return self._mark_closed()` بـ `exit_type` = الكود المناسب
+- safe-by-design: لو فشل → نكمّل بالـ trailing stop
+
+### ترتيب الأولوية في الخروج
+```
+1. Disclosure VETO (في V40.2 — قبل ما نوصل لـ daily_closer)
+2. distribution_exit (priority=1) — الميكرز بـ يفرغ
+3. max_holding_7d (priority=2) — تجاوز 7 أيام
+4. no_move_3d (priority=3) — السهم نام
+5. early_drop (priority=4) — نزول بدري
+6. باقي شروط الـ Take Profit / Stop العادية
+```
+
+### النتائج (integration test — 5 سيناريوهات)
+
+| Scenario | Exit Code | Priority |
+|---|---|---|
+| Distribution + 8 أيام | distribution_exit | 1 |
+| لا توزيع + 8 أيام | max_holding_7d | 2 |
+| 4 أيام + مفيش حركة | no_move_3d | 3 |
+| نزل -6% في يومين | early_drop | 4 |
+| صفقة صحية (لا إغلاق) | (no exit) | — |
+
+### تفعيل آمن (Activation Plan)
+كل الـ 5 flags **مقفولة افتراضياً**:
+- `V40_2_NEWS_IMPACT=0`
+- `V40_2_STRICT_ENTRY=0`
+- `V40_2_DISCLOSURE_IMPACT=0`
+- `V40_2_SHORT_HOLDING=0`
+- `V40_2_DISTRIBUTION_EXIT=0`
+
+طريقة التفعيل المقترحة (واحد ورا التاني):
+1. **أسبوع 1**: `V40_2_STRICT_ENTRY` + `V40_2_DISCLOSURE_IMPACT` (entry + disclosure)
+2. **أسبوع 2**: `V40_2_SHORT_HOLDING` (max_holding + no_move + early_drop)
+3. **أسبوع 3**: `V40_2_DISTRIBUTION_EXIT` (distribution exit)
+4. **أسبوع 4**: `V40_2_NEWS_IMPACT` (news impact — لو لسه محتاج)
+
+ممنوع تفعيل أي flag بدون توثيق + إذن المالك.
+
+### القواعد ما اتنكسرتش
+- ✅ ممنوع لمس Position Sizing (ما لمستش)
+- ✅ ممنوع بيانات وهمية (كل test cases واقعية)
+- ✅ كل تغيير خلف feature flag
+- ✅ سبب كل خروج بـ يتسجل (`[FORCE-EXIT-{code}] {ticker}: {reason}`)
+- ✅ syntax check قبل commit
+- ✅ Rule 20: Python=العقل، Rule 27: NO-FAKE-DATA، Rule 29: UNIFIED-SYSTEM
+
+
 ## [STRICT-ENTRY-FILTERS] — تشديد شروط الدخول + تصحيح تصنيف الإفصاحات (2026-09-01)
 
 > **توجيه المالك:** "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في حالتين:

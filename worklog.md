@@ -14431,3 +14431,92 @@ Stage Summary:
 - ✅ اللوج بيوضح سبب أي رفض
 - 🔜 commit + push
 
+
+
+---
+Task ID: SHORT-HOLDING-DISTRIBUTION-EXIT-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: مدة احتفاظ قصيرة + منطق التوزيع كـ إشارة خروج + تفعيل آمن
+
+Work Log:
+
+### Phase 1: مدة الاحتفاظ القصيرة (Holding Rules)
+بناء vps-service/analyzers/short_holding_exit.py (480 LOC):
+- should_force_exit_by_time(): 3 شروط:
+  1. max_holding_7d: لو عدّت 7 أيام → إغلاق إجباري
+  2. no_move_3d: لو 3 أيام مفيش حركة +3% → إغلاق إجباري
+  3. early_drop: لو نزل -5% في أول 3 أيام → إغلاق إجباري
+
+Thresholds (EGX-calibrated):
+- MAX_HOLDING_DAYS = 7
+- NO_MOVE_DAYS = 3 (threshold +3%)
+- EARLY_DROP_DAYS = 3 (threshold -5%)
+
+### Phase 2: منطق التوزيع (Distribution Exit)
+detect_distribution() بـ 5 شروط:
+1. شمعة حمراء/ضعيفة (close < open) أو جسم صغير
+2. ظل علوي طويل (upper_wick ≥ body)
+3. حجم أعلى من المتوسط (>1.8×)
+4. السعر قريب من قمة 20 يوم (≤8%)
+5. ضعف زخم (RSI > 65)
+
+Thresholds:
+- DIST_UPPER_WICK_RATIO = 1.0 (ظل علوي ≥ الجسم)
+- DIST_VOLUME_RATIO = 1.8
+- DIST_DIST_FROM_HIGH_MAX_PCT = 8.0
+- DIST_RSI_HIGH_THRESHOLD = 65.0
+
+### Phase 3: ترتيب الأولوية في الخروج
+evaluate_force_exit() بـ يفحص بالترتيب:
+1. distribution_exit (priority=1) — الميكرز بـ يفرغ
+2. max_holding_7d (priority=2) — تجاوز 7 أيام
+3. no_move_3d (priority=3) — السهم نام
+4. early_drop (priority=4) — نزول بدري
+
+(Disclosure VETO بـ يتعامل معاه في V40.2 قبل ما نوصل هنا)
+
+### Phase 4: التكامل في daily_closer.py
+دمج في السطر 692-738 (قبل الـ trailing stop logic):
+- V40_2_SHORT_HOLDING=1 → max_holding + no_move + early_drop
+- V40_2_DISTRIBUTION_EXIT=1 → distribution_exit
+- لو force exit → return self._mark_closed() بـ exit_type = الكود المناسب
+- safe-by-design: لو فشل → نكمّل بالـ trailing stop
+
+### Phase 5: الاختبارات
+12/12 اختبار نجح:
+- 5 holding tests (8 أيام، 4 أيام no move، 2 يوم حركة قوية، -6% early drop، 5 أيام +2%)
+- 4 distribution tests (توزيع واضح، شمعة حمراء عادية، شمعة خضراء قوية، أولوية distribution)
+- 3 integration tests (distribution > max_holding > no_move، صفقة صحية، بيانات غير كافية)
+
+### Phase 6: التفعيل الآمن (Activation Plan)
+كل الـ 5 flags مقفولة افتراضياً:
+- V40_2_NEWS_IMPACT=0 (default OFF)
+- V40_2_STRICT_ENTRY=0 (default OFF)
+- V40_2_DISCLOSURE_IMPACT=0 (default OFF)
+- V40_2_SHORT_HOLDING=0 (default OFF)
+- V40_2_DISTRIBUTION_EXIT=0 (default OFF)
+
+طريقة التفعيل المقترحة (واحد ورا التاني):
+1. أسبوع 1: V40_2_STRICT_ENTRY + V40_2_DISCLOSURE_IMPACT (entry + disclosure)
+2. أسبوع 2: V40_2_SHORT_HOLDING (max_holding + no_move + early_drop)
+3. أسبوع 3: V40_2_DISTRIBUTION_EXIT (distribution exit)
+4. أسبوع 4: V40_2_NEWS_IMPACT (news impact — لو لسه محتاج)
+
+ممنوع تفعيل أي flag بدون توثيق + إذن المالك.
+
+### Phase 7: الالتزام بالقواعد
+1. ممنوع لمس Position Sizing ✅ (ما لمستش)
+2. ممنوع بيانات وهمية ✅ (كل test cases واقعية)
+3. كل تغيير خلف feature flag ✅ (V40_2_SHORT_HOLDING + V40_2_DISTRIBUTION_EXIT)
+4. سبب كل خروج بـ يتسجل ✅ ([FORCE-EXIT-{code}] {ticker} on {date}: {reason})
+5. syntax check قبل commit ✅
+6. اتباع Documentation ✅ (Rule 20, 27, 29)
+
+Stage Summary:
+- ✅ بناء short_holding_exit.py (480 LOC، 12/12 اختبار نجح)
+- ✅ دمج في daily_closer.py (V40_2_SHORT_HOLDING + V40_2_DISTRIBUTION_EXIT)
+- ✅ ترتيب الأولوية: distribution > max_holding > no_move > early_drop
+- ✅ كل الـ 5 flags مقفولة افتراضياً
+- ✅ توثيق طريقة التفعيل الآمن
+- 🔜 commit + push
+
