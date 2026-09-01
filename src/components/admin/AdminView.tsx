@@ -1209,7 +1209,7 @@ export function AdminView() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <Button onClick={handleSync} disabled={syncing} className="h-auto py-4 flex-col gap-2">
                   <RefreshCw className={cn("w-6 h-6", syncing && "animate-spin")} />
                   <span>تحديث البيانات</span>
@@ -1226,6 +1226,28 @@ export function AdminView() {
                   <RefreshCw className={cn("w-6 h-6", multiMarketSyncing && "animate-spin")} />
                   <span>تحديث كل الأسواق</span>
                   <span className="text-[10px] opacity-70">EGX, KSA, KSE, DFM...</span>
+                </Button>
+                <Button
+                  onClick={async () => {
+                    toast.info('جاري تشغيل محرك V40.2 الموحد والفحص اللحظي...');
+                    try {
+                      const res = await adminFetch('/api/admin/generate-predictions?type=intraday', { method: 'POST' });
+                      const d = await res.json();
+                      if (d.success) {
+                        toast.success('تم توليد التوقعات بنجاح!', { description: d.message });
+                        fetchStats();
+                      } else {
+                        toast.error(d.error || 'فشل التوليد');
+                      }
+                    } catch {
+                      toast.error('خطأ في الاتصال');
+                    }
+                  }}
+                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white"
+                >
+                  <Sparkles className="w-6 h-6" />
+                  <span>توليد توقعات V40.2</span>
+                  <span className="text-[10px] opacity-80">فحص لحظي + يومي</span>
                 </Button>
                 {/* Stream C: fixed dead 'egx' button → now correctly opens the learning hub tab */}
                 <Button variant="outline" onClick={() => { setActiveTab('learning'); setExpandedHub('learning'); }} className="h-auto py-4 flex-col gap-2">

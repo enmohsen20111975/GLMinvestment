@@ -1469,8 +1469,65 @@ def rebuild_predictions():
         conn = sqlite3.connect(_db)
         conn.row_factory = sqlite3.Row
 
-        # 1. جلب آخر التوقعات النشطة من stored_analyses
+        # إذا كان الطلب POST: نقوم بتشغيل محرك V40.2 الموحد أو الفحص اللحظي فوراً
+        if request.method == 'POST':
+            import subprocess, sys
+            mode = request.args.get('type') or request.args.get('mode') or 'intraday'
+            python_bin = sys.executable or '/home/meme/my_apps/GLMinvestment/.venv/bin/python3'
+            env = os.environ.copy()
+            env['BYPASS_PRED_CAP'] = '1'
+            env['V76_SECTOR_INTRADAY'] = '1'
+            env['V40_EXPLOSIVE_UNCAP'] = '1'
+            if mode == 'daily':
+                cmd = [python_bin, str(_root / 'vps-service' / 'jobs' / 'v40_2_daily_generator.py'), '--today-only', '--max-picks', '5']
+            else:
+                cmd = [python_bin, str(_root / 'vps-service' / 'jobs' / 'v40_2_intraday_scanner.py'), '--limit', '5']
+            try:
+                subprocess.run(cmd, env=env, timeout=40)
+            except Exception as _e:
+                logger.error(f"[rebuild-predictions] Error running generator: {_e}")
+
+        # 1. جلب آخر التوقعات النشطة من stored_analyses و predictions
+        active_predictions = []
         try:
+            # أولاً: توقعات V40.2 النشطة من جدول predictions
+            pred_rows = conn.execute("""
+                SELECT ticker, signal, signal_type, entry_price, target_price,
+                       stop_loss, confidence, maestro_score, created_at,
+                       prediction_date, kill_filter_result
+                FROM predictions
+                WHERE status = 'PENDING'
+                ORDER BY id DESC
+                LIMIT 30
+            """).fetchall()
+            seen_tickers = set()
+            for pr in pred_rows:
+                prd = dict(pr)
+                pticker = prd.get('ticker') or ''
+                if pticker and pticker not in seen_tickers:
+                    pinfo = _get_stock_name(pticker)
+                    active_predictions.append({
+                        'ticker': pticker,
+                        'symbol': pticker,
+                        'name': pinfo['name'],
+                        'name_ar': pinfo['name_ar'],
+                        'sector': pinfo['sector'],
+                        'logo_url': pinfo.get('logo_url', ''),
+                        'signal': (prd.get('signal') or 'BUY').upper(),
+                        'signal_type': (prd.get('signal_type') or 'BUY').upper(),
+                        'entry_price': prd.get('entry_price') or 0,
+                        'target_price': prd.get('target_price') or 0,
+                        'stop_loss': prd.get('stop_loss') or 0,
+                        'confidence': prd.get('confidence') or 80,
+                        'maestro_score': prd.get('maestro_score') or 80,
+                        'status': 'active',
+                        'prediction_date': prd.get('prediction_date') or prd.get('created_at'),
+                        'created_at': prd.get('created_at'),
+                        'notes': prd.get('kill_filter_result') or 'V40.2 Unified Hunter'
+                    })
+                    seen_tickers.add(pticker)
+
+            # ثانياً: استكمال من stored_analyses
             rows = conn.execute("""
                 SELECT ticker, recommendation, maestro_score, target_price,
                        stop_loss, entry_price, confidence, updated_at,
@@ -1479,34 +1536,34 @@ def rebuild_predictions():
                 ORDER BY updated_at DESC
                 LIMIT 100
             """).fetchall()
-            active_predictions = []
             for r in rows:
                 d = dict(r)
                 ticker = d.get('ticker') or ''
-                stock_info = _get_stock_name(ticker)
-                # تحويل للصيغة اللي الـ frontend بيتوقعها
-                active_predictions.append({
-                    'ticker': ticker,
-                    'symbol': ticker,
-                    'name': stock_info['name'],
-                    'name_ar': stock_info['name_ar'],
-                    'sector': stock_info['sector'],
-                    'logo_url': stock_info.get('logo_url', ''),
-                    'signal': (d.get('recommendation') or 'hold').upper(),
-                    'signal_type': 'BUY' if 'buy' in (d.get('recommendation') or '').lower()
-                                   else 'SELL' if 'sell' in (d.get('recommendation') or '').lower()
-                                   else 'HOLD',
-                    'entry_price': d.get('entry_price') or 0,
-                    'target_price': d.get('target_price') or 0,
-                    'stop_loss': d.get('stop_loss') or 0,
-                    'confidence': d.get('confidence') or d.get('ai_confidence') or 50,
-                    'maestro_score': d.get('maestro_score') or d.get('master_score') or 50,
-                    'status': 'active',
-                    'prediction_date': d.get('updated_at'),
-                    'created_at': d.get('updated_at'),
-                })
+                if ticker and ticker not in seen_tickers:
+                    stock_info = _get_stock_name(ticker)
+                    active_predictions.append({
+                        'ticker': ticker,
+                        'symbol': ticker,
+                        'name': stock_info['name'],
+                        'name_ar': stock_info['name_ar'],
+                        'sector': stock_info['sector'],
+                        'logo_url': stock_info.get('logo_url', ''),
+                        'signal': (d.get('recommendation') or 'hold').upper(),
+                        'signal_type': 'BUY' if 'buy' in (d.get('recommendation') or '').lower()
+                                       else 'SELL' if 'sell' in (d.get('recommendation') or '').lower()
+                                       else 'HOLD',
+                        'entry_price': d.get('entry_price') or 0,
+                        'target_price': d.get('target_price') or 0,
+                        'stop_loss': d.get('stop_loss') or 0,
+                        'confidence': d.get('confidence') or d.get('ai_confidence') or 50,
+                        'maestro_score': d.get('maestro_score') or d.get('master_score') or 50,
+                        'status': 'active',
+                        'prediction_date': d.get('updated_at'),
+                        'created_at': d.get('updated_at'),
+                    })
+                    seen_tickers.add(ticker)
         except Exception as e:
-            active_predictions = []
+            logger.error(f"[rebuild-predictions] Error fetching active predictions: {e}")
 
         # 2. جلب التوقعات المغلقة + حساب الأداء الحقيقي
         closed_predictions = []

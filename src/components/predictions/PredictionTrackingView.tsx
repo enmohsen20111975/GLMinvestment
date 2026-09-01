@@ -59,6 +59,7 @@ import {
   Shield,
   Gauge,
   ListChecks,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
@@ -172,6 +173,7 @@ export function PredictionTrackingView() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingList, setLoadingList] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [generatingV40, setGeneratingV40] = useState(false);
 
   // fetch stats
   const fetchStats = useCallback(async (market: MarketType) => {
@@ -251,6 +253,29 @@ export function PredictionTrackingView() {
     }
   };
 
+  const handleGenerateV40 = async () => {
+    setGeneratingV40(true);
+    toast.info('جاري تشغيل محرك التوقعات V40.2 وفحص السيولة اللحظية...');
+    try {
+      const res = await fetch('/api/admin/generate-predictions?type=intraday', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('تم توليد التوقعات بنجاح!', {
+          description: data.message || 'تم تحديث الفرص وحفظها في النظام',
+        });
+        refreshAll();
+      } else {
+        toast.error(data.error || 'فشل توليد التوقعات');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال بالخادم');
+    } finally {
+      setGeneratingV40(false);
+    }
+  };
+
   const refreshAll = () => {
     fetchStats(currentMarket);
     fetchList(currentMarket, statusFilter);
@@ -292,6 +317,19 @@ export function PredictionTrackingView() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <MarketSelector size="sm" />
+          <Button
+            size="sm"
+            onClick={handleGenerateV40}
+            disabled={generatingV40}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-1 shadow-sm"
+          >
+            {generatingV40 ? (
+              <RefreshCw className="h-4 w-4 ml-1 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 ml-1" />
+            )}
+            <span>{generatingV40 ? 'جارٍ التوليد...' : '⚡ توليد توقعات V40.2'}</span>
+          </Button>
           <Button
             size="sm"
             variant="default"

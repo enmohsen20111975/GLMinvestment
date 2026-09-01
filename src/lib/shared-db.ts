@@ -70,12 +70,13 @@ export interface OpenOptions {
 export function openDb(dbName: string, options?: OpenOptions): Database.Database {
   const inputBaseName = path.basename(dbName);
   const candidates = [
-    dbName,
+    path.isAbsolute(dbName) ? dbName : null,
     `/home/meme/my_apps/GLMinvestment/db/${inputBaseName}`,
     path.join(process.cwd(), 'db', inputBaseName),
     path.resolve('db', inputBaseName),
     `\\\\wsl.localhost\\Ubuntu\\home\\meme\\my_apps\\GLMinvestment\\db\\${inputBaseName}`,
-  ];
+    dbName,
+  ].filter(Boolean) as string[];
   let absPath = candidates[0];
   for (const c of candidates) {
     if (c && typeof c === 'string' && existsSync(c)) {

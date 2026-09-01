@@ -907,9 +907,9 @@ export function getAvailablePriceDates(): { min: string; max: string; count: num
 // BACKWARD COMPATIBILITY - These functions map to new structure
 // ---------------------------------------------------------------------------
 
-// For backward compatibility - maps to data_engine.db (contains main stocks, gold, crypto, forex tables)
+// For backward compatibility - maps to stocks.db (contains main stocks, is_active, and technical data)
 export function getLightDb(): SqliteDatabase {
-  return wrapNativeDatabase(getDataEngineDb())
+  return getStocksDb()
 }
 
 // For backward compatibility - maps to price_history.db

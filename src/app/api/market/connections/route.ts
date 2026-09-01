@@ -10,7 +10,10 @@
 import { NextResponse } from 'next/server';
 import { isEgxpyAvailable } from '@/lib/egxpy-bridge';
 import { isVpsAvailable, getVpsServiceUrl } from '@/lib/vps-adapter';
-import { ensureInitialized, getLightDb, getHeavyDb } from '@/lib/egx-db';
+import { ensureInitialized, getLightDb, getStocksDb, getHeavyDb } from '@/lib/egx-db';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET() {
   const results: Record<string, {
@@ -137,8 +140,12 @@ export async function GET() {
                 'Option B (VPS): Set EGXPY_SERVICE_URL=http://127.0.0.1:8010 in .env',
               ],
       });
+    let lightDb;
+    try {
+      lightDb = getStocksDb();
+    } catch {
+      lightDb = getLightDb();
     }
-    const lightDb = getLightDb();
     const stats = lightDb.prepare(`
       SELECT 
         COUNT(*) as total_stocks,

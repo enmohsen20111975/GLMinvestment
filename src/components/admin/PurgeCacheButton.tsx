@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Database } from 'lucide-react';
+import { Trash2, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Database, Zap, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -90,8 +90,30 @@ export function PurgeCacheButton() {
       }
     } catch {
       toast.error('خطأ في الاتصال');
+  };
+
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerate = async (type: 'intraday' | 'daily') => {
+    setGenerating(true);
+    toast.info(type === 'daily' ? 'جاري تشغيل محرك V40.2 لتوليد توقعات اليوم...' : 'جاري فحص السوق اللحظي (بيانات الـ 5 دقائق)...');
+    try {
+      const res = await fetch(`/api/admin/generate-predictions?type=${type}`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || 'تم توليد التوقعات بنجاح!', {
+          description: `تم تحديث التوقعات بنجاح وحفظها في قاعدة البيانات`
+        });
+        await fetchStats();
+      } else {
+        toast.error(data.error || 'فشل توليد التوقعات');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال أثناء توليد التوقعات');
     } finally {
-      setPurging(false);
+      setGenerating(false);
     }
   };
 
@@ -188,6 +210,33 @@ export function PurgeCacheButton() {
           >
             <Trash2 className="w-4 h-4" />
             مسح التوقعات القديمة
+          </Button>
+
+          {/* أزرار تشغيل محرك التوقعات V40.2 الموحد والفحص اللحظي */}
+          <Button
+            onClick={() => handleGenerate('intraday')}
+            disabled={generating || purging}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-medium"
+          >
+            {generating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Zap className="w-4 h-4" />
+            )}
+            🎯 فحص لحظي حقيقي (5 دقائق)
+          </Button>
+
+          <Button
+            onClick={() => handleGenerate('daily')}
+            disabled={generating || purging}
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-medium"
+          >
+            {generating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            ⚡ تشغيل محرك V40.2 الموحد (اليومي)
           </Button>
         </div>
 

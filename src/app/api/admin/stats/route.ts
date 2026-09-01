@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { db } from '@/lib/db';
-import { ensureInitialized, getLightDb, isHeavyDbAvailable, getHeavyDbHealth } from '@/lib/egx-db';
+import { ensureInitialized, getLightDb, getStocksDb, isHeavyDbAvailable, getHeavyDbHealth } from '@/lib/egx-db';
 
 // ---------------------------------------------------------------------------
 // GET /api/admin/stats
@@ -63,8 +63,13 @@ export async function GET(request: NextRequest) {
     try {
       await ensureInitialized();
       dbAvailable = true;
-      // Light DB for stocks table (stocks.db - main analysis database)
-      const lightDb = getLightDb();
+      // Stocks table from stocks.db (main analysis database)
+      let lightDb;
+      try {
+        lightDb = getStocksDb();
+      } catch {
+        lightDb = getLightDb();
+      }
       const stockStats = lightDb.prepare(`
         SELECT
           COUNT(*) as total_stocks,
