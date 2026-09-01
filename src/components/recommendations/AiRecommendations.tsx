@@ -309,13 +309,13 @@ function PersonaLabel() {
   if (!personaId) return null;
 
   const PERSONA_LABELS: Record<string, { emoji: string; label: string }> = {
-    conservative:  { emoji: '🛡️', label: 'المستثمر'  // معطل  // معطل },
-    cautious:      { emoji: '🐢', label: 'الحذر' },
-    balanced:      { emoji: '⚖️', label: 'المتوازن' },
-    active_trader: { emoji: '🎯', label: 'المضارب'  // معطل  // معطل },
-    adventurer:    { emoji: '🎲', label: 'المضارب'  // معطل  // معطل },
-    gambler:       { emoji: '🔥', label: 'المضارب'  // معطل  // معطل },
-    hedger:        { emoji: '🏛️', label: 'المتحوط' },
+    conservative: { emoji: '🛡️', label: 'المستثمر' },
+    cautious: { emoji: '🐢', label: 'الحذر' },
+    balanced: { emoji: '⚖️', label: 'المتوازن' },
+    active_trader: { emoji: '🎯', label: 'المضارب' },
+    adventurer: { emoji: '🎲', label: 'المضارب' },
+    gambler: { emoji: '🔥', label: 'المضارب' },
+    hedger: { emoji: '🏛️', label: 'المتحوط' },
   };
   const p = PERSONA_LABELS[personaId];
   if (!p) return null;
@@ -526,11 +526,8 @@ function V2MarketOverview() {
 
 // ==================== V2: SECTION 2 — STOCK RECOMMENDATIONS TABLE (ENHANCED) ====================
 
-const PAGE_SIZE = 15;
-
 function V2StocksTable() {
   const { v2Data, loadStockDetail } = useAppStore();
-  const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<string>('all');
 
   const sortedStocks = useMemo(() => {
@@ -556,9 +553,6 @@ function V2StocksTable() {
   }, [v2Data, filter]);
 
   if (!v2Data) return null;
-
-  const totalPages = Math.ceil(sortedStocks.length / PAGE_SIZE);
-  const paginated = sortedStocks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const filters = [
     { value: 'all', label: 'الكل' },
@@ -591,7 +585,7 @@ function V2StocksTable() {
                 size="sm"
                 variant={filter === f.value ? 'default' : 'outline'}
                 className={cn('text-xs h-7 px-2.5', filter === f.value && 'bg-primary text-primary-foreground')}
-                onClick={() => { setFilter(f.value); setPage(1); }}
+                onClick={() => setFilter(f.value)}
               >
                 {f.label}
               </Button>
@@ -600,7 +594,7 @@ function V2StocksTable() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+        <div className="overflow-x-auto max-h-[62vh] overflow-y-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow className="sticky top-0 bg-background z-10">
@@ -619,9 +613,9 @@ function V2StocksTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginated.map((stock, idx) => {
+              {sortedStocks.map((stock, idx) => {
                 const rec = getV2RecommendationBadge(stock.recommendation);
-                const globalRank = (page - 1) * PAGE_SIZE + idx + 1;
+                const globalRank = idx + 1;
                 const changePct = getChangePercent(stock);
                 const riskCol = getRiskColor(stock.riskAssessment.level);
                 const capBadge = stock.marketCapCategory ? getCapBadge(stock.marketCapCategory) : null;
@@ -713,18 +707,6 @@ function V2StocksTable() {
             </TableBody>
           </Table>
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t">
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground px-3">{page} / {totalPages}</span>
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
@@ -1458,7 +1440,6 @@ function OldMarketOutlookHeader() {
 
 function OldStockTable() {
   const { aiInsights, loadStockDetail } = useAppStore();
-  const [page, setPage] = useState(1);
   const [filterScore, setFilterScore] = useState<string>('all');
 
   const sortedStocks = useMemo(() => {
@@ -1474,9 +1455,6 @@ function OldStockTable() {
   }, [aiInsights, filterScore]);
 
   if (!aiInsights) return null;
-
-  const totalPages = Math.ceil(sortedStocks.length / PAGE_SIZE);
-  const paginatedStocks = sortedStocks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const filters = [
     { value: 'all', label: 'الكل' },
@@ -1500,7 +1478,7 @@ function OldStockTable() {
             {filters.map(f => (
               <Button key={f.value} size="sm" variant={filterScore === f.value ? 'default' : 'outline'}
                 className={cn('text-xs h-7 px-2.5', filterScore === f.value && 'bg-primary text-primary-foreground')}
-                onClick={() => { setFilterScore(f.value); setPage(1); }}>
+                onClick={() => setFilterScore(f.value)}>
                 {f.label}
               </Button>
             ))}
@@ -1508,7 +1486,7 @@ function OldStockTable() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+        <div className="overflow-x-auto max-h-[62vh] overflow-y-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow className="sticky top-0 bg-background z-10">
@@ -1525,9 +1503,9 @@ function OldStockTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedStocks.map((stock, idx) => {
+              {sortedStocks.map((stock, idx) => {
                 const rec = getOldRecommendation(stock.score);
-                const globalRank = (page - 1) * PAGE_SIZE + idx + 1;
+                const globalRank = idx + 1;
                 const changeColor = stock.price_change >= 0 ? 'text-emerald-600' : 'text-red-600';
                 return (
                   <TableRow key={stock.ticker} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
@@ -1565,17 +1543,6 @@ function OldStockTable() {
             </TableBody>
           </Table>
         </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t">
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground px-3">{page} / {totalPages}</span>
-            <Button size="icon" variant="outline" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
