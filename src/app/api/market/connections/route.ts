@@ -140,6 +140,8 @@ export async function GET() {
                 'Option B (VPS): Set EGXPY_SERVICE_URL=http://127.0.0.1:8010 in .env',
               ],
       });
+    }
+
     let lightDb;
     try {
       lightDb = getStocksDb();

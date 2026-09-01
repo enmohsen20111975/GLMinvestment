@@ -90,6 +90,9 @@ export function PurgeCacheButton() {
       }
     } catch {
       toast.error('خطأ في الاتصال');
+    } finally {
+      setPurging(false);
+    }
   };
 
   const [generating, setGenerating] = useState(false);
