@@ -14352,3 +14352,82 @@ Stage Summary:
 - 🔜 commit + push
 - 🔜 المرحلة القادمة: تشديد شروط الدخول (تراكم/Liquidity Grab) + مدة احتفاظ قصيرة
 
+
+
+---
+Task ID: STRICT-ENTRY-FILTERS-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تشديد شروط الدخول + تصحيح تصنيف الإفصاحات (V40.2 EGX)
+
+Work Log:
+
+### Phase 1: تصحيح تصنيف الإفصاحات (المرحلة الأولى)
+تعديل DISCLOSURE_TYPES في egx_disclosure_engine.py حسب الجدول المطلوب:
+- SUBSCRIPTION_RIGHTS: +2 → 0 (NEUTRAL) — تخفيف/dilution غالبًا
+- FREE_SHARES: +2 → +1 (BOOST) — أقل قوة من الاكتتاب
+- DIVIDEND: -1 → CONTEXT (قبل ex-date=0، بعد=-1) — context-aware scoring
+- EARNINGS: 0 → dynamic (يحلل النص: قفزة قوية +2، نمو +1، خسارة -2، تراجع -1)
+
+دوال جديدة:
+- _score_earnings_dynamic(): تحليل ديناميكي لنتائج الأعمال (4 قواميس كلمات)
+- _is_after_ex_date(): تحديد هل الإفصاح بعد ex-date ولا قبله
+- classify_disclosure() بقت تقبل disclosure_date parameter للـ context-aware scoring
+
+اختبارات: 16/16 سيناريو نجح (زيادة رأس المال، حقوق اكتتاب، توزيع قبل/بعد ex-date،
+إيقاف، شطب، استحواذ، نتائج أعمال قوية/ضعيفة/محايدة، أسهم مجانية، تجزئة،
+مراقب حسابات، استقالة، كوبون، نص مش إفصاح، تخزين، تكامل، سهم نظيف)
+
+### Phase 2: تشديد شروط الدخول (المرحلة الثانية)
+بناء vps-service/analyzers/strict_entry_filters.py (530 LOC):
+- is_in_accumulation(): نطاق ضيق + حجم هادي + مفيش قفزة + بعيد عن القمة
+- is_liquidity_grab(): مسح تحت الدعم + رجوع فوقه + تأكيد حجم
+- is_late_entry(): قريب من القمة + RSI عالي + صعود قوي (Don't Chase)
+- evaluate_strict_entry(): القرار النهائي (ACCEPT/REJECT)
+
+الـ thresholds (EGX-calibrated):
+- Accumulation: range<12%, vol<1.2×, recent_gain<12%, dist_from_high≥8%
+- Grab: penetration≥0.5%, support_lookback=20
+- Late: dist_from_high<6% | RSI>65 | recent_gain>15%
+
+اختبارات: 7/7 سيناريو نجح (تراكم، late entry، grab، كسر بلا رجوع،
+مطاردة 18%، سهم عادي، بيانات غير كافية)
+
+### Phase 3: التكامل في V40.2
+دمج STRICT_ENTRY في v40_2_daily_generator.py (السطر 1601-1640):
+- بـ toggle V40_2_STRICT_ENTRY (default OFF للتوافق مع الباك-تست القديم)
+- بـ يشتغل قبل DISCLOSURE_IMPACT (entry check أول، disclosure ثاني)
+- لو REJECT → continue (hard reject) + سجل السبب في proofs
+- لو ACCEPT → سجل نوع الدخول (accumulation/grab)
+- safe-by-design: لو فشل → نكمّل بالسلوك القديم
+
+### Phase 4: اختبار التكامل الكامل (4 سيناريوهات)
+1. تراكم + لا إفصاح → ACCEPT ✅
+2. دخول متأخر + استحواذ (BOOST) → REJECT (late entry يلغي الإفصاح الإيجابي) ✅
+3. Liquidity Grab + إيقاف تداول (VETO) → REJECT (VETO يلغي القبول) ✅
+4. Liquidity Grab + لا إفصاح → ACCEPT ✅
+
+الـ pipeline شغّال صح: strict entry (first) → disclosure VETO (final gate)
+
+### Phase 5: الالتزام بالقواعد (من البرومبت)
+1. ممنوع features جديدة برة النطاق ✅ (تصنيف + entry filters بس)
+2. ممنوع لمس Risk/Position Sizing ✅ (ما لمستش)
+3. ممنوع بيانات وهمية ✅ (كل test cases واقعية)
+4. feature flag لكل تغيير ✅ (V40_2_STRICT_ENTRY + V40_2_DISCLOSURE_IMPACT)
+5. كل function مستخدمة ✅ (مفيش كود يتيم)
+6. syntax check قبل commit ✅
+7. اتباع Documentation ✅ (Rule 20: Python=العقل، Rule 27: NO-FAKE-DATA، Rule 29: UNIFIED-SYSTEM)
+
+### Phase 6: اللوج (logging)
+أي رفض بيظهر بوضوح:
+- [STRICT-ENTRY-REJECT] {ticker} on {date}: ❌ دخول متأخر (Don't Chase): ...
+- [DISCLOSURE-VETO] {ticker} on {date}: 🚨 إيقاف التداول → تجميد
+- [NEWS-VETO] {ticker} on {date}: 🚨 NEWS VETO: ...
+
+Stage Summary:
+- ✅ تصحيح تصنيف الإفصاحات (16/16 اختبار نجح)
+- ✅ بناء strict_entry_filters.py (7/7 اختبار نجح)
+- ✅ دمج في V40.2 خلف V40_2_STRICT_ENTRY flag
+- ✅ اختبار تكامل كامل (4/4 سيناريوهات نجح)
+- ✅ اللوج بيوضح سبب أي رفض
+- 🔜 commit + push
+

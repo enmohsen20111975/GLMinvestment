@@ -63,6 +63,12 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════
 
 # كل نوع: event_type, impact_score (-2 لـ +2), verdict, keywords_ar, keywords_en
+# تصحيح 2026-09-01 (بعد توجيه المالك — التصنيف الواقعي للسوق المصري):
+#   - SUBSCRIPTION_RIGHTS: +2 → 0 (تخفيف/dilution غالبًا، مش فرصة)
+#   - FREE_SHARES: +2 → +1 (أقل قوة من الاكتتاب)
+#   - DIVIDEND: -1 → CONTEXT (قبل ex-date محايد/إيجابي، بعد ex-date -1)
+#   - EARNINGS: 0 → dynamic (يحلل النص: قفزة +1/+2، خسارة -1/-2)
+#   - الباقي كما هو (تمام)
 DISCLOSURE_TYPES: Dict[str, Dict[str, Any]] = {
     'CAPITAL_INCREASE': {
         'score': +1, 'verdict': 'BOOST',
@@ -72,22 +78,27 @@ DISCLOSURE_TYPES: Dict[str, Dict[str, Any]] = {
         'keywords_en': ['capital increase', 'increase in capital', 'raise capital'],
     },
     'SUBSCRIPTION_RIGHTS': {
-        'score': +2, 'verdict': 'BOOST_STRONG',
-        'reason_ar': 'حقوق اكتتاب — فرصة للمساهمين (سهم بيفرقع)',
+        # تصحيح: تخفيف (dilution) غالبًا → NEUTRAL (مش BOOST_STRONG)
+        'score': 0, 'verdict': 'NEUTRAL',
+        'reason_ar': 'حقوق اكتتاب — تخفيف للمساهمين الحاليين (غالبًا محايد)',
         'keywords_ar': ['حقوق اكتتاب', 'اكتتاب', 'طرح حقوق', 'rights issue',
                         'حق أولوية', 'أسهم الأولوية'],
         'keywords_en': ['subscription rights', 'rights issue', 'preemptive rights'],
     },
     'FREE_SHARES': {
-        'score': +2, 'verdict': 'BOOST_STRONG',
-        'reason_ar': 'أسهم مجانية — مكافأة للمساهمين (سعر ينزل بس قيمة السهم تزيد)',
+        # تصحيح: أقل قوة من الاكتتاب → BOOST (+1) مش BOOST_STRONG
+        'score': +1, 'verdict': 'BOOST',
+        'reason_ar': 'أسهم مجانية — مكافأة للمساهمين (قيمة السهم تزيد بسعر ينزل)',
         'keywords_ar': ['أسهم مجانية', 'سهم مجاني', 'منح أسهم', 'stock dividend',
                         'أسهم منحة', 'توزيع أسهم'],
         'keywords_en': ['free shares', 'bonus shares', 'stock dividend', 'capitalization'],
     },
     'DIVIDEND': {
-        'score': -1, 'verdict': 'REDUCE',
-        'reason_ar': 'توزيع أرباح — ex-date السعر بينزل بقيمة التوزيع',
+        # تصحيح: CONTEXT — قبل ex-date محايد/إيجابي، بعد ex-date سلبي
+        # الـ score الافتراضي هنا = 0 (محايد). الـ context-aware scoring بـ يتم
+        # في classify_disclosure() لو فيه إشارة للتاريخ. لو مفيش → محايد.
+        'score': 0, 'verdict': 'NEUTRAL',
+        'reason_ar': 'توزيع أرباح — محايد قبل ex-date، سلبي بعد ex-date',
         'keywords_ar': ['توزيع أرباح', 'توزيعات أرباح', 'توزيع نقدي', 'dividend',
                         'توزيع الكوبون', 'قيد الأرباح'],
         'keywords_en': ['dividend', 'cash dividend', 'distribution', 'payout'],
@@ -99,6 +110,9 @@ DISCLOSURE_TYPES: Dict[str, Dict[str, Any]] = {
         'keywords_en': ['coupon', 'bond interest', 'bond coupon'],
     },
     'EARNINGS': {
+        # تصحيح: dynamic scoring من النص (مش ثابت 0)
+        # الـ score هنا = 0 (default). classify_disclosure() بـ يـ override
+        # لو فيه كلمات قفزة أرباح قوية → +1/+2، لو خسائر → -1/-2
         'score': 0, 'verdict': 'NEUTRAL',
         'reason_ar': 'نتائج أعمال — محايد (لازم تحليل الرقم نفسه)',
         'keywords_ar': ['نتائج أعمال', 'القوائم المالية', 'تقرير سنوي', 'تقرير ربع سنوي',
@@ -156,6 +170,105 @@ FREEZE_THRESHOLD = -1
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# 2a. Earnings dynamic scoring (keyword-based, EGX-calibrated)
+# ═══════════════════════════════════════════════════════════════════════
+
+# كلمات قفزة أرباح قوية (إيجابي) — +1 لـ +2
+EARNINGS_POSITIVE_STRONG = [
+    'ارباح قياسيه', 'ارباح قياسية', 'نمو قوي', 'نمو كبير', 'قفزه', 'قفزة',
+    'تضاعف', 'تضاعفت', 'رقم قياسي', 'اعلي ربح', 'اعلى ربح', 'تحقيق ارباح',
+    'زياده كبيره', 'زيادة كبيرة', 'صعود قوي', 'record profit', 'record earnings',
+    'surge', 'soar', 'beat estimates', 'beat expectations', 'jump',
+]
+
+# كلمات نمو معتدل (إيجابي خفيف) — +1
+EARNINGS_POSITIVE_MODERATE = [
+    'نمو', 'ارتفاع الارباح', 'ارتفاع ارباح', 'زياده', 'زيادة', 'تحسن',
+    'صعود', 'growth', 'increase', 'rise', 'gain', 'improve',
+]
+
+# كلمات خسائر قوية (سلبي) — -1 لـ -2
+EARNINGS_NEGATIVE_STRONG = [
+    'خساره', 'خسارة', 'خسائر', 'خسائر كبيره', 'خسائر كبيرة', 'تراجع حاد',
+    'انهيار', 'تراجع قوي', 'نزول حاد', 'loss', 'losses', 'plunge', 'crash',
+    'collapse', 'sharp decline', 'warns', 'warning',
+]
+
+# كلمات تراجع معتدل (سلبي خفيف) — -1
+EARNINGS_NEGATIVE_MODERATE = [
+    'تراجع', 'انخفاض', 'نزول', 'هبوط', 'decline', 'drop', 'fall', 'decrease',
+    'miss', 'below estimates',
+]
+
+
+def _score_earnings_dynamic(title: str, content: str = '') -> Tuple[int, str]:
+    """
+    تحليل ديناميكي لنتائج الأعمال من النص.
+
+    Returns:
+        (score, reason_ar)
+        score ∈ {-2, -1, 0, +1, +2}
+    """
+    text = f"{title} {content}"
+    normalized = _normalize_text(text)
+
+    pos_strong = sum(1 for kw in EARNINGS_POSITIVE_STRONG if _normalize_text(kw) in normalized)
+    pos_mod = sum(1 for kw in EARNINGS_POSITIVE_MODERATE if _normalize_text(kw) in normalized)
+    neg_strong = sum(1 for kw in EARNINGS_NEGATIVE_STRONG if _normalize_text(kw) in normalized)
+    neg_mod = sum(1 for kw in EARNINGS_NEGATIVE_MODERATE if _normalize_text(kw) in normalized)
+
+    # Strong positive wins (+2)
+    if pos_strong >= 1:
+        return +2, f'نتائج أعمال قوية ({pos_strong}× قفزة قوية + {pos_mod}× نمو)'
+    # Strong negative wins (-2)
+    if neg_strong >= 1:
+        return -2, f'نتائج أعمال ضعيفة ({neg_strong}× خسارة قوية + {neg_mod}× تراجع)'
+    # Moderate positive (+1)
+    if pos_mod >= 2:
+        return +1, f'نمو معتدل في الأرباح ({pos_mod}× كلمات نمو)'
+    # Moderate negative (-1)
+    if neg_mod >= 2:
+        return -1, f'تراجع معتدل في الأرباح ({neg_mod}× كلمات تراجع)'
+    # Single keyword (light signal)
+    if pos_mod == 1 and neg_mod == 0:
+        return +1, 'نمو خفيف في الأرباح'
+    if neg_mod == 1 and pos_mod == 0:
+        return -1, 'تراجع خفيف في الأرباح'
+    # Neutral (no signal keywords)
+    return 0, 'نتائج أعمال — محايد (لازم تحليل الرقم نفسه)'
+
+
+def _is_after_ex_date(title: str, content: str, disclosure_date: str = '') -> bool:
+    """
+    تحديد هل الإفصاح بعد ex-date (السعر بينزل) ولا قبله.
+
+    منطق بسيط (بدون تواريخ دقيقة):
+      - لو فيه كلمات "تم التوزيع" / "تاريخ الاستحقاق" + تاريخ ماضي → after
+      - لو فيه كلمات "سوف يوزع" / "توزيع مقرر" / "board approved" → before
+      - default: before (محايد — آمن)
+
+    Returns: True لو بعد ex-date (سلبي)، False لو قبله (محايد)
+    """
+    text = f"{title} {content} {disclosure_date}"
+    normalized = _normalize_text(text)
+
+    after_keywords = ['تم التوزيع', 'توزيعات المنحه', 'تمت التوزيعات',
+                      'تاريخ الاستحقاق', 'استحقاق التوزيع', 'entitlement date',
+                      'ex-dividend date', 'ex date', 'distributed', 'paid']
+    before_keywords = ['سوف يوزع', 'سيتم التوزيع', 'توزيع مقرر', 'مقرر التوزيع',
+                       'board approved', 'approved dividend', 'declares dividend',
+                       'will distribute', 'قيد الاعتماد']
+
+    for kw in after_keywords:
+        if _normalize_text(kw) in normalized:
+            return True
+    for kw in before_keywords:
+        if _normalize_text(kw) in normalized:
+            return False
+    return False  # default: before (محايد — آمن)
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # 2. Text Normalization + Classification
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -174,9 +287,15 @@ def _normalize_text(text: str) -> str:
     return text.lower()
 
 
-def classify_disclosure(title: str, content: str = '') -> Optional[Dict[str, Any]]:
+def classify_disclosure(title: str, content: str = '',
+                          disclosure_date: str = '') -> Optional[Dict[str, Any]]:
     """
     تصنيف إفصاح بالكلمات المفتاحية الصارمة.
+
+    Args:
+        title: عنوان الإفصاح
+        content: محتوى الإفصاح (optional)
+        disclosure_date: تاريخ الإفصاح (optional — لـ context-aware scoring)
 
     Returns:
         {event_type, score, verdict, reason_ar, matched_keywords} or None
@@ -220,6 +339,37 @@ def classify_disclosure(title: str, content: str = '') -> Optional[Dict[str, Any
                     'reason_ar': config['reason_ar'],
                     'matched_keywords': matched[:3],
                 }
+
+    # ── Dynamic score overrides (context-aware) ──
+    if best_match is not None:
+        # EARNINGS: dynamic scoring من النص (مش ثابت 0)
+        if best_match['event_type'] == 'EARNINGS':
+            dyn_score, dyn_reason = _score_earnings_dynamic(title, content)
+            if dyn_score != 0:
+                best_match['score'] = dyn_score
+                best_match['reason_ar'] = dyn_reason
+                # Update verdict based on dynamic score
+                if dyn_score >= +2:
+                    best_match['verdict'] = 'BOOST_STRONG'
+                elif dyn_score >= +1:
+                    best_match['verdict'] = 'BOOST'
+                elif dyn_score <= -2:
+                    best_match['verdict'] = 'VETO'
+                elif dyn_score <= -1:
+                    best_match['verdict'] = 'REDUCE'
+                # else: stays NEUTRAL
+
+        # DIVIDEND: context-aware (before/after ex-date)
+        elif best_match['event_type'] == 'DIVIDEND':
+            is_after = _is_after_ex_date(title, content, disclosure_date)
+            if is_after:
+                best_match['score'] = -1
+                best_match['verdict'] = 'REDUCE'
+                best_match['reason_ar'] = 'توزيع أرباح — بعد ex-date (السعر بينزل)'
+            else:
+                best_match['score'] = 0
+                best_match['verdict'] = 'NEUTRAL'
+                best_match['reason_ar'] = 'توزيع أرباح — قبل ex-date (محايد)'
 
     return best_match
 
@@ -571,19 +721,28 @@ if __name__ == '__main__':
     assert r['event_type'] == 'CAPITAL_INCREASE' and r['score'] == 1
     print("  ✅ PASS")
 
-    # Test 2: Subscription rights (BOOST_STRONG)
-    print("\n=== Test 2: حقوق اكتتاب ===")
+    # Test 2: Subscription rights (NEUTRAL — تصحيح من +2 لـ 0)
+    print("\n=== Test 2: حقوق اكتتاب (NEUTRAL — تصحيح) ===")
     r = classify_disclosure("بشأن بدء طرح حقوق اكتتاب لشركة ABUK")
     print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
-    assert r['event_type'] == 'SUBSCRIPTION_RIGHTS' and r['score'] == 2
-    print("  ✅ PASS")
+    assert r['event_type'] == 'SUBSCRIPTION_RIGHTS' and r['score'] == 0
+    print("  ✅ PASS (تخفيف/dilution — محايد)")
 
-    # Test 3: Dividend (REDUCE)
-    print("\n=== Test 3: توزيع أرباح ===")
-    r = classify_disclosure("إفصاح عن توزيع أرباح نقدية - شركة HRHO")
+    # Test 3: Dividend BEFORE ex-date (NEUTRAL — context)
+    print("\n=== Test 3: توزيع أرباح قبل ex-date (NEUTRAL) ===")
+    r = classify_disclosure("إفصاح: مجلس الإدارة يقرر توزيع أرباح نقدية - شركة HRHO")
     print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
-    assert r['event_type'] == 'DIVIDEND' and r['score'] == -1
-    print("  ✅ PASS")
+    print(f"  Reason: {r['reason_ar']}")
+    assert r['event_type'] == 'DIVIDEND' and r['score'] == 0
+    print("  ✅ PASS (قبل ex-date — محايد)")
+
+    # Test 3b: Dividend AFTER ex-date (REDUCE — context)
+    print("\n=== Test 3b: توزيع أرباح بعد ex-date (REDUCE) ===")
+    r = classify_disclosure("توزيع أرباح نقدية - تاريخ الاستحقاق", "تم التوزيع فعلياً")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    print(f"  Reason: {r['reason_ar']}")
+    assert r['event_type'] == 'DIVIDEND' and r['score'] == -1 and r['verdict'] == 'REDUCE'
+    print("  ✅ PASS (بعد ex-date — سلبي)")
 
     # Test 4: Suspension (VETO)
     print("\n=== Test 4: إيقاف التداول ===")
@@ -606,24 +765,89 @@ if __name__ == '__main__':
     assert r['event_type'] == 'ACQUISITION' and r['score'] == 2
     print("  ✅ PASS")
 
-    # Test 7: Earnings (NEUTRAL)
-    print("\n=== Test 7: نتائج أعمال ===")
+    # Test 7: Earnings with strong positive (dynamic +2)
+    print("\n=== Test 7: نتائج أعمال قوية (dynamic +2) ===")
+    r = classify_disclosure("نتائج أعمال: أرباح قياسية ونمو قوي لشركة COMI")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    print(f"  Reason: {r['reason_ar']}")
+    assert r['event_type'] == 'EARNINGS' and r['score'] == +2
+    print("  ✅ PASS (dynamic +2)")
+
+    # Test 7b: Earnings with strong negative (dynamic -2)
+    print("\n=== Test 7b: نتائج أعمال ضعيفة (dynamic -2) ===")
+    r = classify_disclosure("نتائج أعمال: خسائر كبيرة وتراجع حاد لشركة ISPH")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    print(f"  Reason: {r['reason_ar']}")
+    assert r['event_type'] == 'EARNINGS' and r['score'] == -2
+    print("  ✅ PASS (dynamic -2)")
+
+    # Test 7c: Earnings with moderate positive (dynamic +1)
+    print("\n=== Test 7c: نتائج أعمال — نمو معتدل (dynamic +1) ===")
+    r = classify_disclosure("نتائج أعمال: نمو وارتفاع الأرباح لشركة TMGH")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    print(f"  Reason: {r['reason_ar']}")
+    assert r['event_type'] == 'EARNINGS' and r['score'] == +1
+    print("  ✅ PASS (dynamic +1)")
+
+    # Test 7d: Earnings neutral (لا كلمات قوية)
+    print("\n=== Test 7d: نتائج أعمال محايدة ===")
     r = classify_disclosure("نشر القوائم المالية لشركة COMI")
     print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
     assert r['event_type'] == 'EARNINGS' and r['score'] == 0
     print("  ✅ PASS (محايد)")
 
-    # Test 8: No match (returns None)
-    print("\n=== Test 8: نص مش إفصاح ===")
+    # Test 8: Free shares (BOOST +1 — تصحيح من +2)
+    print("\n=== Test 8: أسهم مجانية (BOOST +1 — تصحيح) ===")
+    r = classify_disclosure("إفصاح: منح أسهم مجانية للمساهمين - شركة AALR")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    assert r['event_type'] == 'FREE_SHARES' and r['score'] == +1
+    print("  ✅ PASS (BOOST +1 — أقل قوة من الاكتتاب)")
+
+    # Test 9: Stock split (BOOST +1)
+    print("\n=== Test 9: تجزئة سهم ===")
+    r = classify_disclosure("بشأن تجزئة السهم لشركة ABUK")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    assert r['event_type'] == 'STOCK_SPLIT' and r['score'] == +1
+    print("  ✅ PASS")
+
+    # Test 10: Auditor change (REDUCE -1)
+    print("\n=== Test 10: تغيير مراقب الحسابات ===")
+    r = classify_disclosure("تعيين مراقب حسابات جديد لشركة COMI")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    assert r['event_type'] == 'AUDITOR_CHANGE' and r['score'] == -1
+    print("  ✅ PASS")
+
+    # Test 11: Resignation (REDUCE -1)
+    print("\n=== Test 11: استقالة ===")
+    r = classify_disclosure("استقالة عضو مجلس الإدارة لشركة HRHO")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    assert r['event_type'] == 'RESIGNATION' and r['score'] == -1
+    print("  ✅ PASS")
+
+    # Test 12: Coupon (REDUCE -1)
+    print("\n=== Test 12: كوبون سندات ===")
+    r = classify_disclosure("سداد كوبون سندات شركة EFIH")
+    print(f"  Event: {r['event_type']} | Score: {r['score']:+d} | Verdict: {r['verdict']}")
+    assert r['event_type'] == 'COUPON' and r['score'] == -1
+    print("  ✅ PASS")
+
+    # Test 13: No match (returns None)
+    print("\n=== Test 13: نص مش إفصاح ===")
     r = classify_disclosure("تحليل: السهم بيتجميل بشكل جيد")
     print(f"  Result: {r}")
     assert r is None
     print("  ✅ PASS (مفيش إفصاح)")
 
-    # Test 9: Storage + retrieval
-    print("\n=== Test 9: تخزين + استرجاع ===")
-    # Inject a test disclosure
-    test_disc = inject_disclosure('TESTCO', 'إفصاح: توزيع أرباح نقدية', '2026-09-01')
+    # Test 14: Storage + retrieval (with dynamic dividend scoring)
+    print("\n=== Test 14: تخزين + استرجاع (dividend بعد ex-date) ===")
+    # clear old test data
+    import sqlite3 as _sql
+    _c = _sql.connect(str(DB_PATH))
+    _c.execute("DELETE FROM egx_disclosures WHERE ticker = 'TESTCO'")
+    _c.commit()
+    _c.close()
+    # Inject dividend after ex-date (should be -1)
+    test_disc = inject_disclosure('TESTCO', 'توزيع أرباح نقدية - تاريخ الاستحقاق', '2026-09-01')
     print(f"  Injected: {test_disc['event_type']} score={test_disc['impact_score']}")
     # Retrieve
     impact = get_latest_disclosure_impact('TESTCO', days_back=3)
@@ -631,21 +855,21 @@ if __name__ == '__main__':
     assert impact['has_disclosure'] and impact['impact_score'] == -1
     print("  ✅ PASS")
 
-    # Test 10: V40.2 integration helper
-    print("\n=== Test 10: V40.2 integration ===")
+    # Test 15: V40.2 integration helper
+    print("\n=== Test 15: V40.2 integration ===")
     result = get_disclosure_impact_for_ticker('TESTCO')
     print(f"  Score: {result['impact_score']:+d} | Verdict: {result['verdict']}")
     print(f"  Proof: {result['proof_string']}")
     print("  ✅ PASS")
 
-    # Test 11: No disclosure (clean ticker)
-    print("\n=== Test 11: سهم بدون إفصاحات ===")
+    # Test 16: No disclosure (clean ticker)
+    print("\n=== Test 16: سهم بدون إفصاحات ===")
     result = get_disclosure_impact_for_ticker('CLEANTICKER')
     print(f"  has_disclosure: {result['has_disclosure']} | Score: {result['impact_score']}")
     assert not result['has_disclosure'] and result['impact_score'] == 0
     print("  ✅ PASS (عادي — مش هيأثر)")
 
     print("\n" + "=" * 70)
-    print("✅ EGX Disclosure Engine ready")
+    print("✅ EGX Disclosure Engine ready (16/16 tests pass)")
     print(f"\nIntegration in V40.2: V40_2_DISCLOSURE_IMPACT=1 (default OFF for backtest)")
     print(f"Score -2 (VETO) → تجميد | Score -1 → وقف طوارئ | Score +1/+2 → دفعة")

@@ -1,6 +1,70 @@
 # Changelog
 
 
+## [STRICT-ENTRY-FILTERS] — تشديد شروط الدخول + تصحيح تصنيف الإفصاحات (2026-09-01)
+
+> **توجيه المالك:** "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في حالتين:
+> تراكم حقيقي أو Liquidity Grab واضح. غير كده → رفض. + تصحيح تصنيف الإفصاحات
+> (حقوق اكتتاب، نتائج أعمال، توزيع أرباح) عشان يبقى واقعي للسوق المصري."
+
+### التعديلات (3 ملفات)
+
+#### 1. `vps-service/analyzers/egx_disclosure_engine.py` (تعديل — تصحيح التصنيف)
+- **SUBSCRIPTION_RIGHTS**: +2 → 0 (NEUTRAL) — تخفيف/dilution غالبًا
+- **FREE_SHARES**: +2 → +1 (BOOST) — أقل قوة من الاكتتاب
+- **DIVIDEND**: -1 → CONTEXT (قبل ex-date=0، بعد=-1) — context-aware scoring
+- **EARNINGS**: 0 → dynamic (يحلل النص: قفزة قوية +2، نمو +1، خسارة -2، تراجع -1)
+- دوال جديدة: `_score_earnings_dynamic()`, `_is_after_ex_date()`
+- `classify_disclosure()` بقت تقبل `disclosure_date` parameter
+- اختبارات: 16/16 سيناريو نجح ✅
+
+#### 2. `vps-service/analyzers/strict_entry_filters.py` (جديد — 530 LOC)
+3 دوال رئيسية:
+- `is_in_accumulation()`: نطاق ضيق + حجم هادي + مفيش قفزة + بعيد عن القمة
+- `is_liquidity_grab()`: مسح تحت الدعم + رجوع فوقه + تأكيد حجم
+- `is_late_entry()`: قريب من القمة + RSI عالي + صعود قوي (Don't Chase)
+- `evaluate_strict_entry()`: القرار النهائي (ACCEPT/REJECT)
+
+Thresholds (EGX-calibrated):
+- Accumulation: range<12%, vol<1.2×, recent_gain<12%, dist_from_high≥8%
+- Grab: penetration≥0.5%, support_lookback=20
+- Late: dist_from_high<6% | RSI>65 | recent_gain>15%
+
+اختبارات: 7/7 سيناريو نجح ✅
+
+#### 3. `vps-service/jobs/v40_2_daily_generator.py` (تعديل — دمج)
+دمج STRICT_ENTRY (السطر 1601-1640):
+- بـ toggle `V40_2_STRICT_ENTRY` (default OFF للتوافق مع الباك-تست القديم)
+- بـ يشتغل قبل DISCLOSURE_IMPACT (entry check أول، disclosure ثاني)
+- لو REJECT → `continue` (hard reject) + سجل السبب في `proofs`
+- لو ACCEPT → سجل نوع الدخول (accumulation/grab)
+- safe-by-design: لو فشل → نكمّل بالسلوك القديم
+
+### النتائج (integration test — 4 سيناريوهات)
+
+| Scenario | Entry Decision | Disclosure | Final |
+|---|---|---|---|
+| تراكم + لا إفصاح | ACCEPT | NEUTRAL | ✅ ACCEPT |
+| دخول متأخر + استحواذ | REJECT (late) | +2 BOOST | ❌ REJECT |
+| Liquidity Grab + إيقاف تداول | ACCEPT | -2 VETO | ❌ REJECT |
+| Liquidity Grab + لا إفصاح | ACCEPT | NEUTRAL | ✅ ACCEPT |
+
+الـ pipeline: `strict entry (first) → disclosure VETO (final gate)`
+
+### القواعد ما اتنكسرتش
+- ✅ feature flag لكل تغيير (V40_2_STRICT_ENTRY + V40_2_DISCLOSURE_IMPACT)
+- ✅ مفيش كود يتيم (كل function مستخدمة + مُختبَرة)
+- ✅ syntax check قبل commit
+- ✅ Rule 20: Python=العقل (كل المنطق في Python)
+- ✅ Rule 27: NO-FAKE-DATA (كل test cases واقعية)
+- ✅ Rule 29: UNIFIED-SYSTEM (entry + disclosure مترابطين في pipeline واحد)
+
+### اللوج (logging)
+أي رفض بيظهر بوضوح:
+- `[STRICT-ENTRY-REJECT] {ticker} on {date}: ❌ دخول متأخر (Don't Chase): ...`
+- `[DISCLOSURE-VETO] {ticker} on {date}: 🚨 إيقاف التداول → تجميد`
+
+
 ## [EGX-DISCLOSURE-ENGINE] — حل العزلة عن الأخبار: إفصاحات EGX الرسمية (2026-09-01)
 
 > **توجيه المالك:** "اقطع البحث العشوائي تمامًا. المصدر الوحيد المسموح: صفحة الإفصاحات الرسمية للبورصة المصرية. يحول الإفصاح لـ JSON بسيط (رمز السهم + نوع الحدث + تاريخ + ملخص). يدي درجة تأثير رقمية من -2 إلى +2."

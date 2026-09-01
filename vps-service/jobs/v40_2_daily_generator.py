@@ -1598,6 +1598,47 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     except Exception as _news_err:
                         pass  # safe-by-design: لو news scorer فشل → نكمّل
 
+            # ── STRICT ENTRY FILTER (2026-09-01): تراكم أو Liquidity Grab فقط ──
+            # توجيه المالك: "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في
+            # حالتين: تراكم حقيقي أو Liquidity Grab واضح. غير كده → رفض."
+            # الـ module: vps-service/analyzers/strict_entry_filters.py
+            # - is_late_entry → continue (Don't Chase — hard reject)
+            # - is_in_accumulation OR is_liquidity_grab → قبول
+            # - غير كده → continue (رفض — مش setup)
+            # NOTE: بـ يشتغل على بيانات الـ day_idx الحالي (closes/highs/lows/volumes)
+            # Toggle: V40_2_STRICT_ENTRY=1 (default OFF للتوافق مع الباك-تست القديم)
+            if os.environ.get('V40_2_STRICT_ENTRY', '0') == '1':
+                try:
+                    from analyzers.strict_entry_filters import evaluate_strict_entry
+                    _entry_closes = closes[:day_idx + 1] if day_idx < len(closes) else closes
+                    _entry_highs = highs[:day_idx + 1] if day_idx < len(highs) else highs
+                    _entry_lows = lows[:day_idx + 1] if day_idx < len(lows) else lows
+                    _entry_vols = volumes[:day_idx + 1] if day_idx < len(volumes) else volumes
+                    _entry_rsi = result.get('rsi') or result.get('indicators', {}).get('rsi')
+
+                    _entry = evaluate_strict_entry(
+                        _entry_closes, _entry_highs, _entry_lows, _entry_vols, rsi=_entry_rsi
+                    )
+
+                    if _entry['decision'] == 'REJECT':
+                        print(f"[STRICT-ENTRY-REJECT] {ticker} on {scan_date}: "
+                              f"{_entry['reason'][:100]}", flush=True)
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['strict_entry_reject'] = _entry['reason']
+                        continue  # hard reject — مش تراكم ولا grab
+
+                    # قبول — سجّل السبب
+                    if 'proofs' not in result or result['proofs'] is None:
+                        result['proofs'] = {}
+                    result['proofs']['strict_entry'] = _entry['reason']
+                    if _entry.get('is_accumulation'):
+                        result['strict_entry_type'] = 'accumulation'
+                    elif _entry.get('is_grab'):
+                        result['strict_entry_type'] = 'liquidity_grab'
+                except Exception as _entry_err:
+                    pass  # safe-by-design: لو strict entry فشل → نكمّل بالسلوك القديم
+
             # ── DISCLOSURE IMPACT (2026-09-01): إفصاحات EGX الرسمية ──
             # توجيه المالك: "اقطع البحث العشوائي. المصدر الوحيد: الإفصاحات الرسمية.
             # درجة تأثير -2 لـ +2. لو سلبي قوي → جمّد الإشارة. لو إيجابي → دفعة."
