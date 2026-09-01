@@ -274,9 +274,11 @@ def run_version(label, flags, tickers):
                 from analyzers.short_holding_exit import evaluate_force_exit
                 # Build price_history for holding check
                 sh_history = [{'close': c} for c in data['closes'][i+1:i+1+result['days']+1]]
+                end_date = data['dates'][min(i + result['days'], len(data['dates'])-1)]
+                end_price = future_closes[result['days']-1] if future_closes and len(future_closes) >= result['days'] else signal['entry']
                 force = evaluate_force_exit(
-                    entry_time=date, current_time=data['dates'][min(i + result['days'], len(data['dates'])-1)],
-                    entry_price=signal['entry'], current_price=future_closes[result['days']-1] if future_closes else signal['entry'],
+                    entry_date=date, current_date=end_date,
+                    entry_price=signal['entry'], current_price=end_price,
                     price_history=sh_history,
                     opens=data['opens'][i+1:i+1+result['days']+1],
                     highs=future_highs[:result['days']],

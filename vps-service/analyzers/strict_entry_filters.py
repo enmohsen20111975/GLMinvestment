@@ -46,14 +46,15 @@ from typing import List, Dict, Any, Optional, Tuple
 
 # ═══════════════════════════════════════════════════════════════════════
 # Config (thresholds — EGX-calibrated)
+# تعديل 2026-09-01: تخفيف العتبات بعد باك-تست (كان بـ يرفض كل شيء)
 # ═══════════════════════════════════════════════════════════════════════
 
 # Accumulation thresholds
 ACCUM_LOOKBACK = 20              # فحص آخر 20 يوم
-ACCUM_RANGE_MAX_PCT = 12.0       # أقصى مدى (high-low)/low خلال 20 يوم
-ACCUM_VOL_MAX_RATIO = 1.2        # الحجم أقل من 1.2× متوسط 20 يوم
-ACCUM_RECENT_GAIN_MAX_PCT = 12.0 # أقصى صعود في آخر 5 أيام
-ACCUM_DIST_FROM_20D_HIGH_MIN_PCT = 8.0  # لازم يكون بعيد 8%+ عن قمة 20 يوم
+ACCUM_RANGE_MAX_PCT = 18.0       # أقصى مدى 18% (كان 12% — EGX أسهم كتير حركتها خشنة)
+ACCUM_VOL_MAX_RATIO = 1.4        # الحجم أقل من 1.4× (كان 1.2× — تخفيف بسيط)
+ACCUM_RECENT_GAIN_MAX_PCT = 15.0 # أقصى صعود 15% في 5 أيام (كان 12% — تخفيف)
+ACCUM_DIST_FROM_20D_HIGH_MIN_PCT = 6.0  # بعيد 6%+ عن قمة 20 يوم (كان 8% — تخفيف)
 
 # Liquidity Grab thresholds
 GRAB_LOOKBACK = 10               # فحص آخر 10 شموع
@@ -61,10 +62,10 @@ GRAB_SUPPORT_LOOKBACK = 20       # الدعم = أقل قاع في آخر 20 ي�
 GRAB_PENETRATION_PCT = 0.5       # لازم ينزل 0.5%+ تحت الدعم
 GRAB_RECOVERY_PCT = 0.0           # لازم يقفل فوق الدعم (0% recovery = فوق الدعم)
 
-# Late Entry (Don't Chase) thresholds
-LATE_DIST_FROM_HIGH_MAX_PCT = 6.0 # لو أقل من 6% من قمة 20 يوم → late
-LATE_RSI_THRESHOLD = 65.0          # RSI > 65 → late
-LATE_RECENT_GAIN_PCT = 15.0        # صعود +15% في 5 أيام → late
+# Late Entry (Don't Chase) thresholds — تخفيف
+LATE_DIST_FROM_HIGH_MAX_PCT = 8.0 # لو أقل من 8% من قمة 20 يوم → late (كان 6%)
+LATE_RSI_THRESHOLD = 70.0          # RSI > 70 → late (كان 65 — تخفيف)
+LATE_RECENT_GAIN_PCT = 18.0        # صعود +18% في 5 أيام → late (كان 15%)
 
 
 # ═══════════════════════════════════════════════════════════════════════

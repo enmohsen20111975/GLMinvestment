@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 3,
   "identity": {
     "is_index_related": false,
     "related_index": null,
     "liquidity_profile": "medium",
     "free_float_note": "",
-    "ownership_concentration": "medium",
+    "ownership_concentration": "low",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "البنك المصري الخليجي — بنك متوسط. بيتحرك مع القطاع المالي."
   },
   "price_behavior": {
     "typical_correction_pct": 13.2,
@@ -26,7 +26,7 @@
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "تصحيحاته معتدلة (10-14%). بيرتد من EMA50."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -38,13 +38,13 @@
   },
   "events_behavior": {
     "dividend": {
-      "typical_ex_date_drop_pct": 0,
+      "typical_ex_date_drop_pct": 3,
       "drop_range": [
-        0,
-        0
+        2,
+        5
       ],
       "behavior_before_ex": "",
-      "notes": ""
+      "notes": "توزيعات منتظمة. نزول بسيط."
     },
     "rights_issue_history": [],
     "capital_increase_history": [],
@@ -53,10 +53,10 @@
   "danger_flags": [],
   "learned_lessons": [],
   "machine_summary": {
-    "typical_correction_pct": 13.2,
-    "max_expected_correction_pct": 20.528087699284946,
+    "typical_correction_pct": 12,
+    "max_expected_correction_pct": 16,
     "liquidity_profile": "medium",
-    "danger_level": 1,
+    "danger_level": 2,
     "preferred_entry_style": "correction_or_grab",
     "avoid_chase": true,
     "distribution_sensitivity": "medium"
