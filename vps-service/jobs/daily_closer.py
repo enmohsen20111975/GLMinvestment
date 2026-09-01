@@ -725,6 +725,15 @@ class DailyCloser:
                         _exit_code = _force['exit_code']
                         print(f"[FORCE-EXIT-{_exit_code}] {ticker} on {_sh_current_date}: "
                               f"{_force['reason'][:90]}", flush=True)
+                        # Log decision for analysis (المحور ج — طبقة الشفافية)
+                        try:
+                            from analyzers.decision_logger import log_decision
+                            _flag = 'V40_2_SHORT_HOLDING' if _exit_code in ('max_holding_7d', 'no_move_3d', 'early_drop') else 'V40_2_DISTRIBUTION_EXIT'
+                            log_decision(ticker, 'force_exit', _exit_code,
+                                _force['reason'][:200], _flag, market='STOCKS',
+                                scan_date=_sh_current_date)
+                        except Exception:
+                            pass
                         return self._mark_closed(
                             pred_id, ticker, 'FORCE_EXIT', ((close - entry_price) / entry_price * 100),
                             highest_price_reached, lowest_price, days_elapsed,

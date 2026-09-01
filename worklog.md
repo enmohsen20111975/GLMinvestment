@@ -14801,3 +14801,70 @@ Stage Summary:
 - ✅ 9 feature flags كلها مقفولة افتراضياً
 - 🔜 commit + push
 
+
+
+---
+Task ID: UNIFIED-SYSTEM-DEEPENING-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: توحيد النظام + تعميق القيمة (5 محاور)
+
+Work Log:
+
+### المحور أ: تعميق Stock Notebooks (14/14 اختبار نجح)
+بناء apply_notebook_context() — الجسر الموحد بين النوتبوك والقرار:
+- danger_level 5 → hard reject
+- danger_level 4 → score -= 5
+- avoid_chase + is_chasing → reject
+- typical_correction > stop_distance → stop_adjustment (توسيع الوقف)
+- distribution_sensitivity=high → threshold mult ×0.8
+
+### المحور ب: توحيد طبقة الخروج (11/11 اختبار نجح)
+بناء unified_exit_engine.py — نفس المنطق، أرقام مختلفة:
+- MARKET_PROFILES: STOCKS (7d/3d/+3%/-5%) + CRYPTO (72h/24h/+5%/-8%)
+- detect_distribution_unified(): wick_ratio_mult من النوتبوك
+- should_force_exit_by_time_unified(): بالأيام أو الساعات
+- evaluate_unified_force_exit(): priority ثابتة (1=distribution > 2=max_holding > 3=no_move > 4=early_drop)
+
+### المحور ج: طبقة تسجيل الأسباب (5/5 اختبار نجح)
+بناء decision_logger.py — log_decision() + get_decision_stats():
+- DB: decision_log.db → table decision_log
+- 12 reason codes ثابتة (late_entry, danger_level_5, distribution_exit, etc.)
+- log_decision(): تسجيل reject_entry / force_exit + reason + flag + notebook_summary
+- get_decision_stats(): تحليل كم رُفضت + الأسباب (by_reason, by_symbol, by_market)
+- ربط في كل مسارات الرفض/الخروج (6 مسارات في V40.2 + 1 في daily_closer)
+
+### المحور د: ضبط مسار الكريبتو
+- ربط log_decision في كل مسارات الكريبتو (3 مسارات: strict_entry, disclosure, news)
+- نفس أسلوب تسجيل الأسباب (market='CRYPTO')
+- الكريبتو دلوقتي جزء من نفس النظام (مش جزيرة منفصلة)
+
+### المحور هـ: خطة التفعيل التدريجي
+الـ 10 feature flags كلها مقفولة افتراضياً:
+1. V40_2_STRICT_ENTRY (المرحلة 1)
+2. V40_2_DISCLOSURE_IMPACT (المرحلة 1)
+3. V40_2_SHORT_HOLDING (المرحلة 2)
+4. V40_2_DISTRIBUTION_EXIT (المرحلة 3)
+5. V40_2_NOTEBOOK_CONTEXT (المرحلة 4)
+6. V40_2_NEWS_IMPACT (المرحلة 4)
+7. V40_2_CRYPTO_STRICT_ENTRY (المرحلة 5)
+8. V40_2_CRYPTO_DISCLOSURE_IMPACT (المرحلة 5)
+9. V40_2_CRYPTO_NEWS_IMPACT (المرحلة 5)
+10. V40_2_UNIFIED_EXIT (اختياري — يحل محل 3+4)
+
+خطة التفعيل:
+- أسبوع 1: Strict Entry + Disclosure (أسهم)
+- أسبوع 2: Short Holding
+- أسبوع 3: Distribution Exit
+- أسبوع 4: Notebook influence
+- أسبوع 5: كريبتو بشكل ضيق
+
+كل مرحلة لها شرط مراقبة (decision_logger stats) قبل الانتقال.
+
+Stage Summary:
+- ✅ المحور أ: apply_notebook_context (14/14 اختبار نجح)
+- ✅ المحور ب: unified_exit_engine (11/11 اختبار نجح)
+- ✅ المحور ج: decision_logger (5/5 اختبار نجح) + ربط في 7 مسارات
+- ✅ المحور د: كريبتو مربوط في نفس النظام
+- ✅ المحور هـ: خطة تفعيل في التوثيق
+- 🔜 commit + push
+

@@ -1580,6 +1580,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             if 'proofs' not in result or result['proofs'] is None:
                                 result['proofs'] = {}
                             result['proofs']['news_veto'] = _news_result.get('proof_string', '')
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                log_decision(ticker, 'reject_entry', 'news_veto',
+                                    _news_result.get('reason', ''), 'V40_2_NEWS_IMPACT',
+                                    market='STOCKS', scan_date=scan_date, score_before=result.get('score', 0))
+                            except Exception:
+                                pass
                             continue  # hard reject
 
                         # Apply score adjustment (BOOST or REDUCE) — scale ×10 للـ V40.2 score (0-100)
@@ -1617,6 +1624,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             if 'proofs' not in result or result['proofs'] is None:
                                 result['proofs'] = {}
                             result['proofs']['notebook_reject'] = _nb_ctx['proof_string']
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                log_decision(ticker, 'reject_entry', 'danger_level_5',
+                                    'نوتبوك: danger_level=5', 'V40_2_NOTEBOOK_CONTEXT',
+                                    _nb_ctx.get('proof_string', ''), 'STOCKS',
+                                    score_before=result.get('score', 0), scan_date=scan_date)
+                            except Exception:
+                                pass
                             continue  # hard reject
 
                         # Apply score adjustment
@@ -1658,6 +1673,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         if 'proofs' not in result or result['proofs'] is None:
                             result['proofs'] = {}
                         result['proofs']['strict_entry_reject'] = _entry['reason']
+                        try:
+                            from analyzers.decision_logger import log_decision
+                            _reason_code = 'late_entry' if _entry.get('is_late') else 'not_accumulation'
+                            log_decision(ticker, 'reject_entry', _reason_code,
+                                _entry['reason'][:200], 'V40_2_STRICT_ENTRY',
+                                market='STOCKS', scan_date=scan_date, score_before=result.get('score', 0))
+                        except Exception:
+                            pass
                         continue  # hard reject — مش تراكم ولا grab
 
                     # قبول — سجّل السبب
@@ -1695,6 +1718,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             if 'proofs' not in result or result['proofs'] is None:
                                 result['proofs'] = {}
                             result['proofs']['disclosure_veto'] = _disc_result.get('proof_string', '')
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                log_decision(ticker, 'reject_entry', 'disclosure_veto',
+                                    _disc_result.get('reason_ar', ''), 'V40_2_DISCLOSURE_IMPACT',
+                                    market='STOCKS', scan_date=scan_date, score_before=result.get('score', 0))
+                            except Exception:
+                                pass
                             continue  # hard reject — تجميد الإشارة
 
                         # Apply score adjustment (BOOST or REDUCE)
@@ -2328,6 +2358,14 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                         _c_entry = evaluate_crypto_strict_entry(closes, crypto_highs, crypto_lows, crypto_vols, rsi=rsi)
                         if _c_entry['decision'] == 'REJECT':
                             print(f"  [CRYPTO-ENTRY-REJECT] {ticker}: {_c_entry['reason'][:60]}", flush=True)
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                _c_reason = 'late_entry' if _c_entry.get('is_late') else 'not_accumulation'
+                                log_decision(ticker, 'reject_entry', _c_reason,
+                                    _c_entry['reason'][:200], 'V40_2_CRYPTO_STRICT_ENTRY',
+                                    market='CRYPTO', scan_date=scan_date)
+                            except Exception:
+                                pass
                             continue
                     except Exception:
                         pass  # safe-by-design
@@ -2342,6 +2380,13 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                         _c_disc_verdict = _c_disc.get('verdict', 'NEUTRAL')
                         if _c_disc_verdict == 'VETO' and _c_disc_score <= -2:
                             print(f"  [CRYPTO-DISCLOSURE-VETO] {ticker}: {_c_disc.get('reason_ar', '')} → رفض", flush=True)
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                log_decision(ticker, 'reject_entry', 'crypto_disclosure_veto',
+                                    _c_disc.get('reason_ar', ''), 'V40_2_CRYPTO_DISCLOSURE_IMPACT',
+                                    market='CRYPTO', scan_date=scan_date)
+                            except Exception:
+                                pass
                             continue  # hard reject
                         # Log boost/reduce (no score change in simple version)
                         if _c_disc_score != 0:
@@ -2359,6 +2404,13 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                         _c_news_verdict = _c_news.get('overall_verdict', 'NEUTRAL')
                         if _c_news_verdict == 'VETO' and _c_news_score <= -2:
                             print(f"  [CRYPTO-NEWS-VETO] {ticker}: {_c_news.get('reason', '')} → رفض", flush=True)
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                log_decision(ticker, 'reject_entry', 'crypto_news_veto',
+                                    _c_news.get('reason', ''), 'V40_2_CRYPTO_NEWS_IMPACT',
+                                    market='CRYPTO', scan_date=scan_date)
+                            except Exception:
+                                pass
                             continue  # hard reject
                         if _c_news_score != 0:
                             print(f"  [CRYPTO-NEWS-{_c_news_verdict}] {ticker}: score={_c_news_score:+d} (news={_c_news.get('news_count', 0)})", flush=True)

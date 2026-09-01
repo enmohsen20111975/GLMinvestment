@@ -330,12 +330,17 @@ def get_notebook_context_for_v402(symbol: str, market: str = 'EGX') -> Dict[str,
             'proof_string': '',
             'should_reject': False,
             'danger_flags': [],
+            'typical_correction_pct': 0,
+            'avoid_chase': True,
+            'distribution_sensitivity': 'medium',
+            'stop_adjustment': 0,
         }
 
     danger_level = summary.get('danger_level', 1)
     danger_flags = notebook.get('danger_flags', [])
     avoid_chase = summary.get('avoid_chase', True)
     typical_correction = summary.get('typical_correction_pct', 0)
+    distribution_sensitivity = summary.get('distribution_sensitivity', 'medium')
 
     # Calculate score adjustment
     score_adjustment = 0
@@ -367,6 +372,133 @@ def get_notebook_context_for_v402(symbol: str, market: str = 'EGX') -> Dict[str,
         'danger_flags': danger_flags,
         'typical_correction_pct': typical_correction,
         'avoid_chase': avoid_chase,
+        'distribution_sensitivity': distribution_sensitivity,
+        'stop_adjustment': 0,  # deprecated — use apply_notebook_context instead
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 3b. apply_notebook_context() — الجسر الموحد بين النوتبوك والقرار
+# ═══════════════════════════════════════════════════════════════════════
+
+def apply_notebook_context(
+    symbol: str,
+    current_score: float,
+    stop_distance_pct: float = 0,
+    is_chasing: bool = False,
+    market: str = 'EGX',
+) -> Dict[str, Any]:
+    """
+    الجسر الوحيد بين النوتبوك ومسار القرار.
+
+    يقرأ النوتبوك ويطبق تأثيرات حقيقية:
+      - danger_level 5 → reject
+      - danger_level 4 → score -= 5
+      - typical_correction > stop_distance → stop_adjustment (توسيع الوقف)
+      - avoid_chase + is_chasing → reject
+      - distribution_sensitivity=high → distribution_threshold_adjustment
+
+    Args:
+        symbol: رمز السهم
+        current_score: الـ score الحالي من V40.2 (0-100)
+        stop_distance_pct: مسافة الوقف الحالية (%) — مثلاً 5.0 = 5%
+        is_chasing: هل السهم في حالة مطاردة (من strict entry)
+        market: السوق
+
+    Returns:
+        {
+            'should_reject': bool,
+            'reject_reason': str,
+            'new_score': float (بعد التعديل),
+            'score_adjustment': int,
+            'stop_adjustment_pct': float (توسيع الوقف — مثلاً +2.0 = أوسع بـ 2%),
+            'new_stop_distance_pct': float,
+            'distribution_threshold_mult': float (1.0=عادي، 0.8=أصعب، 1.2=أسهل),
+            'proofs': list of str,
+            'has_notebook': bool,
+        }
+    """
+    summary = get_machine_summary(symbol, market)
+
+    if not load_stock_notebook(symbol, market):
+        # No notebook → safe defaults, no changes
+        return {
+            'should_reject': False,
+            'reject_reason': '',
+            'new_score': current_score,
+            'score_adjustment': 0,
+            'stop_adjustment_pct': 0,
+            'new_stop_distance_pct': stop_distance_pct,
+            'distribution_threshold_mult': 1.0,
+            'proofs': [],
+            'has_notebook': False,
+        }
+
+    danger_level = summary.get('danger_level', 1)
+    avoid_chase = summary.get('avoid_chase', True)
+    typical_correction = summary.get('typical_correction_pct', 0)
+    max_correction = summary.get('max_expected_correction_pct', 0)
+    distribution_sensitivity = summary.get('distribution_sensitivity', 'medium')
+
+    should_reject = False
+    reject_reason = ''
+    score_adjustment = 0
+    stop_adjustment = 0.0
+    distribution_mult = 1.0
+    proofs = []
+
+    # 1. danger_level 5 → hard reject
+    if danger_level >= 5:
+        should_reject = True
+        reject_reason = f'danger_level={danger_level} (سهم خطير جداً)'
+        proofs.append(f'🚨 NOTEBOOK REJECT: danger_level={danger_level}')
+
+    # 2. danger_level 4 → score -= 5
+    elif danger_level >= 4:
+        score_adjustment -= 5
+        proofs.append(f'⚠️ NOTEBOOK: danger_level={danger_level} → score -5')
+
+    # 3. avoid_chase + is_chasing → reject
+    if avoid_chase and is_chasing and not should_reject:
+        should_reject = True
+        reject_reason = 'avoid_chase=True + السهم في حالة مطاردة'
+        proofs.append('🚨 NOTEBOOK REJECT: avoid_chase + chasing')
+
+    # 4. typical_correction > stop_distance → توسيع الوقف
+    if typical_correction > 0 and stop_distance_pct > 0:
+        if typical_correction > stop_distance_pct * 1.5:
+            # الوقف أضيق بكثير من التصحيح المعتاد → وسّعه
+            stop_adjustment = typical_correction - stop_distance_pct
+            # Cap at max_expected_correction
+            if max_correction > 0 and stop_adjustment + stop_distance_pct > max_correction:
+                stop_adjustment = max_correction - stop_distance_pct
+            proofs.append(f'📖 NOTEBOOK: stop widen +{stop_adjustment:.1f}% (typical_correction={typical_correction}%)')
+        elif typical_correction > stop_distance_pct:
+            # الوقف أضيق شوية → تحذير بس
+            proofs.append(f'📖 NOTEBOOK: stop ضيق قليلاً (typical_correction={typical_correction}% > stop={stop_distance_pct}%)')
+
+    # 5. distribution_sensitivity → adjust distribution threshold
+    if distribution_sensitivity == 'high':
+        distribution_mult = 0.8  # أصعب — يكتشف التوزيع أبكر
+        proofs.append('📖 NOTEBOOK: distribution_sensitivity=high → threshold ×0.8')
+    elif distribution_sensitivity == 'low':
+        distribution_mult = 1.2  # أسهل — يتسامح أكتر
+        proofs.append('📖 NOTEBOOK: distribution_sensitivity=low → threshold ×1.2')
+
+    new_score = max(0, min(100, current_score + score_adjustment))
+    new_stop = stop_distance_pct + stop_adjustment
+
+    return {
+        'should_reject': should_reject,
+        'reject_reason': reject_reason,
+        'new_score': new_score,
+        'score_adjustment': score_adjustment,
+        'stop_adjustment_pct': round(stop_adjustment, 2),
+        'new_stop_distance_pct': round(new_stop, 2),
+        'distribution_threshold_mult': distribution_mult,
+        'proofs': proofs,
+        'has_notebook': True,
+        'machine_summary': summary,
     }
 
 
@@ -473,9 +605,75 @@ if __name__ == '__main__':
         test_path.unlink()
         print("\n  (cleaned up TESTCO notebook)")
 
+    # ── Tests for apply_notebook_context (المحور أ — التعميق) ──
+    print("\n━━━ apply_notebook_context (تعميق النوتبوك) ━━━")
+
+    # Test 9: No notebook → safe defaults
+    print("\n=== Test 9: سهم بدون نوتبوك → safe defaults ===")
+    r = apply_notebook_context('NOSUCHCO', current_score=70, stop_distance_pct=5.0)
+    print(f"  should_reject: {r['should_reject']} | new_score: {r['new_score']} | stop_adj: {r['stop_adjustment_pct']}")
+    assert not r['should_reject'] and r['new_score'] == 70
+    print("  ✅ PASS")
+
+    # Test 10: danger_level 5 → reject
+    print("\n=== Test 10: danger_level 5 → رفض ===")
+    ensure_notebook_exists('TESTNB2')
+    update_stock_notebook('TESTNB2', {'machine_summary': {'danger_level': 5}})
+    r = apply_notebook_context('TESTNB2', current_score=80, stop_distance_pct=5.0)
+    print(f"  should_reject: {r['should_reject']} | reason: {r['reject_reason']}")
+    assert r['should_reject']
+    print("  ✅ PASS")
+
+    # Test 11: danger_level 4 → score -5
+    print("\n=== Test 11: danger_level 4 → score -5 ===")
+    update_stock_notebook('TESTNB2', {'machine_summary': {'danger_level': 4}})
+    r = apply_notebook_context('TESTNB2', current_score=80, stop_distance_pct=5.0)
+    print(f"  new_score: {r['new_score']} (was 80) | adjustment: {r['score_adjustment']}")
+    assert r['new_score'] == 75 and r['score_adjustment'] == -5
+    print("  ✅ PASS")
+
+    # Test 12: typical_correction > stop → widen stop
+    print("\n=== Test 12: typical_correction=12% > stop=5% → widen stop ===")
+    update_stock_notebook('TESTNB2', {
+        'machine_summary': {'danger_level': 1, 'typical_correction_pct': 12, 'max_expected_correction_pct': 18}
+    })
+    r = apply_notebook_context('TESTNB2', current_score=70, stop_distance_pct=5.0)
+    print(f"  stop_adjustment: +{r['stop_adjustment_pct']}% | new_stop: {r['new_stop_distance_pct']}%")
+    print(f"  proofs: {r['proofs']}")
+    assert r['stop_adjustment_pct'] > 0
+    print("  ✅ PASS (وقف اتوسع)")
+
+    # Test 13: avoid_chase + is_chasing → reject
+    print("\n=== Test 13: avoid_chase + is_chasing → رفض ===")
+    update_stock_notebook('TESTNB2', {
+        'machine_summary': {'danger_level': 1, 'avoid_chase': True, 'typical_correction_pct': 0}
+    })
+    r = apply_notebook_context('TESTNB2', current_score=70, stop_distance_pct=5.0, is_chasing=True)
+    print(f"  should_reject: {r['should_reject']} | reason: {r['reject_reason']}")
+    assert r['should_reject']
+    print("  ✅ PASS")
+
+    # Test 14: distribution_sensitivity=high → mult 0.8
+    print("\n=== Test 14: distribution_sensitivity=high → threshold ×0.8 ===")
+    update_stock_notebook('TESTNB2', {
+        'machine_summary': {'danger_level': 1, 'distribution_sensitivity': 'high', 'typical_correction_pct': 0}
+    })
+    r = apply_notebook_context('TESTNB2', current_score=70, stop_distance_pct=5.0)
+    print(f"  distribution_mult: {r['distribution_threshold_mult']}")
+    assert r['distribution_threshold_mult'] == 0.8
+    print("  ✅ PASS")
+
+    # Cleanup
+    test_path = _get_notebook_path('TESTNB2')
+    if test_path.exists():
+        test_path.unlink()
+
     print("\n" + "=" * 70)
-    print("✅ Stock Notebook System ready (8/8 tests pass)")
+    print("✅ Stock Notebook System ready (14/14 tests pass)")
     print(f"\nIntegration in V40.2: reads notebook before analysis")
     print(f"  danger_level 4 → score -= 5")
     print(f"  danger_level 5 → reject")
+    print(f"  avoid_chase + is_chasing → reject")
+    print(f"  typical_correction > stop → widen stop")
+    print(f"  distribution_sensitivity → threshold mult")
     print(f"  avoid_chase=True → supports reject")
