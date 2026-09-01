@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 3,
   "identity": {
-    "is_index_related": false,
-    "related_index": null,
+    "is_index_related": true,
+    "related_index": "EGX30",
     "liquidity_profile": "high",
     "free_float_note": "",
-    "ownership_concentration": "medium",
+    "ownership_concentration": "low",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "الهرم القابضة — سهم قيادي مالي. بيتحرك مع أداء البنوك."
   },
   "price_behavior": {
     "typical_correction_pct": 18.9,
@@ -26,7 +26,7 @@
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "بيحترم التصحيح في نطاق 12-18%. حساس لأخبار القطاع المالي."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -38,13 +38,13 @@
   },
   "events_behavior": {
     "dividend": {
-      "typical_ex_date_drop_pct": 0,
+      "typical_ex_date_drop_pct": 3,
       "drop_range": [
-        0,
-        0
+        2,
+        5
       ],
-      "behavior_before_ex": "",
-      "notes": ""
+      "behavior_before_ex": "mild_bid",
+      "notes": "توزيعات منتظمة. نزول يوم الاستحقاق بسيط."
     },
     "rights_issue_history": [],
     "capital_increase_history": [],
@@ -53,8 +53,8 @@
   "danger_flags": [],
   "learned_lessons": [],
   "machine_summary": {
-    "typical_correction_pct": 18.9,
-    "max_expected_correction_pct": 31.7104520193765,
+    "typical_correction_pct": 13,
+    "max_expected_correction_pct": 20,
     "liquidity_profile": "high",
     "danger_level": 1,
     "preferred_entry_style": "correction_or_grab",

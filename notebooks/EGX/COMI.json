@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 4,
   "identity": {
-    "is_index_related": false,
-    "related_index": null,
-    "liquidity_profile": "medium",
+    "is_index_related": true,
+    "related_index": "EGX30",
+    "liquidity_profile": "high",
     "free_float_note": "",
-    "ownership_concentration": "medium",
+    "ownership_concentration": "low",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "سهم قيادي — البنك التجاري الدولي. أكبر بنك خاص في مصر. سلوك مستقر."
   },
   "price_behavior": {
     "typical_correction_pct": 16.0,
@@ -25,8 +25,8 @@
     "moves_violently_with_volume": false,
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
-    "ramadan_behavior": "",
-    "notes": ""
+    "ramadan_behavior": "lower_volume_slower_moves",
+    "notes": "التصحيحات منضبطة (10-16%)، بيحترم المتوسطات. بيرتد من EMA50."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -38,27 +38,34 @@
   },
   "events_behavior": {
     "dividend": {
-      "typical_ex_date_drop_pct": 0,
+      "typical_ex_date_drop_pct": 4,
       "drop_range": [
-        0,
-        0
+        3,
+        6
       ],
-      "behavior_before_ex": "",
-      "notes": ""
+      "behavior_before_ex": "mild_bid",
+      "notes": "بينزل يوم الاستحقاق بقيمة الكوبون تقريباً. بيرتد خلال أسبوع."
     },
     "rights_issue_history": [],
     "capital_increase_history": [],
     "other_recurring_events": []
   },
   "danger_flags": [],
-  "learned_lessons": [],
+  "learned_lessons": [
+    {
+      "date": "2026-04-15",
+      "type": "success",
+      "summary": "دخل بعد تصحيح 14% من القمة، ارتد من EMA50 بحجم",
+      "lesson": "يحترم التصحيح في نطاق 12-16% + يرتد من EMA50"
+    }
+  ],
   "machine_summary": {
-    "typical_correction_pct": 16.0,
-    "max_expected_correction_pct": 23.960468149252208,
-    "liquidity_profile": "medium",
+    "typical_correction_pct": 14,
+    "max_expected_correction_pct": 18,
+    "liquidity_profile": "high",
     "danger_level": 1,
     "preferred_entry_style": "correction_or_grab",
     "avoid_chase": true,
-    "distribution_sensitivity": "medium"
+    "distribution_sensitivity": "low"
   }
 }

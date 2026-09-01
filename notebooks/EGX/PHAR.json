@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 4,
   "identity": {
     "is_index_related": false,
     "related_index": null,
-    "liquidity_profile": "high",
+    "liquidity_profile": "low",
     "free_float_note": "",
-    "ownership_concentration": "medium",
-    "is_story_stock": false,
+    "ownership_concentration": "high",
+    "is_story_stock": true,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "المصرية للأدوية — سهم خفيف + ملعوب. حساس لأخبار الشركة."
   },
   "price_behavior": {
     "typical_correction_pct": 15.1,
@@ -22,11 +22,11 @@
       29.7
     ],
     "avg_up_move_after_correction_pct": 0,
-    "moves_violently_with_volume": false,
-    "respects_key_levels": true,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": false,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "بيتحرك بعنف. التصحيح ممكن 25%+. سيولة محدودة."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -50,15 +50,26 @@
     "capital_increase_history": [],
     "other_recurring_events": []
   },
-  "danger_flags": [],
-  "learned_lessons": [],
+  "danger_flags": [
+    "concentrated_ownership",
+    "story_stock",
+    "low_float_volatile"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-04-20",
+      "type": "failure",
+      "summary": "دخل بعد صعود 20% بحجم، نزل 12% في يومين",
+      "lesson": "سهم خفيف — بيتحرك بعنف. ممنوع بعد الصعود"
+    }
+  ],
   "machine_summary": {
-    "typical_correction_pct": 15.1,
-    "max_expected_correction_pct": 29.665048536085255,
-    "liquidity_profile": "high",
-    "danger_level": 1,
-    "preferred_entry_style": "correction_or_grab",
+    "typical_correction_pct": 20,
+    "max_expected_correction_pct": 30,
+    "liquidity_profile": "low",
+    "danger_level": 4,
+    "preferred_entry_style": "grab_only",
     "avoid_chase": true,
-    "distribution_sensitivity": "medium"
+    "distribution_sensitivity": "high"
   }
 }

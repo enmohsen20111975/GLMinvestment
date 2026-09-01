@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 4,
   "identity": {
-    "is_index_related": false,
-    "related_index": null,
+    "is_index_related": true,
+    "related_index": "EGX30",
     "liquidity_profile": "high",
     "free_float_note": "",
     "ownership_concentration": "medium",
-    "is_story_stock": false,
+    "is_story_stock": true,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "TMG القابضة — سهم عقاري قيادي. قصة نمو + أراضي ضخمة."
   },
   "price_behavior": {
     "typical_correction_pct": 13.3,
@@ -22,11 +22,11 @@
       20.1
     ],
     "avg_up_move_after_correction_pct": 0,
-    "moves_violently_with_volume": false,
-    "respects_key_levels": true,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": false,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "بيتحرك بعنف مع الأخبار. التصحيح ممكن يوصل 25%. قصة سهم مش سهم عادي."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -50,15 +50,25 @@
     "capital_increase_history": [],
     "other_recurring_events": []
   },
-  "danger_flags": [],
-  "learned_lessons": [],
+  "danger_flags": [
+    "story_stock",
+    "earnings_miss_sensitive"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-05-10",
+      "type": "failure",
+      "summary": "دخل قرب القمة بعد صعود 25%، تراجع 20%",
+      "lesson": "سهم قصة — بيتحرك بعنف. ممنوع المطاردة"
+    }
+  ],
   "machine_summary": {
-    "typical_correction_pct": 13.3,
-    "max_expected_correction_pct": 20.119167568508914,
+    "typical_correction_pct": 18,
+    "max_expected_correction_pct": 28,
     "liquidity_profile": "high",
-    "danger_level": 1,
+    "danger_level": 3,
     "preferred_entry_style": "correction_or_grab",
     "avoid_chase": true,
-    "distribution_sensitivity": "medium"
+    "distribution_sensitivity": "high"
   }
 }

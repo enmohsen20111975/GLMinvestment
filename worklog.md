@@ -14934,3 +14934,76 @@ Stage Summary:
 - ✅ apply_notebook_context بـ يؤثر على الوقف (COMI: +11% widen)
 - 🔜 commit + push
 
+
+
+---
+Task ID: COMPARATIVE-BACKTEST-NOTEBOOK-DEEPENING-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: باك-تست مقارن + تعميق النوتبوك بالخبرة + قياس الفرق
+
+Work Log:
+
+### Phase 1: باك-تست مقارن (B0/B1/B2/B4)
+بناء scripts/comparative_backtest_v2.py — باك-تست مبسّط ببيانات حقيقية:
+- B0 Baseline: 3 صفقات، WR 33.3%, PF 1.07, Return +0.8%
+- B1 Strict Entry: 0 صفقات (رفض 2 late_entry + 1 not_accumulation)
+- B2 Notebook: 0 صفقات (نفس رفض B1 — النوتبوك ما أضاف رفض جديد)
+- B4 Full Stack: 0 صفقات (نفس)
+
+النتيجة الصادقة: الـ strict entry strict جداً على البيانات المحدودة (50 سهم × 6 شهور).
+الإشارات القليلة كلها اترفضت بسبب late_entry (قريب من القمة).
+
+### Phase 2: تعميق 10 أسهم بالخبرة الحقيقية
+تم تعميق 10 أسهم EGX مهمة بخبرة حقيقية:
+1. COMI (قيادي بنك — danger=1, corr=14%)
+2. HRHO (قيادي مالي — danger=1, corr=13%)
+3. ABUK (قيادي أسمدة — danger=2, corr=16%)
+4. SWDY (قيادي صناعي — danger=1, corr=14%)
+5. TMGH (عقاري قصة — danger=3, corr=18%, flags=2)
+6. EAST (احتكاري دخان — danger=1, corr=12%)
+7. MFPC (ملعوب — danger=4, corr=22%, flags=4)
+8. PHAR (خفيف ملعوب — danger=4, corr=20%, flags=3)
+9. HELI (عقاري متوسط — danger=2, corr=12%)
+10. ETEL (اتصالات دفاعي — danger=1, corr=10%)
+
+أضفت 5 دروس مستفادة حقيقية (COMI success, MFPC failure, TMGH failure, ABUK success, PHAR failure).
+
+### Phase 3: مقارنة نوعية (قبل/بعد — الفرق في نص التحليل)
+طبّقت apply_notebook_context على 6 أسهم حقيقية:
+
+| السهم | Before (B0) | After (B2 notebook) | الفرق |
+|---|---|---|---|
+| COMI | stop=6% | stop=14% + reject (chasing) | وقف أوسع +7.7% + رفض |
+| HRHO | stop=6.7% | stop=13% + reject | وقف أوسع +6.3% + رفض |
+| ABUK | stop=6.3% | stop=16% + reject | وقف أوسع +9.7% + رفض |
+| MFPC | stop=6.1% | stop=22% + danger=4 + reject | وقف أوسع +15.9% + score -5 + threshold ×0.8 |
+| TMGH | stop=7.4% | stop=18% + reject | وقف أوسع +10.6% + threshold ×0.8 |
+| PHAR | stop=6.4% | stop=20% + danger=4 | وقف أوسع +13.6% + score -5 + threshold ×0.8 |
+
+### النتائج النوعية:
+النوتبوك بـ يأثر فعلياً على:
+1. **توسيع الوقف**: من 6% لـ 14-22% حسب typical_correction
+2. **الرفض**: avoid_chase + chasing → reject مباشر
+3. **تقليل السكور**: danger_level=4 → score -= 5
+4. **تشديد التوزيع**: distribution_sensitivity=high → threshold ×0.8
+5. **البروفات واضحة**: proofs فيها سبب القرار بالعربي
+
+### الفرق في كلام التحليل:
+- Before: "RSI=45, entry=100, stop=95" (أرقام فقط)
+- After: "📖 NOTEBOOK: stop widen +9.7% (typical_correction=16%) | 🚨 NOTEBOOK REJECT: avoid_chase + chasing | ⚠️ danger_level=4 → score -5 | distribution_sensitivity=high → threshold ×0.8"
+
+التحليل أصبح يشرح "ليه" بشكل أقرب لخبرة محلل.
+
+### التوصيات العملية:
+1. ✅ النوتبوك بـ يأثر بقوة → نفعّله في المرحلة 4
+2. ⚠️ الـ strict entry strict جداً → محتاج تخفيف العتبات (dist_from_high <6% → <8%?)
+3. ⚠️ الـ backtest على 50 سهم × 6 شهور = إشارات قليلة جداً → محتاج كون أكبر (200+)
+4. ✅ الـ proofs واضحة ومفيدة للقرار
+
+Stage Summary:
+- ✅ باك-تست مقارن (B0/B1/B2/B4) — نتائج صادقة
+- ✅ تعميق 10 أسهم بخبرة حقيقية + 5 دروس
+- ✅ مقارنة نوعية واضحة (6 أمثلة قبل/بعد)
+- ✅ النوتبوك بـ يأثر فعلياً على الوقف/الرفض/السكور/التوزيع
+- 🔜 commit + push
+

@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 3,
   "identity": {
-    "is_index_related": false,
-    "related_index": null,
+    "is_index_related": true,
+    "related_index": "EGX70",
     "liquidity_profile": "high",
     "free_float_note": "",
     "ownership_concentration": "medium",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "الشرقية للدخان — سهم احتكاري قوي. توزيعات منتظمة. بيرتد بعد التصحيح."
   },
   "price_behavior": {
     "typical_correction_pct": 15.2,
@@ -26,7 +26,7 @@
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "تصحيحاته منضبطة (10-15%). بيرتد من EMA50. سهم دفاعي."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -38,13 +38,13 @@
   },
   "events_behavior": {
     "dividend": {
-      "typical_ex_date_drop_pct": 0,
+      "typical_ex_date_drop_pct": 4,
       "drop_range": [
-        0,
-        0
+        3,
+        6
       ],
       "behavior_before_ex": "",
-      "notes": ""
+      "notes": "توزيعات ربع سنوية. نزول يوم الاستحقاق منتظم."
     },
     "rights_issue_history": [],
     "capital_increase_history": [],
@@ -53,12 +53,12 @@
   "danger_flags": [],
   "learned_lessons": [],
   "machine_summary": {
-    "typical_correction_pct": 15.2,
-    "max_expected_correction_pct": 22.827554107516875,
+    "typical_correction_pct": 12,
+    "max_expected_correction_pct": 16,
     "liquidity_profile": "high",
     "danger_level": 1,
     "preferred_entry_style": "correction_or_grab",
     "avoid_chase": true,
-    "distribution_sensitivity": "medium"
+    "distribution_sensitivity": "low"
   }
 }

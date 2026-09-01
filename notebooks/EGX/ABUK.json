@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 4,
   "identity": {
-    "is_index_related": false,
-    "related_index": null,
+    "is_index_related": true,
+    "related_index": "EGX30",
     "liquidity_profile": "high",
     "free_float_note": "",
-    "ownership_concentration": "medium",
+    "ownership_concentration": "low",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "أبو قير للأسمدة — سهم قطاعي قوي. بيتحرك مع أسعار الغاز والأسمدة العالمية."
   },
   "price_behavior": {
     "typical_correction_pct": 16.2,
@@ -26,7 +26,7 @@
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "التصحيحات عميقة (15-20%) لكن بيرتد بقوة. حساس لأسعار اليوريا."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -38,25 +38,32 @@
   },
   "events_behavior": {
     "dividend": {
-      "typical_ex_date_drop_pct": 0,
+      "typical_ex_date_drop_pct": 5,
       "drop_range": [
-        0,
-        0
+        4,
+        7
       ],
       "behavior_before_ex": "",
-      "notes": ""
+      "notes": "توزيعات سخية. نزول يوم الاستحقاق واضح."
     },
     "rights_issue_history": [],
     "capital_increase_history": [],
     "other_recurring_events": []
   },
   "danger_flags": [],
-  "learned_lessons": [],
+  "learned_lessons": [
+    {
+      "date": "2026-06-01",
+      "type": "success",
+      "summary": "دخل بعد تصحيح 16% من القمة + حجم هادي، طلع 18%",
+      "lesson": "يحترم التصحيح 15-18% + حجم هادي = دخول صحيح"
+    }
+  ],
   "machine_summary": {
-    "typical_correction_pct": 16.2,
-    "max_expected_correction_pct": 27.531748364243835,
+    "typical_correction_pct": 16,
+    "max_expected_correction_pct": 22,
     "liquidity_profile": "high",
-    "danger_level": 1,
+    "danger_level": 2,
     "preferred_entry_style": "correction_or_grab",
     "avoid_chase": true,
     "distribution_sensitivity": "medium"
