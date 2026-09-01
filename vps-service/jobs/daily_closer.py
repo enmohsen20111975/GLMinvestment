@@ -3050,6 +3050,25 @@ class DailyCloser:
         except Exception as e:
             logger.error(f"Error closing prediction #{pred_id}: {e}")
 
+        # ── NOTEBOOK INTEGRATION (2026-09-01): اكتب ملاحظة الإغلاق في النوتبوك ──
+        # النوتبوك = ذاكرة دائمة (بدل ما نحسب من جديد كل مرة)
+        try:
+            from analyzers.stock_notebook import add_exit_observation
+            _nb_entry = float(_prow['entry_price'] or 0) if _prow else 0.0
+            _nb_exit = exit_close_price if exit_close_price > 0 else (highest_price_reached or _nb_entry)
+            add_exit_observation(
+                ticker=ticker,
+                exit_type=exit_type,
+                entry_price=_nb_entry,
+                exit_price=_nb_exit,
+                return_pct=actual_return,
+                holding_days=holding_days,
+                exit_reason=exit_type,
+                source='daily_closer',
+            )
+        except Exception:
+            pass  # safe-by-design: لو النوتبوك فشل → نكمّل
+
         return CloseResult(
             prediction_id=pred_id, ticker=ticker, old_status='PENDING', new_status=status,
             actual_return=actual_return, highest_price=highest, lowest_price=lowest,

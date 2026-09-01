@@ -1146,6 +1146,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 if V68_DIRTY_DIST_REJECT and _v68['dirty_distribution']:
                     print(f"[V68-DIRTY-DIST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                           f"توزيع قاتل (ظهر علوي + حجم انفجاري + delta سالب) → رفض", flush=True)
+                    # NOTEBOOK: سجّل رفض الفلتر
+                    try:
+                        from analyzers.stock_notebook import add_filter_rejection
+                        add_filter_rejection(ticker, 'V68-dirty-dist',
+                            'توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب', source='v68')
+                    except Exception:
+                        pass
                     continue
 
                 # 2. no_chase_2d: قفز 15% في يومين → ممنوع الدخول
@@ -1243,6 +1250,14 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         print(f"[V72-HIDDEN-DIST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                               f"توزيع خفي (higher high + lower volume) → block "
                               f"{_v72_hd.get('block_remaining', 0)} bars → رفض", flush=True)
+                        # NOTEBOOK: سجّل رفض الفلتر
+                        try:
+                            from analyzers.stock_notebook import add_filter_rejection
+                            add_filter_rejection(ticker, 'V72-hidden-dist',
+                                f'توزيع خفي: higher high + lower volume (block {_v72_hd.get("block_remaining",0)} bars)',
+                                source='v72')
+                        except Exception:
+                            pass
                         continue
 
                 # ── V72-3: Pullback Buy (new entry path) ──
@@ -1315,6 +1330,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     if _v73_desert:
                         print(f"[V73-DESERT] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                               f"الموت السريري (squeeze + volume ميت) → رفض", flush=True)
+                        # NOTEBOOK: سجّل رفض الفلتر
+                        try:
+                            from analyzers.stock_notebook import add_filter_rejection
+                            add_filter_rejection(ticker, 'V73-desert',
+                                'الموت السريري: BB squeeze + volume < 0.5×MA', source='v73')
+                        except Exception:
+                            pass
                         continue
 
                 # V73-2: Auction Trap Reject
@@ -1656,6 +1678,26 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
                 ) if tracker else None
                 if pred_id and tracker:
+                    # ── NOTEBOOK INTEGRATION (2026-09-01): اكتب ملاحظة في النوتبوك ──
+                    # النوتبوك = ذاكرة دائمة للمحلل (بدل ما نحسب من جديد كل مرة)
+                    try:
+                        from analyzers.stock_notebook import add_prediction_observation
+                        _nb_filters = []
+                        if sig.get('v68_dirty_distribution'): _nb_filters.append('V68-dirty-dist')
+                        if sig.get('v72_hidden_dist', {}).get('block_active'): _nb_filters.append('V72-hidden-dist')
+                        if sig.get('v73_desert_phase'): _nb_filters.append('V73-desert')
+                        add_prediction_observation(
+                            ticker=sig['ticker'], signal=sig['signal'],
+                            entry=sig['entry'], target=sig['target'],
+                            stop=sig['stop'], score=sig['tech_score'],
+                            evidence=sig['evidence'], r_multiple=sig['r_multiple'],
+                            target_2=sig.get('target_2', 0),
+                            source='v40_2',
+                            filters_triggered=_nb_filters,
+                        )
+                    except Exception:
+                        pass  # safe-by-design: لو النوتبوك فشل → نكمّل
+
                     # PHASE-2-RESTORE (2026-08-31): لا نسجل outcome في backtest
                     # daily_closer هو اللي يقفل الصفقات في الإنتاج الحقيقي
                     # بنسجل بس للـ backtest (dry_run) — لو مش dry_run، نسيبها pending
