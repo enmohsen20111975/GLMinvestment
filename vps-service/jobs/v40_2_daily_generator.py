@@ -1555,6 +1555,49 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             result['proofs'] = {}
                         result['proofs']['explosive_uncap'] = f'🚀 هدف انفجاري مفتوح (5×ATR={_atr_val*5.0:.2f})'
 
+            # ── NEWS IMPACT (2026-09-01): تصنيف الأخبار + veto/boost ──
+            # مشكلة المالك: "الأخبار بتحرك السوق بطريقة مش طبيعية — اكتتابات بتطير،
+            # توزيع أرباح بيموت السعر". الحل: news_impact_scorer بـ يصنّف events.
+            # - VETO (fraud/halt) → skip التوقع تماماً
+            # - REDUCE (dividend ex-date/miss) → تقليل score
+            # - BOOST (IPO/beat/MA) → رفع score
+            # NOTE: في backtest mode، الأخبار التاريخية مش متاحة → skip (NEUTRAL)
+            # NOTE: في production، news_agent بـ يعمل live DuckDuckGo search
+            # Toggle: V40_2_NEWS_IMPACT=1 (default OFF للـ backtest)
+            if os.environ.get('V40_2_NEWS_IMPACT', '0') == '1':
+                _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
+                if not _is_backtest:
+                    try:
+                        from analyzers.news_impact_scorer import get_news_impact_for_ticker
+                        _news_result = get_news_impact_for_ticker(
+                            ticker, articles=None, use_live_search=True
+                        )
+                        _news_score = _news_result.get('news_score', 0)
+                        _news_verdict = _news_result.get('verdict', 'NEUTRAL')
+
+                        if _news_verdict == 'VETO' and _news_score <= -15:
+                            print(f"[NEWS-VETO] {ticker} on {scan_date}: "
+                                  f"{_news_result.get('summary_ar', '')} → رفض", flush=True)
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['news_veto'] = _news_result.get('proof_string', '')
+                            continue  # hard reject
+
+                        # Apply score adjustment (BOOST or REDUCE)
+                        if _news_score != 0:
+                            print(f"[NEWS-{_news_verdict}] {ticker} on {scan_date}: "
+                                  f"score={_news_score:+d} → "
+                                  f"{'boost' if _news_score > 0 else 'reduce'}", flush=True)
+                            if isinstance(result.get('score'), (int, float)):
+                                result['score'] = max(0, min(100, result['score'] + _news_score))
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['news_impact'] = _news_result.get('proof_string', '')
+                            result['news_verdict'] = _news_verdict
+                            result['news_score'] = _news_score
+                    except Exception as _news_err:
+                        pass  # safe-by-design: لو news scorer فشل → نكمّل
+
             # إعادة محاكاة الصفقة بالهدف والوقف النهائيين المحدثين
             trade = Trade(
                 ticker=ticker, entry_date=scan_date, entry_price=entry,
