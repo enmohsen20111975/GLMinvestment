@@ -51,8 +51,9 @@ logger = logging.getLogger(__name__)
 # Config
 # ═══════════════════════════════════════════════════════════════════════
 
-# Production API (لو شغّال على السيرفر الإنتاجي)
-PRODUCTION_API_URL = os.environ.get('EGX_PRODUCTION_API', '')
+# Production API (invist.m2y.net — production server)
+# Default to production URL so sandbox always reads live data
+PRODUCTION_API_URL = os.environ.get('EGX_PRODUCTION_API', 'https://invist.m2y.net')
 PRODUCTION_API_KEY = os.environ.get('EGX_PRODUCTION_API_KEY', '')
 
 # External data sources
@@ -185,17 +186,26 @@ class ProductionDataClient:
         return None
 
     def _get_price_production(self, ticker: str) -> Optional[float]:
-        """سعر live من Production API."""
+        """سعر live من Production API (invist.m2y.net)."""
         if not PRODUCTION_API_URL:
             return None
-        url = f"{PRODUCTION_API_URL}/api/stocks/{ticker}/price"
+        # Use the production screener API (bـ يرجع current_price لكل سهم)
+        url = f"{PRODUCTION_API_URL}/api/screener/advanced?market=EGX&limit=500"
         headers = {'Authorization': f'Bearer {PRODUCTION_API_KEY}'} if PRODUCTION_API_KEY else {}
-        data = _http_get(url, headers=headers)
-        if data and 'price' in data:
-            try:
-                return float(data['price'])
-            except (TypeError, ValueError):
-                pass
+        data = _get_cached('prod_screener')
+        if data is None:
+            data = _http_get(url, timeout=20, headers=headers)
+            if data:
+                _set_cached('prod_screener', data)
+        if not data or not data.get('success'):
+            return None
+        for s in data.get('stocks', []):
+            if isinstance(s, dict) and s.get('ticker', '').upper() == ticker.upper():
+                price = s.get('current_price')
+                try:
+                    return float(price) if price else None
+                except (TypeError, ValueError):
+                    return None
         return None
 
     def _get_price_egxpilot(self, ticker: str) -> Optional[float]:
