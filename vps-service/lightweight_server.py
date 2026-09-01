@@ -54,6 +54,7 @@ BLUEPRINTS = [
     ('api.sniper_routes', 'sniper_bp'),
     ('api.reports_routes', 'reports_bp'),
     ('api.risk_routes', 'risk_bp'),
+    ('api.notebook_routes', 'notebook_bp'),
     ('api.learning_routes', 'learning_bp'),
     # P1.7 (REFACTORING_REPORT §12): تسجيل unified_learning_bp لتفعيل
     # /api/unified-learning/* endpoints (25 routes، كلها كانت 404 لأن الـ blueprint

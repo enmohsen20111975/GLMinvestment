@@ -14868,3 +14868,69 @@ Stage Summary:
 - ✅ المحور هـ: خطة تفعيل في التوثيق
 - 🔜 commit + push
 
+
+
+---
+Task ID: EGX-NOTEBOOKS-FULL-POWER-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تعبئة نوتبوك الأسهم + واجهة إدارة + تشغيل EGX بأقصى طاقة
+
+Work Log:
+
+### Phase 1: بناء النوتبوك الجماعي من البيانات الحقيقية
+بناء دوال auto-build في stock_notebook.py:
+- _load_price_history_for_symbol(): تحميل OHLCV من price_history.db
+- _get_stock_metadata(): تحميل name_ar من stocks.db
+- _calc_typical_correction(): حساب متوسط عمق التصحيح من swing highs
+- _calc_liquidity_profile(): تقدير السيولة من متوسط turnover
+- _calc_danger_level(): تقدير مستوى الخطر (1-5)
+- build_or_refresh_notebook(): بناء/تحديث نوتبوك سهم
+- build_notebooks_for_universe(): بناء جماعي
+- list_all_notebooks(): قائمة كل النوتبوكس + ملخص
+- get_notebook_stats(): إحصائيات
+
+### Phase 2: البناء الجماعي الفعلي
+تم بناء 256 نوتبوك لكل أسهم EGX:
+- 245 كامل (فيه typical_correction_pct محسوب)
+- 12 ناقص (بيانات غير كافية)
+- 10 أسهم خطيرة (danger_level ≥ 4)
+- by_liquidity: 203 very_low + 32 high + 19 medium + 3 low
+- كل ملف فيه: symbol, name_ar, identity, price_behavior, machine_summary
+
+### Phase 3: API Routes (Python)
+بناء vps-service/api/notebook_routes.py:
+- GET /api/notebooks/list — قائمة + ملخص
+- GET /api/notebooks/stats — إحصائيات
+- GET /api/notebooks/<symbol> — نوتبوك كامل
+- POST /api/notebooks/<symbol>/refresh — إعادة بناء
+- POST /api/notebooks/build-all — بناء جماعي
+- POST /api/notebooks/<symbol>/lesson — إضافة درس
+- PUT /api/notebooks/<symbol>/summary — تعديل machine_summary
+- مسجل في lightweight_server.py BLUEPRINTS
+
+### Phase 4: واجهة الأدمن
+بناء src/components/admin/NotebookAdminTab.tsx:
+- قائمة الأسهم + بحث + stats cards
+- عرض تفاصيل نوتبوك كامل (machine_summary + danger_flags + lessons)
+- زر تحديث/إعادة بناء
+- زر إضافة درس (success/failure + summary + lesson)
+- تعديل machine_summary (danger_level, typical_correction, liquidity, avoid_chase, distribution_sensitivity)
+- زر بناء جماعي
+- كل الـ logic في Python (الواجهة proxy فقط)
+- مربوط في AdminView.tsx (tab='notebooks')
+
+### Phase 5: اختبارات التكامل
+- COMI: has_notebook=True, stop_adjustment=+11% (typical_correction=16%)
+- 257 نوتبوك كلها قابلة للقراءة فوراً
+- apply_notebook_context بـ يؤثر فعلياً على القرار
+- النظام لا ينكسر عند سهم بلا نوتبوك (safe defaults)
+- كل الـ syntax checks تمر
+
+Stage Summary:
+- ✅ 256 نوتبوك مبني ببيانات حقيقية (245 كامل)
+- ✅ build_or_refresh_notebook + build_notebooks_for_universe
+- ✅ API routes (7 endpoints) + blueprint مسجل
+- ✅ واجهة أدمن كاملة (NotebookAdminTab + مربوط في AdminView)
+- ✅ apply_notebook_context بـ يؤثر على الوقف (COMI: +11% widen)
+- 🔜 commit + push
+

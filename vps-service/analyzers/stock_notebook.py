@@ -503,7 +503,393 @@ def apply_notebook_context(
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 4. Self-test
+# 5. Auto-build functions — بناء النوتبوك من البيانات الحقيقية
+# ═══════════════════════════════════════════════════════════════════════
+
+import sqlite3 as _sqlite3
+import math as _math
+
+
+def _load_price_history_for_symbol(symbol: str, days: int = 250) -> Dict[str, List[float]]:
+    """
+    تحميل بيانات أسعار لسهم من price_history.db.
+
+    Returns:
+        {dates, opens, highs, lows, closes, volumes} or empty if not found.
+    """
+    db_path = PROJECT_ROOT / 'db' / 'price_history.db'
+    if not db_path.exists():
+        db_path = PROJECT_ROOT / 'db' / 'vps_real' / 'price_history.db'
+
+    if not db_path.exists():
+        return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
+
+    try:
+        conn = _sqlite3.connect(str(db_path), timeout=10.0)
+        rows = conn.execute('''
+            SELECT date, open_price, high_price, low_price, close_price, volume
+            FROM price_history
+            WHERE ticker = ? AND close_price IS NOT NULL AND close_price > 0
+            ORDER BY date ASC
+            LIMIT ?
+        ''', (symbol.upper(), days)).fetchall()
+        conn.close()
+
+        if not rows or len(rows) < 30:
+            return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
+
+        return {
+            'dates': [r[0] for r in rows],
+            'opens': [float(r[1] or 0) for r in rows],
+            'highs': [float(r[2] or 0) for r in rows],
+            'lows': [float(r[3] or 0) for r in rows],
+            'closes': [float(r[4] or 0) for r in rows],
+            'volumes': [float(r[5] or 0) for r in rows],
+        }
+    except Exception:
+        return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
+
+
+def _get_stock_metadata(symbol: str) -> Dict[str, str]:
+    """
+    تحميل metadata للسهم (name_ar, sector) من stocks.db.
+    """
+    db_path = PROJECT_ROOT / 'db' / 'stocks.db'
+    if not db_path.exists():
+        db_path = PROJECT_ROOT / 'db' / 'vps_real' / 'stocks.db'
+
+    if not db_path.exists():
+        return {'name_ar': symbol, 'sector': ''}
+
+    try:
+        conn = _sqlite3.connect(str(db_path), timeout=5.0)
+        row = conn.execute(
+            'SELECT symbol, name_ar FROM egksco_stocks WHERE UPPER(symbol) = ?',
+            (symbol.upper(),)
+        ).fetchone()
+        conn.close()
+
+        if row:
+            return {'name_ar': row[1] or symbol, 'sector': ''}
+        return {'name_ar': symbol, 'sector': ''}
+    except Exception:
+        return {'name_ar': symbol, 'sector': ''}
+
+
+def _calc_typical_correction(closes: List[float], highs: List[float], lows: List[float]) -> Tuple[float, List[float]]:
+    """
+    حساب متوسط عمق التصحيح من البيانات التاريخية.
+
+    المنطق:
+      - نبحث عن الـ swing highs (peaks) في آخر 200 يوم
+      - لكل peak، نحسب أقصى نزول بعده قبل ما يرجع يصعد
+      - نحسب المتوسط
+
+    Returns:
+        (typical_correction_pct, list_of_corrections)
+    """
+    if len(closes) < 60:
+        return 0, []
+
+    corrections = []
+    lookback = min(len(closes), 200)
+    recent_closes = closes[-lookback:]
+    recent_highs = highs[-lookback:]
+    recent_lows = lows[-lookback:]
+
+    # Find swing highs (simple: local maxima with window=5)
+    window = 5
+    for i in range(window, len(recent_highs) - window):
+        is_peak = all(recent_highs[i] >= recent_highs[i - j] for j in range(1, window + 1)) and \
+                  all(recent_highs[i] >= recent_highs[i + j] for j in range(1, window + 1))
+        if is_peak:
+            peak_price = recent_highs[i]
+            # Find the lowest low after this peak (within next 20 days)
+            future_lows = recent_lows[i + 1: i + 21]
+            if future_lows:
+                min_low = min(future_lows)
+                correction_pct = ((peak_price - min_low) / peak_price * 100) if peak_price > 0 else 0
+                # Only count meaningful corrections (> 3%)
+                if correction_pct >= 3.0:
+                    corrections.append(correction_pct)
+
+    if not corrections:
+        return 0, []
+
+    typical = sum(corrections) / len(corrections)
+    return round(typical, 1), corrections
+
+
+def _calc_liquidity_profile(volumes: List[float], closes: List[float]) -> str:
+    """
+    تقدير ملف السيولة من متوسط التداول اليومي.
+    """
+    if not volumes or not closes:
+        return 'medium'
+
+    # Average daily turnover (volume × price)
+    recent_volumes = volumes[-30:] if len(volumes) >= 30 else volumes
+    recent_closes = closes[-30:] if len(closes) >= 30 else closes
+
+    turnovers = [v * c for v, c in zip(recent_volumes, recent_closes) if v > 0 and c > 0]
+    if not turnovers:
+        return 'low'
+
+    avg_turnover = sum(turnovers) / len(turnovers)
+
+    # EGX liquidity tiers (approximate)
+    if avg_turnover > 50_000_000:  # > 50M EGP/day
+        return 'high'
+    elif avg_turnover > 10_000_000:  # > 10M EGP/day
+        return 'medium'
+    elif avg_turnover > 1_000_000:  # > 1M EGP/day
+        return 'low'
+    else:
+        return 'very_low'
+
+
+def _calc_danger_level(liquidity_profile: str, typical_correction: float,
+                         ownership_concentration: str = 'medium') -> int:
+    """
+    تقدير مستوى الخطر الأولي (1-5).
+    """
+    level = 1
+
+    # Low liquidity = more dangerous
+    if liquidity_profile == 'very_low':
+        level += 2
+    elif liquidity_profile == 'low':
+        level += 1
+
+    # High ownership concentration = more dangerous
+    if ownership_concentration == 'very_high':
+        level += 2
+    elif ownership_concentration == 'high':
+        level += 1
+
+    # Very deep corrections = more volatile
+    if typical_correction > 20:
+        level += 1
+
+    return min(5, max(1, level))
+
+
+def build_or_refresh_notebook(symbol: str, force: bool = False, market: str = 'EGX') -> Dict[str, Any]:
+    """
+    بناء أو تحديث نوتبوك سهم من البيانات الحقيقية.
+
+    - ينشئ الملف إن لم يكن موجود
+    - أو يحدّث الحقول القابلة للحساب إن وُجد
+    - لا يمسح الدروس اليدوية (learned_lessons)
+    - لا يمسح danger_flags اليدوية
+
+    Args:
+        symbol: رمز السهم
+        force: إجبار التحديث حتى لو الملف موجود
+        market: السوق
+
+    Returns:
+        الـ notebook بعد البناء/التحديث
+    """
+    existing = load_stock_notebook(symbol, market)
+
+    # Skip if exists and not forced
+    if existing and not force:
+        return existing
+
+    # Load metadata
+    meta = _get_stock_metadata(symbol)
+
+    # Load price history
+    prices = _load_price_history_for_symbol(symbol, days=250)
+
+    has_data = len(prices['closes']) >= 60
+
+    # Calculate metrics from real data
+    if has_data:
+        typical_corr, corrections = _calc_typical_correction(
+            prices['closes'], prices['highs'], prices['lows']
+        )
+        liquidity = _calc_liquidity_profile(prices['volumes'], prices['closes'])
+        max_corr = max(corrections) if corrections else 0
+        danger = _calc_danger_level(liquidity, typical_corr)
+    else:
+        typical_corr = 0
+        corrections = []
+        liquidity = 'medium'
+        max_corr = 0
+        danger = 1
+
+    # Build/merge notebook
+    if existing:
+        # Update existing — preserve learned_lessons + danger_flags
+        notebook = existing
+        learned_lessons = notebook.get('learned_lessons', [])
+        danger_flags = notebook.get('danger_flags', [])
+    else:
+        notebook = json.loads(json.dumps(DEFAULT_NOTEBOOK))
+        notebook['symbol'] = symbol.upper()
+        notebook['learned_lessons'] = []
+        notebook['danger_flags'] = []
+
+    # Update fields
+    notebook['name_ar'] = meta['name_ar']
+    notebook['sector'] = meta.get('sector', '')
+    notebook['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+    notebook['version'] = notebook.get('version', 1) + 1
+
+    # Update identity
+    notebook['identity']['liquidity_profile'] = liquidity
+    notebook['identity']['ownership_concentration'] = 'medium'  # default — needs manual override
+
+    # Update price_behavior
+    notebook['price_behavior']['typical_correction_pct'] = typical_corr
+    if corrections:
+        notebook['price_behavior']['typical_correction_range'] = [
+            round(min(corrections), 1),
+            round(max(corrections), 1)
+        ]
+    notebook['price_behavior']['moves_violently_with_volume'] = liquidity in ('low', 'very_low')
+
+    # Update machine_summary
+    notebook['machine_summary']['typical_correction_pct'] = typical_corr
+    notebook['machine_summary']['max_expected_correction_pct'] = max_corr
+    notebook['machine_summary']['liquidity_profile'] = liquidity
+    notebook['machine_summary']['danger_level'] = danger
+    notebook['machine_summary']['preferred_entry_style'] = 'correction_or_grab'
+    notebook['machine_summary']['avoid_chase'] = True
+    notebook['machine_summary']['distribution_sensitivity'] = 'medium'
+
+    # Save
+    path = _get_notebook_path(symbol, market)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(notebook, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save notebook {path}: {e}")
+
+    return notebook
+
+
+def build_notebooks_for_universe(symbols: Any = 'active', market: str = 'EGX',
+                                   force: bool = False) -> Dict[str, Any]:
+    """
+    بناء نوتبوك لعدد كبير من الأسهم.
+
+    Args:
+        symbols: list of symbols OR 'active' (auto-detect from stocks.db)
+        market: السوق
+        force: إجبار التحديث
+
+    Returns:
+        {built, skipped, errors, total}
+    """
+    if symbols == 'active':
+        # Get all tickers from stocks.db
+        db_path = PROJECT_ROOT / 'db' / 'stocks.db'
+        if not db_path.exists():
+            db_path = PROJECT_ROOT / 'db' / 'vps_real' / 'stocks.db'
+
+        try:
+            conn = _sqlite3.connect(str(db_path), timeout=10.0)
+            rows = conn.execute('SELECT symbol FROM egksco_stocks').fetchall()
+            conn.close()
+            symbols = [r[0] for r in rows if r[0] and not r[0].startswith('.')]
+        except Exception:
+            symbols = []
+    elif isinstance(symbols, str):
+        symbols = [symbols]
+
+    built = 0
+    skipped = 0
+    errors = 0
+    error_list = []
+
+    for sym in symbols:
+        try:
+            nb = build_or_refresh_notebook(sym, force=force, market=market)
+            if nb:
+                built += 1
+            else:
+                skipped += 1
+        except Exception as e:
+            errors += 1
+            error_list.append(f'{sym}: {str(e)[:50]}')
+
+    return {
+        'built': built,
+        'skipped': skipped,
+        'errors': errors,
+        'total': len(symbols),
+        'error_details': error_list[:10],
+    }
+
+
+def list_all_notebooks(market: str = 'EGX') -> List[Dict[str, Any]]:
+    """
+    قائمة كل النوتبوكس المتاحة + ملخص سريع لكل واحد.
+
+    Returns:
+        list of {symbol, last_updated, danger_level, liquidity_profile, has_lessons, complete}
+    """
+    market_dir = NOTEBOOKS_DIR / market
+    if not market_dir.exists():
+        return []
+
+    result = []
+    for path in sorted(market_dir.glob('*.json')):
+        symbol = path.stem
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                nb = json.load(f)
+            summary = nb.get('machine_summary', {})
+            result.append({
+                'symbol': symbol,
+                'name_ar': nb.get('name_ar', symbol),
+                'last_updated': nb.get('last_updated', ''),
+                'danger_level': summary.get('danger_level', 1),
+                'liquidity_profile': summary.get('liquidity_profile', 'medium'),
+                'typical_correction_pct': summary.get('typical_correction_pct', 0),
+                'has_lessons': len(nb.get('learned_lessons', [])) > 0,
+                'lesson_count': len(nb.get('learned_lessons', [])),
+                'version': nb.get('version', 1),
+                'complete': summary.get('typical_correction_pct', 0) > 0,
+            })
+        except Exception:
+            continue
+
+    return result
+
+
+def get_notebook_stats(market: str = 'EGX') -> Dict[str, Any]:
+    """
+    إحصائية سريعة عن كل النوتبوكس.
+    """
+    notebooks = list_all_notebooks(market)
+
+    total = len(notebooks)
+    high_danger = sum(1 for n in notebooks if n['danger_level'] >= 4)
+    complete = sum(1 for n in notebooks if n['complete'])
+    with_lessons = sum(1 for n in notebooks if n['has_lessons'])
+    by_liquidity = {}
+    for n in notebooks:
+        lp = n['liquidity_profile']
+        by_liquidity[lp] = by_liquidity.get(lp, 0) + 1
+
+    return {
+        'total': total,
+        'complete': complete,
+        'incomplete': total - complete,
+        'high_danger': high_danger,
+        'with_lessons': with_lessons,
+        'by_liquidity': by_liquidity,
+        'recently_updated': [n for n in notebooks if n['last_updated']][:5],
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 6. Self-test
 # ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':

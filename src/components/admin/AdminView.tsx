@@ -72,6 +72,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SectorClassificationAdmin } from './SectorClassificationAdmin';
 import { RegimeDetectionWidget } from './RegimeDetectionWidget';
 import { PlatformPerformanceView } from './platform-performance/PlatformPerformanceView';
+import { NotebookAdminTab } from './NotebookAdminTab';
 import { BacktestTab } from './BacktestTab';
 
 // V38 Backtest Dashboard & HistoricalPredictionsV2 — REMOVED (2026-08-13)
@@ -340,7 +341,7 @@ interface DataStatus {
   categories: DataStatusItem[];
 }
 
-type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance';
+type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -931,6 +932,7 @@ export function AdminView() {
         { id: 'historical-predictions', label: 'التوقعات التاريخية', icon: <History className="w-3.5 h-3.5" /> },
         { id: 'backtest', label: 'الباك تست', icon: <Activity className="w-3.5 h-3.5" /> },
         { id: 'platform-performance', label: 'كفاءة المنصة', icon: <Gauge className="w-3.5 h-3.5" /> },
+        { id: 'notebooks', label: 'نوتبوك الأسهم', icon: <BookOpen className="w-3.5 h-3.5" /> },
       ],
     },
     {
@@ -1421,6 +1423,11 @@ export function AdminView() {
       {/* ==================== PLATFORM PERFORMANCE TAB (Admin Only) ==================== */}
       {activeTab === 'platform-performance' && (
         <PlatformPerformanceView />
+      )}
+
+      {/* ==================== NOTEBOOKS TAB ==================== */}
+      {activeTab === 'notebooks' && (
+        <NotebookAdminTab />
       )}
 
       {/* ==================== MAESTRO TAB ==================== */}
