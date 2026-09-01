@@ -1598,6 +1598,49 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     except Exception as _news_err:
                         pass  # safe-by-design: لو news scorer فشل → نكمّل
 
+            # ── DISCLOSURE IMPACT (2026-09-01): إفصاحات EGX الرسمية ──
+            # توجيه المالك: "اقطع البحث العشوائي. المصدر الوحيد: الإفصاحات الرسمية.
+            # درجة تأثير -2 لـ +2. لو سلبي قوي → جمّد الإشارة. لو إيجابي → دفعة."
+            # الـ module: vps-service/analyzers/egx_disclosure_engine.py
+            # - VETO (score=-2: suspension/delisting) → continue (hard reject)
+            # - REDUCE (score=-1: dividend/auditor/resignation) → reduce score
+            # - BOOST (score=+1/+2: capital_increase/rights/acquisition) → boost score
+            # NOTE: في backtest mode، الإفصاحات التاريخية مش متاحة → skip
+            # Toggle: V40_2_DISCLOSURE_IMPACT=1 (default OFF للـ backtest)
+            if os.environ.get('V40_2_DISCLOSURE_IMPACT', '0') == '1':
+                _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
+                if not _is_backtest:
+                    try:
+                        from analyzers.egx_disclosure_engine import get_disclosure_impact_for_ticker
+                        _disc_result = get_disclosure_impact_for_ticker(ticker)
+                        _disc_score = _disc_result.get('impact_score', 0)
+                        _disc_verdict = _disc_result.get('verdict', 'NEUTRAL')
+
+                        if _disc_verdict == 'VETO' and _disc_score <= -2:
+                            print(f"[DISCLOSURE-VETO] {ticker} on {scan_date}: "
+                                  f"{_disc_result.get('reason_ar', '')} → تجميد", flush=True)
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['disclosure_veto'] = _disc_result.get('proof_string', '')
+                            continue  # hard reject — تجميد الإشارة
+
+                        # Apply score adjustment (BOOST or REDUCE)
+                        if _disc_score != 0:
+                            print(f"[DISCLOSURE-{_disc_verdict}] {ticker} on {scan_date}: "
+                                  f"score={_disc_score:+d} → "
+                                  f"{'دفعة' if _disc_score > 0 else 'وقف طوارئ'}", flush=True)
+                            if isinstance(result.get('score'), (int, float)):
+                                # scale: disclosure score is -2..+2, V40.2 score is 0..100
+                                # multiply by 10 to make it meaningful (±10..±20)
+                                result['score'] = max(0, min(100, result['score'] + (_disc_score * 10)))
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['disclosure_impact'] = _disc_result.get('proof_string', '')
+                            result['disclosure_verdict'] = _disc_verdict
+                            result['disclosure_score'] = _disc_score
+                    except Exception as _disc_err:
+                        pass  # safe-by-design: لو disclosure engine فشل → نكمّل
+
             # إعادة محاكاة الصفقة بالهدف والوقف النهائيين المحدثين
             trade = Trade(
                 ticker=ticker, entry_date=scan_date, entry_price=entry,

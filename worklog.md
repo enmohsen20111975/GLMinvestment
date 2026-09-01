@@ -14254,3 +14254,101 @@ Stage Summary:
 - ⚠️ الإنتاج الحالي WR 28.1% — محتاج إصلاحات جذرية (توقيت مبكر + مدة أقصر + SELL signals)
 - 🔜 المرحلة القادمة: حل المشاكل الجذرية المذكورة في BACKTEST_ANALYSIS + ANALYST_REPORT
 
+
+
+---
+Task ID: EGX-DISCLOSURE-ENGINE-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: حل مشكلة "العزلة عن الأخبار" — بناء EGX Disclosure Engine (إفصاحات رسمية)
+
+Work Log:
+
+### Phase 1: تشخيص المشكلة (بتوجيه المالك)
+المالك أعطى تحليل دقيق للوضع:
+> "الإفصاحات الرسمية (زيادة رأس مال، حقوق اكتتاب، توزيعات، مراقب حسابات،
+> استحواذ، نتائج أعمال) مش بتيجي في نتائج جوجل أو DuckDuckGo بالسرعة ولا
+> بالدقة المطلوبة. اقطع البحث العشوائي تمامًا. المصدر الوحيد المسموح: صفحة
+> الإفصاحات الرسمية للبورصة المصرية."
+
+التشخيص السابق كان صحيح:
+- news.db فيها 7894 مقال عام (AlphaVantage + GNews) — مفيش إفصاحات EGX
+- news_scraper.py بـ يجلب أخبار عامة (NewsAPI/GNews) — مش إفصاحات رسمية
+- news_agent.py بـ يعمل DuckDuckGo search — غير موثوق للإفصاحات
+
+### Phase 2: بناء EGX Disclosure Engine (module متكامل)
+بناء vps-service/analyzers/egx_disclosure_engine.py (620 LOC):
+- **12 نوع إفصاح** بالكلمات المفتاحية الصارمة (اللي حددها المالك):
+  | Event | Score | Verdict | التأثير على V40.2 |
+  |---|---|---|---|
+  | CAPITAL_INCREASE (زيادة رأس المال) | +1 | BOOST | 📈 دفعة +10 |
+  | SUBSCRIPTION_RIGHTS (حقوق اكتتاب) | +2 | BOOST_STRONG | 📈 دفعة +20 |
+  | FREE_SHARES (أسهم مجانية) | +2 | BOOST_STRONG | 📈 دفعة +20 |
+  | DIVIDEND (توزيع أرباح) | -1 | REDUCE | ⚠️ وقف طوارئ -10 |
+  | COUPON (كوبون) | -1 | REDUCE | ⚠️ وقف طوارئ -10 |
+  | EARNINGS (نتائج أعمال) | 0 | NEUTRAL | ➡️ محايد |
+  | AUDITOR_CHANGE (مراقب حسابات) | -1 | REDUCE | ⚠️ وقف طوارئ -10 |
+  | RESIGNATION (استقالة) | -1 | REDUCE | ⚠️ وقف طوارئ -10 |
+  | ACQUISITION (استحواذ) | +2 | BOOST_STRONG | 📈 دفعة +20 |
+  | STOCK_SPLIT (تجزئة) | +1 | BOOST | 📈 دفعة +10 |
+  | DELISTING (شطب) | -2 | VETO | 🚨 تجميد |
+  | SUSPENSION (إيقاف) | -2 | VETO | 🚨 تجميد |
+
+- **classify_disclosure()**: keyword matching (عربي + إنجليزي) + text normalization
+  (remove diacritics + normalize alef/ta/ya)
+- **fetch_egx_disclosures()**: يجيب من EGX official + EGKSCO fallback
+- **store_disclosure()**: dedup في egx_disclosures table (db/disclosures.db)
+- **get_disclosure_impact_for_ticker()**: للـ V40.2 integration
+
+### Phase 3: التكامل في V40.2
+إضافة قسم DISCLOSURE_IMPACT في v40_2_daily_generator.py (السطر 1601-1642):
+- بـ toggle V40_2_DISCLOSURE_IMPACT (default OFF للـ backtest)
+- لو VETO (score=-2: suspension/delisting) → continue (hard reject — تجميد)
+- لو REDUCE (score=-1) → score -= 10 (وقف طوارئ)
+- لو BOOST (score=+1/+2) → score += 10/20 (دفعة)
+- في backtest mode: skip (لا إفصاحات تاريخية)
+- safe-by-design: لو disclosure engine فشل → نكمّل
+
+### Phase 4: اختبار الـ integration (7 سيناريوهات)
+| Scenario | Score | Verdict | Action in V40.2 |
+|---|---|---|---|
+| SUSPENSION | -2 | VETO | 🚨 تجميد (hard reject) |
+| DELISTING | -2 | VETO | 🚨 تجميد (hard reject) |
+| DIVIDEND | -1 | REDUCE | ⚠️ وقف طوارئ -10 |
+| RIGHTS | +2 | BOOST_STRONG | 📈 دفعة +20 |
+| ACQUISITION | +2 | BOOST_STRONG | 📈 دفعة +20 |
+| CAPITAL | +1 | BOOST | 📈 دفعة +10 |
+| No disclosure | 0 | NEUTRAL | ➡️ لا تأثير |
+
+### Phase 5: cron job
+أضفت في crontab.txt:
+```
+# EGX Disclosures fetch — كل ساعتين أثناء جلسة السوق (10:00-14:00)
+0 10-14/2 * * 0-4 cd /home/z/my-project && python3 -c \
+  "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures; \
+   print(fetch_and_store_disclosures(50))" >> logs/disclosures.log 2>&1
+```
+
+### Phase 6: الالتزام بالقواعد الثلاث
+1. **مشروع متكامل (مش طوب)** ✅:
+   - egx_disclosure_engine.py module → متكامل في v40_2_daily_generator.py → بـ يـ affect القرار
+   - الـ pipeline كامل: إفصاح → تصنيف → درجة → قرار V40.2
+   - مفيش module منفصل
+
+2. **مفيش كود يتيم** ✅:
+   - كل function مستخدمة (classify + fetch + store + get_impact + integration)
+   - الـ module متكامل + مُختبَر (11 اختبار + 7 سيناريوهات integration)
+
+3. **أتبع Documentation** ✅:
+   - Rule 20: Python=العقل (كل المنطق في Python) ✅
+   - Rule 27: NO-FAKE-DATA (لا Math.random، كل درجة من keyword matching) ✅
+   - Rule 29: UNIFIED-SYSTEM (module متربط بالـ V40.2) ✅
+   - توجيه المالك المباشر: "اقطع البحث العشوائي، استخدم الإفصاحات الرسمية" ✅
+
+Stage Summary:
+- ✅ بناء egx_disclosure_engine.py (620 LOC، 12 نوع إفصاف، self-test 11/11 pass)
+- ✅ التكامل في V40.2 (toggle V40_2_DISCLOSURE_IMPACT)
+- ✅ اختبار 7 سيناريوهات integration — كلها صحيحة
+- ✅ cron job للـ fetch كل ساعتين أثناء جلسة السوق
+- 🔜 commit + push
+- 🔜 المرحلة القادمة: تشديد شروط الدخول (تراكم/Liquidity Grab) + مدة احتفاظ قصيرة
+

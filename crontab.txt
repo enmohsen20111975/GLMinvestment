@@ -52,3 +52,6 @@
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l
 # ============================================================================
+
+# EGX Disclosures fetch — كل ساعتين أثناء جلسة السوق (10:00-14:00)
+0 10-14/2 * * 0-4 cd /home/z/my-project && /root/.venv/bin/python3 -c "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures; print(fetch_and_store_disclosures(50))" >> logs/disclosures.log 2>&1

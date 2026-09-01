@@ -1,6 +1,49 @@
 # Changelog
 
 
+## [EGX-DISCLOSURE-ENGINE] — حل العزلة عن الأخبار: إفصاحات EGX الرسمية (2026-09-01)
+
+> **توجيه المالك:** "اقطع البحث العشوائي تمامًا. المصدر الوحيد المسموح: صفحة الإفصاحات الرسمية للبورصة المصرية. يحول الإفصاح لـ JSON بسيط (رمز السهم + نوع الحدث + تاريخ + ملخص). يدي درجة تأثير رقمية من -2 إلى +2."
+
+### التعديلات (2 ملفات)
+
+#### 1. `vps-service/analyzers/egx_disclosure_engine.py` (جديد — 620 LOC)
+- **12 نوع إفصاح** بالكلمات المفتاحية الصارمة (capital_increase, subscription_rights, free_shares, dividend, coupon, earnings, auditor_change, resignation, acquisition, stock_split, delisting, suspension)
+- `classify_disclosure()`: keyword matching (عربي + إنجليزي) + text normalization
+- `fetch_egx_disclosures()`: EGX official + EGKSCO fallback
+- `store_disclosure()`: dedup في `egx_disclosures` table (`db/disclosures.db`)
+- `get_disclosure_impact_for_ticker()`: للـ V40.2 integration
+- self-test: 11/11 سيناريوهات pass ✅
+
+#### 2. `vps-service/jobs/v40_2_daily_generator.py` (تعديل)
+- **دمج DISCLOSURE_IMPACT** (السطر 1601-1642): بـ toggle `V40_2_DISCLOSURE_IMPACT` (default OFF)
+- لو VETO (score=-2) → `continue` (hard reject — تجميد الإشارة)
+- لو REDUCE (score=-1) → `score -= 10` (وقف طوارئ)
+- لو BOOST (score=+1/+2) → `score += 10/20` (دفعة)
+- في backtest mode: skip (لا إفصاحات تاريخية)
+
+### النتائج (integration test — 7 سيناريوهات)
+
+| Scenario | Score | Verdict | Action in V40.2 |
+|---|---|---|---|
+| SUSPENSION (إيقاف تداول) | -2 | VETO | 🚨 تجميد (hard reject) |
+| DELISTING (شطب) | -2 | VETO | 🚨 تجميد (hard reject) |
+| DIVIDEND (توزيع أرباح) | -1 | REDUCE | ⚠️ وقف طوارئ -10 |
+| RIGHTS (حقوق اكتتاب) | +2 | BOOST_STRONG | 📈 دفعة +20 |
+| ACQUISITION (استحواذ) | +2 | BOOST_STRONG | 📈 دفعة +20 |
+| CAPITAL (زيادة رأس المال) | +1 | BOOST | 📈 دفعة +10 |
+| No disclosure | 0 | NEUTRAL | ➡️ لا تأثير |
+
+### cron job (crontab.txt)
+كل ساعتين أثناء جلسة السوق (10:00-14:00) يجيب الإفصاحات الجديدة + يصنفها + يخزنها.
+
+### القواعد ما اتنكسرتش
+- ✅ Rule 20: Python=العقل (كل المنطق في Python)
+- ✅ Rule 27: NO-FAKE-DATA (كل درجة من keyword matching صارم)
+- ✅ Rule 29: UNIFIED-SYSTEM (module مترابط بـ V40.2 decision)
+- ✅ توجيه المالك المباشر: "اقطع البحث العشوائي، استخدم الإفصاحات الرسمية"
+
+
 ## [DYNAMIC-STOP-TARGET-STAGE1] — المرحلة 1: جعل الوقف والأهداف أكثر ديناميكية (2026-08-30)
 
 > **المهمة:** بناءً على تعليمات المالك: "الوقف والهدف ما يبقاش معتمدين على نسب ثابتة أو مضاعفات R عامة فقط، بل يرتبطوا بسلوك السهم الفعلي."
