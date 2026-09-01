@@ -143,6 +143,17 @@ V72_MARKET_BULLISH_SIZING = os.environ.get('V72_MARKET_BULLISH_SIZING', '0') == 
 V73_DESERT_PHASE_REJECT = os.environ.get('V73_DESERT_PHASE_REJECT', '1') == '1'  # ✅ KEEP — +23.1% return
 V73_AUCTION_TRAP_REJECT = os.environ.get('V73_AUCTION_TRAP_REJECT', '0') == '1'  # ❌ KILL — 0 triggers
 
+# ── V75 INSTITUTIONAL MATRIX FEATURE TOGGLES (A/B testing — 2026-09-01) ──
+# 7 ميزات GENUINELY NEW من V75 (Institutional Matrix):
+# A/B على 6 شهور (Feb-Aug 2026) عشان نتأكد general مش overfit.
+V75_ADAPTIVE_DESERT_REJECT = os.environ.get('V75_ADAPTIVE_DESERT_REJECT', '0') == '1'  # ATR-based desert (vs V73 BB-based)
+V75_KILLER_DIST_REJECT = os.environ.get('V75_KILLER_DIST_REJECT', '0') == '1'        # big red candle reject
+V75_VOL_DRYING_REJECT = os.environ.get('V75_VOL_DRYING_REJECT', '0') == '1'           # 3-bar vol decline
+V75_HEALTHY_PULLBACK_BOOST = os.environ.get('V75_HEALTHY_PULLBACK_BOOST', '0') == '1' # healthy pullback = boost
+V75_DAILY_TREND_GATE = os.environ.get('V75_DAILY_TREND_GATE', '0') == '1'             # daily EMA200 filter
+V75_CHOCH_BULL_RECOVERY = os.environ.get('V75_CHOCH_BULL_RECOVERY', '0') == '1'       # new entry path
+V75_MIN_RR_2 = os.environ.get('V75_MIN_RR_2', '0') == '1'                              # 2R min (was 1.5R)
+
 
 def count_evidence(proofs):
     """Count ✅ markers in proofs dict."""
@@ -1318,6 +1329,100 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _v73_err:
                 pass  # safe-by-design: لو V73 فشل → نكمّل بدونه
 
+            # ── V75 INSTITUTIONAL MATRIX (المرحلة 7 — 2026-09-01): 7 ميزات جديدة ──
+            # كل ميزة toggleable via env var (default=0 — الباك-تست يقرر)
+            # 1. adaptive_desert: ATR < 0.6×ATR_SMA + vol < 0.5×median → رفض
+            # 2. killer_dist: شمعة حمرا + range > 1.5×ATR + vol > 2×median → رفض
+            # 3. vol_drying: 3 شموع حجم متناقص + تحت median → رفض
+            # 4. healthy_pullback: شمعة حمرا صغيرة + حجم ضعيف → boost
+            # 5. daily_trend_gate: daily EMA200 filter → رفض لو هابط يومي
+            # 6. choch_bull_recovery: كسر مقاومة لما trend != 1 → boost
+            # 7. min_rr_2: R:R >= 2.0 (was 1.5) → stricter
+            try:
+                from analyzers.v75_matrix import (
+                    compute_median_volume, detect_adaptive_desert,
+                    detect_killer_distribution, detect_vol_drying,
+                    detect_healthy_pullback, compute_daily_trend_up,
+                    detect_choch_bull_recovery
+                )
+                _v75_closes = closes[:day_idx + 1] if 'closes' in dir() and day_idx < len(closes) else []
+                _v75_highs = highs[:day_idx + 1] if 'highs' in dir() and day_idx < len(highs) else []
+                _v75_lows = lows[:day_idx + 1] if 'lows' in dir() and day_idx < len(lows) else []
+                _v75_vols = volumes[:day_idx + 1] if 'volumes' in dir() and day_idx < len(volumes) else []
+                _v75_opens = opens[:day_idx + 1] if 'opens' in dir() and day_idx < len(opens) else []
+                _v75_atr = float(result.get('atr', 0) or 0) or (entry * 0.05)
+                _v75_median_vol = compute_median_volume(_v75_vols, 50) if len(_v75_vols) >= 10 else 0
+
+                # V75-1: Adaptive Desert Reject (ATR-based)
+                if V75_ADAPTIVE_DESERT_REJECT and _v75_median_vol > 0:
+                    _v75_desert = detect_adaptive_desert(_v75_highs, _v75_lows, _v75_closes, _v75_vols, _v75_median_vol)
+                    result['v75_adaptive_desert'] = _v75_desert
+                    if _v75_desert:
+                        print(f"[V75-ADAPTIVE-DESERT] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"ATR contracted + dead volume → رفض", flush=True)
+                        continue
+
+                # V75-2: Killer Distribution Reject (big red candle)
+                if V75_KILLER_DIST_REJECT and _v75_median_vol > 0:
+                    _v75_killer = detect_killer_distribution(
+                        _v75_highs, _v75_lows, _v75_closes, _v75_opens, _v75_vols, _v75_atr, _v75_median_vol
+                    )
+                    result['v75_killer_dist'] = _v75_killer
+                    if _v75_killer:
+                        print(f"[V75-KILLER-DIST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"توزيع قاتل (شمعة حمرا + range > 1.5×ATR + vol > 2×median) → رفض", flush=True)
+                        continue
+
+                # V75-3: Volume Drying Reject
+                if V75_VOL_DRYING_REJECT and _v75_median_vol > 0:
+                    _v75_drying = detect_vol_drying(_v75_closes, _v75_opens, _v75_vols, _v75_median_vol)
+                    result['v75_vol_drying'] = _v75_drying
+                    if _v75_drying:
+                        print(f"[V75-VOL-DRYING] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"جفاف سيولة (3 شموع متناقصة) → رفض", flush=True)
+                        continue
+
+                # V75-4: Healthy Pullback Boost
+                if V75_HEALTHY_PULLBACK_BOOST and _v75_median_vol > 0:
+                    _v75_hp = detect_healthy_pullback(
+                        _v75_highs, _v75_lows, _v75_closes, _v75_opens, _v75_vols, _v75_atr, _v75_median_vol
+                    )
+                    result['v75_healthy_pullback'] = _v75_hp
+                    if _v75_hp:
+                        print(f"[V75-HEALTHY-PULLBACK] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"جني أرباح صحي (شمعة صغيرة + حجم ضعيف) → boost", flush=True)
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = min(100, result['score'] + 5)
+
+                # V75-5: Daily Trend Gate (daily EMA200)
+                if V75_DAILY_TREND_GATE:
+                    # Use available closes as proxy for daily trend (V40.2 runs on daily TF)
+                    _v75_daily_up = compute_daily_trend_up(_v75_closes) if len(_v75_closes) >= 50 else True
+                    result['v75_daily_trend_up'] = _v75_daily_up
+                    if not _v75_daily_up:
+                        print(f"[V75-DAILY-GATE] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"كاسر EMA200 يومي → رفض", flush=True)
+                        continue
+
+                # V75-6: CHoCH Bull Recovery (new entry path)
+                if V75_CHOCH_BULL_RECOVERY:
+                    _v75_support = result.get('v68_low_magnet')
+                    _v75_resist = result.get('v68_high_magnet')
+                    _v75_trend = result.get('v68_trend_state', 0)
+                    _v75_choch = detect_choch_bull_recovery(_v75_closes, _v75_resist, _v75_trend)
+                    result['v75_choch_bull'] = _v75_choch
+                    if _v75_choch:
+                        print(f"[V75-CHOCH-RECOVERY] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"كسر مقاومة مع تغيير هيكل → boost", flush=True)
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = min(100, result['score'] + 8)
+
+                # V75-7: 2R minimum R:R (stricter than 1.5R)
+                # Applied later in the R:R check section
+
+            except Exception as _v75_err:
+                pass  # safe-by-design: لو V75 فشل → نكمّل بدونه
+
             # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
             # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
             # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
@@ -1374,6 +1479,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _min_rr = get_dynamic_min_rr(_regime)
             except Exception:
                 _min_rr = 2.0  # C1 floor if settings unavailable
+            # V75-7: 2R minimum R:R (stricter than regime default)
+            if V75_MIN_RR_2:
+                _min_rr = max(_min_rr, 2.0)
             if r_mult < _min_rr:
                 continue
 
