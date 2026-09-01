@@ -1,6 +1,7 @@
 # 🗺️ Data Flow Map — GLMinvestment
 
-> **آخر تحديث**: 2026-08-29 (PHASE-2-DB-UNIFY)
+> **آخر تحديث**: 2026-09-01 (إضافة Stock Notebook Flow + Disclosure Engine Flow + Decision Logger Flow + Unified Exit Engine Flow + News Fetcher/Ingest Flow + 10 Feature Flags data gating)
+> **آخر تحديث سابق**: 2026-08-29 (PHASE-2-DB-UNIFY)
 > **المؤلف**: Z.ai Code
 > **الحالة**: Production reference document
 
@@ -315,9 +316,170 @@ predictionsDb → predictions.db (Prediction, PersonaPrediction, ExpertRecommend
 
 ## 📚 مراجع
 
-- `Documentation/00-CONSTITUTION.md` — قواعد النظام (32 قاعدة)
+- `Documentation/00-CONSTITUTION.md` — قواعد النظام (40 قاعدة + عهد الوكيل 30 بند)
 - `scripts/audit_backtest.py` — فحص الـ 0 signals
 - `scripts/audit_dbs_deep.py` — فحص كل الجداول في كل الـ DBs
 - `scripts/migrate_to_4_dbs.py` — سكربت الترحيل (PHASE-4 — لم يكتمل على الإنتاج)
 - `vps-service/crontab.txt` — الـ cron jobs الكاملة
 - `ecosystem.config.js` — PM2 services
+
+---
+
+## 🆕 V40.2 Subsystem Flows (2026-09-01)
+
+> أُضيفت بعد إضافة الـ modules الستة (Stock Notebook + Disclosure + Strict Entry + Distribution Exit + News Fetcher + Decision Logger + Unified Exit Engine) + 10 Feature Flags. كلها default OFF عشان نحافظ على الـ baseline الإنتاجي.
+
+### 📒 Stock Notebook Flow
+
+```
+notebooks/EGX/*.json (259 ملف JSON)
+   ↓ load_stock_notebook(symbol) / get_machine_summary(symbol)
+V40.2 generator (per ticker)
+   ↓ apply_notebook_context(current_score, stop_distance_pct, ...)
+   ↓ toggle: V40_2_NOTEBOOK_CONTEXT=1
+   ↓ لو danger_level=5 → تقليل الحجم
+   ↓ لو typical_correction_pct → مراجعة مسافة الوقف
+decision_logger.log_decision() ← سجل: notebook_summary, flag_active
+```
+
+### 🏛️ Disclosure Engine Flow
+
+```
+EGX/EGKSCO disclosures (HTML)
+   ↓ fetch_disclosures() (cron كل ساعتين 10:00-14:00)
+   ↓ classify_disclosure(text) → 12 نوع
+   ↓ score_disclosure(event_type) → -2 لـ +2
+db/disclosures.db.egx_disclosures (dedup: ticker + event_type + date + title)
+   ↓ get_disclosure_impact(ticker)
+V40.2 generator
+   ↓ toggle: V40_2_DISCLOSURE_IMPACT=1
+   ↓ VETO (-2) → continue (hard reject)
+   ↓ REDUCE (-1) → score -= 10
+   ↓ BOOST (+1/+2) → score += 10/20
+decision_logger.log_decision() ← سجل: reason_code='disclosure_veto', flag_active
+```
+
+### 🚷 Strict Entry Flow
+
+```
+V40.2 generator (per BUY signal)
+   ↓ is_in_accumulation(closes, highs, lows, volumes) → range <12% + volume <1.2×
+   ↓ is_liquidity_grab(highs, lows, closes, volumes) → sweep + reclaim + volume ≥1.8×
+   ↓ is_late_entry(closes, highs, rsi) → near 20d high <6% OR RSI >65 OR +15% in 5d
+   ↓ toggle: V40_2_STRICT_ENTRY=1
+   ↓ لو is_late_entry → REJECT (Don't Chase)
+   ↓ لو is_in_accumulation OR is_liquidity_grab → ACCEPT
+   ↓ غير كده → REJECT
+decision_logger.log_decision() ← سجل: reason_code='late_entry', flag_active
+```
+
+### 📊 Distribution Exit Flow (daily_closer)
+
+```
+daily_closer (per open prediction)
+   ↓ detect_distribution(opens, highs, lows, closes, volumes, rsi)
+   ↓ 5 شروط: red candle + upper_wick≥body + volume>1.8×MA + near 20d high ≤8% + RSI>65
+   ↓ toggle: V40_2_DISTRIBUTION_EXIT=1
+   ↓ لو is_distribution → force exit (priority 1)
+   ↓ exit_type = 'distribution_exit'
+   ↓ UPDATE predictions SET exit_type='distribution_exit', outcome=...
+decision_logger.log_decision() ← سجل: reason_code='distribution_exit', flag_active
+```
+
+### 🚪 Short Holding Exit (هيكلي — مش زمني) Flow
+
+```
+daily_closer (per open prediction)
+   ↓ should_force_exit_by_time(entry_date, current_date, entry_price, current_price,
+                                typical_correction_pct, rsi, recent_closes)
+   ↓ toggle: V40_2_SHORT_HOLDING=1
+   ↓
+   ↓ 1. early_drop: نزول ≤ -7% في أول 3 أيام → exit
+   ↓ 2. compound_breakdown: بعد 10 أيام + نزول ×1.3 من typical_correction + RSI<30 + 5 شموع حمراء → exit
+   ↓ 3. review_alert: بعد 7 أيام + نزول خارج التصحيح → تنبيه (NOT exit)
+   ↓
+   ↓ typical_correction_pct جاي من notebooks/EGX/<ticker>.json
+   ↓ is_within_typical_correction() + is_breakdown_not_correction()
+   ↓ UPDATE predictions SET exit_type='early_drop'/'compound_breakdown_exit'
+decision_logger.log_decision() ← سجل: reason_code='early_drop'/'compound_breakdown', flag_active
+```
+
+### 📰 News Fetcher Flow
+
+```
+DuckDuckGo HTML search (مجاني)
+   ↓ news_fetcher_analyzer.fetch_news_for_ticker(ticker)
+   ↓ keyword-based sentiment: +2/+1/0/-1/-2
+   ↓ news.db (fallback)
+V40.2 generator
+   ↓ toggle: V40_2_NEWS_IMPACT=1
+   ↓ score +2 → BOOST_STRONG (+20)
+   ↓ score +1 → BOOST (+10)
+   ↓ score -1 → REDUCE (-10)
+   ↓ score -2 → VETO (hard reject)
+decision_logger.log_decision() ← سجل: reason_code='news_veto', flag_active
+```
+
+### 📰 News Signals Ingest Flow (إضافة المبرمج الآخر)
+
+```
+External News Agent (local)
+   ↓ HTTP POST /api/news/ingest
+   ↓ src/app/api/news/ingest/route.ts
+   ↓ يكتب في news.db (أو content.db.news_articles)
+vps-service/ai/news_signals_reader.py
+   ↓ get_news_bias(ticker) → يقرأ من news.db
+   ↓ apply_news_bias_to_score(score, ticker) — يطبّق bias على القرار في V40.2
+   ↓ يُستدعى من v40_2_daily_generator.py + v40_2_intraday_scanner.py
+```
+
+### 📝 Decision Logger Flow
+
+```
+أي مسار (V40.2 + daily_closer + strict_entry + disclosure + news + notebook)
+   ↓ log_decision(symbol, market, decision_type, reason_code, reason_text, flag_active, notebook_summary)
+db/decision_log.db.decision_log (table)
+   ↓ get_decision_stats() → analytics لمعرفة هل الفلاتر بتساعد أم بتقتل الإشارات
+Admin UI (#admin) ← يعرض stats
+```
+
+### 🚪 Unified Exit Engine Flow
+
+```
+daily_closer (per open prediction)
+   ↓ evaluate_unified_force_exit(market='STOCKS'/'CRYPTO', ...)
+   ↓ toggle: V40_2_UNIFIED_EXIT=1
+   ↓
+   ↓ MARKET_PROFILES['STOCKS']: 7 أيام max, no_move 3d +3%, early -5%, dist wick ≥1.0×
+   ↓ MARKET_PROFILES['CRYPTO']: 72h max, no_move 24h +5%, early -8%, dist wick ≥1.2×
+   ↓
+   ↓ priority: Veto (1) → Distribution (2) → Max holding (3) → No move (4) → Early adverse (5)
+   ↓ exit_code = 'veto'/'distribution_exit'/'max_holding'/'no_move'/'early_adverse'
+   ↓ UPDATE predictions SET exit_type=exit_code
+decision_logger.log_decision() ← سجل: reason_code, flag_active
+```
+
+### 🚦 Feature Flags Matrix (10 flags — كلها OFF افتراضياً)
+
+| Flag | الـ module | التأثير لو ON |
+|---|---|---|
+| `V40_2_STRICT_ENTRY` | strict_entry_filters.py | قبول تراكم/liquidity grab فقط — Don't Chase |
+| `V40_2_DISCLOSURE_IMPACT` | egx_disclosure_engine.py | تأثير الإفصاحات على القرار (-2/+2) |
+| `V40_2_NOTEBOOK_CONTEXT` | stock_notebook.py | تطبيق سياق النوتبوك (danger_level, typical_correction) |
+| `V40_2_SHORT_HOLDING` | short_holding_exit.py | خروج هيكلي (early_drop, compound_breakdown) |
+| `V40_2_DISTRIBUTION_EXIT` | short_holding_exit.py::detect_distribution() | شمعة التوزيع → خروج (priority 1) |
+| `V40_2_NEWS_IMPACT` | news_fetcher_analyzer.py | تأثير الأخبار + sentiment (-2/+2) |
+| `V40_2_CRYPTO_STRICT_ENTRY` | crypto_strict_filters.py | نسخة الكريبتو |
+| `V40_2_CRYPTO_DISCLOSURE_IMPACT` | crypto_disclosure_engine.py | نسخة الكريبتو |
+| `V40_2_CRYPTO_NEWS_IMPACT` | crypto_news_fetcher.py | نسخة الكريبتو |
+| `V40_2_UNIFIED_EXIT` | unified_exit_engine.py | توحيد قرارات الخروج (أسهم + كريبتو) |
+
+> **الترتيب في V40.2 (per BUY signal):** strict_entry (1) → disclosure (2) → notebook_context (3) → news (4). كل خطوة بـ يستدعي `decision_logger.log_decision()` لو رفض.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `DATA_FLOW_MAP.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "V40.2 Subsystem Flows (2026-09-01)" يحتوي على 8 flow diagrams: Stock Notebook, Disclosure Engine, Strict Entry, Distribution Exit, Short Holding Exit (هيكلي), News Fetcher, News Signals Ingest, Decision Logger, Unified Exit Engine. إضافة Feature Flags Matrix (10 flags). تحديث مراجع لـ "40 قاعدة + عهد الوكيل 30 بند". |

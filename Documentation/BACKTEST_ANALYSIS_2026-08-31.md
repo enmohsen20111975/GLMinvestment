@@ -3,6 +3,7 @@
 > **الهدف:** فهم ليه التوقعات مش ماشية مع السوق + تحليل كل صفقة (توقيت + مدة + سيولة + قطاعات)
 > **المصدر:** `data/all.zip` (آخر نسخة من الإنتاج)
 > **التاريخ:** 31 أغسطس 2026
+> **آخر تحديث:** 2026-09-01 (إضافة قسم "تحديث 2026-09-01: نتائج الباك-تست B0/B1/B2/B3 + المعالجة")
 
 ---
 
@@ -167,3 +168,46 @@
 3. **إشارات SELL** (مش بس BUY)
 4. **حرارة القطاع** (فلتر القطاعات الهابطة)
 5. **تتبع الصاعدات** (ما يفوّتش الفرص)
+
+---
+
+## 🆕 تحديث 2026-09-01: نتائج الباك-تست B0/B1/B2/B3 + المعالجة
+
+> **بعد التوصيات أعلاه، تم بناء 5 محركات جديدة + Stock Notebook + Unified Exit + Decision Logger + 10 Feature Flags (كلها OFF افتراضياً) لعلاج المشاكل الـ 5.**
+
+### النتائج الجديدة (200 سهم × 6 شهور)
+
+| السيناريو | Trades | WR | Return | علاقة بالتوصيات |
+|---|---:|---:|---:|---|
+| **B0 (baseline)** | 31 | 45.2% | +41.2% | كل flags OFF — الإنتاج الحالي (32 صفقة → 31 هنا بسبب dedup) |
+| **B1 (strict entry ON)** | 14 | 35.7% | -17.6% | معالجة "توقيت مبكر" (Rule 37) — لكن رفض كتير |
+| **B2 (strict + widened stop)** | 14 (4 stop_widened) | — | -18.8% | تجربة اتساع الوقف — ما ساعدش |
+| **B3 (structural exit ON)** | 14 | — | — | معالجة "مدة أقصر" (Rule 38 محدّثة) — **لا exit من نوع max_holding ✅** |
+
+### المعالجة لكل توصية
+
+| التوصية الأصلية | المعالجة في الجلسة | الـ module |
+|---|---|---|
+| 1. توقيت مبكر (Don't Chase) | ✅ `strict_entry_filters.py` (582 LOC) — قبول تراكم/liquidity grab فقط | toggle `V40_2_STRICT_ENTRY` |
+| 2. مدة أقصر (7 أيام max) | ✅ **فلسفة هيكلية** بدل زمنية — `max_holding_7d` ملغي كسبب وحيد، `typical_correction_pct` من النوتبوك بـ يفرّق تصحيح/انهيار | toggle `V40_2_SHORT_HOLDING` |
+| 3. إشارات SELL | ✅ `egx_disclosure_engine.py` (VETO -2) + `news_fetcher_analyzer.py` (sentiment -2) + `short_holding_exit.py::detect_distribution()` | toggles `V40_2_DISCLOSURE_IMPACT` + `V40_2_NEWS_IMPACT` + `V40_2_DISTRIBUTION_EXIT` |
+| 4. حرارة القطاع | ⏳ معالجة جزئية — `decision_logger.py` بـ يسجل السبب للمراقبة | `decision_logger.py` |
+| 5. تتبع الصاعدات | ✅ Stock Notebook (`stock_notebook.py`) — `typical_correction_pct` + `avoid_chase` لكل سهم | toggle `V40_2_NOTEBOOK_CONTEXT` |
+
+### الدرس الأساسي
+
+الـ B1 (strict entry ON) أظهر إن الـ flag بـ يرفض كتير ويقلل الصفقات (31 → 14) ويخسر (-17.6%). لكن **B3 (structural exit)** أظهر إن الفلسفة الهيكلية شغّالة (لا exit واحد من نوع `max_holding`). التوصية: **تفعيل `V40_2_NOTEBOOK_CONTEXT` + `V40_2_SHORT_HOLDING` (structural) أولاً، ومراجعة `get_decision_stats()` أسبوعياً**.
+
+### المراجع
+
+- `00-CONSTITUTION.md` القواعد 36-40 (الـ 5 محركات الجديدة).
+- `SYSTEM_HOW_IT_THINKS.md` قسم "تغييرات جوهرية (2026-09-01)".
+- `DATA_FLOW_MAP.md` قسم "V40.2 Subsystem Flows".
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `BACKTEST_ANALYSIS_2026-08-31.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديث 2026-09-01: نتائج الباك-تست B0/B1/B2/B3 + المعالجة" — جدول النتائج الجديدة (200 سهم × 6 شهور) + مصفوفة المعالجة لكل توصية أصلية + الدرس الأساسي. |

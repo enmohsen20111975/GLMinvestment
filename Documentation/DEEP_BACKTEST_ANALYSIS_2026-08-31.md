@@ -2,6 +2,7 @@
 
 > **المصدر:** `data/all.zip` (آخر نسخة من الإنتاج)
 > **التاريخ:** 31 أغسطس 2026
+> **آخر تحديث:** 2026-09-01 (إضافة قسم "تحديث 2026-09-01: معالجة الـ 7 إصلاحات")
 > **الهدف:** فهم ليه التوقعات مش ماشية مع السوق + دراسة كل صفقة
 
 ---
@@ -236,3 +237,52 @@ if holding_days <= 3 and actual_return <= -5:
 ---
 
 **الخلاصة:** النظام محتاج 7 إصلاحات عاجلة. أهمها: تقليل مدة الاحتفاظ + فلتر حرارة القطاع + إلغاء WATCH.
+
+---
+
+## 🆕 تحديث 2026-09-01: معالجة الـ 7 إصلاحات
+
+> **بعد الـ 7 توصيات أعلاه، تم بناء 5 محركات جديدة + Stock Notebook + Unified Exit + Decision Logger + 10 Feature Flags (كلها OFF افتراضياً) لعلاج المشاكل.**
+
+### مصفوفة المعالجة (التوصية → الحل)
+
+| # | التوصية الأصلية | المعالجة في الجلسة | الـ module / Toggle | الحالة |
+|---|---|---|---|---|
+| 1 | تقليل مدة الاحتفاظ (7 أيام max) | ✅ **فلسفة هيكلية** بدل زمنية — `max_holding_7d` ملغي كسبب وحيد، `typical_correction_pct` من النوتبوك بـ يفرّق تصحيح/انهيار + `is_breakdown_not_correction()` | `short_holding_exit.py` / `V40_2_SHORT_HOLDING` | ✅ تم |
+| 2 | فلتر حرارة القطاع | ⏳ معالجة جزئية — `decision_logger.py` بـ يسجل السبب للمراقبة + Sector filter موجود من قبل في V40.2 (المرحلة 4 — §15.2 filter #4) | `decision_logger.py` | ⏳ جزئي |
+| 3 | إلغاء WATCH | ✅ موجود من قبل — V40.2 ما بـ يكتبش WATCH (فقط BUY/STRONG_BUY/SELL) | `v40_2_daily_generator.py` | ✅ تم (سابقًا) |
+| 4 | إشارات SELL | ✅ `egx_disclosure_engine.py` (VETO -2) + `news_fetcher_analyzer.py` (sentiment -2) + `short_holding_exit.py::detect_distribution()` (شمعة توزيع) | `V40_2_DISCLOSURE_IMPACT` + `V40_2_NEWS_IMPACT` + `V40_2_DISTRIBUTION_EXIT` | ✅ تم |
+| 5 | تجميع مبكر (volume + trend) | ✅ `strict_entry_filters.py::is_in_accumulation()` — نطاق ضيق + حجم هادي + مفيش قفزة + بعيد عن قمة 20 يوم | `V40_2_STRICT_ENTRY` | ✅ تم |
+| 6 | تجميع مؤسسي (P/E + ROE) | ✅ موجود من قبل — `fundamental_data_provider.py` (Stage A-H منتهية) + `news_impact_scorer.py` (14 event types) | `fundamental_data_provider.py` + `news_impact_scorer.py` | ✅ تم (سابقًا) |
+| 7 | خروج سريع من الخسائر | ✅ `short_holding_exit.py::should_force_exit_by_time()` — `early_drop` (نزول ≤ -7% في 3 أيام → exit) + `compound_breakdown_exit` (انهيار بعد 10 أيام) | `V40_2_SHORT_HOLDING` | ✅ تم |
+
+### النتائج الجديدة (200 سهم × 6 شهور — باك-تست B0/B1/B2/B3)
+
+| السيناريو | Trades | WR | Return | علاقة بالـ 7 إصلاحات |
+|---|---:|---:|---:|---|
+| **B0 (baseline)** | 31 | 45.2% | +41.2% | كل flags OFF — الإنتاج الحالي |
+| **B1 (strict entry ON)** | 14 | 35.7% | -17.6% | معالجة #5 — لكن رفض كتير |
+| **B2 (strict + widened stop)** | 14 (4 stop_widened) | — | -18.8% | تجربة وقف أوسع — ما ساعدش |
+| **B3 (structural exit ON)** | 14 | — | — | معالجة #1 + #7 — **لا exit من نوع max_holding ✅** |
+
+### الدرس الأساسي
+
+- الـ baseline الحالي (B0) بـ يعمل +41.2% (مش -92.43% زي التحليل القديم — الفرق بسبب البيانات الأحدث + الـ dedup).
+- الـ strict entry (B1) بـ يرفض كتير → صفقات أقل + خسارة. يحتاج tuning للـ thresholds.
+- **الفلسفة الهيكلية (B3) أنجح** — بـ تفرّق بين تصحيح (صبر) وانهيار (خروج) عبر `typical_correction_pct` من النوتبوك.
+- التوصية: **تفعيل `V40_2_NOTEBOOK_CONTEXT` + `V40_2_SHORT_HOLDING` (structural) أولاً، ومراجعة `get_decision_stats()` أسبوعياً**.
+
+### المراجع
+
+- `00-CONSTITUTION.md` القواعد 36-40 (الـ 5 محركات الجديدة) + Rule 38 محدّثة (فلسفة هيكلية).
+- `SYSTEM_HOW_IT_THINKS.md` قسم "تغييرات جوهرية (2026-09-01)" — Stock Notebook + فلسفة الخروج الهيكلية.
+- `DATA_FLOW_MAP.md` قسم "V40.2 Subsystem Flows" — 8 flow diagrams.
+- `METHODOLOGY_AND_RESULTS.md` قسم 11 — نفس المعالجة بصيغة منهجية.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `DEEP_BACKTEST_ANALYSIS_2026-08-31.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديث 2026-09-01: معالجة الـ 7 إصلاحات" — مصفوفة المعالجة (7 توصية → الحل + module + toggle + الحالة) + النتائج الجديدة B0/B1/B2/B3 + الدرس الأساسي + المراجع. |

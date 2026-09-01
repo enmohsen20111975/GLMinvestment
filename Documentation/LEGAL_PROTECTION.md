@@ -1,7 +1,8 @@
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"
 
 > **هذا الملف يوثق كل الإجراءات القانونية المتخذة لحماية المنصة.**
-> **آخر تحديث:** 2026-08-30
+> **آخر تحديث:** 2026-09-01 (إضافة قسم "تحديث 2026-09-01: المراجعة القانونية للموديولات الجديدة")
+> **آخر تحديث سابق:** 2026-08-30
 > **الحالة:** ✅ المنصة محمية قانونياً
 
 ---
@@ -172,3 +173,58 @@
 ---
 
 **المنصة محمية قانونياً.** ✅
+
+---
+
+## 🆕 تحديث 2026-09-01: المراجعة القانونية للموديولات الجديدة
+
+> **السياق:** أُضيفت 12 موديول Python جديد (~6,594 LOC) + 259 ملف JSON + 7 API endpoints + NotebookAdminTab.tsx + 10 Feature Flags. تم فحصها قانونياً للتأكد من عدم وجود كلمات تخالف FRA.
+
+### الفحص القانوني للموديولات الجديدة
+
+| الـ module | الفحص | النتيجة |
+|---|---|---|
+| `egx_disclosure_engine.py` | كلمات: "VETO", "hard reject", "score", "disclosure" | ✅ محايد قانونياً — مصطلحات تقنية داخلية (مش للعميل) |
+| `strict_entry_filters.py` | كلمات: "Don't Chase", "REJECT", "ACCEPT" | ✅ محايد — logic داخلي |
+| `short_holding_exit.py` | كلمات: "force_exit", "compound_breakdown", "early_drop" | ✅ محايد — logic داخلي |
+| `unified_exit_engine.py` | كلمات: "MARKET_PROFILES", "evaluate_unified_force_exit" | ✅ محايد — logic داخلي |
+| `stock_notebook.py` | كلمات: "machine_summary", "danger_level", "typical_correction_pct" | ✅ محايد — logic داخلي |
+| `decision_logger.py` | كلمات: "log_decision", "reason_code", "reject_entry" | ✅ محايد — logic داخلي |
+| `news_fetcher_analyzer.py` | كلمات: "sentiment", "score", "VETO" | ✅ محايد — logic داخلي |
+| `news_impact_scorer.py` | كلمات: "BOOST", "REDUCE", "VETO", "verdict" | ✅ محايد — logic داخلي |
+| `crypto_*.py` (4 modules) | نفس فحص الـ EGX counterparts | ✅ محايد |
+| `api/notebook_routes.py` | كلمات: "refresh", "build-all", "lesson" | ✅ محايد — admin endpoints |
+| `NotebookAdminTab.tsx` | شاشة أدمن (مش للعميل) — Rule 30 تسمح بأسلوب تقني | ✅ محايد |
+| `ai/news_signals_reader.py` | كلمات: "bias", "apply_news_bias_to_score" | ✅ محايد — logic داخلي |
+
+### DisclaimerBanner + LegalDisclaimerFooter
+
+- ✅ الـ DisclaimerBanner ما اتعدّلش — لسه موجود في كل الصفحات.
+- ✅ الـ LegalDisclaimerFooter لسه موجود في كل الشاشات الحرجة.
+- ✅ الـ Footer الـ sticky لسه فيه النص القانوني القوي.
+- ⚠️ **ملاحظة:** الـ NotebookAdminTab شاشة أدمن (مش للعميل) — لا تحتاج disclaimer (Rule 30).
+
+### قاعدة مهمة (Rule 30 — CLIENT-FACING-STYLE)
+
+كل الـ logic الداخلي (VETO, REJECT, hard reject, force_exit, danger_level) **محايد قانونياً** لأنه:
+1. مش بـ يشوفه العميل (شاشات الأدمن فقط).
+2. مصطلحات تقنية بحتة (مش ادعاءات استثمارية).
+3. بـ يأثر على القرار الداخلي للنظام (مش عرض مباشر للعميل).
+
+العميل بـ يشوف بس النتيجة النهائية: "إشارة BUY" أو "لا توجد إشارة" — ودي محمية بـ DisclaimerBanner.
+
+### التحقق النهائي (2026-09-01)
+
+- ✅ لا "توصية" جديدة في الموديولات الجديدة (ما عدا DisclaimerBanner المطلوب).
+- ✅ لا "مضمون" جديدة في الموديولات الجديدة.
+- ✅ لا "آمن 100%" جديدة في الموديولات الجديدة.
+- ✅ كل المصطلحات الجديدة تقنية داخلية (مش للعميل).
+- ✅ الـ 10 Feature Flags default OFF — المنصة الإنتاجية محمية.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `LEGAL_PROTECTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديث 2026-09-01: المراجعة القانونية للموديولات الجديدة" — فحص قانوني لـ 12 موديول جديد + التحقق من DisclaimerBanner/Footer + قاعدة Rule 30 + التحقق النهائي. |

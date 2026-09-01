@@ -4,6 +4,7 @@
 > **المؤلف:** Z.ai Code (Senior Full-Stack) + فريق المهندسين (4 audit بالتوازي)
 > **الفترة:** 30-31 أغسطس 2026
 > **الـ commits:** 14 commit على GitHub
+> **آخر تحديث:** 2026-09-01 (إضافة قسم "تحديثات الجلسة 2026-09-01" — الموديولات الجديدة المرتبطة بالـ V40.2)
 
 ---
 
@@ -327,3 +328,76 @@ git revert 77176d93..3124bee7
 ---
 
 **انتهى التقرير. أي مشكلة مستقبلية ارجع للملف ده.**
+
+---
+
+## 🆕 تحديثات الجلسة (2026-09-01) — الموديولات الجديدة المرتبطة بـ V40.2
+
+> **ملاحظة:** كل الموديولات الجديدة بـ feature flags default OFF عشان ما تؤثرش على الإنتاج الحالي. التحقق تم بـ grep + Read على الكود الفعلي.
+
+### الموديولات المضافة (مراجعة Fixes Report)
+
+| الـ module | LOC | الـ feature flag | الوصف |
+|---|---:|---|---|
+| `analyzers/egx_disclosure_engine.py` | 875 | `V40_2_DISCLOSURE_IMPACT` | 12 نوع إفصاح + dynamic scoring (-2 لـ +2). VETO → hard reject. |
+| `analyzers/strict_entry_filters.py` | 582 | `V40_2_STRICT_ENTRY` | Don't Chase: is_in_accumulation + is_liquidity_grab + is_late_entry. |
+| `analyzers/short_holding_exit.py` | 614 | `V40_2_SHORT_HOLDING` / `V40_2_DISTRIBUTION_EXIT` | **مُعاد كتابته بفلسفة هيكلية** — `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة. أضاف `is_within_typical_correction` + `is_breakdown_not_correction` (جسر مع النوتبوك). |
+| `analyzers/unified_exit_engine.py` | 518 | `V40_2_UNIFIED_EXIT` | `MARKET_PROFILES` (STOCKS + CRYPTO) + `evaluate_unified_force_exit()`. يوحّد الخروج. |
+| `analyzers/stock_notebook.py` | 1,065 | `V40_2_NOTEBOOK_CONTEXT` | 259 ملف JSON في `notebooks/EGX/` + `apply_notebook_context()` + `build_or_refresh_notebook()` + `build_notebooks_for_universe()`. 30 سهم معمّق. |
+| `analyzers/decision_logger.py` | 338 | — | `log_decision()` + `get_decision_stats()` + `db/decision_log.db`. |
+| `analyzers/news_fetcher_analyzer.py` | 507 | `V40_2_NEWS_IMPACT` | DuckDuckGo + sentiment (-2 لـ +2). 22 سهم EGX. |
+| `analyzers/news_impact_scorer.py` | 432 | (يُستخدم في news_agent) | 14 event types + verdict (BOOST/REDUCE/VETO). |
+| `analyzers/crypto_strict_filters.py` | 448 | `V40_2_CRYPTO_STRICT_ENTRY` | نظير EGX بـ thresholds مكيّفة لـ 24/7. |
+| `analyzers/crypto_short_holding_exit.py` | 412 | (مدمج في unified) | نظير EGX بـ ساعات بدل أيام. |
+| `analyzers/crypto_news_fetcher.py` | 391 | `V40_2_CRYPTO_NEWS_IMPACT` | نظير EGX للكريبتو. |
+| `analyzers/crypto_disclosure_engine.py` | 412 | `V40_2_CRYPTO_DISCLOSURE_IMPACT` | نظير EGX لأحداث الكريبتو. |
+| `api/notebook_routes.py` | 124 | — | 7 endpoints + مسجّل blueprint (`notebook_bp`) في `lightweight_server.py`. |
+| `src/components/admin/NotebookAdminTab.tsx` | 524 | — | مستورد في AdminView — UI لإدارة النوتبوكس. |
+| `ai/news_signals_reader.py` + `src/app/api/news/ingest/route.ts` | — | — | جسر News Agent خارجي + `apply_news_bias_to_score()`. |
+
+### الـ 10 Feature Flags (كلها default OFF)
+
+| Flag | الـ module | التأثير لو ON |
+|---|---|---|
+| `V40_2_STRICT_ENTRY` | strict_entry_filters.py | Don't Chase |
+| `V40_2_DISCLOSURE_IMPACT` | egx_disclosure_engine.py | تأثير الإفصاحات (-2/+2) |
+| `V40_2_NOTEBOOK_CONTEXT` | stock_notebook.py | سياق النوتبوك |
+| `V40_2_SHORT_HOLDING` | short_holding_exit.py | خروج هيكلي |
+| `V40_2_DISTRIBUTION_EXIT` | short_holding_exit.py::detect_distribution | شمعة التوزيع |
+| `V40_2_NEWS_IMPACT` | news_fetcher_analyzer.py | تأثير الأخبار |
+| `V40_2_CRYPTO_STRICT_ENTRY` | crypto_strict_filters.py | نسخة الكريبتو |
+| `V40_2_CRYPTO_DISCLOSURE_IMPACT` | crypto_disclosure_engine.py | نسخة الكريبتو |
+| `V40_2_CRYPTO_NEWS_IMPACT` | crypto_news_fetcher.py | نسخة الكريبتو |
+| `V40_2_UNIFIED_EXIT` | unified_exit_engine.py | توحيد الخروج |
+
+### باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)
+
+| السيناريو | Trades | WR | Return | ملاحظة |
+|---|---:|---:|---:|---|
+| **B0 (baseline)** | 31 | 45.2% | +41.2% | كل flags OFF — الإنتاج الحالي |
+| **B1 (strict entry ON)** | 14 | 35.7% | -17.6% | رفض كتير → صفقات أقل + خسارة |
+| **B2 (strict + widened stop)** | 14 (4 stop_widened) | — | -18.8% | اتساع الوقف ما ساعدش |
+| **B3 (structural exit ON)** | 14 | — | — | **لا exit واحد من نوع max_holding ✅** — الفلسفة الهيكلية شغّالة |
+
+### القواعد الدستورية المرتبطة (CONSTITUTION Rules 36-40)
+
+- **Rule 36 (DISCLOSURE-ENGINE):** `egx_disclosure_engine.py` — الإفصاحات الرسمية كمصدر وحيد.
+- **Rule 37 (STRICT-ENTRY):** `strict_entry_filters.py` — تراكم أو Liquidity Grab فقط.
+- **Rule 38 (SHORT-HOLDING — محدّثة 2026-09-01):** `short_holding_exit.py` — فلسفة هيكلية بدل زمنية. `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة. الأولوية: distribution > early_drop > compound_breakdown > review_alert.
+- **Rule 39 (DISTRIBUTION-EXIT):** `short_holding_exit.py::detect_distribution()` — شمعة التوزيع كإشارة خروج.
+- **Rule 40 (NEWS-FETCHER-ANALYZER):** `news_fetcher_analyzer.py` — DuckDuckGo + sentiment analysis.
+
+### كيفية التراجع
+
+كل الـ feature flags default OFF. لو أي flag سبب مشكلة:
+1. `unset V40_2_<FLAG>` أو `export V40_2_<FLAG>=0`.
+2. `pm2 restart python-backend`.
+3. النظام بيرجع لـ baseline (B0).
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `FIXES_REPORT_2026-08-30.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديثات الجلسة (2026-09-01)" — جدول 15 موديول جديد + الـ 10 Feature Flags + باك-تست B0/B1/B2/B3 + القواعد الدستورية 36-40 + كيفية التراجع. |

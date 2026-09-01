@@ -5,7 +5,8 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
+> **آخر تحديث: 2026-09-01** (إضافة Stock Notebook System + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags + تحديث العدّادات: blueprints=40، api files=38، notebooks/EGX=259 ملف JSON).
+> **آخر تحديث سابق:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
 > **كل ملفات `Documentation/*.md` السابقة دُمجت في الملفات الأربعة الرئيسية:**
 > `00-CONSTITUTION.md` (الدستور) · `01-PROJECT_ANATOMY.md` (هذا الملف) ·
 > `02-SCREENS_AND_COMPONENTS.md` (الشاشات والمكونات) · `SYSTEM_HOW_IT_THINKS.md` (منطق التحليل).
@@ -15,6 +16,101 @@
 >
 > ⚠️ هذا الملف **يلزم الواقع الحالي للكود**. كل رقم/مسار/منفذ متحقَّق منه ضد الكود الفعلي.
 > أي تغيير في البنية = تحديث هذا الملف فورًا.
+
+---
+
+## ⚡ تغييرات جوهرية (2026-09-01) — اقرأ هذا أولاً
+
+### 📒 Stock Notebook System (طبقة المعرفة الدائمة لكل سهم)
+
+**الـ module:** `vps-service/analyzers/stock_notebook.py` (1,065 LOC) + `notebooks/EGX/` (259 ملف JSON).
+
+| المكوّن | الوصف |
+|---|---|
+| **النوتبوك لكل سهم** | 259 ملف JSON في `notebooks/EGX/` — ملف لكل سهم EGX (COMI.json, HRHO.json, ...). 30 سهم معمّق بالخبرة الحقيقية (typical_correction_pct + danger_level + liquidity_profile). |
+| **`load_stock_notebook(symbol)`** | تحميل النوتبوك كامل + fallback آمن لو الملف مش موجود. |
+| **`get_machine_summary(symbol)`** | جلب machine_summary بس للـ V40.2 (typical_correction_pct, danger_level, avoid_chase, distribution_sensitivity). |
+| **`apply_notebook_context()`** | **الجسر الموحد بين النوتبوك والقرار** في V40.2 — بـ يعدّل الحجم/الوقف/الـ chase بناءً على النوتبوك. |
+| **`build_or_refresh_notebook(symbol, force=False)`** | بناء/تحديث نوتبوك سهم واحد (من بيانات تاريخية + خبرة). |
+| **`build_notebooks_for_universe(symbols='active')`** | بناء جماعي لكل الأسهم النشطة. |
+| **`update_stock_notebook()` + `add_lesson()`** | تحديث جزئي آمن + إضافة دروس. |
+| **API routes** | `vps-service/api/notebook_routes.py` (124 LOC) — 7 endpoints: `/api/notebooks/list` · `/stats` · `/<symbol>` · `POST /<symbol>/refresh` · `POST /build-all` · `POST /<symbol>/lesson` · `PUT /<symbol>/summary`. مسجّل في `lightweight_server.py` كـ `notebook_bp`. |
+| **Admin UI** | `src/components/admin/NotebookAdminTab.tsx` (524 LOC) — داخل `/#admin`. |
+| **التكامل في V40.2** | بـ toggle `V40_2_NOTEBOOK_CONTEXT=1` (default OFF). لو danger_level=5 → تقليل الحجم + `apply_notebook_context()` بـ يعدّل القرار. |
+
+### 🚪 Unified Exit Engine (موحّد للأسهم + الكريبتو)
+
+**الـ module:** `vps-service/analyzers/unified_exit_engine.py` (518 LOC).
+
+| المكوّن | الوصف |
+|---|---|
+| **`MARKET_PROFILES`** | dict بمفاتيح `STOCKS` + `CRYPTO` — thresholds مختلفة حسب نوع السوق. STOCKS: 7 أيام max, no_move 3d (+3%), early -5%. CRYPTO: 72 ساعة max, no_move 24h (+5%), early -8%. |
+| **`evaluate_unified_force_exit()`** | قرار موحد بترتيب أولوية ثابت: Veto (1) → Distribution (2) → Max holding (3) → No move (4) → Early adverse move (5). باقي TP/SL بـ يتعامل معاهم daily_closer. |
+| **التكامل** | بـ toggle `V40_2_UNIFIED_EXIT=1` (default OFF) — بـ يستبدل `short_holding_exit` + `crypto_short_holding_exit`. |
+
+### 📝 Decision Logger (طبقة تسجيل الأسباب)
+
+**الـ module:** `vps-service/analyzers/decision_logger.py` (338 LOC) + `db/decision_log.db`.
+
+| المكوّن | الوصف |
+|---|---|
+| **`log_decision()`** | دالة واحدة يستدعيها كل المسارات لتسجيل كل قرار (reject_entry / force_exit) مع السبب. |
+| **`get_decision_stats()`** | تحليل كم رُفضت/خرجت + الأسباب → عشان نعرف هل الفلاتر بتساعد أم بتقتل الإشارات الجيدة. |
+| **الـ DB** | `db/decision_log.db` — table `decision_log` (timestamp, symbol, market, decision_type, reason_code, reason_text, flag_active, notebook_summary). |
+
+### 📰 News Impact Scorer (14 event types)
+
+**الـ module:** `vps-service/analyzers/news_impact_scorer.py` (432 LOC).
+
+| المكوّن | الوصف |
+|---|---|
+| **`EVENT_TYPES`** | 14 نوع حدث (IPO_SUBSCRIPTION, DIVIDEND_EX_DATE, DIVIDEND_ANNOUNCE, EARNINGS_BEAT, EARNINGS_MISS, MA_ACQUISITION, REGULATORY_APPROVAL, STOCK_SPLIT, MANAGEMENT_CHANGE, CONTRACT_AWARD, EXPANSION, INVESTIGATION_FRAUD, TRADING_HALT, CBE_DECISION). |
+| **impact_score** | كل event له score من -25 لـ +20 + verdict (BOOST/REDUCE/VETO). |
+| **التكامل** | يُستخدم في `v40_2_daily_generator.py` كـ proof #9 + hard veto / boost (لو score < 30 → رفض). |
+
+### 🏛️ EGX Disclosure Engine (12 disclosure types)
+
+**الـ module:** `vps-service/analyzers/egx_disclosure_engine.py` (875 LOC).
+
+| المكوّن | الوصف |
+|---|---|
+| **12 نوع إفصاح** | capital_increase, subscription_rights, free_shares, dividend, coupon, earnings, auditor_change, resignation, acquisition, stock_split, delisting, suspension. |
+| **dynamic scoring** | VETO (-2) / REDUCE (-1) / NEUTRAL (0) / BOOST (+1) / BOOST_STRONG (+2). EARNINGS بـ يحلل النص (أرباح قياسية → +2، خسائر → -2). DIVIDEND بـ يفرق قبل/بعد ex-date. |
+| **التكامل في V40.2** | بـ toggle `V40_2_DISCLOSURE_IMPACT=1` (default OFF). VETO → `continue` (hard reject). |
+| **DB** | `db/disclosures.db` → table `egx_disclosures` (dedup: ticker + event_type + date + title). |
+
+### ₿ Crypto Modules (نظيرة EGX للكريبتو)
+
+| الـ module | LOC | الوصف |
+|---|---:|---|
+| `analyzers/crypto_strict_filters.py` | 448 | نفس `strict_entry_filters.py` بـ thresholds مكيّفة لـ 24/7 + تقلب أعلى. toggle: `V40_2_CRYPTO_STRICT_ENTRY`. |
+| `analyzers/crypto_short_holding_exit.py` | 412 | نفس `short_holding_exit.py` بـ thresholds ساعات بدل أيام (max 72h, no_move 24h). |
+| `analyzers/crypto_news_fetcher.py` | 391 | جلب أخبار الكريبتو من DuckDuckGo + sentiment analysis. toggle: `V40_2_CRYPTO_NEWS_IMPACT`. |
+| `analyzers/crypto_disclosure_engine.py` | 412 | نظير `egx_disclosure_engine.py` لأحداث الكريبتو (hard fork, delisting, hack, ...). toggle: `V40_2_CRYPTO_DISCLOSURE_IMPACT`. |
+
+### 🚦 Feature Flags V40.2 (10 flags — كلها OFF افتراضياً)
+
+| Flag | الـ module | الوصف |
+|---|---|---|
+| `V40_2_STRICT_ENTRY` | `strict_entry_filters.py` | Don't Chase: قبول تراكم/liquidity grab فقط. |
+| `V40_2_DISCLOSURE_IMPACT` | `egx_disclosure_engine.py` | تأثير الإفصاحات الرسمية على القرار. |
+| `V40_2_NOTEBOOK_CONTEXT` | `stock_notebook.py` | تطبيق سياق النوتبوك (danger_level, typical_correction). |
+| `V40_2_SHORT_HOLDING` | `short_holding_exit.py` | خروج هيكلي (هيكلي، مش زمني صرف). |
+| `V40_2_DISTRIBUTION_EXIT` | `short_holding_exit.py::detect_distribution()` | شمعة التوزيع كإشارة خروج. |
+| `V40_2_NEWS_IMPACT` | `news_fetcher_analyzer.py` | تأثير الأخبار + sentiment. |
+| `V40_2_CRYPTO_STRICT_ENTRY` | `crypto_strict_filters.py` | نسخة الكريبتو. |
+| `V40_2_CRYPTO_DISCLOSURE_IMPACT` | `crypto_disclosure_engine.py` | نسخة الكريبتو. |
+| `V40_2_CRYPTO_NEWS_IMPACT` | `crypto_news_fetcher.py` | نسخة الكريبتو. |
+| `V40_2_UNIFIED_EXIT` | `unified_exit_engine.py` | توحيد قرارات الخروج (أسهم + كريبتو). |
+
+### 📰 News Fetcher Analyzer (EGX news from DuckDuckGo + sentiment)
+
+**الـ module:** `vps-service/analyzers/news_fetcher_analyzer.py` (507 LOC).
+- DuckDuckGo HTML search + news.db fallback.
+- 22 سهم EGX معروف (ticker → اسم عربي + إنجليزي للبحث).
+- تحليل المشاعر keyword-based: +2/+1/0/-1/-2.
+- toggle: `V40_2_NEWS_IMPACT`.
+- **news_signals_reader.py** (`vps-service/ai/news_signals_reader.py`) + `/api/news/ingest` (Node route) — جسر لاستقبال الأخبار المحللة من News Agent محلي خارجي + `apply_news_bias_to_score()`.
 
 ---
 
@@ -1406,6 +1502,14 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 
 ---
 
-> **END OF FILE** — `01-PROJECT_ANATOMY.md` v3.5.0 (KILL-MAESTRO + V40.2 sole engine + V62 logic + AI News Agent).
+> **END OF FILE** — `01-PROJECT_ANATOMY.md` v3.6.0 (2026-09-01: Stock Notebook + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags).
 > للتفاصيل الكاملة عن أي قسم: ابحث في الـ source files المُدرجة في §11.2.
 > للتحديث: عدّل هذا الملف مباشرة + حدّث الـ "last updated" في الـ header.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `01-PROJECT_ANATOMY.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook System (1,065 LOC + 259 JSON + 7 API endpoints + NotebookAdminTab.tsx)، Unified Exit Engine (518 LOC + MARKET_PROFILES)، Decision Logger (338 LOC + decision_log.db)، News Impact Scorer (432 LOC + 14 event types)، EGX Disclosure Engine (875 LOC + 12 disclosure types)، Crypto Modules (4 ملفات: crypto_strict_filters + crypto_short_holding_exit + crypto_news_fetcher + crypto_disclosure_engine)، Feature Flags V40.2 (10 flags)، News Fetcher Analyzer + news_signals_reader + /api/news/ingest. |

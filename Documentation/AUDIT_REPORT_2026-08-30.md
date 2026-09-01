@@ -1,7 +1,8 @@
 # 🔍 تقرير الـ Audit الشامل — 30 أغسطس 2026
 
 > **هذا الملف هو السجل الرسمي لكل ما تم فحصه وإصلاحه في المراجعة الشاملة.**
-> **آخر تحديث:** 2026-08-30
+> **آخر تحديث:** 2026-09-01 (إضافة قسم "تحديثات الجلسة 2026-09-01" — مراجعة الموديولات الجديدة)
+> **آخر تحديث سابق:** 2026-08-30
 > **الحالة:** ✅ كل المشاكل الحرجة (P0) تم إصلاحها — المنصة جاهزة للإنتاج
 
 ---
@@ -312,3 +313,45 @@ python vps-service/jobs/v40_2_daily_generator.py --market CRYPTO --today-only
 ---
 
 **انتهى التقرير. المنصة جاهزة للإنتاج.**
+
+---
+
+## 🆕 تحديثات الجلسة (2026-09-01) — مراجعة الموديولات الجديدة
+
+> **ملاحظة:** كل الموديولات الجديدة التالية بـ feature flags default OFF عشان ما تؤثرش على الإنتاج الحالي. التحقق تم بـ grep + Read على الكود الفعلي.
+
+### الموديولات المضافة (مراجعة Audit)
+
+| الـ module | LOC | Toggle (default OFF) | الحالة |
+|---|---:|---|---|
+| `analyzers/egx_disclosure_engine.py` | 875 | `V40_2_DISCLOSURE_IMPACT` | ✅ موجود + 12 نوع إفصاح + dynamic scoring -2/+2 |
+| `analyzers/strict_entry_filters.py` | 582 | `V40_2_STRICT_ENTRY` | ✅ موجود + 3 دوال (is_in_accumulation, is_liquidity_grab, is_late_entry) |
+| `analyzers/short_holding_exit.py` | 614 | `V40_2_SHORT_HOLDING` / `V40_2_DISTRIBUTION_EXIT` | ✅ مُعاد كتابته — فلسفة هيكلية (`max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة) + `is_within_typical_correction` + `is_breakdown_not_correction` |
+| `analyzers/unified_exit_engine.py` | 518 | `V40_2_UNIFIED_EXIT` | ✅ موجود + `MARKET_PROFILES` (STOCKS + CRYPTO) |
+| `analyzers/stock_notebook.py` | 1,065 | `V40_2_NOTEBOOK_CONTEXT` | ✅ موجود + 259 ملف JSON في `notebooks/EGX/` + `apply_notebook_context()` |
+| `analyzers/decision_logger.py` | 338 | — | ✅ موجود + `db/decision_log.db` + `log_decision()` + `get_decision_stats()` |
+| `analyzers/news_fetcher_analyzer.py` | 507 | `V40_2_NEWS_IMPACT` | ✅ موجود + DuckDuckGo + sentiment -2/+2 |
+| `analyzers/news_impact_scorer.py` | 432 | (يُستخدم في news_agent) | ✅ موجود + 14 event types |
+| `analyzers/crypto_strict_filters.py` | 448 | `V40_2_CRYPTO_STRICT_ENTRY` | ✅ موجود |
+| `analyzers/crypto_short_holding_exit.py` | 412 | (مدمج في unified) | ✅ موجود |
+| `analyzers/crypto_news_fetcher.py` | 391 | `V40_2_CRYPTO_NEWS_IMPACT` | ✅ موجود |
+| `analyzers/crypto_disclosure_engine.py` | 412 | `V40_2_CRYPTO_DISCLOSURE_IMPACT` | ✅ موجود |
+| `api/notebook_routes.py` | 124 | — | ✅ موجود + 7 endpoints + مسجّل في `lightweight_server.py` كـ `notebook_bp` |
+| `src/components/admin/NotebookAdminTab.tsx` | 524 | — | ✅ موجود + مستورد في AdminView |
+| `ai/news_signals_reader.py` + `src/app/api/news/ingest/route.ts` | — | — | ✅ موجود (إضافة المبرمج الآخر) + `apply_news_bias_to_score()` |
+
+### النتيجة
+
+- ✅ كل الموديولات موجودة ومرتبطة بالـ V40.2 generator (`grep` أكّد الاستدعاءات في `v40_2_daily_generator.py`).
+- ✅ كل الـ feature flags العشرة default OFF — الإنتاج الحالي مش متأثر.
+- ✅ `decision_logger.py` بـ يسجل كل رفض/خروج في `db/decision_log.db` للمراقبة.
+- ✅ `notebook_routes.py` مسجّل blueprint في `lightweight_server.py`.
+- ⏳ التحقق الإنتاجي الكامل محتاج تفعيل كل flag واحد واحد + قياس الأداء.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `AUDIT_REPORT_2026-08-30.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديثات الجلسة (2026-09-01)" — مراجعة 15 موديول جديد (EGX Disclosure + Strict Entry + Short Holding Exit هيكلي + Unified Exit + Stock Notebook + Decision Logger + News Fetcher + News Impact Scorer + 4 Crypto modules + notebook_routes + NotebookAdminTab + news_signals_reader + /api/news/ingest). كلها default OFF. |

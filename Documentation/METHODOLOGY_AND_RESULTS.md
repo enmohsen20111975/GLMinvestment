@@ -1,7 +1,8 @@
 # 🔬 ملف تفصيلي: منهجية التحليل والتوقعات — الحقيقة الكاملة
 
-> **تاريخ الكتابة:** 2026-09-01  
-> **الغرض:** توثيق كامل لأسلوب التفكير في عمل التحليلات والتوقعات، من الكود مش من كلام.  
+> **تاريخ الكتابة:** 2026-09-01
+> **آخر تحديث:** 2026-09-01 (إضافة قسم 11: النوتبوك + الخروج الهيكلي + Disclosure + Strict Entry + News Fetcher + 10 Feature Flags + نتائج باك-تست B0/B1/B2/B3)
+> **الغرض:** توثيق كامل لأسلوب التفكير في عمل التحليلات والتوقعات، من الكود مش من كلام.
 > **الهدف:** المالك يعرف يحل المشكلة.
 
 ---
@@ -387,3 +388,84 @@ target = None  # no fixed target
 ---
 
 *هذا الملف كُتب من الكود، مش من كلام. كل رقم متحقَّق منه ضد الـ databases الفعلية.*
+
+---
+
+## 11. التحديثات الجديدة (2026-09-01) — Stock Notebook + Structural Exit + 5 Modules + 10 Feature Flags
+
+> **المحاور الثلاثة الجديدة (أ + ب + ج):**
+> - **المحور أ (التعميق):** Stock Notebook System — طبقة معرفة دائمة لكل سهم.
+> - **المحور ب (الخروج):** فلسفة هيكلية بدلاً من زمنية + Unified Exit Engine.
+> - **المحور ج (المراقبة):** Decision Logger — تسجيل كل رفض/خروج مع السبب.
+
+### 11.1 Stock Notebook (`stock_notebook.py` — 1,065 LOC)
+
+**259 ملف JSON في `notebooks/EGX/`** — ملف لكل سهم EGX. كل ملف فيه:
+- `machine_summary`: typical_correction_pct (مفتاح الخروج الهيكلي), danger_level, avoid_chase, preferred_entry_style, distribution_sensitivity.
+- `identity`: is_index_related, is_story_stock, is_zombie_prone, ownership_concentration.
+- `price_behavior`: typical_correction_range, distribution_pattern, base_pattern.
+- `lessons`: دروس تاريخية على السهم.
+
+**30 سهم معمّق** بالخبرة الحقيقية (typical_correction_pct ≠ 0). الـ 229 المتبقية بـ default (محايد).
+
+**الجسر:** `apply_notebook_context()` بـ يعدّل القرار في V40.2 (toggle `V40_2_NOTEBOOK_CONTEXT`).
+
+### 11.2 فلسفة الخروج الهيكلية (`short_holding_exit.py` — 614 LOC)
+
+**التغيير الجوهري:** `max_holding_7d` و `no_move_3d` **ملغيان كأسباب وحيدة**.
+
+| القديم | الجديد |
+|---|---|
+| `max_holding_7d` → إغلاق إجباري | `MAX_HOLDING_DAYS=14` → مراجعة فقط |
+| `no_move_3d` → إغلاق إجباري | `REVIEW_THRESHOLD_DAYS=7` → تنبيه فقط |
+| أولوية: distribution > max_holding > no_move > early_drop | أولوية: **distribution > early_drop > compound_breakdown > review_alert** |
+
+**الدوال الجديدة:**
+- `is_within_typical_correction(entry, current, typical_correction_pct)` — هل النزول جوه نطاق التصحيح المعتاد؟
+- `is_breakdown_not_correction(entry, current, typical_correction_pct, rsi, recent_closes)` — هل ده انهيار حقيقي؟ (3 شروط: نزول ×1.3 + RSI<30 + 5 شموع حمراء).
+
+### 11.3 باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)
+
+| السيناريو | Trades | WR | Return | ملاحظات |
+|---|---:|---:|---:|---|
+| **B0 (baseline)** | 31 | 45.2% | +41.2% | كل flags OFF |
+| **B1 (strict entry ON)** | 14 | 35.7% | -17.6% | رفض كتير → صفقات أقل + خسارة |
+| **B2 (strict + widened stop)** | 14 (4 stop_widened) | — | -18.8% | اتساع الوقف ما ساعدش |
+| **B3 (structural exit ON)** | 14 | — | — | **لا exit واحد من نوع max_holding ✅** — الفلسفة الهيكلية شغّالة |
+
+**الدرس:** الخروج الزمني الصِّرف بـ يقتل صفقات. الفلسفة الهيكلية (`typical_correction_pct` + `compound_breakdown`) أنجح.
+
+### 11.4 الـ 10 Feature Flags (كلها OFF افتراضياً)
+
+| Flag | الـ module | التأثير |
+|---|---|---|
+| `V40_2_STRICT_ENTRY` | strict_entry_filters.py | Don't Chase |
+| `V40_2_DISCLOSURE_IMPACT` | egx_disclosure_engine.py | تأثير الإفصاحات (-2/+2) |
+| `V40_2_NOTEBOOK_CONTEXT` | stock_notebook.py | سياق النوتبوك |
+| `V40_2_SHORT_HOLDING` | short_holding_exit.py | خروج هيكلي |
+| `V40_2_DISTRIBUTION_EXIT` | short_holding_exit.py::detect_distribution | شمعة التوزيع |
+| `V40_2_NEWS_IMPACT` | news_fetcher_analyzer.py | تأثير الأخبار |
+| `V40_2_CRYPTO_STRICT_ENTRY` | crypto_strict_filters.py | نسخة الكريبتو |
+| `V40_2_CRYPTO_DISCLOSURE_IMPACT` | crypto_disclosure_engine.py | نسخة الكريبتو |
+| `V40_2_CRYPTO_NEWS_IMPACT` | crypto_news_fetcher.py | نسخة الكريبتو |
+| `V40_2_UNIFIED_EXIT` | unified_exit_engine.py | توحيد الخروج |
+
+### 11.5 الإفصاحات + الأخبار
+
+- **`egx_disclosure_engine.py`** (875 LOC): 12 نوع إفصاح بـ dynamic scoring (-2 لـ +2). VETO → hard reject.
+- **`news_fetcher_analyzer.py`** (507 LOC): DuckDuckGo + sentiment analysis (-2 لـ +2). يُكمّل الإفصاحات.
+- **`news_impact_scorer.py`** (432 LOC): 14 event types (IPO_SUBSCRIPTION, DIVIDEND_EX_DATE, EARNINGS_BEAT, ...).
+- **`news_signals_reader.py`** + `/api/news/ingest`: جسر لاستقبال الأخبار من News Agent خارجي.
+
+### 11.6 Decision Logger + Unified Exit
+
+- **`decision_logger.py`** (338 LOC) + `db/decision_log.db`: `log_decision()` + `get_decision_stats()`.
+- **`unified_exit_engine.py`** (518 LOC): `MARKET_PROFILES` (STOCKS + CRYPTO) + `evaluate_unified_force_exit()`.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `METHODOLOGY_AND_RESULTS.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم 11: Stock Notebook (259 JSON + apply_notebook_context)، فلسفة الخروج الهيكلية (max_holding_7d و no_move_3d ملغيان + is_within_typical_correction + is_breakdown_not_correction)، باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)، 10 Feature Flags، الإفصاحات + الأخبار (egx_disclosure_engine + news_fetcher_analyzer + news_impact_scorer + news_signals_reader)، Decision Logger + Unified Exit Engine. |

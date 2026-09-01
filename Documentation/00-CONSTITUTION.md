@@ -10,7 +10,8 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث:** 2026-08-29 (إضافة القواعد 27-32 بعد توجيهات المالك: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
+> **آخر تحديث: 2026-09-01** (إعادة كتابة القاعدة 38 لفلسفة الخروج الهيكلية بعد تحوّل `short_holding_exit.py` من زمني إلى هيكلي + إضافة مراجع Stock Notebook + Decision Logger + Unified Exit Engine + News Impact Scorer + Crypto Modules في عهد الوكيل)
+> **آخر تحديث سابق:** 2026-08-29 (إضافة القواعد 27-32 بعد توجيهات المالك: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
 > **الإنتاج:** https://invist.m2y.net
@@ -1032,6 +1033,12 @@ curl -s http://localhost:8010/health
 22. سأكتشف شمعة التوزيع كإشارة خروج (القاعدة 39) — الميكرز بـ يفرغ.
 23. سأفهم الأخبار بـ sentiment analysis حقيقي (القاعدة 40) — مش مجرد جلب.
 24. سأطبق نفس العمق على الكريبتو: quality gate + strict entry + short holding + distribution exit + news fetcher — بـ thresholds مكيّفة لـ 24/7 + تقلب أعلى.
+25. سأحترم فلسفة الخروج الهيكلية (القاعدة 38 محدّثة): الوقت شرط مساعد ضعيف مش سبب وحيد — `typical_correction_pct` من النوتبوك بـ يفرّق بين تصحيح وانهيار.
+26. سأحتفظ بنوتبوك دائم لكل سهم (`stock_notebook.py`) كطبقة معرفة سياقية فوق المحركات، مش بديل لها.
+27. سأستخدم `apply_notebook_context()` كجسر موحد بين النوتبوك والقرار في V40.2.
+28. سأعتمد `unified_exit_engine.py` لـ توحيد قرارات الخروج بين أسهم + كريبتو بنفس الفلسفة و thresholds مختلفة (`MARKET_PROFILES`).
+29. سأسجّل كل رفض/خروج في `decision_log.db` عبر `decision_logger.py::log_decision()` عشان نعرف هل الفلاتر بتساعد أم بتقتل الإشارات الجيدة.
+30. سأفرض الـ feature flags العشرة (10) لـ V40.2 — كلها OFF افتراضياً: STRICT_ENTRY / DISCLOSURE_IMPACT / NOTEBOOK_CONTEXT / SHORT_HOLDING / DISTRIBUTION_EXIT / NEWS_IMPACT / CRYPTO_STRICT_ENTRY / CRYPTO_DISCLOSURE_IMPACT / CRYPTO_NEWS_IMPACT / UNIFIED_EXIT.
 
 ---
 
@@ -1164,19 +1171,30 @@ curl -s http://localhost:8010/health
 
 ---
 
-### القاعدة 38 — مدة احتفاظ قصيرة + خروج إجباري (SHORT-HOLDING — 2026-09-01)
+### القاعدة 38 — مدة احتفاظ قصيرة + خروج هيكلي (SHORT-HOLDING → structural exit — 2026-09-01)
 
 > **سبب الإضافة:** توجيه المالك (2026-09-01): "فرض مدة احتفاظ قصيرة (7 أيام max + خروج لو مفيش حركة في 3 أيام)."
+>
+> **تحديث 2026-09-01 (إعادة كتابة):** بعد باك-تست B1/B2، تبيّن إن الخروج الزمني الصِّرف (`max_holding_7d` أو `no_move_3d` كسبب وحيد) بيقتل صفقات كنا مكسبينها. فالفلسفة اتغيّرت من **زمني** إلى **هيكلي**: الوقت بقى شرط مساعد ضعيف، مش سبب إغلاق وحيد. الـ module `short_holding_exit.py` (614 LOC) أُعيد كتابته بهذه الفلسفة.
 
-- **الـ module:** `vps-service/analyzers/short_holding_exit.py` (480 LOC).
-- **3 شروط إغلاق إجباري**:
-  1. `max_holding_7d`: لو الصفقة عدّت 7 أيام → إغلاق إجباري.
-  2. `no_move_3d`: لو 3 أيام مفيش حركة +3% → إغلاق إجباري.
-  3. `early_drop`: لو نزل -5% في أول 3 أيام → إغلاق إجباري.
-- **التكامل في daily_closer.py**: بـ toggle `V40_2_SHORT_HOLDING=1` (default OFF).
+- **الـ module:** `vps-service/analyzers/short_holding_exit.py` (614 LOC).
+- **الفلسفة الجديدة (هيكلية مش زمنية):**
+  - **`max_holding_7d`** — **ملغي كسبب وحيد**. الـ `MAX_HOLDING_DAYS=14` دلوقتي مجرد حد مراجعة (مش إغلاق إجباري).
+  - **`no_move_3d`** — **ملغي كسبب وحيد**. الـ `REVIEW_THRESHOLD_DAYS=7` دلوقتي بيطلع `review_alert` (تنبيه مش إغلاق) لو النزول خارج نطاق التصحيح المعتاد.
+  - **الأولوية الجديدة:** `distribution` (1) > `early_drop` (2) > `compound_breakdown` (3) > `review_alert` (4 — تنبيه فقط).
+- **الدوال الجديدة (الجسر مع النوتبوك):**
+  - `is_within_typical_correction(entry, current, typical_correction_pct)` — هل النزول جوه نطاق التصحيح المعتاد للسهم؟ (لو النوتبوك فاضي → محايد).
+  - `is_breakdown_not_correction(entry, current, typical_correction_pct, rsi, recent_closes)` — هل ده انهيار حقيقي؟ (3 شروط: نزول ×1.3 من typical_correction + RSI<30 + 5 شموع حمراء متتالية).
+  - `should_force_exit_by_time(...)` — بيقرر بالإغلاق لو `early_drop` أو `compound_breakdown`، وبيطلع `review_alert` (مش إغلاق) لو `review_threshold_days` + نزول خارج التصحيح.
+- **`typical_correction_pct` من النوتبوك:** هو المفتاح اللي بـ يفرّق بين تصحيح (صبر) وانهيار (خروج). مثال: لو سهم typical_correction=16% والنزول الحالي 14% → صبر. لو 22% → خطر.
+- **3 شروط إغلاق فعلية (مش زمنية صرفة):**
+  1. `early_drop`: نزول ≤ -7% في أول 3 أيام → إغلاق إجباري (حماية رأس مال).
+  2. `compound_breakdown_exit`: بعد 10 أيام + نزول أعمق من typical_correction×1.3 + ضعف هيكلي → إغلاق.
+  3. `distribution_exit`: شمعة توزيع (القاعدة 39) — أعلى أولوية.
+- **التكامل في daily_closer.py:** بـ toggle `V40_2_SHORT_HOLDING=1` (default OFF).
   - بـ يشتغل **قبل** الـ trailing stop logic.
-- **الترتيب**: distribution (1) > max_holding (2) > no_move (3) > early_drop (4).
-- **المرجع:** commit `dcbb5cd2` (SHORT-HOLDING-DISTRIBUTION-EXIT).
+- **المرجع:** commit `dcbb5cd2` (SHORT-HOLDING-DISTRIBUTION-EXIT) + إعادة كتابة 2026-09-01 (structural philosophy).
+- **نتيجة باك-تست B3 (200 سهم × 6 شهور):** لا exit واحد من نوع `max_holding` ✅ — الفلسفة الهيكلية شغّالة.
 
 ---
 
@@ -1223,4 +1241,12 @@ curl -s http://localhost:8010/health
 
 ---
 
-*آخر تحديث: 2026-09-01 — إضافة القواعد 36-40 (DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER-ANALYZER) بعد توجيهات المالك حول الإفصاحات الرسمية + تشديد شروط الدخول + مدة الاحتفاظ القصيرة + فهم الأخبار + تحديث عهد الوكيل لـ 41 بند.*
+*آخر تحديث: 2026-09-01 — إعادة كتابة القاعدة 38 (SHORT-HOLDING → structural exit) + إضافة بنود 25-30 لعهد الوكيل (Notebook + Unified Exit + Decision Logger + 10 Feature Flags). القواعد المطلقة الآن 40 + 6 بنود عهد إضافية (مجموع 30 بند في العهد).*
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `00-CONSTITUTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إعادة كتابة القاعدة 38 (SHORT-HOLDING) لتعكس فلسفة الخروج الهيكلية بعد تحوّل `short_holding_exit.py` (614 LOC) من زمني إلى هيكلي: `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة، الأولوية الجديدة `distribution > early_drop > compound_breakdown > review_alert`. إضافة مراجع `is_within_typical_correction()` + `is_breakdown_not_correction()` + `typical_correction_pct` من النوتبوك. إضافة بنود 25-30 لعهد الوكيل (Notebook + apply_notebook_context + Unified Exit Engine + Decision Logger + 10 Feature Flags). |

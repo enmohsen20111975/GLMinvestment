@@ -4,7 +4,8 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-08-17 (post R:R fix commit `65a748f` + post fundamentals activation `04354a5` + post PERSONA-UNIFY-A `c14597d`).
+> **آخر تحديث:** 2026-09-01 (إضافة NotebookAdminTab.tsx في AdminView + تحديث علامة "آخر تحديث" لتعكس الـ admin tab الجديد لـ Stock Notebooks).
+> **آخر تحديث سابق:** 2026-08-17 (post R:R fix commit `65a748f` + post fundamentals activation `04354a5` + post PERSONA-UNIFY-A `c14597d`).
 > **المصادر المُدمجة:** كل ملفات `Documentation/*.md` السابقة (PICKS-MANAGEMENT-SYSTEM · CLOSED_LOOP_FINAL · CURRENT_STATE · PERSONA_UNIFY_A_MEASUREMENT_REPORT · PROJECT_FULL_BLUEPRINT · API_DICTIONARY · V40_2_LIVE_INTEGRATION_PLAN · RR_FIX_FINAL_REPORT_20260817 · P0_V2_POST_DEPLOY_RUNBOOK · V34-INSTITUTIONAL-DECISION-ENGINE · GAPS_AND_MISSING · ULTRA-RESTORE-DATABASE-RECOVERY · DATA_ENGINE_FUNDAMENTALS_INVENTORY · FUNDAMENTALS_HISTORICAL_TEST_REPORT · RL-FIX-9-Predictions-Status-Logic · 03-REFACTORING_REPORT) + `audit_map.json` + `treadingView.code.text` + استكشاف آلي لـ `src/app/` + `src/components/`.
 >
 > 📚 **توحيد التوثيق:** هذا واحد من **4 ملفات رئيسية**:
@@ -493,8 +494,11 @@ AdminView (1,913 LOC)
 ├── <HumanRecommendationsAdmin /> # 964 LOC
 ├── <UsersManagement />           # 1,086 LOC
 ├── <DatabaseManagerFull />       # 3,259 LOC — بديل DatabaseManager
+├── <NotebookAdminTab />          # 524 LOC — (جديد 2026-09-01) إدارة Stock Notebooks
 └── <PurgeCacheButton />          # 223 LOC
 ```
+
+> **جديد 2026-09-01:** `<NotebookAdminTab />` (524 LOC) في `src/components/admin/NotebookAdminTab.tsx` — واجهة إدارة Stock Notebooks. يستدعي `/api/notebooks/*` (7 endpoints في `vps-service/api/notebook_routes.py`). يعرض: قائمة النوتبوكس، إحصائيات، تعديل machine_summary، إضافة دروس، إعادة بناء جماعي.
 
 > **Comment في AdminView:** 6 admin orphans شالهم الـ imports (IterativeLearningAdmin, CryptoLearningAdmin, StockImportCard, RecommendationsExport, CryptoPredictionGenerator, DatabaseExplorer) — "كانوا مستوردين بس مش مرسومين في أي tab".
 
@@ -1101,4 +1105,12 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 
 *هذا الملف هو مرجع الـ UI الكامل والمصدر الأوحد للحقيقة. أي إضافة/حذف شاشة أو مكوّن = تحديث هذا الملف فورًا + تحديث `audit_map.json` (عبر `scripts/audit_map.py`).*
 
-*آخر تحديث: 2026-08-17 — توحيد التوثيق (DOC-3). كل ملفات `Documentation/*.md` السابقة مُدمجة في الـ 4 master files.*
+*آخر تحديث: 2026-09-01 — إضافة NotebookAdminTab.tsx (524 LOC) في AdminView لـ إدارة Stock Notebooks. آخر تحديث سابق: 2026-08-17 — توحيد التوثيق (DOC-3). كل ملفات `Documentation/*.md` السابقة مُدمجة في الـ 4 master files.*
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `02-SCREENS_AND_COMPONENTS.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة `<NotebookAdminTab />` (524 LOC) في AdminView dynamic imports — واجهة إدارة Stock Notebooks تستدعي `/api/notebooks/*` (7 endpoints في `vps-service/api/notebook_routes.py`). |

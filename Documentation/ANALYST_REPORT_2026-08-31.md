@@ -1,6 +1,7 @@
 # 📊 تقرير فريق المحللين — حالة النظام بعد التعديلات
 ## (باك-تست + تحليل + ملاحظات + دروس + توصيات)
 
+> **آخر تحديث:** 2026-09-01 (إضافة قسم سابع: تحديثات الجلسة — Stock Notebook + Structural Exit + Disclosure Engine + Strict Entry + News Fetcher + 10 Feature Flags + باك-تست B0/B1/B2/B3)
 > **المصدر:** 68 صفقة إنتاج حقيقية (يناير-يوليو 2026)
 > **الفريق:** محلل أسهم + محلل اقتصاد + صانع بورصة + مهندس نظم
 > **التاريخ:** 31 أغسطس 2026
@@ -246,4 +247,81 @@
 
 ---
 
-**تقرير فريق المحللين — 31 أغسطس 2026**
+## سابعاً: تحديثات الجلسة (2026-09-01)
+
+> أُضيفت 5 محركات جديدة + Stock Notebook + Unified Exit + Decision Logger + 10 Feature Flags (كلها OFF افتراضياً). الهدف: معالجة الفجوات المذكورة في "الخلاصة".
+
+### 1. Stock Notebook System (`stock_notebook.py` — 1,065 LOC)
+
+- **259 ملف JSON** في `notebooks/EGX/` — ملف لكل سهم EGX. 30 سهم معمّق بالخبرة الحقيقية.
+- **`apply_notebook_context()`** = الجسر بين النوتبوك والقرار في V40.2 (toggle `V40_2_NOTEBOOK_CONTEXT`).
+- **`typical_correction_pct`** = المفتاح اللي بـ يفرّق بين تصحيح (صبر) وانهيار (خروج) — عالج نقطة "الخروج الزمني بـ يقتل صفقات".
+- **API routes** (`notebook_routes.py` — 7 endpoints) + **Admin UI** (`NotebookAdminTab.tsx`).
+
+### 2. فلسفة الخروج الهيكلية (`short_holding_exit.py` — 614 LOC)
+
+| القديم | الجديد |
+|---|---|
+| `max_holding_7d` → إغلاق إجباري | ملغي كسبب وحيد — مراجعة فقط |
+| `no_move_3d` → إغلاق إجباري | ملغي كسبب وحيد — تنبيه فقط |
+
+**الأولوية الجديدة:** `distribution` > `early_drop` > `compound_breakdown` > `review_alert`.
+- `is_within_typical_correction()` + `is_breakdown_not_correction()` — تمييز التصحيح من الانهيار عبر النوتبوك.
+
+### 3. محركات الإفصاحات + الأخبار + شروط الدخول الصارمة
+
+| الـ module | LOC | الدور | Toggle |
+|---|---:|---|---|
+| `egx_disclosure_engine.py` | 875 | 12 نوع إفصاح بـ dynamic scoring (-2 لـ +2) | `V40_2_DISCLOSURE_IMPACT` |
+| `strict_entry_filters.py` | 582 | Don't Chase (تراكم/liquidity grab فقط) | `V40_2_STRICT_ENTRY` |
+| `news_fetcher_analyzer.py` | 507 | DuckDuckGo + sentiment (-2 لـ +2) | `V40_2_NEWS_IMPACT` |
+| `news_impact_scorer.py` | 432 | 14 event types + verdict | (يُستخدم في news_agent) |
+| `news_signals_reader.py` | — | جسر News Agent خارجي + `/api/news/ingest` | — |
+
+### 4. الكريبتو (نظائر EGX)
+
+| الـ module | LOC | Toggle |
+|---|---:|---|
+| `crypto_strict_filters.py` | 448 | `V40_2_CRYPTO_STRICT_ENTRY` |
+| `crypto_short_holding_exit.py` | 412 | (مدمج في unified) |
+| `crypto_news_fetcher.py` | 391 | `V40_2_CRYPTO_NEWS_IMPACT` |
+| `crypto_disclosure_engine.py` | 412 | `V40_2_CRYPTO_DISCLOSURE_IMPACT` |
+
+### 5. Unified Exit Engine + Decision Logger
+
+- **`unified_exit_engine.py`** (518 LOC): `MARKET_PROFILES` (STOCKS + CRYPTO) + `evaluate_unified_force_exit()` — توحيد قرارات الخروج (toggle `V40_2_UNIFIED_EXIT`).
+- **`decision_logger.py`** (338 LOC) + `db/decision_log.db`: `log_decision()` + `get_decision_stats()` — تسجيل كل رفض/خروج مع السبب.
+
+### 6. باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)
+
+| السيناريو | Trades | WR | Return | ملاحظات |
+|---|---:|---:|---:|---|
+| **B0 (baseline)** | 31 | 45.2% | +41.2% | كل flags OFF |
+| **B1 (strict entry ON)** | 14 | 35.7% | -17.6% | رفض كتير → صفقات أقل + خسارة |
+| **B2 (strict + widened stop)** | 14 (4 stop_widened) | — | -18.8% | اتساع الوقف ما ساعدش |
+| **B3 (structural exit ON)** | 14 | — | — | **لا exit واحد من نوع max_holding ✅** — الفلسفة الهيكلية شغّالة |
+
+### 7. خلاصة التحديثات
+
+**اللي اتعمل:**
+- ✅ معالجة نقطة "الخروج الزمني بـ يقتل صفقات" عبر `typical_correction_pct` من النوتبوك.
+- ✅ معالجة نقطة "مفيش إشارات SELL" عبر Disclosure Engine (VETO) + News Fetcher.
+- ✅ معالجة نقطة "التوقيت المتأخر" عبر Strict Entry Filters (Don't Chase).
+- ✅ معالجة نقطة "عدم التوزيع على القطاعات" عبر Decision Logger (مراقبة الأسباب).
+- ✅ توحيد الخروج بين أسهم + كريبتو عبر Unified Exit Engine.
+
+**اللي محتاج قياس إنتاجي:**
+- ⏳ تفعيل كل flag واحد واحد على الإنتاج + قياس الأداء.
+- ⏳ مراجعة `get_decision_stats()` أسبوعياً لمعرفة هل الفلاتر بتساعد أم بتقتل الإشارات.
+
+---
+
+**تقرير فريق المحللين — 31 أغسطس 2026 + تحديث 2026-09-01**
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `ANALYST_REPORT_2026-08-31.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم سابع: تحديثات الجلسة (Stock Notebook + Structural Exit + Disclosure Engine + Strict Entry + News Fetcher + 10 Feature Flags + Unified Exit + Decision Logger + باك-تست B0/B1/B2/B3). |

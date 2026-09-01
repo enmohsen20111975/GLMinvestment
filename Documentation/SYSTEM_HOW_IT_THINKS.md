@@ -1,7 +1,8 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-08-31
-> (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-01
+> (Stock Notebook Context + Structural Exit Philosophy + Disclosure Engine + Strict Entry + Distribution Exit + News Fetcher + Decision Logger + Unified Exit Engine + 10 Feature Flags + باك-تست B0/B1/B2/B3 على 200 سهم × 6 شهور).
+> **آخر تحديث سابق:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
 > **كل ملفات التوثيق السابقة في `/Documentation/*.md` دُمجت في الـ 4 ملفات الرئيسية:**
 > 1. `Documentation/00-CONSTITUTION.md` — الحوكمة والقواعد.
 > 2. `Documentation/01-PROJECT_ANATOMY.md` — التشريح الكامل (المعمارية، المحركات، DBs، تدفق البيانات).
@@ -11,9 +12,112 @@
 > **المنهجية:** كل رقم/صيغة/مسار/سلوك مُتحقَّق منه ضد الكود الفعلي + الأرشيف الإنتاجي
 > (`active_databases_20260817_full.zip`, md5 `0947bdf6c2eff1a75ff8af6c3e576ed8`).
 >
-> **النتيجة على الإنتاج الحالي (2026-08-31):** V40.2 هو العقل الوحيد.
-> Backtest (ساندبوكس): 12 صفقة مغلقة | WR 33.3% (7 breakeven) | PF 51.42 | Return +56.5%.
-> Dry-run: 15 صفقة | WR 73.3% | PF 9.80 | Return +66.2%.
+> **النتيجة على الإنتاج الحالي (2026-09-01):** V40.2 هو العقل الوحيد.
+> Backtest B0 (baseline): 31 trades, WR 45.2%, Return +41.2%.
+> Backtest B3 (structural exit): 14 trades، لا max_holding exit ✅.
+
+---
+
+## ⚡ تغييرات جوهرية (2026-09-01) — اقرأ هذا أولاً
+
+### 📒 Stock Notebook Context (المحور أ — التعميق)
+
+**الـ module:** `vps-service/analyzers/stock_notebook.py` + `notebooks/EGX/*.json` (259 ملف).
+
+كل سهم بقى ليه ملف دائم (نوتبوك) فيه:
+- `machine_summary` (typical_correction_pct, max_expected_correction_pct, danger_level, liquidity_profile, preferred_entry_style, avoid_chase, distribution_sensitivity).
+- `identity` (is_index_related, ownership_concentration, is_story_stock, is_zombie_prone).
+- `price_behavior` (typical_correction_pct, typical_correction_range, distribution_pattern, base_pattern).
+- `lessons` (دروس تاريخية على السهم).
+
+**`apply_notebook_context()` هو الجسر:** بـ يعدّل القرار في V40.2 (لو toggle `V40_2_NOTEBOOK_CONTEXT=1`):
+- `danger_level=5` → تقليل الحجم.
+- `typical_correction_pct` → مراجعة مسافة الوقف + تمييز التصحيح من الانهيار.
+- `avoid_chase=True` → دعم قرار الرفض لو السهم بـ يـ chase.
+
+30 سهم معمّق بالخبرة الحقيقية، 229 سهم بـ default machine_summary (typical_correction=0 → محايد).
+
+### 🚪 فلسفة الخروج الهيكلية (المحور ب — short_holding_exit.py)
+
+**التحوّل:** من زمني (`max_holding_7d` و `no_move_3d` كأسباب وحيدة) → **هيكلي** (الوقت شرط مساعد ضعيف).
+
+| السبب القديم | الحالة الجديدة | المنطق |
+|---|---|---|
+| `max_holding_7d` | **ملغي كسبب وحيد** — `MAX_HOLDING_DAYS=14` مجرد حد مراجعة | الوقت مش سبب كافي للإغلاق |
+| `no_move_3d` | **ملغي كسبب وحيد** — `REVIEW_THRESHOLD_DAYS=7` بـ يطلع `review_alert` | تنبيه مش إغلاق |
+
+**الأولوية الجديدة:** `distribution` (1) > `early_drop` (2) > `compound_breakdown` (3) > `review_alert` (4 — تنبيه فقط).
+
+**الدوال الجديدة (الجسر مع النوتبوك):**
+- `is_within_typical_correction(entry, current, typical_correction_pct)` — هل النزول جوه نطاق التصحيح المعتاد؟ (لو النوتبوك فاضي → محايد).
+- `is_breakdown_not_correction(entry, current, typical_correction_pct, rsi, recent_closes)` — هل ده انهيار حقيقي؟ (3 شروط: نزول ×1.3 من typical_correction + RSI<30 + 5 شموع حمراء متتالية).
+
+**مثال:** لو سهم typical_correction=16% والنزول 14% → صبر. لو 22% → خطر (خارج ×1.3 = 20.8%).
+
+### 🏛️ Disclosure Engine (الإثبات الثامن — القاعدة 36)
+
+`egx_disclosure_engine.py` (875 LOC): 12 نوع إفصاح بـ dynamic scoring من -2 لـ +2.
+- VETO (-2): suspension / delisting → hard reject.
+- REDUCE (-1): dividend (post ex-date) / coupon / auditor_change / resignation → score -= 10.
+- BOOST (+1): capital_increase / free_shares / stock_split → score += 10/20.
+- toggle: `V40_2_DISCLOSURE_IMPACT=1` (default OFF).
+
+### 🚷 Strict Entry Filters (القاعدة 37 — Don't Chase)
+
+`strict_entry_filters.py` (582 LOC): القبول فقط لو تراكم حقيقي (`is_in_accumulation`) أو Liquidity Grab واضح (`is_liquidity_grab`). لو `is_late_entry` → رفض صارم.
+- toggle: `V40_2_STRICT_ENTRY=1` (default OFF).
+- الترتيب: strict entry (first) → disclosure VETO (final gate).
+
+### 📊 Distribution Exit (القاعدة 39)
+
+`short_holding_exit.py::detect_distribution()` (5 شروط): شمعة حمراء + ظل علوي ≥ الجسم + حجم >1.8× MA + قريب من قمة 20 يوم ≤8% + RSI >65.
+- toggle: `V40_2_DISTRIBUTION_EXIT=1` (default OFF).
+- `distribution_exit` = priority 1 (أعلى أولوية — الميكرز بـ يفرغ).
+
+### 📰 News Fetcher Analyzer (القاعدة 40)
+
+`news_fetcher_analyzer.py` (507 LOC): DuckDuckGo HTML search + news.db fallback.
+- 22 سهم EGX معروف (ticker → اسم عربي + إنجليزي).
+- sentiment analysis keyword-based: +2/+1/0/-1/-2.
+- toggle: `V40_2_NEWS_IMPACT=1` (default OFF).
+- يُكمّل (مش يُلغي) الـ Disclosure Engine — الإفصاحات أحداث مؤسسية محددة، الأخبار عامة + sentiment.
+
+### 📝 Decision Logger (المحور ج — المراقبة)
+
+`decision_logger.py` (338 LOC) + `db/decision_log.db`. بـ يسجل كل رفض/خروج مع السبب (`reason_code`) + الـ flag + ملخص النوتبوك.
+- `log_decision()` — دالة واحدة يستدعيها كل المسارات.
+- `get_decision_stats()` — تحليل كم رُفضت/خرجت + الأسباب.
+
+### 🚪 Unified Exit Engine (المحور ب الموسّع)
+
+`unified_exit_engine.py` (518 LOC): توحيد قرارات الخروج بين أسهم + كريبتو.
+- `MARKET_PROFILES`: STOCKS (7 أيام، no_move 3d +3%، early -5%) + CRYPTO (72h، no_move 24h +5%، early -8%).
+- `evaluate_unified_force_exit()` — قرار موحد بترتيب: Veto → Distribution → Max holding → No move → Early adverse.
+- toggle: `V40_2_UNIFIED_EXIT=1` (default OFF).
+
+### ₿ Crypto Modules (نظائر EGX للكريبتو)
+
+| الـ module | LOC | Toggle |
+|---|---:|---|
+| `crypto_strict_filters.py` | 448 | `V40_2_CRYPTO_STRICT_ENTRY` |
+| `crypto_short_holding_exit.py` | 412 | (مدمج في unified) |
+| `crypto_news_fetcher.py` | 391 | `V40_2_CRYPTO_NEWS_IMPACT` |
+| `crypto_disclosure_engine.py` | 412 | `V40_2_CRYPTO_DISCLOSURE_IMPACT` |
+
+### 📊 باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)
+
+| السيناريو | Trades | WR | Return | ملاحظات |
+|---|---:|---:|---:|---|
+| **B0 (baseline)** | 31 | 45.2% | +41.2% | كل flags OFF |
+| **B1 (strict entry ON)** | 14 | 35.7% | -17.6% | رفض كتير، صفقات أقل + خسارة |
+| **B2 (strict + widened stop)** | 14 (4 stop_widened) | — | -18.8% | اتساع الوقف ما ساعدش |
+| **B3 (structural exit ON)** | 14 | — | — | **لا exit واحد من نوع max_holding ✅** — الفلسفة الهيكلية شغّالة |
+
+**الدرس:** الخروج الزمني الصِّرف بـ يقتل صفقات. الفلسفة الهيكلية (`typical_correction_pct` من النوتبوك + `compound_breakdown`) أنجح.
+
+### 📰 News Signals Reader (إضافة المبرمج الآخر)
+
+`vps-service/ai/news_signals_reader.py` + `/api/news/ingest` (Node route): جسر لاستقبال الأخبار المحللة من News Agent محلي خارجي. `apply_news_bias_to_score()` بـ يطبّق الـ bias على القرار في V40.2.
 
 ---
 
@@ -2247,3 +2351,11 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 ---
 
 **End of Section 15 — تطور النظام (2026-08-30).**
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `SYSTEM_HOW_IT_THINKS.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook Context (المحور أ)، فلسفة الخروج الهيكلية (المحور ب — `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة + `is_within_typical_correction` + `is_breakdown_not_correction` + الأولوية distribution > early_drop > compound_breakdown > review_alert)، Disclosure Engine (الإثبات الثامن)، Strict Entry Filters (Don't Chase)، Distribution Exit، News Fetcher Analyzer، Decision Logger (المحور ج)، Unified Exit Engine، Crypto Modules (4 ملفات)، باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)، News Signals Reader. |

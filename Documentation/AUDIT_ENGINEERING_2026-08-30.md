@@ -1,6 +1,7 @@
 # 🏗️ تقرير الـ Audit الهندسي الشامل — 30 أغسطس 2026
 
 > **الموقع:** `Documentation/AUDIT_ENGINEERING_2026-08-30.md`
+> **آخر تحديث:** 2026-09-01 (إضافة قسم "تحديثات الجلسة 2026-09-01" — مراجعة هندسية للموديولات الجديدة)
 > **الفريق:** Senior Full-Stack Engineer + Backend Engineer + Frontend Engineer + UX Designer
 > **المنهجية:** 4 audit بالتوازي بمنظور مختلف لكل واحد
 > **الهدف:** ترتيب المشروع كـ **نظام واحد متكامل** (مش موديولات منفصلة)
@@ -261,3 +262,59 @@
 ---
 
 **انتهى التقرير.**
+
+---
+
+## 🆕 تحديثات الجلسة (2026-09-01) — مراجعة هندسية للموديولات الجديدة
+
+> **المنهجية:** تم التحقق من كل موديول جديد بـ `grep` + `Read` للتأكد من: (1) وجود الملف، (2) ربطه بـ V40.2 generator، (3) feature flag default OFF، (4) عدم وجود تكرار مخالف للـ Rule 28.
+
+### الموديولات الجديدة — تقييم هندسي
+
+| الـ module | LOC | التقييم الهندسي |
+|---|---:|---|
+| `analyzers/egx_disclosure_engine.py` | 875 | ✅ سليم — 12 نوع إفصاح + dynamic scoring. مدمج في V40.2 خلف flag. لا تكرار. |
+| `analyzers/strict_entry_filters.py` | 582 | ✅ سليم — 3 دوال (is_in_accumulation, is_liquidity_grab, is_late_entry). لا تكرار. |
+| `analyzers/short_holding_exit.py` | 614 | ✅ **مُعاد كتابته بفلسفة هيكلية** — `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة. أضاف `is_within_typical_correction` + `is_breakdown_not_correction` — جسر مع النوتبوك. **معالجة لـ Rule 38 (تحديث).** |
+| `analyzers/unified_exit_engine.py` | 518 | ✅ سليم — `MARKET_PROFILES` (STOCKS + CRYPTO). يوحّد short_holding_exit + crypto_short_holding_exit (لا تكرار). |
+| `analyzers/stock_notebook.py` | 1,065 | ✅ سليم — طبقة معرفة فوق المحركات (مش بديل). `apply_notebook_context()` جسر موحد. 259 ملف JSON. |
+| `analyzers/decision_logger.py` | 338 | ✅ سليم — طبقة مراقبة (مش logic تداولي). `log_decision()` + `get_decision_stats()` + `db/decision_log.db`. |
+| `analyzers/news_fetcher_analyzer.py` | 507 | ✅ سليم — يُكمّل (مش يُلغي) `news_agent.py` + `news_impact_scorer.py`. |
+| `analyzers/news_impact_scorer.py` | 432 | ✅ سليم — 14 event types. يُستخدم في news_agent (مش تكرار). |
+| `analyzers/crypto_strict_filters.py` | 448 | ✅ سليم — نظير EGX بـ thresholds مكيّفة لـ 24/7. لا تكرار (thresholds مختلفة). |
+| `analyzers/crypto_short_holding_exit.py` | 412 | ✅ سليم — نظير EGX بـ ساعات بدل أيام. قابل للاستبدال بـ unified_exit_engine. |
+| `analyzers/crypto_news_fetcher.py` | 391 | ✅ سليم — نظير EGX للكريبتو. |
+| `analyzers/crypto_disclosure_engine.py` | 412 | ✅ سليم — نظير EGX لأحداث الكريبتو. |
+| `api/notebook_routes.py` | 124 | ✅ سليم — 7 endpoints + مسجّل blueprint (`notebook_bp`). لا تكرار. |
+| `src/components/admin/NotebookAdminTab.tsx` | 524 | ✅ سليم — مستورد في AdminView. لا تكرار. |
+| `ai/news_signals_reader.py` + `src/app/api/news/ingest/route.ts` | — | ✅ سليم — جسر لـ News Agent خارجي. `apply_news_bias_to_score()` بـ يطبّق bias على V40.2. |
+
+### التقييم العام
+
+- ✅ **كل الموديولات مرتبطة + مستخدمة** (Rule 5 — كل كود لازم يتربط).
+- ✅ **كلها بـ feature flags default OFF** — الإنتاج الحالي مش متأثر (Rule 33 — PRODUCTION-WIRING).
+- ✅ **لا تكرار** — كل موديول له دور واضح، النظائر بين EGX + Crypto بـ thresholds مختلفة (مش تكرار صرف).
+- ✅ **Python = العقل** (Rule 20) — كل الـ logic في Python، Node مجرد proxy للـ `/api/news/ingest` + `notebook_routes` proxy.
+- ✅ **معالجة Rule 28 (NO-DUPLICATION)** — `unified_exit_engine.py` بـ يوحّد الخروج (يستبدل 2 ملف) بدل التكرار.
+- ⏳ **قياس إنتاجي محتاج** — تفعيل كل flag واحد واحد + قياس الأداء على `/live-tracking`.
+
+### نتائج باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)
+
+| السيناريو | Trades | WR | Return | ملاحظة هندسية |
+|---|---:|---:|---:|---|
+| B0 (baseline) | 31 | 45.2% | +41.2% | كل flags OFF — الإنتاج الحالي |
+| B1 (strict entry ON) | 14 | 35.7% | -17.6% | الـ flag بـ يرفض كتير — صفقات أقل |
+| B2 (strict + widened stop) | 14 (4 stop_widened) | — | -18.8% | اتساع الوقف ما عوّضش |
+| B3 (structural exit ON) | 14 | — | — | **لا exit من نوع max_holding ✅** — الفلسفة الهيكلية شغّالة |
+
+### الخلاصة الهندسية
+
+الموديولات الجديدة **سليمة هندسياً** ومرتبطة بالنظام المتكامل. الفلسفة الهيكلية للخروج (`short_holding_exit.py` المُعاد كتابته) بـ تعالج نقطة "الخروج الزمني بـ يقتل صفقات" اللي ظهرت في B1/B2. كلها default OFF لحد ما يتم القياس الإنتاجي.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `AUDIT_ENGINEERING_2026-08-30.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديثات الجلسة (2026-09-01)" — مراجعة هندسية لـ 15 موديول جديد (تقييم Rule 5/20/28/33 + نتائج باك-تست B0/B1/B2/B3 + خلاصة هندسية). |

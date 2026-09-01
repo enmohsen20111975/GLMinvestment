@@ -2,6 +2,7 @@
 
 > **الهدف:** سحب بيانات حقيقية من السيرفر الإنتاجي (`/root/GLMinvestment/`) للتحليل في الساندبوكس.
 > **تنفيذ:** المالك ينفذ هذه الأوامر على VPS ويرسل النتائج.
+> **آخر تحديث:** 2026-09-01 (إضافة قسم 11: سحب بيانات الموديولات الجديدة — decision_log + notebooks + disclosures)
 
 ---
 
@@ -215,3 +216,112 @@ AND actual_return IS NOT NULL AND ABS(actual_return) <= 50;"
 ---
 
 **ملاحظة:** لو الـ DBs كبيرة، اكتفِ بـ `predictions_summary.txt` + `closed_predictions.txt` + `sector_performance.txt` + `top_stocks.txt`. دول enough للتحليل.
+
+---
+
+## 11. سحب بيانات الموديولات الجديدة (2026-09-01)
+
+> **السياق:** أُضيفت 12 موديول جديد + `db/decision_log.db` + `notebooks/EGX/` (259 ملف JSON) + (مستقبلاً) `db/disclosures.db`. الأوامر التالية لسحب بياناتها للتحليل.
+
+### 11.1 Decision Log (قرارات الرفض/الخروج)
+
+```bash
+# على VPS الإنتاجي:
+cd /root/GLMinvestment
+
+# 1. إحصائيات الـ decisions (كم رفض/خروج + الأسباب)
+sqlite3 db/decision_log.db "SELECT decision_type, reason_code, COUNT(*) as count
+FROM decision_log 
+GROUP BY decision_type, reason_code 
+ORDER BY count DESC;" > /tmp/decision_stats.txt
+
+# 2. آخر 50 قرار
+sqlite3 db/decision_log.db "SELECT timestamp, symbol, market, decision_type, reason_code, reason_text, flag_active
+FROM decision_log 
+ORDER BY timestamp DESC 
+LIMIT 50;" > /tmp/recent_decisions.txt
+
+# 3. نسخة احتياطية من decision_log.db
+cp db/decision_log.db /tmp/decision_log_export.db
+```
+
+### 11.2 Stock Notebooks (ملفات JSON)
+
+```bash
+# 1. إحصائيات النوتبوكس
+cd /root/GLMinvestment
+ls notebooks/EGX/ | wc -l > /tmp/notebook_count.txt
+
+# 2. الأسهم المعمّقة (typical_correction_pct ≠ 0)
+for f in notebooks/EGX/*.json; do
+  sym=$(basename "$f" .json)
+  tc=$(python3 -c "import json; d=json.load(open('$f')); print(d.get('machine_summary',{}).get('typical_correction_pct',0))" 2>/dev/null)
+  if [ "$tc" != "0" ] && [ -n "$tc" ]; then
+    echo "$sym: typical_correction=$tc" >> /tmp/deep_notebooks.txt
+  fi
+done
+
+# 3. أرشيف كامل للنوتبوكس
+zip -r /tmp/notebooks_egx.zip notebooks/EGX/
+```
+
+### 11.3 Disclosure Engine (مستقبلاً — بعد تفعيل الـ cron)
+
+```bash
+# لما db/disclosures.db يتكون (بعد تفعيل V40_2_DISCLOSURE_IMPACT + الـ cron):
+cd /root/GLMinvestment
+
+# 1. آخر 20 إفصاح
+sqlite3 db/disclosures.db "SELECT ticker, event_type, score, title, disclosure_date
+FROM egx_disclosures 
+ORDER BY disclosure_date DESC 
+LIMIT 20;" > /tmp/recent_disclosures.txt
+
+# 2. توزيع الدرجات
+sqlite3 db/disclosures.db "SELECT score, COUNT(*) as count
+FROM egx_disclosures 
+GROUP BY score 
+ORDER BY score;" > /tmp/disclosure_scores.txt
+```
+
+### 11.4 فحص Feature Flags المفعّلة
+
+```bash
+# على VPS — شوف أي flags مفعّلة في الـ environment
+cd /root/GLMinvestment
+env | grep V40_2_ > /tmp/active_flags.txt
+
+# أو من الـ pm2 env:
+pm2 env python-backend | grep V40_2_ >> /tmp/active_flags.txt
+```
+
+### 11.5 نتائج الباك-تست (لو اتعمل على VPS)
+
+```bash
+# لو الـ backtest اتعمل على VPS، شوف النتائج
+cd /root/GLMinvestment
+ls data/comparative_results/ > /tmp/backtest_results.txt
+
+# أو من الساندبوكس:
+ls /home/z/GLMinvestment/data/comparative_results/ 2>/dev/null
+# B0_baseline_result.json
+# B1_strict_disclosure_result.json
+# B2_notebook_result.json
+# B4_full_stack_result.json
+# final_comparison.json
+```
+
+### كيفية استخدام النتائج الجديدة:
+
+1. **decision_stats.txt** — يحلل هل الفلاتر بتساعد أم بتقتل الإشارات (`get_decision_stats()`).
+2. **deep_notebooks.txt** — يشوف الأسهم المعمّقة (typical_correction_pct ≠ 0).
+3. **recent_disclosures.txt** — يحلل الإفصاحات الأخيرة + تأثيرها.
+4. **active_flags.txt** — يعرف أي flags مفعّلة على الإنتاج.
+
+---
+
+## 📒 سجل التغييرات
+
+| التاريخ | الملف | التغيير |
+|---------|-------|---------|
+| 2026-09-01 | `PRODUCTION_DATA_EXPORT.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم 11: سحب بيانات الموديولات الجديدة — Decision Log (إحصائيات + آخر 50 قرار + backup)، Stock Notebooks (عدد + الأسهم المعمّقة + أرشيف)، Disclosure Engine (آخر 20 إفصاح + توزيع الدرجات)، فحص Feature Flags المفعّلة، نتائج الباك-تست. |
