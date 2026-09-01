@@ -168,6 +168,22 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
     elif sector_perf.get('heat') == 'cold' and sector_perf.get('avg_change', 0) < -1.5:
         score -= 10
 
+    # 5.5 فحص تحيز الأخبار الواردة من Local News Agent
+    try:
+        from ai.news_signals_reader import get_news_bias
+        news_ctx = get_news_bias(ticker, hours_back=12)
+        if news_ctx.get('has_news'):
+            # VETO Kill Switch: خبر سلبي شديد الأهمية يمنع الدخول فوراً
+            if news_ctx.get('sentiment') == 'bearish' and news_ctx.get('importance', 0) >= 70:
+                return None
+            bias = news_ctx.get('bias', 0)
+            score = max(0, min(100, score + bias))
+            if bias != 0:
+                dir_str = "دعم إيجابي" if bias > 0 else "ضغط سلبي"
+                reasons.append(f"أخبار ({news_ctx.get('sentiment')}: {dir_str} {bias:+d})")
+    except Exception:
+        pass
+
     # تقييم الدخول: هل الإشارة جاهزة للدخول الفوري بأفضل سعر؟
     is_buy = score >= 70 and maker.get('flow') != 'selling'
     if not is_buy:

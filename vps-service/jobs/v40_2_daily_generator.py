@@ -1604,6 +1604,37 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     except Exception as _news_err:
                         pass  # safe-by-design: لو news fetcher فشل → نكمّل
 
+            # ── LOCAL NEWS AGENT SIGNALS (2026-09-01) ──────────────────
+            # يقرأ الأخبار المحللة من وكيل الأخبار المحلي (اللاب توب)
+            # وبيطبّق تحيز −15 → +15 على الـ score
+            # الفكرة: اللاب توب بيجمع أخبار من تيليجرام + ويب + RSS
+            #         ويبعتها للسيرفر كـ JSON منظم في جدول news_signals
+            # Toggle: V40_2_LOCAL_NEWS=1 (default OFF للـ backtest)
+            if os.environ.get('V40_2_LOCAL_NEWS', '0') == '1':
+                _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
+                if not _is_backtest:
+                    try:
+                        from ai.news_signals_reader import apply_news_bias_to_score
+                        _current_score = result.get('score', 0) if isinstance(result.get('score'), (int, float)) else 0
+                        _adj_score, _news_ctx = apply_news_bias_to_score(_current_score, ticker)
+                        if _news_ctx['has_news'] and _news_ctx['bias'] != 0:
+                            result['score'] = _adj_score
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            direction = 'دفعة' if _news_ctx['bias'] > 0 else 'تقليل'
+                            result['proofs']['local_news'] = (
+                                f"📰 {_news_ctx['news_count']} خبر ({_news_ctx['sentiment']}) → "
+                                f"{direction} {abs(_news_ctx['bias'])} نقطة"
+                            )
+                            print(
+                                f"  [LOCAL-NEWS] {ticker}: {_news_ctx['news_count']} خبر "
+                                f"({_news_ctx['sentiment']}) → bias={_news_ctx['bias']:+d} "
+                                f"| score {_current_score:.1f}→{_adj_score:.1f}",
+                                flush=True
+                            )
+                    except Exception:
+                        pass  # safe-by-design
+
             # ── STOCK NOTEBOOK CONTEXT (2026-09-01): طبقة معرفة دائمة ──
             # توجيه المالك: "كل سهم يكون ليه ملف دائم فيه ملخص سلوكي + ملاحظات.
             # النظام يقرأ النوتبوك الأول قبل القرار."
