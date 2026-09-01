@@ -14098,3 +14098,63 @@ Stage Summary:
 - ✅ 6-month validated — general, not overfit
 - ✅ E2E verified: backtest + daily gen + session tracking
 - 🔜 Final push with V73 code + docs
+
+---
+Task ID: ADMIN-FIX-306 + ARCHITECTURE-ASSESSMENT-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: Fix React #306 + assess Stock Filters vs V68/V72/V73 separation
+
+Work Log:
+
+### Phase 1: Fix React error #306 (Admin panel crash)
+- **Root cause**: AdminView.tsx had its entire function body commented out
+  (commit 6372d7e CLOSED CAMP did `//` on everything instead of proper removal)
+- File had 1819/1926 lines commented → 0 active exports → dynamic() got undefined → #306
+- **Fix**: Restored working version from 0a35ccb (KILL-MAESTRO UI commit)
+- Replaced deleted MaestroDashboard/MaestroCommandCenter imports with stubs
+- **Verified**: Admin panel renders, no #306, Agent Browser confirmed
+
+### Phase 2: Architecture Assessment (Stock Filters vs V68/V72/V73)
+User insight: "كل المنطق بايثون بس ومحرك واحد للتحليلات والتوقعات يعنى نتائج واحدة بس فى اى مكان"
+
+**Current state — TWO separate pipelines:**
+
+Pipeline A: Stock Filters (screener)
+- Source: stocks.db (daily snapshot, 1 row per stock)
+- Logic: stock_state.py (compute_stock_state → momentum_score 0-100)
+- Filters: price/volume/turnover/RSI/P/E/ROE/stock_state
+- Does NOT use V68/V72/V73 (0 references)
+
+Pipeline B: V40.2 + V68/V72/V73 (predictions)
+- Source: data_engine.db (egksco_price_history — full OHLCV history)
+- Logic: V40.2 engine + V68/V72/V73 filters
+- Output: predictions.db (entry/target/stop)
+- Does NOT feed back to screener
+
+**Result**: Every stock has TWO independent analyses:
+  - Screener says: "stock_state = NEAR_BREAKOUT, momentum=75"
+  - V40.2 says: "no signal" or "BUY entry=X target=Y"
+  - These never cross-reference each other!
+
+**What user wants (correct architecture):**
+  ONE Python engine → same results on every screen:
+  - Stock Filters should SHOW V68/V72/V73 analysis (dirty_dist flag, hidden_dist flag, etc.)
+  - Stock detail should show notebook observations
+  - Predictions tab should show screener state
+  - All from ONE source of truth
+
+**Gap to close:**
+  1. Screener needs to call V68/V72/V73 analyzers (not just stock_state.py)
+  2. Screener needs to read predictions.db (active predictions column)
+  3. Screener needs to read stock_notebook.json (observations count column)
+  4. Stock detail page needs V68/V72/V73 verdict + notebook + predictions
+  5. V40.2 should enrich predictions with screener's stock_state
+
+### Phase 3: Commit + Push
+- Committed AdminView fix: d05a13c
+- Pushed to GitHub: b70eeb9..d05a13c
+
+Stage Summary:
+- ✅ React #306 FIXED (Admin panel renders)
+- ✅ Architecture gap documented (Stock Filters vs V68/V72/V73 = 2 pipelines)
+- 🔜 Unification work pending (user to confirm approach)
