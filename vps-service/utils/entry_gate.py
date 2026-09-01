@@ -56,8 +56,8 @@ MIN_RS = 1.0  # Relative Strength (stock_roc - benchmark_change)
 DEEP_CORRECTION_DROP_PCT = 12.0
 EXTENDED_CHASE_3D_PCT = 12.0
 EXTENDED_CHASE_5D_PCT = 15.0
-MIN_VOLUME = 1000  # minimum volume (zero-volume guard)
-MIN_TURNOVER_EGP = 50_000  # minimum turnover (liquidity)
+MIN_VOLUME = 100  # V80-TUNE: lower threshold (was 1000 — missed low-volume pumps)
+MIN_TURNOVER_EGP = 5_000  # V80-TUNE: lower threshold (was 50K — missed penny stocks)
 SMA50_PROXIMITY_PCT = 2.0  # within 2% below SMA50 = "قريب جدًا"
 
 

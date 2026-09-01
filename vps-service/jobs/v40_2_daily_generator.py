@@ -97,7 +97,7 @@ PREDICTIONS_DB = os.environ.get('V40_2_PREDICTIONS_DB') or os.path.join(PROJECT_
 
 DEFAULT_START = '2026-01-01'
 DEFAULT_END = '2026-06-10'  # historical default (sandbox run)
-SCAN_INTERVAL = 3
+SCAN_INTERVAL = 1  # V80-TUNE: daily scan (was 3 — missed daily breakouts)
 MAX_PICKS_PER_DAY = 5
 MIN_TICKER_DAYS = 200
 

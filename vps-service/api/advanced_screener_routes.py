@@ -151,9 +151,9 @@ def advanced_screener():
             # 2) min_volume default = 1000 سهم (يستبعد الأسهم الميتة زي DCRC)
             # 3) min_turnover default = 50,000 ج.م (يستبعد الأسهم غير النشطة زي MILS)
             # لو المستخدم مرّر قيمة صريحة → نحترمها (حتى لو 0)
-            effective_min_price = 0.50 if min_price is None else min_price
-            effective_min_volume = 1000 if min_volume is None else min_volume
-            effective_min_turnover = 50000.0 if min_turnover is None else min_turnover
+            effective_min_price = 0.10 if min_price is None else min_price  # V80-TUNE: was 0.50
+            effective_min_volume = 100 if min_volume is None else min_volume  # V80-TUNE: was 1000
+            effective_min_turnover = 5000.0 if min_turnover is None else min_turnover  # V80-TUNE: was 50000
 
             where_clauses = [
                 'is_active = 1',

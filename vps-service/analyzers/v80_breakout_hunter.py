@@ -270,29 +270,28 @@ def analyze_breakout_opportunity(
         atr = last_close * 0.05  # fallback 5%
     
     # 6. Decision logic
-    if breakout['is_breakout'] and base['is_base']:
+    # V80-TUNE: Require breakout strength > 2% + volume > 2× (stricter)
+    if breakout['is_breakout'] and base['is_base'] and breakout['breakout_strength_pct'] > 2.0 and breakout['volume_ratio'] >= 2.0:
         # Strong signal: breakout from base + volume
         entry = last_close
-        # Structural stop: under base low - 0.5×ATR
-        stop_loss = base['base_low'] - (atr * 0.5)
-        if stop_loss >= entry:
-            stop_loss = entry - (atr * 1.5)
+        # V80-TUNE: Tighter stop = entry - 1.5×ATR (not base_low which can be far)
+        stop_loss = entry - (atr * 1.5)
         
         risk = entry - stop_loss
         if risk <= 0:
             return _neutral_signal()
         
-        # Targets: 2R and 4R (لا fixed target — trailing is better)
-        target_1 = entry + (risk * 2.0)
-        target_2 = entry + (risk * 4.0)
+        # V80-TUNE: Closer targets (1.5R and 3R — more achievable in 14 days)
+        target_1 = entry + (risk * 1.5)
+        target_2 = entry + (risk * 3.0)
         
         # Confidence
         conf = 60  # base
         if accumulation['is_accumulating']:
             conf += 15
-        if breakout['volume_ratio'] >= 2.0:
+        if breakout['volume_ratio'] >= 3.0:
             conf += 10
-        if breakout['breakout_strength_pct'] > 3:
+        if breakout['breakout_strength_pct'] > 5:
             conf += 10
         if base['tightness_pct'] < 10:
             conf += 5  # tighter base = stronger

@@ -2,7 +2,7 @@
   "_meta": {
     "description": "دفتر ملاحظات الأسهم — ذاكرة دائمة للمحللين",
     "version": "1.0",
-    "last_updated": "2026-08-03",
+    "last_updated": "2026-09-01",
     "rules": [
       "الملف ده ثابت — بيتعدّل عليه مش بيتمسح",
       "كل سهم له entry خاص بكل الملاحظات التراكمية",
@@ -544,6 +544,50 @@
           "note": "إشارة: STRONG_BUY | دخول: 247.98 | عائد: -8.34% | مدة: 48ي | قطاع هابط — لازم كان يترفض",
           "signal": "❌ خسارة",
           "confidence": 95.0
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -663,6 +707,28 @@
           "note": "🔥 Hot Candidate | score=60 | surge=2.53x | delta=9533.11 | vol_surge=2.5x + delta=+9533.1 | price_change=+7.2%",
           "signal": "hot_candidate",
           "confidence": 60
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -748,9 +814,24 @@
           "note": "🔥 Hot Candidate | score=40 | surge=2.01x | delta=127.21 | vol_surge=2.0x + delta=+127.2",
           "signal": "hot_candidate",
           "confidence": 40
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=503.70 target=686.90 stop=458.37 score=95 evidence=4/6 R=4.04 target_2=1030.34",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 503.7,
+            "target_price": 686.8955,
+            "stop_loss": 458.367,
+            "r_multiple": 4.041,
+            "evidence_count": 4,
+            "filters": []
+          }
         }
       ],
-      "status": "",
+      "status": "في توقع نشط",
       "trend": "صاعد",
       "maker_activity": "نشط جداً (Hot)",
       "sector_heat": ""
@@ -765,6 +846,17 @@
           "note": "🔥 Hot Candidate | score=40 | surge=3.27x | delta=3338.35 | vol_surge=3.3x + delta=+3338.3",
           "signal": "hot_candidate",
           "confidence": 40
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "",
@@ -782,6 +874,149 @@
           "note": "🔥 Hot Candidate | score=40 | surge=2.05x | delta=292.17 | vol_surge=2.0x + delta=+292.2",
           "signal": "hot_candidate",
           "confidence": 40
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -850,9 +1085,24 @@
           "note": "🔥 Hot Candidate | score=30 | surge=2.15x | delta=-3808.29 | absorption (vol=2.1x + change≤2%)",
           "signal": "hot_candidate",
           "confidence": 30
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=9.36 target=11.72 stop=8.62 score=75 evidence=3/6 R=3.19 target_2=17.59",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 9.36,
+            "target_price": 11.7249,
+            "stop_loss": 8.6188,
+            "r_multiple": 3.191,
+            "evidence_count": 3,
+            "filters": []
+          }
         }
       ],
-      "status": "",
+      "status": "في توقع نشط",
       "trend": "محايد",
       "maker_activity": "نشط جداً (Hot)",
       "sector_heat": ""
@@ -1105,6 +1355,17 @@
           "note": "🔥 Hot Candidate | score=20 | surge=1.85x | delta=12746.59 | price_change=+12.9%",
           "signal": "hot_candidate",
           "confidence": 20
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "",
@@ -1122,6 +1383,17 @@
           "note": "🔥 Hot Candidate | score=20 | surge=1.51x | delta=26559.96 | price_change=+6.1%",
           "signal": "hot_candidate",
           "confidence": 20
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "",
@@ -1162,6 +1434,1438 @@
       "trend": "صاعد",
       "maker_activity": "نشط جداً (Hot)",
       "sector_heat": ""
+    },
+    "AALR": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=206.24 target=251.84 stop=187.68 score=75 evidence=3/6 R=2.46 target_2=377.77",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 206.24,
+            "target_price": 251.8443,
+            "stop_loss": 187.6784,
+            "r_multiple": 2.457,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "AJWA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ASCM": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=66.01 target=89.58 stop=60.07 score=95 evidence=4/6 R=3.97 target_2=134.37",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 66.01,
+            "target_price": 89.5797,
+            "stop_loss": 60.0691,
+            "r_multiple": 3.967,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ATLC": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=5.32 target=6.60 stop=4.84 score=95 evidence=4/6 R=2.66 target_2=9.89",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 5.32,
+            "target_price": 6.5952,
+            "stop_loss": 4.8412,
+            "r_multiple": 2.663,
+            "evidence_count": 4,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=5.27 target=6.40 stop=4.80 score=75 evidence=3/6 R=2.39 target_2=9.60",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 5.27,
+            "target_price": 6.4019,
+            "stop_loss": 4.7957,
+            "r_multiple": 2.386,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "BINV": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=48.95 target=61.97 stop=44.54 score=95 evidence=4/6 R=2.96 target_2=92.95",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 48.95,
+            "target_price": 61.9663,
+            "stop_loss": 44.5445,
+            "r_multiple": 2.955,
+            "evidence_count": 4,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=49.25 target=61.00 stop=44.82 score=95 evidence=4/6 R=2.65 target_2=91.50",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 49.25,
+            "target_price": 61.0028,
+            "stop_loss": 44.8175,
+            "r_multiple": 2.652,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "CCAP": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=5.05 target=6.17 stop=4.60 score=75 evidence=3/6 R=2.45 target_2=9.25",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 5.05,
+            "target_price": 6.1654,
+            "stop_loss": 4.5955,
+            "r_multiple": 2.454,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "CERA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "CIRA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=28.80 target=35.67 stop=26.21 score=95 evidence=4/6 R=2.65 target_2=53.51",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 28.8,
+            "target_price": 35.6721,
+            "stop_loss": 26.208,
+            "r_multiple": 2.651,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "COSG": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "EALR": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "EFIH": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "EGCH": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=14.23 target=18.44 stop=12.95 score=95 evidence=4/6 R=3.29 target_2=27.66",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 14.23,
+            "target_price": 18.4418,
+            "stop_loss": 12.9493,
+            "r_multiple": 3.289,
+            "evidence_count": 4,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=14.40 target=18.19 stop=13.10 score=95 evidence=4/6 R=2.93 target_2=27.29",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 14.4,
+            "target_price": 18.1942,
+            "stop_loss": 13.104,
+            "r_multiple": 2.928,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ELSH": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ENGC": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=37.00 target=45.93 stop=33.67 score=75 evidence=3/6 R=2.68 target_2=68.89",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 37.0,
+            "target_price": 45.9295,
+            "stop_loss": 33.67,
+            "r_multiple": 2.682,
+            "evidence_count": 3,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=36.60 target=44.68 stop=33.31 score=95 evidence=4/6 R=2.45 target_2=67.02",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 36.6,
+            "target_price": 44.6829,
+            "stop_loss": 33.306,
+            "r_multiple": 2.454,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "EPCO": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=11.23 target=15.36 stop=10.22 score=75 evidence=3/6 R=4.09 target_2=23.05",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 11.23,
+            "target_price": 15.3645,
+            "stop_loss": 10.2193,
+            "r_multiple": 4.091,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "GSSC": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "IRON": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "KABO": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "KWIN": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "MAAL": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "MENA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "OIH": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "RAYA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ROTO": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "RUBX": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "SCFM": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "SCTS": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        }
+      ],
+      "status": "",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "SIPC": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=3.82 target=5.33 stop=3.48 score=95 evidence=4/6 R=4.38 target_2=7.99",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 3.82,
+            "target_price": 5.327,
+            "stop_loss": 3.4762,
+            "r_multiple": 4.383,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "SDTI": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=50.39 target=70.12 stop=45.85 score=95 evidence=4/6 R=4.35 target_2=105.18",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 50.39,
+            "target_price": 70.1215,
+            "stop_loss": 45.8549,
+            "r_multiple": 4.351,
+            "evidence_count": 4,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=66.85 target=91.50 stop=60.83 score=75 evidence=3/6 R=4.10 target_2=137.26",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 66.85,
+            "target_price": 91.5038,
+            "stop_loss": 60.8335,
+            "r_multiple": 4.098,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ODIN": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=2.65 target=3.65 stop=2.41 score=95 evidence=4/6 R=4.20 target_2=5.48",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 2.65,
+            "target_price": 3.6515,
+            "stop_loss": 2.4115,
+            "r_multiple": 4.199,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "FNAR": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=13.74 target=19.03 stop=12.50 score=95 evidence=4/6 R=4.28 target_2=28.54",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 13.74,
+            "target_price": 19.0266,
+            "stop_loss": 12.5034,
+            "r_multiple": 4.275,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "DAPH": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=100.00 target=136.91 stop=91.00 score=75 evidence=3/6 R=4.10 target_2=205.37",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 100.0,
+            "target_price": 136.9137,
+            "stop_loss": 91.0,
+            "r_multiple": 4.102,
+            "evidence_count": 3,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=100.08 target=133.11 stop=91.07 score=75 evidence=3/6 R=3.67 target_2=199.67",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 100.08,
+            "target_price": 133.1119,
+            "stop_loss": 91.0728,
+            "r_multiple": 3.667,
+            "evidence_count": 3,
+            "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=101.99 target=131.65 stop=92.81 score=75 evidence=3/6 R=3.23 target_2=197.48",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 101.99,
+            "target_price": 131.6523,
+            "stop_loss": 92.8109,
+            "r_multiple": 3.232,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "EXPA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=20.20 target=26.50 stop=18.38 score=75 evidence=3/6 R=3.46 target_2=39.74",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 20.2,
+            "target_price": 26.4955,
+            "stop_loss": 18.382,
+            "r_multiple": 3.463,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "EDFM": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=397.92 target=524.62 stop=362.11 score=75 evidence=3/6 R=3.54 target_2=786.93",
+          "signal": "STRONG_BUY",
+          "confidence": 75,
+          "extra": {
+            "entry_price": 397.92,
+            "target_price": 524.6232,
+            "stop_loss": 362.1072,
+            "r_multiple": 3.538,
+            "evidence_count": 3,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "ELKA": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=1.79 target=2.14 stop=1.63 score=95 evidence=4/6 R=2.17 target_2=3.21",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 1.79,
+            "target_price": 2.14,
+            "stop_loss": 1.6289,
+            "r_multiple": 2.173,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "IDRE": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=56.90 target=71.49 stop=51.78 score=95 evidence=4/6 R=2.85 target_2=107.24",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 56.9,
+            "target_price": 71.493,
+            "stop_loss": 51.779,
+            "r_multiple": 2.85,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
+    },
+    "CPME": {
+      "name": "",
+      "sector": "",
+      "observations": [
+        {
+          "date": "2026-09-01 10:05",
+          "source": "v40_2",
+          "note": "توقع STRONG_BUY: entry=32.67 target=44.81 stop=29.73 score=95 evidence=4/6 R=4.13 target_2=67.21",
+          "signal": "STRONG_BUY",
+          "confidence": 95,
+          "extra": {
+            "entry_price": 32.67,
+            "target_price": 44.8093,
+            "stop_loss": 29.7297,
+            "r_multiple": 4.129,
+            "evidence_count": 4,
+            "filters": []
+          }
+        }
+      ],
+      "status": "في توقع نشط",
+      "trend": "",
+      "maker_activity": "",
+      "sector_heat": "",
+      "last_entry_price": 0,
+      "last_target": 0,
+      "last_result": ""
     }
   },
   "sector_notes": {
