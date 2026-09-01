@@ -729,6 +729,138 @@
             "filter": "V72-hidden-dist",
             "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -849,6 +981,72 @@
         },
         {
           "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -1009,6 +1207,138 @@
         },
         {
           "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v72",
           "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
           "signal": "REJECT",
@@ -1366,6 +1696,72 @@
             "filter": "V68-dirty-dist",
             "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "",
@@ -1386,6 +1782,72 @@
         },
         {
           "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -1464,6 +1926,83 @@
             "evidence_count": 3,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:16",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -1480,6 +2019,83 @@
       "observations": [
         {
           "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:16",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v72",
           "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
           "signal": "REJECT",
@@ -1538,6 +2154,83 @@
             "evidence_count": 4,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -1591,6 +2284,83 @@
             "r_multiple": 2.386,
             "evidence_count": 3,
             "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
           }
         }
       ],
@@ -1646,6 +2416,83 @@
             "evidence_count": 4,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -1696,6 +2543,160 @@
             "evidence_count": 3,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -1712,6 +2713,83 @@
       "observations": [
         {
           "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -1781,6 +2859,237 @@
             "evidence_count": 4,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -1816,6 +3125,160 @@
             "filter": "V72-hidden-dist",
             "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -1832,6 +3295,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -1878,6 +3407,72 @@
         },
         {
           "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v72",
           "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
           "signal": "REJECT",
@@ -1940,6 +3535,72 @@
             "evidence_count": 4,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -1956,6 +3617,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:04",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v72",
           "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
           "signal": "REJECT",
@@ -2051,6 +3778,72 @@
             "evidence_count": 4,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -2101,6 +3894,72 @@
             "evidence_count": 3,
             "filters": []
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v73",
+          "note": "رفض V73-desert: الموت السريري: BB squeeze + volume < 0.5×MA",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V73-desert",
+            "reason": "الموت السريري: BB squeeze + volume < 0.5×MA"
+          }
         }
       ],
       "status": "في توقع نشط",
@@ -2117,6 +3976,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -2206,6 +4131,270 @@
             "filter": "V72-hidden-dist",
             "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -2222,6 +4411,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:04",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -2298,6 +4553,336 @@
             "filter": "V72-hidden-dist",
             "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -2322,6 +4907,72 @@
             "filter": "V72-hidden-dist",
             "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -2338,6 +4989,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -2392,6 +5109,138 @@
             "filter": "V72-hidden-dist",
             "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
         }
       ],
       "status": "",
@@ -2427,6 +5276,138 @@
             "filter": "V68-dirty-dist",
             "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "",
@@ -2443,6 +5424,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:05",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v68",
           "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
           "signal": "REJECT",
@@ -2475,6 +5522,72 @@
             "filter": "V68-dirty-dist",
             "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
           }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
         }
       ],
       "status": "",
@@ -2491,6 +5604,72 @@
       "observations": [
         {
           "date": "2026-09-01 10:05",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
           "source": "v72",
           "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
           "signal": "REJECT",
@@ -2559,6 +5738,204 @@
             "r_multiple": 4.383,
             "evidence_count": 4,
             "filters": []
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:17",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:18",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:19",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v68",
+          "note": "رفض V68-dirty-dist: توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V68-dirty-dist",
+            "reason": "توزيع قاتل: ظهر علوي + حجم انفجاري + delta سالب"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
+          }
+        },
+        {
+          "date": "2026-09-01 10:20",
+          "source": "v72",
+          "note": "رفض V72-hidden-dist: توزيع خفي: higher high + lower volume (block 5 bars)",
+          "signal": "REJECT",
+          "confidence": 0,
+          "extra": {
+            "filter": "V72-hidden-dist",
+            "reason": "توزيع خفي: higher high + lower volume (block 5 bars)"
           }
         }
       ],
