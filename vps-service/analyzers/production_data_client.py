@@ -207,13 +207,14 @@ class ProductionDataClient:
                 _set_cached('egxpilot_all', data)
         if not data:
             return None
-        # EGX Pilot بـ يرجع list of stocks
-        stocks = data if isinstance(data, list) else data.get('data', [])
+        # EGX Pilot structure: {"updatedAt": "...", "stocks": [{...}]}
+        stocks = data.get('stocks', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         for s in stocks:
             if isinstance(s, dict):
-                sym = s.get('symbol') or s.get('ticker') or ''
+                sym = s.get('Symbol') or s.get('symbol') or s.get('ticker') or ''
                 if sym.upper() == ticker.upper():
-                    price = s.get('price') or s.get('current_price') or s.get('last_price')
+                    # Try multiple field names (EGX Pilot uses LastPrice)
+                    price = s.get('LastPrice') or s.get('lastPrice') or s.get('price') or s.get('current_price')
                     try:
                         return float(price) if price else None
                     except (TypeError, ValueError):
@@ -420,19 +421,19 @@ class ProductionDataClient:
         data = _http_get(EGXPILOT_API, timeout=15)
         if not data:
             return []
-        stocks = data if isinstance(data, list) else data.get('data', [])
+        stocks = data.get('stocks', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
         result = []
         for s in stocks[:limit]:
             if isinstance(s, dict):
                 result.append({
-                    'ticker': s.get('symbol') or s.get('ticker') or '',
-                    'name': s.get('name') or s.get('name_ar') or '',
-                    'sector': s.get('sector') or '',
-                    'current_price': float(s.get('price') or s.get('current_price') or 0),
-                    'change_percent': float(s.get('change_percent') or s.get('change') or 0),
-                    'volume': float(s.get('volume') or 0),
-                    'market_cap': float(s.get('market_cap') or 0),
-                    'pe_ratio': float(s.get('pe_ratio') or 0),
+                    'ticker': s.get('Symbol') or s.get('symbol') or '',
+                    'name': s.get('StockName') or s.get('name') or '',
+                    'sector': s.get('Sector') or s.get('sector') or '',
+                    'current_price': float(s.get('LastPrice') or s.get('price') or 0),
+                    'change_percent': float(s.get('DailyChange') or s.get('change_percent') or 0),
+                    'volume': float(s.get('Volume') or s.get('volume') or 0),
+                    'market_cap': float(s.get('MarketCap') or s.get('market_cap') or 0),
+                    'pe_ratio': float(s.get('PE') or s.get('pe_ratio') or 0),
                 })
         return result
 
@@ -475,20 +476,20 @@ class ProductionDataClient:
                 if data:
                     _set_cached('egxpilot_all', data)
             if data:
-                stocks = data if isinstance(data, list) else data.get('data', [])
+                stocks = data.get('stocks', []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
                 for s in stocks:
                     if isinstance(s, dict):
-                        sym = s.get('symbol') or s.get('ticker') or ''
+                        sym = s.get('Symbol') or s.get('symbol') or s.get('ticker') or ''
                         if sym.upper() == ticker.upper():
                             meta = {
                                 'ticker': ticker,
-                                'name': s.get('name') or s.get('name_ar') or '',
-                                'sector': s.get('sector') or '',
-                                'current_price': float(s.get('price') or 0),
-                                'pe_ratio': float(s.get('pe_ratio') or 0),
-                                'market_cap': float(s.get('market_cap') or 0),
-                                'change_percent': float(s.get('change_percent') or 0),
-                                'volume': float(s.get('volume') or 0),
+                                'name': s.get('StockName') or s.get('name') or '',
+                                'sector': s.get('Sector') or s.get('sector') or '',
+                                'current_price': float(s.get('LastPrice') or s.get('price') or 0),
+                                'pe_ratio': float(s.get('PE') or s.get('pe_ratio') or 0),
+                                'market_cap': float(s.get('MarketCap') or s.get('market_cap') or 0),
+                                'change_percent': float(s.get('DailyChange') or s.get('change_percent') or 0),
+                                'volume': float(s.get('Volume') or s.get('volume') or 0),
                             }
                             _set_cached(cache_key, meta)
                             self._source_stats['egxpilot'] += 1
