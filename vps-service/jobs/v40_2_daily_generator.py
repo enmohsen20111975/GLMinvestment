@@ -895,6 +895,62 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception:
                 pass  # safe-by-design: لو feedback loop فشل → نكمّل
 
+            # ── SECTOR + INTRADAY (2026-09-01): تتبع القطاعات + الميكرز ──
+            # قطاع heat + maker flow (سيولة لحظية)
+            if os.environ.get('V76_SECTOR_INTRADAY', '1') == '1':
+                try:
+                    from analyzers.intraday_reader import get_sector_performance, detect_maker_flow
+                    
+                    # 1. Sector performance — penalty لو القطاع بارد
+                    _ticker_sector = None
+                    try:
+                        import sqlite3 as _sec_sql
+                        _sec_conn = _sec_sql.connect(str(_PROJECT_ROOT / 'db' / 'stocks.db'), timeout=5.0)
+                        _sec_row = _sec_conn.execute('SELECT sector FROM stocks WHERE ticker=?', (ticker,)).fetchone()
+                        _sec_conn.close()
+                        if _sec_row: _ticker_sector = _sec_row[0]
+                    except Exception:
+                        pass
+                    
+                    if _ticker_sector:
+                        _sec_perf = get_sector_performance(_ticker_sector)
+                        result['sector_heat'] = _sec_perf.get('heat', 'cold')
+                        result['sector_avg_change'] = _sec_perf.get('avg_change', 0)
+                        
+                        # لو القطاع بارد جداً (avg < -1%) → قلل الثقة
+                        if _sec_perf.get('avg_change', 0) < -1.0:
+                            print(f"[SECTOR-COLD] {ticker}: قطاع {_ticker_sector} بارد "
+                                  f"({_sec_perf['avg_change']:+.2f}%) → تقليل ثقة", flush=True)
+                            if isinstance(result.get('score'), (int, float)):
+                                result['score'] = max(0, result['score'] - 10)
+                        # لو القطاع ساخن (avg > +2%) → boost
+                        elif _sec_perf.get('avg_change', 0) > 2.0:
+                            print(f"[SECTOR-HOT] {ticker}: قطاع {_ticker_sector} ساخن "
+                                  f"({_sec_perf['avg_change']:+.2f}%) → boost", flush=True)
+                            if isinstance(result.get('score'), (int, float)):
+                                result['score'] = min(100, result['score'] + 8)
+                    
+                    # 2. Maker flow (intraday) — كشف سيولة مؤسسية
+                    _maker = detect_maker_flow(ticker)
+                    result['maker_flow'] = _maker.get('flow', 'neutral')
+                    result['maker_confidence'] = _maker.get('confidence', 0)
+                    
+                    if _maker.get('flow') == 'buying' and _maker.get('confidence', 0) > 60:
+                        print(f"[MAKER-BUYING] {ticker}: سيولة مؤسسية شرائية "
+                              f"(conf={_maker['confidence']}, price_trend={_maker['price_trend_pct']:+.3f}%)", flush=True)
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = min(100, result['score'] + 12)
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['maker_buying'] = f'✅ سيولة مؤسسية شرائية (conf={_maker["confidence"]})'
+                    elif _maker.get('flow') == 'selling':
+                        print(f"[MAKER-SELLING] {ticker}: سيولة مؤسسية بيعية "
+                              f"(conf={_maker['confidence']}) → تقليل ثقة", flush=True)
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = max(0, result['score'] - 15)
+                except Exception as _intraday_err:
+                    pass  # safe-by-design
+
             # ── EGX-STRATEGY (2026-08-30): الحد الأدنى للإثباتات ──
             # استراتيجية المالك: "ندخل فقط عندما يكون الاحتمال لصالحنا بوضوح".
             # تحليل مارس-مايو أظهر إن 4 من 9 خسائر كان evidence=0/6 (بدون أي إثباتات).
