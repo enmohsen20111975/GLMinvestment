@@ -268,8 +268,8 @@ def is_liquidity_grab(highs: List[float], lows: List[float],
     # Did it recover (close above support)?
     recovered_1 = close_1 >= support_level
     recovered_2 = close_2 >= support_level
-    recovered = (penetrated_1 and recovered_1) or (penetrated_2 and recovered_2) or \
-                (penetrated_1 and recovered_2)
+    # Grab حقيقي = نزول تحت الدعم + رجوع فوقه (الشمعة الأخيرة لازم تقفل فوق الدعم)
+    recovered = penetrated and recovered_2 and (recovered_1 or recovered_2)
 
     # Volume confirmation (current vol > 1.3× avg)
     volume_confirmed = current_vol > avg_vol * 1.3 if avg_vol > 0 else False

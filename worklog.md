@@ -14602,3 +14602,83 @@ Stage Summary:
 - ✅ live test: COMI +2 BOOST_STRONG، HRHO +1 BOOST
 - 🔜 commit + push
 
+
+
+---
+Task ID: CRYPTO-PHASE-START-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تحديث الدستور بالقوانين 36-40 + إطلاق مرحلة العملات الرقمية
+
+Work Log:
+
+### Phase 1: تحديث الدستور (00-CONSTITUTION.md)
+إضافة القوانين الجديدة من جلسة 2026-09-01:
+- **القاعدة 36**: الإفصاحات الرسمية كمصدر وحيد للأخبار (DISCLOSURE-ENGINE)
+- **القاعدة 37**: شروط الدخول الصارمة: تراكم أو Liquidity Grab فقط (STRICT-ENTRY)
+- **القاعدة 38**: مدة احتفاظ قصيرة + خروج إجباري (SHORT-HOLDING)
+- **القاعدة 39**: منطق التوزيع كإشارة خروج (DISTRIBUTION-EXIT)
+- **القاعدة 40**: فهم الأخبار: News Fetcher + Sentiment Analysis (NEWS-FETCHER-ANALYZER)
+
+تحديث عهد الوكيل لـ 24 بند (إضافة البنود 19-24):
+- 19: الإفصاحات الرسمية كمصدر وحيد
+- 20: تراكم أو Liquidity Grab فقط
+- 21: مدة احتفاظ قصيرة
+- 22: شمعة التوزيع كإشارة خروج
+- 23: فهم الأخبار بـ sentiment analysis
+- 24: تطبيق نفس العمق على الكريبتو
+
+### Phase 2: قراءة توثيقات الكريبتو
+قرأت Documentation/كل الاسواق.md (360 سطر) — خطة 6 مراحل للكريبتو:
+1. توحيد معايير الأسواق في UnifiedConfig + MarketProfile
+2. تفعيل CryptoQualityGate (موجود: crypto_quality_gate.py)
+3. أتمتة المجدول اللحظي 24/7 (crypto_lab_scheduler.py)
+4. بروتوكول المرآة (UI Parity)
+5. باكتست متعدد الأسواق
+6. أرشفة الكود المكرر
+
+الفرق بين الكريبتو والأسهم (من التوثيق):
+- التقلب أعلى: ATR/price = 5-15% (مش 3-9%)
+- 24/7: مدة الاحتفاظ تتحسب بالساعات
+- BTC Dominance + Fear & Greed: بديل sector heat
+- السيولة أهم: شموع واطية = فخ
+
+### Phase 3: فحص ما هو موجود للكريبتو
+- crypto.db: 50 عملة + جداول جاهزة لكن crypto_price_history فاضي
+- crypto_quality_gate.py: موجود + مكتمل (5 عوامل + 3 verdicts)
+- run_crypto_generator في V40.2: موجود لكن مبسّط
+- crypto_lab_scheduler.py: موجود (24/7 scheduler)
+- crypto_predictions_log: 4 صفوف في predictions.db
+- 11+ React component للكريبتو (CryptoScreenerView, CryptoPredictionTrackingView, etc.)
+
+### Phase 4: بناء crypto_strict_filters.py (430 LOC)
+تطبيق القاعدة 37 على الكريبتو بـ thresholds مكيّفة:
+- Accumulation: range<20% (vs 12%), vol<1.5×, recent_gain<20%, dist_from_high≥12%
+- Grab: penetration≥1.5% (vs 0.5%), support_lookback=24
+- Late: dist_from_high<10% (vs 6%), RSI>70 (vs 65), recent_gain>25% (vs 15%)
+
+دوال:
+- is_crypto_accumulation(): تراكم في نطاق ضيق
+- is_crypto_liquidity_grab(): مسح سيولة + رجوع
+- is_crypto_late_entry(): Don't Chase
+- evaluate_crypto_strict_entry(): القرار النهائي
+
+اختبارات: 5/5 نجح
+
+### Phase 5: إصلاح bug في recovered logic (stocks + crypto)
+اكتشفت bug في is_liquidity_grab (stocks + crypto):
+- المشكلة: recovered بـ يرجع True لو الشمعة قبل الأخيرة قفلت فوق الدعم (حتى لو الأخيرة قفلت تحته)
+- الحل: لازم الشمعة الأخيرة تقفل فوق الدعم: recovered = penetrated and recovered_2 and (recovered_1 or recovered_2)
+- تم إصلاح في strict_entry_filters.py + crypto_strict_filters.py
+- اختبارات stocks: 7/7 ما زالت تنجح (ما أثرش على الحالات السليمة)
+
+Stage Summary:
+- ✅ تحديث الدستور بالقوانين 36-40 + عهد الوكيل لـ 24 بند
+- ✅ قراءة توثيقات الكريبتو (كل الاسواق.md)
+- ✅ فحص ما هو موجود (crypto_quality_gate + scheduler + components)
+- ✅ بناء crypto_strict_filters.py (5/5 اختبار نجح)
+- ✅ إصلاح bug في recovered logic (stocks + crypto)
+- 🔜 بناء crypto_short_holding_exit.py
+- 🔜 بناء crypto_news_fetcher.py
+- 🔜 تكامل في run_crypto_generator
+- 🔜 commit + push
+

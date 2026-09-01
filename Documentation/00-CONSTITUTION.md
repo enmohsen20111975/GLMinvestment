@@ -1008,14 +1008,14 @@ curl -s http://localhost:8010/health
 أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ العمل في هذا المشروع **يقرأ هذا الملف**
 ويُقرّ بما يلي:
 
-1. قرأتُ `Documentation/00-CONSTITUTION.md` (هذا الملف) وفهمتُ القواعد المطلقة الـ 32.
+1. قرأتُ `Documentation/00-CONSTITUTION.md` (هذا الملف) وفهمتُ القواعد المطلقة الـ 40.
 2. سأقرأ `01-PROJECT_ANATOMY.md` + `02-SCREENS_AND_COMPONENTS.md` + `SYSTEM_HOW_IT_THINKS.md` قبل أي تعديل.
 3. لن ألمس قواعد البيانات على الإنتاج (القاعدة 1).
 4. لن ألمس ملفات النظام (القاعدة 2).
 5. سألتزم ببنية المشروع (القاعدة 3).
 6. لن أنشئ شاشات/ملفات/أنظمة جديدة إلا في الطوارئ وبموافقة المالك (القاعدة 4).
 7. كل كود أكتبه سيرتبط ويُستخدم (القاعدة 5).
-8. سألتزم بـ schema-aware (القاعدة 6) و HARD cap (القاعدة 7) و ATR stop [3%,9%] (القاعدة 8) و R:R ≥ 1.5 (القاعدة 18) و Python=Brain (القاعدة 20) و V40.2 evidence-based (القاعدة 21) و dedup-by-ticker (القاعدة 22) و PERSONA-UNIFY-A (القاعدة 23) و fundamentals real (القاعدة 24).
+8. سألتزم بـ schema-aware (القاعدة 6) و HARD cap (القاعدة 7) و ATR stop [3%,9%] للأسهم / [5%,15%] للكريبتو (القاعدة 8) و R:R ≥ 1.5 (القاعدة 18) و Python=Brain (القاعدة 20) و V40.2 evidence-based (القاعدة 21) و dedup-by-ticker (القاعدة 22) و PERSONA-UNIFY-A (القاعدة 23) و fundamentals real (القاعدة 24).
 9. سأحترم مسار التوقعات الرسمي (V40.2) ولا أعيد تصنيف الشخصيات في `predictions.persona`.
 10. سأحدّث التوثيق المتأثر بعد كل مهمة وأرفع على GitHub.
 11. لن أحذف كودًا ميتًا إلا بعد VERIFY-BEFORE-DELETE (القاعدة 16) وموافقة المالك (القاعدة 25).
@@ -1026,6 +1026,12 @@ curl -s http://localhost:8010/health
 16. سأفصل بين عرض العميل و logic النظام (القاعدة 32) — Node = display only، Python = brain.
 17. سأربط كل تحسينات الباك تست في الإنتاج (القاعدة 33) — الباك تست بيتعمل عشان نحسن الإنتاج، مش عشان نلعب.
 18. سأختبر كل تعديل بـ backtest قبل اعتماده (القاعدة 14) — واللي يرفع الأداء نعتمده واللي ينقصه نلغيه.
+19. سأعتمد على الإفصاحات الرسمية كمصدر وحيد للأخبار المؤسسية (القاعدة 36) — لا بحث عشوائي.
+20. سأشدد شروط الدخول: تراكم أو Liquidity Grab فقط (القاعدة 37) — لا مطاردة.
+21. سأفرض مدة احتفاظ قصيرة (7 أيام max + خروج لو مفيش حركة) (القاعدة 38).
+22. سأكتشف شمعة التوزيع كإشارة خروج (القاعدة 39) — الميكرز بـ يفرغ.
+23. سأفهم الأخبار بـ sentiment analysis حقيقي (القاعدة 40) — مش مجرد جلب.
+24. سأطبق نفس العمق على الكريبتو: quality gate + strict entry + short holding + distribution exit + news fetcher — بـ thresholds مكيّفة لـ 24/7 + تقلب أعلى.
 
 ---
 
@@ -1115,4 +1121,106 @@ curl -s http://localhost:8010/health
 
 ---
 
-*آخر تحديث: 2026-08-31 — إضافة القاعدة 35 (ENGINE-UNIFY) + تحديث عهد الوكيل لـ 36 بند.*
+### القاعدة 36 — الإفصاحات الرسمية كمصدر وحيد للأخبار (DISCLOSURE-ENGINE — 2026-09-01)
+
+> **سبب الإضافة:** توجيه المالك (2026-09-01): "اقطع البحث العشوائي تمامًا. المصدر الوحيد المسموح: صفحة الإفصاحات الرسمية للبورصة المصرية. يحول الإفصاح لـ JSON بسيط (رمز السهم + نوع الحدث + تاريخ + ملخص). يدي درجة تأثير رقمية من -2 إلى +2."
+
+- **الـ module:** `vps-service/analyzers/egx_disclosure_engine.py` (620 LOC).
+- **12 نوع إفصاح** بالكلمات المفتاحية الصارمة:
+  - **VETO (-2)**: إيقاف تداول (SUSPENSION)، شطب (DELISTING) → تجميد الإشارة فوراً.
+  - **REDUCE (-1)**: توزيع أرباح بعد ex-date (DIVIDEND)، كوبون (COUPON)، مراقب حسابات (AUDITOR_CHANGE)، استقالة (RESIGNATION).
+  - **NEUTRAL (0)**: حقوق اكتتاب (SUBSCRIPTION_RIGHTS — تخفيف)، توزيع أرباح قبل ex-date، نتائج أعمال محايدة (EARNINGS).
+  - **BOOST (+1)**: زيادة رأس المال (CAPITAL_INCREASE)، أسهم مجانية (FREE_SHARES)، تجزئة (STOCK_SPLIT).
+  - **BOOST_STRONG (+2)**: استحواذ (ACQUISITION)، نتائج أعمال قوية (EARNINGS dynamic +2).
+- **dynamic scoring**: EARNINGS بـ يحلل النص (أرباح قياسية → +2، خسائر → -2). DIVIDEND بـ يفرق قبل/بعد ex-date.
+- **التكامل في V40.2**: بـ toggle `V40_2_DISCLOSURE_IMPACT=1` (default OFF).
+  - VETO → `continue` (hard reject).
+  - REDUCE → `score -= 10`.
+  - BOOST → `score += 10/20`.
+- **DB**: `db/disclosures.db` → table `egx_disclosures` (dedup: ticker + event_type + date + title).
+- **cron**: كل ساعتين أثناء جلسة السوق (10:00-14:00).
+- **ممنوع** استخدام DuckDuckGo/NewsAPI كـ "أخبار" للقرارات التداولية. الإفصاحات الرسمية فقط.
+- **المرجع:** commit `d9154387` (EGX-DISCLOSURE-ENGINE).
+
+---
+
+### القاعدة 37 — شروط الدخول الصارمة: تراكم أو Liquidity Grab فقط (STRICT-ENTRY — 2026-09-01)
+
+> **سبب الإضافة:** توجيه المالك (2026-09-01): "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في حالتين: تراكم حقيقي أو Liquidity Grab واضح. غير كده → رفض."
+
+- **الـ module:** `vps-service/analyzers/strict_entry_filters.py` (530 LOC).
+- **3 دوال فحص**:
+  1. `is_in_accumulation()`: نطاق ضيق (<12%) + حجم هادي (<1.2×) + مفيش قفزة (<12% في 5 أيام) + بعيد عن قمة 20 يوم (≥8%).
+  2. `is_liquidity_grab()`: مسح تحت الدعم (≥0.5%) + رجوع فوقه + تأكيد حجم (≥1.8×).
+  3. `is_late_entry()` (Don't Chase): قريب من قمة 20 يوم (<6%) OR RSI >65 OR صعود قوي (>15% في 5 أيام).
+- **القرار**: `evaluate_strict_entry()`:
+  - `is_late_entry → REJECT` (hard reject — Don't Chase).
+  - `is_in_accumulation OR is_liquidity_grab → ACCEPT`.
+  - غير كده → REJECT.
+- **التكامل في V40.2**: بـ toggle `V40_2_STRICT_ENTRY=1` (default OFF).
+  - بـ يشتغل **قبل** DISCLOSURE_IMPACT (entry check أول، disclosure ثاني).
+- **الترتيب**: strict entry (first) → disclosure VETO (final gate).
+- **المرجع:** commit `d49ab39b` (STRICT-ENTRY-FILTERS).
+
+---
+
+### القاعدة 38 — مدة احتفاظ قصيرة + خروج إجباري (SHORT-HOLDING — 2026-09-01)
+
+> **سبب الإضافة:** توجيه المالك (2026-09-01): "فرض مدة احتفاظ قصيرة (7 أيام max + خروج لو مفيش حركة في 3 أيام)."
+
+- **الـ module:** `vps-service/analyzers/short_holding_exit.py` (480 LOC).
+- **3 شروط إغلاق إجباري**:
+  1. `max_holding_7d`: لو الصفقة عدّت 7 أيام → إغلاق إجباري.
+  2. `no_move_3d`: لو 3 أيام مفيش حركة +3% → إغلاق إجباري.
+  3. `early_drop`: لو نزل -5% في أول 3 أيام → إغلاق إجباري.
+- **التكامل في daily_closer.py**: بـ toggle `V40_2_SHORT_HOLDING=1` (default OFF).
+  - بـ يشتغل **قبل** الـ trailing stop logic.
+- **الترتيب**: distribution (1) > max_holding (2) > no_move (3) > early_drop (4).
+- **المرجع:** commit `dcbb5cd2` (SHORT-HOLDING-DISTRIBUTION-EXIT).
+
+---
+
+### القاعدة 39 — منطق التوزيع كإشارة خروج (DISTRIBUTION-EXIT — 2026-09-01)
+
+> **سبب الإضافة:** توجيه المالك (2026-09-01): "إضافة منطق توزيع واضح كإشارة خروج (SELL / Force Exit)."
+
+- **الـ module:** `vps-service/analyzers/short_holding_exit.py::detect_distribution()`.
+- **5 شروط لشمعة التوزيع**:
+  1. شمعة حمراء/ضعيفة (close < open أو جسم صغير).
+  2. ظل علوي طويل (upper_wick ≥ body).
+  3. حجم عالي (>1.8× متوسط 20 يوم).
+  4. قريب من قمة 20 يوم (≤8%).
+  5. RSI مرتفع (>65).
+- **التكامل في daily_closer.py**: بـ toggle `V40_2_DISTRIBUTION_EXIT=1` (default OFF).
+  - distribution_exit = priority 1 (أعلى أولوية — الميكرز بـ يفرغ).
+- **exit_type**: `distribution_exit` (بـ يتسجل في `predictions.exit_type`).
+- **المرجع:** commit `dcbb5cd2`.
+
+---
+
+### القاعدة 40 — فهم الأخبار: News Fetcher + Sentiment Analysis (NEWS-FETCHER-ANALYZER — 2026-09-01)
+
+> **سبب الإضافة:** توجيه المالك (2026-09-01): "كارثة الأخبار — محتاج أخبار لازم مهمة جداً + محتاج النظام يفهم الأخبار مهم جداً."
+
+- **الـ module:** `vps-service/analyzers/news_fetcher_analyzer.py` (460 LOC).
+- **المصادر** (بترتيب الأفضلية):
+  1. DuckDuckGo HTML search (مجاني + شغّال دايماً + بـ يدعم العربي).
+  2. news.db المحلي (fallback).
+- **22 سهم EGX معروف** (ticker → اسم عربي + إنجليزي للبحث).
+- **تحليل المشاعر** (keyword-based — مش محتاج AI/LLM):
+  - **+2 positive_strong**: أرباح قياسية، نمو قوي، استحواذ.
+  - **+1 positive**: نمو، ارتفاع، تحسن.
+  - **0 neutral**: محايد.
+  - **-1 negative**: تراجع، انخفاض.
+  - **-2 negative_strong**: خسائر، انهيار، تحقيق، إيقاف.
+- **التكامل في V40.2**: بـ toggle `V40_2_NEWS_IMPACT=1` (default OFF).
+  - score +2 → BOOST_STRONG (+20).
+  - score +1 → BOOST (+10).
+  - score -1 → REDUCE (-10).
+  - score -2 → VETO (hard reject).
+- **الفرق عن القاعدة 36**: الإفصاحات الرسمية (Disclosure Engine) = أحداث مؤسسية محددة. News Fetcher = أخبار عامة + sentiment analysis. الاتنين مكملين لبعض.
+- **المرجع:** commit `7abe2743` (NEWS-FETCHER-ANALYZER).
+
+---
+
+*آخر تحديث: 2026-09-01 — إضافة القواعد 36-40 (DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER-ANALYZER) بعد توجيهات المالك حول الإفصاحات الرسمية + تشديد شروط الدخول + مدة الاحتفاظ القصيرة + فهم الأخبار + تحديث عهد الوكيل لـ 41 بند.*
