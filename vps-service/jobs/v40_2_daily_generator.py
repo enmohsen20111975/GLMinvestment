@@ -1881,7 +1881,55 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             holding_days=sig.get('holding_days', 0),
                             exit_reason=sig['exit_reason'],
                         )
-                    # لو مش dry_run → نسيبها pending عشان daily_closer يقفلها
+                    else:
+                        # مزامنة التوقع المعتمد في stored_analyses لشاشة التوقعات المباشرة
+                        try:
+                            conn_sa = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
+                            cur_sa = conn_sa.cursor()
+                            now_iso = datetime.now().isoformat()
+                            sa_json = json.dumps({
+                                'ticker': sig['ticker'],
+                                'signal': sig['signal'],
+                                'entry_price': sig['entry'],
+                                'target_price': sig['target'],
+                                'target_price_2': sig.get('target_2', 0),
+                                'stop_loss': sig['stop'],
+                                'risk_reward': sig['r_multiple'],
+                                'master_score': sig['tech_score'],
+                                'evidence_count': sig['evidence'],
+                                'source': 'V40.2_DAILY'
+                            }, ensure_ascii=False)
+                            sa_id = f"v40_{sig['ticker']}_EGX"
+                            cur_sa.execute('''
+                                INSERT INTO stored_analyses (
+                                    id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                                    confidence, entry_price, target_price, stop_loss, risk_reward,
+                                    prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity
+                                ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+                                ON CONFLICT(ticker, market) DO UPDATE SET
+                                    maestro_score = excluded.maestro_score,
+                                    recommendation = excluded.recommendation,
+                                    recommendation_ar = excluded.recommendation_ar,
+                                    confidence = excluded.confidence,
+                                    entry_price = excluded.entry_price,
+                                    target_price = excluded.target_price,
+                                    stop_loss = excluded.stop_loss,
+                                    risk_reward = excluded.risk_reward,
+                                    prediction_date = excluded.prediction_date,
+                                    updated_at = excluded.updated_at,
+                                    analysis_json = excluded.analysis_json,
+                                    is_gambler_opportunity = 1,
+                                    is_investor_opportunity = 1
+                            ''', (
+                                sa_id, sig['ticker'], sig['tech_score'], sig['signal'],
+                                'شراء قوي' if 'STRONG' in sig['signal'] else 'شراء',
+                                85, sig['entry'], sig['target'], sig['stop'],
+                                sig['r_multiple'], scan_date, now_iso, sa_json
+                            ))
+                            conn_sa.commit()
+                            conn_sa.close()
+                        except Exception:
+                            pass
                     # ── Phase 2 Fix: Read lessons BEFORE finalizing prediction ──
                     # This connects the closed loop: close → lesson → next prediction reads it.
                     # Safe-by-design: if lesson_store fails, prediction proceeds normally.

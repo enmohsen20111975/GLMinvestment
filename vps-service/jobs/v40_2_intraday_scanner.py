@@ -257,6 +257,92 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                 if pid:
                     saved_count += 1
             print(f"  💾 تم حفظ {saved_count} توقع لحظي في {PREDICTIONS_DB}", flush=True)
+
+            # مزامنة الفرص اللحظية فوراً في stored_analyses ليراها المستخدم في شاشة التوقعات مباشرة
+            try:
+                conn_sa = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
+                cur_sa = conn_sa.cursor()
+                now_iso = datetime.now().isoformat()
+                today_str = datetime.now().strftime('%Y-%m-%d')
+                for p in top_picks:
+                    analysis_dict = {
+                        'ticker': p['ticker'],
+                        'signal': p['signal'],
+                        'entry_price': p['entry_price'],
+                        'target_price': p['target_price'],
+                        'target_price_2': p.get('target_price_2'),
+                        'stop_loss': p['stop_loss'],
+                        'risk_reward': p.get('risk_reward', 2.0),
+                        'reasons': p.get('reasons', []),
+                        'maker_flow': p.get('maker_flow', 'ACCUMULATION'),
+                        'score': p['score'],
+                        'source': 'V40.2_INTRADAY_5M'
+                    }
+                    sa_id = f"v40_{p['ticker']}_EGX"
+                    cur_sa.execute('''
+                        INSERT INTO stored_analyses (
+                            id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                            confidence, entry_price, target_price, stop_loss, risk_reward,
+                            prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity
+                        ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+                        ON CONFLICT(ticker, market) DO UPDATE SET
+                            maestro_score = excluded.maestro_score,
+                            recommendation = excluded.recommendation,
+                            recommendation_ar = excluded.recommendation_ar,
+                            confidence = excluded.confidence,
+                            entry_price = excluded.entry_price,
+                            target_price = excluded.target_price,
+                            stop_loss = excluded.stop_loss,
+                            risk_reward = excluded.risk_reward,
+                            prediction_date = excluded.prediction_date,
+                            updated_at = excluded.updated_at,
+                            analysis_json = excluded.analysis_json,
+                            is_gambler_opportunity = 1,
+                            is_investor_opportunity = 1
+                    ''', (
+                        sa_id, p['ticker'], p['score'], p['signal'], 'شراء قوي' if 'STRONG' in p['signal'] else 'شراء',
+                        p.get('maker_confidence', 80), p['entry_price'], p['target_price'], p['stop_loss'],
+                        p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False)
+                    ))
+                conn_sa.commit()
+                conn_sa.close()
+                print(f"  ⚡ تم مزامنة {len(top_picks)} فرصة لحظية في stored_analyses لشاشة التوقعات", flush=True)
+
+                # تحديث cached_analysis في stocks.db لإزالة تحذير الكاش القديم
+                try:
+                    conn_ca = sqlite3.connect(str(STOCKS_DB), timeout=30.0)
+                    cur_ca = conn_ca.cursor()
+                    for p in top_picks:
+                        cur_ca.execute('''
+                            INSERT INTO cached_analysis (
+                                ticker, current_price, entry_price, target_price, stop_loss,
+                                signal, recommendation, confidence, master_score, risk_reward,
+                                created_at, updated_at, analysis_date, is_tradeable
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), date('now'), 1)
+                            ON CONFLICT(ticker) DO UPDATE SET
+                                current_price = excluded.current_price,
+                                entry_price = excluded.entry_price,
+                                target_price = excluded.target_price,
+                                stop_loss = excluded.stop_loss,
+                                signal = excluded.signal,
+                                recommendation = excluded.recommendation,
+                                confidence = excluded.confidence,
+                                master_score = excluded.master_score,
+                                risk_reward = excluded.risk_reward,
+                                created_at = datetime('now'),
+                                updated_at = datetime('now'),
+                                analysis_date = date('now'),
+                                is_tradeable = 1
+                        ''', (
+                            p['ticker'], p['entry_price'], p['entry_price'], p['target_price'], p['stop_loss'],
+                            p['signal'], p['signal'], p.get('maker_confidence', 80), p['score'], p.get('risk_reward', 2.0)
+                        ))
+                    conn_ca.commit()
+                    conn_ca.close()
+                except Exception as _ca_e:
+                    print(f"  ⚠️ خطأ في مزامنة cached_analysis: {_ca_e}", flush=True)
+            except Exception as _sa_e:
+                print(f"  ⚠️ خطأ في مزامنة stored_analyses: {_sa_e}", flush=True)
         except Exception as e:
             print(f"  ⚠️ خطأ أثناء حفظ التوقعات اللحظية: {e}", flush=True)
 

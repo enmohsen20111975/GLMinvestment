@@ -1431,6 +1431,7 @@ def refresh_persona_flags():
 
 
 @misc_bp.route('/api/daily/rebuild-predictions', methods=['GET', 'POST'])
+@misc_bp.route('/api/predictions/generate-all', methods=['GET', 'POST'])
 def rebuild_predictions():
     """Rebuild predictions — للـ /api/prediction-performance في الـ frontend.
 

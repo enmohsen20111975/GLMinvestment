@@ -39,7 +39,7 @@ export function RefreshAnalyticsButton({
       // KILL-MAESTRO: V40.2 هو المحرك الوحيد
       // الزرار ده بيولّد توقعات جديدة من V40.2 (مش بيقرأ بس)
       // بيستدعي Python backend اللي بيشغل v40_2_daily_generator.py
-      const res = await fetch(`/api/proxy/predictions/generate-all?market=${currentMarket}&all_markets=true`, {
+      const res = await fetch(`/api/predictions/generate-all?market=${currentMarket}&all_markets=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ market: currentMarket, all_markets: true }),
