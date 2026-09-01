@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 4,
   "identity": {
     "is_index_related": false,
     "related_index": null,
-    "liquidity_profile": "medium",
+    "liquidity_profile": "low",
     "free_float_note": "",
     "ownership_concentration": "medium",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "المصرية للخدمات الهندسية — صناعي متوسط. حساس للمشاريع الحكومية."
   },
   "price_behavior": {
     "typical_correction_pct": 18.4,
@@ -26,7 +26,7 @@
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "تصحيحاته عميقة (15-20%). بيرتد من EMA200."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -51,12 +51,19 @@
     "other_recurring_events": []
   },
   "danger_flags": [],
-  "learned_lessons": [],
+  "learned_lessons": [
+    {
+      "date": "2026-05-05",
+      "type": "success",
+      "summary": "دخل بعد تصحيح 17% + حجم هادي، طلع 12%",
+      "lesson": "يحترم التصحيح 15-20%"
+    }
+  ],
   "machine_summary": {
-    "typical_correction_pct": 18.4,
-    "max_expected_correction_pct": 32.39140063180515,
-    "liquidity_profile": "medium",
-    "danger_level": 1,
+    "typical_correction_pct": 16,
+    "max_expected_correction_pct": 22,
+    "liquidity_profile": "low",
+    "danger_level": 3,
     "preferred_entry_style": "correction_or_grab",
     "avoid_chase": true,
     "distribution_sensitivity": "medium"

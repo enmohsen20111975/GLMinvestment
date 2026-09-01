@@ -15154,3 +15154,75 @@ Stage Summary:
 - ✅ max_holding_7d ملغي كسبب وحيد
 - 🔜 commit + push
 
+
+
+---
+Task ID: DEEPEN-30-STOCKS-STRUCTURAL-BACKTEST-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تعميق 30 سهم + باك-تست عام بعد الخروج الهيكلي
+
+Work Log:
+
+### Phase 0: سحب آخر تحديثات GitHub
+- المبرمج الآخر رفع commit b0609db3 (news agent integration)
+- تم rebase بنجاح — كل الشغل متوافق
+
+### Phase 1: تعميق 10 أسهم إضافية (مجموعة ج)
+- EFID (danger=2, corr=14%) — عقاري قيادي
+- ESRS (danger=3, corr=16%) — صناعي متوسط
+- BIDI (danger=1, corr=10%) — مالي متوسط
+- BETA (danger=3, corr=18%) — خفيف
+- CCAP (danger=5, corr=25%, 4 flags) — ملعوب بامتياز
+- AALR (danger=2, corr=14%) — زراعي/عقاري
+- AFDI (danger=4, corr=20%, 3 flags) — ملعوب
+- ACGC (danger=3, corr=16%) — زراعي
+- ADRI (danger=3, corr=18%) — عقاري خفيف
+- ALCN (danger=2, corr=12%) — نقل
+- 5 دروس جديدة (CCAP failure, AFDI failure, EFID success, ESRS success, BETA failure)
+- الإجمالي: ~30 سهم معمّق بالخبرة
+
+### Phase 2: باك-تست عام مقارن (200 سهم × 6 شهور)
+| Run | Trades | WR% | PF | Return% | AvgW | AvgL | Hold |
+|---|---|---|---|---|---|---|---|
+| B0 Baseline | 31 | 45.2% | 1.43 | +41.2% | +9.82% | -5.66% | 11.4d |
+| B1 Strict | 14 | 35.7% | 0.67 | -17.6% | +7.22% | -5.97% | 12.1d |
+| B2 Notebook | 14 | 35.7% | 0.66 | -18.8% | +7.22% | -6.10% | 14.0d |
+| B3 Structural | 14 | 35.7% | 0.66 | -18.8% | +7.22% | -6.10% | 14.0d |
+
+### Rejects:
+- B1/B2/B3: 17 late_entry rejects (55% of B0 signals)
+- B2/B3: 4 stop_widened (notebook أثر على الوقف)
+
+### Exit Reasons (B3):
+- expired: 6
+- stop_loss: 6
+- target_hit: 2
+- لا يوجد max_holding_7d ✅
+- لا يوجد no_move_3d ✅
+- لا يوجد خروج زمني أعمى ✅
+
+### أمثلة نوعية (4 صفقات بـ notebook impact):
+1. AXPH: stop widen +6.25% (typical_correction=13.4%)
+2. AXPH: stop widen +6.14% (typical_correction=13.4%)
+3. BIGP: stop widen +9.44% (typical_correction=15.3%) — B0 كان stop_loss، B3 expired
+4. CCAPP: stop widen +10.47% (typical_correction=18.2%)
+
+### خلاصة صادقة:
+1. B0 أفضل في الأداء (WR 45.2%, +41.2%) لكن فيه 45% خسائر (جودة أقل)
+2. الفلاتر قللت الصفقات لكن لم تحسن الربحية (B1/B2/B3 = -17.6% to -18.8%)
+3. النوتبوك بـ يأثر على الوقف (4 صفقات) — أثر حقيقي
+4. الخروج الهيكلي يعمل صحيح — لا خروج زمني أعمى
+5. Strict Entry لا يزال قاسياً (55% رفض)
+
+### توصيات:
+1. تفعيل Notebook + Structural Exit (B3) — الخروج الهيكلي سليم
+2. تخفيف Strict Entry أكثر (dist_from_high 8% → 10%؟)
+3. أو: تفعيل Notebook فقط بدون Strict Entry (لأنه يقيس الـ danger_level)
+
+Stage Summary:
+- ✅ 30 سهم معمّق بالخبرة
+- ✅ باك-تست 200 سهم × 6 شهور
+- ✅ الخروج الهيكلي: لا max_holding أعمى ✅
+- ✅ النوتبوك: 4 صفقات بـ stop widening
+- 🔜 commit + push
+

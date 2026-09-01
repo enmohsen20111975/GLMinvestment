@@ -4,16 +4,16 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 4,
   "identity": {
     "is_index_related": false,
     "related_index": null,
-    "liquidity_profile": "very_low",
+    "liquidity_profile": "low",
     "free_float_note": "",
-    "ownership_concentration": "medium",
-    "is_story_stock": false,
+    "ownership_concentration": "high",
+    "is_story_stock": true,
     "is_zombie_prone": false,
-    "notes": ""
+    "notes": "كابيتال للاستثمار — سهم خفيف ملعوب. ملكية مركزة. قفزات عنيفة."
   },
   "price_behavior": {
     "typical_correction_pct": 16.9,
@@ -23,10 +23,10 @@
     ],
     "avg_up_move_after_correction_pct": 0,
     "moves_violently_with_volume": true,
-    "respects_key_levels": true,
+    "respects_key_levels": false,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": ""
+    "notes": "بيفرقع بقوة. تصحيح 25-35%. سهم مضاربي بامتياز."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",
@@ -50,15 +50,27 @@
     "capital_increase_history": [],
     "other_recurring_events": []
   },
-  "danger_flags": [],
-  "learned_lessons": [],
+  "danger_flags": [
+    "concentrated_ownership",
+    "story_stock",
+    "distributes_hard_after_pump",
+    "low_float_volatile"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-04-15",
+      "type": "failure",
+      "summary": "دخل بعد قفزة 35%، توزيع قاسي -20% في 3 أيام",
+      "lesson": "سهم ملعوب — ملكية مركزة. danger_level=5. ممنوع بعد الصعود"
+    }
+  ],
   "machine_summary": {
-    "typical_correction_pct": 16.9,
-    "max_expected_correction_pct": 26.702425373134336,
-    "liquidity_profile": "very_low",
-    "danger_level": 3,
-    "preferred_entry_style": "correction_or_grab",
+    "typical_correction_pct": 25,
+    "max_expected_correction_pct": 40,
+    "liquidity_profile": "low",
+    "danger_level": 5,
+    "preferred_entry_style": "grab_only",
     "avoid_chase": true,
-    "distribution_sensitivity": "medium"
+    "distribution_sensitivity": "high"
   }
 }

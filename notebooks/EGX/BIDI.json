@@ -4,7 +4,7 @@
   "market": "EGX",
   "sector": "",
   "last_updated": "2026-09-01",
-  "version": 2,
+  "version": 3,
   "identity": {
     "is_index_related": false,
     "related_index": null,
@@ -13,7 +13,7 @@
     "ownership_concentration": "low",
     "is_story_stock": false,
     "is_zombie_prone": false,
-    "notes": "بالتون للإستثمار — سهم مالي متوسط. بيتحرك مع القطاع."
+    "notes": "بالتون للإستثمار — مالي متوسط. بيتحرك مع القطاع."
   },
   "price_behavior": {
     "typical_correction_pct": 0,
@@ -26,7 +26,7 @@
     "respects_key_levels": true,
     "gap_behavior": "fills_most_gaps",
     "ramadan_behavior": "",
-    "notes": "تصحيحاته بسيطة (8-12%). سهم مستقر نسبياً."
+    "notes": "تصحيحاته بسيطة (8-12%)."
   },
   "liquidity_and_sector": {
     "liquidity_sensitivity": "medium",

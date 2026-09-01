@@ -31,7 +31,7 @@ sys.path.insert(0, str(PROJECT_ROOT / 'vps-service'))
 
 START_DATE = '2026-02-01'
 END_DATE = '2026-08-14'
-MAX_TICKERS = 50
+MAX_TICKERS = 200
 HOLDING_DAYS = 20  # max holding for simulation
 
 
@@ -269,10 +269,16 @@ def run_version(label, flags, tickers):
 
             result = simulate_trade(signal, future_highs, future_lows, future_closes)
 
-            # Apply Short Holding + Distribution Exit (B4)
-            if flags.get('V40_2_SHORT_HOLDING') == '1':
+            # Apply Structural Exit (B3) — الخروج الهيكلي الجديد
+            if flags.get('V40_2_STRUCTURAL_EXIT') == '1':
                 from analyzers.short_holding_exit import evaluate_force_exit
-                # Build price_history for holding check
+                # Get typical_correction from notebook
+                typical_corr = 0
+                if flags.get('V40_2_NOTEBOOK_CONTEXT') == '1':
+                    from analyzers.stock_notebook import get_machine_summary
+                    ms = get_machine_summary(ticker)
+                    typical_corr = ms.get('typical_correction_pct', 0)
+
                 sh_history = [{'close': c} for c in data['closes'][i+1:i+1+result['days']+1]]
                 end_date = data['dates'][min(i + result['days'], len(data['dates'])-1)]
                 end_price = future_closes[result['days']-1] if future_closes and len(future_closes) >= result['days'] else signal['entry']
@@ -285,13 +291,13 @@ def run_version(label, flags, tickers):
                     lows=future_lows[:result['days']],
                     closes=future_closes[:result['days']],
                     volumes=data['volumes'][i+1:i+1+result['days']+1],
+                    typical_correction_pct=typical_corr,
                 )
                 if force['should_exit']:
-                    # Override exit reason
-                    exit_price = future_closes[force['details'].get('time_elapsed', result['days'])-1] if future_closes else signal['entry']
+                    exit_price = future_closes[min(int(force['details'].get('days_held', result['days']))-1, len(future_closes)-1)] if future_closes else signal['entry']
                     result['exit_reason'] = force['exit_code']
                     result['return_pct'] = ((exit_price - signal['entry']) / signal['entry'] * 100)
-                    result['days'] = int(force['details'].get('time_elapsed', result['days']))
+                    result['days'] = int(force['details'].get('days_held', result['days']))
 
             trades.append({
                 'ticker': ticker,
@@ -358,19 +364,19 @@ def main():
     RUNS = [
         ('B0_baseline', {
             'V40_2_STRICT_ENTRY': '0', 'V40_2_NOTEBOOK_CONTEXT': '0',
-            'V40_2_SHORT_HOLDING': '0', 'V40_2_DISTRIBUTION_EXIT': '0',
+            'V40_2_STRUCTURAL_EXIT': '0',
         }),
-        ('B1_strict_entry', {
+        ('B1_strict_relaxed', {
             'V40_2_STRICT_ENTRY': '1', 'V40_2_NOTEBOOK_CONTEXT': '0',
-            'V40_2_SHORT_HOLDING': '0', 'V40_2_DISTRIBUTION_EXIT': '0',
+            'V40_2_STRUCTURAL_EXIT': '0',
         }),
         ('B2_notebook', {
             'V40_2_STRICT_ENTRY': '1', 'V40_2_NOTEBOOK_CONTEXT': '1',
-            'V40_2_SHORT_HOLDING': '0', 'V40_2_DISTRIBUTION_EXIT': '0',
+            'V40_2_STRUCTURAL_EXIT': '0',
         }),
-        ('B4_full_stack', {
+        ('B3_structural_exit', {
             'V40_2_STRICT_ENTRY': '1', 'V40_2_NOTEBOOK_CONTEXT': '1',
-            'V40_2_SHORT_HOLDING': '1', 'V40_2_DISTRIBUTION_EXIT': '1',
+            'V40_2_STRUCTURAL_EXIT': '1',
         }),
     ]
 
