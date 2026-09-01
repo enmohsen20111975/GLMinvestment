@@ -1597,6 +1597,39 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     except Exception as _news_err:
                         pass  # safe-by-design: لو news fetcher فشل → نكمّل
 
+            # ── STOCK NOTEBOOK CONTEXT (2026-09-01): طبقة معرفة دائمة ──
+            # توجيه المالك: "كل سهم يكون ليه ملف دائم فيه ملخص سلوكي + ملاحظات.
+            # النظام يقرأ النوتبوك الأول قبل القرار."
+            # الـ module: vps-service/analyzers/stock_notebook.py
+            # - danger_level >= 5 → continue (hard reject)
+            # - danger_level >= 4 → score -= 5
+            # - avoid_chase → دعم قرار الرفض (لو مع strict entry)
+            # Toggle: V40_2_NOTEBOOK_CONTEXT=1 (default OFF للـ backtest)
+            if os.environ.get('V40_2_NOTEBOOK_CONTEXT', '0') == '1':
+                try:
+                    from analyzers.stock_notebook import get_notebook_context_for_v402
+                    _nb_ctx = get_notebook_context_for_v402(ticker, market='EGX')
+                    if _nb_ctx['has_notebook']:
+                        # Hard reject لو danger_level = 5
+                        if _nb_ctx['should_reject']:
+                            print(f"[NOTEBOOK-REJECT] {ticker} on {scan_date}: "
+                                  f"danger_level=5 → رفض", flush=True)
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['notebook_reject'] = _nb_ctx['proof_string']
+                            continue  # hard reject
+
+                        # Apply score adjustment
+                        if _nb_ctx['score_adjustment'] != 0:
+                            print(f"[NOTEBOOK] {ticker}: {_nb_ctx['proof_string'][:80]}", flush=True)
+                            if isinstance(result.get('score'), (int, float)):
+                                result['score'] = max(0, min(100, result['score'] + _nb_ctx['score_adjustment']))
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['notebook_context'] = _nb_ctx['proof_string']
+                except Exception as _nb_err:
+                    pass  # safe-by-design: لو notebook فشل → نكمّل
+
             # ── STRICT ENTRY FILTER (2026-09-01): تراكم أو Liquidity Grab فقط ──
             # توجيه المالك: "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في
             # حالتين: تراكم حقيقي أو Liquidity Grab واضح. غير كده → رفض."
@@ -2281,6 +2314,56 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                     stop = last_price * 1.08
                 else:
                     continue  # NEUTRAL — skip
+
+                # ── CRYPTO STRICT ENTRY (2026-09-01): accumulation/grab فقط ──
+                # Toggle: V40_2_CRYPTO_STRICT_ENTRY=1 (default OFF)
+                if signal == 'BUY' and os.environ.get('V40_2_CRYPTO_STRICT_ENTRY', '0') == '1':
+                    try:
+                        from analyzers.crypto_strict_filters import evaluate_crypto_strict_entry
+                        # Build OHLC lists
+                        crypto_opens = [c[1] for c in ohlc] if len(ohlc[0]) > 4 else closes
+                        crypto_highs = [c[2] for c in ohlc] if len(ohlc[0]) > 4 else closes
+                        crypto_lows = [c[3] for c in ohlc] if len(ohlc[0]) > 4 else closes
+                        crypto_vols = [1.0] * len(closes)  # CoinGecko OHLC doesn't have volume
+                        _c_entry = evaluate_crypto_strict_entry(closes, crypto_highs, crypto_lows, crypto_vols, rsi=rsi)
+                        if _c_entry['decision'] == 'REJECT':
+                            print(f"  [CRYPTO-ENTRY-REJECT] {ticker}: {_c_entry['reason'][:60]}", flush=True)
+                            continue
+                    except Exception:
+                        pass  # safe-by-design
+
+                # ── CRYPTO DISCLOSURE IMPACT (2026-09-01): أحداث الكريبتو ──
+                # Toggle: V40_2_CRYPTO_DISCLOSURE_IMPACT=1 (default OFF)
+                if signal == 'BUY' and os.environ.get('V40_2_CRYPTO_DISCLOSURE_IMPACT', '0') == '1':
+                    try:
+                        from analyzers.crypto_disclosure_engine import get_crypto_disclosure_impact_for_symbol
+                        _c_disc = get_crypto_disclosure_impact_for_symbol(ticker)
+                        _c_disc_score = _c_disc.get('impact_score', 0)
+                        _c_disc_verdict = _c_disc.get('verdict', 'NEUTRAL')
+                        if _c_disc_verdict == 'VETO' and _c_disc_score <= -2:
+                            print(f"  [CRYPTO-DISCLOSURE-VETO] {ticker}: {_c_disc.get('reason_ar', '')} → رفض", flush=True)
+                            continue  # hard reject
+                        # Log boost/reduce (no score change in simple version)
+                        if _c_disc_score != 0:
+                            print(f"  [CRYPTO-DISCLOSURE-{_c_disc_verdict}] {ticker}: score={_c_disc_score:+d}", flush=True)
+                    except Exception:
+                        pass  # safe-by-design
+
+                # ── CRYPTO NEWS IMPACT (2026-09-01): أخبار الكريبتو ──
+                # Toggle: V40_2_CRYPTO_NEWS_IMPACT=1 (default OFF)
+                if signal == 'BUY' and os.environ.get('V40_2_CRYPTO_NEWS_IMPACT', '0') == '1':
+                    try:
+                        from analyzers.crypto_news_fetcher import get_crypto_news_with_impact
+                        _c_news = get_crypto_news_with_impact(ticker, max_news=3)
+                        _c_news_score = _c_news.get('overall_score', 0)
+                        _c_news_verdict = _c_news.get('overall_verdict', 'NEUTRAL')
+                        if _c_news_verdict == 'VETO' and _c_news_score <= -2:
+                            print(f"  [CRYPTO-NEWS-VETO] {ticker}: {_c_news.get('reason', '')} → رفض", flush=True)
+                            continue  # hard reject
+                        if _c_news_score != 0:
+                            print(f"  [CRYPTO-NEWS-{_c_news_verdict}] {ticker}: score={_c_news_score:+d} (news={_c_news.get('news_count', 0)})", flush=True)
+                    except Exception:
+                        pass  # safe-by-design
 
                 # تخزين التوقع
                 if tracker and not dry_run:

@@ -14682,3 +14682,122 @@ Stage Summary:
 - 🔜 تكامل في run_crypto_generator
 - 🔜 commit + push
 
+
+
+---
+Task ID: CRYPTO-FULL-PHASE-NOTEBOOKS-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: مرحلة الكريبتو الكاملة + نظام Stock Notebooks
+
+Work Log:
+
+### Phase 0: استرجاع المشروع بعد sandbox reset
+- الساندبوكس اتعمل له reset (القاعدة 26 — SANDBOX-RESET-SAVEREGUARD)
+- استرجاع المشروع من GitHub لـ /home/z/GLMinvestment/
+- كل الشغل كان آمن على GitHub (آخر commit 72a07e1e)
+
+### Phase 1: بناء crypto_short_holding_exit.py (290 LOC)
+تطبيق القواعد 38 + 39 على الكريبتو:
+- should_force_exit_by_time() بالساعات (24/7):
+  - max_holding_hours = 72 (3 أيام — vs 7 أيام stocks)
+  - no_move_hours = 24 (≤+5% — vs +3% stocks)
+  - early_drop = 24h (≤-8% — vs -5% stocks)
+- detect_crypto_distribution():
+  - upper_wick ≥ 1.2× body (vs 1.0× stocks)
+  - vol ≥ 2.0× (vs 1.8× stocks)
+  - near_high ≤ 12% (vs 8% stocks)
+  - RSI ≥ 72 (vs 65 stocks)
+- evaluate_crypto_force_exit(): priority 1=distribution > 2=max_holding > 3=no_move > 4=early_drop
+- اختبارات: 7/7 نجح
+
+### Phase 2: بناء crypto_news_fetcher.py (290 LOC)
+تطبيق القاعدة 40 على الكريبتو:
+- fetch_crypto_news(): DuckDuckGo HTML search (مجاني + شغّال)
+- analyze_crypto_sentiment(): keyword-based (crypto-specific):
+  - +2: bullish, pump, surge, ETF approval, institutional adoption
+  - +1: gains, rise, growth
+  - -1: decline, drop, correction
+  - -2: bearish, dump, crash, hack, exploit, rug pull, SEC lawsuit
+- 15 coin mapping (BTC, ETH, SOL, BNB, XRP, ADA, DOGE, AVAX, DOT, LINK, MATIC, LTC, TRX, UNI, ATOM)
+- get_crypto_news_with_impact(): للـ V40.2 integration
+- اختبارات: 6/6 نجح (including live news fetch for BTC)
+
+### Phase 3: بناء crypto_disclosure_engine.py (430 LOC)
+تطبيق القاعدة 36 على الكريبتو:
+- 10 أنواع أحداث:
+  - VETO (-2): HACK_EXPLOIT, DELISTING, SEC_LAWSUIT
+  - REDUCE (-1): TOKEN_UNLOCK, WHALE_DUMP, LIQUIDATION
+  - NEUTRAL (0): NETWORK_UPGRADE
+  - BOOST (+1): PARTNERSHIP, NEW_LISTING
+  - BOOST_STRONG (+2): ETF_APPROVAL
+- classify_crypto_event(): keyword matching
+- store_crypto_disclosure(): dedup في crypto_disclosures.db
+- get_crypto_disclosure_impact_for_symbol(): للـ V40.2 integration
+- اختبارات: 8/8 نجح
+
+### Phase 4: بناء stock_notebook.py (نظام النوتبوك — 400 LOC)
+تطبيق برومبت المالك: "طبقة معرفة دائمة لكل سهم"
+- بنية: notebooks/EGX/{SYMBOL}.json
+- الدوال الأساسية:
+  1. load_stock_notebook(symbol) → dict | None
+  2. get_machine_summary(symbol) → machine_summary أو defaults
+  3. update_stock_notebook(symbol, updates) → تحديث جزئي آمن
+  4. ensure_notebook_exists(symbol) → إنشاء بالقيم الافتراضية
+  5. add_lesson(symbol, lesson) → إضافة درس (max 10)
+  6. get_notebook_context_for_v402(symbol) → للـ V40.2 integration
+- الهيكل الكامل: identity, price_behavior, liquidity_and_sector, events_behavior,
+  danger_flags, learned_lessons, machine_summary
+- التأثير على V40.2:
+  - danger_level 5 → hard reject
+  - danger_level 4 → score -= 5
+  - avoid_chase → دعم قرار الرفض
+  - typical_correction_pct → سياق للوقف
+- اختبارات: 8/8 نجح
+
+### Phase 5: التكامل في V40.2
+دمج NOTEBOOK_CONTEXT في v40_2_daily_generator.py (السطر 1600-1631):
+- V40_2_NOTEBOOK_CONTEXT=1 (default OFF)
+- قبل STRICT_ENTRY (النوتبوك بـ يقرأ الأول)
+- danger_level 5 → continue (hard reject)
+- danger_level 4 → score -= 5
+- proof: '📖 NOTEBOOK: danger_level=4 (تقليل -5) | avoid_chase=True'
+
+دمج CRYPTO modules في run_crypto_generator (السطر 2318-2366):
+- V40_2_CRYPTO_STRICT_ENTRY=1 → accumulation/grab فقط
+- V40_2_CRYPTO_DISCLOSURE_IMPACT=1 → أحداث الكريبتو
+- V40_2_CRYPTO_NEWS_IMPACT=1 → أخبار الكريبتو
+- VETO → continue (hard reject)
+- كلها safe-by-design
+
+### Phase 6: الالتزام بالدستور
+- Rule 20: Python=العقل (كل المنطق في Python) ✅
+- Rule 27: NO-FAKE-DATA (كل test cases واقعية) ✅
+- Rule 29: UNIFIED-SYSTEM (كل module مترابط) ✅
+- Rule 36: Disclosure Engine (crypto version) ✅
+- Rule 37: Strict Entry (crypto version) ✅
+- Rule 38: Short Holding (crypto version) ✅
+- Rule 39: Distribution Exit (crypto version) ✅
+- Rule 40: News Fetcher (crypto version) ✅
+- Stock Notebooks: طبقة فوقية (مش بديل) ✅
+
+### Phase 7: كل الـ feature flags (9 flags كاملة)
+1. V40_2_NEWS_IMPACT=0 (default OFF)
+2. V40_2_STRICT_ENTRY=0
+3. V40_2_DISCLOSURE_IMPACT=0
+4. V40_2_SHORT_HOLDING=0
+5. V40_2_DISTRIBUTION_EXIT=0
+6. V40_2_NOTEBOOK_CONTEXT=0 (جديد)
+7. V40_2_CRYPTO_STRICT_ENTRY=0 (جديد)
+8. V40_2_CRYPTO_DISCLOSURE_IMPACT=0 (جديد)
+9. V40_2_CRYPTO_NEWS_IMPACT=0 (جديد)
+
+Stage Summary:
+- ✅ استرجاع المشروع بعد sandbox reset
+- ✅ بناء crypto_short_holding_exit.py (7/7 اختبار نجح)
+- ✅ بناء crypto_news_fetcher.py (6/6 اختبار نجح + live BTC news)
+- ✅ بناء crypto_disclosure_engine.py (8/8 اختبار نجح)
+- ✅ بناء stock_notebook.py (8/8 اختبار نجح)
+- ✅ تكامل في V40.2 + run_crypto_generator
+- ✅ 9 feature flags كلها مقفولة افتراضياً
+- 🔜 commit + push
+

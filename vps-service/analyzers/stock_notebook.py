@@ -1,424 +1,481 @@
 #!/usr/bin/env python3
 """
-Stock Notebook — دفتر ملاحظات المحلل
-=====================================
-الذاكرة الدائمة للنظام. بدل ما نحسب كل حاجة من جديد كل مرة، النوتبوك بـ يـ accumulate
-ملاحظات الأسهم + القطاعات + الدروس المستفادة.
+Stock Notebook System — نظام نوتبوك الأسهم
+============================================
+طبقة معرفة دائمة لكل سهم.
 
-المفهوم (زي ورقة المحلل):
-  - اكتب ملاحظة مرة واحدة (مش كل مرة)
-  - لو مهمة → احتفظ بيها
-  - لو خدشcratch → امسحها
-  - كل فترة نظّف القديم
-  - لما تحتاج معلومة → اقفلها من النوتبوك بدل ما تحسبها تاني
+الرؤية (من توجيه المالك):
+  كل سهم يكون ليه ملف دائم (نوتبوك) فيه ملخص سلوكي وملاحظات مستفادة من تاريخه.
+  الملف ده بيتكتب مرة ويتحدث فقط لما يحصل شيء مهم جديد.
+  لما النظام ييجي يحلل السهم، يقرأ النوتبوك الأول وياخد منه سياق ثابت.
 
-الاستخدام:
-  from analyzers.stock_notebook import add_observation, get_stock_notes, add_sector_note
-  
-  add_observation('COMI', 'generated BUY signal entry=18.5 target=20 stop=17.5',
-                  source='v40_2', signal='BUY')
-  notes = get_stock_notes('COMI')  # كل ملاحظات COMI
-  add_sector_note('Finance', 'القطاع صاعد', avg_change='+1.5%')
+ده مش بديل للمحركات. ده طبقة فوقية بتدي استقرار وذكاء سياقي.
 
-الـ notebook بـ يتكتب من:
-  1. V40.2 daily_generator: عند توليد توقع
-  2. daily_closer: عند إغلاق صفقة
-  3. V68/V72/V73 filters: عند رفض/accept
-  4. daily_gainer_scan: عند اكتشاف صاعد
-  5. hot_candidate_detector: عند اكتشاف سهم ساخن
+البنية:
+  notebooks/
+  └── EGX/
+      ├── COMI.json
+      ├── HRHO.json
+      └── ... (ملف لكل سهم)
+
+الـ module بـ يوفّر:
+  1. load_stock_notebook(symbol) — تحميل النوتبوك كامل
+  2. get_machine_summary(symbol) — جيب machine_summary فقط (للـ V40.2)
+  3. update_stock_notebook(symbol, updates) — تحديث جزئي آمن
+  4. ensure_notebook_exists(symbol) — إنشاء ملف أساسي لو مش موجود
+  5. add_lesson(symbol, lesson) — إضافة درس جديد
+
+التكامل في V40.2:
+  - في بداية مسار التحليل، يحمل النوتبوك
+  - يستخدم machine_summary لتعديل القرار:
+    - danger_level >= 4 → تقليل الحجم
+    - typical_correction_pct → مراجعة مسافة الوقف
+    - avoid_chase → دعم قرار الرفض
 
 Author: Z.ai Code
 Date: 2026-09-01
 """
 
-import json
+from __future__ import annotations
 import os
+import json
+import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, List, Optional
-import threading
+from typing import Dict, Any, Optional, List
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-NOTEBOOK_PATH = PROJECT_ROOT / 'data' / 'stock_notebook.json'
+NOTEBOOKS_DIR = PROJECT_ROOT / 'notebooks'
 
-# Thread lock for concurrent writes (daily_closer + V40.2 might run together)
-_lock = threading.Lock()
-
-MAX_OBSERVATIONS_PER_STOCK = 50  # نظّف بعد 50 ملاحظة (احتفظ بآخر 50)
+logger = logging.getLogger(__name__)
 
 
-def _load_notebook() -> Dict[str, Any]:
-    """حمّل النوتبوك (لو مش موجود → أنشئ فارغ)."""
-    if not NOTEBOOK_PATH.exists():
-        return _empty_notebook()
-    try:
-        with open(NOTEBOOK_PATH, 'r', encoding='utf-8') as f:
-            nb = json.load(f)
-        # Validate structure
-        if 'stocks' not in nb:
-            nb['stocks'] = {}
-        if 'sector_notes' not in nb:
-            nb['sector_notes'] = {}
-        if 'lessons_learned' not in nb:
-            nb['lessons_learned'] = []
-        if '_meta' not in nb:
-            nb['_meta'] = _empty_notebook()['_meta']
-        return nb
-    except Exception:
-        return _empty_notebook()
+# ═══════════════════════════════════════════════════════════════════════
+# 1. Default Values (آمنة — لو الملف مش موجود)
+# ═══════════════════════════════════════════════════════════════════════
 
+DEFAULT_MACHINE_SUMMARY = {
+    'typical_correction_pct': 0,
+    'max_expected_correction_pct': 0,
+    'liquidity_profile': 'medium',
+    'danger_level': 1,
+    'preferred_entry_style': 'correction_or_grab',
+    'avoid_chase': True,
+    'distribution_sensitivity': 'medium',
+}
 
-def _empty_notebook() -> Dict[str, Any]:
-    """نوتبوك فارغ بالهيكل الصحيح."""
-    return {
-        '_meta': {
-            'description': 'دفتر ملاحظات الأسهم — ذاكرة دائمة للمحللين',
-            'version': '2.0',
-            'last_updated': datetime.now().strftime('%Y-%m-%d'),
-            'rules': [
-                'الملف ده ثابت — بيتعدّل عليه مش بيتمسح',
-                'كل سهم له entry خاص بكل الملاحظات التراكمية',
-                'التحديث بيتم من V40.2 + daily_closer + الأدمن',
-                'كل ملاحظة عليها تاريخ + مصدر (v40_2/closer/v68/v72/v73/analyst)',
-                'نظّف القديم كل فترة (احتفظ بآخر 50 ملاحظة لكل سهم)',
-            ],
+DEFAULT_NOTEBOOK = {
+    'symbol': '',
+    'name_ar': '',
+    'market': 'EGX',
+    'sector': '',
+    'last_updated': '',
+    'version': 1,
+    'identity': {
+        'is_index_related': False,
+        'related_index': None,
+        'liquidity_profile': 'medium',
+        'free_float_note': '',
+        'ownership_concentration': 'medium',
+        'is_story_stock': False,
+        'is_zombie_prone': False,
+        'notes': '',
+    },
+    'price_behavior': {
+        'typical_correction_pct': 0,
+        'typical_correction_range': [0, 0],
+        'avg_up_move_after_correction_pct': 0,
+        'moves_violently_with_volume': False,
+        'respects_key_levels': True,
+        'gap_behavior': 'fills_most_gaps',
+        'ramadan_behavior': '',
+        'notes': '',
+    },
+    'liquidity_and_sector': {
+        'liquidity_sensitivity': 'medium',
+        'leads_sector': False,
+        'follows_sector': True,
+        'follows_specific_stock': None,
+        'sector_beta_note': '',
+        'notes': '',
+    },
+    'events_behavior': {
+        'dividend': {
+            'typical_ex_date_drop_pct': 0,
+            'drop_range': [0, 0],
+            'behavior_before_ex': '',
+            'notes': '',
         },
-        'stocks': {},
-        'sector_notes': {},
-        'lessons_learned': [],
-    }
+        'rights_issue_history': [],
+        'capital_increase_history': [],
+        'other_recurring_events': [],
+    },
+    'danger_flags': [],
+    'learned_lessons': [],
+    'machine_summary': DEFAULT_MACHINE_SUMMARY.copy(),
+}
 
 
-def _save_notebook(nb: Dict[str, Any]) -> None:
-    """احفظ النوتبوك (atomic write)."""
-    nb['_meta']['last_updated'] = datetime.now().strftime('%Y-%m-%d')
-    # Atomic write: write to temp then rename
-    tmp_path = str(NOTEBOOK_PATH) + '.tmp'
-    with open(tmp_path, 'w', encoding='utf-8') as f:
-        json.dump(nb, f, indent=2, ensure_ascii=False)
-    os.rename(tmp_path, NOTEBOOK_PATH)
+# ═══════════════════════════════════════════════════════════════════════
+# 2. Core Functions
+# ═══════════════════════════════════════════════════════════════════════
+
+def _get_notebook_path(symbol: str, market: str = 'EGX') -> Path:
+    """جيب مسار ملف النوتبوك."""
+    return NOTEBOOKS_DIR / market / f'{symbol.upper()}.json'
 
 
-def _ensure_stock_entry(nb: Dict, ticker: str, name: str = '',
-                        sector: str = '') -> Dict:
-    """تأكد إن السهم له entry في النوتبوك."""
-    if ticker not in nb['stocks']:
-        nb['stocks'][ticker] = {
-            'name': name,
-            'sector': sector,
-            'observations': [],
-            'status': '',
-            'trend': '',
-            'maker_activity': '',
-            'sector_heat': sector,
-            'last_entry_price': 0,
-            'last_target': 0,
-            'last_result': '',
-        }
-    if name and not nb['stocks'][ticker].get('name'):
-        nb['stocks'][ticker]['name'] = name
-    if sector and not nb['stocks'][ticker].get('sector'):
-        nb['stocks'][ticker]['sector'] = sector
-    return nb['stocks'][ticker]
-
-
-def add_observation(
-    ticker: str,
-    note: str,
-    source: str = 'system',
-    signal: str = '',
-    confidence: int = 0,
-    name: str = '',
-    sector: str = '',
-    extra: Optional[Dict] = None
-) -> bool:
+def load_stock_notebook(symbol: str, market: str = 'EGX') -> Optional[Dict[str, Any]]:
     """
-    أضف ملاحظة لسهم في النوتبوك.
+    تحميل نوتبوك سهم كامل.
 
     Args:
-        ticker: رمز السهم (مثلاً COMI)
-        note: نص الملاحظة
-        source: مصدر الملاحظة (v40_2/closer/v68/v72/v73/analyst/gainer_scan)
-        signal: الإشارة (BUY/SELL/REJECT/CLOSED/HIT_TARGET/STOPPED)
-        confidence: مستوى الثقة (0-100)
-        name: اسم الشركة (اختياري)
-        sector: القطاع (اختياري)
-        extra: بيانات إضافية (dict)
+        symbol: رمز السهم (COMI)
+        market: السوق (EGX default)
 
     Returns:
-        True لو اتسجلت، False لو فشل
+        dict كامل أو None لو الملف مش موجود
     """
-    with _lock:
-        try:
-            nb = _load_notebook()
-            stock = _ensure_stock_entry(nb, ticker, name, sector)
+    path = _get_notebook_path(symbol, market)
+    if not path.exists():
+        return None
 
-            obs = {
-                'date': datetime.now().strftime('%Y-%m-%d %H:%M'),
-                'source': source,
-                'note': note,
-                'signal': signal,
-                'confidence': confidence,
-            }
-            if extra:
-                obs['extra'] = extra
-
-            stock['observations'].append(obs)
-
-            # نظّف: احتفظ بآخر MAX_OBSERVATIONS_PER_STOCK ملاحظة
-            if len(stock['observations']) > MAX_OBSERVATIONS_PER_STOCK:
-                stock['observations'] = stock['observations'][-MAX_OBSERVATIONS_PER_STOCK:]
-
-            # حدّث الحالة لو فيه signal
-            if signal == 'BUY' or signal == 'STRONG_BUY':
-                stock['status'] = 'في توقع نشط'
-            elif signal == 'CLOSED':
-                stock['status'] = 'مقفل'
-            elif signal == 'HIT_TARGET':
-                stock['status'] = 'حقق الهدف'
-                stock['last_result'] = 'فوز'
-            elif signal == 'STOPPED':
-                stock['status'] = 'ضرب الوقف'
-                stock['last_result'] = 'خسارة'
-            elif signal == 'REJECT':
-                pass  # ملاحظة رفض بس بدون تغيير الحالة
-
-            _save_notebook(nb)
-            return True
-        except Exception as e:
-            print(f"[NOTEBOOK] خطأ في add_observation: {e}", flush=True)
-            return False
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.warning(f"Failed to load notebook {path}: {e}")
+        return None
 
 
-def add_prediction_observation(
-    ticker: str, signal: str, entry: float, target: float,
-    stop: float, score: float, evidence: int, r_multiple: float,
-    target_2: float = 0, source: str = 'v40_2', sector: str = '',
-    filters_triggered: Optional[List[str]] = None
-) -> bool:
+def get_machine_summary(symbol: str, market: str = 'EGX') -> Dict[str, Any]:
     """
-    اكتب ملاحظة توقع كامل (من V40.2).
-    ده shortcut عشان كل توقع يتسجل بشكل موحد.
-    """
-    note = (f"توقع {signal}: entry={entry:.2f} target={target:.2f} "
-            f"stop={stop:.2f} score={score:.0f} evidence={evidence}/6 R={r_multiple:.2f}")
-    if target_2 > 0:
-        note += f" target_2={target_2:.2f}"
-    if filters_triggered:
-        note += f" | filters: {', '.join(filters_triggered)}"
+    جيب machine_summary فقط (للـ V40.2 integration).
 
-    return add_observation(
-        ticker=ticker,
-        note=note,
-        source=source,
-        signal=signal,
-        confidence=int(score),
-        sector=sector,
-        extra={
-            'entry_price': entry,
-            'target_price': target,
-            'stop_loss': stop,
-            'r_multiple': r_multiple,
-            'evidence_count': evidence,
-            'filters': filters_triggered or [],
+    Returns:
+        machine_summary dict، أو DEFAULT_MACHINE_SUMMARY لو الملف مش موجود.
+    """
+    notebook = load_stock_notebook(symbol, market)
+    if not notebook:
+        return DEFAULT_MACHINE_SUMMARY.copy()
+
+    summary = notebook.get('machine_summary', {})
+    # Merge with defaults (ensure all keys exist)
+    result = DEFAULT_MACHINE_SUMMARY.copy()
+    result.update(summary)
+    return result
+
+
+def ensure_notebook_exists(symbol: str, market: str = 'EGX',
+                             name_ar: str = '') -> Dict[str, Any]:
+    """
+    تأكد إن النوتبوك موجود — لو مش موجود، أنشئه بالقيم الافتراضية.
+
+    Args:
+        symbol: رمز السهم
+        market: السوق
+        name_ar: الاسم العربي (optional)
+
+    Returns:
+        الـ notebook (الموجود أو اللي اتعمل)
+    """
+    notebook = load_stock_notebook(symbol, market)
+    if notebook is not None:
+        return notebook
+
+    # Create new notebook with defaults
+    path = _get_notebook_path(symbol, market)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    new_notebook = DEFAULT_NOTEBOOK.copy()
+    new_notebook['symbol'] = symbol.upper()
+    new_notebook['name_ar'] = name_ar or symbol.upper()
+    new_notebook['market'] = market
+    new_notebook['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+
+    # Deep copy nested dicts (JSON copy)
+    new_notebook = json.loads(json.dumps(new_notebook))
+
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(new_notebook, f, ensure_ascii=False, indent=2)
+        logger.info(f"Created notebook: {path}")
+    except Exception as e:
+        logger.error(f"Failed to create notebook {path}: {e}")
+
+    return new_notebook
+
+
+def update_stock_notebook(symbol: str, updates: Dict[str, Any],
+                            market: str = 'EGX') -> bool:
+    """
+    تحديث جزئي آمن للنوتبوك.
+
+    Args:
+        symbol: رمز السهم
+        updates: dict بالحقول اللي عاوز تحدّثها
+                 (مثلاً: {'machine_summary': {'danger_level': 3}, 'price_behavior': {...}})
+        market: السوق
+
+    Returns:
+        True لو نجح التحديث
+    """
+    # Ensure notebook exists
+    notebook = ensure_notebook_exists(symbol, market)
+
+    # Apply updates (recursive merge for nested dicts)
+    def _deep_merge(target: dict, source: dict):
+        for key, value in source.items():
+            if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+                _deep_merge(target[key], value)
+            else:
+                target[key] = value
+
+    _deep_merge(notebook, updates)
+
+    # Update last_updated
+    notebook['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+    notebook['version'] = notebook.get('version', 1) + 1
+
+    # Save
+    path = _get_notebook_path(symbol, market)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(notebook, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to update notebook {path}: {e}")
+        return False
+
+
+def add_lesson(symbol: str, lesson: Dict[str, Any],
+               market: str = 'EGX', max_lessons: int = 10) -> bool:
+    """
+    إضافة درس جديد للنوتبوك.
+
+    Args:
+        symbol: رمز السهم
+        lesson: {date, type (success/failure), summary, lesson}
+        market: السوق
+        max_lessons: حد أقصى لعدد الدروس (الأحدث أولاً)
+
+    Returns:
+        True لو نجح
+    """
+    notebook = ensure_notebook_exists(symbol, market)
+
+    # Add lesson at the beginning (newest first)
+    if 'learned_lessons' not in notebook:
+        notebook['learned_lessons'] = []
+
+    # Ensure lesson has required fields
+    lesson.setdefault('date', datetime.now().strftime('%Y-%m-%d'))
+    lesson.setdefault('type', 'info')
+    lesson.setdefault('summary', '')
+    lesson.setdefault('lesson', '')
+
+    notebook['learned_lessons'].insert(0, lesson)
+
+    # Trim to max_lessons
+    if len(notebook['learned_lessons']) > max_lessons:
+        notebook['learned_lessons'] = notebook['learned_lessons'][:max_lessons]
+
+    # Update last_updated
+    notebook['last_updated'] = datetime.now().strftime('%Y-%m-%d')
+    notebook['version'] = notebook.get('version', 1) + 1
+
+    # Save
+    path = _get_notebook_path(symbol, market)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(notebook, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to add lesson to {path}: {e}")
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 3. V40.2 Integration Helper
+# ═══════════════════════════════════════════════════════════════════════
+
+def get_notebook_context_for_v402(symbol: str, market: str = 'EGX') -> Dict[str, Any]:
+    """
+    جيب سياق النوتبوك للـ V40.2 (قرار + proofs).
+
+    التأثير على القرار:
+      - danger_level >= 4 → تقليل الحجم (score -= 5)
+      - danger_level >= 5 → رفض (hard reject لو flag مفعّل)
+      - avoid_chase=True + السهم في حالة مطاردة → دعم الرفض
+      - typical_correction_pct أكبر من مسافة الوقف → تحذير
+
+    Returns:
+        {
+            'has_notebook': bool,
+            'machine_summary': dict,
+            'score_adjustment': int (تأثير على V40.2 score),
+            'proof_string': str,
+            'should_reject': bool (danger_level 5),
+            'danger_flags': list,
         }
-    )
-
-
-def add_exit_observation(
-    ticker: str, exit_type: str, entry_price: float, exit_price: float,
-    return_pct: float, holding_days: int, exit_reason: str = '',
-    source: str = 'daily_closer'
-) -> bool:
     """
-    اكتب ملاحظة إغلاق صفقة (من daily_closer).
-    """
-    is_win = return_pct > 0
-    signal = 'HIT_TARGET' if 'target' in exit_type.lower() else (
-        'STOPPED' if 'stop' in exit_type.lower() else 'CLOSED'
-    )
+    summary = get_machine_summary(symbol, market)
+    notebook = load_stock_notebook(symbol, market)
 
-    note = (f"إغلاق {exit_type}: entry={entry_price:.2f} exit={exit_price:.2f} "
-            f"return={return_pct:+.1f}% days={holding_days}")
-    if exit_reason:
-        note += f" | {exit_reason}"
-
-    # حدّث last_entry_price و last_target
-    with _lock:
-        try:
-            nb = _load_notebook()
-            if ticker in nb['stocks']:
-                nb['stocks'][ticker]['last_entry_price'] = entry_price
-                nb['stocks'][ticker]['last_result'] = 'فوز' if is_win else 'خسارة'
-            _save_notebook(nb)
-        except Exception:
-            pass
-
-    return add_observation(
-        ticker=ticker,
-        note=note,
-        source=source,
-        signal=signal,
-        confidence=100 if is_win else 0,
-        extra={
-            'exit_price': exit_price,
-            'return_pct': return_pct,
-            'holding_days': holding_days,
-            'is_win': is_win,
-            'exit_reason': exit_reason,
+    if not notebook:
+        return {
+            'has_notebook': False,
+            'machine_summary': summary,
+            'score_adjustment': 0,
+            'proof_string': '',
+            'should_reject': False,
+            'danger_flags': [],
         }
-    )
 
+    danger_level = summary.get('danger_level', 1)
+    danger_flags = notebook.get('danger_flags', [])
+    avoid_chase = summary.get('avoid_chase', True)
+    typical_correction = summary.get('typical_correction_pct', 0)
 
-def add_filter_rejection(
-    ticker: str, filter_name: str, reason: str, source: str = 'v68',
-    sector: str = ''
-) -> bool:
-    """
-    اكتب ملاحظة رفض فلتر (V68 dirty_dist / V72 hidden_dist / V73 desert / etc).
-    """
-    note = f"رفض {filter_name}: {reason}"
-    return add_observation(
-        ticker=ticker,
-        note=note,
-        source=source,
-        signal='REJECT',
-        confidence=0,
-        sector=sector,
-        extra={'filter': filter_name, 'reason': reason}
-    )
+    # Calculate score adjustment
+    score_adjustment = 0
+    proofs = []
 
+    if danger_level >= 5:
+        proofs.append(f'🚨 danger_level={danger_level} (رفض)')
+    elif danger_level >= 4:
+        score_adjustment -= 5
+        proofs.append(f'⚠️ danger_level={danger_level} (تقليل -5)')
 
-def add_sector_note(
-    sector: str, status: str, avg_change: str, notes: str,
-    source: str = 'system'
-) -> bool:
-    """
-    أضف/حدّث ملاحظة قطاع.
-    """
-    with _lock:
-        try:
-            nb = _load_notebook()
-            nb['sector_notes'][sector] = {
-                'status': status,
-                'avg_change': avg_change,
-                'notes': notes,
-                'last_updated': datetime.now().strftime('%Y-%m-%d'),
-                'source': source,
-            }
-            _save_notebook(nb)
-            return True
-        except Exception as e:
-            print(f"[NOTEBOOK] خطأ في add_sector_note: {e}", flush=True)
-            return False
+    if danger_flags:
+        proofs.append(f'خطر: {", ".join(danger_flags[:3])}')
 
+    if avoid_chase:
+        proofs.append('avoid_chase=True')
 
-def add_lesson(
-    lesson: str, impact: str = 'medium', action: str = '',
-    ticker: str = '', source: str = 'system'
-) -> bool:
-    """
-    أضف درس مستفاد.
-    """
-    with _lock:
-        try:
-            nb = _load_notebook()
-            nb['lessons_learned'].append({
-                'date': datetime.now().strftime('%Y-%m-%d'),
-                'ticker': ticker,
-                'lesson': lesson,
-                'impact': impact,
-                'action': action,
-                'source': source,
-            })
-            # نظّف: احتفظ بآخر 100 درس
-            if len(nb['lessons_learned']) > 100:
-                nb['lessons_learned'] = nb['lessons_learned'][-100:]
-            _save_notebook(nb)
-            return True
-        except Exception as e:
-            print(f"[NOTEBOOK] خطأ في add_lesson: {e}", flush=True)
-            return False
+    if typical_correction > 0:
+        proofs.append(f'correction_typical={typical_correction}%')
 
+    proof_string = f'📖 NOTEBOOK: {" | ".join(proofs)}' if proofs else ''
 
-def get_stock_notes(ticker: str) -> Optional[Dict]:
-    """جيب كل ملاحظات سهم."""
-    nb = _load_notebook()
-    return nb['stocks'].get(ticker)
-
-
-def get_sector_notes(sector: str) -> Optional[Dict]:
-    """جيب ملاحظات قطاع."""
-    nb = _load_notebook()
-    return nb['sector_notes'].get(sector)
-
-
-def get_all_stocks() -> Dict:
-    """جيب كل الأسهم في النوتبوك."""
-    nb = _load_notebook()
-    return nb['stocks']
-
-
-def get_lessons(limit: int = 20) -> List[Dict]:
-    """جيب آخر N درس."""
-    nb = _load_notebook()
-    return nb['lessons_learned'][-limit:]
-
-
-def cleanup_old_observations(days_to_keep: int = 90) -> int:
-    """
-    نظّف الملاحظات القديمة (أقدم من days_to_keep يوم).
-    Returns: عدد الملاحظات اللي اتمسحت.
-    """
-    from datetime import timedelta
-    cutoff = (datetime.now() - timedelta(days=days_to_keep)).strftime('%Y-%m-%d')
-    removed = 0
-    with _lock:
-        try:
-            nb = _load_notebook()
-            for ticker, stock in nb['stocks'].items():
-                original = len(stock.get('observations', []))
-                stock['observations'] = [
-                    o for o in stock.get('observations', [])
-                    if o.get('date', '')[:10] >= cutoff
-                ]
-                removed += original - len(stock['observations'])
-            _save_notebook(nb)
-            return removed
-        except Exception as e:
-            print(f"[NOTEBOOK] خطأ في cleanup: {e}", flush=True)
-            return 0
-
-
-def get_notebook_stats() -> Dict:
-    """إحصائيات النوتبوك."""
-    nb = _load_notebook()
-    total_obs = sum(len(s.get('observations', [])) for s in nb['stocks'].values())
     return {
-        'total_stocks': len(nb['stocks']),
-        'total_observations': total_obs,
-        'total_sectors': len(nb['sector_notes']),
-        'total_lessons': len(nb['lessons_learned']),
-        'last_updated': nb['_meta'].get('last_updated', '?'),
-        'notebook_path': str(NOTEBOOK_PATH),
+        'has_notebook': True,
+        'machine_summary': summary,
+        'score_adjustment': score_adjustment,
+        'proof_string': proof_string,
+        'should_reject': danger_level >= 5,
+        'danger_flags': danger_flags,
+        'typical_correction_pct': typical_correction,
+        'avoid_chase': avoid_chase,
     }
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# 4. Self-test
+# ═══════════════════════════════════════════════════════════════════════
+
 if __name__ == '__main__':
-    print("🧪 Stock Notebook — Self Test")
-    print("=" * 50)
-    print(f"Notebook path: {NOTEBOOK_PATH}")
-    print(f"Stats: {get_notebook_stats()}")
+    print("🧪 Stock Notebook System — Self Test")
+    print("=" * 70)
+    print(f"Notebooks dir: {NOTEBOOKS_DIR}")
     print()
-    # Test add observation
-    ok = add_observation('TEST', 'ملاحظة تجريبية للنوتبوك', source='self_test', signal='BUY')
-    print(f"Add observation: {ok}")
-    notes = get_stock_notes('TEST')
-    if notes:
-        print(f"TEST stock observations: {len(notes['observations'])}")
-        print(f"Last: {notes['observations'][-1]['note']}")
-    # Cleanup test
-    removed = cleanup_old_observations(days_to_keep=0)
-    print(f"Cleanup (0 days): removed {removed} old observations")
-    print()
-    print("✅ Stock Notebook ready for V40.2 + daily_closer integration")
+
+    # Test 1: Load non-existent notebook → None
+    print("=== Test 1: تحميل سهم مش موجود → None ===")
+    r = load_stock_notebook('NONEXISTENT')
+    print(f"  Result: {r}")
+    assert r is None
+    print("  ✅ PASS")
+
+    # Test 2: get_machine_summary for non-existent → defaults
+    print("\n=== Test 2: get_machine_summary لسهم مش موجود → defaults ===")
+    r = get_machine_summary('NONEXISTENT')
+    print(f"  danger_level: {r['danger_level']}")
+    print(f"  avoid_chase: {r['avoid_chase']}")
+    assert r['danger_level'] == 1
+    assert r['avoid_chase'] == True
+    print("  ✅ PASS (قيم آمنة)")
+
+    # Test 3: ensure_notebook_exists → create new
+    print("\n=== Test 3: ensure_notebook_exists → إنشاء جديد ===")
+    nb = ensure_notebook_exists('TESTCO', name_ar='شركة تجريبية')
+    print(f"  symbol: {nb['symbol']}")
+    print(f"  name_ar: {nb['name_ar']}")
+    print(f"  danger_level: {nb['machine_summary']['danger_level']}")
+    assert nb['symbol'] == 'TESTCO'
+    assert nb['name_ar'] == 'شركة تجريبية'
+    print("  ✅ PASS")
+
+    # Test 4: Update partial
+    print("\n=== Test 4: تحديث جزئي ===")
+    success = update_stock_notebook('TESTCO', {
+        'machine_summary': {'danger_level': 3, 'typical_correction_pct': 14},
+        'price_behavior': {'typical_correction_pct': 14},
+    })
+    print(f"  success: {success}")
+    nb = load_stock_notebook('TESTCO')
+    print(f"  danger_level: {nb['machine_summary']['danger_level']}")
+    print(f"  typical_correction: {nb['machine_summary']['typical_correction_pct']}%")
+    print(f"  price_behavior.correction: {nb['price_behavior']['typical_correction_pct']}%")
+    assert nb['machine_summary']['danger_level'] == 3
+    assert nb['machine_summary']['typical_correction_pct'] == 14
+    print("  ✅ PASS")
+
+    # Test 5: Add lesson
+    print("\n=== Test 5: إضافة درس ===")
+    success = add_lesson('TESTCO', {
+        'date': '2026-04-12',
+        'type': 'success',
+        'summary': 'دخل بعد تصحيح 13%، طلع 19%',
+        'lesson': 'يحترم التصحيح في نطاق 12-15%',
+    })
+    print(f"  success: {success}")
+    nb = load_stock_notebook('TESTCO')
+    print(f"  lessons count: {len(nb['learned_lessons'])}")
+    print(f"  first lesson: {nb['learned_lessons'][0]['summary']}")
+    assert len(nb['learned_lessons']) == 1
+    assert nb['learned_lessons'][0]['type'] == 'success'
+    print("  ✅ PASS")
+
+    # Test 6: get_notebook_context_for_v402
+    print("\n=== Test 6: get_notebook_context_for_v402 ===")
+    ctx = get_notebook_context_for_v402('TESTCO')
+    print(f"  has_notebook: {ctx['has_notebook']}")
+    print(f"  score_adjustment: {ctx['score_adjustment']}")
+    print(f"  should_reject: {ctx['should_reject']}")
+    print(f"  proof: {ctx['proof_string']}")
+    assert ctx['has_notebook']
+    assert ctx['score_adjustment'] == 0  # danger_level=3 (not >= 4)
+    assert not ctx['should_reject']
+    print("  ✅ PASS")
+
+    # Test 7: danger_level 4 → score -5
+    print("\n=== Test 7: danger_level 4 → تقليل -5 ===")
+    update_stock_notebook('TESTCO', {'machine_summary': {'danger_level': 4}})
+    ctx = get_notebook_context_for_v402('TESTCO')
+    print(f"  score_adjustment: {ctx['score_adjustment']}")
+    print(f"  proof: {ctx['proof_string']}")
+    assert ctx['score_adjustment'] == -5
+    print("  ✅ PASS")
+
+    # Test 8: danger_level 5 → reject
+    print("\n=== Test 8: danger_level 5 → رفض ===")
+    update_stock_notebook('TESTCO', {'machine_summary': {'danger_level': 5}})
+    ctx = get_notebook_context_for_v402('TESTCO')
+    print(f"  should_reject: {ctx['should_reject']}")
+    print(f"  proof: {ctx['proof_string']}")
+    assert ctx['should_reject']
+    print("  ✅ PASS")
+
+    # Cleanup test file
+    test_path = _get_notebook_path('TESTCO')
+    if test_path.exists():
+        test_path.unlink()
+        print("\n  (cleaned up TESTCO notebook)")
+
+    print("\n" + "=" * 70)
+    print("✅ Stock Notebook System ready (8/8 tests pass)")
+    print(f"\nIntegration in V40.2: reads notebook before analysis")
+    print(f"  danger_level 4 → score -= 5")
+    print(f"  danger_level 5 → reject")
+    print(f"  avoid_chase=True → supports reject")
