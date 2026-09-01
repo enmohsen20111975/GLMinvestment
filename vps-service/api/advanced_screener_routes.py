@@ -369,6 +369,29 @@ def advanced_screener():
             avg_change = sum(s['change_percent'] for s in stocks) / total if total > 0 else 0
             total_turnover = sum(s['turnover_egp'] for s in stocks)
 
+            # ── UNIFIED ENGINE ENRICHMENT (2026-09-01) ──
+            # محرك واحد → نفس النتيجة في كل شاشة
+            # الـ screener بـ يضيف V68/V72/V73 verdict + active_prediction لكل سهم
+            try:
+                from analyzers.unified_analysis import analyze_stock_unified
+                for s in stocks:
+                    try:
+                        ua = analyze_stock_unified(s['ticker'])
+                        s['unified_verdict'] = ua.get('verdict', 'NEUTRAL')
+                        s['unified_reason'] = ua.get('verdict_reason', '')
+                        s['v68_dirty_dist'] = ua.get('v68', {}).get('dirty_distribution', False)
+                        s['v72_hidden_dist'] = ua.get('v72', {}).get('hidden_dist', {}).get('block_active', False)
+                        s['v73_desert'] = ua.get('v73', {}).get('desert_phase', False)
+                        s['v68_probability'] = ua.get('v68', {}).get('probability', 0)
+                        s['has_active_prediction'] = bool(ua.get('active_prediction'))
+                        s['active_prediction'] = ua.get('active_prediction')
+                    except Exception:
+                        s['unified_verdict'] = 'NEUTRAL'
+                        s['unified_reason'] = ''
+                        s['has_active_prediction'] = False
+            except ImportError:
+                pass  # unified_analysis not available → screener still works without enrichment
+
             return jsonify({
                 'success': True,
                 'stocks': stocks,
