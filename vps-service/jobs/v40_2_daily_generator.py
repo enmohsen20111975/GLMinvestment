@@ -1358,3 +1358,41 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             except Exception as _v73_err:
                 pass  # safe-by-design: لو V73 فشل → نكمّل بدونه
 
+            # ── V76 GOLDEN HUNTER (المرحلة 8 — 2026-09-01): 2 إشارات جديدات ──
+            # A/B BACKTEST RESULTS (300 tickers, 6 months):
+            #   ✅ PUMP_FROM_DESERT: 25 trades, WR 56.0%, Return +26.7% (KEEP)
+            #   ✅ GOLDEN_RETEST: 30 trades, WR 63.3%, Return -1.2% (KEEP — high WR)
+            # محرك صيد الانفجارات من النعاس + إعادة الاختبار الذهبي
+            if os.environ.get('V76_GOLDEN_HUNTER', '1') == '1':
+                try:
+                    from analyzers.v76_golden_hunter import analyze_v76
+                    _v76_closes = closes[:day_idx + 1] if 'closes' in dir() and day_idx < len(closes) else []
+                    _v76_highs = highs[:day_idx + 1] if 'highs' in dir() and day_idx < len(highs) else []
+                    _v76_lows = lows[:day_idx + 1] if 'lows' in dir() and day_idx < len(lows) else []
+                    _v76_vols = volumes[:day_idx + 1] if 'volumes' in dir() and day_idx < len(volumes) else []
+                    _v76_opens = opens[:day_idx + 1] if 'opens' in dir() and day_idx < len(opens) else []
+
+                    _v76 = analyze_v76(_v76_closes, _v76_highs, _v76_lows, _v76_vols, _v76_opens)
+                    result['v76_signal'] = _v76['signal']
+                    result['v76_reason'] = _v76['reason']
+
+                    # لو V76 طلع signal قوي → boost
+                    if _v76['signal'] == 'PUMP_FROM_DESERT':
+                        print(f"[V76-PUMP-FROM-DESERT] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"انفجار من نعاس → boost", flush=True)
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = min(100, result['score'] + 15)
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['v76_pump_from_desert'] = '✅ V76 انفجار من نعاس (proven +26.7%)'
+                    elif _v76['signal'] == 'GOLDEN_RETEST':
+                        print(f"[V76-GOLDEN-RETEST] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"إعادة اختبار ذهبية → boost", flush=True)
+                        if isinstance(result.get('score'), (int, float)):
+                            result['score'] = min(100, result['score'] + 10)
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['v76_golden_retest'] = '✅ V76 إعادة اختبار ذهبية (WR 63.3%)'
+                except Exception as _v76_err:
+                    pass  # safe-by-design
+
