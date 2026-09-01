@@ -15093,3 +15093,64 @@ Stage Summary:
 - ✅ توصية: تفعيل NOTEBOOK_CONTEXT أولاً + تخفيف short_holding
 - 🔜 commit + push
 
+
+
+---
+Task ID: STRUCTURAL-EXIT-REDESIGN-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تحويل الخروج من زمني إلى هيكلي + ربط النوتبوك
+
+Work Log:
+
+### Phase 1: تعديل short_holding_exit.py
+- ألغى max_holding_7d كسبب وحيد للخروج
+- أضاف is_within_typical_correction(entry, current, typical_correction_pct)
+- أضاف is_breakdown_not_correction(entry, current, typical_correction, rsi, recent_closes)
+- أعاد كتابة should_force_exit_by_time() بفلسفة هيكلية:
+  1. early_drop (حماية رأس مال) — أولوية 2
+  2. compound_breakdown_exit (وقت + خارج التصحيح + ضعف هيكل) — أولوية 3
+  3. review_alert (تنبيه فقط، ليس إغلاق)
+- أعاد كتابة evaluate_force_exit() بترتيب أولويات جديد:
+  1. distribution_exit (priority 1)
+  2. early_drop (priority 2)
+  3. compound_breakdown_exit (priority 3)
+  4. review_alert (تنبيه، priority 0)
+  (max_holding_7d = ملغي)
+- أضاف typical_correction_pct parameter لكل الدوال
+- 11/11 tests pass
+
+### Phase 2: تعديل unified_exit_engine.py
+- أعاد كتابة should_force_exit_by_time_unified() بنفس الفلسفة
+- أعاد كتابة evaluate_unified_force_exit() بترتيب الأولويات الجديد
+- ربط typical_correction_pct من النوتبوك
+- ربط recent_closes لفحص الانهيار
+- 12/12 tests pass
+
+### Phase 3: اختبارات الحالات الحرجة
+1. ✅ نزول 10% + typical_correction=16% → لا تخرج (تصحيح جوه المدى)
+2. ✅ نزول 25% + typical_correction=16% + RSI=25 → تخرج (انهيار)
+3. ✅ رابحة بعد 10 أيام → لا تُغلق (الوقت لا يغلق الصفقة الرابحة)
+4. ✅ شمعة توزيع → تخرج (حتى لو المدة قصيرة)
+5. ✅ early drop حاد (-8%) → تخرج (حماية رأس مال)
+6. ✅ بدون نوتبوك → لا ينكسر (سلوك آمن)
+7. ✅ اللوج يظهر السبب الصحيح (ليس max_holding_7d)
+8. ✅ compound_breakdown_exit (11 يوم + -25% + RSI=20 + 5 شموع حمراء) → تخرج
+
+### النتائج:
+- max_holding_7d تم إلغاؤه كسبب وحيد ✅
+- no_move_3d تم إلغاؤه كسبب وحيد ✅
+- distribution_exit ما زال يعمل ✅
+- early_drop ما زال يعمل ✅
+- typical_correction_pct من النوتبوك يفرق بين تصحيح وانهيار ✅
+- review_alert = تنبيه فقط (لا إغلاق) ✅
+- compound_breakdown_exit = شرط مركب (وقت + خارج التصحيح + ضعف) ✅
+- النظام لا ينكسر عند غياب النوتبوك ✅
+
+Stage Summary:
+- ✅ short_holding_exit.py: 11/11 tests pass (فلسفة هيكلية)
+- ✅ unified_exit_engine.py: 12/12 tests pass
+- ✅ لا ملفات جديدة (تعديل الموجود فقط)
+- ✅ لا كود يتيم
+- ✅ max_holding_7d ملغي كسبب وحيد
+- 🔜 commit + push
+

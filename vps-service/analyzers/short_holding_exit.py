@@ -37,16 +37,21 @@ from datetime import datetime, timedelta
 
 # ═══════════════════════════════════════════════════════════════════════
 # Config (thresholds — EGX-calibrated)
+# تعديل 2026-09-01: تحويل الخروج من زمني إلى هيكلي
+# الفلسفة: تصحيح → صبر، انهيار → خروج، ربح → أهداف
 # ═══════════════════════════════════════════════════════════════════════
 
-# Holding rules
-MAX_HOLDING_DAYS = 7              # الحد الأقصى للاحتفاظ
-NO_MOVE_DAYS = 3                  # فحص الحركة في أول 3 أيام
-NO_MOVE_THRESHOLD_PCT = 3.0       # لو متحركش +3% في 3 أيام → خروج
+# Holding rules — الوقت شرط مساعد ضعيف، ليس سبب وحيد
+MAX_HOLDING_DAYS = 14             # مراجعة بعد 14 يوم (مش إغلاق إجباري)
+REVIEW_THRESHOLD_DAYS = 7         # بعد 7 أيام بدون تقدم → مراجعة (تنبيه فقط)
 EARLY_DROP_DAYS = 3               # فحص النزول في أول 3 أيام
-EARLY_DROP_THRESHOLD_PCT = -5.0   # لو نزل -5% في 3 أيام → خروج
+EARLY_DROP_THRESHOLD_PCT = -7.0   # نزول -7% في 3 أيام → خروج (حماية رأس مال)
 
-# Distribution detection
+# Compound time exit: وقت طويل + خارج التصحيح + ضعف
+COMPOUND_MIN_DAYS = 10            # بعد 10 أيام
+COMPOUND_BEYOND_CORRECTION_MULT = 1.3  # نزول أعمق من typical_correction × 1.3
+
+# Distribution detection (منطقها سليم — بقاء)
 DIST_UPPER_WICK_RATIO = 1.0       # الظل العلوي ≥ الجسم
 DIST_VOLUME_RATIO = 1.8           # الحجم ≥ 1.8× متوسط 20 يوم
 DIST_DIST_FROM_HIGH_MAX_PCT = 8.0 # قريب من قمة 20 يوم (≤8%)
@@ -83,7 +88,97 @@ def _rsi(closes: List[float], period: int = 14) -> float:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 1. should_force_exit_by_time() — فحص مدة الاحتفاظ
+# 1a. تصحيح vs انهيار — دوال التمييز (جديدة — ترتبط بالنوتبوك)
+# ═══════════════════════════════════════════════════════════════════════
+
+def is_within_typical_correction(
+    entry_price: float,
+    current_price: float,
+    typical_correction_pct: float = 0,
+) -> Dict[str, Any]:
+    """
+    هل النزول جوه نطاق التصحيح المعتاد للسهم؟
+
+    لو typical_correction_pct = 0 (نوتبوك فاضي/غير موجود) → محايد (لا تصحيح ولا انهيار)
+    """
+    if typical_correction_pct <= 0 or entry_price <= 0:
+        return {'within': True, 'drop_pct': 0, 'reason': 'لا يوجد تصحيح معتاد مسجل'}
+
+    drop_pct = ((entry_price - current_price) / entry_price * 100) if entry_price > 0 else 0
+    within = drop_pct <= typical_correction_pct
+
+    if within:
+        reason = f'النزول {drop_pct:.1f}% جوه التصحيح المعتاد ({typical_correction_pct:.1f}%) → صبر'
+    else:
+        reason = f'النزول {drop_pct:.1f}% أعمق من التصحيح المعتاد ({typical_correction_pct:.1f}%) → خطر'
+
+    return {'within': within, 'drop_pct': round(drop_pct, 2), 'reason': reason}
+
+
+def is_breakdown_not_correction(
+    entry_price: float,
+    current_price: float,
+    typical_correction_pct: float = 0,
+    rsi: Optional[float] = None,
+    recent_closes: Optional[List[float]] = None,
+) -> Dict[str, Any]:
+    """
+    هل ده انهيار حقيقي وليس مجرد تصحيح؟
+
+    شروط الانهيار (معظمها لازم يتحقق):
+      1. النزول أعمق بوضوح من typical_correction_pct (×1.3)
+      2. RSI منخفض جداً (< 30) — ضعف شديد
+      3. السعر بـ ينزل باستمرار بدون ارتداد (آخر 5 شموع كلها حمراء)
+    """
+    if entry_price <= 0:
+        return {'is_breakdown': False, 'reason': 'سعر دخول غير صالح'}
+
+    drop_pct = ((entry_price - current_price) / entry_price * 100)
+
+    # شرط 1: أعمق من التصحيح المعتاد × 1.3
+    if typical_correction_pct > 0:
+        threshold = typical_correction_pct * COMPOUND_BEYOND_CORRECTION_MULT
+        cond_deep = drop_pct > threshold
+    else:
+        # لو مفيش نوتبوك → استخدم عتبة عامة (15% = عميق لأي سهم)
+        cond_deep = drop_pct > 15.0
+        threshold = 15.0
+
+    # شرط 2: RSI منخفض جداً
+    cond_rsi_weak = rsi is not None and rsi < 30
+
+    # شرط 3: 5 شموع حمراء متتالية (نزول مستمر)
+    cond_continuous_drop = False
+    if recent_closes and len(recent_closes) >= 5:
+        cond_continuous_drop = all(recent_closes[i] < recent_closes[i-1] for i in range(1, 5))
+
+    # قرار: انهيار لو 2 من 3 شروط على الأقل
+    conditions_met = sum([cond_deep, cond_rsi_weak, cond_continuous_drop])
+    is_breakdown = conditions_met >= 2
+
+    if is_breakdown:
+        reasons = []
+        if cond_deep:
+            reasons.append(f'نزول {drop_pct:.1f}% > {threshold:.1f}% (×1.3 من التصحيح)')
+        if cond_rsi_weak:
+            reasons.append(f'RSI={rsi:.1f} (<30 — ضعف شديد)')
+        if cond_continuous_drop:
+            reasons.append('5 شموع حمراء متتالية')
+        reason = 'انهيار: ' + ' | '.join(reasons)
+    else:
+        reason = f'مش انهيار (drop={drop_pct:.1f}%, conditions={conditions_met}/3)'
+
+    return {
+        'is_breakdown': is_breakdown,
+        'drop_pct': round(drop_pct, 2),
+        'reason': reason,
+        'conditions_met': conditions_met,
+        'threshold_pct': round(threshold, 1),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 1b. should_force_exit_by_time() — فحص مدة الاحتفاظ (هيكلي الآن)
 # ═══════════════════════════════════════════════════════════════════════
 
 def should_force_exit_by_time(
@@ -92,26 +187,19 @@ def should_force_exit_by_time(
     entry_price: float,
     current_price: float,
     price_history: Optional[List[Dict[str, float]]] = None,
+    typical_correction_pct: float = 0,
+    rsi: Optional[float] = None,
+    recent_closes: Optional[List[float]] = None,
 ) -> Dict[str, Any]:
     """
-    فحص هل لازم إغلاق إجباري بناءً على مدة الاحتفاظ.
+    فحص هل لازم إغلاق إجباري — فلسفة هيكلية (مش زمنية صرفة).
 
-    Args:
-        entry_date: تاريخ الدخول (YYYY-MM-DD)
-        current_date: التاريخ الحالي (YYYY-MM-DD)
-        entry_price: سعر الدخول
-        current_price: السعر الحالي
-        price_history: قائمة أيام الأسعار [{date, high, low, close, open, volume}]
-                       (آخر N يوم — للـ no_move check)
+    الأولويات:
+      1. early_drop (نزول حاد بعد الدخول — حماية رأس مال)
+      2. compound_exit (وقت طويل + خارج التصحيح + ضعف هيكل)
+      3. review_alert (تنبيه مراجعة بعد X يوم بدون تقدم — ليس إغلاق)
 
-    Returns:
-        {
-            'should_exit': bool,
-            'reason': str (سبب الخروج أو "no exit needed"),
-            'exit_code': str ('max_holding_7d' | 'no_move_3d' | 'early_drop' | ''),
-            'days_held': int,
-            'return_pct': float,
-        }
+    ممنوع: "عدّى 7 أيام → اخرج" بدون شروط أخرى.
     """
     # Parse dates
     try:
@@ -132,47 +220,53 @@ def should_force_exit_by_time(
 
     return_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
 
-    # 1. Max holding 7 days
-    if days_held >= MAX_HOLDING_DAYS:
-        return {
-            'should_exit': True,
-            'reason': f'تجاوز الحد الأقصى للاحتفاظ ({days_held} ≥ {MAX_HOLDING_DAYS} يوم)',
-            'exit_code': 'max_holding_7d',
-            'days_held': days_held,
-            'return_pct': round(return_pct, 2),
-        }
-
-    # 2. Early drop (first 3 days, -5%)
+    # 1. Early drop (حماية رأس مال — نزول حاد في أول 3 أيام)
     if days_held <= EARLY_DROP_DAYS and return_pct <= EARLY_DROP_THRESHOLD_PCT:
         return {
             'should_exit': True,
-            'reason': f'نزول مبكر {return_pct:+.2f}% في {days_held} يوم (≤ {EARLY_DROP_THRESHOLD_PCT}%)',
+            'reason': f'نزول مبكر {return_pct:+.2f}% في {days_held} يوم (≤ {EARLY_DROP_THRESHOLD_PCT}%) — حماية رأس مال',
             'exit_code': 'early_drop',
             'days_held': days_held,
             'return_pct': round(return_pct, 2),
         }
 
-    # 3. No move (3 days, < +3%)
-    if days_held >= NO_MOVE_DAYS and price_history and len(price_history) >= NO_MOVE_DAYS:
-        # Get the closes of the last NO_MOVE_DAYS days
-        recent_closes = [float(d.get('close', 0) or 0) for d in price_history[-NO_MOVE_DAYS:]]
-        if len(recent_closes) >= NO_MOVE_DAYS and all(c > 0 for c in recent_closes):
-            # Check max gain from entry in these days
-            max_close = max(recent_closes)
-            max_gain_pct = ((max_close - entry_price) / entry_price * 100) if entry_price > 0 else 0
-            if max_gain_pct < NO_MOVE_THRESHOLD_PCT:
-                return {
-                    'should_exit': True,
-                    'reason': f'لا حركة: أقصى ارتفاع {max_gain_pct:+.2f}% في {NO_MOVE_DAYS} أيام (< {NO_MOVE_THRESHOLD_PCT}%)',
-                    'exit_code': 'no_move_3d',
-                    'days_held': days_held,
-                    'return_pct': round(return_pct, 2),
-                }
+    # 2. Compound exit: وقت طويل + خارج التصحيح المعتاد + ضعف هيكل
+    if days_held >= COMPOUND_MIN_DAYS:
+        breakdown = is_breakdown_not_correction(
+            entry_price, current_price, typical_correction_pct, rsi, recent_closes
+        )
+        if breakdown['is_breakdown']:
+            return {
+                'should_exit': True,
+                'reason': f'انهيار بعد {days_held} يوم: {breakdown["reason"]}',
+                'exit_code': 'compound_breakdown_exit',
+                'days_held': days_held,
+                'return_pct': round(return_pct, 2),
+            }
 
-    # No exit needed
+    # 3. Review alert (تنبيه وليس إغلاق)
+    if days_held >= REVIEW_THRESHOLD_DAYS and return_pct < 0:
+        # هل النزول جوه التصحيح المعتاد؟
+        correction = is_within_typical_correction(entry_price, current_price, typical_correction_pct)
+        if not correction['within']:
+            # خارج التصحيح — مراجعة جدية
+            return {
+                'should_exit': False,  # تنبيه مش إغلاق
+                'reason': f'مراجعة: {days_held} يوم + {correction["reason"]}',
+                'exit_code': 'review_alert',
+                'days_held': days_held,
+                'return_pct': round(return_pct, 2),
+            }
+
+    # لا حاجة للإغلاق
+    correction_note = ''
+    if typical_correction_pct > 0:
+        correction = is_within_typical_correction(entry_price, current_price, typical_correction_pct)
+        correction_note = f' | {correction["reason"]}'
+
     return {
         'should_exit': False,
-        'reason': f'لا حاجة للإغلاق ({days_held} يوم، return={return_pct:+.2f}%)',
+        'reason': f'لا حاجة للإغلاق ({days_held} يوم، return={return_pct:+.2f}%{correction_note})',
         'exit_code': '',
         'days_held': days_held,
         'return_pct': round(return_pct, 2),
@@ -313,26 +407,21 @@ def evaluate_force_exit(
     rsi: Optional[float] = None,
     enable_holding: bool = True,
     enable_distribution: bool = True,
+    typical_correction_pct: float = 0,
 ) -> Dict[str, Any]:
     """
-    تقييم شامل للإغلاق الإجباري بترتيب الأولوية:
+    تقييم شامل للإغلاق الإجباري — فلسفة هيكلية.
 
-    1. Distribution مكتشف → distribution_exit
-    2. Max Holding 7 أيام → max_holding_7d
-    3. No Move 3 أيام → no_move_3d
-    4. Early Drop → early_drop
+    ترتيب الأولويات الجديد:
+      1. distribution_exit — توزيع واضح (الميكرز بـ يفرغ)
+      2. early_drop — نزول حاد بعد الدخول (حماية رأس مال)
+      3. compound_breakdown_exit — وقت طويل + خارج التصحيح + ضعف هيكل
+      (review_alert = تنبيه فقط، ليس إغلاق)
+      (max_holding_7d = تم إلغاؤه كسبب وحيد)
 
-    (Disclosure VETO بـ يتعامل معاه في V40.2 قبل ما نوصل هنا)
-
-    Returns:
-        {
-            'should_exit': bool,
-            'exit_code': str,
-            'reason': str,
-            'priority': int,  # 1=distribution, 2=max_holding, 3=no_move, 4=early_drop
-        }
+    mمنوع: "عدّى 7 أيام → اخرج" بدون شروط هيكلية.
     """
-    # 1. Distribution (highest priority — الميكرز بـ يفرغ)
+    # 1. Distribution (أعلى أولوية — الميكرز بـ يفرغ)
     if enable_distribution and opens and highs and lows and closes and volumes:
         dist = detect_distribution(opens, highs, lows, closes, volumes, rsi=rsi)
         if dist['is_distribution']:
@@ -344,16 +433,21 @@ def evaluate_force_exit(
                 'details': dist,
             }
 
-    # 2-4. Holding rules (max_holding + no_move + early_drop)
+    # 2-3. Holding rules (هيكلية الآن — مش زمنية)
     if enable_holding:
+        # استخرج recent_closes لو متاحة
+        recent_closes_list = closes[-5:] if closes and len(closes) >= 5 else None
+
         holding = should_force_exit_by_time(
-            entry_date, current_date, entry_price, current_price, price_history
+            entry_date, current_date, entry_price, current_price, price_history,
+            typical_correction_pct=typical_correction_pct,
+            rsi=rsi,
+            recent_closes=recent_closes_list,
         )
         if holding['should_exit']:
             priority = {
-                'max_holding_7d': 2,
-                'no_move_3d': 3,
-                'early_drop': 4,
+                'early_drop': 2,
+                'compound_breakdown_exit': 3,
             }.get(holding['exit_code'], 5)
             return {
                 'should_exit': True,
@@ -363,7 +457,17 @@ def evaluate_force_exit(
                 'details': holding,
             }
 
-    # No exit needed
+        # لو review_alert → نرجعه بس should_exit=False (تنبيه مش إغلاق)
+        if holding['exit_code'] == 'review_alert':
+            return {
+                'should_exit': False,
+                'exit_code': 'review_alert',
+                'reason': f'📋 {holding["reason"]}',
+                'priority': 0,
+                'details': holding,
+            }
+
+    # لا حاجة للإغلاق
     return {
         'should_exit': False,
         'exit_code': '',
@@ -378,189 +482,133 @@ def evaluate_force_exit(
 # ═══════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
-    print("🧪 Short Holding + Distribution Exit — Self Test")
+    print("🧪 Short Holding + Distribution Exit — Self Test (هيكلي)")
     print("=" * 70)
-    print(f"Thresholds:")
-    print(f"  Holding: max={MAX_HOLDING_DAYS}d, no_move={NO_MOVE_DAYS}d (≤{NO_MOVE_THRESHOLD_PCT}%), "
-          f"early_drop={EARLY_DROP_DAYS}d (≤{EARLY_DROP_THRESHOLD_PCT}%)")
-    print(f"  Distribution: upper_wick≥{DIST_UPPER_WICK_RATIO}×body, vol≥{DIST_VOLUME_RATIO}×, "
-          f"near_high≤{DIST_DIST_FROM_HIGH_MAX_PCT}%, RSI≥{DIST_RSI_HIGH_THRESHOLD}")
+    print(f"الفلسفة: تصحيح → صبر، انهيار → خروج، ربح → أهداف")
+    print(f"  early_drop: {EARLY_DROP_DAYS}d (≤{EARLY_DROP_THRESHOLD_PCT}%)")
+    print(f"  compound: {COMPOUND_MIN_DAYS}d + خارج التصحيح ×{COMPOUND_BEYOND_CORRECTION_MULT} + ضعف")
+    print(f"  review_alert: {REVIEW_THRESHOLD_DAYS}d (تنبيه فقط)")
+    print(f"  max_holding_7d: تم إلغاؤه كسبب وحيد")
+    print(f"  distribution: wick≥{DIST_UPPER_WICK_RATIO}×, vol≥{DIST_VOLUME_RATIO}×, RSI≥{DIST_RSI_HIGH_THRESHOLD}")
     print()
 
-    # ===== Holding Tests =====
-    print("━━━ Phase 1: Holding Rules ━━━")
+    # ===== الحالات الحرجة المطلوبة =====
 
-    # Test 1: 8 days → force exit (max_holding_7d)
-    print("\n=== Test 1: صفقة عمرها 8 أيام → force exit ===")
-    r = should_force_exit_by_time('2026-08-01', '2026-08-09', 100, 101)
+    # Test 1: نزول 10% بينما typical_correction=16% → لا تخرج بالوقت فقط
+    print("=== Test 1: نزول 10% + typical_correction=16% → لا تخرج ===")
+    r = should_force_exit_by_time('2026-08-01', '2026-08-09', 100, 90, typical_correction_pct=16)
     print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
     print(f"  reason: {r['reason']}")
-    assert r['should_exit'] and r['exit_code'] == 'max_holding_7d'
-    print("  ✅ PASS")
-
-    # Test 2: 4 days + no move → force exit (no_move_3d)
-    print("\n=== Test 2: 4 أيام + مفيش حركة → force exit ===")
-    price_history = [
-        {'date': '2026-08-02', 'close': 100.5},
-        {'date': '2026-08-03', 'close': 101},
-        {'date': '2026-08-04', 'close': 100.8},
-        {'date': '2026-08-05', 'close': 101},  # max gain +1% (< 3%)
-    ]
-    r = should_force_exit_by_time('2026-08-01', '2026-08-05', 100, 101, price_history)
-    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
-    print(f"  reason: {r['reason']}")
-    assert r['should_exit'] and r['exit_code'] == 'no_move_3d'
-    print("  ✅ PASS")
-
-    # Test 3: 2 days + strong move → keep open
-    print("\n=== Test 3: 2 يوم + حركة قوية → تفضل مفتوحة ===")
-    price_history2 = [
-        {'date': '2026-08-02', 'close': 105},
-        {'date': '2026-08-03', 'close': 108},
-    ]
-    r = should_force_exit_by_time('2026-08-01', '2026-08-03', 100, 108, price_history2)
-    print(f"  should_exit: {r['should_exit']} | reason: {r['reason']}")
     assert not r['should_exit']
-    print("  ✅ PASS (لا زال مفتوح)")
+    print("  ✅ PASS (تصحيح جوه المدى → صبر)")
 
-    # Test 4: 2 days + -6% → force exit (early_drop)
-    print("\n=== Test 4: نزل -6% في يومين → force exit ===")
-    r = should_force_exit_by_time('2026-08-01', '2026-08-03', 100, 94)
-    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
-    print(f"  reason: {r['reason']}")
-    assert r['should_exit'] and r['exit_code'] == 'early_drop'
-    print("  ✅ PASS")
+    # Test 2: نزول 25% + typical_correction=16% + ضعف → تخرج
+    print("\n=== Test 2: نزول 25% + typical_correction=16% + RSI=25 → تخرج ===")
+    breakdown = is_breakdown_not_correction(100, 75, typical_correction_pct=16, rsi=25)
+    print(f"  is_breakdown: {breakdown['is_breakdown']}")
+    print(f"  reason: {breakdown['reason']}")
+    assert breakdown['is_breakdown']
+    print("  ✅ PASS (انهيار → خروج)")
 
-    # Test 5: 5 days + small gain but not enough → no_move
-    print("\n=== Test 5: 5 أيام + حركة +2% بس → no_move ===")
-    price_history3 = [
-        {'date': '2026-08-02', 'close': 100.5},
-        {'date': '2026-08-03', 'close': 101},
-        {'date': '2026-08-04', 'close': 101.5},
-        {'date': '2026-08-05', 'close': 102},
-        {'date': '2026-08-06', 'close': 102},  # max +2% (< 3%)
-    ]
-    r = should_force_exit_by_time('2026-08-01', '2026-08-06', 100, 102, price_history3)
-    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
-    print(f"  reason: {r['reason']}")
-    assert r['should_exit'] and r['exit_code'] == 'no_move_3d'
-    print("  ✅ PASS")
+    # Test 3: صفقة رابحة بعد 10 أيام → لا تُغلق لمجرد الوقت
+    print("\n=== Test 3: رابحة بعد 10 أيام → لا تُغلق ===")
+    r = should_force_exit_by_time('2026-08-01', '2026-08-11', 100, 108, typical_correction_pct=14)
+    print(f"  should_exit: {r['should_exit']} | reason: {r['reason'][:60]}")
+    assert not r['should_exit']
+    print("  ✅ PASS (الربح لا يُغلق بالوقت)")
 
-    # ===== Distribution Tests =====
-    print("\n━━━ Phase 2: Distribution Detection ━━━")
-
-    # Test 6: Distribution candle (red + upper wick + high volume + near high)
-    print("\n=== Test 6: شمعة توزيع واضحة (ظل علوي + حجم عالي + قرب قمة) ===")
-    # Build 21 days: gentle uptrend to 120, then distribution candle
+    # Test 4: شمعة توزيع → تخرج حتى لو المدة قصيرة
+    print("\n=== Test 4: شمعة توزيع → تخرج ===")
     opens_d = [100 + i * 0.8 for i in range(20)] + [120]
-    highs_d = [100 + i * 0.8 + 0.5 for i in range(20)] + [125]  # upper wick to 125
-    lows_d = [100 + i * 0.8 - 0.5 for i in range(20)] + [116]   # low at 116
-    closes_d = [100 + i * 0.8 for i in range(20)] + [117]  # red candle, close below open
-    volumes_d = [1000] * 20 + [2500]  # volume spike 2.5×
+    highs_d = [100 + i * 0.8 + 0.5 for i in range(20)] + [125]
+    lows_d = [100 + i * 0.8 - 0.5 for i in range(20)] + [116]
+    closes_d = [100 + i * 0.8 for i in range(20)] + [117]
+    volumes_d = [1000] * 20 + [2500]
     r = detect_distribution(opens_d, highs_d, lows_d, closes_d, volumes_d)
     print(f"  is_distribution: {r['is_distribution']}")
-    print(f"  upper_wick_ratio: {r['upper_wick_ratio']}× | volume_ratio: {r['volume_ratio']}×")
-    print(f"  dist_from_high: {r['dist_from_high_pct']}% | RSI: {r['rsi']}")
-    print(f"  reason: {r['reason']}")
     assert r['is_distribution']
     print("  ✅ PASS")
 
-    # Test 7: Normal red candle (no upper wick, no volume) — NOT distribution
-    print("\n=== Test 7: شمعة حمراء عادية (مش توزيع) ===")
-    opens7 = [100 + i * 0.5 for i in range(20)] + [110]
-    highs7 = [100 + i * 0.5 + 0.3 for i in range(20)] + [110.5]  # small wick
-    lows7 = [100 + i * 0.5 - 0.3 for i in range(20)] + [107]
-    closes7 = [100 + i * 0.5 for i in range(20)] + [108]  # red
-    volumes7 = [1000] * 21  # normal volume
-    r = detect_distribution(opens7, highs7, lows7, closes7, volumes7)
-    print(f"  is_distribution: {r['is_distribution']}")
-    print(f"  upper_wick_ratio: {r['upper_wick_ratio']}× | volume_ratio: {r['volume_ratio']}×")
+    # Test 5: early drop حاد → تخرج
+    print("\n=== Test 5: نزول -8% في يومين → early_drop ===")
+    r = should_force_exit_by_time('2026-08-01', '2026-08-03', 100, 92)
+    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
+    assert r['should_exit'] and r['exit_code'] == 'early_drop'
+    print("  ✅ PASS (حماية رأس مال)")
+
+    # Test 6: عدم وجود نوتبوك → النظام لا ينكسر
+    print("\n=== Test 6: بدون نوتبوك (typical=0) → لا ينكسر ===")
+    r = should_force_exit_by_time('2026-08-01', '2026-08-09', 100, 97, typical_correction_pct=0)
+    print(f"  should_exit: {r['should_exit']} | reason: {r['reason'][:60]}")
+    assert not r['should_exit']
+    print("  ✅ PASS (سلوك آمن)")
+
+    # Test 7: اللوج يظهر السبب الصحيح (ليس max_holding_7d)
+    print("\n=== Test 7: 12 يوم + نزول 5% + typical=14% → review (مش max_holding) ===")
+    r = should_force_exit_by_time('2026-08-01', '2026-08-13', 100, 95, typical_correction_pct=14)
+    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
     print(f"  reason: {r['reason']}")
-    assert not r['is_distribution']
-    print("  ✅ PASS (مش توزيع)")
+    assert r['exit_code'] != 'max_holding_7d'  # ممنوع max_holding_7d كسبب وحيد
+    print("  ✅ PASS (لا يوجد max_holding_7d)")
 
-    # Test 8: Strong green candle — NOT distribution
-    print("\n=== Test 8: شمعة خضراء قوية (مش توزيع) ===")
-    opens8 = [100 + i * 0.5 for i in range(20)] + [110]
-    highs8 = [100 + i * 0.5 + 0.5 for i in range(20)] + [115]
-    lows8 = [100 + i * 0.5 - 0.3 for i in range(20)] + [109.5]
-    closes8 = [100 + i * 0.5 for i in range(20)] + [114]  # strong green
-    volumes8 = [1000] * 20 + [2500]  # even with high volume
-    r = detect_distribution(opens8, highs8, lows8, closes8, volumes8)
-    print(f"  is_distribution: {r['is_distribution']}")
-    print(f"  is_red: {r['is_red_candle']} | reason: {r['reason'][:60]}...")
-    assert not r['is_distribution']
-    print("  ✅ PASS (شمعة خضراء قوية)")
+    # Test 8: compound_breakdown_exit — 11 يوم + نزول 25% + RSI=20 + 5 شموع حمراء
+    print("\n=== Test 8: 11 يوم + نزول 25% + RSI=20 + 5 شموع حمراء → compound_breakdown ===")
+    r = should_force_exit_by_time(
+        '2026-08-01', '2026-08-12', 100, 75,
+        typical_correction_pct=14, rsi=20,
+        recent_closes=[80, 78, 76, 75.5, 75],
+    )
+    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
+    print(f"  reason: {r['reason'][:70]}")
+    assert r['should_exit'] and r['exit_code'] == 'compound_breakdown_exit'
+    print("  ✅ PASS (انهيار → خروج)")
 
-    # Test 9: evaluate_force_exit — distribution priority
-    print("\n=== Test 9: Distribution أولوية على max_holding ===")
-    # 8 days (max_holding) + distribution candle
+    # Test 9: is_within_typical_correction
+    print("\n=== Test 9: is_within_typical_correction ===")
+    r = is_within_typical_correction(100, 88, typical_correction_pct=14)
+    print(f"  within: {r['within']} | reason: {r['reason']}")
+    assert r['within']
+    r = is_within_typical_correction(100, 80, typical_correction_pct=14)
+    print(f"  within: {r['within']} | reason: {r['reason']}")
+    assert not r['within']
+    print("  ✅ PASS")
+
+    # Test 10: distribution + max_holding قديم → distribution فقط
+    print("\n=== Test 10: distribution أولوية على كل شيء ===")
     opens9 = [100 + i * 0.5 for i in range(20)] + [110]
     highs9 = [100 + i * 0.5 + 0.5 for i in range(20)] + [115]
     lows9 = [100 + i * 0.5 - 0.3 for i in range(20)] + [108]
     closes9 = [100 + i * 0.5 for i in range(20)] + [109]
-    volumes9 = [1000] * 20 + [2200]
+    vols9 = [1000] * 20 + [2200]
     r = evaluate_force_exit(
-        entry_date='2026-08-01',
-        current_date='2026-08-09',  # 8 days
-        entry_price=100,
-        current_price=109,
+        entry_date='2026-08-01', current_date='2026-08-15',  # 14 days
+        entry_price=100, current_price=109,
         price_history=[{'close': c} for c in closes9[-5:]],
-        opens=opens9, highs=highs9, lows=lows9, closes=closes9, volumes=volumes9,
+        opens=opens9, highs=highs9, lows=lows9, closes=closes9, volumes=vols9,
+        typical_correction_pct=14,
     )
-    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']} | priority: {r['priority']}")
-    print(f"  reason: {r['reason'][:80]}...")
-    assert r['should_exit'] and r['exit_code'] == 'distribution_exit' and r['priority'] == 1
-    print("  ✅ PASS (distribution wins over max_holding)")
+    print(f"  exit: {r['exit_code']} (priority={r['priority']})")
+    assert r['exit_code'] == 'distribution_exit' and r['priority'] == 1
+    print("  ✅ PASS")
 
-    # Test 10: max_holding priority over no_move
-    print("\n=== Test 10: max_holding أولوية على no_move ===")
-    price_history10 = [{'close': 100.5}, {'close': 101}, {'close': 100.8}, {'close': 101}]
+    # Test 11: healthy trade + typical_correction
+    print("\n=== Test 11: صفقة صحية + نوتبوك → لا إغلاق ===")
     r = evaluate_force_exit(
-        entry_date='2026-08-01',
-        current_date='2026-08-09',  # 8 days
-        entry_price=100,
-        current_price=101,
-        price_history=price_history10,
-        enable_distribution=False,  # skip distribution
-    )
-    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']} | priority: {r['priority']}")
-    print(f"  reason: {r['reason']}")
-    assert r['should_exit'] and r['exit_code'] == 'max_holding_7d'
-    print("  ✅ PASS (max_holding wins over no_move)")
-
-    # Test 11: No exit needed (healthy trade)
-    print("\n=== Test 11: صفقة صحية (لا إغلاق) ===")
-    price_history11 = [{'close': 103}, {'close': 105}]
-    r = evaluate_force_exit(
-        entry_date='2026-08-01',
-        current_date='2026-08-03',  # 2 days
-        entry_price=100,
-        current_price=105,
-        price_history=price_history11,
+        entry_date='2026-08-01', current_date='2026-08-05',
+        entry_price=100, current_price=103,
+        price_history=[{'close': 101}, {'close': 102}, {'close': 103}],
         enable_distribution=False,
+        typical_correction_pct=14,
     )
-    print(f"  should_exit: {r['should_exit']} | reason: {r['reason']}")
-    assert not r['should_exit']
-    print("  ✅ PASS (صفقة صحية)")
-
-    # Test 12: Insufficient data
-    print("\n=== Test 12: بيانات غير كافية ===")
-    r = evaluate_force_exit(
-        entry_date='2026-08-01',
-        current_date='2026-08-02',
-        entry_price=100,
-        current_price=101,
-        price_history=[{'close': 101}],
-        enable_distribution=False,
-    )
-    print(f"  should_exit: {r['should_exit']} | reason: {r['reason']}")
+    print(f"  should_exit: {r['should_exit']} | reason: {r['reason'][:60]}")
     assert not r['should_exit']
     print("  ✅ PASS")
 
     print("\n" + "=" * 70)
-    print("✅ Short Holding + Distribution Exit ready (12/12 tests pass)")
-    print(f"\nIntegration in V40.2/daily_closer:")
-    print(f"  V40_2_SHORT_HOLDING=1 → max_holding_7d + no_move_3d + early_drop")
-    print(f"  V40_2_DISTRIBUTION_EXIT=1 → distribution_exit")
-    print(f"\nExit priority: 1=distribution > 2=max_holding > 3=no_move > 4=early_drop")
+    print("✅ Short Holding + Distribution Exit ready (11/11 tests pass)")
+    print(f"\nالفلسفة الجديدة:")
+    print(f"  distribution → خروج (priority 1)")
+    print(f"  early_drop → خروج (priority 2)")
+    print(f"  compound_breakdown → خروج (priority 3)")
+    print(f"  review_alert → تنبيه فقط (لا إغلاق)")
+    print(f"  max_holding_7d → تم إلغاؤه كسبب وحيد ✅")

@@ -220,9 +220,18 @@ def should_force_exit_by_time_unified(
     current_price: float,
     price_history: Optional[List[Dict[str, float]]] = None,
     market: str = 'STOCKS',
+    typical_correction_pct: float = 0,
+    rsi: Optional[float] = None,
+    recent_closes: Optional[List[float]] = None,
 ) -> Dict[str, Any]:
     """
-    فحص هل لازم إغلاق إجباري (موحد — أرقام مختلفة حسب السوق).
+    فحص هل لازم إغلاق إجباري — فلسفة هيكلية (موحد).
+
+    ممنوع: "عدّى X وحدة → اخرج" بدون شروط هيكلية.
+    الأسباب المسموحة للإغلاق:
+      1. early_drop (نزول حاد بعد الدخول — حماية رأس مال)
+      2. compound_breakdown_exit (وقت طويل + خارج التصحيح + ضعف)
+    review_alert = تنبيه فقط (لا إغلاق)
     """
     profile = get_market_profile(market)
     unit = profile['max_holding_unit']
@@ -230,46 +239,57 @@ def should_force_exit_by_time_unified(
     time_elapsed = _calc_time_elapsed(entry_time, current_time, unit)
     return_pct = ((current_price - entry_price) / entry_price * 100) if entry_price > 0 else 0
 
-    # 1. Max holding
-    if time_elapsed >= profile['max_holding']:
-        return {
-            'should_exit': True,
-            'reason': f'تجاوز الحد الأقصى للاحتفاظ ({time_elapsed:.1f} {unit} ≥ {profile["max_holding"]} {unit})',
-            'exit_code': 'max_holding',
-            'time_elapsed': round(time_elapsed, 1),
-            'return_pct': round(return_pct, 2),
-        }
-
-    # 2. Early drop
+    # 1. Early drop (حماية رأس مال)
     if time_elapsed <= profile['early_drop_period'] and return_pct <= profile['early_drop_threshold_pct']:
         return {
             'should_exit': True,
-            'reason': f'نزول مبكر {return_pct:+.2f}% في {time_elapsed:.1f} {unit}',
+            'reason': f'نزول مبكر {return_pct:+.2f}% في {time_elapsed:.1f} {unit} — حماية رأس مال',
             'exit_code': 'early_drop',
             'time_elapsed': round(time_elapsed, 1),
             'return_pct': round(return_pct, 2),
         }
 
-    # 3. No move
-    no_move_period = profile['no_move_period']
-    if time_elapsed >= no_move_period and price_history:
-        recent = price_history[-int(no_move_period):] if len(price_history) >= no_move_period else price_history
-        recent_closes = [float(d.get('close', 0) or 0) for d in recent if float(d.get('close', 0) or 0) > 0]
-        if len(recent_closes) >= 3:
-            max_close = max(recent_closes)
-            max_gain_pct = ((max_close - entry_price) / entry_price * 100) if entry_price > 0 else 0
-            if max_gain_pct < profile['no_move_threshold_pct']:
-                return {
-                    'should_exit': True,
-                    'reason': f'لا حركة: أقصى ارتفاع {max_gain_pct:+.2f}% (< {profile["no_move_threshold_pct"]}%)',
-                    'exit_code': 'no_move',
-                    'time_elapsed': round(time_elapsed, 1),
-                    'return_pct': round(return_pct, 2),
-                }
+    # 2. Compound breakdown: وقت طويل + خارج التصحيح + ضعف هيكل
+    compound_min = profile.get('no_move_period', 3) * 2  # ضعف no_move_period كشرط زمني
+    if time_elapsed >= compound_min:
+        # استخدم is_breakdown_not_correction من short_holding_exit
+        from analyzers.short_holding_exit import is_breakdown_not_correction
+        breakdown = is_breakdown_not_correction(
+            entry_price, current_price, typical_correction_pct, rsi, recent_closes
+        )
+        if breakdown['is_breakdown']:
+            return {
+                'should_exit': True,
+                'reason': f'انهيار بعد {time_elapsed:.1f} {unit}: {breakdown["reason"]}',
+                'exit_code': 'compound_breakdown_exit',
+                'time_elapsed': round(time_elapsed, 1),
+                'return_pct': round(return_pct, 2),
+            }
+
+    # 3. Review alert (تنبيه وليس إغلاق)
+    review_threshold = profile.get('no_move_period', 3)
+    if time_elapsed >= review_threshold and return_pct < 0:
+        from analyzers.short_holding_exit import is_within_typical_correction
+        correction = is_within_typical_correction(entry_price, current_price, typical_correction_pct)
+        if not correction['within']:
+            return {
+                'should_exit': False,  # تنبيه مش إغلاق
+                'reason': f'مراجعة: {time_elapsed:.1f} {unit} + {correction["reason"]}',
+                'exit_code': 'review_alert',
+                'time_elapsed': round(time_elapsed, 1),
+                'return_pct': round(return_pct, 2),
+            }
+
+    # لا حاجة للإغلاق
+    correction_note = ''
+    if typical_correction_pct > 0:
+        from analyzers.short_holding_exit import is_within_typical_correction
+        correction = is_within_typical_correction(entry_price, current_price, typical_correction_pct)
+        correction_note = f' | {correction["reason"]}'
 
     return {
         'should_exit': False,
-        'reason': f'{time_elapsed:.1f} {unit}, return={return_pct:+.2f}%',
+        'reason': f'{time_elapsed:.1f} {unit}, return={return_pct:+.2f}%{correction_note}',
         'exit_code': '',
         'time_elapsed': round(time_elapsed, 1),
         'return_pct': round(return_pct, 2),
@@ -296,19 +316,22 @@ def evaluate_unified_force_exit(
     enable_holding: bool = True,
     enable_distribution: bool = True,
     wick_ratio_mult: float = 1.0,  # من النوتبوك
+    typical_correction_pct: float = 0,  # من النوتبوك
+    recent_closes: Optional[List[float]] = None,
 ) -> Dict[str, Any]:
     """
-    تقييم شامل للإغلاق الإجباري (موحد).
+    تقييم شامل للإغلاق الإجباري (موحد) — فلسفة هيكلية.
 
-    ترتيب الأولوية ثابت:
-      1. distribution_exit (priority=1) — الميكرز بـ يفرغ
-      2. max_holding (priority=2)
-      3. no_move (priority=3)
-      4. early_drop (priority=4)
+    ترتيب الأولوية الجديد:
+      1. distribution_exit — توزيع واضح (priority 1)
+      2. early_drop — نزول حاد بعد الدخول (priority 2)
+      3. compound_breakdown_exit — وقت طويل + خارج التصحيح + ضعف (priority 3)
+      (review_alert = تنبيه فقط)
+      (max_holding = تم إلغاؤه كسبب وحيد)
 
-    (Veto/إفصاح بـ يتعامل معاه في V40.2 قبل ما نوصل هنا)
+    mمنوع: "عدّى X يوم → اخرج" بدون شروط هيكلية.
     """
-    # 1. Distribution
+    # 1. Distribution (أعلى أولوية)
     if enable_distribution and opens and highs and lows and closes and volumes:
         dist = detect_distribution_unified(
             opens, highs, lows, closes, volumes, rsi=rsi,
@@ -324,22 +347,36 @@ def evaluate_unified_force_exit(
                 'market': market,
             }
 
-    # 2-4. Holding rules
+    # 2-3. Holding rules (هيكلية — مش زمنية صرفة)
     if enable_holding:
         holding = should_force_exit_by_time_unified(
-            entry_time, current_time, entry_price, current_price, price_history, market=market
+            entry_time, current_time, entry_price, current_price, price_history,
+            market=market,
+            typical_correction_pct=typical_correction_pct,
+            rsi=rsi,
+            recent_closes=recent_closes or (closes[-5:] if closes and len(closes) >= 5 else None),
         )
         if holding['should_exit']:
             priority = {
-                'max_holding': 2,
-                'no_move': 3,
-                'early_drop': 4,
+                'early_drop': 2,
+                'compound_breakdown_exit': 3,
             }.get(holding['exit_code'], 5)
             return {
                 'should_exit': True,
                 'exit_code': holding['exit_code'],
                 'reason': f'⏰ {holding["reason"]}',
                 'priority': priority,
+                'details': holding,
+                'market': market,
+            }
+
+        # review_alert → تنبيه مش إغلاق
+        if holding['exit_code'] == 'review_alert':
+            return {
+                'should_exit': False,
+                'exit_code': 'review_alert',
+                'reason': f'📋 {holding["reason"]}',
+                'priority': 0,
                 'details': holding,
                 'market': market,
             }
@@ -378,21 +415,23 @@ if __name__ == '__main__':
     assert p['max_holding'] == 72
     print("  ✅ PASS")
 
-    # Test 3: Stocks — 8 days → max_holding
-    print("\n=== Test 3: Stocks — 8 days → max_holding ===")
+    # Test 3: Stocks — 8 days → NO max_holding (تم إلغاؤه كسبب وحيد)
+    print("\n=== Test 3: Stocks — 8 days → no exit (max_holding cancelled) ===")
     r = should_force_exit_by_time_unified('2026-08-01', '2026-08-09', 100, 101, market='STOCKS')
-    print(f"  exit: {r['exit_code']}")
-    assert r['should_exit'] and r['exit_code'] == 'max_holding'
-    print("  ✅ PASS")
+    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
+    assert not r['should_exit']  # max_holding تم إلغاؤه
+    assert r['exit_code'] != 'max_holding'
+    print("  ✅ PASS (max_holding cancelled as sole reason)")
 
-    # Test 4: Crypto — 80 hours → max_holding
-    print("\n=== Test 4: Crypto — 80 hours → max_holding ===")
+    # Test 4: Crypto — 80 hours → NO max_holding (تم إلغاؤه)
+    print("\n=== Test 4: Crypto — 80 hours → no exit (max_holding cancelled) ===")
     r = should_force_exit_by_time_unified('2026-09-01 10:00', '2026-09-04 18:00', 50000, 51000, market='CRYPTO')
-    print(f"  exit: {r['exit_code']}")
-    assert r['should_exit'] and r['exit_code'] == 'max_holding'
+    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
+    assert not r['should_exit']
+    assert r['exit_code'] != 'max_holding'
     print("  ✅ PASS")
 
-    # Test 5: Stocks — early drop -6%
+    # Test 5: Stocks — early drop -6% → early_drop (حماية رأس مال)
     print("\n=== Test 5: Stocks — early drop -6% ===")
     r = should_force_exit_by_time_unified('2026-08-01', '2026-08-03', 100, 94, market='STOCKS')
     print(f"  exit: {r['exit_code']}")
@@ -418,48 +457,62 @@ if __name__ == '__main__':
     assert r['is_distribution']
     print("  ✅ PASS")
 
-    # Test 8: Distribution — crypto (higher thresholds)
+    # Test 8: Distribution — crypto
     print("\n=== Test 8: Distribution — crypto ===")
     r = detect_distribution_unified(opens, highs, lows, closes, vols, market='CRYPTO')
-    print(f"  is_distribution: {r['is_distribution']} (crypto thresholds higher)")
-    # Crypto needs wick ≥ 1.2× body — here wick=5, body=1 → 5× ≥ 1.2× → True
+    print(f"  is_distribution: {r['is_distribution']}")
     assert r['is_distribution']
     print("  ✅ PASS")
 
-    # Test 9: wick_ratio_mult from notebook (0.8 = stricter)
+    # Test 9: wick_ratio_mult
     print("\n=== Test 9: wick_ratio_mult=0.8 (stricter) ===")
     opens9 = [100 + i * 0.5 for i in range(25)] + [110]
-    highs9 = [100 + i * 0.5 + 0.5 for i in range(25)] + [112]  # smaller wick
+    highs9 = [100 + i * 0.5 + 0.5 for i in range(25)] + [112]
     lows9 = [100 + i * 0.5 - 0.3 for i in range(25)] + [108]
     closes9 = [100 + i * 0.5 for i in range(25)] + [109]
     vols9 = [1000] * 25 + [2200]
     r_normal = detect_distribution_unified(opens9, highs9, lows9, closes9, vols9, market='STOCKS', wick_ratio_mult=1.0)
     r_strict = detect_distribution_unified(opens9, highs9, lows9, closes9, vols9, market='STOCKS', wick_ratio_mult=0.8)
     print(f"  normal (×1.0): {r_normal['is_distribution']} | strict (×0.8): {r_strict['is_distribution']}")
-    print("  ✅ PASS (mult affects threshold)")
+    print("  ✅ PASS")
 
-    # Test 10: evaluate_unified — distribution priority
+    # Test 10: evaluate — distribution priority (أعلى من أي شيء)
     print("\n=== Test 10: evaluate — distribution priority ===")
     r = evaluate_unified_force_exit(
-        entry_time='2026-08-01', current_time='2026-08-09',  # 8 days (max_holding)
+        entry_time='2026-08-01', current_time='2026-08-15',  # 14 days
         entry_price=100, current_price=109,
         price_history=[{'close': c} for c in closes[-5:]],
         opens=opens, highs=highs, lows=lows, closes=closes, volumes=vols,
-        market='STOCKS',
+        market='STOCKS', typical_correction_pct=14,
     )
     print(f"  exit: {r['exit_code']} (priority={r['priority']})")
     assert r['exit_code'] == 'distribution_exit' and r['priority'] == 1
     print("  ✅ PASS")
 
-    # Test 11: No exit needed
-    print("\n=== Test 11: No exit needed ===")
+    # Test 11: No exit needed (صفقة رابحة)
+    print("\n=== Test 11: No exit needed (رابحة) ===")
     r = should_force_exit_by_time_unified('2026-08-01', '2026-08-02', 100, 105, market='STOCKS')
     print(f"  should_exit: {r['should_exit']}")
     assert not r['should_exit']
     print("  ✅ PASS")
 
+    # Test 12: compound_breakdown (انهيار حقيقي)
+    print("\n=== Test 12: compound_breakdown (11d + -25% + RSI=20 + 5 red) ===")
+    r = should_force_exit_by_time_unified(
+        '2026-08-01', '2026-08-12', 100, 75,
+        market='STOCKS', typical_correction_pct=14, rsi=20,
+        recent_closes=[80, 78, 76, 75.5, 75],
+    )
+    print(f"  should_exit: {r['should_exit']} | code: {r['exit_code']}")
+    assert r['should_exit'] and r['exit_code'] == 'compound_breakdown_exit'
+    print("  ✅ PASS (انهيار → خروج)")
+
     print("\n" + "=" * 70)
-    print("✅ Unified Exit Engine ready (11/11 tests pass)")
-    print(f"\nIntegration: V40_2_UNIFIED_EXIT=1 (default OFF)")
-    print(f"Priority: 1=distribution > 2=max_holding > 3=no_move > 4=early_drop")
-    print(f"Markets: STOCKS (7d) + CRYPTO (72h) — same logic, different thresholds")
+    print("✅ Unified Exit Engine ready (12/12 tests pass)")
+    print(f"\nالفلسفة الجديدة (هيكلية):")
+    print(f"  distribution → خروج (priority 1)")
+    print(f"  early_drop → خروج (priority 2)")
+    print(f"  compound_breakdown → خروج (priority 3)")
+    print(f"  review_alert → تنبيه فقط")
+    print(f"  max_holding → تم إلغاؤه كسبب وحيد ✅")
+    print(f"  typical_correction_pct → من النوتبوك (تصحيح vs انهيار)")
