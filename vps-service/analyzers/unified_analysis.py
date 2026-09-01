@@ -40,7 +40,17 @@ PREDICTIONS_DB = PROJECT_ROOT / 'db' / 'predictions.db'
 
 
 def _get_ohlcv(ticker: str, days: int = 60) -> Dict[str, List]:
-    """جيب OHLCV من data_engine.db (آخر N يوم)."""
+    """جيب OHLCV — بـ يستخدم Production Data Client (Yahoo live → data_engine fallback)."""
+    try:
+        from analyzers.production_data_client import get_data_client
+        client = get_data_client()
+        ohlcv = client.get_ohlcv(ticker, days)
+        if ohlcv['closes']:
+            return ohlcv
+    except Exception:
+        pass
+
+    # Fallback to local data_engine.db
     if not DATA_ENGINE_DB.exists():
         return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
     try:
@@ -54,7 +64,6 @@ def _get_ohlcv(ticker: str, days: int = 60) -> Dict[str, List]:
         conn.close()
         if not rows:
             return {'dates': [], 'opens': [], 'highs': [], 'lows': [], 'closes': [], 'volumes': []}
-        # Reverse to chronological order
         rows = list(reversed(rows))
         return {
             'dates': [r[0] for r in rows],
@@ -160,13 +169,28 @@ def analyze_stock_unified(ticker: str) -> Dict[str, Any]:
         result['verdict_reason'] = 'السهم مش موجود في stocks.db'
         return result
 
-    # 2. OHLCV history (from data_engine.db)
+    # 2. OHLCV history (live from Yahoo → data_engine fallback)
     ohlcv = _get_ohlcv(ticker, 60)
     result['ohlcv'] = {
         'bars': len(ohlcv['closes']),
         'last_date': ohlcv['dates'][-1] if ohlcv['dates'] else None,
         'last_close': ohlcv['closes'][-1] if ohlcv['closes'] else 0,
     }
+
+    # 2b. Live current price (from production data client)
+    try:
+        from analyzers.production_data_client import get_data_client
+        client = get_data_client()
+        live_price = client.get_current_price(ticker)
+        result['live_price'] = live_price
+        result['data_source'] = 'live' if live_price else 'local'
+        if live_price and meta.get('current_price'):
+            result['price_vs_stored'] = ((live_price - meta['current_price']) / meta['current_price'] * 100)
+        else:
+            result['price_vs_stored'] = 0
+    except Exception:
+        result['live_price'] = None
+        result['data_source'] = 'local'
 
     closes = ohlcv['closes']
     highs = ohlcv['highs']
