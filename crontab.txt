@@ -13,6 +13,10 @@
 # يومياً الساعة 3:30 عصراً (بعد إغلاق السوق) — يولّد توقعات الغد
 30 15 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
 
+# ─── محرك التوقعات اللحظي (كل 5 دقائق أثناء جلسة التداول) ───
+# يفحص بيانات الـ 5 دقائق الحية من intraday.db ويكتشف الاختراقات وتدفق السيولة المؤسسية بأفضل سعر
+*/5 10-14 * * 0-4 cd /home/meme/my_apps/GLMinvestment && /home/meme/my_apps/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_intraday_scanner.py --limit 5 >> /tmp/v40_2_intraday.log 2>&1
+
 # ─── إغلاق الصفقات (daily_closer) ───
 # يومياً الساعة 4:00 عصراً (بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
 0 16 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1

@@ -1452,3 +1452,690 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 except Exception as _v76_err:
                     pass  # safe-by-design
 
+            # ── EGX-STRATEGY-DYNAMIC (المرحلة 1 — 2026-08-30): وقف + هدف ديناميكي ──
+            # المالك طلب: "الوقف والهدف يرتبطوا بسلوك السهم الفعلي (swing low/high)."
+            # - الوقف: آخر قاع واضح (swing_low) + 0.5×ATR buffer.
+            # - الهدف: أقرب مقاومة (swing_high) أو ATR fallback.
+            # - target_2 (Runner): max(target×1.5, entry+5×ATR).
+            # لو مفيش swing low/high → fallback للمنطق القديم (ATR).
+            try:
+                from core.opportunity_quality import enforce_atr_based_stop, compute_dynamic_target
+                _atr_val = float(result.get('atr', 0) or 0)
+                if _atr_val <= 0:
+                    _atr_val = entry * 0.05  # fallback 5%
+                _lows_dyn = lows[:day_idx+1] if 'lows' in dir() else []
+                _highs_dyn = highs[:day_idx+1] if 'highs' in dir() else []
+
+                # وقف ديناميكي
+                _stop_check = enforce_atr_based_stop(
+                    signal, entry, stop, _atr_val, 'balanced', lows=_lows_dyn
+                )
+                if _stop_check['action'] == 'replace_stop' and _stop_check['fixed']:
+                    _old_stop = stop
+                    stop = _stop_check['fixed']['stop_loss']
+                    if stop != _old_stop:
+                        print(f"[DYN-STOP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"entry={entry:.2f} stop {_old_stop:.2f}→{stop:.2f} "
+                              f"({_stop_check.get('stop_source', '?')})", flush=True)
+
+                # هدف ديناميكي
+                _target_check = compute_dynamic_target(
+                    entry, stop, _atr_val, highs=_highs_dyn, min_rr=1.8
+                )
+                if _target_check['target'] > 0:
+                    _old_target = target
+                    target = _target_check['target']
+                    target_2 = _target_check['target_2']
+                    r_mult = _target_check['rr']
+                    result['target_2'] = target_2
+                    if target != _old_target:
+                        print(f"[DYN-TARGET] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"target {_old_target:.2f}→{target:.2f} (R:R={r_mult:.2f}) "
+                              f"target_2={target_2:.2f} ({_target_check.get('source', '?')})", flush=True)
+            except Exception as _dyn_err:
+                pass  # safe-by-design: لو فشل، سيب الـ stop/target القديم
+
+            # ─── V40.3 REGIME-RR (2026-08-17): regime-aware R:R floor with absolute 1.5 ───
+            # Owner directive: replace flat dynamic_rr_normal with get_dynamic_min_rr(regime).
+            #   bull  → 2.0  (نطمع أكتر)
+            #   range → 1.5  (was 1.2 — العمولات بـ تاكل الـ edge تحت 1.5)
+            #   bear  → 1.8  (صفقات الارتداد النادرة؛ cash-mode veto بـ يـ handle أغلب الـ bear)
+            # Absolute floor 1.5 مطلقًا — ممنوع R:R < 1.5 تحت أي ظرف.
+            # get_dynamic_min_rr بـ يـ apply الـ floor internally كمان (defense-in-depth).
+            try:
+                from analyzers.engine_settings import get_dynamic_min_rr
+                _regime = result.get('market_regime_trend', 'range')
+                _min_rr = get_dynamic_min_rr(_regime)
+            except Exception:
+                _min_rr = 2.0  # C1 floor if settings unavailable
+            # V75-7: 2R minimum R:R (stricter than regime default)
+            if False:  # V75 killed
+                _min_rr = max(_min_rr, 2.0)
+            if r_mult < _min_rr:
+                continue
+
+            # ── EGX-STRATEGY-STAGE2: تصنيف نوع السيولة ──
+            # المالك طلب: "النظام يفرق أكتر بين السيولة الذكية والسيولة المضاربية الهشة"
+            # classify_liquidity بترجع: type + score + position_size_mult + hold_multiplier
+            _liquidity = None
+            try:
+                from core.opportunity_quality import classify_liquidity
+                _liquidity = classify_liquidity(
+                    closes[:day_idx+1], volumes[:day_idx+1],
+                    opens[:day_idx+1], highs[:day_idx+1], lows[:day_idx+1]
+                )
+                if _liquidity['type'] != 'neutral':
+                    print(f"[LIQUIDITY] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"type={_liquidity['type']} score={_liquidity['score']} "
+                          f"vol_ratio={_liquidity['vol_ratio']} pos_mult={_liquidity['position_size_mult']}", flush=True)
+            except Exception:
+                _liquidity = None
+
+            # ── EXPLOSIVE UNCAP (Revived from Maestro 55.7% WR) ──
+            # للأاسهم الانفجارية: فك سقف الهدف حتى 5×ATR ووقف واسع حتى لا يتم إخراج الصفقة مبكراً
+            if os.environ.get('V40_EXPLOSIVE_UNCAP', '1') == '1':
+                _is_pump_v76 = result.get('v76_signal') == 'PUMP_FROM_DESERT'
+                _vol_ratio = _liquidity.get('vol_ratio', 1.0) if _liquidity else 1.0
+                _change_pct = ((closes[day_idx] - closes[day_idx-1]) / closes[day_idx-1] * 100) if day_idx > 0 else 0
+                _is_high_mom = (_vol_ratio >= 1.8 and _change_pct >= 3.0)
+
+                if _is_pump_v76 or _is_high_mom:
+                    _uncap_target = round(entry + (_atr_val * 5.0), 2)
+                    if _uncap_target > target:
+                        _old_t = target
+                        target = _uncap_target
+                        target_2 = round(entry + (_atr_val * 8.0), 2)
+                        result['target_2'] = target_2
+                        _explosive_stop = round(entry * 0.915, 2)
+                        if stop < _explosive_stop:
+                            stop = _explosive_stop
+                        r_mult = (target - entry) / max(0.01, entry - stop)
+                        print(f"[EXPLOSIVE-UNCAP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: target {_old_t:.2f}→{target:.2f} (5×ATR) target_2={target_2:.2f} (R:R={r_mult:.2f})", flush=True)
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['explosive_uncap'] = f'🚀 هدف انفجاري مفتوح (5×ATR={_atr_val*5.0:.2f})'
+
+            # إعادة محاكاة الصفقة بالهدف والوقف النهائيين المحدثين
+            trade = Trade(
+                ticker=ticker, entry_date=scan_date, entry_price=entry,
+                target_price=target, stop_loss=stop, score=result['score'],
+                signal=signal, proofs=result['proofs'],
+            )
+            trade = simulate_trade(trade, future_closes, future_dates, 7, future_atrs)
+
+            signals_by_date[scan_date].append({
+                'ticker': ticker,
+                'signal': signal,
+                'entry': entry,
+                'target': target,
+                'target_2': result.get('target_2', 0),
+                'stop': stop,
+                'tech_score': result['score'],
+                'evidence': evidence,
+                'r_multiple': r_mult,
+                'atr': result.get('atr', 0) or (_atr_soft if '_atr_soft' in dir() else 0),
+                'exit_price': trade.exit_price,
+                'exit_date': trade.exit_date,
+                'exit_reason': trade.exit_reason,
+                'return_pct': trade.return_pct,
+                'is_win': trade.is_win,
+                'pnl_pct': trade.pnl_pct,
+                'r_multiple_actual': trade.r_multiple,
+                'persona_fit': persona_fit['persona_fit'],
+                'persona_fit_scores': persona_fit['fit_scores'],
+                'proofs': result.get('proofs', {}),
+                'liquidity_type': _liquidity['type'] if _liquidity else 'neutral',
+                'liquidity_score': _liquidity['score'] if _liquidity else 50,
+                'liquidity_pos_mult': _liquidity['position_size_mult'] if _liquidity else 1.0,
+                'liquidity_hold_mult': _liquidity['hold_multiplier'] if _liquidity else 1.0,
+                # ── V68 ORACLE FIELDS (المرحلة 4 — 2026-08-31) ──
+                # احتمالية النجاح + البصمة المستقبلية + خريطة الجثث
+                'v68_probability': result.get('v68_probability', 0),
+                'v68_future_direction': result.get('v68_future_direction', 'flat'),
+                'v68_future_momentum': result.get('v68_future_momentum', 0.0),
+                'v68_quiet_accumulation': result.get('v68_quiet_accumulation', False),
+                'v68_dirty_distribution': result.get('v68_dirty_distribution', False),
+                'v68_no_chase_2d': result.get('v68_no_chase_2d', False),
+                'v68_liquidity_grab': result.get('v68_liquidity_grab', False),
+                'v68_low_magnet': result.get('v68_low_magnet'),
+                'v68_high_magnet': result.get('v68_high_magnet'),
+                'v68_trend_state': result.get('v68_trend_state', 0),
+                'v68_delta_vol': result.get('v68_delta_vol', 0.0),
+                # PHASE-C FIX: خزّن الـ fundamental_score الحقيقي في DB بدل placeholder 50.0.
+                # لما fundamentals تكون متاحة → الدرجة الحقيقية (0-100).
+                # لما غير متاحة → 50.0 (neutral، نفس السلوك السابق — safe-by-design).
+                # ده بـ يـ fix Rule 12 (ممنوع placeholder 50.0 في مسار إنتاجي)
+                # دون ما يأثر على الـ veto (اللي بـ يقرأ من result dict مباشرة).
+                'fundamental_score': _fund_score if _fund_avail else 50.0,
+            })
+
+            # ── AI NEWS AGENT (المرحلة 3 — 2026-08-31): الإثبات السابع ──
+            # جلب وتحليل الأخبار بالذكاء الاصطناعي المحلي (keyword fallback)
+            # لو الأخبار سلبية → تقليل الثقة
+            # لو الأخبار إيجابية → boost الثقة
+            # safe-by-design: لو الـ Agent فشل → نتجاهل ونكمّل
+            # A/B TESTING: V40_2_SKIP_NEWS env var to skip news (faster backtest)
+            try:
+                if os.environ.get('V40_2_SKIP_NEWS', '0') == '1':
+                    raise RuntimeError('news skipped for A/B backtest')
+                from ai.news_agent import NewsAgent
+                if not hasattr(engine, '_news_agent'):
+                    engine._news_agent = NewsAgent()
+                if engine._news_agent.is_ready() or DDGS_AVAILABLE:
+                    _news_result = engine._news_agent.analyze_stock_news(
+                        ticker, max_articles=2
+                    )
+                    _news_score = _news_result.get('score', 50)
+                    _news_sentiment = _news_result.get('sentiment', 'neutral')
+                    # خزّن في آخر signal
+                    if signals_by_date[scan_date]:
+                        signals_by_date[scan_date][-1]['news_sentiment'] = _news_sentiment
+                        signals_by_date[scan_date][-1]['news_score'] = _news_score
+                        signals_by_date[scan_date][-1]['news_summary'] = _news_result.get('summary', '')
+                    # لو الأخبار سلبية جداً (score < 30) → ارفض
+                    if _news_score < 30 and _news_result.get('confidence', 0) > 0.5:
+                        print(f"[NEWS-REJECT] {ticker} on {scan_date}: أخبار سلبية "
+                              f"(score={_news_score}/100) → رفض", flush=True)
+                        signals_by_date[scan_date].pop()  # شيل آخر signal
+            except Exception as _news_err:
+                pass  # safe-by-design: لو الـ Agent فشل → نتجاهل
+
+        del dates, opens, highs, lows, closes, volumes, atrs, date_to_idx
+        if processed % 100 == 0:
+            gc.collect()
+
+    print(f"\n✅ Processed {total_tickers} tickers. Signals found on {len(signals_by_date)} dates.", flush=True)
+
+    # ── V40_2_BACKTEST_MODE (2026-08-31): A/B testing harness ──
+    # لما V40_2_BACKTEST_MODE=1: مش بـ return early في dry-run، وبـ نـ set outcomes.
+    # ده بـ يـ allow الـ A/B harness يقرأ WR/PF من temp DB.
+    _backtest_mode = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
+
+    if dry_run and not _backtest_mode:
+        total_signals = sum(len(v) for v in signals_by_date.values())
+        print(f"🔍 DRY-RUN: would have generated {total_signals} signals across {len(signals_by_date)} dates.", flush=True)
+        # Still print the summary of what would have been picked
+        for scan_date in sorted(signals_by_date.keys()):
+            day_signals = signals_by_date[scan_date]
+            day_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
+            picks = day_signals[:max_picks]
+            mb = picks[0] if picks else None
+            print(f"  📅 {scan_date}: {len(picks)} picks | MB={mb['ticker'] if mb else '-'} (ev={mb['evidence'] if mb else 0})", flush=True)
+        return
+
+    # Store: sort each date's signals, take top N, morning bell = top 1
+    # PHASE-1-RESTORE (2026-08-31): V40.2 رجع كمولّد توقعات أساسي
+    # Maestro اتعلّل واتعطل من الكتابة — V40.2 هو المصدر الوحيد دلوقتي
+    tracker = PredictionTracker(PREDICTIONS_DB)  # مفعّل — V40.2 يكتب في predictions
+    # V40_2_BACKTEST_MODE: set _dry_run_no_write=True عشان يـ set outcomes
+    _dry_run_no_write = _backtest_mode  # لو backtest mode → set outcomes
+    total_generated = 0
+    total_morning_bells = 0
+    daily_summary = []
+    all_stored = []
+
+    for scan_date in sorted(signals_by_date.keys()):
+        day_signals = signals_by_date[scan_date]
+        # Sort: evidence DESC → R-multiple DESC → tech_score DESC
+        day_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
+        picks = day_signals[:max_picks]
+
+        for rank, sig in enumerate(picks):
+            # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل morning_bell ──
+            # morning_bell كان بيميّز "أقوى توقع في اليوم" كـ persona-specific feature.
+            # دلوقتي كل التوقعات balanced، فالـ morning_bell بـ يبقى 0 لكل التوقعات.
+            # الكود القديم: sig['morning_bell'] = 1 if rank == 0 else 0
+            sig['morning_bell'] = 0  # UNIFIED-BALANCED-ONLY: معطّل
+
+        for sig in picks:
+            # ── RECOMMENDATION 1: فلتر حرارة القطاع — معطّل ──────────────────
+            # باك-تست على بيانات الإنتاج (68 صفقة): فلتر القطاع الهابط نقص العائد -37.6%
+            # لأنه رفض 5 رابحة + 5 خاسرة (50/50). ألغي.
+            # sector_heat = load_sector_heat()
+            # ticker_sector = get_ticker_sector(sig['ticker'])
+            # if ticker_sector and ticker_sector in sector_heat:
+            #     _heat = sector_heat[ticker_sector]
+            #     if _heat < 0:
+            #         continue
+
+            total_generated += 1
+            if sig.get('morning_bell'):
+                total_morning_bells += 1
+            all_stored.append(sig)
+
+            hit_target = 1 if sig['exit_reason'] == 'hit_target' else 0
+            hit_stop = 1 if sig['exit_reason'] == 'hit_stop' else 0
+            is_correct = 1 if sig['is_win'] else 0
+            fit_tag = sig.get('persona_fit', 'balanced')
+            fit_scores = sig.get('persona_fit_scores', {})
+            fit_score = fit_scores.get(fit_tag, 0.0)
+            try:
+                pred_id = tracker.record_prediction(
+                    ticker=sig['ticker'], signal=sig['signal'],
+                    entry_price=sig['entry'], target_price=sig['target'],
+                    stop_loss=sig['stop'], master_score=sig['tech_score'],
+                    technical_score=sig['tech_score'], persona='balanced',
+                    fundamental_score=sig.get('fundamental_score', 50.0),
+                    atr_at_entry=sig['atr'], target_price_2=sig['target_2'],
+                    prediction_date=scan_date, evidence_count=sig['evidence'],
+                    morning_bell=sig['morning_bell'],
+                    kill_filter_result=f"V40 evidence={sig['evidence']}/6 R={sig['r_multiple']:.2f} | fit:{fit_tag}({fit_score:.0f})" + (" | SOFT-SURGE" if sig.get('proofs', {}).get('soft_surge') else "") + f" | LIQUIDITY:{sig.get('liquidity_type', 'neutral')}({sig.get('liquidity_score', 50)}) pos_mult={sig.get('liquidity_pos_mult', 1.0)}" + f" | V68:prob={sig.get('v68_probability', 0)}/100 dir={sig.get('v68_future_direction', 'flat')}" + (" | A+GRAB" if sig.get('v68_liquidity_grab') else "") + (" | QUIET-ACC" if sig.get('v68_quiet_accumulation') else ""),
+                ) if tracker else None
+                if pred_id and tracker:
+                    # ── NOTEBOOK INTEGRATION (2026-09-01): اكتب ملاحظة في النوتبوك ──
+                    # النوتبوك = ذاكرة دائمة للمحلل (بدل ما نحسب من جديد كل مرة)
+                    try:
+                        from analyzers.stock_notebook import add_prediction_observation
+                        _nb_filters = []
+                        if sig.get('v68_dirty_distribution'): _nb_filters.append('V68-dirty-dist')
+                        if sig.get('v72_hidden_dist', {}).get('block_active'): _nb_filters.append('V72-hidden-dist')
+                        if sig.get('v73_desert_phase'): _nb_filters.append('V73-desert')
+                        add_prediction_observation(
+                            ticker=sig['ticker'], signal=sig['signal'],
+                            entry=sig['entry'], target=sig['target'],
+                            stop=sig['stop'], score=sig['tech_score'],
+                            evidence=sig['evidence'], r_multiple=sig['r_multiple'],
+                            target_2=sig.get('target_2', 0),
+                            source='v40_2',
+                            filters_triggered=_nb_filters,
+                        )
+                    except Exception:
+                        pass  # safe-by-design: لو النوتبوك فشل → نكمّل
+
+                    # PHASE-2-RESTORE (2026-08-31): لا نسجل outcome في backtest
+                    # daily_closer هو اللي يقفل الصفقات في الإنتاج الحقيقي
+                    # بنسجل بس للـ backtest (dry_run) — لو مش dry_run، نسيبها pending
+                    if _dry_run_no_write or dry_run:
+                        tracker.set_verified_outcome(
+                            prediction_id=pred_id, outcome_date=sig['exit_date'],
+                            exit_price=sig['exit_price'], actual_return=sig['return_pct'],
+                            hit_target=hit_target, hit_stop=hit_stop,
+                            is_correct=is_correct,
+                            holding_days=sig.get('holding_days', 0),
+                            exit_reason=sig['exit_reason'],
+                        )
+                    # لو مش dry_run → نسيبها pending عشان daily_closer يقفلها
+                    # ── Phase 2 Fix: Read lessons BEFORE finalizing prediction ──
+                    # This connects the closed loop: close → lesson → next prediction reads it.
+                    # Safe-by-design: if lesson_store fails, prediction proceeds normally.
+                    try:
+                        from analyzers.maestro_orchestrator import run_expert_memory_phase
+                        _em = run_expert_memory_phase(
+                            db_path=PREDICTIONS_DB,
+                            ticker=sig['ticker'],
+                            sector=_sector_change if isinstance(_sector_change, str) else '',
+                            regime=result.get('market_regime_trend', 'range') if isinstance(result, dict) else 'range',
+                            rsi=0.0,
+                            month=int(scan_date.split('-')[1]) if '-' in scan_date else 1,
+                            persona_name='balanced',
+                        )
+                        if _em and _em.recommendation == 'block':
+                            # Expert memory says BLOCK this ticker → skip
+                            print(f"🚫 [EXPERT-MEMORY] Block {sig['ticker']} on {scan_date} — lesson-based veto", flush=True)
+                            continue
+                    except Exception:
+                        pass  # Safe-by-design — lessons optional
+                    pass
+                    # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل persona_predictions writing ──
+                    # المنطق الموحد: مفيش persona تانية غير balanced. الكود القديم
+                    # بـ يكتب persona_predictions للأسهم اللي strongly fit gambler/conservative.
+                    # دلوقتي ده معطّل (مش بـ يكتب حاجة) عشان النظام يفضل unified.
+                    #
+                    # Phase 2 (Option A — Safe) [LEGACY — معطّل]:
+                    # if fit_tag in ('gambler', 'conservative') and fit_score >= PERSONA_FIT_MIN_SCORE:
+                    #     try:
+                    #         safe_store_prediction(
+                    #             ticker=sig['ticker'], market='EGX',
+                    #             persona_type=fit_tag,
+                    #             signal_type=sig['signal'],
+                    #             entry_price=sig['entry'],
+                    #             target_price=sig['target'],
+                    #             stop_loss=sig['stop'],
+                    #             prediction_date=scan_date,
+                    #         )
+                    #         update_persona_prediction_outcome(
+                    #             ticker=sig['ticker'],
+                    #             persona_type=fit_tag,
+                    #             final_price=sig['exit_price'],
+                    #             prediction_date=scan_date,
+                    #         )
+                    #     except Exception as pe:
+                    #         print(f"  ⚠️ persona_predictions {sig['ticker']}/{fit_tag}: {pe}", flush=True)
+            except Exception as e:
+                print(f"  ⚠️ Store error {sig['ticker']}: {e}", flush=True)
+
+        mb = picks[0] if picks else None
+        wins = sum(1 for p in picks if p['is_win'])
+        daily_summary.append({
+            'date': scan_date, 'picks': len(picks), 'wins': wins,
+            'morning_bell': mb['ticker'] if mb else '',
+            'mb_win': mb['is_win'] if mb else False,
+            'avg_evidence': round(sum(p['evidence'] for p in picks) / len(picks), 1) if picks else 0,
+        })
+        print(f"  📅 {scan_date}: {len(picks)} picks ({wins}W/{len(picks) - wins}L) | "
+              f"MB={mb['ticker'] if mb else '-'}({'✅' if mb and mb['is_win'] else '❌'}) | "
+              f"avg_ev={daily_summary[-1]['avg_evidence']}", flush=True)
+
+    # Compute PF from stored trades
+    wins_pnl = [s['pnl_pct'] for s in all_stored if s['pnl_pct'] > 0]
+    losses_pnl = [abs(s['pnl_pct']) for s in all_stored if s['pnl_pct'] <= 0]
+    gross_profit = sum(wins_pnl)
+    gross_loss = sum(losses_pnl)
+    pf = gross_profit / gross_loss if gross_loss > 0 else 0
+    total_wins = len(wins_pnl)
+    total_picks = len(all_stored)
+    overall_wr = total_wins / total_picks * 100 if total_picks else 0
+    mb_wins = sum(1 for d in daily_summary if d['mb_win'])
+    mb_wr = mb_wins / total_morning_bells * 100 if total_morning_bells else 0
+
+    sig_dist = Counter(s['signal'] for s in all_stored)
+    ev_dist = Counter(s['evidence'] for s in all_stored)
+
+    print("\n" + "=" * 80, flush=True)
+    print("  GENERATION COMPLETE", flush=True)
+    print("=" * 80, flush=True)
+    print(f"  Total predictions: {total_generated}")
+    print(f"  Morning bells: {total_morning_bells} ({mb_wins} wins = {mb_wr:.1f}% WR)")
+    print(f"  Overall win rate: {total_wins}/{total_picks} = {overall_wr:.1f}%")
+    print(f"  Profit Factor (equity-impact): {pf:.3f}")
+    print(f"  Gross profit: {gross_profit:.2f} | Gross loss: {gross_loss:.2f}")
+    print(f"  Signal dist: {dict(sig_dist)}")
+    print(f"  Evidence dist: {dict(sorted(ev_dist.items()))}")
+    print(f"  Scan dates with picks: {len(daily_summary)}")
+
+    summary = {
+        'version': 'V40.2 (CLI-enabled, tightened entry + real benchmark + partial 1.5R)',
+        'generated_at': datetime.now().isoformat(),
+        'period': f'{start_date} → {end_date}',
+        'scan_interval': scan_interval,
+        'total_generated': total_generated,
+        'total_morning_bells': total_morning_bells,
+        'morning_bell_win_rate': round(mb_wr, 1),
+        'overall_win_rate': round(overall_wr, 1),
+        'profit_factor': round(pf, 3),
+        'gross_profit': round(gross_profit, 2),
+        'gross_loss': round(gross_loss, 2),
+        'signal_distribution': dict(sig_dist),
+        'evidence_distribution': {str(k): v for k, v in sorted(ev_dist.items())},
+        'scan_dates_with_picks': len(daily_summary),
+        'daily': daily_summary,
+    }
+    summary_path = os.path.join(
+        PROJECT_ROOT, 'vps-service', 'backtest_results',
+        f'v40_2_generation_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json',
+    )
+    with open(summary_path, 'w', encoding='utf-8') as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False, default=str)
+    print(f"\n💾 Summary saved: {summary_path}")
+    print(f"📊 Predictions in: {PREDICTIONS_DB}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='V40.2 Prediction Generator — توليد توقعات V40.2 لأي فترة',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+أمثلة:
+  %(prog)s --today-only              # توليد لليوم
+  %(prog)s --yesterday-only          # توليد لأمس
+  %(prog)s --start 2026-08-01 --end 2026-08-14  # فترة مخصصة
+  %(prog)s --today-only --dry-run    # جاف فقط (اختبار)
+  %(prog)s --keep-old                # عدم حذف القديم
+""",
+    )
+    parser.add_argument('--start', default=None,
+                        help=f'تاريخ البداية (YYYY-MM-DD). افتراضي: {DEFAULT_START}')
+    parser.add_argument('--end', default=None,
+                        help='تاريخ النهاية (YYYY-MM-DD). افتراضي: اليوم')
+    parser.add_argument('--today-only', action='store_true',
+                        help='توليد لليوم فقط (تجاهل --start/--end)')
+    parser.add_argument('--yesterday-only', action='store_true',
+                        help='توليد لأمس فقط (للكرون بعد إغلاق السوق)')
+    parser.add_argument('--scan-interval', type=int, default=SCAN_INTERVAL,
+                        help=f'فحص كل N أيام تداول (افتراضي: {SCAN_INTERVAL}). استخدم 1 لفحص كل يوم')
+    parser.add_argument('--max-picks', type=int, default=MAX_PICKS_PER_DAY,
+                        help=f'حد أقصى توقعات/يوم (افتراضي: {MAX_PICKS_PER_DAY})')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='جاف فقط — لا يكتب في DB، يطبع ما كان سيتولده')
+    parser.add_argument('--keep-old', action='store_true',
+                        help='عدم حذف توقعات V40 القديمة في الفترة (الافتراضي: يحذف)')
+    parser.add_argument('--max-tickers', type=int, default=None,
+                        help='⚡ BATCH MODE: limit عدد الـ tickers المتعالجًا (للـ resume في ساندبوكس بـ timeout)')
+    parser.add_argument('--tickers-offset', type=int, default=0,
+                        help='⚡ BATCH MODE: skip أول N tickers (للـ resume بعد run سابق)')
+    parser.add_argument('--force', action='store_true',
+                        help='تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل')
+    parser.add_argument('--market', default='EGX', choices=['EGX', 'CRYPTO'],
+                        help='السوق: EGX (افتراضي) أو CRYPTO (Aug 2026 — جديد)')
+    args = parser.parse_args()
+
+    # Determine date range
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    yesterday_str = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    if args.today_only and args.yesterday_only:
+        print("❌ لا يمكن استخدام --today-only و --yesterday-only معاً", flush=True)
+        sys.exit(1)
+
+    if args.today_only:
+        start_date = today_str
+        end_date = today_str
+        # For today-only, scan every day (not every 3)
+        scan_interval = 1
+    elif args.yesterday_only:
+        start_date = yesterday_str
+        end_date = yesterday_str
+        scan_interval = 1
+    else:
+        start_date = args.start or DEFAULT_START
+        end_date = args.end or today_str
+        scan_interval = args.scan_interval
+
+    # Validate dates
+    try:
+        datetime.strptime(start_date, '%Y-%m-%d')
+        datetime.strptime(end_date, '%Y-%m-%d')
+    except ValueError as e:
+        print(f"❌ صيغة تاريخ خاطئة: {e}. استخدم YYYY-MM-DD", flush=True)
+        sys.exit(1)
+
+    if start_date > end_date:
+        print(f"❌ تاريخ البداية ({start_date}) بعد تاريخ النهاية ({end_date})", flush=True)
+        sys.exit(1)
+
+    # FIX (Aug 2026): route لـ CRYPTO generator لو --market CRYPTO
+    if args.market == 'CRYPTO':
+        run_crypto_generator(
+            start_date=start_date,
+            end_date=end_date,
+            scan_interval=scan_interval,
+            max_picks=args.max_picks,
+            dry_run=args.dry_run,
+            keep_old=args.keep_old,
+            max_tickers=args.max_tickers,
+            tickers_offset=args.tickers_offset,
+            force=args.force,
+        )
+    else:
+        run_generator(
+            start_date=start_date,
+            end_date=end_date,
+            scan_interval=scan_interval,
+            max_picks=args.max_picks,
+            dry_run=args.dry_run,
+            keep_old=args.keep_old,
+            max_tickers=args.max_tickers,
+            tickers_offset=args.tickers_offset,
+            force=args.force,
+        )
+
+
+def get_crypto_tickers(min_days=30):
+    """Get crypto tickers from crypto_prices table (data_engine.db).
+
+    FIX (Aug 2026): دعم CRYPTO في v40_2_daily_generator.
+    بيرجع بس العملات اللي ليها تاريخ كافي في crypto_prices.
+    """
+    _db_dir = Path(__file__).resolve().parents[2] / 'db'
+    tickers = []
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        # شوف عدد snapshots المختلفة لكل symbol
+        cur.execute("""
+            SELECT symbol, COUNT(DISTINCT timestamp) as cnt
+            FROM crypto_prices
+            GROUP BY symbol
+            HAVING cnt >= ?
+            ORDER BY market_cap_rank ASC
+            LIMIT 50
+        """, (min_days,))
+        tickers = [row[0] for row in cur.fetchall()]
+        conn.close()
+        print(f"[V40.2-CRYPTO] crypto_prices — {len(tickers)} coins with >= {min_days} snapshots", flush=True)
+    except Exception as e:
+        print(f"[V40.2-CRYPTO] ⚠️ Failed to load crypto tickers: {e}", flush=True)
+    return tickers
+
+
+def run_crypto_generator(start_date, end_date, scan_interval=1,
+                          max_picks=5, dry_run=False, keep_old=False,
+                          max_tickers=None, tickers_offset=0, force=False):
+    """Crypto prediction generator — نسخة مبسطة من run_generator للكريبتو.
+
+    FIX (Aug 2026): إضافة دعم CRYPTO لـ v40_2_daily_generator.
+
+    الكريبتو 24/7 فمفيش session restrictions. بنفسلم OHLC من CoinGecko
+    لكل عملة ونعمل تحليل فني مبسط (RSI + MA + trend).
+    """
+    print("=" * 80, flush=True)
+    print("  V40.2-CRYPTO Prediction Generator", flush=True)
+    print(f"  Period: {start_date} → {end_date} | Scan every {scan_interval} days", flush=True)
+    print(f"  Max picks/day: {max_picks}", flush=True)
+    print("=" * 80, flush=True)
+
+    # CoinGecko symbol → coin_id mapping
+    SYMBOL_TO_COIN_ID = {
+        'BTC': 'bitcoin', 'ETH': 'ethereum', 'BNB': 'binancecoin',
+        'SOL': 'solana', 'XRP': 'ripple', 'ADA': 'cardano',
+        'DOGE': 'dogecoin', 'AVAX': 'avalanche-2', 'DOT': 'polkadot',
+        'LINK': 'chainlink', 'MATIC': 'matic-network', 'LTC': 'litecoin',
+        'TRX': 'tron', 'UNI': 'uniswap', 'ATOM': 'cosmos',
+    }
+
+    import requests as _requests
+
+    tickers = get_crypto_tickers(min_days=30)
+    if max_tickers is not None:
+        tickers = tickers[tickers_offset:tickers_offset + max_tickers]
+
+    if not tickers:
+        print("[V40.2-CRYPTO] ⚠️ No crypto tickers available. Exiting.", flush=True)
+        return
+
+    # للتوليد الحقيقي، نحتاج Python backend prediction_tracker
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from core.prediction_tracker import PredictionTracker
+        tracker = PredictionTracker()
+    except Exception as e:
+        print(f"[V40.2-CRYPTO] ⚠️ PredictionTracker not available: {e}", flush=True)
+        tracker = None
+
+    # نمشي على كل scan_date
+    from datetime import datetime as _dt, timedelta as _td
+    start_dt = _dt.strptime(start_date, '%Y-%m-%d')
+    end_dt = _dt.strptime(end_date, '%Y-%m-%d')
+    current = start_dt
+    total_generated = 0
+
+    while current <= end_dt:
+        scan_date = current.strftime('%Y-%m-%d')
+        print(f"\n[V40.2-CRYPTO] Scanning {scan_date}...", flush=True)
+        daily_picks = 0
+
+        for ticker in tickers:
+            if daily_picks >= max_picks:
+                break
+            coin_id = SYMBOL_TO_COIN_ID.get(ticker.upper())
+            if not coin_id:
+                continue
+            try:
+                # جلب OHLC من CoinGecko
+                url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+                params = {'vs_currency': 'usd', 'days': '30'}
+                resp = _requests.get(url, params=params, timeout=15)
+                if not resp.ok:
+                    continue
+                ohlc = resp.json()
+                if len(ohlc) < 15:
+                    continue
+                closes = [c[4] for c in ohlc]
+                last_price = closes[-1]
+
+                # حساب RSI بسيط
+                rsi = 50.0
+                if len(closes) >= 15:
+                    gains, losses = 0, 0
+                    for i in range(1, 15):
+                        diff = closes[i] - closes[i-1]
+                        if diff >= 0:
+                            gains += diff
+                        else:
+                            losses -= diff
+                    avg_gain = gains / 14
+                    avg_loss = losses / 14
+                    if avg_loss == 0:
+                        rsi = 100.0
+                    else:
+                        rs = avg_gain / avg_loss
+                        rsi = 100 - (100 / (1 + rs))
+
+                # حساب MA50 (proxy: آخر 30 closes)
+                ma50 = sum(closes) / len(closes) if closes else last_price
+
+                # إشارة بسيطة
+                if rsi < 40 and last_price > ma50:
+                    signal = 'BUY'
+                    entry = last_price
+                    target = last_price * 1.15  # +15%
+                    stop = last_price * 0.92     # -8%
+                elif rsi > 70:
+                    signal = 'SELL'
+                    entry = last_price
+                    target = last_price * 0.85
+                    stop = last_price * 1.08
+                else:
+                    continue  # NEUTRAL — skip
+
+                # تخزين التوقع
+                if tracker and not dry_run:
+                    try:
+                        pred_id = tracker.record_prediction(
+                            ticker=ticker, signal=signal,
+                            entry_price=entry, target_price=target,
+                            stop_loss=stop, master_score=60 + (100 - rsi),
+                            technical_score=rsi, persona='crypto_balanced',
+                            prediction_date=scan_date,
+                        )
+                        if pred_id:
+                            total_generated += 1
+                            daily_picks += 1
+                            print(f"  ✓ {ticker} {signal} entry=${entry:.2f} target=${target:.2f} RSI={rsi:.0f}", flush=True)
+                    except Exception as e:
+                        print(f"  ⚠️ Store error {ticker}: {e}", flush=True)
+                else:
+                    print(f"  [DRY] {ticker} {signal} entry=${entry:.2f} RSI={rsi:.0f}", flush=True)
+                    daily_picks += 1
+
+            except Exception as e:
+                print(f"  ⚠️ {ticker}: {e}", flush=True)
+                continue
+
+        current += _td(days=scan_interval)
+
+    print(f"\n[V40.2-CRYPTO] Done. Total predictions: {total_generated}", flush=True)
+
+
+if __name__ == '__main__':
+    main()
