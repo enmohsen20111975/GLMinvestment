@@ -14520,3 +14520,85 @@ Stage Summary:
 - ✅ توثيق طريقة التفعيل الآمن
 - 🔜 commit + push
 
+
+
+---
+Task ID: NEWS-FETCHER-ANALYZER-2026-09-01
+Agent: Z.ai Code (main) — Senior Engineer
+Task: حل مشكلة التوقعات العشوائية + كارثة الأخبار (أخبار حقيقية + فهم)
+
+Work Log:
+
+### Phase 1: مشكلة التوقعات العشوائية
+المشكلة: لما المستخدم بـ يدوس "تحديث التحليلات" من تبويب التوقعات، النتائج بـ تتغير
+عشوائياً. ده مش مقبول للعميل.
+
+السبب الجذري:
+1. زرار "تحديث التحليل" في AIAnalysisWidget.tsx — بـ يعمل fetchAnalysis(true) اللي
+   بـ يعمل trigger لتحليل جديد كل مرة → نتائج عشوائية
+2. زرار "⚡ توليد توقعات V40.2" + "تحقق الآن" في PredictionTrackingView.tsx —
+   دول في تبويب العميل (مش admin) و بـ يولّدوا توقعات عشوائية
+
+الحل:
+- إزالة زرار "تحديث التحليل" من AIAnalysisWidget.tsx (تم)
+- إزالة زرار "توليد توقعات V40.2" + "تحقق الآن" من PredictionTrackingView.tsx (تم)
+- الحفاظ على زرار "تحديث" (الآمن — بـ يعمل refresh للبيانات فقط)
+- التوقعات بـ تتولّد تلقائياً من V40.2 (cron job) — مش محتاجة تدخل يدوي
+
+### Phase 2: إثبات إن التوقعات بتظهر في تبويب التوقعات
+- تبويب التوقعات بـ يقرأ من /api/predictions/honest-tracking/live-tracking
+- الـ endpoint بـ يقرأ من db/predictions.db → table: predictions
+- V40.2 بـ يكتب في نفس الـ table (PREDICTIONS_DB = db/predictions.db)
+- الـ flow سليم: V40.2 (cron) → predictions.db → /api/predictions/honest-tracking → tab
+
+### Phase 3: الحد الأقصى للتوقعات (5)
+- MAX_PICKS_PER_DAY = 5 (ثابت في v40_2_daily_generator.py line 101)
+- admin route بيستخدم --max-picks 5 (generate-predictions/route.ts line 29)
+- intraday scanner بيستخدم --limit 5
+- كل المسارات مظبوطة على 5 توقعات بحد أقصى
+
+### Phase 4: كارثة الأخبار — بناء news_fetcher_analyzer.py
+المشكلة: news.db فيها 7894 مقال عام، 376 EGX بس **مفيش ولا واحد فيه symbol**.
+الـ EGX disclosure fetch بـ يرجع 0 (scraper مش شغّال).
+
+الحل: بناء vps-service/analyzers/news_fetcher_analyzer.py (460 LOC):
+1. fetch_news_for_ticker(ticker) — يجيب أخبار السهم من DuckDuckGo (شغّال + مجاني)
+2. fetch_egx_market_news() — يجيب أخبار السوق المصري كله
+3. analyze_news_sentiment(text) — يحلل المشاعر (keyword-based — مش محتاج AI):
+   - positive_strong (+2): أرباح قياسية، نمو قوي، استحواذ
+   - positive (+1): نمو، ارتفاع، تحسن
+   - neutral (0): محايد
+   - negative (-1): تراجع، انخفاض
+   - negative_strong (-2): خسائر، انهيار، تحقيق، إيقاف
+4. get_news_with_impact(ticker) — للـ V40.2 integration (يجيب + يحلل + يحسب التأثير)
+
+الميزات:
+- 22 سهم EGX معروف (ticker → اسم عربي + إنجليزي للبحث)
+- DuckDuckGo HTML search (شغّال دايماً — مش محتاج API key)
+- Keyword-based sentiment (مش محتاج AI/LLM — سريع + دقيق)
+- Ticker extraction من النص (يربط الخبر بالسهم)
+
+### Phase 5: التكامل في V40.2
+تحديث قسم NEWS_IMPACT في v40_2_daily_generator.py (السطر 1567-1598):
+- تغيير من news_impact_scorer (القديم — كان محتاج DuckDuckGo search)
+- لـ news_fetcher_analyzer (الجديد — يجيب أخبار حقيقية + يحللها)
+- score +2 → BOOST_STRONG (+20)
+- score +1 → BOOST (+10)
+- score -1 → REDUCE (-10)
+- score -2 → VETO (hard reject)
+
+### Phase 6: الاختبارات
+- 6/6 اختبار نجح (sentiment + ticker extraction + live news fetch)
+- live test على COMI: 3 أخبار، score=+2 (BOOST_STRONG) ✅
+- live test على HRHO: 3 أخبار، score=+1 (BOOST) ✅
+
+Stage Summary:
+- ✅ إزالة زرار "تحديث التحليل" من AIAnalysisWidget.tsx
+- ✅ إزالة زرار "توليد توقعات V40.2" + "تحقق الآن" من PredictionTrackingView.tsx
+- ✅ إثبات إن التوقعات بتظهر في تبويب التوقعات (flow سليم)
+- ✅ MAX_PICKS_PER_DAY = 5 (ثابت في الكود + admin route)
+- ✅ بناء news_fetcher_analyzer.py (460 LOC، 6/6 اختبار نجح)
+- ✅ تكامل في V40.2 (V40_2_NEWS_IMPACT flag)
+- ✅ live test: COMI +2 BOOST_STRONG، HRHO +1 BOOST
+- 🔜 commit + push
+

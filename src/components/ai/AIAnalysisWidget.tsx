@@ -251,15 +251,8 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
                 قابل للتداول
               </Badge>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => fetchAnalysis(true)}
-              title="تحديث التحليل"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            {/* تم إزالة زرار "تحديث التحليل" — كان بـ يولّد تحليل عشوائي في كل مرة */}
+            {/* التحليل بـ يتحدّث تلقائياً من V40.2 — مش محتاج تدخل يدوي */}
           </div>
         </div>
       </CardHeader>

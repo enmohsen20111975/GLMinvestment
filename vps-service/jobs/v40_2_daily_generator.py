@@ -1562,41 +1562,40 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # - REDUCE (dividend ex-date/miss) → تقليل score
             # - BOOST (IPO/beat/MA) → رفع score
             # NOTE: في backtest mode، الأخبار التاريخية مش متاحة → skip (NEUTRAL)
-            # NOTE: في production، news_agent بـ يعمل live DuckDuckGo search
+            # NOTE: في production، news_fetcher_analyzer بـ يجيب أخبار حقيقية + يحللها
             # Toggle: V40_2_NEWS_IMPACT=1 (default OFF للـ backtest)
             if os.environ.get('V40_2_NEWS_IMPACT', '0') == '1':
                 _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
                 if not _is_backtest:
                     try:
-                        from analyzers.news_impact_scorer import get_news_impact_for_ticker
-                        _news_result = get_news_impact_for_ticker(
-                            ticker, articles=None, use_live_search=True
-                        )
-                        _news_score = _news_result.get('news_score', 0)
-                        _news_verdict = _news_result.get('verdict', 'NEUTRAL')
+                        # استخدم news_fetcher_analyzer (جديد — يجيب أخبار حقيقية + يحللها)
+                        from analyzers.news_fetcher_analyzer import get_news_with_impact
+                        _news_result = get_news_with_impact(ticker, max_news=3)
+                        _news_score = _news_result.get('overall_score', 0)
+                        _news_verdict = _news_result.get('overall_verdict', 'NEUTRAL')
 
-                        if _news_verdict == 'VETO' and _news_score <= -15:
+                        if _news_verdict == 'VETO' and _news_score <= -2:
                             print(f"[NEWS-VETO] {ticker} on {scan_date}: "
-                                  f"{_news_result.get('summary_ar', '')} → رفض", flush=True)
+                                  f"{_news_result.get('reason', '')} → رفض", flush=True)
                             if 'proofs' not in result or result['proofs'] is None:
                                 result['proofs'] = {}
                             result['proofs']['news_veto'] = _news_result.get('proof_string', '')
                             continue  # hard reject
 
-                        # Apply score adjustment (BOOST or REDUCE)
+                        # Apply score adjustment (BOOST or REDUCE) — scale ×10 للـ V40.2 score (0-100)
                         if _news_score != 0:
                             print(f"[NEWS-{_news_verdict}] {ticker} on {scan_date}: "
-                                  f"score={_news_score:+d} → "
-                                  f"{'boost' if _news_score > 0 else 'reduce'}", flush=True)
+                                  f"score={_news_score:+d} (news_count={_news_result.get('news_count', 0)}) → "
+                                  f"{'دفعة' if _news_score > 0 else 'تقليل'}", flush=True)
                             if isinstance(result.get('score'), (int, float)):
-                                result['score'] = max(0, min(100, result['score'] + _news_score))
+                                result['score'] = max(0, min(100, result['score'] + (_news_score * 10)))
                             if 'proofs' not in result or result['proofs'] is None:
                                 result['proofs'] = {}
                             result['proofs']['news_impact'] = _news_result.get('proof_string', '')
                             result['news_verdict'] = _news_verdict
                             result['news_score'] = _news_score
                     except Exception as _news_err:
-                        pass  # safe-by-design: لو news scorer فشل → نكمّل
+                        pass  # safe-by-design: لو news fetcher فشل → نكمّل
 
             # ── STRICT ENTRY FILTER (2026-09-01): تراكم أو Liquidity Grab فقط ──
             # توجيه المالك: "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في

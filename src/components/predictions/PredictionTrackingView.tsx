@@ -317,34 +317,13 @@ export function PredictionTrackingView() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <MarketSelector size="sm" />
+          {/* تم إزالة زرار "توليد توقعات V40.2" + "تحقق الآن" — كانوا بـ يسببوا نتائج عشوائية */}
+          {/* التوقعات بـ تتولّد تلقائياً من V40.2 (cron job) — مش محتاجين تدخل يدوي */}
           <Button
             size="sm"
-            onClick={handleGenerateV40}
-            disabled={generatingV40}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-1 shadow-sm"
+            variant="outline"
+            onClick={refreshAll}
           >
-            {generatingV40 ? (
-              <RefreshCw className="h-4 w-4 ml-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 ml-1" />
-            )}
-            <span>{generatingV40 ? 'جارٍ التوليد...' : '⚡ توليد توقعات V40.2'}</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="default"
-            onClick={handleVerify}
-            disabled={verifying}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            {verifying ? (
-              <RefreshCw className="h-4 w-4 ml-1 animate-spin" />
-            ) : (
-              <Activity className="h-4 w-4 ml-1" />
-            )}
-            <span>{verifying ? 'جارٍ التحقق...' : 'تحقق الآن'}</span>
-          </Button>
-          <Button size="sm" variant="outline" onClick={refreshAll}>
             <RefreshCw className="h-4 w-4 ml-1" />
             <span>تحديث</span>
           </Button>
