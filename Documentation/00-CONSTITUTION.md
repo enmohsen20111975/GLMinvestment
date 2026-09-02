@@ -445,6 +445,40 @@
   - لا أسلوب تقني في شاشات العميل (يخدش Rule 30)
 - **المرجع:** `Documentation/handOver.text` + `01-PROJECT_ANATOMY.md` §1 (المعمارية الرباعية).
 
+### القاعدة 42 — فلتر الـ Regime إلزامي + المتوسط السعري الذكي (REGIME-AND-AVG-DOWN — 2026-09-02)
+> **سبب الإضافة:** توجيه المالك (2026-09-02): "السوق المصري نزوله حاد كتير بيبقى Liquidity Grab من الصناع وبعدين انفجار سعري. عايزين فلتر اتجاه قوي + تعريف كمي لفرصة المتوسط السعري الذكي، مش الأعمى."
+
+**أ. فلتر الـ Regime (إلزامي على إشارات BUY):**
+- **المُطبِّق:** `vps-service/analyzers/regime_filter.py::passes_regime_filter()`.
+- **النسختان المدعومتان:**
+  - `mode='A'` (افتراضي للإنتاج): `Close > SMA50` (اتجاه صحي متوسط المدى).
+  - `mode='B'` (للأبحاث/الإنتاج المستقبلي): `Close > SMA20 AND Close > SMA50` (تأكيد مزدوج).
+- **التكامل:** خلف feature flag `V40_2_REGIME_FILTER` (default OFF حتى اكتمال walk-forward). عند التفعيل، يُطبَّق كـ pre-filter في `evaluate_strict_entry()` (قبل is_late / is_grab).
+- **النتائج الموثقة (19 شهر، 442 سهم EGX):**
+  - `Correction [B]` = الأفضل جودة (PF 18.54، DD -2.59%، 5 صفقات فقط).
+  - `Merged-Strict [B]` = الأفضل عائداً (+1594.91%، DD -24.8%، 130 صفقة).
+  - `Merged [الساذج]` مرفوض في كل الحالات حتى مع regime filter.
+  - `Chase` مرفوض دائماً (DD -66% حتى مع regime) — المشكلة في طبيعته مش في الفلتر.
+
+**ب. المتوسط السعري الذكي (Average Down):**
+- **المُطبِّق:** `vps-service/analyzers/strict_entry_filters.py::evaluate_average_down()`.
+- **الشروط الكمية الصارمة (قابلة للقياس):**
+  1. السهم كسر قاع سابق بنسبة بين 3% و 8% (`AVG_DOWN_BREAK_MIN_PCT=3.0`, `AVG_DOWN_BREAK_MAX_PCT=8.0`).
+  2. حجم شمعة الكسر أعلى من متوسط الحجم 20 يوم (`AVG_DOWN_VOL_RATIO_MIN=1.1`).
+  3. خلال 1-3 أيام يرجع السعر فوق الدعم وفوق منتصف شمعة الكسر (`AVG_DOWN_RECOVERY_DAYS=3`).
+  4. السعر قريب من SMA50 (within 8% — `AVG_DOWN_PROXIMITY_TO_SMA50=8.0`).
+  5. مفيش Change of Character هابط واضح (no 3 consecutive lower-lows + lower-highs).
+- **قواعد صارمة (hard rules — لا تُكسر):**
+  - الستوب يفضل موجود. المتوسط مش بديل للستوب، هو قرار إضافي.
+  - المتوسط مرة واحدة فقط كحد أقصى (`already_averaged` flag).
+  - حجم المتوسط = 50% من الصفقة الأصلية (`AVG_DOWN_SIZE_PCT=50.0`).
+  - الـ stop الأصلي يظل كما هو — ممنوع التوسيع بحجة "صانع سوق".
+- **النتيجة الموثقة (Phase 2):** في backtest 19 شهر، لم يطلق Average Down أبداً (avg_used=0) لأن الشروط نادراً ما تتحقق أثناء holding مفتوح. هذا **سلوك مقبول** — الـ Average Down الذكي نادر، والـ Average Down الأعمى ممنوع.
+
+**ج. قاعدة الرفض الإلزامية:** أي نسخة من الـ strategies بـ Max Drawdown > 25% تُرفض للإنتاج حتى لو كان العائد أعلى (توجيه المالك 2026-09-02).
+
+- **المرجع:** `Documentation/01-PROJECT_ANATOMY.md` §"Regime Filter + Average Down Logic" + `data/merge_backtest_real/phase1_regime_results.json` + `phase2_avg_down_results.json`.
+
 ---
 
 ## 📊 KPIs والحدود الحرجة (Hard Caps)

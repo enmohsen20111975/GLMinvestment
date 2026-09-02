@@ -19,6 +19,58 @@
 
 ---
 
+## ⚡ تغييرات جوهرية (2026-09-02) — اقرأ هذا أولاً
+
+### 🛡️ Regime Filter + Average Down Logic (Phase 1 + Phase 2)
+
+توجيه المالك (2026-09-02): "السوق المصري نزوله حاد كتير بيبقى Liquidity Grab من الصناع وبعدين انفجار سعري. عايزين فلتر اتجاه قوي + تعريف كمي لفرصة المتوسط السعري الذكي."
+
+| المكوّن | الملف | الوصف |
+|---|---|---|
+| **Regime Filter** | `vps-service/analyzers/regime_filter.py` (210 LOC) | فلتر اتجاه إلزامي على إشارات BUY. mode='A': `Close > SMA50`. mode='B': `Close > SMA20 AND Close > SMA50`. يحتوي `is_bullish_regime()` + `passes_regime_filter()` + `compute_market_proxy_index()` + `is_market_bullish()`. |
+| **Liquidity Grab Opportunity** | `vps-service/analyzers/strict_entry_filters.py` (إضافة ~250 LOC) | `is_liquidity_grab_opportunity()` — تعريف كمي صارم لفرصة المتوسط السعري: كسر 3-8% تحت الدعم + recovery خلال 3 أيام + حجم مؤكد + قريب من SMA50 + لا bearish ChoC. |
+| **Average Down Evaluator** | `vps-service/analyzers/strict_entry_filters.py` | `evaluate_average_down()` — تقييم قرار المتوسط لصفقة قائمة. قواعد صارمة: مرة واحدة فقط، حجم 50%، الستوب لا يتوسع (يظل original). |
+| **التكامل في V40.2** | خلف feature flag `V40_2_REGIME_FILTER` (default OFF) | سيُفعّل بعد التحقق على بيانات أطول (walk-forward). الـ baseline الموثق V40.2 بدون فلتر: PF 9.80. |
+
+### 📊 نتائج باك-تest المرحلة 1 (Regime Filter على EGX حقيقي 442 سهم)
+
+| الفترة | الاستراتيجية | mode | صفقات | WR | العائد | Max DD | PF | الحكم |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| 6 شهور | Correction | A | 2 | 100% | +25.44% | 0% | ∞ | ✅ مقبول (DD≤25%) |
+| 6 شهور | Correction | B | 2 | 100% | +25.44% | 0% | ∞ | ✅ مقبول |
+| 6 شهور | Merged-Strict | A | 41 | 46.3% | +48.66% | -23.77% | 1.46 | ✅ مقبول |
+| 6 شهور | Merged-Strict | B | 35 | 51.4% | +75.48% | -16.48% | 1.73 | ✅ مقبول |
+| 19 شهر | Correction | A | 15 | 46.7% | +66.76% | -7.74% | 4.31 | ✅ مقبول |
+| 19 شهر | Correction | B | 5 | 80.0% | +53.28% | -2.59% | 18.54 | ✅ مقبول (الأفضل) |
+| 19 شهر | Merged-Strict | B | 130 | 53.1% | +1594.91% | -24.80% | 2.03 | ✅ مقبول |
+| 19 شهر | Merged-Strict | A | 162 | 47.5% | +1361.20% | -30.03% | 1.81 | ❌ مرفوض (DD>25%) |
+| 19 شهر | Chase | A | 252 | 44.0% | +711.72% | -66.11% | 1.38 | ❌ مرفوض |
+| 19 شهر | Merged | A | 778 | 39.0% | +10827.34% | -75.33% | 1.31 | ❌ مرفوض (ساذج حتى مع regime) |
+
+**الاكتشافات:**
+1. **Correction [B]** (Close>SMA20 AND Close>SMA50) هو الأفضل: PF 18.54 على 19 شهر (5 صفقات فقط — عالي الجودة جداً ونادر).
+2. **Merged-Strict [B]** هو الأفضل على 19 شهر في إجمالي العائد (+1594.91%) مع DD -24.8% (على حدود القاعدة).
+3. **Merged (الساذج)** مرفوض في كل الحالات حتى مع regime filter — تخفيف العتبات = كارثة.
+4. **Chase** مرفوض دائماً (DD -66% حتى مع regime) — المشكلة في طبيعته مش في الفلتر.
+
+### 📊 نتائج باك-تest المرحلة 2 (Average Down)
+
+| الاستراتيجية | السيناريو | Trades | Exp | AvgUsed | Flipped | الحكم |
+|---|---|---:|---:|---:|---:|---|
+| Correction [A] full | NO_AVG | 10 | +3.36% | — | — | baseline |
+| Correction [A] full | AVG_DOWN | 10 | +3.36% | 0 | 0 | 🟡 محايد (لم يطلق النار) |
+| Merged-Strict [B] full | NO_AVG | 113 | +0.39% | — | — | baseline |
+| Merged-Strict [B] full | AVG_DOWN | 113 | +0.39% | 0 | 0 | 🟡 محايد |
+
+**الحُكم الصادق للمرحلة 2:** Average Down مع الشروط الصارمة لم يُطلق النار أبداً في الـ backtest (avg_used=0). الأسباب:
+1. الشروط صارمة (break 3-8% + recovery خلال 3 أيام + حجم مؤكد + قريب من SMA50 + لا ChoC).
+2. معظم الصفقات تخرج (stop_loss أو take_profit) قبل ما تظهر الفرصة.
+3. هذا **إيجابي** — الـ Average Down الذكي نادر والـ Average Down الأعمى ممنوع.
+
+**التوصية:** تفعيل `evaluate_average_down()` كـ safety layer في V40.2 (سيطلق النار نادراً، لكن عندما يطلق = فرصة حقيقية). المتوسط الأعمى ممنوع.
+
+---
+
 ## ⚡ تغييرات جوهرية (2026-09-01) — اقرأ هذا أولاً
 
 ### 📒 Stock Notebook System (طبقة المعرفة الدائمة لكل سهم)

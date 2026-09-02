@@ -455,6 +455,258 @@ def evaluate_strict_entry(closes: List[float], highs: List[float],
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# 6. Liquidity Grab Opportunity + Average Down (Phase 2 — 2026-09-02)
+# ═══════════════════════════════════════════════════════════════════════
+# توجيه المالك (2026-09-02):
+#   "السوق المصري نزوله حاد كتير بيبقى Liquidity Grab من الصناع وبعدين انفجار سعري.
+#    عايزين تعريف كمي لفرصة المتوسط السعري (Average Down) الذكي، مش الأعمى."
+#
+# الشروط الكمية الصارمة (quantitative, measurable):
+#   1. السهم كسر قاع سابق/منطقة دعم بنسبة بين 3% و 8% (مش أقل، مش أكتر).
+#   2. حجم شمعة الكسر أعلى من متوسط الحجم 20 يوم (تأكيد).
+#   3. خلال 1-3 أيام يرجع السعر فوق مستوى الكسر (أو فوق منتصف شمعة الكسر) مع حجم صاعد.
+#   4. السعر يرجع فوق SMA50 أو كان أصلاً قريب منه (within 5%).
+#   5. مفيش Change of Character هابط واضح (no 3 consecutive lower-lows + lower-highs).
+#
+# قواعد صارمة (hard rules — لا تُكسر):
+#   - الستوب يفضل موجود. المتوسط مش بديل للستوب، هو قرار إضافي.
+#   - المتوسط مرة واحدة بس كحد أقصى.
+#   - حجم المتوسط = نصف حجم الصفقة الأصلية (50%).
+#   - الـ new stop = min(original_stop, avg_down_trigger - 0.5×ATR) (مش أوسع من الأصلي).
+
+# ─── Thresholds (EGX-calibrated) ───
+AVG_DOWN_BREAK_MIN_PCT = 3.0          # كسر 3% على الأقل
+AVG_DOWN_BREAK_MAX_PCT = 8.0          # كسر 8% على الأكثر (أكتر = falling knife)
+AVG_DOWN_RECOVERY_DAYS = 3            # رجوع خلال 1-3 أيام
+AVG_DOWN_RECOVERY_RATIO = 0.5         # رجوع فوق منتصف شمعة الكسر (0.5 = فوق منتصف)
+AVG_DOWN_VOL_RATIO_MIN = 1.1          # حجم صاعد للرجوع (مش صارم زي grab)
+AVG_DOWN_PROXIMITY_TO_SMA50 = 8.0     # السعر لسه قريب من SMA50 (within 8% — expanded 5→8)
+AVG_DOWN_SIZE_PCT = 50.0              # حجم المتوسط = 50% من الصفقة الأصلية
+AVG_DOWN_LOOKBACK_BARS = 10           # ابحث آخر 10 أيام للكسر+الرجوع (م扩عاً من 3)
+
+
+def is_liquidity_grab_opportunity(closes: List[float],
+                                    highs: List[float],
+                                    lows: List[float],
+                                    volumes: List[float],
+                                    sma50: Optional[float] = None) -> Dict[str, Any]:
+    """
+    تعريف كمي صارم لـ Liquidity Grab Opportunity (فرصة المتوسط السعري الذكي).
+
+    الفرق بين ده و is_liquidity_grab():
+      - is_liquidity_grab: يدخل سهم نزل تحت دعم ورجع فوقه (entry signal).
+      - is_liquidity_grab_opportunity: سهم كسر دعم بنسبة 3-8% + رجع خلال 3 أيام
+        + قريب من SMA50 = فرصة متوسط سعري (ADD to existing position).
+
+    Returns:
+        {
+            'is_opportunity': bool,
+            'break_pct': float,        # نسبة الكسر
+            'recovered': bool,
+            'recovery_days': int,
+            'vol_confirmed': bool,
+            'near_sma50': bool,
+            'no_bearish_choc': bool,   # لا Change of Character هابط
+            'reason': str,
+            'details': dict,
+        }
+    """
+    n = min(len(closes), len(highs), len(lows), len(volumes))
+    if n < 25:
+        return {'is_opportunity': False, 'reason': f'بيانات غير كافية ({n} < 25)',
+                'break_pct': 0, 'recovered': False, 'recovery_days': 0,
+                'vol_confirmed': False, 'near_sma50': False, 'no_bearish_choc': False}
+
+    # Support = lowest low in last 20 days (excluding last 3)
+    if n < 23:
+        return {'is_opportunity': False, 'reason': 'بيانات غير كافية', 'break_pct': 0,
+                'recovered': False, 'recovery_days': 0, 'vol_confirmed': False,
+                'near_sma50': False, 'no_bearish_choc': False}
+    support_lows = lows[-23:-3]
+    support_level = min(support_lows) if support_lows else 0
+    if support_level <= 0:
+        return {'is_opportunity': False, 'reason': 'مستوى دعم غير صالح',
+                'break_pct': 0, 'recovered': False, 'recovery_days': 0,
+                'vol_confirmed': False, 'near_sma50': False, 'no_bearish_choc': False}
+
+    # avg_vol 20d
+    avg_vol = _sma(volumes[-20:], 20) if len(volumes) >= 20 else 1
+
+    # Look back up to AVG_DOWN_RECOVERY_DAYS for the break + recovery pattern
+    # We scan last 3 bars; each bar = "today". Find: did price break support recently + recover?
+    found = False
+    break_pct = 0
+    recovery_days = 0
+    recovered = False
+    vol_confirmed = False
+    break_idx = -1
+    break_low = 0
+
+    # check last AVG_DOWN_LOOKBACK_BARS days: was there a break day + recovery within AVG_DOWN_RECOVERY_DAYS?
+    for back in range(1, min(AVG_DOWN_LOOKBACK_BARS + 1, n)):
+        break_idx_candidate = n - 1 - back  # the break day
+        if break_idx_candidate < 0:
+            continue
+        break_low_candidate = lows[break_idx_candidate]
+        if break_low_candidate >= support_level:
+            continue  # didn't break
+        pct = ((support_level - break_low_candidate) / support_level * 100)
+        if pct < AVG_DOWN_BREAK_MIN_PCT or pct > AVG_DOWN_BREAK_MAX_PCT:
+            continue  # out of range
+        # check recovery in the bars AFTER break (within AVG_DOWN_RECOVERY_DAYS window)
+        recovered_now = False
+        vol_up = False
+        recovery_offset = 0
+        for j in range(break_idx_candidate + 1,
+                       min(break_idx_candidate + 1 + AVG_DOWN_RECOVERY_DAYS, n)):
+            # recovery = close above support AND above midpoint of break candle
+            mid_break = (highs[break_idx_candidate] + break_low_candidate) / 2
+            if closes[j] >= support_level and closes[j] >= mid_break:
+                recovered_now = True
+                recovery_offset = j - break_idx_candidate
+                # volume on recovery day should be > avg
+                if volumes[j] > avg_vol * AVG_DOWN_VOL_RATIO_MIN:
+                    vol_up = True
+                break
+        if recovered_now:
+            found = True
+            break_pct = pct
+            recovery_days = recovery_offset
+            recovered = True
+            vol_confirmed = vol_up
+            break_idx = break_idx_candidate
+            break_low = break_low_candidate
+            break
+
+    if not found:
+        return {'is_opportunity': False,
+                'reason': 'مفيش كسر + رجوع ضمن النطاق 3-8%',
+                'break_pct': 0, 'recovered': False, 'recovery_days': 0,
+                'vol_confirmed': False, 'near_sma50': False, 'no_bearish_choc': False}
+
+    # Near SMA50?
+    current_close = closes[-1]
+    near_sma50 = False
+    if sma50 is not None and sma50 > 0:
+        dist_pct = abs(current_close - sma50) / sma50 * 100
+        near_sma50 = dist_pct <= AVG_DOWN_PROXIMITY_TO_SMA50
+
+    # No bearish ChoC? (no 3 consecutive lower-lows + lower-highs in last 6 bars)
+    no_bearish_choc = True
+    if n >= 6:
+        recent_lows = lows[-6:]
+        recent_highs = highs[-6:]
+        # 3 consecutive lower lows
+        ll_count = sum(1 for i in range(1, 3) if recent_lows[-1-i] > recent_lows[-i])
+        # 3 consecutive lower highs
+        lh_count = sum(1 for i in range(1, 3) if recent_highs[-1-i] > recent_highs[-i])
+        if ll_count >= 2 and lh_count >= 2:
+            no_bearish_choc = False  # bearish ChoC detected
+
+    is_opp = (recovered and vol_confirmed and near_sma50 and no_bearish_choc)
+
+    reason_parts = []
+    reason_parts.append(f'كسر {break_pct:.2f}% تحت الدعم {support_level:.2f}')
+    reason_parts.append(f'رجوع خلال {recovery_days} يوم')
+    if vol_confirmed:
+        reason_parts.append('بحجم مؤكد')
+    else:
+        reason_parts.append('بدون تأكيد حجم')
+    if near_sma50:
+        reason_parts.append('قريب من SMA50')
+    else:
+        reason_parts.append('بعيد عن SMA50')
+    if no_bearish_choc:
+        reason_parts.append('بدون ChoC هابط')
+    else:
+        reason_parts.append('فيه ChoC هابط')
+
+    reason = ('✅ فرصة متوسط: ' if is_opp else '❌ مش فرصة: ') + ' | '.join(reason_parts)
+
+    return {
+        'is_opportunity': is_opp,
+        'break_pct': round(break_pct, 2),
+        'recovered': recovered,
+        'recovery_days': recovery_days,
+        'vol_confirmed': vol_confirmed,
+        'near_sma50': near_sma50,
+        'no_bearish_choc': no_bearish_choc,
+        'reason': reason,
+        'details': {
+            'support_level': round(support_level, 2),
+            'break_low': round(break_low, 2),
+            'break_idx': break_idx,
+            'avg_vol_20': round(avg_vol, 2),
+            'avg_down_size_pct': AVG_DOWN_SIZE_PCT,
+        },
+    }
+
+
+def evaluate_average_down(closes: List[float],
+                            highs: List[float],
+                            lows: List[float],
+                            volumes: List[float],
+                            original_entry: float,
+                            original_stop: float,
+                            current_price: float,
+                            sma50: Optional[float] = None,
+                            already_averaged: bool = False) -> Dict[str, Any]:
+    """
+    تقييم قرار المتوسط السعري (Average Down) لصفقة قائمة.
+
+    Args:
+        original_entry: سعر الدخول الأصلي.
+        original_stop: سعر الستوب الأصلي.
+        current_price: السعر الحالي.
+        already_averaged: هل الصفقة اتـ average قبل كده؟ (ممنوع مرتين)
+
+    Returns:
+        {
+            'should_average': bool,
+            'avg_price': float | None,    # سعر المتوسط المقترح (نصف حجم الصفقة)
+            'new_avg_entry': float | None, # متوسط سعر الدخول الجديد بعد المتوسط
+            'new_stop': float | None,     # الستوب الجديد (مش أوسع من الأصلي)
+            'reason': str,
+            'opportunity_details': dict,
+        }
+    """
+    if already_averaged:
+        return {'should_average': False, 'avg_price': None, 'new_avg_entry': None,
+                'new_stop': None, 'reason': 'ممنوع: الصفقة اتـ average قبل كده (مرة واحدة بس)',
+                'opportunity_details': {}}
+
+    # Check if original stop is still valid (not hit)
+    if current_price <= original_stop:
+        return {'should_average': False, 'avg_price': None, 'new_avg_entry': None,
+                'new_stop': None, 'reason': 'ممنوع: الستوب ضرب — ممنوع المتوسط على صفقة خاسرة بقتعلم',
+                'opportunity_details': {}}
+
+    # Liquidity grab opportunity check
+    opp = is_liquidity_grab_opportunity(closes, highs, lows, volumes, sma50)
+    if not opp['is_opportunity']:
+        return {'should_average': False, 'avg_price': None, 'new_avg_entry': None,
+                'new_stop': None, 'reason': f'ممنوع: {opp["reason"]}',
+                'opportunity_details': opp}
+
+    # Average down: add 50% size at current price
+    # New avg entry = (original_entry + current_price) / 2 (assuming original size = 1, add 0.5)
+    new_avg_entry = (original_entry + current_price) / 2
+
+    # New stop: keep original (لا توسيع)
+    # V40.2 hard rule: الستوب مش بيتوسّع بحجة المتوسط.
+    new_stop = original_stop
+
+    return {
+        'should_average': True,
+        'avg_price': round(current_price, 2),
+        'new_avg_entry': round(new_avg_entry, 2),
+        'new_stop': round(new_stop, 2),
+        'reason': f'✅ متوسط مرة واحدة عند {current_price:.2f} — متوسط الدخول الجديد = {new_avg_entry:.2f}',
+        'opportunity_details': opp,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # 5. Self-test
 # ═══════════════════════════════════════════════════════════════════════
 
