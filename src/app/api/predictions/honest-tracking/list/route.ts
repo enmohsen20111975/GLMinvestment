@@ -587,6 +587,17 @@ export async function GET(request: NextRequest) {
       predictions = applyProtectionFilter(predictions);
     }
 
+    // PREDICTION-VALIDATOR (2026-09-02): filter out invalid predictions before client display
+    // المالك: "مستحيل واجهة الموقع تحط العبط ده. أي عميل هاشوف الكلام ده هايهرب على طول."
+    // الفحوصات: stop≥entry, target≤entry, daily return anomaly, exit_type consistency, dedup
+    const { filterValidPredictions, deduplicatePredictions } = await import('@/lib/prediction-validator');
+    const beforeValidation = predictions.length;
+    predictions = deduplicatePredictions(predictions);
+    const afterDedup = predictions.length;
+    const validationResult = filterValidPredictions(predictions);
+    predictions = validationResult.valid;
+    const invalidCount = validationResult.invalid.length;
+
     const total = predictions.length;
     const page = predictions.slice(offset, offset + limit);
 
@@ -601,6 +612,14 @@ export async function GET(request: NextRequest) {
       },
       filters: { market, status, signal, sortBy, sortOrder, minScore, topPerDay, qualityMode },
       protection: isProtectionActive() ? getProtectionDescription() : undefined,
+      // PREDICTION-VALIDATOR: إفصاح عن عدد التنبؤات المرفوضة
+      validation: {
+        before_dedup: beforeValidation,
+        after_dedup: afterDedup,
+        deduped_removed: beforeValidation - afterDedup,
+        invalid_removed: invalidCount,
+        valid_shown: predictions.length,
+      },
       // HONEST-V3: إفصاح عن مصدر البيانات (local vs production fallback)
       // علشان المطور يقدر يكتشف لو الـ cleanup مش شغّال أو الـ fallback بيخبيه.
       data_source: localIsEmpty ? 'vps-production-fallback' : 'local-db',

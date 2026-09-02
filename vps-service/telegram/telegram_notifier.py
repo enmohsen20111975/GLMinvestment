@@ -29,7 +29,8 @@ class TelegramNotifier:
 
     def __init__(self):
         self.bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-        self.chat_id = os.environ.get('TELEGRAM_CHAT_ID', '')
+        # TELEGRAM_CHAT_ID أو TELEGRAM_CHANNEL_ID (المالك بعت TELEGRAM_CHANNEL_ID=@Arabian_investment_guide)
+        self.chat_id = os.environ.get('TELEGRAM_CHAT_ID', '') or os.environ.get('TELEGRAM_CHANNEL_ID', '')
         self.enabled = bool(self.bot_token and self.chat_id)
 
     def _send(self, message: str) -> bool:
