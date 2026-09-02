@@ -16241,3 +16241,51 @@ NEED_OWNER:
 2. 🟡 الـ proxy-prod لازم يتعمله deploy على الإنتاج عشان V40.2 الإنتاجي يقدر يقرأ التوصيات بنفسه.
 3. 🟡 هل تريد تفعيل V40_2_EXPERT_RECS=1 في الإنتاج بعد deploy الـ proxy-prod؟
 4. 🟡 المبرمج البشري شغّال على recommendations tab في news repo dashboard — أقدر أتنسق معاه على schema.
+
+---
+Task ID: V402-DETAILED-ANALYSIS-GROK-REPORT-2026-09-02
+Agent: main (orchestrator, Z.ai Code)
+Task: تنفيذ توجيه المالك: "محتاجين نركز ونبلّي في رفع كفاءة التوقعات. بالباك تست نرجع نشوف بالتفاصيل فين المشاكل وندخل جروك معانا عشان يساعد."
+
+Work Log:
+- Task 1 (اختبار الإنتاج بعد الرفع):
+  * /api/proxy-prod/news-feed → 404 (الكود الجديد مش متـdeploy كامل على الإنتاج — مفيش /api/proxy-prod endpoint).
+  * /api/news → 200 (شغّال ببيانات قديمة من AlphaVantage).
+  * /api/news-feed → 200 (24 خبر، 6 فيهم tickers حقيقية).
+  * /api/expert-recommendations → 200 (20 توصية: 10 شراء واحتفاظ + 3 دعم/ارتداد + 3 T+1).
+  * /api/features → 200 (regime=DISTRIBUTION, egx30=+2.16%).
+- Task 2 (V40.2 detailed backtest):
+  * كتبت scripts/v402_detailed_backtest.py (تحليل per-trade + per-ticker + per-exit-type + per-month + winners/losers).
+  * شغلت V40.2 baseline على 6 شهور (2026-02-01 → 2026-08-14)، 235 tickers.
+  * النتايج:
+    - Trades: 23, WR: 69.57%, Total Return: +95.89%, MaxDD: -31.47%, PF: 2.79
+    - Avg Winner: +7.87%, Avg Loser: -6.45%, Avg Holding: 6.7 days
+  * Per-Month: فبراير-مايو = 0 صفقات، يونيو = 2، يوليو = 5، أغسطس = 16 (70%).
+  * Top winners: DAPH +29.90%, DAPH +25.01%, EPCO +13.18%.
+  * Bottom losers: UTOP -24.86%, IDRE -12.14%.
+- Task 3 (تحليل المشاكل):
+  * المشكلة #1: MaxDD=-31.47% (عالي — فوق الحد المقبول 25%).
+  * المشكلة #2: 23 صفقة فقط في 6 شهور (kill filters صارمة جداً).
+  * المشكلة #3: exit_type = "unknown" في 100% من الصفقات (bug في daily_closer.py).
+  * المشكلة #4: توزيع الأشهر غير متوازن (Q1 = 0 صفقات).
+  * المشكلة #5: R:R ثابت (1.50 أو 3.00 بس — مفيش تنوع).
+  * المشكلة #6: Losers بياخدوا -9% بالظبط (مفيش trailing stop).
+- Task 4 (كتابة تقرير Grok):
+  * أنشأت Grok-Report-V40.2-Detailed-Analysis.md (200+ سطر).
+  * فيه: النتايج + المشاكل + 5 أسئلة محددة لـ Grok + ملفات مهمة ليه.
+  * الأسئلة:
+    1. كيف نخفض MaxDD من -31% لـ -20%؟
+    2. كيف نرفع عدد الصفقات من 23 لـ 50+؟
+    3. ليه exit_type = "unknown" في كل الصفقات؟
+    4. كيف نخلي R:R dynamic بدل ثابت؟
+    5. ليه فبراير-مايو = 0 صفقات؟
+
+Stage Summary:
+- V40.2 detailed backtest اتعمل بنجاح: PF=2.79, MaxDD=-31.47%.
+- 6 مشاكل اتحددت بدقة (أهمها: MaxDD عالي + exit_type unknown).
+- تقرير Grok جاهز بـ 5 أسئلة محددة + ملفات مرجعية.
+- النتايج متاحة في data/merge_backtest_real/v402_detailed_backtest.json.
+
+NEED_OWNER:
+1. 🟡 شارك Grok-Report-V40.2-Detailed-Analysis.md مع Grok عشان يساعد.
+2. 🟡 بعد ما Grok يرد، نبدأ تنفيذ الإصلاحات المقترحة.
