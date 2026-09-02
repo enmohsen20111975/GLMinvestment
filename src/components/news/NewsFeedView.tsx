@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * NewsFeedView — الأخبار المالية والاقتصادية
+ * Features: 2-column layout, investment insights, social sharing (Facebook, Twitter X, LinkedIn, WhatsApp, Telegram)
+ */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Newspaper,
