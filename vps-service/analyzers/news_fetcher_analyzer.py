@@ -129,7 +129,121 @@ def _parse_ddg_results(html: str) -> List[Dict[str, str]]:
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# 1b. news.db → market_news (PRIMARY source — News Agent's analyzed news)
+# 1a. Production server via /api/proxy-prod/news-feed (PRIMARY — fresh EGX news)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _get_news_from_production(ticker: str, max_results: int = 5) -> List[Dict[str, Any]]:
+    """
+    جلب أخبار لسهم من السيرفر الإنتاجي (invist.m2y.net) عبر /api/proxy-prod/news-feed.
+    ده الـ PRIMARY source — أخبار EGX حقيقية طازجة.
+
+    Owner directive (2026-09-02):
+        "اعمل API يخليك تقرأ أي بيانات انت محتاجها من الموقع الإنتاجي.
+         كدة كدة هاحتاجهم فى تطوير برنامج الموبايل."
+
+    Args:
+        ticker: رمز السهم (COMI)
+        max_results: حد أقصى للنتائج
+
+    Returns:
+        list of {
+            'title', 'snippet', 'url', 'source', 'published_at',
+            'importance', 'sentiment', 'impact_type', 'summary_ar',
+            'tickers', 'from_production'
+        }
+    """
+    # Determine proxy-prod URL (sandbox: localhost:3000, prod: same host)
+    proxy_url = os.environ.get('PROXY_PROD_URL') or 'http://127.0.0.1:3000'
+    proxy_url = proxy_url.rstrip('/')
+    endpoint = f"{proxy_url}/api/proxy-prod/news-feed?limit=50"
+
+    try:
+        req = urllib.request.Request(
+            endpoint,
+            headers={
+                'Accept': 'application/json',
+                'User-Agent': 'GLMinvestment-NewsFetcher/1.0',
+            },
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+
+        if not data.get('success'):
+            logger.debug(f"production news-feed: success=false")
+            return []
+
+        all_news = data.get('news', [])
+        if not all_news:
+            return []
+
+        # Filter by ticker (in tickers array OR in title/body)
+        ticker_upper = ticker.upper()
+        ticker_lower = ticker.lower()
+        results = []
+        for n in all_news:
+            # Check tickers array
+            news_tickers = n.get('tickers') or []
+            if isinstance(news_tickers, str):
+                try:
+                    news_tickers = json.loads(news_tickers)
+                except Exception:
+                    news_tickers = []
+            ticker_match = any(
+                t.upper() == ticker_upper
+                for t in news_tickers
+            )
+
+            # Also check title/body
+            title = (n.get('title') or '').lower()
+            body = (n.get('body') or n.get('summary') or '').lower()
+            text_match = ticker_lower in title or ticker_lower in body
+
+            if ticker_match or text_match:
+                results.append({
+                    'title': n.get('title', ''),
+                    'snippet': (n.get('summary') or n.get('body', ''))[:500],
+                    'url': n.get('url', ''),
+                    'source': n.get('source', 'production'),
+                    'published_at': n.get('published_at', ''),
+                    'importance': _map_importance(n.get('importance')),
+                    'sentiment': n.get('sentiment') or 'neutral',
+                    'impact_type': n.get('impact_type') or 'general',
+                    'summary_ar': n.get('summary') or '',
+                    'tickers': news_tickers,
+                    'from_production': True,
+                })
+                if len(results) >= max_results:
+                    break
+
+        logger.info(f"📰 production: {len(results)} أخبار لـ {ticker} (طازجة من invist.m2y.net)")
+        return results
+
+    except Exception as e:
+        logger.debug(f"production news fetch error for {ticker}: {e}")
+        return []
+
+
+def _map_importance(val) -> int:
+    """Map production importance (string) to integer 0-100."""
+    if val is None:
+        return 50
+    if isinstance(val, (int, float)):
+        return int(val)
+    s = str(val).lower().strip()
+    if s in ('high', 'عالي', 'مهم'):
+        return 80
+    if s in ('medium', 'متوسط'):
+        return 50
+    if s in ('low', 'منخفض', 'weak'):
+        return 30
+    try:
+        return int(s)
+    except Exception:
+        return 50
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 1b. news.db → market_news (fallback — News Agent's analyzed news)
 # ═══════════════════════════════════════════════════════════════════════
 
 def _get_news_from_market_news_db(ticker: str, max_results: int = 5, days: int = 30) -> List[Dict[str, Any]]:
@@ -221,8 +335,9 @@ def fetch_news_for_ticker(ticker: str, max_results: int = 5) -> List[Dict[str, A
     جلب أخبار لسهم معين.
 
     المصادر بترتيب الأفضلية:
-      1. news.db → market_news (PRIMARY — News Agent's analyzed news)
-      2. DuckDuckGo HTML search (fallback)
+      1. Production server via /api/proxy-prod/news-feed (PRIMARY — fresh real EGX news)
+      2. news.db → market_news (fallback — News Agent's analyzed news)
+      3. DuckDuckGo HTML search (last resort)
 
     Args:
         ticker: رمز السهم (COMI)
@@ -231,7 +346,15 @@ def fetch_news_for_ticker(ticker: str, max_results: int = 5) -> List[Dict[str, A
     Returns:
         list of {title, snippet, url, source, published_at, ticker}
     """
-    # ── PRIMARY: news.db → market_news (الأخبار المحللة من News Agent) ──
+    # ── PRIMARY: production server (fresh real EGX news via /api/proxy-prod/news-feed) ──
+    prod_news = _get_news_from_production(ticker, max_results=max_results)
+    if prod_news:
+        for n in prod_news:
+            n['ticker'] = ticker.upper()
+        logger.info(f"📰 {ticker}: استخدام {len(prod_news)} خبر من الإنتاج (طازجة)")
+        return prod_news[:max_results]
+
+    # ── FALLBACK 1: news.db → market_news (الأخبار المحللة من News Agent) ──
     db_news = _get_news_from_market_news_db(ticker, max_results=max_results)
     if db_news:
         # ضيف ticker لكل خبر
@@ -240,7 +363,7 @@ def fetch_news_for_ticker(ticker: str, max_results: int = 5) -> List[Dict[str, A
         logger.info(f"📰 {ticker}: استخدام {len(db_news)} خبر من news.db (News Agent)")
         return db_news[:max_results]
 
-    # ── FALLBACK: DuckDuckGo HTML search (لو مفيش أخبار للسهم في news.db) ──
+    # ── FALLBACK 2: DuckDuckGo HTML search (لو مفيش أخبار في news.db) ──
     logger.debug(f"📰 {ticker}: مفيش أخبار في news.db → fallback لـ DuckDuckGo")
     ar_name, en_name = get_company_name(ticker)
 

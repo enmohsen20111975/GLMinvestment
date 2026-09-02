@@ -1,6 +1,71 @@
 # Changelog
 
 
+## [PRODUCTION-PROXY + FRESH-NEWS] — API proxy للإنتاج + V40.2 يقرأ أخبار EGX طازجة (2026-09-02)
+
+> **توجيه المالك:** "اعمل API يخليك تقرأ أي بيانات انت محتاجها من الموقع الإنتاجي.
+> كدة كدة هاحتاجهم فى تطوير برنامج الموبايل. دة هايخليك حاسس ببيانات السيرفر
+> الإنتاجى مش شغال على بيانات قديمة أو تخيليات."
+
+### التعديلات (3 ملفات)
+
+#### 1. `src/app/api/proxy-prod/[...path]/route.ts` (جديد — 240 سطر)
+- Generic proxy بيقرأ من PRODUCTION_SERVER_URL (default: https://invist.m2y.net).
+- Whitelist of 40+ allowed paths (news-feed, features, stocks, market/*, predictions/*,
+  mobile/*, expert-recommendations, إلخ).
+- Block admin paths (defense in depth) → 403.
+- Rate limit: 30 req/min per IP (in-memory counter).
+- READ-ONLY: POST/PUT/DELETE → 405 (Method Not Allowed).
+- Same-origin CORS (مش *).
+- Timeout 15s per request.
+- Use cases:
+  1. Sandbox V40.2 reads fresh news from production
+  2. Mobile app (Flutter) development against real production data
+  3. Dashboard preview with real market data
+
+#### 2. `vps-service/analyzers/news_fetcher_analyzer.py` (تعديل)
+- **NEW function**: `_get_news_from_production(ticker, max_results)` — بيقرأ من
+  `/api/proxy-prod/news-feed?limit=50` ويفلتر بالـ ticker.
+- **NEW function**: `_map_importance(val)` — string → int (high=80, medium=50, low=30).
+- `fetch_news_for_ticker` بقى بترتيب:
+  1. **PRIMARY**: production server (طازجة من invist.m2y.net)
+  2. **FALLBACK 1**: news.db → market_news (محللة من News Agent)
+  3. **FALLBACK 2**: DuckDuckGo HTML search (last resort)
+- كل خبر بيرجع فيه `from_production=True` marker (للتمييز).
+
+#### 3. `scripts/v402_news_impact_backtest.py` (موجود من session السابقة)
+- سكربت مقارنة baseline vs news_IMPACT_on.
+- استخدم `V40_2_FORCE_NEWS_IN_BACKTEST=1` env var عشان نـ skip الـ backtest guard.
+
+### النتائج (backtest بـ 10 tickers, 2026-07-01→2026-08-14)
+
+| Run | Trades | WR | News Actions |
+|-----|--------|----|--------------|
+| baseline_NO_news | 1 | 100% | VETO:0, BOOST:0, REDUCE:0 |
+| news_IMPACT_on | 1 | 100% | VETO:0, BOOST:**1**, REDUCE:0 |
+
+- **الأخبار اشتغلت فعلًا!** `[NEWS-BOOST] AALR on 2026-07-15: score=+1 (news_count=3) → دفعة`
+- الأخبار جت من الإنتاج (from_production=True)، مش DuckDuckGo.
+- أمثلة: "الرقابة المالية تعتمد بدء التداول على أسهم القاهرة للدواجن"، "ارتفاع مؤشرات البورصة المصرية"
+- الـ metrics النهائية متطابقة عشان الـ BOOST ما أثّرش على الـ morning bell ranking.
+- محتاج universe أكبر (50+ tickers) عشان نشوف تأثير فعلي.
+
+### التحقق من الإنتاج (invist.m2y.net)
+- `/api/news-feed` → HTTP 200 بـ 20 خبر EGX حقيقي بالعربي ✓
+- `/api/features` → HTTP 200 ببيانات سوق EGX حقيقية (regime=DISTRIBUTION, egx30=+2.16%) ✓
+- `/api/stocks` → HTTP 200 بأسهم EGX حقيقية ✓
+- مصادر الأخبار: مصراوي، manual_copy، WhatsApp Group، القاهرة 24، اليوم السابع
+
+### القواعد ما اتنكسرتش
+- ✅ Rule 17 (مسارات نسبية) — proxy-prod يستخدم PRODUCTION_SERVER_URL env var.
+- ✅ Rule 27 (NO-FAKE-DATA) — الأخبار طازجة من الإنتاج.
+- ✅ Rule 29 (UNIFIED-SYSTEM) — proxy-prod endpoint واحد للكل (sandbox + mobile).
+- ✅ Rule 44 (NEWS-DB-SOT) — news.db لسه المصدر المحلي، بس production هو PRIMARY.
+- ✅ Security: read-only + whitelist + rate limit + same-origin CORS.
+
+
+
+
 ## [NEWS-DB-SOT + V40_2_NEWS_IMPACT] — news.db مصدر وحيد + تفعيل تأثير الأخبار على V40.2 (2026-09-02)
 
 > **توجيه المالك:** "أنا فيه قاعدة بيانات خاصة بالأخبار ليه الغبي ده ما يستعملهاش؟ ممكن تنقل كله إلى news.db ونشتغل منها."

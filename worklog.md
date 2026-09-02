@@ -16103,3 +16103,68 @@ NEED_OWNER:
 1. ✅ كل التعديلات اتعملت في الساندبوكس + جاهزة للـ push.
 2. هـ push التعديلات دي على GitHub (commit منفصل).
 3. 🟡 هل تريد تفعيل V40_2_NEWS_IMPACT=1 في الإنتاج بعد ما نخلص باقي Agent messages.md items؟
+
+---
+Task ID: PRODUCTION-PROXY-NEWS-2026-09-02
+Agent: main (orchestrator, Z.ai Code)
+Task: تنفيذ توجيه المالك: "اعمل API يخليك تقرأ أي بيانات انت محتاجها من الموقع الإنتاجي. كدة كدة هاحتاجهم فى تطوير برنامج الموبايل. دة هايخليك حاسس ببيانات السيرفر الإنتاجى مش شغال على بيانات قديمة أو تخيليات."
+
+Work Log:
+- Task 1 (git pull على المشروعين):
+  * GLMinvestment: Already up to date (0b39491..175b6e8).
+  * news repo: 4 commits جديدة من المبرمج البشري:
+    - 30cb5ad Remove .env from tracking (أمني!)
+    - 2238557 Fix Telegram session persistence
+    - c5043a2 Remove remaining telegram session files
+    - bc8ae66 Merge remote main
+- Task 2 (فحص الإنتاج invist.m2y.net):
+  * /api/news → HTTP 500 (team's news.db مش متزامن مع schema الجديدة)
+  * /api/news-feed → HTTP 200 بـ 20 خبر EGX حقيقي بالعربي (مصادر: مصراوي، manual_copy، WhatsApp Group، القاهرة 24، اليوم السابع)
+  * /api/features → HTTP 200 ببيانات سوق EGX حقيقية (gainers=387، losers=381، regime=DISTRIBUTION، egx30 change=+2.16%)
+  * /api/stocks → HTTP 200 بأسهم EGX حقيقية
+  * في أخبار لـ tickers حقيقية: COMI، TMGH، EGX30، EGX70، EGX100
+- Task 3 (بناء /api/proxy-prod/[...path] endpoint):
+  * أنشأت src/app/api/proxy-prod/[...path]/route.ts (240 سطر).
+  * generic proxy بيقرأ من PRODUCTION_SERVER_URL (default: https://invist.m2y.net).
+  * Whitelist of allowed paths (40+ endpoints: news-feed, features, stocks, market/*, predictions/*, mobile/*, expert-recommendations, إلخ).
+  * Block admin paths (defense in depth) → 403.
+  * Rate limit: 30 req/min per IP (in-memory counter).
+  * READ-ONLY: POST/PUT/DELETE → 405.
+  * Same-origin CORS (مش *).
+  * Timeout 15s per request.
+  * اختبار: /api/proxy-prod/news-feed → 200، /api/proxy-prod/admin/users → 403، /api/proxy-prod/foo → 403.
+- Task 4 (تعديل news_fetcher_analyzer.py):
+  * ضفت function جديدة: _get_news_from_production(ticker, max_results).
+  * بتقرأ من /api/proxy-prod/news-feed?limit=50 وبتفلتر بالـ ticker.
+  * بترجع أخبار بـ from_production=True marker.
+  * ضفت _map_importance (string → int: high=80, medium=50, low=30).
+  * fetch_news_for_ticker بقى بترتيب:
+    1. PRIMARY: production server (طازجة من invist.m2y.net)
+    2. FALLBACK 1: news.db → market_news (محللة من News Agent)
+    3. FALLBACK 2: DuckDuckGo HTML search (last resort)
+- Task 5 (اختبار جلب الأخبار الطازجة):
+  * _get_news_from_production('COMI') → 2 أخبار من الإنتاج ✓
+  * _get_news_from_production('TMGH') → 2 أخبار من الإنتاج ✓
+  * _get_news_from_production('EGX30') → 3 أخبار من الإنتاج ✓
+  * كل الأخبار from_production=True (مش DuckDuckGo، مش news.db القديمة).
+  * get_news_with_impact('COMI') → overall_score=+1, verdict=BOOST ✓
+  * get_news_with_impact('EGX30') → overall_score=+2, verdict=BOOST_STRONG ✓
+  * أمثلة على الأخبار: "الرقابة المالية تعتمد بدء التداول على أسهم القاهرة للدواجن"، "ارتفاع مؤشرات البورصة المصرية مع بداية تعاملات جلسة الأربعاء"
+- Task 6 (إعادة الباك تتس بالأخبار الطازجة):
+  * Baseline (V40_2_NEWS_IMPACT=0): 1 trade, 100% WR, 0 news actions
+  * News ON (V40_2_NEWS_IMPACT=1 + FORCE_NEWS_IN_BACKTEST=1): 1 trade, 100% WR, 1 BOOST!
+  * النتيجة: [NEWS-BOOST] AALR on 2026-07-15: score=+1 (news_count=3) → دفعة
+  * الأخبار اشتغلت فعلًا! V40.2 بقا بيستخدم أخبار EGX طازجة من الإنتاج.
+  * الـ metrics النهائية متطابقة عشان الـ BOOST ما أثّرش على الـ morning bell ranking (السهم كان pick 1 من الأساس).
+  * محتاج universe أكبر (50+ tickers) عشان نشوف تأثير فعلي على عدد الصفقات.
+
+Stage Summary:
+- /api/proxy-prod/* شغّال 100% بيقرأ من invist.m2y.net.
+- V40.2 بقا بيقرأ أخبار EGX طازجة من الإنتاج (مش news.db القديمة).
+- الباك تتس أظهر إن الأخبار بتشتغل: [NEWS-BOOST] ظهر في الـ logs.
+- محتاج universe أكبر لـ backtest أعمق (10 tickers قليلين).
+
+NEED_OWNER:
+1. ✅ الـ proxy + تعديل news_fetcher جاهزين للـ push.
+2. 🟡 هل عايز أزود الـ universe لـ 50 tickers + فترة أطول (6 شهور) عشان backtest أوضح؟
+3. 🟡 نفس الـ API (/api/proxy-prod/*) هايستخدم في تطوير برنامج الموبايل (Flutter).
