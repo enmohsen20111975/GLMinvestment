@@ -66,9 +66,22 @@ async def scrape_market(page, market, url):
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('td, [data-name="cell"], .cell');
                     if (cells.length >= 4) {
-                        const aTags = cells[0].querySelectorAll('a');
-                        const sym = aTags[0]?.textContent?.trim() || '';
-                        const name = aTags[1]?.textContent?.trim() || sym;
+                        // Robust symbol & name extraction
+                        let sym = '';
+                        let name = '';
+                        const link = cells[0].querySelector('a[href*="/symbols/"]');
+                        if (link) {
+                            const href = link.getAttribute('href') || '';
+                            const m = href.match(/\/symbols\/[A-Z0-9_]+-([A-Z0-9_]+)/i);
+                            if (m) sym = m[1].toUpperCase();
+                        }
+                        if (!sym) {
+                            const raw = cells[0].querySelector('[class*="tickerName"], a')?.textContent?.trim() || '';
+                            const m = raw.match(/^[A-Z0-9_]{2,8}|^\d{4,5}/);
+                            sym = m ? m[0] : '';
+                        }
+                        const nameElem = cells[0].querySelector('[class*="tickerDescription"], [class*="description"]');
+                        name = nameElem ? nameElem.textContent.trim() : (cells[0].querySelectorAll('a')[1]?.textContent?.trim() || sym);
                         const priceText = cells[1]?.textContent || '0';
                         const price = parseFloat(priceText.match(/[\\d.]+/)?.[0] || 0);
                         const changeText = cells[2]?.textContent || '0';
@@ -176,9 +189,19 @@ def save_to_db(stocks, market):
 
     for s in stocks:
         cursor.execute('''
-            INSERT OR REPLACE INTO stocks
+            INSERT INTO stocks
             (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(symbol) DO UPDATE SET
+                price = excluded.price,
+                change_percent = excluded.change_percent,
+                volume = excluded.volume,
+                market_cap = excluded.market_cap,
+                sector = CASE WHEN excluded.sector != '' THEN excluded.sector ELSE stocks.sector END,
+                name = CASE WHEN excluded.name != '' AND excluded.name != excluded.symbol THEN excluded.name ELSE stocks.name END,
+                name_ar = CASE WHEN excluded.name != '' AND excluded.name GLOB '*[\u0600-\u06ff]*' THEN excluded.name ELSE stocks.name_ar END,
+                tabs_data = excluded.tabs_data,
+                last_update = excluded.last_update
         ''', (
             s.get('symbol', ''), s.get('name', ''), s.get('price', 0),
             s.get('change_percent', 0), s.get('volume', ''), s.get('market_cap', ''),

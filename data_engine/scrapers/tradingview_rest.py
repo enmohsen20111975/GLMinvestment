@@ -326,9 +326,18 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
     for s in stocks:
         try:
             cursor.execute('''
-                INSERT OR REPLACE INTO stocks
+                INSERT INTO stocks
                 (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(symbol) DO UPDATE SET
+                    price = excluded.price,
+                    change_percent = excluded.change_percent,
+                    volume = excluded.volume,
+                    market_cap = excluded.market_cap,
+                    sector = CASE WHEN excluded.sector != '' THEN excluded.sector ELSE stocks.sector END,
+                    name = CASE WHEN excluded.name != '' AND excluded.name != excluded.symbol THEN excluded.name ELSE stocks.name END,
+                    tabs_data = excluded.tabs_data,
+                    last_update = excluded.last_update
             ''', (
                 s.get('symbol', ''), s.get('name', ''),
                 float(s.get('price', 0) or 0),

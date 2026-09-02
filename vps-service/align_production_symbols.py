@@ -192,14 +192,22 @@ def sync_names_from_data_engine():
     de_cursor = conn_de.cursor()
     
     # Load all distinct symbols with their latest name/market/sector details
-    de_rows = de_cursor.execute("""
-        SELECT symbol, name, market, sector, market_cap, price, change_percent, volume
+    cols_de = [c[1] for c in de_cursor.execute("PRAGMA table_info(stocks)").fetchall()]
+    has_name_ar = 'name_ar' in cols_de
+    name_ar_col = 'name_ar' if has_name_ar else "''"
+    
+    order_col = 'last_update DESC' if 'last_update' in cols_de else 'rowid DESC'
+    if 'id' in cols_de: order_col += ', id DESC'
+    
+    de_rows = de_cursor.execute(f"""
+        SELECT symbol, name, market, sector, market_cap, price, change_percent, volume, {name_ar_col}
         FROM stocks
-        ORDER BY last_update DESC, id DESC
+        ORDER BY {order_col}
     """).fetchall()
     
     unique_de_stocks = {}
-    for sym, name, market, sector, cap, price, chg, vol in de_rows:
+    for sym, name, market, sector, cap, price, chg, vol, *extra in de_rows:
+        nar = extra[0] if extra else ''
         if not sym or not name:
             continue
         if sym not in unique_de_stocks:
@@ -212,6 +220,7 @@ def sync_names_from_data_engine():
             mkt_code = market_map.get(market, market)
             unique_de_stocks[sym] = {
                 'name': name,
+                'name_ar': nar or '',
                 'market': mkt_code,
                 'sector': sector or '',
                 'market_cap': cap or '',
@@ -235,8 +244,11 @@ def sync_names_from_data_engine():
         if existing:
             st_cursor.execute("""
                 UPDATE stocks SET
-                    name = ?,
-                    name_ar = ?,
+                    name = CASE WHEN ? != '' THEN ? ELSE name END,
+                    name_ar = CASE 
+                        WHEN ? != '' AND ? GLOB '*[\u0600-\u06ff]*' THEN ? 
+                        ELSE COALESCE(NULLIF(name_ar, ''), ?) 
+                    END,
                     market = ?,
                     sector = ?,
                     current_price = ?,
@@ -248,7 +260,10 @@ def sync_names_from_data_engine():
                     updated_at = ?
                 WHERE ticker = ?
             """, (
-                info['name'], info['name'], info['market'], info['sector'],
+                info['name'], info['name'],
+                info.get('name_ar', ''), info.get('name_ar', ''), info.get('name_ar', ''),
+                info['name'],
+                info['market'], info['sector'],
                 info['price'], info['change_percent'], info['volume'], info['market_cap'],
                 fetch_time, fetch_time, sym
             ))
@@ -260,7 +275,7 @@ def sync_names_from_data_engine():
                     volume, market_cap, is_active, last_update, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
             """, (
-                sym, info['name'], info['name'], info['market'], info['sector'],
+                sym, info['name'], info.get('name_ar') or '', info['market'], info['sector'],
                 info['price'], info['change_percent'], info['volume'], info['market_cap'],
                 fetch_time, fetch_time, fetch_time
             ))

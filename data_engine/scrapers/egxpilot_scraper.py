@@ -172,7 +172,7 @@ def parse_stocks(data: Dict, market_label: str = 'مصر') -> List[Dict]:
     for stock in stocks:
         try:
             symbol = (stock.get('Symbol') or '').strip()
-            if not symbol or _is_index_symbol(symbol):
+            if not symbol or _is_index_symbol(symbol) or symbol.isdigit():
                 continue
 
             price = _parse_price(stock.get('LastPrice'))
