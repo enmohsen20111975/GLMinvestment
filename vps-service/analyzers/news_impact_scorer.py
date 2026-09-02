@@ -129,6 +129,192 @@ VETO_THRESHOLD = -15
 BOOST_THRESHOLD = +8
 # Reduce threshold
 REDUCE_THRESHOLD = -5
+# STRONG thresholds (2026-09-02): 5 levels for live predictions
+STRONG_BOOST_THRESHOLD = +15   # إيجابي قوي (الخبر اللي ممكن يقلب القرار 180°)
+STRONG_REDUCE_THRESHOLD = -12  # سلبي قوي
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 5-Level Classification (2026-09-02) — for live predictions
+# ═══════════════════════════════════════════════════════════════════════
+# Owner directive: "تصنيف تأثير الخبر على السهم
+#   (إيجابي قوي / إيجابي / محايد / سلبي / سلبي قوي)."
+
+NEWS_IMPACT_LEVELS = {
+    'STRONG_POSITIVE': {
+        'label_ar': 'إيجابي قوي',
+        'label_en': 'Strong Positive',
+        'description_ar': 'خبر ممكن يقلب القرار 180° (استحواذ ضخم / زيادة رأس مال / عقد مليار)',
+        'color': 'green',
+        'emoji': '🚀',
+        'score_range': (15, 25),
+        'action_ar': 'يدعم قرار الشراء بقوة / يقلل الرغبة في البيع',
+    },
+    'POSITIVE': {
+        'label_ar': 'إيجابي',
+        'label_en': 'Positive',
+        'description_ar': 'خبر إيجابي مؤثر (أرباح超标 / توزيع / عقد)',
+        'color': 'lightgreen',
+        'emoji': '📈',
+        'score_range': (5, 14),
+        'action_ar': 'يرفع تقييم السهم / يدعم قرار الشراء',
+    },
+    'NEUTRAL': {
+        'label_ar': 'محايد',
+        'label_en': 'Neutral',
+        'description_ar': 'خبر عام بدون تأثير مباشر',
+        'color': 'gray',
+        'emoji': '➖',
+        'score_range': (-4, 4),
+        'action_ar': 'لا تأثير — يفضل التحليل الفني',
+    },
+    'NEGATIVE': {
+        'label_ar': 'سلبي',
+        'label_en': 'Negative',
+        'description_ar': 'خبر سلبي مؤثر (أرباح أقل / تغيير إدارة / نزول أرباح)',
+        'color': 'orange',
+        'emoji': '📉',
+        'score_range': (-11, -5),
+        'action_ar': 'يخلي النظام أكثر حذر / يفضل التخفيف',
+    },
+    'STRONG_NEGATIVE': {
+        'label_ar': 'سلبي قوي',
+        'label_en': 'Strong Negative',
+        'description_ar': 'خبر ممكن يوقف التداول (تحقيقات / إيقاف تداول / قضايا)',
+        'color': 'red',
+        'emoji': '🚨',
+        'score_range': (-25, -12),
+        'action_ar': 'يفضل التخفيف/الخروج — تجنب الدخول',
+    },
+}
+
+
+def classify_news_impact_level(news_score: int) -> Dict[str, Any]:
+    """
+    تصنيف درجة الخبر لـ 5 levels (للـ live predictions + UI display).
+
+    Args:
+        news_score: النتيجة من news_impact_scorer (-25 لـ +20).
+
+    Returns:
+        {
+            'level': 'STRONG_POSITIVE' | 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'STRONG_NEGATIVE',
+            'label_ar': str,
+            'label_en': str,
+            'description_ar': str,
+            'emoji': str,
+            'color': str,
+            'action_ar': str,
+        }
+    """
+    for level_key, level_data in NEWS_IMPACT_LEVELS.items():
+        low, high = level_data['score_range']
+        if low <= news_score <= high:
+            return {
+                'level': level_key,
+                'label_ar': level_data['label_ar'],
+                'label_en': level_data['label_en'],
+                'description_ar': level_data['description_ar'],
+                'emoji': level_data['emoji'],
+                'color': level_data['color'],
+                'action_ar': level_data['action_ar'],
+            }
+    # fallback
+    if news_score >= 15:
+        return NEWS_IMPACT_LEVELS['STRONG_POSITIVE']
+    elif news_score >= 5:
+        return NEWS_IMPACT_LEVELS['POSITIVE']
+    elif news_score >= -4:
+        return NEWS_IMPACT_LEVELS['NEUTRAL']
+    elif news_score >= -11:
+        return NEWS_IMPACT_LEVELS['NEGATIVE']
+    else:
+        return NEWS_IMPACT_LEVELS['STRONG_NEGATIVE']
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Live Prediction Impact (2026-09-02) — لربط الأخبار بالتوقعات الحية
+# ═══════════════════════════════════════════════════════════════════════
+# Owner directive: "خبر إيجابي قوي (صفقة استحواذ كبيرة، زيادة رأس مال، عقد ضخم)
+# → يرفع تقييم السهم أو يدعم قرار الشراء أو يقلل من الرغبة في البيع.
+# خبر سلبي قوي → يخلي النظام أكثر حذرًا أو يفضل التخفيف/الخروج."
+
+LIVE_PREDICTION_IMPACT = {
+    'STRONG_POSITIVE': {
+        'score_delta': +15,        # +15 points on V40.2 score
+        'action_recommendation': 'شراء قوي',
+        'action_ar': 'الخبر يدعم قرار الشراء بقوة — ممكن نزيد الحجم لو الصفقة مفتوحة',
+        'client_message_template': '📊 خبر إيجابي قوي على {ticker}: {news_summary}\nالتوصية: الخبر بيأكد على فرصة الشراء.',
+    },
+    'POSITIVE': {
+        'score_delta': +8,
+        'action_recommendation': 'شراء',
+        'action_ar': 'الخبر بيرفع تقييم السهم — يدعم قرار الشراء',
+        'client_message_template': '📈 خبر إيجابي على {ticker}: {news_summary}\nالتوصية: الخبر بيدعم فرصة الشراء.',
+    },
+    'NEUTRAL': {
+        'score_delta': 0,
+        'action_recommendation': 'محايد',
+        'action_ar': 'الخبر محايد — يفضل الاعتماد على التحليل الفني',
+        'client_message_template': '➖ خبر محايد على {ticker}: {news_summary}\nالتوصية: لا تأثير مباشر — التحليل الفني هو المرجع.',
+    },
+    'NEGATIVE': {
+        'score_delta': -8,
+        'action_recommendation': 'حذر',
+        'action_ar': 'الخبر سلبي — يخلي النظام أكثر حذر',
+        'client_message_template': '📉 خبر سلبي على {ticker}: {news_summary}\nالتوصية: حذر — يُفضّل تخفيف الحجم أو الانتظار.',
+    },
+    'STRONG_NEGATIVE': {
+        'score_delta': -15,
+        'action_recommendation': 'تجنب / تخفيف',
+        'action_ar': 'الخبر سلبي قوي — يُفضّل التخفيف/الخروج',
+        'client_message_template': '🚨 خبر سلبي قوي على {ticker}: {news_summary}\nالتوصية: تجنب الدخول — لو الصفقة مفتوحة، يُفضّل التخفيف أو الخروج.',
+    },
+}
+
+
+def get_live_prediction_impact(news_score: int, ticker: str, news_summary: str = '') -> Dict[str, Any]:
+    """
+    الحصول على تأثير الخبر على التوقع الحي.
+
+    Args:
+        news_score: النتيجة من news_impact_scorer (-25 لـ +20).
+        ticker: رمز السهم.
+        news_summary: ملخص الخبر (للرسالة).
+
+    Returns:
+        {
+            'level': str,
+            'score_delta': int,
+            'action_recommendation': str,
+            'action_ar': str,
+            'client_message': str,
+            'label_ar': str,
+            'emoji': str,
+            'color': str,
+        }
+    """
+    level_info = classify_news_impact_level(news_score)
+    level_key = level_info['level']
+    impact = LIVE_PREDICTION_IMPACT.get(level_key, LIVE_PREDICTION_IMPACT['NEUTRAL'])
+
+    client_message = impact['client_message_template'].format(
+        ticker=ticker,
+        news_summary=news_summary or level_info['description_ar'],
+    )
+
+    return {
+        'level': level_key,
+        'score_delta': impact['score_delta'],
+        'action_recommendation': impact['action_recommendation'],
+        'action_ar': impact['action_ar'],
+        'client_message': client_message,
+        'label_ar': level_info['label_ar'],
+        'label_en': level_info['label_en'],
+        'emoji': level_info['emoji'],
+        'color': level_info['color'],
+        'description_ar': level_info['description_ar'],
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════

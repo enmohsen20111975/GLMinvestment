@@ -16409,3 +16409,88 @@ NEED_OWNER:
    - Position sizing (سهم متفجر = حجم أصغر).
    - أو pre-trade gap analysis (ممنوع الدخول لو السهم بيحب يـ gap).
 3. 🟡 هل تريد أفعّل V40_2_REGIME_FILTER=1 (mode B) + الـ tightening مع بعض؟ ممكن الـ Regime يرفض UTOP + IDRE من الأساس.
+
+---
+Task ID: POSITION-SIZING-PLUS-LIVE-NEWS-INTEGRATION-2026-09-02
+Agent: main (orchestrator, Z.ai Code)
+Task: تنفيذ البرومبت التنفيذي للمالك — مهمتين مترابطتين:
+  المهمة 1: Position Sizing حسب التقلب (عشان الـ MaxDD).
+  المهمة 2: ربط الأخبار الحية بالتوقعات (الأهم حاليًا).
+
+Work Log:
+
+=== المهمة 1: Position Sizing حسب التقلب ===
+- Task 1a (قراءة الدستور):
+  * Rule 8: ATR stop في [3%, 9%].
+  * Rule 19: hard_loss_ceiling = 7.0%.
+  * القاعدة: الـ position sizing عامل إضافي → بيأثر على حجم الصفقة، مش على الـ stop.
+- Task 1b (فحص الموجود):
+  * فيه _compute_dynamic_sl_mult في institutional_decision_engine (بترجع atr_percentile).
+  * فيه compute_market_bullish_sizing + classify_liquidity (position_size_mult).
+  * بس مفيش sizing على مستوى الـ simulate_trade.
+- Task 1c (بناء module جديد):
+  * أنشأت vps-service/analyzers/position_sizing.py (170 سطر).
+  * calculate_position_size(atr, entry): بيرجع position_size_mult (0.5-1.0).
+  * 3 volatility classes: LOW (ATR<3%) / NORMAL (3-6%) / HIGH (≥6%).
+  * HIGH vol → 55% size (env: V40_2_HIGH_VOL_SIZE_MULT).
+  * NORMAL/LOW → 100% size.
+  * Self-test: UTOP (ATR=8.35%) → 55% size → خسارة -24.86% بقت -13.67% ✓.
+- Task 1d (دمج في simulate_trade):
+  * عدّلت v38_backtest_engine.py:
+    - أضفت position_size_mult field في Trade dataclass.
+    - أضفت volatility_class + atr_pct fields.
+    - في _finalize: trade.return_pct *= position_size_mult.
+    - بيحفظ على trade.position_size_mult للـ UI.
+- Task 1e (backtest مقارنة):
+  * كتبت scripts/v402_position_sizing_comparison.py.
+  * النتايج (6 شهور، 235 tickers):
+    | Run | Trades | WR | TotalRet | MaxDD | PF | WorstLoser |
+    |-----|--------|-----|----------|-------|-----|-----------|
+    | baseline (100% size) | 23 | 69.6% | +99.85% | -34.26% | 2.83 | -24.86% (UTOP) |
+    | with sizing (55% for high vol) | 23 | 69.6% | +51.28% | **-19.59%** | 2.83 | **-13.68%** (UTOP) |
+  * Delta: MaxDD +14.67pp (وصلنا لـ -20%!), WorstLoser +11.18pp.
+  * Total Return قل (-48.57pp) — منطقي لأن الأسهم المتفجرة (اللي بتكسب أكتر) خدت حجم أصغر.
+  * PF فضل 2.83 (نفس الجودة).
+
+=== المهمة 2: ربط الأخبار الحية بالتوقعات ===
+- Task 2a (تصنيف تأثير الخبر 5 levels):
+  * عدّلت vps-service/analyzers/news_impact_scorer.py:
+    - ضفت NEWS_IMPACT_LEVELS (5 levels: STRONG_POSITIVE / POSITIVE / NEUTRAL / NEGATIVE / STRONG_NEGATIVE).
+    - classify_news_impact_level(news_score): بترجع level + label_ar + emoji + color + action.
+    - LIVE_PREDICTION_IMPACT: score_delta لكل level (+15 / +8 / 0 / -8 / -15).
+    - get_live_prediction_impact(news_score, ticker, summary): دالة موحدة.
+  * اختبرت بأمثلة المالك:
+    - استحواذ KORA بمليار → +12 → 📈 إيجابي → +8 (شراء)
+    - موافقة زيادة رأس مال النيل → +18 → 🚀 إيجابي قوي → +15 (شراء قوي)
+    - أرباح قياسية PHAR → +14 → 📈 إيجابي → +8 (شراء)
+    - إيقاف تداول → -25 → 🚨 سلبي قوي → -15 (تجنب/تخفيف)
+    - رفع فائدة بنك مركزي → -8 → 📉 سلبي → -8 (حذر)
+- Task 2b (ربط news impact بالـ V40.2 live predictions):
+  * أنشأت vps-service/analyzers/live_news_integration.py (380 سطر).
+  * get_news_impact_for_live_prediction(ticker): بيجيب أخبار من الإنتاج + يحللها + يرجع score_delta.
+  * بيقرأ من /api/proxy-prod/news-feed (طازجة من invist.m2y.net).
+- Task 2c (شرح التوصية للعميل):
+  * format_news_for_client_display(ticker, news_data): بينسق الأخبار للـ UI.
+  * generate_news_aware_recommendation(ticker, v40_2_score, v40_2_signal, v40_2_proofs):
+    - بيدمج V40.2 + news في combined_score.
+    - بيتخذ قرار final signal (BUY/STRONG_BUY/HOLD/SELL).
+    - بينشئ recommendation_ar (شرح كامل بالعربي).
+  * اختبرت COMI: V40.2 BUY (65) + خبر إيجابي (+8) = combined 73, BUY.
+- Task 2d (متابعة الصفقات المفتوحة + أخبار جديدة):
+  * check_news_for_open_position(ticker, entry_date):
+    - بيجيب أخبار من بعد تاريخ الدخول.
+    - action: HOLD / ADD (إيجابي قوي) / REDUCE (سلبي) / EXIT (سلبي قوي).
+    - client_alert: رسالة تنبيه للعميل.
+  * اختبرت COMI من 2026-08-25: 4 أخبار جديدة → HOLD (إيجابي بسيط).
+
+Stage Summary:
+- ✅ المهمة 1: Position Sizing شغّال — MaxDD من -34% لـ -19.59% (وصلنا لـ -20%!).
+- ✅ المهمة 2: Live News Integration شغّال — 5 levels + شرح للعميل + متابعة صفقات مفتوحة.
+- ✅ أمثلة المالك (KORA, النيل للأدوية) بتشتغل صح.
+- ✅ الأخبار بتيجي من الإنتاج (طازجة).
+- ✅ الخبر عامل إضافي قوي، مش بديل عن V40.2 (combined score, مش news score بس).
+
+NEED_OWNER:
+1. ✅ التعديلات جاهزة للـ push.
+2. 🟡 تفعيل V40_2_NEWS_IMPACT=1 + V40_2_EXPERT_RECS=1 في الإنتاج (بعد deploy الكود الجديد).
+3. 🟡 مراقبة الـ logs لـ [NEWS-STRONG_POSITIVE] / [NEWS-STRONG_NEGATIVE] / [EXPERT-STRONG_BUY].

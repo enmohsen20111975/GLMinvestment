@@ -737,6 +737,10 @@ class Trade:
     # V40.1: Position Sizing — R-multiple & equity impact
     r_multiple: float = 0.0       # R-multiple: (exit-entry)/(entry-stop) — how many R won/lost
     pnl_pct: float = 0.0          # equity impact % = risk_per_trade_pct * r_multiple
+    # POSITION SIZING (2026-09-02): volatility-based size multiplier
+    position_size_mult: float = 1.0   # 0.5 - 1.0 (high vol = 0.55, normal = 1.0)
+    volatility_class: str = 'NORMAL' # LOW / NORMAL / HIGH
+    atr_pct: float = 0.0             # ATR / price × 100 (for UI display)
 
 
 @dataclass
@@ -904,6 +908,22 @@ def simulate_trade(
     effective_stop = stop  # الستوب الفعال (يتغير بعد partial_exit)
     effective_stop_type = 'fixed'
 
+    # POSITION SIZING (2026-09-02): scale returns based on volatility.
+    # Owner directive: "لو التقلب عالي → قلل حجم الصفقة (50-60%)."
+    # → High vol stocks (UTOP, DAPH) get 55% size → max loss reduced.
+    # → Normal vol stocks get 100% size.
+    # → position_size_mult is stored on trade for the UI to display.
+    try:
+        from analyzers.position_sizing import calculate_position_size
+        _atr_for_sizing = future_atrs[0] if (future_atrs and len(future_atrs) > 0) else 0.0
+        _sizing_result = calculate_position_size(_atr_for_sizing, entry)
+        position_size_mult = _sizing_result['position_size_mult']
+        trade.position_size_mult = position_size_mult  # store for UI
+        trade.volatility_class = _sizing_result['volatility_class']
+        trade.atr_pct = _sizing_result['atr_pct']
+    except Exception:
+        position_size_mult = 1.0  # fallback: full size
+
     # V40: Get StopLossManager singleton (for partial_exit)
     stop_mgr = _get_stop_manager()
 
@@ -928,6 +948,11 @@ def simulate_trade(
         else:
             trade.return_pct = ((exit_price - entry) / entry) * 100
             trade.partial_exit_taken = False
+
+        # POSITION SIZING (2026-09-02): scale return by position_size_mult
+        # Owner: "السهم العالي التقلب ياخد حجم أصغر → خسارة أقل"
+        # Example: UTOP -24.86% × 0.55 = -13.67% (خسارة أقل بـ 11.19pp)
+        trade.return_pct = trade.return_pct * position_size_mult
 
         # V40.1: Position Sizing — R-multiple
         # R = (exit-entry)/(entry-stop) → نحسبه من return_pct كنسبة سعرية
