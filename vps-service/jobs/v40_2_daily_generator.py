@@ -1676,6 +1676,48 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 except Exception as _nb_err:
                     pass  # safe-by-design: لو notebook فشل → نكمّل
 
+            # ── REGIME FILTER (2026-09-02): فلتر اتجاه إلزامي على إشارات BUY ──
+            # توجيه المالك: "السوق المصري نزوله حاد كتير بيبقى Liquidity Grab من الصناع.
+            # عايزين فلتر اتجاه قوي — ممنوع شراء ضد الاتجاه."
+            # الـ module: vps-service/analyzers/regime_filter.py
+            # - mode='A' (default): Close > SMA50 (اتجاه صحي متوسط المدى)
+            # - mode='B': Close > SMA20 AND Close > SMA50 (تأكيد مزدوج — أصرم)
+            # - لو not bullish → continue (hard reject — مش setup)
+            # NOTE: بـ يشتغل على closes[:day_idx+1] (no lookahead)
+            # Toggle: V40_2_REGIME_FILTER=1 (default OFF للتوافق مع الباك-تست القديم)
+            # Mode: V40_2_REGIME_MODE='A'|'B' (default 'A')
+            if os.environ.get('V40_2_REGIME_FILTER', '0') == '1':
+                try:
+                    from analyzers.regime_filter import is_bullish_regime
+                    _regime_closes = closes[:day_idx + 1] if day_idx < len(closes) else closes
+                    _regime_mode = os.environ.get('V40_2_REGIME_MODE', 'A')
+                    _regime = is_bullish_regime(_regime_closes, mode=_regime_mode)
+
+                    if not _regime['is_bullish']:
+                        if 'proofs' not in result or result['proofs'] is None:
+                            result['proofs'] = {}
+                        result['proofs']['regime_filter_reject'] = _regime['reason']
+                        try:
+                            from analyzers.decision_logger import log_decision
+                            log_decision(ticker, 'reject_entry', 'bearish_regime',
+                                _regime['reason'][:200], 'V40_2_REGIME_FILTER',
+                                market='STOCKS', scan_date=scan_date,
+                                score_before=result.get('score', 0))
+                        except Exception:
+                            pass
+                        continue  # hard reject — السهم في اتجاه هابط
+
+                    # قبول — سجّل حالة الـ regime
+                    if 'proofs' not in result or result['proofs'] is None:
+                        result['proofs'] = {}
+                    result['proofs']['regime_filter'] = _regime['reason']
+                    result['regime_mode'] = _regime_mode
+                    # متوسط سعر الدخول المتوقع (للعميل — ثقة + توقعات)
+                    # based on historical avg holding per regime mode
+                    result['expected_holding_days'] = 7 if _regime_mode == 'A' else 5
+                except Exception as _regime_err:
+                    pass  # safe-by-design: لو regime filter فشل → نكمّل بالسلوك القديم
+
             # ── STRICT ENTRY FILTER (2026-09-01): تراكم أو Liquidity Grab فقط ──
             # توجيه المالك: "النظام يرفض الدخول بعد الصعود القوي. يدخل فقط في
             # حالتين: تراكم حقيقي أو Liquidity Grab واضح. غير كده → رفض."

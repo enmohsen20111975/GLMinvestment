@@ -1,14 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
 const DB_PATH = path.join(process.cwd(), 'data-engine', 'data', 'data_engine.db');
+const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8010';
 const AGENT_API_KEY = process.env.NEWS_AGENT_API_KEY || process.env.PRODUCTION_API_KEY;
 
 function isAuthorized(request: Request) {
+  if (!AGENT_API_KEY) return true; // Optional in dev if not set
   const agentKey = request.headers.get('x-agent-key') || request.headers.get('X-News-Agent-Key') || '';
-  return Boolean(AGENT_API_KEY) && agentKey === AGENT_API_KEY;
+  return agentKey === AGENT_API_KEY;
 }
 
 function ensureNewsTable(db: InstanceType<typeof Database>) {
@@ -39,6 +41,9 @@ function ensureNewsTable(db: InstanceType<typeof Database>) {
   `);
 }
 
+/**
+ * GET /api/news — reads market_news from data_engine.db
+ */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -76,14 +81,18 @@ export async function GET(request: Request) {
     return NextResponse.json({
       news,
       total: total.count,
-      markets: markets.map(m => m.market)
+      markets: markets.map(m => m.market),
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+/**
+ * POST /api/news — receives news from local News Agent (telegram/rss/web)
+ * Stores in data_engine.db (immediate display) and forwards to Python backend (for V40.2 impact scoring)
+ */
+export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
@@ -109,10 +118,11 @@ export async function POST(request: Request) {
       published_at,
     } = body;
 
-    if (!title || !content) {
-      return NextResponse.json({ error: 'title and content are required' }, { status: 400 });
+    if (!title) {
+      return NextResponse.json({ ok: false, error: 'title is required' }, { status: 400 });
     }
 
+    // 1. Direct persistent save to data_engine.db
     fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
     const db = new Database(DB_PATH);
     ensureNewsTable(db);
@@ -123,7 +133,7 @@ export async function POST(request: Request) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `).run(
       title,
-      content,
+      content || '',
       summary_ar || '',
       summary_en || '',
       source || 'news_agent',
@@ -142,12 +152,30 @@ export async function POST(request: Request) {
 
     db.close();
 
+    // 2. Non-blocking forward to Python backend if reachable (for V40.2 scoring)
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const agentKey = request.headers.get('x-agent-key') || request.headers.get('X-News-Agent-Key');
+      if (agentKey) headers['X-News-Agent-Key'] = agentKey;
+
+      fetch(`${BACKEND_URL}/api/news/agent`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      }).catch(() => {});
+    } catch {}
+
     if (result.changes === 0) {
-      return NextResponse.json({ ok: true, message: 'خبر مكرر - تم تجاهله', duplicate: true });
+      return NextResponse.json({ ok: true, success: true, message: 'خبر مكرر - تم تجاهله', duplicate: true });
     }
 
-    return NextResponse.json({ ok: true, message: 'تم إضافة الخبر للموقع', id: result.lastInsertRowid });
+    return NextResponse.json({
+      ok: true,
+      success: true,
+      message: 'تم إضافة الخبر للموقع بنجاح',
+      id: result.lastInsertRowid,
+    }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, success: false, error: error.message }, { status: 500 });
   }
 }

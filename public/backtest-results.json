@@ -1,171 +1,331 @@
 {
   "meta": {
+    "test": "WALK-FORWARD + EXPECTED CORRECTION DAYS",
     "data_source": "REAL EGX price_history.db — 442 alpha tickers",
-    "windows": {
-      "6mo": "2026-02-01 → 2026-08-14",
-      "full": "2025-01-09 → 2026-08-17"
+    "walk_forward_windows": {
+      "half1": "2025-01-09 → 2025-08-31 (~8 months)",
+      "half2": "2025-09-01 → 2026-08-17 (~12 months)"
     },
-    "scenarios": {
-      "NO_AVG": "دخول عادي + ستوب عادي (لا متوسط)",
-      "AVG_DOWN": "نفس الإشارات + السماح بمتوسط مرة واحدة (50% حجم) لو is_liquidity_grab_opportunity تحققت"
-    },
-    "production_modules": [
-      "vps-service/analyzers/regime_filter.py",
-      "vps-service/analyzers/strict_entry_filters.py (is_liquidity_grab_opportunity, evaluate_average_down)"
-    ],
-    "exit_engine": "shared/structural: stop_loss(-7%), take_profit(+12%), review_alert(25d cap)",
-    "rules": [
-      "الستوب يفضل موجود — مش بديل للستوب",
-      "المتوسط مرة واحدة بس",
-      "حجم المتوسط = 50% من الصفقة الأصلية",
-      "الـ new stop = original stop (مش أوسع)"
-    ]
+    "consistent_rule": "both halves: ret > 0 AND DD > -25%"
   },
-  "results": {
-    "Correction [A] [6mo] NO_AVG": {
-      "label": "Correction [A] [6mo] NO_AVG",
-      "trades": 1,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 12.0,
-      "total_return_pct": 12.0,
-      "max_drawdown_pct": 0.0,
-      "profit_factor": 999.99,
-      "expectancy": 12.0
+  "walk_forward": {
+    "Correction [none]": {
+      "half1": {
+        "strategy": "[none]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      },
+      "half2": {
+        "strategy": "[none]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      }
     },
-    "Correction [A] [6mo] AVG_DOWN": {
-      "label": "Correction [A] [6mo] AVG_DOWN",
-      "trades": 1,
-      "win_rate_pct": 100.0,
-      "avg_return_pct": 12.0,
-      "total_return_pct": 12.0,
-      "max_drawdown_pct": 0.0,
-      "profit_factor": 999.99,
-      "expectancy": 12.0,
-      "avg_used_count": 0,
-      "flipped_count": 0,
-      "flip_rate_pct": 0.0,
-      "avg_rate_pct": 0.0
+    "Correction [A]": {
+      "half1": {
+        "strategy": "[A]",
+        "trades": 4,
+        "wins": 1,
+        "losses": 3,
+        "win_rate_pct": 25.0,
+        "avg_return_pct": -1.69,
+        "total_return_pct": -6.63,
+        "max_drawdown_pct": -6.72,
+        "profit_factor": 0.01,
+        "avg_holding_days": 1.0
+      },
+      "half2": {
+        "strategy": "[A]",
+        "trades": 6,
+        "wins": 4,
+        "losses": 2,
+        "win_rate_pct": 66.67,
+        "avg_return_pct": 7.49,
+        "total_return_pct": 52.53,
+        "max_drawdown_pct": -2.08,
+        "profit_factor": 15.56,
+        "avg_holding_days": 3.8
+      }
     },
-    "Correction [A] [full] NO_AVG": {
-      "label": "Correction [A] [full] NO_AVG",
-      "trades": 10,
-      "win_rate_pct": 60.0,
-      "avg_return_pct": 3.36,
-      "total_return_pct": 33.99,
-      "max_drawdown_pct": -13.51,
-      "profit_factor": 2.2,
-      "expectancy": 3.364
+    "Correction [B]": {
+      "half1": {
+        "strategy": "[B]",
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": -4.09,
+        "total_return_pct": -4.09,
+        "max_drawdown_pct": -4.09,
+        "profit_factor": 0.0,
+        "avg_holding_days": 1.0
+      },
+      "half2": {
+        "strategy": "[B]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      }
     },
-    "Correction [A] [full] AVG_DOWN": {
-      "label": "Correction [A] [full] AVG_DOWN",
-      "trades": 10,
-      "win_rate_pct": 60.0,
-      "avg_return_pct": 3.36,
-      "total_return_pct": 33.99,
-      "max_drawdown_pct": -13.51,
-      "profit_factor": 2.2,
-      "expectancy": 3.364,
-      "avg_used_count": 0,
-      "flipped_count": 0,
-      "flip_rate_pct": 0.0,
-      "avg_rate_pct": 0.0
+    "Merged-Strict [none]": {
+      "half1": {
+        "strategy": "[none]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      },
+      "half2": {
+        "strategy": "[none]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      }
     },
-    "Correction [B] [6mo] NO_AVG": {
-      "label": "Correction [B] [6mo] NO_AVG",
-      "trades": 0,
-      "win_rate_pct": 0,
-      "avg_return_pct": 0,
-      "total_return_pct": 0,
-      "max_drawdown_pct": 0,
-      "profit_factor": 0,
-      "expectancy": 0
+    "Merged-Strict [A]": {
+      "half1": {
+        "strategy": "[A]",
+        "trades": 61,
+        "wins": 19,
+        "losses": 42,
+        "win_rate_pct": 31.15,
+        "avg_return_pct": -0.21,
+        "total_return_pct": -24.31,
+        "max_drawdown_pct": -38.62,
+        "profit_factor": 0.93,
+        "avg_holding_days": 5.8
+      },
+      "half2": {
+        "strategy": "[A]",
+        "trades": 88,
+        "wins": 39,
+        "losses": 49,
+        "win_rate_pct": 44.32,
+        "avg_return_pct": 1.56,
+        "total_return_pct": 210.52,
+        "max_drawdown_pct": -30.94,
+        "profit_factor": 1.62,
+        "avg_holding_days": 7.5
+      }
     },
-    "Correction [B] [6mo] AVG_DOWN": {
-      "label": "Correction [B] [6mo] AVG_DOWN",
-      "trades": 0,
-      "win_rate_pct": 0,
-      "avg_return_pct": 0,
-      "total_return_pct": 0,
-      "max_drawdown_pct": 0,
-      "profit_factor": 0,
-      "expectancy": 0,
-      "avg_used_count": 0,
-      "flipped_count": 0,
-      "flip_rate_pct": 0,
-      "avg_rate_pct": 0
+    "Merged-Strict [B]": {
+      "half1": {
+        "strategy": "[B]",
+        "trades": 47,
+        "wins": 16,
+        "losses": 31,
+        "win_rate_pct": 34.04,
+        "avg_return_pct": -0.17,
+        "total_return_pct": -18.98,
+        "max_drawdown_pct": -38.9,
+        "profit_factor": 0.95,
+        "avg_holding_days": 6.8
+      },
+      "half2": {
+        "strategy": "[B]",
+        "trades": 66,
+        "wins": 31,
+        "losses": 35,
+        "win_rate_pct": 46.97,
+        "avg_return_pct": 1.51,
+        "total_return_pct": 122.44,
+        "max_drawdown_pct": -22.32,
+        "profit_factor": 1.54,
+        "avg_holding_days": 8.6
+      }
     },
-    "Correction [B] [full] NO_AVG": {
-      "label": "Correction [B] [full] NO_AVG",
-      "trades": 1,
-      "win_rate_pct": 0.0,
-      "avg_return_pct": -7.0,
-      "total_return_pct": -7.0,
-      "max_drawdown_pct": -7.0,
-      "profit_factor": 0.0,
-      "expectancy": -7.0
+    "Chase [none]": {
+      "half1": {
+        "strategy": "[none]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      },
+      "half2": {
+        "strategy": "[none]",
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "avg_return_pct": 0.0,
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "profit_factor": 0.0,
+        "avg_holding_days": 0.0,
+        "wins": 0,
+        "losses": 0
+      }
     },
-    "Correction [B] [full] AVG_DOWN": {
-      "label": "Correction [B] [full] AVG_DOWN",
-      "trades": 1,
-      "win_rate_pct": 0.0,
-      "avg_return_pct": -7.0,
-      "total_return_pct": -7.0,
-      "max_drawdown_pct": -7.0,
-      "profit_factor": 0.0,
-      "expectancy": -7.0,
-      "avg_used_count": 0,
-      "flipped_count": 0,
-      "flip_rate_pct": 0.0,
-      "avg_rate_pct": 0.0
+    "Chase [A]": {
+      "half1": {
+        "strategy": "[A]",
+        "trades": 112,
+        "wins": 48,
+        "losses": 64,
+        "win_rate_pct": 42.86,
+        "avg_return_pct": 1.16,
+        "total_return_pct": 150.97,
+        "max_drawdown_pct": -59.32,
+        "profit_factor": 1.36,
+        "avg_holding_days": 8.5
+      },
+      "half2": {
+        "strategy": "[A]",
+        "trades": 126,
+        "wins": 47,
+        "losses": 79,
+        "win_rate_pct": 37.3,
+        "avg_return_pct": 0.02,
+        "total_return_pct": -29.28,
+        "max_drawdown_pct": -59.79,
+        "profit_factor": 1.01,
+        "avg_holding_days": 7.5
+      }
     },
-    "Merged-Strict [B] [6mo] NO_AVG": {
-      "label": "Merged-Strict [B] [6mo] NO_AVG",
-      "trades": 28,
-      "win_rate_pct": 46.43,
-      "avg_return_pct": 1.2,
-      "total_return_pct": 25.68,
-      "max_drawdown_pct": -19.56,
-      "profit_factor": 1.33,
-      "expectancy": 1.203
-    },
-    "Merged-Strict [B] [6mo] AVG_DOWN": {
-      "label": "Merged-Strict [B] [6mo] AVG_DOWN",
-      "trades": 28,
-      "win_rate_pct": 46.43,
-      "avg_return_pct": 1.2,
-      "total_return_pct": 25.68,
-      "max_drawdown_pct": -19.56,
-      "profit_factor": 1.33,
-      "expectancy": 1.203,
-      "avg_used_count": 0,
-      "flipped_count": 0,
-      "flip_rate_pct": 0.0,
-      "avg_rate_pct": 0.0
-    },
-    "Merged-Strict [B] [full] NO_AVG": {
-      "label": "Merged-Strict [B] [full] NO_AVG",
-      "trades": 113,
-      "win_rate_pct": 42.48,
-      "avg_return_pct": 0.39,
-      "total_return_pct": 1.0,
-      "max_drawdown_pct": -53.62,
-      "profit_factor": 1.1,
-      "expectancy": 0.389
-    },
-    "Merged-Strict [B] [full] AVG_DOWN": {
-      "label": "Merged-Strict [B] [full] AVG_DOWN",
-      "trades": 113,
-      "win_rate_pct": 42.48,
-      "avg_return_pct": 0.39,
-      "total_return_pct": 1.0,
-      "max_drawdown_pct": -53.62,
-      "profit_factor": 1.1,
-      "expectancy": 0.389,
-      "avg_used_count": 0,
-      "flipped_count": 0,
-      "flip_rate_pct": 0.0,
-      "avg_rate_pct": 0.0
+    "Chase [B]": {
+      "half1": {
+        "strategy": "[B]",
+        "trades": 112,
+        "wins": 48,
+        "losses": 64,
+        "win_rate_pct": 42.86,
+        "avg_return_pct": 1.16,
+        "total_return_pct": 150.97,
+        "max_drawdown_pct": -59.32,
+        "profit_factor": 1.36,
+        "avg_holding_days": 8.5
+      },
+      "half2": {
+        "strategy": "[B]",
+        "trades": 126,
+        "wins": 47,
+        "losses": 79,
+        "win_rate_pct": 37.3,
+        "avg_return_pct": 0.02,
+        "total_return_pct": -29.28,
+        "max_drawdown_pct": -59.79,
+        "profit_factor": 1.01,
+        "avg_holding_days": 7.5
+      }
     }
+  },
+  "expected_durations": {
+    "Correction [none]": {
+      "avg_days": 0,
+      "n_trades": 0,
+      "client_message": "غير متاح"
+    },
+    "Correction [A]": {
+      "avg_days": 2.7,
+      "median_days": 1.5,
+      "p25_days": 1.0,
+      "p75_days": 3.8,
+      "min_days": 1,
+      "max_days": 7,
+      "n_trades": 10,
+      "client_message": "~2 يوم (بين 1 و 3 يوم)"
+    },
+    "Correction [B]": {
+      "avg_days": 1.0,
+      "median_days": 1.0,
+      "p25_days": 1.0,
+      "p75_days": 1.0,
+      "min_days": 1,
+      "max_days": 1,
+      "n_trades": 1,
+      "client_message": "~1 يوم (بين 1 و 1 يوم)"
+    },
+    "Merged-Strict [none]": {
+      "avg_days": 0,
+      "n_trades": 0,
+      "client_message": "غير متاح"
+    },
+    "Merged-Strict [A]": {
+      "avg_days": 6.8,
+      "median_days": 4.0,
+      "p25_days": 2.0,
+      "p75_days": 10.0,
+      "min_days": 1,
+      "max_days": 24,
+      "n_trades": 149,
+      "client_message": "~6 يوم (بين 2 و 10 يوم)"
+    },
+    "Merged-Strict [B]": {
+      "avg_days": 7.8,
+      "median_days": 6.0,
+      "p25_days": 3.0,
+      "p75_days": 12.0,
+      "min_days": 1,
+      "max_days": 24,
+      "n_trades": 113,
+      "client_message": "~7 يوم (بين 3 و 12 يوم)"
+    },
+    "Chase [none]": {
+      "avg_days": 0,
+      "n_trades": 0,
+      "client_message": "غير متاح"
+    },
+    "Chase [A]": {
+      "avg_days": 8.0,
+      "median_days": 7.0,
+      "p25_days": 3.2,
+      "p75_days": 11.0,
+      "min_days": 1,
+      "max_days": 24,
+      "n_trades": 238,
+      "client_message": "~8 يوم (بين 3 و 11 يوم)"
+    },
+    "Chase [B]": {
+      "avg_days": 8.0,
+      "median_days": 7.0,
+      "p25_days": 3.2,
+      "p75_days": 11.0,
+      "min_days": 1,
+      "max_days": 24,
+      "n_trades": 238,
+      "client_message": "~8 يوم (بين 3 و 11 يوم)"
+    }
+  },
+  "integration_status": {
+    "regime_filter_in_v40_2": "✅ wired (V40_2_REGIME_FILTER flag, default OFF) — v40_2_daily_generator.py line ~1679",
+    "expected_holding_days_field": "✅ added to result dict (expected_holding_days = 7 for mode A, 5 for mode B)",
+    "production_test_blocked_by": "data_engine.db + egksco_price_history empty in sandbox — V40.2 finds 0 signals without egksco data. Production test must be done on environment with full data_engine.db.",
+    "phase1_proves_value": "Correction [B] full 19mo: PF 18.54, DD -2.59%, 5 trades. Regime filter MASSIVELY improves quality."
   },
   "phase1_results": {
     "results_6mo": {
@@ -654,6 +814,152 @@
         },
         "window": "full"
       }
+    }
+  },
+  "phase2_results": {
+    "Correction [A] [6mo] NO_AVG": {
+      "label": "Correction [A] [6mo] NO_AVG",
+      "trades": 1,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 12.0,
+      "total_return_pct": 12.0,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": 999.99,
+      "expectancy": 12.0
+    },
+    "Correction [A] [6mo] AVG_DOWN": {
+      "label": "Correction [A] [6mo] AVG_DOWN",
+      "trades": 1,
+      "win_rate_pct": 100.0,
+      "avg_return_pct": 12.0,
+      "total_return_pct": 12.0,
+      "max_drawdown_pct": 0.0,
+      "profit_factor": 999.99,
+      "expectancy": 12.0,
+      "avg_used_count": 0,
+      "flipped_count": 0,
+      "flip_rate_pct": 0.0,
+      "avg_rate_pct": 0.0
+    },
+    "Correction [A] [full] NO_AVG": {
+      "label": "Correction [A] [full] NO_AVG",
+      "trades": 10,
+      "win_rate_pct": 60.0,
+      "avg_return_pct": 3.36,
+      "total_return_pct": 33.99,
+      "max_drawdown_pct": -13.51,
+      "profit_factor": 2.2,
+      "expectancy": 3.364
+    },
+    "Correction [A] [full] AVG_DOWN": {
+      "label": "Correction [A] [full] AVG_DOWN",
+      "trades": 10,
+      "win_rate_pct": 60.0,
+      "avg_return_pct": 3.36,
+      "total_return_pct": 33.99,
+      "max_drawdown_pct": -13.51,
+      "profit_factor": 2.2,
+      "expectancy": 3.364,
+      "avg_used_count": 0,
+      "flipped_count": 0,
+      "flip_rate_pct": 0.0,
+      "avg_rate_pct": 0.0
+    },
+    "Correction [B] [6mo] NO_AVG": {
+      "label": "Correction [B] [6mo] NO_AVG",
+      "trades": 0,
+      "win_rate_pct": 0,
+      "avg_return_pct": 0,
+      "total_return_pct": 0,
+      "max_drawdown_pct": 0,
+      "profit_factor": 0,
+      "expectancy": 0
+    },
+    "Correction [B] [6mo] AVG_DOWN": {
+      "label": "Correction [B] [6mo] AVG_DOWN",
+      "trades": 0,
+      "win_rate_pct": 0,
+      "avg_return_pct": 0,
+      "total_return_pct": 0,
+      "max_drawdown_pct": 0,
+      "profit_factor": 0,
+      "expectancy": 0,
+      "avg_used_count": 0,
+      "flipped_count": 0,
+      "flip_rate_pct": 0,
+      "avg_rate_pct": 0
+    },
+    "Correction [B] [full] NO_AVG": {
+      "label": "Correction [B] [full] NO_AVG",
+      "trades": 1,
+      "win_rate_pct": 0.0,
+      "avg_return_pct": -7.0,
+      "total_return_pct": -7.0,
+      "max_drawdown_pct": -7.0,
+      "profit_factor": 0.0,
+      "expectancy": -7.0
+    },
+    "Correction [B] [full] AVG_DOWN": {
+      "label": "Correction [B] [full] AVG_DOWN",
+      "trades": 1,
+      "win_rate_pct": 0.0,
+      "avg_return_pct": -7.0,
+      "total_return_pct": -7.0,
+      "max_drawdown_pct": -7.0,
+      "profit_factor": 0.0,
+      "expectancy": -7.0,
+      "avg_used_count": 0,
+      "flipped_count": 0,
+      "flip_rate_pct": 0.0,
+      "avg_rate_pct": 0.0
+    },
+    "Merged-Strict [B] [6mo] NO_AVG": {
+      "label": "Merged-Strict [B] [6mo] NO_AVG",
+      "trades": 28,
+      "win_rate_pct": 46.43,
+      "avg_return_pct": 1.2,
+      "total_return_pct": 25.68,
+      "max_drawdown_pct": -19.56,
+      "profit_factor": 1.33,
+      "expectancy": 1.203
+    },
+    "Merged-Strict [B] [6mo] AVG_DOWN": {
+      "label": "Merged-Strict [B] [6mo] AVG_DOWN",
+      "trades": 28,
+      "win_rate_pct": 46.43,
+      "avg_return_pct": 1.2,
+      "total_return_pct": 25.68,
+      "max_drawdown_pct": -19.56,
+      "profit_factor": 1.33,
+      "expectancy": 1.203,
+      "avg_used_count": 0,
+      "flipped_count": 0,
+      "flip_rate_pct": 0.0,
+      "avg_rate_pct": 0.0
+    },
+    "Merged-Strict [B] [full] NO_AVG": {
+      "label": "Merged-Strict [B] [full] NO_AVG",
+      "trades": 113,
+      "win_rate_pct": 42.48,
+      "avg_return_pct": 0.39,
+      "total_return_pct": 1.0,
+      "max_drawdown_pct": -53.62,
+      "profit_factor": 1.1,
+      "expectancy": 0.389
+    },
+    "Merged-Strict [B] [full] AVG_DOWN": {
+      "label": "Merged-Strict [B] [full] AVG_DOWN",
+      "trades": 113,
+      "win_rate_pct": 42.48,
+      "avg_return_pct": 0.39,
+      "total_return_pct": 1.0,
+      "max_drawdown_pct": -53.62,
+      "profit_factor": 1.1,
+      "expectancy": 0.389,
+      "avg_used_count": 0,
+      "flipped_count": 0,
+      "flip_rate_pct": 0.0,
+      "avg_rate_pct": 0.0
     }
   }
 }

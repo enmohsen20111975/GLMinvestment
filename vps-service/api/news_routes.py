@@ -6,12 +6,15 @@ News API routes for market news management
 Routes:
 - GET /api/news - Get market news
 - POST /api/news - Add news (Admin only)
+- POST /api/news/agent - Add news from local News Agent (telegram/rss/web) — no admin auth, uses API key
 - DELETE /api/news/<int:news_id> - Delete news (Admin only)
 - GET /api/news/ticker/<ticker> - Get news by ticker
 - POST /api/news/bulk - Add multiple news (Admin only)
 """
 
 import sqlite3
+import json
+import os
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 
@@ -20,6 +23,12 @@ news_bp = Blueprint('news', __name__, url_prefix='/api/news')
 
 # Database path - will be set by main.py or use default
 DATABASE_PATH = None
+
+# News Agent DB (separate from stocks.db — stores full News Agent payload)
+NEWS_AGENT_DB = os.environ.get('NEWS_AGENT_DB', str(
+    Path(__file__).resolve().parents[2] / 'db' / 'news.db'
+)) if (Path := __import__('pathlib').Path) else 'db/news.db'
+
 
 def get_db_path():
     """Get database path, importing from config if available"""
@@ -59,6 +68,68 @@ def init_news_db():
     ''')
     conn.commit()
     conn.close()
+
+
+def init_news_agent_db():
+    """Initialize news_agent table in news.db for News Agent payload.
+
+    The News Agent (local service) sends:
+      title, content, summary_ar, summary_en, source, source_type,
+      url, tickers (list), importance (0-100), sentiment, impact_type,
+      market, image_paths (list), ocr_text, raw_analysis, published_at.
+
+    This table stores the FULL payload + analysis fields for V40.2 news impact.
+    """
+    conn = sqlite3.connect(NEWS_AGENT_DB)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS news_agent_articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT,
+            summary_ar TEXT,
+            summary_en TEXT,
+            source TEXT,
+            source_type TEXT,
+            url TEXT,
+            tickers_json TEXT,
+            importance INTEGER DEFAULT 50,
+            sentiment TEXT DEFAULT 'neutral',
+            impact_type TEXT,
+            market TEXT DEFAULT 'EGX',
+            image_paths_json TEXT,
+            ocr_text TEXT,
+            raw_analysis_json TEXT,
+            published_at TEXT,
+            received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            processed INTEGER DEFAULT 0
+        )
+    ''')
+    # Index for fast ticker lookup
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_news_agent_published
+        ON news_agent_articles(published_at)
+    ''')
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_news_agent_sentiment
+        ON news_agent_articles(sentiment, importance)
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def check_news_agent_auth():
+    """Check auth for News Agent requests.
+
+    Uses NEWS_AGENT_API_KEY env var. If unset, allows all requests (for dev).
+    In production, set NEWS_AGENT_API_KEY to a shared secret.
+    """
+    expected_key = os.environ.get('NEWS_AGENT_API_KEY', '')
+    if not expected_key:
+        # Dev mode: no auth required
+        return True
+    provided = request.headers.get('X-News-Agent-Key', '')
+    return provided == expected_key
 
 
 def check_admin_auth():
@@ -422,5 +493,228 @@ def get_egx_news():
             "timestamp": datetime.now().isoformat()
         })
         
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================================================
+# NEWS AGENT ENDPOINT — لـ News Agent المحلي (telegram/rss/web)
+# ============================================================================
+# توجيه المالك (2026-09-02): "اعمل مشروع محلى عشان اغذى الموقع بلأخبار الحية"
+# الـ News Agent المحلي بـ يجمع الأخبار من Telegram + RSS + Web،
+# يحللها محلياً بـ Ollama، وبعدين يبعتها للموقع عبر POST /api/news/agent.
+#
+# الـ payload المتوقع:
+#   title: str (required)
+#   content: str
+#   summary_ar: str
+#   summary_en: str
+#   source: str
+#   source_type: "telegram" | "rss" | "web"
+#   url: str
+#   tickers: list[str]  e.g. ["COMI", "TMGH"]
+#   importance: int 0-100
+#   sentiment: "bullish" | "bearish" | "neutral"
+#   impact_type: "earnings" | "macro" | "market"
+#   market: "EGX" | "NASDAQ" | "global"
+#   image_paths: list[str]
+#   ocr_text: str
+#   raw_analysis: dict (JSON-serializable)
+#   published_at: ISO date string
+# ============================================================================
+
+
+@news_bp.route('/agent', methods=['POST'])
+def receive_from_news_agent():
+    """استقبال خبر من News Agent المحلي وتخزينه في news.db.
+
+    Auth: X-News-Agent-Key header (optional in dev, required in prod if NEWS_AGENT_API_KEY set).
+    """
+    try:
+        if not check_news_agent_auth():
+            return jsonify({"success": False, "error": "Unauthorized: invalid X-News-Agent-Key"}), 401
+
+        data = request.get_json() or {}
+
+        # Validate required fields
+        if not data.get('title'):
+            return jsonify({"success": False, "error": "title is required"}), 400
+
+        # Normalize fields
+        title = str(data.get('title', ''))[:500]
+        content = str(data.get('content', ''))[:50000]
+        summary_ar = str(data.get('summary_ar', ''))[:2000]
+        summary_en = str(data.get('summary_en', ''))[:2000]
+        source = str(data.get('source', 'unknown'))[:200]
+        source_type = str(data.get('source_type', 'web'))[:50]
+        url = str(data.get('url', ''))[:2000]
+        tickers = data.get('tickers', [])
+        if isinstance(tickers, str):
+            tickers = [t.strip().upper() for t in tickers.split(',') if t.strip()]
+        tickers_json = json.dumps([t.upper() for t in tickers[:20]])  # max 20 tickers
+        importance = max(0, min(100, int(data.get('importance', 50))))  # clamp 0-100
+        sentiment = str(data.get('sentiment', 'neutral')).lower()
+        if sentiment not in ('bullish', 'bearish', 'neutral'):
+            sentiment = 'neutral'
+        impact_type = str(data.get('impact_type', 'market'))[:50]
+        market = str(data.get('market', 'EGX'))[:20]
+        image_paths = data.get('image_paths', [])
+        if isinstance(image_paths, str):
+            image_paths = [image_paths]
+        image_paths_json = json.dumps(image_paths[:10])  # max 10 images
+        ocr_text = str(data.get('ocr_text', ''))[:10000]
+        raw_analysis = data.get('raw_analysis', {})
+        raw_analysis_json = json.dumps(raw_analysis) if isinstance(raw_analysis, dict) else str(raw_analysis)[:5000]
+        published_at = str(data.get('published_at', datetime.now().isoformat()))[:50]
+
+        # Initialize table (idempotent)
+        init_news_agent_db()
+
+        # Insert
+        conn = sqlite3.connect(NEWS_AGENT_DB)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO news_agent_articles (
+                title, content, summary_ar, summary_en, source, source_type,
+                url, tickers_json, importance, sentiment, impact_type, market,
+                image_paths_json, ocr_text, raw_analysis_json, published_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            title, content, summary_ar, summary_en, source, source_type,
+            url, tickers_json, importance, sentiment, impact_type, market,
+            image_paths_json, ocr_text, raw_analysis_json, published_at
+        ))
+        conn.commit()
+        news_id = cursor.lastrowid
+        conn.close()
+
+        # Optional: trigger news impact analysis (if V40_2_NEWS_IMPACT=1)
+        # This is done lazily by V40.2 when it next scans, not here.
+        return jsonify({
+            "success": True,
+            "message": "تم استلام الخبر وتخزينه",
+            "news_id": news_id,
+            "received_at": datetime.now().isoformat(),
+            "tickers": json.loads(tickers_json),
+            "importance": importance,
+            "sentiment": sentiment,
+        }), 201
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@news_bp.route('/agent/list', methods=['GET'])
+def list_news_agent_articles():
+    """عرض الأخبار المخزنة من News Agent (للأدمن/التحقق)."""
+    try:
+        if not check_admin_auth():
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+        limit = min(int(request.args.get('limit', 50)), 200)
+        offset = int(request.args.get('offset', 0))
+        sentiment_filter = request.args.get('sentiment', '')
+        ticker_filter = request.args.get('ticker', '').upper()
+
+        init_news_agent_db()
+        conn = sqlite3.connect(NEWS_AGENT_DB)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        query = 'SELECT * FROM news_agent_articles'
+        params = []
+        conditions = []
+        if sentiment_filter:
+            conditions.append('sentiment = ?')
+            params.append(sentiment_filter)
+        if ticker_filter:
+            conditions.append('tickers_json LIKE ?')
+            params.append(f'%"{ticker_filter}"%')
+        if conditions:
+            query += ' WHERE ' + ' AND '.join(conditions)
+        query += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
+        params.extend([limit, offset])
+
+        rows = cursor.execute(query, params).fetchall()
+        total = cursor.execute('SELECT COUNT(*) FROM news_agent_articles').fetchone()[0]
+
+        articles = []
+        for row in rows:
+            articles.append({
+                'id': row['id'],
+                'title': row['title'],
+                'summary_ar': row['summary_ar'],
+                'summary_en': row['summary_en'],
+                'source': row['source'],
+                'source_type': row['source_type'],
+                'url': row['url'],
+                'tickers': json.loads(row['tickers_json']) if row['tickers_json'] else [],
+                'importance': row['importance'],
+                'sentiment': row['sentiment'],
+                'impact_type': row['impact_type'],
+                'market': row['market'],
+                'image_paths': json.loads(row['image_paths_json']) if row['image_paths_json'] else [],
+                'published_at': row['published_at'],
+                'received_at': row['received_at'],
+                'processed': row['processed'],
+            })
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "count": len(articles),
+            "total": total,
+            "articles": articles,
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@news_bp.route('/agent/stats', methods=['GET'])
+def news_agent_stats():
+    """إحصائيات الأخبار المخزنة من News Agent."""
+    try:
+        init_news_agent_db()
+        conn = sqlite3.connect(NEWS_AGENT_DB)
+        cursor = conn.cursor()
+
+        total = cursor.execute('SELECT COUNT(*) FROM news_agent_articles').fetchone()[0]
+        by_sentiment = dict(cursor.execute(
+            'SELECT sentiment, COUNT(*) FROM news_agent_articles GROUP BY sentiment'
+        ).fetchall())
+        by_source_type = dict(cursor.execute(
+            'SELECT source_type, COUNT(*) FROM news_agent_articles GROUP BY source_type'
+        ).fetchall())
+        by_market = dict(cursor.execute(
+            'SELECT market, COUNT(*) FROM news_agent_articles GROUP BY market'
+        ).fetchall())
+        avg_importance = cursor.execute(
+            'SELECT AVG(importance) FROM news_agent_articles'
+        ).fetchone()[0] or 0
+        unprocessed = cursor.execute(
+            'SELECT COUNT(*) FROM news_agent_articles WHERE processed = 0'
+        ).fetchone()[0]
+
+        # Last 24h
+        from datetime import datetime, timedelta
+        since = (datetime.now() - timedelta(hours=24)).isoformat()
+        last_24h = cursor.execute(
+            'SELECT COUNT(*) FROM news_agent_articles WHERE received_at > ?', (since,)
+        ).fetchone()[0]
+
+        conn.close()
+
+        return jsonify({
+            "success": True,
+            "total_articles": total,
+            "unprocessed": unprocessed,
+            "last_24h": last_24h,
+            "by_sentiment": by_sentiment,
+            "by_source_type": by_source_type,
+            "by_market": by_market,
+            "avg_importance": round(avg_importance, 1),
+        })
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
