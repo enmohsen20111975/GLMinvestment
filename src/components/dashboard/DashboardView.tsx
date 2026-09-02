@@ -13,7 +13,6 @@ import { CryptoSignalsWidget } from '@/components/dashboard/CryptoSignalsWidget'
 import { SeasonalitySignalsWidget } from '@/components/dashboard/SeasonalitySignalsWidget';
 import { EidPredictionsWidget } from '@/components/eid-predictions-widget';
 import { AutoAnalysisWidget } from '@/components/auto-analysis-widget';
-import { NewsFeedWidget } from '@/components/news-feed-widget';
 import { MaestroWidget } from '@/components/dashboard/MaestroWidget';
 import { LiveStockTicker } from '@/components/dashboard/LiveStockTicker';
 import { MarketPulseWidget } from '@/components/dashboard/MarketPulseWidget';
@@ -207,12 +206,6 @@ export function DashboardView() {
       title: 'الأسواق المتعددة',
       visible: (p) => p !== 'gold',
       render: () => <MultiMarketWidget />,
-    },
-    {
-      id: 'news-feed',
-      title: 'آخر الأخبار',
-      visible: (p) => p !== 'gold',
-      render: () => <NewsFeedWidget />,
     },
   ], []);
 
@@ -445,12 +438,12 @@ export function DashboardView() {
 
             {/* 7. الأسواق المتعددة والأخبار */}
             {(() => {
-              const items = layout.filter((x) => x.id === 'multi-market' || x.id === 'news-feed');
+              const items = layout.filter((x) => x.id === 'multi-market');
               const visible = items.filter((x) => !x.pinned);
               if (visible.length === 0) return null;
               return (
                 <section
-                  aria-label="الأسواق المتعددة والأخبار"
+                  aria-label="الأسواق المتعددة"
                   className="grid grid-cols-1 lg:grid-cols-2 gap-4"
                 >
                   {visible.map((w) => (

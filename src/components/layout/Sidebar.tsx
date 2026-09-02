@@ -37,6 +37,7 @@ import {
   MessageCircle,
   HelpCircle,
   Filter,
+  Newspaper,
   type LucideIcon,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
@@ -105,6 +106,7 @@ function getNavSections(currentMarket: MarketType): NavSection[] {
         // unified-analysis moved to Admin
         { id: 'specialist-analysis', label: 'تحليل المتخصصين', labelEn: 'Specialist Analysis', icon: Sparkles },
         { id: 'reports', label: 'التقارير', labelEn: 'Reports', icon: FileBarChart },
+        { id: 'news', label: 'الأخبار والتحليلات', labelEn: 'News & Analysis', icon: Newspaper },
         { id: 'learning', label: 'مركز التعلم', labelEn: 'Learning', icon: GraduationCap },
         { id: 'simulation', label: 'المحاكاة', labelEn: 'Simulation', icon: Gamepad2 },
         { id: 'academy', label: 'أكاديمية M2y', labelEn: 'M2y Academy', icon: GraduationCap },

@@ -74,6 +74,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1343,6 +1344,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                     <SortableTh label="السهم" field="ticker" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
                     <SortableTh label="السعر" field="current_price" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
                     <SortableTh label="التغير %" field="change_percent" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
+                    <SortableTh label="الرسم البياني" field="ticker" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
                     <SortableTh label="الحجم" field="volume" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
                     <SortableTh label="السيولة (ج.م)" field="turnover_egp" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
                     <SortableTh label="مكرر الربحية" field="pe_ratio" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
@@ -1371,6 +1373,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                       </TableCell>
                       <TableCell className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
                         {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
+                      </TableCell>
+                      <TableCell>
+                        <MiniSparkline ticker={s.ticker} height={24} width={80} showArea={false} />
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {formatVolume(s.volume)}

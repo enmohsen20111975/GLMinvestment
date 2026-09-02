@@ -11,6 +11,7 @@ export const VALID_VIEWS: readonly string[] = [
   // EGX — السوق المصري
   'dashboard', 'stocks', 'stock-filters', 'top-performers', 'screener',
   'portfolio', 'watchlist', 'recommendations', 'reports',
+  'news',
   'learning', 'simulation', 'academy',
   'advanced-analysis', 'unified-analysis', 'specialist-analysis',
   'advanced-portfolio', 'seasonality',

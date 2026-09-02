@@ -387,6 +387,7 @@ export type AppView =
   | 'seasonality'        // محرك الموسمية - Paper Trading
   | 'sniper'             // القناص
   | 'reports'            // التقارير
+  | 'news'               // الأخبار والتحليلات
   | 'learning'           // مركز التعلم
   | 'simulation'         // المحاكاة
   | 'academy'            // أكاديمية M2y التعليمية ومحاكي التداول الحي

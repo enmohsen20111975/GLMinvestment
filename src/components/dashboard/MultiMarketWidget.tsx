@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Minus, Coins, ArrowUpRight, ArrowDownRight, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 
 // Market configuration
 const MARKETS = [
@@ -195,6 +196,9 @@ export function MultiMarketWidget() {
                     {stock.change_percent >= 0 ? '+' : ''}
                      {(stock.change_percent ?? 0).toFixed(2)}%
                   </span>
+                </div>
+                <div className="mt-1">
+                  <MiniSparkline ticker={ticker} height={16} width={64} showArea={false} />
                 </div>
               </div>
             </button>
