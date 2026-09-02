@@ -778,7 +778,18 @@ class BacktestSummary:
 
 # FIX: Trailing stop reads from engine_settings — unified with live stop_manager
 TRAILING_STOP_ATR_MULT = get_setting('trailing_stop_atr_mult', default=2.0)
-TRAILING_STOP_MIN_GAIN = get_setting('trailing_stop_activation_gain', default=2.0)
+# TIGHTENING (2026-09-02): Owner directive: "فعّل Trailing Stop بعد +5% ربح
+# (يحرك الستوب على نقطة الدخول أو أعلى)"
+# → default activation gain raised from 2.0% to 5.0%
+# → env override: V40_2_TRAILING_ACTIVATION_GAIN=5.0
+TRAILING_STOP_MIN_GAIN = float(os.environ.get(
+    'V40_2_TRAILING_ACTIVATION_GAIN',
+    str(get_setting('trailing_stop_activation_gain', default=5.0))
+))
+# BREAKEVEN FLOOR (2026-09-02): once trailing activates, stop cannot go below
+# entry * 1.01 (breakeven + 1%). This locks profits early.
+# → env override: V40_2_TRAILING_BREAKEVEN_FLOOR=1.01 (means +1%)
+TRAILING_BREAKEVEN_FLOOR = float(os.environ.get('V40_2_TRAILING_BREAKEVEN_FLOOR', '1.01'))
 
 # V40: Lazy singleton for StopLossManager (avoids per-trade instantiation overhead)
 _STOP_MGR_INSTANCE = None
@@ -827,6 +838,27 @@ def simulate_trade(
     target = trade.target_price
     stop = trade.stop_loss
     highest_price = entry  # تتبع أعلى سعر للستوب المتحرك
+
+    # TIGHTENING (2026-09-02): clamp stop_loss to max V40_2_STOP_MAX_PCT (default 7%)
+    # Owner directive: "خفّض الستوب الأقصى من 9% لـ 7% (أو خلّيه ATR-based بس بحد أقصى 7%)"
+    # This is applied HERE (not in the decision engine) so it works in both
+    # production AND backtest — regardless of where the stop was originally computed.
+    try:
+        _tighten_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))
+        if entry > 0 and stop > 0:
+            _stop_dist_pct = abs((entry - stop) / entry) * 100.0
+            if _stop_dist_pct > _tighten_max_pct:
+                # Tighten: move stop closer to entry (max _tighten_max_pct away)
+                _new_stop = entry - (entry * _tighten_max_pct / 100.0)
+                # Re-derive target to preserve R:R (so tighter stop = tighter target)
+                _old_risk = entry - stop
+                _new_risk = entry - _new_stop
+                if _old_risk > 0 and _new_risk > 0:
+                    _ratio = _new_risk / _old_risk
+                    target = entry + (target - entry) * _ratio
+                stop = _new_stop
+    except Exception:
+        pass  # safe-by-design: if env parsing fails, keep original stop
 
     # V40.2: Data sanity guard — clamp any single-bar price jump >2x or <0.5x
     # (protects against corrupt/split-unadjusted data that would produce absurd
@@ -955,13 +987,22 @@ def simulate_trade(
 
         # ── V40: Trailing stop check BEFORE hit_stop (protects profits) ──
         # للصفقات اللي ما أخدتش partial: لو فيه ربح >= min_gain → فعل trailing
+        # TIGHTENING (2026-09-02): trailing activation raised to +5% (was +2%)
+        # + BREAKEVEN FLOOR: once activated, stop = max(trailing, breakeven)
+        # Owner: "يحرك الستوب على نقطة الدخول أو أعلى"
         if not partial_taken:
             gain_pct = ((price - entry) / entry) * 100
             if gain_pct >= TRAILING_STOP_MIN_GAIN and atr_i > 0:
                 trailing_stop_price = highest_price - (TRAILING_STOP_ATR_MULT * atr_i)
+                # BREAKEVEN FLOOR: لا ينزل تحت entry * 1.01 (locks profit)
+                breakeven = entry * TRAILING_BREAKEVEN_FLOOR
+                # الستوب الفعال = أقصى (trailing, breakeven) — أقوى حماية
+                effective_trailing = max(trailing_stop_price, breakeven)
                 # لازم السعر يكون نزل تحت trailing stop (مش بس تحته قليلاً)
-                if price <= trailing_stop_price and trailing_stop_price > stop:
-                    _finalize(price, 'trailing_stop', i, i + 1, price > entry)
+                if price <= effective_trailing and effective_trailing > stop:
+                    # سجل إن trailing حمى الربح (للتحليل)
+                    protected_profit = max(0, (effective_trailing - entry) / entry * 100)
+                    _finalize(effective_trailing, 'trailing_stop', i, i + 1, effective_trailing > entry)
                     break
 
         # ── Hit target (exit remaining at target) ──
@@ -1617,13 +1658,21 @@ class V38BacktestEngine:
                     tp2 = entry + risk * rr2_floor
         else:
             # ─── ATR stop clamp (P1 / PILLAR-3): fallback when no MarketProfile ───
-            # CONSTITUTION Rule 8: stops must stay within [3%, 9%] of entry.
+            # CONSTITUTION Rule 8: stops must stay within [3%, max] of entry.
             # Without this clamp, a tiny-ATR stock could have a 0.5% stop (whipsawed) and a
             # huge-ATR stock could have a 15% stop (catastrophic loss). Both are forbidden.
+            #
+            # TIGHTENING (2026-09-02): Owner directive: "خفّض الستوب الأقصى من 9% لـ 7%"
+            # → default max tightened from 9.0% to 7.0% to reduce MaxDD.
+            # → Override via env var: V40_2_STOP_MAX_PCT=7.0 (or any value).
+            # → The tighter stop reduces per-trade loss but may increase false stops
+            #   on volatile stocks. Use with trailing stop activation for best effect.
             try:
                 from analyzers.engine_settings import get_setting
                 _stop_min_pct = get_setting('atr_stop_min_pct', default=3.0)
-                _stop_max_pct = get_setting('atr_stop_max_pct', default=9.0)
+                # TIGHTENING: default 7.0% (was 9.0%) — env override takes priority
+                _stop_max_default = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))
+                _stop_max_pct = get_setting('atr_stop_max_pct', default=_stop_max_default)
                 _stop_dist_pct = abs((entry - sl) / entry) * 100.0 if entry > 0 else 0.0
                 if _stop_dist_pct < _stop_min_pct:
                     # Tighten: move stop down to minimum distance

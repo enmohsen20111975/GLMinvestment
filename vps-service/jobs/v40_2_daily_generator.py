@@ -1546,7 +1546,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         target = _uncap_target
                         target_2 = round(entry + (_atr_val * 8.0), 2)
                         result['target_2'] = target_2
-                        _explosive_stop = round(entry * 0.915, 2)
+                        # TIGHTENING (2026-09-02): explosive stop from -8.5% (0.915) to -7% (0.93)
+                        # Owner directive: "خفّض الستوب الأقصى من 9% لـ 7% (أو خلّيه ATR-based بس بحد أقصى 7%)"
+                        _explosive_stop_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))
+                        _explosive_stop = round(entry * (1 - _explosive_stop_max_pct / 100.0), 2)
                         if stop < _explosive_stop:
                             stop = _explosive_stop
                         r_mult = (target - entry) / max(0.01, entry - stop)

@@ -1,0 +1,199 @@
+{
+  "meta": {
+    "test": "V40.2 TIGHTENING COMPARISON",
+    "window": "2026-02-01 → 2026-08-14",
+    "universe": "235 EGX tickers",
+    "goal": "هل تضييق الستوب +5% + trailing +5% + breakeven floor بيوصل MaxDD لـ -20%؟",
+    "owner_directive": "خفّض الستوب الأقصى من 9% لـ 7% + فعّل Trailing Stop بعد +5% ربح"
+  },
+  "results": {
+    "baseline_stop9_trail2": {
+      "label": "baseline_stop9_trail2",
+      "trades": 23,
+      "wins": 16,
+      "losses": 7,
+      "win_rate_pct": 69.57,
+      "avg_return_pct": 3.508,
+      "avg_winner_pct": 7.87,
+      "avg_loser_pct": -6.45,
+      "worst_loser_pct": -24.86,
+      "best_loser_pct": -0.39,
+      "total_return_pct": 95.89,
+      "max_drawdown_pct": -34.26,
+      "max_dd_duration_trades": 5,
+      "profit_factor": 2.79,
+      "avg_holding_days": 6.7,
+      "exit_types": {
+        "expired": 21,
+        "fast_stop": 2
+      },
+      "trailing_saves": 0,
+      "trailing_save_returns": [],
+      "trailing_losses": 0,
+      "stop_distance": {
+        "avg": 8.95,
+        "min": 7.92,
+        "max": 9.0
+      },
+      "worst_5_losers": [
+        {
+          "ticker": "UTOP",
+          "return": -24.86,
+          "exit_type": "fast_stop",
+          "holding": 1
+        },
+        {
+          "ticker": "IDRE",
+          "return": -12.14,
+          "exit_type": "fast_stop",
+          "holding": 2
+        },
+        {
+          "ticker": "ELKA",
+          "return": -4.47,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "ATLC",
+          "return": -1.9,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "EGCH",
+          "return": -0.76,
+          "exit_type": "expired",
+          "holding": 7
+        }
+      ],
+      "best_5_winners": [
+        {
+          "ticker": "DAPH",
+          "return": 29.9,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "DAPH",
+          "return": 25.01,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "EPCO",
+          "return": 13.18,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "CPCI",
+          "return": 9.71,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "AALR",
+          "return": 7.7,
+          "exit_type": "expired",
+          "holding": 7
+        }
+      ]
+    },
+    "tightened_stop7_trail5": {
+      "label": "tightened_stop7_trail5",
+      "trades": 23,
+      "wins": 16,
+      "losses": 7,
+      "win_rate_pct": 69.57,
+      "avg_return_pct": 3.603,
+      "avg_winner_pct": 8.0,
+      "avg_loser_pct": -6.45,
+      "worst_loser_pct": -24.86,
+      "best_loser_pct": -0.39,
+      "total_return_pct": 99.85,
+      "max_drawdown_pct": -34.26,
+      "max_dd_duration_trades": 5,
+      "profit_factor": 2.83,
+      "avg_holding_days": 6.7,
+      "exit_types": {
+        "expired": 20,
+        "hit_target": 1,
+        "fast_stop": 2
+      },
+      "trailing_saves": 0,
+      "trailing_save_returns": [],
+      "trailing_losses": 0,
+      "stop_distance": {
+        "avg": 8.95,
+        "min": 7.92,
+        "max": 9.0
+      },
+      "worst_5_losers": [
+        {
+          "ticker": "UTOP",
+          "return": -24.86,
+          "exit_type": "fast_stop",
+          "holding": 1
+        },
+        {
+          "ticker": "IDRE",
+          "return": -12.14,
+          "exit_type": "fast_stop",
+          "holding": 2
+        },
+        {
+          "ticker": "ELKA",
+          "return": -4.47,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "ATLC",
+          "return": -1.9,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "EGCH",
+          "return": -0.76,
+          "exit_type": "expired",
+          "holding": 7
+        }
+      ],
+      "best_5_winners": [
+        {
+          "ticker": "DAPH",
+          "return": 29.9,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "DAPH",
+          "return": 25.04,
+          "exit_type": "hit_target",
+          "holding": 7
+        },
+        {
+          "ticker": "EPCO",
+          "return": 13.18,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "AALR",
+          "return": 9.85,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "CPCI",
+          "return": 9.71,
+          "exit_type": "expired",
+          "holding": 7
+        }
+      ]
+    }
+  },
+  "timestamp": "2026-09-02T20:35:19.249869"
+}
