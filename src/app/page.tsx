@@ -8,32 +8,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 
-type Phase1Result = {
-  strategy: string; trades: number; win_rate_pct: number; avg_return_pct: number;
+type Phase1Result = { strategy: string; trades: number; win_rate_pct: number; avg_return_pct: number;
   total_return_pct: number; max_drawdown_pct: number; profit_factor: number; avg_holding_days: number;
-  exit_reasons: Record<string, number>; window: string;
-}
-type Phase2Result = {
-  label: string; trades: number; win_rate_pct: number; avg_return_pct: number;
-  total_return_pct: number; max_drawdown_pct: number; profit_factor: number;
-  expectancy: number; avg_used_count?: number; flipped_count?: number;
-  flip_rate_pct?: number; avg_rate_pct?: number;
-}
+  exit_reasons: Record<string, number>; window: string; }
+type Phase2Result = { label: string; trades: number; win_rate_pct: number; avg_return_pct: number;
+  total_return_pct: number; max_drawdown_pct: number; profit_factor: number; expectancy: number;
+  avg_used_count?: number; flipped_count?: number; }
+type WFResult = { half1: any; half2: any; }
+type Duration = { avg_days: number; median_days: number; p25_days: number; p75_days: number;
+  min_days: number; max_days: number; n_trades: number; client_message: string; }
 type Payload = {
-  meta: {
-    data_source: string; windows: Record<string, string>;
-    scenarios?: Record<string, string>; regime_modes?: Record<string, string>;
-    exit_engine: string; rejection_rule?: string; production_modules?: string[];
-    rules?: string[];
-  }
+  meta: { test: string; data_source: string; walk_forward_windows?: any; consistent_rule?: string; }
+  walk_forward?: Record<string, WFResult>
+  expected_durations?: Record<string, Duration>
+  phase1_results?: { results_6mo: Record<string, Phase1Result>; results_full: Record<string, Phase1Result> }
+  phase2_results?: Record<string, Phase2Result>
+  integration_status?: { [k: string]: string }
+  // legacy phase1 keys
   results_6mo?: Record<string, Phase1Result>
   results_full?: Record<string, Phase1Result>
-  phase1_results?: { results_6mo: Record<string, Phase1Result>; results_full: Record<string, Phase1Result> }
   results?: Record<string, Phase2Result>
 }
-
-const V402_BASELINE = { trades: 15, win_rate_pct: 73.3, profit_factor: 9.80,
-  total_return_pct: 66.2, max_drawdown_pct: 4.71, avg_holding_days: 5.0 }
 
 function colorRet(v: number) {
   if (v > 0.01) return "text-emerald-600 dark:text-emerald-400 font-semibold"
@@ -67,7 +62,10 @@ export default function Home() {
 
   const r6 = data?.results_6mo || data?.phase1_results?.results_6mo || {}
   const rFull = data?.results_full || data?.phase1_results?.results_full || {}
-  const r2 = data?.results || {}
+  const r2 = data?.results || data?.phase2_results || {}
+  const wf = data?.walk_forward || {}
+  const dur = data?.expected_durations || {}
+  const integration = data?.integration_status || {}
 
   return (
     <div dir="rtl" className="min-h-screen flex flex-col bg-background">
@@ -76,23 +74,23 @@ export default function Home() {
         <header className="space-y-2">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              التقرير النهائي — Regime Filter + Average Down
+              دمج Regime Filter في V40.2 + Walk-Forward + توقعات المدة للعميل
             </h1>
             <Badge variant="secondary" className="font-mono">442 سهم EGX · 19 شهر</Badge>
           </div>
           <p className="text-sm sm:text-base text-muted-foreground">
-            تنفيذ البرومبت الكامل: المرحلة 1 (فلتر regime بنسختين) + المرحلة 2 (متوسط سعري ذكي). قاعدة الرفض:
-            <span className="font-semibold text-foreground"> أي نسخة DD &gt; 25% تُرفض حتى لو العائد أعلى.</span>
+            تنفيذ البرومبت: دمج regime filter كـ pre-filter في V40.2 + walk-forward (قسم 19 شهر لـ 2 أنصاف)
+            + <span className="font-semibold text-foreground">رسالة العميل: "التصحيح المتوقع ~X يوم"</span> — ثقة + خبرة.
           </p>
         </header>
 
         <Alert className="border-emerald-400/50 bg-emerald-50 dark:bg-emerald-950/30">
-          <AlertTitle className="text-emerald-800 dark:text-emerald-300">بيانات EGX حقيقية · modules مرتبطة بالإنتاج · صفر محاكاة</AlertTitle>
+          <AlertTitle className="text-emerald-800 dark:text-emerald-300">دمج V40.2 تم — Walk-forward صادق — رسالة المدة جاهزة</AlertTitle>
           <AlertDescription className="text-emerald-800 dark:text-emerald-200/90 text-sm leading-relaxed">
-            المصادر: <span className="font-mono">price_history.db</span> (442 سهم EGX، 288K شمعة) +
-            <span className="font-mono"> vps-service/analyzers/regime_filter.py</span> (module إنتاجي جديد) +
-            <span className="font-mono"> vps-service/analyzers/strict_entry_filters.py</span> (إضافة is_liquidity_grab_opportunity + evaluate_average_down).
-            تم الرفع على GitHub + تحديث CONSTITUTION (Rule 42) + PROJECT_ANATOMY.
+            فلتر الـ Regime اتربط جوه <span className="font-mono">v40_2_daily_generator.py</span> (feature flag
+            <span className="font-mono"> V40_2_REGIME_FILTER</span> default OFF).
+            Walk-forward على 19 شهر (نصفين) بـ يكشف إن النتائج period-dependent.
+            رسالة المدة للعميل: <span className="font-mono">expected_correction_days</span> = متوسط فعلي من backtest (مش تخمين).
           </AlertDescription>
         </Alert>
 
@@ -112,100 +110,212 @@ export default function Home() {
 
         {data && (
           <>
-            {/* VERDICT */}
-            <Card className="border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/20">
+            {/* INTEGRATION STATUS */}
+            <Card>
               <CardHeader>
-                <CardTitle className="text-emerald-800 dark:text-emerald-300">الحُكم النهائي — Correction [B] هو الأفضل جودة، Merged-Strict [B] الأفضل عائداً</CardTitle>
-                <CardDescription className="text-emerald-800/80 dark:text-emerald-200/80">
-                  Average Down مع الشروط الصارمة لم يُطلق أبداً (سلوك مقبول — الـ Average Down الذكي نادر، الأعمى ممنوع)
+                <CardTitle>حالة الدمج في V40.2 الإنتاجي</CardTitle>
+                <CardDescription>
+                  الفلتر مربوط في <span className="font-mono">v40_2_daily_generator.py</span> قبل V40_2_STRICT_ENTRY مباشرة.
+                  Production test يحتاج data_engine.db مع egksco_price_history (غير متوفرة في الساندبوكس).
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-100/90 space-y-2">
-                <p>
-                  <span className="font-semibold">Correction [B]</span> (Close &gt; SMA20 AND Close &gt; SMA50) على 19 شهر:
-                  <span className="font-mono font-bold"> PF 18.54</span>، DD <span className="font-mono">-2.59%</span>، 5 صفقات فقط — جودة استثنائية ونادر.
-                </p>
-                <p>
-                  <span className="font-semibold">Merged-Strict [B]</span> على 19 شهر:
-                  <span className="font-mono font-bold"> +1594.91%</span> عائد، DD <span className="font-mono">-24.80%</span> (على حدود القاعدة)، PF 2.03، 130 صفقة.
-                </p>
-                <p>
-                  <span className="font-semibold">Average Down (Phase 2):</span> مع الشروط الصارمة (break 3-8% + recovery 3 أيام + حجم + قرب SMA50 + لا ChoC)
-                  لم يُطلق أبداً في backtest (avg_used=0). هذا سلوك مقبول — المتوسط الذكي نادر، الأعمى ممنوع.
-                </p>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  {Object.entries(integration).map(([k, v]) => (
+                    <div key={k} className="flex gap-2 items-start">
+                      <span className="font-mono text-xs text-muted-foreground shrink-0 min-w-32">{k}:</span>
+                      <span className="text-xs leading-relaxed">{v}</span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
-            <Tabs defaultValue="phase1">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="phase1">المرحلة 1 — Regime Filter</TabsTrigger>
-                <TabsTrigger value="phase2">المرحلة 2 — Average Down</TabsTrigger>
+            <Tabs defaultValue="walk_forward">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="walk_forward">Walk-Forward</TabsTrigger>
+                <TabsTrigger value="durations">توقعات المدة للعميل</TabsTrigger>
+                <TabsTrigger value="phase1">المرحلة 1 — Regime</TabsTrigger>
               </TabsList>
 
-              {/* PHASE 1 */}
+              {/* WALK-FORWARD */}
+              <TabsContent value="walk_forward" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Walk-Forward — Half 1 (Jan-Aug 2025) vs Half 2 (Sep 2025-Aug 2026)</CardTitle>
+                    <CardDescription>
+                      قاعدة الثبات: النصفين لازم ret &gt; 0 AND DD &gt; -25%. النتيجة: النتائج period-dependent.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الاستراتيجية [mode]</TableHead>
+                            <TableHead className="text-right">H1 Ret</TableHead>
+                            <TableHead className="text-right">H1 DD</TableHead>
+                            <TableHead className="text-right">H1 Trades</TableHead>
+                            <TableHead className="text-right">H2 Ret</TableHead>
+                            <TableHead className="text-right">H2 DD</TableHead>
+                            <TableHead className="text-right">H2 Trades</TableHead>
+                            <TableHead className="text-right">الحكم</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(wf).map(([key, w]) => {
+                            const h1 = w.half1, h2 = w.half2
+                            const consistent = h1.total_return_pct > 0 && h2.total_return_pct > 0
+                              && h1.max_drawdown_pct > -25 && h2.max_drawdown_pct > -25
+                            return (
+                              <TableRow key={key} className={consistent ? "bg-emerald-50 dark:bg-emerald-950/30" : ""}>
+                                <TableCell className="font-medium text-xs">{key}</TableCell>
+                                <TableCell className={`font-mono ${colorRet(h1.total_return_pct)}`}>{pct(h1.total_return_pct)}</TableCell>
+                                <TableCell className={`font-mono ${ddColor(h1.max_drawdown_pct)}`}>{pct(h1.max_drawdown_pct)}</TableCell>
+                                <TableCell className="font-mono">{h1.trades}</TableCell>
+                                <TableCell className={`font-mono ${colorRet(h2.total_return_pct)}`}>{pct(h2.total_return_pct)}</TableCell>
+                                <TableCell className={`font-mono ${ddColor(h2.max_drawdown_pct)}`}>{pct(h2.max_drawdown_pct)}</TableCell>
+                                <TableCell className="font-mono">{h2.trades}</TableCell>
+                                <TableCell>
+                                  {consistent ? <Badge className="bg-emerald-600">✓ ثابت</Badge> : <Badge variant="outline">⚠ غير ثابت</Badge>}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Alert>
+                  <AlertTitle>الحُكم الصادق للـ Walk-forward</AlertTitle>
+                  <AlertDescription className="text-sm leading-relaxed">
+                    النتائج <span className="font-semibold">period-dependent</span>. Correction [A] في H1 = -6.63% بس في H2 = +52.53%.
+                    Merged-Strict [A/B] في H1 كان DD -38% (مرفوض)، في H2 تحسّن. Chase اختلف تماماً (H1 +151%، H2 -29%).
+                    <br /><br />
+                    <span className="font-semibold">الخلاصة:</span> regime filter بيحسّن الجودة بشكل واضح،
+                    بس الأداء نفسه period-dependent. لازم walk-forward أطول (multi-year) قبل أي اعتماد نهائي.
+                    Phase 1 (19 شهر كامل) أعطى نتائج إيجابية بس مش ممكن نعتمد على فترة واحدة.
+                  </AlertDescription>
+                </Alert>
+              </TabsContent>
+
+              {/* EXPECTED DURATIONS */}
+              <TabsContent value="durations" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>توقعات المدة للعميل — متوسط الاحتفاظ الفعلي</CardTitle>
+                    <CardDescription>
+                      متوسط مدة الصفقات الفعلية من backtest (مش تخمين). العميل يشوف: "التصحيح المتوقع: ~7 يوم (بين 3 و 12 يوم)"
+                      = ثقة + إحساس بـ خبرة. ده بيعمل فرق كبير في تجربة العميل.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">الاستراتيجية [mode]</TableHead>
+                            <TableHead className="text-right">Trades</TableHead>
+                            <TableHead className="text-right">Avg days</TableHead>
+                            <TableHead className="text-right">Median</TableHead>
+                            <TableHead className="text-right">P25-P75</TableHead>
+                            <TableHead className="text-right">Min-Max</TableHead>
+                            <TableHead className="text-right">رسالة العميل</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(dur).map(([key, d]) => (
+                            <TableRow key={key}>
+                              <TableCell className="font-medium text-xs">{key}</TableCell>
+                              <TableCell className="font-mono">{d.n_trades}</TableCell>
+                              <TableCell className="font-mono">{d.avg_days.toFixed(1)}ي</TableCell>
+                              <TableCell className="font-mono">{d.median_days.toFixed(1)}ي</TableCell>
+                              <TableCell className="font-mono">{d.p25_days.toFixed(1)} - {d.p75_days.toFixed(1)}ي</TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground">{d.min_days}-{d.max_days}ي</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono text-xs">{d.client_message}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>فلسفة رسالة المدة — ثقة العميل</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm space-y-3 text-muted-foreground leading-relaxed">
+                    <p>
+                      توجيه المالك: "العميل بيحتاج حد فاهم يطمنة دى مهمة جدا".
+                      لما العميل يشوف توصية فيها: <span className="font-mono font-semibold">"التصحيح المتوقع: ~7 يوم (بين 3 و 12 يوم)"</span>،
+                      ده بـ يدي إحساس إن النظام عنده خبرة وفاهم السوق. مش مجرد رقم جامد، ده نطاق واقعي مبني على backtest حقيقي.
+                    </p>
+                    <p>
+                      التطبيق في V40.2: لما الـ regime filter بـ يقبل إشارة، بـ يكتب في
+                      <span className="font-mono"> result['expected_holding_days']</span> = 7 (mode A) أو 5 (mode B).
+                      ده بـ يظهر في UI للعميل مع التوصية.
+                    </p>
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-foreground mb-1">الـ numbers الحقيقية (من backtest 19 شهر):</p>
+                      <ul className="list-disc list-inside text-xs space-y-1">
+                        <li><span className="font-mono">Correction [A]</span>: متوسط 2.7 يوم (1-3 يوم) — صفقات سريعة (snapback)</li>
+                        <li><span className="font-mono">Merged-Strict [B]</span>: متوسط 7.8 يوم (3-12 يوم) — corrections حقيقية</li>
+                        <li><span className="font-mono">Chase</span>: متوسط 8 يوم (3-11 يوم) — momentum rides</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* PHASE 1 RESULTS */}
               <TabsContent value="phase1" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>المرحلة 1 — 4 استراتيجيات × 3 أوضاع regime × فترتين</CardTitle>
+                    <CardTitle>المرحلة 1 — Regime Filter results (للمرجعية)</CardTitle>
                     <CardDescription>
-                      قاعدة الرفض: DD &gt; 25% = ❌ مرفوض. 🟢 DD &lt; 10% | 🟡 DD 10-25% | 🔴 DD &gt; 25%.
-                      mode A: Close &gt; SMA50 | mode B: Close &gt; SMA20 AND Close &gt; SMA50 | none: بدون فلتر.
+                      النتائج الكاملة على 6 شهور + 19 شهر. اللي اتكلمنا عنه قبل كده.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Tabs defaultValue="full">
                       <TabsList className="grid grid-cols-2 w-full mb-4">
-                        <TabsTrigger value="full">19 شهر (Jan 2025 - Aug 2026)</TabsTrigger>
-                        <TabsTrigger value="6mo">6 شهور (Feb - Aug 2026)</TabsTrigger>
+                        <TabsTrigger value="full">19 شهر</TabsTrigger>
+                        <TabsTrigger value="6mo">6 شهور</TabsTrigger>
                       </TabsList>
-
                       {(["full", "6mo"] as const).map((win) => {
                         const r = win === "6mo" ? r6 : rFull
                         return (
-                          <TabsContent key={win} value={win} className="space-y-3">
+                          <TabsContent key={win} value={win}>
                             <div className="overflow-x-auto">
                               <Table>
                                 <TableHeader>
                                   <TableRow>
-                                    <TableHead className="text-right">الاستراتيجية [mode]</TableHead>
-                                    <TableHead className="text-right">صفقات</TableHead>
+                                    <TableHead className="text-right">Strategy [mode]</TableHead>
+                                    <TableHead className="text-right">Trades</TableHead>
                                     <TableHead className="text-right">WR</TableHead>
-                                    <TableHead className="text-right">العائد</TableHead>
+                                    <TableHead className="text-right">Return</TableHead>
                                     <TableHead className="text-right">Max DD</TableHead>
                                     <TableHead className="text-right">PF</TableHead>
-                                    <TableHead className="text-right">الحكم</TableHead>
+                                    <TableHead className="text-right">Verdict</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  <TableRow className="bg-blue-50 dark:bg-blue-950/20 border-b-2 border-blue-200">
-                                    <TableCell className="font-medium"><Badge className="bg-blue-600">V40.2 إنتاج</Badge></TableCell>
-                                    <TableCell className="font-mono">{V402_BASELINE.trades}</TableCell>
-                                    <TableCell className="font-mono">{V402_BASELINE.win_rate_pct}%</TableCell>
-                                    <TableCell className={`font-mono ${colorRet(V402_BASELINE.total_return_pct)}`}>{pct(V402_BASELINE.total_return_pct)}</TableCell>
-                                    <TableCell className={`font-mono ${ddColor(-V402_BASELINE.max_drawdown_pct)}`}>{pct(-V402_BASELINE.max_drawdown_pct)}</TableCell>
-                                    <TableCell className={`font-mono ${pfColor(V402_BASELINE.profit_factor)}`}>{V402_BASELINE.profit_factor.toFixed(2)}</TableCell>
-                                    <TableCell className="text-xs text-muted-foreground">baseline (6mo)</TableCell>
-                                  </TableRow>
-
                                   {Object.entries(r).map(([key, m]) => {
                                     const dd = m.max_drawdown_pct
                                     const verdict = dd > -25
-                                    const isBest = (key === "Correction [B]" && win === "full") || (key === "Merged-Strict [B]" && win === "full")
                                     return (
-                                      <TableRow key={key} className={isBest ? "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-emerald-500" : !verdict ? "bg-red-50/30 dark:bg-red-950/10" : ""}>
-                                        <TableCell className="font-medium">{key}</TableCell>
+                                      <TableRow key={key} className={!verdict ? "bg-red-50/30 dark:bg-red-950/10" : ""}>
+                                        <TableCell className="font-medium text-xs">{key}</TableCell>
                                         <TableCell className="font-mono">{m.trades}</TableCell>
                                         <TableCell className="font-mono">{m.win_rate_pct.toFixed(1)}%</TableCell>
                                         <TableCell className={`font-mono ${colorRet(m.total_return_pct)}`}>{pct(m.total_return_pct)}</TableCell>
                                         <TableCell className={`font-mono ${ddColor(dd)}`}>{pct(dd)}</TableCell>
                                         <TableCell className={`font-mono ${pfColor(m.profit_factor)}`}>{m.profit_factor === 999.99 ? "∞" : m.profit_factor.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                          {verdict ? (
-                                            <Badge className="bg-emerald-600">✓ مقبول</Badge>
-                                          ) : (
-                                            <Badge variant="destructive">✗ مرفوض</Badge>
-                                          )}
-                                        </TableCell>
+                                        <TableCell>{verdict ? <Badge className="bg-emerald-600">✓</Badge> : <Badge variant="destructive">✗</Badge>}</TableCell>
                                       </TableRow>
                                     )
                                   })}
@@ -218,165 +328,38 @@ export default function Home() {
                     </Tabs>
                   </CardContent>
                 </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>منطق فلتر الـ Regime</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm space-y-3 text-muted-foreground leading-relaxed">
-                    <div className="grid sm:grid-cols-3 gap-3">
-                      <div className="p-3 rounded-md border bg-muted/30">
-                        <p className="font-semibold text-foreground mb-1">🔴 none</p>
-                        <p className="text-xs">baseline — يدخل في كل الإشارات بما فيها bear markets.</p>
-                      </div>
-                      <div className="p-3 rounded-md border bg-muted/30">
-                        <p className="font-semibold text-foreground mb-1">🟡 mode A</p>
-                        <p className="text-xs"><span className="font-mono">Close &gt; SMA50</span> — اتجاه صحي متوسط المدى.</p>
-                      </div>
-                      <div className="p-3 rounded-md border border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20">
-                        <p className="font-semibold text-foreground mb-1">🟢 mode B (الأفضل)</p>
-                        <p className="text-xs"><span className="font-mono">Close &gt; SMA20 AND Close &gt; SMA50</span> — تأكيد مزدوج.</p>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <p className="font-semibold text-foreground mb-1">الخلاصة</p>
-                      <p className="text-xs">
-                        فلتر الـ regime حوّل Correction من خاسر (-4.45%) لرباح (+66.76% لـ mode A، +53.28% لـ mode B)
-                        مع DD نزل من -47% لـ -7.7% و -2.6%. الميكانيزم اشتغل.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* PHASE 2 */}
-              <TabsContent value="phase2" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>المرحلة 2 — Average Down: مع vs من غير</CardTitle>
-                    <CardDescription>
-                      سيناريو NO_AVG (بدون متوسط) vs AVG_DOWN (مع متوسط مرة واحدة لو تحققت is_liquidity_grab_opportunity).
-                      الشروط الصارمة: كسر 3-8% + recovery 3 أيام + حجم + قرب SMA50 + لا ChoC.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-right">الاستراتيجية + الفترة + السيناريو</TableHead>
-                            <TableHead className="text-right">صفقات</TableHead>
-                            <TableHead className="text-right">Expectancy</TableHead>
-                            <TableHead className="text-right">WR</TableHead>
-                            <TableHead className="text-right">العائد الإجمالي</TableHead>
-                            <TableHead className="text-right">Max DD</TableHead>
-                            <TableHead className="text-right">PF</TableHead>
-                            <TableHead className="text-right">avgUsed</TableHead>
-                            <TableHead className="text-right">flipped</TableHead>
-                            <TableHead className="text-right">الحكم</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {Object.entries(r2).map(([key, m]) => {
-                            const isAvg = key.includes("AVG_DOWN")
-                            return (
-                              <TableRow key={key} className={isAvg ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}>
-                                <TableCell className="font-medium text-xs">{key}</TableCell>
-                                <TableCell className="font-mono">{m.trades}</TableCell>
-                                <TableCell className={`font-mono ${colorRet(m.expectancy)}`}>{pct(m.expectancy)}</TableCell>
-                                <TableCell className="font-mono">{m.win_rate_pct.toFixed(1)}%</TableCell>
-                                <TableCell className={`font-mono ${colorRet(m.total_return_pct)}`}>{pct(m.total_return_pct)}</TableCell>
-                                <TableCell className={`font-mono ${ddColor(m.max_drawdown_pct)}`}>{pct(m.max_drawdown_pct)}</TableCell>
-                                <TableCell className={`font-mono ${pfColor(m.profit_factor)}`}>{m.profit_factor === 999.99 ? "∞" : m.profit_factor.toFixed(2)}</TableCell>
-                                <TableCell className="font-mono">{m.avg_used_count ?? 0}</TableCell>
-                                <TableCell className="font-mono">{m.flipped_count ?? 0}</TableCell>
-                                <TableCell>
-                                  {isAvg ? (
-                                    <Badge variant="outline" className="font-mono text-xs">🟡 محايد</Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="font-mono text-xs">baseline</Badge>
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>منطق Liquidity Grab Opportunity</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm space-y-3 text-muted-foreground leading-relaxed">
-                    <div>
-                      <p className="font-semibold text-foreground mb-1">الشروط الكمية الصارمة:</p>
-                      <ol className="list-decimal list-inside text-xs space-y-1">
-                        <li>السهم كسر قاع سابق بنسبة بين <span className="font-mono">3% و 8%</span> (أقل = ضعيف، أكتر = falling knife).</li>
-                        <li>حجم شمعة الكسر أعلى من متوسط الحجم 20 يوم (<span className="font-mono">vol &gt; 1.1× avg</span>).</li>
-                        <li>خلال <span className="font-mono">1-3 أيام</span> يرجع السعر فوق الدعم وفوق منتصف شمعة الكسر.</li>
-                        <li>السعر قريب من SMA50 (within <span className="font-mono">8%</span>).</li>
-                        <li>مفيش Change of Character هابط (no 3 consecutive lower-lows + lower-highs).</li>
-                      </ol>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground mb-1">قواعد المتوسط الصارمة:</p>
-                      <ul className="list-disc list-inside text-xs space-y-1">
-                        <li>مرة واحدة فقط كحد أقصى (<span className="font-mono">already_averaged</span> flag).</li>
-                        <li>حجم المتوسط = <span className="font-mono">50%</span> من الصفقة الأصلية.</li>
-                        <li>الـ stop الأصلي يظل كما هو — <span className="font-semibold">ممنوع التوسيع</span>.</li>
-                        <li>الستوب بديل إلزامي — المتوسط قرار إضافي فقط.</li>
-                      </ul>
-                    </div>
-                    <div className="pt-2 border-t">
-                      <p className="font-semibold text-foreground mb-1">الحُكم الصادق للمرحلة 2:</p>
-                      <p className="text-xs">
-                        Average Down مع الشروط الصارمة <span className="font-semibold">لم يُطلق أبداً</span> في backtest 19 شهر (avg_used=0).
-                        السبب: الشروط نادراً ما تتحقق أثناء holding مفتوح، ومعظم الصفقات تخرج قبل ما تظهر الفرصة.
-                        هذا <span className="font-semibold">سلوك مقبول</span> — المتوسط الذكي نادر، الأعمى ممنوع.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
 
-            {/* FINAL RECOMMENDATIONS */}
-            <Card>
+            {/* FINAL VERDICT */}
+            <Card className="border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20">
               <CardHeader>
-                <CardTitle>التوصية النهائية — إيه اللي يدخل الإنتاج وإيه اللي يترفض</CardTitle>
+                <CardTitle className="text-emerald-800 dark:text-emerald-300">الحُكم النهائي — Integration جاهز + أرقام صادقة</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm space-y-3 text-muted-foreground leading-relaxed">
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-md border border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20">
-                    <p className="font-semibold text-emerald-800 dark:text-emerald-300 mb-2">✅ مقبول للإنتاج (خلف feature flag):</p>
-                    <ul className="list-disc list-inside text-xs space-y-1">
-                      <li><span className="font-mono">regime_filter.py</span> (mode='A' افتراضي)</li>
-                      <li><span className="font-mono">evaluate_average_down()</span> كـ safety layer</li>
-                      <li><span className="font-mono">Correction [B]</span> كـ pre-filter جوه V40.2</li>
-                    </ul>
-                  </div>
-                  <div className="p-3 rounded-md border border-red-300 bg-red-50/50 dark:bg-red-950/20">
-                    <p className="font-semibold text-red-800 dark:text-red-300 mb-2">❌ مرفوض للإنتاج:</p>
-                    <ul className="list-disc list-inside text-xs space-y-1">
-                      <li><span className="font-mono">Merged [الساذج]</span> — تخفيف العتبات = DEADCAT</li>
-                      <li><span className="font-mono">Chase</span> — DD -66% حتى مع regime</li>
-                      <li>المتوسط الأعمى (بدون is_liquidity_grab_opportunity)</li>
-                      <li>أي نسخة DD &gt; 25%</li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="font-semibold text-foreground mb-1">الخطوات المطلوبة قبل تفعيل V40_2_REGIME_FILTER:</p>
-                  <ol className="list-decimal list-inside text-xs space-y-1">
-                    <li>Walk-forward test: قسم البيانات لـ train/test periods.</li>
-                    <li>ربط regime_filter بـ evaluate_strict_entry (pre-filter).</li>
-                    <li>ربط evaluate_average_down بـ position_manager (per-trade state).</li>
-                    <li>تفعيل الـ flag على staging ورصد لـ 7 أيام قبل الإنتاج.</li>
-                  </ol>
-                </div>
+              <CardContent className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-100/90 space-y-2">
+                <p>
+                  <span className="font-semibold">تم الدمج:</span> <span className="font-mono">regime_filter.py</span> مربوط في
+                  <span className="font-mono"> v40_2_daily_generator.py</span> خلف flag <span className="font-mono">V40_2_REGIME_FILTER</span> (default OFF).
+                  لما يتفعل، كل إشارة BUY بـ تمر على <span className="font-mono">is_bullish_regime()</span> قبل أي معالجة تانية.
+                </p>
+                <p>
+                  <span className="font-semibold">Walk-forward صادق:</span> النتائج period-dependent.
+                  Correction [A] H1=-6.6%، H2=+52.5%. لازم walk-forward أطول (multi-year) قبل الاعتماد النهائي.
+                </p>
+                <p>
+                  <span className="font-semibold">رسالة المدة للعميل:</span> متوسط فعلي من backtest.
+                  Merged-Strict [B] = ~7 يوم (3-12 يوم). Correction [A] = ~3 يوم (1-3 يوم).
+                  ده بـ يبني ثقة العميل.
+                </p>
+                <p>
+                  <span className="font-semibold">الخطوات التالية المقترحة:</span>
+                </p>
+                <ol className="list-decimal list-inside text-xs space-y-1 mt-2">
+                  <li>توفير data_engine.db مع egksco_price_history لـ production test كامل لـ V40.2.</li>
+                  <li>تفعيل V40_2_REGIME_FILTER على staging ورصد 7 أيام.</li>
+                  <li>Walk-forward أطول (multi-year) لـ تأكيد الثبات.</li>
+                  <li>إضافة <span className="font-mono">expected_holding_days</span> لـ UI العميل.</li>
+                </ol>
               </CardContent>
             </Card>
           </>
@@ -385,8 +368,8 @@ export default function Home() {
 
       <footer className="mt-auto border-t bg-muted/30">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 text-xs text-muted-foreground flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>GLMinvestment · Phase 1+2 — Regime Filter + Average Down · Rule 42 · الأرقام هي الحكم</span>
-          <span className="font-mono">regime_filter.py + strict_entry_filters.py + phase1/2 scripts</span>
+          <span>GLMinvestment · Regime filter integration + Walk-forward + Client durations · Rule 42</span>
+          <span className="font-mono">v40_2_daily_generator.py + regime_filter.py + walk_forward_and_durations.py</span>
         </div>
       </footer>
     </div>
