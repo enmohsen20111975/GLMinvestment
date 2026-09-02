@@ -1316,3 +1316,49 @@ curl -s http://localhost:8010/health
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
 | 2026-09-01 | `00-CONSTITUTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إعادة كتابة القاعدة 38 (SHORT-HOLDING) لتعكس فلسفة الخروج الهيكلية بعد تحوّل `short_holding_exit.py` (614 LOC) من زمني إلى هيكلي: `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة، الأولوية الجديدة `distribution > early_drop > compound_breakdown > review_alert`. إضافة مراجع `is_within_typical_correction()` + `is_breakdown_not_correction()` + `typical_correction_pct` من النوتبوك. إضافة بنود 25-30 لعهد الوكيل (Notebook + apply_notebook_context + Unified Exit Engine + Decision Logger + 10 Feature Flags). |
+
+
+### القاعدة 43 — التليجرام كذراع إعلاني + إشعارات شاملة (TELEGRAM-NOTIFICATIONS — 2026-09-02)
+> **سبب الإضافة:** توجيه المالك (2026-09-02): "التليجرام هو الذراع الإعلاني للمشروع وأهميته = أهمية الـ Frontend. لازم رسائل تقول إن السهم جاب الهدف بنسبة ربح كذا ومعاها فرح بالأيموجي. ورسالة سهم كذا قرب من الهدف خد بالك من الدعم عند كذا."
+
+**5 أنواع إشعارات (في `vps-service/telegram/telegram_notifier.py`):**
+
+| # | الإشعار | الترايغر | الإيموجي |
+|---|---|---|---|
+| 1 | `notify_target_hit` | توقع جاب الهدف | 🎉🏆🚀 (حسب حجم الربح: ≥20%=🚀, ≥10%=🏆, ≥5%=🎉) |
+| 2 | `notify_approaching_target` | السهم دخل 3% من الهدف | 🔥 |
+| 3 | `notify_stop_warning` | السهم قرب 5% من الستوب | ⚠️🚨 (حرج لو ≤2%) |
+| 4 | `notify_trailing_profit` | توقع خرج بربح قبل الهدف (trailing stop) | 💰 |
+| 5 | `notify_stop_loss` | توقع ضرب الستوب (خسارة محسوبة) | 🛑 |
+
+**Live Monitor (`check_active_predictions_for_notifications`):**
+- بـ يفحص كل التوقعات النشطة (PENDING/ACTIVE) ويرسل إشعارات قرب الهدف/الستوب.
+- التشغيل: `scripts/telegram_live_monitor.py` — cron كل 15 دقيقة أثناء الجلسة (10:00-14:30 القاهرة).
+- Endpoint: `POST /api/telegram/notifications/live-monitor`.
+
+**التكامل في `daily_closer.py`:**
+- عند إغلاق أي توقع → بـ يبعت الإشعار المناسب:
+  - `TARGET_HIT` → `notify_target_hit` (احتفال بالأيموجي حسب الربح)
+  - `TRAILING_PROFIT` → `notify_trailing_profit` (خرج بربح قبل الهدف)
+  - `STOPPED` → `notify_stop_loss` (خسارة محسوبة)
+
+**API endpoints (7):**
+- `POST /api/telegram/notifications/test/target-hit` — اختبار احتفال الهدف
+- `POST /api/telegram/notifications/test/approaching-target` — اختبار قرب الهدف
+- `POST /api/telegram/notifications/test/stop-warning` — اختبار تحذير الستوب
+- `POST /api/telegram/notifications/test/trailing-profit` — اختبار trailing
+- `POST /api/telegram/notifications/test/stop-loss` — اختبار ضرب الستوب
+- `POST /api/telegram/notifications/live-monitor` — تشغيل الـ monitor
+- `GET /api/telegram/notifications/types` — قائمة كل الإشعارات
+
+**المتغيرات البيئية المطلوبة:**
+- `TELEGRAM_BOT_TOKEN` — Bot token من @BotFather
+- `TELEGRAM_CHAT_ID` — Chat ID للقناة/المجموعة
+
+**قواعد الرسائل (CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE):**
+- الاحتفال بالأيموجي مسموح (🎉🏆🚀) لأنه إشعار نجاح حقيقي.
+- لكن ممنوع المبالغة: ما نقولش "حقق أحلامك!" — نقول "هدف محقق بنجاح".
+- كل رسالة فيها: السهم + سعر الدخول + الهدف/الستوب + العائد + الوقت + توصية عملية.
+- رسالة `approaching_target` بتقول الدعم المهم (نصف المكسب) — ده اللي طلبه المالك صراحة.
+
+- **المرجع:** `vps-service/telegram/telegram_notifier.py` (283 LOC) + `vps-service/api/telegram_routes.py` (1,860 LOC) + `scripts/telegram_live_monitor.py`.

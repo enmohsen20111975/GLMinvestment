@@ -1660,3 +1660,201 @@ def send_daily_report():
             }), 500
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# NOTIFICATIONS — اختبار الإشعارات + تشغيل الـ live monitor
+# ============================================================================
+
+@telegram_bp.route('/notifications/test/target-hit', methods=['POST'])
+def test_target_hit_notification():
+    """اختبر رسالة احتفال الهدف.
+    Body: {ticker, entry, target, return_pct, target_num?, name_ar?}
+    """
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        data = request.get_json() or {}
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({
+                'success': False,
+                'error': 'Telegram مش مفعّل (TELEGRAM_BOT_TOKEN أو TELEGRAM_CHAT_ID ناقص)'
+            }), 400
+        ok = notifier.notify_target_hit(
+            ticker=data.get('ticker', 'TEST'),
+            entry=float(data.get('entry', 100)),
+            target=float(data.get('target', 110)),
+            return_pct=float(data.get('return_pct', 10)),
+            target_num=int(data.get('target_num', 1)),
+            name_ar=data.get('name_ar', ''),
+        )
+        return jsonify({'success': ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@telegram_bp.route('/notifications/test/approaching-target', methods=['POST'])
+def test_approaching_target_notification():
+    """اختبر رسالة قرب الهدف."""
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        data = request.get_json() or {}
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({
+                'success': False,
+                'error': 'Telegram مش مفعّل'
+            }), 400
+        ok = notifier.notify_approaching_target(
+            ticker=data.get('ticker', 'TEST'),
+            entry=float(data.get('entry', 100)),
+            target=float(data.get('target', 110)),
+            current=float(data.get('current', 108)),
+            distance_pct=float(data.get('distance_pct', 1.8)),
+            name_ar=data.get('name_ar', ''),
+        )
+        return jsonify({'success': ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@telegram_bp.route('/notifications/test/stop-warning', methods=['POST'])
+def test_stop_warning_notification():
+    """اختبر رسالة تحذير قرب الستوب."""
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        data = request.get_json() or {}
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({'success': False, 'error': 'Telegram مش مفعّل'}), 400
+        ok = notifier.notify_stop_warning(
+            ticker=data.get('ticker', 'TEST'),
+            entry=float(data.get('entry', 100)),
+            stop=float(data.get('stop', 93)),
+            current=float(data.get('current', 94)),
+            name_ar=data.get('name_ar', ''),
+        )
+        return jsonify({'success': ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@telegram_bp.route('/notifications/test/trailing-profit', methods=['POST'])
+def test_trailing_profit_notification():
+    """اختبر رسالة الخروج بربح قبل الهدف."""
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        data = request.get_json() or {}
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({'success': False, 'error': 'Telegram مش مفعّل'}), 400
+        ok = notifier.notify_trailing_profit(
+            ticker=data.get('ticker', 'TEST'),
+            entry=float(data.get('entry', 100)),
+            exit_price=float(data.get('exit_price', 105)),
+            return_pct=float(data.get('return_pct', 5)),
+            highest=float(data.get('highest', 107)),
+            name_ar=data.get('name_ar', ''),
+        )
+        return jsonify({'success': ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@telegram_bp.route('/notifications/test/stop-loss', methods=['POST'])
+def test_stop_loss_notification():
+    """اختبر رسالة ضرب الستوب."""
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        data = request.get_json() or {}
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({'success': False, 'error': 'Telegram مش مفعّل'}), 400
+        ok = notifier.notify_stop_loss(
+            ticker=data.get('ticker', 'TEST'),
+            entry=float(data.get('entry', 100)),
+            stop=float(data.get('stop', 93)),
+            return_pct=float(data.get('return_pct', -7)),
+            name_ar=data.get('name_ar', ''),
+        )
+        return jsonify({'success': ok})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@telegram_bp.route('/notifications/live-monitor', methods=['POST'])
+def run_live_monitor():
+    """شغّل live monitor لفحص التوقعات النشطة + إرسال notifications.
+
+    ده بـ يبعت:
+      - notify_approaching_target لما السهم يدخل 3% من الهدف
+      - notify_stop_warning لما السهم يقرب 5% من الستوب
+
+    مفروض يشتغل كل 15 دقيقة أثناء الجلسة (cron job).
+    """
+    try:
+        from telegram.telegram_notifier import TelegramNotifier
+        notifier = TelegramNotifier()
+        if not notifier.enabled:
+            return jsonify({'success': False, 'error': 'Telegram مش مفعّل'}), 400
+
+        sent_count = notifier.check_active_predictions_for_notifications()
+        return jsonify({
+            'success': True,
+            'notifications_sent': sent_count,
+            'message': f'تم إرسال {sent_count} إشعار للتليجرام'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@telegram_bp.route('/notifications/types', methods=['GET'])
+def list_notification_types():
+    """قائمة بكل أنواع الإشعارات المتاحة — للأدمن/التوثيق."""
+    return jsonify({
+        'success': True,
+        'types': [
+            {
+                'id': 'target_hit',
+                'name_ar': 'احتفال تحقيق الهدف',
+                'trigger': 'لما توقع يجيب الهدف',
+                'emoji': '🎉🎯🚀',
+                'endpoint': '/api/telegram/notifications/test/target-hit',
+            },
+            {
+                'id': 'approaching_target',
+                'name_ar': 'قرب من الهدف',
+                'trigger': 'لما السهم يدخل 3% من الهدف',
+                'emoji': '🔥',
+                'endpoint': '/api/telegram/notifications/test/approaching-target',
+            },
+            {
+                'id': 'stop_warning',
+                'name_ar': 'تحذير قرب الستوب',
+                'trigger': 'لما السهم يقرب 5% من الستوب',
+                'emoji': '⚠️🚨',
+                'endpoint': '/api/telegram/notifications/test/stop-warning',
+            },
+            {
+                'id': 'trailing_profit',
+                'name_ar': 'خروج بربح قبل الهدف',
+                'trigger': 'لما توقع يخرج بـ trailing stop بربح',
+                'emoji': '💰',
+                'endpoint': '/api/telegram/notifications/test/trailing-profit',
+            },
+            {
+                'id': 'stop_loss',
+                'name_ar': 'خسارة محسوبة (الستوب شغّال)',
+                'trigger': 'لما توقع يضرب الستوب',
+                'emoji': '🛑',
+                'endpoint': '/api/telegram/notifications/test/stop-loss',
+            },
+            {
+                'id': 'live_monitor',
+                'name_ar': 'فحص التوقعات النشطة',
+                'trigger': 'cron كل 15 دقيقة أثناء الجلسة',
+                'emoji': '👁️',
+                'endpoint': '/api/telegram/notifications/live-monitor',
+            },
+        ]
+    })

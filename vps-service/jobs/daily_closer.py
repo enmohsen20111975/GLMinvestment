@@ -2961,8 +2961,13 @@ class DailyCloser:
             conn.close()
             logger.info(f"Closed prediction #{pred_id} ({ticker}): {status}/{exit_type}, return={actual_return:.2f}%, days={days}")
 
-            # ── TELEGRAM NOTIFIER (2026-08-30) ──
-            # المالك: "لو توقع جاب الهدف نعمل حفلة ونبعت على التليجرام"
+            # ── TELEGRAM NOTIFIER (2026-09-02) ──
+            # المالك: "التليجرام هو الذراع الإعلاني للمشروع وأهميته = أهمية الـ Frontend"
+            # 4 أنواع إشعارات:
+            #   1. notify_target_hit (احتفال كامل بالأيموجي حسب حجم الربح)
+            #   2. notify_trailing_profit (خرج بربح قبل الهدف)
+            #   3. notify_stop_loss (خسارة محسوبة — الستوب شغّال)
+            #   4. notify_stop_warning (للنشطة — بيتفحص في check_active_predictions_for_notifications)
             try:
                 from telegram.telegram_notifier import TelegramNotifier
                 _notifier = TelegramNotifier()
@@ -2974,6 +2979,25 @@ class DailyCloser:
                             target=exit_close_price or highest_price_reached,
                             return_pct=actual_return,
                             target_num=1 if exit_type in ('target_hit', 'trailing_profit') else 2,
+                        )
+                    elif status == 'TRAILING_PROFIT' and actual_return > 0:
+                        # خرج بربح قبل الهدف (trailing stop)
+                        _notifier.notify_trailing_profit(
+                            ticker=ticker,
+                            entry=float(_entry_price_db),
+                            exit_price=exit_close_price or 0,
+                            return_pct=actual_return,
+                            highest=highest_price_reached,
+                            name_ar='',
+                        )
+                    elif status == 'STOPPED' and actual_return < 0:
+                        # ضرب الستوب — خسارة محسوبة
+                        _notifier.notify_stop_loss(
+                            ticker=ticker,
+                            entry=float(_entry_price_db),
+                            stop=float(_stop_price_db) if '_stop_price_db' in dir() else (exit_close_price or 0),
+                            return_pct=actual_return,
+                            name_ar='',
                         )
             except Exception:
                 pass  # safe-by-design
