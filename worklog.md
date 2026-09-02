@@ -16289,3 +16289,54 @@ Stage Summary:
 NEED_OWNER:
 1. 🟡 شارك Grok-Report-V40.2-Detailed-Analysis.md مع Grok عشان يساعد.
 2. 🟡 بعد ما Grok يرد، نبدأ تنفيذ الإصلاحات المقترحة.
+
+---
+Task ID: V402-EXIT-TYPE-FIX-REGIME-FILTER-2026-09-02
+Agent: main (orchestrator, Z.ai Code)
+Task: تنفيذ توجيهات المالك: (1) إصلاح باج exit_type = unknown فوراً (2) تفعيل Regime filter mode B + قياس تأثيره على MaxDD.
+
+Work Log:
+- Task 1 (تشخيص باج exit_type = unknown):
+  * فحص daily_closer.py — لقيت إنه بيسجل exit_type بشكل صحيح (target_hit, stop_loss, trailing_stop, إلخ).
+  * فحص predictions table في vps_real/predictions.db — exit_types موجودة: None (3), breakeven (2), partial_trailing (6), stop_loss (19), target_hit (5).
+  * فحص temp DB اللي اتعمل في backtest — exit_types: [(None, 23)] (كلها None!).
+  * السبب: V40.2 generator بيـ call set_verified_outcome من prediction_tracker.py بس الـ function دي كانت بيكتب exit_reason في notes بس (مش في exit_type column).
+- Task 2 (إصلاح باج exit_type):
+  * عدّلت vps-service/analyzers/prediction_tracker.py في set_verified_outcome (سطر 696-732):
+    - ضفت exit_type = ? في UPDATE statement.
+    - ضفت status = 'closed' (كانت بتسيبها 'active').
+    - حفظت الـ bugfix في docstring.
+  * اختبرت الإصلاح بـ backtest جديد:
+    - قبل: exit_types = [(None, 23)] (100% unknown).
+    - بعد: exit_types = {expired: 21, fast_stop: 2} ✅.
+  * الباج اتصرف بالكامل.
+- Task 3 (Regime filter comparison):
+  * كتبت scripts/v402_regime_comparison.py (3 runs: baseline vs mode A vs mode B).
+  * شغلت V40.2 على 6 شهور (2026-02-01 → 2026-08-14)، 235 tickers.
+  * النتايج:
+    | Run | Trades | WR | TotalRet | MaxDD | PF |
+    |-----|--------|-----|----------|-------|-----|
+    | baseline | 23 | 69.6% | +95.89% | -34.26% | 2.79 |
+    | + Regime A (Close > SMA50) | 23 | 69.6% | +95.89% | -34.26% | 2.79 |
+    | + Regime B (Close > SMA20 AND SMA50) | 21 | 66.7% | +88.32% | -31.19% | 2.83 |
+  * Mode A مطابق للـ baseline 100% — كل الصفقات اللي V40.2 بيختارها أصلاً Close > SMA50.
+  * Mode B أظهر تحسن بسيط: MaxDD قلّ من -34% لـ -31% (Δ=+3pp).
+- Task 4 (تحليل النتايج):
+  * Regime filter (Mode B) مش كفاية لوحده لخفض MaxDD لـ -20%.
+  * محتاجين حلول إضافية:
+    - Trailing stop بعد +5% ربح (lock profits).
+    - تضييق stop_loss من -9% لـ -7%.
+    - Position sizing بناءً على volatility.
+  * Losers analysis: UTOP (-24.86%), IDRE (-12.14%) — دول اللي بيزودوا الـ MaxDD.
+
+Stage Summary:
+- ✅ باج exit_type = unknown اتصرف بالكامل (prediction_tracker.py).
+- ✅ Regime filter (Mode B) تم تفعيله وقياسه: MaxDD قل 3pp بس.
+- ⚠️ MaxDD لسه -31% (أعلى من الحد المقبول -25%) — محتاجين حلول إضافية.
+- ✅ exit_types دلوقتي واضحة: expired (21) + fast_stop (2).
+- النتايج محفوظة في data/merge_backtest_real/v402_regime_comparison.json.
+
+NEED_OWNER:
+1. ✅ الإصلاحات جاهزة للـ push.
+2. 🟡 هل تريد أبدأ في الحلول الإضافية لخفض MaxDD (trailing stop + tighter stops + position sizing)؟
+3. 🟡 مشاركة النتايج مع Grok عشان يقدر يحلل الـ regime filter + يقترح حلول MaxDD.

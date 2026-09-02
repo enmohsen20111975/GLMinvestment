@@ -20,7 +20,8 @@
     "profit_factor": 2.79,
     "avg_holding_days": 6.7,
     "exit_types": {
-      "unknown": 23
+      "expired": 21,
+      "fast_stop": 2
     },
     "per_ticker_count": 18,
     "best_tickers": [
@@ -128,7 +129,7 @@
       {
         "ticker": "DAPH",
         "return_pct": 29.896083133493207,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 100.08,
         "target": 133.1119
@@ -136,7 +137,7 @@
       {
         "ticker": "DAPH",
         "return_pct": 25.012256103539567,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 101.99,
         "target": 131.6523
@@ -144,7 +145,7 @@
       {
         "ticker": "EPCO",
         "return_pct": 13.178985201664936,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 11.23,
         "target": 15.3645
@@ -152,7 +153,7 @@
       {
         "ticker": "CPCI",
         "return_pct": 9.712129266862718,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 503.7,
         "target": 686.8955
@@ -160,7 +161,7 @@
       {
         "ticker": "AALR",
         "return_pct": 7.699764893903942,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 206.24,
         "target": 251.8443
@@ -170,7 +171,7 @@
       {
         "ticker": "UTOP",
         "return_pct": -24.864376130198913,
-        "exit_type": "unknown",
+        "exit_type": "fast_stop",
         "holding_days": 1,
         "entry": 143.78,
         "stop": 130.8398
@@ -178,7 +179,7 @@
       {
         "ticker": "IDRE",
         "return_pct": -12.144112478031628,
-        "exit_type": "unknown",
+        "exit_type": "fast_stop",
         "holding_days": 2,
         "entry": 56.9,
         "stop": 51.779
@@ -186,7 +187,7 @@
       {
         "ticker": "ELKA",
         "return_pct": -4.469271611900971,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 1.79,
         "stop": 1.6289
@@ -194,7 +195,7 @@
       {
         "ticker": "ATLC",
         "return_pct": -1.8975317591281644,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 5.27,
         "stop": 4.7957
@@ -202,7 +203,7 @@
       {
         "ticker": "EGCH",
         "return_pct": -0.7638891537984237,
-        "exit_type": "unknown",
+        "exit_type": "expired",
         "holding_days": 7,
         "entry": 14.4,
         "stop": 13.104
@@ -215,5 +216,5 @@
       "15+": 0
     }
   },
-  "timestamp": "2026-09-02T19:34:27.127763"
+  "timestamp": "2026-09-02T19:48:08.244756"
 }

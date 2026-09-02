@@ -697,6 +697,10 @@ class PredictionTracker:
         V40.1: Store a pre-verified outcome for a historical prediction.
         Used by the V40 historical generator which computes outcomes via simulate_trade.
         Unlike update_outcome, this accepts all fields explicitly (no datetime.now()).
+
+        BUGFIX (2026-09-02): exit_reason wasn't being written to the exit_type column
+        (it was only going into notes). This caused every backtest prediction to have
+        exit_type=NULL. Now we write exit_type explicitly.
         """
         try:
             conn = sqlite3.connect(self.db_path)
@@ -710,11 +714,14 @@ class PredictionTracker:
                     hit_stop = ?,
                     is_correct = ?,
                     holding_days = ?,
+                    exit_type = ?,
+                    status = 'closed',
                     notes = COALESCE(notes || ' | ' || ?, ?)
                 WHERE id = ?
             ''', (
                 outcome_date, exit_price, actual_return,
                 hit_target, hit_stop, is_correct, holding_days,
+                exit_reason,
                 exit_reason, exit_reason, prediction_id,
             ))
             conn.commit()
