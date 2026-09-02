@@ -289,6 +289,46 @@ function InvestmentDecisionInsight({
   );
 }
 
+function FacebookIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  );
+}
+
+function TwitterXIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#25D366">
+      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.772.82 2.79.82h.001c3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.586-5.766-5.768-5.766zm9.969 5.828c0 5.523-4.477 10-10 10-1.761 0-3.414-.46-4.856-1.266L2 22l1.472-5.029C2.628 15.547 2 13.847 2 12c0-5.523 4.477-10 10-10s10 4.477 10 10z" />
+    </svg>
+  );
+}
+
+function TelegramIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#229ED9">
+      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+    </svg>
+  );
+}
+
+function LinkedInIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="#0A66C2">
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+    </svg>
+  );
+}
+
 /**
  * Social Sharing and Copy Actions
  */
@@ -319,59 +359,132 @@ function ShareAndActions({ item }: { item: NewsItem }) {
     }
   };
 
-  const handleTelegram = () => {
-    const text = encodeURIComponent(`${item.title}\n\n${item.summary || ''}\n\n${item.url || ''}`);
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(item.url || window.location.href)}&text=${text}`, '_blank');
+  const getTargetUrl = () => {
+    return item.url || (typeof window !== 'undefined' ? window.location.href : 'https://invist.m2y.net');
+  };
+
+  const handleFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getTargetUrl())}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
+  };
+
+  const handleTwitter = () => {
+    const tags = item.tickers?.length ? item.tickers.join(',') : 'EGX,بورصة';
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(item.title)}&url=${encodeURIComponent(getTargetUrl())}&hashtags=${encodeURIComponent(tags)}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
   };
 
   const handleWhatsApp = () => {
-    const text = encodeURIComponent(`*${item.title}*\n\n${item.summary || ''}\n\n${item.url || ''}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
+    const text = encodeURIComponent(`*${item.title}*\n\n${item.summary || ''}\n\n${getTargetUrl()}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleTelegram = () => {
+    const text = encodeURIComponent(`${item.title}\n\n${item.summary || ''}`);
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(getTargetUrl())}&text=${text}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleLinkedIn = () => {
+    window.open(
+      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getTargetUrl())}`,
+      '_blank',
+      'noopener,noreferrer,width=600,height=500'
+    );
   };
 
   return (
     <div className="space-y-2 pt-2">
       <span className="text-[11px] font-medium text-muted-foreground block">مشاركة ونشر:</span>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {/* فيسبوك */}
         <Button
           variant="outline"
           size="sm"
-          onClick={handleTelegram}
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+          onClick={handleFacebook}
+          title="مشاركة على فيسبوك"
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#1877F2]/10 hover:border-[#1877F2]/30 hover:text-[#1877F2] transition-colors"
         >
-          <Share2 className="w-3.5 h-3.5 text-sky-500" />
-          <span>تليجرام</span>
+          <FacebookIcon className="w-3.5 h-3.5" />
+          <span>فيسبوك</span>
         </Button>
 
+        {/* إكس (تويتر) */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTwitter}
+          title="مشاركة على إكس / تويتر"
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <TwitterXIcon className="w-3.5 h-3.5" />
+          <span>تويتر (X)</span>
+        </Button>
+
+        {/* واتساب */}
         <Button
           variant="outline"
           size="sm"
           onClick={handleWhatsApp}
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+          title="مشاركة عبر واتساب"
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#25D366]/10 hover:border-[#25D366]/30 hover:text-[#25D366] transition-colors"
         >
-          <Share2 className="w-3.5 h-3.5 text-emerald-500" />
+          <WhatsAppIcon className="w-3.5 h-3.5" />
           <span>واتساب</span>
         </Button>
 
+        {/* تليجرام */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTelegram}
+          title="مشاركة عبر تليجرام"
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#229ED9]/10 hover:border-[#229ED9]/30 hover:text-[#229ED9] transition-colors"
+        >
+          <TelegramIcon className="w-3.5 h-3.5" />
+          <span>تليجرام</span>
+        </Button>
+
+        {/* لينكد إن */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLinkedIn}
+          title="مشاركة على لينكد إن"
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#0A66C2]/10 hover:border-[#0A66C2]/30 hover:text-[#0A66C2] transition-colors"
+        >
+          <LinkedInIcon className="w-3.5 h-3.5" />
+          <span>لينكد إن</span>
+        </Button>
+
+        {/* نسخ الخبر */}
         <Button
           variant="outline"
           size="sm"
           onClick={handleCopy}
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+          title="نسخ نص الخبر بالكامل"
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted transition-colors"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
           <span>{copied ? 'تم النسخ' : 'نسخ الخبر'}</span>
         </Button>
 
+        {/* رابط المصدر الأصلي */}
         {item.url && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => window.open(item.url, '_blank')}
-            className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+            title="الانتقال إلى موقع المصدر الأصلي"
+            className="h-8 text-xs gap-1.5 justify-center col-span-2 hover:bg-muted text-muted-foreground hover:text-foreground"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>المصدر</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>رابط المصدر الأصلي</span>
           </Button>
         )}
       </div>
