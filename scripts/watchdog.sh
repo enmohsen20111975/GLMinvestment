@@ -9,10 +9,21 @@
 # to check if the next-server child is alive (not the stored parent PID,
 # which exits immediately after spawning the child).
 #
-# Logs: dev.log (proxy) + /tmp/next.log (next dev)
-cd /home/z/my-project
+# RELATIVE-PATHS-ONLY (CONSTITUTION Rule 17):
+#   This script lives at <project_root>/scripts/watchdog.sh. Resolve the
+#   project root via the script's own location (BASH_SOURCE) so the watchdog
+#   works identically on Production VPS (/root/GLMinvestment/), Laptop
+#   (/home/meme/...), and Cloud Sandbox (/home/z/my-project/GLMinvestment/)
+#   without any code changes.
+#
+# Logs: dev.log (proxy+watchdog) + /tmp/next.log (next dev)
 
-LOG=/home/z/my-project/dev.log
+# Resolve project root from this script's location (two levels up: scripts/ → root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+LOG="$PROJECT_ROOT/dev.log"
 
 echo "[$(date)] watchdog: starting sandbox stack..." > "$LOG"
 
@@ -26,13 +37,13 @@ fi
 
 start_next() {
   echo "[$(date)] watchdog: starting next dev on :3001..." >> "$LOG"
-  ( setsid env NODE_ENV=development NODE_OPTIONS='--max-old-space-size=2048 --no-warnings' node_modules/.bin/next dev -p 3001 > /tmp/next.log 2>&1 < /dev/null & )
+  ( setsid env NODE_ENV=development NODE_OPTIONS='--max-old-space-size=2048 --no-warnings' "$PROJECT_ROOT/node_modules/.bin/next" dev -p 3001 > /tmp/next.log 2>&1 < /dev/null & )
   echo "[$(date)] watchdog: next dev launched" >> "$LOG"
 }
 
 start_proxy() {
   echo "[$(date)] watchdog: starting proxy-server.js on :3000..." >> "$LOG"
-  setsid bash -c 'exec node /home/z/my-project/proxy-server.js' >> "$LOG" 2>&1 < /dev/null &
+  setsid bash -c "exec node '$PROJECT_ROOT/proxy-server.js'" >> "$LOG" 2>&1 < /dev/null &
   disown 2>/dev/null || true
   echo "[$(date)] watchdog: proxy launched" >> "$LOG"
 }

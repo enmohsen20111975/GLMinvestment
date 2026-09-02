@@ -6,8 +6,15 @@ const net = require('net');
 // Sandbox adaptation: serve static files from .next/static and public/ directly
 // (standalone output is disabled in next.config.mjs, so we read from the
 // standard build output dirs instead of .next/standalone/*).
-const STATIC_DIR = '/home/z/my-project/.next/static';
-const PUBLIC_DIR = '/home/z/my-project/public';
+//
+// RELATIVE-PATHS-ONLY (CONSTITUTION Rule 17):
+//   This file lives at the project root. Use __dirname to resolve .next/static
+//   and public/ so the proxy works on Production VPS (/root/GLMinvestment/),
+//   Laptop (/home/meme/...), and Cloud Sandbox (/home/z/my-project/GLMinvestment/)
+//   without any code changes.
+const PROJECT_ROOT = path.resolve(__dirname);
+const STATIC_DIR = path.join(PROJECT_ROOT, '.next', 'static');
+const PUBLIC_DIR = path.join(PROJECT_ROOT, 'public');
 const NEXT_PORT = 3001;
 const WS_PORT = 3005;          // socket.io ws-service
 const PROXY_PORT = 3000;
