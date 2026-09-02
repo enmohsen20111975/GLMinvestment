@@ -15994,3 +15994,43 @@ NEED_OWNER للخطوة الجاية:
    - CHANGELOG.md + worklog.md (محدثة)
    - Agent messages (from news).md (جديد)
 5. 🟡 هل تريد تفعيل V40_2_NEWS_IMPACT=1 في الساندبوكس عشان نشوف تأثير الأخبار على V40.2 فعلياً؟ (default OFF للـ backtest safety).
+
+---
+Task ID: PUSH-TO-GITHUB-2026-09-02
+Agent: main (orchestrator, Z.ai Code)
+Task: رفع التعديلات على GitHub للمستودعين GLMinvestment + news (تنفيذ قواعد المالك 5 + 9).
+
+Work Log:
+- Task 1 (مراجعة أمنية قبل الـ push):
+  * فحصت كل الملفات المُعدّلة في الاتنين المستودعين للتأكد من عدم وجود أسرار حقيقية.
+  * GLMinvestment: worklog.md + CHANGELOG.md + Agent messages (from news).md + proxy-server.js + scripts/watchdog.sh — كلها نظيفة (التوكين الكامل `ghp_mbAvtsj6...` count=0).
+  * news: .env.example (placeholders), .gitignore, Agent messages.md, workflow.md, CHANGELOG.md — كلها نظيفة.
+  * اتأكدت إن .env (الحقيقي في news repo) مش متـstaged (ما عدّلتش عليه — لسه tracked في history).
+- Task 2 (push GLMinvestment repo):
+  * git add -A (6 files: 1 new + 4 modified + 1 deleted).
+  * git commit برسالة واضحة (relative paths + news data + security cleanup).
+  * أول محاولة push فشلت (fetch first — remote فيه commits جديدة من team تاني: feat(admin) news management tab + fix(dashboard) + feat(news) split layout).
+  * git pull --rebase عشان أدمج commits الـ team مع بتاعتي.
+  * git push نجح: commit 7d83b8015a3f468ceffc90f5bf200b74392da0d6 على main.
+  * التحقق: git ls-remote أرجع نفس الـ hash → push ناجح.
+- Task 3 (push news repo):
+  * git add (5 files: .env.example + .gitignore + Agent messages.md + workflow.md + CHANGELOG.md).
+  * git commit برسالة واضحة (security cleanup + GLMinvestment integration audit).
+  * git push نجح مباشرة (مفيش commits تانية على remote): commit 8fb93023e00fb5348681aec82ff13be01e5a6da9 على main.
+  * التحقق: git ls-remote أرجع نفس الـ hash → push ناجح.
+- Task 4 (تنظيف أمني):
+  * اتأكدت إن التوكين مش متخزن في git config في الاتنين المستودعين (remote.origin.url مش فيه token).
+  * الـ user.email = z@container, user.name = Z User (إعدادات الـ sandbox الأساسية).
+  * التوكين اتـused بس في الـ push command كـ inline URL (مش stored).
+
+Stage Summary:
+- GLMinvestment repo: commit 7d83b80 pushed بنجاح (6 files: handOver.text محذوف + proxy-server.js + scripts/watchdog.sh بمسارات نسبية + worklog.md + CHANGELOG.md + Agent messages (from news).md).
+- news repo: commit 8fb9302 pushed بنجاح (5 files: .env.example نظيف + .gitignore جديد + Agent messages.md + workflow.md + CHANGELOG.md).
+- الاتنين المستودعين في حالة clean (GLMinvestment: 0 unstaged changes، news: بس data/news.db-shm + -wal المؤقتة).
+- كل القواعد محترمة: مفيش أسرار في الـ commits، مفيش .env متـstaged، التوكين مش متخزن.
+
+⚠️ خطر أمني لسه قائم (محتاج revoke + scrub من المبرمج البشري):
+- GLMinvestment: Documentation/handOver.text اتشال من HEAD بس التوكين `ghp_mbAv...` لسه في git history (commit e68150fd).
+- news: .env (الحقيقي) + .venv/ كامل + data/news.db لسه tracked في git history (commit 0975b0d).
+- محتاج: revoke Telegram API_HASH + Bot Token + GLMinvestment PRODUCTION_API_KEY + GitHub PAT (ghp_mbAv...).
+- محتاج: scrub git history باستخدام BFG أو git filter-repo (الأوامر في Agent messages.md).
