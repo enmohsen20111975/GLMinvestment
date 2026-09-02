@@ -485,9 +485,10 @@ function computeStatsFromPredictions(preds: LivePrediction[]): PersonaStats {
   const closedCount = settled;
   // ما يهم العميل: الفلوس + الحماية
   const netReturn = winReturnsSum + lossReturnsSum; // صافي الربح/الخسارة
-  const grossProfit = winReturnsSum; // إجمالي الأرباح (موجب)
-  const grossLoss = lossReturnsSum; // إجمالي الخسائر (سالب)
-  const maxLoss = preds.length > 0 ? Math.min(...preds.filter(p => p.actual_return !== null && p.actual_return !== undefined).map(p => p.actual_return as number)) : 0; // أقصى خسارة (أكثر قيمة سالبة)
+  const validLosses = preds
+    .map(p => Number(p.returnPct ?? (p as any).actual_return ?? (p as any).pnl_pct))
+    .filter(r => !isNaN(r) && r < 0);
+  const maxLoss = validLosses.length > 0 ? Math.min(...validLosses) : 0; // أقصى خسارة (أكثر قيمة سالبة)
   const rrRatio = avgLossPct < 0 ? avgWinPct / Math.abs(avgLossPct) : 0; // متوسط الربح ÷ متوسط الخسارة
   return { total, wins, losses, pending, settled, winRate, avgWinPct, avgLossPct, profitFactor, closedCount, expired, netReturn, grossProfit, grossLoss, maxLoss, rrRatio };
 }
@@ -549,10 +550,10 @@ export function PredictionTrackingDashboard({
     setError(null);
 
     try {
-      const fetchDays = days === 999 ? 0 : days;
+      const fetchDays = days; // 999 = YTD, 0 = All, >0 = Days
       const minScore = qualityMode === 'top_picks' ? minConfidence : 0;
       const res = await fetch(
-        `/api/predictions/honest-tracking/live-tracking?market=${encodeURIComponent(market)}&days=${fetchDays}&limit=50&minScore=${minScore}`,
+        `/api/predictions/honest-tracking/live-tracking?market=${encodeURIComponent(market)}&days=${fetchDays}&limit=200&minScore=${minScore}`,
         { cache: 'no-store', signal: ctrl.signal }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

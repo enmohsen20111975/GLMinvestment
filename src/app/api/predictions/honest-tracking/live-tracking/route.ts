@@ -37,8 +37,8 @@ function inferMarket(ticker: string, marketCol: string | null): string {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const market = searchParams.get('market') || 'EGX';
-  const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50); // max 50 per persona
-  const days = parseInt(searchParams.get('days') || '0'); // 0 = all
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50'), 10), 300); // up to 300 per persona
+  const days = parseInt(searchParams.get('days') || '0'); // 0 = all, 999 = YTD
   const minScore = parseInt(searchParams.get('minScore') || '0');
 
   const db = openDb();
@@ -91,19 +91,13 @@ export async function GET(request: NextRequest) {
       : (winReturnsSum > 0 ? 999 : 0);
 
     // ── Fetch top-N predictions per persona (lightweight) ──
-    // Instead of fetching ALL and processing, we fetch only the top N per persona
-    //
-    // BUG-FIX (2026-08-29): كان الفلتر بـ uses prediction_date (تاريخ الدخول)
-    // بدل outcome_date (تاريخ الإغلاق). ده بـ يسبب أرقام غريبة:
-    //   - "أمس" بـ يظهر خسارة في أجازة (لأن توقعات دخلها الخميس واتقفلت الجمعة)
-    //   - "7 أيام" بـ يظهر خسارة أكبر من -100% (مجموع خسائر أكتر من صفقة)
-    // الحل: نـ filter بـ COALESCE(outcome_date, prediction_date):
-    //   - التوقعات المقفولة: بـ filter بـ outcome_date (تاريخ الإغلاق)
-    //   - التوقعات المعلقة: بـ filter بـ prediction_date (تاريخ الدخول)
-    // كمان نـ uses 'localtime' بدل UTC عشان توقيت مصر (UTC+2).
-    const dayFilter = days > 0
-      ? `AND COALESCE(outcome_date, prediction_date) >= date('now', 'localtime', '-${days} days')`
-      : '';
+    let dayFilter = '';
+    if (days === 999) {
+      // YTD: من أول السنة الحالية
+      dayFilter = "AND COALESCE(outcome_date, prediction_date) >= date('now', 'start of year')";
+    } else if (days > 0) {
+      dayFilter = `AND COALESCE(outcome_date, prediction_date) >= date('now', 'localtime', '-${days} days')`;
+    }
     const scoreFilter = minScore > 0
       ? `AND master_score >= ${minScore}`
       : '';
