@@ -172,7 +172,13 @@ function SourceImageViewer({ images, title, source }: { images?: string[]; title
 /**
  * Genuine Local AI Decision Support Card (Rendered ONLY if genuine reasoning exists)
  */
-function InvestmentDecisionInsight({ item }: { item: NewsItem }) {
+function InvestmentDecisionInsight({
+  item,
+  onTickerClick,
+}: {
+  item: NewsItem;
+  onTickerClick?: (ticker: string) => void;
+}) {
   const [copied, setCopied] = useState(false);
 
   // Strictly enforce: never render unless genuine reasoning exists
@@ -201,41 +207,41 @@ function InvestmentDecisionInsight({ item }: { item: NewsItem }) {
   };
 
   return (
-    <div className="my-4 rounded-xl border border-border/80 bg-muted/40 p-4 transition-colors">
+    <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 space-y-3">
       <div className="flex items-center justify-between pb-2 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-xs font-bold text-foreground">تحليل استثماري (من المحرك المحلي)</span>
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <span className="text-xs font-bold text-foreground">تحليل استثماري محلي</span>
         </div>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={handleCopyAnalysis}
-          className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+          className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
         >
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-          <span>{copied ? 'تم النسخ' : 'نسخ التحليل'}</span>
+          {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+          <span>{copied ? 'تم' : 'نسخ'}</span>
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mt-3">
+      <div className="flex flex-wrap items-center gap-1.5">
         {/* Sentiment Badge */}
         {sentimentKey === 'positive' && (
           <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-xs gap-1">
-            <ArrowUpRight className="w-3.5 h-3.5" />
+            <ArrowUpRight className="w-3 h-3" />
             إيجابي
           </Badge>
         )}
         {sentimentKey === 'negative' && (
           <Badge className="bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 text-xs gap-1">
-            <ArrowDownRight className="w-3.5 h-3.5" />
+            <ArrowDownRight className="w-3 h-3" />
             سلبي
           </Badge>
         )}
         {sentimentKey === 'neutral' && (
           <Badge variant="outline" className="text-muted-foreground text-xs gap-1">
-            <Minus className="w-3.5 h-3.5" />
+            <Minus className="w-3 h-3" />
             محايد
           </Badge>
         )}
@@ -248,7 +254,7 @@ function InvestmentDecisionInsight({ item }: { item: NewsItem }) {
         )}
         {(action === 'sell' || action === 'بيع') && (
           <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30 text-xs">
-            إشارة بيع / تخفيف
+            إشارة بيع
           </Badge>
         )}
         {(action === 'monitor' || action === 'مراقبة') && (
@@ -256,28 +262,29 @@ function InvestmentDecisionInsight({ item }: { item: NewsItem }) {
             مراقبة
           </Badge>
         )}
-
-        {/* Related Tickers */}
-        {item.tickers && item.tickers.length > 0 && (
-          <div className="flex items-center gap-1 mr-auto flex-wrap">
-            <span className="text-[11px] text-muted-foreground ml-1">الأسهم المرتبطة:</span>
-            {item.tickers.map((t) => (
-              <Badge
-                key={t}
-                variant="outline"
-                className="font-mono text-xs font-semibold text-primary border-primary/30 bg-primary/5"
-              >
-                {t}
-              </Badge>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Analysis Reasoning Text */}
-      <p className="text-xs md:text-sm text-foreground/85 leading-relaxed mt-2.5 font-normal whitespace-pre-wrap">
+      <p className="text-xs text-foreground/85 leading-relaxed font-normal">
         {item.reasoning}
       </p>
+
+      {/* Related Tickers */}
+      {item.tickers && item.tickers.length > 0 && (
+        <div className="flex items-center gap-1 pt-2 border-t border-border/40 flex-wrap">
+          <span className="text-[10px] text-muted-foreground">الأسهم:</span>
+          {item.tickers.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onTickerClick?.(t)}
+              className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -323,48 +330,51 @@ function ShareAndActions({ item }: { item: NewsItem }) {
   };
 
   return (
-    <div className="flex items-center gap-2 pt-3 mt-3 border-t border-border/50 flex-wrap">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleTelegram}
-        className="h-8 text-xs gap-1.5 hover:bg-muted"
-      >
-        <Share2 className="w-3.5 h-3.5 text-sky-500" />
-        <span>تليجرام</span>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleWhatsApp}
-        className="h-8 text-xs gap-1.5 hover:bg-muted"
-      >
-        <Share2 className="w-3.5 h-3.5 text-emerald-500" />
-        <span>واتساب</span>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-        className="h-8 text-xs gap-1.5 hover:bg-muted"
-      >
-        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-        <span>{copied ? 'تم النسخ' : 'نسخ الخبر'}</span>
-      </Button>
-
-      {item.url && (
+    <div className="space-y-2 pt-2">
+      <span className="text-[11px] font-medium text-muted-foreground block">مشاركة ونشر:</span>
+      <div className="grid grid-cols-2 gap-2">
         <Button
           variant="outline"
           size="sm"
-          onClick={() => window.open(item.url, '_blank')}
-          className="h-8 text-xs gap-1.5 mr-auto hover:bg-muted"
+          onClick={handleTelegram}
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
         >
-          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>المصدر الأصلي</span>
+          <Share2 className="w-3.5 h-3.5 text-sky-500" />
+          <span>تليجرام</span>
         </Button>
-      )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleWhatsApp}
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+        >
+          <Share2 className="w-3.5 h-3.5 text-emerald-500" />
+          <span>واتساب</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopy}
+          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copied ? 'تم النسخ' : 'نسخ الخبر'}</span>
+        </Button>
+
+        {item.url && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(item.url, '_blank')}
+            className="h-8 text-xs gap-1.5 justify-center hover:bg-muted"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>المصدر</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -389,107 +399,117 @@ function NewsCard({ item }: { item: NewsItem }) {
   return (
     <Card className="overflow-hidden border border-border/70 hover:border-border transition-all duration-200 bg-card shadow-sm hover:shadow-md">
       <CardContent className="p-5">
-        {/* Header Metadata */}
-        <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap text-xs text-muted-foreground">
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Source */}
-            <Badge variant="secondary" className="font-normal text-xs gap-1">
-              <Building2 className="w-3 h-3" />
-              {item.source}
-            </Badge>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+          {/* Main Content Area (الجزء الأكبر للخبر - 8 أعمدة) */}
+          <div className="md:col-span-8 flex flex-col justify-between">
+            <div>
+              {/* Header Metadata */}
+              <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Source */}
+                  <Badge variant="secondary" className="font-normal text-xs gap-1">
+                    <Building2 className="w-3 h-3" />
+                    {item.source}
+                  </Badge>
 
-            {/* Importance */}
-            {item.importance === 'high' && (
-              <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs">
-                مهم وعاجل
-              </Badge>
-            )}
+                  {/* Importance */}
+                  {item.importance === 'high' && (
+                    <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs">
+                      مهم وعاجل
+                    </Badge>
+                  )}
 
-            {/* Tickers */}
-            {item.tickers && item.tickers.length > 0 && (
-              <div className="flex items-center gap-1">
-                {item.tickers.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => handleTickerClick(t)}
-                    className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
-                  >
-                    {t}
-                  </button>
-                ))}
+                  {/* Tickers */}
+                  {item.tickers && item.tickers.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      {item.tickers.map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => handleTickerClick(t)}
+                          className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Date & Time */}
+                <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{formatDate(item.timestamp)}</span>
+                  {formatTime(item.timestamp) && (
+                    <>
+                      <span>•</span>
+                      <span>{formatTime(item.timestamp)}</span>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
+
+              {/* Title */}
+              <h2 className="text-base md:text-xl font-bold text-foreground leading-snug tracking-tight mb-3">
+                {item.url ? (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                  >
+                    {item.title}
+                  </a>
+                ) : (
+                  item.title
+                )}
+              </h2>
+
+              {/* Featured Image from Source */}
+              <SourceImageViewer images={item.image_paths} title={item.title} source={item.source} />
+
+              {/* Full Article Content */}
+              <div className="text-sm md:text-base text-foreground/90 leading-relaxed font-normal mt-3 space-y-2 whitespace-pre-line">
+                {isLong && !expanded ? (
+                  <>
+                    <p>{fullText.slice(0, 750)}...</p>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setExpanded(true)}
+                      className="p-0 h-auto text-xs font-semibold text-primary"
+                    >
+                      قراءة الخبر كاملاً ↓
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p>{fullText}</p>
+                    {isLong && expanded && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setExpanded(false)}
+                        className="p-0 h-auto text-xs font-semibold text-muted-foreground mt-1"
+                      >
+                        إخفاء جزء من النص ↑
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Date & Time */}
-          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{formatDate(item.timestamp)}</span>
-            {formatTime(item.timestamp) && (
-              <>
-                <span>•</span>
-                <span>{formatTime(item.timestamp)}</span>
-              </>
-            )}
+          {/* Sidebar Area (التحليل والنشر على جنب - 4 أعمدة) */}
+          <div className="md:col-span-4 flex flex-col justify-between border-t md:border-t-0 md:border-r md:border-border/60 pt-4 md:pt-0 md:pr-4 gap-3">
+            {/* Local AI Decision Insight */}
+            <InvestmentDecisionInsight item={item} onTickerClick={handleTickerClick} />
+
+            {/* Sharing and Action Bar */}
+            <ShareAndActions item={item} />
           </div>
         </div>
-
-        {/* Title */}
-        <h2 className="text-base md:text-lg font-bold text-foreground leading-snug tracking-tight mb-2">
-          {item.url ? (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors inline-flex items-center gap-1"
-            >
-              {item.title}
-            </a>
-          ) : (
-            item.title
-          )}
-        </h2>
-
-        {/* Featured Image from Source */}
-        <SourceImageViewer images={item.image_paths} title={item.title} source={item.source} />
-
-        {/* Full Article Content */}
-        <div className="text-sm text-foreground/90 leading-relaxed font-normal mt-3 space-y-2 whitespace-pre-line">
-          {isLong && !expanded ? (
-            <>
-              <p>{fullText.slice(0, 650)}...</p>
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => setExpanded(true)}
-                className="p-0 h-auto text-xs font-semibold text-primary"
-              >
-                قراءة الخبر كاملاً ↓
-              </Button>
-            </>
-          ) : (
-            <>
-              <p>{fullText}</p>
-              {isLong && expanded && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => setExpanded(false)}
-                  className="p-0 h-auto text-xs font-semibold text-muted-foreground mt-1"
-                >
-                  إخفاء جزء من النص ↑
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Local AI Decision Insight (ONLY if real analysis exists) */}
-        <InvestmentDecisionInsight item={item} />
-
-        {/* Sharing and Action Bar */}
-        <ShareAndActions item={item} />
       </CardContent>
     </Card>
   );
