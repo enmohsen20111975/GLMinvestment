@@ -483,8 +483,9 @@ function computeStatsFromPredictions(preds: LivePrediction[]): PersonaStats {
     ? winReturnsSum / Math.abs(lossReturnsSum)
     : (winReturnsSum > 0 ? 999 : 0);
   const closedCount = settled;
-  // ما يهم العميل: الفلوس + الحماية
   const netReturn = winReturnsSum + lossReturnsSum; // صافي الربح/الخسارة
+  const grossProfit = winReturnsSum; // إجمالي الأرباح (موجب)
+  const grossLoss = lossReturnsSum; // إجمالي الخسائر (سالب)
   const validLosses = preds
     .map(p => Number(p.returnPct ?? (p as any).actual_return ?? (p as any).pnl_pct))
     .filter(r => !isNaN(r) && r < 0);
