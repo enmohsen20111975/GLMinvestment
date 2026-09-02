@@ -243,6 +243,190 @@ def _map_importance(val) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════
+# 1c. Expert Recommendations from production (human recommendations aggregator)
+# ═══════════════════════════════════════════════════════════════════════
+# Owner directive (2026-09-02):
+#   "دة لسة تحت الأختبار عالشان الملك توصيات بشرية تساعدك فى التحليلات
+#    ممكن تجهز نفسك عالشان نستقبلة ونستعملة"
+#
+# Pipeline:
+#   news repo (recommendation_aggregator.py)
+#     → POST /api/expert-recommendations/import
+#     → stocks.db (ExpertRecommendation table)
+#     → GET /api/expert-recommendations?symbol=TICKER
+#     → V40.2 reads them + boosts/reduces score based on action
+
+def _get_expert_recommendations_from_production(ticker: str, max_results: int = 3) -> List[Dict[str, Any]]:
+    """
+    جلب توصيات الخبراء لسهم من السيرفر الإنتاجي.
+    المصدر: news repo recommendation_aggregator.py → /api/expert-recommendations.
+
+    Args:
+        ticker: رمز السهم (COMI)
+        max_results: حد أقصى للنتائج (default 3)
+
+    Returns:
+        list of {
+            'expert_name', 'action', 'recommendation_type', 'entry_price',
+            'target_price', 'stop_loss', 'support_level', 'resistance_level',
+            'session_date', 'recommendation_date', 'notes', 'technical_analysis',
+            'recommendation_reason', 'from_production'
+        }
+    """
+    proxy_url = os.environ.get('PROXY_PROD_URL') or 'http://127.0.0.1:3000'
+    proxy_url = proxy_url.rstrip('/')
+
+    # Try /expert-recommendations/active?ticker=COMI first (more specific)
+    # then fall back to /expert-recommendations?symbol=COMI
+    endpoints = [
+        f"{proxy_url}/api/proxy-prod/expert-recommendations?symbol={ticker.upper()}&limit={max_results}",
+        f"{proxy_url}/api/proxy-prod/expert-recommendations/active?ticker={ticker.upper()}",
+    ]
+
+    for endpoint in endpoints:
+        try:
+            req = urllib.request.Request(
+                endpoint,
+                headers={
+                    'Accept': 'application/json',
+                    'User-Agent': 'GLMinvestment-ExpertRecReader/1.0',
+                },
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+
+            if not data.get('success'):
+                continue
+
+            recs = data.get('data') or data.get('recommendations') or []
+            if not recs:
+                continue
+
+            results = []
+            for r in recs[:max_results]:
+                results.append({
+                    'expert_name': r.get('expert_name', 'خبير'),
+                    'action': _normalize_expert_action(r.get('action', '')),
+                    'recommendation_type': r.get('recommendation_type', ''),
+                    'entry_price': r.get('entry_price'),
+                    'target_price': r.get('target_price'),
+                    'target_price_2': r.get('target_price_2'),
+                    'stop_loss': r.get('stop_loss'),
+                    'support_level': r.get('support_level'),
+                    'resistance_level': r.get('resistance_level'),
+                    'session_date': r.get('session_date', ''),
+                    'recommendation_date': r.get('recommendation_date', ''),
+                    'notes': r.get('notes', ''),
+                    'technical_analysis': r.get('technical_analysis', ''),
+                    'recommendation_reason': r.get('recommendation_reason', ''),
+                    'status': r.get('status', 'PENDING'),
+                    'from_production': True,
+                })
+
+            logger.info(f"📰 expert-recs: {len(results)} توصية لـ {ticker} (من خبراء الإنتاج)")
+            return results
+
+        except Exception as e:
+            logger.debug(f"expert-recs fetch error for {ticker} via {endpoint}: {e}")
+            continue
+
+    return []
+
+
+def _normalize_expert_action(action: str) -> str:
+    """
+    تطبيع الـ action بتاع الخبراء لـ V40.2 verdicts.
+    news repo بيستخدم: BUY, SELL, HOLD + أنواع عربية.
+    V40.2 بيتوقع: BUY, SELL, HOLD.
+    """
+    if not action:
+        return 'HOLD'
+    a = str(action).strip().upper()
+    # English
+    if a in ('BUY', 'STRONG_BUY', 'ACCUMULATE'):
+        return 'BUY'
+    if a in ('SELL', 'REDUCE', 'STRONG_SELL'):
+        return 'SELL'
+    if a in ('HOLD', 'NEUTRAL', 'WATCH'):
+        return 'HOLD'
+    # Arabic recommendation_types from news repo
+    if 'شراء' in a or 'احتفاظ' in a or 'تجميع' in a or 'ارتداد' in a:
+        return 'BUY'
+    if 'بيع' in a or 'تفريغ' in a or 'تخارج' in a or 'تصريف' in a:
+        return 'SELL'
+    if 'متوسط' in a or 'مراقبة' in a:
+        return 'HOLD'
+    return 'HOLD'
+
+
+def get_expert_recommendations_impact(ticker: str) -> Dict[str, Any]:
+    """
+    جلب توصيات الخبراء لسهم + تحليل تأثيرها على V40.2 score.
+
+    Returns:
+        {
+            'has_recommendations': bool,
+            'recommendations_count': int,
+            'recommendations': list,
+            'overall_verdict': 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'NO_DATA',
+            'score_delta': int (-10 to +20),
+            'reason': str,
+            'proof_string': str,
+        }
+    """
+    recs = _get_expert_recommendations_from_production(ticker, max_results=5)
+    if not recs:
+        return {
+            'has_recommendations': False,
+            'recommendations_count': 0,
+            'recommendations': [],
+            'overall_verdict': 'NO_DATA',
+            'score_delta': 0,
+            'reason': 'لا توجد توصيات خبراء',
+            'proof_string': 'ℹ️ EXPERT: لا توجد توصيات خبراء',
+        }
+
+    # Aggregate: count actions
+    buy_count = sum(1 for r in recs if r['action'] == 'BUY')
+    sell_count = sum(1 for r in recs if r['action'] == 'SELL')
+    hold_count = sum(1 for r in recs if r['action'] == 'HOLD')
+
+    # Determine verdict + score_delta
+    if buy_count >= 2 and sell_count == 0:
+        verdict = 'STRONG_BUY'
+        score_delta = +20
+        reason = f'{buy_count} خبراء بيوصوا بالشراء'
+    elif buy_count > sell_count and buy_count >= 1:
+        verdict = 'BUY'
+        score_delta = +10
+        reason = f'{buy_count} شراء vs {sell_count} بيع'
+    elif sell_count >= 2 and buy_count == 0:
+        verdict = 'SELL'
+        score_delta = -10
+        reason = f'{sell_count} خبراء بيوصوا بالبيع'
+    elif sell_count > buy_count:
+        verdict = 'SELL'
+        score_delta = -10
+        reason = f'{sell_count} بيع vs {buy_count} شراء'
+    else:
+        verdict = 'HOLD'
+        score_delta = 0
+        reason = f'{hold_count} محايد ({buy_count} شراء، {sell_count} بيع)'
+
+    proof = f"👥 EXPERT {verdict} (Δ={score_delta:+d}): {buy_count}B/{sell_count}S/{hold_count}H من {len(recs)} خبير"
+
+    return {
+        'has_recommendations': True,
+        'recommendations_count': len(recs),
+        'recommendations': recs,
+        'overall_verdict': verdict,
+        'score_delta': score_delta,
+        'reason': reason,
+        'proof_string': proof,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
 # 1b. news.db → market_news (fallback — News Agent's analyzed news)
 # ═══════════════════════════════════════════════════════════════════════
 

@@ -1638,6 +1638,73 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     except Exception:
                         pass  # safe-by-design
 
+            # ── EXPERT RECOMMENDATIONS (2026-09-02): توصيات الخبراء البشرية ──
+            # توجيه المالك: "دة لسة تحت الأختبار عالشان الملك توصيات بشرية تساعدك
+            #                فى التحليلات ممكن تجهز نفسك عالشان نستقبلة ونستعمله"
+            # المصدر: news repo recommendation_aggregator.py (Ollama + خبراء تيليجرام)
+            #         → POST /api/expert-recommendations/import → stocks.db
+            #         → V40.2 بيقرأ من الإنتاج عبر /api/proxy-prod/expert-recommendations
+            # الأثر على score:
+            #   STRONG_BUY (2+ خبراء بيوصوا بالشراء) → +20
+            #   BUY (1+ خبير شراء، أغلبية شراء) → +10
+            #   SELL (2+ خبراء بيع) → -10
+            #   HOLD (محايد/متساوي) → 0
+            # Toggle: V40_2_EXPERT_RECS=1 (default OFF للـ backtest)
+            #         V40_2_FORCE_EXPERT_RECS_IN_BACKTEST=1 → اختبار في backtest
+            if os.environ.get('V40_2_EXPERT_RECS', '0') == '1':
+                _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
+                _force_expert_recs = os.environ.get('V40_2_FORCE_EXPERT_RECS_IN_BACKTEST', '0') == '1'
+                if not _is_backtest or _force_expert_recs:
+                    try:
+                        from analyzers.news_fetcher_analyzer import get_expert_recommendations_impact
+                        _expert_result = get_expert_recommendations_impact(ticker)
+                        _expert_delta = _expert_result.get('score_delta', 0)
+                        _expert_verdict = _expert_result.get('overall_verdict', 'NO_DATA')
+
+                        if _expert_verdict == 'SELL' and _expert_delta <= -10:
+                            # VETO: لو 2+ خبراء بيوصوا بالبيع → ارفض التوقع
+                            print(f"[EXPERT-VETO] {ticker} on {scan_date}: "
+                                  f"{_expert_result.get('reason', '')} → رفض", flush=True)
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['expert_veto'] = _expert_result.get('proof_string', '')
+                            try:
+                                from analyzers.decision_logger import log_decision
+                                log_decision(ticker, 'reject_entry', 'expert_veto',
+                                    _expert_result.get('reason', ''), 'V40_2_EXPERT_RECS',
+                                    market='STOCKS', scan_date=scan_date, score_before=result.get('score', 0))
+                            except Exception:
+                                pass
+                            continue  # hard reject
+
+                        # Apply score adjustment (BOOST/REDUCE)
+                        if _expert_delta != 0:
+                            print(f"[EXPERT-{_expert_verdict}] {ticker} on {scan_date}: "
+                                  f"Δ={_expert_delta:+d} (recs={_expert_result.get('recommendations_count', 0)}) → "
+                                  f"{'دفعة' if _expert_delta > 0 else 'تقليل'}", flush=True)
+                            if isinstance(result.get('score'), (int, float)):
+                                result['score'] = max(0, min(100, result['score'] + _expert_delta))
+                            if 'proofs' not in result or result['proofs'] is None:
+                                result['proofs'] = {}
+                            result['proofs']['expert_impact'] = _expert_result.get('proof_string', '')
+                            result['expert_verdict'] = _expert_verdict
+                            result['expert_delta'] = _expert_delta
+                            # خزّن تفاصيل التوصيات للـ UI
+                            if _expert_result.get('recommendations'):
+                                result['expert_recommendations'] = [
+                                    {
+                                        'expert': r.get('expert_name', ''),
+                                        'action': r.get('action', ''),
+                                        'entry_price': r.get('entry_price'),
+                                        'target_price': r.get('target_price'),
+                                        'stop_loss': r.get('stop_loss'),
+                                        'notes': (r.get('notes') or '')[:200],
+                                    }
+                                    for r in _expert_result['recommendations'][:3]
+                                ]
+                    except Exception as _expert_err:
+                        pass  # safe-by-design: لو expert fetcher فشل → نكمّل
+
             # ── STOCK NOTEBOOK CONTEXT (2026-09-01): طبقة معرفة دائمة ──
             # توجيه المالك: "كل سهم يكون ليه ملف دائم فيه ملخص سلوكي + ملاحظات.
             # النظام يقرأ النوتبوك الأول قبل القرار."
