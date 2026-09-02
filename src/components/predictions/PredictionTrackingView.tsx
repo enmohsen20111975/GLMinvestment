@@ -481,6 +481,7 @@ export function PredictionTrackingView() {
                       <TableHead className="text-right">الهدف</TableHead>
                       <TableHead className="text-right">R/R</TableHead>
                       <TableHead className="text-right">السعر الحالي</TableHead>
+                      <TableHead className="text-right">الفرق</TableHead>
                       <TableHead className="text-right">العائد %</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                     </TableRow>
@@ -526,6 +527,17 @@ export function PredictionTrackingView() {
                           </TableCell>
                           <TableCell className="font-mono text-xs">
                             {p.current_price !== null ? formatNumber(p.current_price) : '—'}
+                          </TableCell>
+                          <TableCell className={cn('font-mono text-xs font-bold', p.current_price !== null && p.current_price > p.entry_price ? 'text-emerald-600 dark:text-emerald-400' : p.current_price !== null && p.current_price < p.entry_price ? 'text-rose-600 dark:text-rose-400' : '')}>
+                            {p.current_price !== null ? (
+                              <>
+                                {p.current_price > p.entry_price ? '+' : ''}
+                                {formatNumber(p.current_price - p.entry_price)}
+                                <span className="text-[9px] text-muted-foreground ml-0.5">
+                                  ({formatPct(((p.current_price - p.entry_price) / p.entry_price) * 100, true)})
+                                </span>
+                              </>
+                            ) : '—'}
                           </TableCell>
                           <TableCell className={cn('font-mono text-xs font-bold', pnlColor)}>
                             {formatPct(pnl, true)}
