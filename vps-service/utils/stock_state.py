@@ -695,3 +695,207 @@ def get_stage_color(stage: str) -> str:
 def get_stage_order(stage: str) -> int:
     """ترتيب مرحلة التصحيح (لـ sort)."""
     return STAGE_ORDER.get(stage, 99)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# تصحيح متقدم + تحديد أفضل وقت دخول (2026-09-01)
+# ═══════════════════════════════════════════════════════════════════════
+
+# Thresholds للتصحيح المتقدم
+CORRECTION_DEPTH_BUCKETS = [
+    (5.0, 'SHALLOW'),      # تصحيح ضحل (< 5%)
+    (10.0, 'MODERATE'),    # تصحيح متوسط (5-10%)
+    (15.0, 'DEEP'),        # تصحيح عميق (10-15%)
+    (25.0, 'VERY_DEEP'),   # تصحيح عميق جداً (15-25%)
+    (999.0, 'EXTREME'),    # تصحيح متطرف (> 25%)
+]
+
+CORRECTION_VOL_DRY_UP_RATIO = 0.5    # حجم انخفض لأقل من 50% من المتوسط = "عصر"
+CORRECTION_VOL_RETURN_RATIO = 1.3    # حجم رجع بـ 1.3× = "رجوع السيولة"
+CORRECTION_RSI_BOTTOM = 35.0        # RSI < 35 = "تشبع بيعي"
+
+
+def detect_correction_opportunity(
+    closes: List[float],
+    highs: List[float],
+    lows: List[float],
+    volumes: List[float],
+    typical_correction_pct: float = 0,
+    market: str = 'EGX',
+) -> Dict[str, Any]:
+    """
+    تحليل متقدم للتصحيح + تحديد أفضل وقت دخول.
+
+    يستخدم:
+      - عمق التصحيح من القمة
+      - سلوك الحجم (عصر/رجوع)
+      - RSI (تشبع بيعي)
+      - typical_correction_pct من النوتبوك
+      - مدى التذبذب (ضيق = قاع يبنى)
+
+    Returns:
+        {
+            'phase': 'NO_CORRECTION' | 'EARLY_DROP' | 'DEEP_CORRECTION' | 'LATE_BASE' | 'RECOVERY_STARTING',
+            'phase_ar': str,
+            'depth_pct': float,
+            'depth_bucket': str,
+            'vol_state': 'DRY_UP' | 'RETURNING' | 'NORMAL',
+            'rsi': float,
+            'is_oversold': bool,
+            'correction_complete': bool (النزول وصل typical_correction أو أعمق),
+            'near_bottom': bool (حجم عصر + RSI تشبع + تذبذب قل),
+            'entry_readiness': int (0-100),
+            'entry_readiness_ar': str,
+            'reason': str,
+            'proofs': List[str],
+        }
+    """
+    n = min(len(closes), len(highs), len(lows), len(volumes))
+    if n < 40:
+        return {
+            'phase': 'NO_CORRECTION', 'phase_ar': 'بيانات غير كافية',
+            'depth_pct': 0, 'depth_bucket': 'NONE',
+            'vol_state': 'NORMAL', 'rsi': 50, 'is_oversold': False,
+            'correction_complete': False, 'near_bottom': False,
+            'entry_readiness': 0, 'entry_readiness_ar': 'غير جاهز',
+            'reason': 'بيانات غير كافية', 'proofs': []
+        }
+
+    # حسابات
+    lookback = min(n, 60)
+    recent_closes = closes[-lookback:]
+    recent_highs = highs[-lookback:]
+    recent_lows = lows[-lookback:]
+    recent_vols = volumes[-lookback:]
+
+    peak = max(recent_highs)
+    current = closes[-1]
+    depth_pct = ((peak - current) / peak * 100) if peak > 0 else 0
+
+    # عمق التصحيح bucket
+    depth_bucket = 'NONE'
+    for threshold, bucket_name in CORRECTION_DEPTH_BUCKETS:
+        if depth_pct < threshold:
+            depth_bucket = bucket_name
+            break
+
+    # RSI
+    rsi = _rsi(recent_closes, 14)
+    is_oversold = rsi < CORRECTION_RSI_BOTTOM
+
+    # حجم: عصر / رجوع
+    vol_ma20 = sum(recent_vols[-20:]) / min(20, len(recent_vols)) if len(recent_vols) >= 20 else 1
+    recent_vol = recent_vols[-1]
+    vol_ratio = recent_vol / vol_ma20 if vol_ma20 > 0 else 1
+
+    vol_state = 'NORMAL'
+    if vol_ratio < CORRECTION_VOL_DRY_UP_RATIO:
+        vol_state = 'DRY_UP'
+    elif vol_ratio >= CORRECTION_VOL_RETURN_RATIO:
+        vol_state = 'RETURNING'
+
+    # مدى التذبذب (ضيق = قاع يبنى)
+    range_5d = max(recent_highs[-5:]) - min(recent_lows[-5:]) if len(recent_highs) >= 5 else 0
+    range_pct = (range_5d / current * 100) if current > 0 else 0
+    tight_range = range_pct < 4.0
+
+    # هل التصحيح وصل للنهاية المعتادة؟
+    correction_complete = False
+    if typical_correction_pct > 0:
+        correction_complete = depth_pct >= typical_correction_pct * 0.8  # وصل 80% من المعتاد
+
+    # هل قرب القاع؟
+    near_bottom = vol_state == 'DRY_UP' and is_oversold and tight_range
+
+    # تحديد المرحلة + entry_readiness
+    phase = 'NO_CORRECTION'
+    phase_ar = 'لا يوجد تصحيح'
+    entry_readiness = 0
+    proofs = []
+
+    if depth_pct < 5.0:
+        phase = 'NO_CORRECTION'
+        phase_ar = 'لا يوجد تصحيح'
+        entry_readiness = 10
+        proofs.append(f'السعر قرب القمة (نزول {depth_pct:.1f}% فقط)')
+    elif depth_pct < 10.0 and vol_state != 'DRY_UP':
+        phase = 'EARLY_DROP'
+        phase_ar = 'بداية تصحيح'
+        entry_readiness = 20
+        proofs.append(f'تصحيح ضحل {depth_pct:.1f}% — لسه بدري')
+    elif depth_pct >= 10.0 and vol_state == 'DRY_UP' and is_oversold:
+        phase = 'LATE_BASE'
+        phase_ar = 'أواخر التصحيح (يبنى قاع)'
+        entry_readiness = 60
+        proofs.append(f'تصحيح {depth_pct:.1f}% + حجم عُصر + RSI={rsi:.0f} (تشبع بيعي)')
+        if tight_range:
+            proofs.append(f'تذبذب قليل ({range_pct:.1f}%) — قاع يبنى')
+            entry_readiness += 10
+        if correction_complete:
+            proofs.append(f'وصل typical_correction ({typical_correction_pct:.1f}%)')
+            entry_readiness += 10
+    elif depth_pct >= 10.0 and vol_state == 'RETURNING' and rsi > 40:
+        phase = 'RECOVERY_STARTING'
+        phase_ar = 'بدء التعافي (أفضل وقت دخول)'
+        entry_readiness = 80
+        proofs.append(f'تصحيح {depth_pct:.1f}% + حجم رجع ({vol_ratio:.1f}×) + RSI={rsi:.0f}')
+        if correction_complete:
+            proofs.append(f'وصل typical_correction ({typical_correction_pct:.1f}%)')
+            entry_readiness += 10
+    elif depth_pct >= 10.0:
+        phase = 'DEEP_CORRECTION'
+        phase_ar = 'تصحيح عميق (انتظر)'
+        entry_readiness = 30
+        proofs.append(f'تصحيح {depth_pct:.1f}% — لسه بينزل')
+    else:
+        phase = 'NO_CORRECTION'
+        phase_ar = 'محايد'
+        entry_readiness = 10
+
+    # entry_readiness label
+    if entry_readiness >= 80:
+        readiness_ar = '🟢 جاهز للدخول'
+    elif entry_readiness >= 60:
+        readiness_ar = '🟡 راقب عن قرب'
+    elif entry_readiness >= 30:
+        readiness_ar = '🟠 انتظر'
+    else:
+        readiness_ar = '🔴 غير جاهز'
+
+    reason = f'{phase_ar}: نزول {depth_pct:.1f}% | حجم={vol_state} | RSI={rsi:.0f} | readiness={entry_readiness}%'
+
+    return {
+        'phase': phase,
+        'phase_ar': phase_ar,
+        'depth_pct': round(depth_pct, 2),
+        'depth_bucket': depth_bucket,
+        'vol_state': vol_state,
+        'vol_ratio': round(vol_ratio, 2),
+        'rsi': round(rsi, 1),
+        'is_oversold': is_oversold,
+        'correction_complete': correction_complete,
+        'near_bottom': near_bottom,
+        'tight_range': tight_range,
+        'range_pct': round(range_pct, 2),
+        'entry_readiness': entry_readiness,
+        'entry_readiness_ar': readiness_ar,
+        'reason': reason,
+        'proofs': proofs,
+    }
+
+
+def _rsi(closes: List[float], period: int = 14) -> float:
+    """RSI(14) — duplicate of helper above for local use."""
+    if len(closes) < period + 1:
+        return 50.0
+    gains, losses = [], []
+    for i in range(len(closes) - period, len(closes)):
+        change = closes[i] - closes[i - 1]
+        gains.append(max(0, change))
+        losses.append(max(0, -change))
+    avg_gain = sum(gains) / len(gains) if gains else 0
+    avg_loss = sum(losses) / len(losses) if losses else 0
+    if avg_loss == 0:
+        return 100.0
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))

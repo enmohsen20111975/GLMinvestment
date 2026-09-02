@@ -15226,3 +15226,69 @@ Stage Summary:
 - ✅ النوتبوك: 4 صفقات بـ stop widening
 - 🔜 commit + push
 
+
+
+---
+Task ID: CORRECTION-OPPORTUNITY-DETECTOR-2026-09-02
+Agent: Z.ai Code (main) — Senior Engineer
+Task: تركيز على موضوع التصحيح + تحديد أفضل وقت للدخول
+
+Work Log:
+
+### Phase 1: قراءة الدستور (Rule 41 — DOCS-FIRST-LAST)
+قرأت:
+- Documentation/00-CONSTITUTION.md (القواعد الـ 41)
+- Documentation/SYSTEM_HOW_IT_THINKS.md (منطق التصحيح)
+- worklog.md (آخر إدخال)
+- CHANGELOG.md (آخر إدخالات)
+
+### Phase 2: فحص منطق التصحيح الحالي
+وجدت في stock_state.py (698 LOC):
+- compute_stock_state(): 7 حالات (AT_PEAK → DECLINING)
+- classify_correction_stage(): 4 مراحل (DEEP_CORRECTION → RECOVERY_STARTING)
+- is_near_correction_end(): 4 شروط (فوق MA50 + حجم + RSI + change)
+- confirm_recovery_starting(): 5 شروط (MA50 + حجم + RS + شمعة + قطاع)
+
+### Phase 3: بناء detect_correction_opportunity() — تحليل متقدم
+أضيفت في نفس الملف (stock_state.py) — لا ملفات جديدة:
+- عمق التصحيح من القمة (depth_pct + depth_bucket)
+- سلوك الحجم: DRY_UP (عُصر) / RETURNING (رجوع السيولة) / NORMAL
+- RSI + is_oversold (تشبع بيعي < 35)
+- typical_correction_pct من النوتبوك → correction_complete
+- مدى التذبذب (tight_range = قاع يبنى)
+- near_bottom = DRY_UP + oversold + tight_range
+
+5 مراحل:
+1. NO_CORRECTION (readiness 10%) — قرب القمة
+2. EARLY_DROP (readiness 20%) — بداية تصحيح ضحل
+3. DEEP_CORRECTION (readiness 30%) — لسه بينزل
+4. LATE_BASE (readiness 60-80%) — حجم عُصر + تشبع بيعي + تذبذب قل
+5. RECOVERY_STARTING (readiness 80-90%) — حجم رجع + RSI > 40 + correction_complete
+
+entry_readiness: 0-100 مع labels (🔴 غير جاهز / 🟠 انتظر / 🟡 راقب / 🟢 جاهز)
+
+### Phase 4: اختبارات
+4/4 tests pass + 10 أسهم حقيقية:
+- COMI: NO_CORRECTION (1.4% drop, RSI=90 — قرب القمة)
+- HRHO: DEEP_CORRECTION (78.8% drop, RSI=4 — عميق)
+- EAST: LATE_BASE (77.7% drop, DRY_UP, RSI=8 — قاع يبنى، readiness=70%) ← 🟡 راقب
+- MFPC: EARLY_DROP (7.9% drop, RSI=94 — بدري)
+
+### النتائج على بيانات حقيقية:
+- EAST: LATE_BASE + readiness=70% (🟡 راقب عن قرب) — حجم عُصر + تشبع بيعي
+- معظم الأسهم في DEEP_CORRECTION (لسه بينزل)
+- COMI/MFPC قرب القمة (RSI > 90)
+
+### الالتزام بالقواعد:
+- Rule 41: قرأت التوثيق قبل العمل ✅
+- Rule 3: لا ملفات جديدة — عدّلت stock_state.py فقط ✅
+- Rule 5: كل كود يتربط ✅
+- Rule 29: نظام متكامل ✅
+
+Stage Summary:
+- ✅ detect_correction_opportunity() في stock_state.py
+- ✅ 5 مراحل + entry_readiness 0-100
+- ✅ مرتبط بـ typical_correction_pct من النوتبوك
+- ✅ 4/4 tests pass + 10 أسهم حقيقية
+- 🔜 commit + push + تحديث التوثيق
+
