@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Database, Zap, Sparkles } from 'lucide-react';
+import { Trash2, RefreshCw, AlertTriangle, CheckCircle2, Loader2, Database } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -215,32 +215,18 @@ export function PurgeCacheButton() {
             مسح التوقعات القديمة
           </Button>
 
-          {/* أزرار تشغيل محرك التوقعات V40.2 الموحد والفحص اللحظي */}
-          <Button
-            onClick={() => handleGenerate('intraday')}
-            disabled={generating || purging}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-medium"
-          >
-            {generating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Zap className="w-4 h-4" />
-            )}
-            🎯 فحص لحظي حقيقي (5 دقائق)
-          </Button>
-
-          <Button
-            onClick={() => handleGenerate('daily')}
-            disabled={generating || purging}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-medium"
-          >
-            {generating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            ⚡ تشغيل محرك V40.2 الموحد (اليومي)
-          </Button>
+          {/* ============================================================
+          * DISABLED (2026-09-02) — Owner directive:
+          * "زرار توليد توقعات ده معناه إننا بنعمل توقعات عشوائية الغيه خالص"
+          *
+          * التوقعات بـ تتولّد تلقائياً من V40.2 (cron job) — مش محتاجين تدخل يدوي.
+          * الأزرار دي كانت بـ تشغل scripts بـ BYPASS_PRED_CAP=1 بدون context كافي،
+          * فكانت بتـ produce توقعات عشوائية مش مبنية على التحليل الكامل.
+          * ============================================================ */}
+          {/* تم إزالة:
+            - 🎯 فحص لحظي حقيقي (5 دقائق)
+            - ⚡ تشغيل محرك V40.2 الموحد (اليومي)
+          */}
         </div>
 
         {/* P37-PHASE-4B: حجم المساحة المُحرَّرة بعد آخر عملية مسح */}

@@ -202,72 +202,83 @@ def _get_news_from_production(ticker: str, max_results: int = 5) -> List[Dict[st
     # Determine proxy-prod URL (sandbox: localhost:3000, prod: same host)
     proxy_url = os.environ.get('PROXY_PROD_URL') or 'http://127.0.0.1:3000'
     proxy_url = proxy_url.rstrip('/')
-    endpoint = f"{proxy_url}/api/proxy-prod/news-feed?limit=50"
 
-    try:
-        req = urllib.request.Request(
-            endpoint,
-            headers={
-                'Accept': 'application/json',
-                'User-Agent': 'GLMinvestment-NewsFetcher/1.0',
-            },
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
+    # Try /api/proxy-prod/news-feed first (sandbox/dev), then fallback to /api/news-feed (production)
+    # Owner directive (2026-09-02): "ليه ماحطيتش الأخبار معاك في التوقعات؟"
+    # → production doesn't have /api/proxy-prod endpoint, so we need to fallback.
+    endpoints = [
+        f"{proxy_url}/api/proxy-prod/news-feed?limit=50",  # sandbox/dev
+        f"{proxy_url}/api/news-feed?limit=50",              # production (direct)
+    ]
 
-        if not data.get('success'):
-            logger.debug(f"production news-feed: success=false")
-            return []
-
-        all_news = data.get('news', [])
-        if not all_news:
-            return []
-
-        # Filter by ticker (in tickers array OR in title/body)
-        ticker_upper = ticker.upper()
-        ticker_lower = ticker.lower()
-        results = []
-        for n in all_news:
-            # Check tickers array
-            news_tickers = n.get('tickers') or []
-            if isinstance(news_tickers, str):
-                try:
-                    news_tickers = json.loads(news_tickers)
-                except Exception:
-                    news_tickers = []
-            ticker_match = any(
-                t.upper() == ticker_upper
-                for t in news_tickers
+    # Try each endpoint until one works
+    data = None
+    for endpoint in endpoints:
+        try:
+            req = urllib.request.Request(
+                endpoint,
+                headers={
+                    'Accept': 'application/json',
+                    'User-Agent': 'GLMinvestment-NewsFetcher/1.0',
+                },
             )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+            # Success — break out of the loop
+            break
+        except Exception as e:
+            logger.debug(f"production news-feed fetch error via {endpoint}: {e}")
+            continue
 
-            # Also check title/body
-            title = (n.get('title') or '').lower()
-            body = (n.get('body') or n.get('summary') or '').lower()
-            text_match = ticker_lower in title or ticker_lower in body
-
-            if ticker_match or text_match:
-                results.append({
-                    'title': n.get('title', ''),
-                    'snippet': (n.get('summary') or n.get('body', ''))[:500],
-                    'url': n.get('url', ''),
-                    'source': n.get('source', 'production'),
-                    'published_at': n.get('published_at', ''),
-                    'importance': _map_importance(n.get('importance')),
-                    'sentiment': n.get('sentiment') or 'neutral',
-                    'impact_type': n.get('impact_type') or 'general',
-                    'summary_ar': n.get('summary') or '',
-                    'tickers': news_tickers,
-                    'from_production': True,
-                })
-                if len(results) >= max_results:
-                    break
-
-        logger.info(f"📰 production: {len(results)} أخبار لـ {ticker} (طازجة من invist.m2y.net)")
-        return results
-
-    except Exception as e:
-        logger.debug(f"production news fetch error for {ticker}: {e}")
+    if not data or not data.get('success'):
+        logger.debug(f"production news-feed: success=false or no data")
         return []
+
+    all_news = data.get('news', [])
+    if not all_news:
+        return []
+
+    # Filter by ticker (in tickers array OR in title/body)
+    ticker_upper = ticker.upper()
+    ticker_lower = ticker.lower()
+    results = []
+    for n in all_news:
+        # Check tickers array
+        news_tickers = n.get('tickers') or []
+        if isinstance(news_tickers, str):
+            try:
+                news_tickers = json.loads(news_tickers)
+            except Exception:
+                news_tickers = []
+        ticker_match = any(
+            t.upper() == ticker_upper
+            for t in news_tickers
+        )
+
+        # Also check title/body
+        title = (n.get('title') or '').lower()
+        body = (n.get('body') or n.get('summary') or '').lower()
+        text_match = ticker_lower in title or ticker_lower in body
+
+        if ticker_match or text_match:
+            results.append({
+                'title': n.get('title', ''),
+                'snippet': (n.get('summary') or n.get('body', ''))[:500],
+                'url': n.get('url', ''),
+                'source': n.get('source', 'production'),
+                'published_at': n.get('published_at', ''),
+                'importance': _map_importance(n.get('importance')),
+                'sentiment': n.get('sentiment') or 'neutral',
+                'impact_type': n.get('impact_type') or 'general',
+                'summary_ar': n.get('summary') or '',
+                'tickers': news_tickers,
+                'from_production': True,
+            })
+            if len(results) >= max_results:
+                break
+
+    logger.info(f"📰 production: {len(results)} أخبار لـ {ticker} (طازجة)")
+    return results
 
 
 def _map_importance(val) -> int:
@@ -325,9 +336,11 @@ def _get_expert_recommendations_from_production(ticker: str, max_results: int = 
 
     # Try /expert-recommendations/active?ticker=COMI first (more specific)
     # then fall back to /expert-recommendations?symbol=COMI
+    # Also try both via proxy-prod AND direct (production doesn't have proxy-prod).
     endpoints = [
         f"{proxy_url}/api/proxy-prod/expert-recommendations?symbol={ticker.upper()}&limit={max_results}",
         f"{proxy_url}/api/proxy-prod/expert-recommendations/active?ticker={ticker.upper()}",
+        f"{proxy_url}/api/expert-recommendations?symbol={ticker.upper()}&limit={max_results}",  # direct (production)
     ]
 
     for endpoint in endpoints:
