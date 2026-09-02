@@ -14,8 +14,9 @@ import { requireAdminAsync } from '@/lib/admin-auth-server';
 
 export const dynamic = 'force-dynamic';
 
+// news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
 function getDataEngineDbPath() {
-  return path.join(process.cwd(), 'data-engine', 'data', 'data_engine.db');
+  return path.join(process.cwd(), 'db', 'news.db');
 }
 
 function getPredictionsDbPath() {

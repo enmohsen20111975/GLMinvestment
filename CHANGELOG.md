@@ -1,6 +1,57 @@
 # Changelog
 
 
+## [NEWS-DB-SOT + V40_2_NEWS_IMPACT] — news.db مصدر وحيد + تفعيل تأثير الأخبار على V40.2 (2026-09-02)
+
+> **توجيه المالك:** "أنا فيه قاعدة بيانات خاصة بالأخبار ليه الغبي ده ما يستعملهاش؟ ممكن تنقل كله إلى news.db ونشتغل منها."
+
+### التعديلات (6 ملفات)
+
+#### 1. `vps-service/analyzers/news_fetcher_analyzer.py` (تعديل — function جديدة + fallback logic)
+- **function جديدة**: `_get_news_from_market_news_db(ticker, max_results, days)` — بتقرأ من `news.db/market_news` بـ SQL query ذكي (يبحث في tickers JSON + symbol + title + content).
+- `fetch_news_for_ticker` بقى بيستدعي news.db الأول، DuckDuckGo كـ fallback.
+- كل خبر بيرجع فيه `from_db=True` marker للتمييز.
+- تحديث docstring + comments.
+
+#### 2. `src/app/api/news/route.ts` (تعديل — DB_PATH)
+- `DB_PATH` اتغير من `data-engine/data/data_engine.db` إلى `db/news.db`.
+- news.db هو الـ single source of truth (CONSTITUTION Rule 44).
+
+#### 3. `src/app/api/news-feed/route.ts` (تعديل — DB_PATH)
+- نفس التعديل — `getDataEngineDbPath()` بقى يرجع `db/news.db`.
+
+#### 4. `src/app/api/admin/news/route.ts` (تعديل — DB_PATH)
+- `getDataEngineDbPath()` بقى يرجع `db/news.db`.
+
+#### 5. `Documentation/00-CONSTITUTION.md` (تعديل — Rule 44 جديدة)
+- إضافة القاعدة 44 — NEWS-DB-SOT (news.db هو المصدر الوحيد للأخبار).
+- documentation كاملة: schema، التكامل مع V40.2، الـ endpoints، الهجرة.
+- تحديث "آخر تحديث" line لـ 2026-09-02.
+
+#### 6. `.env` (تعديل — V40_2_NEWS_IMPACT=1)
+- تفعيل الـ flag في الساندبوكس للأخبار تؤثر على V40.2 score.
+
+### هجرة البيانات (sandbox)
+- 7,894 خبر من `news.db/news_articles` (legacy) → `news.db/market_news`.
+- 7,809 خبر من `data_engine.db/market_news` → `news.db/market_news`.
+- بعد dedup (UNIQUE title+source): **7,809 خبر** في `news.db/market_news`.
+- `news_articles` (legacy) اتمسحت (backup متاح في `news.db.pre_migration`).
+
+### التحقق من V40.2 integration
+- `_get_news_from_market_news_db('COMI')` → 3 أخبار من news.db ✓
+- `get_news_with_impact('COMI')` → `overall_score=+2, verdict=BOOST_STRONG` ✓
+- V40.2 simulation: COMI score 60 → 80 (+20 boost) بسبب 3 أخبار إيجابية ✓
+
+### القواعد ما اتنكسرتش
+- ✅ Rule 17 (مسارات نسبية) — كل الـ DB_PATHs نسبية (db/news.db).
+- ✅ Rule 27 (NO-FAKE-DATA) — كل الأخبار حقيقية من News Agent + AlphaVantage + GNews.
+- ✅ Rule 29 (UNIFIED-SYSTEM) — news.db = single source of truth (Rule 44 جديدة).
+- ✅ مفيش أسرار في الـ commits.
+- ✅ توثيق محدّث (CONSTITUTION + worklog + CHANGELOG).
+
+
+
+
 ## [SANDBOX-RELATIVE-PATHS + DATA-UNZIP + NEWS-MIGRATION + SECURITY-CLEANUP] — (2026-09-02)
 
 > **توجيه المالك:** "تعديل proxy-server.js + scripts/watchdog.sh في المستودع عشان يستخدموا

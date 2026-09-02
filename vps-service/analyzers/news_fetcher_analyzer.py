@@ -5,12 +5,12 @@ News Fetcher & Analyzer — جلب وتحليل الأخبار الحقيقية
 حل "كارثة الأخبار" — يجيب أخبار حقيقية + يفهمها.
 
 المصادر (بترتيب الأفضلية):
-  1. DuckDuckGo HTML search (شغّال + مجاني + بـ يدعم العربي)
-  2. Reuters EGX (لو متاح)
-  3. Fallback: news.db المحلي (لو متاح)
+  1. news.db → market_news table (PRIMARY — الأخبار اللي News Agent بيبعتها)
+  2. DuckDuckGo HTML search (fallback — لو مفيش أخبار للسهم في news.db)
+  3. Reuters EGX (لو متاح)
 
 الـ module بـ يعمل:
-  1. fetch_news_for_ticker(ticker) — يجيب أخبار السهم من DuckDuckGo
+  1. fetch_news_for_ticker(ticker) — يجيب أخبار السهم من news.db (أو DuckDuckGo)
   2. fetch_egx_market_news() — يجيب أخبار السوق المصري كله
   3. analyze_news_sentiment(text) — يحلل المشاعر (keyword-based)
   4. extract_ticker_from_news(text) — يربط الخبر بالسهم
@@ -22,6 +22,7 @@ News Fetcher & Analyzer — جلب وتحليل الأخبار الحقيقية
 
 Author: Z.ai Code
 Date: 2026-09-01
+Updated: 2026-09-02 — news.db = single source of truth (CONSTITUTION Rule: NEWS-DB-SOT)
 """
 
 from __future__ import annotations
@@ -127,9 +128,101 @@ def _parse_ddg_results(html: str) -> List[Dict[str, str]]:
     return results
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# 1b. news.db → market_news (PRIMARY source — News Agent's analyzed news)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _get_news_from_market_news_db(ticker: str, max_results: int = 5, days: int = 30) -> List[Dict[str, Any]]:
+    """
+    جلب أخبار سهم من news.db → market_news table.
+    ده الـ PRIMARY source — الأخبار اللي News Agent بيبعتها (محللة بـ Ollama).
+
+    Args:
+        ticker: رمز السهم (COMI)
+        max_results: حد أقصى للنتائج
+        days: الأخبار في آخر N يوم (default 30)
+
+    Returns:
+        list of {
+            'title', 'snippet', 'url', 'source', 'published_at',
+            'importance', 'sentiment', 'impact_type', 'summary_ar'
+        }
+    """
+    if not DB_PATH.exists():
+        logger.debug(f"news.db not found at {DB_PATH}")
+        return []
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH), timeout=3)
+        conn.row_factory = sqlite3.Row
+
+        # ابحث بالـ ticker في tickers JSON array + symbol column
+        # tickers JSON format: ["COMI","TMGH"]
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        rows = conn.execute('''
+            SELECT title, content, summary_ar, summary_en, source, source_url, url,
+                   image_url, image_paths, ocr_text, raw_analysis,
+                   market, symbol, tickers, category, impact_type,
+                   importance, sentiment, is_valid_news, language,
+                   published_at, fetched_at
+            FROM market_news
+            WHERE (
+                tickers LIKE ? COLLATE NOCASE
+                OR symbol = ? COLLATE NOCASE
+                OR title LIKE ? COLLATE NOCASE
+                OR content LIKE ? COLLATE NOCASE
+            )
+            AND is_valid_news = 1
+            AND (published_at IS NULL OR published_at = '' OR published_at >= ?)
+            ORDER BY importance DESC, published_at DESC
+            LIMIT ?
+        ''', (
+            f'%"{ticker.upper()}"%',
+            ticker.upper(),
+            f'%{ticker}%',
+            f'%{ticker}%',
+            cutoff,
+            max_results
+        )).fetchall()
+
+        conn.close()
+
+        if not rows:
+            return []
+
+        results = []
+        for r in rows:
+            # جرّب summary_ar الأول، بعدين summary_en، بعدين content
+            snippet = r['summary_ar'] or r['summary_en'] or r['content'] or ''
+            url = r['url'] or r['source_url'] or ''
+            results.append({
+                'title': r['title'] or '',
+                'snippet': snippet[:500],
+                'url': url,
+                'source': r['source'] or 'news_agent',
+                'published_at': r['published_at'] or r['fetched_at'] or '',
+                'importance': r['importance'] or 0,
+                'sentiment': r['sentiment'] or 'neutral',
+                'impact_type': r['impact_type'] or 'general',
+                'summary_ar': r['summary_ar'] or '',
+                'raw_analysis': r['raw_analysis'] or '{}',
+                'from_db': True,  # marker: من news.db (محلل بالـ Ollama)
+            })
+        logger.info(f"📰 news.db: {len(results)} أخبار لـ {ticker} (محللة من News Agent)")
+        return results
+
+    except Exception as e:
+        logger.warning(f"news.db read error for {ticker}: {e}")
+        return []
+
+
 def fetch_news_for_ticker(ticker: str, max_results: int = 5) -> List[Dict[str, Any]]:
     """
-    جلب أخبار لسهم معين من DuckDuckGo.
+    جلب أخبار لسهم معين.
+
+    المصادر بترتيب الأفضلية:
+      1. news.db → market_news (PRIMARY — News Agent's analyzed news)
+      2. DuckDuckGo HTML search (fallback)
 
     Args:
         ticker: رمز السهم (COMI)
@@ -138,6 +231,17 @@ def fetch_news_for_ticker(ticker: str, max_results: int = 5) -> List[Dict[str, A
     Returns:
         list of {title, snippet, url, source, published_at, ticker}
     """
+    # ── PRIMARY: news.db → market_news (الأخبار المحللة من News Agent) ──
+    db_news = _get_news_from_market_news_db(ticker, max_results=max_results)
+    if db_news:
+        # ضيف ticker لكل خبر
+        for n in db_news:
+            n['ticker'] = ticker.upper()
+        logger.info(f"📰 {ticker}: استخدام {len(db_news)} خبر من news.db (News Agent)")
+        return db_news[:max_results]
+
+    # ── FALLBACK: DuckDuckGo HTML search (لو مفيش أخبار للسهم في news.db) ──
+    logger.debug(f"📰 {ticker}: مفيش أخبار في news.db → fallback لـ DuckDuckGo")
     ar_name, en_name = get_company_name(ticker)
 
     # بناء الـ query — نبحث بالاسم العربي + الإنجليزي + Egypt
@@ -169,6 +273,7 @@ def fetch_news_for_ticker(ticker: str, max_results: int = 5) -> List[Dict[str, A
                 'url': r['url'],
                 'source': 'DuckDuckGo',
                 'published_at': datetime.now().strftime('%Y-%m-%d %H:%M'),
+                'from_db': False,  # marker: من DuckDuckGo
             })
             if len(all_news) >= max_results:
                 break

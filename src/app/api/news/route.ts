@@ -3,7 +3,9 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH = path.join(process.cwd(), 'data-engine', 'data', 'data_engine.db');
+// DB_PATH: news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
+// news.db → market_news table holds all news (from News Agent + legacy news_articles merged 2026-09-02).
+const DB_PATH = path.join(process.cwd(), 'db', 'news.db');
 const BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8010';
 const AGENT_API_KEY = process.env.NEWS_AGENT_API_KEY || process.env.PRODUCTION_API_KEY;
 
@@ -42,7 +44,7 @@ function ensureNewsTable(db: InstanceType<typeof Database>) {
 }
 
 /**
- * GET /api/news — reads market_news from data_engine.db
+ * GET /api/news — reads market_news from news.db (single source of truth)
  */
 export async function GET(request: Request) {
   try {
@@ -90,7 +92,7 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/news — receives news from local News Agent (telegram/rss/web)
- * Stores in data_engine.db (immediate display) and forwards to Python backend (for V40.2 impact scoring)
+ * Stores in news.db (immediate display) and forwards to Python backend (for V40.2 impact scoring)
  */
 export async function POST(request: NextRequest) {
   if (!isAuthorized(request)) {
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'title is required' }, { status: 400 });
     }
 
-    // 1. Direct persistent save to data_engine.db
+    // 1. Direct persistent save to news.db
     fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
     const db = new Database(DB_PATH);
     ensureNewsTable(db);

@@ -16034,3 +16034,72 @@ Stage Summary:
 - news: .env (الحقيقي) + .venv/ كامل + data/news.db لسه tracked في git history (commit 0975b0d).
 - محتاج: revoke Telegram API_HASH + Bot Token + GLMinvestment PRODUCTION_API_KEY + GitHub PAT (ghp_mbAv...).
 - محتاج: scrub git history باستخدام BFG أو git filter-repo (الأوامر في Agent messages.md).
+
+---
+Task ID: NEWS-DB-SOT-MIGRATION-2026-09-02
+Agent: main (orchestrator, Z.ai Code)
+Task: تنفيذ توجيه المالك: "أنا فيه قاعدة بيانات خاصة بالأخبار ليه الغبي ده ما يستعملهاش؟ ممكن تنقل كله إلى news.db ونشتغل منها." + تفعيل V40_2_NEWS_IMPACT=1 + سحب آخر تحديثات الـ 3 مبرمجين.
+
+Work Log:
+- Task 1 (git pull — آخر تحديثات الـ 3 مبرمجين):
+  * git pull --rebase نجح. 3 commits جديدة من الـ team:
+    - 2e0639e feat(admin): add comprehensive News Management tab (delete, batch delete, purge all, add manual news, filter by source)
+    - 24eeab5 feat(news-admin): add edit news feature, prominent admin shortcut bar, and direct button in news feed
+    - 70848cf fix(news): ensure client news page has zero admin controls; strict separation in admin panel
+  * المبرمجين ضافوا: src/app/api/admin/news/route.ts + src/components/admin/AdminView.tsx + src/components/admin/NewsManagementTab.tsx (342 سطر جديد).
+- Task 2 (اكتشاف المشكلة المعمارية):
+  * news.db فيه news_articles table (7894 خبر) بـ schema مختصرة.
+  * data_engine.db فيه market_news table (7809 خبر) بـ schema موسعة.
+  * ده غلط معماري — الأخبار متوزعة على قاعدتين.
+- Task 3 (هجرة موحدة لـ news.db):
+  * أنشأت schema موحدة في news.db/market_news (28 عمود — superset من الاتنين).
+  * هاجرت 7894 خبر من news_articles → market_news.
+  * هاجرت 7809 خبر من data_engine.db/market_news → news.db/market_news.
+  * بعد dedup (UNIQUE title+source): 7809 خبر في news.db/market_news.
+  * اتمسحت news_articles القديمة (backup متاح في news.db.pre_migration).
+  * إحصائيات: AlphaVantage 6616، GNews 1090، NewsAPI 100.
+- Task 4 (تعديل news_fetcher_analyzer.py):
+  * ضفت function جديدة: _get_news_from_market_news_db(ticker, max_results, days).
+  * بتقرأ من news.db/market_news بـ SQL query ذكي:
+    - يبحث في tickers JSON array (LIKE '%"COMI"%')
+    - OR symbol column = 'COMI'
+    - OR title/content LIKE '%COMI%'
+    - AND is_valid_news = 1
+    - AND published_at >= cutoff (default 30 يوم)
+    - ORDER BY importance DESC, published_at DESC
+  * fetch_news_for_ticker بقى بيستدعي news.db الأول، DuckDuckGo كـ fallback.
+  * كل خبر بيرجع فيه from_db=True marker (للتمييز عن DuckDuckGo).
+- Task 5 (تعديل /api/news route.ts):
+  * غيرت DB_PATH من data-engine/data/data_engine.db إلى db/news.db.
+  * حدّثت comments + error messages.
+- Task 6 (تعديل /api/news-feed/route.ts):
+  * نفس التعديل — DB_PATH بقى db/news.db.
+- Task 7 (تعديل /api/admin/news/route.ts):
+  * getDataEngineDbPath() بقى يرجع db/news.db.
+  * الـ function اسمها فضل getDataEngineDbPath عشان ما أكسرش بقية الكود.
+- Task 8 (تفعيل V40_2_NEWS_IMPACT=1):
+  * sed -i في .env: V40_2_NEWS_IMPACT=1.
+  * Restart كل services: next-server + proxy + watchdog + uvicorn.
+- Task 9 (اختبار V40.2 news impact):
+  * _get_news_from_market_news_db('COMI') → 3 أخبار من news.db ✓
+  * _get_news_from_market_news_db('EAST') → 3 أخبار من news.db ✓
+  * _get_news_from_market_news_db('TEST') → 3 أخبار من news.db ✓
+  * get_news_with_impact('COMI') → overall_score=+2, verdict=BOOST_STRONG (من news.db، مش DuckDuckGo) ✓
+  * V40.2 simulation: COMI original_score=60 → new_score=80 (Δ=+20 boost بسبب الأخبار الإيجابية) ✓
+- Task 10 (تحديث الدستور):
+  * ضفت القاعدة 44 — NEWS-DB-SOT في Documentation/00-CONSTITUTION.md.
+  * documentation كاملة: schema، التكامل مع V40.2، الـ endpoints، الهجرة.
+  * حدّثت "آخر تحديث" line لـ 2026-09-02.
+
+Stage Summary:
+- news.db بقى المصدر الوحيد للأخبار (single source of truth) — Rule 44 في CONSTITUTION.
+- 7809 خبر موحدة في news.db/market_news (بعد dedup).
+- V40.2 بيستخدم news.db الأول، DuckDuckGo كـ fallback.
+- V40_2_NEWS_IMPACT=1 مفعّل في الساندبوكس — الأخبار بـ تأثر على score (BOOST/REDUCE/VETO).
+- اختبار COMI: score 60 → 80 (+20 boost) بسبب 3 أخبار إيجابية من news.db.
+- كل القواعد محترمة: مفيش بيانات وهمية، توثيق محدّث، مسار نسبي (db/news.db).
+
+NEED_OWNER:
+1. ✅ كل التعديلات اتعملت في الساندبوكس + جاهزة للـ push.
+2. هـ push التعديلات دي على GitHub (commit منفصل).
+3. 🟡 هل تريد تفعيل V40_2_NEWS_IMPACT=1 في الإنتاج بعد ما نخلص باقي Agent messages.md items؟

@@ -39,8 +39,9 @@ function getPredictionsDbPath() {
   return path.join(process.cwd(), 'db', 'predictions.db');
 }
 
+// news.db is the SINGLE SOURCE OF TRUTH for news (CONSTITUTION Rule: NEWS-DB-SOT).
 function getDataEngineDbPath() {
-  return path.join(process.cwd(), 'data-engine', 'data', 'data_engine.db');
+  return path.join(process.cwd(), 'db', 'news.db');
 }
 
 function safeParseJson<T>(val: any, fallback: T): T {
@@ -56,7 +57,7 @@ function safeParseJson<T>(val: any, fallback: T): T {
 function fetchNewsSignals(limit = 50): NewsItem[] {
   const items: NewsItem[] = [];
 
-  // 1. Fetch from data_engine.db -> market_news (where news_agent POSTs to /api/news)
+  // 1. Fetch from news.db -> market_news (single source of truth — News Agent posts here)
   try {
     const dePath = getDataEngineDbPath();
     if (fs.existsSync(dePath)) {
@@ -100,7 +101,7 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
       }
     }
   } catch (e) {
-    console.warn('[news-feed] data_engine.db market_news fetch failed:', e);
+    console.warn('[news-feed] news.db market_news fetch failed:', e);
   }
 
   // 2. Fetch from predictions.db -> news_signals (local agent signal table)

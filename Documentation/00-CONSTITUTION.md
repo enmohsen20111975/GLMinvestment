@@ -10,7 +10,7 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-01** (إعادة كتابة القاعدة 38 لفلسفة الخروج الهيكلية بعد تحوّل `short_holding_exit.py` من زمني إلى هيكلي + إضافة مراجع Stock Notebook + Decision Logger + Unified Exit Engine + News Impact Scorer + Crypto Modules في عهد الوكيل)
+> **آخر تحديث: 2026-09-02** (إضافة القاعدة 44 — NEWS-DB-SOT: news.db هو المصدر الوحيد للأخبار. هجرة 7809 خبر من data_engine.db + news_articles لـ news.db/market_news. تفعيل V40_2_NEWS_IMPACT=1 في الساندبوكس. تعديل news_fetcher_analyzer.py + /api/news + /api/news-feed + /api/admin/news عشان يقرأوا من news.db.)
 > **آخر تحديث سابق:** 2026-08-29 (إضافة القواعد 27-32 بعد توجيهات المالك: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
@@ -1362,3 +1362,86 @@ curl -s http://localhost:8010/health
 - رسالة `approaching_target` بتقول الدعم المهم (نصف المكسب) — ده اللي طلبه المالك صراحة.
 
 - **المرجع:** `vps-service/telegram/telegram_notifier.py` (283 LOC) + `vps-service/api/telegram_routes.py` (1,860 LOC) + `scripts/telegram_live_monitor.py`.
+
+
+---
+
+### القاعدة 44 — news.db هو المصدر الوحيد للأخبار (NEWS-DB-SOT — 2026-09-02)
+> **سبب الإضافة:** توجيه المالك (2026-09-02): "أنا فيه قاعدة بيانات خاصة بالأخبار ليه الغبي ده ما يستعملهاش؟ ممكن تنقل كله إلى news.db ونشتغل منها."
+> المشكلة كانت إن الأخبار كانت متوزعة على قاعدتين: `data_engine.db/market_news` + `news.db/news_articles`. ده غلط معماري.
+
+**القاعدة الحاكمة:**
+**`db/news.db` هو المصدر الوحيد للحقيقة (single source of truth) لكل الأخبار.** مفيش أي DB تاني يبقى فيه أخبار.
+
+**الـ schema الموحدة (`market_news` table في `news.db`):**
+
+| العمود | النوع | الوصف |
+|--------|------|------|
+| `id` | INTEGER PK | AUTOINCREMENT |
+| `title` | TEXT NOT NULL | عنوان الخبر |
+| `content` | TEXT | نص الخبر الكامل |
+| `summary` | TEXT | ملخص (legacy) |
+| `summary_ar` / `summary_en` | TEXT | ملخصات عربي/إنجليزي |
+| `source` | TEXT | مصدر الخبر (AlphaVantage, GNews, telegram, ...) |
+| `source_type` | TEXT | telegram/web/rss/copy |
+| `source_url` / `url` | TEXT | الرابط الأصلي |
+| `image_url` / `image_paths` | TEXT | صورة واحدة (legacy) / JSON array |
+| `ocr_text` | TEXT | نص مستخرج من الصور |
+| `raw_analysis` | TEXT (JSON) | تحليل Ollama الكامل |
+| `market` / `market_code` | TEXT | EGX / GENERAL |
+| `symbol` / `tickers` | TEXT | ticker واحد (legacy) / JSON array |
+| `category` / `impact_type` | TEXT | تصنيف (earnings/dividend/ipo/...) |
+| `importance` | INTEGER 0-100 | درجة الأهمية |
+| `sentiment` | TEXT | bullish/bearish/neutral |
+| `is_valid_news` | INTEGER | 0/1 — فلتر للأخبار غير الصالحة |
+| `language` | TEXT | ar/en |
+| `published_at` / `fetched_at` / `created_at` | TEXT | timestamps |
+| `sent_at` / `is_sent` | TEXT / INTEGER | حالة الإرسال لـ Telegram |
+| `UNIQUE(title, source)` | constraint | منع التكرار |
+
+**التكامل مع V40.2:**
+
+```python
+# vps-service/analyzers/news_fetcher_analyzer.py
+def get_news_with_impact(ticker, max_news=3):
+    # 1. PRIMARY: news.db → market_news (الأخبار المحللة من News Agent)
+    articles = _get_news_from_market_news_db(ticker, max_results=max_news)
+    if articles:
+        return _analyze_articles(articles)  # → BOOST/REDUCE/VETO/NEUTRAL
+    
+    # 2. FALLBACK: DuckDuckGo HTML search (لو مفيش أخبار في news.db)
+    articles = fetch_news_for_ticker(ticker, max_results=max_news)
+    return _analyze_articles(articles)
+```
+
+**toggle V40.2:**
+- `V40_2_NEWS_IMPACT=1` → بـ يـ boost/reduce/veto التوقعات بناءً على الأخبار
+- `V40_2_NEWS_IMPACT=0` (default للـ backtest safety) → الأخبار ما بتأثرش على score
+
+**التأثير على V40.2 score:**
+- `VETO` (score ≤ -2) → رفض التوقع تماماً
+- `BOOST_STRONG` (+2) → score += 20
+- `BOOST` (+1) → score += 10
+- `REDUCE` (-1) → score -= 10
+
+**الـ endpoints اللي بتقرأ/تكتب من news.db:**
+- `POST /api/news` — News Agent يبعت خبر → يتحفظ في `news.db/market_news`
+- `GET /api/news` — يقرأ من `news.db/market_news`
+- `GET /api/news-feed` — يقرأ من `news.db/market_news` (و `predictions.db/news_signals` كـ fallback)
+- `GET/POST/DELETE /api/admin/news` — admin management من `news.db/market_news`
+- `POST /api/news/agent` (Python) — News Agent endpoint مباشر على Python backend
+
+**الهجرة (2026-09-02):**
+- 7,894 خبر من `news.db/news_articles` (legacy) → `news.db/market_news`
+- 7,809 خبر من `data_engine.db/market_news` → `news.db/market_news`
+- بعد dedup (UNIQUE title+source): **7,809 خبر** في `news.db/market_news`
+- `news.db/news_articles` (legacy) اتمسحت (البيانات اتحفظت في backup).
+
+**Sources count:**
+- AlphaVantage: 6616 خبر
+- GNews: 1090 خبر
+- NewsAPI: 100 خبر
+- integration_test + fallback + test: 3 أخبار
+
+**المرجع:** `vps-service/analyzers/news_fetcher_analyzer.py` (function جديدة `_get_news_from_market_news_db`) + `src/app/api/news/route.ts` + `src/app/api/news-feed/route.ts` + `src/app/api/admin/news/route.ts`.
+
