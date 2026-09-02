@@ -62,3 +62,29 @@ export async function getAdminToken(): Promise<string | null> {
 
   return _clientAdminTokenPromise;
 }
+
+/**
+ * Universal client-side fetch helper for admin routes with fallback cookie / token
+ */
+export async function adminFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const res = await fetch(url, {
+    ...options,
+    credentials: 'same-origin',
+  });
+
+  if (res.status !== 401 && res.status !== 403) {
+    return res;
+  }
+
+  // Fallback token
+  const token = await getAdminToken();
+  if (!token) return res;
+
+  const headers = new Headers(options.headers);
+  headers.set('X-Admin-Token', token);
+  return fetch(url, {
+    ...options,
+    headers,
+    credentials: 'same-origin',
+  });
+}

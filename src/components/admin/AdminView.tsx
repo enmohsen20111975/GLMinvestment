@@ -52,6 +52,7 @@ import {
   ClipboardList,
   Ticket,
   Gauge,
+  Newspaper,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
@@ -205,6 +206,14 @@ const SystemControlPanel = withErrorBoundary(
   'لوحة تحكم النظام',
 );
 
+const NewsManagementTab = withErrorBoundary(
+  dynamic(
+    () => import('./NewsManagementTab').then(m => ({ default: m.NewsManagementTab })),
+    { ssr: false, loading: () => <LazyTabLoader label="إدارة الأخبار" /> }
+  ),
+  'إدارة الأخبار',
+);
+
 // HistoricalPredictionsV2 — REMOVED (2026-08-13) — consolidated into Maestro
 
 // ==================== ADMIN API HELPER ====================
@@ -341,7 +350,7 @@ interface DataStatus {
   categories: DataStatusItem[];
 }
 
-type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks';
+type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -941,6 +950,7 @@ export function AdminView() {
       icon: <Database className="w-4 h-4" />,
       accent: 'border-sky-500/40 bg-sky-500/5',
       tabs: [
+        { id: 'news-control', label: 'إدارة الأخبار', icon: <Newspaper className="w-3.5 h-3.5" /> },
         { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" /> },
         { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" /> },
         { id: 'crypto', label: 'الكريبتو', icon: <Coins className="w-3.5 h-3.5" /> },
@@ -1756,6 +1766,11 @@ export function AdminView() {
             title="التقارير الذكية"
           />
         </div>
+      )}
+
+      {/* ==================== NEWS CONTROL TAB ==================== */}
+      {activeTab === 'news-control' && (
+        <NewsManagementTab />
       )}
 
       {/* ==================== DATABASES TAB (Full Database Manager) ==================== */}
