@@ -48,30 +48,77 @@ logger = logging.getLogger(__name__)
 # 1. Ticker → Company name mapping (EGX)
 # ═══════════════════════════════════════════════════════════════════════
 
-# أهم 50 سهم EGX (ticker → اسم عربي + إنجليزي للبحث)
+# أهم 50+ سهم EGX (ticker → اسم عربي + إنجليزي للبحث)
+# EXTENDED (2026-09-02): Owner directive to fix tickers extraction in news agent.
+# Added more tickers + common abbreviations + Arabic variants.
 EGX_TICKER_NAMES: Dict[str, Dict[str, str]] = {
+    # === Banks ===
     'COMI': {'ar': 'البنك التجاري الدولي', 'en': 'Commercial International Bank'},
-    'HRHO': {'ar': 'الهرم للإستضافة والسياحة', 'en': 'Hermes Holding'},
-    'MFPC': {'ar': 'مصفاة فلسطين', 'en': 'Middle East Oil Refining'},
-    'ABUK': {'ar': 'أبو قير للأسمدة', 'en': 'Abu Qir Fertilizers'},
-    'SWDY': {'ar': 'سويداني الكتريك', 'en': 'Elsewedy Electric'},
     'EFIH': {'ar': 'البنك المصري الخليجي', 'en': 'Egyptian Gulf Bank'},
-    'ETEL': {'ar': 'المصرية للاتصالات', 'en': 'Telecom Egypt'},
-    'EAST': {'ar': 'الشرقية للدخان', 'en': 'Eastern Company'},
-    'CCAP': {'ar': 'كابيتال للاستثمار', 'en': 'Capital Intelligence'},
-    'HELI': {'ar': 'هيلين لك للتنمية', 'en': 'Heliopolis Housing'},
-    'TMGH': {'ar': 'المهندس', 'en': 'TMG Holding'},
-    'ORWE': {'ar': 'اوراسكوم للتنمية', 'en': 'Orascom Construction'},
-    'EFIN': {'ar': 'البنك المصري', 'en': 'Egyptian Banks'},
-    'ISPH': {'ar': 'الاسكندرية', 'en': 'Isph Company'},
-    'OCDI': {'ar': 'النقل للسيارات', 'en': 'GB Auto'},
     'SAIB': {'ar': 'البنك السعودي', 'en': 'Saudi Investment Bank'},
+    'BIEH': {'ar': 'البنك الأهلي المصري', 'en': 'National Bank of Egypt'},
+    'CIEB': {'ar': 'البنك المصري لتنمية الصادرات', 'en': 'Export Development Bank'},
+    'ETEL': {'ar': 'المصرية للاتصالات', 'en': 'Telecom Egypt'},
+    # === Real Estate ===
+    'TMGH': {'ar': 'طلعت مصطفى', 'en': 'TMG Holding'},
+    'ORHD': {'ar': 'أوراسكوم للتنمية', 'en': 'Orascom Development'},
+    'MNHD': {'ar': 'مدينة نصر للإسكان', 'en': 'Nasr City Housing'},
+    'HELI': {'ar': 'هيليوبوليس للإسكان', 'en': 'Heliopolis Housing'},
+    'OCDI': {'ar': 'سوديك', 'en': 'Sixth of October Development'},
+    'ORWE': {'ar': 'أوراسكوم للإنشاء', 'en': 'Orascom Construction'},
+    # === Fertilizers & Chemicals ===
+    'ABUK': {'ar': 'أبو قير للأسمدة', 'en': 'Abu Qir Fertilizers'},
+    'SKPC': {'ar': 'سيدي كرير للبتروكيماويات', 'en': 'Sidi Kerir Petrochemicals'},
+    'MFPC': {'ar': 'موبكو', 'en': 'Misr Fertilizers Production'},
+    'EGCH': {'ar': 'ال埃及ية للكيماويات', 'en': 'Egyptian Chemical Industries'},
+    'AMOC': {'ar': 'المصرية للأملاح', 'en': 'Alexandria Mineral Oils'},
+    # === Pharmaceuticals ===
     'PHAR': {'ar': 'المصرية للأدوية', 'en': 'Pharma'},
-    'SKPC': {'ar': 'المصرية للأسمدة', 'en': 'Egyptian Fertilizers'},
-    'AMER': {'ar': 'المير', 'en': 'Amer Group'},
-    'BIDI': {'ar': 'بنك التنمية', 'en': 'Beltone'},
+    'EIPH': {'ar': 'إيبيكو', 'en': 'EIPICO'},
+    'AMER': {'ar': 'عمر للتنمية', 'en': 'Amer Group'},
+    # === Food & Beverages ===
+    'EAST': {'ar': 'الشرقية للدخان', 'en': 'Eastern Company'},
     'FWRY': {'ar': 'فوري', 'en': 'Fawry'},
-    'GOCO': {'ar': 'جهاز التعبئة', 'en': 'El Sewedy'},
+    'GZCO': {'ar': 'الجيزة العامة', 'en': 'Giza General Contracting'},
+    'CCAP': {'ar': 'كابيتال للاستثمار', 'en': 'Capital Intelligence'},
+    # === Industrial ===
+    'SWDY': {'ar': 'السويدي إلكتريك', 'en': 'Elsewedy Electric'},
+    'EGAL': {'ar': 'مصر للألمنيوم', 'en': 'Egyptian Aluminum'},
+    'AALR': {'ar': 'أبوسمبل للتنمية السياحية', 'en': 'Abu Simbel Tourism'},
+    'BinV': {'ar': 'بين فينشورز', 'en': 'B Investments'},
+    # === Telecom & Tech ===
+    'FWRY': {'ar': 'فوري للأنظمة', 'en': 'Fawry for Banking Technology'},
+    # === Cement & Construction ===
+    'CCRS': {'ar': 'سمنة السويس', 'en': 'Suez Cement'},
+    'CEFM': {'ar': 'السعودية للأسمنت', 'en': 'Cement Company'},
+    # === Holding Companies ===
+    'HRHO': {'ar': 'الهرم للإستضافة والسياحة', 'en': 'Hermes Holding'},
+    'ORAS': {'ar': 'أوراسكوم للصناعات', 'en': 'Orascom Industries'},
+    # === New additions (2026-09-02) — common in news ===
+    'EFIN': {'ar': 'المجموعة المالية', 'en': 'EFG Hermes'},
+    'ISPH': {'ar': 'الإسكندرية للخدمات', 'en': 'Ispih'},
+    'AJWA': {'ar': 'أجوا للصناعات', 'en': 'Ajwa'},
+    'ATLC': {'ar': 'أطلس للتنمية', 'en': 'Atlas'},
+    'DAPH': {'ar': 'دلتا للسكر', 'en': 'Delta Sugar'},
+    'EPCO': {'ar': 'المصرية للاتصالات', 'en': 'Egyptian Telecom'},
+    'CPCI': {'ar': 'القاهرة للدواجن', 'en': 'Cairo Poultry'},
+    'EXPA': {'ar': 'المصرية للإكسسوارات', 'en': 'Export'},
+    'ATQA': {'ar': 'أتاكا للتنمية', 'en': 'Ataka'},
+    'AFDI': {'ar': 'العربية للأدوية', 'en': 'Arab Pharma'},
+    'AFMC': {'ar': 'أفكو للصناعات', 'en': 'AFCO'},
+    'AALR': {'ar': 'أبوسمبل', 'en': 'Abu Simbel'},
+    'ASCM': {'ar': 'الأسكندرية للأسمنت', 'en': 'Alexandria Cement'},
+    'AXPH': {'ar': 'أكسفارما', 'en': 'Axpah'},
+    'CAED': {'ar': 'القاهرة للدواجن', 'en': 'Cairo Poultry'},
+    'ENGC': {'ar': 'الإنجليش', 'en': 'English'},
+    'IDRE': {'ar': 'إدكو', 'en': 'Idku'},
+    'UTOP': {'ar': 'يوتوبيا', 'en': 'Utopia'},
+    'ELKA': {'ar': 'الكهرباء', 'en': 'Electra'},
+    'EGTS': {'ar': 'الإنتاج الإعلامي', 'en': 'Egypt Media'},
+    # === Indices (for market-wide news) ===
+    'EGX30': {'ar': 'مؤشر EGX30', 'en': 'EGX 30 Index'},
+    'EGX70': {'ar': 'مؤشر EGX70', 'en': 'EGX 70 Index'},
+    'EGX100': {'ar': 'مؤشر EGX100', 'en': 'EGX 100 Index'},
 }
 
 
