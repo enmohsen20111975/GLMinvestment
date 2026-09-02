@@ -15292,3 +15292,67 @@ Stage Summary:
 - ✅ 4/4 tests pass + 10 أسهم حقيقية
 - 🔜 commit + push + تحديث التوثيق
 
+
+
+---
+Task ID: CORRECTION-BACKTEST-2026-09-02
+Agent: Z.ai Code (main) — Senior Engineer
+Task: باك-تست قاسي لمحرك التصحيح + مقارنة 3 استراتيجيات
+
+Work Log:
+
+### Phase 1: قراءة الدستور (Rule 41)
+قرأت: 00-CONSTITUTION.md + worklog.md (آخر إدخال) + آخر commit (109c4e2d)
+
+### Phase 2: بناء باك-تست قاسي
+scripts/correction_backtest.py — 3 استراتيجيات على نفس البيانات:
+1. Correction (readiness ≥ 60%): دخول عند LATE_BASE/RECOVERY_STARTING
+2. Correction (readiness ≥ 70%): دخول عند readiness أعلى
+3. Random: دخول عشوائي (50 صفقة)
+4. Chase: دخول بعد صعود +15% في 5 أيام (مطاردة)
+
+الفترة: 2026-02-01 → 2026-08-14 (6 شهور)
+الكون: 200 سهم EGX
+
+### Phase 3: النتائج الصادقة
+
+| Strategy | Trades | WR% | PF | Return% | AvgR% | AvgW | AvgL | Hold |
+|---|---|---|---|---|---|---|---|---|
+| Correction (≥60%) | 86 | 37.2% | 1.05 | +15.1% | +0.18% | +9.66% | -5.45% | 11.8d |
+| Correction (≥70%) | 85 | 37.6% | 1.08 | +22.9% | +0.27% | +9.66% | -5.40% | 11.8d |
+| Random | 50 | 40.0% | 1.19 | +33.1% | +0.66% | +10.45% | -5.86% | 9.5d |
+| Chase (+15%) | 147 | 51.0% | 1.33 | +157.5% | +1.07% | +8.53% | -6.70% | 14.2d |
+
+Signals by phase:
+- DEEP_CORRECTION: 10,035 (معظم الأيام)
+- EARLY_DROP: 3,333
+- NO_CORRECTION: 3,257
+- RECOVERY_STARTING: 85 (نادر جداً)
+- LATE_BASE: 1 (نادر جداً)
+
+### تحليل صادق:
+1. **Chase فاز بكل المقاييس** (WR 51%, PF 1.33, Return +157.5%) — هذا مفاجئ
+2. **Correction أضعف من Random** (WR 37% vs 40%, Return +15% vs +33%)
+3. **RECOVERY_STARTING نادر جداً** (85 من ~17,000 يوم مسح = 0.5%)
+4. **LATE_BASE شبه مستحيل** (1 فقط!)
+5. **النوتبوك أثر ضعيف** — typical_correction_pct = 0 لمعظم الأسهم (البيانات الآلية محدودة)
+
+### أسباب الضعف:
+1. **البيانات**: 200 سهم × 6 شهور = إشارات قليلة (RECOVERY_STARTING = 85 فقط)
+2. **DEEP_CORRECTION كثيرة جداً** (10,035) — العتبة 10% منخفضة جداً (كل شيء "تصحيح عميق")
+3. **النوتبوك**: typical_correction_pct = 0 لمعظم الأسهم → correction_complete = False دائماً
+4. **Chase فاز لأنه بـ يدخل بعد بداية الترند الصاعد** — Momentum works in EGX
+
+### توصيات:
+1. **رفع عتبة DEEP_CORRECTION** من 10% إلى 15% (يقلل الإشارات الكاذبة)
+2. **تخفيف RECOVERY_STARTING** — حالياً يحتاج vol_ratio ≥ 1.3× + RSI > 40 (نادر)
+3. **تعميق النوتبوك** — typical_correction_pct = 0 لمعظم الأسهم
+4. **دمج Correction + Chase** — Correction بـ يحدد "أين" + Chase بـ يحدد "متى" (momentum confirmation)
+
+Stage Summary:
+- ✅ باك-تست قاسي على 200 سهم × 6 شهور
+- ✅ 4 استراتيجيات مقارنة
+- ✅ نتائج صادقة (Chase فاز — Correction ضعيف)
+- ✅ توصيات عملية
+- 🔜 commit + push
+
