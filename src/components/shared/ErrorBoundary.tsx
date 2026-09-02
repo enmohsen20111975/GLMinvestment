@@ -161,6 +161,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const label = this.props.label || 'Unknown';
     console.error(`[ErrorBoundary:${label}] Caught error:`, error, errorInfo);
 
+    // Auto-reload on ChunkLoadError caused by new deployment
+    if (
+      typeof window !== 'undefined' &&
+      (error?.name === 'ChunkLoadError' ||
+        error?.message?.includes('Loading chunk') ||
+        error?.message?.includes('ChunkLoadError'))
+    ) {
+      const storageKey = 'last_chunk_error_reload';
+      const lastReload = Number(sessionStorage.getItem(storageKey) || 0);
+      const now = Date.now();
+      if (now - lastReload > 15000) {
+        sessionStorage.setItem(storageKey, String(now));
+        console.warn(`[ErrorBoundary:${label}] ChunkLoadError detected, reloading page to fetch latest build chunks...`);
+        window.location.reload();
+        return;
+      }
+    }
+
     // Store errorInfo for the details display
     this.setState({ errorInfo });
 

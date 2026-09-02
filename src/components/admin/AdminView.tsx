@@ -73,6 +73,7 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { SectorClassificationAdmin } from './SectorClassificationAdmin';
 import { RegimeDetectionWidget } from './RegimeDetectionWidget';
 import { PlatformPerformanceView } from './platform-performance/PlatformPerformanceView';
+import { NewsManagementTab as NewsManagementTabComponent } from './NewsManagementTab';
 import { NotebookAdminTab } from './NotebookAdminTab';
 import { BacktestTab } from './BacktestTab';
 
@@ -207,10 +208,7 @@ const SystemControlPanel = withErrorBoundary(
 );
 
 const NewsManagementTab = withErrorBoundary(
-  dynamic(
-    () => import('./NewsManagementTab').then(m => ({ default: m.NewsManagementTab })),
-    { ssr: false, loading: () => <LazyTabLoader label="إدارة الأخبار" /> }
-  ),
+  NewsManagementTabComponent,
   'إدارة الأخبار',
 );
 
