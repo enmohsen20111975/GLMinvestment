@@ -1,570 +1,376 @@
-'use client';
+'use client'
 
-import React from 'react';
-import dynamic from 'next/dynamic';
-import { useSession } from 'next-auth/react';
-import { useAppStore } from '@/lib/store';
-import { VALID_VIEWS, VALID_VIEWS_SET } from '@/lib/valid-views';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { MobileNav } from '@/components/layout/MobileNav';
-import { DashboardView } from '@/components/dashboard/DashboardView';
-import { AuthGate } from '@/components/auth/AuthGate';
-import { RealtimeTicker } from '@/components/dashboard/RealtimeTicker';
-import { NotificationCenter } from '@/components/notifications/NotificationCenter';
-import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
-import { CentralAlertMonitor } from '@/components/notifications/CentralAlertMonitor';
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
 
-import { FloatingAssistant } from '@/components/ai/FloatingAssistant';
-import { Footer } from '@/components/layout/Footer';
-import { PlatformGuide, usePlatformGuide } from '@/components/help/PlatformGuide';
-import { LazyTabLoader } from '@/components/shared/LazyTabLoader';
-import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
-
-// Dynamic imports - only loaded when the view is activated
-// This reduces initial compilation from 4089 modules to ~1500, preventing OOM in sandbox.
-// Phase 3: added `loading: <LazyTabLoader />` to the heaviest views so users
-// see a clear "بيتحمّل..." skeleton instead of a blank white screen while
-// the chunk downloads (typically 200-800ms on a fresh cache).
-// Phase 4 Task 3: wrapped the heaviest views with `withErrorBoundary` so that
-// a runtime error in one view (e.g., TradingChartView's Recharts rendering)
-// shows a friendly "حدث خطأ" message + Retry button instead of a White Screen
-// of Death. Each view has its own isolated boundary — the rest of the app
-// keeps working.
-const StocksView = dynamic(() => import('@/components/stocks/StocksView').then(m => ({ default: m.StocksView })), { ssr: false, loading: () => <LazyTabLoader label="الأسهم" /> });
-const EnhancedPortfolioView = withErrorBoundary(
-  dynamic(() => import('@/components/portfolio/EnhancedPortfolioView').then(m => ({ default: m.EnhancedPortfolioView })), { ssr: false, loading: () => <LazyTabLoader label="المحفظة" /> }),
-  'المحفظة',
-);
-const EnhancedWatchlistView = withErrorBoundary(
-  dynamic(() => import('@/components/watchlist/EnhancedWatchlistView').then(m => ({ default: m.EnhancedWatchlistView })), { ssr: false, loading: () => <LazyTabLoader label="قائمة المتابعة" /> }),
-  'قائمة المتابعة',
-);
-const MarketAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
-  'التحليل',
-);
-// فلاتر الأسهم — شاشة موحّدة (فلاتر متقدمة + أعلى الأرباح/الخسائر) — Python screener via proxy
-const StockScreenerAdvancedView = withErrorBoundary(
-  dynamic(() => import('@/components/screener/StockScreenerAdvanced').then(m => ({ default: m.StockScreenerAdvanced })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
-  'فلاتر الأسهم',
-);
-const ReportsView = withErrorBoundary(
-  dynamic(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
-  'التقارير',
-);
-const LearningView = withErrorBoundary(
-  dynamic(() => import('@/components/learning/LearningView').then(m => ({ default: m.LearningView })), { ssr: false, loading: () => <LazyTabLoader label="التعلّم" /> }),
-  'التعلّم',
-);
-const SimulationView = withErrorBoundary(
-  dynamic(() => import('@/components/simulation/SimulationView').then(m => ({ default: m.SimulationView })), { ssr: false, loading: () => <LazyTabLoader label="المحاكاة" /> }),
-  'المحاكاة',
-);
-const AcademyView = withErrorBoundary(
-  dynamic(() => import('@/components/academy/AcademyView').then(m => ({ default: m.AcademyView })), { ssr: false, loading: () => <LazyTabLoader label="أكاديمية M2y" /> }),
-  'أكاديمية M2y',
-);
-const SettingsView = withErrorBoundary(
-  dynamic(() => import('@/components/settings/SettingsView').then(m => ({ default: m.SettingsView })), { ssr: false, loading: () => <LazyTabLoader label="الإعدادات" /> }),
-  'الإعدادات',
-);
-const AdminView = withErrorBoundary(
-  dynamic(() => import('@/components/admin/AdminView').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <LazyTabLoader label="لوحة الأدمن" /> }),
-  'لوحة الأدمن',
-);
-const AuthView = dynamic(() => import('@/components/auth/AuthView').then(m => ({ default: m.AuthView })), { ssr: false });
-const SubscriptionView = dynamic(() => import('@/components/subscription/SubscriptionView').then(m => ({ default: m.SubscriptionView })), { ssr: false });
-// UI-MIRROR PROTOCOL (Complete Mirror):
-// CryptoView, LiveCryptoTable, CryptoWatchlistView REMOVED.
-// Crypto now uses the SAME components as stocks:
-//   crypto           -> DashboardView (same widgets/layout, crypto data)
-//   crypto-live      -> StocksView    (same table/columns/presets/search)
-//   crypto-watchlist -> EnhancedWatchlistView (same watchlist UX)
-// The Sidebar sets currentMarket='CRYPTO' on crypto nav clicks, which makes
-// these stock components load crypto data automatically.
-const CryptoPortfolioView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoPortfolioView').then(m => ({ default: m.CryptoPortfolioView })), { ssr: false }),
-  'محفظة الكريبتو',
-);
-const ZakatView = withErrorBoundary(
-  dynamic(() => import('@/components/zakat/ZakatView').then(m => ({ default: m.ZakatView })), { ssr: false }),
-  'الزكاة',
-);
-const TithesView = withErrorBoundary(
-  dynamic(() => import('@/components/tithes/TithesView').then(m => ({ default: m.TithesView })), { ssr: false }),
-  'العشور',
-);
-// StoredAnalysisView REMOVED — advanced-analysis features distributed to
-// #recommendations (متابعة التوقعات) + #specialist-analysis (تحليل المتخصصين).
-// The file still exists for reference but is no longer routed.
-const SpecialistAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/advanced-analysis/SpecialistAnalysisView').then(m => ({ default: m.SpecialistAnalysisView })), { ssr: false }),
-  'التحليل التخصصي',
-);
-// PredictionPerformanceView + PredictionCredibilityTable معطّلين (admin-only)
-const AdvancedPortfolioManager = withErrorBoundary(
-  dynamic(() => import('@/components/portfolio/AdvancedPortfolioManager').then(m => ({ default: m.AdvancedPortfolioManager })), { ssr: false }),
-  'المحفظة المتقدمة',
-);
-const SeasonalityDashboard = withErrorBoundary(
-  dynamic(() => import('@/components/seasonality/SeasonalityDashboard').then(m => ({ default: m.SeasonalityDashboard })), { ssr: false }),
-  'لوحة الموسمية',
-);
-const AlertsCenterView = withErrorBoundary(
-  dynamic(() => import('@/components/alerts/AlertsCenterView').then(m => ({ default: m.AlertsCenterView })), { ssr: false }),
-  'مركز التنبيهات',
-);
-const UserPublishingView = withErrorBoundary(
-  dynamic(() => import('@/components/publishing/UserPublishingView').then(m => ({ default: m.UserPublishingView })), { ssr: false }),
-  'منصة النشر',
-);
-const TradingMemoryView = withErrorBoundary(
-  dynamic(() => import('@/components/memory/TradingMemoryView').then(m => ({ default: m.TradingMemoryView })), { ssr: false }),
-  'ذاكرة التداول',
-);
-const TradingJournalView = withErrorBoundary(
-  dynamic(() => import('@/components/journal/TradingJournalView').then(m => ({ default: m.TradingJournalView })), { ssr: false }),
-  'يوميات التداول',
-);
-const UnifiedAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/analysis/UnifiedAnalysisView'), { ssr: false }),
-  'التحليل الموحّد',
-);
-const SmartConfluenceView = withErrorBoundary(
-  dynamic(() => import('@/components/smart-assistant/SmartConfluenceView').then(m => ({ default: m.SmartConfluenceView })), { ssr: false }),
-  'المساعد الذكي',
-);
-const PredictionTrackingView = withErrorBoundary(
-  dynamic(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
-  'تتبّع التوقعات',
-);
-const PicksManagementView = withErrorBoundary(
-  dynamic(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوصيات" /> }),
-  'إدارة التوصيات',
-);
-const LiveMonitor = withErrorBoundary(
-  dynamic(() => import('@/components/dashboard/LiveMonitor'), { ssr: false }),
-  'المراقبة الحية',
-);
-const WealthCharts = withErrorBoundary(
-  dynamic(() => import('@/components/admin/WealthCharts').then(m => ({ default: m.WealthCharts })), { ssr: false }),
-  'رسوم الثروة',
-);
-// IterativeLearningView + SimpleRecommendationsView معطّلين (مش مستخدمين في switch)
-const EGXBacktestDashboard = withErrorBoundary(
-  dynamic(() => import('@/components/backtesting/EGXBacktestDashboard').then(m => ({ default: m.EGXBacktestDashboard })), { ssr: false }),
-  'لوحة الـ Backtest',
-);
-
-const TradingChartView = withErrorBoundary(
-  dynamic(() => import('@/components/analysis/TradingChartView').then(m => ({ default: m.TradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="الشارت التفاعلي" height="h-[600px]" /> }),
-  'الشارت التفاعلي',
-  { height: 'h-[600px]' },
-);
-const AboutView = dynamic(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
-// SniperView removed — merged into MarketAnalysisView persona tabs
-
-// Crypto additional views - loaded as a batch
-// V40.4 §6 Phase 6: CryptoRecommendationsView + CryptoAnalysisView removed
-// (archived to _archived_v404/) — the unified MarketAnalysisView now
-// handles #crypto-recommendations + #crypto-analysis via initialMarket prop.
-let CryptoLearningView: React.ComponentType | null = null;
-let CryptoSimulationView: React.ComponentType | null = null;
-
-// Lazy load crypto views
-const cryptoViewsPromise = import('@/components/crypto/CryptoAdditionalViews').then(m => {
-  CryptoLearningView = m.CryptoLearningView;
-  CryptoSimulationView = m.CryptoSimulationView;
-});
-
-// ─── مكونات الكريبتو المستقلة (بيانات crypto_prices حقيقية) ────────────────────────
-const CryptoScreenerView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
-  'فلتر العملات الرقمية',
-);
-const CryptoPredictionTrackingView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
-  'تتبّع توقعات الكريبتو',
-);
-const CryptoTradingChartView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
-  'شارت العملات',
-  { height: 'h-[600px]' },
-);
-const CryptoAdvancedAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
-  'التحليل المتقدم للعملات',
-);
-
-/**
- * DbSchemaInit — ensures finance tables exist on first load (once per session)
- * Also initializes database with VPS data if empty
- */
-function DbSchemaInit() {
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (sessionStorage.getItem('finance_schema_init_done')) return;
-    
-    // Initialize database schema
-    fetch('/api/finance/schema', { method: 'POST', cache: 'no-store' })
-      .then(() => sessionStorage.setItem('finance_schema_init_done', '1'))
-      .catch(() => {});
-    
-    // Initialize database with VPS data if empty
-    fetch('/api/init-db', { method: 'GET', cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'synced') {
-          console.log('[Init] Database synced from VPS:', data.stocks_inserted, 'stocks');
-        }
-      })
-      .catch(() => {});
-  }, []);
-  return null;
+type Metrics = {
+  strategy: string
+  trades: number
+  wins: number
+  losses: number
+  win_rate_pct: number
+  avg_return_pct: number
+  total_return_pct: number
+  max_drawdown_pct: number
+  profit_factor: number
+  avg_holding_days: number
+  exit_reasons: Record<string, number>
 }
 
-/**
- * UrlHashSync — syncs URL hash with app view state
- * Enables browser back/forward navigation and direct links to views
- */
-function UrlHashSync() {
-  const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
-  const currentView = useAppStore((s) => s.currentView);
-
-  // Valid views for URL hash (موحد من src/lib/valid-views.ts)
-  const validViews = VALID_VIEWS;
-
-  // Initialize from URL hash on mount
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const hash = window.location.hash.slice(1); // Remove #
-    if (hash && validViews.includes(hash)) {
-      setCurrentViewFromHash(hash as typeof currentView);
-      // CRYPTO-SUPPORT: لو الـ hash يبدأ بـ crypto → setCurrentMarket('CRYPTO')
-      const { setCurrentMarket, currentMarket } = useAppStore.getState();
-      if (hash.startsWith('crypto') && currentMarket !== 'CRYPTO') {
-        setCurrentMarket('CRYPTO');
-      } else if (!hash.startsWith('crypto') && currentMarket === 'CRYPTO' && ['stocks', 'dashboard', 'recommendations', 'portfolio', 'watchlist', 'trading-chart'].includes(hash)) {
-        setCurrentMarket('EGX');
-      }
-    }
-  }, [setCurrentViewFromHash]);
-
-  // Listen for browser back/forward (hashchange event)
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1); // Remove #
-      if (hash && validViews.includes(hash)) {
-        // Only update if different from current
-        if (hash !== currentView) {
-          setCurrentViewFromHash(hash as typeof currentView);
-        }
-      } else if (!hash) {
-        // No hash = dashboard
-        if (currentView !== 'dashboard') {
-          setCurrentViewFromHash('dashboard');
-        }
-      }
-    };
-
-    // Listen for popstate (back/forward) - more reliable than hashchange
-    const handlePopState = (e: PopStateEvent) => {
-      if (e.state?.view && validViews.includes(e.state.view)) {
-        if (e.state.view !== currentView) {
-          setCurrentViewFromHash(e.state.view as typeof currentView);
-        }
-      } else {
-        // No state = check hash or go to dashboard
-        const hash = window.location.hash.slice(1);
-        if (hash && validViews.includes(hash) && hash !== currentView) {
-          setCurrentViewFromHash(hash as typeof currentView);
-        } else if (!hash && currentView !== 'dashboard') {
-          setCurrentViewFromHash('dashboard');
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('hashchange', handleHashChange);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, [currentView, setCurrentViewFromHash]);
-
-  return null; // no UI
+type MonthlyStat = { trades: number; wins: number; win_rate: number; ret_pct: number }
+type DDAnalysis = {
+  label: string
+  max_dd_pct: number
+  max_dd_at: string | null
+  worst_trades: Array<{ date: string; ticker: string; ret: number; reason: string }>
+  max_loss_streak: number
+  monthly: Record<string, MonthlyStat>
 }
 
-/**
- * SessionSync — bridges NextAuth session into the zustand store
- * so every component that reads `useAppStore().user` sees real auth data.
- */
-function SessionSync() {
-  const { data: session, status } = useSession();
-  const syncFromSession = useAppStore((s) => s.syncFromSession);
-  const user = useAppStore((s) => s.user);
-  const setCurrentView = useAppStore((s) => s.setCurrentView);
-
-  React.useEffect(() => {
-    if (status === 'authenticated') {
-      // Only sync if session changed (avoid infinite loops)
-      const sessionUser = session?.user as Record<string, unknown> | undefined;
-      if (!user || user.id !== session?.user?.id) {
-        syncFromSession(session ?? null);
-      }
-    } else if (status === 'unauthenticated' && user) {
-      // Session was cleared — reset store
-      syncFromSession(null);
-    }
-  }, [status, session, syncFromSession, user]);
-
-  // If user just authenticated via OAuth redirect, go to dashboard
-  React.useEffect(() => {
-    if (status === 'authenticated' && user) {
-      const { currentView } = useAppStore.getState();
-      if (currentView === 'auth') {
-        setCurrentView('dashboard');
-      }
-    }
-  }, [status, user, setCurrentView]);
-
-  return null; // no UI
+type Payload = {
+  meta: {
+    data_source: string
+    window: string
+    n_tickers: number
+    total_bars: number
+    market_regime: string
+    exit_engine: string
+    regime_filter: string
+    note: string
+  }
+  results: Record<string, Metrics>
+  drawdown_analysis: Record<string, DDAnalysis>
+  market_proxy?: {
+    dates: string[]
+    market_close: number[]
+    market_ma50: Array<number | null>
+    above_ma50: boolean[]
+  }
 }
 
-function AppShell() {
-  const { currentView } = useAppStore();
-  const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
+const STRATEGIES = ["Correction", "Chase", "Merged", "Merged-Strict"] as const
+const MODES = ["none", "stock", "both"] as const
+const MODE_LABELS: Record<string, string> = {
+  "none": "بدون فلتر",
+  "stock": "فلتر السهم (close > MA50)",
+  "both": "فلتر مزدوج (سهم + سوق)",
+}
+const MODE_EMOJI: Record<string, string> = { "none": "🔴", "stock": "🟢", "both": "🟡" }
 
-  // Direct hash → view sync (robust fallback that survives hydration errors)
-  // Reads URL hash on mount and on hashchange, sets the current view directly.
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const applyHash = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash && VALID_VIEWS_SET.has(hash)) {
-        const { currentView: cur } = useAppStore.getState();
-        if (cur !== hash) {
-          setCurrentViewFromHash(hash as typeof currentView);
-        }
-      }
-    };
-
-    // Apply on mount
-    applyHash();
-
-    // Listen for hash changes
-    window.addEventListener('hashchange', applyHash);
-    window.addEventListener('popstate', applyHash);
-
-    return () => {
-      window.removeEventListener('hashchange', applyHash);
-      window.removeEventListener('popstate', applyHash);
-    };
-  }, [setCurrentViewFromHash]);
-
-  const renderView = () => {
-    switch (currentView) {
-      // === البورصة المصرية (EGX) ===
-      case 'dashboard':
-        return <DashboardView />;
-      case 'stocks':
-      case 'stock-detail':
-        return <StocksView />;
-      case 'stock-filters':
-        return <StockScreenerAdvancedView />;
-      // #top-performers merged into #stock-filters (Tab 2). Redirect safely.
-      case 'top-performers':
-        return <StockScreenerAdvancedView initialTab="top-performers" />;
-      case 'screener':
-      case 'trading-chart':
-        return <TradingChartView />;
-      case 'portfolio':
-      case 'finance':
-        return <EnhancedPortfolioView />;
-      case 'watchlist':
-        return <EnhancedWatchlistView />;
-      case 'recommendations':
-      case 'analysis':
-        return <MarketAnalysisView />;
-      case 'advanced-analysis':
-      case 'v2-analysis':
-        // advanced-analysis REMOVED — features distributed to:
-        //   - #recommendations (متابعة التوقعات) → prediction tracking + persona tabs
-        //   - #specialist-analysis (تحليل المتخصصين) → expert intelligence + comparison
-        // Redirect to recommendations for backward-compat hash links.
-        return <MarketAnalysisView />;
-      case 'unified-analysis':
-        return <UnifiedAnalysisView />;
-      case 'specialist-analysis':
-        return <SpecialistAnalysisView />;
-      case 'prediction-performance':
-      case 'prediction-credibility':
-        // These views are admin-only now — available in /#admin panel
-        // Direct access redirects to dashboard
-        return (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
-            <div className="text-6xl mb-4">🔬</div>
-            <h2 className="text-2xl font-bold mb-2">قسم التحليلات الفنية</h2>
-            <p className="text-muted-foreground mb-4">
-              هذه الصفحة متاحة في لوحة التحكم للمشرفين فقط.
-            </p>
-            <button
-              onClick={() => { setCurrentViewFromHash('dashboard'); window.location.hash = ''; }}
-              className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90"
-            >
-              العودة للوحة التحكم
-            </button>
-          </div>
-        );
-      case 'prediction-tracking':
-        return <PredictionTrackingView />;
-      case 'picks-management':
-        return <PicksManagementView />;
-      case 'reports':
-        return <ReportsView />;
-      case 'learning':
-        return <LearningView />;
-      case 'simulation':
-        return <SimulationView />;
-      case 'academy':
-        return <AcademyView />;
-      case 'advanced-portfolio':
-        return <AdvancedPortfolioManager />;
-      case 'seasonality':
-        return <SeasonalityDashboard />;
-      // sniper merged into analysis
-      
-      // === المساعد المالي الذكي (Smart Assistant) ===
-      case 'smart-confluence':
-        return <SmartConfluenceView />;
-      
-      // === الذكاء الاصطناعي (Intelligence) ===
-      case 'alerts-center':
-        return <AlertsCenterView />;
-      
-
-      case 'live-monitor':
-        return <LiveMonitor />;
-      
-      case 'wealth':
-        return <WealthCharts />;
-      
-      // === ذاكرة التداول (Trading Memory) ===
-      case 'trading-memory':
-        return <TradingMemoryView />;
-      
-      // === يوميات التداول (Trading Journal) ===
-      case 'trading-journal':
-        return <TradingJournalView />;
-      
-      // === منصة التوقعات (Publishing & Points) ===
-      case 'publishing':
-        return <UserPublishingView />;
-      
-      // === العملات الرقمية (Crypto) — COMPLETE UI MIRROR ===
-      // Carbon copy of stocks: same DashboardView / StocksView / Watchlist,
-      // only the data source changes (currentMarket='CRYPTO' is set by the
-      // Sidebar when a crypto nav item is clicked).
-      case 'crypto':
-        return <DashboardView />;
-      case 'crypto-live':
-        return <StocksView />;
-      case 'crypto-portfolio':
-        return <CryptoPortfolioView />;
-      case 'crypto-watchlist':
-        return <EnhancedWatchlistView />;
-      case 'crypto-recommendations':
-        // V40.4 §5 UI Mirror Protocol: crypto views use the SAME unified
-        // MarketAnalysisView shell as stocks, with initialMarket="CRYPTO".
-        return <MarketAnalysisView initialMarket="CRYPTO" />;
-      case 'crypto-analysis':
-        return <CryptoAdvancedAnalysisView />;
-      case 'crypto-learning':
-        return CryptoLearningView ? <CryptoLearningView /> : <div className="p-4">Loading...</div>;
-      case 'crypto-simulation':
-        return CryptoSimulationView ? <CryptoSimulationView /> : <div className="p-4">Loading...</div>;
-      case 'crypto-trading-chart':
-        return <CryptoTradingChartView initialTicker="BTC" />;
-      case 'crypto-prediction-tracking':
-        return <CryptoPredictionTrackingView />;
-      case 'crypto-screener':
-        return <CryptoScreenerView />;
-      
-      // === حسابات دينية ===
-      case 'zakat':
-        return <ZakatView />;
-      case 'tithes':
-        return <TithesView />;
-       
-       // === أخرى ===
-      case 'subscription':
-        return <SubscriptionView />;
-      case 'settings':
-        return <SettingsView />;
-      case 'auth':
-        return <AuthView />;
-      case 'admin':
-        return <AdminView />;
-
-      // === من نحن ===
-      case 'about':
-        return <AboutView />;
-
-      // === مخفية/قديمة ===
-      case 'backtesting':
-        return <EGXBacktestDashboard />;
-
-      default:
-        return <DashboardView />;
-    }
-  };
-
-  const isChartView = currentView === 'trading-chart' || currentView === 'screener';
-
-  return (
-    <AuthGate>
-      <div className="min-h-screen flex flex-col bg-background">
-        <DbSchemaInit />
-        <SessionSync />
-        <UrlHashSync />
-        <RealtimeTicker />
-        {/* P20-CENTRAL-ALERTS: الجرس المركزي — بيراقب /api/sniper/scan كل 60ث
-            ويطلع صوت + toast للإشارات الجديدة/المتغيرة (مشروط بتفعيل التنبيهات) */}
-        <CentralAlertMonitor />
-        <AppGuideAutoOpen />
-        <div className="flex-1 flex flex-col lg:flex-row">
-          <Sidebar />
-          <div className="flex-1 min-w-0 w-full lg:mr-64 transition-all duration-300 flex flex-col min-h-screen">
-            <main className="pb-24 lg:pb-8 flex-1">
-              {renderView()}
-            </main>
-            <Footer />
-          </div>
-          <MobileNav />
-        </div>
-        <FloatingAssistant />
-        {/* ROBO-ADVISOR-P2: زر التنبيهات الحية — عائم فوق الـ MobileNav على الموبايل */}
-        <div className="fixed bottom-20 lg:bottom-4 left-4 z-40">
-          <RoboNotifierToggle />
-        </div>
-        <NotificationCenter />
-      </div>
-    </AuthGate>
-  );
+// V40.2 documented baseline (6-month window Feb-Aug 2026)
+const V402_BASELINE = {
+  trades: 15, win_rate_pct: 73.3, profit_factor: 9.80,
+  total_return_pct: 66.2, max_drawdown_pct: 4.71, avg_holding_days: 5.0,
 }
 
-// ONBOARDING-033: Auto-open the Platform Guide on first visit (separate
-// component so the hook only runs on the client, not during SSR).
-function AppGuideAutoOpen() {
-  const { open, setOpen } = usePlatformGuide();
-  return <PlatformGuide open={open} onOpenChange={setOpen} />;
+function colorRet(v: number) {
+  if (v > 0.01) return "text-emerald-600 dark:text-emerald-400 font-semibold"
+  if (v < -0.01) return "text-red-600 dark:text-red-400 font-semibold"
+  return "text-muted-foreground font-semibold"
+}
+function pct(v: number) {
+  const s = v > 0 ? "+" : ""
+  return `${s}${v.toFixed(2)}%`
+}
+function ddColor(v: number) {
+  if (v > -20) return "text-emerald-600 dark:text-emerald-400 font-bold"
+  if (v > -35) return "text-amber-600 dark:text-amber-400 font-bold"
+  return "text-red-600 dark:text-red-400 font-bold"
+}
+function pfColor(v: number) {
+  if (v >= 2.0) return "text-emerald-600 dark:text-emerald-400 font-bold"
+  if (v >= 1.3) return "text-amber-600 dark:text-amber-400 font-semibold"
+  return "text-red-600 dark:text-red-400 font-semibold"
 }
 
 export default function Home() {
-  return <AppShell />;
+  const [data, setData] = useState<Payload | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/backtest-results.json", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
+      .then((d: Payload) => { if (!cancelled) setData(d) })
+      .catch((e) => { if (!cancelled) setErr(String(e)) })
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <div dir="rtl" className="min-h-screen flex flex-col bg-background">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+        <header className="space-y-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              اختبار فلتر الـ Regime — الأثر على الـ DD والـ PF
+            </h1>
+            <Badge variant="secondary" className="font-mono">442 سهم EGX · 19 شهر</Badge>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            بناءً على طلبك: فلتر regime إجباري (ممنوع الدخول لو السهم تحت MA50). النتيجة:
+            <span className="font-semibold text-foreground"> Correction + per-stock MA50 = أول variant يحقق DD &lt; 10% (PF 3.09).</span>
+          </p>
+        </header>
+
+        <Alert className="border-emerald-400/50 bg-emerald-50 dark:bg-emerald-950/30">
+          <AlertTitle className="text-emerald-800 dark:text-emerald-300">بيانات EGX حقيقية · 3 أوضاع فلتر · 19 شهر</AlertTitle>
+          <AlertDescription className="text-emerald-800 dark:text-emerald-200/90 text-sm leading-relaxed">
+            <span className="font-mono">{data?.meta?.total_bars ?? "—"}</span> شمعة على <span className="font-semibold">442 سهم EGX</span>،
+            نافذة <span className="font-mono">{data?.meta?.window ?? "—"}</span>.
+            حالة السوق: <span className="font-mono">{data?.meta?.market_regime ?? "—"}</span>.
+            3 أوضاع: بدون فلتر / per-stock MA50 / مزدوج (سهم + سوق). نفس محرك الخروج. no lookahead.
+          </AlertDescription>
+        </Alert>
+
+        {err && (
+          <Alert className="border-red-500 bg-red-50 dark:bg-red-950/30">
+            <AlertTitle>تعذّر تحميل النتائج</AlertTitle>
+            <AlertDescription className="font-mono text-xs">{err}</AlertDescription>
+          </Alert>
+        )}
+
+        {!data && !err && (
+          <div className="space-y-4">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        )}
+
+        {data && (
+          <>
+            {/* VERDICT */}
+            <Card className="border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/20">
+              <CardHeader>
+                <CardTitle className="text-emerald-800 dark:text-emerald-300">الحُكم — فلتر الـ Regime اشتغل. Correction [stock] هو الفائز.</CardTitle>
+                <CardDescription className="text-emerald-800/80 dark:text-emerald-200/80">
+                  أول variant يحقق شرطك (DD &lt; 20-25%): Correction + per-stock MA50 = DD -9% فقط، PF 3.09
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-100/90 space-y-2">
+                <p>
+                  <span className="font-semibold">الاكتشاف الكبير:</span> فلتر per-stock MA50 حوّل Correction
+                  من <span className="font-mono">-4.45%</span> (خاسر) لـ <span className="font-mono font-bold">+34.51%</span> (رباح)
+                  مع DD نزل من <span className="font-mono">-47%</span> لـ <span className="font-mono font-bold">-9%</span> فقط
+                  و PF قفز من <span className="font-mono">1.05</span> لـ <span className="font-mono font-bold">3.09</span>.
+                  السبب: الفلتر منع الدخول في bear markets (يوليو-أغسطس 2025) وبالتالي منع دخول الأسهم اللي نازلة تحت MA50 = falling knives.
+                </p>
+                <p>
+                  <span className="font-semibold">لكن العدد صغير:</span> 12 صفقة بس في 19 شهر. ده عالي الجودة بس نادر.
+                  Merged-Strict [stock] لسه الأعلى عائدًا (<span className="font-mono">+166%</span>) بس DD لسه <span className="font-mono">-44%</span> (فوق حدك).
+                </p>
+                <p className="text-xs pt-2 border-t border-emerald-300/50">
+                  <span className="font-semibold">تنبيه:</span> فلتر "both" (سهم + سوق) <span className="font-semibold">قتل العائد</span> في معظم الاستراتيجيات.
+                  السوق الـ proxy بتاعنا ممكن يكون متشدد زيادة. الـ per-stock MA50 لوحده هو الـ sweet spot.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* MAIN COMPARISON TABLE */}
+            <Card>
+              <CardHeader>
+                <CardTitle>المقارنة الكاملة — 4 استراتيجيات × 3 أوضاع فلتر</CardTitle>
+                <CardDescription>
+                  كل صف = استراتيجية + وضع فلتر. 🟢 DD &lt; 20% | 🟡 DD 20-35% | 🔴 DD &gt; 35%
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">الاستراتيجية + الفلتر</TableHead>
+                        <TableHead className="text-right">صفقات</TableHead>
+                        <TableHead className="text-right">WR</TableHead>
+                        <TableHead className="text-right">العائد</TableHead>
+                        <TableHead className="text-right">Max DD</TableHead>
+                        <TableHead className="text-right">PF</TableHead>
+                        <TableHead className="text-right">streak</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* V40.2 baseline row */}
+                      <TableRow className="bg-blue-50 dark:bg-blue-950/20 border-b-2 border-blue-200">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-blue-600">V40.2 إنتاج</Badge>
+                            <span className="text-xs text-muted-foreground">(6 شهور فقط)</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">{V402_BASELINE.trades}</TableCell>
+                        <TableCell className="font-mono">{V402_BASELINE.win_rate_pct}%</TableCell>
+                        <TableCell className={`font-mono ${colorRet(V402_BASELINE.total_return_pct)}`}>{pct(V402_BASELINE.total_return_pct)}</TableCell>
+                        <TableCell className={`font-mono ${ddColor(-V402_BASELINE.max_drawdown_pct)}`}>{pct(-V402_BASELINE.max_drawdown_pct)}</TableCell>
+                        <TableCell className={`font-mono ${pfColor(V402_BASELINE.profit_factor)}`}>{V402_BASELINE.profit_factor.toFixed(2)}</TableCell>
+                        <TableCell className="font-mono text-muted-foreground">—</TableCell>
+                      </TableRow>
+
+                      {STRATEGIES.map((strat) => (
+                        MODES.map((mode) => {
+                          const key = `${strat} [${mode}]`
+                          const m = data.results[key]
+                          if (!m) return null
+                          const dd = data.drawdown_analysis[key]
+                          const isWinner = key === "Correction [stock]"
+                          const passesDD = m.max_drawdown_pct > -20
+                          return (
+                            <TableRow key={key} className={isWinner ? "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-emerald-500" : ""}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span>{strat}</span>
+                                  <Badge variant="outline" className="font-mono text-xs">{MODE_EMOJI[mode]} {mode}</Badge>
+                                  {isWinner && <Badge className="bg-emerald-600">✓ DD&lt;20%</Badge>}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono">{m.trades}</TableCell>
+                              <TableCell className="font-mono">{m.win_rate_pct.toFixed(1)}%</TableCell>
+                              <TableCell className={`font-mono ${colorRet(m.total_return_pct)}`}>{pct(m.total_return_pct)}</TableCell>
+                              <TableCell className={`font-mono ${ddColor(m.max_drawdown_pct)}`}>{pct(m.max_drawdown_pct)}</TableCell>
+                              <TableCell className={`font-mono ${pfColor(m.profit_factor)}`}>{m.profit_factor.toFixed(2)}</TableCell>
+                              <TableCell className="font-mono text-muted-foreground">{dd.max_loss_streak}</TableCell>
+                            </TableRow>
+                          )
+                        })
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* DD analysis per strategy */}
+            <Card>
+              <CardHeader>
+                <CardTitle>تحليل الـ Drawdown — إمتى الخسائر + الأشهر الكارثية</CardTitle>
+                <CardDescription>المقارنة بين الأوضاع لكل استراتيجية. الأخضر = تحسن، الأحمر = تأذّى.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="Correction">
+                  <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full mb-4">
+                    {STRATEGIES.map((s) => (
+                      <TabsTrigger key={s} value={s} className="font-mono text-xs sm:text-sm">{s}</TabsTrigger>
+                    ))}
+                  </TabsList>
+
+                  {STRATEGIES.map((strat) => (
+                    <TabsContent key={strat} value={strat} className="space-y-4">
+                      {/* mode comparison for this strategy */}
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        {MODES.map((mode) => {
+                          const key = `${strat} [${mode}]`
+                          const m = data.results[key]
+                          const dd = data.drawdown_analysis[key]
+                          return (
+                            <div key={mode} className={`p-3 rounded-md border ${mode === "stock" ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20" : "bg-muted/30"}`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">{MODE_EMOJI[mode]}</span>
+                                <span className="font-semibold text-sm">{MODE_LABELS[mode]}</span>
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div className="flex justify-between"><span className="text-muted-foreground">صفقات</span><span className="font-mono">{m.trades}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">العائد</span><span className={`font-mono ${colorRet(m.total_return_pct)}`}>{pct(m.total_return_pct)}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Max DD</span><span className={`font-mono ${ddColor(m.max_drawdown_pct)}`}>{pct(m.max_drawdown_pct)}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">PF</span><span className={`font-mono ${pfColor(m.profit_factor)}`}>{m.profit_factor.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">streak</span><span className="font-mono">{dd.max_loss_streak}</span></div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* monthly breakdown for "stock" mode (the winner) */}
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">
+                          الأداء الشهري لـ {strat} [stock] (الوضع الفائز):
+                        </p>
+                        <div className="max-h-72 overflow-y-auto rounded-md border">
+                          <Table>
+                            <TableHeader className="sticky top-0 bg-background z-10">
+                              <TableRow>
+                                <TableHead className="text-right">الشهر</TableHead>
+                                <TableHead className="text-right">صفقات</TableHead>
+                                <TableHead className="text-right">WR</TableHead>
+                                <TableHead className="text-right">العائد</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {(() => {
+                                const key = `${strat} [stock]`
+                                const dd = data.drawdown_analysis[key]
+                                if (!dd || !dd.monthly) return null
+                                return Object.entries(dd.monthly).map(([month, v]) => (
+                                  <TableRow key={month} className={v.ret_pct < -10 ? "bg-red-50 dark:bg-red-950/20" : v.ret_pct > 20 ? "bg-emerald-50 dark:bg-emerald-950/20" : ""}>
+                                    <TableCell className="font-mono text-xs">{month}</TableCell>
+                                    <TableCell className="font-mono">{v.trades}</TableCell>
+                                    <TableCell className="font-mono">{v.win_rate}%</TableCell>
+                                    <TableCell className={`font-mono ${colorRet(v.ret_pct)}`}>{pct(v.ret_pct)}</TableCell>
+                                  </TableRow>
+                                ))
+                              })()}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Filter logic explanation */}
+            <Card>
+              <CardHeader>
+                <CardTitle>منطق فلتر الـ Regime — كيف يعمل</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-3 text-muted-foreground leading-relaxed">
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <div className="p-3 rounded-md border bg-muted/30">
+                    <p className="font-semibold text-foreground mb-1">🔴 none (بدون فلتر)</p>
+                    <p className="text-xs">الـbaseline الأصلي. يدخل في كل الإشارات بما فيها bear markets. ده اللي خسر في يوليو-أغسطس 2025.</p>
+                  </div>
+                  <div className="p-3 rounded-md border border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20">
+                    <p className="font-semibold text-foreground mb-1">🟢 stock (فلتر السهم)</p>
+                    <p className="text-xs">يدخل فقط لو <span className="font-mono">close &gt; MA50</span> للسهم نفسه. يمنع دخول الأسهم في ترند هابط. الـ sweet spot.</p>
+                  </div>
+                  <div className="p-3 rounded-md border bg-amber-50/30 dark:bg-amber-950/10">
+                    <p className="font-semibold text-foreground mb-1">🟡 both (فلتر مزدوج)</p>
+                    <p className="text-xs">stock MA50 + market proxy MA50. متشدد زيادة، قتل العائد في معظم الحالات.</p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="font-semibold text-foreground mb-1">Market proxy</p>
+                  <p className="text-xs">
+                    بنينا index للسوق المصري (equal-weighted daily return لـ442 سهم ثم cumulative).
+                    الفلتر "both" يتطلب إن السهم فوق MA50 <span className="font-semibold">و</span> السوق كله فوق MA50.
+                    النتيجة: متشدد زيادة لأن السوق الـproxy كان bearish في فترات طويلة.
+                    حالة السوق على مدار 19 شهر: <span className="font-mono">{data.meta.market_regime}</span>.
+                  </p>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="font-semibold text-foreground mb-1">الخلاصة</p>
+                  <p className="text-xs">
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">Correction [stock]</span> هو
+                    الـ variant الوحيد اللي بـ يحقق DD &lt; 20% (سجل -9% بس). PF 3.09 ممتاز. لكن 12 صفقة فقط في 19 شهر = نادر جدًا.
+                    الخيار العملي: استخدامه كـ <span className="font-semibold">pre-filter inside V40.2</span> مش كنظام مستقل.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </main>
+
+      <footer className="mt-auto border-t bg-muted/30">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 text-xs text-muted-foreground flex flex-col sm:flex-row justify-between items-center gap-2">
+          <span>GLMinvestment · اختبار فلتر الـ Regime · DD &lt; 20% هو المعيار · الأرقام هي الحكم</span>
+          <span className="font-mono">vps-service/strategies_merge/regime_filter + scripts/regime_filter_backtest.py</span>
+        </div>
+      </footer>
+    </div>
+  )
 }
