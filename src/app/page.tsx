@@ -229,12 +229,12 @@ export default function Home() {
                             <TableRow key={key}>
                               <TableCell className="font-medium text-xs">{key}</TableCell>
                               <TableCell className="font-mono">{d.n_trades}</TableCell>
-                              <TableCell className="font-mono">{d.avg_days.toFixed(1)}ي</TableCell>
-                              <TableCell className="font-mono">{d.median_days.toFixed(1)}ي</TableCell>
-                              <TableCell className="font-mono">{d.p25_days.toFixed(1)} - {d.p75_days.toFixed(1)}ي</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground">{d.min_days}-{d.max_days}ي</TableCell>
+                              <TableCell className="font-mono">{d.avg_days?.toFixed(1) ?? "—"}ي</TableCell>
+                              <TableCell className="font-mono">{d.median_days?.toFixed(1) ?? "—"}ي</TableCell>
+                              <TableCell className="font-mono">{d.p25_days != null ? `${d.p25_days.toFixed(1)} - ${d.p75_days?.toFixed(1)}ي` : "—"}</TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground">{d.min_days != null ? `${d.min_days}-${d.max_days}ي` : "—"}</TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="font-mono text-xs">{d.client_message}</Badge>
+                                <Badge variant="outline" className="font-mono text-xs">{d.client_message ?? "غير متاح"}</Badge>
                               </TableCell>
                             </TableRow>
                           ))}
