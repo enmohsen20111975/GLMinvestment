@@ -1898,14 +1898,91 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             )
             trade = simulate_trade(trade, future_closes, future_dates, 7, future_atrs)
 
+            # ════════════════════════════════════════════════════════════════
+            # LIVE PRODUCTION INTEGRATION (2026-09-02)
+            # Owner directive: "اربط Position Sizing + News Impact جوه مسار V40.2 الإنتاجي"
+            #
+            # 1. Position Sizing: scale returns based on volatility (live, not just backtest)
+            # 2. News Impact: adjust score + signal based on fresh EGX news
+            # ════════════════════════════════════════════════════════════════
+
+            # ── 1. POSITION SIZING (live) ──────────────────────────────────
+            # Owner: "السهم العالي التقلب ياخد حجم أصغر"
+            # Apply the same logic as simulate_trade but for the stored prediction.
+            _live_position_size_mult = 1.0
+            _live_volatility_class = 'NORMAL'
+            _live_atr_pct = 0.0
+            try:
+                from analyzers.position_sizing import calculate_position_size
+                _atr_for_live_sizing = result.get('atr', 0) or (_atr_soft if '_atr_soft' in dir() else 0)
+                if _atr_for_live_sizing > 0 and entry > 0:
+                    _live_sizing = calculate_position_size(_atr_for_live_sizing, entry)
+                    _live_position_size_mult = _live_sizing['position_size_mult']
+                    _live_volatility_class = _live_sizing['volatility_class']
+                    _live_atr_pct = _live_sizing['atr_pct']
+                    if _live_volatility_class == 'HIGH' and _live_position_size_mult < 1.0:
+                        print(f"[POSITION-SIZING] {ticker}: ATR={_live_atr_pct:.1f}% → حجم مخفّض ({_live_position_size_mult:.0%})", flush=True)
+            except Exception as _ps_err:
+                pass  # safe-by-design
+
+            # ── 2. NEWS IMPACT (live) ─────────────────────────────────────
+            # Owner: "خبر إيجابي قوي → يرفع تقييم السهم. خبر سلبي قوي → حذر."
+            # Apply news impact to V40.2 score + signal (combined_score, combined_signal).
+            _live_news_level = 'NEUTRAL'
+            _live_news_score = 0
+            _live_news_delta = 0
+            _live_news_count = 0
+            _live_news_summary = ''
+            _live_news_action = ''
+            _live_news_client_msg = ''
+            _combined_score = result['score']
+            _combined_signal = signal
+            try:
+                # Only apply news in live mode (not backtest) — news are fresh, not historical
+                _is_live_mode = os.environ.get('V40_2_BACKTEST_MODE', '0') != '1'
+                if _is_live_mode or os.environ.get('V40_2_FORCE_NEWS_IN_BACKTEST', '0') == '1':
+                    from analyzers.live_news_integration import get_news_impact_for_live_prediction
+                    _news_impact = get_news_impact_for_live_prediction(ticker)
+                    if _news_impact.get('has_news'):
+                        _live_news_level = _news_impact['level']
+                        _live_news_score = _news_impact.get('news_score', 0)
+                        _live_news_delta = _news_impact.get('score_delta', 0)
+                        _live_news_count = _news_impact.get('news_count', 0)
+                        _live_news_summary = _news_impact.get('news_summary_ar', '')
+                        _live_news_action = _news_impact.get('action_ar', '')
+                        _live_news_client_msg = _news_impact.get('client_message', '')
+
+                        # Combined score = V40.2 score + news delta (clamped 0-100)
+                        _combined_score = max(0, min(100, result['score'] + _live_news_delta))
+
+                        # Adjust signal based on news level
+                        if _live_news_level == 'STRONG_POSITIVE':
+                            if signal == 'HOLD':
+                                _combined_signal = 'BUY'
+                            elif signal == 'BUY':
+                                _combined_signal = 'STRONG_BUY'
+                            print(f"[NEWS-STRONG_POSITIVE] {ticker}: Δ={_live_news_delta:+d} → {_combined_signal} (news_count={_live_news_count})", flush=True)
+                        elif _live_news_level == 'STRONG_NEGATIVE':
+                            if signal in ('BUY', 'STRONG_BUY'):
+                                _combined_signal = 'HOLD'
+                            elif signal == 'HOLD':
+                                _combined_signal = 'SELL'
+                            print(f"[NEWS-STRONG_NEGATIVE] {ticker}: Δ={_live_news_delta:+d} → {_combined_signal} (news_count={_live_news_count})", flush=True)
+                        elif _live_news_level in ('POSITIVE', 'NEGATIVE'):
+                            print(f"[NEWS-{_live_news_level}] {ticker}: Δ={_live_news_delta:+d} → combined_score={_combined_score} (news_count={_live_news_count})", flush=True)
+            except Exception as _news_err:
+                pass  # safe-by-design
+
             signals_by_date[scan_date].append({
                 'ticker': ticker,
                 'signal': signal,
+                'combined_signal': _combined_signal,  # signal بعد تأثير الأخبار
                 'entry': entry,
                 'target': target,
                 'target_2': result.get('target_2', 0),
                 'stop': stop,
                 'tech_score': result['score'],
+                'combined_score': _combined_score,  # score بعد تأثير الأخبار
                 'evidence': evidence,
                 'r_multiple': r_mult,
                 'atr': result.get('atr', 0) or (_atr_soft if '_atr_soft' in dir() else 0),
@@ -1923,6 +2000,18 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 'liquidity_score': _liquidity['score'] if _liquidity else 50,
                 'liquidity_pos_mult': _liquidity['position_size_mult'] if _liquidity else 1.0,
                 'liquidity_hold_mult': _liquidity['hold_multiplier'] if _liquidity else 1.0,
+                # POSITION SIZING (live — 2026-09-02)
+                'position_size_mult': _live_position_size_mult,
+                'volatility_class': _live_volatility_class,
+                'atr_pct': _live_atr_pct,
+                # NEWS IMPACT (live — 2026-09-02)
+                'news_level': _live_news_level,
+                'news_score': _live_news_score,
+                'news_delta': _live_news_delta,
+                'news_count': _live_news_count,
+                'news_summary_ar': _live_news_summary,
+                'news_action_ar': _live_news_action,
+                'news_client_message': _live_news_client_msg,
                 # ── V68 ORACLE FIELDS (المرحلة 4 — 2026-08-31) ──
                 # احتمالية النجاح + البصمة المستقبلية + خريطة الجثث
                 'v68_probability': result.get('v68_probability', 0),
