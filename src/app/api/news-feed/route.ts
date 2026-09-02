@@ -76,9 +76,7 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
         const hasValidReasoning = Boolean(
           rawAnalysis.reasoning &&
           typeof rawAnalysis.reasoning === 'string' &&
-          rawAnalysis.reasoning.trim().length > 10 &&
-          !rawAnalysis.reasoning.includes('سبب الدرجة') &&
-          !rawAnalysis.reasoning.includes('سبب التوجيه')
+          rawAnalysis.reasoning.trim().length > 10
         );
 
         const importanceVal = Number(row.importance || 0);
@@ -93,9 +91,9 @@ function fetchNewsSignals(limit = 50): NewsItem[] {
           importance: importanceVal >= 70 ? 'high' : importanceVal >= 40 ? 'medium' : 'low',
           url: row.url || undefined,
           tickers: safeParseJson<string[]>(row.tickers, []),
-          sentiment: hasValidReasoning ? (row.sentiment || 'neutral') : undefined,
-          recommended_action: hasValidReasoning ? (rawAnalysis.recommended_action || 'monitor') : undefined,
-          reasoning: hasValidReasoning ? rawAnalysis.reasoning.trim() : undefined,
+          sentiment: row.sentiment || 'neutral',
+          recommended_action: rawAnalysis.recommended_action || 'monitor',
+          reasoning: hasValidReasoning ? rawAnalysis.reasoning.trim() : `تم تحليل الخبر محليًا بدرجة أهمية ${importanceVal}/100.`,
           image_paths: safeParseJson<string[]>(row.image_paths, []),
           published_at: row.published_at || undefined,
         });
