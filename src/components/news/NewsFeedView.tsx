@@ -18,6 +18,7 @@ import {
   Maximize2,
   X,
   Building2,
+  Settings,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { useSession } from 'next-auth/react';
+import { isAdmin } from '@/lib/admin-auth';
 
 // ==================== TYPES ====================
 
@@ -518,6 +521,13 @@ function NewsCard({ item }: { item: NewsItem }) {
 // ==================== MAIN COMPONENT ====================
 
 export function NewsFeedView() {
+  const { data: session } = useSession();
+  const user = useAppStore((s) => s.user);
+  const userEmail = user?.email || session?.user?.email || '';
+  const userName = user?.username || (session?.user as any)?.username || '';
+  const isAdminUser = isAdmin(userEmail, userName);
+  const setMainTab = useAppStore((s) => s.setActiveTab);
+
   const [data, setData] = useState<NewsFeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -603,6 +613,22 @@ export function NewsFeedView() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {isAdminUser && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setMainTab('admin');
+                window.location.hash = 'admin';
+                window.location.search = '?tab=news-control';
+              }}
+              className="gap-1.5 h-9 text-xs border-primary/50 text-primary hover:bg-primary/10 font-semibold"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span>إدارة وحذف الأخبار</span>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"

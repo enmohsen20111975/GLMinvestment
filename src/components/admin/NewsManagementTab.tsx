@@ -21,6 +21,7 @@ import {
   CheckSquare,
   Square,
   Sparkles,
+  Pencil,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -77,6 +78,62 @@ export function NewsManagementTab() {
 
   // Preview Article Modal
   const [previewItem, setPreviewItem] = useState<AdminNewsItem | null>(null);
+
+  // Edit News Modal
+  const [editItem, setEditItem] = useState<AdminNewsItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [editSource, setEditSource] = useState('');
+  const [editUrl, setEditUrl] = useState('');
+  const [editTickers, setEditTickers] = useState('');
+  const [editImportance, setEditImportance] = useState(75);
+  const [editSentiment, setEditSentiment] = useState<'positive' | 'neutral' | 'negative'>('neutral');
+
+  const openEditModal = (item: AdminNewsItem) => {
+    setEditItem(item);
+    setEditTitle(item.title);
+    setEditContent(item.content);
+    setEditSource(item.source);
+    setEditUrl(item.url || '');
+    setEditTickers(item.tickers?.join(', ') || '');
+    setEditImportance(item.importance || 75);
+    setEditSentiment((item.sentiment as any) || 'neutral');
+  };
+
+  const handleUpdateNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItem) return;
+
+    setActionLoading(true);
+    try {
+      const res = await adminFetch('/api/admin/news', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editItem.id,
+          title: editTitle.trim(),
+          content: editContent.trim(),
+          source: editSource.trim() || 'أدمن المنصة',
+          url: editUrl.trim() || undefined,
+          tickers: editTickers.trim() || undefined,
+          importance: Number(editImportance),
+          sentiment: editSentiment,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('تم تعديل وتحديث الخبر بنجاح!');
+        setEditItem(null);
+        fetchNews(page);
+      } else {
+        toast.error(data.error || 'فشل في تعديل الخبر');
+      }
+    } catch (err: any) {
+      toast.error('حدث خطأ: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // Fetch News
   const fetchNews = useCallback(async (targetPage = page) => {
@@ -594,6 +651,16 @@ export function NewsManagementTab() {
                             <Eye className="w-3.5 h-3.5" />
                           </button>
 
+                          {/* Edit button */}
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(item)}
+                            title="تعديل هذا الخبر"
+                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-amber-500 transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Source Link */}
                           {item.url && (
                             <a
@@ -840,6 +907,131 @@ export function NewsManagementTab() {
                 </a>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit News */}
+      {editItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-4 text-right" dir="rtl">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-bold text-foreground">تعديل الخبر (معرّف: #{editItem.id})</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditItem(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateNews} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-foreground font-semibold mb-1">
+                  عنوان الخبر <span className="text-rose-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="text-xs h-9 bg-background font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-foreground font-semibold mb-1">المصدر</label>
+                <Input
+                  type="text"
+                  value={editSource}
+                  onChange={(e) => setEditSource(e.target.value)}
+                  className="text-xs h-9 bg-background"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-foreground font-semibold mb-1">الأسهم المرتبطة</label>
+                  <Input
+                    type="text"
+                    value={editTickers}
+                    onChange={(e) => setEditTickers(e.target.value)}
+                    placeholder="COMI, TMGH"
+                    className="text-xs h-9 font-mono bg-background"
+                  />
+                </div>
+                <div>
+                  <label className="block text-foreground font-semibold mb-1">رابط المصدر الأصلي</label>
+                  <Input
+                    type="url"
+                    value={editUrl}
+                    onChange={(e) => setEditUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="text-xs h-9 bg-background"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-foreground font-semibold mb-1">درجة الأهمية (10 - 100)</label>
+                  <Input
+                    type="number"
+                    min="10"
+                    max="100"
+                    value={editImportance}
+                    onChange={(e) => setEditImportance(Number(e.target.value))}
+                    className="text-xs h-9 bg-background"
+                  />
+                </div>
+                <div>
+                  <label className="block text-foreground font-semibold mb-1">التوجه الاستثماري</label>
+                  <select
+                    value={editSentiment}
+                    onChange={(e: any) => setEditSentiment(e.target.value)}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="positive">إيجابي (Bullish)</option>
+                    <option value="neutral">محايد (Neutral)</option>
+                    <option value="negative">سلبي (Bearish)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-foreground font-semibold mb-1">نص ومحتوى الخبر</label>
+                <textarea
+                  rows={6}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditItem(null)}
+                  className="h-8 text-xs"
+                >
+                  إلغاء
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={actionLoading}
+                  className="h-8 text-xs bg-amber-600 text-white hover:bg-amber-700"
+                >
+                  {actionLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

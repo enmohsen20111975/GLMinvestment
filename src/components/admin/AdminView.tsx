@@ -430,6 +430,16 @@ export function AdminView() {
     };
     checkSession();
     setIsMounted(true);
+
+    // فحص إذا كان الرابط يطلب تبويب معين مباشرة مثل ?tab=news أو ?tab=news-control
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam === 'news' || tabParam === 'news-control') {
+        setActiveTab('news-control');
+        setExpandedHub('data');
+      }
+    }
   }, []);
 
   // Track admin tab views
@@ -1036,6 +1046,55 @@ export function AdminView() {
             تحديث
           </Button>
         </div>
+      </div>
+
+      {/* شريط الوصول السريع لأهم أدوات الإدارة */}
+      <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-card border border-border shadow-sm flex-wrap">
+        <span className="text-xs font-bold text-muted-foreground ml-1">وصول مباشر:</span>
+        <Button
+          variant={activeTab === 'news-control' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => { setActiveTab('news-control'); setExpandedHub('data'); }}
+          className={cn(
+            "gap-2 h-9 text-xs font-bold transition-all",
+            activeTab === 'news-control'
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "border-primary/50 text-primary hover:bg-primary/10"
+          )}
+        >
+          <Newspaper className="w-4 h-4" />
+          <span>إدارة وحذف الأخبار</span>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-primary/20 text-primary">
+            جديد
+          </Badge>
+        </Button>
+        <Button
+          variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => { setActiveTab('dashboard'); setExpandedHub('health'); }}
+          className="gap-1.5 h-9 text-xs"
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>لوحة المراقبة</span>
+        </Button>
+        <Button
+          variant={activeTab === 'databases' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => { setActiveTab('databases'); setExpandedHub('data'); }}
+          className="gap-1.5 h-9 text-xs"
+        >
+          <Database className="w-3.5 h-3.5" />
+          <span>قواعد البيانات</span>
+        </Button>
+        <Button
+          variant={activeTab === 'users' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => { setActiveTab('users'); setExpandedHub('users'); }}
+          className="gap-1.5 h-9 text-xs"
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>المستخدمين</span>
+        </Button>
       </div>
 
       {/* Stream C: 6 Core Admin Hubs — replaces the 26-tab flat nav.

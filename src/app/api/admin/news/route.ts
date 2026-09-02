@@ -245,6 +245,97 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * PUT /api/admin/news
+ * Update existing news article
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const authErr = await requireAdminAsync(request);
+    if (authErr) return authErr;
+
+    const body = await request.json();
+    const rawId = String(body.id || '');
+    const numId = parseInt(rawId.replace('mn-', ''), 10);
+
+    if (isNaN(numId)) {
+      return NextResponse.json({ success: false, error: 'معرّف الخبر غير صالح' }, { status: 400 });
+    }
+
+    const title = (body.title || '').trim();
+    const content = (body.content || '').trim();
+    const source = (body.source || 'أدمن المنصة').trim();
+    const url = (body.url || '').trim();
+    const importance = Math.min(Math.max(Number(body.importance || 70), 10), 100);
+    const sentiment = ['positive', 'negative', 'neutral'].includes(body.sentiment) ? body.sentiment : 'neutral';
+
+    let tickers: string[] = [];
+    if (Array.isArray(body.tickers)) {
+      tickers = body.tickers.map((t: any) => String(t).toUpperCase().trim()).filter(Boolean);
+    } else if (typeof body.tickers === 'string') {
+      tickers = body.tickers
+        .split(/[,،\s]+/)
+        .map((t) => t.toUpperCase().trim())
+        .filter(Boolean);
+    }
+
+    if (!title) {
+      return NextResponse.json({ success: false, error: 'عنوان الخبر مطلوب' }, { status: 400 });
+    }
+
+    const dePath = getDataEngineDbPath();
+    const db = new Database(dePath, { timeout: 5000 });
+
+    const analysisObj = {
+      recommended_action: sentiment === 'positive' ? 'buy_opportunity' : sentiment === 'negative' ? 'sell_signal' : 'monitor',
+      reasoning: body.reasoning || `تم تعديل الخبر بواسطة إدارة المنصة بتاريخ ${new Date().toLocaleDateString('ar-EG')}`,
+      importance,
+      sentiment,
+    };
+
+    const stmt = db.prepare(`
+      UPDATE market_news
+      SET title = ?,
+          content = ?,
+          summary_ar = ?,
+          source = ?,
+          url = ?,
+          tickers = ?,
+          importance = ?,
+          sentiment = ?,
+          impact_type = ?,
+          raw_analysis = ?
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(
+      title,
+      content || title,
+      content ? content.slice(0, 200) : title,
+      source,
+      url || null,
+      JSON.stringify(tickers),
+      importance,
+      sentiment,
+      sentiment === 'positive' ? 'bullish' : sentiment === 'negative' ? 'bearish' : 'neutral',
+      JSON.stringify(analysisObj),
+      numId
+    );
+
+    db.close();
+    await triggerCachePurge();
+
+    return NextResponse.json({
+      success: true,
+      updated: result.changes > 0,
+      message: 'تم تعديل وتحديث الخبر بنجاح',
+    });
+  } catch (err: any) {
+    console.error('[Admin News PUT] error:', err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+
+/**
  * DELETE /api/admin/news
  * Actions:
  * - delete_one: { action: 'delete_one', id: 24 } or { id: 'mn-24' }
