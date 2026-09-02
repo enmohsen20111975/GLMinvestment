@@ -701,7 +701,7 @@ def get_stage_order(stage: str) -> int:
 # تصحيح متقدم + تحديد أفضل وقت دخول (2026-09-01)
 # ═══════════════════════════════════════════════════════════════════════
 
-# Thresholds للتصحيح المتقدم
+# Thresholds للتصحيح المتقدم (تعديل 2026-09-02: رفع العتبات بعد باك-تست)
 CORRECTION_DEPTH_BUCKETS = [
     (5.0, 'SHALLOW'),      # تصحيح ضحل (< 5%)
     (10.0, 'MODERATE'),    # تصحيح متوسط (5-10%)
@@ -710,9 +710,9 @@ CORRECTION_DEPTH_BUCKETS = [
     (999.0, 'EXTREME'),    # تصحيح متطرف (> 25%)
 ]
 
-CORRECTION_VOL_DRY_UP_RATIO = 0.5    # حجم انخفض لأقل من 50% من المتوسط = "عصر"
-CORRECTION_VOL_RETURN_RATIO = 1.3    # حجم رجع بـ 1.3× = "رجوع السيولة"
-CORRECTION_RSI_BOTTOM = 35.0        # RSI < 35 = "تشبع بيعي"
+CORRECTION_VOL_DRY_UP_RATIO = 0.6    # حجم انخفض لأقل من 60% من المتوسط = "عصر" (كان 0.5)
+CORRECTION_VOL_RETURN_RATIO = 1.15   # حجم رجع بـ 1.15× = "رجوع السيولة" (كان 1.3 — تخفيف)
+CORRECTION_RSI_BOTTOM = 40.0         # RSI < 40 = "تشبع بيعي" (كان 35 — تخفيف)
 
 
 def detect_correction_opportunity(
@@ -834,7 +834,7 @@ def detect_correction_opportunity(
         if correction_complete:
             proofs.append(f'وصل typical_correction ({typical_correction_pct:.1f}%)')
             entry_readiness += 10
-    elif depth_pct >= 10.0 and vol_state == 'RETURNING' and rsi > 40:
+    elif depth_pct >= 10.0 and vol_state == 'RETURNING' and rsi > 35:
         phase = 'RECOVERY_STARTING'
         phase_ar = 'بدء التعافي (أفضل وقت دخول)'
         entry_readiness = 80

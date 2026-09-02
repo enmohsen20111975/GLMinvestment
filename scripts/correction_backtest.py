@@ -79,6 +79,7 @@ def _rsi(closes, period=14):
 # ═══════════════════════════════════════════════════════════════════════
 
 def load_tickers(max_count=200):
+    """تحميل أسهم EGX فقط (alpha tickers — مش أرقام سعودية)."""
     db = PROJECT_ROOT / 'db' / 'vps_real' / 'price_history.db'
     if not db.exists():
         db = PROJECT_ROOT / 'db' / 'price_history.db'
@@ -86,11 +87,14 @@ def load_tickers(max_count=200):
     rows = conn.execute('''
         SELECT ticker FROM price_history
         WHERE ticker NOT LIKE '.%' AND ticker NOT LIKE '%.%'
+          AND length(ticker) <= 5
+          AND substr(ticker, 1, 1) BETWEEN 'A' AND 'Z'
         GROUP BY ticker HAVING COUNT(*) >= 100
         ORDER BY ticker LIMIT ?
     ''', (max_count,)).fetchall()
     conn.close()
-    return [r[0] for r in rows]
+    # Filter: only pure alpha (A-Z) tickers
+    return [r[0] for r in rows if r[0].isalpha() and len(r[0]) <= 5]
 
 
 def load_price_data(ticker):

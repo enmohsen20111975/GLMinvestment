@@ -15356,3 +15356,75 @@ Stage Summary:
 - ✅ توصيات عملية
 - 🔜 commit + push
 
+
+
+---
+Task ID: CORRECTION-BACKTEST-EGX-ONLY-2026-09-02
+Agent: Z.ai Code (main) — Senior Engineer
+Task: إصلاح الباك-تست (EGX فقط) + تخفيف العتبات + إعادة قياس
+
+Work Log:
+
+### Phase 1: إصلاح مشكلة الأسهم السعودية
+- الباك-تست السابق كان بـ يشمل أسهم سعودية (numeric tickers: 1010, 1120, etc.)
+- تم تعديل load_tickers() لـ فلترة EGX فقط (alpha tickers, ≤ 5 chars)
+- النتيجة: 400 سهم EGX صافي (بدون أي سعودي)
+
+### Phase 2: باك-تست EGX-only (baseline — العتبات الأصلية)
+| Strategy | Trades | WR% | PF | Return% |
+| Correction (≥60%) | 86 | 39.8% | 1.08 | +48.9% |
+| Correction (≥70%) | 86 | 39.8% | 1.08 | +48.9% |
+| Random | 50 | 38.0% | 0.95 | -10.1% |
+| Chase (+15%) | 136 | 52.2% | 1.95 | +372.9% |
+
+RECOVERY_STARTING: 176 (نادر)
+LATE_BASE: 0 (مستحيل)
+
+### Phase 3: تخفيف العتبات (التوصية #1 + #2)
+- CORRECTION_VOL_DRY_UP_RATIO: 0.5 → 0.6 (تخفيف العصر)
+- CORRECTION_VOL_RETURN_RATIO: 1.3 → 1.15 (تخفيف رجوع السيولة)
+- CORRECTION_RSI_BOTTOM: 35 → 40 (تخفيف التشبع)
+- RECOVERY_STARTING شرط RSI: > 40 → > 35 (تخفيف)
+
+### Phase 4: باك-تست EGX-only (بعد التخفيف)
+| Strategy | Trades | WR% | PF | Return% |
+| Correction (≥60%) | 2604 | 37.1% | 1.01 | +108.2% |
+| Random | 50 | 38.0% | 0.95 | -10.1% |
+| Chase (+15%) | 136 | 52.2% | 1.95 | +372.9% |
+
+RECOVERY_STARTING: 2604 (15× أكثر!)
+LATE_BASE: 0 (لسه مستحيل — يحتاج DRY_UP + oversold + tight_range معاً)
+
+### تحليل:
+1. التخفيف زاد الإشارات من 86 → 2604 (30× أكثر!)
+2. لكن Return/WR لم تتحسن (37% vs 40%، PF 1.01 vs 1.08)
+3. Correction +108% Return — لكن هذا من كثرة الصفقات (2604) مش من الجودة
+4. Chase لا يزال الأفضل (WR 52%, PF 1.95, Return +373%)
+5. Random أسوأ من Correction في Return (-10% vs +108%)
+
+### أمثلة على فائزين EGX (كلهم مصرية!):
+- AALR on 2026-03-30: +15.0% (RECOVERY_STARTING, depth=29%, readiness=90%)
+- ABAR on 2026-02-23: +13.0% (RECOVERY_STARTING, depth=17%, readiness=80%)
+- ABAR on 2026-02-25: +12.6% (RECOVERY_STARTING, depth=14%, readiness=80%)
+- ABAR on 2026-02-26: +12.8% (RECOVERY_STARTING, depth=11%, readiness=80%)
+- ASCM on 2026-05-04: +13.0% (RECOVERY_STARTING, depth=11%, readiness=80%)
+
+### خلاصة صادقة:
+1. **Correction بـ يولّد إشارات صحيحة** — الفائزون EGX حقيقيون (AALR, ABAR, ASCM)
+2. **لكن WR 37% ضعيف** — 63% من الإشارات بـ تخسر
+3. **Chase يفوز** لأنه بـ يدخل مع المومنتمم (السهم بـ يكمل صعود)
+4. **التخفيف زاد الكمية مش الجودة** — PF بقي 1.01 (هامش جد ضيق)
+5. **LATE_BASE مستحيل** لأن DRY_UP + oversold + tight_range نادرين معاً
+
+### توصيات:
+1. **دمج Correction + Chase**: Correction بـ يحدد "أين" (بعد تصحيح كافي) + Chase بـ يحدد "متى" (تأكيد مومنتمم)
+2. **رفع عتبة RECOVERY_STARTING**: لازم vol ≥ 1.15× (مش 1.3×) + RSI > 35 + depth ≥ 10%
+3. **LATE_BASE**: محتاج إعادة تصميم (DRY_UP + oversold + tight_range = شبه مستحيل)
+
+Stage Summary:
+- ✅ إصلاح EGX-only (بدون سعودي)
+- ✅ تخفيف 3 عتبات + إعادة قياس
+- ✅ نتائج صادقة (Correction +108% Return لكن WR 37%)
+- ✅ أمثلة EGX حقيقية (AALR, ABAR, ASCM)
+- 🔜 commit + push
+
