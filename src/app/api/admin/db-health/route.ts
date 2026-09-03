@@ -99,8 +99,9 @@ export async function GET(request: NextRequest) {
 
     results['price_history.db'] = {
       status: newDbsAvailable.price_history ? 'ok' : 'not_found',
-      path: join(dbDir, 'price_history.db'),
-      exists: existsSync(join(dbDir, 'price_history.db')),
+      path: join(dbDir, 'data_engine.db'),
+      table: 'egksco_price_history',
+      exists: existsSync(join(dbDir, 'data_engine.db')),
       records_count: newDbHealth.price_history_count,
     };
 

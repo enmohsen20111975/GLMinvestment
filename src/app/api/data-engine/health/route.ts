@@ -87,15 +87,15 @@ export async function GET() {
       };
     }
 
-    // ---- price_history.db ----
+    // ---- price_history (now in data_engine.db.egksco_price_history) ----
     try {
       const { getPriceHistoryDb } = await import('@/lib/data-engine-db');
       const ph = getPriceHistoryDb();
-      databases.price_history = probeTable(ph, 'price_history', 'date');
+      databases.price_history = probeTable(ph, 'egksco_price_history', 'price_date');
     } catch (e: any) {
       databases.price_history = {
         status: 'down',
-        error: e?.message || 'price_history.db unreachable',
+        error: e?.message || 'data_engine.db.egksco_price_history unreachable',
       };
     }
 

@@ -12,7 +12,7 @@ export async function GET() {
     const importantPaths = {
       stocksDb: join(cwd, 'db', 'stocks.db'),
       predictionsDb: join(cwd, 'db', 'predictions.db'),
-      priceHistoryDb: join(cwd, 'db', 'price_history.db'),
+      dataEngineDb: join(cwd, 'db', 'data_engine.db'),
     };
 
     const diagnostics: Record<string, unknown> = {
@@ -23,7 +23,7 @@ export async function GET() {
       databases: {
         'db/stocks.db': _fileInfo(importantPaths.stocksDb),
         'db/predictions.db': _fileInfo(importantPaths.predictionsDb),
-        'db/price_history.db': _fileInfo(importantPaths.priceHistoryDb),
+        'db/data_engine.db': _fileInfo(importantPaths.dataEngineDb),
       },
     };
 

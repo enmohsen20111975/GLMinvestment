@@ -17,11 +17,11 @@ interface ChartDataPoint {
 
 /**
  * Fetch chart data from local databases (stocks.db stock_daily_prices first,
- * then price_history.db as fallback)
+ * then data_engine.db.egksco_price_history as fallback)
  */
 function getLocalChartData(ticker: string, period: string): ChartDataPoint[] | null {
   const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
-  const priceHistoryPath = path.join(process.cwd(), 'db', 'price_history.db');
+  const dataEngineDbPath = path.join(process.cwd(), 'db', 'data_engine.db');
 
   // Determine lookback limit based on period
   const periodLimitMap: Record<string, number> = {
@@ -71,17 +71,17 @@ function getLocalChartData(ticker: string, period: string): ChartDataPoint[] | n
     }
   }
 
-  // 2. Fallback to price_history.db (may have older data)
-  if (existsSync(priceHistoryPath)) {
+  // 2. Fallback to data_engine.db.egksco_price_history (migrated from price_history.db)
+  if (existsSync(dataEngineDbPath)) {
     try {
-      const db = new Database(priceHistoryPath, { readonly: true, timeout: 5000 });
+      const db = new Database(dataEngineDbPath, { readonly: true, timeout: 5000 });
       db.pragma('busy_timeout = 5000');
 
       const rows = db.prepare(`
-        SELECT date, open_price, high_price, low_price, close_price, volume
-        FROM price_history
-        WHERE ticker = ?
-        ORDER BY date DESC
+        SELECT price_date AS date, open_price, high_price, low_price, close_price, volume
+        FROM egksco_price_history
+        WHERE symbol = ?
+        ORDER BY price_date DESC
         LIMIT ?
       `).all(ticker, limit) as { date: string; open_price: number | null; high_price: number | null; low_price: number | null; close_price: number | null; volume: number | null }[];
 
@@ -100,7 +100,7 @@ function getLocalChartData(ticker: string, period: string): ChartDataPoint[] | n
           .reverse(); // chronological order
       }
     } catch (e) {
-      console.warn(`[chart] price_history query failed for ${ticker}:`, e);
+      console.warn(`[chart] data_engine.db.egksco_price_history query failed for ${ticker}:`, e);
     }
   }
 

@@ -81,16 +81,16 @@ export async function GET() {
     const silverCount = dataEngineDb.prepare('SELECT COUNT(*) as count FROM silver_prices').get() as { count: number };
     const forexCount = dataEngineDb.prepare('SELECT COUNT(*) as count FROM exchange_rates').get() as { count: number };
 
-    // Get historical data count from price_history.db
+    // Get historical data count from data_engine.db.egksco_price_history (migrated from price_history.db)
     const priceHistoryDb = getPriceHistoryDb();
-    const historicalCount = priceHistoryDb.prepare('SELECT COUNT(*) as count FROM price_history').get() as { count: number };
+    const historicalCount = priceHistoryDb.prepare('SELECT COUNT(*) as count FROM egksco_price_history').get() as { count: number };
 
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       databases: {
         live_data: 'data_engine.db',
-        historical_data: 'price_history.db'
+        historical_data: 'data_engine.db.egksco_price_history'
       },
       data_counts: {
         stocks: stocksCount.count,

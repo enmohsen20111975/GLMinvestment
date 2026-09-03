@@ -16894,3 +16894,62 @@ Stage Summary:
 - توفير: 32 KB + 1 قاعدة بيانات أقل + ~123 lines كود ميت اتشالت.
 
 NEED_OWNER: NONE — كله اشتغل تلقائياً.
+
+---
+Task ID: WAVE-2a-2c
+Agent: main (orchestrator, Z.ai Code)
+Task: الموجة الثانية — migration price_history.db readers لـ data_engine.db.egksco_price_history
+
+Work Log:
+- 2a (فحص schema):
+  * price_history.db.price_history schema: ticker, date, open_price, high_price, low_price, close_price, volume (TEXT), source
+  * data_engine.db.egksco_price_history schema: id, symbol, price_date, open_price, high_price, low_price, close_price, volume (INTEGER), turnover
+  * نفس عدد الـ rows بالظبط (162,946) + نفس date range (2025-01-09 → 2026-08-27)
+  * Sample row متطابق (TALM 2025-01-09: نفس OHLC).
+  * الـ migration rules: ticker→symbol, date→price_date, FROM price_history→FROM egksco_price_history.
+
+- 2b (health checks - الصنف C - الأسهل):
+  * /api/health/route.ts: شيلت check على price_history.db، حطيت check على data_engine.db.
+  * /api/admin/db-health/route.ts: حدّثت price_history.db entry لـ data_engine.db + table: 'egksco_price_history'.
+  * /api/admin/engines-status/route.ts: حدّثت PRICE_HISTORY_DB → DATA_ENGINE_DB + query MAX(price_date) FROM egksco_price_history.
+  * /api/data-engine/health/route.ts: حدّثت probeTable لـ ('egksco_price_history', 'price_date').
+  * /api/data-engine/status/route.ts: حدّثت COUNT(*) FROM egksco_price_history + display string.
+  * src/lib/new-db-queries.ts:
+    - DB_PATHS.price_history → DB_PATHS.data_engine (path لـ data_engine.db)
+    - _priceHistoryDb → _dataEngineDb (singleton rename)
+    - getPriceHistoryFromNewDb(): SQL rewritten for egksco_price_history (symbol, price_date).
+    - areNewDbsAvailable(): price_history check بقى على data_engine.db.
+    - getNewDbHealth(): COUNT(*) FROM egksco_price_history.
+    - شيلت duplicate comment block في آخر الملف.
+
+- 2c (readers بـ fallback - الصنف A):
+  * src/lib/data-engine-db.ts:
+    - getPriceHistoryDb() بقى alias لـ getDataEngineDb() (نفس connection).
+    - _priceHistoryDb variable اتشال.
+    - getHistoricalData(): SQL rewritten (SELECT symbol AS ticker, price_date AS date, ... FROM egksco_price_history WHERE symbol = ?).
+    - getHistoricalByMarket(): بقى بيرجع empty array (egksco_price_history مفيهاش market column).
+    - getHistoricalDateRange(): SQL rewritten.
+    - ensureDataEngineDbInitialized() + resetDataEngineDbState() اتعدّلوا.
+  * src/lib/data-engine-db-sqljs.ts:
+    - getPriceHistoryDbSqlJs() بقى alias لـ getDataEngineDbSqlJs().
+    - _priceHistoryDb variable اتشال.
+    - getHistoricalData() (sqljs version): SQL rewritten.
+    - getLastCleanClose(): اتعدّل لـ SELECT من egksco_price_history (بدون filter على source، لإن egksco_price_history مفيهاش source column — كل البيانات source = 'egksco').
+  * src/lib/market-data-access.ts:
+    - Source 3 (getAvailableTickers): path اتغير لـ data_engine.db، SQL rewritten لـ egksco_price_history.
+    - Source 3 (getPriceHistory): path اتغير لـ data_engine.db، SQL rewritten.
+  * src/app/api/chart/[ticker]/route.ts:
+    - priceHistoryPath → dataEngineDbPath.
+    - Fallback query rewritten لـ egksco_price_history (SELECT price_date AS date, ... WHERE symbol = ? ORDER BY price_date DESC).
+
+Stage Summary:
+- ✅ كل health check routes بـ 200 OK.
+- ✅ كل routes اللي بـ read من price_history.db اتعملها migration لـ data_engine.db.egksco_price_history.
+- ✅ lint بدون أخطاء.
+- ✅ /api/chart/COMI?period=3m بيرجع بيانات حقيقية (15+ candles) من local_db.
+- ✅ /api/data-engine/health بيرجع price_history.status=ok, count=162946.
+- ✅ /api/data-engine/status بيرجع historical_data: 'data_engine.db.egksco_price_history', count=162946.
+- ✅ /api/admin/db-health بيرجع price_history.db entry بـ path: data_engine.db + table: egksco_price_history + records_count: 162946.
+- الـ price_history.db file لسه موجود (مش هنشيله لحد ما نخلّص كل readers).
+
+NEED_OWNER: NONE — كله اشتغل تلقائياً.

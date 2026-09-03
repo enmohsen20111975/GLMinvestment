@@ -4,7 +4,7 @@
  * يوفّر وصول موحّد لكل قواعد بيانات الأسعار مع fallback ذكي:
  *   1. data_engine.db → historical_data (TADAWUL 89 symbols, US, Forex, Gold)
  *   2. historical.db  → historical_prices (TADAWUL, EGX, KSE, QSE, Crypto, Forex, Metals, Indices)
- *   3. price_history.db → price_history (762 EGX tickers)
+ *   3. data_engine.db → egksco_price_history (762 EGX tickers — migrated from price_history.db)
  *
  * كل قاعدة بيانات بيتم فتحها بـ readonly الأول، وبعدين immutable=1 كـ fallback
  * عشان نتجنّب WAL corruption اللي بيحصل لما data_engine (port 5000) يمسك الـ DB.
@@ -188,17 +188,17 @@ export function getAvailableTickers(maxPerMarket = 15): MarketTicker[] {
     finally { hDb.close(); }
   }
 
-  // --- Source 3: price_history.db → price_history (EGX, 762 tickers) ---
-  const phPath = path.join(process.cwd(), 'db', 'price_history.db');
+  // --- Source 3: data_engine.db → egksco_price_history (EGX, 762 tickers — migrated from price_history.db) ---
+  const phPath = path.join(process.cwd(), 'db', 'data_engine.db');
   const phDb = openRobust(phPath);
   if (phDb) {
     try {
-      const hasTable = phDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='price_history'").get();
+      const hasTable = phDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='egksco_price_history'").get();
       if (hasTable) {
         const rows = phDb.prepare(`
-          SELECT ticker, COUNT(*) as cnt, MIN(date) as min_d, MAX(date) as max_d
-          FROM price_history
-          GROUP BY ticker
+          SELECT symbol AS ticker, COUNT(*) as cnt, MIN(price_date) as min_d, MAX(price_date) as max_d
+          FROM egksco_price_history
+          GROUP BY symbol
           HAVING cnt >= 30
           ORDER BY cnt DESC
           LIMIT ?
@@ -214,12 +214,12 @@ export function getAvailableTickers(maxPerMarket = 15): MarketTicker[] {
             data_points: r.cnt,
             earliest_date: r.min_d,
             latest_date: r.max_d,
-            source: 'price_history.db',
-          });
+            source: 'data_engine.db.egksco_price_history',
+          } as any);
         }
-        console.log(`[market-data-access] price_history.db: ${rows.length} EGX tickers`);
+        console.log(`[market-data-access] data_engine.db.egksco_price_history: ${rows.length} EGX tickers`);
       }
-    } catch (e) { console.warn('[market-data-access] price_history.db:', e); }
+    } catch (e) { console.warn('[market-data-access] data_engine.db.egksco_price_history:', e); }
     finally { phDb.close(); }
   }
 
@@ -305,25 +305,25 @@ export function getPriceHistory(ticker: string, market: string, daysBack: number
     finally { try { hDb.close(); } catch {} }
   }
 
-  // --- Source 3: price_history.db → price_history (EGX) ---
-  const phPath = path.join(process.cwd(), 'db', 'price_history.db');
+  // --- Source 3: data_engine.db → egksco_price_history (EGX — migrated from price_history.db) ---
+  const phPath = path.join(process.cwd(), 'db', 'data_engine.db');
   const phDb = openRobust(phPath);
   if (phDb) {
     try {
       const rows = phDb.prepare(`
-        SELECT date(date) as date,
+        SELECT date(price_date) as date,
                COALESCE(open_price, close_price) as open_price,
                COALESCE(high_price, close_price) as high_price,
                COALESCE(low_price, close_price) as low_price,
                close_price,
                COALESCE(volume, 0) as volume
-        FROM price_history
-        WHERE ticker = ? AND date >= datetime('now','-${lookback} days')
-        ORDER BY date ASC
+        FROM egksco_price_history
+        WHERE symbol = ? AND price_date >= datetime('now','-${lookback} days')
+        ORDER BY price_date ASC
       `).all(ticker) as any[];
       if (rows.length > 0) {
         phDb.close();
-        return rows.map(r => ({ ...r, source: 'price_history.db' }));
+        return rows.map(r => ({ ...r, source: 'data_engine.db.egksco_price_history' }));
       }
     } catch (e) { /* fall through */ }
     finally { try { phDb.close(); } catch {} }

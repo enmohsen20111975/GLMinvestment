@@ -2,8 +2,8 @@
  * Data Engine Database Client
  * ============================
  * Multi-database architecture:
- * - data_engine.db: Live stock/crypto/gold/silver prices
- * - price_history.db: Historical price data (98856 records)
+ * - data_engine.db: Live stock/crypto/gold/silver prices + historical (egksco_price_history)
+ * - stocks.db: Synced stocks with last_update
  * - auth.db: User preferences (country, favorite_market)
  */
 
@@ -16,7 +16,6 @@ import { existsSync } from 'fs';
 // ===========================================================================
 
 let _dataEngineDb: Database.Database | null = null;
-let _priceHistoryDb: Database.Database | null = null;
 let _stocksDb: Database.Database | null = null;
 
 /**
@@ -47,20 +46,13 @@ export function getDataEngineDb(): Database.Database {
 
 /**
  * Get price_history.db connection (historical data)
+ * 
+ * NOTE: price_history.db was removed. Now reads from data_engine.db.egksco_price_history.
+ * Returns the same connection as getDataEngineDb() for backward compatibility.
  */
 export function getPriceHistoryDb(): Database.Database {
-  if (_priceHistoryDb) return _priceHistoryDb;
-  
-  const dbPath = path.join(process.cwd(), 'db', 'price_history.db');
-  
-  if (!existsSync(dbPath)) {
-    throw new Error(`Price History DB not found at ${dbPath}`);
-  }
-  
-  _priceHistoryDb = new Database(dbPath, { readonly: false });
-  _priceHistoryDb.pragma('journal_mode = WAL');
-  console.log('[data-engine-db] Loaded price_history.db');
-  return _priceHistoryDb;
+  // Backward-compatible: route to data_engine.db connection
+  return getDataEngineDb();
 }
 
 /**
@@ -688,11 +680,11 @@ export function getCryptoBySymbol(symbol: string): DataEngineCrypto | null {
 }
 
 // ===========================================================================
-// HISTORICAL QUERIES (from price_history.db)
+// HISTORICAL QUERIES (from data_engine.db.egksco_price_history — migrated from price_history.db)
 // ===========================================================================
 
 /**
- * Get historical data for a symbol from price_history.db
+ * Get historical data for a symbol from data_engine.db.egksco_price_history
  */
 export function getHistoricalData(symbol: string, limit: number = 100): PriceHistoryRecord[] {
   const cacheKey = `historical:${symbol}:${limit}`;
@@ -703,9 +695,21 @@ export function getHistoricalData(symbol: string, limit: number = 100): PriceHis
 
   try {
     const data = db.prepare(`
-      SELECT * FROM price_history
-      WHERE ticker = ?
-      ORDER BY date DESC
+      SELECT 
+        id, 
+        symbol AS ticker, 
+        NULL AS name, 
+        NULL AS category, 
+        price_date AS date, 
+        open_price AS open, 
+        high_price AS high, 
+        low_price AS low, 
+        close_price AS close, 
+        volume, 
+        NULL AS market
+      FROM egksco_price_history
+      WHERE symbol = ?
+      ORDER BY price_date DESC
       LIMIT ?
     `).all(symbol, limit) as PriceHistoryRecord[];
     
@@ -719,29 +723,18 @@ export function getHistoricalData(symbol: string, limit: number = 100): PriceHis
 
 /**
  * Get historical data by market
+ * 
+ * NOTE: egksco_price_history doesn't have a 'market' column.
+ * This function returns empty array (legacy — callers should use getHistoricalData per ticker).
  */
 export function getHistoricalByMarket(market: string, limit: number = 100): PriceHistoryRecord[] {
   const cacheKey = `historical_market:${market}:${limit}`;
   const cached = getCached<PriceHistoryRecord[]>(cacheKey);
   if (cached) return cached;
 
-  const db = getPriceHistoryDb();
-  const marketName = marketCodeToArabic(market);
-
-  try {
-    const data = db.prepare(`
-      SELECT * FROM price_history
-      WHERE market = ?
-      ORDER BY date DESC
-      LIMIT ?
-    `).all(marketName, limit) as PriceHistoryRecord[];
-    
-    setCache(cacheKey, data);
-    return data;
-  } catch (err) {
-    console.warn('[data-engine-db] getHistoricalByMarket error:', err);
-    return [];
-  }
+  // egksco_price_history has no 'market' column — return empty
+  console.warn('[data-engine-db] getHistoricalByMarket: egksco_price_history has no market column — returning empty');
+  return [];
 }
 
 /**
@@ -753,11 +746,11 @@ export function getHistoricalDateRange(symbol: string): { minDate: string; maxDa
   try {
     const result = db.prepare(`
       SELECT 
-        MIN(date) as minDate, 
-        MAX(date) as maxDate, 
+        MIN(price_date) as minDate, 
+        MAX(price_date) as maxDate, 
         COUNT(*) as count 
-      FROM price_history 
-      WHERE ticker = ?
+      FROM egksco_price_history 
+      WHERE symbol = ?
     `).get(symbol) as { minDate: string; maxDate: string; count: number };
     
     return result || { minDate: '', maxDate: '', count: 0 };
@@ -986,7 +979,8 @@ export async function getUserFavoriteMarket(userId: string): Promise<string> {
 export async function ensureDataEngineDbInitialized(): Promise<void> {
   // Pre-initialize connections
   getDataEngineDb();
-  getPriceHistoryDb();
+  // getPriceHistoryDb() now returns the same connection as getDataEngineDb()
+  // No need to separately initialize it.
 }
 
 // ===========================================================================
@@ -995,8 +989,8 @@ export async function ensureDataEngineDbInitialized(): Promise<void> {
 
 export function resetDataEngineDbState(): void {
   if (_dataEngineDb) { _dataEngineDb.close(); _dataEngineDb = null; }
-  if (_priceHistoryDb) { _priceHistoryDb.close(); _priceHistoryDb = null; }
   if (_stocksDb) { _stocksDb.close(); _stocksDb = null; }
+  // _priceHistoryDb removed — now uses _dataEngineDb connection
   _cache.clear();
   console.log('[data-engine-db] State reset');
 }

@@ -4,7 +4,7 @@
  * 
  * Queries that use the new database structure:
  * - stocks.db for stock info
- * - price_history.db for historical prices
+ * - data_engine.db for historical prices (egksco_price_history table)
  * - predictions.db for predictions and analysis
  * - learned.db for learned lessons
  * 
@@ -23,7 +23,7 @@ const DB_DIR = path.join(process.cwd(), 'db');
 
 const DB_PATHS = {
   stocks: path.join(DB_DIR, 'stocks.db'),
-  price_history: path.join(DB_DIR, 'price_history.db'),
+  data_engine: path.join(DB_DIR, 'data_engine.db'),
   predictions: path.join(DB_DIR, 'predictions.db'),
   learned: path.join(DB_DIR, 'learned.db'),
 };
@@ -59,7 +59,7 @@ export async function ensureInitialized(): Promise<void> {
 // ===========================================================================
 
 let _stocksDb: SqliteDatabase | null = null;
-let _priceHistoryDb: SqliteDatabase | null = null;
+let _dataEngineDb: SqliteDatabase | null = null;
 let _predictionsDb: SqliteDatabase | null = null;
 let _learnedDb: SqliteDatabase | null = null;
 
@@ -89,14 +89,14 @@ function getDb(dbPath: string, singleton: { current: SqliteDatabase | null }, re
 // ===========================================================================
 
 /**
- * Get price history from price_history.db
+ * Get price history from data_engine.db (egksco_price_history table)
  * 
  * 🔥 FIXED: Validates data against stocks.db current_price
  * - Rejects data with future dates (year > current year)
  * - Rejects data where price differs more than 50% from current_price
  */
 export function getPriceHistoryFromNewDb(ticker: string, days: number = 90): Record<string, unknown>[] {
-  const priceDb = getDb(DB_PATHS.price_history, { current: _priceHistoryDb });
+  const priceDb = getDb(DB_PATHS.data_engine, { current: _dataEngineDb });
   const stocksDb = getDb(DB_PATHS.stocks, { current: _stocksDb });
   
   if (!priceDb) return [];
@@ -115,16 +115,15 @@ export function getPriceHistoryFromNewDb(ticker: string, days: number = 90): Rec
       }
     }
     
-    // Get price history
-    // FIX (July 2026): column names are open_price, high_price, low_price, close_price
-    // (not open, high, low, close)
+    // Get price history from data_engine.db.egksco_price_history
+    // (migrated from price_history.db.price_history — same data, different column names)
     const history = priceDb.prepare(`
       SELECT 
-        date, open_price AS open, high_price AS high, low_price AS low, 
+        price_date AS date, open_price AS open, high_price AS high, low_price AS low, 
         close_price AS close, volume
-      FROM price_history
-      WHERE ticker = ? COLLATE NOCASE
-      ORDER BY date DESC
+      FROM egksco_price_history
+      WHERE symbol = ? COLLATE NOCASE
+      ORDER BY price_date DESC
       LIMIT ?
     `).all(ticker.toUpperCase(), days) as Record<string, unknown>[];
     
@@ -288,7 +287,7 @@ export function getLearnedLessonsFromNewDb(limit: number = 100): Record<string, 
 export function areNewDbsAvailable(): { stocks: boolean; price_history: boolean; predictions: boolean; learned: boolean } {
   return {
     stocks: existsSync(DB_PATHS.stocks),
-    price_history: existsSync(DB_PATHS.price_history),
+    price_history: existsSync(DB_PATHS.data_engine),
     predictions: existsSync(DB_PATHS.predictions),
     learned: existsSync(DB_PATHS.learned),
   };
@@ -319,9 +318,9 @@ export function getNewDbHealth(): {
       result.stocks_count = row?.count || 0;
     }
     
-    const priceHistoryDb = getDb(DB_PATHS.price_history, { current: _priceHistoryDb });
+    const priceHistoryDb = getDb(DB_PATHS.data_engine, { current: _dataEngineDb });
     if (priceHistoryDb) {
-      const row = priceHistoryDb.prepare('SELECT COUNT(*) as count FROM price_history').get() as { count: number };
+      const row = priceHistoryDb.prepare('SELECT COUNT(*) as count FROM egksco_price_history').get() as { count: number };
       result.price_history_count = row?.count || 0;
     }
     
@@ -344,16 +343,4 @@ export function getNewDbHealth(): {
   
   return result;
 }
-/**
- * New Database Queries
- * =====================
- * 
- * Queries that use the new database structure:
- * - stocks.db for stock info
- * - price_history.db for historical prices
- * - predictions.db for predictions and analysis
- * - learned.db for learned lessons
- * 
- * Use these as fallback when egx_investment.db is corrupted or unavailable.
- */
 

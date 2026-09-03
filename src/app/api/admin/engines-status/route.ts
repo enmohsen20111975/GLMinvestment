@@ -25,7 +25,6 @@ export const dynamic = 'force-dynamic';
 // ============== Config ==============
 const DB_DIR = path.join(process.cwd(), 'db');
 const STOCKS_DB = path.join(DB_DIR, 'stocks.db');
-const PRICE_HISTORY_DB = path.join(DB_DIR, 'price_history.db');
 const PREDICTIONS_DB = path.join(DB_DIR, 'predictions.db');
 const DATA_ENGINE_DB = path.join(DB_DIR, 'data_engine.db');
 const ENGINE_STATUS_FILE = path.join(DB_DIR, 'engine_status.json');
@@ -156,10 +155,10 @@ async function checkDataEngine() {
         goldCount = r?.count || 0;
     } catch { }
 
-    // Check price_history freshness (last inserted row)
+    // Check price_history freshness (last inserted row) — now reads from data_engine.db.egksco_price_history
     let priceHistoryLastUpdate: string | null = null;
     try {
-        const r = safeDbQuery<{ latest: string }>(PRICE_HISTORY_DB, 'SELECT MAX(date) as latest FROM price_history');
+        const r = safeDbQuery<{ latest: string }>(DATA_ENGINE_DB, 'SELECT MAX(price_date) as latest FROM egksco_price_history');
         priceHistoryLastUpdate = r?.latest || null;
     } catch { }
 

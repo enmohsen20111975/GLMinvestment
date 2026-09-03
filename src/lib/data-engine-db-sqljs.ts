@@ -15,7 +15,6 @@ import type { SqlJsStatic, Database as SqlJsDatabase } from 'sql.js';
 
 let _sqlJs: SqlJsStatic | null = null;
 let _dataEngineDb: SqlJsDatabase | null = null;
-let _priceHistoryDb: SqlJsDatabase | null = null;
 let _stocksDb: SqlJsDatabase | null = null;
 let _initPromise: Promise<void> | null = null;
 
@@ -73,19 +72,12 @@ export async function getDataEngineDbSqlJs(): Promise<SqlJsDatabase> {
 }
 
 /**
- * Get price_history.db connection (read-only via sql.js)
+ * Get data_engine.db connection (read-only via sql.js) — also used for price history.
+ * (price_history.db was removed; egksco_price_history table in data_engine.db is now the source.)
  */
 export async function getPriceHistoryDbSqlJs(): Promise<SqlJsDatabase> {
-    if (_priceHistoryDb) return _priceHistoryDb;
-
-    const dbPath = path.join(process.cwd(), 'db', 'price_history.db');
-    if (!fs.existsSync(dbPath)) {
-        throw new Error(`Price History DB not found at ${dbPath}`);
-    }
-
-    const sqlJs = await ensureInit();
-    _priceHistoryDb = openReadonly(sqlJs, dbPath);
-    return _priceHistoryDb;
+    // Backward-compatible: route to data_engine.db connection
+    return getDataEngineDbSqlJs();
 }
 
 /**
@@ -184,7 +176,7 @@ async function _ensureDataEngineCompat(): Promise<DbCompat> {
 async function _ensurePriceHistoryCompat(): Promise<DbCompat> {
     if (_priceHistoryCompat) return _priceHistoryCompat;
     const db = await getPriceHistoryDbSqlJs();
-    _priceHistoryCompat = new DbCompat(db, 'price_history.db');
+    _priceHistoryCompat = new DbCompat(db, 'data_engine.db');
     return _priceHistoryCompat;
 }
 
@@ -421,7 +413,25 @@ export async function getLatestSilverPrices(): Promise<DataEngineSilverPrice[]> 
 export async function getHistoricalData(symbol: string, limit: number = 100): Promise<PriceHistoryRecord[]> {
     const db = await _ensurePriceHistoryCompat();
     try {
-        return db.prepare('SELECT * FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT ?').all(symbol, limit) as PriceHistoryRecord[];
+        // egksco_price_history: id, symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover
+        return db.prepare(`
+            SELECT 
+                id,
+                symbol AS ticker,
+                NULL AS name,
+                NULL AS category,
+                price_date AS date,
+                open_price AS open,
+                high_price AS high,
+                low_price AS low,
+                close_price AS close,
+                volume,
+                NULL AS market
+            FROM egksco_price_history
+            WHERE symbol = ?
+            ORDER BY price_date DESC
+            LIMIT ?
+        `).all(symbol, limit) as PriceHistoryRecord[];
     } catch { return []; }
 }
 /**
@@ -431,11 +441,10 @@ export async function getHistoricalData(symbol: string, limit: number = 100): Pr
  * stocks.db is frequently empty/stale (TradingView feed gaps), so the fallback
  * chain in calculate-values/route.ts dead-ends at avg_buy_price (P&L = 0%).
  *
- * Opens price_history.db (where yahoo_clean 5-year history lives) and returns
- * the last available close with the SAME source priority as load_merged_history:
- *   1. yahoo_clean  (5-year clean Yahoo history, auto_adjust=False) - PRIMARY
- *   2. egksco       (live TradingView/EGKSCO snapshot)
- *   3. any source   (last resort - most recent row regardless of source)
+ * Reads from data_engine.db.egksco_price_history (migrated from price_history.db).
+ * Note: egksco_price_history has no `source` column — all rows are from EGKSCO.
+ * Previously, price_history.db had `source` (yahoo_clean / egksco), but yahoo_clean
+ * was never populated (verified empty), so we now just use egksco directly.
  *
  * Ticker is normalized: "COMI.CA" / "comi" -> "COMI" (base ticker before first dot).
  *
@@ -447,28 +456,12 @@ export async function getLastCleanClose(ticker: string): Promise<{ price: number
     if (!base) return { price: 0, source: 'none', date: '' };
 
     try {
-        // Priority 1: yahoo_clean (5-year clean Yahoo history)
-        let row = db.prepare(
-            "SELECT close_price, date FROM price_history WHERE ticker = ? AND source = 'yahoo_clean' AND close_price > 0 ORDER BY date DESC LIMIT 1"
-        ).get(base) as any;
-        if (row && Number(row.close_price) > 0) {
-            return { price: Number(row.close_price), source: 'yahoo_clean', date: String(row.date || '') };
-        }
-
-        // Priority 2: egksco (live TradingView/EGKSCO snapshot)
-        row = db.prepare(
-            "SELECT close_price, date FROM price_history WHERE ticker = ? AND source = 'egksco' AND close_price > 0 ORDER BY date DESC LIMIT 1"
+        // egksco_price_history: SELECT most recent close_price WHERE symbol = ?
+        const row = db.prepare(
+            "SELECT close_price, price_date AS date FROM egksco_price_history WHERE symbol = ? AND close_price > 0 ORDER BY price_date DESC LIMIT 1"
         ).get(base) as any;
         if (row && Number(row.close_price) > 0) {
             return { price: Number(row.close_price), source: 'egksco', date: String(row.date || '') };
-        }
-
-        // Priority 3: any source, most recent row with a valid close
-        row = db.prepare(
-            "SELECT close_price, date, source FROM price_history WHERE ticker = ? AND close_price > 0 ORDER BY date DESC LIMIT 1"
-        ).get(base) as any;
-        if (row && Number(row.close_price) > 0) {
-            return { price: Number(row.close_price), source: String(row.source || 'unknown'), date: String(row.date || '') };
         }
     } catch (err) {
         console.warn('[data-engine-db/sqljs] getLastCleanClose error:', err);
