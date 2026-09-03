@@ -1,0 +1,135 @@
+ticker,entry_date,exit_date,entry_price,exit_price,shares,pnl_pct,exit_reason,holding_days,position_value_egp,sector
+HELI,2026-03-15,2026-04-05,6.23,5.79,1284,-7.00,stop_loss,21,7996,Consumer Durables
+TMGH,2026-03-15,2026-04-12,79.80,91.37,40,14.49,partial_exit_1.5R,28,3192,Finance
+FAIT,2026-03-15,2026-04-12,37.44,42.29,85,12.96,partial_exit_1.5R,28,3182,Finance
+EGCH,2026-03-15,2026-04-19,11.42,13.17,280,15.37,partial_exit_1.5R,35,3197,Process Industries
+TMGH,2026-03-15,2026-04-26,79.80,95.77,60,20.00,take_profit,42,4788,Finance
+EGCH,2026-03-15,2026-05-03,11.42,13.70,420,20.00,take_profit,49,4795,Process Industries
+CIEB,2026-03-15,2026-05-10,28.18,26.21,283,-7.00,stop_loss,56,7976,Finance
+FAIT,2026-03-15,2026-05-10,37.44,39.22,128,4.75,partial_trail_1.5ATR,56,4792,Finance
+AIFI,2026-03-22,2026-03-29,3.99,3.71,1204,-7.00,stop_loss,7,4804,Process Industries
+ALUM,2026-03-22,2026-03-29,32.20,29.94,149,-7.00,stop_loss,7,4797,Non-Energy Minerals
+AMIA,2026-03-22,2026-03-29,12.12,11.27,396,-7.00,stop_loss,7,4799,Finance
+OCDI,2026-03-22,2026-04-05,19.72,18.34,243,-7.00,stop_loss,14,4792,Finance
+PHDC,2026-03-22,2026-04-05,12.61,11.73,381,-7.00,stop_loss,14,4806,Finance
+SIPC,2026-03-29,2026-04-12,2.95,3.47,536,17.80,partial_exit_1.5R,14,1581,Health Technology
+HRHO,2026-03-29,2026-04-12,23.40,26.16,67,11.79,partial_exit_1.5R,14,1568,Finance
+ATLC,2026-03-29,2026-04-19,4.39,4.86,360,10.75,partial_exit_1.5R,21,1581,Finance
+DCRC,2026-03-29,2026-04-19,50.18,56.96,31,13.51,partial_exit_1.5R,21,1556,Finance
+SIPC,2026-03-29,2026-04-26,2.95,3.54,805,20.00,take_profit,28,2375,Health Technology
+HRHO,2026-03-29,2026-04-26,23.40,28.08,102,20.00,take_profit,28,2387,Finance
+ATLC,2026-03-29,2026-04-26,4.39,4.57,541,4.06,partial_trail_1.5ATR,28,2376,Finance
+DCRC,2026-03-29,2026-05-17,50.18,55.62,47,10.83,partial_trail_1.5ATR,49,2359,Finance
+DSCW,2026-03-29,2026-05-24,1.81,1.68,2188,-7.00,stop_loss,56,3958,Consumer Non-Durables
+EFIH,2026-04-05,2026-04-12,26.77,24.89,137,-7.00,stop_loss,7,3667,Technology Services
+ABUK,2026-04-05,2026-04-19,125.96,117.14,29,-7.00,stop_loss,14,3653,Process Industries
+ATQA,2026-04-05,2026-04-19,6.78,7.66,217,12.95,partial_exit_1.5R,14,1471,Producer Manufacturing
+ELEC,2026-04-05,2026-05-03,2.49,2.32,1480,-7.00,stop_loss,28,3688,Producer Manufacturing
+ATQA,2026-04-05,2026-05-10,6.78,8.14,326,20.00,take_profit,35,2210,Producer Manufacturing
+ACGC,2026-04-05,2026-06-08,16.86,15.68,218,-7.00,stop_loss,64,3676,Process Industries
+EHDR,2026-04-12,2026-05-03,3.17,2.95,1059,-7.00,stop_loss,21,3359,Finance
+ELSH,2026-04-12,2026-05-24,10.70,12.54,125,17.20,partial_exit_1.5R,42,1337,Finance
+ETEL,2026-04-12,2026-05-24,145.32,138.87,23,-4.44,trailing_stop,42,3342,Communications
+KABO,2026-04-12,2026-05-24,5.64,6.46,238,14.51,partial_exit_1.5R,42,1343,Consumer Non-Durables
+COSG,2026-04-12,2026-05-31,1.38,1.55,973,11.97,partial_exit_1.5R,49,1344,Consumer Non-Durables
+ELSH,2026-04-12,2026-05-31,10.70,11.55,189,8.02,partial_trail_1.5ATR,49,2022,Finance
+COSG,2026-04-12,2026-06-08,1.38,1.63,1460,18.01,distribution_exit,57,2017,Consumer Non-Durables
+KABO,2026-04-12,2026-07-14,5.64,6.77,357,20.00,take_profit,93,2015,Consumer Non-Durables
+PHDC,2026-04-19,2026-05-03,13.69,15.83,87,15.59,partial_exit_1.5R,14,1191,Finance
+ABUK,2026-04-19,2026-05-10,121.12,112.64,24,-7.00,stop_loss,21,2907,Process Industries
+PHDC,2026-04-19,2026-05-31,13.69,14.86,132,8.50,partial_trail_1.5ATR,42,1807,Finance
+AIFI,2026-04-19,2026-05-31,3.70,3.44,810,-7.00,stop_loss,42,2999,Process Industries
+OCDI,2026-04-19,2026-07-03,19.85,25.39,60,27.94,partial_exit_1.5R,75,1191,Finance
+OCDI,2026-04-19,2026-07-03,19.85,23.81,91,20.00,take_profit,75,1806,Finance
+BTFH,2026-04-19,2026-08-25,3.03,2.96,990,-2.22,trailing_stop,128,2997,Finance
+ALUM,2026-04-26,2026-05-10,31.95,29.72,91,-7.00,stop_loss,14,2908,Non-Energy Minerals
+HELI,2026-04-26,2026-05-17,5.96,7.23,196,21.31,partial_exit_1.5R,21,1169,Consumer Durables
+HELI,2026-04-26,2026-05-17,5.96,7.16,294,20.00,take_profit,21,1753,Consumer Durables
+HRHO,2026-04-26,2026-06-08,28.29,26.31,103,-7.00,stop_loss,43,2914,Finance
+TMGH,2026-04-26,2026-07-21,95.96,101.45,30,5.73,distribution_exit,86,2879,Finance
+SIPC,2026-04-26,2026-07-31,3.57,3.99,326,11.67,partial_exit_1.5R,96,1165,Health Technology
+SIPC,2026-04-26,2026-08-05,3.57,4.29,491,20.00,take_profit,101,1754,Health Technology
+AMIA,2026-05-03,2026-05-10,11.66,10.84,244,-7.00,stop_loss,7,2844,Finance
+ATLC,2026-05-03,2026-05-10,4.78,4.45,596,-7.00,stop_loss,7,2850,Finance
+EFID,2026-05-03,2026-06-28,26.56,25.83,107,-2.76,trailing_stop,56,2842,Consumer Non-Durables
+EAST,2026-05-03,2026-07-08,39.16,37.10,72,-5.25,trailing_stop,66,2819,Consumer Non-Durables
+SUGR,2026-05-03,2026-08-25,49.58,57.11,22,15.19,partial_exit_1.5R,114,1091,Process Industries
+SUGR,2026-05-03,2026-08-25,49.58,57.24,35,15.46,backtest_end,114,1735,Process Industries
+IRON,2026-05-10,2026-05-17,34.16,31.77,110,-7.00,stop_loss,7,3758,Non-Energy Minerals
+EGCH,2026-05-10,2026-05-24,14.05,13.07,269,-7.00,stop_loss,14,3781,Process Industries
+GMCI,2026-05-10,2026-05-24,1.39,1.57,1085,12.94,partial_exit_1.5R,14,1513,Distribution Services
+GMCI,2026-05-10,2026-05-31,1.39,1.67,1628,20.00,take_profit,21,2270,Distribution Services
+ENGC,2026-05-10,2026-06-08,27.05,34.25,55,26.64,partial_exit_1.5R,29,1488,Producer Manufacturing
+ENGC,2026-05-10,2026-06-08,27.05,32.46,84,20.00,take_profit,29,2272,Producer Manufacturing
+MCRO,2026-05-10,2026-06-08,1.14,1.26,1326,10.52,partial_exit_1.5R,29,1512,Health Technology
+MCRO,2026-05-10,2026-07-21,1.14,1.37,1991,20.00,take_profit,72,2270,Health Technology
+HELI,2026-05-17,2026-05-24,7.23,6.73,420,-7.00,stop_loss,7,3038,Consumer Durables
+ISPH,2026-05-17,2026-05-31,12.88,11.98,236,-7.00,stop_loss,14,3040,Distribution Services
+ALUM,2026-05-17,2026-06-08,32.94,30.63,92,-7.00,stop_loss,22,3030,Non-Energy Minerals
+JUFO,2026-05-17,2026-06-08,31.99,29.75,95,-7.00,stop_loss,22,3039,Consumer Non-Durables
+MENA,2026-05-17,2026-07-14,6.33,7.01,192,10.71,partial_exit_1.5R,58,1216,Finance
+MENA,2026-05-17,2026-08-25,6.33,6.90,288,8.98,backtest_end,100,1823,Finance
+ELEC,2026-05-31,2026-06-08,2.38,2.21,1844,-7.00,stop_loss,8,4390,Producer Manufacturing
+ELWA,2026-05-31,2026-07-08,2.09,1.95,2098,-7.00,stop_loss,38,4389,Consumer Services
+HELI,2026-05-31,2026-07-21,6.75,8.31,260,23.10,partial_exit_1.5R,51,1755,Consumer Durables
+HELI,2026-05-31,2026-07-21,6.75,8.10,390,20.00,take_profit,51,2633,Consumer Durables
+DSCW,2026-05-31,2026-08-05,1.80,2.05,974,13.72,partial_exit_1.5R,66,1756,Consumer Non-Durables
+DSCW,2026-05-31,2026-08-20,1.80,1.92,1461,6.51,partial_trail_1.5ATR,81,2634,Consumer Non-Durables
+ATLC,2026-05-31,2026-08-25,4.93,5.48,891,11.22,backtest_end,86,4390,Finance
+FIRE,2026-06-08,2026-06-15,4.06,4.71,1132,16.01,distribution_exit,7,4596,Finance
+ELSH,2026-06-08,2026-06-28,13.50,12.55,340,-7.00,stop_loss,20,4590,Finance
+MAAL,2026-06-08,2026-07-03,5.95,6.99,308,17.48,partial_exit_1.5R,25,1833,Finance
+MAAL,2026-06-08,2026-07-14,5.95,7.14,464,20.00,take_profit,36,2761,Finance
+EFIH,2026-06-08,2026-07-26,21.07,23.40,87,11.06,partial_exit_1.5R,48,1833,Technology Services
+ATQA,2026-06-08,2026-08-20,9.82,11.04,187,12.42,partial_exit_1.5R,73,1836,Producer Manufacturing
+ATQA,2026-06-08,2026-08-25,9.82,11.60,281,18.13,backtest_end,78,2759,Producer Manufacturing
+EFIH,2026-06-08,2026-08-25,21.07,24.00,131,13.91,backtest_end,78,2760,Technology Services
+ETEL,2026-07-03,2026-07-21,93.65,103.61,18,10.64,partial_exit_1.5R,18,1686,Communications
+ECAP,2026-07-03,2026-07-31,33.79,31.42,124,-7.00,stop_loss,28,4190,Producer Manufacturing
+ETRS,2026-07-03,2026-07-31,11.30,10.51,373,-7.00,stop_loss,28,4215,Transportation
+ETEL,2026-07-03,2026-08-20,93.65,112.38,27,20.00,take_profit,48,2529,Communications
+CIEB,2026-07-03,2026-08-25,23.93,24.99,176,4.43,backtest_end,53,4212,Finance
+PHDC,2026-07-03,2026-08-25,15.13,14.67,278,-3.04,backtest_end,53,4206,Finance
+AJWA,2026-07-14,2026-07-21,180.33,167.71,20,-7.00,stop_loss,7,3607,Consumer Non-Durables
+AMOC,2026-07-14,2026-07-31,8.35,7.77,435,-7.00,stop_loss,17,3632,Energy Minerals
+EFID,2026-07-14,2026-08-10,28.00,31.89,51,13.89,partial_exit_1.5R,27,1428,Consumer Non-Durables
+EFID,2026-07-14,2026-08-15,28.00,29.70,78,6.07,partial_trail_1.5ATR,32,2184,Consumer Non-Durables
+FAIT,2026-07-14,2026-08-20,36.96,42.44,39,14.83,partial_exit_1.5R,37,1441,Finance
+FAIT,2026-07-14,2026-08-25,36.96,43.52,59,17.75,backtest_end,42,2181,Finance
+ABUK,2026-07-14,2026-08-25,73.31,75.76,49,3.34,backtest_end,42,3592,Process Industries
+OCDI,2026-07-21,2026-07-31,27.29,25.38,128,-7.00,stop_loss,10,3493,Finance
+COSG,2026-07-21,2026-07-31,1.70,1.58,2057,-7.00,stop_loss,10,3497,Consumer Non-Durables
+ACGC,2026-07-21,2026-08-10,10.10,11.39,138,12.77,partial_exit_1.5R,20,1394,Process Industries
+ACGC,2026-07-21,2026-08-20,10.10,12.12,208,20.00,take_profit,30,2101,Process Industries
+HRHO,2026-07-21,2026-08-25,27.01,25.90,129,-4.11,backtest_end,35,3484,Finance
+EGCH,2026-07-21,2026-08-25,13.05,13.51,268,3.52,backtest_end,35,3497,Process Industries
+HELI,2026-07-26,2026-07-31,8.30,7.72,272,-7.00,stop_loss,5,2258,Consumer Durables
+AALR,2026-07-26,2026-07-31,243.00,273.78,3,12.67,partial_exit_1.5R,5,729,Finance
+AALR,2026-07-26,2026-07-31,243.00,225.99,6,-7.00,stop_loss,5,1458,Finance
+AJWA,2026-07-26,2026-07-31,180.41,167.78,12,-7.00,stop_loss,5,2165,Consumer Non-Durables
+CIRA,2026-07-26,2026-07-31,31.86,29.63,71,-7.00,stop_loss,5,2262,Consumer Services
+TMGH,2026-07-26,2026-08-25,98.80,97.51,22,-1.31,backtest_end,30,2174,Finance
+HELI,2026-07-31,2026-08-20,8.20,7.63,435,-7.00,stop_loss,20,3567,Consumer Durables
+OCDI,2026-07-31,2026-08-20,28.03,32.70,50,16.66,partial_exit_1.5R,20,1402,Finance
+AXPH,2026-07-31,2026-08-25,1209.64,1451.57,2,20.00,take_profit,25,2419,Health Technology
+OCDI,2026-07-31,2026-08-25,28.03,31.50,77,12.38,backtest_end,25,2158,Finance
+DCRC,2026-07-31,2026-08-25,52.00,55.00,68,5.77,backtest_end,25,3536,Finance
+EALR,2026-07-31,2026-08-25,391.98,402.29,9,2.63,backtest_end,25,3528,Finance
+ADRI,2026-08-05,2026-08-20,7.99,10.40,128,30.16,partial_exit_1.5R,15,1023,Finance
+ADRI,2026-08-05,2026-08-20,7.99,9.59,193,20.00,take_profit,15,1542,Finance
+AREH,2026-08-05,2026-08-20,1.60,1.49,1606,-7.00,stop_loss,15,2570,Industrial Services
+SIPC,2026-08-05,2026-08-25,4.62,4.90,556,6.06,backtest_end,20,2569,Health Technology
+CNFN,2026-08-05,2026-08-25,4.90,4.78,524,-2.45,backtest_end,20,2568,Finance
+EMFD,2026-08-05,2026-08-25,12.10,12.17,212,0.58,backtest_end,20,2565,Finance
+AMOC,2026-08-10,2026-08-20,9.10,11.35,78,24.73,partial_exit_1.5R,10,710,Energy Minerals
+AMOC,2026-08-10,2026-08-20,9.10,10.92,119,20.00,take_profit,10,1083,Energy Minerals
+ADPC,2026-08-10,2026-08-25,4.17,3.88,431,-7.00,stop_loss,15,1797,Consumer Non-Durables
+ALUM,2026-08-10,2026-08-25,24.40,29.38,29,20.41,partial_exit_1.5R,15,708,Non-Energy Minerals
+ALUM,2026-08-10,2026-08-25,24.40,29.28,44,20.00,take_profit,15,1074,Non-Energy Minerals
+AALR,2026-08-10,2026-08-25,291.11,306.44,6,5.27,backtest_end,15,1747,Finance
+AJWA,2026-08-10,2026-08-25,188.12,181.83,9,-3.34,backtest_end,15,1693,Consumer Non-Durables
+ECAP,2026-08-20,2026-08-25,36.23,33.69,90,-7.00,stop_loss,5,3261,Producer Manufacturing
+AMOC,2026-08-20,2026-08-25,11.35,10.91,287,-3.88,backtest_end,5,3257,Energy Minerals
+COSG,2026-08-20,2026-08-25,1.83,1.82,1783,-0.55,backtest_end,5,3263,Consumer Non-Durables
+CPCI,2026-08-20,2026-08-25,532.09,548.00,6,2.99,backtest_end,5,3193,Health Technology
+ELWA,2026-08-20,2026-08-25,1.74,1.86,1875,6.90,backtest_end,5,3263,Consumer Services

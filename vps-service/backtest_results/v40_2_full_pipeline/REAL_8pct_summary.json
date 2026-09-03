@@ -1,0 +1,73 @@
+{
+  "metrics": {
+    "trades": 134,
+    "win_rate": 60.45,
+    "avg_win": 14.42,
+    "avg_loss": -6.18,
+    "profit_factor": 3.57,
+    "total_return": 11.85,
+    "max_dd": -2.11,
+    "expectancy": 6.27,
+    "final_capital": 111850.3
+  },
+  "sector_concentration": {
+    "Process Industries": {
+      "count": 14,
+      "pnl_sum": 63.65922153649316
+    },
+    "Non-Energy Minerals": {
+      "count": 6,
+      "pnl_sum": 12.409834508580577
+    },
+    "Finance": {
+      "count": 51,
+      "pnl_sum": 363.53433593229005
+    },
+    "Consumer Durables": {
+      "count": 8,
+      "pnl_sum": 56.40850562799229
+    },
+    "Health Technology": {
+      "count": 9,
+      "pnl_sum": 129.03454378960586
+    },
+    "Technology Services": {
+      "count": 3,
+      "pnl_sum": 17.96440255591017
+    },
+    "Producer Manufacturing": {
+      "count": 10,
+      "pnl_sum": 82.13733813540779
+    },
+    "Consumer Non-Durables": {
+      "count": 18,
+      "pnl_sum": 50.78564393860365
+    },
+    "Communications": {
+      "count": 3,
+      "pnl_sum": 26.198867776050115
+    },
+    "Distribution Services": {
+      "count": 3,
+      "pnl_sum": 25.935365749808373
+    },
+    "Consumer Services": {
+      "count": 3,
+      "pnl_sum": -7.103448861749974
+    },
+    "Transportation": {
+      "count": 1,
+      "pnl_sum": -7.0000000000000036
+    },
+    "Energy Minerals": {
+      "count": 4,
+      "pnl_sum": 33.848618475744914
+    },
+    "Industrial Services": {
+      "count": 1,
+      "pnl_sum": -7.000000000000009
+    }
+  },
+  "market_down_days": 7,
+  "buy_on_down_days": 0
+}
