@@ -1,0 +1,145 @@
+{
+  "main_period": {
+    "metrics": {
+      "trades": 111,
+      "win_rate": 63.96,
+      "avg_win": 13.91,
+      "avg_loss": -6.09,
+      "profit_factor": 4.06,
+      "total_return": 11.28,
+      "max_dd": -2.59,
+      "expectancy": 6.71,
+      "final_capital": 111282.24
+    },
+    "exposure": {
+      "max_open_positions": 29,
+      "avg_open_positions": 12.7,
+      "sector_violations": 4,
+      "sector_violation_details": [
+        {
+          "date": "2026-03-29",
+          "sector": "Finance",
+          "pct": 25.25970897055568,
+          "limit": 25.0
+        },
+        {
+          "date": "2026-04-19",
+          "sector": "Finance",
+          "pct": 31.88323532938522,
+          "limit": 25.0
+        },
+        {
+          "date": "2026-04-26",
+          "sector": "Finance",
+          "pct": 26.38533765885534,
+          "limit": 25.0
+        },
+        {
+          "date": "2026-05-17",
+          "sector": "Finance",
+          "pct": 27.949267615964985,
+          "limit": 25.0
+        }
+      ],
+      "sector_rejected": {
+        "Finance": 51
+      }
+    }
+  },
+  "oos_2025": {
+    "metrics": {
+      "trades": 253,
+      "win_rate": 52.17,
+      "avg_win": 13.28,
+      "avg_loss": -6.52,
+      "profit_factor": 2.22,
+      "total_return": 2.01,
+      "max_dd": -4.37,
+      "expectancy": 3.81,
+      "final_capital": 102010.06
+    },
+    "exposure": {
+      "max_open_positions": 25,
+      "avg_open_positions": 12.63,
+      "sector_violations": 7,
+      "sector_violation_details": [
+        {
+          "date": "2025-02-27",
+          "sector": "Finance",
+          "pct": 32.10510719462593,
+          "limit": 25.0
+        },
+        {
+          "date": "2025-06-19",
+          "sector": "Finance",
+          "pct": 30.608074962805965,
+          "limit": 25.0
+        },
+        {
+          "date": "2025-07-03",
+          "sector": "Finance",
+          "pct": 29.264703899631062,
+          "limit": 25.0
+        },
+        {
+          "date": "2025-07-10",
+          "sector": "Finance",
+          "pct": 25.573456869658763,
+          "limit": 25.0
+        },
+        {
+          "date": "2025-08-14",
+          "sector": "Finance",
+          "pct": 29.832893428653385,
+          "limit": 25.0
+        },
+        {
+          "date": "2025-10-09",
+          "sector": "Finance",
+          "pct": 25.972164713695804,
+          "limit": 25.0
+        },
+        {
+          "date": "2025-12-25",
+          "sector": "Finance",
+          "pct": 29.06230952152422,
+          "limit": 25.0
+        }
+      ],
+      "sector_rejected": {
+        "Finance": 49,
+        "Process Industries": 1
+      }
+    }
+  },
+  "last_60_days": {
+    "metrics": {
+      "trades": 32,
+      "win_rate": 56.25,
+      "avg_win": 9.75,
+      "avg_loss": -4.28,
+      "profit_factor": 2.93,
+      "total_return": 4.16,
+      "max_dd": -1.27,
+      "expectancy": 3.61,
+      "final_capital": 104159.16
+    },
+    "exposure": {
+      "max_open_positions": 20,
+      "avg_open_positions": 5.5,
+      "sector_violations": 1,
+      "sector_violation_details": [
+        {
+          "date": "2026-08-18",
+          "sector": "Finance",
+          "pct": 25.964029538492273,
+          "limit": 25.0
+        }
+      ],
+      "sector_rejected": {
+        "Process Industries": 1,
+        "Finance": 11
+      }
+    }
+  }
+}
