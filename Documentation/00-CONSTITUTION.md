@@ -10,7 +10,7 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-03** (إضافة القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
+> **آخر تحديث: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
 > **آخر تحديث سابق:** 2026-09-03 (القاعدة 45) + 2026-09-02 (القاعدة 44 — NEWS-DB-SOT) + 2026-08-29 (القواعد 27-32: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
@@ -1536,3 +1536,35 @@ VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db).
 **الـ backup:** محفوظ في `backups/db-cleanup-20260903-163211/` (331 MB — كل الـ DBs الـ 10 قبل التنظيف).
 
 **المرجع:** `worklog.md` (Task IDs: WAVE-1a, WAVE-1b, WAVE-1c, WAVE-2a-2c, WAVE-3, SANDBOX-RESTART-DATA-LOSS, BACKTEST-AND-PREDICTIONS-FINAL).
+
+---
+
+### القاعدة 47 — دمج news-agent submodule (NEWS-AGENT-INTEGRATION — 2026-09-03)
+> **سبب الإضافة:** توجيه المالك (2026-09-03): "خد المشروع عندك عالشان يكون جزء من المشروع بتاعنا أعتقد ممكن تدمجة مع محرك البيانات"
+
+دمج [news repo](https://github.com/enmohsen20111975/news/) كـ submodule جوه المشروع الرئيسي في `news-agent/`.
+
+**الـ scrapers النشطة (تكتب في db/ بتاعنا):**
+1. `tradingview_rest.py` — scanner.tradingview.com (REST API، urllib فقط، 296 سهم في <1 ثانية)
+2. `tradingview_screener_lists.py` — screener lists (1,459 entries)
+3. `tradingview_market_movers.py` — 9 tabs market movers
+4. `egx_news_scraper.py` — EGX official site → `news.db.market_news`
+5. `marketmaker_news_scraper.py` — MarketMaker → `news.db.market_news`
+6. `telegram_collector.py` — Telegram channels → `news.db.market_news` (محتاج telethon)
+
+**الـ scrapers المعطّلة (محتفظ بيها، مش نشطة):**
+- `rss_collector.py.disabled` — محتاج `feedparser`
+- `investing_scraper.py.disabled` — محتاج Playwright + chromium
+- `investing_news_collector.py.disabled` — محتاج Playwright + chromium
+
+**Rule 28 (NO-DUPLICATION):** كل الـ scrapers بتكتب في `/home/z/my-project/db/` (الـ canonical). مفيش DBs مكررة في `news-agent/`.
+
+**Rule 29 (UNIFIED-SYSTEM):** `news-agent/config/paths.py` بيوفّر مسارات موحدة لكل الـ scrapers.
+
+**news merge:** 212 خبر من news-agent القديم ادمجت في `db/news.db.market_news` (الإجمالي دلوقتي 8,012 خبر).
+
+**AI محلي معطّل:** المشروع الأصلي كان بيستخدم Ollama. إحنا مش محتاجينه — V40.2 بيعتمد على rules + indicators.
+
+**الـ backup:** DBs الأصلية لـ news-agent محفوظة في `news-agent/_disabled_dbs/` (للرجوع فقط).
+
+**المرجع:** `news-agent/README.md` + `news-agent/config/paths.py`

@@ -63,6 +63,29 @@
 | `intraday_aggregator.py` (legacy) | `intraday_aggregated` | `price_history.db.price_history` (safety net) | كل 30 دقيقة |
 | `price_history_safetynet.py` (legacy) | `yahoo_safetynet` | `price_history.db.price_history` (safety net) | كل 60 دقيقة |
 
+### 1.1b — news-agent scrapers (مدerged من news repo)
+
+> **الـ module:** `news-agent/` (submodule from https://github.com/enmohsen20111975/news/)
+> **التكامل:** 2026-09-03 (Rule 47: NEWS-AGENT-INTEGRATION)
+
+| Scraper | المصدر | الـ destination | الحالة |
+|---|---|---|---|
+| `tradingview_rest.py` | scanner.tradingview.com (REST API) | `db/data_engine.db.stocks` | ✅ نشط (urllib فقط) |
+| `tradingview_screener_lists.py` | TradingView screener | `db/data_engine.db.screener_lists` | ✅ نشط |
+| `tradingview_market_movers.py` | TradingView 9 tabs | `db/data_engine.db.market_movers_tabs` | ✅ نشط |
+| `egx_news_scraper.py` | EGX official site | `db/news.db.market_news` | ✅ نشط |
+| `marketmaker_news_scraper.py` | MarketMaker | `db/news.db.market_news` | ✅ نشط |
+| `telegram_collector.py` | Telegram channels | `db/news.db.market_news` | ⚠️ محتاج telethon |
+| `tradingview_scraper.py` | TradingView (Playwright) | `db/data_engine.db.stocks` | ⚠️ محتاج Playwright |
+| `web_scraper.py` | Web scraping | `db/news.db.market_news` | ⚠️ محتاج trafilatura |
+| `rss_collector.py.disabled` | RSS feeds | — | 🚫 معطّل (feedparser) |
+| `investing_scraper.py.disabled` | sa.investing.com | — | 🚫 معطّل (Playwright) |
+| `investing_news_collector.py.disabled` | sa.investing.com/news | — | 🚫 معطّل (Playwright) |
+
+**Rule 28 (NO-DUPLICATION):** كل الـ scrapers بتكتب في `/home/z/my-project/db/` (الـ canonical).
+**Rule 29 (UNIFIED-SYSTEM):** `news-agent/config/paths.py` بيوفّر مسارات موحدة.
+**news merge:** 212 خبر من news-agent القديم ادمجت في `db/news.db.market_news` (الإجمالي 8,012 خبر).
+
 ### 1.2 — الـ writers لـ `data_engine.db` (live quotes)
 
 | الكاتب | الـ destination | التردد |
