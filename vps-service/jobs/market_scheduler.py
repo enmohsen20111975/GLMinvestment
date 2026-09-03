@@ -977,12 +977,16 @@ class MarketScheduler:
 
             # Build args based on mode
             if mode == 'intraday':
-                args = ['--today-only', '--max-picks', '5']
-                log_label = 'intraday (5 picks)'
+                # أثناء الجلسة: حدّث توقعات اليوم بالأسعار الحية
+                # --keep-old: ما تمسحش التوقعات القديمة (فقط أضف/حدّث)
+                args = ['--today-only', '--max-picks', '5', '--keep-old']
+                log_label = 'intraday (5 picks, keep-old)'
             elif mode == 'daily':
+                # بعد الإغلاق: تحليل عميق لتوقعات الغد
                 args = ['--yesterday-only', '--max-picks', '7']
                 log_label = 'daily deep (7 picks)'
             else:  # morning
+                # قبل الجلسة: توقعات اليوم (ابدأ من جديد)
                 args = ['--today-only', '--max-picks', '7']
                 log_label = 'morning (7 picks)'
 
