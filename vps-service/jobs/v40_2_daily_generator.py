@@ -247,40 +247,8 @@ def get_scan_dates(start_date, end_date, scan_interval):
     except Exception:
         pass
     
-    # 2. FALLBACK: price_history.db (LEGACY — متجمد)
-    try:
-        conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
-        cur = conn.cursor()
-        cur.execute("PRAGMA table_info(price_history)")
-        cols = [r[1] for r in cur.fetchall()]
-        date_col = 'date' if 'date' in cols else 'price_date' if 'price_date' in cols else None
-        if date_col:
-            cur.execute(
-                f"SELECT DISTINCT {date_col} FROM price_history WHERE {date_col} >= ? AND {date_col} <= ? ORDER BY {date_col} ASC",
-                (start_date, end_date),
-            )
-            dates = [row[0] for row in cur.fetchall()]
-            
-            if not dates and start_date == end_date:
-                cur.execute(
-                    f"SELECT DISTINCT {date_col} FROM price_history ORDER BY {date_col} DESC LIMIT 1"
-                )
-                last_row = cur.fetchone()
-                if last_row:
-                    last_date = last_row[0]
-                    print(f"[V40.2] ⚠️ fallback: استخدام آخر يوم من price_history.db: {last_date}", flush=True)
-                    conn.close()
-                    return [last_date]
-            
-            conn.close()
-            if dates:
-                print(f"[V40.2] Using price_history.db ({date_col}) — {len(dates)} dates (LEGACY)", flush=True)
-                return dates[::scan_interval]
-        conn.close()
-    except Exception:
-        pass
-    
-    # 3. Fallback أخير: stocks.db (stock_daily_prices — آخر 30 يوم)
+    # 2. FALLBACK: stocks.db (stock_daily_prices — آخر 30 يوم)
+    # price_history.db تم إلغاؤه تماماً (2026-09-03)
     try:
         conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=10.0)
         cur = conn.cursor()

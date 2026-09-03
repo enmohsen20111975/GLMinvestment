@@ -126,12 +126,9 @@ def _resolve_price_history_db():
     return primary
 
 PRICE_HISTORY_DB = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
-# PHASE-2-DB-UNIFY (2026-08-29): price_history.db هو المصدر الكامل للأسعار التاريخية
-# - 1,248,257 rows / 1,267 tickers / 25 سنة بيانات (2001→2026)
-# - 30,214 rows للأسهم الانفجارية (BIOC: 5942, NIPH: 6243, AMES: 5585, ...)
-# - schema: ticker, date, open_price, high_price, low_price, close_price, volume, source
-# data_engine.db.egksco_price_history = 0 rows على الإنتاج (فاضي) → fallback فقط
-PRICE_HISTORY_DB_LEGACY = str(Path(__file__).resolve().parents[2] / 'db' / 'price_history.db')
+# price_history.db تم إلغاؤه تماماً (2026-09-03)
+# Owner: "ألغى التعامل مع price_history.db خالص الموضوع مش ناقص تخبط"
+# كل القراءة الآن من data_engine.db.egksco_price_history فقط.
 
 
 # ===========================================================================
@@ -1281,12 +1278,11 @@ class V38BacktestEngine:
     def get_price_data(self, ticker: str) -> Tuple[List[str], List[float], List[float], List[float], List[float], List[float]]:
         """تحميل بيانات السعر لسهم واحد.
         
-        FIX (2026-09-03): data_engine.db هو PRIMARY (طازج أثناء الجلسة).
-        Owner: "لازم تشتغل على data-engine.db لان هى دى الى فيها البيانات اثناء الجلسة"
+       FIX (2026-09-03): data_engine.db هو المصدر الوحيد — price_history.db تم إلغاؤه.
+        Owner: "ألغى التعامل مع price_history.db خالص"
         
         1. PRIMARY: data_engine.db.egksco_price_history (طازج — 162K rows)
-        2. FALLBACK: price_history.db.price_history (LEGACY — متجمد)
-        3. FALLBACK أخير: stocks.db.stock_daily_prices (آخر 30 يوم)
+        2. FALLBACK: stocks.db.stock_daily_prices (آخر 30 يوم)
         """
         # 1. PRIMARY: data_engine.db (egksco_price_history — طازج أثناء الجلسة)
         try:
@@ -1311,31 +1307,7 @@ class V38BacktestEngine:
         except Exception:
             pass
         
-        # 2. FALLBACK: price_history.db (LEGACY — متجمد)
-        try:
-            conn = sqlite3.connect(PRICE_HISTORY_DB_LEGACY, timeout=10.0)
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT date, open_price, high_price, low_price, close_price, volume
-                FROM price_history
-                WHERE ticker = ?
-                ORDER BY date ASC
-            """, (ticker,))
-            rows = cur.fetchall()
-            conn.close()
-            if rows:
-                dates = [r[0] for r in rows]
-                opens = [float(r[1] or 0) for r in rows]
-                highs = [float(r[2] or 0) for r in rows]
-                lows = [float(r[3] or 0) for r in rows]
-                closes = [float(r[4] or 0) for r in rows]
-                volumes = [parse_volume(r[5]) for r in rows]
-                return dates, opens, highs, lows, closes, volumes
-        except Exception:
-            pass
-        
-                
-        # 3. Fallback أخير: stocks.db.stock_daily_prices (آخر 30 يوم)
+        # 2. FALLBACK: stocks.db.stock_daily_prices (آخر 30 يوم)
         try:
             conn = sqlite3.connect(STOCKS_DB, timeout=10.0)
             cur = conn.cursor()
