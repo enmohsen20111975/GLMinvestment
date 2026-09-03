@@ -934,6 +934,94 @@ class MarketScheduler:
         except Exception as e:
             logger.error(f"[MarketScheduler] Rebuild predictions error: {e}")
 
+    # ══════════════════════════════════════════════════════════════════
+    # V40.2 LIVE GENERATION (2026-09-03)
+    # Owner directive: "التوقعات ماتغيرتش خالص من يومين — المفروض فيه
+    # تحديث أثناء الجلسة + تحليل عميق بعد الإغلاق لتحديد توقعات الغد"
+    #
+    # المشكلة: V40.2 daily generator كان بيعتمد على crontab بس (cron job
+    # الساعة 3:00 فجراً). لو crontab مش متظبط على الـ VPS → مفيش توقعات
+    # جديدة. كمان الـ MarketScheduler كان بيـ call generate_predictions_internal
+    # (اللي بتكتب في aiPrediction table) بدل V40.2 (اللي بيكتب في predictions table).
+    #
+    # الحل: ربط V40.2 daily generator مباشرة في MarketScheduler.tick() بحيث:
+    # 1. أثناء الجلسة (10:00-14:30): كل 15 دقيقة — تحديث سريع (intraday)
+    # 2. بعد الإغلاق (14:45): مرة واحدة — تحليل عميق لتوقعات الغد
+    # 3. قبل الجلسة (3:00 فجراً): مرة واحدة — توقعات اليوم (backup للـ cron)
+    # ══════════════════════════════════════════════════════════════════
+
+    def run_v40_2_generation(self, mode: str = 'intraday'):
+        """
+        تشغيل V40.2 daily generator كـ subprocess داخل MarketScheduler.
+
+        Args:
+            mode: 'intraday' (تحديث سريع أثناء الجلسة) | 'daily' (تحليل عميق)
+                  'morning' (توقعات اليوم قبل فتح السوق)
+        """
+        if not self._should_run(f'v40_2_generation_{mode}', 15 if mode == 'intraday' else 60):
+            return
+
+        import subprocess
+        import sys as _sys
+
+        try:
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            venv_python = os.path.join(project_root, '.venv', 'bin', 'python3')
+            if not os.path.exists(venv_python):
+                venv_python = _sys.executable
+
+            script_path = os.path.join(project_root, 'vps-service', 'jobs', 'v40_2_daily_generator.py')
+            if not os.path.exists(script_path):
+                logger.warning(f"[MarketScheduler] V40.2 script not found: {script_path}")
+                return
+
+            # Build args based on mode
+            if mode == 'intraday':
+                args = ['--today-only', '--max-picks', '5']
+                log_label = 'intraday (5 picks)'
+            elif mode == 'daily':
+                args = ['--yesterday-only', '--max-picks', '7']
+                log_label = 'daily deep (7 picks)'
+            else:  # morning
+                args = ['--today-only', '--max-picks', '7']
+                log_label = 'morning (7 picks)'
+
+            env = os.environ.copy()
+            # لا نستخدم BYPASS_PRED_CAP — التوقعات لازم تمر بكل الفلاتر
+            env['V40_2_NEWS_IMPACT'] = env.get('V40_2_NEWS_IMPACT', '1')
+            env['V40_2_EXPERT_RECS'] = env.get('V40_2_EXPERT_RECS', '1')
+
+            logger.info(f"[MarketScheduler] 🚀 V40.2 generation ({log_label})...")
+
+            result = subprocess.run(
+                [venv_python, script_path] + args,
+                cwd=project_root,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120,  # 2 دقيقة max
+            )
+
+            if result.returncode == 0:
+                # Extract key lines from stdout
+                for line in result.stdout.split('\n')[-10:]:
+                    if any(k in line for k in ['Total predictions', 'Overall win rate',
+                                               'Signals found', 'Processed', 'NEWS-',
+                                               'EXPERT-', 'POSITION-SIZING']):
+                        logger.info(f"[V40.2] {line.strip()}")
+                logger.info(f"[MarketScheduler] ✓ V40.2 generation complete ({log_label})")
+            else:
+                logger.warning(f"[MarketScheduler] V40.2 exited with code {result.returncode}")
+                if result.stderr:
+                    logger.error(f"[V40.2 stderr] {result.stderr[-500:]}")
+
+            self._mark_run(f'v40_2_generation_{mode}')
+
+        except subprocess.TimeoutExpired:
+            logger.warning(f"[MarketScheduler] V40.2 generation timed out (120s) — mode={mode}")
+        except Exception as e:
+            logger.error(f"[MarketScheduler] V40.2 generation error (mode={mode}): {e}")
+
     def run_daily_closer(self):
         """⚠ DEPRECATED — استخدم ``run_close_predictions`` + ``run_rebuild_predictions``.
 
@@ -2361,6 +2449,13 @@ class MarketScheduler:
                     self.run_morning_regime_check(),
                     self.compute_market_pulse(),
                     self._log_pulse_summary(),
+                    # ════════════════════════════════════════════════════════════
+                    # V40.2 MORNING GENERATION (2026-09-03)
+                    # Owner: "المفروض فيه تحليل لليوم على مدار الجلسة"
+                    # → V40.2 daily generator قبل فتح السوق (9:30)
+                    # → يـ generate توقعات اليوم بناءً على بيانات الأمس
+                    # ════════════════════════════════════════════════════════════
+                    self.run_v40_2_generation(mode='morning'),
                 ),
                 window_minutes=10,  # نافذة 10 دقايق — آمنة جداً
             )
@@ -2402,6 +2497,13 @@ class MarketScheduler:
                 # open until the EOD closer runs at 14:45 Cairo (post-market) on real
                 # closing prices. Only the generation/rebuild path runs intraday.
                 self.run_rebuild_predictions()  # generation only, every 15 min
+                # ════════════════════════════════════════════════════════════
+                # V40.2 LIVE GENERATION (2026-09-03)
+                # Owner: "المفروض فيه تحديث أثناء الجلسة"
+                # → V40.2 daily generator كل 15 دقيقة أثناء الجلسة
+                # → يـ generate توقعات في predictions table (مش aiPrediction)
+                # ════════════════════════════════════════════════════════════
+                self.run_v40_2_generation(mode='intraday')
                 # Live AI Monitor — كل 15 دقيقة أثناء الجلسة (جديد يوليو 2026)
                 self.run_live_ai_scan()
                 # v3.63.0: Live Trailing Stop update — كل 15 دقيقة وقت الجلسة
@@ -2426,6 +2528,14 @@ class MarketScheduler:
                 # run_close_predictions via _run_daily_task). Rebuild runs every 15 min.
                 self.run_close_predictions()
                 self.run_rebuild_predictions()
+                # ════════════════════════════════════════════════════════════
+                # V40.2 DEEP ANALYSIS (2026-09-03)
+                # Owner: "فيه تحديث وتحليل عميق جداً بعد نهاية الجلسة
+                #         لتحديد التوقعات اللي هاتكون لليوم التالي"
+                # → V40.2 daily generator with --yesterday-only (تحليل عميق)
+                # → بيـ generate توقعات الغد بناءً على بيانات اليوم الكاملة
+                # ════════════════════════════════════════════════════════════
+                self.run_v40_2_generation(mode='daily')
                 # Trade Learning — يومياً post-market (جديد يوليو 2026)
                 self.run_daily_trade_learning()
                 # Historical Trade Generator — أسبوعياً (السبت) (جديد يوليو 2026)
