@@ -56,6 +56,11 @@ MIN_RS = 1.0  # Relative Strength (stock_roc - benchmark_change)
 DEEP_CORRECTION_DROP_PCT = 12.0
 EXTENDED_CHASE_3D_PCT = 12.0
 EXTENDED_CHASE_5D_PCT = 15.0
+# EXPLOSIVE OVERRIDE (2026-09-03): الأسهم الانفجارية (INSTITUTIONAL_BUY / score=100)
+# بـ تطير بسرعة — لا نرفضها كـ "مطاردة". دي فرص حقيقية مش chase.
+# Owner: "ABUK طلع INSTITUTIONAL_BUY بـ score 100 بس اترفض — ده مش صحيح"
+EXPLOSIVE_CHASE_3D_PCT = 25.0   # 25% in 3 days = انفجار حقيقي (مش مطاردة)
+EXPLOSIVE_CHASE_5D_PCT = 30.0   # 30% in 5 days = انفجار حقيقي
 MIN_VOLUME = 100  # V80-TUNE: lower threshold (was 1000 — missed low-volume pumps)
 MIN_TURNOVER_EGP = 5_000  # V80-TUNE: lower threshold (was 50K — missed penny stocks)
 SMA50_PROXIMITY_PCT = 2.0  # within 2% below SMA50 = "قريب جدًا"
@@ -184,20 +189,32 @@ def _check_deep_correction(closes: List[float]) -> Dict[str, Any]:
     return {'name': 'deep_correction', 'passed': True, 'reason': f'نزل {drop_pct:.1f}% (تحت {DEEP_CORRECTION_DROP_PCT}%)', 'weight': 2}
 
 
-def _check_dont_chase(closes: List[float]) -> Dict[str, Any]:
-    """شرط 6: Don't Chase (مش ممتد)."""
+def _check_dont_chase(closes: List[float], signal_type: str = '', score: int = 0) -> Dict[str, Any]:
+    """شرط 6: Don't Chase (مش ممتد).
+    
+    FIX (2026-09-03): لو السهم INSTITUTIONAL_BUY أو STRONG_BUY بـ score ≥ 90
+    → نـ松弛 الـ chase threshold لـ EXPLOSIVE_CHASE (25%/30%) بدل الـ عادي (12%/15%).
+    الأسهم الانفجارية بـ تطير بسرعة — رفضها كـ "مطاردة" بـ يقتل الفرص الحقيقية.
+    """
     if not closes or len(closes) < 6:
         return {'name': 'dont_chase', 'passed': True, 'reason': 'بيانات غير كافية', 'weight': 2}
+    
+    # حدد الـ thresholds بناءً على نوع الإشارة
+    is_explosive = signal_type in ('INSTITUTIONAL_BUY', 'STRONG_BUY') or score >= 90
+    chase_3d = EXPLOSIVE_CHASE_3D_PCT if is_explosive else EXTENDED_CHASE_3D_PCT
+    chase_5d = EXPLOSIVE_CHASE_5D_PCT if is_explosive else EXTENDED_CHASE_5D_PCT
+    label = 'انفجار حقيقي' if is_explosive else 'مطاردة'
+    
     # ROC3
     if len(closes) >= 4 and closes[-4] > 0:
         roc3 = ((closes[-1] - closes[-4]) / closes[-4]) * 100
-        if roc3 >= EXTENDED_CHASE_3D_PCT:
-            return {'name': 'dont_chase', 'passed': False, 'reason': f'طلع {roc3:.1f}% في 3 أيام (مطاردة)', 'weight': 2}
+        if roc3 >= chase_3d:
+            return {'name': 'dont_chase', 'passed': False, 'reason': f'طلع {roc3:.1f}% في 3 أيام ({label})', 'weight': 2}
     # ROC5
     if len(closes) >= 6 and closes[-6] > 0:
         roc5 = ((closes[-1] - closes[-6]) / closes[-6]) * 100
-        if roc5 >= EXTENDED_CHASE_5D_PCT:
-            return {'name': 'dont_chase', 'passed': False, 'reason': f'طلع {roc5:.1f}% في 5 أيام (مطاردة)', 'weight': 2}
+        if roc5 >= chase_5d:
+            return {'name': 'dont_chase', 'passed': False, 'reason': f'طلع {roc5:.1f}% في 5 أيام ({label})', 'weight': 2}
     return {'name': 'dont_chase', 'passed': True, 'reason': 'مش ممتد', 'weight': 2}
 
 
@@ -285,7 +302,7 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
         _check_above_sma50(closes, volumes),
         _check_relative_strength(proofs, stock_roc, benchmark_change),
         _check_deep_correction(closes),
-        _check_dont_chase(closes),
+        _check_dont_chase(closes, signal_type=data.get('signal_type', ''), score=data.get('score', 0)),
         _check_liquidity(volumes, closes),
         _market_ctx_check,
     ]

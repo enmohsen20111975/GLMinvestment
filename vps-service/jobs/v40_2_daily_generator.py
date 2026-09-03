@@ -1030,6 +1030,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     'market_regime_trend': result.get('market_regime_trend', ''),
                     'stock_roc': float(result.get('stock_roc', 0) or 0),
                     'benchmark_change': float(result.get('benchmark_change', 0) or 0),
+                    'signal_type': signal,
+                    'score': result.get('score', 0),
                 }
                 _gate_result = check_entry_gate(_gate_data)
                 if not _gate_result['passed']:
