@@ -1,0 +1,119 @@
+{
+  "trades": [
+    {
+      "ticker": "1202",
+      "date": "2026-08-13",
+      "entry": 18.739999771118164,
+      "stop": 17.10178537913731,
+      "target1": 21.197321359089443,
+      "exit_price": 18.24,
+      "exit_reason": "expired",
+      "return_pct": -2.67,
+      "is_win": false,
+      "confidence": 85
+    },
+    {
+      "ticker": "3060",
+      "date": "2026-08-15",
+      "entry": 16.77,
+      "stop": 15.542143114634921,
+      "target1": 18.611785328047617,
+      "exit_price": 16.77,
+      "exit_reason": "expired",
+      "return_pct": 0.0,
+      "is_win": false,
+      "confidence": 90
+    },
+    {
+      "ticker": "4061",
+      "date": "2026-08-12",
+      "entry": 12.300000190734863,
+      "stop": 11.440714456013271,
+      "target1": 13.588928792817251,
+      "exit_price": 11.440714456013271,
+      "exit_reason": "stop_hit",
+      "return_pct": -6.99,
+      "is_win": false,
+      "confidence": 90
+    },
+    {
+      "ticker": "4143",
+      "date": "2026-08-15",
+      "entry": 37.44,
+      "stop": 33.43928510938372,
+      "target1": 43.44107233592442,
+      "exit_price": 37.44,
+      "exit_reason": "expired",
+      "return_pct": 0.0,
+      "is_win": false,
+      "confidence": 80
+    },
+    {
+      "ticker": "4163",
+      "date": "2026-08-15",
+      "entry": 45.86,
+      "stop": 41.726428734915594,
+      "target1": 52.060356897626605,
+      "exit_price": 45.86,
+      "exit_reason": "expired",
+      "return_pct": 0.0,
+      "is_win": false,
+      "confidence": 70
+    },
+    {
+      "ticker": "4194",
+      "date": "2026-08-15",
+      "entry": 48.58,
+      "stop": 43.7649993787493,
+      "target1": 55.80250093187604,
+      "exit_price": 48.58,
+      "exit_reason": "expired",
+      "return_pct": 0.0,
+      "is_win": false,
+      "confidence": 100
+    },
+    {
+      "ticker": "6014",
+      "date": "2026-08-13",
+      "entry": 42.599998474121094,
+      "stop": 39.5571410042899,
+      "target1": 47.16428467886788,
+      "exit_price": 40.94,
+      "exit_reason": "expired",
+      "return_pct": -3.9,
+      "is_win": false,
+      "confidence": 85
+    },
+    {
+      "ticker": "6019",
+      "date": "2026-08-13",
+      "entry": 27.079999923706055,
+      "stop": 24.930714119502476,
+      "target1": 30.303928630011423,
+      "exit_price": 24.930714119502476,
+      "exit_reason": "stop_hit",
+      "return_pct": -7.94,
+      "is_win": false,
+      "confidence": 95
+    },
+    {
+      "ticker": "9536",
+      "date": "2026-08-06",
+      "entry": 43.880001068115234,
+      "stop": 33.98642978668213,
+      "target1": 58.72035799026489,
+      "exit_price": 40.0,
+      "exit_reason": "expired",
+      "return_pct": -8.84,
+      "is_win": false,
+      "confidence": 100
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "wins": 0,
+    "losses": 9,
+    "wr": 0.0,
+    "ret": -30.3
+  }
+}

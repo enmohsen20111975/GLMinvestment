@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "test": "V40.2 POSITION SIZING COMPARISON",
+    "window": "2026-02-01 → 2026-08-14",
+    "universe": "235 EGX tickers",
+    "goal": "هل Position Sizing بيقلل MaxDD من -34% لـ -20%؟",
+    "owner_directive": "السهم العالي التقلب ياخد حجم أصغر"
+  },
+  "results": {
+    "baseline_no_sizing": {
+      "label": "baseline_no_sizing",
+      "trades": 23,
+      "wins": 16,
+      "losses": 7,
+      "win_rate_pct": 69.57,
+      "avg_return_pct": 3.603,
+      "total_return_pct": 99.85,
+      "max_drawdown_pct": -34.26,
+      "profit_factor": 2.83,
+      "avg_loser_pct": -6.45,
+      "worst_loser_pct": -24.86,
+      "exit_types": {
+        "expired": 20,
+        "hit_target": 1,
+        "fast_stop": 2
+      },
+      "position_sizing_simulation": {
+        "high_vol_count": 10,
+        "high_vol_losers_reduced": 4,
+        "sized_max_dd": -24.3,
+        "sized_total_ret": 111.69,
+        "max_dd_improvement": -9.97,
+        "total_ret_delta": 11.84
+      },
+      "worst_5_losers": [
+        {
+          "ticker": "UTOP",
+          "return": -24.86,
+          "stop_pct": 9.0,
+          "exit_type": "fast_stop",
+          "holding": 1
+        },
+        {
+          "ticker": "IDRE",
+          "return": -12.14,
+          "stop_pct": 9.0,
+          "exit_type": "fast_stop",
+          "holding": 2
+        },
+        {
+          "ticker": "ELKA",
+          "return": -4.47,
+          "stop_pct": 9.0,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "ATLC",
+          "return": -1.9,
+          "stop_pct": 9.0,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "EGCH",
+          "return": -0.76,
+          "stop_pct": 9.0,
+          "exit_type": "expired",
+          "holding": 7
+        }
+      ]
+    },
+    "with_position_sizing": {
+      "label": "with_position_sizing",
+      "trades": 23,
+      "wins": 16,
+      "losses": 7,
+      "win_rate_pct": 69.57,
+      "avg_return_pct": 1.982,
+      "total_return_pct": 51.28,
+      "max_drawdown_pct": -19.59,
+      "profit_factor": 2.83,
+      "avg_loser_pct": -3.55,
+      "worst_loser_pct": -13.68,
+      "exit_types": {
+        "expired": 20,
+        "hit_target": 1,
+        "fast_stop": 2
+      },
+      "position_sizing_simulation": {
+        "high_vol_count": 10,
+        "high_vol_losers_reduced": 4,
+        "sized_max_dd": -13.77,
+        "sized_total_ret": 54.8,
+        "max_dd_improvement": -5.81,
+        "total_ret_delta": 3.52
+      },
+      "worst_5_losers": [
+        {
+          "ticker": "UTOP",
+          "return": -13.68,
+          "stop_pct": 9.0,
+          "exit_type": "fast_stop",
+          "holding": 1
+        },
+        {
+          "ticker": "IDRE",
+          "return": -6.68,
+          "stop_pct": 9.0,
+          "exit_type": "fast_stop",
+          "holding": 2
+        },
+        {
+          "ticker": "ELKA",
+          "return": -2.46,
+          "stop_pct": 9.0,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "ATLC",
+          "return": -1.04,
+          "stop_pct": 9.0,
+          "exit_type": "expired",
+          "holding": 7
+        },
+        {
+          "ticker": "EGCH",
+          "return": -0.42,
+          "stop_pct": 9.0,
+          "exit_type": "expired",
+          "holding": 7
+        }
+      ]
+    }
+  },
+  "timestamp": "2026-09-02T20:51:34.103838"
+}
