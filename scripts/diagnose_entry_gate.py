@@ -70,6 +70,8 @@ for ticker in ['ABUK', 'COMI', 'EAST', 'SWDY', 'DAPH']:
         'market_regime_trend': result.get('market_regime_trend', ''),
         'stock_roc': float(result.get('stock_roc', 0) or 0),
         'benchmark_change': float(result.get('benchmark_change', 0) or 0),
+        'signal_type': signal,
+        'score': score,
     }
     
     gate_result = check_entry_gate(gate_data)
