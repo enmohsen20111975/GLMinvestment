@@ -1279,17 +1279,16 @@ class V38BacktestEngine:
         return tickers
     
     def get_price_data(self, ticker: str) -> Tuple[List[str], List[float], List[float], List[float], List[float], List[float]]:
-        """تحميل بيانات السعر لسهم واحد — PHASE-2-DB-UNIFY
+        """تحميل بيانات السعر لسهم واحد.
         
-        المصدر الرئيسي: price_history.db.price_history (1.24M rows, 25 سنة بيانات)
-        Fallback: data_engine.db.egksco_price_history (لو رجع فيها بيانات)
+        FIX (2026-09-03): data_engine.db هو PRIMARY (طازج أثناء الجلسة).
+        Owner: "لازم تشتغل على data-engine.db لان هى دى الى فيها البيانات اثناء الجلسة"
         
-        schema price_history.db.price_history:
-          ticker, date, open_price, high_price, low_price, close_price, volume, source
-        schema data_engine.db.egksco_price_history:
-          symbol, price_date, open_price, high_price, low_price, close_price, volume
+        1. PRIMARY: data_engine.db.egksco_price_history (طازج — 162K rows)
+        2. FALLBACK: price_history.db.price_history (LEGACY — متجمد)
+        3. FALLBACK أخير: stocks.db.stock_daily_prices (آخر 30 يوم)
         """
-        # 2. FALLBACK: price_history.db (LEGACY — متجمد).egksco_price_history (لو رجع فيه بيانات)
+        # 1. PRIMARY: data_engine.db (egksco_price_history — طازج أثناء الجلسة)
         try:
             conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
             cur = conn.cursor()
@@ -1311,7 +1310,8 @@ class V38BacktestEngine:
                 return dates, opens, highs, lows, closes, volumes
         except Exception:
             pass
-# 1. PRIMARY: data_engine.db (egksco — طازج اثناء الجلسه): price_history.db (الكامل + 25 سنة)
+        
+        # 2. FALLBACK: price_history.db (LEGACY — متجمد)
         try:
             conn = sqlite3.connect(PRICE_HISTORY_DB_LEGACY, timeout=10.0)
             cur = conn.cursor()
