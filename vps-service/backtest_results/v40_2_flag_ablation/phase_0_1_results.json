@@ -1,0 +1,74 @@
+[
+  {
+    "trades": 125,
+    "win_rate": 43.2,
+    "avg_win": 13.61,
+    "avg_loss": -6.53,
+    "profit_factor": 1.59,
+    "total_return": 10.71,
+    "max_dd": -30.05,
+    "expectancy": 2.17,
+    "final_capital": 110713.07,
+    "config": "BASELINE"
+  },
+  {
+    "trades": 113,
+    "win_rate": 44.25,
+    "avg_win": 15.47,
+    "avg_loss": -7.53,
+    "profit_factor": 1.63,
+    "total_return": 11.97,
+    "max_dd": -35.33,
+    "expectancy": 2.65,
+    "final_capital": 111966.7,
+    "config": "STRICT_ENTRY"
+  },
+  {
+    "trades": 130,
+    "win_rate": 43.85,
+    "avg_win": 17.36,
+    "avg_loss": -6.42,
+    "profit_factor": 2.11,
+    "total_return": 20.35,
+    "max_dd": -22.43,
+    "expectancy": 4.0,
+    "final_capital": 120351.84,
+    "config": "DISTRIBUTION_EXIT"
+  },
+  {
+    "trades": 130,
+    "win_rate": 48.46,
+    "avg_win": 14.04,
+    "avg_loss": -7.88,
+    "profit_factor": 1.68,
+    "total_return": 11.92,
+    "max_dd": -34.16,
+    "expectancy": 2.74,
+    "final_capital": 111922.9,
+    "config": "NOTEBOOK_CONTEXT"
+  },
+  {
+    "trades": 125,
+    "win_rate": 44.0,
+    "avg_win": 14.14,
+    "avg_loss": -6.33,
+    "profit_factor": 1.75,
+    "total_return": 10.25,
+    "max_dd": -39.38,
+    "expectancy": 2.67,
+    "final_capital": 110245.58,
+    "config": "NEWS_IMPACT"
+  },
+  {
+    "trades": 131,
+    "win_rate": 43.51,
+    "avg_win": 9.66,
+    "avg_loss": -4.84,
+    "profit_factor": 1.54,
+    "total_return": 8.97,
+    "max_dd": -28.36,
+    "expectancy": 1.47,
+    "final_capital": 108973.77,
+    "config": "POSITION_SIZING"
+  }
+]
