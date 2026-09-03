@@ -51,7 +51,11 @@ MD_PATH = OUTPUT_DIR / 'MULTI_MARKET_REPORT.md'
 
 # Database paths
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
-PRICE_HISTORY_DB = str(PROJECT_ROOT / 'db' / 'price_history.db')
+# Migrated from price_history.db → data_engine.db.egksco_price_history (Wave 2 cleanup)
+PRICE_HISTORY_DB = str(PROJECT_ROOT / 'db' / 'data_engine.db')
+PRICE_HISTORY_TABLE = 'egksco_price_history'
+PRICE_HISTORY_TICKER_COL = 'symbol'
+PRICE_HISTORY_DATE_COL = 'price_date'
 
 # Backtest window
 START_DATE = '2025-06-01'
@@ -81,13 +85,14 @@ def _load_market_tickers(market: str, limit: int) -> list[str]:
     if not stocks_tickers:
         return []
 
-    # 2. Find which ones have >= 200 days in price_history
+    # 2. Find which ones have >= 200 days in price_history (data_engine.db.egksco_price_history)
     conn_p = sqlite3.connect(PRICE_HISTORY_DB, timeout=30.0)
     cur_p = conn_p.cursor()
     placeholders = ','.join('?' * len(stocks_tickers))
     cur_p.execute(
-        f"SELECT ticker FROM price_history WHERE ticker IN ({placeholders}) "
-        f"GROUP BY ticker HAVING COUNT(*) >= 200 ORDER BY ticker",
+        f"SELECT {PRICE_HISTORY_TICKER_COL} AS ticker FROM {PRICE_HISTORY_TABLE} "
+        f"WHERE {PRICE_HISTORY_TICKER_COL} IN ({placeholders}) "
+        f"GROUP BY {PRICE_HISTORY_TICKER_COL} HAVING COUNT(*) >= 200 ORDER BY {PRICE_HISTORY_TICKER_COL}",
         stocks_tickers,
     )
     qualified = [r[0] for r in cur_p.fetchall()]

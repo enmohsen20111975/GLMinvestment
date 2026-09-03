@@ -17309,3 +17309,60 @@ CRITICAL:
 Code changes محفوظة بالكامل في git (13 commits pushed to GitHub).
 DBs فقدت — لازم تسترجع من مصدر تاني.
 
+
+---
+Task ID: BACKTEST-AND-PREDICTIONS-FINAL
+Agent: main (orchestrator, Z.ai Code)
+Task: عمل backtest محترم + بناء توقعات جديدة بالكنوز المدفونة
+
+Work Log:
+- استرجاع DBs من data/all.zip (بعد sandbox restart):
+  * Extracted 19 DBs من zip
+  * verified integrity_check = ok لكل الـ core DBs
+  * أعيد تطبيق Wave 1 (حذف custom, prices, crypto)
+  * أعيد تطبيق Wave 3 (drop 9 جداول فاضية + VACUUM)
+  * migration news.db: news_articles (7,894) → market_news (7,806)
+
+- تدقيق الكنوز المدفونة:
+  * Screener Lists: 1,459 entries في 5 فئات (most_active, top_gainers, top_losers, unusual_volume, high_dividend)
+  * Fundamentals (tab_*): 858-866 سهم في 8 جداول
+  * EGKSCO Price History: 162,946 rows × 1,047 tickers (2025-01-09 → 2026-08-27)
+  * Stocks metadata: 1,047 سهم بـ 13 fundamental columns
+
+- backtest محترم (scripts/v40_2_treasures_backtest.py):
+  * Period: 2026-02-01 → 2026-08-27
+  * 68 trades على 19 EGX stock
+  * Win Rate: 36.76%
+  * Avg Win: +13.44% / Avg Loss: -6.55%
+  * Profit Factor: 1.19 (إيجابي)
+  * Total Return: +1.35%
+  * Max Drawdown: -39.80%
+  * 12 trade وصلت +20% (take profit)
+  * Top performers: AMOC, HELI, SWDY, TMGH, HRHO, AMER, PHDC, OCDI
+
+- بناء توقعات جديدة (scripts/v40_2_build_predictions.py):
+  * 10 توقعات بناءً على screener + fundamentals + ATR + RSI + volume
+  * كلها BUY/STRONG_BUY
+  * Top 5:
+    1. CIEB  — STRONG_BUY (Score 100, Entry 24.99, Target 26.86, R/R 2.5)
+    2. HRHO  — STRONG_BUY (Score  98, Entry 25.90, Target 27.84, R/R 2.5)
+    3. HELI  — STRONG_BUY (Score  95, Entry  7.66, Target  8.23, R/R 2.5)
+    4. ABUK  — STRONG_BUY (Score  93, Entry 75.76, Target 81.87, R/R 2.5)
+    5. MASR  — STRONG_BUY (Score  93, Entry  7.55, Target  8.12, R/R 2.5)
+
+- artifacts:
+  * vps-service/backtest_results/v40_2_treasures/BACKTEST_REPORT.md
+  * vps-service/backtest_results/v40_2_treasures/summary.json
+  * vps-service/backtest_results/v40_2_treasures/trades.csv
+  * vps-service/backtest_results/v40_2_treasures/PREDICTIONS.md
+  * vps-service/backtest_results/v40_2_treasures/predictions.json
+
+Stage Summary:
+- ✅ كل الـ DBs مسترجعة + تنظيف مُعاد تطبيقه + 9 جداول فاضية اتشالت.
+- ✅ news.db migration: news_articles → market_news (7,806 خبر).
+- ✅ backtest محترم اشتغل بـ 68 trade (PF=1.19, Return=+1.35%).
+- ✅ 10 توقعات جديدة متبنية بالكنوز المدفونة.
+- ✅ كل API routes بـ 200 OK.
+- ✅ lint بدون أخطاء.
+
+NEED_OWNER: مراجعة الـ predictions في vps-service/backtest_results/v40_2_treasures/PREDICTIONS.md
