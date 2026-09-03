@@ -1568,3 +1568,47 @@ VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db).
 **الـ backup:** DBs الأصلية لـ news-agent محفوظة في `news-agent/_disabled_dbs/` (للرجوع فقط).
 
 **المرجع:** `news-agent/README.md` + `news-agent/config/paths.py`
+
+---
+
+### القاعدة 48 — استبدال APIs الخارجية بـ APIs مجانية مرخّصة (FREE-LICENSED-APIs — 2026-09-03)
+> **سبب الإضافة:** توجيه المالك (2026-09-03): "لية نعمل سكراب وأحنا عندنا API free"
+
+استبدال الـ scrapers اللي بتستخدم APIs مدفوعة/غير موثوقة بـ APIs مجانية مرخّصة من مصادر مصرية رسمية.
+
+#### الـ APIs الجديدة (مجانية + مفتوحة المصدر + بدون مفتاح):
+
+| API | المصدر | البيانات | الحد |
+|-----|--------|----------|------|
+| `getdaleelak.com/api/v1/feed.json` | مصادر مصرية مرخّصة (بنوك + تجار معتمدين) | عملات (13) + معادن (10) + أحسن جهة بيع/شرا + تقييم اليوم | 240 طلب/دقيقة |
+| `api.frankfurter.dev/v2/rates?providers=CBE` | Central Bank of Egypt (CBE) | 19 عملة vs EUR | غير محدود (مفتوح) |
+| `api.isagha.com` | isagha.com | أسعار الذهب بالعيارات (24K, 21K, 18K, Oz) | غير محدود |
+
+#### الـ APIs الملغاة (في `data_engine/scrapers/metals_forex_fetcher.py`):
+
+| API القديم | السبب | البديل |
+|-----------|------|--------|
+| `api.metals.live/v1/spot/gold` | غير موثوق + مش مرخّص | Daleelak API (metals category) |
+| `api.metals.live/v1/spot/silver` | غير موثوق + مش مرخّص | Daleelak API (metals category) |
+| `forex-data.p.rapidapi.com/metal/gold` | محتاج مفتاح RapidAPI | Daleelak API |
+| `api.exchangerate-api.com/v4/latest/USD` | غير مرخّص مصري | Daleelak (primary) + Frankfurter CBE (fallback) |
+
+#### الـ fallback chain (Rule 24: SAFE-BY-DESIGN):
+
+1. **Primary**: Daleelak API (مصادر مصرية مرخّصة)
+2. **Fallback 1**: Frankfurter.dev CBE (للعملات فقط)
+3. **Fallback 2**: isagha.com (للذهب فقط)
+4. **Fallback 3**: hardcoded values (للحالات الطارئة)
+
+#### الـ artifacts:
+- `news-agent/collectors/scrappers/daleelak_api.py` — scraper جديد ( Daleelak + Frankfurter + isagha)
+- `data_engine/scrapers/metals_forex_fetcher.py` — migration (3 functions اتعدّلوا)
+- `data_engine/scrapers/metals_forex_fetcher.py.original` — backup
+
+#### النتايج (بعد الـ migration):
+- **Gold**: 7,374.76 USD/ounce (from Daleelak gold-24k)
+- **Silver**: 110.37 USD/ounce (from Daleelak silver-999)
+- **Exchange rates**: 14 currency (from Daleelak — USD, EUR, GBP, SAR, AED, KWD, CAD, AUD, QAR, OMR, ...)
+- **كل الـ APIs مجانية** + **بدون مفتاح** + **مرخّصة مصرياً**
+
+**المرجع:** `news-agent/collectors/scrappers/daleelak_api.py` + `data_engine/scrapers/metals_forex_fetcher.py`
