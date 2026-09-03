@@ -213,6 +213,10 @@ def get_scan_dates(start_date, end_date, scan_interval):
     - price_history.db.price_history: 1,248,257 rows, 25 سنة بيانات (2001→2026)
     - data_engine.db.egksco_price_history: 0 rows على الإنتاج (fallback only)
     - stocks.db.stock_daily_prices: آخر 30 يوم (fallback أخير)
+    
+    FIX (2026-09-03): لو start_date == end_date (today-only mode) ومالقيناش
+    تاريخ اليوم في price_history.db → نرجّع آخر يوم متاح بدل ما نرجع قائمة فاضية.
+    ده يخلي V40.2 يـ generate توقعات بناءً على أحدث بيانات موجودة.
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
     
@@ -230,6 +234,20 @@ def get_scan_dates(start_date, end_date, scan_interval):
                 (start_date, end_date),
             )
             dates = [row[0] for row in cur.fetchall()]
+            
+            # FIX (2026-09-03): لو مفيش تواريخ في النطاق (today-only + price_history
+            # مش محدث) → نرجّع آخر يوم متاح في price_history.db
+            if not dates and start_date == end_date:
+                cur.execute(
+                    f"SELECT DISTINCT {date_col} FROM price_history ORDER BY {date_col} DESC LIMIT 1"
+                )
+                last_row = cur.fetchone()
+                if last_row:
+                    last_date = last_row[0]
+                    print(f"[V40.2] ⚠️ اليوم ({start_date}) مش موجود في price_history.db → استخدام آخر يوم متاح: {last_date}", flush=True)
+                    conn.close()
+                    return [last_date]
+            
             conn.close()
             if dates:
                 print(f"[V40.2] Using price_history.db ({date_col}) — {len(dates)} dates", flush=True)
@@ -2390,9 +2408,13 @@ def main():
         sys.exit(1)
 
     if args.today_only:
+        # FIX (2026-09-03): --today-only كان بيـ query price_history لليوم بالظبط.
+        # لو price_history.db مش محدث لليوم (السوق لسه ما فتحش أو الـ safetynet
+        # ما شغلش) → مفيش تواريخ → 0 signals → 0 predictions.
+        # الحل: لو اليوم مش موجود، استخدم آخر يوم متاح في price_history.db.
+        # ده يخلي V40.2 يـ generate توقعات بناءً على أحدث بيانات موجودة.
         start_date = today_str
         end_date = today_str
-        # For today-only, scan every day (not every 3)
         scan_interval = 1
     elif args.yesterday_only:
         start_date = yesterday_str
