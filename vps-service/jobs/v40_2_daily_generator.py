@@ -529,6 +529,23 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     print(f"📊 Scan dates: {len(scan_dates)} | Tickers: {len(tickers)}", flush=True)
     print(f"📅 Scan dates: {scan_dates}", flush=True)
 
+    # DEBUG (2026-09-03): طباعة آخر 5 تواريخ من price_history + مقارنتها بـ scan_date
+    # عشان نعرف ليه date_to_idx.get(scan_date) بترجع None
+    try:
+        _dbg_conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=5.0)
+        _dbg_cur = _dbg_conn.cursor()
+        _dbg_cur.execute("SELECT DISTINCT date FROM price_history ORDER BY date DESC LIMIT 5")
+        _dbg_dates = [r[0] for r in _dbg_cur.fetchall()]
+        print(f"🔍 DEBUG: آخر 5 تواريخ في price_history.db: {_dbg_dates}", flush=True)
+        print(f"🔍 DEBUG: scan_dates: {scan_dates}", flush=True)
+        print(f"🔍 DEBUG: match? {scan_dates[0] in _dbg_dates if scan_dates and _dbg_dates else 'N/A'}", flush=True)
+        if _dbg_dates:
+            print(f"🔍 DEBUG: type(scan_date)={type(scan_dates[0]) if scan_dates else 'N/A'}, type(db_date)={type(_dbg_dates[0])}", flush=True)
+            print(f"🔍 DEBUG: repr(scan_date)={repr(scan_dates[0]) if scan_dates else 'N/A'}, repr(db_date)={repr(_dbg_dates[0])}", flush=True)
+        _dbg_conn.close()
+    except Exception as _dbg_e:
+        print(f"🔍 DEBUG error: {_dbg_e}", flush=True)
+
     if dry_run:
         print("🔍 DRY-RUN: would process the above dates. No DB writes.", flush=True)
 
