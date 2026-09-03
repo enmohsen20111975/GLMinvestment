@@ -1289,7 +1289,29 @@ class V38BacktestEngine:
         schema data_engine.db.egksco_price_history:
           symbol, price_date, open_price, high_price, low_price, close_price, volume
         """
-        # 1. المصدر الرئيسي: price_history.db (الكامل + 25 سنة)
+        # 2. FALLBACK: price_history.db (LEGACY — متجمد).egksco_price_history (لو رجع فيه بيانات)
+        try:
+            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT price_date, open_price, high_price, low_price, close_price, volume
+                FROM egksco_price_history
+                WHERE symbol = ?
+                ORDER BY price_date ASC
+            """, (ticker,))
+            rows = cur.fetchall()
+            conn.close()
+            if rows:
+                dates = [r[0] for r in rows]
+                opens = [float(r[1] or 0) for r in rows]
+                highs = [float(r[2] or 0) for r in rows]
+                lows = [float(r[3] or 0) for r in rows]
+                closes = [float(r[4] or 0) for r in rows]
+                volumes = [parse_volume(r[5]) for r in rows]
+                return dates, opens, highs, lows, closes, volumes
+        except Exception:
+            pass
+# 1. PRIMARY: data_engine.db (egksco — طازج اثناء الجلسه): price_history.db (الكامل + 25 سنة)
         try:
             conn = sqlite3.connect(PRICE_HISTORY_DB_LEGACY, timeout=10.0)
             cur = conn.cursor()
@@ -1312,29 +1334,7 @@ class V38BacktestEngine:
         except Exception:
             pass
         
-        # 2. Fallback: data_engine.db.egksco_price_history (لو رجع فيه بيانات)
-        try:
-            conn = sqlite3.connect(PRICE_HISTORY_DB, timeout=10.0)
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT price_date, open_price, high_price, low_price, close_price, volume
-                FROM egksco_price_history
-                WHERE symbol = ?
-                ORDER BY price_date ASC
-            """, (ticker,))
-            rows = cur.fetchall()
-            conn.close()
-            if rows:
-                dates = [r[0] for r in rows]
-                opens = [float(r[1] or 0) for r in rows]
-                highs = [float(r[2] or 0) for r in rows]
-                lows = [float(r[3] or 0) for r in rows]
-                closes = [float(r[4] or 0) for r in rows]
-                volumes = [parse_volume(r[5]) for r in rows]
-                return dates, opens, highs, lows, closes, volumes
-        except Exception:
-            pass
-        
+                
         # 3. Fallback أخير: stocks.db.stock_daily_prices (آخر 30 يوم)
         try:
             conn = sqlite3.connect(STOCKS_DB, timeout=10.0)

@@ -209,22 +209,48 @@ def compute_persona_fit(proofs):
 def get_scan_dates(start_date, end_date, scan_interval):
     """Get trading dates from price history within [start, end].
     
-    PHASE-2-DB-UNIFY (2026-08-29): price_history.db is the canonical source.
-    - price_history.db.price_history: 1,248,257 rows, 25 سنة بيانات (2001→2026)
-    - data_engine.db.egksco_price_history: 0 rows على الإنتاج (fallback only)
-    - stocks.db.stock_daily_prices: آخر 30 يوم (fallback أخير)
+    FIX (2026-09-03): data_engine.db هو PRIMARY (طازج أثناء الجلسة).
+    Owner: "لازم تشتغل على data-engine.db لان هى دى الى فيها البيانات اثناء الجلسة"
     
-    FIX (2026-09-03): لو start_date == end_date (today-only mode) ومالقيناش
-    تاريخ اليوم في price_history.db → نرجّع آخر يوم متاح بدل ما نرجع قائمة فاضية.
-    ده يخلي V40.2 يـ generate توقعات بناءً على أحدث بيانات موجودة.
+    - data_engine.db.egksco_price_history: 162,946 rows (PRIMARY — طازج)
+    - price_history.db.price_history: LEGACY fallback (متجمد)
+    - stocks.db.stock_daily_prices: fallback أخير
     """
     _db_dir = Path(__file__).resolve().parents[2] / 'db'
     
-    # 1. price_history.db (المصدر الكامل — 1.24M rows)
+    # 1. PRIMARY: data_engine.db (egksco_price_history — طازج أثناء الجلسة)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            (start_date, end_date),
+        )
+        dates = [row[0] for row in cur.fetchall()]
+        
+        # FIX: لو مفيش تواريخ في النطاق → نرجّع آخر يوم متاح
+        if not dates and start_date == end_date:
+            cur.execute(
+                "SELECT DISTINCT price_date FROM egksco_price_history ORDER BY price_date DESC LIMIT 1"
+            )
+            last_row = cur.fetchone()
+            if last_row:
+                last_date = last_row[0]
+                print(f"[V40.2] ⚠️ اليوم ({start_date}) مش موجود في data_engine.db → استخدام آخر يوم متاح: {last_date}", flush=True)
+                conn.close()
+                return [last_date]
+        
+        conn.close()
+        if dates:
+            print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
+            return dates[::scan_interval]
+    except Exception:
+        pass
+    
+    # 2. FALLBACK: price_history.db (LEGACY — متجمد)
     try:
         conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
         cur = conn.cursor()
-        # Check schema (column name may be 'date' or 'price_date')
         cur.execute("PRAGMA table_info(price_history)")
         cols = [r[1] for r in cur.fetchall()]
         date_col = 'date' if 'date' in cols else 'price_date' if 'price_date' in cols else None
@@ -235,8 +261,6 @@ def get_scan_dates(start_date, end_date, scan_interval):
             )
             dates = [row[0] for row in cur.fetchall()]
             
-            # FIX (2026-09-03): لو مفيش تواريخ في النطاق (today-only + price_history
-            # مش محدث) → نرجّع آخر يوم متاح في price_history.db
             if not dates and start_date == end_date:
                 cur.execute(
                     f"SELECT DISTINCT {date_col} FROM price_history ORDER BY {date_col} DESC LIMIT 1"
@@ -244,31 +268,15 @@ def get_scan_dates(start_date, end_date, scan_interval):
                 last_row = cur.fetchone()
                 if last_row:
                     last_date = last_row[0]
-                    print(f"[V40.2] ⚠️ اليوم ({start_date}) مش موجود في price_history.db → استخدام آخر يوم متاح: {last_date}", flush=True)
+                    print(f"[V40.2] ⚠️ fallback: استخدام آخر يوم من price_history.db: {last_date}", flush=True)
                     conn.close()
                     return [last_date]
             
             conn.close()
             if dates:
-                print(f"[V40.2] Using price_history.db ({date_col}) — {len(dates)} dates", flush=True)
+                print(f"[V40.2] Using price_history.db ({date_col}) — {len(dates)} dates (LEGACY)", flush=True)
                 return dates[::scan_interval]
         conn.close()
-    except Exception:
-        pass
-    
-    # 2. Fallback: data_engine.db (egksco_price_history — 0 rows على prod)
-    try:
-        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT price_date FROM egksco_price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
-            (start_date, end_date),
-        )
-        dates = [row[0] for row in cur.fetchall()]
-        conn.close()
-        if dates:
-            print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
-            return dates[::scan_interval]
     except Exception:
         pass
     
@@ -317,7 +325,35 @@ def get_tickers(min_days=MIN_TICKER_DAYS):
     except Exception:
         _egx_gate_available = False
 
-    # 1. price_history.db (المصدر الكامل — 1,267 tickers)
+    # 1. PRIMARY: data_engine.db (egksco_price_history — طازج أثناء الجلسة)
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
+            (min_days,),
+        )
+        raw_tickers = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if raw_tickers:
+            # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
+            if _egx_gate_available:
+                result = filter_egx_tickers_detailed(raw_tickers)
+                tickers = result['accepted']
+                stats = result['stats']
+                print(f"[V40.2] data_engine.db (egksco) — {len(raw_tickers)} raw → "
+                      f"{len(tickers)} EGX-canonical "
+                      f"(rejected {stats['rejected_count']} non-EGX, "
+                      f"removed {stats['duplicates_removed']} dups)", flush=True)
+            else:
+                tickers = raw_tickers
+                print(f"[V40.2] Using data_engine.db (egksco) — {len(tickers)} tickers "
+                      f"(⚠️ EGX gate not available — no filtering)", flush=True)
+            return tickers
+    except Exception:
+        pass
+
+    # 2. FALLBACK: price_history.db (LEGACY — متجمد)
     try:
         conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
         cur = conn.cursor()
@@ -338,35 +374,6 @@ def get_tickers(min_days=MIN_TICKER_DAYS):
                     tickers = result['accepted']
                     stats = result['stats']
                     print(f"[V40.2] price_history.db ({ticker_col}) — {len(raw_tickers)} raw → "
-                          f"{len(tickers)} EGX-canonical "
-                          f"(rejected {stats['rejected_count']} non-EGX, "
-                          f"removed {stats['duplicates_removed']} dups)", flush=True)
-                else:
-                    tickers = raw_tickers
-                    print(f"[V40.2] Using price_history.db ({ticker_col}) — {len(tickers)} tickers "
-                          f"(⚠️ EGX gate not available — no filtering)", flush=True)
-                return tickers
-        conn.close()
-    except Exception:
-        pass
-
-    # 2. Fallback: data_engine.db (egksco_price_history — 0 rows على prod)
-    try:
-        conn = sqlite3.connect(str(_db_dir / 'data_engine.db'), timeout=10.0)
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT DISTINCT symbol FROM egksco_price_history GROUP BY symbol HAVING COUNT(*) >= ? ORDER BY symbol",
-            (min_days,),
-        )
-        raw_tickers = [row[0] for row in cur.fetchall()]
-        conn.close()
-        if raw_tickers:
-            # EGX-MARKET-ISOLATION: فلتر EGX canonical فقط
-            if _egx_gate_available:
-                result = filter_egx_tickers_detailed(raw_tickers)
-                tickers = result['accepted']
-                stats = result['stats']
-                print(f"[V40.2] data_engine.db (egksco_price_history) — {len(raw_tickers)} raw → "
                       f"{len(tickers)} EGX-canonical "
                       f"(rejected {stats['rejected_count']} non-EGX, "
                       f"removed {stats['duplicates_removed']} dups)", flush=True)
