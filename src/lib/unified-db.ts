@@ -3,7 +3,6 @@
  * 
  * This module provides access to:
  * - unified_stocks.db: All Arab stocks (EGX, KSA, DFM, KSE, QSE, BSE)
- * - crypto.db: Cryptocurrency data
  */
 
 import { createDatabase, initialize, isInitialized, type SqliteDatabase } from '@/lib/sqlite-wrapper';
@@ -100,42 +99,6 @@ export function getUnifiedStocksDb(): SqliteDatabase {
 }
 
 // ===========================================================================
-// CRYPTO DATABASE
-// ===========================================================================
-
-let _cryptoDb: SqliteDatabase | null = null;
-let _cryptoDbFailed = false;
-
-export function getCryptoDb(): SqliteDatabase {
-  if (_cryptoDb) return _cryptoDb;
-  
-  if (_cryptoDbFailed) {
-    throw new Error('Crypto DB unavailable');
-  }
-  
-  if (!isInitialized()) {
-    throw new Error('sql.js not initialized. Call await ensureUnifiedDbInitialized() first.');
-  }
-  
-  const dbPath = path.join(process.cwd(), 'db', 'crypto.db');
-  
-  if (!existsSync(dbPath)) {
-    _cryptoDbFailed = true;
-    throw new Error(`Crypto DB not found at ${dbPath}`);
-  }
-  
-  try {
-    _cryptoDb = createDatabase(dbPath, { readonly: true });
-    _cryptoDb.pragma('foreign_keys = ON');
-    console.log('[unified-db] Loaded crypto.db');
-    return _cryptoDb;
-  } catch (err) {
-    _cryptoDbFailed = true;
-    throw err;
-  }
-}
-
-// ===========================================================================
 // TYPES
 // ===========================================================================
 
@@ -190,31 +153,6 @@ export interface UnifiedStock {
   // Calculated fields
   price_change_calc?: number;
   value_traded?: number;
-}
-
-export interface CryptoCoin {
-  id: number;
-  coin_id: string;
-  symbol: string;
-  name: string | null;
-  current_price: number | null;
-  price_change_24h: number | null;
-  price_change_percent_24h: number | null;
-  high_24h: number | null;
-  low_24h: number | null;
-  market_cap: number | null;
-  market_cap_rank: number | null;
-  total_volume: number | null;
-  circulating_supply: number | null;
-  total_supply: number | null;
-  max_supply: number | null;
-  ath: number | null;
-  ath_change_percent: number | null;
-  atl: number | null;
-  atl_change_percent: number | null;
-  image_url: string | null;
-  last_update: string | null;
-  created_at: string | null;
 }
 
 export interface StockFilters {
@@ -454,68 +392,6 @@ export function getUnifiedTopMovers(exchange?: Exchange, limit: number = 10): {
     .slice(0, limit);
   
   const result = { gainers, losers, most_active };
-  setCache(cacheKey, result);
-  return result;
-}
-
-// ===========================================================================
-// CRYPTO QUERIES
-// ===========================================================================
-
-/**
- * Get all crypto coins
- */
-export function getCryptoCoins(limit: number = 50, offset: number = 0): CryptoCoin[] {
-  const cacheKey = `crypto_coins:${limit}:${offset}`;
-  const cached = getCached<CryptoCoin[]>(cacheKey);
-  if (cached) return cached;
-  
-  const db = getCryptoDb();
-  const rows = db.prepare('SELECT * FROM crypto_coins ORDER BY market_cap_rank ASC LIMIT ? OFFSET ?').all(limit, offset) as Record<string, unknown>[];
-  
-  const coins = rows.map(toPlainRow) as unknown as CryptoCoin[];
-  setCache(cacheKey, coins);
-  return coins;
-}
-
-/**
- * Get a single crypto coin by ID or symbol
- */
-export function getCryptoCoin(idOrSymbol: string): CryptoCoin | null {
-  const db = getCryptoDb();
-  const row = db.prepare('SELECT * FROM crypto_coins WHERE coin_id = ? OR symbol = ? COLLATE NOCASE LIMIT 1').get(idOrSymbol, idOrSymbol) as Record<string, unknown> | undefined;
-  
-  if (!row) return null;
-  return toPlainRow(row) as unknown as CryptoCoin;
-}
-
-/**
- * Get top crypto gainers/losers
- */
-export function getCryptoMovers(limit: number = 10): {
-  gainers: CryptoCoin[];
-  losers: CryptoCoin[];
-} {
-  const cacheKey = `crypto_movers:${limit}`;
-  const cached = getCached<{ gainers: CryptoCoin[]; losers: CryptoCoin[] }>(cacheKey);
-  if (cached) return cached;
-  
-  const db = getCryptoDb();
-  const rows = db.prepare('SELECT * FROM crypto_coins ORDER BY market_cap_rank ASC LIMIT 50').all() as Record<string, unknown>[];
-  
-  const coins = rows.map(toPlainRow) as unknown as CryptoCoin[];
-  
-  const gainers = coins
-    .filter(c => (c.price_change_percent_24h || 0) > 0)
-    .sort((a, b) => (b.price_change_percent_24h || 0) - (a.price_change_percent_24h || 0))
-    .slice(0, limit);
-  
-  const losers = coins
-    .filter(c => (c.price_change_percent_24h || 0) < 0)
-    .sort((a, b) => (a.price_change_percent_24h || 0) - (b.price_change_percent_24h || 0))
-    .slice(0, limit);
-  
-  const result = { gainers, losers };
   setCache(cacheKey, result);
   return result;
 }
