@@ -16953,3 +16953,280 @@ Stage Summary:
 - الـ price_history.db file لسه موجود (مش هنشيله لحد ما نخلّص كل readers).
 
 NEED_OWNER: NONE — كله اشتغل تلقائياً.
+
+
+---
+Task ID: 3a
+Agent: Explore (audit-empty-tables)
+Task: تدقيق الجداول الفارغة في DBs المتبقية (stocks / predictions / auth / data_engine / intraday / news)
+
+Work Log:
+- قرأت آخر 100 سطر من worklog.md + db-manifest-before.txt + db-references-files.txt لمعرفة ما تم.
+- شغلت scripts/list-db-tables.ts للتأكد من الـ row counts الحالية (كل الأرقام متطابقة مع الـ manifest).
+- كتبت scripts/audit-empty-tables.sh اللي بعمل grep لكل جدول فاضي في src/ + vps-service/ + scripts/ + data_engine/ باستخدام patterns: FROM/INTO/UPDATE/JOIN/CREATE TABLE/DROP TABLE/DELETE FROM/INSERT OR REPLACE/ALTER TABLE.
+- النتايج اتحفظت في /tmp/audit-table-refs.txt (907 سطر) + scripts/_audit-results.txt.
+- لكل جدول فاضي، صنّفته إلى:
+  * ✅ SAFE TO DROP (0 rows + 0 code refs)
+  * ⚠️ NEEDS INVESTIGATION (0 rows but has code refs - migrator placeholder OR duplicate)
+  * ❌ DO NOT DROP (active SELECT/INSERT OR Prisma schema OR migration system)
+- تحققت من الـ DB paths في key Python files (config.py, database.py, learning_engine.py, indicator_trust_scores.py, telegram_signal_importer.py, historical_prediction_generator.py, trade_recorder.py, analyses.py, maestro_orchestrator.py, v40_2_daily_generator.py, sniper_routes.py, eodhd_fetcher.py, egx_fundamental_fetcher.py, egksco_scraper.py) لتحديد أي DB هو الـ canonical source.
+- تأكدت من prisma/auth-schema.prisma (Account/Session/UserSubscription/VerificationToken — Prisma-managed، لازم تبقى) و prisma/schema.prisma (Post — leftover من prisma init، مش مستخدم في الـ app).
+
+Stage Summary:
+- stocks.db: 5 safe to drop, 8 needs investigation, 20 do not drop (33 tables)
+- predictions.db: 4 safe to drop, 4 needs investigation, 9 do not drop (17 tables)
+- auth.db: 3 safe to drop, 2 needs investigation, 4 do not drop (9 tables)
+- data_engine.db: 0 safe to drop, 0 needs investigation, 2 do not drop (2 tables)
+- intraday.db: 0 safe to drop, 1 needs investigation, 0 do not drop (1 table)
+- news.db: 0 safe to drop, 0 needs investigation, 1 do not drop (1 table)
+
+TOTAL: 12 safe, 15 needs investigation, 36 do not drop (63 tables audited)
+
+SAFE_TO_DROP_TABLES:
+- stocks.db: [maestro_personas, ticker_performance, trading_lessons, trading_rules, stocks_backup]
+- predictions.db: [CachedAnalysis, ExpertTrackRecord, TechnicalIndicator, prediction_outcomes_old]
+- auth.db: [optimized_parameters, platform_recommendations, user_trades]
+- data_engine.db: [] (none)
+- intraday.db: [] (none)
+- news.db: [] (none)
+
+NEEDS_INVESTIGATION_TABLES:
+- stocks.db: [context_logs, egksco_price_history, indicator_weights, learned_lessons, outcome_logs, indicator_trust_scores, news_items, telegram_images]
+- predictions.db: [analysis_jobs, sniper_performance, telegram_signals, trade_journal_reflections]
+- auth.db: [ExpertTrackRecord, Post]
+- data_engine.db: [] (none)
+- intraday.db: [intraday_prices]
+- news.db: [] (none)
+
+DO_NOT_DROP_TABLES:
+- stocks.db: [cached_analysis, conjunction_patterns, daily_analytics_summary, error_logs, feature_usage, financial_obligations, financial_transactions, morning_reports, news, obligation_payments, page_views, paper_trades, pending_settlements, regime_indicator_weights, scraping_status, stock_adaptive_profiles, telegram_messages, telegram_recommendations, tracked_channels, user_sessions]
+- predictions.db: [aiPrediction, analysis_engine_status, cached_analysis, hunter_pick_tracking, prediction_lessons, prediction_outcomes, reports, telegram_news, trade_journal_entries]
+- auth.db: [Account, Session, UserSubscription, VerificationToken]
+- data_engine.db: [egksco_stocks, egx_fundamentals]
+- intraday.db: [] (none)
+- news.db: [news_api_keys]
+
+DETAILED FINDINGS:
+
+### stocks.db (11.50 MB) — 33 tables audited (32 empty + 1 backup)
+
+#### ✅ SAFE TO DROP (5 tables — 0 rows + 0 code refs OR backup table):
+- `maestro_personas` (0 rows) — only `init-databases.py:112` CREATE TABLE IF NOT EXISTS; no runtime SELECT/INSERT. Placeholder.
+- `ticker_performance` (0 rows) — zero code references anywhere.
+- `trading_lessons` (0 rows) — zero code references anywhere (only mentioned in audit JSON manifest).
+- `trading_rules` (0 rows) — zero code references anywhere. (Note: `_trading_rules()` is a method name in market_regime.py, NOT a SQL table.)
+- `stocks_backup` (345 rows, NOT strictly empty but backup) — referenced only in `fix_vps_db_schema.py` DROP statements; no runtime code reads it.
+
+#### ⚠️ NEEDS INVESTIGATION (8 tables — 0 rows but has code refs):
+- `context_logs` (0 rows) — only CREATE TABLE IF NOT EXISTS in init_db_tables.py, init_learning_tables.py, fix_tables.py, migrator.py. No INSERT/SELECT. Placeholder.
+- `egksco_price_history` (0 rows) — migrated to `data_engine.db.egksco_price_history` (162,946 rows) per worklog WAVE-2a-2c. vps-service reads from data_engine.db (v40_2_daily_generator.py:223, maestro_orchestrator.py:784). Stocks.db copy is stale duplicate; migrator + egksco_scraper still CREATE IF NOT EXISTS but no INSERT. **Caveat:** migrator will recreate the table on next run.
+- `indicator_weights` (0 rows) — only `migrate-databases.ts` CREATE+INSERT (migration script); no runtime code reads/writes.
+- `learned_lessons` (0 rows) — duplicate of `predictions.db.learned_lessons` (494 rows). vps-service/jobs/learning_engine.py uses PREDICTIONS_DB (predictions.db). scripts/mine_learned_lessons.py writes to STOCKS_DB. Stocks.db copy is target of one-off scripts but empty (script not run).
+- `outcome_logs` (0 rows) — duplicate of `predictions.db.outcome_logs` (8,544 rows). vps-service/analyzers (expert_memory.py, unified_learning_engine.py) reference it but predictions.db has the live data.
+- `indicator_trust_scores` (0 rows) — duplicate of `predictions.db.indicator_trust_scores` (10 rows). `vps-service/analyzers/indicator_trust_scores.py:19` opens PREDICTIONS_DB explicitly. Stocks.db copy is stale.
+- `news_items` (0 rows) — `vps-service/analyzers/news_stop_filter.py:73,82,161` SELECT FROM news_items; data has migrated to news.db.market_news (7,806 rows) + news.db.news_articles (7,894 rows). Stocks.db.news_items is stale.
+- `telegram_images` (0 rows) — only `CREATE TABLE IF NOT EXISTS telegram_images` in `vps-service/telegram/database.py:145`. No INSERT/SELECT. Placeholder.
+
+#### ❌ DO NOT DROP (20 tables — active uses):
+- `cached_analysis` (0 rows) — heavily used in vps-service (60+ references: database.py, hot_stocks_detector.py, nightly_analysis.py, live_prediction_engine.py, background_analyzer.py, ai_predictions_routes.py, expert_memory.py, etc.) + TS (purge-cache, db-manager/repair, migration scripts). Empty because of recent purge, not because of disuse.
+- `conjunction_patterns` (0 rows) — actively INSERT + SELECT in `vps-service/analyzers/expert_memory.py:520,542,550`.
+- `daily_analytics_summary` (0 rows) — actively INSERT OR REPLACE in `vps-service/api/analytics.py:667`.
+- `error_logs` (0 rows) — actively INSERT in `vps-service/api/analytics.py:318`.
+- `feature_usage` (0 rows) — actively INSERT + SELECT in `vps-service/api/analytics.py` + `src/app/api/admin/users/cleanup-expired/route.ts` DELETE.
+- `financial_obligations` (0 rows) — actively SELECT/INSERT/UPDATE/DELETE in `src/app/api/finance/obligations/*` + `src/app/api/finance/reports/route.ts` + `src/app/api/portfolio/master/route.ts` + `vps-service/scripts/wealth_tracker.py`.
+- `financial_transactions` (0 rows) — actively SELECT/DELETE/CREATE in `src/app/api/finance/transactions/*` + `src/app/api/finance/reports/route.ts` + `vps-service/scripts/wealth_tracker.py`.
+- `morning_reports` (0 rows) — actively SELECT/INSERT/DELETE/CREATE in `src/app/api/reports/morning/route.ts`.
+- `news` (0 rows) — actively INSERT/SELECT/DELETE in `vps-service/api/news_routes.py` (Python legacy). News has been migrated to news.db.market_news (SOT) but Python code hasn't been updated yet.
+- `obligation_payments` (0 rows) — actively SELECT/INSERT in `src/app/api/finance/obligations/payments/route.ts` + `src/app/api/finance/obligations/route.ts` DELETE.
+- `page_views` (0 rows) — actively INSERT + SELECT in `vps-service/api/analytics.py` + `src/app/api/admin/users/cleanup-expired/route.ts` DELETE.
+- `paper_trades` (0 rows) — actively CREATE/INSERT/SELECT/UPDATE in `vps-service/engine/paper_trade_tracker.py` + `vps-service/analyzers/confluence_engine_v3.py`.
+- `pending_settlements` (0 rows) — actively UPDATE/SELECT in `vps-service/portfolio/hard_protection.py`.
+- `regime_indicator_weights` (0 rows) — actively SELECT FROM in `src/lib/analysis-engine.ts:773` + INSERT OR REPLACE in `vps-service/engine/historical_backfill_engine.py:1021`.
+- `scraping_status` (0 rows) — actively INSERT/SELECT in `vps-service/telegram/database.py:356,378`.
+- `stock_adaptive_profiles` (0 rows) — actively INSERT/SELECT in `vps-service/scripts/build_stock_profiles.py` + `vps-service/analyzers/stock_dna_analyzer.py:946,1016` + `vps-service/core/migrator.py:146`.
+- `telegram_messages` (0 rows) — actively CREATE/ALTER/INSERT in `vps-service/telegram/database.py:63,98,231`.
+- `telegram_recommendations` (0 rows) — actively ALTER/SELECT COUNT/SELECT FROM in `vps-service/ai/telegram_signal_importer.py:709,710,714,721,728`.
+- `tracked_channels` (0 rows) — actively INSERT/SELECT/UPDATE/COUNT in `vps-service/telegram/database.py:181,202,211,390`.
+- `user_sessions` (0 rows) — actively INSERT/UPDATE in `vps-service/api/analytics.py:373,418` + `src/app/api/admin/users/cleanup-expired/route.ts:82` DELETE.
+
+### predictions.db (4.69 MB) — 17 tables audited (all empty)
+
+#### ✅ SAFE TO DROP (4 tables — 0 rows + 0 code refs OR legacy backup):
+- `CachedAnalysis` (0 rows, camelCase) — zero code references. Distinct from `cached_analysis` (snake_case) which is heavily used.
+- `ExpertTrackRecord` (0 rows) — only setup scripts (`fix-vps-db-complete.py:648`, `setup-prisma-db.ts:322`) CREATE; no runtime code SELECT/INSERT. Duplicate with auth.db.ExpertTrackRecord (also empty).
+- `TechnicalIndicator` (0 rows, camelCase) — zero code references anywhere.
+- `prediction_outcomes_old` (0 rows) — only RENAME TARGET in `vps-service/analyzers/feedback_loop.py:58` (`ALTER TABLE prediction_outcomes RENAME TO prediction_outcomes_old`). One-time migration backup.
+
+#### ⚠️ NEEDS INVESTIGATION (4 tables — 0 rows + CREATE TABLE only):
+- `analysis_jobs` (0 rows) — only CREATE TABLE IF NOT EXISTS in `vps-service/analyzers/background_analyzer.py:357` + `vps-service/core/migrator.py:372`. No INSERT/SELECT.
+- `sniper_performance` (0 rows) — only CREATE TABLE IF NOT EXISTS in `vps-service/jobs/learning_engine.py:130`. No INSERT/SELECT.
+- `telegram_signals` (0 rows) — only CREATE TABLE IF NOT EXISTS in `vps-service/ai/telegram_signal_importer.py:136`. No INSERT/SELECT.
+- `trade_journal_reflections` (0 rows) — only CREATE TABLE IF NOT EXISTS in `vps-service/portfolio/trade_journal.py:216`. No INSERT/SELECT.
+
+#### ❌ DO NOT DROP (9 tables — active uses):
+- `aiPrediction` (0 rows) — heavily used in `vps-service/api/ai_predictions_routes.py` (50+ references: SELECT, INSERT, UPDATE, DELETE, CREATE) + multiple scripts (close_predictions.py, publish_today_picks.py, generate_full_predictions.py, daily_result_checker.py, clean_and_regenerate_predictions.py, verify-migration.ts). Empty due to reset, not disuse.
+- `analysis_engine_status` (0 rows) — actively SELECT/UPDATE in `vps-service/api/stored_analysis_routes.py:1023,2759,2767` + `vps-service/analyzers/background_analyzer.py:341,373,2644,2660`.
+- `cached_analysis` (0 rows) — same table as stocks.db.cached_analysis (also 0 rows); heavily used in vps-service + `src/app/api/admin/purge-cache/route.ts:95` (DELETE FROM cached_analysis on predictions.db).
+- `hunter_pick_tracking` (0 rows) — actively CREATE/INSERT/SELECT in `vps-service/api/prediction_tracking_routes.py:84,248,292,297,558`.
+- `prediction_lessons` (0 rows) — actively CREATE/INSERT/DELETE in `src/lib/honest-tracking/maestro.ts:118,1462,1464` + `src/app/api/predictions/honest-tracking/learn-from-errors/route.ts:130,137`.
+- `prediction_outcomes` (0 rows) — actively ALTER/CREATE/INSERT/SELECT JOIN in `vps-service/analyzers/feedback_loop.py:58,63,135,192` + `vps-service/core/migrator.py:439`.
+- `reports` (0 rows) — actively CREATE/INSERT/UPDATE in `vps-service/analyzers/reports_engine.py:240,1495,1627,1653`.
+- `telegram_news` (0 rows) — actively CREATE/INSERT in `vps-service/api/telegram_routes.py:944,959` + `vps-service/ai/telegram_signal_importer.py:116` + `vps-service/telegram/database.py:127`. Duplicate with stocks.db.telegram_news (6 rows), but predictions.db copy is written to by telegram_signal_importer.
+- `trade_journal_entries` (0 rows) — actively CREATE/SELECT in `vps-service/portfolio/trade_journal.py:177,323,340,408,425,508,520,533`.
+
+### auth.db (0.23 MB) — 9 tables audited (all empty)
+
+#### ✅ SAFE TO DROP (3 tables — stale duplicates, no code targets auth.db):
+- `optimized_parameters` (0 rows) — zero code references anywhere.
+- `platform_recommendations` (0 rows) — code references target `predictions.db` (historical_prediction_generator.py:31 PREDICTIONS_DB) + `stocks.db` (align_production_symbols.py DBS list). Auth.db copy is stale duplicate.
+- `user_trades` (0 rows) — code references target `predictions.db` only (trade_recorder.py:52 PREDICTIONS_DB). Auth.db copy is stale duplicate.
+
+#### ⚠️ NEEDS INVESTIGATION (2 tables — setup-only, no runtime use):
+- `ExpertTrackRecord` (0 rows) — only `scripts/setup-prisma-db.ts:322` and `scripts/fix-vps-db-complete.py:648` CREATE; no runtime code SELECT/INSERT. Duplicate with predictions.db.ExpertTrackRecord (also empty). To permanently remove, also remove the ExpertTrackRecord definition from setup-prisma-db.ts.
+- `Post` (0 rows) — `prisma/schema.prisma:24` has Post model (default from `prisma init`); app uses `posts` lowercase via `src/lib/community-db.ts:35`. Setup script creates `PostLike` and `PostComment` (different names). Safe to drop if you also remove the Post model from prisma/schema.prisma.
+
+#### ❌ DO NOT DROP (4 tables — Prisma-managed in auth-schema.prisma):
+- `Account` (0 rows) — `prisma/auth-schema.prisma:40` model Account; User has many Account relation (line 32). Prisma migrations expect it.
+- `Session` (0 rows) — `prisma/auth-schema.prisma:58` model Session; User has many Session relation (line 33).
+- `UserSubscription` (0 rows) — `prisma/auth-schema.prisma:95` model UserSubscription; SubscriptionPlan has many UserSubscription relation (line 92).
+- `VerificationToken` (0 rows) — `prisma/auth-schema.prisma:66` model VerificationToken. Auth flows may use it for email verification.
+
+### data_engine.db (125 MB) — 2 tables audited (both empty)
+
+#### ❌ DO NOT DROP (2 tables — actively read + written):
+- `egksco_stocks` (0 rows) — actively read by `vps-service/data/analyses.py:186` (`SELECT symbol, market FROM egksco_stocks` on data_engine.db explicitly per `_DATA_ENGINE_DB` line 158) — comment says "data_engine.db.egksco_stocks هو المرجع الرسمي لتصنيف السوق". Also read by `vps-service/jobs/daily_closer.py:502`, `vps-service/analyzers/stock_notebook.py:567`, `vps-service/api/stored_analysis_routes.py:211`. Written by `vps-service/data/egksco_scraper.py:275` INSERT INTO. Canonical market-classification source — empty because sync hasn't populated it yet; dropping would cause `sqlite3.OperationalError: no such table` in analyses.py.
+- `egx_fundamentals` (0 rows) — actively read by `vps-service/api/sniper_routes.py:349` (SELECT pe_ratio, roe, debt_equity, dividend_yield) + `vps-service/analyzers/maestro_orchestrator.py:2736` (SELECT fundamental_score) + `vps-service/api/misc_routes.py:951` (SELECT *). Written by `vps-service/data/egx_fundamental_fetcher.py:383,433` (CREATE+INSERT) + `vps-service/data/eodhd_fetcher.py:566,611` (CREATE+INSERT). Both fetchers open `data_engine.db` explicitly. Empty because fetcher hasn't been run; dropping would crash sniper_routes.py + maestro_orchestrator.py.
+
+### intraday.db (120 MB) — 1 table audited (empty)
+
+#### ⚠️ NEEDS INVESTIGATION (1 table — migrator placeholder only):
+- `intraday_prices` (0 rows) — only `CREATE TABLE IF NOT EXISTS intraday_prices` in `vps-service/core/migrator.py:628`. No INSERT/SELECT. Note: intraday.db has 4 other tables with data (commodity_intraday 22,795 rows, crypto_intraday 151,792, intraday_meta 3, stock_intraday 266,259). The `intraday_prices` table appears to be a leftover schema placeholder.
+
+### news.db (31 MB) — 1 table audited (empty)
+
+#### ❌ DO NOT DROP (1 table — actively used):
+- `news_api_keys` (0 rows) — actively CRUD in `src/app/api/news/apikeys/route.ts` (CREATE, SELECT, UPDATE, INSERT, DELETE) + `data_engine/scrapers/news_scraper.py` (CREATE, SELECT, UPDATE). Empty because no API keys configured yet; dropping would break news scraper + admin API.
+
+DUPLICATE TABLES FINDINGS:
+
+Cross-DB duplicates with data:
+- `cached_analysis` — both stocks.db (0) AND predictions.db (0); actively used in both DBs (purge-cache touches both). Neither should be dropped.
+- `learned_lessons` — stocks.db (0) AND predictions.db (494); predictions.db has the live data; stocks.db is target of one-off scripts. → stocks.db copy ⚠️ investigate.
+- `outcome_logs` — stocks.db (0) AND predictions.db (8,544); predictions.db has live data. → stocks.db copy ⚠️ investigate.
+- `indicator_trust_scores` — stocks.db (0) AND predictions.db (10); vps-service/analyzers/indicator_trust_scores.py opens predictions.db explicitly. → stocks.db copy ⚠️ investigate (stale duplicate).
+- `telegram_news` — stocks.db (6) AND predictions.db (0); different writers (telegram/database.py vs telegram_signal_importer.py). Neither should be dropped.
+- `ExpertRecommendation` — stocks.db (42) + predictions.db (42) + auth.db (17); not in scope (have rows).
+- `egksco_stocks` — stocks.db (256) AND data_engine.db (0); vps-service/data/analyses.py explicitly opens data_engine.db as canonical reference. Data inconsistency — data_engine.db is expected to be populated but isn't. ❌ DO NOT DROP data_engine.db copy.
+
+Cross-DB duplicates both empty:
+- `ExpertTrackRecord` — auth.db (0) + predictions.db (0); only setup scripts CREATE. Both → ⚠️ investigate (setup-only).
+
+LEGACY BACKUP TABLES (suffix _old, _backup):
+- `prediction_outcomes_old` (predictions.db, 0 rows) — created by RENAME in feedback_loop.py one-time migration. → ✅ SAFE TO DROP.
+- `stocks_backup` (stocks.db, 345 rows) — referenced only in fix_vps_db_schema.py DROP statements. → ✅ SAFE TO DROP.
+
+DROP ORDER (recommended sequence):
+1. **Backup verification**: confirm `/home/z/my-project/backups/db-cleanup-20260903-163211/` has fresh backup of all 6 DBs (already exists).
+2. **DROP safe tables (12 total)**:
+   - stocks.db: DROP TABLE maestro_personas, ticker_performance, trading_lessons, trading_rules, stocks_backup
+   - predictions.db: DROP TABLE CachedAnalysis, ExpertTrackRecord, TechnicalIndicator, prediction_outcomes_old
+   - auth.db: DROP TABLE optimized_parameters, platform_recommendations, user_trades
+3. **VACUUM each DB** after DROPs to reclaim space:
+   - sqlite3 db/stocks.db "VACUUM;"
+   - sqlite3 db/predictions.db "VACUUM;"
+   - sqlite3 db/auth.db "VACUUM;"
+4. **Smoke-test API endpoints** (run after each DB's drops):
+   - /api/health → 200
+   - /api/stocks → 200
+   - /api/stocks/COMI → 200
+   - /api/predictions → 200
+   - /api/db-stats → 200
+   - /api/admin/db-health → 200
+   - /api/data-engine/health → 200
+   - /api/news → 200
+   - /api/news/apikeys → 200
+   - /api/reports/morning → 200
+   - /api/finance/obligations → 200
+   - /api/finance/transactions → 200
+5. **For NEEDS_INVESTIGATION tables (15 total)** — owner review required:
+   - For duplicates (learned_lessons, outcome_logs, indicator_trust_scores in stocks.db): owner should verify which DB is canonical and consolidate.
+   - For placeholder tables (context_logs, indicator_weights, analysis_jobs, sniper_performance, telegram_signals, trade_journal_reflections, telegram_images, intraday_prices): owner should decide if migrator should be updated to remove the CREATE statements.
+   - For news_items + stocks.db.egksco_price_history: data has been migrated (to news.db and data_engine.db.egksco_price_history respectively); owner should update vps-service readers to use new sources, then drop.
+   - For Post (auth.db): remove model from prisma/schema.prisma before dropping.
+   - For ExpertTrackRecord: remove CREATE from setup-prisma-db.ts before dropping.
+
+NEED_OWNER: YES — owner should review the 15 NEEDS_INVESTIGATION tables. The 12 SAFE_TO_DROP tables can be dropped immediately after backup verification.
+
+---
+
+---
+Task ID: WAVE-3
+Agent: main (orchestrator, Z.ai Code)
+Task: الموجة الثالثة — تنظيف الجداول الفارغة + VACUUM + اختبار نهائي
+
+Work Log:
+- 3a (تدقيق الجداول الفارغة — subagent):
+  * Task ID 3a عمل audit دقيق لكل الجداول الفارغة في الـ DBs المتبقية.
+  * النتايج:
+    - stocks.db: 5 SAFE, 8 INVESTIGATE, 20 DO NOT DROP (33 total)
+    - predictions.db: 4 SAFE, 4 INVESTIGATE, 9 DO NOT DROP (17 total)
+    - auth.db: 3 SAFE, 2 INVESTIGATE, 4 DO NOT DROP (9 total)
+    - data_engine.db: 0 SAFE, 0 INVESTIGATE, 2 DO NOT DROP (2 total)
+    - TOTAL: 12 SAFE, 15 INVESTIGATE, 36 DO NOT DROP
+  * الـ audit أنقذ في scripts/audit-empty-tables.sh + /tmp/audit-table-refs.txt (907 سطر).
+
+- 3b (drop الـ 9 جداول الآمنة فقط — مبدأ الأمان أولاً):
+  * قررت أتشكاush على 9 جداول بس (مش 12) — اللي عندها 0 rows + 0 code references فعلياً.
+  * تجاهلت:
+    - stocks_backup (345 rows — فيه داتا)
+    - ExpertTrackRecord (محتاج CREATE removal من setup scripts)
+    - prediction_outcomes_old (one-time migration backup — ممكن يتNeed)
+  * كتبت scripts/drop-safe-tables.py (Python — better-sqlite3 بـ crash مع bun).
+  * النتايج:
+    - stocks.db: DROPPED maestro_personas, ticker_performance, trading_lessons, trading_rules (4 tables) + VACUUM → saved 1.34 MB
+    - predictions.db: DROPPED CachedAnalysis, TechnicalIndicator (2 tables) + VACUUM → saved 3.2 MB
+    - auth.db: DROPPED optimized_parameters, platform_recommendations, user_trades (3 tables) + VACUUM → saved 0.04 MB
+  * إجمالي التوفير: ~4.5 MB (من VACUUM + drop)
+  * إجمالي 9 جداول اتعملها DROP، 0 failures.
+
+- اختبار نهائي (Agent Browser):
+  * فتحت http://127.0.0.1:3000/ بـ agent-browser.
+  * الصفحة فتحت بنجاح: title="دليل الاستثمار | تحليلات الأسهم والعملات الرقمية"
+  * مفيش console errors حقيقية (بس warnings موجودة من قبل — radix-ui Slot, React DevTools, WS connection من Python anyio bug).
+  * الصفحة بتعرض بيانات حقيقية للأسهم:
+    - ARAB: 0.26 (+4.38%) — 973.4M
+    - OFH: 1.10 (+9.56%) — 339.5M
+    - LUTS: 0.66 (+13.08%) — 221.6M
+    - AIDC: 0.75 (+2.05%) — 219.9M
+    - AIH: 0.50 (+5.01%) — 173.8M
+  * كل الـ 11 API route اللي اختبرتها بـ 200 OK.
+  * lint بدون أخطاء.
+
+Stage Summary:
+- ✅ 9 جداول فاضية اتشالت بنجاح (0 failures).
+- ✅ VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db) — استرجاع ~4.5 MB.
+- ✅ Agent Browser test: الصفحة بتفتح، بتعرض بيانات حقيقية، مفيش errors.
+- ✅ كل API routes بـ 200 OK.
+- ✅ lint بدون أخطاء.
+- price_history.db محتفظ بيه (الأمان — fallback لو أي مشكلة).
+
+FINAL DB STATE:
+- auth.db: 0.19 MB (كان 0.23 MB)
+- predictions.db: 1.5 MB (كان 4.7 MB)
+- stocks.db: 10.65 MB (كان 11.5 MB)
+- price_history.db: 17 MB (محتفظ بيه — safety net)
+- news.db: 32 MB
+- intraday.db: 120 MB
+- data_engine.db: 126 MB
+- TOTAL: ~307 MB (كان ~345 MB قبل التنظيف)
+
+CLEANUP SUMMARY (كل الموجات):
+- الموجة 1: حذف 3 DBs (custom, prices, crypto) — توفير 37 MB + 123 lines dead code
+- الموجة 2: migration price_history.db readers لـ data_engine.db.egksco_price_history (9 ملفات TS)
+- الموجة 3: drop 9 جداول فاضية + VACUUM — توفير 4.5 MB
+- الإجمالي: توفير ~41.5 MB + 3 DBs أقل + 9 جداول أقل + 123 lines dead code أقل
+
+NEED_OWNER:
+1. مراجعة الـ changes (git diff).
+2. لو موافق: git add + commit + push.
+3. price_history.db ممكن يتشال لاحقاً بعد مراقبة الـ production لفترة (一周 مثلاً).
