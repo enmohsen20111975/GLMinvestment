@@ -1061,6 +1061,64 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 # safe-by-design: لو الـ gate فشل، سيب الإشارة تكمّل (مش نوقف النظام)
                 pass
 
+            # ════════════════════════════════════════════════════════════════
+            # SCREENER + FUNDAMENTALS + BID/ASK INTEGRATION (2026-09-03)
+            # Owner: "انا عندى تصنيفات كتيييييييييييير جدا لية مش بنستعملها؟"
+            # Owner: "عندك بيانات عمق السوق الى هى عروض البيع و الشراء؟"
+            #
+            # ده بيربط 3 كنوز مدفونة بـ V40.2:
+            # 1. screener_lists (8 قوائم: unusual_volume +10, undervalued +9, إلخ)
+            # 2. tab_valuation + tab_profitability (P/E, ROE → boost +5 / veto bubble)
+            # 3. intraday_prices bid/ask (spread < 0.5% → boost +3 سيولة عالية)
+            #
+            # CONSTITUTION: Rule 20 (Python=brain), Rule 27 (NO-FAKE-DATA),
+            # Rule 29 (UNIFIED-SYSTEM), Rule 17 (RELATIVE-PATHS)
+            # ════════════════════════════════════════════════════════════════
+            try:
+                from analyzers.screener_integration import apply_screener_data_to_v402
+                # RSI for top_gainers veto check
+                _rsi_val = 50.0
+                try:
+                    _v38_rsi = result.get('proofs', {}).get('technicals', '')
+                    if 'RSI' in str(_v38_rsi):
+                        import re as _rsi_re
+                        _rsi_match = _rsi_re.search(r'RSI[:\s]+(\d+)', str(_v38_rsi))
+                        if _rsi_match:
+                            _rsi_val = float(_rsi_match.group(1))
+                except Exception:
+                    pass
+                _screener_result = apply_screener_data_to_v402(
+                    ticker=ticker,
+                    score=result.get('score', 0),
+                    signal=signal,
+                    rsi=_rsi_val,
+                    current_price=entry,
+                )
+                # Veto: لو screener/fundamentals قال VETO → ارفض
+                if _screener_result['veto']:
+                    print(f"[SCREENER-VETO] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                          f"{' | '.join(_screener_result['boost_notes'])}", flush=True)
+                    continue
+                # Apply score boost/reduction
+                _old_score = result.get('score', 0)
+                result['score'] = _screener_result['adjusted_score']
+                if _screener_result['boost_notes']:
+                    _delta = result['score'] - _old_score
+                    if _delta != 0:
+                        print(f"[SCREENER-BOOST] {ticker}: score {_old_score}→{result['score']} "
+                              f"({' | '.join(_screener_result['boost_notes'])})", flush=True)
+                # خزّن بيانات screener في proofs للـ UI
+                if 'proofs' not in result or result['proofs'] is None:
+                    result['proofs'] = {}
+                if _screener_result['screener_tags']:
+                    result['proofs']['screener_tags'] = ', '.join(_screener_result['screener_tags'])
+                if _screener_result['fundamentals'].get('pe'):
+                    result['proofs']['fundamentals'] = f"P/E={_screener_result['fundamentals']['pe']:.1f}, ROE={_screener_result['fundamentals'].get('roe', 0):.1f}%"
+                if _screener_result['bid_ask'].get('spread_pct') is not None:
+                    result['proofs']['bid_ask'] = f"spread={_screener_result['bid_ask']['spread_pct']:.2f}%"
+            except Exception as _screener_err:
+                pass  # safe-by-design: لو screener integration فشل → نكمّل
+
             # ── SECTOR-LIQUIDITY FILTER (مرحلة منفصلة 1 — 2026-08-30) ──
             # المالك: "السيولة والميكرز بتخش في السوق على القطاع مش أسهم منفصلة"
             # المنطق: احسب حرارة القطاع من كل أسهم EGX في نفس اليوم.
