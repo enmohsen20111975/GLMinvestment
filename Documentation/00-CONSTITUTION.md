@@ -10,8 +10,8 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-03** (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2. module جديد screener_integration.py.) (إضافة القاعدة 44 — NEWS-DB-SOT: news.db هو المصدر الوحيد للأخبار. هجرة 7809 خبر من data_engine.db + news_articles لـ news.db/market_news. تفعيل V40_2_NEWS_IMPACT=1 في الساندبوكس. تعديل news_fetcher_analyzer.py + /api/news + /api/news-feed + /api/admin/news عشان يقرأوا من news.db.)
-> **آخر تحديث سابق:** 2026-08-29 (إضافة القواعد 27-32 بعد توجيهات المالك: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
+> **آخر تحديث: 2026-09-03** (إضافة القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
+> **آخر تحديث سابق:** 2026-09-03 (القاعدة 45) + 2026-09-02 (القاعدة 44 — NEWS-DB-SOT) + 2026-08-29 (القواعد 27-32: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
 > **الإنتاج:** https://invist.m2y.net
@@ -1469,3 +1469,70 @@ def get_news_with_impact(ticker, max_news=3):
 **Safe-by-design:** لو أي مصدر فشل → V40.2 بيكمل بدون تأثير.
 
 **المرجع:** `vps-service/analyzers/screener_integration.py` + `vps-service/jobs/v40_2_daily_generator.py` (سطر 1064-1120).
+
+---
+
+### القاعدة 46 — تنظيف قواعد البيانات الشامل (DB-CLEANUP-WAVE-1+2+3 — 2026-09-03)
+> **سبب الإضافة:** توجيه المالك (2026-09-03): "لية التداخل الغبى دة واية كم الجداول الرهيب دة؟ انت كدة ريحتنى من 3 قواعد بيانات اية اخبار الباقى"
+>
+> المشكلة كانت إن فيه **10 DBs** بإجمالي ~345 MB، فيها DBs مش مستخدمة (custom, prices, crypto) + تكرار في البيانات (price_history.db و data_engine.db.egksco_price_history فيهم نفس الـ 162,946 rows) + 9 جداول فاضية منتشرة في 3 DBs.
+
+**الـ 3 موجات (Waves) المنفصلة:**
+
+#### WAVE-1: حذف 3 DBs غير مستخدمة (توفير ~37 MB)
+| DB | الحجم | السبب |
+|----|------|------|
+| `custom.db` | 24 KB | default Prisma DB، الـ stubs كلها deprecated (بتـ route لـ stocks.db) |
+| `prices.db` | 21 MB | صفر references في الكود — البيانات كلها مكررة في data_engine.db |
+| `crypto.db` | 32 KB | 0 rows + dead code (unified-db.ts بـ query جدول `crypto_coins` مش موجود) |
+
+**كمان:** cleanup لـ `src/lib/unified-db.ts` (شيل 124 سطر كود ميت: getCryptoDb + CryptoCoin interface + 3 query functions) + حذف dead endpoint `/api/unified-crypto/route.ts`.
+
+#### WAVE-2: migration price_history readers لـ data_engine.db.egksco_price_history
+**الـ migration rules:**
+- `FROM price_history` → `FROM egksco_price_history`
+- `ticker` → `symbol`
+- `date` → `price_date`
+- شيل أي filter على `source` (egksco_price_history مفيهاش source column)
+
+**10 ملفات TS اتعملها migration:**
+1. `src/lib/data-engine-db.ts` — getPriceHistoryDb() بقى alias + 3 SQL queries rewritten
+2. `src/lib/data-engine-db-sqljs.ts` — getPriceHistoryDbSqlJs() بقى alias + getLastCleanClose + getHistoricalData rewritten
+3. `src/lib/market-data-access.ts` — Source 3 في getAvailableTickers + getPriceHistory rewritten
+4. `src/lib/new-db-queries.ts` — DB_PATHS + getPriceHistoryFromNewDb + areNewDbsAvailable + getNewDbHealth rewritten
+5. `src/app/api/health/route.ts` — check على data_engine.db
+6. `src/app/api/admin/db-health/route.ts` — probe egksco_price_history
+7. `src/app/api/admin/engines-status/route.ts` — MAX(price_date) من egksco_price_history
+8. `src/app/api/data-engine/health/route.ts` — probe table egksco_price_history
+9. `src/app/api/data-engine/status/route.ts` — COUNT(*) FROM egksco_price_history
+10. `src/app/api/chart/[ticker]/route.ts` — fallback query rewritten
+
+#### WAVE-3: drop 9 جداول فاضية + VACUUM (توفير ~4.5 MB)
+| DB | الجداول اللي اتمسحت |
+|----|---------------------|
+| `stocks.db` | maestro_personas, ticker_performance, trading_lessons, trading_rules |
+| `predictions.db` | CachedAnalysis, TechnicalIndicator (camelCase duplicates) |
+| `auth.db` | optimized_parameters, platform_recommendations, user_trades |
+
+VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db).
+
+**النتيجة النهائية:**
+- **7 DBs** بدل 10 (توفير ~41.5 MB)
+- **9 جداول أقل**
+- **123 سطر كود ميت أقل**
+- `price_history.db` محتفظ بيه كـ **safety net فقط** (الكود بـ reads من data_engine.db.egksco_price_history)
+- كل الـ API routes بـ 200 OK
+- Lint بدون أخطاء
+- Backtest محترم اشتغل بـ 68 trade (PF=1.19, Return=+1.35%)
+- 10 توقعات جديدة بناءً على screener + fundamentals + ATR + RSI + volume
+
+**الـ scripts المساعدة:**
+- `scripts/restore-and-clean.py` — استرجاع DBs من data/all.zip + تنظيف تلقائي
+- `scripts/migrate-news-table.py` — migration news_articles → market_news
+- `scripts/drop-safe-tables.py` — drop الجداول الفاضية + VACUUM
+- `scripts/v40_2_treasures_backtest.py` — backtest بـ الكنوز المدفونة
+- `scripts/v40_2_build_predictions.py` — بناء توقعات جديدة
+
+**الـ backup:** محفوظ في `backups/db-cleanup-20260903-163211/` (331 MB — كل الـ DBs الـ 10 قبل التنظيف).
+
+**المرجع:** `worklog.md` (Task IDs: WAVE-1a, WAVE-1b, WAVE-1c, WAVE-2a-2c, WAVE-3, SANDBOX-RESTART-DATA-LOSS, BACKTEST-AND-PREDICTIONS-FINAL).

@@ -1,8 +1,8 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-01
-> (Stock Notebook Context + Structural Exit Philosophy + Disclosure Engine + Strict Entry + Distribution Exit + News Fetcher + Decision Logger + Unified Exit Engine + 10 Feature Flags + باك-تست B0/B1/B2/B3 على 200 سهم × 6 شهور).
-> **آخر تحديث سابق:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-03
+> (WAVE-1+2+3 DB Cleanup + Position Sizing + News Impact 5 levels + Screener Integration + Migration price_history → data_engine.db.egksco_price_history + Backtest محترم 68 trade + 10 توقعات جديدة بالكنوز المدفونة).
+> **آخر تحديث سابق:** 2026-09-01 (Stock Notebook + Disclosure + Decision Logger + Unified Exit + News Fetcher + 10 Feature Flags + باك-تست B0/B1/B2/B3).
 > **كل ملفات التوثيق السابقة في `/Documentation/*.md` دُمجت في الـ 4 ملفات الرئيسية:**
 > 1. `Documentation/00-CONSTITUTION.md` — الحوكمة والقواعد.
 > 2. `Documentation/01-PROJECT_ANATOMY.md` — التشريح الكامل (المعمارية، المحركات، DBs، تدفق البيانات).
@@ -10,11 +10,74 @@
 > 4. **`Documentation/SYSTEM_HOW_IT_THINKS.md` (هذا الملف)** — منطق المحرك (التفكير + القرار).
 >
 > **المنهجية:** كل رقم/صيغة/مسار/سلوك مُتحقَّق منه ضد الكود الفعلي + الأرشيف الإنتاجي
-> (`active_databases_20260817_full.zip`, md5 `0947bdf6c2eff1a75ff8af6c3e576ed8`).
+> (`data/all.zip` بعد WAVE-1+2+3 cleanup).
 >
-> **النتيجة على الإنتاج الحالي (2026-09-01):** V40.2 هو العقل الوحيد.
-> Backtest B0 (baseline): 31 trades, WR 45.2%, Return +41.2%.
-> Backtest B3 (structural exit): 14 trades، لا max_holding exit ✅.
+> **النتيجة على الإنتاج الحالي (2026-09-03):** V40.2 هو العقل الوحيد.
+> Backtest محترم بـ الكنوز المدفونة: 68 trade، WR 36.76%، PF 1.19، Return +1.35%.
+> 10 توقعات جديدة STRONG_BUY بناءً على screener + fundamentals + ATR + RSI + volume.
+
+---
+
+## ⚡ تغييرات جوهرية (2026-09-03) — اقرأ هذا أولاً
+
+### 🌊 WAVE-1+2+3 DB Cleanup (المحور أ — التنظيف الشامل)
+
+**الـ changes:**
+- **WAVE-1**: حذف 3 DBs (custom.db, prices.db, crypto.db) + 124 سطر كود ميت + dead endpoint
+- **WAVE-2**: migration price_history readers لـ data_engine.db.egksco_price_history (10 ملفات TS)
+- **WAVE-3**: drop 9 جداول فاضية + VACUUM (توفير ~4.5 MB)
+- **news.db migration**: news_articles (7,894) → market_news (7,806)
+
+**النتيجة:**
+- 7 DBs بدل 10 (توفير ~41.5 MB)
+- الـ canonical source دلوقتي `data_engine.db.egksco_price_history` (162,946 rows)
+- `price_history.db` محتفظ بيه كـ safety net فقط
+
+### 💰 الكنوز المدفونة (المحور ب — 3 modules مربوطين في V40.2)
+
+#### الكنز #1: Screener Integration (`vps-service/analyzers/screener_integration.py`)
+- مربوط في `v40_2_daily_generator.py` (line 1036-1120)
+- بيقرأ من `data_engine.db.screener_lists` (1,459 entries في 5 فئات)
+- 3 functions:
+  - `get_screener_tags(ticker)` → screener tags (most_active, unusual_volume, ...)
+  - `get_fundamentals_boost(ticker)` → P/E + ROE check → +5 boost أو VETO
+  - `get_bid_ask_spread(ticker)` → spread < 0.5% → +3 boost (سيولة عالية)
+- `apply_screener_data_to_v402(ticker, score, signal)` → VETO/BOOST الـ score
+
+#### الكنز #2: News Impact 5 Levels (`vps-service/analyzers/live_news_integration.py`)
+- 5 levels: STRONG_POSITIVE (+15) / POSITIVE (+8) / NEUTRAL (0) / NEGATIVE (-8) / STRONG_NEGATIVE (-15)
+- `get_news_impact_for_live_prediction(ticker)` → بيقرأ من الإنتاج (`/api/proxy-prod/news-feed`)
+- `generate_news_aware_recommendation(ticker, v40_2_score, v40_2_signal, v40_2_proofs)` → combined_score
+- ممكن يقلب القرار: HOLD → SELL (لو خبر سلبي قوي) أو HOLD → BUY (لو خبر إيجابي قوي)
+
+#### الكنز #3: Position Sizing (`vps-service/analyzers/position_sizing.py`)
+- `calculate_position_size(atr, entry)` → position_size_mult (0.5-1.0)
+- 3 volatility classes:
+  - HIGH (ATR ≥ 6%) → 55% size (env: `V40_2_HIGH_VOL_SIZE_MULT`)
+  - NORMAL (3-6%) → 80% size
+  - LOW (< 3%) → 100% size
+- مربوط في `v38_backtest_engine.py` (trade.return_pct *= position_size_mult)
+- مثال: UTOP (ATR=8.35%) → 55% size → خسارة -24.86% بقت -13.67%
+
+### 📊 Backtest محترم بالكنوز (2026-09-03)
+
+**الـ script:** `scripts/v40_2_treasures_backtest.py`
+- Period: 2026-02-01 → 2026-08-27
+- 68 trade على 19 EGX stock
+- Win Rate: 36.76% | Avg Win: +13.44% | Avg Loss: -6.55%
+- Profit Factor: 1.19 (إيجابي)
+- Total Return: +1.35%
+- Max Drawdown: -39.80%
+- 12 trade وصلت +20% (take profit)
+- Top performers: AMOC, HELI, SWDY, TMGH, HRHO, AMER, PHDC, OCDI
+
+### 🎯 توقعات جديدة (2026-09-03)
+
+**الـ script:** `scripts/v40_2_build_predictions.py`
+- 10 توقعات بناءً على screener + fundamentals + ATR + RSI + volume
+- كلها STRONG_BUY/BUY
+- Top 5: CIEB (100), HRHO (98), HELI (95), ABUK (93), MASR (93)
+- كل توقع فيه: entry, stop (ATR-based 3-9%), target (R/R 2.5), position_size (volatility-based)
 
 ---
 
@@ -260,9 +323,10 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 │  STAGE 1: SCRAPE (يجمع البيانات)                                              │
 │  ────────────────────────────                                                 │
 │  tradingview_scraper (كل 5 دقايق) ──→ stocks.db + data_engine.db              │
-│  egksco_scraper (يومي) ──→ price_history.db (OHLCV EGX)                      │
+│  egksco_scraper (15 دقايق) ──→ data_engine.db.egksco_price_history (CANONICAL)│
+│  daily_price_updater (legacy cron) ──→ price_history.db (safety net only)    │
 │  yahoo_fallback (safety net) ──→ data_engine.historical_data                  │
-│  coingecko + newsapi + gnews ──→ crypto.db + news.db + community.db          │
+│  coingecko + newsapi + gnews ──→ data_engine.db + news.db.market_news          │
 │  EGXPilot (egx_fundamental_fetcher — ⚠️ NOT scheduled) ──→ egx_fundamentals   │
 └──────────────────────────────────────────────────────────────────────────────┘
                                   ↓
@@ -335,7 +399,7 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 │  ────────────────────────────────────────────                                 │
 │  daily_closer.py (15:30 Cairo, بعد إغلاق السوق):                              │
 │   ├─ لكل PENDING prediction:                                                  │
-│   │   ├─ حمّل سعر الإغلاق اليومي من price_history.db                          │
+│   │   ├─ حمّل سعر الإغلاق اليومي من data_engine.db.egksco_price_history (canonical)                          │
 │   │   ├─ حدّث highest_price / lowest_price (مع intraday.db)                  │
 │   │   ├─ فحص: hit_target? hit_stop? trailing_stop? expired?                  │
 │   │   ├─ حساب actual_return على سعر التفعيل (limit/stop) — مش سعر الإغلاق    │
@@ -361,18 +425,18 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 مداخل النظام (inputs)
+### 1.2 مداخل النظام (inputs) — post-WAVE-1+2+3 Cleanup
 
 | المصدر | البيانات | التردد |
 |--------|----------|--------|
-| `price_history.db` | EGX OHLCV (288,194 rows, 1,260 tickers) | يومي |
-| `stocks.db` | 970 ticker metadata (price, 52w hi/lo, market) | لحظي (5 دقايق) |
-| `data_engine.db` | historical_data + tab_valuation/profitability/dividends/performance/technical (858-866 rows each) | snapshot أسبوعي |
-| `intraday.db` | أسعار لحظية (آخر 5 جلسات) | 15 دقيقة |
-| `news.db` + `community.db` | sentiment + telegram signals | ساعي |
-| `crypto.db` + `crypto-lab.db` | 6 عملات رقمية | ساعي |
-| `learned.db` | دروس التعلم (STOP_TOO_TIGHT, ...) | تحديث عند كل إغلاق |
-| `analytics.db` | persona scoring cache | عند كل تحليل |
+| `data_engine.db.egksco_price_history` | EGX OHLCV (162,946 rows, 1,047 tickers) — **الـ canonical source بعد WAVE-2** | 15 دقيقة |
+| `price_history.db` | EGX OHLCV (162,946 rows — duplicate) — **safety net فقط** | يومي (legacy) |
+| `stocks.db` | 1,047 ticker metadata (price, 52w hi/lo, market, pe_ratio, roe, ma_50, ma_200, rsi) | لحظي (5 دقايق) |
+| `data_engine.db` | tab_valuation/profitability/dividends/performance/technical (858-866 rows each) + crypto_prices (429,649) + gold_prices (220,598) + screener_lists (1,459) | snapshot أسبوعي / live quotes |
+| `intraday.db` | أسعار لحظية (stock_intraday 266,259 + crypto_intraday 151,792) | 15 دقيقة |
+| `news.db.market_news` | 7,806 خبر (migrated from news_articles) | تحديث عند الـ fetch |
+| `predictions.db` | 80 توقع V40.2 + 8,544 outcome_logs + 494 learned_lessons | لحظي |
+| `auth.db` | 90 مستخدم + api_tokens + task_runs | لحظي |
 
 ### 1.3 مخارج النظام (outputs)
 

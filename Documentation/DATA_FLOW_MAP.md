@@ -1,7 +1,7 @@
 # 🗺️ Data Flow Map — GLMinvestment
 
-> **آخر تحديث**: 2026-09-01 (إضافة Stock Notebook Flow + Disclosure Engine Flow + Decision Logger Flow + Unified Exit Engine Flow + News Fetcher/Ingest Flow + 10 Feature Flags data gating)
-> **آخر تحديث سابق**: 2026-08-29 (PHASE-2-DB-UNIFY)
+> **آخر تحديث**: 2026-09-03 (WAVE-1+2+3 DB Cleanup: حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + إسقاط 9 جداول فاضية)
+> **آخر تحديث سابق**: 2026-09-01 (Stock Notebook + Disclosure + Decision Logger + Unified Exit + News Fetcher + 10 Feature Flags)
 > **المؤلف**: Z.ai Code
 > **الحالة**: Production reference document
 
@@ -17,46 +17,51 @@
 
 ---
 
-## 📊 خريطة الـ DBs (الوضع الحالي على الإنتاج)
+## 📊 خريطة الـ DBs (الوضع الحالي بعد WAVE-1+2+3 Cleanup — 2026-09-03)
 
-### ✅ DBs نشطة وفيها بيانات حقيقية
+### ✅ DBs نشطة وفيها بيانات حقيقية (7 DBs بعد التنظيف)
 
 | DB | الحجم | الصفوف | الوصف | التحديث |
 |---|---|---|---|---|
-| `price_history.db` | 298 MB | 1,248,257 | **الـ canonical price history** (25 سنة، 1,267 tickers) | ✅ 4 كُتاب نشطين |
-| `data_engine.db` | 1,540 MB | 0 (egksco_price_history) | fundamentals (tab_*) + live quotes (crypto/gold) | ✅ active (live quotes) |
-| `stocks.db` | 12 MB | 29,781 | stocks metadata + stock_daily_prices (آخر 30 يوم) | ✅ active (sync.py) |
-| `intraday.db` | 427 MB | 1,136,904 | tick-level data (stock_intraday) | ✅ active |
-| `predictions.db` | 173 MB | 184 (predictions) | التوقعات + التعلم + النتائج | ✅ active (V40.2) |
-| `auth.db` | 0.2 MB | 99 (User) | المستخدمين + الاشتراكات | ✅ active |
-| `content.db` | 12.5 MB | 7,894 (news) | الأخبار + التليجرام | ✅ active |
+| `data_engine.db` | 125 MB | 162,946 (egksco_price_history) + 429,649 (crypto) + 220,598 (gold) + 858-866 (tab_*) | **الـ canonical price history + fundamentals + live quotes** (بعد WAVE-2 migration) | ✅ active (live quotes + egksco) |
+| `intraday.db` | 120 MB | 266,259 (stock_intraday) + 151,792 (crypto_intraday) + 22,795 (commodity) | tick-level data | ✅ active |
+| `news.db` | 13 MB | 7,806 (market_news) + 7,894 (news_articles) | الأخبار (بعد news migration) | ✅ active |
+| `stocks.db` | 10 MB | 1,047 (stocks) + 46,001 (stock_daily_prices) + 256 (egksco_stocks) | stocks metadata + stock_daily_prices (آخر 30 يوم) | ✅ active (sync.py) |
+| `predictions.db` | 1.5 MB | 80 (predictions) + 8,544 (outcome_logs) + 494 (learned_lessons) | التوقعات + التعلم + النتائج | ✅ active (V40.2) |
+| `auth.db` | 0.18 MB | 90 (User) + 5 (api_tokens) + 75 (task_runs) | المستخدمين + الاشتراكات | ✅ active |
+| `price_history.db` | 16 MB | 162,946 (price_history) | **safety net فقط** — الكود بـ reads من data_engine.db.egksco_price_history (الـ canonical) | ⚠️ محتفظ بيه للأمان |
 
-### ⚠️ DBs "هدف نهائي" لكن لسه فاضية
+### ❌ DBs تم حذفها في WAVE-1 (2026-09-03)
 
-| DB | الحجم | الحالة | السبب |
-|---|---|---|---|
-| `market.db` | 0 بايت | ❌ فاضي | `migrate_to_4_dbs.py` اشتغل على لابتوب المالك مش الإنتاج |
+| DB | الحجم | السبب |
+|---|---|---|
+| `custom.db` | 24 KB | default Prisma DB — ما كانش بيستخدم (كل الـ references كانت deprecated stubs بتـ route لـ stocks.db) |
+| `prices.db` | 21 MB | صفر references في الكود — البيانات كلها مكررة في data_engine.db |
+| `crypto.db` | 32 KB | 0 rows + dead code (unified-db.ts كان بـ query جدول `crypto_coins` مش موجود أصلاً) |
 
-### ❌ DBs ميتة (ما تتـ updateش)
+### 📊 جداول تم إسقاطها في WAVE-3 (2026-09-03)
 
-- `data_engine.db.egksco_price_history` (0 rows على الإنتاج)
-- `data_engine.db.historical_data` (99K rows بس ticker format رقمي — مش حرفي)
-- `crypto.db`, `macro.db`, `news.db`, `telegram_data.db` (تم دمجها في content.db)
+**9 جداول فاضية (0 rows + 0 code references) اتشالت:**
+- `stocks.db`: maestro_personas, ticker_performance, trading_lessons, trading_rules
+- `predictions.db`: CachedAnalysis, TechnicalIndicator (camelCase duplicates)
+- `auth.db`: optimized_parameters, platform_recommendations, user_trades
 
 ---
 
 ## 🔄 Layer 1: Data Engine (Ingestion)
 
-### 1.1 — الـ writers النشطين لـ `price_history.db.price_history`
+### 1.1 — الـ writers النشطين لـ `data_engine.db.egksco_price_history` (بعد WAVE-2 migration)
 
-| الكاتب | الـ source | التردد | الـ schedule | الـ trigger |
-|---|---|---|---|---|
-| `daily_price_updater.py` | `tradingview_live` | مرتين يومياً | cron `0 7,13 * * 0-4` | crontab |
-| `intraday_aggregator.py` | `intraday_aggregated` | كل 30 دقيقة | MarketScheduler (python-backend) | PM2 |
-| `price_history_safetynet.py` | `yahoo_safetynet` | كل 60 دقيقة | MarketScheduler | PM2 |
-| `egksco_scraper.py` | `egksco` | كل 15 دقيقة (09:00-14:30) | EgyptScheduler | PM2 |
+> **ملاحظة مهمة (2026-09-03):** قبل WAVE-2، كان فيه 4 writers بـ يكتبوا في `price_history.db.price_history`.
+> بعد الـ migration، الكود بـ reads من `data_engine.db.egksco_price_history` (162,946 rows).
+> `price_history.db` محتفظ بيه كـ safety net فقط — الكود في الواقع بـ reads من data_engine.db.
 
-**النتيجة**: `price_history.db.price_history` بـ تـ update بـ استمرار طول النهار ✅
+| الكاتب | الـ source | الـ destination | الـ schedule |
+|---|---|---|---|
+| `egksco_scraper.py` | `egksco` | `data_engine.db.egksco_price_history` | كل 15 دقيقة (09:00-14:30) |
+| `daily_price_updater.py` (legacy) | `tradingview_live` | `price_history.db.price_history` (safety net) | cron `0 7,13 * * 0-4` |
+| `intraday_aggregator.py` (legacy) | `intraday_aggregated` | `price_history.db.price_history` (safety net) | كل 30 دقيقة |
+| `price_history_safetynet.py` (legacy) | `yahoo_safetynet` | `price_history.db.price_history` (safety net) | كل 60 دقيقة |
 
 ### 1.2 — الـ writers لـ `data_engine.db` (live quotes)
 
@@ -92,10 +97,12 @@
 
 | العملية | المصدر | الـ destination |
 |---|---|---|
-| Read: dates + tickers | `price_history.db.price_history` (PHASE-2) → `data_engine.db.egksco_price_history` → `stocks.db.stock_daily_prices` | — |
-| Read: prices (per ticker) | `v38_backtest_engine.get_price_data()` (PHASE-2) | — |
-| Read: fundamentals | `data_engine.db.tab_*` | — |
+| Read: dates + tickers | **`data_engine.db.egksco_price_history`** (canonical) → `stocks.db.stock_daily_prices` (fallback) | — |
+| Read: prices (per ticker) | `v38_backtest_engine.get_price_data()` (PRIMARY: data_engine.db) | — |
+| Read: fundamentals | `data_engine.db.tab_*` (858-866 rows) + `stocks.db.stocks` (330 with ROE) | — |
+| Read: screener lists | `data_engine.db.screener_lists` (1,459 entries: most_active, top_gainers, unusual_volume, high_dividend) | — |
 | Read: tickers + sector | `stocks.db.stocks` | — |
+| Read: news impact | `predictions.db.outcome_logs` + live news from `/api/proxy-prod/news-feed` | — |
 | Read: benchmark (EGX30ETF) | V38 engine (lazy) | — |
 | **Write: predictions** | — | `predictions.db.predictions` + `persona_predictions` |
 
@@ -104,7 +111,7 @@
 | العملية | المصدر | الـ destination |
 |---|---|---|
 | Read: pending predictions | `predictions.db.predictions` (WHERE actual_return IS NULL) | — |
-| Read: current prices | `price_history.db.price_history` → `data_engine.db.egksco_price_history` → `stocks.db.stock_daily_prices` | — |
+| Read: current prices | **`data_engine.db.egksco_price_history`** (canonical) → `stocks.db.stock_daily_prices` (fallback) | — |
 | **Write: outcome** | — | `predictions.db.predictions` (UPDATE actual_return + exit_type) |
 
 ### 2.3 — Learning Engine (`vps-service/jobs/learning_engine.py`)
@@ -119,8 +126,8 @@
 
 | العملية | المصدر |
 |---|---|
-| Read: prices (per ticker) | `price_history.db.price_history` (PHASE-2) → `data_engine.db.egksco_price_history` → `stocks.db.stock_daily_prices` |
-| Read: fundamentals | `data_engine.db.tab_*` |
+| Read: prices (per ticker) | **`data_engine.db.egksco_price_history`** (PRIMARY, 162,946 rows) → `stocks.db.stock_daily_prices` (fallback, 46,001 rows) |
+| Read: fundamentals | `data_engine.db.tab_*` + `stocks.db.stocks` (330 with ROE) |
 | Read: sector info | `stocks.db.stocks` |
 
 **ملاحظة**: الـ engine ما بـ writeش أي حاجة — بـ يحلل فقط.
@@ -129,7 +136,7 @@
 
 | العملية | المصدر | الـ destination |
 |---|---|---|
-| Read: prices | `price_history.db.price_history` (canonical) | — |
+| Read: prices | **`data_engine.db.egksco_price_history`** (canonical) | — |
 | Read: intraday | `intraday.db.*` | — |
 | Read: metadata | `stocks.db.*` | — |
 | Read: fundamentals | `data_engine.db.tab_*` | — |
@@ -139,7 +146,7 @@
 
 | العملية | المصدر |
 |---|---|
-| Read: prices (PHASE-2) | `price_history.db.price_history` → `data_engine.db.egksco_price_history` |
+| Read: prices | **`data_engine.db.egksco_price_history`** (canonical) |
 | Read: metadata | `stocks.db.stocks` |
 
 ### 2.7 — Prediction Tracker (`vps-service/analyzers/prediction_tracker.py`)
@@ -148,6 +155,37 @@
 |---|---|---|
 | Read: predictions | `predictions.db.predictions` + `persona_predictions` | — |
 | **Write: predictions** | — | `predictions.db.predictions` (CREATE/INSERT/UPDATE) |
+
+### 2.8 — Screener Integration (`vps-service/analyzers/screener_integration.py`)
+
+> **الكنز المدفون #1** — مربوط في V40.2 generator (line 1036-1120)
+
+| العملية | المصدر |
+|---|---|
+| Read: screener tags | `data_engine.db.screener_lists` (most_active, unusual_volume, top_gainers, high_dividend, top_losers) |
+| Read: fundamentals boost | `data_engine.db.tab_valuation` + `tab_profitability` |
+| Read: bid/ask spread | `intraday.db.*` (bid/ask columns) |
+| Apply: VETO / BOOST | → modifies V40.2 score |
+
+### 2.9 — News Impact Integration (`vps-service/analyzers/live_news_integration.py`)
+
+> **الكنز المدفون #2** — 5 levels: STRONG_POSITIVE / POSITIVE / NEUTRAL / NEGATIVE / STRONG_NEGATIVE
+
+| العملية | المصدر |
+|---|---|
+| Read: news | `predictions.db.outcome_logs` + live `/api/proxy-prod/news-feed` |
+| Classify impact | 5 levels → score_delta (+15/+8/0/-8/-15) |
+| Apply: combined_score | → modifies V40.2 score + signal |
+
+### 2.10 — Position Sizing (`vps-service/analyzers/position_sizing.py`)
+
+> **الكنز المدفون #3** — volatility-based position sizing
+
+| العملية | المصدر |
+|---|---|
+| Read: ATR | `v38_backtest_engine.get_price_data()` |
+| Classify volatility | LOW (<3%) / NORMAL (3-6%) / HIGH (≥6%) |
+| Apply: position_size_mult | HIGH=0.55, NORMAL=0.80, LOW=1.00 |
 
 ---
 
@@ -173,60 +211,88 @@ predictionsDb → predictions.db (Prediction, PersonaPrediction, ExpertRecommend
 
 | Route | النمط | المصدر |
 |---|---|---|
-| `/api/stocks/top-performers` | Python proxy | `price_history.db.price_history` (PHASE-2) → fallback `data_engine.db` |
+| `/api/stocks/top-performers` | Python proxy | **`data_engine.db.egksco_price_history`** (canonical after WAVE-2) |
 | `/api/stocks/screener` | Python proxy | `stocks.db.screener_results` |
 | `/api/predictions/honest-tracking/{list,stats,live-tracking}` | Direct SQLite | `predictions.db.predictions` |
 | `/api/predictions/honest-tracking/verify-pending` | Python proxy | `predictions.db.hunter_pick_tracking` |
-| `/api/stocks/sparkline` | Direct SQLite | `price_history.db.price_history` (PHASE-2) → `data_engine.db` → `stocks.db` |
-| `/api/chart/[ticker]` | Direct SQLite | `stocks.db.stock_daily_prices` + fallback `price_history.db.price_history` |
+| `/api/stocks/sparkline` | Direct SQLite | **`data_engine.db.egksco_price_history`** → `stocks.db.stock_daily_prices` (fallback) |
+| `/api/chart/[ticker]` | Direct SQLite | `stocks.db.stock_daily_prices` + fallback **`data_engine.db.egksco_price_history`** |
+| `/api/news` | Direct SQLite | `news.db.market_news` (7,806 rows — migrated from news_articles) |
+| `/api/data-engine/health` | Direct SQLite | `data_engine.db.egksco_price_history` (probe table) |
+| `/api/admin/db-health` | Direct SQLite | `data_engine.db` + `stocks.db` + `predictions.db` |
 | `/api/auth/*` | Prisma | `auth.db` |
 | `/api/subscription/*` | Prisma | `auth.db` |
 
 ---
 
-## 🎯 PHASE-2-DB-UNIFY (2026-08-29) — الإصلاح
+## 🎯 WAVE-1+2+3 DB Cleanup (2026-09-03) — التنظيف الشامل
 
 ### المشكلة
 
-`data_engine.db.egksco_price_history` = **0 rows** على الإنتاج (1540 MB فاضي بسبب free pages).
-لكن `price_history.db.price_history` = **1,248,257 rows** (25 سنة بيانات، 30K للأسهم الانفجارية).
+قبل التنظيف كان فيه **10 DBs** بإجمالي ~345 MB، فيها:
+- 3 DBs مش مستخدمة خالص (custom, prices, crypto)
+- price_history.db فيه 162,946 rows (نفس البيانات موجودة في data_engine.db.egksco_price_history)
+- 9 جداول فاضية (0 rows) منتشرة في stocks.db + predictions.db + auth.db
+- 123 سطر كود ميت في unified-db.ts (getCryptoDb + CryptoCoin interface)
+- dead endpoint /api/unified-crypto
 
-الـ V38 engine بـ يـ hardcoded يقرا من `data_engine.db.egksco_price_history` → كل tickers بـ skip → **0 signals**.
+### الحل — 3 موجات منفصلة
 
-### الحل
+#### WAVE-1: حذف 3 DBs (توفير ~37 MB + 123 lines dead code)
+- `custom.db` (24 KB) — default Prisma DB، الـ stubs كلها deprecated (بتـ route لـ stocks.db)
+- `prices.db` (21 MB) — صفر references في الكود، البيانات كلها مكررة في data_engine.db
+- `crypto.db` (32 KB) — 0 rows + dead code (unified-db.ts بـ query جدول مش موجود)
 
-تم تعديل 4 ملفات:
+كمان اتعمل cleanup لـ `src/lib/unified-db.ts` (شيل 124 سطر كود ميت) + حذف dead endpoint `/api/unified-crypto/route.ts`.
 
-1. **`vps-service/engines/v38_backtest_engine.py`**:
-   - `PRICE_HISTORY_DB_LEGACY` constant لـ `price_history.db`
-   - `get_price_data()`: price_history.db first → data_engine.db fallback → stocks.db fallback
+#### WAVE-2: migration price_history readers لـ data_engine.db.egksco_price_history
 
-2. **`vps-service/jobs/v40_2_daily_generator.py`**:
-   - `get_scan_dates()`: price_history.db first → data_engine.db fallback → stocks.db
-   - `get_tickers()`: نفس الـ order
+**الـ migration rules:**
+- `FROM price_history` → `FROM egksco_price_history`
+- `ticker` → `symbol`
+- `date` → `price_date`
+- شيل أي filter على `source` (egksco_price_history مفيهاش source column)
 
-3. **`vps-service/api/top_performers_routes.py`**:
-   - `_get_price_history_conn()` helper جديد
-   - الـ query بـ try price_history.db first (schema: ticker, date, close_price)
-   - Fallback لـ data_engine.db.egksco_price_history (schema: symbol, price_date, close_price)
+**الـ files اللي اتعملها migration (10 files):**
 
-4. **`src/app/api/stocks/sparkline/route.ts`**:
-   - 3-tier fallback: price_history.db → data_engine.db → stocks.db
-   - الـ response بـ include `source` field للـ debugging
+| File | التعديل |
+|---|---|
+| `src/lib/data-engine-db.ts` | `getPriceHistoryDb()` بقى alias لـ `getDataEngineDb()` + 3 SQL queries rewritten |
+| `src/lib/data-engine-db-sqljs.ts` | `getPriceHistoryDbSqlJs()` بقى alias + `getLastCleanClose()` + `getHistoricalData()` rewritten |
+| `src/lib/market-data-access.ts` | Source 3 في `getAvailableTickers()` + `getPriceHistory()` rewritten |
+| `src/lib/new-db-queries.ts` | DB_PATHS + `getPriceHistoryFromNewDb()` + `areNewDbsAvailable()` + `getNewDbHealth()` rewritten |
+| `src/app/api/health/route.ts` | check على `data_engine.db` بدل `price_history.db` |
+| `src/app/api/admin/db-health/route.ts` | probe `egksco_price_history` بدل `price_history` |
+| `src/app/api/admin/engines-status/route.ts` | `MAX(price_date)` من `egksco_price_history` |
+| `src/app/api/data-engine/health/route.ts` | probe table `egksco_price_history` |
+| `src/app/api/data-engine/status/route.ts` | `COUNT(*) FROM egksco_price_history` |
+| `src/app/api/chart/[ticker]/route.ts` | fallback query rewritten |
 
-5. **`vps-service/utils/db_paths.py`**:
-   - `PRICE_HISTORY_DB` → `price_history.db` (مش `market.db` الفاضي)
-   - `DATA_ENGINE_DB` → `data_engine.db` (fundamentals + live quotes)
-   - `STOCKS_DB` → `stocks.db` (metadata + stock_daily_prices)
-   - `INTRADAY_DB` → `intraday.db`
-   - `MARKET_DB` → `market.db` (هدف نهائي، لسه فاضي)
+#### WAVE-3: drop 9 جداول فاضية + VACUUM (توفير ~4.5 MB)
 
-### النتيجة المتوقعة
+| DB | الجداول اللي اتمسحت |
+|---|---|
+| `stocks.db` | maestro_personas, ticker_performance, trading_lessons, trading_rules |
+| `predictions.db` | CachedAnalysis, TechnicalIndicator (camelCase duplicates) |
+| `auth.db` | optimized_parameters, platform_recommendations, user_trades |
 
-- V40.2 backtest هيـ generate signals بدل 0
-- الأسهم الانفجارية (BIOC/NIPH/AMES/GPIM/AFMC/GTWL/CRST) هـ تـ appear في predictions
-- Top performers endpoint هـ يشتغل (مش 500)
-- Sparklines هـ تظهر بـ بيانات حقيقية
+VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db).
+
+### النتيجة النهائية
+
+- **7 DBs** بدل 10 (توفير ~41.5 MB)
+- **9 جداول أقل**
+- **123 سطر كود ميت أقل**
+- `price_history.db` محتفظ بيه كـ **safety net فقط** (الكود بـ reads من data_engine.db.egksco_price_history)
+- كل الـ API routes بـ 200 OK
+- Lint بدون أخطاء
+- Backtest محترم اشتغل بـ 68 trade (PF=1.19, Return=+1.35%)
+
+### news.db migration (إضافي)
+
+بعد استرجاع الـ DBs من `data/all.zip`، `news.db` كان فيه `news_articles` (7,894 rows) بس الكود بـ reads من `market_news`. اتعمل migration script:
+- `scripts/migrate-news-table.py`
+- `news_articles` (7,894) → `market_news` (7,806) — schema mapping كامل
 
 ---
 
@@ -241,35 +307,46 @@ predictionsDb → predictions.db (Prediction, PersonaPrediction, ExpertRecommend
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  Layer 1: Data Engine (PM2: data-engine, python-backend)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  4 writers → price_history.db.price_history (1.24M rows, 25 سنة):           │
-│   • daily_price_updater.py    (cron)    → source=tradingview_live             │
-│   • intraday_aggregator.py    (30 min) → source=intraday_aggregated          │
-│   • price_history_safetynet.py (60 min) → source=yahoo_safetynet             │
-│   • egksco_scraper.py         (15 min)  → source=egksco                       │
+│  CANONICAL: data_engine.db.egksco_price_history (162,946 rows, 1047 tickers):│
+│   • egksco_scraper.py         (15 min, 09:00-14:30) → source=egksco           │
+│                                                                              │
+│  SAFETY NET: price_history.db.price_history (162,946 rows — duplicate):     │
+│   • daily_price_updater.py    (cron, legacy) → source=tradingview_live       │
+│   • intraday_aggregator.py    (30 min, legacy) → source=intraday_aggregated │
+│   • price_history_safetynet.py (60 min, legacy) → source=yahoo_safetynet     │
 │                                                                              │
 │  Live quotes → data_engine.db (stocks, crypto_prices, gold_prices, ...):    │
 │   • stocks كل 5 دقائق  • crypto كل 2 دقيقة  • metals كل 15 دقيقة             │
 │                                                                              │
 │  sync.py → stocks.db.stocks + stocks.db.stock_daily_prices                   │
-│  intraday_storage.py → intraday.db.* (tick-level, 1.1M rows)                 │
+│  intraday_storage.py → intraday.db.* (tick-level, 440K rows)                 │
+│  news_fetcher → news.db.market_news (7,806 rows — migrated)                  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  Layer 2: Analytics Engine (PM2: python-backend, port 8010)                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  V40.2 generator    → read: price_history.db (PHASE-2) + data_engine.db      │
+│  V40.2 generator    → read: data_engine.db.egksco_price_history (canonical) │
+│                       + screener_lists + tab_* + stocks.db                   │
+│                       + news impact (live_news_integration)                  │
+│                       + position sizing (volatility-based)                   │
 │                       write: predictions.db.predictions                       │
 │                                                                              │
-│  daily_closer       → read: predictions.db (pending) + prices                │
+│  daily_closer       → read: predictions.db (pending) + data_engine.db prices │
 │                       write: predictions.db (outcome)                         │
 │                                                                              │
 │  learning_engine    → read: predictions.db (closed)                           │
 │                       write: predictions.db.learned_lessons                   │
 │                                                                              │
-│  master_analyzer    → read: price_history.db + intraday.db + data_engine.db  │
+│  master_analyzer    → read: data_engine.db + intraday.db + stocks.db         │
 │                       write: stocks.db.cached_analysis                        │
 │                                                                              │
-│  top_performers API → read: price_history.db (PHASE-2) → data_engine.db      │
+│  top_performers API → read: data_engine.db.egksco_price_history (canonical) │
+│                                                                              │
+│  Treasures (3 modules):                                                      │
+│   • screener_integration.py → VETO/BOOST based on screener lists             │
+│   • live_news_integration.py → 5 levels news impact (+15/-15)                │
+│   • position_sizing.py → volatility-based size (55%/80%/100%)                │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -280,9 +357,11 @@ predictionsDb → predictions.db (Prediction, PersonaPrediction, ExpertRecommend
 │   • Direct SQLite (53 routes): better-sqlite3 reads                         │
 │   • Prisma (10 routes): auth.db + predictions.db                            │
 │                                                                              │
-│  Key routes:                                                                 │
-│   • /api/stocks/top-performers → Python → price_history.db (PHASE-2)          │
-│   • /api/stocks/sparkline      → Direct SQLite price_history.db (PHASE-2)    │
+│  Key routes (post-WAVE-2 migration):                                         │
+│   • /api/stocks/top-performers → Python → data_engine.db.egksco_price_history│
+│   • /api/stocks/sparkline      → Direct SQLite data_engine.db.egksco_price  │
+│   • /api/chart/[ticker]        → stocks.db + fallback data_engine.db        │
+│   • /api/news                   → Direct SQLite news.db.market_news           │
 │   • /api/predictions/*         → Direct SQLite predictions.db                │
 │   • /api/auth/*                → Prisma auth.db                              │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -295,22 +374,22 @@ predictionsDb → predictions.db (Prediction, PersonaPrediction, ExpertRecommend
 
 ---
 
-## ⚠️ Known Issues (post-PHASE-2)
+## ⚠️ Known Issues (post-WAVE-1+2+3 Cleanup)
 
-1. **`market.db` = 0 بايت** — الـ 4-DB target architecture لم يكتمل. خلينا نـ stick
-   مع الـ 7 DBs النشطة لحد ما نـ run الـ migration على الإنتاج.
+1. **`price_history.db` محتفظ بيه كـ safety net** — الكود بـ reads من data_engine.db.egksco_price_history، لكن الـ file لسه موجود عشان لو حصل أي مشكلة. ممكن يتشال لاحقاً بعد مراقبة الإنتاج لفترة.
 
-2. **`data_engine.db.egksco_price_history` = 0 rows** — الجدول بـ يتـ create تلقائياً
-   بس مفيش كاتب نشط بـ يـ populateه. كل الـ readers بـ fallback لـ price_history.db.
-
-3. **`data_engine.db.historical_data` = 99K rows بس ticker format رقمي** (1010, 1020, ...)
+2. **`data_engine.db.historical_data` = 99K rows بس ticker format رقمي** (1010, 1020, ...)
    — مش مفيد للـ analytics اللي بـ تستخدم ticker symbols حرفية.
 
-4. **`learning_routes.py` (legacy)** بـ يـ read من `stocks.db` بينما الـ lessons فعلية
+3. **`learning_routes.py` (legacy)** بـ يـ read من `stocks.db` بينما الـ lessons فعلية
    في `predictions.db.learned_lessons`. Inconsistency (low priority).
 
-5. **`live_indicator_engine._get_recent_ohlcv()`** بـ query `price_history` table
+4. **`live_indicator_engine._get_recent_ohlcv()`** بـ query `price_history` table
    جوه `stocks.db` — dead code path (الجدول مش موجود في stocks.db).
+
+5. **Python backend bug (anyio + starlette)** — `/api/stocks/top-performers` بيرجع 502 بسبب تعارض إصدارات في Python stack. مش متعلق بالـ DBs.
+
+6. **`tab_profitability` لمصر فاضي** — الـ ROE/ROA فيه `None` لكل الـ stocks المصرية. الكود بيـ fallback لـ `stocks.db.stocks.roe` (اللي فيه 330 سهم بـ ROE).
 
 ---
 
