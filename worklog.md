@@ -17279,3 +17279,33 @@ FINAL STATE:
 - النسخة الاحتياطية محفوظة في backups/db-cleanup-20260903-163211/ (331 MB)
 - كل الـ API routes شغّالة بـ 200 OK
 - Agent Browser test: الصفحة بتفتح وبتعرض بيانات حقيقية
+
+---
+Task ID: SANDBOX-RESTART-DATA-LOSS-2026-09-03-20-27
+Agent: main (orchestrator, Z.ai Code)
+Task: تنبيه طارئ — فقد البيانات بعد restart الساندبوكس
+
+Work Log:
+- الساندبوكس اتعمله restart في 20:27 UTC.
+- الساندبوكس الجديد مفيهوش أي من الـ DBs الأصلية:
+  * stocks.db (11.5 MB)
+  * data_engine.db (125 MB)
+  * intraday.db (120 MB)
+  * news.db (31 MB)
+  * predictions.db (4.7 MB)
+  * price_history.db (16 MB)
+  * auth.db (0.23 MB)
+- السبب: كل الـ DBs كانت في .gitignore (مش متسجلة في git).
+- backups/db-cleanup-20260903-163211/ folder فضل موجود بس مفيهوش أي .db files (كانت في .gitignore برضه).
+
+CRITICAL:
+- الـ git commits فيها كل الـ CODE changes (migration scripts, route updates, lib files).
+- بس الـ DBs نفسها مش متسجلة في git.
+- المالك لازم يسترجع الـ DBs من مصدر تاني:
+  1. الـ VPS الإنتاجي (invist.m2y.net)
+  2. نسخة احتياطية محلية على جهازه
+  3. أو يطلب من الساندبوكس الـ original snapshot
+
+Code changes محفوظة بالكامل في git (13 commits pushed to GitHub).
+DBs فقدت — لازم تسترجع من مصدر تاني.
+
