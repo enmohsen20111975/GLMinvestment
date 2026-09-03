@@ -81,10 +81,16 @@ for ticker in ['ABUK', 'COMI', 'EAST', 'SWDY', 'DAPH']:
     else:
         print(f'  ❌ REJECTED — الأسباب:')
         for r in gate_result.get('reasons_failed', []):
-            print(f'    ✗ {r["name"]}: {r["reason"]}')
+            if isinstance(r, dict):
+                print(f'    ✗ {r.get("name","?")}: {r.get("reason","?")}')
+            else:
+                print(f'    ✗ {r}')
         print(f'\n  الشروط اللي passed:')
         for r in gate_result.get('reasons_passed', []):
-            print(f'    ✓ {r["name"]}: {r["reason"]}')
+            if isinstance(r, dict):
+                print(f'    ✓ {r.get("name","?")}: {r.get("reason","?")}')
+            else:
+                print(f'    ✓ {r}')
 
 conn.close()
 print(f'\n{"="*80}')
