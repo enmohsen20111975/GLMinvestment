@@ -954,6 +954,11 @@ class MarketScheduler:
         """
         تشغيل V40.2 daily generator كـ subprocess داخل MarketScheduler.
 
+        CRITICAL FIX (2026-09-03): قبل ما V40.2 يشتغل، نتأكد إن price_history.db
+        طازة (آخر تاريخ = اليوم). لو مش طازة → نشغل intraday_aggregator +
+        price_history_safetynet الأول. ده يمنع تكرار مشكلة "التوقعات ماتغيرتش
+        من يومين" اللي سببها تجمّد price_history.db.
+
         Args:
             mode: 'intraday' (تحديث سريع أثناء الجلسة) | 'daily' (تحليل عميق)
                   'morning' (توقعات اليوم قبل فتح السوق)
@@ -963,6 +968,7 @@ class MarketScheduler:
 
         import subprocess
         import sys as _sys
+        import sqlite3 as _v40_sqlite
 
         try:
             project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -975,23 +981,72 @@ class MarketScheduler:
                 logger.warning(f"[MarketScheduler] V40.2 script not found: {script_path}")
                 return
 
+            # ════════════════════════════════════════════════════════════════
+            # CRITICAL (2026-09-03): تأكد إن price_history.db طازة قبل V40.2
+            # Owner: "لية عملية تغذية price_history.db بالبيانات وقفت؟
+            #         مكن عطل ممكن طيب لية حاجة واحدة ممكن تدمر سير مشروع كامل؟"
+            # الحل: V40.2 نفسها بتـ check وتـ refresh لو price_history stale.
+            # ════════════════════════════════════════════════════════════════
+            try:
+                _ph_db = os.path.join(project_root, 'db', 'price_history.db')
+                if os.path.exists(_ph_db):
+                    _ph_conn = _v40_sqlite.connect(_ph_db, timeout=5)
+                    _row = _ph_conn.execute("SELECT MAX(date) FROM price_history").fetchone()
+                    _ph_conn.close()
+                    if _row and _row[0]:
+                        from datetime import datetime as _dt, timedelta as _td
+                        _last_date = str(_row[0])[:10]
+                        _today = _dt.now().strftime('%Y-%m-%d')
+                        _yesterday = (_dt.now() - _td(days=1)).strftime('%Y-%m-%d')
+                        # لو آخر تاريخ قديم (أقل من أمس) → نشغل aggregator + safetynet
+                        if _last_date < _yesterday:
+                            logger.warning(
+                                f"[MarketScheduler] ⚠️ price_history STALE! "
+                                f"MAX(date)={_last_date} < yesterday={_yesterday} "
+                                f"→ running aggregator + safetynet BEFORE V40.2"
+                            )
+                            # 1. شغل intraday_aggregator (intraday → daily bars)
+                            try:
+                                _agg_script = os.path.join(project_root, 'vps-service', 'jobs', 'intraday_aggregator.py')
+                                if os.path.exists(_agg_script):
+                                    _agg_result = subprocess.run(
+                                        [venv_python, _agg_script],
+                                        cwd=project_root, env=os.environ.copy(),
+                                        capture_output=True, text=True, timeout=60,
+                                    )
+                                    logger.info(f"[MarketScheduler] ✓ intraday_aggregator: {_agg_result.stdout[-200:] if _agg_result.stdout else 'no output'}")
+                            except Exception as _agg_e:
+                                logger.error(f"[MarketScheduler] intraday_aggregator error: {_agg_e}")
+
+                            # 2. شغل price_history_safetynet (Yahoo gap-fill)
+                            try:
+                                _sn_script = os.path.join(project_root, 'vps-service', 'jobs', 'price_history_safetynet.py')
+                                if os.path.exists(_sn_script):
+                                    _sn_result = subprocess.run(
+                                        [venv_python, _sn_script],
+                                        cwd=project_root, env=os.environ.copy(),
+                                        capture_output=True, text=True, timeout=120,
+                                    )
+                                    logger.info(f"[MarketScheduler] ✓ price_history_safetynet: {_sn_result.stdout[-200:] if _sn_result.stdout else 'no output'}")
+                            except Exception as _sn_e:
+                                logger.error(f"[MarketScheduler] price_history_safetynet error: {_sn_e}")
+                        else:
+                            logger.debug(f"[MarketScheduler] price_history OK (MAX(date)={_last_date})")
+            except Exception as _ph_e:
+                logger.warning(f"[MarketScheduler] price_history check error: {_ph_e}")
+
             # Build args based on mode
             if mode == 'intraday':
-                # أثناء الجلسة: حدّث توقعات اليوم بالأسعار الحية
-                # --keep-old: ما تمسحش التوقعات القديمة (فقط أضف/حدّث)
                 args = ['--today-only', '--max-picks', '5', '--keep-old']
                 log_label = 'intraday (5 picks, keep-old)'
             elif mode == 'daily':
-                # بعد الإغلاق: تحليل عميق لتوقعات الغد
                 args = ['--yesterday-only', '--max-picks', '7']
                 log_label = 'daily deep (7 picks)'
             else:  # morning
-                # قبل الجلسة: توقعات اليوم (ابدأ من جديد)
                 args = ['--today-only', '--max-picks', '7']
                 log_label = 'morning (7 picks)'
 
             env = os.environ.copy()
-            # لا نستخدم BYPASS_PRED_CAP — التوقعات لازم تمر بكل الفلاتر
             env['V40_2_NEWS_IMPACT'] = env.get('V40_2_NEWS_IMPACT', '1')
             env['V40_2_EXPERT_RECS'] = env.get('V40_2_EXPERT_RECS', '1')
 
@@ -1003,15 +1058,15 @@ class MarketScheduler:
                 env=env,
                 capture_output=True,
                 text=True,
-                timeout=120,  # 2 دقيقة max
+                timeout=180,  # 3 دقائق max (زودناه عشان الـ aggregator + safetynet)
             )
 
             if result.returncode == 0:
-                # Extract key lines from stdout
-                for line in result.stdout.split('\n')[-10:]:
+                for line in result.stdout.split('\n')[-15:]:
                     if any(k in line for k in ['Total predictions', 'Overall win rate',
                                                'Signals found', 'Processed', 'NEWS-',
-                                               'EXPERT-', 'POSITION-SIZING']):
+                                               'EXPERT-', 'POSITION-SIZING', 'DEBUG',
+                                               'price_history', 'STALE', 'aggregator']):
                         logger.info(f"[V40.2] {line.strip()}")
                 logger.info(f"[MarketScheduler] ✓ V40.2 generation complete ({log_label})")
             else:
@@ -1022,7 +1077,7 @@ class MarketScheduler:
             self._mark_run(f'v40_2_generation_{mode}')
 
         except subprocess.TimeoutExpired:
-            logger.warning(f"[MarketScheduler] V40.2 generation timed out (120s) — mode={mode}")
+            logger.warning(f"[MarketScheduler] V40.2 generation timed out (180s) — mode={mode}")
         except Exception as e:
             logger.error(f"[MarketScheduler] V40.2 generation error (mode={mode}): {e}")
 
