@@ -16,6 +16,27 @@ engine._load_benchmark()
 conn = sqlite3.connect('db/price_history.db')
 cur = conn.cursor()
 
+def parse_volume(val):
+    """Parse volume strings like '2.56M', '1.2K', '500' to float."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).strip().replace('\u202f', '').replace(' ', '')
+    if not s:
+        return 0.0
+    multipliers = {'K': 1000, 'M': 1_000_000, 'B': 1_000_000_000}
+    for suffix, mult in multipliers.items():
+        if s.upper().endswith(suffix):
+            try:
+                return float(s[:-1]) * mult
+            except ValueError:
+                return 0.0
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
 # Get all EGX tickers (same logic as V40.2)
 cur.execute("SELECT DISTINCT ticker FROM price_history ORDER BY ticker")
 all_tickers = [r[0] for r in cur.fetchall()]
@@ -49,7 +70,7 @@ for i, ticker in enumerate(tickers):
     highs = [float(r[2] or 0) for r in rows]
     lows = [float(r[3] or 0) for r in rows]
     closes = [float(r[4] or 0) for r in rows]
-    volumes = [float(r[5] or 0) for r in rows]
+    volumes = [parse_volume(r[5]) for r in rows]
     
     day_idx = len(closes) - 1
     try:
