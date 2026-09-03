@@ -10,7 +10,7 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-02** (إضافة القاعدة 44 — NEWS-DB-SOT: news.db هو المصدر الوحيد للأخبار. هجرة 7809 خبر من data_engine.db + news_articles لـ news.db/market_news. تفعيل V40_2_NEWS_IMPACT=1 في الساندبوكس. تعديل news_fetcher_analyzer.py + /api/news + /api/news-feed + /api/admin/news عشان يقرأوا من news.db.)
+> **آخر تحديث: 2026-09-03** (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2. module جديد screener_integration.py.) (إضافة القاعدة 44 — NEWS-DB-SOT: news.db هو المصدر الوحيد للأخبار. هجرة 7809 خبر من data_engine.db + news_articles لـ news.db/market_news. تفعيل V40_2_NEWS_IMPACT=1 في الساندبوكس. تعديل news_fetcher_analyzer.py + /api/news + /api/news-feed + /api/admin/news عشان يقرأوا من news.db.)
 > **آخر تحديث سابق:** 2026-08-29 (إضافة القواعد 27-32 بعد توجيهات المالك: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
@@ -1445,3 +1445,27 @@ def get_news_with_impact(ticker, max_news=3):
 
 **المرجع:** `vps-service/analyzers/news_fetcher_analyzer.py` (function جديدة `_get_news_from_market_news_db`) + `src/app/api/news/route.ts` + `src/app/api/news-feed/route.ts` + `src/app/api/admin/news/route.ts`.
 
+
+
+---
+
+### القاعدة 45 — ربط البيانات المدفونة بـ V40.2 (SCREENER-FUNDAMENTALS-DEPTH — 2026-09-03)
+> **سبب الإضافة:** توجيه المالك (2026-09-03): "انا عندى تصنيفات كتييييييير جدا لية مش بنستعملها؟" + "عندك بيانات عمق السوق الى هى عروض البيع والشراء؟"
+>
+> المشكلة كانت إن `data_engine/scrapers` فيها 13 scraper بتجمع بيانات ضخمة (8 قوائم تصنيف + 9 تبويبات بيانات مالية + bid/ask) بس **V40.2 مش كان بيستخدم أي منها**. V40.2 بيستخدم `V38BacktestEngine` اللي مش مربوط بـ `MasterAnalyzer` (اللي كان بيستخدم screener data بس).
+
+**الـ module الموحّد:** `vps-service/analyzers/screener_integration.py`
+
+**البيانات المربوطة (3 مصادر):**
+
+| # | المصدر | DB | التأثير |
+|---|--------|-----|---------|
+| 1 | screener_lists (8 قوائم) | data_engine.db | unusual_volume +10, undervalued +9, most_active +8, high_dividend +6, high_net_income +5, top_gainers -6 (+VETO لو RSI>70), penny -8 (+VETO) |
+| 2 | tab_valuation + tab_profitability | data_engine.db | ROE>15% + P/E<15 → +5, P/E>100 → VETO (bubble) |
+| 3 | intraday_prices (bid/ask) | intraday.db | spread < 0.5% → +3 (سيولة عالية) |
+
+**مكان الربط في V40.2:** بعد entry_gate، قبل sector-liquidity filter.
+**VETO:** لو screener/fundamentals قال VETO → `continue` (رفض فوري).
+**Safe-by-design:** لو أي مصدر فشل → V40.2 بيكمل بدون تأثير.
+
+**المرجع:** `vps-service/analyzers/screener_integration.py` + `vps-service/jobs/v40_2_daily_generator.py` (سطر 1064-1120).

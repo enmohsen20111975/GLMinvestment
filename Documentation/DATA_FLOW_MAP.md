@@ -483,3 +483,48 @@ decision_logger.log_decision() ← سجل: reason_code, flag_active
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
 | 2026-09-01 | `DATA_FLOW_MAP.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "V40.2 Subsystem Flows (2026-09-01)" يحتوي على 8 flow diagrams: Stock Notebook, Disclosure Engine, Strict Entry, Distribution Exit, Short Holding Exit (هيكلي), News Fetcher, News Signals Ingest, Decision Logger, Unified Exit Engine. إضافة Feature Flags Matrix (10 flags). تحديث مراجع لـ "40 قاعدة + عهد الوكيل 30 بند". |
+
+---
+
+## 🆕 Screener + Fundamentals + Bid/Ask Integration (2026-09-03)
+
+**الـ module:** `vps-service/analyzers/screener_integration.py`
+
+يربط 3 مصادر بيانات مدفونة بـ V40.2:
+
+### 1. screener_lists (data_engine.db)
+- الكاتب: `data_engine/scrapers/tradingview_screener_lists.py`
+- 8 قوائم: most_active, unusual_volume, high_dividend, high_net_income, undervalued, top_losers, penny, top_gainers
+- التأثير على V40.2: boost/veto score (+10 لـ unusual_volume, -8 + VETO لـ penny)
+
+### 2. tab_valuation + tab_profitability (data_engine.db)
+- الكاتب: `data_engine/scrapers/tradingview_market_movers.py`
+- بيانات: P/E, P/B, ROE, net_margin
+- التأثير: ROE>15% + P/E<15 → +5 pts, P/E>100 → VETO (bubble)
+
+### 3. intraday_prices bid/ask (intraday.db)
+- الكاتب: `data_engine/intraday_storage.py` (schema موجود بس أعمدة bid/ask كانت فاضية)
+- التأثير: spread < 0.5% → +3 pts (سيولة عالية)
+
+### مكان الربط في V40.2:
+```
+V40.2 analyze_single_day_v393()
+    ↓
+entry_gate (8 شروط)
+    ↓
+screener_integration ← جديد (screener + fundamentals + bid/ask)
+    ↓
+sector-liquidity filter
+    ↓
+BOS/ChoCH filter
+    ↓
+V68/V72/V73 kill filters
+    ↓
+signals_by_date.append()
+```
+
+### الـ logs:
+```
+[SCREENER-BOOST] ABUK: score 90→100 (unusual_volume +10pts | undervalued +9pts)
+[SCREENER-VETO] XYZ: penny → VETO (فخ قرشية)
+```

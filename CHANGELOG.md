@@ -1,6 +1,40 @@
 # Changelog
 
 
+## [SCREENER + FUNDAMENTALS + BID/ASK + PRICE_HISTORY FIX] — ربط الكنوز المدفونة (2026-09-03)
+
+> **توجيه المالك:** "انا عندى تصنيفات كتييييييير جدا لية مش بنستعملها؟" + "عندك بيانات عمق السوق؟" + "لية عملية تغذية price_history.db بالبيانات وقفت؟"
+
+### التعديلات (4 ملفات)
+
+#### 1. `vps-service/analyzers/screener_integration.py` (جديد — 180 سطر)
+Module موحّد بيربط 3 كنوز مدفونة بـ V40.2:
+- screener_lists: unusual_volume +10, undervalued +9, most_active +8, penny -8+VETO
+- tab_valuation + tab_profitability: ROE>15% + P/E<15 → +5, P/E>100 → VETO
+- intraday_prices bid/ask: spread<0.5% → +3 (سيولة عالية)
+
+#### 2. `vps-service/jobs/v40_2_daily_generator.py` (تعديل — ربط screener)
+- بعد entry_gate، قبل sector-liquidity: تطبيق screener data
+- VETO → continue (hard reject)
+- BOOST → result['score'] += boost
+- proofs بتخزين screener_tags + fundamentals + bid_ask للـ UI
+
+#### 3. `vps-service/jobs/market_scheduler.py` (تعديل — price_history auto-refresh)
+- run_v40_2_generation: قبل V40.2، بيتـ check price_history staleness
+- لو stale → يشغل intraday_aggregator + price_history_safetynet الأول
+- timeout زاد من 120s لـ 180s
+
+#### 4. `Documentation/00-CONSTITUTION.md` + `DATA_FLOW_MAP.md` (تحديث)
+- Rule 45: SCREENER-FUNDAMENTALS-DEPTH
+- DATA_FLOW_MAP: section جديد عن screener integration
+
+### القواعد محترمة
+- ✅ Rule 20 (Python=brain), Rule 27 (NO-FAKE-DATA), Rule 29 (UNIFIED-SYSTEM), Rule 17 (RELATIVE-PATHS)
+- ✅ Rule 5 (كل كود جديد مربوط بـ pipeline موجود)
+
+
+
+
 ## [EXPERT-RECS + LIVE-SIMULATION] — V40.2 يدمج توصيات الخبراء البشرية + نتائج live simulation (2026-09-02)
 
 > **توجيه المالك:** "دة لسة تحت الأختبار عالشان الملك توصيات بشرية تساعدك فى التحليلات
