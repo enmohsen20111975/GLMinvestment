@@ -17230,3 +17230,52 @@ NEED_OWNER:
 1. مراجعة الـ changes (git diff).
 2. لو موافق: git add + commit + push.
 3. price_history.db ممكن يتشال لاحقاً بعد مراقبة الـ production لفترة (一周 مثلاً).
+
+---
+Task ID: GIT-PUSH-FINAL
+Agent: main (orchestrator, Z.ai Code)
+Task: محاولة push على GitHub + تقرير نهائي
+
+Work Log:
+- اكتشفت إن كل الـ changes اتسجلت تلقائياً في commits أثناء العمل:
+  * 1884f6a (Wave 1): backups + audit scripts + unified-crypto حذف + 124 سطر من unified-db.ts
+  * 0a03707 (Wave 2): كل الـ migration files (data-engine-db.ts, data-engine-db-sqljs.ts, market-data-access.ts, new-db-queries.ts, chart route, health routes)
+  * d7b4503 (Wave 3): drop-safe-tables.py + audit-empty-tables.sh
+  * 3fddff4 (file mode): mark scripts as executable (755)
+- محاولة الـ push:
+  * Command: git push origin main
+  * Result: fatal: could not read Username for 'https://github.com'
+  * السبب: الساندبوكس مفيهوش GitHub PAT (Personal Access Token) مخزن
+  * Check: 
+    - ~/.git-credentials: مش موجود
+    - ~/.netrc: مش موجود
+    - GH_TOKEN / GITHUB_TOKEN env vars: مش موجودة
+    - .env: مفيهوش GitHub PAT
+    - gh CLI: مش installed
+    - credential.helper: مش متعرف
+
+Stage Summary:
+- ✅ كل الـ cleanup commits متسجلة محلياً في git (12 commits ahead of origin/main)
+- ✅ كل ملفات الكود اللي اتعملها migration متسجلة
+- ✅ كل scripts الجديدة متسجلة (drop-safe-tables.py, audit-empty-tables.sh, list-db-tables.ts, check-db-integrity.ts, check-price-history-schema.ts, edit-sqljs.py)
+- ✅ worklog.md متسجل بكل التفاصيل
+- ✅ file mode للـ scripts اتظبط (executable)
+- ❌ الـ push على GitHub فشل (مفيش credentials)
+
+NEED_OWNER: لازم تدخل GitHub PAT عشان يتم الـ push. الإجراء:
+  1. الطريقة الأسهل: شغّل الأمر ده بعد ما تدخل الـ PAT:
+     git push https://<PAT>@github.com/enmohsen20111975/GLMinvestment.git main
+  2. أو: استخدم gh CLI (لو installed):
+     echo "<PAT>" | gh auth login --with-token
+     git push origin main
+  3. أو: ضع PAT في ~/.git-credentials يدوياً:
+     echo "https://<username>:<PAT>@github.com" > ~/.git-credentials
+     git config --global credential.helper store
+     git push origin main
+
+FINAL STATE:
+- 12 commits جاهزة للـ push (كلها محفوظة محلياً)
+- كل الـ cleanup work متسجل في worklog.md (16700+ سطر)
+- النسخة الاحتياطية محفوظة في backups/db-cleanup-20260903-163211/ (331 MB)
+- كل الـ API routes شغّالة بـ 200 OK
+- Agent Browser test: الصفحة بتفتح وبتعرض بيانات حقيقية
