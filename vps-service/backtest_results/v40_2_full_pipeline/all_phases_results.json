@@ -1,0 +1,604 @@
+{
+  "phase2": [
+    {
+      "trades": 130,
+      "win_rate": 43.85,
+      "avg_win": 17.36,
+      "avg_loss": -6.42,
+      "profit_factor": 2.11,
+      "total_return": 20.35,
+      "max_dd": -3.56,
+      "expectancy": 4.0,
+      "final_capital": 120351.84,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "DIST_ONLY"
+    },
+    {
+      "trades": 113,
+      "win_rate": 45.13,
+      "avg_win": 16.74,
+      "avg_loss": -7.61,
+      "profit_factor": 1.81,
+      "total_return": 15.37,
+      "max_dd": -3.62,
+      "expectancy": 3.38,
+      "final_capital": 115370.35,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "DIST+STRICT"
+    },
+    {
+      "trades": 130,
+      "win_rate": 49.23,
+      "avg_win": 14.67,
+      "avg_loss": -7.7,
+      "profit_factor": 1.85,
+      "total_return": 14.64,
+      "max_dd": -3.54,
+      "expectancy": 3.31,
+      "final_capital": 114643.26,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "DIST+NOTEBOOK"
+    },
+    {
+      "trades": 130,
+      "win_rate": 44.62,
+      "avg_win": 14.9,
+      "avg_loss": -6.41,
+      "profit_factor": 1.87,
+      "total_return": 13.14,
+      "max_dd": -3.38,
+      "expectancy": 3.1,
+      "final_capital": 113142.98,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "DIST+NEWS"
+    },
+    {
+      "trades": 113,
+      "win_rate": 46.9,
+      "avg_win": 16.87,
+      "avg_loss": -8.56,
+      "profit_factor": 1.74,
+      "total_return": 14.96,
+      "max_dd": -4.39,
+      "expectancy": 3.37,
+      "final_capital": 114959.13,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "DIST+STRICT+NB"
+    },
+    {
+      "trades": 115,
+      "win_rate": 47.83,
+      "avg_win": 15.58,
+      "avg_loss": -8.49,
+      "profit_factor": 1.68,
+      "total_return": 15.51,
+      "max_dd": -4.28,
+      "expectancy": 3.02,
+      "final_capital": 115508.38,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "DIST+STRICT+NB+NEWS"
+    },
+    {
+      "trades": 120,
+      "win_rate": 49.17,
+      "avg_win": 10.84,
+      "avg_loss": -6.2,
+      "profit_factor": 1.69,
+      "total_return": 12.93,
+      "max_dd": -3.39,
+      "expectancy": 2.18,
+      "final_capital": 112934.39,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "ALL_ON"
+    }
+  ],
+  "phase3": [
+    {
+      "trades": 130,
+      "win_rate": 43.85,
+      "avg_win": 17.36,
+      "avg_loss": -6.42,
+      "profit_factor": 2.11,
+      "total_return": 20.35,
+      "max_dd": -3.56,
+      "expectancy": 4.0,
+      "final_capital": 120351.84,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "BASE_BEST"
+    },
+    {
+      "trades": 133,
+      "win_rate": 45.86,
+      "avg_win": 18.12,
+      "avg_loss": -7.36,
+      "profit_factor": 2.09,
+      "total_return": 22.38,
+      "max_dd": -3.63,
+      "expectancy": 4.32,
+      "final_capital": 122379.11,
+      "rejected": {
+        "rs": 533,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+RS_1.15"
+    },
+    {
+      "trades": 60,
+      "win_rate": 41.67,
+      "avg_win": 12.33,
+      "avg_loss": -6.05,
+      "profit_factor": 1.46,
+      "total_return": 5.4,
+      "max_dd": -6.34,
+      "expectancy": 1.61,
+      "final_capital": 105403.67,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 1232,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+FUND_VETO_35"
+    },
+    {
+      "trades": 115,
+      "win_rate": 46.09,
+      "avg_win": 17.46,
+      "avg_loss": -6.32,
+      "profit_factor": 2.36,
+      "total_return": 22.59,
+      "max_dd": -2.39,
+      "expectancy": 4.64,
+      "final_capital": 122588.47,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 4,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+EGX30_DOWN_HOLD"
+    },
+    {
+      "trades": 131,
+      "win_rate": 51.91,
+      "avg_win": 16.91,
+      "avg_loss": -7.93,
+      "profit_factor": 2.3,
+      "total_return": 26.37,
+      "max_dd": -2.76,
+      "expectancy": 4.96,
+      "final_capital": 126374.45,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 848,
+        "atr_clamp": 0
+      },
+      "config": "+LATE_ENTRY_STRONG"
+    },
+    {
+      "trades": 130,
+      "win_rate": 43.85,
+      "avg_win": 17.36,
+      "avg_loss": -6.42,
+      "profit_factor": 2.11,
+      "total_return": 20.35,
+      "max_dd": -3.56,
+      "expectancy": 4.0,
+      "final_capital": 120351.84,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+ATR_CLAMP_WEAK"
+    }
+  ],
+  "phase4": [
+    {
+      "trades": 115,
+      "win_rate": 46.09,
+      "avg_win": 17.46,
+      "avg_loss": -6.32,
+      "profit_factor": 2.36,
+      "total_return": 22.59,
+      "max_dd": -2.39,
+      "expectancy": 4.64,
+      "final_capital": 122588.47,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 4,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "BASE_BEST"
+    },
+    {
+      "trades": 150,
+      "win_rate": 59.33,
+      "avg_win": 20.53,
+      "avg_loss": -6.06,
+      "profit_factor": 4.94,
+      "total_return": 28.64,
+      "max_dd": -2.39,
+      "expectancy": 9.71,
+      "final_capital": 128635.67,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 4,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+PARTIAL_EXIT"
+    },
+    {
+      "trades": 115,
+      "win_rate": 46.09,
+      "avg_win": 17.46,
+      "avg_loss": -6.32,
+      "profit_factor": 2.36,
+      "total_return": 17.1,
+      "max_dd": -2.32,
+      "expectancy": 4.64,
+      "final_capital": 117098.9,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 4,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+PORTFOLIO_HEAT"
+    },
+    {
+      "trades": 115,
+      "win_rate": 46.09,
+      "avg_win": 17.46,
+      "avg_loss": -6.32,
+      "profit_factor": 2.36,
+      "total_return": 22.59,
+      "max_dd": -2.39,
+      "expectancy": 4.64,
+      "final_capital": 122588.47,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 4,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+CORRELATION"
+    },
+    {
+      "trades": 115,
+      "win_rate": 46.09,
+      "avg_win": 17.46,
+      "avg_loss": -7.62,
+      "profit_factor": 1.96,
+      "total_return": 19.07,
+      "max_dd": -2.39,
+      "expectancy": 3.94,
+      "final_capital": 119074.04,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 4,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "+STRUCTURAL_EXIT"
+    }
+  ],
+  "phase5": {
+    "train": {
+      "trades": 70,
+      "win_rate": 44.29,
+      "avg_win": 11.41,
+      "avg_loss": -5.6,
+      "profit_factor": 1.62,
+      "total_return": 0.91,
+      "max_dd": -2.39,
+      "expectancy": 1.93,
+      "final_capital": 100911.87,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "TRAIN"
+    },
+    "test": {
+      "trades": 63,
+      "win_rate": 57.14,
+      "avg_win": 13.28,
+      "avg_loss": -4.35,
+      "profit_factor": 4.07,
+      "total_return": 7.19,
+      "max_dd": -2.74,
+      "expectancy": 5.73,
+      "final_capital": 107193.53,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 2,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "TEST"
+    },
+    "pf_drop_pct": -151.2,
+    "overfit": false
+  },
+  "phase6": {
+    "metrics": {
+      "trades": 17,
+      "win_rate": 47.06,
+      "avg_win": 7.92,
+      "avg_loss": -4.51,
+      "profit_factor": 1.56,
+      "total_return": 0.64,
+      "max_dd": -0.44,
+      "expectancy": 1.34,
+      "final_capital": 100637.15,
+      "rejected": {
+        "rs": 0,
+        "fund_veto": 0,
+        "egx_down": 0,
+        "late_entry": 0,
+        "atr_clamp": 0
+      },
+      "config": "LIVE_SIM"
+    },
+    "trades": [
+      {
+        "ticker": "AALR",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-18",
+        "entry_price": 300.0,
+        "exit_price": 339.1000061035156,
+        "shares": 13,
+        "pnl_pct": 13.033335367838541,
+        "exit_reason": "partial_exit_1.5R",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "ACGC",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-18",
+        "entry_price": 11.25,
+        "exit_price": 13.5,
+        "shares": 355,
+        "pnl_pct": 20.0,
+        "exit_reason": "partial_exit_1.5R",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "ACGC",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-18",
+        "entry_price": 11.25,
+        "exit_price": 13.5,
+        "shares": 533,
+        "pnl_pct": 20.0,
+        "exit_reason": "take_profit",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "AJWA",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-23",
+        "entry_price": 197.80999755859375,
+        "exit_price": 183.96329772949218,
+        "shares": 50,
+        "pnl_pct": -7.000000000000002,
+        "exit_reason": "stop_loss",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "CIEB",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-23",
+        "entry_price": 24.459999084472656,
+        "exit_price": 24.99,
+        "shares": 408,
+        "pnl_pct": 2.1668067676412535,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "ABUK",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-23",
+        "entry_price": 77.9000015258789,
+        "exit_price": 75.76,
+        "shares": 128,
+        "pnl_pct": -2.7471135865998386,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "AALR",
+        "entry_date": "2026-08-13",
+        "exit_date": "2026-08-23",
+        "entry_price": 300.0,
+        "exit_price": 306.44,
+        "shares": 20,
+        "pnl_pct": 2.1466666666666656,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "OCDI",
+        "entry_date": "2026-08-18",
+        "exit_date": "2026-08-23",
+        "entry_price": 33.48,
+        "exit_price": 31.5,
+        "shares": 199,
+        "pnl_pct": -5.913978494623647,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "EGAS",
+        "entry_date": "2026-08-18",
+        "exit_date": "2026-08-23",
+        "entry_price": 58.849998474121094,
+        "exit_price": 57.0,
+        "shares": 113,
+        "pnl_pct": -3.1435828752563495,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "EGCH",
+        "entry_date": "2026-08-18",
+        "exit_date": "2026-08-23",
+        "entry_price": 14.210000038146973,
+        "exit_price": 13.51,
+        "shares": 469,
+        "pnl_pct": -4.9261086296116225,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "MICH",
+        "entry_date": "2026-08-18",
+        "exit_date": "2026-08-23",
+        "entry_price": 47.78,
+        "exit_price": 49.01,
+        "shares": 139,
+        "pnl_pct": 2.5742988698200016,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "CEFM",
+        "entry_date": "2026-08-18",
+        "exit_date": "2026-08-23",
+        "entry_price": 141.10000610351562,
+        "exit_price": 144.24,
+        "shares": 47,
+        "pnl_pct": 2.225367654612843,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "SIPC",
+        "entry_date": "2026-08-23",
+        "exit_date": "2026-08-23",
+        "entry_price": 5.07,
+        "exit_price": 4.9,
+        "shares": 840,
+        "pnl_pct": -3.353057199211044,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "AMOC",
+        "entry_date": "2026-08-23",
+        "exit_date": "2026-08-23",
+        "entry_price": 11.130000114440918,
+        "exit_price": 10.91,
+        "shares": 382,
+        "pnl_pct": -1.9766407203848342,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "FAIT",
+        "entry_date": "2026-08-23",
+        "exit_date": "2026-08-23",
+        "entry_price": 43.0,
+        "exit_price": 43.52,
+        "shares": 99,
+        "pnl_pct": 1.2093023255814026,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "ADCI",
+        "entry_date": "2026-08-23",
+        "exit_date": "2026-08-23",
+        "entry_price": 301.25,
+        "exit_price": 292.61,
+        "shares": 14,
+        "pnl_pct": -2.8680497925311155,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      },
+      {
+        "ticker": "BIOC",
+        "entry_date": "2026-08-23",
+        "exit_date": "2026-08-23",
+        "entry_price": 487.3500061035156,
+        "exit_price": 445.0,
+        "shares": 8,
+        "pnl_pct": -8.689854431749051,
+        "exit_reason": "backtest_end",
+        "position_size_mult": 1.0
+      }
+    ],
+    "start": "2026-07-12",
+    "end": "2026-08-27"
+  }
+}
