@@ -1588,6 +1588,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if False:  # V75 killed
                 _min_rr = max(_min_rr, 2.0)
             if r_mult < _min_rr:
+                print(f"[RR-SKIP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: R:R={r_mult:.2f} < {_min_rr} ({_regime}) entry={entry:.2f} stop={stop:.2f} target={target:.2f}", flush=True)
                 continue
 
             # ── EGX-STRATEGY-STAGE2: تصنيف نوع السيولة ──
