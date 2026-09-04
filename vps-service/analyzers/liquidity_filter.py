@@ -438,7 +438,7 @@ def evaluate_kill_filters(
         avg_20 = sum(last_20) / len(last_20)
         if avg_20 > 0:
             range_pct = (max(last_20) - min(last_20)) / avg_20 * 100
-            _dead_money_range_min = get_setting('kill_filter_dead_money_range_min_pct', default=6.0)
+            _dead_money_range_min = get_setting('kill_filter_dead_money_range_min_pct', default=4.5)
             if range_pct < _dead_money_range_min:
                 kill_reasons.append(
                     f'🚨 سهم ميت (Dead Money) — مدى 20 يوم {range_pct:.1f}% < {_dead_money_range_min}% — رأس مال محبوس'

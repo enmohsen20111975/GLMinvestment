@@ -743,7 +743,14 @@ def _compute_signal_final(
     _weak_blocks_buy = get_setting('weak_evidence_blocks_buy', default=1.0) >= 1.0
 
     # V40: الانفجار المؤسسي — maker_bullish AND flight_up + 3+ أدلة (الأعلى أولوية)
-    if maker_bullish and flight_up and strong_count >= _strong_buy_count:
+    # DNA-WINNER (2026-09-04): coiling يعدّي لو maker_bullish + strong_count>=3 + RS>=1.15
+    _coiling_ok = (
+        flight_state.get('state') == 'coiling'
+        and maker_bullish
+        and strong_count >= _strong_buy_count
+        and benchmark_passed  # RS >= 1.15 proxy (outperforming market)
+    )
+    if (maker_bullish and flight_up and strong_count >= _strong_buy_count) or _coiling_ok:
         # في السوق الهابط: لو فيه RS إيجابي → اسمح؛ غير كده → انتظر
         if regime_bearish and _rs_required_strong and not benchmark_passed:
             return (
