@@ -582,6 +582,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 continue
 
             signal = result.get('signal', 'WAIT')
+            # DNA-DEBUG: trace AMOC
+            if ticker == 'AMOC':
+                print(f"[DNA-TRACE] AMOC: signal={signal} score={result.get('score')} on {scan_date}", flush=True)
             # PILLAR-4: قبول BUY عادي (مش بس STRONG_BUY/INSTITUTIONAL_BUY) —
             # عشان نوصل للهدف التشغيلي 60-150 صفقة في 8 أشهر بدل 6 فقط.
             # الـ R/R >= 1.5 بـ يـ ensure جودة الصفقات (dynamic_rr_normal=1.5).
@@ -780,6 +783,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             entry = result['entry']
             target = result['target']
             stop = result['stop_loss']
+            if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: reached stop check stop={stop} entry={entry}", flush=True)
             if stop >= entry or entry <= 0:
                 if result.get('proofs', {}).get('soft_surge'):
                     print(f"[SOFT-SURGE-DEBUG] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: REJECTED stop>=entry (stop={stop} entry={entry})", flush=True)
@@ -793,6 +797,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             try:
                 _today_vol = volumes[day_idx] if day_idx < len(volumes) else 0
                 _yest_vol = volumes[day_idx - 1] if day_idx >= 1 and day_idx - 1 < len(volumes) else 0
+                if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: vol check today={_today_vol} yest={_yest_vol}", flush=True)
                 if _today_vol < 1000 or _yest_vol < 1000:
                     continue  # skip dead stocks
             except Exception:
@@ -816,6 +821,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
                 _chase_rejected = False
                 _chase_reason = ''
+                if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: chase check daily_gain={_daily_gain:.2f}% roc3={_roc3:.2f}% roc5={_roc5:.2f}%", flush=True)
                 if _daily_gain > 12.0:
                     _chase_rejected = True
                     _chase_reason = f'daily_gain=+{_daily_gain:.1f}% > +12%'
@@ -1098,6 +1104,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 if _screener_result['bid_ask'].get('spread_pct') is not None:
                     result['proofs']['bid_ask'] = f"spread={_screener_result['bid_ask']['spread_pct']:.2f}%"
             except Exception as _screener_err:
+                if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: screener EXCEPTION: {_screener_err}", flush=True)
                 pass  # safe-by-design: لو screener integration فشل → نكمّل
 
             # ── SECTOR-LIQUIDITY FILTER (مرحلة منفصلة 1 — 2026-08-30) ──
@@ -1140,6 +1147,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             continue
                 _sec_conn.close()
             except Exception as _sec_err:
+                if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: sector EXCEPTION: {_sec_err}", flush=True)
                 pass  # safe-by-design: لو sector filter فشل، سيب الإشارة تكمّل
 
             # ── BOS/ChoCH FILTER (مرحلة منفصلة 2 — 2026-08-30) ──
@@ -1166,6 +1174,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     print(f"[SWEEP-LOW] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                           f"low={lows[day_idx]:.2f} swept support={_ob_state.last_support:.2f} → boost", flush=True)
             except Exception as _bos_err:
+                if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: BOS EXCEPTION: {_bos_err}", flush=True)
                 pass  # safe-by-design
 
             # ── V62 LOGIC (المرحلة 3 — 2026-08-31): 4 ميزات من Pine Script V62 ──
@@ -1590,6 +1599,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if r_mult < _min_rr:
                 print(f"[RR-SKIP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: R:R={r_mult:.2f} < {_min_rr} ({_regime}) entry={entry:.2f} stop={stop:.2f} target={target:.2f}", flush=True)
                 continue
+
+            # DNA-DEBUG: trace AMOC specifically
+            if ticker == 'AMOC':
+                print(f"[DNA-TRACE] AMOC passed R:R check! r_mult={r_mult:.2f} min_rr={_min_rr}", flush=True)
 
             # ── EGX-STRATEGY-STAGE2: تصنيف نوع السيولة ──
             # المالك طلب: "النظام يفرق أكتر بين السيولة الذكية والسيولة المضاربية الهشة"
@@ -2101,6 +2114,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         continue
                 except Exception:
                     pass
+
+            # DNA-WINNER DEBUG: print what reaches the append
+            if signal in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
+                print(f"[DNA-DEBUG] {ticker} on {scan_date}: REACHED APPEND | signal={signal} score={result.get('score')} entry={entry} stop={stop} target={target} r_mult={r_mult:.2f}", flush=True)
 
             signals_by_date[scan_date].append({
                 'ticker': ticker,

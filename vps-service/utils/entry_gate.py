@@ -51,7 +51,7 @@ import re
 
 # ─── العتبات ────────────────────────────────────────────────────────────────
 MIN_EVIDENCE_COUNT = 3
-MIN_RR_RATIO = 1.8
+MIN_RR_RATIO = 1.5  # DNA-WINNER: was 1.8, lowered to 1.5 (floor)
 MIN_RS = 1.0  # Relative Strength (stock_roc - benchmark_change)
 DEEP_CORRECTION_DROP_PCT = 12.0
 EXTENDED_CHASE_3D_PCT = 12.0
