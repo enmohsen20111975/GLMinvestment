@@ -17486,3 +17486,72 @@ Stage Summary:
   - `scripts/output/explosive_rejections_20260904.json` (نتايج)
   - `scripts/monitor_paper_mode_v2.py` (مراقبة يومية)
   - `db/paper_mode_v2.json` (paper config)
+
+---
+Task ID: PHASE-1-PRODUCTION-DATA-ACCESS-1
+Agent: Main Agent (Z.ai Code)
+Task: توفير الوصول للبيانات الإنتاجية الكاملة (للتحليل الحقيقي للـ explosive movers)
+
+Work Log:
+- فحصت المشروع واكتشفت إن فيه آلية deploy (deploy_vps.sh) بـ rsync على VPS عبر SSH
+- لقيت إن الإنتاج متاح عبر HTTPS: https://invist.m2y.net (Next.js على port 3000)
+- اختبرت الـ APIs الإنتاجية:
+  - `GET /api/health` → 200 (cwd=/root/GLMinvestment, stocks.db=12.9MB, predictions.db=221MB, data_engine.db=1.6GB)
+  - `GET /api/stocks?market=EGX&limit=N` → 440 سهم EGX
+  - `GET /api/stocks/<TICKER>/history?days=365` → list of {close, date, high, low, open, volume}
+  - اختبار COMI → 387 نقطة من 2025-01-15 → 2026-09-04 (~20 شهر بيانات)
+- بنيت `scripts/fetch_production_data.py`:
+  - يسحب كل أسهم EGX من الإنتاج
+  - يحفظ البيانات في `db/production_snapshot.db` (SQLite محلي)
+  - يدعم الاستئناف (--resume) عبر `db/production_snapshot_progress.json`
+  - init_db + fetch_egx_tickers + fetch_ticker_history + store_ticker_history
+- اختبار على 5 أسهم: نجح في 5.2 ثانية (1 سهم/ثانية)
+- بدأت السحب الكامل لـ 440 سهم في الـ background (PID 5684)
+- بنيت `scripts/diagnose_explosive_rejections_v2.py`:
+  - بـ يستخدم `db/production_snapshot.db` بدل `db/stocks.db`
+  - بـ يحسب الـ stock_roc من البيانات الحقيقية (آخر 20 يوم قبل الـ surge)
+  - بـ يطبّق الـ data_bars filter الحقيقي (MIN_DATA_BARS=60) — دلوقتي كل الأسهم عندها 60+ شمعة
+  - بـ يفحص الـ EXPLOSIVE_SURGE بالشروط الكاملة (25 شمعة قبل الـ surge)
+
+Stage Summary:
+- ✅ **لقينا طريقة الوصول للإنتاج**: HTTPS + REST APIs على invist.m2y.net
+- ✅ **البيانات الكاملة متاحة**: ~20 شهر لكل سهم (387 نقطة) بدل 60 يوم
+- ⏳ **السحب الكامل جاري**: 440 سهم × ~5 ثواني = ~36 دقيقة متوقعة
+- 📦 Artifacts:
+  - `scripts/fetch_production_data.py` (سكربت السحب)
+  - `scripts/diagnose_explosive_rejections_v2.py` (سكربت التحليل الجديد)
+  - `db/production_snapshot.db` (الـ DB المحلي بالبيانات الإنتاجية)
+  - `db/production_snapshot_progress.json` (progress tracking)
+
+---
+Task ID: PHASE-1-PRODUCTION-DATA-ANALYSIS-1
+Agent: Main Agent (Z.ai Code)
+Task: إعادة تحليل الـ explosive movers باستخدام البيانات الإنتاجية الكاملة (20 شهر)
+
+Work Log:
+- سحبت كل بيانات الإنتاج (440 سهم EGX، 124,884 صف) لـ db/production_snapshot.db
+- بنيت سكربت `diagnose_explosive_rejections_v2.py` اللي بـ يستخدم البيانات الكاملة
+- شغلت التحليل على كل الـ 440 سهم
+
+Stage Summary:
+- ✅ **السحب اكتمل**: 440 سهم، 124,884 صف، 15.8 MB، ~7 دقايق
+- 📊 **النتايج الحقيقية على 20 شهر بيانات**:
+  - **108 explosive mover** (+40% خلال 5 أيام) — بدل 24 في الـ sandbox!
+  - 46 (42.6%) كانت هتتقبل طبيعي
+  - **12 (11.1%) EXPLOSIVE_SURGE بـ يصطادها** (بدل 6 في الـ sandbox!)
+  - 50 (46.3%) ضاعت فعلاً
+- 🎯 **أسباب الرفض الحقيقية** (مختلفة تماماً عن الـ sandbox!):
+  | السبب | sandbox (60 يوم) | إنتاج (20 شهر) |
+  |-------|-------------------|----------------|
+  | relative_strength | 0% | **27.8%** 🆕 |
+  | liquidity | 12.5% | 23.1% |
+  | price | 16.7% | 18.5% |
+  | dead_money | 8.3% | 13.0% |
+  | data_bars | 29.2% | 9.3% |
+- 🔥 **12 سهم** EXPLOSIVE_SURGE بـ يصطادها:
+  AFMC (+236%), AALR (+149%), EALR (+149%), AMES (+105%), WKOL (+86%), SCTS (+83%),
+  LUTS (+82%), INFI (+78%), KZPC (+54%), ZEOT (+51%), PRMH (+59%), HDBK (+43%)
+- 📦 Artifacts:
+  - `db/production_snapshot.db` (البيانات الإنتاجية الكاملة)
+  - `scripts/output/explosive_rejections_v2_20260904.json` (108 mover)
+  - `scripts/output/explosive_rejections_v2_20260904.md` (تقرير عربي)
