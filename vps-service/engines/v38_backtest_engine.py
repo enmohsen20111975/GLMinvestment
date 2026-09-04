@@ -1753,6 +1753,8 @@ class V38BacktestEngine:
             'signal': signal,
             'score': decision.get('tech_score', 0),
             'proofs': proofs_dict,
+            'proofs_list': proofs_list,  # DNA-WINNER: keep the list for evidence counting
+            'decision': decision,  # DNA-WINNER: keep full decision for debugging
             'entry': entry,
             'target': tp1,
             'target_2': tp2,
