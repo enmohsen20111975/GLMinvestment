@@ -60,6 +60,7 @@ export function MultiMarketWidget() {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [goldData, setGoldData] = useState<Record<string, GoldCountry> | null>(null);
   const [cryptoData, setCryptoData] = useState<Crypto[]>([]);
+  const [liveGold, setLiveGold] = useState<any>(null);
   const [forexData, setForexData] = useState<Record<string, { rate_to_usd: number; name: string; flag: string }>>({});
   const [loading, setLoading] = useState(true);
 
@@ -73,6 +74,11 @@ export function MultiMarketWidget() {
   // Reload data when market changes
   useEffect(() => {
     loadData();
+    // Load unified gold/silver/currencies
+    fetch('/api/metals/gold')
+      .then(r => r.json())
+      .then(d => { if (d.success) setLiveGold(d); })
+      .catch(() => {});
   }, [selectedMarket]);
 
   const loadData = async () => {
@@ -214,47 +220,110 @@ export function MultiMarketWidget() {
   };
 
   const renderGold = () => {
-    if (!goldData || Object.keys(goldData).length === 0) return null;
-    
-    // Filter gold to show only selected market's country
+    if (!liveGold) return <Skeleton className="h-20 w-full" />;
+
     const marketInfo = getMarketInfo(selectedMarket);
-    const arabicCountryName = marketInfo.name;
-    
-    // Find the gold data for this country
-    const countryGold = goldData[arabicCountryName];
-    const countries = countryGold 
-      ? [[arabicCountryName, countryGold] as [string, GoldCountry]] 
-      : Object.entries(goldData).slice(0, 4);
+    const prices = liveGold.prices || {};
+    const goldKarats = prices.gold_karats || [];
+    const silverKarats = prices.silver_karats || [];
+    const goldPound = prices.gold_pound;
+    const goldOunce = prices.gold_ounce;
+    const silverPound = prices.silver_pound;
+    const silverOunce = prices.silver_ounce;
+    const currencies = liveGold.currencies || [];
+    const marketCurrency = marketInfo.currency;
+
+    // Find rate to convert EGP to market currency
+    const egpRate = currencies.find(c => c.code === 'EGP');
+    const marketRate = currencies.find(c => c.code === marketCurrency);
+    const convertRate = marketCurrency === 'EGP' ? 1 : 
+      (egpRate && marketRate) ? (egpRate.rate_to_usd / marketRate.rate_to_usd) : 1;
 
     return (
-      <div className="space-y-2">
-        {countries.map(([country, data]) => {
-          // Get 24k price from either format
-          const price24k = data.prices?.find(p => p.karat === 'عيار 24')?.price_per_gram 
-            || data.gold_per_gram_local 
-            || 0;
-          
-          return (
-            <div
-              key={country}
-              className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{data.flag}</span>
-                <div>
-                  <p className="font-semibold text-sm">{country}</p>
-                  <p className="text-xs text-muted-foreground">عيار 24</p>
-                </div>
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-sm tabular-nums">
-                  {price24k.toLocaleString()} {data.currency}
-                </p>
-                <p className="text-xs text-muted-foreground">للجرام</p>
-              </div>
+      <div className="space-y-3">
+        {/* Gold karats */}
+        {goldKarats.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <Coins className="w-3.5 h-3.5" />
+              الذهب
             </div>
-          );
-        })}
+            {goldKarats.map((k: any) => (
+              <div key={k.key} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
+                <span className="text-sm text-muted-foreground">{k.name_ar}</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {Math.round((k.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
+                </span>
+              </div>
+            ))}
+            {goldPound && (
+              <div className="flex items-center justify-between p-1.5 rounded-lg bg-amber-500/5">
+                <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">{goldPound.name_ar}</span>
+                <span className="text-sm font-semibold tabular-nums text-amber-600 dark:text-amber-400">
+                  {Math.round((goldPound.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
+                </span>
+              </div>
+            )}
+            {goldOunce && (
+              <div className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40">
+                <span className="text-sm text-muted-foreground">{goldOunce.name_ar}</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {Math.round((goldOunce.price || 0) * convertRate).toLocaleString()} {marketCurrency}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Silver */}
+        {silverKarats.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-xs font-bold text-gray-400 flex items-center gap-1">
+              <Coins className="w-3.5 h-3.5" />
+              الفضة
+            </div>
+            {silverKarats.map((k: any) => (
+              <div key={k.key} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
+                <span className="text-sm text-muted-foreground">{k.name_ar}</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {Math.round((k.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
+                </span>
+              </div>
+            ))}
+            {silverPound && (
+              <div className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40">
+                <span className="text-sm text-muted-foreground">{silverPound.name_ar}</span>
+                <span className="text-sm font-semibold tabular-nums">
+                  {Math.round((silverPound.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Currencies */}
+        {currencies.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5" />
+              العملات (مقابل {marketCurrency})
+            </div>
+            {currencies.filter((c: any) => c.code !== marketCurrency).slice(0, 12).map((c: any) => (
+              <div key={c.code} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{c.code}</span>
+                  <span className="text-[10px] text-muted-foreground">{c.name_ar}</span>
+                </div>
+                <span className="text-sm font-semibold tabular-nums">
+                  {marketCurrency === 'EGP' && c.rate_to_egp ? c.rate_to_egp.toFixed(2) :
+                   marketCurrency === 'USD' ? (1 / c.rate_to_usd).toFixed(2) :
+                   c.rate_to_egp ? (c.rate_to_egp * convertRate).toFixed(2) : '-'}
+                  {' '}{marketCurrency}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
