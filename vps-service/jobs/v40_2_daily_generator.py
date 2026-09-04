@@ -1107,33 +1107,21 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: screener EXCEPTION: {_screener_err}", flush=True)
                 pass  # safe-by-design: لو screener integration فشل → نكمّل
 
-            # ── DELTA VOLUME BOOST/VETO (DNA-WINNER — 2026-09-04) ──
-            # ضغط الشراء/البيع من بيانات OHLCV
-            # STRONG_BUY → +5 | BUY → +3 | SELL → -3 | STRONG_SELL → VETO
+            # ── DELTA VOLUME (DISPLAY ONLY — 2026-09-04) ──
+            # A/B test proved delta_volume on daily candles HURTS results (PF -0.31, WR -1.46%).
+            # Kept for UI display only — NO boost, NO veto.
+            # Will revisit on 5-minute intraday data (Phase 2).
             try:
-                from analyzers.screener_integration import get_delta_volume_boost, get_delta_volume_data
-                _delta_boost = get_delta_volume_boost(ticker)
+                from analyzers.screener_integration import get_delta_volume_data
                 _delta_data = get_delta_volume_data(ticker)
-
                 if _delta_data['has_data']:
-                    # VETO: ضغط بيع قوي = الميكرز بيوزع → ارفض
-                    if _delta_boost <= -100:
-                        print(f"[DELTA-VETO] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
-                              f"delta_pct={_delta_data['delta_pct']}% pressure={_delta_data['pressure']} → رفض", flush=True)
-                        continue
-
-                    # Boost/Reduction
-                    if _delta_boost != 0:
-                        _old_score = result.get('score', 0)
-                        result['score'] = max(0, min(100, _old_score + _delta_boost))
-                        if 'proofs' not in result or result['proofs'] is None:
-                            result['proofs'] = {}
-                        result['proofs']['delta_volume'] = (
-                            f"{'🟢' if _delta_boost > 0 else '🔴'} delta={_delta_data['delta_pct']}% "
-                            f"({_delta_data['pressure']}) buy={_delta_data['buy_volume']:,} sell={_delta_data['sell_volume']:,}"
-                        )
-                        print(f"[DELTA-BOOST] {ticker}: delta_pct={_delta_data['delta_pct']}% "
-                              f"pressure={_delta_data['pressure']} → score {_old_score}→{result['score']}", flush=True)
+                    if 'proofs' not in result or result['proofs'] is None:
+                        result['proofs'] = {}
+                    result['proofs']['delta_volume'] = (
+                        f"{'🟢' if (_delta_data.get('delta_pct',0) or 0) > 0 else '🔴'} "
+                        f"delta={_delta_data['delta_pct']}% ({_delta_data['pressure']}) "
+                        f"buy={_delta_data['buy_volume']:,} sell={_delta_data['sell_volume']:,}"
+                    )
             except Exception:
                 pass  # safe-by-design
 
