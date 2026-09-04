@@ -17448,3 +17448,41 @@ Stage Summary:
   - `scripts/output/ab_liquidity_v2_20260904.json` (نتايج universe analysis)
   - `scripts/output/ab_liquidity_v2_backtest_20260904.json` (نتايج backtest)
   - `scripts/output/ab_liquidity_v2_backtest_20260904.md` (تقرير عربي)
+
+---
+Task ID: PHASE-1-EXPLOSIVE-SURGE-1
+Agent: Main Agent (Z.ai Code)
+Task: المرحلة 1 — بناء المسار الانفجاري (explosive_surge) + تصنيف أسباب رفض الـ explosive movers
+
+Work Log:
+- Paper deploy متأكد: `db/paper_mode_v2.json` + `scripts/monitor_paper_mode_v2.py` (مراقبة يومية)
+- أنشأت `is_explosive_surge()` في `shared_liquidity.py`:
+  - volume surge ≥ 2.5× (أقوى من bypass العادي 1.5×)
+  - السعر فوق SMA20
+  - range 20 يوم (قبل الـ surge) < 18% (انضغاط)
+  - position size 2% فقط (EXPLOSIVE_SURGE_POSITION_SIZE)
+- حدّثت `should_reject_by_liquidity` لترجع 5 قيم (أضفت explosive_surge_activated)
+- دمجت المسار الانفجاري في `liquidity_filter.py` (evaluate_kill_filters) + `entry_gate.py` (_check_liquidity)
+- اختبرت 5 scenarios — كلها passed ✅ (explosive=True, position_size=2%)
+- بنيت `scripts/diagnose_explosive_rejections.py`:
+  - لكل explosive mover (+40% خلال 5 أيام): يحدد يوم بداية الـ surge
+  - ياخد البيانات قبل/أثناء الـ surge
+  - يشغل كل الـ kill filters (liquidity, price, vol_volatility, data_bars, RS, wash, dead_money)
+  - يفحص هل EXPLOSIVE_SURGE path كان هيتصطاده
+- شغّلت التحليل على 452 EGX ticker → 24 explosive mover
+
+Stage Summary:
+- ✅ **المسار الانفجاري شغال** ومدمج في 3 ملفات
+- 📊 **تصنيف الـ 24 explosive mover**:
+  - 12 (50%) كانت هتتقبل طبيعي — النظام بـ يصطادها
+  - 6 (25%) EXPLOSIVE_SURGE بـ يصطادها: ICID, CAED, MOIN, PHAR, TRTO, KZPC
+  - 6 (25%) ضاعت فعلاً (data_bars 7 + price 4 + liquidity 3 + dead_money 2)
+- 🎯 **أهم اكتشاف**: الـ dead_money filter بـ يرفض 2 explosive movers (TRTO, KZPC) — بس الـ EXPLOSIVE_SURGE بـ يصطادهم! ده معناه إن الـ explosive path بـ يحل مشكلة الـ dead_money false rejections.
+- 📦 Artifacts:
+  - `vps-service/utils/shared_liquidity.py` (محدّث — is_explosive_surge)
+  - `vps-service/analyzers/liquidity_filter.py` (محدّث — explosive_surge_activated)
+  - `vps-service/utils/entry_gate.py` (محدّث — position_size_override=0.02)
+  - `scripts/diagnose_explosive_rejections.py` (سكربت التصنيف)
+  - `scripts/output/explosive_rejections_20260904.json` (نتايج)
+  - `scripts/monitor_paper_mode_v2.py` (مراقبة يومية)
+  - `db/paper_mode_v2.json` (paper config)

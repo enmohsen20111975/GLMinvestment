@@ -57,6 +57,22 @@ LIQUIDITY_BYPASS_THRESHOLD_REDUCTION = 0.5   # خفّض الـ threshold لـ 50
 # 3. Dead market ceiling: لو السوق كله ميت → ارفع لـ 700K (موجود بالفعل في الكود القديم)
 DEAD_MARKET_CEILING = 700_000
 
+# ─── PHASE-1: EXPLOSIVE SURGE PATH (2026-09-04) ────────────────────────────
+# قرار المالك: مسار خاص لصيد الأسهم الانفجارية اللي بتطير من السيولة القليلة.
+# الشروط (كلها مع بعض):
+#   1. volume surge ≥ 2.5× (أقوى من الـ bypass العادي 1.5×)
+#   2. السعر فوق SMA20
+#   3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
+# النتيجة: سمح بالدخول حتى لو السيولة المطلقة قليلة (بس turnover > 0)
+# Position size: 2% فقط (أقل من الـ bypass العادي 2.5%)
+EXPLOSIVE_SURGE_VOLUME_RATIO = 2.5      # × متوسط 20d (أقوى من bypass العادي)
+EXPLOSIVE_SURGE_LOOKBACK = 5            # آخر 5 شموع للـ surge
+EXPLOSIVE_SURGE_BASE = 20               # متوسط 20 شموع
+EXPLOSIVE_SURGE_SMA_PERIOD = 20         # SMA20 للسعر
+EXPLOSIVE_SURGE_RANGE_MAX_PCT = 18.0    # range 20 يوم < 18% (انضغاط)
+EXPLOSIVE_SURGE_RANGE_WINDOW = 20       # عدد شموع الـ range (قبل الـ surge)
+EXPLOSIVE_SURGE_POSITION_SIZE = 0.02    # 2% فقط (أقل من bypass العادي)
+
 
 def classify_price_bucket(price: float) -> str:
     """تصنيف سعر السهم لـ bucket."""
@@ -140,22 +156,133 @@ def has_volume_surge(
     return True, f'volume_surge_ratio={ratio:.2f} ≥ {surge_ratio} + السعر فوق MA20'
 
 
+# ============================================================================
+# PHASE-1: EXPLOSIVE SURGE PATH — صيد الأسهم الانفجارية (2026-09-04)
+# ============================================================================
+def is_explosive_surge(
+    volumes: List[float],
+    closes: List[float] = None,
+    surge_ratio: float = EXPLOSIVE_SURGE_VOLUME_RATIO,
+    surge_lookback: int = EXPLOSIVE_SURGE_LOOKBACK,
+    base_lookback: int = EXPLOSIVE_SURGE_BASE,
+    sma_period: int = EXPLOSIVE_SURGE_SMA_PERIOD,
+    range_max_pct: float = EXPLOSIVE_SURGE_RANGE_MAX_PCT,
+    range_window: int = EXPLOSIVE_SURGE_RANGE_WINDOW,
+) -> Tuple[bool, str, dict]:
+    """PHASE-1: مسار صيد الأسهم الانفجارية.
+
+    قرار المالك (2026-09-04): مسار خاص لصيد الأسهم اللي بتطير من السيولة القليلة.
+    الشروط (كلها مع بعض):
+      1. volume surge ≥ 2.5× متوسط 20d (أقوى من الـ bypass العادي 1.5×)
+      2. السعر فوق SMA20
+      3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
+
+    لو كلها متحققة → سمح بالدخول حتى لو السيولة المطلقة قليلة (بس turnover > 0).
+    Position size: 2% فقط.
+
+    Returns:
+        (is_explosive, reason, details)
+        is_explosive: True لو كل الشروط متحققة
+        reason: وصف
+        details: dict فيه vol_ratio, sma20, range_pct, etc.
+    """
+    details = {
+        'vol_ratio': 0.0,
+        'sma20': None,
+        'price_vs_sma20': None,
+        'range_pct': None,
+        'range_compressed': None,
+    }
+
+    if not volumes or len(volumes) < base_lookback + surge_lookback:
+        return False, f'بيانات حجم غير كافية ({len(volumes) if volumes else 0} < {base_lookback + surge_lookback})', details
+
+    # 1. Volume surge ≥ 2.5×
+    recent_vol = volumes[-surge_lookback:]
+    recent_avg = sum(recent_vol) / len(recent_vol)
+    # base = الـ 20 شمعة قبل الـ surge (مش شامله الـ surge نفسه)
+    base_vol = volumes[-(surge_lookback + base_lookback):-surge_lookback]
+    if len(base_vol) < base_lookback:
+        base_vol = volumes[-base_lookback:]
+    base_avg = sum(base_vol) / len(base_vol) if base_vol else 0
+
+    if base_avg <= 0:
+        return False, 'متوسط الحجم 20d = 0', details
+
+    vol_ratio = recent_avg / base_avg
+    details['vol_ratio'] = round(vol_ratio, 2)
+
+    if vol_ratio < surge_ratio:
+        return False, f'vol_surge {vol_ratio:.2f} < {surge_ratio} (مطلوب ≥ 2.5×)', details
+
+    # 2. السعر فوق SMA20
+    if not closes or len(closes) < sma_period:
+        return False, f'بيانات سعر غير كافية لـ SMA{sma_period}', details
+
+    sma20 = sum(closes[-sma_period:]) / sma_period
+    last_close = closes[-1]
+    details['sma20'] = round(sma20, 4)
+    details['price_vs_sma20'] = round(last_close - sma20, 4)
+
+    if last_close <= sma20:
+        return False, f'السعر {last_close:.2f} ≤ SMA20 {sma20:.2f}', details
+
+    # 3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
+    # ناخذ الـ 20 شمعة قبل آخر 5 شموع (الـ surge)
+    if len(closes) < range_window + surge_lookback:
+        # fallback: نستخدم آخر 20 شمعة (بما فيها الـ surge — أقل دقة)
+        pre_window = closes[-range_window:] if len(closes) >= range_window else closes
+    else:
+        pre_window = closes[-(range_window + surge_lookback):-surge_lookback]
+
+    if len(pre_window) < 5:
+        return False, 'بيانات غير كافية لحساب الـ range', details
+
+    min_price = min(pre_window)
+    max_price = max(pre_window)
+    if min_price <= 0:
+        return False, 'سعر صفري في النافذة', details
+
+    range_pct = (max_price - min_price) / min_price * 100.0
+    details['range_pct'] = round(range_pct, 2)
+    details['range_compressed'] = range_pct < range_max_pct
+
+    if range_pct >= range_max_pct:
+        return False, f'range {range_pct:.1f}% ≥ {range_max_pct}% (مش منضغط)', details
+
+    # كل الشروط متحققة → EXPLOSIVE SURGE!
+    return True, (
+        f'🔥 EXPLOSIVE_SURGE — vol {vol_ratio:.2f}× ≥ {surge_ratio} + سعر فوق SMA20 '
+        f'({last_close:.2f} > {sma20:.2f}) + range منضغط ({range_pct:.1f}% < {range_max_pct}%). '
+        f'⚠️ position size 2% (EXPLOSIVE_SURGE_POSITION_SIZE)'
+    ), details
+
+
 def should_reject_by_liquidity(
     avg_turnover: float,
     current_price: float,
     volumes: List[float] = None,
     closes: List[float] = None,
     market_dead: bool = False,
-) -> Tuple[bool, str, bool, float]:
-    """قرار الرفض/القبول بناءً على السيولة.
+) -> Tuple[bool, str, bool, float, bool]:
+    """قرار الرفض/القبول بناءً على السيولة — DYNAMIC-LIQUIDITY-V2 + PHASE-1 EXPLOSIVE SURGE.
 
     Returns:
-        (rejected, reason, bypass_activated, effective_threshold)
+        (rejected, reason, bypass_activated, effective_threshold, explosive_surge_activated)
 
     rejected: True لو السهم يُرفض
     reason: وصف القرار
-    bypass_activated: True لو الـ volume_surge_bypass اشتغل (position size يبقى 2.5%)
+    bypass_activated: True لو الـ volume_surge_bypass اشتغل (position size 2.5%)
     effective_threshold: الحد الفعلي المستخدم
+    explosive_surge_activated: True لو الـ EXPLOSIVE_SURGE path اشتغل (position size 2%)
+
+    أولوية الفحص:
+      1. turnover=0 → ارفض (pump-and-dump guard)
+      2. turnover ≥ dynamic threshold → اقبل عادي
+      3. EXPLOSIVE_SURGE (2.5× + SMA20 + range<18%) → اقبل بـ position size 2%
+         (حتى لو turnover < 50% threshold — ده أقوى من bypass العادي)
+      4. VOLUME_SURGE_BYPASS (1.5× + MA20) + turnover ≥ 50% threshold → اقبل بـ 2.5%
+      5. else → ارفض
     """
     # 1. Pump-and-dump guard — ارفض فوري لو turnover = 0
     if avg_turnover <= PUMP_AND_DUMP_TURNOVER_FLOOR:
@@ -164,6 +291,7 @@ def should_reject_by_liquidity(
             f'🚨 pump-and-dump guard — turnover=0 (لا توجد سيولة إطلاقاً)',
             False,
             0.0,
+            False,
         )
 
     # 2. احسب الـ threshold الديناميكي
@@ -176,9 +304,22 @@ def should_reject_by_liquidity(
             f'سيولة كافية — turnover={avg_turnover:,.0f} ≥ {threshold:,} ({classify_price_bucket(current_price)})',
             False,
             float(threshold),
+            False,
         )
 
-    # 4. لو تحت الـ threshold → فحص volume surge bypass
+    # 4. PHASE-1: فحص EXPLOSIVE_SURGE path أولاً (أقوى، position size أصغر)
+    #    لو تحقق → اقبل بـ 2% حتى لو turnover < 50% threshold
+    explosive, explosive_reason, explosive_details = is_explosive_surge(volumes, closes)
+    if explosive:
+        return (
+            False,
+            explosive_reason,
+            False,           # bypass_activated = False (مش الـ bypass العادي)
+            float(threshold), # threshold الأصلي (مش المخفّض)
+            True,            # explosive_surge_activated = True
+        )
+
+    # 5. لو تحت الـ threshold → فحص volume surge bypass العادي
     bypass, bypass_reason = has_volume_surge(volumes, closes)
     if bypass:
         # خفّض الـ threshold لـ 50% (DECISION 2026-09-04)
@@ -190,27 +331,35 @@ def should_reject_by_liquidity(
                 f'السبب: {bypass_reason}. ⚠️ استخدم position size 2.5% (LIQUIDITY_BYPASS_POSITION_SIZE)',
                 True,
                 float(reduced_threshold),
+                False,
             )
+        # حتى الـ bypass ما قدرش — turnover أقل من 50% من threshold
+        # بس لو فيه explosive_surge signals (vol ≥ 2.5× بس range مش منضغط أو price تحت SMA20)
+        # نرفض بأمان
         return (
             True,
             f'🚨 سيولة ميتة — turnover={avg_turnover:,.0f} < {reduced_threshold:,.0f} (حتى بعد تخفيض 50% لـ bypass). '
-            f'باس: {bypass_reason}',
+            f'باس: {bypass_reason}. explosive: {explosive_reason}',
             False,
             float(reduced_threshold),
+            False,
         )
 
-    # 5. سيولة قليلة بدون علامة تجميع → ارفض
+    # 6. سيولة قليلة بدون أي علامة تجميع → ارفض
     return (
         True,
         f'🚨 سيولة ميتة — turnover={avg_turnover:,.0f} < {threshold:,} ({classify_price_bucket(current_price)}) '
-        f'بدون volume surge. {bypass_reason}',
+        f'بدون volume surge. bypass: {bypass_reason}. explosive: {explosive_reason}',
         False,
         float(threshold),
+        False,
     )
 
 
-def position_size_for_liquidity_bypass(bypass_activated: bool, default_pct: float = 0.08) -> float:
-    """لو الـ bypass اشتغل → position size 2.5% بدلاً من الـ default."""
+def position_size_for_liquidity_bypass(bypass_activated: bool, default_pct: float = 0.08, explosive_surge_activated: bool = False) -> float:
+    """لو الـ bypass اشتغل → position size 2.5% | لو explosive → 2%."""
+    if explosive_surge_activated:
+        return EXPLOSIVE_SURGE_POSITION_SIZE
     if bypass_activated:
         return LIQUIDITY_BYPASS_POSITION_SIZE
     return default_pct
@@ -223,9 +372,13 @@ __all__ = [
     'LIQUIDITY_BYPASS_POSITION_SIZE',
     'LIQUIDITY_BYPASS_THRESHOLD_REDUCTION',
     'DEAD_MARKET_CEILING',
+    'EXPLOSIVE_SURGE_VOLUME_RATIO',
+    'EXPLOSIVE_SURGE_POSITION_SIZE',
+    'EXPLOSIVE_SURGE_RANGE_MAX_PCT',
     'classify_price_bucket',
     'dynamic_min_turnover',
     'has_volume_surge',
+    'is_explosive_surge',
     'should_reject_by_liquidity',
     'position_size_for_liquidity_bypass',
 ]

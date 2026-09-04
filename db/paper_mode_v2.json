@@ -1,0 +1,32 @@
+{
+  "paper_mode": true,
+  "paper_mode_started": "2026-09-04",
+  "paper_mode_duration_days": 14,
+  "paper_mode_end_target": "2026-09-18",
+  "version": "DYNAMIC-LIQUIDITY-V2",
+  "thresholds": {
+    "low_price": 80000,
+    "mid_price": 200000,
+    "high_price": 400000
+  },
+  "rules": {
+    "dynamic_threshold_active": true,
+    "pump_and_dump_guard_active": true,
+    "volume_surge_bypass_active": true,
+    "volume_surge_bypass_position_size": 0.025,
+    "max_position_size_for_bypass": 0.03,
+    "max_position_size_for_dynamic": 0.03,
+    "kill_switch_on_pump": true
+  },
+  "monitoring": {
+    "daily_review_required": true,
+    "review_metrics": [
+      "trades_from_dynamic_threshold",
+      "trades_from_bypass",
+      "trades_from_explosive_surge",
+      "pump_and_dump_rejections",
+      "any_loss_above_5pct"
+    ]
+  },
+  "status": "PAPER_ONLY — NO REAL CAPITAL ON V2-ONLY TRADES"
+}

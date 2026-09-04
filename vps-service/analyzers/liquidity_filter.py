@@ -346,7 +346,7 @@ def evaluate_kill_filters(
     _effective_threshold = float(_admin_min_turnover)
 
     if _SHARED_LIQUIDITY_AVAILABLE:
-        _liquidity_rejected, _liquidity_reason, _liquidity_bypass, _effective_threshold = _shared_should_reject_by_liquidity(
+        _liquidity_rejected, _liquidity_reason, _liquidity_bypass, _effective_threshold, _liquidity_explosive = _shared_should_reject_by_liquidity(
             avg_turnover=avg_turnover,
             current_price=current_price,
             volumes=volumes,
@@ -356,6 +356,7 @@ def evaluate_kill_filters(
     else:
         # LEGACY FALLBACK: لو shared_liquidity مش متاح، استخدم الـ admin setting القديم
         _effective_threshold = _admin_min_turnover
+        _liquidity_explosive = False
         if not _market_open and not _STRICT_KILL_FILTERS:
             _effective_threshold = _admin_min_turnover * 0.2
         if avg_turnover <= 0:
@@ -364,6 +365,10 @@ def evaluate_kill_filters(
         elif avg_turnover < _effective_threshold:
             _liquidity_rejected = True
             _liquidity_reason = f'turnover {avg_turnover:,.0f} < {_effective_threshold:,.0f}'
+        else:
+            _liquidity_rejected = False
+            _liquidity_reason = 'ok'
+            _liquidity_bypass = False
 
     if _liquidity_rejected:
         kill_reasons.append(
@@ -374,6 +379,7 @@ def evaluate_kill_filters(
             'value': avg_turnover,
             'threshold': _effective_threshold,
             'bypass_activated': _liquidity_bypass,
+            'explosive_surge_activated': _liquidity_explosive,
             'dynamic_v2': _SHARED_LIQUIDITY_AVAILABLE,
             'price_bucket': _shared_classify_price_bucket(current_price) if _SHARED_LIQUIDITY_AVAILABLE else 'unknown',
         }
@@ -383,6 +389,7 @@ def evaluate_kill_filters(
             'value': avg_turnover,
             'threshold': _effective_threshold,
             'bypass_activated': _liquidity_bypass,
+            'explosive_surge_activated': _liquidity_explosive,
             'dynamic_v2': _SHARED_LIQUIDITY_AVAILABLE,
             'price_bucket': _shared_classify_price_bucket(current_price) if _SHARED_LIQUIDITY_AVAILABLE else 'unknown',
         }

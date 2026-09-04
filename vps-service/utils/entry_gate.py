@@ -280,9 +280,9 @@ def _check_liquidity(volumes: List[float], closes: List[float]) -> Dict[str, Any
     last_price = closes[-1] if closes else 0
     turnover = last_vol * last_price
 
-    # DYNAMIC-LIQUIDITY-V2: استخدم shared_liquidity للقرار النهائي
+    # DYNAMIC-LIQUIDITY-V2 + PHASE-1: استخدم shared_liquidity للقرار النهائي
     if _SHARED_LIQUIDITY_AVAILABLE:
-        rejected, reason, bypass, threshold = _should_reject_by_liquidity_v2(
+        rejected, reason, bypass, threshold, explosive = _should_reject_by_liquidity_v2(
             avg_turnover=turnover,
             current_price=last_price,
             volumes=volumes,
@@ -290,12 +290,23 @@ def _check_liquidity(volumes: List[float], closes: List[float]) -> Dict[str, Any
         )
         if rejected:
             return {'name': 'liquidity', 'passed': False, 'reason': f'turnover={turnover:.0f} EGP — {reason}', 'weight': 1}
+        if explosive:
+            # PHASE-1: EXPLOSIVE_SURGE path — position size 2%
+            return {
+                'name': 'liquidity', 'passed': True,
+                'reason': f'🔥 EXPLOSIVE_SURGE: turnover={turnover:.0f} EGP. {reason}',
+                'weight': 1,
+                'bypass_activated': False,
+                'explosive_surge_activated': True,
+                'position_size_override': 0.02,  # EXPLOSIVE_SURGE_POSITION_SIZE
+            }
         if bypass:
             return {
                 'name': 'liquidity', 'passed': True,
                 'reason': f'VOLUME_SURGE_BYPASS: turnover={turnover:.0f} EGP ≥ {threshold:.0f} (50% من الحد). ⚠️ استخدم position size 2.5%',
                 'weight': 1,
                 'bypass_activated': True,
+                'explosive_surge_activated': False,
                 'position_size_override': _LIQUIDITY_BYPASS_POSITION_SIZE,
             }
         return {'name': 'liquidity', 'passed': True, 'reason': f'turnover={turnover:.0f} EGP ≥ {threshold:.0f}', 'weight': 1}

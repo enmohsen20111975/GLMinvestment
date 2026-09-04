@@ -1,0 +1,11 @@
+{
+  "scan_date": "2026-08-27",
+  "scan_window": "2026-08-26 → 2026-08-27",
+  "total_egx": 452,
+  "v2_only_accepted": [],
+  "bypass_activated": [],
+  "pump_and_dump_rejected": [],
+  "explosive_surge_candidates": [],
+  "kill_switch_activated": false,
+  "kill_switch_reasons": []
+}
