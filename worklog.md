@@ -17366,3 +17366,41 @@ Stage Summary:
 - ✅ lint بدون أخطاء.
 
 NEED_OWNER: مراجعة الـ predictions في vps-service/backtest_results/v40_2_treasures/PREDICTIONS.md
+
+---
+Task ID: V40.2-LIQUIDITY-DIAG-1
+Agent: Main Agent (Z.ai Code)
+Task: تحليل جنائي: كم explosive mover هيُرفض بسبب الـ kill filter الثابت (600K/3M EGP)؟
+
+Work Log:
+- استكشفت بنية الـ kill filter في النظام — لقيت 3 layers:
+  1. `vps-service/analyzers/liquidity_filter.py`: MIN_TURNOVER=3M (strict), MIN_TURNOVER_CLOSED=500K (closed-market relaxation)
+  2. `vps-service/utils/entry_gate.py`: MIN_TURNOVER_EGP=5K (V80-TUNE — كان 50K)
+  3. `vps-service/core/opportunity_quality.py`: OPPORTUNITY_MIN_TURNOVER=50K (كان 500K)
+- لقيت إن فيه P24-DYNAMIC-LIQUIDITY موجود بالفعل (بناءً على volume_spike_ratio)، بس **مش مبني على سعر السهم** — ده اللي المدير عايزه.
+- كتبت `scripts/diagnose_liquidity_rejections.py`:
+  - لكل سهم EGX: حساب آخر close + متوسط daily turnover 20d + أكبر 5-day surge
+  - فلتر الـ explosive movers: +40% خلال 5 أيام (explosive) أو +100% (super_explosive)
+  - صنّف الأسهم لـ 3 فئات حسب السعر: low_price (<5), mid_price (5-15), high_price (>15)
+  - لكل explosive mover: احسب turnover قبل الانفجار بـ 5 أيام
+  - قارن: هل كان هيُرفض بالـ 3M / 500K / dynamic المقترح؟
+- التشغيل: 407 سهم EGX محللين، 42 explosive mover (10.3%)
+
+Stage Summary:
+- ✅ **المدير صح 100%**: 17/42 explosive movers (40.5%) كان هيُرفض بالـ strict (3M EGP)
+- ✅ حتى بالـ relaxed (500K): 11/42 (26.2%) هيُرفض
+- ✅ الـ dynamic المقترح (100K/250K/600K حسب السعر) بـ يخفف القتل لـ 10/42 (23.8%)
+- 🔍 **3 cases = pump-and-dump** (CCAPP, DCCC, ICMI) — turnover = 0 قبل الانفجار. النظام صح بـ يرفضها.
+- لو شلنا الـ 3 pump-and-dump: killed_strict=14/39 (35.9%), killed_closed=8/39 (20.5%), killed_dynamic=7/39 (17.9%)
+- 🎯 **Top winners اللي اترفضت ظلماً**:
+  - BIGP (0.26 EGP, +110%) — TurnBefore=106K — اترفض بـ 500K، بس الـ dynamic 100K كان هيسمح بيه ✅
+  - MOIN (38.75 EGP, +64%) — TurnBefore=159K — اترفض بـ 3 thresholds (دي مشكلة)
+  - AMES (121 EGP, +151%) — TurnBefore=2.1M — اترفض بالـ 3M بس
+- 📊 **التوزيع النهائي للـ buckets**:
+  - low_price (10 explosive): median turnover = 16M قبل الانفجار (عالي!)
+  - mid_price (10 explosive): median = 2.5M (أقل!)
+  - high_price (22 explosive): median = 12M
+- 📦 Artifacts:
+  - `scripts/diagnose_liquidity_rejections.py` (سكربت التحليل)
+  - `scripts/output/liquidity_rejections_20260904.json` (النتايج الكاملة)
+  - `scripts/output/liquidity_rejections_20260904.md` (تقرير عربي)
