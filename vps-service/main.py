@@ -342,13 +342,24 @@ async def health_check():
     return {"status": "ok", "service": "GLM Finance Backend", "version": "2.0.0"}
 
 # Mount Flask app for all chart / stock / market-pulse endpoints
+# Migration (2026-09-03): استبدال fastapi.middleware.wsgi ( buggy مع starlette 0.50+)
+# بـ a2wsgi.WSGIMiddleware (البديل الموصى بيه من starlette docs نفسها).
+# الـ fastapi.middleware.wsgi بتعمل segfault/crash مع anyio 4.13.
 try:
-    from fastapi.middleware.wsgi import WSGIMiddleware
+    from a2wsgi import WSGIMiddleware as A2WSGIMiddleware
     from lightweight_server import app as flask_app
-    app.mount("/", WSGIMiddleware(flask_app))
-    logger.info("✅ Mounted Flask lightweight_server WSGI app on /")
+    app.mount("/", A2WSGIMiddleware(flask_app))
+    logger.info("✅ Mounted Flask lightweight_server WSGI app on / (via a2wsgi.WSGIMiddleware)")
 except Exception as e:
-    logger.error(f"❌ Failed to mount Flask app: {e}")
+    logger.error(f"❌ Failed to mount Flask app via a2wsgi: {e}")
+    # Fallback: try the old WSGIMiddleware (might crash but at least it'll start)
+    try:
+        from fastapi.middleware.wsgi import WSGIMiddleware
+        from lightweight_server import app as flask_app
+        app.mount("/", WSGIMiddleware(flask_app))
+        logger.warning("⚠️ Using fastapi WSGIMiddleware fallback (may crash on WSGI requests)")
+    except Exception as e2:
+        logger.error(f"❌ Fallback also failed: {e2}")
 
 if __name__ == "__main__":
     import uvicorn
