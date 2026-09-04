@@ -34,6 +34,7 @@ import { AIAnalysisWidget } from '@/components/ai/AIAnalysisWidget';
 import { StockAdvancedAnalysisView } from './StockAdvancedAnalysisView';
 import { QuickPublishButton } from '@/components/publishing/QuickPublishButton';
 import { ComprehensiveStockAnalysis } from './ComprehensiveStockAnalysis';
+import { DeltaVolumeBar } from './DeltaVolumeBar';
 import GateAnalysisView from './GateAnalysisView';
 
 // Simple error boundary to prevent child component crashes from breaking the whole page
@@ -1050,6 +1051,11 @@ export function StockDetail() {
           stockName={stock.name_ar}
           currentPrice={stock.current_price}
         />
+      </ErrorBoundary>
+
+      {/* Delta Volume — ضغط الشراء/البيع (عمق السوق) */}
+      <ErrorBoundary title="عمق السوق">
+        <DeltaVolumeBar ticker={stock.ticker} />
       </ErrorBoundary>
 
       {/* Financial & Technical Metrics */}
