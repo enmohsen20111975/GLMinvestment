@@ -107,17 +107,16 @@ def log_message(message):
     print(f"[{timestamp}] {message}")
     update_status({'logs': [f"[{timestamp}] {message}"]})
 
-def fetch_gold_price_usd():
+def fetch_gold_price_usd(usd_egp_rate=50.70):
     """جلب سعر الذهب بالدولار (للأوقية) — من Daleelak API (مصادر مصرية مرخصة)
     
-    Migration (2026-09-03, Rule 48): استبدال api.metals.live + forex-data.p.rapidapi.com
-    بـ Daleelak API (مجاني، مرخّص، من غير مفتاح).
-    Fallback: isagha cached file.
+    Daleelak يعطي سعر الذهب عيار 24 بالجنيه المصري لكل جرام (EGP/g).
+    نقوم بتحويله إلى دولار لكل أوقية:
+    (سعر الجرام بالجنيه / سعر الدولار) × 31.1035 جرام للأوقية
     """
     import urllib.request
     import json as _json
     
-    # 1. Primary: Daleelak API (gold-24k = per gram in EGP → convert to USD/ounce)
     try:
         url = "https://getdaleelak.com/api/v1/feed.json?category=metals"
         req = urllib.request.Request(url, headers={
@@ -128,11 +127,16 @@ def fetch_gold_price_usd():
         data = _json.loads(resp.read())
         for asset in data.get('assets', []):
             if asset.get('slug') == 'gold-24k' or asset.get('id') == 'GOLD-24K-EGP':
+                # Daleelak returns EGP per gram
                 global_val = (asset.get('global') or {}).get('value')
-                if global_val and global_val > 0:
-                    return float(global_val)
-    except Exception:
-        pass
+                buy_val = (asset.get('directions', {}).get('buy', {}).get('best') or {}).get('value')
+                val_egp_per_gram = float(global_val or buy_val or 0)
+                if val_egp_per_gram > 0:
+                    rate = usd_egp_rate if usd_egp_rate > 0 else 50.70
+                    ounce_usd = (val_egp_per_gram / rate) * 31.1035
+                    return round(ounce_usd, 2)
+    except Exception as e:
+        log_message(f"⚠️ خطأ في جلب الذهب من دليلَك: {e}")
     
     # 2. Fallback: isagha cached (from news-agent/data/gold_prices.json)
     try:
@@ -142,20 +146,18 @@ def fetch_gold_price_usd():
         if os.path.exists(cached_path):
             with open(cached_path) as f:
                 gold_data = _json.load(f)
-            # Oz price (in USD)
             oz_data = gold_data.get('prices', {}).get('Oz', {})
             if oz_data.get('buy'):
                 return float(oz_data['buy'])
     except Exception:
         pass
     
-    # Last resort: hardcoded (update manually)
-    return 2500.0  # ~approximate gold ounce USD price
+    # Last resort: approximate gold ounce USD price
+    return 4495.0
 
-def fetch_silver_price_usd():
+def fetch_silver_price_usd(usd_egp_rate=50.70):
     """جلب سعر الفضة بالدولار (للأوقية) — من Daleelak API
-    
-    Migration (2026-09-03, Rule 48): استبدال api.metals.live بـ Daleelak.
+    Daleelak يعطي سعر الفضة عيار 999 بالجنيه المصري لكل جرام.
     """
     import urllib.request
     import json as _json
@@ -171,12 +173,16 @@ def fetch_silver_price_usd():
         for asset in data.get('assets', []):
             if asset.get('slug') == 'silver-999':
                 global_val = (asset.get('global') or {}).get('value')
-                if global_val and global_val > 0:
-                    return float(global_val)
-    except Exception:
-        pass
+                buy_val = (asset.get('directions', {}).get('buy', {}).get('best') or {}).get('value')
+                val_egp_per_gram = float(global_val or buy_val or 0)
+                if val_egp_per_gram > 0:
+                    rate = usd_egp_rate if usd_egp_rate > 0 else 50.70
+                    ounce_usd = (val_egp_per_gram / rate) * 31.1035
+                    return round(ounce_usd, 2)
+    except Exception as e:
+        log_message(f"⚠️ خطأ في جلب الفضة من دليلَك: {e}")
     
-    return 30.0  # approximate silver ounce USD price
+    return 60.0
 
 def fetch_exchange_rates():
     """جلب أسعار صرف العملات العربية مقابل الدولار — من Daleelak API (primary)
@@ -254,8 +260,9 @@ def calculate_gold_prices_by_karat(gold_price_per_ounce_usd, exchange_rates):
     """حساب أسعار الذهب بجميع العيارات لكل دولة"""
     timestamp = get_timestamp()
     
-    # سعر الجرام من الأوقية (31.1035 جرام)
+    # سعر الجرام من الأوقية (31.1035 جرام) بالدولار
     gold_price_per_gram_usd = gold_price_per_ounce_usd / 31.1035
+    usd_egp = exchange_rates.get('USD') or exchange_rates.get('EGP') or 50.70
     
     results = {
         'timestamp': timestamp,
@@ -271,16 +278,30 @@ def calculate_gold_prices_by_karat(gold_price_per_ounce_usd, exchange_rates):
         currency = info['currency']
         symbol = info['symbol']
         flag = info['flag']
-        rate = exchange_rates.get(currency, 1)
+        
+        # سعر صرف العملة مقابل الدولار (كم وحدة من العملة لكل 1 دولار)
+        if currency == 'EGP':
+            rate_to_usd = usd_egp
+        elif currency == 'USD':
+            rate_to_usd = 1.0
+        else:
+            # exchange_rates يحتوي على سعر العملة بالجنيه (مثلاً الريال = 13.52 جنيه)
+            # بالتالي سعر الدولار بالريال = سعر الدولار بالجنيه / سعر الريال بالجنيه
+            curr_in_egp = exchange_rates.get(currency)
+            if curr_in_egp and curr_in_egp > 0:
+                rate_to_usd = usd_egp / curr_in_egp
+            else:
+                pegs = {'SAR': 3.75, 'AED': 3.67, 'KWD': 0.307, 'QAR': 3.64, 'BHD': 0.376, 'OMR': 0.385, 'JOD': 0.709}
+                rate_to_usd = pegs.get(currency, 1.0)
         
         # سعر الجرام بالعملة المحلية
-        price_per_gram_local = gold_price_per_gram_usd * rate
+        price_per_gram_local = gold_price_per_gram_usd * rate_to_usd
         
         results['countries'][country] = {
             'currency': currency,
             'symbol': symbol,
             'flag': flag,
-            'exchange_rate_to_usd': rate,
+            'exchange_rate_to_usd': round(rate_to_usd, 4),
             'gold_per_gram_local': round(price_per_gram_local, 2),
             'gold_per_ounce_local': round(price_per_gram_local * 31.1035, 2),
             'prices_by_karat': {}
@@ -317,6 +338,7 @@ def calculate_silver_prices(silver_price_per_ounce_usd, exchange_rates):
     timestamp = get_timestamp()
     
     silver_price_per_gram_usd = silver_price_per_ounce_usd / 31.1035
+    usd_egp = exchange_rates.get('USD') or exchange_rates.get('EGP') or 50.70
     
     results = {
         'timestamp': timestamp,
@@ -327,14 +349,24 @@ def calculate_silver_prices(silver_price_per_ounce_usd, exchange_rates):
     
     for country, info in ARAB_COUNTRIES.items():
         currency = info['currency']
-        rate = exchange_rates.get(currency, 1)
+        if currency == 'EGP':
+            rate_to_usd = usd_egp
+        elif currency == 'USD':
+            rate_to_usd = 1.0
+        else:
+            curr_in_egp = exchange_rates.get(currency)
+            if curr_in_egp and curr_in_egp > 0:
+                rate_to_usd = usd_egp / curr_in_egp
+            else:
+                pegs = {'SAR': 3.75, 'AED': 3.67, 'KWD': 0.307, 'QAR': 3.64, 'BHD': 0.376, 'OMR': 0.385, 'JOD': 0.709}
+                rate_to_usd = pegs.get(currency, 1.0)
         
         results['countries'][country] = {
             'currency': currency,
             'symbol': info['symbol'],
             'flag': info['flag'],
-            'silver_per_gram_local': round(silver_price_per_gram_usd * rate, 4),
-            'silver_per_ounce_local': round(silver_price_per_ounce_usd * rate, 2)
+            'silver_per_gram_local': round(silver_price_per_gram_usd * rate_to_usd, 4),
+            'silver_per_ounce_local': round(silver_price_per_ounce_usd * rate_to_usd, 2)
         }
     
     return results
@@ -344,38 +376,39 @@ def _get_egypt_usd_rate(exchange_rates):
     الحصول على سعر الدولار المناسب لمصر:
     1. S24K من iSagha (لو موجود في exchange_rates كـ EGP_GOLD_SOUGH)
     2. دولار السوق السوداء (لو موجود كـ EGP_BLACK)
-    3. سعر البنك * 1.03 كـ fallback
+    3. سعر البنك كـ fallback
     """
-    # 1. دولار الصاغة (معكوس من سعر 24K لو كان متاح)
     if 'EGP_GOLD_SOUGH' in exchange_rates:
         return exchange_rates['EGP_GOLD_SOUGH']
-    
-    # 2. دولار السوق السوداء
     if 'EGP_BLACK' in exchange_rates:
         return exchange_rates['EGP_BLACK']
-    
-    # 3. Fallback: سعر البنك * 1.03
-    bank_rate = exchange_rates.get('EGP', 48.5)
-    return round(bank_rate * 1.03, 2)
+    bank_rate = exchange_rates.get('USD') or exchange_rates.get('EGP', 50.70)
+    return round(bank_rate, 2)
 
 
 def _get_target_usd_rate(country, exchange_rates):
     """
     الحصول على سعر الدولار المناسب للدولة المستهدفة.
-    - مصر: سعر السوق السوداء/دولار الصاغة
-    - السعودية/الكويت/قطر: سعر الصرف الرسمي
+    - مصر: سعر الدولار بالجنيه
+    - السعودية/الكويت/قطر: سعر الصرف الرسمي مقابل الدولار
     """
     if country == 'مصر':
         return _get_egypt_usd_rate(exchange_rates)
     
-    # الدول الخليجية: سعر الصرف الرسمي
+    usd_egp = exchange_rates.get('USD') or exchange_rates.get('EGP') or 50.70
     currency_map = {
         'السعودية': 'SAR',
         'الكويت': 'KWD',
         'قطر': 'QAR',
+        'الإمارات': 'AED',
     }
     currency = currency_map.get(country, 'SAR')
-    return exchange_rates.get(currency, 3.75)
+    curr_in_egp = exchange_rates.get(currency)
+    if curr_in_egp and curr_in_egp > 0 and curr_in_egp != usd_egp:
+        return round(usd_egp / curr_in_egp, 4)
+    
+    pegs = {'SAR': 3.75, 'KWD': 0.307, 'QAR': 3.64, 'AED': 3.67}
+    return pegs.get(currency, 3.75)
 
 
 def store_clean_gold_prices(timestamp, gold_price_per_ounce_usd, exchange_rates, existing_conn=None):
@@ -556,22 +589,23 @@ def fetch_all_metals_forex():
     
     log_message("🚀 بدء سحب بيانات الذهب والعملات...")
     
-    # 1. جلب سعر الذهب
-    log_message("🥇 جلب سعر الذهب...")
-    gold_price_usd = fetch_gold_price_usd()
-    log_message(f"   سعر الأوقية: ${gold_price_usd:.2f}")
-    update_status({'progress': {'current': 1, 'total': 4}})
-    
-    # 2. جلب سعر الفضة
-    log_message("🥈 جلب سعر الفضة...")
-    silver_price_usd = fetch_silver_price_usd()
-    log_message(f"   سعر الأوقية: ${silver_price_usd:.2f}")
-    update_status({'progress': {'current': 2, 'total': 4}})
-    
-    # 3. جلب أسعار الصرف
+    # 1. جلب أسعار الصرف أولاً لحساب سعر الدولار
     log_message("💱 جلب أسعار الصرف...")
     exchange_rates = fetch_exchange_rates()
-    log_message(f"   تم جلب {len(exchange_rates)} عملة")
+    usd_egp = exchange_rates.get('USD') or exchange_rates.get('EGP') or 50.70
+    log_message(f"   تم جلب {len(exchange_rates)} عملة (الدولار = {usd_egp:.2f} ج.م)")
+    update_status({'progress': {'current': 1, 'total': 4}})
+    
+    # 2. جلب سعر الذهب
+    log_message("🥇 جلب سعر الذهب...")
+    gold_price_usd = fetch_gold_price_usd(usd_egp)
+    log_message(f"   سعر الأوقية: ${gold_price_usd:.2f}")
+    update_status({'progress': {'current': 2, 'total': 4}})
+    
+    # 3. جلب سعر الفضة
+    log_message("🥈 جلب سعر الفضة...")
+    silver_price_usd = fetch_silver_price_usd(usd_egp)
+    log_message(f"   سعر الأوقية: ${silver_price_usd:.2f}")
     update_status({'progress': {'current': 3, 'total': 4}})
     
     # 4. حساب الأسعار لكل دولة

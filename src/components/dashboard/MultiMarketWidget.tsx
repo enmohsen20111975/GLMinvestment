@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -13,10 +13,10 @@ import { MiniSparkline } from '@/components/ui/mini-sparkline';
 
 // Market configuration
 const MARKETS = [
-  { code: 'EGX', name: 'مصر', flag: '🇪🇬', currency: 'EGP' },
-  { code: 'TADAWUL', name: 'السعودية', flag: '🇸🇦', currency: 'SAR' },
-  { code: 'KSE', name: 'الكويت', flag: '🇰🇼', currency: 'KWD' },
-  { code: 'QSE', name: 'قطر', flag: '🇶🇦', currency: 'QAR' },
+  { code: 'EGX', name: 'مصر', flag: '🇪🇬', currency: 'EGP', currencyName: 'جنيه مصري' },
+  { code: 'TADAWUL', name: 'السعودية', flag: '🇸🇦', currency: 'SAR', currencyName: 'ريال سعودي' },
+  { code: 'KSE', name: 'الكويت', flag: '🇰🇼', currency: 'KWD', currencyName: 'دينار كويتي' },
+  { code: 'QSE', name: 'قطر', flag: '🇶🇦', currency: 'QAR', currencyName: 'ريال قطري' },
 ] as const;
 
 type MarketCode = typeof MARKETS[number]['code'];
@@ -35,450 +35,571 @@ interface Stock {
   currency?: string;
 }
 
-interface GoldCountry {
+interface GoldPriceItem {
+  karat: string;
+  price_per_gram: number | null;
+  price_per_ounce: number | null;
+}
+
+interface GoldCountryData {
   currency: string;
   flag: string;
-  name?: string;
-  gold_per_gram_local?: number;
-  prices_by_karat?: Record<string, number>;
-  prices?: Array<{ karat: string; price_per_gram: number; price_per_ounce: number }>;
+  name: string;
+  prices: GoldPriceItem[];
 }
 
 interface Crypto {
+  id?: number;
   rank: number;
   symbol: string;
   name: string;
   price_usd: number;
   price_change_24h: number;
-  market_cap: number;
+  market_cap?: number;
 }
+
+interface ForexRate {
+  currency: string;
+  rate_to_usd: number | null;
+  name: string;
+  flag: string;
+  country: string;
+}
+
+const MAJOR_CURRENCIES_INFO: Record<string, { name: string; flag: string }> = {
+  USD: { name: 'دولار أمريكي', flag: '🇺🇸' },
+  EUR: { name: 'يورو', flag: '🇪🇺' },
+  GBP: { name: 'جنيه إسترليني', flag: '🇬🇧' },
+  SAR: { name: 'ريال سعودي', flag: '🇸🇦' },
+  AED: { name: 'درهم إماراتي', flag: '🇦🇪' },
+  KWD: { name: 'دينار كويتي', flag: '🇰🇼' },
+  QAR: { name: 'ريال قطري', flag: '🇶🇦' },
+  EGP: { name: 'جنيه مصري', flag: '🇪🇬' },
+  JOD: { name: 'دينار أردني', flag: '🇯🇴' },
+  BHD: { name: 'دينار بحريني', flag: '🇧🇭' },
+  OMR: { name: 'ريال عماني', flag: '🇴🇲' },
+  CAD: { name: 'دولار كندي', flag: '🇨🇦' },
+  AUD: { name: 'دولار أسترالي', flag: '🇦🇺' },
+  CNY: { name: 'يوان صيني', flag: '🇨🇳' },
+};
 
 export function MultiMarketWidget() {
   const { loadStockDetail } = useAppStore();
   const [activeTab, setActiveTab] = useState('stocks');
   const [selectedMarket, setSelectedMarket] = useState<MarketCode>('EGX');
   const [stocks, setStocks] = useState<Stock[]>([]);
-  const [goldData, setGoldData] = useState<Record<string, GoldCountry> | null>(null);
+  const [goldData, setGoldData] = useState<Record<string, GoldCountryData> | null>(null);
   const [cryptoData, setCryptoData] = useState<Crypto[]>([]);
-  const [liveGold, setLiveGold] = useState<any>(null);
-  const [forexData, setForexData] = useState<Record<string, { rate_to_usd: number; name: string; flag: string }>>({});
-  const [loading, setLoading] = useState(true);
+  const [forexRates, setForexRates] = useState<Record<string, ForexRate>>({});
+  const [loadingStocks, setLoadingStocks] = useState(true);
+  const [loadingGeneral, setLoadingGeneral] = useState(true);
 
-  // Handle stock click
+  const marketInfo = useMemo(() => {
+    return MARKETS.find(m => m.code === selectedMarket) || MARKETS[0];
+  }, [selectedMarket]);
+
+  // Load stocks when market changes
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingStocks(true);
+    fetch(`/api/data-engine/stocks?market=${selectedMarket}&limit=20`)
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (isMounted) {
+          setStocks(json?.stocks || []);
+          setLoadingStocks(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setStocks([]);
+          setLoadingStocks(false);
+        }
+      });
+
+    return () => { isMounted = false; };
+  }, [selectedMarket]);
+
+  // Load common data once (Gold, Crypto, Forex)
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingGeneral(true);
+
+    Promise.allSettled([
+      fetch('/api/data-engine/gold').then(r => r.ok ? r.json() : null),
+      fetch('/api/data-engine/crypto?limit=10').then(r => r.ok ? r.json() : null),
+      fetch('/api/data-engine/forex').then(r => r.ok ? r.json() : null),
+    ]).then(([goldRes, cryptoRes, forexRes]) => {
+      if (!isMounted) return;
+
+      if (goldRes.status === 'fulfilled' && goldRes.value?.gold) {
+        setGoldData(goldRes.value.gold);
+      }
+
+      if (cryptoRes.status === 'fulfilled' && cryptoRes.value) {
+        const cryptos = cryptoRes.value.data || cryptoRes.value.cryptos || [];
+        setCryptoData(cryptos);
+      }
+
+      if (forexRes.status === 'fulfilled' && forexRes.value?.data?.rates) {
+        setForexRates(forexRes.value.data.rates);
+      }
+
+      setLoadingGeneral(false);
+    });
+
+    return () => { isMounted = false; };
+  }, []);
+
   const handleStockClick = (ticker: string) => {
     if (ticker && ticker !== 'N/A') {
       loadStockDetail(ticker);
     }
   };
 
-  // Reload data when market changes
-  useEffect(() => {
-    loadData();
-    // Load unified gold/silver/currencies
-    fetch('/api/metals/gold')
-      .then(r => r.json())
-      .then(d => { if (d.success) setLiveGold(d); })
-      .catch(() => {});
-  }, [selectedMarket]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // Load stocks for selected market
-      const stocksRes = await fetch(`/api/data-engine/stocks?market=${selectedMarket}&limit=20`);
-      if (stocksRes.ok) {
-        const stocksJson = await stocksRes.json();
-        setStocks(stocksJson.stocks || []);
-      }
-
-      // Load gold (country-specific based on market)
-      const goldRes = await fetch('/api/data-engine/gold');
-      if (goldRes.ok) {
-        const goldJson = await goldRes.json();
-        setGoldData(goldJson.gold);
-      }
-
-      // Load crypto (global, not market-specific)
-      const cryptoRes = await fetch('/api/data-engine/crypto?limit=10');
-      if (cryptoRes.ok) {
-        const cryptoJson = await cryptoRes.json();
-        setCryptoData(cryptoJson.cryptos || []);
-      }
-
-      // Load forex (global)
-      const forexRes = await fetch('/api/data-engine/forex');
-      if (forexRes.ok) {
-        const forexJson = await forexRes.json();
-        setForexData(forexJson.data?.rates || {});
-      }
-    } catch (e) {
-      console.error('Error loading data:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getMarketInfo = (code: MarketCode) => {
-    return MARKETS.find(m => m.code === code) || MARKETS[0];
-  };
-
   const renderMarketSelector = () => (
-    <div className="flex gap-1 p-1 bg-muted/50 rounded-lg mb-3 overflow-x-auto">
-      {MARKETS.map((market) => (
-        <Button
-          key={market.code}
-          variant={selectedMarket === market.code ? 'default' : 'ghost'}
-          size="sm"
-          className={cn(
-            'text-xs h-8 px-2',
-            selectedMarket === market.code && 'bg-primary text-primary-foreground'
-          )}
-          onClick={() => setSelectedMarket(market.code)}
-        >
-          <span className="mr-1">{market.flag}</span>
-          {market.name}
-        </Button>
-      ))}
+    <div className="flex gap-1.5 p-1 bg-muted/60 rounded-xl mb-3 overflow-x-auto border">
+      {MARKETS.map((market) => {
+        const isSelected = selectedMarket === market.code;
+        return (
+          <Button
+            key={market.code}
+            variant={isSelected ? 'default' : 'ghost'}
+            size="sm"
+            className={cn(
+              'text-xs h-8 px-3 rounded-lg font-medium transition-all',
+              isSelected
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+            )}
+            onClick={() => setSelectedMarket(market.code)}
+          >
+            <span className="ml-1.5 text-sm">{market.flag}</span>
+            {market.name}
+          </Button>
+        );
+      })}
     </div>
   );
 
+  // 1. Stocks Tab Content
   const renderStocks = () => {
-    const marketInfo = getMarketInfo(selectedMarket);
-    
-    // Deduplicate stocks by ticker+market
+    if (loadingStocks) {
+      return (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
+
     const uniqueStocks = stocks.filter((stock, index, self) => {
       const ticker = stock.ticker || stock.symbol;
-      const market = stock.market;
-      return index === self.findIndex(s => 
-        (s.ticker || s.symbol) === ticker && s.market === market
-      );
+      return index === self.findIndex(s => (s.ticker || s.symbol) === ticker);
     });
-    
+
+    if (uniqueStocks.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          لا توجد بيانات أسهم متاحة لسوق {marketInfo.name} حالياً
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-2">
         {uniqueStocks.slice(0, 10).map((stock, index) => {
           const ticker = stock.ticker || stock.symbol || 'N/A';
           const price = stock.current_price || stock.price || 0;
-          
+          const change = stock.change_percent ?? 0;
+          const isPositive = change > 0;
+          const isNegative = change < 0;
+
           return (
-            <button
-              key={`${ticker}-${stock.market}-${index}`}
-              className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer w-full text-right border-0 bg-transparent"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleStockClick(ticker);
-              }}
+            <div
+              key={`${ticker}-${index}`}
+              onClick={() => handleStockClick(ticker)}
+              className="flex items-center justify-between p-2.5 rounded-lg bg-card/60 hover:bg-muted/70 border border-border/40 transition-all cursor-pointer group"
             >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{marketInfo.flag}</span>
-                <div>
-                  <p className="font-semibold text-sm">{ticker}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[5rem] sm:max-w-24">{stock.name}</p>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-base flex-shrink-0">{marketInfo.flag}</span>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm group-hover:text-primary transition-colors truncate">
+                    {ticker}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-[160px]">
+                    {stock.name}
+                  </p>
                 </div>
               </div>
-              <div className="text-left">
-                <p className="font-semibold text-sm tabular-nums">
-                  {price.toLocaleString()} {marketInfo.currency}
-                </p>
-                <div className="flex items-center gap-1">
-                  {stock.change_percent > 0 ? (
-                    <TrendingUp className="w-3 h-3 text-emerald-500" />
-                  ) : stock.change_percent < 0 ? (
-                    <TrendingDown className="w-3 h-3 text-red-500" />
-                  ) : (
-                    <Minus className="w-3 h-3 text-slate-500" />
-                  )}
-                  <span
-                    className={cn(
-                      'text-xs font-medium tabular-nums',
-                      stock.change_percent > 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : stock.change_percent < 0
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-slate-600 dark:text-slate-400'
+
+              <div className="flex items-center gap-3">
+                {selectedMarket === 'EGX' && (
+                  <div className="hidden sm:block">
+                    <MiniSparkline ticker={ticker} height={18} width={64} showArea={false} />
+                  </div>
+                )}
+                <div className="text-left flex flex-col items-end">
+                  <p className="font-semibold text-sm tabular-nums">
+                    {price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                    <span className="text-[11px] text-muted-foreground mr-1">{marketInfo.currency}</span>
+                  </p>
+                  <div className="flex items-center gap-1">
+                    {isPositive ? (
+                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                    ) : isNegative ? (
+                      <TrendingDown className="w-3 h-3 text-red-500" />
+                    ) : (
+                      <Minus className="w-3 h-3 text-muted-foreground" />
                     )}
-                  >
-                    {stock.change_percent >= 0 ? '+' : ''}
-                     {(stock.change_percent ?? 0).toFixed(2)}%
-                  </span>
-                </div>
-                <div className="mt-1">
-                  <MiniSparkline ticker={ticker} height={16} width={64} showArea={false} />
+                    <span
+                      className={cn(
+                        'text-xs font-semibold tabular-nums',
+                        isPositive
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : isNegative
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-muted-foreground'
+                      )}
+                    >
+                      {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                    </span>
+                  </div>
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
-        {stocks.length === 0 && !loading && (
-          <p className="text-center text-muted-foreground text-sm py-4">
-            لا توجد أسهم لهذا السوق
-          </p>
-        )}
       </div>
     );
   };
 
+  // 2. Gold Tab Content (Filtered strictly for selected market's country)
   const renderGold = () => {
-    if (!liveGold) return <Skeleton className="h-20 w-full" />;
+    if (loadingGeneral || !goldData) {
+      return (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
 
-    const marketInfo = getMarketInfo(selectedMarket);
-    const prices = liveGold.prices || {};
-    const goldKarats = prices.gold_karats || [];
-    const silverKarats = prices.silver_karats || [];
-    const goldPound = prices.gold_pound;
-    const goldOunce = prices.gold_ounce;
-    const silverPound = prices.silver_pound;
-    const silverOunce = prices.silver_ounce;
-    const currencies = liveGold.currencies || [];
-    const marketCurrency = marketInfo.currency;
+    const countryGold = goldData[marketInfo.name];
+    if (!countryGold || !countryGold.prices || countryGold.prices.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          لا توجد بيانات أسعار ذهب متاحة لـ {marketInfo.name} حالياً
+        </div>
+      );
+    }
 
-    // Find rate to convert EGP to market currency
-    const egpRate = currencies.find(c => c.code === 'EGP');
-    const marketRate = currencies.find(c => c.code === marketCurrency);
-    const convertRate = marketCurrency === 'EGP' ? 1 : 
-      (egpRate && marketRate) ? (egpRate.rate_to_usd / marketRate.rate_to_usd) : 1;
+    // Sort karat numbers descending (e.g. 24, 22, 21, 18, 16, 14, 10)
+    const sortedPrices = [...countryGold.prices].sort((a, b) => {
+      const numA = parseInt(a.karat.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.karat.replace(/\D/g, '')) || 0;
+      return numB - numA;
+    });
+
+    // Find 21K and 24K for gold pound and ounce calculations
+    const price21k = sortedPrices.find(p => p.karat.includes('21'))?.price_per_gram;
+    const price24k = sortedPrices.find(p => p.karat.includes('24'))?.price_per_gram;
+    const goldPoundEstimate = price21k ? Math.round(price21k * 8) : null;
+    const goldOunceEstimate = price24k ? Math.round(price24k * 31.1035) : null;
 
     return (
       <div className="space-y-3">
-        {/* Gold karats */}
-        {goldKarats.length > 0 && (
-          <div className="space-y-1.5">
-            <div className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-              <Coins className="w-3.5 h-3.5" />
-              الذهب
-            </div>
-            {goldKarats.map((k: any) => (
-              <div key={k.key} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
-                <span className="text-sm text-muted-foreground">{k.name_ar}</span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {Math.round((k.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
-                </span>
-              </div>
-            ))}
-            {goldPound && (
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-amber-500/5">
-                <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">{goldPound.name_ar}</span>
-                <span className="text-sm font-semibold tabular-nums text-amber-600 dark:text-amber-400">
-                  {Math.round((goldPound.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
-                </span>
-              </div>
-            )}
-            {goldOunce && (
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40">
-                <span className="text-sm text-muted-foreground">{goldOunce.name_ar}</span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {Math.round((goldOunce.price || 0) * convertRate).toLocaleString()} {marketCurrency}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Header summary badge */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 font-medium">
+          <span className="flex items-center gap-1.5">
+            <Coins className="w-3.5 h-3.5 text-amber-500" />
+            أسعار الذهب الرسمية في {marketInfo.name}
+          </span>
+          <span>بالـ {marketInfo.currencyName} ({marketInfo.currency})</span>
+        </div>
 
-        {/* Silver */}
-        {silverKarats.length > 0 && (
-          <div className="space-y-1.5">
-            <div className="text-xs font-bold text-gray-400 flex items-center gap-1">
-              <Coins className="w-3.5 h-3.5" />
-              الفضة
-            </div>
-            {silverKarats.map((k: any) => (
-              <div key={k.key} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
-                <span className="text-sm text-muted-foreground">{k.name_ar}</span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {Math.round((k.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
-                </span>
-              </div>
-            ))}
-            {silverPound && (
-              <div className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40">
-                <span className="text-sm text-muted-foreground">{silverPound.name_ar}</span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {Math.round((silverPound.price_per_ounce || 0) * convertRate).toLocaleString()} {marketCurrency}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Karats List */}
+        <div className="space-y-1.5">
+          {sortedPrices.map((item) => {
+            const gramPrice = item.price_per_gram;
+            if (!gramPrice || gramPrice <= 0) return null;
 
-        {/* Currencies */}
-        {currencies.length > 0 && (
-          <div className="space-y-1.5">
-            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              <Globe className="w-3.5 h-3.5" />
-              العملات (مقابل {marketCurrency})
-            </div>
-            {currencies.filter((c: any) => c.code !== marketCurrency).slice(0, 12).map((c: any) => (
-              <div key={c.code} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 hover:bg-muted transition-colors">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{c.code}</span>
-                  <span className="text-[10px] text-muted-foreground">{c.name_ar}</span>
-                </div>
-                <span className="text-sm font-semibold tabular-nums">
-                  {marketCurrency === 'EGP' && c.rate_to_egp ? c.rate_to_egp.toFixed(2) :
-                   marketCurrency === 'USD' ? (1 / c.rate_to_usd).toFixed(2) :
-                   c.rate_to_egp ? (c.rate_to_egp * convertRate).toFixed(2) : '-'}
-                  {' '}{marketCurrency}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
+            const isKarat21 = item.karat.includes('21');
+            const isKarat24 = item.karat.includes('24');
 
-  const renderCrypto = () => (
-    <div className="space-y-2">
-      {cryptoData.slice(0, 8).map((crypto) => (
-        <div
-          key={crypto.symbol}
-          className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              #{crypto.rank}
-            </Badge>
-            <div>
-              <p className="font-semibold text-sm">{crypto.symbol}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[5rem] sm:max-w-24">{crypto.name}</p>
-            </div>
-          </div>
-          <div className="text-left">
-            <p className="font-semibold text-sm tabular-nums">
-              ${crypto.price_usd.toLocaleString()}
-            </p>
-            <div className="flex items-center gap-1">
-              {crypto.price_change_24h > 0 ? (
-                <ArrowUpRight className="w-3 h-3 text-emerald-500" />
-              ) : (
-                <ArrowDownRight className="w-3 h-3 text-red-500" />
-              )}
-              <span
+            return (
+              <div
+                key={item.karat}
                 className={cn(
-                  'text-xs font-medium tabular-nums',
-                  crypto.price_change_24h > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-red-600 dark:text-red-400'
+                  'flex items-center justify-between p-2 rounded-lg border transition-colors',
+                  isKarat21
+                    ? 'bg-amber-500/10 border-amber-500/30'
+                    : isKarat24
+                    ? 'bg-amber-500/5 border-amber-500/20'
+                    : 'bg-card/60 border-border/40 hover:bg-muted/50'
                 )}
               >
-                {crypto.price_change_24h >= 0 ? '+' : ''}
-                {crypto.price_change_24h?.toFixed(2)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderForex = () => {
-    // Show forex for selected market's currency
-    const marketInfo = getMarketInfo(selectedMarket);
-    const relevantForex = forexData[marketInfo.currency];
-    
-    return (
-      <div className="space-y-2">
-        {relevantForex && (
-          <div
-            className="flex items-center justify-between p-2 rounded-lg bg-primary/10 border border-primary/20"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{relevantForex.flag}</span>
-              <div>
-                <p className="font-semibold text-sm">{marketInfo.currency}</p>
-                <p className="text-xs text-muted-foreground">{relevantForex.name}</p>
-              </div>
-            </div>
-            <div className="text-left">
-              <p className="font-semibold text-sm tabular-nums">
-                {relevantForex.rate_to_usd.toLocaleString()}
-              </p>
-              <p className="text-xs text-muted-foreground">للدولار</p>
-            </div>
-          </div>
-        )}
-        {Object.entries(forexData)
-          .filter(([currency]) => currency !== marketInfo.currency)
-          .slice(0, 6)
-          .map(([currency, data]) => (
-            <div
-              key={currency}
-              className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{data.flag}</span>
-                <div>
-                  <p className="font-semibold text-sm">{currency}</p>
-                  <p className="text-xs text-muted-foreground">{data.name}</p>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    'text-sm font-semibold',
+                    isKarat21 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
+                  )}>
+                    {item.karat}
+                  </span>
+                  {isKarat21 && (
+                    <Badge variant="outline" className="text-[10px] h-4 px-1 text-amber-600 border-amber-400/50 bg-amber-50 dark:bg-amber-950/40">
+                      الأكثر تداولاً
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-left">
+                  <span className="text-sm font-bold tabular-nums">
+                    {Math.round(gramPrice).toLocaleString()}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground mr-1">
+                    {marketInfo.currency} / جرام
+                  </span>
                 </div>
               </div>
-              <div className="text-left">
-                <p className="font-semibold text-sm tabular-nums">
-                  {data.rate_to_usd.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">للدولار</p>
-              </div>
+            );
+          })}
+        </div>
+
+        {/* Gold Pound & Ounce Cards */}
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          {goldPoundEstimate && (
+            <div className="p-2 rounded-lg bg-muted/50 border border-border/50 text-center">
+              <p className="text-[11px] text-muted-foreground mb-0.5">جنيه ذهب (8ج عيار 21)</p>
+              <p className="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                {goldPoundEstimate.toLocaleString()} {marketInfo.currency}
+              </p>
             </div>
-          ))}
+          )}
+          {goldOunceEstimate && (
+            <div className="p-2 rounded-lg bg-muted/50 border border-border/50 text-center">
+              <p className="text-[11px] text-muted-foreground mb-0.5">أوقية ذهب (31.1ج)</p>
+              <p className="text-xs font-bold tabular-nums">
+                {goldOunceEstimate.toLocaleString()} {marketInfo.currency}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
-  if (loading) {
+  // 3. Crypto Tab Content
+  const renderCrypto = () => {
+    if (loadingGeneral) {
+      return (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
+
+    if (cryptoData.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          لا توجد بيانات عملات رقمية متاحة حالياً
+        </div>
+      );
+    }
+
     return (
-      <Card>
-        <CardContent className="p-4">
-          <div className="space-y-2">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-2">
+        {cryptoData.slice(0, 10).map((crypto) => {
+          const change = crypto.price_change_24h ?? 0;
+          const isPositive = change > 0;
+          const isNegative = change < 0;
+
+          return (
+            <div
+              key={crypto.symbol}
+              className="flex items-center justify-between p-2.5 rounded-lg bg-card/60 hover:bg-muted/70 border border-border/40 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Badge variant="outline" className="text-[10px] h-5 w-6 flex items-center justify-center p-0 font-mono text-muted-foreground">
+                  {crypto.rank || '#'}
+                </Badge>
+                <div>
+                  <p className="font-semibold text-sm">{crypto.symbol}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px]">{crypto.name}</p>
+                </div>
+              </div>
+              <div className="text-left flex flex-col items-end">
+                <p className="font-semibold text-sm tabular-nums">
+                  ${crypto.price_usd >= 1
+                    ? crypto.price_usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : crypto.price_usd.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })}
+                </p>
+                <div className="flex items-center gap-1">
+                  {isPositive ? (
+                    <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                  ) : isNegative ? (
+                    <ArrowDownRight className="w-3 h-3 text-red-500" />
+                  ) : (
+                    <Minus className="w-3 h-3 text-muted-foreground" />
+                  )}
+                  <span
+                    className={cn(
+                      'text-xs font-semibold tabular-nums',
+                      isPositive
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : isNegative
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     );
-  }
+  };
+
+  // 4. Forex / Currencies Tab Content (Relative to the selected market's currency)
+  const renderForex = () => {
+    if (loadingGeneral) {
+      return (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
+
+    // In data_engine, forex rates are stored as EGP values for 1 unit of foreign currency:
+    // USD: 50.00 EGP, EUR: 59.03 EGP, GBP: 68.62 EGP, KWD: 164.71 EGP, SAR: 13.33 EGP, AED: 13.85 EGP, QAR: 13.74 EGP
+    const marketCurr = marketInfo.currency;
+    const baseEgpRate = marketCurr === 'EGP' ? 1 : (forexRates[marketCurr]?.rate_to_usd || 1);
+
+    // List of currencies to compare against
+    const targetCurrencies = ['USD', 'EUR', 'GBP', 'SAR', 'AED', 'KWD', 'QAR', 'EGP', 'JOD', 'BHD']
+      .filter(c => c !== marketCurr);
+
+    return (
+      <div className="space-y-2.5">
+        {/* Header summary */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+          <span className="flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5 text-emerald-500" />
+            أسعار الصرف مقابل {marketInfo.currencyName}
+          </span>
+          <span>1 وحدة = بالـ {marketCurr}</span>
+        </div>
+
+        <div className="space-y-1.5">
+          {targetCurrencies.map((code) => {
+            const rawRateInEgp = forexRates[code]?.rate_to_usd;
+            if (!rawRateInEgp || rawRateInEgp <= 0) return null;
+
+            // Calculate rate in the selected market's currency:
+            // 1 unit of code = (rateInEgp / baseEgpRate) in marketCurr
+            const rateInMarketCurrency = rawRateInEgp / baseEgpRate;
+            const meta = MAJOR_CURRENCIES_INFO[code] || { name: code, flag: '💱' };
+
+            return (
+              <div
+                key={code}
+                className="flex items-center justify-between p-2 rounded-lg bg-card/60 hover:bg-muted/70 border border-border/40 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg flex-shrink-0">{meta.flag}</span>
+                  <div>
+                    <p className="font-semibold text-sm">{code}</p>
+                    <p className="text-xs text-muted-foreground">{meta.name}</p>
+                  </div>
+                </div>
+
+                <div className="text-left">
+                  <p className="font-bold text-sm tabular-nums">
+                    {rateInMarketCurrency >= 10
+                      ? rateInMarketCurrency.toFixed(2)
+                      : rateInMarketCurrency >= 1
+                      ? rateInMarketCurrency.toFixed(3)
+                      : rateInMarketCurrency.toFixed(4)}
+                    <span className="text-[11px] text-muted-foreground mr-1 font-normal">
+                      {marketCurr}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Globe className="w-4 h-4" />
-          الأسواق المتعددة
-        </CardTitle>
+    <Card className="border-border/60 shadow-sm overflow-hidden">
+      <CardHeader className="pb-2 pt-3.5 px-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Globe className="w-4 h-4 text-primary" />
+            الأسواق المتعددة
+          </CardTitle>
+          <Badge variant="outline" className="text-[11px] font-normal px-2 py-0.5 border-primary/30 text-primary bg-primary/5">
+            {marketInfo.flag} {marketInfo.name} ({marketInfo.currency})
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
-        {/* Market Selector */}
-        <div className="px-3 pt-2">
+        {/* Market Country Selector */}
+        <div className="px-3.5 pt-1">
           {renderMarketSelector()}
         </div>
-        
+
+        {/* Categories Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-9 rounded-none border-b">
-            <TabsTrigger value="stocks" className="text-xs py-1.5">
+          <TabsList className="w-full grid grid-cols-4 h-10 rounded-none border-y bg-muted/40 p-0">
+            <TabsTrigger
+              value="stocks"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all font-medium"
+            >
               📈 الأسهم
             </TabsTrigger>
-            <TabsTrigger value="gold" className="text-xs py-1.5">
+            <TabsTrigger
+              value="gold"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-amber-500 transition-all font-medium"
+            >
               🥇 الذهب
             </TabsTrigger>
-            <TabsTrigger value="crypto" className="text-xs py-1.5">
+            <TabsTrigger
+              value="crypto"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-purple-500 transition-all font-medium"
+            >
               ₿ كريبتو
             </TabsTrigger>
-            <TabsTrigger value="forex" className="text-xs py-1.5">
+            <TabsTrigger
+              value="forex"
+              className="text-xs py-2 rounded-none data-[state=active]:bg-background data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500 transition-all font-medium"
+            >
               💱 عملات
             </TabsTrigger>
           </TabsList>
-          <div className="p-3 max-h-80 overflow-y-auto">
-            <TabsContent value="stocks" className="mt-0">
+
+          <div className="p-3.5 max-h-[380px] overflow-y-auto">
+            <TabsContent value="stocks" className="mt-0 focus-visible:outline-none">
               {renderStocks()}
             </TabsContent>
-            <TabsContent value="gold" className="mt-0">
+            <TabsContent value="gold" className="mt-0 focus-visible:outline-none">
               {renderGold()}
             </TabsContent>
-            <TabsContent value="crypto" className="mt-0">
+            <TabsContent value="crypto" className="mt-0 focus-visible:outline-none">
               {renderCrypto()}
             </TabsContent>
-            <TabsContent value="forex" className="mt-0">
+            <TabsContent value="forex" className="mt-0 focus-visible:outline-none">
               {renderForex()}
             </TabsContent>
           </div>
