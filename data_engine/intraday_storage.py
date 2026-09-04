@@ -254,10 +254,36 @@ def store_stocks_snapshot():
                     skipped += 1
                     continue
 
+                # Delta Volume Calculation (DNA-WINNER: buy/sell pressure)
+                # Calculated at write-time so it's always available
+                _buy_vol = 0
+                _sell_vol = 0
+                _delta_vol = 0
+                _delta_pct = 0.0
+                _pressure = 'NEUTRAL'
+                _open_val = float(stock.get('open') or 0) or price
+                _high_val = float(stock.get('high') or 0) or price
+                _low_val = float(stock.get('low') or 0) or price
+                if volume > 0 and _high_val > _low_val:
+                    _buy_ratio = max(0.0, min(1.0, (price - _low_val) / (_high_val - _low_val)))
+                    _buy_vol = int(volume * _buy_ratio)
+                    _sell_vol = volume - _buy_vol
+                    _delta_vol = _buy_vol - _sell_vol
+                    _delta_pct = round((_delta_vol / volume) * 100, 2)
+                    if _delta_pct > 30:
+                        _pressure = 'STRONG_BUY'
+                    elif _delta_pct > 10:
+                        _pressure = 'BUY'
+                    elif _delta_pct < -30:
+                        _pressure = 'STRONG_SELL'
+                    elif _delta_pct < -10:
+                        _pressure = 'SELL'
+
                 ic.execute('''
                     INSERT OR REPLACE INTO stock_intraday
-                    (ticker, market, timestamp, price, change_percent, volume)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    (ticker, market, timestamp, price, change_percent, volume,
+                     buy_volume, sell_volume, delta_volume, delta_pct, pressure)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     stock['symbol'],
                     stock['market'] or 'UNKNOWN',
@@ -265,6 +291,11 @@ def store_stocks_snapshot():
                     price,
                     change,
                     volume,
+                    _buy_vol,
+                    _sell_vol,
+                    _delta_vol,
+                    _delta_pct,
+                    _pressure,
                 ))
                 stored += 1
             except Exception as e:

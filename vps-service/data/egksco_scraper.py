@@ -719,22 +719,52 @@ class EGKSCOScraper:
             
             # === ADD TO PRICE HISTORY ===
             # Add today's prices to price_history.db for charts
+            # DNA-WINNER: also calculate delta_volume at write-time
             history_added = 0
             try:
                 conn_hist = sqlite3.connect(PRICE_HISTORY_DB_PATH)
                 cursor_hist = conn_hist.cursor()
                 today = datetime.now().strftime('%Y-%m-%d')
                 
+                # Ensure delta columns exist in price_history
+                try:
+                    cursor_hist.execute('ALTER TABLE price_history ADD COLUMN buy_volume INTEGER')
+                    cursor_hist.execute('ALTER TABLE price_history ADD COLUMN sell_volume INTEGER')
+                    cursor_hist.execute('ALTER TABLE price_history ADD COLUMN delta_volume INTEGER')
+                    cursor_hist.execute('ALTER TABLE price_history ADD COLUMN delta_pct REAL')
+                    cursor_hist.execute('ALTER TABLE price_history ADD COLUMN pressure TEXT')
+                except Exception:
+                    pass  # Already exist
+                
                 for stock in stocks:
                     symbol = stock.get('symbol')
                     if not symbol or not stock.get('last'):
                         continue
                     
-                    # Insert or replace today's price history using ticker directly
+                    _close = float(stock.get('last') or 0)
+                    _high = float(stock.get('high') or 0) or _close
+                    _low = float(stock.get('low') or 0) or _close
+                    _vol = int(stock.get('volume') or 0)
+                    
+                    # Delta Volume Calculation
+                    _buy_v = 0; _sell_v = 0; _delta_v = 0; _delta_p = 0.0; _press = 'NEUTRAL'
+                    if _vol > 0 and _high > _low:
+                        _ratio = max(0.0, min(1.0, (_close - _low) / (_high - _low)))
+                        _buy_v = int(_vol * _ratio)
+                        _sell_v = _vol - _buy_v
+                        _delta_v = _buy_v - _sell_v
+                        _delta_p = round((_delta_v / _vol) * 100, 2)
+                        if _delta_p > 30: _press = 'STRONG_BUY'
+                        elif _delta_p > 10: _press = 'BUY'
+                        elif _delta_p < -30: _press = 'STRONG_SELL'
+                        elif _delta_p < -10: _press = 'SELL'
+                    
+                    # Insert or replace today's price history with delta_volume
                     cursor_hist.execute('''
                         INSERT OR REPLACE INTO price_history 
-                        (ticker, date, open_price, high_price, low_price, close_price, volume, source)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'egksco')
+                        (ticker, date, open_price, high_price, low_price, close_price, volume, source,
+                         buy_volume, sell_volume, delta_volume, delta_pct, pressure)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'egksco', ?, ?, ?, ?, ?)
                     ''', (
                         symbol,
                         today,
@@ -742,13 +772,18 @@ class EGKSCOScraper:
                         stock.get('high'),
                         stock.get('low'),
                         stock.get('last'),
-                        stock.get('volume')
+                        stock.get('volume'),
+                        _buy_v,
+                        _sell_v,
+                        _delta_v,
+                        _delta_p,
+                        _press,
                     ))
                     history_added += 1
                 
                 conn_hist.commit()
                 conn_hist.close()
-                logger.info(f"Added {history_added} records to price_history for {today}")
+                logger.info(f"Added {history_added} records to price_history for {today} (with delta_volume)")
             except Exception as e:
                 logger.error(f"Error adding to price history: {e}")
         except Exception as e:
