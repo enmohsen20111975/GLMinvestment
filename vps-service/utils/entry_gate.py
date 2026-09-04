@@ -48,6 +48,38 @@ from __future__ import annotations
 from typing import Dict, Any, Optional, List
 import re
 
+# DYNAMIC-LIQUIDITY-V2 (2026-09-04): استيراد المرجع الموحّد للحد الديناميكي.
+try:
+    from utils.shared_liquidity import (
+        dynamic_min_turnover as _dynamic_min_turnover_v2,
+        should_reject_by_liquidity as _should_reject_by_liquidity_v2,
+        LIQUIDITY_BYPASS_POSITION_SIZE as _LIQUIDITY_BYPASS_POSITION_SIZE,
+    )
+    _SHARED_LIQUIDITY_AVAILABLE = True
+except ImportError:
+    _SHARED_LIQUIDITY_AVAILABLE = False
+
+    def _dynamic_min_turnover_v2(price, market_dead=False):
+        if market_dead:
+            return 700_000
+        if price <= 0:
+            return 400_000
+        if price < 5:
+            return 80_000
+        if price <= 15:
+            return 200_000
+        return 400_000
+
+    def _should_reject_by_liquidity_v2(avg_turnover, current_price, volumes=None, closes=None, market_dead=False):
+        if avg_turnover <= 0:
+            return (True, 'pump-and-dump guard — turnover=0', False, 0.0)
+        threshold = _dynamic_min_turnover_v2(current_price, market_dead)
+        if avg_turnover >= threshold:
+            return (False, 'ok', False, float(threshold))
+        return (True, f'turnover {avg_turnover:,.0f} < {threshold:,}', False, float(threshold))
+
+    _LIQUIDITY_BYPASS_POSITION_SIZE = 0.025
+
 
 # ─── العتبات ────────────────────────────────────────────────────────────────
 MIN_EVIDENCE_COUNT = 3
@@ -61,9 +93,16 @@ EXTENDED_CHASE_5D_PCT = 15.0
 # Owner: "ABUK طلع INSTITUTIONAL_BUY بـ score 100 بس اترفض — ده مش صحيح"
 EXPLOSIVE_CHASE_3D_PCT = 25.0   # 25% in 3 days = انفجار حقيقي (مش مطاردة)
 EXPLOSIVE_CHASE_5D_PCT = 30.0   # 30% in 5 days = انفجار حقيقي
+# DYNAMIC-LIQUIDITY-V2 (2026-09-04): الـ MIN_TURNOVER_EGP الثابت ده بقي LEGACY FALLBACK.
+# الـ effective threshold دلوقتي بيرجع من shared_liquidity.dynamic_min_turnover(price):
+# < 5 → 80K, 5-15 → 200K, > 15 → 400K.
+# + pump-and-dump guard (turnover=0 → رفض فوري)
+# + volume_surge_bypass (لو surge ≥ 1.5× + السعر فوق MA20 → اقبل بـ position size 2.5%)
 MIN_VOLUME = 100  # V80-TUNE: lower threshold (was 1000 — missed low-volume pumps)
-MIN_TURNOVER_EGP = 5_000  # V80-TUNE: lower threshold (was 50K — missed penny stocks)
+MIN_TURNOVER_EGP = 5_000  # LEGACY FALLBACK — used only if shared_liquidity unavailable
 SMA50_PROXIMITY_PCT = 2.0  # within 2% below SMA50 = "قريب جدًا"
+# position size الافتراضي للـ bypass
+DEFAULT_BYPASS_POSITION_SIZE = _LIQUIDITY_BYPASS_POSITION_SIZE
 
 
 def _safe_float(val, default=0.0):
@@ -219,7 +258,19 @@ def _check_dont_chase(closes: List[float], signal_type: str = '', score: int = 0
 
 
 def _check_liquidity(volumes: List[float], closes: List[float]) -> Dict[str, Any]:
-    """شرط 7: السيولة مقبولة."""
+    """شرط 7: السيولة مقبولة — DYNAMIC-LIQUIDITY-V2.
+
+    DECISION 2026-09-04: استبدلنا الحد الثابت 5K بحد ديناميكي مبني على سعر السهم.
+      - price < 5      → 80K
+      - 5 ≤ price ≤ 15 → 200K
+      - price > 15     → 400K
+
+    شروط الحماية:
+      1. turnover == 0 → رفض فوري (pump-and-dump guard)
+      2. لو تحت الـ threshold بس فيه volume_surge ≥ 1.5× + السعر فوق MA20
+         → اقبل بـ position size 2.5% (LIQUIDITY_BYPASS_POSITION_SIZE)
+      3. سيولة قليلة بدون علامة تجميع → رفض
+    """
     if not volumes or len(volumes) < 5:
         return {'name': 'liquidity', 'passed': False, 'reason': 'بيانات حجم غير كافية', 'weight': 1}
     last_vol = volumes[-1]
@@ -228,6 +279,28 @@ def _check_liquidity(volumes: List[float], closes: List[float]) -> Dict[str, Any
     # turnover = volume × price
     last_price = closes[-1] if closes else 0
     turnover = last_vol * last_price
+
+    # DYNAMIC-LIQUIDITY-V2: استخدم shared_liquidity للقرار النهائي
+    if _SHARED_LIQUIDITY_AVAILABLE:
+        rejected, reason, bypass, threshold = _should_reject_by_liquidity_v2(
+            avg_turnover=turnover,
+            current_price=last_price,
+            volumes=volumes,
+            closes=closes,
+        )
+        if rejected:
+            return {'name': 'liquidity', 'passed': False, 'reason': f'turnover={turnover:.0f} EGP — {reason}', 'weight': 1}
+        if bypass:
+            return {
+                'name': 'liquidity', 'passed': True,
+                'reason': f'VOLUME_SURGE_BYPASS: turnover={turnover:.0f} EGP ≥ {threshold:.0f} (50% من الحد). ⚠️ استخدم position size 2.5%',
+                'weight': 1,
+                'bypass_activated': True,
+                'position_size_override': _LIQUIDITY_BYPASS_POSITION_SIZE,
+            }
+        return {'name': 'liquidity', 'passed': True, 'reason': f'turnover={turnover:.0f} EGP ≥ {threshold:.0f}', 'weight': 1}
+
+    # LEGACY FALLBACK: الحد الثابت
     if turnover < MIN_TURNOVER_EGP:
         return {'name': 'liquidity', 'passed': False, 'reason': f'turnover={turnover:.0f} EGP < {MIN_TURNOVER_EGP}', 'weight': 1}
     return {'name': 'liquidity', 'passed': True, 'reason': f'volume={last_vol} turnover={turnover:.0f} EGP', 'weight': 1}

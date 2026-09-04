@@ -17404,3 +17404,47 @@ Stage Summary:
   - `scripts/diagnose_liquidity_rejections.py` (سكربت التحليل)
   - `scripts/output/liquidity_rejections_20260904.json` (النتايج الكاملة)
   - `scripts/output/liquidity_rejections_20260904.md` (تقرير عربي)
+
+---
+Task ID: V40.2-DYNAMIC-LIQUIDITY-V2-1
+Agent: Main Agent (Z.ai Code)
+Task: تنفيذ قرار المالك — تطبيق الـ dynamic liquidity threshold (80K/200K/400K) + 3 شروط حماية + A/B backtest
+
+Work Log:
+- أنشأت `vps-service/utils/shared_liquidity.py` كـ مرجع موحّد للحد الديناميكي:
+  - `dynamic_min_turnover(price, market_dead)` → 80K/200K/400K حسب السعر
+  - `should_reject_by_liquidity(...)` → شامل pump-and-dump guard + volume_surge_bypass
+  - `has_volume_surge(volumes, closes)` → surge ≥ 1.5× + السعر فوق MA20
+  - `LIQUIDITY_BYPASS_POSITION_SIZE = 0.025` (2.5%)
+- عدّلت `vps-service/analyzers/liquidity_filter.py`:
+  - استيراد shared_liquidity في try/except (مع fallback)
+  - تحديث `MIN_TURNOVER` comment لـ LEGACY FALLBACK
+  - Filter 1 في `evaluate_kill_filters` بـ يستخدم `_shared_should_reject_by_liquidity`
+  - أضفنا `bypass_activated` و `price_bucket` في kill_details['liquidity']
+- عدّلت `vps-service/utils/entry_gate.py`:
+  - استيراد shared_liquidity
+  - `_check_liquidity()` بـ يستخدم `_should_reject_by_liquidity_v2`
+  - لو bypass → بيرجع `position_size_override = 0.025` + `bypass_activated = True`
+- عدّلت `vps-service/core/opportunity_quality.py`:
+  - `OPPORTUNITY_MIN_TURNOVER` و `LIVE_STRICT_MIN_TURNOVER` بقوا LEGACY FALLBACK
+  - `is_live_stock_strict()` بـ يستخدم `dynamic_min_turnover(price)` + pump-and-dump guard
+- اختبرت كل التعديلات بـ 5 اختبارات (pump-and-dump, low_price, mid_price, high_price, volume_surge_bypass) — كلها passed ✅
+- كتبت سكربت `scripts/ab_liquidity_v2.py` (تحليل universe) و `scripts/ab_liquidity_v2_backtest.py` (backtest فعلي)
+- شغّلت A/B test على آخر 60 يوم (452 EGX ticker، 29 يوم تداول)
+
+Stage Summary:
+- ✅ **التعديلات اتعملت بنجاح** في 3 ملفات (liquidity_filter.py, entry_gate.py, opportunity_quality.py)
+- ✅ **5 اختبارات وحدة** كلها عدت (pump-and-dump guard شغال، dynamic threshold شغال، volume_surge_bypass شغال)
+- 📊 **A/B backtest نتايجه متطابقة** (38 صفقة، WR 55.26%، PF 5.5، MaxDD -0.31%) في كل الـ modes الثلاثة
+- 🔍 **السبب**: في فترة الـ 60 يوم، الأسهم اللي بـ تعدّي كل الفلاتر (35 ticker فريد) هما نفس الأسهم في الـ 3 modes
+- 🎯 **V2 بـ يقبل 8 أسهم إضافية** LEGACY-500K بيرفضها (VLMR, EGBE, NAHO, MKIT, EGS48271C018-EGP, EOSB بـ bypass، UPMS, EGREF)
+  - 7 منها بـ threshold ديناميكي عادي (low_price: 80K, mid_price: 200K, high_price: 400K)
+  - 1 منها (EOSB) بـ volume_surge_bypass ✅ (سيولة 44K < 80K بس surge ≥ 1.5× + فوق MA20)
+- 💡 **الحقيقة المهمة**: الـ rejected_count نزل من 241 (LEGACY-500K) لـ 206 (V2) = -35 سهم مرفوض أقل
+- 📦 Artifacts:
+  - `vps-service/utils/shared_liquidity.py` (المرجع الموحّد)
+  - `scripts/ab_liquidity_v2.py` (تحليل universe)
+  - `scripts/ab_liquidity_v2_backtest.py` (backtest فعلي)
+  - `scripts/output/ab_liquidity_v2_20260904.json` (نتايج universe analysis)
+  - `scripts/output/ab_liquidity_v2_backtest_20260904.json` (نتايج backtest)
+  - `scripts/output/ab_liquidity_v2_backtest_20260904.md` (تقرير عربي)

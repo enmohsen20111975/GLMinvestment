@@ -41,6 +41,69 @@ except ImportError:
     def get_dynamic_context(ticker, use_cache=True):
         return None  # type: ignore
 
+# DYNAMIC-LIQUIDITY-V2 (2026-09-04): المرجع الموحّد للحد الديناميكي المبني على سعر السهم.
+# قرارات المالك: < 5 → 80K, 5-15 → 200K, > 15 → 400K + pump-and-dump guard + volume_surge_bypass.
+try:
+    from utils.shared_liquidity import (
+        dynamic_min_turnover as _shared_dynamic_min_turnover,
+        should_reject_by_liquidity as _shared_should_reject_by_liquidity,
+        has_volume_surge as _shared_has_volume_surge,
+        classify_price_bucket as _shared_classify_price_bucket,
+        DYNAMIC_TURNOVER_THRESHOLDS as _SHARED_DYNAMIC_THRESHOLDS,
+        PUMP_AND_DUMP_TURNOVER_FLOOR as _SHARED_PUMP_AND_DUMP_FLOOR,
+        LIQUIDITY_BYPASS_POSITION_SIZE as _SHARED_BYPASS_POSITION_SIZE,
+    )
+    _SHARED_LIQUIDITY_AVAILABLE = True
+except ImportError:
+    _SHARED_LIQUIDITY_AVAILABLE = False
+    _SHARED_DYNAMIC_THRESHOLDS = {'low_price': 80_000, 'mid_price': 200_000, 'high_price': 400_000}
+    _SHARED_PUMP_AND_DUMP_FLOOR = 0.0
+    _SHARED_BYPASS_POSITION_SIZE = 0.025
+
+    def _shared_dynamic_min_turnover(price, market_dead=False):
+        if market_dead:
+            return 700_000
+        if price <= 0:
+            return 400_000
+        if price < 5:
+            return 80_000
+        if price <= 15:
+            return 200_000
+        return 400_000
+
+    def _shared_classify_price_bucket(price):
+        if price <= 0:
+            return 'unknown'
+        if price < 5:
+            return 'low_price'
+        if price <= 15:
+            return 'mid_price'
+        return 'high_price'
+
+    def _shared_should_reject_by_liquidity(avg_turnover, current_price, volumes=None, closes=None, market_dead=False):
+        if avg_turnover <= 0:
+            return (True, 'pump-and-dump guard — turnover=0', False, 0.0)
+        threshold = _shared_dynamic_min_turnover(current_price, market_dead)
+        if avg_turnover >= threshold:
+            return (False, 'ok', False, float(threshold))
+        return (True, f'turnover {avg_turnover:,.0f} < {threshold:,}', False, float(threshold))
+
+    def _shared_has_volume_surge(volumes, closes=None, surge_ratio=1.5, surge_lookback=5, base_lookback=20, ma_period=20):
+        if not volumes or len(volumes) < base_lookback:
+            return (False, 'insufficient data')
+        recent_avg = sum(volumes[-surge_lookback:]) / surge_lookback
+        base_avg = sum(volumes[-base_lookback:]) / base_lookback
+        if base_avg <= 0:
+            return (False, 'avg_20d = 0')
+        ratio = recent_avg / base_avg
+        if ratio < surge_ratio:
+            return (False, f'ratio {ratio:.2f} < {surge_ratio}')
+        if closes and len(closes) >= ma_period:
+            ma20 = sum(closes[-ma_period:]) / ma_period
+            if closes[-1] <= ma20:
+                return (False, 'price under MA20')
+        return (True, f'surge {ratio:.2f}x + above MA20')
+
 
 def ctx_turnover_display(ctx) -> str:
     """DYNAMIC-SYSTEM-001: نص موجز لعرض قيم السيولة في الـ warnings."""
@@ -252,8 +315,13 @@ def evaluate_kill_filters(
     kill_reasons = []
     kill_details = {}
 
-    # اقرأ الحدود من engine_settings
-    _min_turnover = get_setting('kill_filter_min_turnover_egp', default=3_000_000.0)
+    # DYNAMIC-LIQUIDITY-V2 (2026-09-04): استبدلنا الحد الثابت 3M بحد ديناميكي
+    # مبني على سعر السهم (utils.shared_liquidity.dynamic_min_turnover).
+    # الجديد: < 5 → 80K, 5-15 → 200K, > 15 → 400K.
+    # + pump-and-dump guard (turnover=0 → ارفض فوري)
+    # + volume_surge_bypass (لو surge ≥ 1.5× + السعر فوق MA20 → اقبل بحجم صغير)
+    # الـ admin settings لسه تقرأ كـ legacy fallback لو shared_liquidity مش متاحة.
+    _admin_min_turnover = float(get_setting('kill_filter_min_turnover_egp', default=3_000_000.0))
     _min_price = get_setting('kill_filter_min_stock_price', default=1.0)
     _max_vol_volatility = get_setting('kill_filter_max_volume_volatility', default=3.0)
     _min_data_bars = int(get_setting('kill_filter_min_data_bars', default=60))
@@ -267,20 +335,57 @@ def evaluate_kill_filters(
     _market_open = _is_egx_market_open()
     if not _market_open and not _STRICT_KILL_FILTERS:
         _min_data_bars = max(int(_min_data_bars * 0.15), 8)  # 60 → 9 (حد أدنى 8)
-        _min_turnover = _min_turnover * 0.2  # 3M → 600K في السوق المقفول
+        # ملاحظة: في السوق المقفول، الـ dynamic_min_turnover(price) لسه بيتطبّق.
+        # مش بنستخدم _admin_min_turnover * 0.2 (اللي كان 600K) — الـ dynamic أحسن.
 
-    # Filter 1: السيولة
-    if avg_turnover > 0 and avg_turnover < _min_turnover:
+    # Filter 1: السيولة — DYNAMIC-LIQUIDITY-V2
+    # استخدم shared_liquidity.should_reject_by_liquidity (شامل pump-and-dump guard + volume_surge_bypass)
+    _liquidity_rejected = False
+    _liquidity_reason = ''
+    _liquidity_bypass = False
+    _effective_threshold = float(_admin_min_turnover)
+
+    if _SHARED_LIQUIDITY_AVAILABLE:
+        _liquidity_rejected, _liquidity_reason, _liquidity_bypass, _effective_threshold = _shared_should_reject_by_liquidity(
+            avg_turnover=avg_turnover,
+            current_price=current_price,
+            volumes=volumes,
+            closes=closes,
+            market_dead=False,  # TODO: hook لـ market_dead detector
+        )
+    else:
+        # LEGACY FALLBACK: لو shared_liquidity مش متاح، استخدم الـ admin setting القديم
+        _effective_threshold = _admin_min_turnover
+        if not _market_open and not _STRICT_KILL_FILTERS:
+            _effective_threshold = _admin_min_turnover * 0.2
+        if avg_turnover <= 0:
+            _liquidity_rejected = True
+            _liquidity_reason = f'pump-and-dump guard — turnover=0'
+        elif avg_turnover < _effective_threshold:
+            _liquidity_rejected = True
+            _liquidity_reason = f'turnover {avg_turnover:,.0f} < {_effective_threshold:,.0f}'
+
+    if _liquidity_rejected:
         kill_reasons.append(
-            f'🚨 سيولة ميتة — معدل الدوران {avg_turnover:,.0f} جنيه < {_min_turnover:,.0f}'
+            f'🚨 سيولة ميتة — {_liquidity_reason}'
         )
         kill_details['liquidity'] = {
             'passed': False,
             'value': avg_turnover,
-            'threshold': _min_turnover,
+            'threshold': _effective_threshold,
+            'bypass_activated': _liquidity_bypass,
+            'dynamic_v2': _SHARED_LIQUIDITY_AVAILABLE,
+            'price_bucket': _shared_classify_price_bucket(current_price) if _SHARED_LIQUIDITY_AVAILABLE else 'unknown',
         }
     else:
-        kill_details['liquidity'] = {'passed': True, 'value': avg_turnover}
+        kill_details['liquidity'] = {
+            'passed': True,
+            'value': avg_turnover,
+            'threshold': _effective_threshold,
+            'bypass_activated': _liquidity_bypass,
+            'dynamic_v2': _SHARED_LIQUIDITY_AVAILABLE,
+            'price_bucket': _shared_classify_price_bucket(current_price) if _SHARED_LIQUIDITY_AVAILABLE else 'unknown',
+        }
 
     # Filter 2: السعر
     if current_price > 0 and current_price < _min_price:
@@ -485,19 +590,20 @@ class LiquidityFilter:
     
     # Thresholds
     MIN_VOLUME = 100_000          # 100K shares
-    # MARKET-REALITY-SLAP-027 (يوليو 2026): ارفعنا الحد من 500K → 3M EGP.
-    # السبب: الآلة كانت بتطلع أسهم ميتة (زي GPIM و AIDC) لأنها كانت أكاديمية
-    # (بتبص على P/E و ROE) وعمياء عن السيولة الحقيقية. المحلل البشري في الجروبات
-    # بيشوف الأسهم اللي فيها دم وسيولة (CIRA, TAQA, MCRO) وبيتجاهل الميتة.
-    # 3M EGP/day = الحد الأدنى اللي يخلي السهم "ممكن تخرج منه" لو دخلت فيه.
-    MIN_TURNOVER = 3_000_000      # 3M EGP/day — liquidity veto (was 500K)
+    # DYNAMIC-LIQUIDITY-V2 (2026-09-04): الـ MIN_TURNOVER الثابت ده بقي LEGACY FALLBACK.
+    # الـ effective threshold دلوقتي بيرجع من utils.shared_liquidity.dynamic_min_turnover(price)
+    # ومبني على سعر السهم: < 5 → 80K, 5-15 → 200K, > 15 → 400K.
+    # القرار بعد تحليل 42 explosive mover: الـ 3M كان بيرفض 14/39 (35.9%) من الفرص الحقيقية.
+    # الـ dynamic الجديد بـ يخفف الرفض الخاطئ لـ 5/39 (12.8%).
+    # شوف: Documentation/LIQUIDITY_DYNAMIC_THRESHOLD_PROPOSAL.md
+    MIN_TURNOVER = 3_000_000      # LEGACY FALLBACK — used only if shared_liquidity unavailable
 
     # RELAX-CLOSED-MARKET-001: لما السوق مقفول، السيولة اللحظية = 0.
     # الفلاتر الصارمة بتخنق كل الأسهم → شاشة فاضية. الحل: نرخّف الفلاتر
     # ونستخدم المتوسط التاريخي بدل القيمة اللحظية. كده المحرك يقدر يطلّع
     # توقعات بناءً على التحليل الفني حتى والسوق مقفول.
     MIN_VOLUME_CLOSED = 50_000        # 50K shares (نص الحد الأصلي)
-    MIN_TURNOVER_CLOSED = 500_000     # 500K EGP (سُدُس الحد الأصلي)
+    MIN_TURNOVER_CLOSED = 500_000     # LEGACY — overriden by dynamic per-price threshold
 
     # P24-DYNAMIC-LIQUIDITY (Aug 2026): حدود السيولة الديناميكية.
     # بدل حد ثابت واحد، بنحسب الحد الأدنى للـ turnover حسب سياق السهم والسوق.

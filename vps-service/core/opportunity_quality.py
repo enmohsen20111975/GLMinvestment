@@ -96,7 +96,11 @@ from typing import Any, Dict, Optional
 # فلتر الضجيج — فـ تخفيض الـ score مش بـ يـ flood بإشارات ضعيفة.
 OPPORTUNITY_MIN_SCORE = 45.0        # maestro_score ≥ 45 (was 65 — EGX-realistic)
 OPPORTUNITY_MIN_RR = 1.5            # risk_reward ≥ 1.5
-OPPORTUNITY_MIN_TURNOVER = 50_000   # EGP floor (was 500K — very few EGX stocks pass)
+# DYNAMIC-LIQUIDITY-V2 (2026-09-04): OPPORTUNITY_MIN_TURNOVER بقي LEGACY FALLBACK.
+# الـ effective threshold بيرجع من utils.shared_liquidity.dynamic_min_turnover(price):
+# < 5 → 80K, 5-15 → 200K, > 15 → 400K. ده الحد الأدنى للأخذ في تحديد فرص
+# المضارب/المستثمر. الـ 50K الثابت كان بيخلي الأسهم الرخيصة تمر بحجم صغير جداً.
+OPPORTUNITY_MIN_TURNOVER = 50_000   # LEGACY FALLBACK — overridden by dynamic per-price threshold
 OPPORTUNITY_MIN_CONFIDENCE = 45.0   # confidence ≥ 45 (was 55 — EGX-realistic)
 
 BUY_FAMILY = ('buy', 'strong_buy', 't1_buy', 'swing_buy', 'accumulate')
@@ -109,7 +113,8 @@ BUY_FAMILY = ('buy', 'strong_buy', 't1_buy', 'swing_buy', 'accumulate')
 # اللي حجمها 1K-5K بس سهميتها شرعية. 1K floor لسه بيستبعد الـ junk الميت.
 LIVE_STRICT_MAX_AGE_HOURS = 24      # gambler: آخر تحديث خلال 24 ساعة
 LIVE_STRICT_MIN_VOLUME = 1_000      # gambler: حجم ≥ 1k سهم (was 10k — EGX-realistic)
-LIVE_STRICT_MIN_TURNOVER = 50_000   # gambler: تيرنوفر ≥ 50k EGP (was 500k)
+# DYNAMIC-LIQUIDITY-V2: LEGACY FALLBACK — effective threshold بيرجع من shared_liquidity.
+LIVE_STRICT_MIN_TURNOVER = 50_000   # LEGACY — overridden by dynamic per-price threshold
 LIVE_LOOSE_MAX_AGE_DAYS = 7         # investor: آخر تحديث خلال 7 أيام (مش ميت)
 
 
@@ -1184,11 +1189,21 @@ def is_live_stock_strict(fund: dict, stored: dict) -> bool:
         or _f(fund.get('turnover_egp'), 0)
         or _f(fund.get('value_traded'), 0)
     )
-    if turnover < _dyn_turn:
-        return False
     # price sanity (prefer fund, fallback to stored — PERSONA-FLAGS-FIX v3.57.0)
     price = _f(fund.get('current_price'), 0) or _f(stored.get('current_price'), 0)
     if price <= 0:
+        return False
+    # DYNAMIC-LIQUIDITY-V2 (2026-09-04): استخدم حد ديناميكي مبني على سعر السهم
+    # بدلاً من الحد الثابت 50K. الجديد: < 5 → 80K, 5-15 → 200K, > 15 → 400K.
+    # + pump-and-dump guard (turnover=0 → رفض فوري)
+    if turnover <= 0:
+        return False  # pump-and-dump guard
+    try:
+        from utils.shared_liquidity import dynamic_min_turnover as _v2_threshold
+        _effective_turn = _v2_threshold(price)
+    except ImportError:
+        _effective_turn = max(_dyn_turn, OPPORTUNITY_MIN_TURNOVER)
+    if turnover < _effective_turn:
         return False
     return True
 
