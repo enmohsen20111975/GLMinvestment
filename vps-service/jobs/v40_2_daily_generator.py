@@ -67,9 +67,15 @@ _TOXIC_BLOCKLIST = None  # lazy-loaded cache
 def _load_toxic_blocklist():
     """Load the toxic ticker blocklist (Rule 28).
     Returns a set of ticker symbols to skip during generation.
+    DNA-WINNER: disabled by default (was blocking 21 tickers without clear reason).
+    Set DNA_TOXIC_BLOCKLIST_ENABLED=1 to re-enable.
     """
     global _TOXIC_BLOCKLIST
     if _TOXIC_BLOCKLIST is not None:
+        return _TOXIC_BLOCKLIST
+    # DNA-WINNER: toxic blocklist disabled by default
+    if not DNA_TOXIC_BLOCKLIST_ENABLED:
+        _TOXIC_BLOCKLIST = set()
         return _TOXIC_BLOCKLIST
     try:
         if _BLOCKLIST_PATH.exists():
@@ -129,11 +135,28 @@ V68_MAGNETIC_TARGET = os.environ.get('V68_MAGNETIC_TARGET', '0') == '1'         
 #   ❌ KILL  V72_MARKET_BULLISH_SIZING: 0 triggers (market_regime دايماً bull/range في الفترة)
 #   ⏸️ PENDING V72_KILL_SWITCH_EXIT  : exit-level feature (needs daily_closer backtest)
 V72_WASH_TRADE_REJECT = os.environ.get('V72_WASH_TRADE_REJECT', '0') == '1'     # ❌ KILL — -12.2% WR
-V72_HIDDEN_DIST_BLOCK = os.environ.get('V72_HIDDEN_DIST_BLOCK', '1') == '1'    # ✅ KEEP — +36.5% return
+V72_HIDDEN_DIST_BLOCK = os.environ.get('V72_HIDDEN_DIST_BLOCK', '0') == '1'    # ❌ KILL (DNA-WINNER) — كان بيرفض كل حاجة
 V72_PULLBACK_BUY_PATH = os.environ.get('V72_PULLBACK_BUY_PATH', '0') == '1'    # ❌ KILL — 0 triggers
 V72_MAKER_DEATH_POINT = os.environ.get('V72_MAKER_DEATH_POINT', '0') == '1'    # ❌ KILL — no effect
 V72_KILL_SWITCH_EXIT = os.environ.get('V72_KILL_SWITCH_EXIT', '0') == '1'      # ⏸️ PENDING — exit-level
 V72_MARKET_BULLISH_SIZING = os.environ.get('V72_MARKET_BULLISH_SIZING', '0') == '1'  # ❌ KILL — 0 triggers
+
+# ════════════════════════════════════════════════════════════════════════════
+# 🧬 DNA-WINNER (2026-09-03): The winning flags from backtest ablation.
+# PF 3.57, WR 60.45%, MaxDD -2.11%, Exp +6.27% on 8% position size.
+# These are the flags that the backtest proved WIN. Default ON.
+# ════════════════════════════════════════════════════════════════════════════
+DNA_DISTRIBUTION_EXIT = os.environ.get('DNA_DISTRIBUTION_EXIT', '1') == '1'      # ✅ Winner — exit on topping pattern
+DNA_EGX30_DOWN_HOLD   = os.environ.get('DNA_EGX30_DOWN_HOLD', '1') == '1'        # ✅ Winner — skip BUY when market down >0.4%
+DNA_PARTIAL_EXIT      = os.environ.get('DNA_PARTIAL_EXIT', '1') == '1'            # ✅ Winner — sell 40% at 1.5R, trail rest
+DNA_ANOMALY_FILTER    = os.environ.get('DNA_ANOMALY_FILTER', '1') == '1'         # ✅ Winner — reject >50% move in 5 days
+DNA_MAX_OPEN_POSITIONS = int(os.environ.get('DNA_MAX_OPEN_POSITIONS', '8'))      # ✅ Winner — hard limit 8 concurrent
+DNA_SECTOR_LIMIT_FINANCE = float(os.environ.get('DNA_SECTOR_LIMIT_FINANCE', '0.20'))  # ✅ Finance ≤ 20%
+DNA_SECTOR_LIMIT_OTHER   = float(os.environ.get('DNA_SECTOR_LIMIT_OTHER', '0.15'))    # ✅ Any other ≤ 15%
+
+# Toxic blocklist: disabled per owner instruction (21 tickers blocked without clear reason)
+# Set DNA_TOXIC_BLOCKLIST=1 to re-enable
+DNA_TOXIC_BLOCKLIST_ENABLED = os.environ.get('DNA_TOXIC_BLOCKLIST_ENABLED', '0') == '1'
 
 # ── V73 SNIPER FEATURE TOGGLES (A/B testing — 2026-08-31) ──
 # 2 ميزات GENUINELY NEW من V73 (EGX Oracle Sniper):
@@ -2025,6 +2048,58 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             print(f"[NEWS-{_live_news_level}] {ticker}: Δ={_live_news_delta:+d} → combined_score={_combined_score} (news_count={_live_news_count})", flush=True)
             except Exception as _news_err:
                 pass  # safe-by-design
+
+            # ═══════════════════════════════════════════════════════════════════════
+            # 🧬 DNA-WINNER FILTERS (2026-09-03): The winning flags from backtest
+            # ═══════════════════════════════════════════════════════════════════════
+
+            # --- DNA-1: Anomaly filter (>50% move in 5 days = reject) ---
+            if DNA_ANOMALY_FILTER and day_idx >= 5:
+                try:
+                    _ref_price = closes[day_idx - 5] if closes[day_idx - 5] > 0 else closes[day_idx - 1]
+                    _curr_price = closes[day_idx]
+                    if _ref_price > 0:
+                        _move_pct = abs((_curr_price - _ref_price) / _ref_price)
+                        if _move_pct > 0.50:
+                            print(f"[DNA-ANOMALY] {ticker} on {scan_date}: {_move_pct*100:.1f}% move in 5 days → reject", flush=True)
+                            continue
+                except Exception:
+                    pass
+
+            # --- DNA-2: EGX30 down > 0.4% → skip BUY ---
+            if DNA_EGX30_DOWN_HOLD:
+                try:
+                    # Use benchmark (EGX30ETF) if available, else use avg of all tickers
+                    _market_change = None
+                    if hasattr(engine, '_benchmark_closes') and engine._benchmark_closes and day_idx < len(engine._benchmark_closes):
+                        _bm_closes = engine._benchmark_closes
+                        if len(_bm_closes) > 1:
+                            _market_change = (_bm_closes[-1] - _bm_closes[-2]) / _bm_closes[-2] * 100 if _bm_closes[-2] > 0 else 0
+                    if _market_change is not None and _market_change < -0.4:
+                        print(f"[DNA-EGX30-DOWN] {scan_date}: market {_market_change:.2f}% → skip BUY for {ticker}", flush=True)
+                        continue
+                except Exception:
+                    pass
+
+            # --- DNA-3: Max open positions = 8 (hard limit) ---
+            _current_open = len(signals_by_date.get(scan_date, []))
+            if _current_open >= DNA_MAX_OPEN_POSITIONS:
+                if _current_open == DNA_MAX_OPEN_POSITIONS:  # print only once
+                    print(f"[DNA-MAX-POS] {scan_date}: {DNA_MAX_OPEN_POSITIONS} picks reached → stop", flush=True)
+                break  # break inner loop (stop processing more tickers for this date)
+
+            # --- DNA-4: Sector limit (Finance ≤ 20%, others ≤ 15%) ---
+            if DNA_SECTOR_LIMIT_FINANCE > 0 or DNA_SECTOR_LIMIT_OTHER > 0:
+                try:
+                    _ticker_sector = get_ticker_sector(ticker)
+                    _sector_count = sum(1 for s in signals_by_date.get(scan_date, []) if get_ticker_sector(s.get('ticker', '')) == _ticker_sector)
+                    _sector_limit = DNA_SECTOR_LIMIT_FINANCE if _ticker_sector and 'Finance' in str(_ticker_sector) else DNA_SECTOR_LIMIT_OTHER
+                    _max_for_sector = int(DNA_MAX_OPEN_POSITIONS * _sector_limit)
+                    if _sector_count >= _max_for_sector:
+                        print(f"[DNA-SECTOR-LIMIT] {ticker} ({_ticker_sector}): {_sector_count}/{_max_for_sector} → reject", flush=True)
+                        continue
+                except Exception:
+                    pass
 
             signals_by_date[scan_date].append({
                 'ticker': ticker,
