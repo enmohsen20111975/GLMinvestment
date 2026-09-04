@@ -45,11 +45,11 @@ export function Header({ title, subtitle }: HeaderProps) {
         {/* Mobile "More" sections button — replaces the bottom bar's 6th item (P5-MOBILE-UX) */}
         <MobileMoreButton />
 
-        {/* Desktop sidebar toggle */}
+        {/* Sidebar toggle — visible on ALL screens (was hidden md:flex) */}
         <Button
           variant="ghost"
           size="icon"
-          className="hidden md:flex flex-shrink-0"
+          className="flex-shrink-0"
           onClick={toggleSidebar}
           aria-label="القائمة الجانبية"
         >

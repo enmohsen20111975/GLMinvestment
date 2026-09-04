@@ -543,10 +543,10 @@ function AppShell() {
             ويطلع صوت + toast للإشارات الجديدة/المتغيرة (مشروط بتفعيل التنبيهات) */}
         <CentralAlertMonitor />
         <AppGuideAutoOpen />
-        <div className="flex-1 flex flex-col lg:flex-row">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-x-hidden">
           <Sidebar />
-          <div className="flex-1 min-w-0 w-full lg:mr-64 transition-all duration-300 flex flex-col min-h-screen">
-            <main className="pb-24 lg:pb-8 flex-1">
+          <div className="flex-1 min-w-0 w-full lg:mr-64 transition-all duration-300 flex flex-col min-h-screen overflow-x-hidden">
+            <main className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
               {renderView()}
             </main>
             <Footer />
