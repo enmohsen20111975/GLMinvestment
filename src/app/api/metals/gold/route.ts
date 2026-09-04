@@ -32,19 +32,32 @@ const PLACEHOLDER_EG = {
   ounce: 150800, // 31.1035 g × 4850 ≈ 150,852 EGP
 };
 
-function buildKarats(rows: any[]) {
+function buildKarats(rows: any[], usdEgpRate: number = 50.0) {
   const parseKarat = (s: string): string => {
+    // Handle multiple formats: 'gold-24k', 'عيار 24', '24'
     const m = (s || '').match(/\d+/);
     return m ? m[0] : s;
   };
   const karats: any[] = [];
   for (const g of rows) {
     const k = parseKarat(g.karat);
-    if (['24', '22', '21', '18', '14', '12', '10', '8'].includes(k)) {
+    // Only include gold karats (not silver)
+    const isGold = (g.karat || '').toLowerCase().includes('gold') ||
+                   (g.karat || '').includes('عيار') ||
+                   ['24', '22', '21', '18', '14', '12', '10', '8'].includes(k);
+    const isSilver = (g.karat || '').toLowerCase().includes('silver');
+    if (isGold && !isSilver) {
+      // Use price_per_gram if available (already EGP from local sources)
+      let pricePerGram = g.price_per_gram;
+      // If price_per_gram is null, use price_per_ounce which from Daleelak
+      // is actually the price per gram in EGP (despite the column name)
+      if (!pricePerGram && g.price_per_ounce) {
+        pricePerGram = g.price_per_ounce; // Daleelak returns EGP per gram in this field
+      }
       karats.push({
         key: k,
-        name_ar: g.karat,
-        price_per_gram: g.price_per_gram ?? 0,
+        name_ar: g.karat.includes('عيار') ? g.karat : `عيار ${k}`,
+        price_per_gram: Math.round(pricePerGram * 100) / 100 || 0,
         change: g.change ?? null,
         currency: g.currency || 'EGP',
       });
@@ -59,12 +72,29 @@ export async function GET() {
     const goldRows = getLatestGoldPrices();
     const silverRows = getLatestSilverPrices();
 
-    const egGold = (goldRows || []).filter((g: any) => g.country === 'مصر');
-    const egSilver = (silverRows || []).filter((s: any) => s.country === 'مصر');
+    const egGold = (goldRows || []).filter((g: any) =>
+      g.country === 'مصر' || g.country === 'Egypt' || g.country === 'EGY');
+    const egSilver = (silverRows || []).filter((s: any) =>
+      s.country === 'مصر' || s.country === 'Egypt' || s.country === 'EGY');
 
     // ----- DB-driven path (preferred) -----
     if (egGold.length > 0) {
-      const karats = buildKarats(egGold);
+      // Get current USD/EGP rate for converting global USD prices
+      let usdEgpRate = 50.0; // fallback
+      try {
+        const { getDataEngineDb } = await import('@/lib/data-engine-db');
+        const deDb = getDataEngineDb();
+        // rate_to_usd = how many units of this currency = 1 USD
+        // For EGP: rate_to_usd ≈ 50 (1 USD = 50 EGP)
+        const rateRow = deDb.prepare(
+          "SELECT rate_to_usd FROM exchange_rates WHERE currency = 'EGP' ORDER BY id DESC LIMIT 1"
+        ).get() as any;
+        if (rateRow && rateRow.rate_to_usd > 0) {
+          usdEgpRate = rateRow.rate_to_usd;
+        }
+      } catch {}
+
+      const karats = buildKarats(egGold, usdEgpRate);
       const ounceRow = egGold.find((g: any) => (g.karat || '').toLowerCase().includes('ounce'));
       const ounce = ounceRow
         ? {
