@@ -295,3 +295,66 @@ if __name__ == '__main__':
 
     print(f"\n{'='*70}")
     print("✓ Self test complete")
+
+
+def get_delta_volume_data(ticker: str) -> Dict[str, Any]:
+    """جلب آخر delta_volume لسهم من data_engine.db.egksco_price_history.
+    
+    Delta Volume = حجم الشراء - حجم البيع (محسوب من بيانات OHLCV).
+    Pressure: STRONG_BUY / BUY / NEUTRAL / SELL / STRONG_SELL
+    
+    Returns: dict with delta_volume, delta_pct, pressure, buy_volume, sell_volume
+    """
+    import sqlite3 as _sql
+    result = {
+        'has_data': False, 'delta_volume': None, 'delta_pct': None,
+        'pressure': 'NEUTRAL', 'buy_volume': None, 'sell_volume': None,
+    }
+    try:
+        _db = str(Path(__file__).resolve().parents[2] / 'db' / 'data_engine.db')
+        _conn = _sql.connect(_db, timeout=5)
+        _conn.row_factory = _sql.Row
+        row = _conn.execute('''
+            SELECT delta_volume, delta_pct, pressure, buy_volume, sell_volume
+            FROM egksco_price_history
+            WHERE symbol = ? AND delta_volume IS NOT NULL
+            ORDER BY price_date DESC LIMIT 1
+        ''', (ticker,)).fetchone()
+        _conn.close()
+        if row and row['delta_volume'] is not None:
+            result['has_data'] = True
+            result['delta_volume'] = row['delta_volume']
+            result['delta_pct'] = row['delta_pct']
+            result['pressure'] = row['pressure'] or 'NEUTRAL'
+            result['buy_volume'] = row['buy_volume']
+            result['sell_volume'] = row['sell_volume']
+    except Exception:
+        pass
+    return result
+
+
+def get_delta_volume_boost(ticker: str) -> int:
+    """Delta Volume boost: تعديل الـ score بناءً على ضغط الشراء/البيع.
+    
+    STRONG_BUY (>30%) → +5
+    BUY (10-30%)      → +3
+    NEUTRAL           → 0
+    SELL (-10 to -30%) → -3
+    STRONG_SELL (<-30%) → VETO (return -100)
+    """
+    delta = get_delta_volume_data(ticker)
+    if not delta['has_data']:
+        return 0
+    
+    pressure = delta['pressure']
+    pct = delta['delta_pct'] or 0
+    
+    if pressure == 'STRONG_BUY' and pct > 30:
+        return 5
+    elif pressure == 'BUY' and pct > 10:
+        return 3
+    elif pressure == 'SELL' and pct < -10:
+        return -3
+    elif pressure == 'STRONG_SELL' and pct < -30:
+        return -100  # VETO signal
+    return 0

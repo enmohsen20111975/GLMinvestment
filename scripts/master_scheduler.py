@@ -93,10 +93,24 @@ def run_health_check():
 
 # === Schedule ===
 
+def run_delta_volume():
+    """كل 5 دقائق — تحديث delta_volume للبيانات اللحظية."""
+    try:
+        import subprocess
+        result = subprocess.run(
+            [str(PROJECT_ROOT / 'scripts' / 'delta_volume_calculator.py'), '--live'],
+            capture_output=True, text=True, timeout=60
+        )
+        log.info(f'✓ Delta volume: updated')
+    except Exception as e:
+        log.error(f'✗ Delta volume failed: {e}')
+
+
 def setup_schedule():
     """تنظيم كل الـ jobs."""
     # Every 5 minutes
     schedule.every(5).minutes.do(run_tradingview_rest)
+    schedule.every(5).minutes.do(run_delta_volume)
     # Every 2 minutes
     schedule.every(2).minutes.do(run_crypto_fetcher)
     # Every 15 minutes
@@ -112,6 +126,7 @@ def setup_schedule():
     log.info('='*60)
     log.info('Jobs:')
     log.info('  • TradingView REST: every 5 min')
+    log.info('  • Delta Volume: every 5 min')
     log.info('  • Crypto fetcher: every 2 min')
     log.info('  • Metals + EGKSCO: every 15 min')
     log.info('  • Daleelak (forex/gold): every 30 min')
