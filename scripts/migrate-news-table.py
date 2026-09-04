@@ -11,7 +11,8 @@ import os
 import json
 from datetime import datetime
 
-DB_PATH = '/home/z/my-project/db/news.db'
+import os as _os
+DB_PATH = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'db', 'news.db')
 
 print('=' * 70)
 print('News DB Migration — news_articles → market_news')

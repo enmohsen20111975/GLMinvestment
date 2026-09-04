@@ -10,7 +10,8 @@ import sqlite3
 import os
 import sys
 
-DB_DIR = '/home/z/my-project/db'
+import os as _os
+DB_DIR = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'db')
 
 # DBs to delete (we deleted these in Wave 1)
 DBS_TO_DELETE = ['custom.db', 'prices.db', 'crypto.db']

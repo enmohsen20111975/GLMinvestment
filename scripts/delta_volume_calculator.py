@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from collections import defaultdict
 
-PROJECT_ROOT = Path('/home/z/my-project')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / 'news-agent' / 'config'))
 from paths import DATA_ENGINE_DB, INTRADAY_DB
 
