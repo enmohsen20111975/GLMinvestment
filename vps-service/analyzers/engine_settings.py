@@ -142,7 +142,7 @@ DEFAULT_SETTINGS: Dict[str, float] = {
     #   range → 1.5  (was 1.2 — رُفع عشان العمولات والانزلاق السعري بـ ياكل الـ edge)
     #   bear  → 1.8  (was 1.5 — صفقات الارتداد النادرة بـ تحتاج جودة أعلى؛ cash-mode veto
     #               بـ يـ handle أغلب حالات الـ bear عبر _check_market_breadth_veto)
-    "min_rr_bull_market": 2.0,          # R/R أدنى في السوق الصاعد
+    "min_rr_bull_market": 1.5,          # R/R أدنى في السوق الصاعد (was 2.0 — DNA-WINNER: 1.5 floor)
     "min_rr_bear_market": 1.8,          # R/R أدنى في السوق الهابط (was 1.5 — V40.3 directive)
     "min_rr_range_market": 1.5,         # R/R أدنى في السوق العادي (was 1.2 — V40.3 directive)
     "target_rr_bull": 3.0,              # هدف R/R في السوق الصاعد (1:3)
