@@ -19,7 +19,7 @@ import {
   Activity, AlertTriangle, Star, StarOff, X, ChevronLeft,
   Layers, Target, Zap, Gauge, Award, Crosshair, Clock,
   BarChart3, Eye as MicroscopeIcon, Flame as FlameIcon,
-  Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, Info,
+  Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, Info, Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -126,6 +126,15 @@ interface MakerRadarResponse {
   generated_at?: string;
   cached?: boolean;
   cache_age_seconds?: number;
+  cache_stale?: boolean;
+  warmup_running?: boolean;
+  cache_generated_at?: string;
+  db_source?: string;
+  last_warmup_status?: 'idle' | 'running' | 'success' | 'failed';
+  last_warmup_finished_at?: string;
+  last_warmup_duration_ms?: number;
+  last_error?: string | null;
+  warming_up?: boolean;
   error?: string;
 }
 
@@ -392,6 +401,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [data, setData] = useState<MakerRadarResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [warmingRadar, setWarmingRadar] = useState(false);
+  const [warmingV40, setWarmingV40] = useState(false);
+  const [warmupMsg, setWarmupMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
@@ -476,6 +488,59 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       console.error('track toggle error:', e);
     }
   }, [fetchData]);
+
+  // ─── Synchronous radar warmup (calls /api/maker-radar/warmup) ─────────
+  // Forces a fresh Python run. Blocks until done (typically <2s on indexed DB).
+  const handleWarmupRadar = useCallback(async () => {
+    setWarmingRadar(true);
+    setWarmupMsg('بيتشغل الرادار...');
+    try {
+      const res = await fetch('/api/maker-radar/warmup?market=EGX&timeout=120000', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (json.success) {
+        const dur = json.status?.last_warmup_duration_ms ?? 0;
+        const scanned = json.cache_total_scanned ?? 0;
+        setWarmupMsg(`✅ اتحدّث في ${(dur / 1000).toFixed(1)}ث — ${scanned} سهم مفسوح`);
+        await fetchData(true);
+      } else {
+        setWarmupMsg(`❌ فشل: ${json.status?.last_error || 'خطأ غير معروف'}`);
+      }
+    } catch (e) {
+      setWarmupMsg(`❌ خطأ: ${e instanceof Error ? e.message : 'اتصال'}`);
+    } finally {
+      setWarmingRadar(false);
+      setTimeout(() => setWarmupMsg(null), 6000);
+    }
+  }, [fetchData]);
+
+  // ─── V40.2 predictions refresh (calls /api/predictions/refresh-v40) ───
+  // Runs the V40.2 daily generator directly via subprocess.
+  const handleRefreshV40 = useCallback(async () => {
+    setWarmingV40(true);
+    setWarmupMsg('بيولّد توقعات V40.2...');
+    try {
+      const res = await fetch('/api/predictions/refresh-v40?mode=today&timeout=240000', {
+        method: 'POST',
+      });
+      const json = await res.json();
+      if (json.success) {
+        const preds = json.total_predictions ?? 0;
+        const dates = (json.scan_dates || []).join(', ');
+        const dur = ((json.elapsed_ms ?? 0) / 1000).toFixed(1);
+        setWarmupMsg(`✅ V40.2 خلص في ${dur}ث — ${preds} توقعات على ${dates}`);
+      } else {
+        const tail = json.stderr_tail || json.status?.last_error || 'خطأ غير معروف';
+        setWarmupMsg(`❌ V40.2 فشل: ${tail.slice(0, 120)}`);
+      }
+    } catch (e) {
+      setWarmupMsg(`❌ خطأ: ${e instanceof Error ? e.message : 'اتصال'}`);
+    } finally {
+      setWarmingV40(false);
+      setTimeout(() => setWarmupMsg(null), 8000);
+    }
+  }, []);
 
   // --------------------------------------------------------------------
   // Derived data — sector heat strip (client-side aggregation)
@@ -632,22 +697,83 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                   آخر تحديث: {lastUpdated.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
+              {/* ─── Freshness badge ─── cache_age + db_source + warmup status */}
               {data?.cached && (
-                <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-200 dark:text-amber-400">
-                  cache {data.cache_age_seconds}s
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] ${
+                    data.cache_stale
+                      ? 'text-amber-700 border-amber-300 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/40'
+                      : data.cache_age_seconds! < 60
+                      ? 'text-emerald-700 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40'
+                      : 'text-muted-foreground border-border bg-muted/30'
+                  }`}
+                  title={`DB: ${data.db_source || 'unknown'}\nGenerated: ${data.cache_generated_at || '?'}\nLast warmup: ${data.last_warmup_status} (${data.last_warmup_duration_ms ?? 0}ms)`}
+                >
+                  <Clock className="h-3 w-3 ml-0.5" />
+                  {data.cache_stale
+                    ? `قديم ${Math.floor(data.cache_age_seconds! / 60)}د`
+                    : data.cache_age_seconds! < 60
+                    ? `طازج ${data.cache_age_seconds}ث`
+                    : `${Math.floor(data.cache_age_seconds! / 60)}د`}
                 </Badge>
               )}
+              {data?.warmup_running && (
+                <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-200 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse mr-1" />
+                  بيشتغل
+                </Badge>
+              )}
+              {data?.db_source && (
+                <Badge variant="outline" className="text-[9px] text-muted-foreground border-border bg-muted/20" title="قاعدة البيانات المستخدمة">
+                  {data.db_source.split('::')[0]}
+                </Badge>
+              )}
+              {data?.last_warmup_status === 'failed' && data?.last_error && (
+                <Badge variant="outline" className="text-[10px] text-rose-700 border-rose-200 bg-rose-50 dark:text-rose-400 dark:bg-rose-950/40" title={data.last_error}>
+                  ⚠️ خطأ آخر تشغيل
+                </Badge>
+              )}
+              {/* ─── Refresh buttons ─── */}
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => fetchData(true)}
-                disabled={refreshing || loading}
+                disabled={refreshing || loading || warmingRadar}
                 className="h-8"
+                title="إعادة قراءة الكاش"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline mr-1">تحديث</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={handleWarmupRadar}
+                disabled={warmingRadar || warmingV40}
+                className="h-8 gap-1"
+                title="شغّل الرادار من جديد (Python script)"
+              >
+                <RefreshCw className={`h-4 w-4 ${warmingRadar ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">تشغيل الرادار</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleRefreshV40}
+                disabled={warmingRadar || warmingV40}
+                className="h-8 gap-1"
+                title="ولّد توقعات V40.2 لليوم"
+              >
+                <Sparkles className={`h-4 w-4 ${warmingV40 ? 'animate-pulse' : ''}`} />
+                <span className="hidden sm:inline">توليد التوقعات</span>
               </Button>
             </div>
+            {/* ─── Warmup status message ─── */}
+            {warmupMsg && (
+              <div className="mt-2 text-xs px-3 py-1.5 rounded-md bg-muted/50 border border-border text-foreground animate-in fade-in slide-in-from-top-1">
+                {warmupMsg}
+              </div>
+            )}
           </div>
         </div>
       </Card>

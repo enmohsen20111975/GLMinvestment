@@ -1,0 +1,13 @@
+{
+  "last_warmup_started_at": "2026-09-05T17:26:29.409Z",
+  "last_warmup_finished_at": "2026-09-05T17:26:33.560Z",
+  "last_warmup_duration_ms": 4151,
+  "last_warmup_status": "success",
+  "last_error": null,
+  "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260905.json",
+  "cache_generated_at": "2026-09-05T17:26:33.527842",
+  "cache_age_seconds": 0,
+  "total_scanned": 270,
+  "under_microscope_count": 81,
+  "db_source": "data_engine.db::egksco_price_history"
+}

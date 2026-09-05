@@ -98,6 +98,9 @@ def _find_radar_db():
 
 PROD_DB, PROD_TABLE, TICKER_COL, PRICE_COL, VOL_COL, TURN_COL, DATE_COL, OPEN_COL, HIGH_COL, LOW_COL = _find_radar_db()
 
+# DB source identifier — يكتب في الـ JSON output عشان الـ API يقدر يعرضه
+DB_SOURCE_ID = f"{PROD_DB.name}::{PROD_TABLE}" if PROD_DB else None
+
 
 def log(msg):
     print(msg, flush=True)
@@ -403,9 +406,18 @@ def main():
         return 1
 
     log(f"  DB: {PROD_DB.name} (table: {PROD_TABLE})")
+    log(f"  DB source id: {DB_SOURCE_ID}")
 
     conn = sqlite3.connect(str(PROD_DB))
     conn.row_factory = sqlite3.Row
+
+    # تحقق من وجود index على (ticker, date) — لو مش موجود، حذّر في الـ log
+    try:
+        idx_rows = conn.execute(f"PRAGMA index_list({PROD_TABLE})").fetchall()
+        idx_names = [r[1] for r in idx_rows]
+        log(f"  Indexes on {PROD_TABLE}: {idx_names if idx_names else '(none — will be slow!)'}")
+    except Exception:
+        pass
 
     # فلتر السوق (EGX افتراضياً)
     # محاولة JOIN مع stocks table (لو موجود) — fallback لكل الأسهم لو مفيش stocks table
@@ -548,6 +560,9 @@ def main():
             'market': args.market,
             'min_quiet_signals': args.min_quiet_signals,
             'min_price': args.min_price,
+            'db_source': DB_SOURCE_ID,
+            'db_file': PROD_DB.name if PROD_DB else None,
+            'db_table': PROD_TABLE,
             'total_scanned': len(results),
             'under_microscope_count': len(under_microscope),
             'quiet_count': len(quiet_list),

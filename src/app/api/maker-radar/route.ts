@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
+import {
+  readRadarCache,
+  triggerBackgroundWarmup,
+  getLiveStatus,
+  isCacheStale,
+  isWarmupRunning,
+} from '@/lib/radar-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-export const maxDuration = 60; // 60 seconds — production DB is 1.8GB
+export const maxDuration = 300; // generous — but we should never need it (cache reads are <50ms)
 
-const execAsync = promisify(exec);
+// Tracking file — same as before
 const PROJECT_ROOT = process.cwd();
-
-// Cache لـ 60 ثانية عشان ما نضربش الإنتاج كل request
-// Per-market cache (عشان EGX و TADAWUL ما يخليشوش بعض)
-const cachedRadarMap = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL_MS = 60_000;
-
-// Tracking file: بيخزن الأسهم اللي العميل ضافها للمتابعة + سعر الدخول
 const TRACKING_FILE = path.join(PROJECT_ROOT, 'db', 'maker_radar_tracking.json');
 
 interface TrackedStock {
@@ -39,159 +37,98 @@ function loadTracking(): Record<string, TrackedStock> {
   return {};
 }
 
+/**
+ * GET /api/maker-radar?market=EGX
+ *
+ * Production-safe: ALWAYS reads from cached JSON (instant <50ms).
+ * Never blocks on Python script execution. If the cache is stale, a
+ * background warmup is triggered (fire-and-forget) — but the current
+ * cache is returned immediately so the user never waits.
+ *
+ * To force a synchronous refresh, POST /api/maker-radar/warmup instead.
+ */
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const market = url.searchParams.get('market') || 'EGX';
-  const minQuietSignals = parseInt(url.searchParams.get('minQuietSignals') || '5', 10);
-  const minPrice = parseFloat(url.searchParams.get('minPrice') || '1.0');
-  const forceRefresh = url.searchParams.get('refresh') === '1';
 
-  // تحقق من الـ cache (per-market)
-  const cacheKey = `${market}_${minQuietSignals}_${minPrice}`;
-  const now = Date.now();
-  const cached = cachedRadarMap.get(cacheKey);
-  if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+  const cache = readRadarCache();
+
+  // Cache miss — no JSON file exists yet. Trigger synchronous warmup ONCE
+  // (first ever request). Subsequent requests use the cache.
+  if (!cache) {
+    const status = getLiveStatus();
+    if (!isWarmupRunning()) {
+      // First-ever request: do a synchronous warmup with a reasonable timeout
+      // so the user gets data on the first load instead of an empty screen.
+      // The warmup function is in radar-cache but for the first-request path
+      // we use the background trigger and return a "warming up" response.
+      triggerBackgroundWarmup(market);
+    }
     return NextResponse.json({
-      ...cached.data,
-      cached: true,
-      cache_age_seconds: Math.round((now - cached.timestamp) / 1000),
-    });
+      success: false,
+      warming_up: true,
+      error: 'الرادار بيتسخن لأول مرة — حاول تاني خلال دقيقة',
+      status,
+      retry_after_seconds: 30,
+    }, { status: 503 });
   }
 
-  try {
-    // شغّل الـ Python script
-    const scriptPath = path.join(PROJECT_ROOT, 'scripts', 'maker_radar.py');
-    const outputDir = path.join(PROJECT_ROOT, 'scripts', 'output');
+  // ─── Cache hit — enrich + return instantly ───────────────────────────
+  const tracking = loadTracking();
 
-    // تأكد إن الـ output dir موجود
-    const fs = require('fs');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+  const enrichStock = (stock: any) => {
+    const tracked = tracking[stock.ticker];
+    if (tracked) {
+      const currentPrice = stock.current_price || 0;
+      const changeSinceTracking = tracked.entryPrice > 0
+        ? ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100
+        : 0;
+      return {
+        ...stock,
+        isTracked: true,
+        trackingEntryDate: tracked.entryDate,
+        trackingEntryPrice: tracked.entryPrice,
+        changeSinceTracking: Math.round(changeSinceTracking * 100) / 100,
+      };
     }
+    return { ...stock, isTracked: false };
+  };
 
-    const args = [
-      `--market ${market}`,
-      `--min-quiet-signals ${minQuietSignals}`,
-      `--min-price ${minPrice}`,
-      `--json-only`,
-    ].join(' ');
+  const radarData = cache.data;
+  const enriched = {
+    ...radarData,
+    quiet_list: (radarData.quiet_list || []).map(enrichStock),
+    explosive_list: (radarData.explosive_list || []).map(enrichStock),
+    early_break_list: (radarData.early_break_list || []).map(enrichStock),
+    pre_surge_list: (radarData.pre_surge_list || []).map(enrichStock),
+    tracked_count: Object.keys(tracking).length,
+    tracked_tickers: Object.keys(tracking),
+    served_at: new Date().toISOString(),
+  };
 
-    // استخدم venv python لو موجود، غير كده python3
-    const venvPython = path.join(PROJECT_ROOT, '.venv', 'bin', 'python3');
-    const pythonBin = fs.existsSync(venvPython) ? venvPython : 'python3';
+  // Attach live status (freshness, db_source, last warmup info)
+  const status = getLiveStatus();
+  const cacheAgeSec = status.cache_age_seconds ?? 0;
+  const stale = cacheAgeSec > 15 * 60;
 
-    let stdout = '';
-    try {
-      const result = await execAsync(`${pythonBin} ${scriptPath} ${args}`, {
-        cwd: PROJECT_ROOT,
-        timeout: 60_000,  // was 30s — production DB is 1.8GB
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
-      });
-      stdout = result.stdout;
-    } catch (execErr: any) {
-      // لو الـ script فشل، حاول نقرا آخر JSON متاح
-      console.error('[maker-radar] script exec error:', execErr.message);
-      // fallback: نقرا أي ملف maker_radar_*.json موجود
-      try {
-        const files = fs.readdirSync(outputDir)
-          .filter((f: string) => f.startsWith('maker_radar_') && f.endsWith('.json'))
-          .sort()
-          .reverse();
-        if (files.length === 0) {
-          throw new Error('Script failed and no cached JSON available');
-        }
-        const fallbackPath = path.join(outputDir, files[0]);
-        const radarData = JSON.parse(readFileSync(fallbackPath, 'utf-8'));
-        const tracking = loadTracking();
-        return NextResponse.json({
-          success: true,
-          ...radarData,
-          tracked_count: Object.keys(tracking).length,
-          tracked_tickers: Object.keys(tracking),
-          generated_at: new Date().toISOString(),
-          cached: true,
-          cache_source: 'fallback',
-        });
-      } catch (fallbackErr: any) {
-        throw new Error(`Script failed: ${execErr.message}. Fallback failed: ${fallbackErr.message}`);
-      }
-    }
-
-    // الـ script بيحفظ JSON في scripts/output/maker_radar_<date>.json
-    // نقرا أحدث ملف مباشرة (بدون الاعتماد على stdout parsing)
-    const today = new Date();
-    const dateStr = today.getFullYear().toString() +
-      (today.getMonth() + 1).toString().padStart(2, '0') +
-      today.getDate().toString().padStart(2, '0');
-    const jsonPath = path.join(outputDir, `maker_radar_${dateStr}.json`);
-
-    let radarData: any;
-    if (existsSync(jsonPath)) {
-      radarData = JSON.parse(readFileSync(jsonPath, 'utf-8'));
-    } else {
-      // fallback: حاول نقرا أي ملف maker_radar_*.json
-      const files = fs.readdirSync(outputDir)
-        .filter((f: string) => f.startsWith('maker_radar_') && f.endsWith('.json'))
-        .sort()
-        .reverse();
-      if (files.length === 0) {
-        throw new Error('No maker_radar JSON found in scripts/output/');
-      }
-      radarData = JSON.parse(readFileSync(path.join(outputDir, files[0]), 'utf-8'));
-    }
-
-    // حمّل الـ tracking data
-    const tracking = loadTracking();
-
-    // دمج الـ tracking مع الـ radar data
-    // لكل سهم تحت الميكروسكوب: ضيف entryPrice + changeSinceTracking
-    const enrichStock = (stock: any) => {
-      const tracked = tracking[stock.ticker];
-      if (tracked) {
-        const currentPrice = stock.current_price || 0;
-        const changeSinceTracking = tracked.entryPrice > 0
-          ? ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100
-          : 0;
-        return {
-          ...stock,
-          isTracked: true,
-          trackingEntryDate: tracked.entryDate,
-          trackingEntryPrice: tracked.entryPrice,
-          changeSinceTracking: Math.round(changeSinceTracking * 100) / 100,
-        };
-      }
-      return { ...stock, isTracked: false };
-    };
-
-    const enriched = {
-      ...radarData,
-      quiet_list: (radarData.quiet_list || []).map(enrichStock),
-      explosive_list: (radarData.explosive_list || []).map(enrichStock),
-      early_break_list: (radarData.early_break_list || []).map(enrichStock),
-      tracked_count: Object.keys(tracking).length,
-      tracked_tickers: Object.keys(tracking),
-      generated_at: new Date().toISOString(),
-    };
-
-    // احفظ في الـ cache (per-market)
-    cachedRadarMap.set(cacheKey, { data: enriched, timestamp: now });
-
-    return NextResponse.json({
-      success: true,
-      ...enriched,
-      cached: false,
-    });
-  } catch (error: any) {
-    console.error('[maker-radar] error:', error);
-    const cachedFallback = cachedRadarMap.get(cacheKey);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message || 'Failed to run maker radar',
-        cached: !!cachedFallback,
-        ...(cachedFallback ? { ...cachedFallback.data, cached: true } : {}),
-      },
-      { status: 500 }
-    );
+  // If cache is stale AND no warmup is running → trigger background warmup.
+  // Fire-and-forget — do NOT block the response.
+  if (stale && !isWarmupRunning()) {
+    triggerBackgroundWarmup(market);
   }
+
+  return NextResponse.json({
+    success: true,
+    ...enriched,
+    cached: true,
+    cache_age_seconds: cacheAgeSec,
+    cache_stale: stale,
+    warmup_running: isWarmupRunning(),
+    cache_generated_at: status.cache_generated_at,
+    db_source: status.db_source,
+    last_warmup_status: status.last_warmup_status,
+    last_warmup_finished_at: status.last_warmup_finished_at,
+    last_warmup_duration_ms: status.last_warmup_duration_ms,
+    last_error: status.last_error,
+  });
 }
