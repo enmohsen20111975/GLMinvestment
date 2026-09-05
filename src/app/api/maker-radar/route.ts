@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
   try {
     // شغّل الـ Python script
     const scriptPath = path.join(PROJECT_ROOT, 'scripts', 'maker_radar.py');
+    const outputDir = path.join(PROJECT_ROOT, 'scripts', 'output');
     const args = [
       `--market ${market}`,
       `--min-quiet-signals ${minQuietSignals}`,
@@ -74,17 +75,28 @@ export async function GET(req: NextRequest) {
     });
 
     // الـ script بيحفظ JSON في scripts/output/maker_radar_<date>.json
-    // + بيـ print "✅ JSON saved: <path>"
-    const match = stdout.match(/JSON saved:\s*(.+?\.json)/);
-    if (!match) {
-      throw new Error('Failed to find JSON output path in script output');
-    }
-    const jsonPath = match[1].trim();
-    if (!existsSync(jsonPath)) {
-      throw new Error(`JSON file not found: ${jsonPath}`);
-    }
+    // نقرا أحدث ملف مباشرة (بدون الاعتماد على stdout parsing)
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() +
+      (today.getMonth() + 1).toString().padStart(2, '0') +
+      today.getDate().toString().padStart(2, '0');
+    const jsonPath = path.join(outputDir, `maker_radar_${dateStr}.json`);
 
-    const radarData = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+    let radarData: any;
+    if (existsSync(jsonPath)) {
+      radarData = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+    } else {
+      // fallback: حاول نقرا أي ملف maker_radar_*.json
+      const fs = require('fs');
+      const files = fs.readdirSync(outputDir)
+        .filter((f: string) => f.startsWith('maker_radar_') && f.endsWith('.json'))
+        .sort()
+        .reverse();
+      if (files.length === 0) {
+        throw new Error('No maker_radar JSON found in scripts/output/');
+      }
+      radarData = JSON.parse(readFileSync(path.join(outputDir, files[0]), 'utf-8'));
+    }
 
     // حمّل الـ tracking data
     const tracking = loadTracking();
