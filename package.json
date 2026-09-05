@@ -6,6 +6,7 @@
     "dev": "setsid -f bash scripts/watchdog.sh; sleep 10",
     "prebuild": "prisma generate && prisma generate --schema=prisma/auth-schema.prisma && prisma generate --schema=prisma/predictions-schema.prisma",
     "build": "UV_THREADPOOL_SIZE=2 SWC_THREADPOOL=1 RAYON_NUM_THREADS=1 next build",
+    "build:prod": "NODE_OPTIONS='--max-old-space-size=4096' NEXT_TELEMETRY_DISABLED=1 next build --no-lint",
     "postbuild": "node scripts/copy-sqljs-to-standalone.js",
     "start": "NODE_ENV=production UV_THREADPOOL_SIZE=1 SWC_THREADPOOL=1 RAYON_NUM_THREADS=1 NODE_OPTIONS='--max-old-space-size=256 --no-warnings' next start -p 3000",
     "start:safe": "UV_THREADPOOL_SIZE=2 SWC_THREADPOOL=1 RAYON_NUM_THREADS=1 NODE_OPTIONS='--max-old-space-size=512' next start -p 3000",
