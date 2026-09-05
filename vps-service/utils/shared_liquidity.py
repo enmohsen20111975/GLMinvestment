@@ -65,7 +65,7 @@ DEAD_MARKET_CEILING = 700_000
 #   3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
 # النتيجة: سمح بالدخول حتى لو السيولة المطلقة قليلة (بس turnover > 0)
 # Position size: 2% فقط (أقل من الـ bypass العادي 2.5%)
-EXPLOSIVE_SURGE_VOLUME_RATIO = 2.5      # × متوسط 20d (أقوى من bypass العادي)
+EXPLOSIVE_SURGE_VOLUME_RATIO = 2.0      # × متوسط 20d (كان 2.5× — خفّض لـ 2.0× عشان نصطاد الأسهم اللي طارت بحجم أقل)
 EXPLOSIVE_SURGE_LOOKBACK = 5            # آخر 5 شموع للـ surge
 EXPLOSIVE_SURGE_BASE = 20               # متوسط 20 شموع
 EXPLOSIVE_SURGE_SMA_PERIOD = 20         # SMA20 للسعر

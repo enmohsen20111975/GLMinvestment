@@ -993,8 +993,12 @@ function StockTable({
             <TableHead className="font-semibold text-right h-9">السعر</TableHead>
             <TableHead className="font-semibold text-right h-9">التغير%</TableHead>
             <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">ROC10</TableHead>
+            <TableHead className="font-semibold text-right h-9 hidden lg:table-cell">ROC30</TableHead>
             <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">حجم نسبي</TableHead>
             <TableHead className="font-semibold text-center h-9">الإشارات</TableHead>
+            <TableHead className="font-semibold text-center h-9 hidden md:table-cell">ميكرز</TableHead>
+            <TableHead className="font-semibold text-center h-9 hidden md:table-cell">تجميع/تصريف</TableHead>
+            <TableHead className="font-semibold h-9 hidden xl:table-cell">المتوقع</TableHead>
             <TableHead className="font-semibold h-9 hidden md:table-cell">القطاع</TableHead>
             <TableHead className="font-semibold text-right h-9">الحجم</TableHead>
             <TableHead className="w-10 text-center font-semibold h-9">⭐</TableHead>
@@ -1036,6 +1040,9 @@ function StockTable({
                 <TableCell className={`font-mono text-right hidden sm:table-cell ${pnlColorClass(stock.roc_10d)}`}>
                   {fmtPct(stock.roc_10d)}
                 </TableCell>
+                <TableCell className={`font-mono text-right hidden lg:table-cell ${pnlColorClass((stock as any).roc_30d)}`}>
+                  {fmtPct((stock as any).roc_30d)}
+                </TableCell>
                 <TableCell className={`font-mono text-right hidden sm:table-cell ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
                   {volRatio.toFixed(2)}×
                 </TableCell>
@@ -1045,6 +1052,33 @@ function StockTable({
                       {signalCount}/{signalMax}
                     </Badge>
                   ) : '—'}
+                </TableCell>
+                <TableCell className="text-center hidden md:table-cell">
+                  <span className={
+                    (stock as any).maker_activity === 'عالي'
+                      ? 'text-rose-600 dark:text-rose-400 font-bold'
+                      : (stock as any).maker_activity === 'متوسط'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-muted-foreground'
+                  }>
+                    {(stock as any).maker_activity || '-'}
+                  </span>
+                </TableCell>
+                <TableCell className="text-center hidden md:table-cell">
+                  <span className={
+                    (stock as any).accumulation?.includes('تجميع قوي')
+                      ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                      : (stock as any).accumulation?.includes('تصريف قوي')
+                        ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                        : (stock as any).accumulation?.includes('تجميع')
+                          ? 'text-emerald-500 dark:text-emerald-500'
+                          : 'text-amber-500 dark:text-amber-500'
+                  }>
+                    {(stock as any).accumulation || '-'}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden xl:table-cell text-xs text-muted-foreground">
+                  {(stock as any).expected || '-'}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
                   {sector || '—'}

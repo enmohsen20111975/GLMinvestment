@@ -273,6 +273,57 @@ def scan_ticker(rows, ticker):
         winner_position_size = 0.025  # 2.5%
         winner_reason = break_reason
 
+    # ─── بيانات الميكرز الإضافية (من التحليل الجنائي) ──────────────────
+    # ROC10 (التغير القصير)
+    roc_10d = round((closes[-1] - closes[-11]) / closes[-11] * 100, 2) if len(closes) >= 11 and closes[-11] > 0 else None
+    # ROC30 (التغير الشهري)
+    roc_30d = round((closes[-1] - closes[-21]) / closes[-21] * 100, 2) if len(closes) >= 21 and closes[-21] > 0 else None
+
+    # نشاط الميكرز: حجم آخر يوم vs متوسط 20 يوم
+    last_vol = volumes[-1] if volumes else 0
+    if last_vol > avg_volume_20d * 2.0:
+        maker_activity = 'عالي'
+    elif last_vol > avg_volume_20d * 1.2:
+        maker_activity = 'متوسط'
+    else:
+        maker_activity = 'منخفض'
+
+    # تجميع/تصريف: أيام الشراء vs أيام البيع في آخر 10 أيام
+    buy_days_count = sum(1 for i in range(-10, 0) if i > -len(closes) and closes[i] > closes[i-1])
+    sell_days_count = 10 - buy_days_count
+    if buy_days_count >= 6:
+        accumulation = 'تجميع قوي'
+    elif sell_days_count >= 6:
+        accumulation = 'تصريف قوي'
+    elif buy_days_count >= sell_days_count:
+        accumulation = 'تجميع خفيف'
+    else:
+        accumulation = 'تصريف خفيف'
+
+    # حالة التصحيح: نزول من آخر قمة 20 يوم
+    max_20_price = max(closes[-20:]) if len(closes) >= 20 else max(closes)
+    drop_from_peak = round((current_price - max_20_price) / max_20_price * 100, 2) if max_20_price > 0 else 0
+    if drop_from_peak < -5:
+        correction_status = 'في تصحيح'
+    elif drop_from_peak < -3:
+        correction_status = 'قرب التصحيح'
+    else:
+        correction_status = 'صاعد'
+
+    # المتوقع (توصية ديناميكية)
+    if roc_10d is not None and roc_10d > 20:
+        expected = 'مخترق — ممكن يصحح'
+    elif roc_10d is not None and roc_10d > 10:
+        expected = 'صاعد بقوة'
+    elif volume_ratio_10d_vs_20d > 1.5 and range_10d_pct < 8:
+        expected = 'تجميع — ممكن انفجار'
+    elif drop_from_peak < -10:
+        expected = 'في تصحيح'
+    elif maker_activity == 'عالي' and buy_days_count >= 5:
+        expected = 'ميكرز نشط'
+    else:
+        expected = 'عادي'
+
     return {
         'ticker': ticker,
         'current_price': round(current_price, 2),
@@ -283,7 +334,15 @@ def scan_ticker(rows, ticker):
         'volume_ratio_10d_vs_20d': round(volume_ratio_10d_vs_20d, 2),
         'price_stability': round(price_stability, 3),
         'range_10d_pct': round(range_10d_pct, 2),
-        'roc_10d': round((closes[-1] - closes[-11]) / closes[-11] * 100, 2) if len(closes) >= 11 and closes[-11] > 0 else None,
+        'roc_10d': roc_10d,
+        'roc_30d': roc_30d,
+        'maker_activity': maker_activity,
+        'accumulation': accumulation,
+        'correction_status': correction_status,
+        'drop_from_peak': drop_from_peak,
+        'expected': expected,
+        'buy_days': buy_days_count,
+        'sell_days': sell_days_count,
         'under_microscope': winner_path is not None,
         'path': winner_path,
         'position_size': winner_position_size,
