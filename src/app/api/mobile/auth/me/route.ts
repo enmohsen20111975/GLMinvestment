@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { validateTokenWithUser, updateTokenLastUsed } from '@/lib/token-helper';
 
 export async function GET(request: NextRequest) {

@@ -9,6 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { initialize, createDatabase } from '@/lib/sqlite-wrapper';
 
 const DB_PATH = 'db/stocks.db';

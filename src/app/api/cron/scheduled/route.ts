@@ -13,6 +13,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getSharedCustomDb, getLightDb, resetLightDbState } from '@/lib/egx-db';
 
 // Expected token for cron-job.org

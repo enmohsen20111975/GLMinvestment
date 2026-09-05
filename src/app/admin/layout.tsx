@@ -6,6 +6,8 @@
  */
 
 import { redirect } from 'next/navigation';
+export const dynamic = "force-dynamic";
+
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';

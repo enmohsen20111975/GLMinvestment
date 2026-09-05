@@ -3,6 +3,8 @@
  * ويحقنها في قاعدة بيانات الأخبار ليستخدمها محرك التوقعات V40.2
  */
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import path from 'path';
 import Database from 'better-sqlite3';
 import fs from 'fs';
