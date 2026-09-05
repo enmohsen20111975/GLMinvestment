@@ -19,6 +19,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: false,
+  // ─── FIX: Increase static generation timeout ──────────────────────
+  // Default is 60s. On slow VPS with large DB, pages may take longer.
+  staticPageGenerationTimeout: 300, // 5 minutes
   // ─── FIX: Disable static generation entirely ────────────────────────────
   // The build was crashing with SIGSEGV during 'Generating static pages (0/64)'
   // because Next.js was trying to pre-render pages that import heavy modules
@@ -40,17 +43,16 @@ const nextConfig = {
   // to allow the worker to use more memory during static generation.
   experimental: {
     serverComponentsExternalPackages: ["better-sqlite3", "sql.js", "@prisma/client", "@prisma/auth-client", "@prisma/predictions-client"],
-    // ─── FIX: Disable worker threads for static generation ─────────────
-    // The SIGSEGV crash was caused by better-sqlite3 (native module) crashing
-    // when imported inside a Next.js build worker thread. Worker threads have
-    // separate memory and can't handle native modules that use N-API in
-    // certain ways.
+    // ─── FIX: Use worker threads instead of child processes ────────────
+    // By default, Next.js uses ChildProcessWorker (forks a new Node.js process)
+    // for static page generation. Child processes crash with SIGSEGV when
+    // importing native modules like better-sqlite3.
     //
-    // Setting workerThreads: false tells Next.js to do page data collection
-    // in the main thread. This is slower but avoids the native module crash.
-    workerThreads: false,
-    // ─── FIX: Disable CPU-intensive optimization ───────────────────────
-    // Also helps with memory during build
+    // Setting workerThreads: true switches to NodeThreadWorker (uses
+    // worker_threads API). Worker threads share memory with the main process,
+    // which is more memory-efficient and handles native modules better.
+    workerThreads: true,
+    // ─── FIX: Use only 1 worker to reduce memory pressure ────────────
     cpus: 1,
     optimizePackageImports: [
       "lucide-react",
