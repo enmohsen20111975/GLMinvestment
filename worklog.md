@@ -17593,3 +17593,37 @@ Stage Summary:
   - `vps-service/analyzers/liquidity_filter.py` (محدّث — RS bypass)
   - `vps-service/utils/entry_gate.py` (محدّث — RS bypass + reorder checks)
   - `scripts/diagnose_explosive_rejections_v2.py` (محدّث — مقارنة قبل/بعد + benchmark حقيقي)
+
+---
+Task ID: PRODUCTION-MELTDOWN-DIAG-1
+Agent: Main Agent (Z.ai Code)
+Task: تشخيص سبب ارتفاع CPU الإنتاج لـ 76% + Memory 77% (VPS Hostinger KVM 2)
+
+Work Log:
+- حللت screenshot من hPanel: CPU 76%, Memory 77%, VPS Lithuania
+- المدير بعت `top` output — لقيت الـ culprit:
+  - PID 1591: `python3 /root/GLMinvestment/data_engine/sync.py` — 77.2% CPU، 984 MB RAM، شغال 1:19 دقيقة
+- فحصت `data_engine/sync.py` و `data_engine/main.py` محلياً:
+  - sync.py نفسه مش فيه `while True` — بـ يشتغل مرة واحدة وبيخلص
+  - main.py بـ يستدعي `run_full_sync()` كل 60 ثانية (subprocess.run مع timeout=120)
+  - المشكلة: subprocess.run مع timeout بـ يقتل الـ parent بس، الـ subprocesses الأبناء (sync.py + أي scrapers) ممكن يفضلوا شغالين
+- المدير نفّذ بنجاح:
+  - `kill -9 1591` → "No such process" (كان مات لوحده أو بسبب restart)
+  - `ps aux` → بقية عمليات GLMinvestment شغالة عادي
+  - `pm2 list` → 6 خدمات online
+  - `pm2 stop all` → وقف كل الخدمات (السيرفر دلوقتي مستريح)
+- طلبت من المدير:
+  1. تشغيل الخدمات الأساسية بس (بدون data-engine)
+  2. تصدير البيانات لـ JSON من السيرفر مباشرة (بدل 440 request من بره)
+  3. رفع الملف لـ /home/z/my-project/upload/
+
+Stage Summary:
+- ✅ **السبب**: `data_engine/sync.py` كان شارد بـ يستهلك 77% CPU (984 MB RAM)
+- ✅ **الحل الفوري**: `pm2 stop all` — السيرفر دلوقتي مستريح
+- 🎯 **الحل الدائم المطلوب**:
+  - تشغيل الخدمات الأساسية بس (python-backend, nextjs, telegram, ws-service)
+  - سيب data-engine stopped لحد ما نصلح المشكلة
+  - تصدير البيانات لـ JSON من السيرفر مباشرة (بدل HTTP requests)
+- 📦 التعديلات القادمة:
+  - تعديل `data_engine/main.py` لإضافة subprocess timeout حقيقي (kill الـ children)
+  - أو تعطيل الـ sync loop مؤقتاً و تشغيله يدوياً عند الحاجة
