@@ -61,6 +61,13 @@ export async function GET(req: NextRequest) {
     // شغّل الـ Python script
     const scriptPath = path.join(PROJECT_ROOT, 'scripts', 'maker_radar.py');
     const outputDir = path.join(PROJECT_ROOT, 'scripts', 'output');
+
+    // تأكد إن الـ output dir موجود
+    const fs = require('fs');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
     const args = [
       `--market ${market}`,
       `--min-quiet-signals ${minQuietSignals}`,
@@ -68,11 +75,46 @@ export async function GET(req: NextRequest) {
       `--json-only`,
     ].join(' ');
 
-    const { stdout } = await execAsync(`python3 ${scriptPath} ${args}`, {
-      cwd: PROJECT_ROOT,
-      timeout: 30_000,
-      env: { ...process.env, PYTHONUNBUFFERED: '1' },
-    });
+    // استخدم venv python لو موجود، غير كده python3
+    const venvPython = path.join(PROJECT_ROOT, '.venv', 'bin', 'python3');
+    const pythonBin = fs.existsSync(venvPython) ? venvPython : 'python3';
+
+    let stdout = '';
+    try {
+      const result = await execAsync(`${pythonBin} ${scriptPath} ${args}`, {
+        cwd: PROJECT_ROOT,
+        timeout: 30_000,
+        env: { ...process.env, PYTHONUNBUFFERED: '1' },
+      });
+      stdout = result.stdout;
+    } catch (execErr: any) {
+      // لو الـ script فشل، حاول نقرا آخر JSON متاح
+      console.error('[maker-radar] script exec error:', execErr.message);
+      // fallback: نقرا أي ملف maker_radar_*.json موجود
+      try {
+        const files = fs.readdirSync(outputDir)
+          .filter((f: string) => f.startsWith('maker_radar_') && f.endsWith('.json'))
+          .sort()
+          .reverse();
+        if (files.length === 0) {
+          throw new Error('Script failed and no cached JSON available');
+        }
+        const fallbackPath = path.join(outputDir, files[0]);
+        const radarData = JSON.parse(readFileSync(fallbackPath, 'utf-8'));
+        const tracking = loadTracking();
+        return NextResponse.json({
+          success: true,
+          ...radarData,
+          tracked_count: Object.keys(tracking).length,
+          tracked_tickers: Object.keys(tracking),
+          generated_at: new Date().toISOString(),
+          cached: true,
+          cache_source: 'fallback',
+        });
+      } catch (fallbackErr: any) {
+        throw new Error(`Script failed: ${execErr.message}. Fallback failed: ${fallbackErr.message}`);
+      }
+    }
 
     // الـ script بيحفظ JSON في scripts/output/maker_radar_<date>.json
     // نقرا أحدث ملف مباشرة (بدون الاعتماد على stdout parsing)
@@ -87,7 +129,6 @@ export async function GET(req: NextRequest) {
       radarData = JSON.parse(readFileSync(jsonPath, 'utf-8'));
     } else {
       // fallback: حاول نقرا أي ملف maker_radar_*.json
-      const fs = require('fs');
       const files = fs.readdirSync(outputDir)
         .filter((f: string) => f.startsWith('maker_radar_') && f.endsWith('.json'))
         .sort()
