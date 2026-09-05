@@ -1,5 +1,7 @@
 import { Metadata } from 'next';
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: 'إخلاء المسؤولية | دليل الاستثمار',
   description: 'إخلاء المسؤولية لتطبيق دليل الاستثمار - منصة الاستثمار في البورصة المصرية',

@@ -1,5 +1,7 @@
 import { Metadata } from 'next';
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: 'سياسة الخصوصية | دليل الاستثمار',
   description: 'سياسة الخصوصية لتطبيق دليل الاستثمار - منصة الاستثمار في البورصة المصرية',
