@@ -26,7 +26,6 @@ from datetime import datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PROD_DB = PROJECT_ROOT / "db" / "production_snapshot.db"
 OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -40,6 +39,44 @@ from utils.shared_liquidity import (
     QUIET_ACCUMULATION_POSITION_SIZE,
     EXPLOSIVE_SURGE_POSITION_SIZE,
 )
+
+
+# ============================================================================
+# PORTABLE DB DETECTION — يشتغل في sandbox + laptop + production
+# ============================================================================
+# Fallback chain:
+#   1. db/production_snapshot.db  (sandbox — بيانات مسحوبة من الإنتاج)
+#   2. db/vps_real/stocks.db       (sandbox — نسخة من VPS)
+#   3. db/stocks.db                (production)
+#   4. db/data_engine.db (historical_data) — fallback أخير
+def _find_radar_db():
+    """اكتشف الـ DB المتاح تلقائياً. يرجع (db_path, table_name)."""
+    candidates = [
+        # (db_path, table_name, ticker_col, price_col, volume_col, turnover_col, date_col)
+        ('db/production_snapshot.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date'),
+        ('db/vps_real/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date'),
+        ('db/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date'),
+        # Production data_engine fallback (historical_data — السعودية وغيرها)
+        ('db/data_engine.db', 'historical_data', 'symbol', 'close', 'volume', None, 'date'),
+    ]
+    for db_rel, table, ticker_col, price_col, vol_col, turn_col, date_col in candidates:
+        db_path = PROJECT_ROOT / db_rel
+        if db_path.exists():
+            # تحقق إن الجدول موجود
+            try:
+                import sqlite3 as _sql
+                conn = _sql.connect(str(db_path))
+                cur = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+                row = cur.fetchone()
+                conn.close()
+                if row:
+                    return db_path, table, ticker_col, price_col, vol_col, turn_col, date_col
+            except Exception:
+                continue
+    return None, None, None, None, None, None, None
+
+
+PROD_DB, PROD_TABLE, TICKER_COL, PRICE_COL, VOL_COL, TURN_COL, DATE_COL = _find_radar_db()
 
 
 def log(msg):
@@ -59,27 +96,52 @@ def parse_volume(v):
 
 
 def compute_turnover(row):
-    t = row['turnover']
+    """احسب turnover من row — portable (يدعم turnover field أو close × volume)."""
+    # الـ turnover column اسمه ممكن يختلف
+    t = None
+    try:
+        if TURN_COL and TURN_COL in row.keys():
+            t = row[TURN_COL]
+    except Exception:
+        pass
     if t is not None:
         try:
             t_float = float(t)
             if t_float > 0: return t_float
         except (TypeError, ValueError):
             pass
-    close = row['close'] or 0.0
-    vol = parse_volume(row['volume'])
+    close = row[PRICE_COL] or 0.0 if PRICE_COL in row.keys() else 0.0
+    vol = parse_volume(row[VOL_COL]) if VOL_COL in row.keys() else 0.0
     return float(close) * float(vol)
 
 
 def fetch_ticker_series(conn, ticker, days=40):
-    rows = conn.execute("""
-        SELECT price_date, open, high, low, close, volume, turnover
-        FROM stock_daily_prices
-        WHERE ticker = ? AND close IS NOT NULL AND close > 0
-        ORDER BY price_date DESC
+    """جلب بيانات سهم — portable (يستخدم column names المكتشفة)."""
+    # استخدم column names المكتشفة بدلاً من hardcoded names
+    cols = f"{DATE_COL}, open, high, low, {PRICE_COL}, {VOL_COL}"
+    if TURN_COL:
+        cols += f", {TURN_COL}"
+    else:
+        cols += ", NULL as turnover"
+    query = f"""
+        SELECT {cols}
+        FROM {PROD_TABLE}
+        WHERE {TICKER_COL} = ? AND {PRICE_COL} IS NOT NULL AND {PRICE_COL} > 0
+        ORDER BY {DATE_COL} DESC
         LIMIT ?
-    """, (ticker, days)).fetchall()
-    return list(reversed(rows))
+    """
+    rows = conn.execute(query, (ticker, days)).fetchall()
+    # رجّع标准化 keys عشان باقي الكود يشتغل
+    normalized = []
+    for r in rows:
+        d = dict(r)
+        # unify keys
+        d['price_date'] = d.get(DATE_COL)
+        d['close'] = d.get(PRICE_COL)
+        d['volume'] = d.get(VOL_COL)
+        d['turnover'] = d.get(TURN_COL) if TURN_COL else None
+        normalized.append(d)
+    return list(reversed(normalized))
 
 
 def is_early_break(closes, volumes, highs=None):
@@ -211,24 +273,41 @@ def main():
     log(f"  Min Quiet signals: {args.min_quiet_signals}/6")
     log(f"  Min price: {args.min_price} EGP")
 
-    if not PROD_DB.exists():
-        log(f"❌ {PROD_DB} مش موجود. شغّل scripts/fetch_production_data.py الأول.")
+    if not PROD_DB or not PROD_DB.exists():
+        log("❌ مفيش DB متاح. جرّب:")
+        log("   - sandbox: شغّل scripts/fetch_production_data.py")
+        log("   - production: تأكد إن db/stocks.db أو db/data_engine.db موجود")
         return 1
 
-    conn = sqlite3.connect(PROD_DB)
+    log(f"  DB: {PROD_DB.name} (table: {PROD_TABLE})")
+
+    conn = sqlite3.connect(str(PROD_DB))
     conn.row_factory = sqlite3.Row
 
     # فلتر السوق (EGX افتراضياً)
-    if args.market.upper() == 'ALL':
-        tickers = [r[0] for r in conn.execute("""
-            SELECT DISTINCT p.ticker FROM stock_daily_prices p
+    # محاولة JOIN مع stocks table (لو موجود) — fallback لكل الأسهم لو مفيش stocks table
+    has_stocks_table = bool(conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='stocks'"
+    ).fetchone())
+
+    if args.market.upper() == 'ALL' or not has_stocks_table:
+        tickers = [r[0] for r in conn.execute(f"""
+            SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
         """).fetchall()]
     else:
-        tickers = [r[0] for r in conn.execute("""
-            SELECT DISTINCT p.ticker FROM stock_daily_prices p
-            JOIN stocks s ON p.ticker = s.ticker
-            WHERE s.market = ?
-        """, (args.market.upper(),)).fetchall()]
+        # JOIN مع stocks table عشان نفلتر بـ market
+        # لو الـ ticker column في stocks table اسمه مختلف، استخدم ticker
+        try:
+            tickers = [r[0] for r in conn.execute(f"""
+                SELECT DISTINCT p.{TICKER_COL} FROM {PROD_TABLE} p
+                JOIN stocks s ON p.{TICKER_COL} = s.ticker
+                WHERE s.market = ?
+            """, (args.market.upper(),)).fetchall()]
+        except Exception:
+            # fallback: كل الأسهم (لو الـ JOIN فشل)
+            tickers = [r[0] for r in conn.execute(f"""
+                SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
+            """).fetchall()]
     if args.limit > 0:
         tickers = tickers[: args.limit]
     log(f"  فحص {len(tickers)} سهم (market={args.market})...")

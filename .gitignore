@@ -240,3 +240,16 @@ vps-service/backtest_results/*.json
 !active_databases_20260817_full.zip
 !data/active_databases_20260817_full.zip
 !**/active_databases_*.zip
+
+# Maker Radar — tracking + paper test data (user-specific, لا ترفع)
+db/maker_radar_tracking.json
+db/paper_test_v2.json
+db/paper_mode_v2.json
+db/production_snapshot_progress.json
+scripts/output/paper_test_monitor_*.json
+scripts/output/maker_radar_*.json
+scripts/output/ab_liquidity_v2_*.json
+scripts/output/ab_liquidity_v2_backtest_*.json
+scripts/output/explosive_rejections_*.json
+scripts/output/liquidity_rejections_*.json
+scripts/output/missed_opportunities_*.json

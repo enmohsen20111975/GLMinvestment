@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -31,12 +32,32 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DB = PROJECT_ROOT / "db" / "production_snapshot.db"
 PROGRESS_FILE = PROJECT_ROOT / "db" / "production_snapshot_progress.json"
 
-PRODUCTION_URL = "https://invist.m2y.net"
-TIMEOUT = 60  # زودناه من 30 لـ 60
-BATCH_SIZE = 3  # قللناه من 5 لـ 3 (rate limit)
-SLEEP_BETWEEN_BATCHES = 1.0  # زودناه من 0.5 لـ 1.0
-MAX_RETRIES = 5  # عدد مرات إعادة المحاولة لو فشل
-RETRY_BACKOFF = 2.0  # ضاعف وقت الانتظار كل retry
+# PORTABLE: اكتشف بيئة التشغيل تلقائياً
+# - في الإنتاج: db/stocks.db موجود أصلاً → مفيش حاجة للسحب
+# - في sandbox/laptop: لازم نسحب من الإنتاج
+def _is_production():
+    """لو db/stocks.db موجود + فيه بيانات → إحنا في الإنتاج."""
+    stocks_db = PROJECT_ROOT / "db" / "stocks.db"
+    if not stocks_db.exists():
+        return False
+    try:
+        import sqlite3 as _sql
+        conn = _sql.connect(str(stocks_db))
+        n = conn.execute("SELECT COUNT(*) FROM stock_daily_prices").fetchone()[0]
+        conn.close()
+        return n > 1000  # لو فيه أكتر من 1000 صف → إحنا في الإنتاج
+    except Exception:
+        return False
+
+IS_PRODUCTION = _is_production()
+
+# PRODUCTION_URL: من env variable لو موجود، غير كده استخدم default
+PRODUCTION_URL = os.environ.get("PRODUCTION_URL", "https://invist.m2y.net")
+TIMEOUT = 60
+BATCH_SIZE = 3
+SLEEP_BETWEEN_BATCHES = 1.0
+MAX_RETRIES = 5
+RETRY_BACKOFF = 2.0
 
 
 def log(msg):
@@ -175,6 +196,7 @@ def main():
     parser.add_argument("--market", type=str, default="EGX")
     parser.add_argument("--limit", type=int, default=0, help="0 = كل الأسهم")
     parser.add_argument("--resume", action="store_true", help="استئناف من حيث وقف")
+    parser.add_argument("--force", action="store_true", help="اسحب حتى لو في الإنتاج")
     args = parser.parse_args()
 
     log("═══ سحب بيانات الإنتاج الكاملة ═══")
@@ -182,6 +204,16 @@ def main():
     log(f"  DB: {OUTPUT_DB}")
     log(f"  days: {args.days}, market: {args.market}, limit: {args.limit}")
     log("")
+
+    # PORTABLE: لو إحنا في الإنتاج، مفيش حاجة للسحب — الـ DBs موجودة
+    if IS_PRODUCTION and not args.force:
+        log("✅ إحنا في الإنتاج — db/stocks.db موجود أصلاً.")
+        log("   مفيش حاجة للسحب. الـ APIs هتقرا من db/stocks.db مباشرة.")
+        log("   (استخدم --force لو عايز تسحب بيانات للـ production_snapshot.db)")
+        return 0
+
+    if IS_PRODUCTION and args.force:
+        log("⚠️ --force مفعّل — هنسحب للـ production_snapshot.db حتى لو إحنا في الإنتاج.")
 
     # 1. جلب قائمة الأسهم
     tickers = fetch_egx_tickers()
