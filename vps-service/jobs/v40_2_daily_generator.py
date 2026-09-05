@@ -2121,15 +2121,19 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 break  # break inner loop (stop processing more tickers for this date)
 
             # --- DNA-4: Sector limit (Finance ≤ 20%, others ≤ 15%) ---
+            # V40.2-FIX: لو الـ sector = None (مش متاح)، اعتبار السهم في قطاع
+            # "غير محدد" وسمح بـ المرور (مش رفض). الـ limit بـ يطبق بس لو فيه
+            # قطاع محدد فعلاً.
             if DNA_SECTOR_LIMIT_FINANCE > 0 or DNA_SECTOR_LIMIT_OTHER > 0:
                 try:
                     _ticker_sector = get_ticker_sector(ticker)
-                    _sector_count = sum(1 for s in signals_by_date.get(scan_date, []) if get_ticker_sector(s.get('ticker', '')) == _ticker_sector)
-                    _sector_limit = DNA_SECTOR_LIMIT_FINANCE if _ticker_sector and 'Finance' in str(_ticker_sector) else DNA_SECTOR_LIMIT_OTHER
-                    _max_for_sector = int(DNA_MAX_OPEN_POSITIONS * _sector_limit)
-                    if _sector_count >= _max_for_sector:
-                        print(f"[DNA-SECTOR-LIMIT] {ticker} ({_ticker_sector}): {_sector_count}/{_max_for_sector} → reject", flush=True)
-                        continue
+                    if _ticker_sector:
+                        _sector_count = sum(1 for s in signals_by_date.get(scan_date, []) if get_ticker_sector(s.get('ticker', '')) == _ticker_sector)
+                        _sector_limit = DNA_SECTOR_LIMIT_FINANCE if 'Finance' in str(_ticker_sector) else DNA_SECTOR_LIMIT_OTHER
+                        _max_for_sector = int(DNA_MAX_OPEN_POSITIONS * _sector_limit)
+                        if _sector_count >= _max_for_sector:
+                            print(f"[DNA-SECTOR-LIMIT] {ticker} ({_ticker_sector}): {_sector_count}/{_max_for_sector} → reject", flush=True)
+                            continue
                 except Exception:
                     pass
 
