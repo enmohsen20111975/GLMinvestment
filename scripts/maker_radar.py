@@ -55,12 +55,12 @@ def _find_radar_db():
     """
     candidates = [
         # 1. data_engine.db.egksco_price_history — الـ source of truth في الإنتاج
-        #    (schema: symbol, date, open_price, high_price, low_price, close_price, volume, value)
-        ('db/data_engine.db', 'egksco_price_history', 'symbol', 'close_price', 'volume', 'value', 'date', 'open_price', 'high_price', 'low_price'),
+        #    schema حقيقي: symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover
+        ('db/data_engine.db', 'egksco_price_history', 'symbol', 'close_price', 'volume', 'turnover', 'price_date', 'open_price', 'high_price', 'low_price'),
         # 2. stocks.db.stock_daily_prices — fallback (فيه EGX في الإنتاج + sandbox)
         ('db/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date', 'open', 'high', 'low'),
         # 3. data_engine.db.historical_data — fallback للأسواق التانية (سعودي/أمريكي)
-        #    (schema: symbol, date, open, high, low, close, volume — مفيش turnover/value)
+        #    schema: symbol, date, open, high, low, close, volume (مفيش turnover)
         ('db/data_engine.db', 'historical_data', 'symbol', 'close', 'volume', None, 'date', 'open', 'high', 'low'),
         # 4. sandbox fallbacks
         ('db/production_snapshot.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date', 'open', 'high', 'low'),

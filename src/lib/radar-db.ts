@@ -29,20 +29,20 @@ const PROJECT_ROOT = process.cwd();
 
 const CANDIDATES: RadarDbConfig[] = [
   // 1. data_engine.db.egksco_price_history — الـ source of truth في الإنتاج
-  //    (schema: symbol, date, open_price, high_price, low_price, close_price, volume, value)
+  //    schema حقيقي: symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover
   {
     dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
     table: 'egksco_price_history',
     tickerCol: 'symbol',
     priceCol: 'close_price',
     volumeCol: 'volume',
-    turnoverCol: 'value', // في egksco_price_history اسمها value
-    dateCol: 'date',
+    turnoverCol: 'turnover',
+    dateCol: 'price_date',
     openCol: 'open_price',
     highCol: 'high_price',
     lowCol: 'low_price',
   },
-  // 2. stocks.db.stock_daily_prices — fallback (الـ mirror في الإنتاج + اللي فيه EGX)
+  // 2. stocks.db.stock_daily_prices — fallback (فيه EGX في الإنتاج + sandbox)
   {
     dbPath: path.join(PROJECT_ROOT, 'db', 'stocks.db'),
     table: 'stock_daily_prices',
@@ -56,7 +56,7 @@ const CANDIDATES: RadarDbConfig[] = [
     lowCol: 'low',
   },
   // 3. data_engine.db.historical_data — fallback للأسواق التانية (سعودي/أمريكي)
-  //    (schema: symbol, date, open, high, low, close, volume — مفيش turnover)
+  //    schema: symbol, date, open, high, low, close, volume (مفيش turnover)
   {
     dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
     table: 'historical_data',

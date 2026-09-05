@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""
+cleanup_db_architecture.py — تنظيم هندسي لقواعد البيانات
+============================================================
+المشكلة: الأسعار اليومية متكررة في 4 أماكن + جداول ميتة كتيرة.
+الحل: توحيد المصادر + حذف المكرر + توثيق المعمارية.
+
+الخطوات:
+  1. نسخ stocks.db.stock_daily_prices → data_engine.db.egksco_price_history
+     (بنفس الـ schema — عشان data_engine.db يبقى source of truth)
+  2. حذف الجداول الميتة الفاضية (0 rows + مش هتتأثر)
+  3. عرض تقرير قبل/بعد
+
+CLI:
+  python3 scripts/cleanup_db_architecture.py --dry-run    # معاينة فقط
+  python3 scripts/cleanup_db_architecture.py --execute   # تنفيذ فعلي
+  python3 scripts/cleanup_db_architecture.py --report     # تقرير فقط
+"""
+from __future__ import annotations
+
+import argparse
+import sqlite3
+import sys
+from datetime import datetime
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+def get_db_path(name: str) -> Path:
+    return PROJECT_ROOT / 'db' / name
+
+
+def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
+    """نسخ stock_daily_prices من stocks.db → egksco_price_history في data_engine.db.
+
+    يحافظ على schema الموجود فعلاً (price_date, turnover, delta_volume, etc.)
+    """
+    stocks_db = get_db_path('stocks.db')
+    data_engine_db = get_db_path('data_engine.db')
+
+    if not stocks_db.exists():
+        log(f"❌ {stocks_db} مش موجود")
+        return False
+    if not data_engine_db.exists():
+        log(f"❌ {data_engine_db} مش موجود")
+        return False
+
+    log("\n═══ نسخ stock_daily_prices → egksco_price_history ═══")
+
+    # اقرأ من stocks.db
+    src_conn = sqlite3.connect(str(stocks_db))
+    src_conn.row_factory = sqlite3.Row
+    src_rows = src_conn.execute("""
+        SELECT ticker, price_date, open, high, low, close, volume, turnover
+        FROM stock_daily_prices
+        WHERE close IS NOT NULL AND close > 0
+    """).fetchall()
+    src_count = len(src_rows)
+    log(f"  المصدر (stocks.db.stock_daily_prices): {src_count:,} صف")
+    src_conn.close()
+
+    if src_count == 0:
+        log("  ⚠️ مفيش بيانات للنسخ")
+        return False
+
+    if dry_run:
+        log(f"  [DRY-RUN] كنت هنسخ {src_count:,} صف لـ data_engine.db.egksco_price_history")
+        return True
+
+    # انسخ لـ data_engine.db (بنفس schema الموجود)
+    dst_conn = sqlite3.connect(str(data_engine_db))
+
+    def _parse_vol(v):
+        if v is None:
+            return 0
+        if isinstance(v, (int, float)):
+            return int(v)
+        s = str(v).strip().upper().replace('\u202f', '').replace('\xa0', '').replace(' ', '')
+        mult = 1
+        if s.endswith('K'):
+            mult = 1000; s = s[:-1]
+        elif s.endswith('M'):
+            mult = 1_000_000; s = s[:-1]
+        elif s.endswith('B'):
+            mult = 1_000_000_000; s = s[:-1]
+        try:
+            return int(float(s) * mult)
+        except Exception:
+            return 0
+
+    # امسح القديم (لو فيه)
+    dst_conn.execute("DELETE FROM egksco_price_history")
+
+    # انسخ البيانات (مع mapping حسب schema الموجود)
+    batch = []
+    for r in src_rows:
+        close = float(r['close'] or 0)
+        volume = _parse_vol(r['volume'])
+        turnover = r['turnover']
+        if turnover is not None:
+            try:
+                value = float(turnover)
+            except (TypeError, ValueError):
+                value = (close * volume) if close and volume else None
+        else:
+            value = (close * volume) if close and volume else None
+        batch.append((
+            r['ticker'],
+            r['price_date'],
+            float(r['open'] or 0),
+            float(r['high'] or 0),
+            float(r['low'] or 0),
+            close,
+            volume,
+            value,
+        ))
+    # schema الحقيقي: symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover
+    dst_conn.executemany("""
+        INSERT INTO egksco_price_history
+            (symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, batch)
+    dst_conn.commit()
+
+    # تحقق
+    n = dst_conn.execute("SELECT COUNT(*) FROM egksco_price_history").fetchone()[0]
+    latest = dst_conn.execute("SELECT MAX(price_date) FROM egksco_price_history").fetchone()[0]
+    n_tickers = dst_conn.execute("SELECT COUNT(DISTINCT symbol) FROM egksco_price_history").fetchone()[0]
+    dst_conn.close()
+
+    log(f"  ✅ تم نسخ {n:,} صف لـ data_engine.db.egksco_price_history")
+    log(f"     {n_tickers} ticker | آخر تاريخ: {latest}")
+    return True
+
+
+def find_empty_tables(db_path: Path, protect: list = None) -> list:
+    """ارجع قائمة بالجداول اللي صفوفها = 0. استثني الـ protected tables."""
+    if not db_path.exists():
+        return []
+    protect = protect or []
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()
+    empty = []
+    for t in tables:
+        name = t[0]
+        if name in protect:
+            continue
+        try:
+            n = conn.execute(f"SELECT COUNT(*) FROM \"{name}\"").fetchone()[0]
+            if n == 0:
+                empty.append(name)
+        except Exception:
+            pass
+    conn.close()
+    return empty
+
+
+def drop_empty_tables(db_path: Path, tables: list, dry_run: bool = False) -> int:
+    """احذف الجداول الفاضية."""
+    if not tables:
+        return 0
+    if dry_run:
+        log(f"  [DRY-RUN] كنت هحذف {len(tables)} جدول فاضي من {db_path.name}")
+        return len(tables)
+
+    conn = sqlite3.connect(str(db_path))
+    dropped = 0
+    for table in tables:
+        try:
+            conn.execute(f"DROP TABLE IF EXISTS \"{table}\"")
+            dropped += 1
+        except Exception as e:
+            log(f"  ⚠️ فشل حذف {table}: {e}")
+    conn.commit()
+    conn.close()
+    return dropped
+
+
+def show_report():
+    """تقرير شامل لكل الـ DBs."""
+    log("\n═══ تقرير قواعد البيانات ═══\n")
+    log(f"  {'DB':25s} | {'Tables':>7s} | {'Total rows':>12s} | {'Empty':>6s} | {'Size':>10s}")
+    log("  " + "-" * 75)
+
+    db_dir = PROJECT_ROOT / 'db'
+    total_size = 0
+    total_tables = 0
+    total_rows = 0
+    total_empty = 0
+
+    for db_file in sorted(db_dir.glob('*.db')):
+        size_mb = db_file.stat().st_size / (1024 * 1024)
+        total_size += size_mb
+        try:
+            conn = sqlite3.connect(str(db_file))
+            tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()
+            n_tables = len(tables)
+            total_tables += n_tables
+            n_rows = 0
+            n_empty = 0
+            for t in tables:
+                try:
+                    cnt = conn.execute(f"SELECT COUNT(*) FROM \"{t[0]}\"").fetchone()[0]
+                    n_rows += cnt
+                    if cnt == 0:
+                        n_empty += 1
+                except:
+                    pass
+            total_rows += n_rows
+            total_empty += n_empty
+            conn.close()
+            log(f"  {db_file.name:25s} | {n_tables:>7d} | {n_rows:>12,} | {n_empty:>6d} | {size_mb:>9.1f}MB")
+        except Exception as e:
+            log(f"  {db_file.name:25s} | ERROR: {e}")
+
+    log("  " + "-" * 75)
+    log(f"  {'TOTAL':25s} | {total_tables:>7d} | {total_rows:>12,} | {total_empty:>6d} | {total_size:>9.1f}MB")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='تنظيم هندسي لقواعد البيانات')
+    parser.add_argument('--dry-run', action='store_true', help='معاينة فقط من غير تعديل')
+    parser.add_argument('--execute', action='store_true', help='تنفيذ فعلي')
+    parser.add_argument('--report', action='store_true', help='تقرير فقط')
+    parser.add_argument('--skip-copy', action='store_true', help='تخطّي نسخ stock_daily_prices')
+    parser.add_argument('--skip-cleanup', action='store_true', help='تخطّي حذف الجداول الفاضية')
+    args = parser.parse_args()
+
+    if args.report or (not args.dry_run and not args.execute):
+        show_report()
+        if args.report:
+            return 0
+
+    mode = 'DRY-RUN' if args.dry_run else 'EXECUTE'
+    log(f"\n═══ تنظيم هندسي ({mode}) ═══")
+
+    # 1. نسخ stock_daily_prices → egksco_price_history
+    if not args.skip_copy:
+        copy_stock_daily_prices_to_egksco(dry_run=args.dry_run)
+
+    # 2. حذف الجداول الفاضية
+    if not args.skip_cleanup:
+        log("\n═══ حذف الجداول الفاضية ═══")
+        # protect: جداول هنعبيها / مش هتتلمس
+        protect_data_engine = ['egksco_price_history', 'egksco_stocks']  # هنعبيهم
+        protect_stocks = ['egksco_price_history']  # هنعبيها من stocks.db كمان
+
+        dbs_to_clean = [
+            ('stocks.db', protect_stocks),
+            ('data_engine.db', protect_data_engine),
+            ('predictions.db', []),
+        ]
+        total_dropped = 0
+        for db_name, protect_list in dbs_to_clean:
+            db_path = get_db_path(db_name)
+            if not db_path.exists():
+                continue
+            empty_tables = find_empty_tables(db_path, protect=protect_list)
+            if empty_tables:
+                log(f"\n  {db_name} — {len(empty_tables)} جدول فاضي:")
+                for t in empty_tables:
+                    log(f"    - {t}")
+                n_dropped = drop_empty_tables(db_path, empty_tables, dry_run=args.dry_run)
+                total_dropped += n_dropped
+                log(f"  ✅ تم حذف {n_dropped} جدول من {db_name}")
+            else:
+                log(f"\n  {db_name} — مفيش جداول فاضية ✅")
+        log(f"\n  إجمالي الجداول المحذوفة: {total_dropped}")
+
+    # 3. تقرير نهائي
+    show_report()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
