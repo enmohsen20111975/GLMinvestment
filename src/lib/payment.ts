@@ -3,8 +3,19 @@ import { getPlan } from './plans';
 
 const SHARED_SECRET = (process.env.SHARED_SECRET || '').trim();
 
-// Warn once at module load (not during build time)
-if (typeof window === 'undefined' && !SHARED_SECRET && process.env.NODE_ENV === 'production') {
+// Warn once at module load — BUT skip during build/static generation.
+// During next build, Next.js imports this module to collect route data,
+// which triggers the FATAL log. We only want the warning when the server
+// is actually running (not during build).
+const isBuildPhase =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.NEXT_PHASE === 'phase-export';
+if (
+  typeof window === 'undefined' &&
+  !SHARED_SECRET &&
+  process.env.NODE_ENV === 'production' &&
+  !isBuildPhase
+) {
   console.error('FATAL: SHARED_SECRET is not set in production ! — payment tokens cannot be generated safely');
 }
 
