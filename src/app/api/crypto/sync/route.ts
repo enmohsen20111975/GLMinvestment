@@ -59,8 +59,7 @@ async function fetchLiveCryptoData() {
       `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d`,
       {
         headers: { 'Accept': 'application/json' },
-        next: { revalidate: 60 }
-      }
+        }
     );
 
     if (!response.ok) {
@@ -129,8 +128,7 @@ async function fetchOHLCData(coinId: string, days: number = 30) {
       `${COINGECKO_API}/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`,
       {
         headers: { 'Accept': 'application/json' },
-        next: { revalidate: 300 }
-      }
+        }
     );
 
     if (!response.ok) {

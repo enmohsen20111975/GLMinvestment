@@ -26,8 +26,7 @@ export async function GET() {
         'X-Internal-Request': 'true',
       },
       cache: 'no-store',
-      next: { revalidate: 10 },
-    });
+      });
 
     if (!res.ok) {
       return NextResponse.json(

@@ -76,8 +76,7 @@ export async function GET() {
     // Try Python backend first
     const response = await fetch(`${PYTHON_API_URL}/api/currency/list`, {
       headers: { 'Accept': 'application/json' },
-      next: { revalidate: 3600 }
-    });
+      });
     
     if (response.ok) {
       const data = await response.json();

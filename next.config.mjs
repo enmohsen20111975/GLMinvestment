@@ -43,16 +43,8 @@ const nextConfig = {
   // to allow the worker to use more memory during static generation.
   experimental: {
     serverComponentsExternalPackages: ["better-sqlite3", "sql.js", "@prisma/client", "@prisma/auth-client", "@prisma/predictions-client"],
-    // ─── FIX: Use worker threads instead of child processes ────────────
-    // By default, Next.js uses ChildProcessWorker (forks a new Node.js process)
-    // for static page generation. Child processes crash with SIGSEGV when
-    // importing native modules like better-sqlite3.
-    //
-    // Setting workerThreads: true switches to NodeThreadWorker (uses
-    // worker_threads API). Worker threads share memory with the main process,
-    // which is more memory-efficient and handles native modules better.
-    workerThreads: true,
-    // ─── FIX: Use only 1 worker to reduce memory pressure ────────────
+    // Use default worker (child process) — workerThreads: true can crash
+    // with native modules like better-sqlite3
     cpus: 1,
     optimizePackageImports: [
       "lucide-react",

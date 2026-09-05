@@ -129,7 +129,7 @@ async function resolveCoinId(symbol: string): Promise<string | null> {
   const sym = symbol.toUpperCase();
   if (SYMBOL_TO_COIN_ID[sym]) return SYMBOL_TO_COIN_ID[sym];
   try {
-    const res = await fetch(`${COINGECKO_API}/coins/list`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${COINGECKO_API}/coins/list`, {});
     if (!res.ok) return null;
     const list = (await res.json()) as Array<{ id: string; symbol: string; name: string }>;
     const match = list.find(c => c.symbol.toUpperCase() === sym);
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
     // Fetch OHLC from CoinGecko (returns [timestamp, open, high, low, close])
     const ohlcRes = await fetch(
       `${COINGECKO_API}/coins/${coinId}/ohlc?vs_currency=usd&days=${days}`,
-      { next: { revalidate: 300 }, headers: { Accept: 'application/json' } }
+      { headers: { Accept: 'application/json' } }
     );
     if (!ohlcRes.ok) {
       // fallback لـ crypto_prices DB لو CoinGecko rate-limited
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
     try {
       const volRes = await fetch(
         `${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`,
-        { next: { revalidate: 300 }, headers: { Accept: 'application/json' } }
+        { headers: { Accept: 'application/json' } }
       );
       if (volRes.ok) {
         const volData = await volRes.json() as { total_volumes?: Array<[number, number]> };

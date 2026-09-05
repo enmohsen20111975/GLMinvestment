@@ -24,7 +24,7 @@ export async function GET(
     try {
       const response = await fetch(
         `${pythonBackendUrl}/api/crypto/${id}/history?days=${days}`,
-        { next: { revalidate: 300 } } // 5-minute cache
+        {} // 5-minute cache
       );
 
       if (response.ok) {

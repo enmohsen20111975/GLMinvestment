@@ -56,7 +56,7 @@ interface VPSStock {
 async function fetchStocksFromVPS(): Promise<VPSStock[]> {
   try {
     const response = await fetch(`${VPS_API_URL}/api/stocks`, {
-      next: { revalidate: 300 } // Cache 5 minutes
+      // Cache 5 minutes
     });
     
     if (!response.ok) {
@@ -84,7 +84,7 @@ async function fetchPriceHistoryFromVPS(ticker: string, days: number = 200): Pro
     const response = await fetch(
       `${VPS_API_URL}/api/stocks/${ticker}/local-history?days=${days}`,
       { 
-        next: { revalidate: 3600 } // Cache 1 hour
+        // Cache 1 hour
       }
     );
     
@@ -121,7 +121,7 @@ async function fetchCurrentPriceFromVPS(ticker: string): Promise<{ price: number
     const response = await fetch(
       `${VPS_API_URL}/api/stocks/${ticker}/local-history?days=5`,
       { 
-        next: { revalidate: 60 } // Cache 1 minute
+        // Cache 1 minute
       }
     );
     
