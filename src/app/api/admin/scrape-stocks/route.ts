@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { verifyAdminRequest } from '@/lib/admin-auth-server';
 import { fetchFromMubasher, fetchFromWebSearch, fetchVerifiedStockData } from '@/lib/egx-data-sources';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { ensureInitialized, getLightDb, getHeavyDbHealth, getHeavyDb } from '@/lib/egx-db';
 import { ensureInitialized as ensureNewDbInit, getNewDbHealth, areNewDbsAvailable } from '@/lib/new-db-queries';

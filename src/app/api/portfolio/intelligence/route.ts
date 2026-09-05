@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getFinanceDb } from '@/lib/finance-db';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
 import { getSessionUserId } from '@/lib/auth-helper';

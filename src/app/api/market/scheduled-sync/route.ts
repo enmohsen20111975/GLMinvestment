@@ -19,6 +19,8 @@
 */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getStocks, getWritableDb, isWritableDbAvailable } from '@/lib/egx-db';
 import {
   upsertPriceHistory,

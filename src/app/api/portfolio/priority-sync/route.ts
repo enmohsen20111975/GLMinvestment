@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { db as prisma } from '@/lib/db';
 import { ensureInitialized, getLightDb, getSharedCustomDb } from '@/lib/egx-db';
 import { getServerSession } from 'next-auth';

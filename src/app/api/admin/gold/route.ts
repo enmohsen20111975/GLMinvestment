@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, verifyAdminPassword, getGoldPrices, updateAllGoldPrices } from '@/lib/egx-db';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 

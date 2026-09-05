@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getRandomSmartTip, getAllSmartTipCategories, getSmartTipsByCategory } from '@/lib/egx-db';
 
 export const maxDuration = 10;

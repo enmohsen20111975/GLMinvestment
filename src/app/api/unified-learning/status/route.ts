@@ -7,6 +7,8 @@
  * - fallback: رجّع status: 'idle', patterns_count: 0, accuracy: 0
  */
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 export const revalidate = 30; // Cache for 30s
 

@@ -22,6 +22,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { runDevilFilter } from '@/lib/devil/devil-filter';
 
 export async function POST(request: NextRequest) {

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { db } from '@/lib/db';
 
 // GET /api/dividend-calendar - Get dividend calendar entries

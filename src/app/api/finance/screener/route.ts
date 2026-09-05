@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 const Database = require('better-sqlite3');
 const path = require('path');

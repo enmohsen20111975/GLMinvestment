@@ -15,6 +15,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { buildDevilCard } from '@/lib/devil/devil-orchestrator';
 import { getStockBySymbol, getHistoricalData, getMarketStats } from '@/lib/data-engine-db';
 

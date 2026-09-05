@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+export const dynamic = "force-dynamic";
+
 import { listTables, deleteDatabase, vacuumDatabase, executeRawSql } from '@/lib/sqlite-admin'
 import { requireAdminAsync } from '@/lib/admin-auth-server'
 

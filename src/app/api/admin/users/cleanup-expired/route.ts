@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { getFinanceDb } from '@/lib/finance-db';
 import { db } from '@/lib/db';

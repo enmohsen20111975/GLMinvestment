@@ -7,6 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { randomUUID } from 'crypto';
 import { ensureInitialized, getWritableStocksDb, ensureExpertRecommendationSchema } from '@/lib/egx-db';
 

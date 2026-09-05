@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { openDb } from '@/lib/shared-db';
 import path from 'path';
 

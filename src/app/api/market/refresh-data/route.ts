@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getStocks } from '@/lib/egx-db';
 import { batchRefreshStocks, generateDataHealthReport } from '@/lib/egx-data-sources';
 import { validateStockData, detectFakeData, isDataFresh } from '@/lib/data-validator';

@@ -7,6 +7,8 @@
  * - fallback: قائمة فارغة (لا بيانات مُفبركة في production)
  */
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 export const revalidate = 30; // Cache for 30s
 

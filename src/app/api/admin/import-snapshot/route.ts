@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getLightDb, getHeavyDb, getWritableDb, isWritableDbAvailable, clearCache } from '@/lib/egx-db';
 import * as fs from 'fs';
 import * as path from 'path';

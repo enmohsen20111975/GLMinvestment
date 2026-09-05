@@ -5,6 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getSessionUserId } from '@/lib/auth-helper';
 import Database from 'better-sqlite3';
 import path from 'path';

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getVpsServiceUrl } from '@/lib/vps-adapter';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
 import { verifyAdminRequest } from '@/lib/admin-auth-server';

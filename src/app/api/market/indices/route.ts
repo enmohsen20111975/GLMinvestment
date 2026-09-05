@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getMarketIndices } from '@/lib/egx-db';
 
 export async function GET(_request: NextRequest) {

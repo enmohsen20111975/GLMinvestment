@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 // Arabic to English digit mapping
 const ARABIC_TO_ENGLISH_DIGITS: { [key: string]: string } = {

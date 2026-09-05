@@ -29,6 +29,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 const PYTHON_BACKEND =
   process.env.PYTHON_BACKEND_URL ||

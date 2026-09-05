@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { generateAdminToken, getAdminSessionToken } from '@/lib/admin-auth-server';
 
 // ---------------------------------------------------------------------------

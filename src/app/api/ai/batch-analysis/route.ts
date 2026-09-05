@@ -10,6 +10,8 @@
  * If Python backend is unavailable, returns 502 with clear hint.
  */
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 export const revalidate = 30;
 

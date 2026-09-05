@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getFinanceDb } from '@/lib/finance-db';
 import type { SqliteDatabase } from '@/lib/sqlite-wrapper';
 import type { AssetType } from '@/types';

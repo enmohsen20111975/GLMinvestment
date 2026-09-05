@@ -11,6 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getPaywallUser, applyPaywallToResults } from '@/lib/paywall';
 
 const PYTHON_BACKEND =

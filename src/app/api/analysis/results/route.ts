@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 const VPS_SERVICE_URL = process.env.PYTHON_BACKEND_URL || process.env.VPS_SERVICE_URL || 'http://localhost:8010';
 

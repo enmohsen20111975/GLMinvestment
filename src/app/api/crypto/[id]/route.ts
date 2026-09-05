@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+export const dynamic = "force-dynamic";
+
 import { updateRow, deleteRow, listTables } from '@/lib/sqlite-admin'
 import { requireAdminAsync } from '@/lib/admin-auth-server'
 

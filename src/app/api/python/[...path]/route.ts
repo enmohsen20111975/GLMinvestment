@@ -23,6 +23,8 @@
  */
 
 import { NextRequest } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { proxyRequest } from '@/app/api/proxy/[...path]/route';
 
 type RouteContext = { params: Promise<{ path: string[] }> };

@@ -9,6 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { callDeepSeek, quickChat, deepAnalysis } from '@/lib/ai/deepseek-client';
 import { webSearch, getMarketNews, getMarketSentiment } from '@/lib/ai/tools';
 import { memory } from '@/lib/ai/memory';

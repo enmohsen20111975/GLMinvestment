@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getPaywallUser, applyPaywallToResults } from '@/lib/paywall';
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export async function GET(req: NextRequest) {

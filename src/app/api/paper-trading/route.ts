@@ -10,6 +10,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { initialize as initSqlJs } from '@/lib/sqlite-wrapper';
 // v2/paper-trading-engine deleted (CLOSED CAMP). Stubs:
 const initializePaperTradingTables = async () => {};

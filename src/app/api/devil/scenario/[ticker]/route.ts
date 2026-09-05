@@ -10,6 +10,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { buildScenarioMatrix } from '@/lib/devil/scenario-matrix';
 import { getStockBySymbol, getHistoricalData, getMarketStats } from '@/lib/data-engine-db';
 import { detectMarketRegime } from '@/lib/devil/regime-engine';

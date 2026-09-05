@@ -9,6 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized } from '@/lib/egx-db';
 import { fetchBatchFundamentals, type FundamentalData } from '@/lib/external-data-fetcher';
 import { createDatabase } from '@/lib/sqlite-wrapper';

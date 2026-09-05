@@ -13,6 +13,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 // Python Backend URL - ALWAYS use 127.0.0.1 for IPv4
 const PYTHON_BACKEND_URL = 'http://127.0.0.1:8010';

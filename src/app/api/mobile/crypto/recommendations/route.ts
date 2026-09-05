@@ -4,6 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export async function GET(request: NextRequest) {

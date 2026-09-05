@@ -4,6 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import Database from 'better-sqlite3';
 import path from 'path';
 import { randomUUID } from 'crypto';

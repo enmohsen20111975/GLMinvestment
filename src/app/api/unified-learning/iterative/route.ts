@@ -7,6 +7,8 @@
  * - fallback: رجّع stub بـ iteration: 0, accuracy: 0.5, loss: 1.0
  */
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 export const revalidate = 30; // Cache for 30s
 

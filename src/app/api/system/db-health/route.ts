@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getHeavyDbHealth, isHeavyDbAvailable, getLightDb, resetHeavyDbState } from '@/lib/egx-db';
 
 export const maxDuration = 15;

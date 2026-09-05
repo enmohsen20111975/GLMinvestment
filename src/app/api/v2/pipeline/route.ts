@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { pythonFetch } from '@/lib/python-backend';
 
 // POST /api/v2/pipeline/save-preset

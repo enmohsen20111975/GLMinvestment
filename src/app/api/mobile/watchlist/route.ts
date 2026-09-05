@@ -8,6 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getUserIdsWithLegacy, buildUserIdClause } from '@/lib/auth-helper';
 
 export const revalidate = 30; // Cache for 30s

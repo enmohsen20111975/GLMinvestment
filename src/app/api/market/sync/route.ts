@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { ensureInitialized, getSharedCustomDb, resetLightDbState, resetHeavyDbState } from '@/lib/egx-db';
 import {
   fetchGoldPrices,

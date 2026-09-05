@@ -8,6 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 
 // Track last sync time to prevent duplicate calls
 let lastAutoSync: string | null = null;
