@@ -334,12 +334,22 @@ def main():
     else:
         # JOIN مع stocks table عشان نفلتر بـ market
         # الـ ticker column في stocks table اسمه 'symbol' (نفس الـ egksco_price_history)
+        # ملاحظة: data_engine.db.stocks بـ يستخدم 'مصر' (عربي) بدل 'EGX'
+        # فعشان كده بنعمل mapping للقيمتين
+        market_variants = {
+            'EGX': ['EGX', 'مصر'],
+            'TADAWUL': ['TADAWUL', 'السعودية'],
+            'KSE': ['KSE', 'الكويت'],
+            'QSE': ['QSE', 'قطر'],
+        }
+        market_values = market_variants.get(args.market.upper(), [args.market.upper()])
+        placeholders = ','.join(['?' for _ in market_values])
         try:
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT p.{TICKER_COL} FROM {PROD_TABLE} p
                 JOIN stocks s ON p.{TICKER_COL} = s.symbol
-                WHERE s.market = ?
-            """, (args.market.upper(),)).fetchall()]
+                WHERE s.market IN ({placeholders})
+            """, market_values).fetchall()]
         except Exception as e:
             log(f"  ⚠️ JOIN فشل ({e}) — fallback لكل الأسهم")
             tickers = [r[0] for r in conn.execute(f"""
