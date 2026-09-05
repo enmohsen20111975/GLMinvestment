@@ -137,6 +137,16 @@ def scan_ticker(rows, ticker):
 
     current_price = closes[-1]
     avg_turnover_20d = statistics.mean(turnovers[-20:]) if len(turnovers) >= 20 else 0
+    avg_volume_20d = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else 0
+    avg_volume_10d = statistics.mean(volumes[-10:]) if len(volumes) >= 10 else 0
+
+    # مقاييس الترتيب: قوة الحجم النسبي + استقرار السعر
+    volume_ratio_10d_vs_20d = (avg_volume_10d / avg_volume_20d) if avg_volume_20d > 0 else 0
+    # استقرار السعر: 1 - (range_10d_pct / 20) → كل ما range أقل، كل ما stability أعلى
+    min_10 = min(closes[-10:])
+    max_10 = max(closes[-10:])
+    range_10d_pct = ((max_10 - min_10) / min_10 * 100) if min_10 > 0 else 0
+    price_stability = max(0.0, 1.0 - (range_10d_pct / 20.0))  # 0..1
 
     # مسار أ: Quiet Accumulation
     quiet, quiet_reason, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows)
@@ -170,7 +180,11 @@ def scan_ticker(rows, ticker):
         'current_price': round(current_price, 2),
         'price_bucket': classify_price_bucket(current_price),
         'avg_turnover_20d': round(avg_turnover_20d, 0),
-        'avg_volume_20d': round(statistics.mean(volumes[-20:]), 0),
+        'avg_volume_20d': round(avg_volume_20d, 0),
+        'avg_volume_10d': round(avg_volume_10d, 0),
+        'volume_ratio_10d_vs_20d': round(volume_ratio_10d_vs_20d, 2),
+        'price_stability': round(price_stability, 3),
+        'range_10d_pct': round(range_10d_pct, 2),
         'roc_10d': round((closes[-1] - closes[-11]) / closes[-11] * 100, 2) if len(closes) >= 11 and closes[-11] > 0 else None,
         'under_microscope': winner_path is not None,
         'path': winner_path,
@@ -185,11 +199,17 @@ def scan_ticker(rows, ticker):
 def main():
     parser = argparse.ArgumentParser(description='رادار الميكرز اليومي')
     parser.add_argument('--limit', type=int, default=0, help='0 = كل الأسهم')
+    parser.add_argument('--market', type=str, default='EGX', help='فلتر السوق (EGX, TADAWUL, KSE, QSE, ALL)')
+    parser.add_argument('--min-quiet-signals', type=int, default=5, help='حد أدنى للإشارات في Quiet Accumulation (default 5/6)')
+    parser.add_argument('--min-price', type=float, default=1.0, help='استبعاد الأسهم تحت ده السعر (default 1.0)')
     parser.add_argument('--json-only', action='store_true')
     args = parser.parse_args()
 
-    log("═══ رادار الميكرز اليومي ═══")
+    log("═══ رادار الميكرز اليومي (نظيف) ═══")
     log(f"  DB: {PROD_DB}")
+    log(f"  Market filter: {args.market}")
+    log(f"  Min Quiet signals: {args.min_quiet_signals}/6")
+    log(f"  Min price: {args.min_price} EGP")
 
     if not PROD_DB.exists():
         log(f"❌ {PROD_DB} مش موجود. شغّل scripts/fetch_production_data.py الأول.")
@@ -198,11 +218,20 @@ def main():
     conn = sqlite3.connect(PROD_DB)
     conn.row_factory = sqlite3.Row
 
-    # كل tickers
-    tickers = [r[0] for r in conn.execute("SELECT DISTINCT ticker FROM stock_daily_prices").fetchall()]
+    # فلتر السوق (EGX افتراضياً)
+    if args.market.upper() == 'ALL':
+        tickers = [r[0] for r in conn.execute("""
+            SELECT DISTINCT p.ticker FROM stock_daily_prices p
+        """).fetchall()]
+    else:
+        tickers = [r[0] for r in conn.execute("""
+            SELECT DISTINCT p.ticker FROM stock_daily_prices p
+            JOIN stocks s ON p.ticker = s.ticker
+            WHERE s.market = ?
+        """, (args.market.upper(),)).fetchall()]
     if args.limit > 0:
         tickers = tickers[: args.limit]
-    log(f"  فحص {len(tickers)} سهم...")
+    log(f"  فحص {len(tickers)} سهم (market={args.market})...")
 
     results = []
     for i, ticker in enumerate(tickers, 1):
@@ -214,47 +243,87 @@ def main():
             log(f"    {i}/{len(tickers)} — {sum(1 for r in results if r['under_microscope'])} تحت الميكروسكوب")
     conn.close()
 
-    # ─── تصنيف النتايج ──────────────────────────────────────────────────
-    under_microscope = [r for r in results if r['under_microscope']]
-    quiet_list = [r for r in under_microscope if r['path'] == 'A_quiet_accumulation']
-    explosive_list = [r for r in under_microscope if r['path'] == 'B_explosive_surge']
-    early_break_list = [r for r in under_microscope if r['path'] == 'C_early_break']
+    # ─── تصنيف + تنظيف النتايج ────────────────────────────────────────
+    # 1. فلتر: السعر >= args.min_price (استبعاد penny stocks)
+    results = [r for r in results if r['current_price'] >= args.min_price]
 
-    log(f"\n═══ النتايج ═══")
-    log(f"  إجمالي الأسهم المفحوصة: {len(results)}")
-    log(f"  🔬 تحت الميكروسكوب: {len(under_microscope)} ({len(under_microscope)/len(results)*100 if results else 0:.1f}%)")
-    log(f"    مسار أ — Quiet Accumulation: {len(quiet_list)}")
-    log(f"    مسار ب — Explosive Surge: {len(explosive_list)}")
-    log(f"    مسار ج — Early Break: {len(early_break_list)}")
+    # 2. فلتر Quiet: بس اللي signals >= args.min_quiet_signals
+    under_microscope_raw = [r for r in results if r['under_microscope']]
+    quiet_list = [
+        r for r in under_microscope_raw
+        if r['path'] == 'A_quiet_accumulation'
+        and (r.get('quiet_details', {}) or {}).get('signal_count', 0) >= args.min_quiet_signals
+    ]
+    explosive_list = [r for r in under_microscope_raw if r['path'] == 'B_explosive_surge']
+    early_break_list = [r for r in under_microscope_raw if r['path'] == 'C_early_break']
+
+    # 3. ترتيب حسب: signals → volume_ratio → price_stability (للـ quiet)
+    def quiet_sort_key(r):
+        qd = r.get('quiet_details', {}) or {}
+        return (
+            -qd.get('signal_count', 0),       # أكثر signals أول
+            -r.get('volume_ratio_10d_vs_20d', 0),  # أعلى volume ratio
+            -r.get('price_stability', 0),     # أعلى stability
+        )
+    quiet_list.sort(key=quiet_sort_key)
+
+    # للـ explosive: حسب volume_ratio (أعلى surge أول)
+    explosive_list.sort(key=lambda r: -r.get('volume_ratio_10d_vs_20d', 0))
+
+    # للـ early_break: حسب ROC10 (أعلى ROC أول)
+    early_break_list.sort(key=lambda r: -(r.get('roc_10d') or 0))
+
+    under_microscope = quiet_list + explosive_list + early_break_list
+
+    log(f"\n═══ النتايج النظيفة (market={args.market}, price≥{args.min_price}) ═══")
+    log(f"  إجمالي المفحوصين (بعد فلتر السعر): {len(results)}")
+    log(f"  🔬 تحت الميكروسكوب: {len(under_microscope)}")
+    log(f"    🎯 Quiet Accumulation (≥{args.min_quiet_signals}/6): {len(quiet_list)}")
+    log(f"    🔥 Explosive Surge: {len(explosive_list)}")
+    log(f"    ⚡ Early Break: {len(early_break_list)}")
 
     # ─── عرض الأسهم تحت الميكروسكوب ────────────────────────────────────
-    if under_microscope:
-        log(f"\n═══ الأسهم تحت الميكروسكوب ═══\n")
-        log(f"{'#':>3} {'Ticker':10s} {'Price':>8s} {'Bucket':>10s} {'Turnover':>12s} {'ROC10':>7s} {'Path':>22s} {'Size':>5s}")
+    if quiet_list:
+        log(f"\n═══ 🎯 مسار أ — Quiet Accumulation (≥{args.min_quiet_signals}/6) ═══\n")
+        log(f"{'#':>3} {'Ticker':10s} {'Price':>8s} {'Bucket':>10s} {'Turnover':>12s} {'ROC10':>7s} {'VolRatio':>8s} {'Stability':>9s} {'Signals':>7s}")
         log("-" * 100)
-        # رتّب: quiet الأول، بعدين explosive، بعدين early_break
-        sorted_list = quiet_list + explosive_list + early_break_list
-        for i, r in enumerate(sorted_list, 1):
-            path_label = {
-                'A_quiet_accumulation': '🎯 QUIET_ACC',
-                'B_explosive_surge': '🔥 EXPLOSIVE',
-                'C_early_break': '⚡ EARLY_BREAK',
-            }.get(r['path'], r['path'])
+        for i, r in enumerate(quiet_list, 1):
+            qd = r.get('quiet_details', {}) or {}
             roc_str = f"{r['roc_10d']:+.1f}%" if r['roc_10d'] is not None else 'N/A'
             log(f"{i:>3} {r['ticker']:10s} {r['current_price']:>8.2f} {r['price_bucket']:>10s} "
-                f"{r['avg_turnover_20d']:>12,.0f} {roc_str:>7s} {path_label:>22s} {r['position_size']*100:>4.1f}%")
+                f"{r['avg_turnover_20d']:>12,.0f} {roc_str:>7s} {r['volume_ratio_10d_vs_20d']:>7.2f}x "
+                f"{r['price_stability']:>8.2f} {qd.get('signal_count', 0):>5d}/6")
 
-        # تفاصيل Quiet Accumulation
-        if quiet_list:
-            log(f"\n══─ تفاصيل مسار أ — Quiet Accumulation ══")
-            for r in quiet_list:
-                qd = r.get('quiet_details', {})
-                log(f"\n  🎯 {r['ticker']} (price={r['current_price']:.2f}, turnover={r['avg_turnover_20d']:,.0f})")
-                log(f"     {qd.get('signal_count', 0)}/6 إشارات متحققة:")
-                for s in qd.get('signals_met', []):
-                    log(f"       ✅ {s}")
-                for s in qd.get('signals_failed', []):
-                    log(f"       ❌ {s}")
+    if explosive_list:
+        log(f"\n═══ 🔥 مسار ب — Explosive Surge ═══\n")
+        log(f"{'#':>3} {'Ticker':10s} {'Price':>8s} {'Bucket':>10s} {'Turnover':>12s} {'ROC10':>7s} {'VolRatio':>8s} {'Range10':>8s}")
+        log("-" * 90)
+        for i, r in enumerate(explosive_list, 1):
+            roc_str = f"{r['roc_10d']:+.1f}%" if r['roc_10d'] is not None else 'N/A'
+            log(f"{i:>3} {r['ticker']:10s} {r['current_price']:>8.2f} {r['price_bucket']:>10s} "
+                f"{r['avg_turnover_20d']:>12,.0f} {roc_str:>7s} {r['volume_ratio_10d_vs_20d']:>7.2f}x "
+                f"{r['range_10d_pct']:>7.1f}%")
+
+    if early_break_list:
+        log(f"\n═══ ⚡ مسار ج — Early Break ═══\n")
+        log(f"{'#':>3} {'Ticker':10s} {'Price':>8s} {'Bucket':>10s} {'Turnover':>12s} {'ROC10':>7s} {'VolRatio':>8s}")
+        log("-" * 80)
+        for i, r in enumerate(early_break_list, 1):
+            roc_str = f"{r['roc_10d']:+.1f}%" if r['roc_10d'] is not None else 'N/A'
+            log(f"{i:>3} {r['ticker']:10s} {r['current_price']:>8.2f} {r['price_bucket']:>10s} "
+                f"{r['avg_turnover_20d']:>12,.0f} {roc_str:>7s} {r['volume_ratio_10d_vs_20d']:>7.2f}x")
+
+    # تفاصيل Quiet Accumulation (لأعلى 5 بس)
+    if quiet_list:
+        log(f"\n══─ تفاصيل أعلى 5 Quiet Accumulation ══")
+        for r in quiet_list[:5]:
+            qd = r.get('quiet_details', {}) or {}
+            log(f"\n  🎯 {r['ticker']} (price={r['current_price']:.2f}, turnover={r['avg_turnover_20d']:,.0f})")
+            log(f"     {qd.get('signal_count', 0)}/6 إشارات متحققة:")
+            for s in qd.get('signals_met', []):
+                log(f"       ✅ {s}")
+            for s in qd.get('signals_failed', []):
+                log(f"       ❌ {s}")
 
     # ─── حفظ JSON ──────────────────────────────────────────────────────
     today_str = datetime.now().strftime("%Y%m%d")
@@ -262,11 +331,17 @@ def main():
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump({
             'generated_at': datetime.now().isoformat(),
+            'market': args.market,
+            'min_quiet_signals': args.min_quiet_signals,
+            'min_price': args.min_price,
             'total_scanned': len(results),
             'under_microscope_count': len(under_microscope),
             'quiet_count': len(quiet_list),
             'explosive_count': len(explosive_list),
             'early_break_count': len(early_break_list),
+            'quiet_list': quiet_list,
+            'explosive_list': explosive_list,
+            'early_break_list': early_break_list,
             'under_microscope': under_microscope,
             'all_results': results,
         }, f, ensure_ascii=False, indent=2, default=str)
