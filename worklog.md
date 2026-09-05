@@ -17845,3 +17845,104 @@ Stage Summary:
 - TypeScript passes (no errors in MakerRadarTab.tsx) ✓
 - API verified working (`curl http://localhost:3001/api/maker-radar?market=EGX` → HTTP 200 with 815 stocks scanned) ✓
 - Visually verified via headless browser that all sections render correctly ✓
+
+---
+Task ID: RADAR-TABLES-GUIDANCE-1
+Agent: frontend-styling-expert
+Task: Convert cards to tables + fix trade guidance with real numbers
+
+Work Log:
+- Read worklog.md context and MakerRadarTab.tsx (1740 lines) — understood the existing card grid layout in RadarSection/StockCard and the generic guidance box in StockDetailDrawer (buildGuidance function)
+- Verified shadcn Table UI components exist at `/home/z/my-project/src/components/ui/table.tsx` (Table, TableHeader, TableBody, TableRow, TableHead, TableCell exports)
+- Verified Maker Radar API returns 4 separate lists (pre_surge_list, explosive_list, quiet_list, early_break_list) with proper data fields including OHLC prices in stock detail
+- Plan: 1) Replace StockCard grid with StockTable component using shadcn Table primitives; 2) Replace buildGuidance generic text with TradingPlanSection that calculates real support/resistance/entry/stop/targets from detail.prices history
+
+Fix 1 — Tables replacing cards (single MultiEdit, 12 atomic edits):
+- Added imports for `Table, TableHeader, TableBody, TableRow, TableHead, TableCell` from `@/components/ui/table`
+- Removed unused `Sparkles` import from lucide-react (no longer used after StockCard removal)
+- Added new `changePercentForTicker` useCallback helper (cross-references stockMap to look up `change_percent` field from `/api/stocks` response — needed for the "التغير%" column in the table spec)
+- Wired `changePercentForTicker` prop through all 4 RadarSection call sites (Pre-Surge, Explosive, Quiet, Early Break) by inserting it after `sectorForTicker={sectorForTicker}` on each instance
+- Updated RadarSectionProps interface to include `changePercentForTicker: (ticker: string) => number | null`
+- Rewrote RadarSection function body to render `<StockTable>` instead of the old `<div className="grid ...">{stocks.map(s => <StockCard .../>)}</div>` grid
+- Replaced the entire StockCard component (~160 lines) with a new StockTable component (~95 lines) using shadcn Table primitives
+- StockTable renders a 10-column table: `# | السهم | السعر | التغير% | ROC10 | حجم نسبي | الإشارات | القطاع | الحجم | ⭐`
+- Header row uses accent-colored background (e.g. `bg-purple-50/60` for Pre-Surge), `sticky top-0 z-10`, `hover:bg-transparent` (header doesn't highlight on hover)
+- Rows are striped (`odd:bg-muted/20`) with hover effect (`hover:bg-muted/50`) and `cursor-pointer` + `transition-colors`
+- Positive % values colored emerald, negative rose (via existing `pnlColorClass` helper) — applied to both `التغير%` and `ROC10` columns
+- Volume ratio column highlighted with `text-emerald-600 dark:text-emerald-400 font-bold` when ratio ≥ 1.5× (verified: GPPL 2.00×, MOIN 1.92×, EGREF 1.70× all show emerald+bold)
+- ROC10 and حجم نسبي columns marked `hidden sm:table-cell` so they hide on mobile (responsive requirement)
+- القطاع column marked `hidden md:table-cell` (also responsive)
+- Each `<TableRow>` is fully clickable (onClick → onSelect(stock.ticker)) opening the detail drawer
+- Star toggle button in last column uses `e.stopPropagation()` to prevent row-click from firing when star is clicked; toggles filled amber Star vs StarOff icon
+- Position size shown as small pill Badge (`{psPct}%`)
+- Removed dead code: `computeTradePlan` function (was used by StockCard and StockDetailDrawer's plan card — both removed/replaced), `buildGuidance` function (replaced by TradingPlanSection)
+
+Fix 2 — TradingPlanSection with real numbers:
+- Replaced the old generic guidance box (lines 1487-1502) with `<TradingPlanSection detail={detail} />`
+- Also removed the existing "خطة التداول المقترحة" 3-column entry/stop/target card (lines 1360-1389) since TradingPlanSection now subsumes it — cleaner UX, no redundancy
+- Removed `const plan = detail?.stats ? computeTradePlan(...) : null;` line (no longer needed)
+- Added TradingPlanSection + TradingFieldRow components at module level (where buildGuidance used to be, between StockDetailDrawer and StatCard)
+- TradingPlanSection calculates ALL numbers dynamically from `detail.prices` (30-day OHLC array):
+  • Sorts prices ascending by date so "last N" = most recent N entries
+  • `current_price` = last close
+  • `support_1` = min low of last 10 days (filtered to exclude zero/null values which appear in the API data for sessions missing OHLC)
+  • `support_2` = min low of last 20 days (same filter)
+  • `resistance_1` = max high of last 10 days
+  • `resistance_2` = max high of last 20 days
+  • `entry_price` = current_price
+  • `stop_loss` = current_price * 0.94 (-6.0%)
+  • `target_1` = current_price * 1.10 (+10.0%)
+  • `target_2` = current_price * 1.20 (+20.0%)
+  • `rr_ratio` = (target_1 - entry) / (entry - stop_loss) ≈ 1.7:1
+  • `ma10` = avg of last 10 closes (used for above/below MA10 analysis)
+  • `vol_ratio` = last session volume / avg of last 20 session volumes
+  • `range_10d_pct` = (max_high_10 - min_low_10) / min_low_10 * 100
+- Dynamic Arabic analysis text (4 lines, all generated from real data, not hardcoded):
+  1. MA10 line: "السهم يتداول فوق/تحت متوسط 10 أيام (PRICE > < MA10)" — direction depends on real comparison
+  2. Volume line: "الحجم الحالي X.XX× متوسط 20 يوم — تأكيد قوة/ضعف سيولة/حجم طبيعي" — categorized by ratio thresholds (≥1.5 = قوة, <0.7 = ضعف, else طبيعي)
+  3. Range line: "المدى الضيق/الواسع/طبيعي X.X% في آخر 10 أيام يشير لتجميع/تقلب عالي/طبيعي" — categorized (<6% = تجميع, >15% = تقلب, else طبيعي)
+  4. Recommendation: derived from above_ma10 + vol_ratio conditions (3 possible outcomes)
+- Used TradingFieldRow helper (module-level, not inside TradingPlanSection — avoids re-mount anti-pattern) for the label/value/sub/valueClass layout
+- Color-coded values: supports = emerald, resistances = rose, entry = blue, stop = rose, targets = emerald, RR ratio = amber bold
+
+Verification:
+- Lint: `bun run lint` → exit code 0 (no errors, no warnings)
+- TypeScript: `npx tsc --noEmit` → no errors in MakerRadarTab.tsx (only pre-existing error in scripts/audit-db-schema.ts which we didn't touch)
+- Visual verification via agent-browser (Playwright headless on http://localhost:3001/#analysis):
+  • Confirmed 4 tables rendered with correct row counts matching API (18 Pre-Surge / 17 Explosive / 31 Quiet / 1 Early Break)
+  • Confirmed all 10 column headers present: `# | السهم | السعر | التغير% | ROC10 | حجم نسبي | الإشارات | القطاع | الحجم | ⭐`
+  • Confirmed row CSS classes include `cursor-pointer odd:bg-muted/20 hover:bg-muted/50 transition-colors`
+  • Confirmed header CSS classes include `bg-purple-50/60 dark:bg-purple-950/20 sticky top-0 z-10` (accent-colored, sticky)
+  • Confirmed volume ratio highlighting: ratios ≥1.5× show `text-emerald-600 dark:text-emerald-400 font-bold`
+  • Clicked first table row → drawer opened
+  • Confirmed TradingPlanSection renders with REAL calculated numbers for HRHO (current_price 25.9 / support_1 25.53 / support_2 25.53 / resistance_1 27.16 / resistance_2 27.37 / entry 25.9 / stop 24.35 / target_1 28.49 / target_2 31.08 / RR 1.7:1)
+  • Confirmed dynamic analysis text changes based on data: "السهم يتداول تحت متوسط 10 أيام (25.9 < 26.53)" + "الحجم الحالي 0.46× متوسط 20 يوم — ضعف سيولة" + "المدى 6.4% في آخر 10 أيام طبيعي" + "توصية: انتظر عودة السعر فوق 26.53 قبل الدخول"
+  • Verified stop_loss calculation: 25.9 × 0.94 = 24.346 → displays as 24.35 (matches -6.0% label)
+  • Verified target_1 calculation: 25.9 × 1.10 = 28.49 (matches +10.0% label)
+  • Verified target_2 calculation: 25.9 × 1.20 = 31.08 (matches +20.0% label)
+  • Verified rr_ratio calculation: (28.49 - 25.9) / (25.9 - 24.35) = 2.59 / 1.55 = 1.67 → displays as 1.7:1
+  • Confirmed star toggle button has proper title="أضف للمتابعة" + aria-label + hover styling
+- Screenshot saved at /tmp/radar-tables-final.png showing the visual layout
+
+Stage Summary:
+- src/components/predictions/MakerRadarTab.tsx updated (1759 lines, was 1740)
+- All 4 stock sections (Pre-Surge, Explosive, Quiet, Early Break) now render professional tables instead of card grids ✓
+- Tables have proper `<thead>`/`<tbody>`/`<tr>`/`<th>`/`<td>` semantics using shadcn Table primitives ✓
+- Header row is sticky with accent-colored background ✓
+- Striped rows (alternating bg via `odd:bg-muted/20`) ✓
+- Hover effect on rows (`hover:bg-muted/50 transition-colors`) ✓
+- Each row is clickable (opens detail drawer) ✓
+- Star toggle button in last column with stopPropagation (doesn't trigger row click) ✓
+- Position size badge as small pill ✓
+- RTL layout preserved (first column = #, last column = ⭐) ✓
+- Responsive: ROC10 and حجم نسبي columns hidden on mobile (`hidden sm:table-cell`) ✓
+- Volume ratio highlighted emerald+bold when ≥ 1.5× ✓
+- Positive % colored emerald, negative rose ✓
+- Removed dead code: StockCard, computeTradePlan, buildGuidance, Sparkles import ✓
+- Trade guidance box replaced with TradingPlanSection showing REAL calculated numbers ✓
+- All numbers (supports/resistances/entry/stop/targets/RR) computed from detail.prices history ✓
+- Handles data gaps gracefully (filters out zero/null OHLC values, falls back to percentage-based estimates) ✓
+- Dynamic Arabic analysis text changes based on MA10 position, volume ratio, and range % ✓
+- Lint passes (exit 0, no warnings) ✓
+- TypeScript passes (no errors in MakerRadarTab.tsx) ✓
+- Visually verified via headless browser: 4 tables render correctly with right row counts and headers; drawer shows real numbers; star buttons work ✓

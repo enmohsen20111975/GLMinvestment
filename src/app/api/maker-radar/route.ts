@@ -11,7 +11,8 @@ const execAsync = promisify(exec);
 const PROJECT_ROOT = process.cwd();
 
 // Cache لـ 60 ثانية عشان ما نضربش الإنتاج كل request
-let cachedRadar: { data: any; timestamp: number } | null = null;
+// Per-market cache (عشان EGX و TADAWUL ما يخليشوش بعض)
+const cachedRadarMap = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL_MS = 60_000;
 
 // Tracking file: بيخزن الأسهم اللي العميل ضافها للمتابعة + سعر الدخول
@@ -44,13 +45,15 @@ export async function GET(req: NextRequest) {
   const minPrice = parseFloat(url.searchParams.get('minPrice') || '1.0');
   const forceRefresh = url.searchParams.get('refresh') === '1';
 
-  // تحقق من الـ cache
+  // تحقق من الـ cache (per-market)
+  const cacheKey = `${market}_${minQuietSignals}_${minPrice}`;
   const now = Date.now();
-  if (!forceRefresh && cachedRadar && (now - cachedRadar.timestamp) < CACHE_TTL_MS) {
+  const cached = cachedRadarMap.get(cacheKey);
+  if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
     return NextResponse.json({
-      ...cachedRadar.data,
+      ...cached.data,
       cached: true,
-      cache_age_seconds: Math.round((now - cachedRadar.timestamp) / 1000),
+      cache_age_seconds: Math.round((now - cached.timestamp) / 1000),
     });
   }
 
@@ -116,8 +119,8 @@ export async function GET(req: NextRequest) {
       generated_at: new Date().toISOString(),
     };
 
-    // احفظ في الـ cache
-    cachedRadar = { data: enriched, timestamp: now };
+    // احفظ في الـ cache (per-market)
+    cachedRadarMap.set(cacheKey, { data: enriched, timestamp: now });
 
     return NextResponse.json({
       success: true,
@@ -126,12 +129,13 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[maker-radar] error:', error);
+    const cachedFallback = cachedRadarMap.get(cacheKey);
     return NextResponse.json(
       {
         success: false,
         error: error.message || 'Failed to run maker radar',
-        cached: !!cachedRadar,
-        ...(cachedRadar ? { ...cachedRadar.data, cached: true } : {}),
+        cached: !!cachedFallback,
+        ...(cachedFallback ? { ...cachedFallback.data, cached: true } : {}),
       },
       { status: 500 }
     );

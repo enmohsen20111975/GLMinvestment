@@ -18,7 +18,7 @@ import {
   Radar, RefreshCw, Eye, Flame, TrendingUp, TrendingDown,
   Activity, AlertTriangle, Star, StarOff, X, ChevronLeft,
   Layers, Target, Zap, Gauge, Award, Crosshair, Clock,
-  BarChart3, Sparkles, Eye as MicroscopeIcon, Flame as FlameIcon,
+  BarChart3, Eye as MicroscopeIcon, Flame as FlameIcon,
   Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, Info,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -26,6 +26,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table';
 import {
   Collapsible,
   CollapsibleContent,
@@ -360,26 +363,6 @@ const shortSignal = (s: string): string => {
   return s;
 };
 
-// Compute entry/stop/target from current price using the system's risk rules
-// (8% hard stop, 16-20% target → 2-2.5R)
-const computeTradePlan = (price: number, support?: number | null, resistance?: number | null) => {
-  if (!price || price <= 0) return null;
-  const entry = price;
-  const stop = Math.max(0, price * 0.92); // -8% hard stop (matches enforce_stop_loss)
-  const target = price * 1.20;            // +20% (2.5R)
-  const riskPerShare = entry - stop;
-  const rewardPerShare = target - entry;
-  const rr = riskPerShare > 0 ? rewardPerShare / riskPerShare : 0;
-  return {
-    entry,
-    stop,
-    target,
-    rr,
-    riskPct: ((entry - stop) / entry) * 100,
-    rewardPct: ((target - entry) / entry) * 100,
-  };
-};
-
 // ============================================================================
 // Backtest / proof constants (from scripts/output/retroactive_radar_test_*.json)
 // These are static-shown metrics. Live values would require a separate API.
@@ -535,6 +518,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const sectorForTicker = useCallback((ticker: string): string | null => {
     if (!stockMap) return null;
     return stockMap.get(ticker.toUpperCase())?.sector || null;
+  }, [stockMap]);
+
+  const changePercentForTicker = useCallback((ticker: string): number | null => {
+    if (!stockMap) return null;
+    const chg = stockMap.get(ticker.toUpperCase())?.change_percent;
+    return typeof chg === 'number' ? chg : null;
   }, [stockMap]);
 
   const marketStatus = getMarketStatus(market);
@@ -738,6 +727,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           accent="purple"
           stocks={filteredPreSurge}
           sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -752,6 +742,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           accent="rose"
           stocks={filteredExplosive}
           sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -766,6 +757,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           accent="amber"
           stocks={filteredQuiet}
           sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -780,6 +772,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           accent="emerald"
           stocks={filteredEarlyBreak}
           sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -926,7 +919,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
 }
 
 // ============================================================================
-// Radar Section (group of stock cards)
+// Radar Section (table of stocks)
 // ============================================================================
 interface RadarSectionProps {
   title: string;
@@ -935,13 +928,14 @@ interface RadarSectionProps {
   accent: AccentKey;
   stocks: RadarStock[];
   sectorForTicker: (ticker: string) => string | null;
+  changePercentForTicker: (ticker: string) => number | null;
   onSelect: (ticker: string) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
 function RadarSection({
   title, subtitle, icon, accent, stocks,
-  sectorForTicker, onSelect, onTrackToggle,
+  sectorForTicker, changePercentForTicker, onSelect, onTrackToggle,
 }: RadarSectionProps) {
   const a = accentClasses[accent];
   return (
@@ -955,187 +949,130 @@ function RadarSection({
           </div>
         </div>
         <Badge variant="secondary" className="text-xs">
-          {stocks.length} سهم
+          {stocks.length} أسهم
         </Badge>
       </div>
 
-      <div className="p-3 md:p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {stocks.map((stock) => (
-            <StockCard
-              key={stock.ticker}
-              stock={stock}
-              sector={sectorForTicker(stock.ticker)}
-              accent={accent}
-              onSelect={() => onSelect(stock.ticker)}
-              onTrackToggle={() => onTrackToggle(stock.ticker, stock.current_price, !!stock.isTracked)}
-            />
-          ))}
-        </div>
+      <div className="p-2 md:p-3">
+        <StockTable
+          stocks={stocks}
+          accent={accent}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          onSelect={onSelect}
+          onTrackToggle={onTrackToggle}
+        />
       </div>
     </Card>
   );
 }
 
 // ============================================================================
-// Stock Card
+// Stock Table (professional table layout — replaces card grid)
 // ============================================================================
-interface StockCardProps {
-  stock: RadarStock;
-  sector: string | null;
+interface StockTableProps {
+  stocks: RadarStock[];
   accent: AccentKey;
-  onSelect: () => void;
-  onTrackToggle: () => void;
+  sectorForTicker: (ticker: string) => string | null;
+  changePercentForTicker: (ticker: string) => number | null;
+  onSelect: (ticker: string) => void;
+  onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
-function StockCard({ stock, sector, accent, onSelect, onTrackToggle }: StockCardProps) {
+function StockTable({
+  stocks, accent, sectorForTicker, changePercentForTicker, onSelect, onTrackToggle,
+}: StockTableProps) {
   const a = accentClasses[accent];
-  const meta = pathMeta[stock.path];
-
-  const volRatio = stock.volume_ratio_10d_vs_20d;
-  const volHighlight = volRatio >= 1.5;
-
-  const plan = computeTradePlan(stock.current_price);
-  const psPct = (stock.position_size * 100).toFixed(1);
-
-  // signal count summary
-  const signalCount =
-    stock.pre_surge_details?.signal_count ??
-    stock.quiet_details?.signal_count ?? null;
-  const signalMax = stock.pre_surge_details ? 4 : stock.quiet_details ? 6 : null;
-
   return (
-    <div
-      onClick={onSelect}
-      className={`group relative cursor-pointer rounded-lg border ${a.border} ${a.softBg} p-3 transition-all hover:shadow-md hover:border-foreground/30`}
-    >
-      {/* Row 1: Ticker + Arabic name + Star */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={(e) => { e.stopPropagation(); onTrackToggle(); }}
-              className="text-muted-foreground hover:text-amber-500 transition-colors"
-              title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
-            >
-              {stock.isTracked ? (
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              ) : (
-                <StarOff className="h-3.5 w-3.5" />
-              )}
-            </button>
-            <span className="font-bold text-base">{stock.ticker}</span>
-            {stock.isTracked && (
-              <Badge variant="outline" className="text-[9px] h-4 px-1 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300">
-                متابَع
-              </Badge>
-            )}
-          </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
-            {bucketLabel[stock.price_bucket] || ''}
-            {bucketLabel[stock.price_bucket] && sector ? ' · ' : ''}
-            {sector || 'قطاع غير محدد'}
-          </div>
-        </div>
-        <ChevronLeft className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-      </div>
+    <div className="overflow-x-auto -mx-1">
+      <Table className="text-xs">
+        <TableHeader>
+          <TableRow className={`${a.headerBg} border-b ${a.border} hover:bg-transparent sticky top-0 z-10`}>
+            <TableHead className="w-10 text-center font-semibold h-9">#</TableHead>
+            <TableHead className="font-semibold h-9">السهم</TableHead>
+            <TableHead className="font-semibold text-right h-9">السعر</TableHead>
+            <TableHead className="font-semibold text-right h-9">التغير%</TableHead>
+            <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">ROC10</TableHead>
+            <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">حجم نسبي</TableHead>
+            <TableHead className="font-semibold text-center h-9">الإشارات</TableHead>
+            <TableHead className="font-semibold h-9 hidden md:table-cell">القطاع</TableHead>
+            <TableHead className="font-semibold text-right h-9">الحجم</TableHead>
+            <TableHead className="w-10 text-center font-semibold h-9">⭐</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {stocks.map((stock, idx) => {
+            const volRatio = stock.volume_ratio_10d_vs_20d;
+            const volHighlight = volRatio >= 1.5;
 
-      {/* Row 2: Price + ROC */}
-      <div className="flex items-end justify-between gap-2 mb-2">
-        <div>
-          <div className="text-[10px] text-muted-foreground">السعر</div>
-          <div className="text-lg font-bold font-mono">{fmtNum(stock.current_price)}</div>
-        </div>
-        <div className="text-left">
-          <div className="text-[10px] text-muted-foreground">ROC 10 أيام</div>
-          <div className={`text-sm font-bold font-mono ${pnlColorClass(stock.roc_10d)}`}>
-            {fmtPct(stock.roc_10d)}
-          </div>
-        </div>
-      </div>
+            const signalCount =
+              stock.pre_surge_details?.signal_count ??
+              stock.quiet_details?.signal_count ?? null;
+            const signalMax = stock.pre_surge_details ? 4 : stock.quiet_details ? 6 : null;
 
-      {/* Row 3: Volume ratio + stability */}
-      <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-        <div className="flex items-center justify-between bg-background/60 rounded px-2 py-1">
-          <span className="text-[10px] text-muted-foreground">حجم نسبي</span>
-          <span className={`font-mono font-semibold ${volHighlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>
-            {volRatio.toFixed(2)}×
-          </span>
-        </div>
-        <div className="flex items-center justify-between bg-background/60 rounded px-2 py-1">
-          <span className="text-[10px] text-muted-foreground">استقرار</span>
-          <span className={`font-mono font-semibold ${
-            stock.price_stability >= 0.7 ? 'text-emerald-600 dark:text-emerald-400' :
-            stock.price_stability >= 0.5 ? 'text-amber-600 dark:text-amber-400' :
-            'text-muted-foreground'
-          }`}>
-            {(stock.price_stability * 100).toFixed(0)}%
-          </span>
-        </div>
-      </div>
+            const changePct = changePercentForTicker(stock.ticker);
+            const psPct = (stock.position_size * 100).toFixed(1);
+            const sector = sectorForTicker(stock.ticker);
 
-      {/* Row 4: signals OR trade plan */}
-      {signalCount != null && signalMax != null && (
-        <div className="flex items-center gap-1.5 mb-2">
-          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${a.badge}`}>
-            <Sparkles className="h-3 w-3" />
-            {signalCount}/{signalMax} إشارات
-          </div>
-          {stock.range_10d_pct > 0 && (
-            <span className="text-[10px] text-muted-foreground">
-              نطاق {stock.range_10d_pct.toFixed(1)}%
-            </span>
-          )}
-        </div>
-      )}
-
-      {stock.path === 'D_explosive_surge' && plan && (
-        <div className="grid grid-cols-3 gap-1.5 mb-2 text-[10px]">
-          <div className="bg-background/60 rounded px-1.5 py-1 border border-border/40">
-            <div className="text-muted-foreground">دخول</div>
-            <div className="font-mono font-semibold">{fmtNum(plan.entry)}</div>
-          </div>
-          <div className="bg-rose-50/60 dark:bg-rose-950/20 rounded px-1.5 py-1 border border-rose-200/40 dark:border-rose-900/40">
-            <div className="text-muted-foreground">وقف</div>
-            <div className="font-mono font-semibold text-rose-600 dark:text-rose-400">{fmtNum(plan.stop)}</div>
-          </div>
-          <div className="bg-emerald-50/60 dark:bg-emerald-950/20 rounded px-1.5 py-1 border border-emerald-200/40 dark:border-emerald-900/40">
-            <div className="text-muted-foreground">هدف</div>
-            <div className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{fmtNum(plan.target)}</div>
-          </div>
-          <div className="col-span-3 flex items-center justify-between text-[10px]">
-            <span className="text-muted-foreground">
-              R:R <span className="font-bold text-foreground">{plan.rr.toFixed(2)}:1</span>
-            </span>
-            <span className="text-muted-foreground">
-              مخاطرة <span className="font-bold text-rose-600 dark:text-rose-400">{plan.riskPct.toFixed(1)}%</span>
-              {' · '}
-              عائد <span className="font-bold text-emerald-600 dark:text-emerald-400">{plan.rewardPct.toFixed(1)}%</span>
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Row 5: footer badges — position size + change since tracking + sector */}
-      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-border/30">
-        <div className="flex items-center gap-1 flex-wrap">
-          <Badge variant="outline" className="text-[9px] h-4 px-1">
-            <Target className="h-2.5 w-2.5 ml-0.5" />
-            {psPct}% حجم
-          </Badge>
-          {stock.isTracked && stock.changeSinceTracking != null && (
-            <Badge variant="outline" className={`text-[9px] h-4 px-1 ${pnlColorClass(stock.changeSinceTracking)}`}>
-              {fmtPct(stock.changeSinceTracking)}
-            </Badge>
-          )}
-        </div>
-        {sector && (
-          <Badge variant="outline" className="text-[9px] h-4 px-1 max-w-[120px] truncate">
-            <span className="ml-1">{meta.icon}</span>
-            <span className="truncate">{sector}</span>
-          </Badge>
-        )}
-      </div>
+            return (
+              <TableRow
+                key={stock.ticker}
+                onClick={() => onSelect(stock.ticker)}
+                className="cursor-pointer odd:bg-muted/20 hover:bg-muted/50 transition-colors"
+              >
+                <TableCell className="text-center text-muted-foreground font-mono text-[11px]">{idx + 1}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-sm">{stock.ticker}</span>
+                    {stock.isTracked && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="متابَع" />
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="font-mono font-semibold text-right">{fmtNum(stock.current_price)}</TableCell>
+                <TableCell className={`font-mono font-semibold text-right ${pnlColorClass(changePct)}`}>
+                  {changePct != null ? fmtPct(changePct) : '-'}
+                </TableCell>
+                <TableCell className={`font-mono text-right hidden sm:table-cell ${pnlColorClass(stock.roc_10d)}`}>
+                  {fmtPct(stock.roc_10d)}
+                </TableCell>
+                <TableCell className={`font-mono text-right hidden sm:table-cell ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
+                  {volRatio.toFixed(2)}×
+                </TableCell>
+                <TableCell className="text-center">
+                  {signalCount != null && signalMax != null ? (
+                    <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${a.badge}`}>
+                      {signalCount}/{signalMax}
+                    </Badge>
+                  ) : '—'}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
+                  {sector || '—'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-mono">
+                    {psPct}%
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onTrackToggle(stock.ticker, stock.current_price, !!stock.isTracked); }}
+                    className="text-muted-foreground hover:text-amber-500 transition-colors p-1 rounded"
+                    title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
+                    aria-label={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
+                  >
+                    {stock.isTracked ? (
+                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ) : (
+                      <StarOff className="h-4 w-4" />
+                    )}
+                  </button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -1210,7 +1147,6 @@ function StockDetailDrawer({
   const sector = sectorForTicker(ticker);
   const sectorChange = sectorChangeForTicker(ticker);
   const stockInfo = detail?.stock_info;
-  const plan = detail?.stats ? computeTradePlan(detail.stats.lastClose) : null;
 
   return (
     <>
@@ -1356,38 +1292,6 @@ function StockDetailDrawer({
               </Card>
             )}
 
-            {/* === Trade plan (explosive) === */}
-            {plan && (
-              <Card className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-xs font-semibold">خطة التداول المقترحة</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    R:R <span className="font-bold mr-1">{plan.rr.toFixed(2)}:1</span>
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-emerald-50/60 dark:bg-emerald-950/20 rounded-md p-2 border border-emerald-200/50 dark:border-emerald-900/40">
-                    <div className="text-[10px] text-muted-foreground">دخول</div>
-                    <div className="font-mono font-bold text-sm">{fmtNum(plan.entry)}</div>
-                    <div className="text-[9px] text-emerald-600 dark:text-emerald-400">السعر الحالي</div>
-                  </div>
-                  <div className="bg-rose-50/60 dark:bg-rose-950/20 rounded-md p-2 border border-rose-200/50 dark:border-rose-900/40">
-                    <div className="text-[10px] text-muted-foreground">وقف الخسارة</div>
-                    <div className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">{fmtNum(plan.stop)}</div>
-                    <div className="text-[9px] text-rose-600 dark:text-rose-400">{plan.riskPct.toFixed(1)}%- تحرك</div>
-                  </div>
-                  <div className="bg-blue-50/60 dark:bg-blue-950/20 rounded-md p-2 border border-blue-200/50 dark:border-blue-900/40">
-                    <div className="text-[10px] text-muted-foreground">الهدف</div>
-                    <div className="font-mono font-bold text-sm text-blue-600 dark:text-blue-400">{fmtNum(plan.target)}</div>
-                    <div className="text-[9px] text-blue-600 dark:text-blue-400">+{plan.rewardPct.toFixed(1)}% هدف</div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
             {/* === Stats grid === */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <StatCard
@@ -1484,22 +1388,8 @@ function StockDetailDrawer({
               </Card>
             )}
 
-            {/* === Action guidance box === */}
-            <Card className="p-3 bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50">
-              <div className="flex items-start gap-2">
-                <div className="h-7 w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">
-                    💡 توجيه التداول
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    {buildGuidance(ticker, detail)}
-                  </p>
-                </div>
-              </div>
-            </Card>
+            {/* === Trading Plan (real numbers + dynamic analysis from price history) === */}
+            <TradingPlanSection detail={detail} />
           </div>
         )}
       </div>
@@ -1507,27 +1397,156 @@ function StockDetailDrawer({
   );
 }
 
-function buildGuidance(ticker: string, detail: StockDetail): string {
-  const stats = detail.stats;
-  if (!stats) return `تابع ${ticker} مع التحديث اليومي للرادار.`;
+// ============================================================================
+// Trading Plan Section — real numbers calculated from price history
+// (replaces generic guidance box with calculated supports/resistances,
+//  entry/stop/target1/target2, R:R ratio, and dynamic Arabic analysis)
+// ============================================================================
+interface TradingFieldRowProps {
+  label: string;
+  value: string;
+  sub?: string;
+  valueClass?: string;
+}
 
-  const roc = stats.roc10d ?? 0;
-  const range = stats.range20Pct ?? 0;
-  const change = stats.changePct ?? 0;
+function TradingFieldRow({ label, value, sub, valueClass }: TradingFieldRowProps) {
+  return (
+    <div className="flex items-baseline justify-between py-1 border-b border-border/40 last:border-0">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="flex items-baseline gap-1">
+        <span className={`text-xs font-mono font-semibold ${valueClass || ''}`}>{value}</span>
+        {sub && <span className="text-[10px] text-muted-foreground">{sub}</span>}
+      </span>
+    </div>
+  );
+}
 
-  if (roc > 12) {
-    return `السهم في موجة صعودية قوية (ROC10 ${fmtPct(roc)}). انتظر ارتداد صغير للدخول، وضع وقف خسارة تحت آخر قاع — تجنب الشراء عند القمة.`;
+function TradingPlanSection({ detail }: { detail: StockDetail }) {
+  const prices = detail.prices;
+
+  if (!prices || prices.length === 0) {
+    return null;
   }
-  if (roc < -5) {
-    return `السهم في تصحيح (ROC10 ${fmtPct(roc)}). انتظر استقرار السعر فوق الدعم قبل الدخول. لو كسر القاع، تجنّب.`;
+
+  // Sort by date ascending (oldest first) so "last N" = most recent N entries
+  const sorted = [...prices].sort((a, b) => a.date.localeCompare(b.date));
+  const lastClose = sorted[sorted.length - 1].close;
+
+  if (!lastClose || lastClose <= 0) {
+    return null;
   }
-  if (range < 6) {
-    return `السهم في نطاق ضيق (${range.toFixed(1)}% خلال 20 يوم) — مرحلة تجميع. الكسر للأعلى بحجم > 1.5× يكون إشارة دخول.`;
+
+  const last10 = sorted.slice(-10);
+  const last20 = sorted.slice(-20);
+
+  // Support / Resistance calculated from OHLC history (NOT static numbers).
+  // Filter out zero/negative values which appear in the data when the source
+  // had no high/low recorded for a session (treat them as missing bars).
+  const validLows10 = last10.map((p) => p.low).filter((v) => v > 0);
+  const validLows20 = last20.map((p) => p.low).filter((v) => v > 0);
+  const validHighs10 = last10.map((p) => p.high).filter((v) => v > 0);
+  const validHighs20 = last20.map((p) => p.high).filter((v) => v > 0);
+
+  const support_1 = validLows10.length > 0 ? Math.min(...validLows10) : lastClose * 0.95;
+  const support_2 = validLows20.length > 0 ? Math.min(...validLows20) : lastClose * 0.90;
+  const resistance_1 = validHighs10.length > 0 ? Math.max(...validHighs10) : lastClose * 1.05;
+  const resistance_2 = validHighs20.length > 0 ? Math.max(...validHighs20) : lastClose * 1.10;
+
+  // Entry / Stop / Targets — fixed-pct rules from current price
+  const entry_price = lastClose;
+  const stop_loss = lastClose * 0.94;        // -6.0%
+  const target_1 = lastClose * 1.10;        // +10.0%
+  const target_2 = lastClose * 1.20;        // +20.0%
+  const rr_ratio = (target_1 - entry_price) / (entry_price - stop_loss);
+
+  // MA10 — average of last 10 closes
+  const ma10 = last10.reduce((sum, p) => sum + p.close, 0) / last10.length;
+  const above_ma10 = lastClose > ma10;
+
+  // Volume ratio: last session volume vs avg of last 20 sessions
+  const last_volume = sorted[sorted.length - 1].volume;
+  const avg_20_vol = last20.reduce((sum, p) => sum + p.volume, 0) / last20.length;
+  const vol_ratio = avg_20_vol > 0 ? last_volume / avg_20_vol : 0;
+
+  // Range 10d % = (max_high - min_low) / min_low * 100
+  const range_10d_pct = support_1 > 0 ? ((resistance_1 - support_1) / support_1) * 100 : 0;
+
+  // Build dynamic Arabic analysis — changes based on real data, not a fixed string
+  const analysis_lines: string[] = [];
+
+  analysis_lines.push(
+    above_ma10
+      ? `السهم يتداول فوق متوسط 10 أيام (${fmtNum(lastClose)} > ${fmtNum(ma10)}).`
+      : `السهم يتداول تحت متوسط 10 أيام (${fmtNum(lastClose)} < ${fmtNum(ma10)}).`
+  );
+
+  if (vol_ratio >= 1.5) {
+    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — تأكيد قوة.`);
+  } else if (vol_ratio < 0.7) {
+    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — ضعف سيولة.`);
+  } else {
+    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — حجم طبيعي.`);
   }
-  if (change > 0) {
-    return `السهم يتحرك بإيجابية (+${change.toFixed(1)}%). راقب حجم التداول: لو ارتفع فوق المتوسط بـ 1.5× يكون تأكيد استمرار.`;
+
+  if (range_10d_pct < 6) {
+    analysis_lines.push(`المدى الضيق ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتجميع.`);
+  } else if (range_10d_pct > 15) {
+    analysis_lines.push(`المدى الواسع ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتقلب عالي.`);
+  } else {
+    analysis_lines.push(`المدى ${range_10d_pct.toFixed(1)}% في آخر 10 أيام طبيعي.`);
   }
-  return `السهم في مرحلة تجميع هادئة. راقب حجم التداول اليومي وإشارات الرادار لتحديد توقيت الدخول الأمثل.`;
+
+  // Recommendation: derived from real conditions
+  let recommendation: string;
+  if (above_ma10 && vol_ratio >= 1.5) {
+    recommendation = `توصية: انتظر اختراق ${fmtNum(resistance_1)} بحجم لتأكيد الدخول.`;
+  } else if (!above_ma10) {
+    recommendation = `توصية: انتظر عودة السعر فوق ${fmtNum(ma10)} قبل الدخول.`;
+  } else {
+    recommendation = `توصية: راقب الكسر فوق ${fmtNum(resistance_1)} بحجم للتأكيد.`;
+  }
+
+  return (
+    <Card className="p-3 bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50">
+      <div className="flex items-center gap-1.5 mb-2">
+        <div className="h-7 w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+          <Crosshair className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+        </div>
+        <div className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+          📋 خطة التداول
+        </div>
+      </div>
+
+      {/* Support / Resistance levels (calculated from price history) */}
+      <div className="space-y-0">
+        <TradingFieldRow label="سعر السهم الحالي" value={`${fmtNum(lastClose)} جنيه`} />
+        <TradingFieldRow label="الدعم الأول" value={fmtNum(support_1)} sub="(أقل سعر في 10 أيام)" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <TradingFieldRow label="المقاومة الأولى" value={fmtNum(resistance_1)} sub="(أعلى سعر في 10 أيام)" valueClass="text-rose-600 dark:text-rose-400" />
+        <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-rose-600 dark:text-rose-400" />
+      </div>
+
+      {/* Entry / Stop / Targets / R:R */}
+      <div className="mt-2 pt-2 border-t border-border/50 space-y-0">
+        <TradingFieldRow label="نقطة الدخول" value={fmtNum(entry_price)} sub="(السعر الحالي)" valueClass="text-blue-600 dark:text-blue-400" />
+        <TradingFieldRow label="وقف الخسارة" value={fmtNum(stop_loss)} sub="(-6.0%)" valueClass="text-rose-600 dark:text-rose-400" />
+        <TradingFieldRow label="الهدف الأول" value={fmtNum(target_1)} sub="(+10.0%)" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <TradingFieldRow label="الهدف الثاني" value={fmtNum(target_2)} sub="(+20.0%)" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${rr_ratio.toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
+      </div>
+
+      {/* Dynamic analysis text — changes based on MA10 / volume / range */}
+      <div className="mt-2 pt-2 border-t border-border/50">
+        <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 التحليل:</div>
+        <div className="space-y-0.5 text-[11px] text-muted-foreground leading-relaxed">
+          {analysis_lines.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
+          <p className="font-medium text-foreground mt-1">{recommendation}</p>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 // ============================================================================

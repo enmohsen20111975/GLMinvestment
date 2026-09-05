@@ -333,15 +333,15 @@ def main():
         """).fetchall()]
     else:
         # JOIN مع stocks table عشان نفلتر بـ market
-        # لو الـ ticker column في stocks table اسمه مختلف، استخدم ticker
+        # الـ ticker column في stocks table اسمه 'symbol' (نفس الـ egksco_price_history)
         try:
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT p.{TICKER_COL} FROM {PROD_TABLE} p
-                JOIN stocks s ON p.{TICKER_COL} = s.ticker
+                JOIN stocks s ON p.{TICKER_COL} = s.symbol
                 WHERE s.market = ?
             """, (args.market.upper(),)).fetchall()]
-        except Exception:
-            # fallback: كل الأسهم (لو الـ JOIN فشل)
+        except Exception as e:
+            log(f"  ⚠️ JOIN فشل ({e}) — fallback لكل الأسهم")
             tickers = [r[0] for r in conn.execute(f"""
                 SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
             """).fetchall()]
