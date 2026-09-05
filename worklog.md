@@ -17692,3 +17692,57 @@ Stage Summary:
   - `db/paper_test_v2.json` (7 صفقات + tracking)
   - `scripts/monitor_paper_test.py` (سكربت المراقبة)
   - `scripts/output/paper_test_monitor_20260905.json` (قراءة اليوم)
+
+---
+Task ID: MAKER-RADAR-UI-1
+Agent: Main Agent (Z.ai Code)
+Task: بناء تبويب رادار الميكرز في شاشة التوقعات (UI + Backend APIs)
+
+Work Log:
+- استكشفت بنية الـ predictions screen (MarketAnalysisView.tsx)
+- بنيت 3 APIs في `src/app/api/maker-radar/`:
+  - `route.ts` (GET) — يشغل scripts/maker_radar.py ويرجع القوائم الثلاث + tracking
+  - `track/route.ts` (POST/GET/DELETE) — إضافة/قراءة/حذف سهم من المتابعة (db/maker_radar_tracking.json)
+  - `stock/route.ts` (GET) — تفاصيل سهم واحد (أسعار + إحصائيات + tracking info)
+- بنيت `src/components/predictions/MakerRadarTab.tsx`:
+  - 4 أقسام: تحت الميكروسكوب + موجة انفجارية + اختراق مبكر + المتابَعة
+  - فلتر سريع (الكل/تحت الميكروسكوب/انفجارية/اختراق/متابَعة)
+  - auto-refresh كل 60 ثانية (useVisibilityAwarePolling)
+  - عرض آخر تحديث + حالة السوق (مفتوح/مقفول)
+  - كل سهم clickable → يفتح Dialog بتفاصيله
+  - زر "أضف للمتابعة" + "إزالة من المتابعة" لكل سهم
+  - StockDetailDrawer:
+    - السعر الحالي + تغير الفترة + ROC10 + مدى 20 يوم
+    - tracking info (لو متابَع): تغير من بداية المتابعة + عدد الأيام
+    - sparkline SVG لحركة السعر (30 يوم)
+    - السيولة والحجم (متوسط 20 يوم)
+    - جدول آخر 10 أيام
+- ربطت الـ tab في MarketAnalysisView.tsx (slot 6th column جاهز)
+- اختبرت بـ agent browser:
+  - فتحت http://localhost:3001/ → mounted ✅
+  - انتقلت لـ "متابعة التوقعات" → ظهر tab "رادار الميكرز" ✅
+  - ضغطت على الـ tab → ظهرت القوائم الثلاث + الفلاتر ✅
+  - فلتر "تحت الميكروسكوب" → 7 أسهم (GIH, ETRS, SKPC, SAUD, OBRI, MCRO, EXPA) ✅
+  - ضغطت على GIH → فتح Dialog بتفاصيله الكاملة ✅
+  - ضغطت "أضف للمتابعة" → اتحول لـ "متابَع" + ظهر tracking info ✅
+  - فلتر "⭐ المتابَعة 1" → ظهر بس GIH ✅
+  - زر "إزالة من المتابعة" شغال ✅
+
+Stage Summary:
+- ✅ **تبويب رادار الميكرز شغال 100%** (مختبر بـ agent browser)
+- 📊 **القوائم الـ 3 تظهر**:
+  - 7 أسهم تحت الميكروسكوب (Quiet Accumulation)
+  - 15 سهم موجة انفجارية (Explosive Surge)
+  - 2 سهم اختراق مبكر (Early Break)
+- ✅ **Tracking system شغال**: إضافة/إزالة/عرض + persist in db/maker_radar_tracking.json
+- ✅ **Stock detail drawer**: sparkline + جدول أسعار + إحصائيات + tracking info
+- ✅ **Auto-refresh**: كل 60 ثانية لو السوق مفتوح (useVisibilityAwarePolling)
+- ✅ **Lint passed** (no errors)
+- 📦 Artifacts:
+  - `src/app/api/maker-radar/route.ts` (GET)
+  - `src/app/api/maker-radar/track/route.ts` (POST/GET/DELETE)
+  - `src/app/api/maker-radar/stock/route.ts` (GET)
+  - `src/components/predictions/MakerRadarTab.tsx` (التبويب + الـ drawer)
+  - `src/components/analysis/MarketAnalysisView.tsx` (محدّث — إضافة الـ tab)
+  - `scripts/output/maker_radar_tab.png` (screenshot للتبويب)
+  - `scripts/output/maker_radar_stock_detail.png` (screenshot للـ drawer)

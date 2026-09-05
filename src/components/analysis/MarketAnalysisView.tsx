@@ -17,7 +17,7 @@ import {
   Bitcoin, Zap, Download, Image as ImageIcon, FileText, Camera, Loader2, X, Layers, Send
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
-import { Radio } from 'lucide-react';
+import { Radio, Radar } from 'lucide-react';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -33,6 +33,7 @@ import { MarketSelector } from '@/components/shared/MarketSelector';
 import { MarketStatusExport } from '@/components/market/MarketStatusExport';
 import { RefreshAnalyticsButton } from '@/components/recommendations/RefreshAnalyticsButton';
 import { PredictionTrackingDashboard } from '@/components/predictions/PredictionTrackingDashboard';
+import { MakerRadarTab } from '@/components/predictions/MakerRadarTab';
 import { ExecutiveReportView } from '@/components/reports/ExecutiveReportView';
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
 import dynamic from 'next/dynamic';
@@ -7643,6 +7644,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Layers className="h-4 w-4 text-teal-600" />
             <span className="hidden sm:inline">تتبع القطاعات</span>
           </TabsTrigger>
+          {/* PHASE-2: رادار الميكرز — قائمة أسهم تحت الميكروسكوب + موجة انفجارية + اختراق مبكر */}
+          <TabsTrigger value="maker-radar" className="flex items-center gap-1">
+            <Radar className="h-4 w-4 text-emerald-600" />
+            <span className="hidden sm:inline">رادار الميكرز</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* تبويب متابعة التوقعات — PredictionTrackingDashboard (كل التوقعات + من جاب الهدف + وقف الخسارة) */}
@@ -7666,6 +7672,11 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         {/* Phase P5: تتبع حركة القطاعات */}
         <TabsContent value="sectors-tracking" className="mt-4">
           <SectorTrackingTab market={currentMarket} />
+        </TabsContent>
+
+        {/* PHASE-2: رادار الميكرز */}
+        <TabsContent value="maker-radar" className="mt-4">
+          <MakerRadarTab market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />
         </TabsContent>
       </Tabs>
 
