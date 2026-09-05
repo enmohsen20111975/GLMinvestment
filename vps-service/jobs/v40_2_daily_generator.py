@@ -150,7 +150,7 @@ DNA_DISTRIBUTION_EXIT = os.environ.get('DNA_DISTRIBUTION_EXIT', '1') == '1'     
 DNA_EGX30_DOWN_HOLD   = os.environ.get('DNA_EGX30_DOWN_HOLD', '1') == '1'        # ✅ Winner — skip BUY when market down >0.4%
 DNA_PARTIAL_EXIT      = os.environ.get('DNA_PARTIAL_EXIT', '1') == '1'            # ✅ Winner — sell 40% at 1.5R, trail rest
 DNA_ANOMALY_FILTER    = os.environ.get('DNA_ANOMALY_FILTER', '1') == '1'         # ✅ Winner — reject >50% move in 5 days
-DNA_MAX_OPEN_POSITIONS = int(os.environ.get('DNA_MAX_OPEN_POSITIONS', '8'))      # ✅ Winner — hard limit 8 concurrent
+DNA_MAX_OPEN_POSITIONS = int(os.environ.get('DNA_MAX_OPEN_POSITIONS', '5'))      # ✅ Winner — hard limit 5 concurrent (was 8)
 DNA_SECTOR_LIMIT_FINANCE = float(os.environ.get('DNA_SECTOR_LIMIT_FINANCE', '0.20'))  # ✅ Finance ≤ 20%
 DNA_SECTOR_LIMIT_OTHER   = float(os.environ.get('DNA_SECTOR_LIMIT_OTHER', '0.15'))    # ✅ Any other ≤ 15%
 
