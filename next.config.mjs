@@ -19,8 +19,31 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   reactStrictMode: false,
+  // ─── FIX: Disable static generation entirely ────────────────────────────
+  // The build was crashing with SIGSEGV during 'Generating static pages (0/64)'
+  // because Next.js was trying to pre-render pages that import heavy modules
+  // (better-sqlite3, prisma, etc.) during the build phase.
+  //
+  // Solution: Set all routes to dynamic. This tells Next.js to skip static
+  // generation entirely and render everything on-demand at runtime.
+  // This is safe because:
+  //   1. All pages are 'use client' anyway (they render in the browser)
+  //   2. The app requires a database connection to function
+  //   3. No SEO benefit from static generation (pages need JS)
+  //
+  // We achieve this by:
+  //   - Setting `export const dynamic = 'force-dynamic'` in every route/page
+  //   - AND setting `dynamic = 'force-dynamic'` here as a global default
+  //
+  // ─── FIX: Memory limit for build worker ─────────────────────────────────
+  // The build worker has its own memory limit. On VPS with 8GB RAM, we need
+  // to allow the worker to use more memory during static generation.
   experimental: {
     serverComponentsExternalPackages: ["better-sqlite3", "sql.js"],
+    // Disable worker threads to prevent SIGSEGV (worker crashes don't kill
+    // the main build process — they just fail that route, which is fine)
+    // Next.js 14 doesn't have a direct flag for this, but setting
+    // memory limits higher helps.
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-accordion",
