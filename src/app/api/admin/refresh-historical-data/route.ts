@@ -10,6 +10,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { verifyAdminToken, verifyAdminRequest } from '@/lib/admin-auth-server';
 
 // Data engine runs on port 5000

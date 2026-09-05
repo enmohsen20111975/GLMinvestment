@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
 const PYTHON_BACKEND_URL = process.env.VPS_API_URL || process.env.PYTHON_API_URL || 'http://127.0.0.1:8010';
