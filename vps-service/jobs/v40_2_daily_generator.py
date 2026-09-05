@@ -2137,6 +2137,53 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if signal in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
                 print(f"[DNA-DEBUG] {ticker} on {scan_date}: REACHED APPEND | signal={signal} score={result.get('score')} entry={entry} stop={stop} target={target} r_mult={r_mult:.2f}", flush=True)
 
+            # ── MAKER RADAR INTEGRATION (2026-09-05): Kill Switch + Money Flow ──
+            # لو السهم عليه Kill Switch (توزيع قاتل / حبس / تدوير وهمي) → ارفضه فوراً.
+            # لو السهم فيه دخول سيولة قوي → boost score +5.
+            # لو السهم فيه خروج سيولة قوي → penalty score -5.
+            _radar_kill = False
+            _radar_kill_reason = ''
+            _radar_boost = 0
+            _radar_money_flow = 'neutral'
+            try:
+                from utils.shared_liquidity import check_kill_switch, compute_money_flow
+                _closes_slice = closes[:day_idx+1]
+                _volumes_slice = volumes[:day_idx+1]
+                _highs_slice = highs[:day_idx+1]
+                _lows_slice = lows[:day_idx+1]
+                if len(_closes_slice) >= 18:
+                    _kill_triggered, _kill_reason = check_kill_switch(
+                        _closes_slice, _volumes_slice, _highs_slice, _lows_slice
+                    )
+                    if _kill_triggered:
+                        _radar_kill = True
+                        _radar_kill_reason = _kill_reason
+                        print(f"🚫 [RADAR-KILL] {ticker} on {scan_date}: {_kill_reason} → rejected", flush=True)
+
+                    _mf = compute_money_flow(_closes_slice, _volumes_slice, _highs_slice, _lows_slice)
+                    _radar_money_flow = _mf.get('money_flow_state', 'neutral')
+                    if '🔥 دخول قوي' in _radar_money_flow:
+                        _radar_boost = 5
+                    elif '🔥 خروج قوي' in _radar_money_flow:
+                        _radar_boost = -5
+                    elif '🟢 سيولة داخلة' in _radar_money_flow:
+                        _radar_boost = 2
+                    elif '🔴 سيولة خارجة' in _radar_money_flow:
+                        _radar_boost = -2
+            except Exception as _radar_err:
+                pass  # safe-by-design: لو الرادار فشل → نكمّل من غيره
+
+            # Kill Switch → ارفض الإشارة فوراً
+            if _radar_kill:
+                print(f"🚫 [RADAR-KILL] {ticker} on {scan_date}: {_radar_kill_reason} → signal rejected", flush=True)
+                continue
+
+            # Apply boost/penalty
+            if _radar_boost != 0:
+                _old_score = result.get('score', 0)
+                result['score'] = max(0, min(100, _old_score + _radar_boost))
+                print(f"📊 [RADAR-BOOST] {ticker} on {scan_date}: {_radar_money_flow} → score {_old_score} → {result['score']} ({_radar_boost:+d})", flush=True)
+
             signals_by_date[scan_date].append({
                 'ticker': ticker,
                 'signal': signal,
