@@ -392,7 +392,7 @@ QUIET_ACCUM_ROC_10D_MAX = 12.0      # تخفيف: ROC 10d < 12% (كان 10%)
 QUIET_ACCUM_DIST_DAYS_MAX = 3       # تخفيف: على الأكثر 3 أيام distribution (كان 2)
 
 # عدد الإشارات اللازمة (من 6 شروط) — تخفيف لـ 4/6
-QUIET_ACCUMULATION_MIN_SIGNALS = 4   # تخفيف: 4/6 (كان 5) — عشان نصطاد التجميع المبكر
+QUIET_ACCUMULATION_MIN_SIGNALS = 5   # تشديد رجع لـ 5/6 (كان 4 — خرب الدقة)
 
 # Position size
 QUIET_ACCUMULATION_POSITION_SIZE = 0.02  # 2% (مش 2.5% — احتياط)
@@ -439,8 +439,8 @@ def detect_quiet_accumulation(
         'signals_failed': [],
     }
 
-    # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
-    needed = 15  # محتاجين 10 أيام + buffer للأخيرة
+    # lookback = 18 يوم (توازن بين البدري والدقة)
+    needed = 18
     if not closes or len(closes) < needed or not volumes or len(volumes) < needed:
         return False, f'بيانات غير كافية ({len(closes) if closes else 0} < {needed})', details
 
@@ -582,9 +582,25 @@ def detect_pre_surge(
         'signals_failed': [],
     }
 
-    needed = 15
+    # lookback = 18 يوم (توازن)
+    needed = 18
     if not closes or len(closes) < needed or not volumes or len(volumes) < needed:
         return False, f'بيانات غير كافية ({len(closes) if closes else 0} < {needed})', details
+
+    # فلتر سيولة أدنى + استبعاد pump (قرار المالك 2026-09-05)
+    avg_20_vol_check = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes) / len(volumes) if volumes else 0)
+    last_close_check = closes[-1]
+    avg_turnover_check = avg_20_vol_check * last_close_check
+    # شرط سيولة أدنى: turnover ≥ 50K EGP (مش أسهم ميتة)
+    if avg_turnover_check < 50_000:
+        return False, f'سيولة ميتة (turnover {avg_turnover_check:.0f} < 50K)', details
+    # استبعاد pump: لو آخر شمعة طلعت +50% مع سيولة شبه صفر → مش حقيقي
+    if len(closes) >= 2 and closes[-2] > 0:
+        last_move = (closes[-1] - closes[-2]) / closes[-2] * 100
+        last_vol = volumes[-1] if volumes else 0
+        # لو حركة +50% والحجم أقل من نص المتوسط → pump
+        if last_move > 50 and last_vol < avg_20_vol_check * 0.3:
+            return False, f'pump مشبوه (move +{last_move:.0f}% + volume واطي)', details
 
     last_10_closes = closes[-10:]
     last_10_volumes = volumes[-10:]

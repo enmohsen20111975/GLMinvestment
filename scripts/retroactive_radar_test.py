@@ -141,8 +141,8 @@ def run_radar_at_t(by_ticker, t_date, min_price=1.0):
     for ticker, series in by_ticker.items():
         # خد البيانات لحد t_date
         data_up_to_t = [d for d in series if d['date'] < t_date]
-        # تخفيف الـ lookback من 25 لـ 15 يوم
-        if len(data_up_to_t) < 15:
+        # lookback = 18 يوم
+        if len(data_up_to_t) < 18:
             continue
 
         closes = [d['close'] for d in data_up_to_t]
@@ -310,8 +310,8 @@ def main():
     all_detections = []
     for i, t_date in enumerate(all_dates[:-1]):
         # محتاجين على الأقل 25 يوم قبل t_date
-        # تخفيف الـ lookback من 25 لـ 15 يوم
-        if i < 15:
+        # lookback = 18 يوم (تشديد من 15)
+        if i < 18:
             continue
         detections = run_radar_at_t(by_ticker, t_date)
         n_total = sum(len(v) for v in detections.values())
