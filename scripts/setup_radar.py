@@ -30,10 +30,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Fallback chain (نفس اللي في maker_radar.py و radar-db.ts)
 DB_CANDIDATES = [
+    # 1. Source of truth
+    ('db/data_engine.db', 'egksco_price_history'),
+    # 2. Mirror
+    ('db/stocks.db', 'stock_daily_prices'),
+    # 3. Saudi/US/Commodities
+    ('db/data_engine.db', 'historical_data'),
+    # 4. Sandbox fallbacks
     ('db/production_snapshot.db', 'stock_daily_prices'),
     ('db/vps_real/stocks.db', 'stock_daily_prices'),
-    ('db/stocks.db', 'stock_daily_prices'),
-    ('db/data_engine.db', 'historical_data'),
 ]
 
 
@@ -59,12 +64,14 @@ def check_db(db_rel, table):
             return {'exists': True, 'path': str(db_path), 'size_mb': round(size_mb, 1), 'table_exists': False, 'rows': 0}
         # عد الصفوف
         n_rows = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        # اكتشف الـ ticker column و date column من الـ schema
+        cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        ticker_col = 'symbol' if 'symbol' in cols else ('ticker' if 'ticker' in cols else None)
+        date_col = 'price_date' if 'price_date' in cols else ('date' if 'date' in cols else None)
         # عد الـ tickers
-        ticker_col = 'ticker' if table == 'stock_daily_prices' else 'symbol'
-        n_tickers = conn.execute(f"SELECT COUNT(DISTINCT {ticker_col}) FROM {table}").fetchone()[0]
+        n_tickers = conn.execute(f"SELECT COUNT(DISTINCT {ticker_col}) FROM {table}").fetchone()[0] if ticker_col else 0
         # أحدث تاريخ
-        date_col = 'price_date' if table == 'stock_daily_prices' else 'date'
-        latest = conn.execute(f"SELECT MAX({date_col}) FROM {table}").fetchone()[0]
+        latest = conn.execute(f"SELECT MAX({date_col}) FROM {table}").fetchone()[0] if date_col else '-'
         conn.close()
         return {
             'exists': True,
