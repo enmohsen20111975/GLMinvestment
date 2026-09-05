@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import React from 'react';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
 import { VALID_VIEWS, VALID_VIEWS_SET } from '@/lib/valid-views';
@@ -32,54 +32,54 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 // shows a friendly "حدث خطأ" message + Retry button instead of a White Screen
 // of Death. Each view has its own isolated boundary — the rest of the app
 // keeps working.
-const StocksView = dynamic(() => import('@/components/stocks/StocksView').then(m => ({ default: m.StocksView })), { ssr: false, loading: () => <LazyTabLoader label="الأسهم" /> });
+const StocksView = dynamicImport(() => import('@/components/stocks/StocksView').then(m => ({ default: m.StocksView })), { ssr: false, loading: () => <LazyTabLoader label="الأسهم" /> });
 const EnhancedPortfolioView = withErrorBoundary(
-  dynamic(() => import('@/components/portfolio/EnhancedPortfolioView').then(m => ({ default: m.EnhancedPortfolioView })), { ssr: false, loading: () => <LazyTabLoader label="المحفظة" /> }),
+  dynamicImport(() => import('@/components/portfolio/EnhancedPortfolioView').then(m => ({ default: m.EnhancedPortfolioView })), { ssr: false, loading: () => <LazyTabLoader label="المحفظة" /> }),
   'المحفظة',
 );
 const EnhancedWatchlistView = withErrorBoundary(
-  dynamic(() => import('@/components/watchlist/EnhancedWatchlistView').then(m => ({ default: m.EnhancedWatchlistView })), { ssr: false, loading: () => <LazyTabLoader label="قائمة المتابعة" /> }),
+  dynamicImport(() => import('@/components/watchlist/EnhancedWatchlistView').then(m => ({ default: m.EnhancedWatchlistView })), { ssr: false, loading: () => <LazyTabLoader label="قائمة المتابعة" /> }),
   'قائمة المتابعة',
 );
 const MarketAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
+  dynamicImport(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
   'التحليل',
 );
 // فلاتر الأسهم — شاشة موحّدة (فلاتر متقدمة + أعلى الأرباح/الخسائر) — Python screener via proxy
 const StockScreenerAdvancedView = withErrorBoundary(
-  dynamic(() => import('@/components/screener/StockScreenerAdvanced').then(m => ({ default: m.StockScreenerAdvanced })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
+  dynamicImport(() => import('@/components/screener/StockScreenerAdvanced').then(m => ({ default: m.StockScreenerAdvanced })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
   'فلاتر الأسهم',
 );
 const ReportsView = withErrorBoundary(
-  dynamic(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
+  dynamicImport(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
 );
 const NewsFeedView = withErrorBoundary(
-  dynamic(() => import('@/components/news/NewsFeedView').then(m => ({ default: m.NewsFeedView })), { ssr: false, loading: () => <LazyTabLoader label="الأخبار" /> }),
+  dynamicImport(() => import('@/components/news/NewsFeedView').then(m => ({ default: m.NewsFeedView })), { ssr: false, loading: () => <LazyTabLoader label="الأخبار" /> }),
   'الأخبار',
 );
 const LearningView = withErrorBoundary(
-  dynamic(() => import('@/components/learning/LearningView').then(m => ({ default: m.LearningView })), { ssr: false, loading: () => <LazyTabLoader label="التعلّم" /> }),
+  dynamicImport(() => import('@/components/learning/LearningView').then(m => ({ default: m.LearningView })), { ssr: false, loading: () => <LazyTabLoader label="التعلّم" /> }),
   'التعلّم',
 );
 const SimulationView = withErrorBoundary(
-  dynamic(() => import('@/components/simulation/SimulationView').then(m => ({ default: m.SimulationView })), { ssr: false, loading: () => <LazyTabLoader label="المحاكاة" /> }),
+  dynamicImport(() => import('@/components/simulation/SimulationView').then(m => ({ default: m.SimulationView })), { ssr: false, loading: () => <LazyTabLoader label="المحاكاة" /> }),
   'المحاكاة',
 );
 const AcademyView = withErrorBoundary(
-  dynamic(() => import('@/components/academy/AcademyView').then(m => ({ default: m.AcademyView })), { ssr: false, loading: () => <LazyTabLoader label="أكاديمية M2y" /> }),
+  dynamicImport(() => import('@/components/academy/AcademyView').then(m => ({ default: m.AcademyView })), { ssr: false, loading: () => <LazyTabLoader label="أكاديمية M2y" /> }),
   'أكاديمية M2y',
 );
 const SettingsView = withErrorBoundary(
-  dynamic(() => import('@/components/settings/SettingsView').then(m => ({ default: m.SettingsView })), { ssr: false, loading: () => <LazyTabLoader label="الإعدادات" /> }),
+  dynamicImport(() => import('@/components/settings/SettingsView').then(m => ({ default: m.SettingsView })), { ssr: false, loading: () => <LazyTabLoader label="الإعدادات" /> }),
   'الإعدادات',
 );
 const AdminView = withErrorBoundary(
-  dynamic(() => import('@/components/admin/AdminView').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <LazyTabLoader label="لوحة الأدمن" /> }),
+  dynamicImport(() => import('@/components/admin/AdminView').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <LazyTabLoader label="لوحة الأدمن" /> }),
   'لوحة الأدمن',
 );
-const AuthView = dynamic(() => import('@/components/auth/AuthView').then(m => ({ default: m.AuthView })), { ssr: false });
-const SubscriptionView = dynamic(() => import('@/components/subscription/SubscriptionView').then(m => ({ default: m.SubscriptionView })), { ssr: false });
+const AuthView = dynamicImport(() => import('@/components/auth/AuthView').then(m => ({ default: m.AuthView })), { ssr: false });
+const SubscriptionView = dynamicImport(() => import('@/components/subscription/SubscriptionView').then(m => ({ default: m.SubscriptionView })), { ssr: false });
 // UI-MIRROR PROTOCOL (Complete Mirror):
 // CryptoView, LiveCryptoTable, CryptoWatchlistView REMOVED.
 // Crypto now uses the SAME components as stocks:
@@ -89,85 +89,85 @@ const SubscriptionView = dynamic(() => import('@/components/subscription/Subscri
 // The Sidebar sets currentMarket='CRYPTO' on crypto nav clicks, which makes
 // these stock components load crypto data automatically.
 const CryptoPortfolioView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoPortfolioView').then(m => ({ default: m.CryptoPortfolioView })), { ssr: false }),
+  dynamicImport(() => import('@/components/crypto/CryptoPortfolioView').then(m => ({ default: m.CryptoPortfolioView })), { ssr: false }),
   'محفظة الكريبتو',
 );
 const ZakatView = withErrorBoundary(
-  dynamic(() => import('@/components/zakat/ZakatView').then(m => ({ default: m.ZakatView })), { ssr: false }),
+  dynamicImport(() => import('@/components/zakat/ZakatView').then(m => ({ default: m.ZakatView })), { ssr: false }),
   'الزكاة',
 );
 const TithesView = withErrorBoundary(
-  dynamic(() => import('@/components/tithes/TithesView').then(m => ({ default: m.TithesView })), { ssr: false }),
+  dynamicImport(() => import('@/components/tithes/TithesView').then(m => ({ default: m.TithesView })), { ssr: false }),
   'العشور',
 );
 // StoredAnalysisView REMOVED — advanced-analysis features distributed to
 // #recommendations (متابعة التوقعات) + #specialist-analysis (تحليل المتخصصين).
 // The file still exists for reference but is no longer routed.
 const SpecialistAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/advanced-analysis/SpecialistAnalysisView').then(m => ({ default: m.SpecialistAnalysisView })), { ssr: false }),
+  dynamicImport(() => import('@/components/advanced-analysis/SpecialistAnalysisView').then(m => ({ default: m.SpecialistAnalysisView })), { ssr: false }),
   'التحليل التخصصي',
 );
 // PredictionPerformanceView + PredictionCredibilityTable معطّلين (admin-only)
 const AdvancedPortfolioManager = withErrorBoundary(
-  dynamic(() => import('@/components/portfolio/AdvancedPortfolioManager').then(m => ({ default: m.AdvancedPortfolioManager })), { ssr: false }),
+  dynamicImport(() => import('@/components/portfolio/AdvancedPortfolioManager').then(m => ({ default: m.AdvancedPortfolioManager })), { ssr: false }),
   'المحفظة المتقدمة',
 );
 const SeasonalityDashboard = withErrorBoundary(
-  dynamic(() => import('@/components/seasonality/SeasonalityDashboard').then(m => ({ default: m.SeasonalityDashboard })), { ssr: false }),
+  dynamicImport(() => import('@/components/seasonality/SeasonalityDashboard').then(m => ({ default: m.SeasonalityDashboard })), { ssr: false }),
   'لوحة الموسمية',
 );
 const AlertsCenterView = withErrorBoundary(
-  dynamic(() => import('@/components/alerts/AlertsCenterView').then(m => ({ default: m.AlertsCenterView })), { ssr: false }),
+  dynamicImport(() => import('@/components/alerts/AlertsCenterView').then(m => ({ default: m.AlertsCenterView })), { ssr: false }),
   'مركز التنبيهات',
 );
 const UserPublishingView = withErrorBoundary(
-  dynamic(() => import('@/components/publishing/UserPublishingView').then(m => ({ default: m.UserPublishingView })), { ssr: false }),
+  dynamicImport(() => import('@/components/publishing/UserPublishingView').then(m => ({ default: m.UserPublishingView })), { ssr: false }),
   'منصة النشر',
 );
 const TradingMemoryView = withErrorBoundary(
-  dynamic(() => import('@/components/memory/TradingMemoryView').then(m => ({ default: m.TradingMemoryView })), { ssr: false }),
+  dynamicImport(() => import('@/components/memory/TradingMemoryView').then(m => ({ default: m.TradingMemoryView })), { ssr: false }),
   'ذاكرة التداول',
 );
 const TradingJournalView = withErrorBoundary(
-  dynamic(() => import('@/components/journal/TradingJournalView').then(m => ({ default: m.TradingJournalView })), { ssr: false }),
+  dynamicImport(() => import('@/components/journal/TradingJournalView').then(m => ({ default: m.TradingJournalView })), { ssr: false }),
   'يوميات التداول',
 );
 const UnifiedAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/analysis/UnifiedAnalysisView'), { ssr: false }),
+  dynamicImport(() => import('@/components/analysis/UnifiedAnalysisView'), { ssr: false }),
   'التحليل الموحّد',
 );
 const SmartConfluenceView = withErrorBoundary(
-  dynamic(() => import('@/components/smart-assistant/SmartConfluenceView').then(m => ({ default: m.SmartConfluenceView })), { ssr: false }),
+  dynamicImport(() => import('@/components/smart-assistant/SmartConfluenceView').then(m => ({ default: m.SmartConfluenceView })), { ssr: false }),
   'المساعد الذكي',
 );
 const PredictionTrackingView = withErrorBoundary(
-  dynamic(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
+  dynamicImport(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
   'تتبّع التوقعات',
 );
 const PicksManagementView = withErrorBoundary(
-  dynamic(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوصيات" /> }),
+  dynamicImport(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوصيات" /> }),
   'إدارة التوصيات',
 );
 const LiveMonitor = withErrorBoundary(
-  dynamic(() => import('@/components/dashboard/LiveMonitor'), { ssr: false }),
+  dynamicImport(() => import('@/components/dashboard/LiveMonitor'), { ssr: false }),
   'المراقبة الحية',
 );
 const WealthCharts = withErrorBoundary(
-  dynamic(() => import('@/components/admin/WealthCharts').then(m => ({ default: m.WealthCharts })), { ssr: false }),
+  dynamicImport(() => import('@/components/admin/WealthCharts').then(m => ({ default: m.WealthCharts })), { ssr: false }),
   'رسوم الثروة',
 );
 // IterativeLearningView + SimpleRecommendationsView معطّلين (مش مستخدمين في switch)
 const EGXBacktestDashboard = withErrorBoundary(
-  dynamic(() => import('@/components/backtesting/EGXBacktestDashboard').then(m => ({ default: m.EGXBacktestDashboard })), { ssr: false }),
+  dynamicImport(() => import('@/components/backtesting/EGXBacktestDashboard').then(m => ({ default: m.EGXBacktestDashboard })), { ssr: false }),
   'لوحة الـ Backtest',
 );
 
 const TradingChartView = withErrorBoundary(
-  dynamic(() => import('@/components/analysis/TradingChartView').then(m => ({ default: m.TradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="الشارت التفاعلي" height="h-[600px]" /> }),
+  dynamicImport(() => import('@/components/analysis/TradingChartView').then(m => ({ default: m.TradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="الشارت التفاعلي" height="h-[600px]" /> }),
   'الشارت التفاعلي',
   { height: 'h-[600px]' },
 );
-const AboutView = dynamic(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
+const AboutView = dynamicImport(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
 // SniperView removed — merged into MarketAnalysisView persona tabs
 
 // Crypto additional views - loaded as a batch
@@ -185,20 +185,20 @@ const cryptoViewsPromise = import('@/components/crypto/CryptoAdditionalViews').t
 
 // ─── مكونات الكريبتو المستقلة (بيانات crypto_prices حقيقية) ────────────────────────
 const CryptoScreenerView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
+  dynamicImport(() => import('@/components/crypto/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
   'فلتر العملات الرقمية',
 );
 const CryptoPredictionTrackingView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
+  dynamicImport(() => import('@/components/crypto/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
   'تتبّع توقعات الكريبتو',
 );
 const CryptoTradingChartView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
+  dynamicImport(() => import('@/components/crypto/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
   'شارت العملات',
   { height: 'h-[600px]' },
 );
 const CryptoAdvancedAnalysisView = withErrorBoundary(
-  dynamic(() => import('@/components/crypto/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
+  dynamicImport(() => import('@/components/crypto/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
   'التحليل المتقدم للعملات',
 );
 
