@@ -447,18 +447,32 @@ def evaluate_kill_filters(
     else:
         kill_details['data_bars'] = {'passed': True, 'value': data_bars_count}
 
-    # Filter 5: القوة النسبية
+    # Filter 5: القوة النسبية — PHASE-1-RS-BYPASS (2026-09-04)
+    # قرار المالك: الأسهم الانفجارية بتيجي ضعيفة عن السوق قبل ما تنفجر (الـ RS سلبي).
+    # لو الـ EXPLOSIVE_SURGE path اشتغل (vol ≥ 2.5× + فوق SMA20 + range منضغط)
+    # → نشيل الرفض ونحوله لـ penalty (warning) + position size 2%.
+    # غير كده → nسيب الـ kill زي ما هو.
     if benchmark_change != 0 or stock_roc != 0:
         relative_strength = stock_roc - benchmark_change
         if relative_strength < _min_rs:
-            kill_reasons.append(
-                f'🚨 ضعف نسبي واضح — RS={relative_strength:+.2f}% < {_min_rs}% مقابل المؤشر'
-            )
-            kill_details['relative_strength'] = {
-                'passed': False,
-                'value': round(relative_strength, 2),
-                'threshold': _min_rs,
-            }
+            # لو فيه explosive_surge → bypass الرفض
+            if _liquidity_explosive:
+                kill_details['relative_strength'] = {
+                    'passed': True,  # bypass — مش kill
+                    'value': round(relative_strength, 2),
+                    'threshold': _min_rs,
+                    'bypassed_by_explosive_surge': True,
+                    'note': f'RS={relative_strength:+.2f}% ضعيف، بس EXPLOSIVE_SURGE بـ يبرر الدخول بـ position size 2%',
+                }
+            else:
+                kill_reasons.append(
+                    f'🚨 ضعف نسبي واضح — RS={relative_strength:+.2f}% < {_min_rs}% مقابل المؤشر'
+                )
+                kill_details['relative_strength'] = {
+                    'passed': False,
+                    'value': round(relative_strength, 2),
+                    'threshold': _min_rs,
+                }
         else:
             kill_details['relative_strength'] = {
                 'passed': True,

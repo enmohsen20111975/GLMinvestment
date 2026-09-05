@@ -194,8 +194,24 @@ def _check_above_sma50(closes: List[float], volumes: List[float] = None) -> Dict
     return {'name': 'sma50', 'passed': False, 'reason': f'تحت {sma_label} بـ {dist_pct:.1f}%', 'weight': 2}
 
 
-def _check_relative_strength(proofs: Dict, stock_roc: float = 0, benchmark_change: float = 0) -> Dict[str, Any]:
-    """شرط 4: RS > 1.0."""
+def _check_relative_strength(proofs: Dict, stock_roc: float = 0, benchmark_change: float = 0,
+                             explosive_surge_activated: bool = False) -> Dict[str, Any]:
+    """شرط 4: RS > 1.0 — PHASE-1-RS-BYPASS (2026-09-04).
+
+    قرار المالك: الأسهم الانفجارية بتيجي ضعيفة عن السوق قبل ما تنفجر.
+    لو الـ EXPLOSIVE_SURGE path اشتغل → bypass الرفض (penalty مش kill).
+    غير كده → استخدم الـ logic القديم.
+    """
+    # PHASE-1-RS-BYPASS: لو فيه explosive_surge → اسمح بالدخول بـ penalty
+    if explosive_surge_activated:
+        rs = stock_roc - benchmark_change
+        return {
+            'name': 'rs', 'passed': True,
+            'reason': f'RS={rs:+.2f}% ضعيف، بس EXPLOSIVE_SURGE بـ يبرر الدخول بـ position size 2%',
+            'weight': 3,
+            'bypassed_by_explosive_surge': True,
+        }
+
     # لو في proofs.benchmark string
     benchmark_str = str(proofs.get('benchmark', '')).lower() if isinstance(proofs, dict) else ''
     if 'أقوى' in benchmark_str or 'outperform' in benchmark_str or '✅' in str(proofs.get('benchmark', '')):
@@ -366,6 +382,11 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
     stock_roc = _safe_float(data.get('stock_roc'))
     benchmark_change = _safe_float(data.get('benchmark_change'))
 
+    # PHASE-1-RS-BYPASS: نفّذ _check_liquidity الأول عشان نعرف لو فيه explosive_surge
+    # بعدين نمرّر الـ flag لـ _check_relative_strength (لو explosive → bypass RS kill)
+    _liquidity_check = _check_liquidity(volumes, closes)
+    _explosive_surge = bool(_liquidity_check.get('explosive_surge_activated', False))
+
     # تنفيذ كل الفحوصات
     # EGX-STRATEGY-FINAL: لو soft_surge=True، نتخطى شرط market_context (السوق الهابط)
     # لأن soft_surge بيصطاد وحوش بتنفجر رغم السوق الهابط (vol_ratio ≥ 2.0 + ROC5 > 3%).
@@ -384,10 +405,11 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
         _check_evidence_count(evidence_count),
         _check_rr(entry_price, target_price, stop_price),
         _check_above_sma50(closes, volumes),
-        _check_relative_strength(proofs, stock_roc, benchmark_change),
+        _check_relative_strength(proofs, stock_roc, benchmark_change,
+                                 explosive_surge_activated=_explosive_surge),
         _check_deep_correction(closes),
         _check_dont_chase(closes, signal_type=data.get('signal_type', ''), score=data.get('score', 0)),
-        _check_liquidity(volumes, closes),
+        _liquidity_check,
         _market_ctx_check,
     ]
 

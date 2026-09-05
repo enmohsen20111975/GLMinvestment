@@ -99,12 +99,17 @@ def find_best_surge(closes):
 
 
 def compute_market_benchmark(conn, current_date, lookback=20):
-    """متوسط عوائد كل أسهم EGX في آخر N يوم = benchmark proxy (نفس v40_2 logic)."""
+    """متوسط عوائد كل أسهم EGX في آخر N يوم قبل current_date = benchmark.
+
+    PHASE-1: نحسب متوسط عوائد كل الأسهم في نافذة [current_date - lookback, current_date]
+    عشان نقارنها بـ stock_roc (نفس النافذة).
+    """
     rows = conn.execute("""
         SELECT ticker, close, price_date FROM stock_daily_prices
         WHERE price_date <= ? AND close > 0
-        ORDER BY price_date DESC LIMIT 50000
-    """, (current_date,)).fetchall()
+        AND price_date >= date(?, ?)
+        ORDER BY price_date
+    """, (current_date, current_date, f"-{lookback} days")).fetchall()
     # لكل ticker: أول وأخر close في الـ window
     by_ticker = {}
     for r in rows:
@@ -112,10 +117,8 @@ def compute_market_benchmark(conn, current_date, lookback=20):
     returns = []
     for ticker, series in by_ticker.items():
         series.sort()
-        # آخر lookback+1 يوم
-        recent = series[-lookback-1:]
-        if len(recent) >= lookback + 1 and recent[0][1] > 0:
-            ret = (recent[-1][1] - recent[0][1]) / recent[0][1] * 100
+        if len(series) >= 2 and series[0][1] > 0:
+            ret = (series[-1][1] - series[0][1]) / series[0][1] * 100
             returns.append(ret)
     if not returns:
         return 0.0
@@ -193,19 +196,31 @@ def evaluate_all_kill_filters(
     else:
         filters['data_bars'] = {'passed': True, 'value': data_bars}
 
-    # 5. Relative strength
+    # 5. Relative strength — PHASE-1-RS-BYPASS (2026-09-04)
+    # لو explosive_surge اشتغل (من Filter 1) → bypass RS kill (penalty مش رفض)
     if benchmark_change != 0 or stock_roc != 0:
         rs = stock_roc - benchmark_change
         if rs < MIN_RS:
-            filters['relative_strength'] = {
-                'passed': False,
-                'reason': f'RS={rs:+.2f}% < {MIN_RS}%',
-                'value': round(rs, 2),
-            }
+            # لو فيه explosive_surge → bypass الرفض
+            if filters.get('liquidity', {}).get('explosive_surge_activated', False):
+                filters['relative_strength'] = {
+                    'passed': True,  # bypass — مش kill
+                    'reason': f'RS={rs:+.2f}% < {MIN_RS}% — bypassed by EXPLOSIVE_SURGE (position size 2%)',
+                    'value': round(rs, 2),
+                    'bypassed_by_explosive_surge': True,
+                    'would_have_failed_old': True,  # كان هيُرفض قبل التعديل
+                }
+            else:
+                filters['relative_strength'] = {
+                    'passed': False,
+                    'reason': f'RS={rs:+.2f}% < {MIN_RS}%',
+                    'value': round(rs, 2),
+                    'would_have_failed_old': True,
+                }
         else:
-            filters['relative_strength'] = {'passed': True, 'value': round(rs, 2)}
+            filters['relative_strength'] = {'passed': True, 'value': round(rs, 2), 'would_have_failed_old': False}
     else:
-        filters['relative_strength'] = {'passed': True, 'value': None, 'note': 'no benchmark'}
+        filters['relative_strength'] = {'passed': True, 'value': None, 'note': 'no benchmark', 'would_have_failed_old': False}
 
     # 6. Wash trading
     if closes and len(closes) >= 25 and volumes and len(volumes) >= 25:
@@ -318,10 +333,10 @@ def main():
         else:
             stock_roc = 0.0
 
-        # benchmark = متوسط عوائد السوق في نفس الفترة (نأخذ عينة من 10 أسهم عشوائية عشان السرعة)
-        # بدل ما نحسب الـ benchmark من كل الأسهم (ببطء)، نستخدم proxy: متوسط عوائد آخر 20 يوم لـ 5 أسهم مرجعية
-        # أو نستخدم قيمة ثابتة (0) كـ fallback
-        benchmark_change = 0.0  # TODO: hook للـ benchmark الحقيقي
+        # benchmark = متوسط عوائد كل أسهم EGX في نفس نافذة الـ 20 يوم
+        # نحسبها من الـ production_snapshot.db (لدينا بيانات كل الأسهم)
+        benchmark_date = rows[pre_end - 1][0] if pre_end > 0 else None
+        benchmark_change = compute_market_benchmark(conn, benchmark_date, lookback=20)
 
         # شغّل كل الـ kill filters
         filters = evaluate_all_kill_filters(
@@ -357,6 +372,21 @@ def main():
             if not fdata['passed']:
                 rejection_reasons.append(fname)
 
+        # احسب الـ old_rejection_reasons (قبل تعديل RS bypass)
+        # لو RS كان هيُرفض بس الـ explosive bypass شغّاله → اعتبره "old_rejection"
+        old_rejection_reasons = []
+        for fname, fdata in filters.items():
+            if fname == 'relative_strength':
+                if fdata.get('would_have_failed_old', False):
+                    old_rejection_reasons.append(fname)
+            elif not fdata['passed']:
+                old_rejection_reasons.append(fname)
+
+        # هل الـ RS bypass أنقذ السهم؟
+        rs_bypassed = (
+            filters.get('relative_strength', {}).get('bypassed_by_explosive_surge', False)
+        )
+
         explosive_movers.append({
             'ticker': ticker,
             'last_close': round(closes[-1], 2),
@@ -367,9 +397,13 @@ def main():
             'pre_avg_turnover': round(avg_turnover, 0),
             'pre_data_bars': len(pre_closes),
             'pre_stock_roc_20d': round(stock_roc, 2),
+            'benchmark_change_20d': round(benchmark_change, 2),
+            'relative_strength': round(stock_roc - benchmark_change, 2),
             'price_bucket': classify_price_bucket(current_price),
             'filters': filters,
             'rejection_reasons': rejection_reasons,
+            'old_rejection_reasons': old_rejection_reasons,  # قبل التعديل
+            'rs_bypassed_by_explosive': rs_bypassed,
             'explosive_surge_would_catch': explosive_pre,
             'explosive_surge_reason': explosive_reason,
             'explosive_surge_details': explosive_details,
@@ -382,21 +416,45 @@ def main():
     log(f"\n  ✅ تم تحليل {len(tickers)} سهم | {len(explosive_movers)} explosive mover | {skipped_low_data} اتسكيبوا (بيانات ناقصة)")
 
     # ─── التصنيف ──────────────────────────────────────────────────────
-    log("\n═══ تصنيف أسباب الرفض ═══\n")
+    log("\n═══ تصنيف أسباب الرفض (بعد تعديل RS bypass) ═══\n")
 
     reason_counts = {}
     for m in explosive_movers:
         for r in m['rejection_reasons']:
             reason_counts[r] = reason_counts.get(r, 0) + 1
 
+    old_reason_counts = {}
+    for m in explosive_movers:
+        for r in m['old_rejection_reasons']:
+            old_reason_counts[r] = old_reason_counts.get(r, 0) + 1
+
     log(f"  إجمالي explosive movers: {len(explosive_movers)}")
-    log(f"  أسباب الرفض (ممكن سهم يترفض لأكتر من سبب):\n")
-    for reason, count in sorted(reason_counts.items(), key=lambda x: -x[1]):
-        pct = count / len(explosive_movers) * 100 if explosive_movers else 0
-        log(f"    {reason:25s}: {count:3d} ({pct:.1f}%)")
+    log(f"\n  أسباب الرفض — مقارنة قبل/بعد تعديل RS bypass:\n")
+    log(f"  {'السبب':25s} | {'قبل (old)':>10s} | {'بعد (new)':>10s} | {'الفرق':>8s}")
+    log(f"  {'-'*25} | {'-'*10} | {'-'*10} | {'-'*8}")
+    all_reasons = sorted(set(list(old_reason_counts.keys()) + list(reason_counts.keys())),
+                        key=lambda x: -(old_reason_counts.get(x, 0)))
+    for reason in all_reasons:
+        old_n = old_reason_counts.get(reason, 0)
+        new_n = reason_counts.get(reason, 0)
+        diff = new_n - old_n
+        diff_str = f"{diff:+d}" if diff != 0 else "0"
+        log(f"  {reason:25s} | {old_n:>10d} | {new_n:>10d} | {diff_str:>8s}")
 
     no_rejection = [m for m in explosive_movers if not m['rejection_reasons']]
-    log(f"\n  ✅ مفيهاش أي سبب رفض (كانت هتتقبل): {len(no_rejection)}/{len(explosive_movers)}")
+    no_old_rejection = [m for m in explosive_movers if not m['old_rejection_reasons']]
+    log(f"\n  ✅ مفيهاش أي سبب رفض (هتتقبل):")
+    log(f"     قبل التعديل: {len(no_old_rejection)}/{len(explosive_movers)} ({len(no_old_rejection)/len(explosive_movers)*100 if explosive_movers else 0:.1f}%)")
+    log(f"     بعد التعديل: {len(no_rejection)}/{len(explosive_movers)} ({len(no_rejection)/len(explosive_movers)*100 if explosive_movers else 0:.1f}%)")
+    log(f"     الفرق:       +{len(no_rejection) - len(no_old_rejection)} سهم ✅")
+
+    # الأسهم اللي الـ RS bypass أنقذها
+    rs_saved = [m for m in explosive_movers if m['rs_bypassed_by_explosive']]
+    log(f"\n  🔥 الأسهم اللي RS-bypass أنقذها (كانت هتترفض بسبب RS، دلوقتي هتتقبل): {len(rs_saved)}")
+    for m in rs_saved[:15]:
+        log(f"    {m['ticker']:10s}  surge=+{m['surge_pct']:.1f}%  RS={m['relative_strength']:+.2f}%  "
+            f"pre_price={m['pre_entry_price']:.2f}  pre_turnover={m['pre_avg_turnover']:>12,.0f}  "
+            f"bucket={m['price_bucket']}")
 
     caught_by_explosive = [m for m in explosive_movers if m['explosive_surge_would_catch']]
     log(f"\n  🔥 EXPLOSIVE_SURGE path: كان هيتصطد {len(caught_by_explosive)}/{len(explosive_movers)} قبل الانفجار")
