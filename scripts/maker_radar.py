@@ -34,6 +34,10 @@ sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
 from utils.shared_liquidity import (
     detect_quiet_accumulation,
     detect_pre_surge,
+    detect_life_cycle,
+    compute_money_flow,
+    check_limit_up_trap,
+    check_kill_switch,
     is_explosive_surge,
     classify_price_bucket,
     dynamic_min_turnover,
@@ -273,6 +277,17 @@ def scan_ticker(rows, ticker):
         winner_position_size = 0.025  # 2.5%
         winner_reason = break_reason
 
+    # ─── PHASE-4: Money Flow + Life Cycle + Kill Switch ──────────────────
+    money_flow = compute_money_flow(closes, volumes, highs, lows)
+    life_cycle = detect_life_cycle(closes, volumes, highs, lows)
+    limit_up = check_limit_up_trap(closes)
+    kill_triggered, kill_reason = check_kill_switch(closes, volumes, highs, lows)
+
+    # لو Kill Switch triggered → نقلل الحجم للنص أو نلغي
+    if kill_triggered:
+        winner_position_size = winner_position_size * 0.5  # نص الحجم
+        winner_reason = f'⚠️ KILL SWITCH: {kill_reason} | {winner_reason}'
+
     # ─── بيانات الميكرز الإضافية (من التحليل الجنائي) ──────────────────
     # ROC10 (التغير القصير)
     roc_10d = round((closes[-1] - closes[-11]) / closes[-11] * 100, 2) if len(closes) >= 11 and closes[-11] > 0 else None
@@ -343,6 +358,18 @@ def scan_ticker(rows, ticker):
         'expected': expected,
         'buy_days': buy_days_count,
         'sell_days': sell_days_count,
+        # PHASE-4: Money Flow + Life Cycle
+        'buy_pct': money_flow['buy_pct'],
+        'sell_pct': money_flow['sell_pct'],
+        'net_flow_egp': money_flow['net_flow_egp'],
+        'buy_value_m': money_flow['buy_value_m'],
+        'sell_value_m': money_flow['sell_value_m'],
+        'liquidity_state': money_flow['liquidity_state'],
+        'money_flow_state': money_flow['money_flow_state'],
+        'life_cycle': life_cycle,
+        'limit_up_trap': limit_up,
+        'kill_switch': kill_triggered,
+        'kill_reason': kill_reason if kill_triggered else None,
         'under_microscope': winner_path is not None,
         'path': winner_path,
         'position_size': winner_position_size,

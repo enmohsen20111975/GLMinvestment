@@ -27,6 +27,7 @@ shared_liquidity.py — DYNAMIC-LIQUIDITY-V2 (2026-09-04)
 
 from __future__ import annotations
 from typing import List, Optional, Tuple
+import statistics
 
 
 # ─── العتبات الجديدة (DECISION 2026-09-04) ──────────────────────────────────
@@ -712,6 +713,261 @@ def detect_pre_surge(
     return is_pre_surge, reason, details
 
 
+# ============================================================================
+# PHASE-4: MONEY FLOW — تحليل السيولة الداخلة والخارجة (2026-09-05)
+# ============================================================================
+# مستوحى من V55 Pine Script — حساب حجم الشراء/البيع التقديري
+# buy_vol = volume × ((close - low) / (high - low))
+# ده بـ يفصل: الميكرز بـ يشتري بكم vs الناس العادية بـ تبيع بكم
+
+def compute_money_flow(
+    closes: List[float],
+    volumes: List[float],
+    highs: List[float] = None,
+    lows: List[float] = None,
+) -> dict:
+    """PHASE-4: حساب Money Flow التقديري للسهم.
+
+    المعادلة (من V55 Pine Script):
+      clv = ((close - low) - (high - close)) / range  # Close Location Value
+      buy_vol = volume × (0.5 + pressure_score × 0.5)
+      sell_vol = volume - buy_vol
+
+    Returns:
+        {
+            'buy_pct': float,       # نسبة الشراء %
+            'sell_pct': float,      # نسبة البيع %
+            'net_flow_egp': float,  # صافي التدفق بالجنيه
+            'buy_value_m': float,   # قيمة الشراء بالمليون
+            'sell_value_m': float,  # قيمة البيع بالمليون
+            'liquidity_state': str,  # حالة السيولة (دخول قوي/خروج قوي/متوازن)
+            'money_flow_state': str, # حالة تفصيلية
+        }
+    """
+    if not closes or not volumes or len(closes) < 1:
+        return {
+            'buy_pct': 50.0, 'sell_pct': 50.0, 'net_flow_egp': 0,
+            'buy_value_m': 0, 'sell_value_m': 0,
+            'liquidity_state': 'متوازنة', 'money_flow_state': 'متوازنة',
+        }
+
+    last_close = closes[-1]
+    last_vol = volumes[-1] if volumes else 0
+
+    # استخدم highs/lows لو متاحة، غير كده proxy
+    if highs and lows and len(highs) > 0 and len(lows) > 0:
+        last_high = highs[-1]
+        last_low = lows[-1]
+    else:
+        last_high = last_close * 1.01  # proxy
+        last_low = last_close * 0.99
+
+    candle_range = max(last_high - last_low, 0.001)  # تجنب القسمة على صفر
+
+    # CLV (Close Location Value)
+    clv = ((last_close - last_low) - (last_high - last_close)) / candle_range
+    clv = max(-1.0, min(1.0, clv))
+
+    # Body pressure (proxy لو مفيش open)
+    # في الـ pine script: body_pressure = (close - open) / range
+    # هنا مش عندنا open، فبنستخدم clv فقط
+    pressure_score = clv
+
+    # Estimated buy/sell volume
+    buy_vol = last_vol * (0.5 + pressure_score * 0.5)
+    sell_vol = last_vol - buy_vol
+    buy_vol = max(0, buy_vol)
+    sell_vol = max(0, sell_vol)
+
+    # Percentages
+    total_vol = buy_vol + sell_vol
+    buy_pct = (buy_vol / total_vol * 100) if total_vol > 0 else 50.0
+    sell_pct = 100 - buy_pct
+
+    # Values in EGP (millions)
+    buy_value = buy_vol * last_close
+    sell_value = sell_vol * last_close
+    net_flow = buy_value - sell_value
+    buy_value_m = buy_value / 1_000_000
+    sell_value_m = sell_value / 1_000_000
+
+    # متوسط 20 يوم للحجم
+    avg_vol_20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes) / len(volumes) if volumes else 1)
+    vol_ratio = last_vol / avg_vol_20 if avg_vol_20 > 0 else 1.0
+
+    # Volume surge: حجم > (SMA + 1.5×STD)
+    if len(volumes) >= 20:
+        vol_std = statistics.stdev(volumes[-20:])
+        dynamic_vol_level = avg_vol_20 + vol_std * 1.5
+        volume_surge = last_vol > dynamic_vol_level
+    else:
+        volume_surge = vol_ratio >= 1.3
+    volume_extreme = vol_ratio >= 2.0
+
+    # Liquidity state
+    if volume_extreme and last_close > (last_low + (last_high - last_low) * 0.5):
+        liquidity_state = 'دخول سيولة قوي'
+    elif volume_extreme and last_close < (last_low + (last_high - last_low) * 0.5):
+        liquidity_state = 'خروج سيولة قوي'
+    elif volume_surge and buy_pct >= 55:
+        liquidity_state = 'دخول سيولة'
+    elif volume_surge and sell_pct >= 55:
+        liquidity_state = 'خروج سيولة'
+    elif vol_ratio > 1.0:
+        liquidity_state = 'مرتفعة'
+    else:
+        liquidity_state = 'عادية'
+
+    # Money Flow state (more detailed)
+    strong_buy = buy_pct >= 60 and vol_ratio >= 1.2 and net_flow > 0
+    strong_sell = sell_pct >= 60 and vol_ratio >= 1.2 and net_flow < 0
+    mild_buy = buy_pct >= 55 and net_flow > 0
+    mild_sell = sell_pct >= 55 and net_flow < 0
+
+    if strong_buy:
+        money_flow_state = '🔥 دخول قوي'
+    elif strong_sell:
+        money_flow_state = '🔥 خروج قوي'
+    elif mild_buy:
+        money_flow_state = '🟢 سيولة داخلة'
+    elif mild_sell:
+        money_flow_state = '🔴 سيولة خارجة'
+    else:
+        money_flow_state = '⚪ متوازنة'
+
+    return {
+        'buy_pct': round(buy_pct, 1),
+        'sell_pct': round(sell_pct, 1),
+        'net_flow_egp': round(net_flow, 0),
+        'buy_value_m': round(buy_value_m, 2),
+        'sell_value_m': round(sell_value_m, 2),
+        'liquidity_state': liquidity_state,
+        'money_flow_state': money_flow_state,
+        'vol_ratio': round(vol_ratio, 2),
+    }
+
+
+# ============================================================================
+# PHASE-4B: LIFE CYCLE — دورة حياة السهم (من V76 Pine Script)
+# ============================================================================
+
+def detect_life_cycle(
+    closes: List[float],
+    volumes: List[float],
+    highs: List[float] = None,
+    lows: List[float] = None,
+) -> str:
+    """PHASE-4B: تحديد مرحلة دورة حياة السهم.
+
+    المراحل (من V76 الصياد الذهبي):
+      1. نعاس (تجميع صامت): ATR منخفض + حجم ميت
+      2. قفزة أولى (انفجار): شمعة خضراء كبيرة + حجم حقيقي
+      3. جني أرباح صحي: نزول هادي بحجم ضعيف
+      4. توزيع قاتل: نزول قوي بحجم مرعب
+      5. تدوير وهمي: حجم ضخم بدون حركة سعرية
+      6. عادي: حركة طبيعية
+    """
+    if not closes or len(closes) < 20 or not volumes or len(volumes) < 20:
+        return 'عادي'
+
+    last_close = closes[-1]
+    # proxy open (الشمعة السابقة)
+    last_open = closes[-2] if len(closes) >= 2 else last_close
+    last_high = highs[-1] if highs and len(highs) > 0 else max(last_close, last_open)
+    last_low = lows[-1] if lows and len(lows) > 0 else min(last_close, last_open)
+    last_vol = volumes[-1]
+
+    # ATR proxy: متوسط المدى اليومي في آخر 14 يوم
+    if len(closes) >= 14:
+        ranges = []
+        for i in range(-14, 0):
+            if i > -len(closes):
+                h = highs[i] if highs and len(highs) > abs(i) else max(closes[i], closes[i-1])
+                l = lows[i] if lows and len(lows) > abs(i) else min(closes[i], closes[i-1])
+                ranges.append(h - l)
+        atr = sum(ranges) / len(ranges) if ranges else 0
+        atr_sma = atr  # proxy
+    else:
+        atr = max(last_high - last_low, 0.01)
+        atr_sma = atr
+
+    # متوسط الحجم
+    median_vol = sorted(volumes[-20:])[10] if len(volumes) >= 20 else (sum(volumes) / len(volumes) if volumes else 1)
+
+    candle_range = last_high - last_low
+    body_size = abs(last_close - last_open)
+
+    # 1. الموت السريري (نعاس): ATR منخفض + حجم ميت
+    if atr < (atr_sma * 0.60) and last_vol < (median_vol * 0.5):
+        return '🟡 نعاس'
+
+    # 2. القفزة الأولى (انفجار): شمعة خضراء كبيرة + حجم حقيقي
+    is_green = last_close > last_open
+    if is_green and body_size > (candle_range * 0.7) and last_vol > (median_vol * 2.0) and last_vol > 0:
+        return '🚀 انفجار'
+
+    # 3. جني أرباح صحي: نزول هادي بحجم ضعيف
+    is_red = last_close < last_open
+    if is_red and candle_range < (atr * 0.5) and last_vol < (median_vol * 0.8):
+        return '🟢 جني أرباح'
+
+    # 4. التوزيع القاتل: نزول قوي بحجم مرعب
+    if is_red and candle_range > (atr * 1.5) and last_vol > (median_vol * 2.0):
+        return '🚨 توزيع قاتل'
+
+    # 5. التدوير الوهمي: حجم ضخم بدون حركة سعرية
+    if last_vol > (median_vol * 2.0) and candle_range < (atr * 0.5):
+        return '⚠️ تدوير وهمي'
+
+    # 6. Limit Up Trap: لو السهم طلع أكتر من 9.5% في يوم
+    if last_open > 0:
+        daily_change = ((last_close - last_open) / last_open) * 100
+        if daily_change > 9.5:
+            return '🚫 حبس (Limit Up)'
+
+    return 'عادي'
+
+
+# ============================================================================
+# PHASE-4C: LIMIT UP TRAP + KILL SWITCH (من V76)
+# ============================================================================
+
+def check_limit_up_trap(
+    closes: List[float],
+    volumes: List[float] = None,
+) -> bool:
+    """كشف لو السهم قريب من الحد الأقصى (+9.5% في يوم)."""
+    if not closes or len(closes) < 2:
+        return False
+    last_close = closes[-1]
+    prev_close = closes[-2]
+    if prev_close <= 0:
+        return False
+    daily_change = ((last_close - prev_close) / prev_close) * 100
+    return daily_change > 9.5
+
+
+def check_kill_switch(
+    closes: List[float],
+    volumes: List[float],
+    highs: List[float] = None,
+    lows: List[float] = None,
+) -> Tuple[bool, str]:
+    """KILL SWITCH: لو فيه توزيع قاتل → إغلاق فوري.
+
+    Returns:
+        (kill_triggered, reason)
+    """
+    life_cycle = detect_life_cycle(closes, volumes, highs, lows)
+    if life_cycle == '🚨 توزيع قاتل':
+        return True, 'توزيع قاتل — إغلاق فوري'
+    if life_cycle == '🚫 حبس (Limit Up)':
+        return True, 'حبس — متدخلش'
+    if life_cycle == '⚠️ تدوير وهمي':
+        return True, 'تدوير وهمي — احذر'
+    return False, ''
+
+
 __all__ = [
     'DYNAMIC_TURNOVER_THRESHOLDS',
     'PUMP_AND_DUMP_TURNOVER_FLOOR',
@@ -730,6 +986,12 @@ __all__ = [
     'PRE_SURGE_POSITION_SIZE',
     'PRE_SURGE_MIN_SIGNALS',
     'detect_pre_surge',
+    # PHASE-4: Money Flow + Life Cycle + Kill Switch
+    'compute_money_flow',
+    'detect_life_cycle',
+    'check_limit_up_trap',
+    'check_kill_switch',
+    # Helpers
     'classify_price_bucket',
     'dynamic_min_turnover',
     'has_volume_surge',

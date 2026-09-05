@@ -997,6 +997,9 @@ function StockTable({
             <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">حجم نسبي</TableHead>
             <TableHead className="font-semibold text-center h-9">الإشارات</TableHead>
             <TableHead className="font-semibold text-center h-9 hidden md:table-cell">ميكرز</TableHead>
+            <TableHead className="font-semibold text-center h-9 hidden lg:table-cell">شراء%</TableHead>
+            <TableHead className="font-semibold text-center h-9 hidden lg:table-cell">Net Flow</TableHead>
+            <TableHead className="font-semibold text-center h-9 hidden xl:table-cell">دورة الحياة</TableHead>
             <TableHead className="font-semibold text-center h-9 hidden md:table-cell">تجميع/تصريف</TableHead>
             <TableHead className="font-semibold h-9 hidden xl:table-cell">المتوقع</TableHead>
             <TableHead className="font-semibold h-9 hidden md:table-cell">القطاع</TableHead>
@@ -1063,6 +1066,37 @@ function StockTable({
                   }>
                     {(stock as any).maker_activity || '-'}
                   </span>
+                </TableCell>
+                <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
+                  <span className={
+                    (stock as any).buy_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                    : (stock as any).buy_pct <= 40 ? 'text-rose-600 dark:text-rose-400 font-bold'
+                    : 'text-muted-foreground'
+                  }>
+                    {(stock as any).buy_pct != null ? `${(stock as any).buy_pct}%` : '-'}
+                  </span>
+                </TableCell>
+                <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
+                  <span className={pnlColorClass((stock as any).net_flow_egp)}>
+                    {(stock as any).net_flow_egp != null
+                      ? `${(stock as any).net_flow_egp >= 0 ? '+' : ''}${(Math.abs((stock as any).net_flow_egp) / 1_000_000).toFixed(1)}M`
+                      : '-'}
+                  </span>
+                </TableCell>
+                <TableCell className="text-center hidden xl:table-cell text-xs">
+                  {(stock as any).kill_switch ? (
+                    <span className="text-rose-600 dark:text-rose-400 font-bold">⚠️ KILL</span>
+                  ) : (stock as any).life_cycle && (stock as any).life_cycle !== 'عادي' ? (
+                    <span className={
+                      (stock as any).life_cycle.includes('انفجار') ? 'text-emerald-600 font-bold'
+                      : (stock as any).life_cycle.includes('توزيع') ? 'text-rose-600 font-bold'
+                      : (stock as any).life_cycle.includes('نعاس') ? 'text-amber-600'
+                      : (stock as any).life_cycle.includes('حبس') ? 'text-rose-600 font-bold'
+                      : 'text-muted-foreground'
+                    }>
+                      {(stock as any).life_cycle}
+                    </span>
+                  ) : <span className="text-muted-foreground">-</span>}
                 </TableCell>
                 <TableCell className="text-center hidden md:table-cell">
                   <span className={
