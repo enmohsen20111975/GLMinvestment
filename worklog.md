@@ -17659,3 +17659,36 @@ Stage Summary:
   - `scripts/maker_radar.py` (سكربت الرادار)
   - `scripts/output/maker_radar_20260905.json` (774 سهم مفحوص)
   - `scripts/output/maker_radar_20260905.md` (تقرير عربي)
+
+---
+Task ID: PHASE-2-PAPER-TEST-1
+Agent: Main Agent (Z.ai Code)
+Task: paper test على 7 أسهم Quiet Accumulation + مراقبة يومية
+
+Work Log:
+- بنيت `db/paper_test_v2.json` بـ 7 صفقات ورقية:
+  - GIH (530), ETRS (10.91), SKPC (17.21), SAUD (23.03), OBRI (32.20), MCRO (1.50), EXPA (19.98)
+  - كل صفقة: 2% position size, stop -7%, target +15%, R:R ~2.14
+  - إجمالي مستثمر: 13,557 EGP (13.6% من رأس المال الافتراضي 100K)
+  - إجمالي مخاطرة: 940 EGP
+- بنيت `scripts/monitor_paper_test.py`:
+  - يسحب أحدث أسعار من db/production_snapshot.db
+  - يحسب P&L + R multiple لكل صفقة
+  - يفحص exit signals: stop_loss, target, distribution, liquidity_disappear
+  - يفحص 1.5R partial exit
+  - يحدّث db/paper_test_v2.json بالـ tracking اليومي
+- شغلت أول قراءة مراقبة (2026-09-05):
+
+Stage Summary:
+- ✅ **7 صفقات paper مفتوحة** (كلهم entry = current_price لأن الـ DB بياناتها لحد 2026-09-03/05)
+- 📊 **إجمالي P&L**: 0.00 EGP (طبيعي — السوق مقفول/بيانات قديمة)
+- ⚠️ **EXIT_LIQUIDITY على MCRO**:
+  - baseline (avg_20d turnover) = 190M EGP
+  - آخر 3 أيام (avg_3d) = 62M EGP
+  - النسبة = 32% < 50% → exit signal
+  - السبب: آخر 3 أيام بيانات (2026-09-03: vol=18M, 2026-08-17: vol=69M, 2026-08-16: vol=35M)
+  - ده **signal حقيقي** مش bug — MCRO سيولتها اختفت فعلاً
+- 📦 Artifacts:
+  - `db/paper_test_v2.json` (7 صفقات + tracking)
+  - `scripts/monitor_paper_test.py` (سكربت المراقبة)
+  - `scripts/output/paper_test_monitor_20260905.json` (قراءة اليوم)

@@ -1,0 +1,88 @@
+{
+  "monitoring_date": "2026-09-05",
+  "total_unrealized_pnl_egp": 0.0,
+  "total_position_amount_egp": 13557.37,
+  "open_positions": 7,
+  "exit_signals": [
+    {
+      "ticker": "MCRO",
+      "status": "EXIT_LIQUIDITY",
+      "reason": "liquidity dropped: avg_3d 62,690,255 < 50% of baseline 190,482,867"
+    }
+  ],
+  "daily_tracking": {
+    "date": "2026-09-05",
+    "stocks": [
+      {
+        "date": "2026-08-17",
+        "current_price": 530.0,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "OPEN",
+        "exit_reason": "",
+        "partial_signal": ""
+      },
+      {
+        "date": "2026-09-03",
+        "current_price": 10.91,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "OPEN",
+        "exit_reason": "",
+        "partial_signal": ""
+      },
+      {
+        "date": "2026-09-03",
+        "current_price": 17.21,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "OPEN",
+        "exit_reason": "",
+        "partial_signal": ""
+      },
+      {
+        "date": "2026-09-03",
+        "current_price": 23.03,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "OPEN",
+        "exit_reason": "",
+        "partial_signal": ""
+      },
+      {
+        "date": "2026-09-03",
+        "current_price": 32.2,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "OPEN",
+        "exit_reason": "",
+        "partial_signal": ""
+      },
+      {
+        "date": "2026-09-03",
+        "current_price": 1.5,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "EXIT_LIQUIDITY",
+        "exit_reason": "liquidity dropped: avg_3d 62,690,255 < 50% of baseline 190,482,867",
+        "partial_signal": ""
+      },
+      {
+        "date": "2026-09-03",
+        "current_price": 19.98,
+        "pnl_pct": 0.0,
+        "pnl_egp": 0.0,
+        "r_multiple": 0.0,
+        "status": "OPEN",
+        "exit_reason": "",
+        "partial_signal": ""
+      }
+    ]
+  }
+}
