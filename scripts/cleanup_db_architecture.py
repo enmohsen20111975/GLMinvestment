@@ -36,40 +36,73 @@ def get_db_path(name: str) -> Path:
 
 
 def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
-    """نسخ stock_daily_prices من stocks.db → egksco_price_history في data_engine.db.
+    """نسخ البيانات التاريخية الكاملة لـ egksco_price_history في data_engine.db.
 
-    يحافظ على schema الموجود فعلاً (price_date, turnover, delta_volume, etc.)
+    المصدر الأولوية:
+      1. price_history.db (1.2M+ rows، 2000-2026) — البيانات العميقة
+      2. stocks.db.stock_daily_prices (29K rows، 60 يوم) — fallback
+
+    ده بـ يخلي egksco_price_history فيها بيانات كاملة للتداول والباك-تست.
     """
     stocks_db = get_db_path('stocks.db')
+    price_history_db = get_db_path('price_history.db')
     data_engine_db = get_db_path('data_engine.db')
 
-    if not stocks_db.exists():
-        log(f"❌ {stocks_db} مش موجود")
-        return False
     if not data_engine_db.exists():
         log(f"❌ {data_engine_db} مش موجود")
         return False
 
-    log("\n═══ نسخ stock_daily_prices → egksco_price_history ═══")
+    log("\n═══ نسخ البيانات التاريخية → egksco_price_history ═══")
 
-    # اقرأ من stocks.db
-    src_conn = sqlite3.connect(str(stocks_db))
-    src_conn.row_factory = sqlite3.Row
-    src_rows = src_conn.execute("""
-        SELECT ticker, price_date, open, high, low, close, volume, turnover
-        FROM stock_daily_prices
-        WHERE close IS NOT NULL AND close > 0
-    """).fetchall()
-    src_count = len(src_rows)
-    log(f"  المصدر (stocks.db.stock_daily_prices): {src_count:,} صف")
-    src_conn.close()
+    # الأولوية 1: price_history.db (البيانات العميقة)
+    use_price_history = price_history_db.exists()
+    if use_price_history:
+        log(f"  ✅ price_history.db موجود — بـ نستخدمه (بيانات عميقة)")
+        src_conn = sqlite3.connect(str(price_history_db))
+        src_conn.row_factory = sqlite3.Row
+        # price_history schema: ticker, date, open_price, high_price, low_price, close_price, volume
+        src_rows = src_conn.execute("""
+            SELECT ticker, date, open_price, high_price, low_price, close_price, volume
+            FROM price_history
+            WHERE close_price IS NOT NULL AND close_price > 0
+        """).fetchall()
+        src_count = len(src_rows)
+        log(f"  المصدر (price_history.db): {src_count:,} صف")
+        src_conn.close()
 
-    if src_count == 0:
+        # فلتر EGX tickers فقط
+        stocks_conn = sqlite3.connect(str(stocks_db)) if stocks_db.exists() else None
+        if stocks_conn:
+            egx_tickers = set(r[0] for r in stocks_conn.execute(
+                "SELECT ticker FROM stocks WHERE market = 'EGX'"
+            ).fetchall())
+            stocks_conn.close()
+            # شيل الأسهم المش EGX
+            src_rows = [r for r in src_rows if r['ticker'] in egx_tickers]
+            log(f"  بعد فلتر EGX: {len(src_rows):,} صف ({len(set(r['ticker'] for r in src_rows))} سهم)")
+    elif stocks_db.exists():
+        # fallback: stocks.db (بيانات سطحية)
+        log(f"  ⚠️ price_history.db مش موجود — بـ نستخدم stocks.db (بيانات سطحية)")
+        src_conn = sqlite3.connect(str(stocks_db))
+        src_conn.row_factory = sqlite3.Row
+        src_rows = src_conn.execute("""
+            SELECT ticker, price_date, open, high, low, close, volume, turnover
+            FROM stock_daily_prices
+            WHERE close IS NOT NULL AND close > 0
+        """).fetchall()
+        src_count = len(src_rows)
+        log(f"  المصدر (stocks.db.stock_daily_prices): {src_count:,} صف")
+        src_conn.close()
+    else:
+        log("  ❌ مفيش DB مصدر متاح")
+        return False
+
+    if not src_rows:
         log("  ⚠️ مفيش بيانات للنسخ")
         return False
 
     if dry_run:
-        log(f"  [DRY-RUN] كنت هنسخ {src_count:,} صف لـ data_engine.db.egksco_price_history")
+        log(f"  [DRY-RUN] كنت هنسخ {len(src_rows):,} صف لـ data_engine.db.egksco_price_history")
         return True
 
     # انسخ لـ data_engine.db (بنفس schema الموجود)
@@ -96,29 +129,36 @@ def copy_stock_daily_prices_to_egksco(dry_run: bool = False):
     # امسح القديم (لو فيه)
     dst_conn.execute("DELETE FROM egksco_price_history")
 
-    # انسخ البيانات (مع mapping حسب schema الموجود)
+    # انسخ البيانات (مع mapping حسب المصدر)
     batch = []
     for r in src_rows:
-        close = float(r['close'] or 0)
-        volume = _parse_vol(r['volume'])
-        turnover = r['turnover']
-        if turnover is not None:
-            try:
-                value = float(turnover)
-            except (TypeError, ValueError):
-                value = (close * volume) if close and volume else None
-        else:
+        if use_price_history:
+            # price_history.db schema: ticker, date, open_price, high_price, low_price, close_price, volume
+            close = float(r['close_price'] or 0)
+            volume = _parse_vol(r['volume'])
             value = (close * volume) if close and volume else None
-        batch.append((
-            r['ticker'],
-            r['price_date'],
-            float(r['open'] or 0),
-            float(r['high'] or 0),
-            float(r['low'] or 0),
-            close,
-            volume,
-            value,
-        ))
+            batch.append((
+                r['ticker'], r['date'],
+                float(r['open_price'] or 0), float(r['high_price'] or 0),
+                float(r['low_price'] or 0), close, volume, value,
+            ))
+        else:
+            # stocks.db schema: ticker, price_date, open, high, low, close, volume, turnover
+            close = float(r['close'] or 0)
+            volume = _parse_vol(r['volume'])
+            turnover = r['turnover']
+            if turnover is not None:
+                try:
+                    value = float(turnover)
+                except (TypeError, ValueError):
+                    value = (close * volume) if close and volume else None
+            else:
+                value = (close * volume) if close and volume else None
+            batch.append((
+                r['ticker'], r['price_date'],
+                float(r['open'] or 0), float(r['high'] or 0),
+                float(r['low'] or 0), close, volume, value,
+            ))
     # schema الحقيقي: symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover
     dst_conn.executemany("""
         INSERT INTO egksco_price_history
