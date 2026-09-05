@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-09-05T11:10:48.416728",
+  "generated_at": "2026-09-05T11:13:14.797314",
   "market": "EGX",
   "lookforward": 10,
   "min_quiet_signals": 5,
   "surge_threshold": 15.0,
-  "total_detections": 3495,
-  "target_hits": 820,
-  "stopped": 1097,
-  "precision": 23.462088698140203,
-  "avg_rr": -0.001875210663244501,
+  "total_detections": 3265,
+  "target_hits": 790,
+  "stopped": 1006,
+  "precision": 24.196018376722815,
+  "avg_rr": 0.014224664183335406,
   "explosive_moves": 555,
   "detected_explosive": 117,
   "recall": 21.08108108108108,
@@ -1120,19 +1120,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-21",
-      "entry_price": 28.799999237060547,
-      "final_close": 27.32,
-      "return_pct": -5.138886375927563,
-      "max_high_pct": 3.1250053809750185,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-21"
-    },
-    {
-      "path": "quiet",
       "ticker": "MBEG",
       "entry_date": "2026-07-21",
       "entry_price": 4.25,
@@ -1191,19 +1178,6 @@
       "final_close": 2.7,
       "return_pct": -2.8776968421973383,
       "max_high_pct": -0.7194237817389376,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-21"
-    },
-    {
-      "path": "quiet",
-      "ticker": "MMAT",
-      "entry_date": "2026-07-21",
-      "entry_price": 3.5299999713897705,
-      "final_close": 3.53,
-      "return_pct": 8.104880886308995e-07,
-      "max_high_pct": 4.815866222996479,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -2498,19 +2472,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-22",
-      "entry_price": 28.899999618530273,
-      "final_close": 27.27,
-      "return_pct": -5.640137162787854,
-      "max_high_pct": 2.7681700863976144,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-22"
-    },
-    {
-      "path": "quiet",
       "ticker": "MBEG",
       "entry_date": "2026-07-22",
       "entry_price": 4.199999809265137,
@@ -2569,19 +2530,6 @@
       "final_close": 2.7,
       "return_pct": -2.8776968421973383,
       "max_high_pct": -1.0791356726084065,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-22"
-    },
-    {
-      "path": "quiet",
-      "ticker": "MMAT",
-      "entry_date": "2026-07-22",
-      "entry_price": 3.5299999713897705,
-      "final_close": 3.53,
-      "return_pct": 8.104880886308995e-07,
-      "max_high_pct": 4.815866222996479,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -3135,19 +3083,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-23",
-      "entry_price": 28.899999618530273,
-      "final_close": 27.25,
-      "return_pct": -5.709341315950457,
-      "max_high_pct": 2.7681700863976144,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-23"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "MBSC",
       "entry_date": "2026-07-23",
       "entry_price": 245.0,
@@ -3365,19 +3300,6 @@
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-07-23"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AJWA",
-      "entry_date": "2026-07-23",
-      "entry_price": 170.02999877929688,
-      "final_close": 181.83,
-      "return_pct": 6.939952540974743,
-      "max_high_pct": 23.507617189708487,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
       "detection_date": "2026-07-23"
     },
     {
@@ -3820,19 +3742,6 @@
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
-      "detection_date": "2026-07-23"
-    },
-    {
-      "path": "quiet",
-      "ticker": "MMAT",
-      "entry_date": "2026-07-23",
-      "entry_price": 3.5299999713897705,
-      "final_close": 3.53,
-      "return_pct": 8.104880886308995e-07,
-      "max_high_pct": 4.815866222996479,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-23"
     },
     {
@@ -4500,19 +4409,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-24",
-      "entry_price": 28.9,
-      "final_close": 27.25,
-      "return_pct": -5.709342560553629,
-      "max_high_pct": 2.7681687298943065,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-24"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "MBEG",
       "entry_date": "2026-07-24",
       "entry_price": 4.27,
@@ -4717,19 +4613,6 @@
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
-      "detection_date": "2026-07-24"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "SNFC",
-      "entry_date": "2026-07-24",
-      "entry_price": 11.45,
-      "final_close": 10.5,
-      "return_pct": -8.296943231441043,
-      "max_high_pct": -0.1746698237922973,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-24"
     },
     {
@@ -5228,19 +5111,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "HDBK",
-      "entry_date": "2026-07-24",
-      "entry_price": 83.0,
-      "final_close": 96.4,
-      "return_pct": 16.144578313253017,
-      "max_high_pct": 16.144578313253017,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-24"
-    },
-    {
-      "path": "quiet",
       "ticker": "ICFC",
       "entry_date": "2026-07-24",
       "entry_price": 15.46,
@@ -5345,19 +5215,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "MHOT",
-      "entry_date": "2026-07-24",
-      "entry_price": 16.6,
-      "final_close": 18.3,
-      "return_pct": 10.240963855421683,
-      "max_high_pct": 17.168674698795165,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-24"
-    },
-    {
-      "path": "quiet",
       "ticker": "MICH",
       "entry_date": "2026-07-24",
       "entry_price": 40.29,
@@ -5377,19 +5234,6 @@
       "final_close": 2.7,
       "return_pct": -1.818181818181812,
       "max_high_pct": 0.0,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-24"
-    },
-    {
-      "path": "quiet",
-      "ticker": "MMAT",
-      "entry_date": "2026-07-24",
-      "entry_price": 3.53,
-      "final_close": 3.53,
-      "return_pct": 0.0,
-      "max_high_pct": 4.815865373476375,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -6040,19 +5884,6 @@
       "final_close": 12.92,
       "return_pct": 10.14492753623188,
       "max_high_pct": 12.105711849957373,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-25"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-25",
-      "entry_price": 28.9,
-      "final_close": 27.25,
-      "return_pct": -5.709342560553629,
-      "max_high_pct": 2.7681687298943065,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -6736,19 +6567,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-25",
-      "entry_price": 4.9,
-      "final_close": 5.74,
-      "return_pct": 17.14285714285714,
-      "max_high_pct": 17.14285714285714,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-25"
-    },
-    {
-      "path": "quiet",
       "ticker": "FNAR",
       "entry_date": "2026-07-25",
       "entry_price": 13.05,
@@ -6872,19 +6690,6 @@
       "final_close": 12.92,
       "return_pct": 10.14492753623188,
       "max_high_pct": 12.105711849957373,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-25"
-    },
-    {
-      "path": "quiet",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-25",
-      "entry_price": 28.9,
-      "final_close": 27.25,
-      "return_pct": -5.709342560553629,
-      "max_high_pct": 2.7681687298943065,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -7132,19 +6937,6 @@
       "final_close": 38.44,
       "return_pct": -0.4145077720207349,
       "max_high_pct": 1.2953328345106019,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-25"
-    },
-    {
-      "path": "quiet",
-      "ticker": "RAYA",
-      "entry_date": "2026-07-25",
-      "entry_price": 7.76,
-      "final_close": 7.39,
-      "return_pct": -4.768041237113404,
-      "max_high_pct": 0.38659744655963346,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -7542,19 +7334,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-26",
-      "entry_price": 4.9,
-      "final_close": 5.74,
-      "return_pct": 17.14285714285714,
-      "max_high_pct": 17.14285714285714,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "IDRE",
       "entry_date": "2026-07-26",
       "entry_price": 47.77,
@@ -7574,19 +7353,6 @@
       "final_close": 12.92,
       "return_pct": 10.14492753623188,
       "max_high_pct": 12.105711849957373,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-26",
-      "entry_price": 28.9,
-      "final_close": 27.25,
-      "return_pct": -5.709342560553629,
-      "max_high_pct": 2.560551521274875,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -7717,19 +7483,6 @@
       "final_close": 38.44,
       "return_pct": -0.4145077720207349,
       "max_high_pct": 1.2953328345106019,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "RAYA",
-      "entry_date": "2026-07-26",
-      "entry_price": 7.76,
-      "final_close": 7.39,
-      "return_pct": -4.768041237113404,
-      "max_high_pct": -1.4175245442341258,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -8283,19 +8036,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-26",
-      "entry_price": 4.9,
-      "final_close": 5.74,
-      "return_pct": 17.14285714285714,
-      "max_high_pct": 17.14285714285714,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "quiet",
       "ticker": "FNAR",
       "entry_date": "2026-07-26",
       "entry_price": 13.05,
@@ -8413,19 +8153,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "IFA",
-      "entry_date": "2026-07-26",
-      "entry_price": 356.0,
-      "final_close": 367.0,
-      "return_pct": 3.089887640449438,
-      "max_high_pct": 5.617977528089887,
-      "min_low_pct": -0.8426966292134831,
-      "outcome": "NEUTRAL",
-      "rr": 0.20599250936329588,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "quiet",
       "ticker": "ISMA",
       "entry_date": "2026-07-26",
       "entry_price": 28.29,
@@ -8445,19 +8172,6 @@
       "final_close": 12.92,
       "return_pct": 10.14492753623188,
       "max_high_pct": 12.105711849957373,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "quiet",
-      "ticker": "JUFO",
-      "entry_date": "2026-07-26",
-      "entry_price": 28.9,
-      "final_close": 27.25,
-      "return_pct": -5.709342560553629,
-      "max_high_pct": 2.560551521274875,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -8777,19 +8491,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RAYA",
-      "entry_date": "2026-07-26",
-      "entry_price": 7.76,
-      "final_close": 7.39,
-      "return_pct": -4.768041237113404,
-      "max_high_pct": -1.4175245442341258,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-26"
-    },
-    {
-      "path": "quiet",
       "ticker": "ROTO",
       "entry_date": "2026-07-26",
       "entry_price": 43.0,
@@ -9063,19 +8764,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "EGCH",
-      "entry_date": "2026-07-27",
-      "entry_price": 12.899999618530273,
-      "final_close": 13.51,
-      "return_pct": 4.728685267505652,
-      "max_high_pct": 6.0465147638399195,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "ELNA",
       "entry_date": "2026-07-27",
       "entry_price": 38.58000183105469,
@@ -9134,19 +8822,6 @@
       "final_close": 43.52,
       "return_pct": 16.5818319456815,
       "max_high_pct": 22.662731727774712,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-27",
-      "entry_price": 4.96999979019165,
-      "final_close": 5.74,
-      "return_pct": 15.492962622009637,
-      "max_high_pct": 15.492962622009637,
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
@@ -9277,19 +8952,6 @@
       "final_close": 38.44,
       "return_pct": 0.10416268888462234,
       "max_high_pct": 0.23437538805105734,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "RKAZ",
-      "entry_date": "2026-07-27",
-      "entry_price": 4.590000152587891,
-      "final_close": 4.24,
-      "return_pct": -7.625275402018378,
-      "max_high_pct": 0.43572941746499666,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -9726,19 +9388,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EGTS",
-      "entry_date": "2026-07-27",
-      "entry_price": 17.59000015258789,
-      "final_close": 17.0,
-      "return_pct": -3.354179348890387,
-      "max_high_pct": 4.03637906943508,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "quiet",
       "ticker": "EHDR",
       "entry_date": "2026-07-27",
       "entry_price": 2.940000057220459,
@@ -9771,19 +9420,6 @@
       "final_close": 13.26,
       "return_pct": -12.475245320921175,
       "max_high_pct": 0.9240946986659764,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "quiet",
-      "ticker": "ELWA",
-      "entry_date": "2026-07-27",
-      "entry_price": 1.909999966621399,
-      "final_close": 1.85,
-      "return_pct": -3.1413595638712417,
-      "max_high_pct": 0.5235619661444326,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -9836,19 +9472,6 @@
       "final_close": 43.52,
       "return_pct": 16.5818319456815,
       "max_high_pct": 22.662731727774712,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "quiet",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-27",
-      "entry_price": 4.96999979019165,
-      "final_close": 5.74,
-      "return_pct": 15.492962622009637,
-      "max_high_pct": 15.492962622009637,
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
@@ -9943,19 +9566,6 @@
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "quiet",
-      "ticker": "IFA",
-      "entry_date": "2026-07-27",
-      "entry_price": 360.0,
-      "final_close": 366.0,
-      "return_pct": 1.6666666666666667,
-      "max_high_pct": 4.444444444444445,
-      "min_low_pct": -1.3888888888888888,
-      "outcome": "NEUTRAL",
-      "rr": 0.11111111111111112,
       "detection_date": "2026-07-27"
     },
     {
@@ -10285,19 +9895,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RAYA",
-      "entry_date": "2026-07-27",
-      "entry_price": 7.590000152587891,
-      "final_close": 7.39,
-      "return_pct": -2.6350480707131316,
-      "max_high_pct": 0.790513064207033,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-07-27",
       "entry_price": 5.110000133514404,
@@ -10385,19 +9982,6 @@
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
-      "detection_date": "2026-07-27"
-    },
-    {
-      "path": "quiet",
-      "ticker": "SMFR",
-      "entry_date": "2026-07-27",
-      "entry_price": 234.72999572753906,
-      "final_close": 260.85,
-      "return_pct": 11.127680632167499,
-      "max_high_pct": 12.04362662932739,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-27"
     },
     {
@@ -10922,19 +10506,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "NEDA",
-      "entry_date": "2026-07-28",
-      "entry_price": 2.75,
-      "final_close": 2.78,
-      "return_pct": 1.090909090909084,
-      "max_high_pct": 2.181818181818184,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "OBRI",
       "entry_date": "2026-07-28",
       "entry_price": 34.349998474121094,
@@ -11175,19 +10746,6 @@
       "final_close": 2.4,
       "return_pct": 8.597283193367602,
       "max_high_pct": 9.954749233284707,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-07-28",
-      "entry_price": 19.99,
-      "final_close": 15.48,
-      "return_pct": -22.561280640320152,
-      "max_high_pct": -2.4512256128063954,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -11507,19 +11065,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-07-28",
-      "entry_price": 8.65,
-      "final_close": 10.0,
-      "return_pct": 15.606936416184967,
-      "max_high_pct": 23.699421965317903,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
       "ticker": "ELKA",
       "entry_date": "2026-07-28",
       "entry_price": 1.9700000286102295,
@@ -11620,19 +11165,6 @@
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
-      "ticker": "FNAR",
-      "entry_date": "2026-07-28",
-      "entry_price": 13.0600004196167,
-      "final_close": 12.44,
-      "return_pct": -4.747323121716226,
-      "max_high_pct": -1.071978676251897,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-28"
     },
     {
@@ -11763,19 +11295,6 @@
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
-      "ticker": "IFA",
-      "entry_date": "2026-07-28",
-      "entry_price": 355.0,
-      "final_close": 365.0,
-      "return_pct": 2.8169014084507045,
-      "max_high_pct": 5.915492957746479,
-      "min_low_pct": 2.2535211267605635,
-      "outcome": "NEUTRAL",
-      "rr": 0.18779342723004697,
       "detection_date": "2026-07-28"
     },
     {
@@ -12001,19 +11520,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "PRDC",
-      "entry_date": "2026-07-28",
-      "entry_price": 9.270000457763672,
-      "final_close": 9.4,
-      "return_pct": 1.4023682396633885,
-      "max_high_pct": 1.8338676789810961,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
       "ticker": "QNBE",
       "entry_date": "2026-07-28",
       "entry_price": 56.84,
@@ -12046,19 +11552,6 @@
       "final_close": 22.25,
       "return_pct": -1.7226121915301589,
       "max_high_pct": 1.8109568083249399,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
-      "ticker": "RAYA",
-      "entry_date": "2026-07-28",
-      "entry_price": 7.510000228881836,
-      "final_close": 7.39,
-      "return_pct": -1.597872506319525,
-      "max_high_pct": -0.39947041235047004,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -12124,19 +11617,6 @@
       "final_close": 260.85,
       "return_pct": 12.328825522693368,
       "max_high_pct": 13.254671698172718,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-28"
-    },
-    {
-      "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-07-28",
-      "entry_price": 10.59,
-      "final_close": 10.1,
-      "return_pct": -4.627006610009445,
-      "max_high_pct": -1.7941454202077385,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -13028,19 +12508,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-07-29",
-      "entry_price": 19.99,
-      "final_close": 15.48,
-      "return_pct": -22.561280640320152,
-      "max_high_pct": -2.4512256128063954,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
       "ticker": "ALUM",
       "entry_date": "2026-07-29",
       "entry_price": 23.700000762939453,
@@ -13102,19 +12569,6 @@
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-07-29",
-      "entry_price": 1.4500000476837158,
-      "final_close": 1.46,
-      "return_pct": 0.6896518612022421,
-      "max_high_pct": 2.0689621606707673,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-29"
     },
     {
@@ -13366,19 +12820,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-07-29",
-      "entry_price": 8.65,
-      "final_close": 10.0,
-      "return_pct": 15.606936416184967,
-      "max_high_pct": 23.699421965317903,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
       "ticker": "ELNA",
       "entry_date": "2026-07-29",
       "entry_price": 38.9900016784668,
@@ -13398,19 +12839,6 @@
       "final_close": 13.26,
       "return_pct": -10.101694915254239,
       "max_high_pct": -6.915254237288132,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
-      "ticker": "ELWA",
-      "entry_date": "2026-07-29",
-      "entry_price": 1.8300000429153442,
-      "final_close": 1.85,
-      "return_pct": 1.0928938041331537,
-      "max_high_pct": 4.918030326451697,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -13479,45 +12907,6 @@
       "min_low_pct": -100.0,
       "outcome": "BOTH_HIT",
       "rr": 0.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-29",
-      "entry_price": 4.699999809265137,
-      "final_close": 5.74,
-      "return_pct": 22.127664530639024,
-      "max_high_pct": 22.127664530639024,
-      "min_low_pct": -100.0,
-      "outcome": "BOTH_HIT",
-      "rr": 0.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
-      "ticker": "FTNS",
-      "entry_date": "2026-07-29",
-      "entry_price": 1.2999999523162842,
-      "final_close": 1.39,
-      "return_pct": 6.923080844992148,
-      "max_high_pct": 7.692311642438135,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-07-29",
-      "entry_price": 30.489999771118164,
-      "final_close": 28.59,
-      "return_pct": -6.231550624404893,
-      "max_high_pct": -2.2630363276413332,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-29"
     },
     {
@@ -13717,19 +13106,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "NEDA",
-      "entry_date": "2026-07-29",
-      "entry_price": 2.75,
-      "final_close": 2.78,
-      "return_pct": 1.090909090909084,
-      "max_high_pct": 2.181818181818184,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
       "ticker": "NINH",
       "entry_date": "2026-07-29",
       "entry_price": 22.170000076293945,
@@ -13899,19 +13275,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RAYA",
-      "entry_date": "2026-07-29",
-      "entry_price": 7.400000095367432,
-      "final_close": 7.39,
-      "return_pct": -0.1351364221426463,
-      "max_high_pct": 1.081079778399605,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-07-29",
       "entry_price": 5.190000057220459,
@@ -14003,19 +13366,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-07-29",
-      "entry_price": 10.59,
-      "final_close": 10.1,
-      "return_pct": -4.627006610009445,
-      "max_high_pct": -1.7941454202077385,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-07-29",
       "entry_price": 15.960000038146973,
@@ -14087,19 +13437,6 @@
       "final_close": 97.51,
       "return_pct": -2.3435137805510977,
       "max_high_pct": -1.3119664438058154,
-      "min_low_pct": -100.0,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-29"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-07-29",
-      "entry_price": 66.0,
-      "final_close": 65.11,
-      "return_pct": -1.3484848484848493,
-      "max_high_pct": 3.818181818181812,
       "min_low_pct": -100.0,
       "outcome": "STOPPED",
       "rr": -1.0,
@@ -14562,19 +13899,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "GIH",
-      "entry_date": "2026-07-30",
-      "entry_price": 523.0,
-      "final_close": 560.0,
-      "return_pct": 7.0745697896749515,
-      "max_high_pct": 7.0745697896749515,
-      "min_low_pct": -1.338432122370937,
-      "outcome": "NEUTRAL",
-      "rr": 0.4716379859783301,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "ICID",
       "entry_date": "2026-07-30",
       "entry_price": 8.11,
@@ -14744,19 +14068,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "PRCL",
-      "entry_date": "2026-07-30",
-      "entry_price": 35.8,
-      "final_close": 33.2,
-      "return_pct": -7.262569832402218,
-      "max_high_pct": -2.234636871508372,
-      "min_low_pct": -7.765363128491604,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "PRMH",
       "entry_date": "2026-07-30",
       "entry_price": 2.66,
@@ -14857,19 +14168,6 @@
       "min_low_pct": -2.529044926455877,
       "outcome": "NEUTRAL",
       "rr": -0.14860335872681094,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "WCDF",
-      "entry_date": "2026-07-30",
-      "entry_price": 582.38,
-      "final_close": 642.05,
-      "return_pct": 10.245887564820213,
-      "max_high_pct": 10.58072049177513,
-      "min_low_pct": -0.9237954600089282,
-      "outcome": "NEUTRAL",
-      "rr": 0.6830591709880143,
       "detection_date": "2026-07-30"
     },
     {
@@ -15316,19 +14614,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-07-30",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
       "ticker": "ELNA",
       "entry_date": "2026-07-30",
       "entry_price": 38.72,
@@ -15420,19 +14705,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "FIRE",
-      "entry_date": "2026-07-30",
-      "entry_price": 4.69,
-      "final_close": 5.74,
-      "return_pct": 22.388059701492534,
-      "max_high_pct": 22.388059701492534,
-      "min_low_pct": -0.21321961620470523,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
       "ticker": "FTNS",
       "entry_date": "2026-07-30",
       "entry_price": 1.29,
@@ -15442,19 +14714,6 @@
       "min_low_pct": -0.7751937984496131,
       "outcome": "NEUTRAL",
       "rr": 0.5167958656330742,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-07-30",
-      "entry_price": 30.29,
-      "final_close": 28.59,
-      "return_pct": -5.612413337735224,
-      "max_high_pct": -1.6176956091119128,
-      "min_low_pct": -9.177946517002303,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-30"
     },
     {
@@ -15507,19 +14766,6 @@
       "min_low_pct": -2.7027027027027026,
       "outcome": "NEUTRAL",
       "rr": -0.16216216216216217,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
-      "ticker": "IRAX",
-      "entry_date": "2026-07-30",
-      "entry_price": 1.0,
-      "final_close": 1250.0,
-      "return_pct": 124900.0,
-      "max_high_pct": 124900.0,
-      "min_low_pct": 124900.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-07-30"
     },
     {
@@ -15654,19 +14900,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "NEDA",
-      "entry_date": "2026-07-30",
-      "entry_price": 2.72,
-      "final_close": 2.78,
-      "return_pct": 2.205882352941162,
-      "max_high_pct": 3.308823529411759,
-      "min_low_pct": 0.7352941176470594,
-      "outcome": "NEUTRAL",
-      "rr": 0.1470588235294108,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
       "ticker": "NIPH",
       "entry_date": "2026-07-30",
       "entry_price": 225.0,
@@ -15676,19 +14909,6 @@
       "min_low_pct": 0.13333333333333838,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-07-30",
-      "entry_price": 33.9,
-      "final_close": 32.2,
-      "return_pct": -5.014749262536861,
-      "max_high_pct": -3.834808259587012,
-      "min_low_pct": -6.165191740412979,
-      "outcome": "NEUTRAL",
-      "rr": -0.3343166175024574,
       "detection_date": "2026-07-30"
     },
     {
@@ -15836,19 +15056,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-07-30",
-      "entry_price": 4.37,
-      "final_close": 4.24,
-      "return_pct": -2.9748283752860387,
-      "max_high_pct": 1.1441647597253963,
-      "min_low_pct": -8.009153318077814,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-07-30",
       "entry_price": 5.22,
@@ -15910,19 +15117,6 @@
       "min_low_pct": -3.2258064516129115,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-07-30",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
       "detection_date": "2026-07-30"
     },
     {
@@ -15992,19 +15186,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-07-30",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
       "ticker": "UBEE",
       "entry_date": "2026-07-30",
       "entry_price": 13.7,
@@ -16040,19 +15221,6 @@
       "min_low_pct": -7.155172413793104,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-07-30"
-    },
-    {
-      "path": "quiet",
-      "ticker": "WCDF",
-      "entry_date": "2026-07-30",
-      "entry_price": 582.38,
-      "final_close": 642.05,
-      "return_pct": 10.245887564820213,
-      "max_high_pct": 10.58072049177513,
-      "min_low_pct": -0.9237954600089282,
-      "outcome": "NEUTRAL",
-      "rr": 0.6830591709880143,
       "detection_date": "2026-07-30"
     },
     {
@@ -16538,19 +15706,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-07-31",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-07-31",
       "entry_price": 81.71,
@@ -16967,19 +16122,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-07-31",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-07-31",
       "entry_price": 13.63,
@@ -17162,19 +16304,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-07-31",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-07-31",
       "entry_price": 2.9,
@@ -17197,19 +16326,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-07-31",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-07-31"
     },
     {
@@ -17288,19 +16404,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-07-31",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-07-31"
     },
     {
@@ -17422,19 +16525,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-07-31",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-07-31",
       "entry_price": 26.95,
@@ -17496,19 +16586,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-07-31",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-07-31"
     },
     {
@@ -17626,19 +16703,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-07-31",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-07-31"
     },
     {
@@ -17942,19 +17006,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-07-31",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-07-31",
       "entry_price": 27.9,
@@ -18098,19 +17149,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-07-31",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-07-31",
       "entry_price": 5.25,
@@ -18189,19 +17227,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-07-31",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-07-31",
       "entry_price": 15.7,
@@ -18250,32 +17275,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-07-31",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-07-31"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-07-31",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-07-31"
     },
     {
@@ -18852,19 +17851,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-02",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-02",
       "entry_price": 81.71,
@@ -19281,19 +18267,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-02",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-02",
       "entry_price": 13.63,
@@ -19476,19 +18449,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-02",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-02",
       "entry_price": 2.9,
@@ -19511,19 +18471,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-02",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-02"
     },
     {
@@ -19602,19 +18549,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-02",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-02"
     },
     {
@@ -19736,19 +18670,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-02",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-02",
       "entry_price": 26.95,
@@ -19810,19 +18731,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-02",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-02"
     },
     {
@@ -19940,19 +18848,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-02",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-02"
     },
     {
@@ -20256,19 +19151,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-02",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-02",
       "entry_price": 27.9,
@@ -20412,19 +19294,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-02",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-02",
       "entry_price": 5.25,
@@ -20503,19 +19372,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-02",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-02",
       "entry_price": 15.7,
@@ -20564,32 +19420,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-02",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-02"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-02",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-02"
     },
     {
@@ -21153,19 +19983,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-03",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-03",
       "entry_price": 81.71,
@@ -21582,19 +20399,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-03",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-03",
       "entry_price": 13.63,
@@ -21777,19 +20581,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-03",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-03",
       "entry_price": 2.9,
@@ -21812,19 +20603,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-03",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-03"
     },
     {
@@ -21903,19 +20681,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-03",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-03"
     },
     {
@@ -22037,19 +20802,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-03",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-03",
       "entry_price": 26.95,
@@ -22111,19 +20863,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-03",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-03"
     },
     {
@@ -22241,19 +20980,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-03",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-03"
     },
     {
@@ -22570,19 +21296,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-03",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-03",
       "entry_price": 27.9,
@@ -22726,19 +21439,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-03",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-03",
       "entry_price": 5.25,
@@ -22817,19 +21517,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-03",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-03",
       "entry_price": 15.7,
@@ -22878,32 +21565,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-03",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-03"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-03",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-03"
     },
     {
@@ -23441,19 +22102,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-04",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-04",
       "entry_price": 81.71,
@@ -23870,19 +22518,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-04",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-04",
       "entry_price": 13.63,
@@ -24065,19 +22700,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-04",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-04",
       "entry_price": 2.9,
@@ -24100,19 +22722,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-04",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-04"
     },
     {
@@ -24191,19 +22800,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-04",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-04"
     },
     {
@@ -24325,19 +22921,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-04",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-04",
       "entry_price": 26.95,
@@ -24399,19 +22982,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-04",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-04"
     },
     {
@@ -24529,19 +23099,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-04",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-04"
     },
     {
@@ -24858,19 +23415,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-04",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-04",
       "entry_price": 27.9,
@@ -25014,19 +23558,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-04",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-04",
       "entry_price": 5.25,
@@ -25105,19 +23636,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-04",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-04",
       "entry_price": 15.7,
@@ -25166,32 +23684,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-04",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-04"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-04",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-04"
     },
     {
@@ -25742,19 +24234,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-05",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-05",
       "entry_price": 81.71,
@@ -26171,19 +24650,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-05",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-05",
       "entry_price": 13.63,
@@ -26366,19 +24832,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-05",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-05",
       "entry_price": 2.9,
@@ -26401,19 +24854,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-05",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-05"
     },
     {
@@ -26492,19 +24932,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-05",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-05"
     },
     {
@@ -26626,19 +25053,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-05",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-05",
       "entry_price": 26.95,
@@ -26700,19 +25114,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-05",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-05"
     },
     {
@@ -26830,19 +25231,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-05",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-05"
     },
     {
@@ -27159,19 +25547,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-05",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-05",
       "entry_price": 27.9,
@@ -27315,19 +25690,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-05",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-05",
       "entry_price": 5.25,
@@ -27406,19 +25768,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-05",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-05",
       "entry_price": 15.7,
@@ -27467,32 +25816,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-05",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-05"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-05",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-05"
     },
     {
@@ -28026,19 +26349,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 1.4605418138987043,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-06",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-06"
     },
     {
@@ -28459,19 +26769,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-06",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-06",
       "entry_price": 13.63,
@@ -28654,19 +26951,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-06",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-06",
       "entry_price": 2.9,
@@ -28689,19 +26973,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-06",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-06"
     },
     {
@@ -28780,19 +27051,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-06",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-06"
     },
     {
@@ -28914,19 +27172,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-06",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-06",
       "entry_price": 26.95,
@@ -28988,19 +27233,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-06",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-06"
     },
     {
@@ -29118,19 +27350,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-06",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-06"
     },
     {
@@ -29447,19 +27666,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-06",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-06",
       "entry_price": 27.9,
@@ -29603,19 +27809,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-06",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-06",
       "entry_price": 5.25,
@@ -29694,19 +27887,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-06",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-06",
       "entry_price": 15.7,
@@ -29755,32 +27935,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-06",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-06"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-06",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-06"
     },
     {
@@ -30314,19 +28468,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 1.4605418138987043,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-09",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-09"
     },
     {
@@ -30747,19 +28888,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-09",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-09",
       "entry_price": 13.63,
@@ -30942,19 +29070,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-09",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-09",
       "entry_price": 2.9,
@@ -30977,19 +29092,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-09",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-09"
     },
     {
@@ -31068,19 +29170,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-09",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-09"
     },
     {
@@ -31202,19 +29291,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-09",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-09",
       "entry_price": 26.95,
@@ -31276,19 +29352,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-09",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-09"
     },
     {
@@ -31406,19 +29469,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-09",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-09"
     },
     {
@@ -31735,19 +29785,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-09",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-09",
       "entry_price": 27.9,
@@ -31891,19 +29928,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-09",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-09",
       "entry_price": 5.25,
@@ -31982,19 +30006,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-09",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-09",
       "entry_price": 15.7,
@@ -32043,32 +30054,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-09",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-09"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-09",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-09"
     },
     {
@@ -32606,19 +30591,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-10",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-10",
       "entry_price": 81.71,
@@ -33022,19 +30994,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-10",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-10",
       "entry_price": 13.63,
@@ -33217,19 +31176,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-10",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-10",
       "entry_price": 2.9,
@@ -33252,19 +31198,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-10",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-10"
     },
     {
@@ -33343,19 +31276,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-10",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-10"
     },
     {
@@ -33477,19 +31397,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-10",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-10",
       "entry_price": 26.95,
@@ -33551,19 +31458,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-10",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-10"
     },
     {
@@ -33681,19 +31575,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-10",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-10"
     },
     {
@@ -34010,19 +31891,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-10",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-10",
       "entry_price": 27.9,
@@ -34166,19 +32034,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-10",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-10",
       "entry_price": 5.25,
@@ -34257,19 +32112,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-10",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-10",
       "entry_price": 15.7,
@@ -34318,32 +32160,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-10",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-10"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-10",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-10"
     },
     {
@@ -34881,19 +32697,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-11",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-11",
       "entry_price": 81.71,
@@ -35284,19 +33087,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-11",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-11",
       "entry_price": 13.63,
@@ -35479,19 +33269,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-11",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-11",
       "entry_price": 2.9,
@@ -35514,19 +33291,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-11",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-11"
     },
     {
@@ -35605,19 +33369,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-11",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-11"
     },
     {
@@ -35739,19 +33490,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-11",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-11",
       "entry_price": 26.95,
@@ -35813,19 +33551,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-11",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-11"
     },
     {
@@ -35943,19 +33668,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-11",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-11"
     },
     {
@@ -36272,19 +33984,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-11",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-11",
       "entry_price": 27.9,
@@ -36428,19 +34127,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-11",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-11",
       "entry_price": 5.25,
@@ -36519,19 +34205,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-11",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-11",
       "entry_price": 15.7,
@@ -36580,32 +34253,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-11",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-11"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-11",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-11"
     },
     {
@@ -37156,19 +34803,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-12",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-12",
       "entry_price": 81.71,
@@ -37559,19 +35193,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-12",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-12",
       "entry_price": 13.63,
@@ -37754,19 +35375,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-12",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-12",
       "entry_price": 2.9,
@@ -37789,19 +35397,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-12",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-12"
     },
     {
@@ -37880,19 +35475,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-12",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-12"
     },
     {
@@ -38014,19 +35596,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-12",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-12",
       "entry_price": 26.95,
@@ -38088,19 +35657,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-12",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-12"
     },
     {
@@ -38218,19 +35774,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-12",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-12"
     },
     {
@@ -38547,19 +36090,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-12",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-12",
       "entry_price": 27.9,
@@ -38703,19 +36233,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-12",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-12",
       "entry_price": 5.25,
@@ -38794,19 +36311,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-12",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-12",
       "entry_price": 15.7,
@@ -38855,32 +36359,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-12",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-12"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-12",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-12"
     },
     {
@@ -39431,19 +36909,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-13",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-13",
       "entry_price": 81.71,
@@ -39847,19 +37312,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-13",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-13",
       "entry_price": 13.63,
@@ -40042,19 +37494,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-13",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-13",
       "entry_price": 2.9,
@@ -40077,19 +37516,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-13",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-13"
     },
     {
@@ -40168,19 +37594,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-13",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-13"
     },
     {
@@ -40302,19 +37715,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-13",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-13",
       "entry_price": 26.95,
@@ -40376,19 +37776,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-13",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-13"
     },
     {
@@ -40506,19 +37893,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-13",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-13"
     },
     {
@@ -40822,19 +38196,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-13",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-13",
       "entry_price": 27.9,
@@ -40978,19 +38339,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-13",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-13",
       "entry_price": 5.25,
@@ -41069,19 +38417,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-13",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-13",
       "entry_price": 15.7,
@@ -41130,32 +38465,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-13",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 0.6535947712418253,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-13"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-13",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-13"
     },
     {
@@ -41693,19 +39002,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "HBCO",
-      "entry_date": "2026-08-16",
-      "entry_price": 8.49,
-      "final_close": 7.02,
-      "return_pct": -17.31448763250884,
-      "max_high_pct": 0.0,
-      "min_low_pct": -17.31448763250884,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "HDBK",
       "entry_date": "2026-08-16",
       "entry_price": 81.71,
@@ -42096,19 +39392,6 @@
     },
     {
       "path": "pre_surge",
-      "ticker": "TORA",
-      "entry_date": "2026-08-16",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "pre_surge",
       "ticker": "UBEE",
       "entry_date": "2026-08-16",
       "entry_price": 13.63,
@@ -42291,19 +39574,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ALEX",
-      "entry_date": "2026-08-16",
-      "entry_price": 19.5,
-      "final_close": 15.48,
-      "return_pct": -20.615384615384613,
-      "max_high_pct": 0.0,
-      "min_low_pct": -22.564102564102566,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
       "ticker": "AMPI",
       "entry_date": "2026-08-16",
       "entry_price": 2.9,
@@ -42326,19 +39596,6 @@
       "min_low_pct": 0.0,
       "outcome": "TARGET_HIT",
       "rr": 1.0,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
-      "ticker": "AREH",
-      "entry_date": "2026-08-16",
-      "entry_price": 1.41,
-      "final_close": 1.46,
-      "return_pct": 3.5460992907801447,
-      "max_high_pct": 4.964539007092203,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.236406619385343,
       "detection_date": "2026-08-16"
     },
     {
@@ -42417,19 +39674,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.7051282051282048,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
-      "ticker": "CCRS",
-      "entry_date": "2026-08-16",
-      "entry_price": 2.51,
-      "final_close": 2.87,
-      "return_pct": 14.342629482071729,
-      "max_high_pct": 23.107569721115542,
-      "min_low_pct": 0.0,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-16"
     },
     {
@@ -42551,19 +39795,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EEII",
-      "entry_date": "2026-08-16",
-      "entry_price": 2.63,
-      "final_close": 2.92,
-      "return_pct": 11.02661596958175,
-      "max_high_pct": 12.54752851711027,
-      "min_low_pct": 0.0,
-      "outcome": "NEUTRAL",
-      "rr": 0.73510773130545,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
       "ticker": "EFID",
       "entry_date": "2026-08-16",
       "entry_price": 26.95,
@@ -42625,19 +39856,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.32180279714147936,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-16",
-      "entry_price": 9.0,
-      "final_close": 10.0,
-      "return_pct": 11.11111111111111,
-      "max_high_pct": 18.88888888888888,
-      "min_low_pct": -5.555555555555555,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-16"
     },
     {
@@ -42755,19 +39973,6 @@
       "min_low_pct": 0.0,
       "outcome": "NEUTRAL",
       "rr": 0.5729166666666661,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-16",
-      "entry_price": 29.8,
-      "final_close": 28.59,
-      "return_pct": -4.060402684563761,
-      "max_high_pct": 0.0,
-      "min_low_pct": -7.684563758389258,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-16"
     },
     {
@@ -43058,19 +40263,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-16",
-      "entry_price": 32.6,
-      "final_close": 32.2,
-      "return_pct": -1.2269938650306704,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.423312883435591,
-      "outcome": "NEUTRAL",
-      "rr": -0.08179959100204469,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
       "ticker": "OCDI",
       "entry_date": "2026-08-16",
       "entry_price": 27.9,
@@ -43214,19 +40406,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "RKAZ",
-      "entry_date": "2026-08-16",
-      "entry_price": 4.42,
-      "final_close": 4.24,
-      "return_pct": -4.072398190045242,
-      "max_high_pct": 0.0,
-      "min_low_pct": -9.049773755656117,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
       "ticker": "RMDA",
       "entry_date": "2026-08-16",
       "entry_price": 5.25,
@@ -43305,19 +40484,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "SNFI",
-      "entry_date": "2026-08-16",
-      "entry_price": 10.4,
-      "final_close": 10.1,
-      "return_pct": -2.8846153846153912,
-      "max_high_pct": 0.0,
-      "min_low_pct": -2.8846153846153912,
-      "outcome": "NEUTRAL",
-      "rr": -0.19230769230769276,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
       "ticker": "SPIN",
       "entry_date": "2026-08-16",
       "entry_price": 15.7,
@@ -43366,32 +40532,6 @@
       "min_low_pct": -10.69735951252539,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TMGH",
-      "entry_date": "2026-08-16",
-      "entry_price": 96.39,
-      "final_close": 97.51,
-      "return_pct": 1.1619462599854804,
-      "max_high_pct": 2.2305218383649814,
-      "min_low_pct": 1.1619462599854804,
-      "outcome": "NEUTRAL",
-      "rr": 0.07746308399903203,
-      "detection_date": "2026-08-16"
-    },
-    {
-      "path": "quiet",
-      "ticker": "TORA",
-      "entry_date": "2026-08-16",
-      "entry_price": 66.45,
-      "final_close": 65.11,
-      "return_pct": -2.016553799849516,
-      "max_high_pct": 3.115124153498861,
-      "min_low_pct": -2.1820917983446244,
-      "outcome": "NEUTRAL",
-      "rr": -0.13443691998996773,
       "detection_date": "2026-08-16"
     },
     {
@@ -44085,19 +41225,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "ACAMD",
-      "entry_date": "2026-08-17",
-      "entry_price": 2.25,
-      "final_close": 2.06,
-      "return_pct": -8.444444444444441,
-      "max_high_pct": -7.111111111111118,
-      "min_low_pct": -10.222222222222221,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
       "ticker": "ACAP",
       "entry_date": "2026-08-17",
       "entry_price": 9.07,
@@ -44319,19 +41446,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "EITP",
-      "entry_date": "2026-08-17",
-      "entry_price": 8.71,
-      "final_close": 10.0,
-      "return_pct": 14.810562571756591,
-      "max_high_pct": 22.847301951779546,
-      "min_low_pct": -2.411021814006898,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
       "ticker": "ELNA",
       "entry_date": "2026-08-17",
       "entry_price": 37.55,
@@ -44397,32 +41511,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "FIRE",
-      "entry_date": "2026-08-17",
-      "entry_price": 4.55,
-      "final_close": 5.74,
-      "return_pct": 26.15384615384616,
-      "max_high_pct": 26.15384615384616,
-      "min_low_pct": 23.076923076923073,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GBCO",
-      "entry_date": "2026-08-17",
-      "entry_price": 30.49,
-      "final_close": 28.59,
-      "return_pct": -6.2315513283043575,
-      "max_high_pct": -6.034765496884225,
-      "min_low_pct": -9.773696293866832,
-      "outcome": "STOPPED",
-      "rr": -1.0,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
       "ticker": "GGRN",
       "entry_date": "2026-08-17",
       "entry_price": 1.44,
@@ -44445,19 +41533,6 @@
       "min_low_pct": -33.87096774193549,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
-      "ticker": "GRCA",
-      "entry_date": "2026-08-17",
-      "entry_price": 55.8,
-      "final_close": 72.64,
-      "return_pct": 30.179211469534057,
-      "max_high_pct": 30.179211469534057,
-      "min_low_pct": 30.179211469534057,
-      "outcome": "TARGET_HIT",
-      "rr": 1.0,
       "detection_date": "2026-08-17"
     },
     {
@@ -44527,19 +41602,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "MEPA",
-      "entry_date": "2026-08-17",
-      "entry_price": 1.87,
-      "final_close": 1.8,
-      "return_pct": -3.7433155080213933,
-      "max_high_pct": -2.1390374331550817,
-      "min_low_pct": -3.7433155080213933,
-      "outcome": "NEUTRAL",
-      "rr": -0.24955436720142624,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
       "ticker": "MFPC",
       "entry_date": "2026-08-17",
       "entry_price": 40.5,
@@ -44579,32 +41641,6 @@
     },
     {
       "path": "quiet",
-      "ticker": "NEDA",
-      "entry_date": "2026-08-17",
-      "entry_price": 2.7,
-      "final_close": 2.78,
-      "return_pct": 2.962962962962949,
-      "max_high_pct": 4.07407407407407,
-      "min_low_pct": 1.4814814814814827,
-      "outcome": "NEUTRAL",
-      "rr": 0.19753086419752994,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
-      "ticker": "OBRI",
-      "entry_date": "2026-08-17",
-      "entry_price": 32.88,
-      "final_close": 32.2,
-      "return_pct": -2.0681265206812642,
-      "max_high_pct": -1.1557177615571852,
-      "min_low_pct": -3.2542579075425904,
-      "outcome": "NEUTRAL",
-      "rr": -0.13787510137875095,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
       "ticker": "OLFI",
       "entry_date": "2026-08-17",
       "entry_price": 25.0,
@@ -44627,19 +41663,6 @@
       "min_low_pct": -2.494754021916531,
       "outcome": "NEUTRAL",
       "rr": -0.06372891893992441,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
-      "ticker": "PACH",
-      "entry_date": "2026-08-17",
-      "entry_price": 81.0,
-      "final_close": 70.01,
-      "return_pct": -13.567901234567895,
-      "max_high_pct": -13.567901234567895,
-      "min_low_pct": -13.567901234567895,
-      "outcome": "STOPPED",
-      "rr": -1.0,
       "detection_date": "2026-08-17"
     },
     {
@@ -44679,19 +41702,6 @@
       "min_low_pct": -7.619047619047626,
       "outcome": "STOPPED",
       "rr": -1.0,
-      "detection_date": "2026-08-17"
-    },
-    {
-      "path": "quiet",
-      "ticker": "RAYA",
-      "entry_date": "2026-08-17",
-      "entry_price": 7.08,
-      "final_close": 7.39,
-      "return_pct": 4.378531073446322,
-      "max_high_pct": 4.51977401129944,
-      "min_low_pct": 2.401129943502824,
-      "outcome": "NEUTRAL",
-      "rr": 0.2919020715630882,
       "detection_date": "2026-08-17"
     },
     {

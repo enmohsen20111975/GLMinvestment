@@ -444,6 +444,21 @@ def detect_quiet_accumulation(
     if not closes or len(closes) < needed or not volumes or len(volumes) < needed:
         return False, f'بيانات غير كافية ({len(closes) if closes else 0} < {needed})', details
 
+    # فلتر سيولة أدنى + استبعاد pump + RS (نفس اللي في Pre-Surge)
+    avg_20_vol_qa = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes) / len(volumes) if volumes else 0)
+    last_close_qa = closes[-1]
+    avg_turnover_qa = avg_20_vol_qa * last_close_qa
+    if avg_turnover_qa < 50_000:
+        return False, f'سيولة ميتة', details
+    if len(closes) >= 2 and closes[-2] > 0:
+        last_move_qa = (closes[-1] - closes[-2]) / closes[-2] * 100
+        if last_move_qa > 50 and volumes[-1] < avg_20_vol_qa * 0.3:
+            return False, 'pump مشبوه', details
+    if len(closes) >= 11 and closes[-11] > 0:
+        roc_qa = (closes[-1] - closes[-11]) / closes[-11] * 100
+        if roc_qa < -5:
+            return False, f'ضعف نسبي (ROC10={roc_qa:.1f}%)', details
+
     last_10_closes = closes[-10:]
     last_10_volumes = volumes[-10:]
     # avg_20_vol: لو مفيش 20 يوم، استخدم اللي متاح
@@ -601,6 +616,13 @@ def detect_pre_surge(
         # لو حركة +50% والحجم أقل من نص المتوسط → pump
         if last_move > 50 and last_vol < avg_20_vol_check * 0.3:
             return False, f'pump مشبوه (move +{last_move:.0f}% + volume واطي)', details
+    # فلتر قوة نسبية: لازم RS ≥ -5% (مش أضعف من السوق بكتير)
+    # (محتاجين stock_roc + benchmark_change، بس هنا بـ proxy: ROC 10d)
+    if len(closes) >= 11 and closes[-11] > 0:
+        roc_10d_rs = (closes[-1] - closes[-11]) / closes[-11] * 100
+        # لو السهم نزل أكتر من 5% في آخر 10 أيام → ضعيف جداً
+        if roc_10d_rs < -5:
+            return False, f'ضعف نسبي واضح (ROC10={roc_10d_rs:.1f}% < -5%)', details
 
     last_10_closes = closes[-10:]
     last_10_volumes = volumes[-10:]
