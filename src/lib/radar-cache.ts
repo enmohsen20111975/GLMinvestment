@@ -137,19 +137,63 @@ export function isWarmupRunning(): boolean {
   return true;
 }
 
-/** Resolve python binary — prefer venv if present.
- *  Checks multiple venv locations (project-local + user-global). */
+/**
+ * Resolve python binary — 100% portable, NO absolute paths.
+ *
+ * Resolution order:
+ *   1. process.env.PYTHON          (explicit override — highest priority)
+ *   2. process.env.VIRTUAL_ENV/bin/python3  (set when venv is activated)
+ *   3. PROJECT_ROOT/.venv/bin/python3      (project-local venv)
+ *   4. Walk up parents looking for .venv    (user-global venv at parent dirs)
+ *   5. 'python3'                            (fallback to PATH)
+ *
+ * This works everywhere because every path is derived from PROJECT_ROOT
+ * or environment variables — never hardcoded.
+ */
 function resolvePython(): string {
-  const candidates = [
-    path.join(PROJECT_ROOT, '.venv', 'bin', 'python3'),       // project-local venv
-    '/home/z/.venv/bin/python3',                                 // user-global venv (sandbox)
-    path.join(PROJECT_ROOT, '.venv', 'bin', 'python'),          // alt name
-    '/home/z/.venv/bin/python',                                  // alt name (sandbox)
+  // 1. Explicit override
+  if (process.env.PYTHON && existsSync(process.env.PYTHON)) {
+    return process.env.PYTHON;
+  }
+
+  // 2. VIRTUAL_ENV env var (set by `source venv/bin/activate`)
+  if (process.env.VIRTUAL_ENV) {
+    const venvPython = path.join(process.env.VIRTUAL_ENV, 'bin', 'python3');
+    if (existsSync(venvPython)) return venvPython;
+    const venvPythonAlt = path.join(process.env.VIRTUAL_ENV, 'bin', 'python');
+    if (existsSync(venvPythonAlt)) return venvPythonAlt;
+  }
+
+  // 3. Project-local .venv
+  const projectVenvs = [
+    path.join(PROJECT_ROOT, '.venv', 'bin', 'python3'),
+    path.join(PROJECT_ROOT, '.venv', 'bin', 'python'),
+    path.join(PROJECT_ROOT, 'venv', 'bin', 'python3'),
+    path.join(PROJECT_ROOT, 'venv', 'bin', 'python'),
   ];
-  for (const c of candidates) {
+  for (const c of projectVenvs) {
     if (existsSync(c)) return c;
   }
-  return 'python3'; // fallback to PATH
+
+  // 4. Walk up parent directories looking for .venv (covers user-global venv)
+  let dir = PROJECT_ROOT;
+  for (let i = 0; i < 5; i++) {
+    const parent = path.dirname(dir);
+    if (parent === dir) break; // reached root
+    const venvInParent = [
+      path.join(parent, '.venv', 'bin', 'python3'),
+      path.join(parent, '.venv', 'bin', 'python'),
+      path.join(parent, 'venv', 'bin', 'python3'),
+      path.join(parent, 'venv', 'bin', 'python'),
+    ];
+    for (const c of venvInParent) {
+      if (existsSync(c)) return c;
+    }
+    dir = parent;
+  }
+
+  // 5. Fallback to PATH (system python — may or may not have the deps)
+  return 'python3';
 }
 
 /**

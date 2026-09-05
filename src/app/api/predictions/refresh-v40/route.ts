@@ -25,17 +25,50 @@ interface V40Status {
 let v40InMemory = false;
 const V40_MUTEX_TTL_MS = 10 * 60 * 1000; // 10 min — V40.2 can be slow on big DBs
 
+/**
+ * Resolve python binary — 100% portable, NO absolute paths.
+ * Same logic as radar-cache.ts — see that file for full docs.
+ */
 function resolvePython(): string {
-  const candidates = [
-    path.join(PROJECT_ROOT, '.venv', 'bin', 'python3'),       // project-local venv
-    '/home/z/.venv/bin/python3',                                 // user-global venv (sandbox)
-    path.join(PROJECT_ROOT, '.venv', 'bin', 'python'),          // alt name
-    '/home/z/.venv/bin/python',                                  // alt name (sandbox)
+  // 1. Explicit override
+  if (process.env.PYTHON && existsSync(process.env.PYTHON)) {
+    return process.env.PYTHON;
+  }
+  // 2. VIRTUAL_ENV env var (set by `source venv/bin/activate`)
+  if (process.env.VIRTUAL_ENV) {
+    const venvPython = path.join(process.env.VIRTUAL_ENV, 'bin', 'python3');
+    if (existsSync(venvPython)) return venvPython;
+    const venvPythonAlt = path.join(process.env.VIRTUAL_ENV, 'bin', 'python');
+    if (existsSync(venvPythonAlt)) return venvPythonAlt;
+  }
+  // 3. Project-local .venv / venv
+  const projectVenvs = [
+    path.join(PROJECT_ROOT, '.venv', 'bin', 'python3'),
+    path.join(PROJECT_ROOT, '.venv', 'bin', 'python'),
+    path.join(PROJECT_ROOT, 'venv', 'bin', 'python3'),
+    path.join(PROJECT_ROOT, 'venv', 'bin', 'python'),
   ];
-  for (const c of candidates) {
+  for (const c of projectVenvs) {
     if (existsSync(c)) return c;
   }
-  return 'python3'; // fallback to PATH
+  // 4. Walk up parent directories looking for .venv (user-global venv)
+  let dir = PROJECT_ROOT;
+  for (let i = 0; i < 5; i++) {
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    const venvInParent = [
+      path.join(parent, '.venv', 'bin', 'python3'),
+      path.join(parent, '.venv', 'bin', 'python'),
+      path.join(parent, 'venv', 'bin', 'python3'),
+      path.join(parent, 'venv', 'bin', 'python'),
+    ];
+    for (const c of venvInParent) {
+      if (existsSync(c)) return c;
+    }
+    dir = parent;
+  }
+  // 5. Fallback to PATH
+  return 'python3';
 }
 
 function readStatus(): V40Status {
