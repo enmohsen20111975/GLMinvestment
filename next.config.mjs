@@ -39,11 +39,19 @@ const nextConfig = {
   // The build worker has its own memory limit. On VPS with 8GB RAM, we need
   // to allow the worker to use more memory during static generation.
   experimental: {
-    serverComponentsExternalPackages: ["better-sqlite3", "sql.js"],
-    // Disable worker threads to prevent SIGSEGV (worker crashes don't kill
-    // the main build process — they just fail that route, which is fine)
-    // Next.js 14 doesn't have a direct flag for this, but setting
-    // memory limits higher helps.
+    serverComponentsExternalPackages: ["better-sqlite3", "sql.js", "@prisma/client", "@prisma/auth-client", "@prisma/predictions-client"],
+    // ─── FIX: Disable worker threads for static generation ─────────────
+    // The SIGSEGV crash was caused by better-sqlite3 (native module) crashing
+    // when imported inside a Next.js build worker thread. Worker threads have
+    // separate memory and can't handle native modules that use N-API in
+    // certain ways.
+    //
+    // Setting workerThreads: false tells Next.js to do page data collection
+    // in the main thread. This is slower but avoids the native module crash.
+    workerThreads: false,
+    // ─── FIX: Disable CPU-intensive optimization ───────────────────────
+    // Also helps with memory during build
+    cpus: 1,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-accordion",
