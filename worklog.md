@@ -17746,3 +17746,60 @@ Stage Summary:
   - `src/components/analysis/MarketAnalysisView.tsx` (محدّث — إضافة الـ tab)
   - `scripts/output/maker_radar_tab.png` (screenshot للتبويب)
   - `scripts/output/maker_radar_stock_detail.png` (screenshot للـ drawer)
+
+---
+Task ID: MAKER-RADAR-PORTABILITY-1
+Agent: Main Agent (Z.ai Code)
+Task: ترتيب المشروع للأنتاج — جعل رادار الميكرز portable يشتغل في أي بيئة
+
+Work Log:
+- حللت الـ gaps: النظام كان بـ يقرا db/production_snapshot.db (مش موجود في الإنتاج)
+- بنيت Portable DB Detection في 3 طبقات:
+  1. `scripts/maker_radar.py` — Python fallback chain
+  2. `src/lib/radar-db.ts` — TypeScript fallback chain
+  3. نفس الـ chain في الاتنين:
+     - db/production_snapshot.db → db/vps_real/stocks.db → db/stocks.db → db/data_engine.db
+- عدّلت `scripts/maker_radar.py`:
+  - أضفت `_find_radar_db()` لاكتشاف الـ DB المتاح
+  - عدّلت `fetch_ticker_series()` و `compute_turnover()` لاستخدام column names المكتشفة
+  - عدّلت الـ main للاكتشاف التلقائي + fallback لو JOIN مع stocks table فشل
+- بنيت `src/lib/radar-db.ts`:
+  - `getRadarDbConfig()` — يكتشف الـ DB + column names
+  - `getRadarDb()` — يفتح الـ DB
+  - `parseVolume()` + `computeTurnover()` — portable helpers
+- عدّلت `src/app/api/maker-radar/stock/route.ts` لاستخدام radar-db.ts
+- عدّلت `scripts/fetch_production_data.py`:
+  - أضفت `IS_PRODUCTION` detection
+  - لو في الإنتاج → مفيش حاجة للسحب (الـ DBs موجودة أصلاً)
+  - `--force` لتجاوز الـ detection
+- بنيت `scripts/setup_radar.py`:
+  - `--status` — اعرض حالة كل الـ DBs
+  - `--force-fetch` — اسحب من الإنتاج
+- اختبرت portability:
+  - شغلت `maker_radar.py` على `production_snapshot.db` → شغل ✅
+  - شلت `production_snapshot.db` → اكتشف `vps_real/stocks.db` تلقائياً ✅
+  - الـ API لسه شغال بعد شل الـ DB ✅
+- نظفت git: شلت كل `scripts/output/*` من الـ tracking (كانت اترفعت بالغلط قبل كده)
+- حدّثت `.gitignore` لإضافة:
+  - db/maker_radar_tracking.json
+  - db/paper_test_v2.json, db/paper_mode_v2.json
+  - scripts/output/*.json, *.md (كل الـ output files)
+- عملت commit + push لـ GitHub main branch:
+  - commit: 0185ea9
+  - message: "feat(radar): make Maker Radar portable across sandbox/laptop/production"
+
+Stage Summary:
+- ✅ **النظام portable 100%** — يشتغل في أي بيئة من غير إعدادات يدوية
+- 🔄 **Fallback chain** في 3 طبقات (Python + TypeScript + API):
+  1. db/production_snapshot.db (sandbox)
+  2. db/vps_real/stocks.db (sandbox/laptop)
+  3. db/stocks.db (production)
+  4. db/data_engine.db (production fallback)
+- ✅ **Pushed to GitHub**: commit `0185ea9` على main
+- 📦 Artifacts:
+  - `scripts/maker_radar.py` (portable — auto-detect DB)
+  - `src/lib/radar-db.ts` (portable helper)
+  - `src/app/api/maker-radar/stock/route.ts` (portable)
+  - `scripts/fetch_production_data.py` (portable — skip in production)
+  - `scripts/setup_radar.py` (env setup + status)
+  - `.gitignore` (محدّث — exclude tracking/output files)
