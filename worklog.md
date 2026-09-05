@@ -17946,3 +17946,38 @@ Stage Summary:
 - Lint passes (exit 0, no warnings) ✓
 - TypeScript passes (no errors in MakerRadarTab.tsx) ✓
 - Visually verified via headless browser: 4 tables render correctly with right row counts and headers; drawer shows real numbers; star buttons work ✓
+
+---
+Task ID: MAKER-RADAR-INTEGRATION-1
+Agent: Main Agent (Z.ai Code)
+Task: ربط رادار الميكرز بمولّد التوقعات V40.2 + Documentation + Frontend
+
+Work Log:
+- حللت V40.2 prediction generator (v40_2_daily_generator.py):
+  - الـ signals بـ تتولد في `signals_by_date[scan_date].append({...})`
+  - بـ تـ store في `tracker.record_prediction()`
+  - المكان المناسب للربط: قبل الـ append (veto أو boost)
+- أضفت Kill Switch + Money Flow في v40_2_daily_generator.py (lines 2140-2185):
+  - قبل ما أي signal تـ store، بـ يشغل check_kill_switch()
+  - لو Kill=True (توزيع قاتل / حبس / تدوير وهمي) → `continue` (veto)
+  - Money Flow boost:
+    - 🔥 دخول قوي → score +5
+    - 🟢 سيولة داخلة → score +2
+    - 🔴 سيولة خارجة → score -2
+    - 🔥 خروج قوي → score -5
+  - safe-by-design: لو الرادار فشل → التوقعات بتكمل عادي
+- أضفت أعمدة جديدة في MakerRadarTab.tsx:
+  - شراء% (أخضر ≥60% / أحمر ≤40%)
+  - Net Flow (بالمليون)
+  - دورة الحياة (🚀 انفجار / 🚨 توزيع / 🚫 حبس)
+  - Kill Switch badge (⚠️ KILL بالأحمر)
+- حفظت Pine scripts في data/pine_scripts/ للمرجعية
+- حدّثت Documentation/DATABASE_ARCHITECTURE.md
+
+Stage Summary:
+- ✅ **الرادار دلوقتي مربوط بمولّد التوقعات** — مش تحليل منفصل
+- ✅ Kill Switch = veto فوري (مفيش signal تـ store لو فيه توزيع قاتل)
+- ✅ Money Flow = boost/penalty على الـ score
+- ✅ Frontend محدّث بالأعمدة الجديدة
+- ✅ Documentation محدّثة
+- 📦 commit: 08ab71a على GitHub main
