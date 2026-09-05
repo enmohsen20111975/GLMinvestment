@@ -365,6 +365,176 @@ def position_size_for_liquidity_bypass(bypass_activated: bool, default_pct: floa
     return default_pct
 
 
+# ============================================================================
+# PHASE-2: QUIET ACCUMULATION — رادار الميكرز (2026-09-05)
+# ============================================================================
+# قرار المالك: نصطاد مرحلة التجميع الهادئ (مش الانفجار).
+# الميكرز بيجمع بهدوء أيام قبل ما يولع السهم. لو امسكنا المرحلة دي → R:R ممتاز.
+
+# ─── العتبات (مبنية على إشارات الميكرز) ──────────────────────────────────
+# 1. حجم أعلى من المتوسط بشكل متكرر (مش يوم واحد)
+QUIET_ACCUM_LOOKBACK = 10            # فحص آخر 10 أيام
+QUIET_ACCUM_VOLUME_DAYS_HIGH = 4     # على الأقل 4 من 10 أيام volume > avg_20d
+QUIET_ACCUM_VOLUME_RATIO_MIN = 1.2   # volume اليوم > 1.2× متوسط 20d
+
+# 2. ضغط شراء متكرر: الـ close قريب من الـ high
+QUIET_ACCUM_BUY_PRESSURE_DAYS = 5    # على الأقل 5 من 10 أيام
+QUIET_ACCUM_CLOSE_TO_HIGH_PCT = 80.0 # close >= 80% من (high - low) range
+
+# 3. العرض بيختفي: الـ range ضيق والحجم مش واطي
+QUIET_ACCUM_RANGE_MAX_PCT = 12.0     # range 10d < 12% (انضغاط)
+QUIET_ACCUM_AVG_VOL_RATIO_MIN = 0.8  # متوسط حجم 10d >= 80% من متوسط 20d (مش واطي)
+
+# 4. السعر لسه مش طالع بقوة (مش انفجار)
+QUIET_ACCUM_ROC_10D_MAX = 10.0      # ROC 10d < 10% (مش طالع بسرعة)
+
+# 5. مفيش توزيع واضح (مفيش بيع قوي)
+QUIET_ACCUM_DIST_DAYS_MAX = 2       # على الأكثر 2 يوم distribution في آخر 10
+
+# عدد الإشارات اللازمة (من 6 شروط)
+QUIET_ACCUMULATION_MIN_SIGNALS = 4   # لازم 4 من 6 إشارات
+
+# Position size
+QUIET_ACCUMULATION_POSITION_SIZE = 0.02  # 2% (مش 2.5% — احتياط)
+
+
+def detect_quiet_accumulation(
+    closes: List[float],
+    volumes: List[float],
+    highs: List[float] = None,
+    lows: List[float] = None,
+) -> Tuple[bool, str, dict]:
+    """PHASE-2: كشف مرحلة التجميع الهادئ (Quiet Accumulation).
+
+    الميكرز بيجمع بهدوء أيام قبل ما يولع السهم. الإشارات:
+      1. حجم أعلى من المتوسط بشكل متكرر (≥ 4 من 10 أيام volume > 1.2× avg_20d)
+      2. ضغط شراء متكرر (close ≥ 80% من range في ≥ 5 من 10 أيام)
+      3. انضغاط سعري (range 10d < 12%)
+      4. الحجم مش واطي (avg_10d ≥ 80% من avg_20d)
+      5. مش انفجار (ROC 10d < 10%)
+      6. مفيش توزيع (≤ 2 يوم distribution في آخر 10)
+
+    لو 4 من 6 إشارات متحققة → quiet_accumulation=True.
+
+    Returns:
+        (is_quiet_accumulation, reason, details)
+    """
+    details = {
+        'signal_count': 0,
+        'signals_met': [],
+        'signals_failed': [],
+    }
+
+    needed = 25  # محتاجين 20 يوم + 5 للأخيرة
+    if not closes or len(closes) < needed or not volumes or len(volumes) < needed:
+        return False, f'بيانات غير كافية ({len(closes) if closes else 0} < {needed})', details
+
+    last_10_closes = closes[-10:]
+    last_10_volumes = volumes[-10:]
+    avg_20_vol = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else 0
+    avg_10_vol = sum(last_10_volumes) / 10
+
+    # 1. حجم أعلى من المتوسط بشكل متكرر
+    if avg_20_vol > 0:
+        days_high_vol = sum(1 for v in last_10_volumes if v >= avg_20_vol * QUIET_ACCUM_VOLUME_RATIO_MIN)
+        signal1 = days_high_vol >= QUIET_ACCUM_VOLUME_DAYS_HIGH
+        details['days_high_volume'] = days_high_vol
+        details['avg_20_vol'] = round(avg_20_vol, 0)
+        if signal1:
+            details['signals_met'].append(f'1.volume_high_recurring({days_high_vol}/{QUIET_ACCUM_VOLUME_DAYS_HIGH})')
+        else:
+            details['signals_failed'].append(f'1.volume_high_recurring({days_high_vol}/{QUIET_ACCUM_VOLUME_DAYS_HIGH})')
+
+    # 2. ضغط شراء متكرر: close قريب من high
+    # لو مفيش highs/lows، نحسبها من closes (proxy: high = max(close, prev_close))
+    if highs and lows and len(highs) >= 10 and len(lows) >= 10:
+        last_10_highs = highs[-10:]
+        last_10_lows = lows[-10:]
+    else:
+        # proxy: استخدم close كـ high و close[-1] كـ low للشمعة (أقل دقة)
+        last_10_highs = [max(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
+        last_10_lows = [min(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
+
+    buy_pressure_days = 0
+    for i in range(10):
+        h, l, c = last_10_highs[i], last_10_lows[i], last_10_closes[i]
+        if h > l:
+            close_pct = (c - l) / (h - l) * 100
+            if close_pct >= QUIET_ACCUM_CLOSE_TO_HIGH_PCT:
+                buy_pressure_days += 1
+    signal2 = buy_pressure_days >= QUIET_ACCUM_BUY_PRESSURE_DAYS
+    details['buy_pressure_days'] = buy_pressure_days
+    if signal2:
+        details['signals_met'].append(f'2.buy_pressure({buy_pressure_days}/{QUIET_ACCUM_BUY_PRESSURE_DAYS})')
+    else:
+        details['signals_failed'].append(f'2.buy_pressure({buy_pressure_days}/{QUIET_ACCUM_BUY_PRESSURE_DAYS})')
+
+    # 3. انضغاط سعري (range 10d < 12%)
+    min_10 = min(last_10_closes)
+    max_10 = max(last_10_closes)
+    if min_10 > 0:
+        range_pct = (max_10 - min_10) / min_10 * 100
+    else:
+        range_pct = 0
+    signal3 = range_pct < QUIET_ACCUM_RANGE_MAX_PCT
+    details['range_10d_pct'] = round(range_pct, 2)
+    if signal3:
+        details['signals_met'].append(f'3.compressed({range_pct:.1f}%<{QUIET_ACCUM_RANGE_MAX_PCT}%)')
+    else:
+        details['signals_failed'].append(f'3.compressed({range_pct:.1f}%≥{QUIET_ACCUM_RANGE_MAX_PCT}%)')
+
+    # 4. الحجم مش واطي (avg_10d ≥ 80% من avg_20d)
+    if avg_20_vol > 0:
+        vol_ratio = avg_10_vol / avg_20_vol
+        signal4 = vol_ratio >= QUIET_ACCUM_AVG_VOL_RATIO_MIN
+        details['avg_vol_ratio'] = round(vol_ratio, 2)
+        if signal4:
+            details['signals_met'].append(f'4.volume_not_low({vol_ratio:.2f}≥{QUIET_ACCUM_AVG_VOL_RATIO_MIN})')
+        else:
+            details['signals_failed'].append(f'4.volume_not_low({vol_ratio:.2f}<{QUIET_ACCUM_AVG_VOL_RATIO_MIN})')
+
+    # 5. مش انفجار (ROC 10d < 10%)
+    if len(closes) >= 11 and closes[-11] > 0:
+        roc_10d = (closes[-1] - closes[-11]) / closes[-11] * 100
+        signal5 = roc_10d < QUIET_ACCUM_ROC_10D_MAX
+        details['roc_10d'] = round(roc_10d, 2)
+        if signal5:
+            details['signals_met'].append(f'5.not_explosive({roc_10d:+.1f}%<{QUIET_ACCUM_ROC_10D_MAX}%)')
+        else:
+            details['signals_failed'].append(f'5.not_explosive({roc_10d:+.1f}%≥{QUIET_ACCUM_ROC_10D_MAX}%)')
+
+    # 6. مفيش توزيع واضح (≤ 2 يوم distribution)
+    # distribution day = day where close < (high + low) / 2 AND volume > avg_20d
+    dist_days = 0
+    for i in range(10):
+        h, l, c, v = last_10_highs[i], last_10_lows[i], last_10_closes[i], last_10_volumes[i]
+        if h > l and avg_20_vol > 0:
+            mid = (h + l) / 2
+            if c < mid and v > avg_20_vol:
+                dist_days += 1
+    signal6 = dist_days <= QUIET_ACCUM_DIST_DAYS_MAX
+    details['distribution_days'] = dist_days
+    if signal6:
+        details['signals_met'].append(f'6.no_distribution({dist_days}≤{QUIET_ACCUM_DIST_DAYS_MAX})')
+    else:
+        details['signals_failed'].append(f'6.no_distribution({dist_days}>{QUIET_ACCUM_DIST_DAYS_MAX})')
+
+    # احسب النتيجة النهائية
+    details['signal_count'] = len(details['signals_met'])
+    is_quiet = details['signal_count'] >= QUIET_ACCUMULATION_MIN_SIGNALS
+
+    if is_quiet:
+        reason = (
+            f'🎯 QUIET_ACCUMULATION — {details["signal_count"]}/6 إشارات. '
+            f'متجمعة: {", ".join(details["signals_met"])}. '
+            f'⚠️ position size 2% (QUIET_ACCUMULATION_POSITION_SIZE)'
+        )
+    else:
+        reason = f'مش quiet accumulation — {details["signal_count"]}/6 إشارات فقط'
+
+    return is_quiet, reason, details
+
+
 __all__ = [
     'DYNAMIC_TURNOVER_THRESHOLDS',
     'PUMP_AND_DUMP_TURNOVER_FLOOR',
@@ -375,6 +545,10 @@ __all__ = [
     'EXPLOSIVE_SURGE_VOLUME_RATIO',
     'EXPLOSIVE_SURGE_POSITION_SIZE',
     'EXPLOSIVE_SURGE_RANGE_MAX_PCT',
+    # PHASE-2: Quiet Accumulation
+    'QUIET_ACCUMULATION_POSITION_SIZE',
+    'QUIET_ACCUMULATION_MIN_SIGNALS',
+    'detect_quiet_accumulation',
     'classify_price_bucket',
     'dynamic_min_turnover',
     'has_volume_surge',

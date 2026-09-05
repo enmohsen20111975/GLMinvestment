@@ -17627,3 +17627,35 @@ Stage Summary:
 - 📦 التعديلات القادمة:
   - تعديل `data_engine/main.py` لإضافة subprocess timeout حقيقي (kill الـ children)
   - أو تعطيل الـ sync loop مؤقتاً و تشغيله يدوياً عند الحاجة
+
+---
+Task ID: PHASE-2-QUIET-ACCUMULATION-1
+Agent: Main Agent (Z.ai Code)
+Task: بناء مؤشر Quiet Accumulation + رادار الميكرز اليومي
+
+Work Log:
+- بنيت `detect_quiet_accumulation()` في `vps-service/utils/shared_liquidity.py`:
+  - 6 إشارات للكشف عن مرحلة التجميع الهادئ
+  - لازم 4/6 إشارات عشان يعتبر سهم "quiet accumulation"
+  - position size 2% (QUIET_ACCUMULATION_POSITION_SIZE)
+- بنيت `scripts/maker_radar.py` — رادار الميكرز اليومي:
+  - 3 مسارات: Quiet Accumulation + Explosive Surge + Early Break
+  - أولوية: quiet > explosive > early_break (لأن quiet أصغر مخاطرة)
+  - يفحص كل أسهم DB ويعرض الأسهم تحت الميكروسكوب
+- شغلت الرادار على 774 سهم (EGX 360 + TADAWUL 413 + KSE 128 + QSE 55)
+
+Stage Summary:
+- ✅ **المؤشر شغال ومختبر** (Test 1: quiet=True 5/6, Test 2: explosive=False 3/6)
+- 📊 **النتايج الأولية على 774 سهم**:
+  - 378 تحت الميكروسكوب (48.8%)
+  - 🎯 323 Quiet Accumulation
+  - 🔥 35 Explosive Surge
+  - ⚡ 20 Early Break
+- 🏆 **Top Quiet Accumulation (6/6 إشارات)**:
+  - 6004 (price=72.30, turnover=11.2M, ROC10=+4.0%)
+  - BURG (price=189.00, turnover=454.5M, ROC10=+1.1%)
+- 📦 Artifacts:
+  - `vps-service/utils/shared_liquidity.py` (محدّث — detect_quiet_accumulation)
+  - `scripts/maker_radar.py` (سكربت الرادار)
+  - `scripts/output/maker_radar_20260905.json` (774 سهم مفحوص)
+  - `scripts/output/maker_radar_20260905.md` (تقرير عربي)
