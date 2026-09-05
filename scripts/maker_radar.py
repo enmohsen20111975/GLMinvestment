@@ -33,10 +33,12 @@ sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
 
 from utils.shared_liquidity import (
     detect_quiet_accumulation,
+    detect_pre_surge,
     is_explosive_surge,
     classify_price_bucket,
     dynamic_min_turnover,
     QUIET_ACCUMULATION_POSITION_SIZE,
+    PRE_SURGE_POSITION_SIZE,
     EXPLOSIVE_SURGE_POSITION_SIZE,
 )
 
@@ -200,8 +202,9 @@ def is_early_break(closes, volumes, highs=None):
 
 
 def scan_ticker(rows, ticker):
-    """يفحص سهم واحد على الـ 3 مسارات."""
-    if len(rows) < 25:
+    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى)."""
+    # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
+    if len(rows) < 15:
         return None
 
     closes = [r['close'] for r in rows if r['close'] and r['close'] > 0]
@@ -210,12 +213,12 @@ def scan_ticker(rows, ticker):
     lows = [r['low'] or r['close'] for r in rows]
     turnovers = [compute_turnover(r) for r in rows]
 
-    if len(closes) < 25 or len(volumes) < 25:
+    if len(closes) < 15 or len(volumes) < 15:
         return None
 
     current_price = closes[-1]
-    avg_turnover_20d = statistics.mean(turnovers[-20:]) if len(turnovers) >= 20 else 0
-    avg_volume_20d = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else 0
+    avg_turnover_20d = statistics.mean(turnovers[-20:]) if len(turnovers) >= 20 else (statistics.mean(turnovers) if turnovers else 0)
+    avg_volume_20d = statistics.mean(volumes[-20:]) if len(volumes) >= 20 else (statistics.mean(volumes) if volumes else 0)
     avg_volume_10d = statistics.mean(volumes[-10:]) if len(volumes) >= 10 else 0
 
     # مقاييس الترتيب: قوة الحجم النسبي + استقرار السعر
@@ -226,6 +229,9 @@ def scan_ticker(rows, ticker):
     range_10d_pct = ((max_10 - min_10) / min_10 * 100) if min_10 > 0 else 0
     price_stability = max(0.0, 1.0 - (range_10d_pct / 20.0))  # 0..1
 
+    # PHASE-3: Pre-Surge (الأولوية الأولى — تجميع مبكر جداً)
+    pre_surge, pre_surge_reason, pre_surge_details = detect_pre_surge(closes, volumes, highs, lows)
+
     # مسار أ: Quiet Accumulation
     quiet, quiet_reason, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows)
 
@@ -235,21 +241,35 @@ def scan_ticker(rows, ticker):
     # مسار ج: Early Break
     early_break, break_reason = is_early_break(closes, volumes, highs)
 
-    # تحديد المسار الفائز (أولوية: quiet > explosive > early_break)
-    # ليه quiet الأول؟ لأنه أصغر مخاطرة (السهم لسه ماطلعش)
+    # تحديد المسار الفائز (ترتيب الأولوية الجديد):
+    # 1. Pre-Surge (تجميع مبكر جدًا) → حجم 1.5%
+    # 2. Quiet Accumulation 5-6/6 → حجم 2%
+    # 3. Quiet Accumulation 4/6 → حجم 1.5%
+    # 4. Explosive Surge → حجم 2%
+    # 5. Early Break → حجم 2.5%
     winner_path = None
     winner_position_size = 0.0
     winner_reason = ''
-    if quiet:
-        winner_path = 'A_quiet_accumulation'
-        winner_position_size = QUIET_ACCUMULATION_POSITION_SIZE
+    quiet_signals = quiet_details.get('signal_count', 0) if quiet else 0
+
+    if pre_surge:
+        winner_path = 'A_pre_surge'
+        winner_position_size = PRE_SURGE_POSITION_SIZE  # 1.5%
+        winner_reason = pre_surge_reason
+    elif quiet and quiet_signals >= 5:
+        winner_path = 'B_quiet_accumulation_strong'
+        winner_position_size = QUIET_ACCUMULATION_POSITION_SIZE  # 2%
+        winner_reason = quiet_reason
+    elif quiet and quiet_signals >= 4:
+        winner_path = 'C_quiet_accumulation_weak'
+        winner_position_size = 0.015  # 1.5% (أضعف)
         winner_reason = quiet_reason
     elif explosive:
-        winner_path = 'B_explosive_surge'
-        winner_position_size = EXPLOSIVE_SURGE_POSITION_SIZE
+        winner_path = 'D_explosive_surge'
+        winner_position_size = EXPLOSIVE_SURGE_POSITION_SIZE  # 2%
         winner_reason = explosive_reason
     elif early_break:
-        winner_path = 'C_early_break'
+        winner_path = 'E_early_break'
         winner_position_size = 0.025  # 2.5%
         winner_reason = break_reason
 
@@ -268,6 +288,7 @@ def scan_ticker(rows, ticker):
         'path': winner_path,
         'position_size': winner_position_size,
         'reason': winner_reason,
+        'pre_surge_details': pre_surge_details if pre_surge else None,
         'quiet_details': quiet_details if quiet else None,
         'explosive_details': explosive_details if explosive else None,
         'break_reason': break_reason if early_break else None,

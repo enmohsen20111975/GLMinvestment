@@ -42,6 +42,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
 
 from utils.shared_liquidity import (
     detect_quiet_accumulation,
+    detect_pre_surge,
     is_explosive_surge,
     classify_price_bucket,
 )
@@ -131,6 +132,7 @@ def fetch_all_data(db_path, market='EGX'):
 def run_radar_at_t(by_ticker, t_date, min_price=1.0):
     """شغل الرادار على البيانات لحد t_date (مش شامل)."""
     detections = {
+        'pre_surge': [],
         'quiet': [],
         'explosive': [],
         'early_break': [],
@@ -139,7 +141,8 @@ def run_radar_at_t(by_ticker, t_date, min_price=1.0):
     for ticker, series in by_ticker.items():
         # خد البيانات لحد t_date
         data_up_to_t = [d for d in series if d['date'] < t_date]
-        if len(data_up_to_t) < 25:
+        # تخفيف الـ lookback من 25 لـ 15 يوم
+        if len(data_up_to_t) < 15:
             continue
 
         closes = [d['close'] for d in data_up_to_t]
@@ -152,9 +155,19 @@ def run_radar_at_t(by_ticker, t_date, min_price=1.0):
         if current_price < min_price:
             continue
 
-        # مسار أ: Quiet Accumulation
+        # PHASE-3: Pre-Surge (الأولوية الأولى)
+        pre_surge, _, pre_surge_details = detect_pre_surge(closes, volumes, highs, lows)
+        if pre_surge and pre_surge_details.get('signal_count', 0) >= 3:
+            detections['pre_surge'].append({
+                'ticker': ticker,
+                'date': t_date,
+                'price': current_price,
+                'signal_count': pre_surge_details.get('signal_count', 0),
+            })
+
+        # مسار أ: Quiet Accumulation (4/6 كحد أدنى دلوقتي)
         quiet, _, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows)
-        if quiet and quiet_details.get('signal_count', 0) >= 5:
+        if quiet and quiet_details.get('signal_count', 0) >= 4:
             detections['quiet'].append({
                 'ticker': ticker,
                 'date': t_date,
@@ -297,7 +310,8 @@ def main():
     all_detections = []
     for i, t_date in enumerate(all_dates[:-1]):
         # محتاجين على الأقل 25 يوم قبل t_date
-        if i < 25:
+        # تخفيف الـ lookback من 25 لـ 15 يوم
+        if i < 15:
             continue
         detections = run_radar_at_t(by_ticker, t_date)
         n_total = sum(len(v) for v in detections.values())
@@ -313,7 +327,7 @@ def main():
     total_detections = sum(
         len(d['detections'][path])
         for d in all_detections
-        for path in ['quiet', 'explosive', 'early_break']
+        for path in ['pre_surge', 'quiet', 'explosive', 'early_break']
     )
     log(f"  إجمالي detections: {total_detections}")
 
@@ -348,7 +362,7 @@ def main():
         for d in all_detections:
             if d['date'] >= surge_start:
                 break
-            for path in ['quiet', 'explosive', 'early_break']:
+            for path in ['pre_surge', 'quiet', 'explosive', 'early_break']:
                 for det in d['detections'][path]:
                     if det['ticker'] == ticker:
                         was_detected_before = True
@@ -387,7 +401,7 @@ def main():
 
     # حسب المسار
     log(f"\n📊 توزيع detections حسب المسار:")
-    for path in ['quiet', 'explosive', 'early_break']:
+    for path in ['pre_surge', 'quiet', 'explosive', 'early_break']:
         path_results = [r for r in results if r['path'] == path]
         path_target = sum(1 for r in path_results if r['outcome'] == 'TARGET_HIT')
         path_stopped = sum(1 for r in path_results if r['outcome'] == 'STOPPED')
@@ -409,7 +423,7 @@ def main():
         ticker = move['ticker']
         was_detected = False
         for d in all_detections:
-            for path in ['quiet', 'explosive', 'early_break']:
+            for path in ['pre_surge', 'quiet', 'explosive', 'early_break']:
                 for det in d['detections'][path]:
                     if det['ticker'] == ticker:
                         was_detected = True
