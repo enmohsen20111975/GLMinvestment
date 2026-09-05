@@ -17803,3 +17803,45 @@ Stage Summary:
   - `scripts/fetch_production_data.py` (portable — skip in production)
   - `scripts/setup_radar.py` (env setup + status)
   - `.gitignore` (محدّث — exclude tracking/output files)
+
+---
+Task ID: PROFESSIONAL-MAKER-RADAR-1
+Agent: frontend-styling-expert
+Task: Build professional client-facing Maker Radar tab
+
+Work Log:
+- Read existing MakerRadarTab.tsx (815 lines, simple table-based version) and understood the API contract: GET /api/maker-radar returns quiet_list / pre_surge_list / explosive_list / early_break_list + tracked_count, GET /api/maker-radar/stock?ticker=X&days=30 returns full 30-day prices + stats + stock_info + tracking, GET /api/maker-radar/track (POST/GET/DELETE) for tracking management
+- Tested all APIs against the running sandbox dev server (port 3001): maker-radar returns 815 scanned / 289 under microscope / 66 pre_surge / 162 quiet / 37 explosive / 24 early_break; stock detail returns 30 price rows + stats; sectors/tracking endpoint fails because Python backend is down
+- Designed workaround for sector heat strip: built client-side aggregation from /api/stocks?market=EGX&page_size=1000 (works locally from stocks.db) → groups by sector, computes avg change_percent, advancers/decliners
+- Wrote complete new MakerRadarTab.tsx (~1700 lines, replacing the simple version) with:
+  • Professional header: radar icon, LIVE/مقفول badge, last-update timestamp, refresh button (with spinner)
+  • 4 KPI cards in a row: إجمالي الأسهم المفحوصة (815), تحت الميكروسكوب (289), موجات منفجرة (37), أسهم متابَعة (0)
+  • Sector heat strip: horizontally scrollable pills colored by daily avg change (emerald/rose), with stock count per sector
+  • Filter bar: 6 filters (الكل / 🚀 Pre-Surge / 🎯 ميكروسكوب / 🔥 منفجرة / ⚡ اختراق / ⭐ متابَعة)
+  • 4 grouped sections with rich card grid (1/2/3 columns responsive): Pre-Surge (purple/violet), Explosive (rose/red), Quiet Accumulation (amber), Early Break (emerald)
+  • Each Stock Card shows: ticker + bucket + sector, current price, ROC 10d colored, volume ratio (highlighted if >1.5×), stability %, signal count badge (e.g. "3/4 إشارات"), position-size badge (1.5% / 2%), star toggle, change-since-tracking badge
+  • Explosive cards also show computed entry/stop/target/R:R (8% stop, +20% target → 2.5:1 R:R, matching system risk rules)
+  • Stock detail drawer (Dialog): sticky header (ticker + Arabic name + sector badge + sector change badge + track button + open full stock page button + close), SVG sparkline with gradient fill + 30-day range stats, tracking banner if tracked, trade-plan grid (entry/stop/target + R:R + risk/reward %), 4-stat grid (ROC/range/avg volume/avg turnover), sector context card, fundamentals grid (P/E, P/B, ROE, EPS, market cap, dividend yield, support, resistance), last-10-days price table, action guidance box (contextual Arabic guidance generated from ROC/range/changePct)
+  • Collapsible Proof section at bottom with: 4 metric cards (Recall 21.1% / Precision 24.2% / نافذة 10 أيام / avg R:R 0.01), bar chart comparing detected vs missed explosive moves (117 detected / 438 missed of 555 total), summary text, "شاهد التفاصيل الكاملة (قريباً)" button
+  • Auto-refresh every 60s via useVisibilityAwarePolling (only when EGX market is open and tab visible)
+  • All Arabic RTL, shadcn components (Card/Badge/Button/Dialog/Skeleton/ScrollArea/Collapsible), Lucide icons
+- Fixed duplicate-export lint error (removed `export { MakerRadarTab }`, kept only `export default`)
+- Handled pre-existing API quirk: cached maker-radar responses omit `success:true` flag — added fallback check `Array.isArray(json.quiet_list) || Array.isArray(json.explosive_list)` to treat cached responses as success
+- Lint: `bun run lint` → no errors (clean exit)
+- TypeScript: `tsc --noEmit --project tsconfig.json` → no errors in MakerRadarTab.tsx (only an unrelated error in scripts/audit-db-schema.ts which we didn't touch)
+- Verified via agent-browser (Playwright headless): navigated to http://localhost:3000/#analysis, clicked "رادار الميكرز" tab, confirmed all elements rendered correctly (KPI cards showing 815/289/37/0, sector heat strip with "خريطة القطاعات", filter bar with all 6 buttons, Pre-Surge section heading with "66 سهم", stock cards with all badges), expanded the proof section (Recall 21.1% / Precision 24.2% / 117 detected / 438 missed / 555 total), clicked a stock card (ticker 1010) → drawer opened with full details (sparkline, R:R 2.50:1, entry 20.85, stop 19.18, target 25.02, 10-day price table, guidance box "السهم يتحرك بإيجابية...")
+- Took screenshot at /tmp/maker-radar-drawer.png showing the drawer visually
+
+Stage Summary:
+- src/components/predictions/MakerRadarTab.tsx fully rewritten as a professional, client-facing UI (~1700 lines, was 815)
+- 4 KPI cards at top (إجمالي/ميكروسكوب/منفجرة/متابَعة) ✓
+- Sector heat strip (horizontal scroll, colored by avg daily change) ✓
+- 6-filter bar (الكل/Pre-Surge/ميكروسكوب/منفجرة/اختراق/متابَعة) ✓
+- 4 grouped sections with rich stock cards (1/2/3 col responsive grid) ✓
+- Stock detail drawer with sparkline + trade plan + stats + fundamentals + price table + guidance ✓
+- Collapsible proof section with 4 metric cards + bar chart + summary ✓
+- Auto-refresh every 60s via useVisibilityAwarePolling ✓
+- Lint passes (`bun run lint` exit 0) ✓
+- TypeScript passes (no errors in MakerRadarTab.tsx) ✓
+- API verified working (`curl http://localhost:3001/api/maker-radar?market=EGX` → HTTP 200 with 815 stocks scanned) ✓
+- Visually verified via headless browser that all sections render correctly ✓
