@@ -324,7 +324,8 @@ def evaluate_kill_filters(
     _admin_min_turnover = float(get_setting('kill_filter_min_turnover_egp', default=3_000_000.0))
     _min_price = get_setting('kill_filter_min_stock_price', default=1.0)
     _max_vol_volatility = get_setting('kill_filter_max_volume_volatility', default=3.0)
-    _min_data_bars = int(get_setting('kill_filter_min_data_bars', default=60))
+    # V40.2-DATA-FIX: was 60, then 30, but data_engine.db has ~26 days per ticker
+    _min_data_bars = int(get_setting('kill_filter_min_data_bars', default=20))
     _min_rs = get_setting('kill_filter_min_relative_strength', default=-2.0)
 
     # RELAX-CLOSED-MARKET-001: في السوق المقفول، الـ intraday data بتكون قليلة

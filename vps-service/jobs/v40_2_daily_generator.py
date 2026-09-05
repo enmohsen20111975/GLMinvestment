@@ -105,7 +105,7 @@ DEFAULT_START = '2026-01-01'
 DEFAULT_END = '2026-06-10'  # historical default (sandbox run)
 SCAN_INTERVAL = 1  # TUNED: daily scan (was 3 — missed daily breakouts)
 MAX_PICKS_PER_DAY = 5
-MIN_TICKER_DAYS = 200
+MIN_TICKER_DAYS = 30  # was 200 — data_engine.db has ~42 days max
 
 # ── V68 ORACLE FEATURE TOGGLES (A/B testing — 2026-08-31) ──
 # كل ميزة V68 ممكن تتعطل/تتفعل عبر env var عشان نعمل A/B backtest.
@@ -554,7 +554,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
         for scan_date in scan_dates:
             day_idx = date_to_idx.get(scan_date)
-            if day_idx is None or day_idx < 60:
+            if day_idx is None or day_idx < 15:
                 continue
 
             # PILLAR-1: حساب sector_change حقيقي (proxy = أداء السهم آخر 5 أيام).

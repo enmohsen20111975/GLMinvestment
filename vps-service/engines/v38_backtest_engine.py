@@ -1484,7 +1484,8 @@ class V38BacktestEngine:
         When ``market_profile`` is ``None`` (default) the function behaves
         exactly as before — full backward compatibility with V38/V39.3 callers.
         """
-        if day_idx < 60:
+        # V40.2-DATA-FIX: was 60, but data_engine.db has ~42 days max
+        if day_idx < 15:
             return {'signal': 'WAIT', 'score': 0, 'proofs': {}}
         
         sl_closes = closes[:day_idx+1]
