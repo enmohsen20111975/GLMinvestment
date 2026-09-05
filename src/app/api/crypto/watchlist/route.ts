@@ -4,6 +4,8 @@
  */
 
 import { NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+
 import { getSessionUserId } from '@/lib/auth-helper';
 import { pythonFetch } from '@/lib/python-backend';
 
