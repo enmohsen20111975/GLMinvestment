@@ -258,7 +258,7 @@ def scan_ticker(rows, ticker):
         winner_reason = pre_surge_reason
     elif quiet and quiet_signals >= 5:
         winner_path = 'B_quiet_accumulation_strong'
-        winner_position_size = QUIET_ACCUMULATION_POSITION_SIZE  # 2%
+        winner_position_size = QUIET_ACCUMULATION_POSITION_SIZE  # 1.5% (paper mode)
         winner_reason = quiet_reason
     elif quiet and quiet_signals >= 4:
         winner_path = 'C_quiet_accumulation_weak'
@@ -363,15 +363,16 @@ def main():
     # 1. فلتر: السعر >= args.min_price (استبعاد penny stocks)
     results = [r for r in results if r['current_price'] >= args.min_price]
 
-    # 2. فلتر Quiet: بس اللي signals >= args.min_quiet_signals
+    # 2. فلتر حسب المسار (مع Pre-Surge كمسار منفصل)
     under_microscope_raw = [r for r in results if r['under_microscope']]
+    pre_surge_list = [r for r in under_microscope_raw if r['path'] == 'A_pre_surge']
     quiet_list = [
         r for r in under_microscope_raw
-        if r['path'] == 'A_quiet_accumulation'
+        if r['path'] in ('B_quiet_accumulation_strong', 'C_quiet_accumulation_weak', 'A_quiet_accumulation')
         and (r.get('quiet_details', {}) or {}).get('signal_count', 0) >= args.min_quiet_signals
     ]
-    explosive_list = [r for r in under_microscope_raw if r['path'] == 'B_explosive_surge']
-    early_break_list = [r for r in under_microscope_raw if r['path'] == 'C_early_break']
+    explosive_list = [r for r in under_microscope_raw if r['path'] in ('D_explosive_surge', 'B_explosive_surge')]
+    early_break_list = [r for r in under_microscope_raw if r['path'] in ('E_early_break', 'C_early_break')]
 
     # 3. ترتيب حسب: signals → volume_ratio → price_stability (للـ quiet)
     def quiet_sort_key(r):
@@ -389,11 +390,12 @@ def main():
     # للـ early_break: حسب ROC10 (أعلى ROC أول)
     early_break_list.sort(key=lambda r: -(r.get('roc_10d') or 0))
 
-    under_microscope = quiet_list + explosive_list + early_break_list
+    under_microscope = pre_surge_list + quiet_list + explosive_list + early_break_list
 
     log(f"\n═══ النتايج النظيفة (market={args.market}, price≥{args.min_price}) ═══")
     log(f"  إجمالي المفحوصين (بعد فلتر السعر): {len(results)}")
     log(f"  🔬 تحت الميكروسكوب: {len(under_microscope)}")
+    log(f"    🚀 Pre-Surge: {len(pre_surge_list)}")
     log(f"    🎯 Quiet Accumulation (≥{args.min_quiet_signals}/6): {len(quiet_list)}")
     log(f"    🔥 Explosive Surge: {len(explosive_list)}")
     log(f"    ⚡ Early Break: {len(early_break_list)}")
@@ -453,9 +455,11 @@ def main():
             'total_scanned': len(results),
             'under_microscope_count': len(under_microscope),
             'quiet_count': len(quiet_list),
+            'pre_surge_count': len(pre_surge_list),
             'explosive_count': len(explosive_list),
             'early_break_count': len(early_break_list),
             'quiet_list': quiet_list,
+            'pre_surge_list': pre_surge_list,
             'explosive_list': explosive_list,
             'early_break_list': early_break_list,
             'under_microscope': under_microscope,

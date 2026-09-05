@@ -395,7 +395,7 @@ QUIET_ACCUM_DIST_DAYS_MAX = 3       # تخفيف: على الأكثر 3 أيام
 QUIET_ACCUMULATION_MIN_SIGNALS = 5   # تشديد رجع لـ 5/6 (كان 4 — خرب الدقة)
 
 # Position size
-QUIET_ACCUMULATION_POSITION_SIZE = 0.02  # 2% (مش 2.5% — احتياط)
+QUIET_ACCUMULATION_POSITION_SIZE = 0.015  # 1.5% (قرار المالك 2026-09-05 — paper mode)
 
 # ─── PHASE-3: PRE-SURGE — طبقة ما قبل الانفجار (الأولوية القصوى) ──────
 # الشروط (محتاجين 3 من 4 على الأقل):

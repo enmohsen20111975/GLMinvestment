@@ -29,7 +29,7 @@ interface RadarStock {
   price_stability: number;
   range_10d_pct: number;
   roc_10d: number | null;
-  path: 'A_quiet_accumulation' | 'B_explosive_surge' | 'C_early_break';
+  path: 'A_pre_surge' | 'B_quiet_accumulation_strong' | 'C_quiet_accumulation_weak' | 'D_explosive_surge' | 'E_early_break';
   position_size: number;
   reason: string;
   quiet_details?: {
@@ -57,6 +57,7 @@ interface MakerRadarResponse {
   explosive_count: number;
   early_break_count: number;
   quiet_list: RadarStock[];
+  pre_surge_list: RadarStock[];
   explosive_list: RadarStock[];
   early_break_list: RadarStock[];
   tracked_count: number;
@@ -204,6 +205,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const marketStatus = getMarketStatus(market);
 
   // فلترة القوائم حسب الـ filter النشط
+  const filteredPreSurge = useMemo(() => {
+    if (filter === 'all' || filter === 'quiet') return data?.pre_surge_list || [];
+    if (filter === 'tracked') return (data?.pre_surge_list || []).filter((s) => s.isTracked);
+    return [];
+  }, [data, filter]);
+
   const filteredQuiet = useMemo(() => {
     if (filter === 'all' || filter === 'quiet') return data?.quiet_list || [];
     if (filter === 'tracked') return (data?.quiet_list || []).filter((s) => s.isTracked);
@@ -314,6 +321,19 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           ))}
         </div>
       </Card>
+
+      {/* ===== القسم 0: Pre-Surge (الأولوية القصوى) ===== */}
+      {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredPreSurge.length > 0 && (
+        <RadarSection
+          title="Pre-Surge (تجميع مبكر)"
+          subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
+          icon={<Radar className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+          accent="amber"
+          stocks={filteredPreSurge}
+          onSelect={setSelectedTicker}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
 
       {/* ===== القسم 1: تحت الميكروسكوب (الأولوية القصوى) ===== */}
       {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredQuiet.length > 0 && (
