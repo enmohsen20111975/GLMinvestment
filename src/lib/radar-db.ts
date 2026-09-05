@@ -28,6 +28,48 @@ export interface RadarDbConfig {
 const PROJECT_ROOT = process.cwd();
 
 const CANDIDATES: RadarDbConfig[] = [
+  // 1. data_engine.db.egksco_price_history — الـ source of truth في الإنتاج
+  //    (schema: symbol, date, open_price, high_price, low_price, close_price, volume, value)
+  {
+    dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
+    table: 'egksco_price_history',
+    tickerCol: 'symbol',
+    priceCol: 'close_price',
+    volumeCol: 'volume',
+    turnoverCol: 'value', // في egksco_price_history اسمها value
+    dateCol: 'date',
+    openCol: 'open_price',
+    highCol: 'high_price',
+    lowCol: 'low_price',
+  },
+  // 2. stocks.db.stock_daily_prices — fallback (الـ mirror في الإنتاج + اللي فيه EGX)
+  {
+    dbPath: path.join(PROJECT_ROOT, 'db', 'stocks.db'),
+    table: 'stock_daily_prices',
+    tickerCol: 'ticker',
+    priceCol: 'close',
+    volumeCol: 'volume',
+    turnoverCol: 'turnover',
+    dateCol: 'price_date',
+    openCol: 'open',
+    highCol: 'high',
+    lowCol: 'low',
+  },
+  // 3. data_engine.db.historical_data — fallback للأسواق التانية (سعودي/أمريكي)
+  //    (schema: symbol, date, open, high, low, close, volume — مفيش turnover)
+  {
+    dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
+    table: 'historical_data',
+    tickerCol: 'symbol',
+    priceCol: 'close',
+    volumeCol: 'volume',
+    turnoverCol: null,
+    dateCol: 'date',
+    openCol: 'open',
+    highCol: 'high',
+    lowCol: 'low',
+  },
+  // 4. sandbox fallbacks
   {
     dbPath: path.join(PROJECT_ROOT, 'db', 'production_snapshot.db'),
     table: 'stock_daily_prices',
@@ -52,31 +94,6 @@ const CANDIDATES: RadarDbConfig[] = [
     highCol: 'high',
     lowCol: 'low',
   },
-  {
-    dbPath: path.join(PROJECT_ROOT, 'db', 'stocks.db'),
-    table: 'stock_daily_prices',
-    tickerCol: 'ticker',
-    priceCol: 'close',
-    volumeCol: 'volume',
-    turnoverCol: 'turnover',
-    dateCol: 'price_date',
-    openCol: 'open',
-    highCol: 'high',
-    lowCol: 'low',
-  },
-  // Production data_engine fallback (historical_data — السعودية + غيرها)
-  {
-    dbPath: path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
-    table: 'historical_data',
-    tickerCol: 'symbol',
-    priceCol: 'close',
-    volumeCol: 'volume',
-    turnoverCol: null, // historical_data مفيهاش turnover field
-    dateCol: 'date',
-    openCol: 'open',
-    highCol: 'high',
-    lowCol: 'low',
-  },
 ];
 
 let cachedConfig: RadarDbConfig | null = null;
@@ -87,16 +104,25 @@ export function getRadarDbConfig(): RadarDbConfig | null {
   for (const cfg of CANDIDATES) {
     try {
       if (!existsSync(cfg.dbPath)) continue;
-      // تحقق إن الـ table موجود
       const db = new Database(cfg.dbPath, { readonly: true, fileMustExist: true });
+      // تحقق إن الـ table موجود
       const row = db.prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
       ).get(cfg.table);
-      db.close();
-      if (row) {
-        cachedConfig = cfg;
-        return cfg;
+      if (!row) {
+        db.close();
+        continue;
       }
+      // تحقق إن الجدول مش فاضي (عشان egksco_price_history الفاضية ما تفضلش)
+      const countRow = db.prepare(`SELECT COUNT(*) as n FROM ${cfg.table}`).get() as any;
+      const n = countRow?.n || 0;
+      if (n === 0) {
+        db.close();
+        continue; // جرّب اللي بعده
+      }
+      db.close();
+      cachedConfig = cfg;
+      return cfg;
     } catch (e) {
       continue;
     }

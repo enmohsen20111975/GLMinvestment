@@ -50,33 +50,47 @@ from utils.shared_liquidity import (
 #   3. db/stocks.db                (production)
 #   4. db/data_engine.db (historical_data) — fallback أخير
 def _find_radar_db():
-    """اكتشف الـ DB المتاح تلقائياً. يرجع (db_path, table_name)."""
+    """اكتشف الـ DB المتاح تلقائياً. يرجع (db_path, table_name, columns...).
+    يتحقق إن الجدول مش فاضي (عشان egksco_price_history الفاضية ما تفضلش).
+    """
     candidates = [
-        # (db_path, table_name, ticker_col, price_col, volume_col, turnover_col, date_col)
-        ('db/production_snapshot.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date'),
-        ('db/vps_real/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date'),
-        ('db/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date'),
-        # Production data_engine fallback (historical_data — السعودية وغيرها)
-        ('db/data_engine.db', 'historical_data', 'symbol', 'close', 'volume', None, 'date'),
+        # 1. data_engine.db.egksco_price_history — الـ source of truth في الإنتاج
+        #    (schema: symbol, date, open_price, high_price, low_price, close_price, volume, value)
+        ('db/data_engine.db', 'egksco_price_history', 'symbol', 'close_price', 'volume', 'value', 'date', 'open_price', 'high_price', 'low_price'),
+        # 2. stocks.db.stock_daily_prices — fallback (فيه EGX في الإنتاج + sandbox)
+        ('db/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date', 'open', 'high', 'low'),
+        # 3. data_engine.db.historical_data — fallback للأسواق التانية (سعودي/أمريكي)
+        #    (schema: symbol, date, open, high, low, close, volume — مفيش turnover/value)
+        ('db/data_engine.db', 'historical_data', 'symbol', 'close', 'volume', None, 'date', 'open', 'high', 'low'),
+        # 4. sandbox fallbacks
+        ('db/production_snapshot.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date', 'open', 'high', 'low'),
+        ('db/vps_real/stocks.db', 'stock_daily_prices', 'ticker', 'close', 'volume', 'turnover', 'price_date', 'open', 'high', 'low'),
     ]
-    for db_rel, table, ticker_col, price_col, vol_col, turn_col, date_col in candidates:
+    for db_rel, table, ticker_col, price_col, vol_col, turn_col, date_col, open_col, high_col, low_col in candidates:
         db_path = PROJECT_ROOT / db_rel
-        if db_path.exists():
-            # تحقق إن الجدول موجود
-            try:
-                import sqlite3 as _sql
-                conn = _sql.connect(str(db_path))
-                cur = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
-                row = cur.fetchone()
+        if not db_path.exists():
+            continue
+        try:
+            import sqlite3 as _sql
+            conn = _sql.connect(str(db_path))
+            # تحقق إن الـ table موجود
+            cur = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+            row = cur.fetchone()
+            if not row:
                 conn.close()
-                if row:
-                    return db_path, table, ticker_col, price_col, vol_col, turn_col, date_col
-            except Exception:
                 continue
-    return None, None, None, None, None, None, None
+            # تحقق إن الجدول مش فاضي
+            n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            conn.close()
+            if n == 0:
+                continue  # جرّب اللي بعده
+            return db_path, table, ticker_col, price_col, vol_col, turn_col, date_col, open_col, high_col, low_col
+        except Exception:
+            continue
+    return None, None, None, None, None, None, None, None, None, None
 
 
-PROD_DB, PROD_TABLE, TICKER_COL, PRICE_COL, VOL_COL, TURN_COL, DATE_COL = _find_radar_db()
+PROD_DB, PROD_TABLE, TICKER_COL, PRICE_COL, VOL_COL, TURN_COL, DATE_COL, OPEN_COL, HIGH_COL, LOW_COL = _find_radar_db()
 
 
 def log(msg):
@@ -96,8 +110,7 @@ def parse_volume(v):
 
 
 def compute_turnover(row):
-    """احسب turnover من row — portable (يدعم turnover field أو close × volume)."""
-    # الـ turnover column اسمه ممكن يختلف
+    """احسب turnover من row — portable (يدعم turnover/value field أو close × volume)."""
     t = None
     try:
         if TURN_COL and TURN_COL in row.keys():
@@ -110,17 +123,17 @@ def compute_turnover(row):
             if t_float > 0: return t_float
         except (TypeError, ValueError):
             pass
-    close = row[PRICE_COL] or 0.0 if PRICE_COL in row.keys() else 0.0
-    vol = parse_volume(row[VOL_COL]) if VOL_COL in row.keys() else 0.0
+    close = row.get(PRICE_COL) or row.get('close') or 0.0
+    vol = parse_volume(row.get(VOL_COL) or row.get('volume'))
     return float(close) * float(vol)
 
 
 def fetch_ticker_series(conn, ticker, days=40):
     """جلب بيانات سهم — portable (يستخدم column names المكتشفة)."""
     # استخدم column names المكتشفة بدلاً من hardcoded names
-    cols = f"{DATE_COL}, open, high, low, {PRICE_COL}, {VOL_COL}"
+    cols = f"{DATE_COL}, {OPEN_COL} as open, {HIGH_COL} as high, {LOW_COL} as low, {PRICE_COL} as close, {VOL_COL} as volume"
     if TURN_COL:
-        cols += f", {TURN_COL}"
+        cols += f", {TURN_COL} as turnover"
     else:
         cols += ", NULL as turnover"
     query = f"""
@@ -131,15 +144,18 @@ def fetch_ticker_series(conn, ticker, days=40):
         LIMIT ?
     """
     rows = conn.execute(query, (ticker, days)).fetchall()
-    # رجّع标准化 keys عشان باقي الكود يشتغل
+    # رجّع standardized keys عشان باقي الكود يشتغل
     normalized = []
     for r in rows:
         d = dict(r)
         # unify keys
-        d['price_date'] = d.get(DATE_COL)
-        d['close'] = d.get(PRICE_COL)
-        d['volume'] = d.get(VOL_COL)
-        d['turnover'] = d.get(TURN_COL) if TURN_COL else None
+        d['price_date'] = d.get(DATE_COL) or d.get('date') or d.get('price_date')
+        d['close'] = d.get('close') or d.get(PRICE_COL)
+        d['volume'] = d.get('volume') or d.get(VOL_COL)
+        d['turnover'] = d.get('turnover') if TURN_COL else None
+        d['open'] = d.get('open') or d.get(OPEN_COL)
+        d['high'] = d.get('high') or d.get(HIGH_COL)
+        d['low'] = d.get('low') or d.get(LOW_COL)
         normalized.append(d)
     return list(reversed(normalized))
 

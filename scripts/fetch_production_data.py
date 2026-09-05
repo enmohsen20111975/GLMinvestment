@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-fetch_production_data.py — سحب بيانات الإنتاج الكاملة
-=====================================================
-يسحب بيانات الأسعار اليومية من الإنتاج (https://invist.m2y.net) لكل أسهم EGX.
+fetch_production_data.py — سحب بيانات الإنتاج للـ sandbox/laptop (تجربة فقط)
+================================================================================
+⚠️ مهم: ده سكربت للـ sandbox/laptop فقط. مش للإنتاج.
 
-المميزات:
-  - يسحب 365 يوم لكل سهم
-  - يحفظ البيانات في SQLite محلي (db/production_snapshot.db)
-  - يدعم الاستئناف (لو انقطع، يكمل من حيث وقف)
-  - يعرض التقدم كل 10 أسهم
+في الإنتاج: الـ DBs موجودة أصلاً (db/stocks.db + db/data_engine.db).
+الـ API بـ يقرا منها مباشرة عبر radar-db.ts fallback chain.
+
+في الـ sandbox: مفيش DBs → السكربت ده بيسحب من الإنتاج عبر HTTPS API
+وبيحفظ في db/production_snapshot.db للتجربة المحلية.
 
 CLI:
   python3 scripts/fetch_production_data.py
   python3 scripts/fetch_production_data.py --days 365 --market EGX
   python3 scripts/fetch_production_data.py --limit 50  # سحب 50 سهم بس (للتجربة)
+  python3 scripts/fetch_production_data.py --force     # اسحب حتى لو في الإنتاج
 """
 from __future__ import annotations
 
