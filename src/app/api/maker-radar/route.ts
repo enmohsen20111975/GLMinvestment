@@ -6,6 +6,7 @@ import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const maxDuration = 60; // 60 seconds — production DB is 1.8GB
 
 const execAsync = promisify(exec);
 const PROJECT_ROOT = process.cwd();
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
     try {
       const result = await execAsync(`${pythonBin} ${scriptPath} ${args}`, {
         cwd: PROJECT_ROOT,
-        timeout: 30_000,
+        timeout: 60_000,  // was 30s — production DB is 1.8GB
         env: { ...process.env, PYTHONUNBUFFERED: '1' },
       });
       stdout = result.stdout;
