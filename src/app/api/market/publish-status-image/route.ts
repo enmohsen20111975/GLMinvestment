@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
  * Body: { image: "data:image/png;base64,...", market: "EGX", caption: "..." }
  *
  * يفكّ الـ base64 ويستخدم telegram.auto_poster.send_photo لينشر الصورة
- * على قناة تيليجرام (@REDACTED_CHANNEL_NAME).
+ * على قناة تيليجرام (@Arabian_investment_guide).
  */
 export async function POST(request: NextRequest) {
   const pythonUrl = (

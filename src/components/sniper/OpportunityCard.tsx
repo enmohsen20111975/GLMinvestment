@@ -21,6 +21,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { cn, getRRVerdict, fmtPrice } from '@/lib/utils';
+import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 
 // ============================================================================
 // Types
@@ -335,15 +336,7 @@ export function OpportunityCard({ opportunity: opp }: OpportunityCardProps) {
               onClick={async () => {
                 try {
                   const text = `🎯 ${opp.ticker} | ${opp.signal_ar} | دخول: ${opp.entry_price} | هدف: ${opp.target_price} | وقف: ${opp.stop_loss} | R/R: ${opp.risk_reward}
-
-📢 انضم الآن إلى مجتمع المتداولين بلا مشاعر، ودع الأرقام تقود محفظتك! 📈
-
-🔗 روابطنا الرسمية:
-🌐 الموقع الإلكتروني: https://invist.m2y.net
-📱 تطبيق أندرويد: https://play.google.com/store/apps/details?id=com.egx.investment
-📘 فيسبوك: https://www.facebook.com/profile.php?id=61590600300048
-✈️ تليجرام: https://t.me/Arabian_investment_guide
-💬 واتساب: https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc`;
+${OFFICIAL_LINKS_BLOCK}`;
                   if (navigator.share) {
                   await navigator.share({ title: `توقع القناص - ${opp.ticker}`, text });
                 } else {

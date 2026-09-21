@@ -33,6 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { withOfficialLinks } from '@/lib/official-links';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -73,7 +74,18 @@ function generateShareText(title: string, description?: string): string {
     text += `\n\n${description}`;
   }
   text += '\n\n📊 من منصة دليل الاستثمار';
-  return text;
+  return withOfficialLinks(text);
+}
+
+/**
+ * يضمن أن أي نص جاهز للمشاركة يحتوي على بلوك الروابط الرسمية
+ * (حتى لو جاء كـ prop جاهز من خارج المكوّن).
+ */
+function ensureOfficialLinks(text: string): string {
+  if (text.includes('invist.m2y.net')) {
+    return text; // النص فيه الروابط بالفعل
+  }
+  return withOfficialLinks(text);
 }
 
 /* ------------------------------------------------------------------ */
@@ -129,7 +141,7 @@ export function ShareButton({
 
   const handleShareFacebook = useCallback(async () => {
     const image = await captureImage();
-    const text = shareText || generateShareText(title, description);
+    const text = shareText ? ensureOfficialLinks(shareText) : generateShareText(title, description);
     const url = encodeURIComponent(window.location.href);
     const quote = encodeURIComponent(text);
     
@@ -143,7 +155,7 @@ export function ShareButton({
 
   const handleShareTelegram = useCallback(async () => {
     const image = await captureImage();
-    const text = shareText || generateShareText(title, description);
+    const text = shareText ? ensureOfficialLinks(shareText) : generateShareText(title, description);
     const url = encodeURIComponent(window.location.href);
     
     window.open(
@@ -155,7 +167,7 @@ export function ShareButton({
 
   const handleShareWhatsApp = useCallback(async () => {
     const image = await captureImage();
-    const text = shareText || generateShareText(title, description);
+    const text = shareText ? ensureOfficialLinks(shareText) : generateShareText(title, description);
     const url = window.location.href;
     
     window.open(

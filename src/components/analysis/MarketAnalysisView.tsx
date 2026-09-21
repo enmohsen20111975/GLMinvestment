@@ -26,7 +26,7 @@ import { cn, getRRVerdict, getStockRiskAlert, safeToFixed, verdictStyle, compute
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { toast } from 'sonner';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/lib/official-links';
 // PredictionCredibilityTable moved to dedicated route #prediction-credibility (removed from analysis tabs)
 import { DailyPicksPoster } from '@/components/daily-picks/DailyPicksPoster';
 import { MarketSelector } from '@/components/shared/MarketSelector';
@@ -7684,17 +7684,25 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       <Card className="mt-4 bg-muted/50">
         <CardContent className="p-3 text-center text-sm text-muted-foreground">
           <p>📍 تابع أحدث تحليلات السوق على</p>
-          <div className="flex items-center justify-center gap-4 mt-2">
-            <a href="https://invist.m2y.net" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
+            <a href={OFFICIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               invist.m2y.net
             </a>
             <span>|</span>
-            <a href="https://t.me/REDACTED_CHANNEL_NAME" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.android} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Android
+            </a>
+            <span>|</span>
+            <a href={OFFICIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Telegram
             </a>
             <span>|</span>
-            <a href="https://www.facebook.com/profile.php?id=61590600300048" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a href={OFFICIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Facebook
+            </a>
+            <span>|</span>
+            <a href={OFFICIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              WhatsApp
             </a>
           </div>
         </CardContent>

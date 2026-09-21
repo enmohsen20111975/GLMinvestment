@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { withOfficialLinks, OFFICIAL_LINKS_SHORT } from '@/lib/official-links';
 
 // ==================== TYPES ====================
 
@@ -197,11 +198,13 @@ function InvestmentDecisionInsight({
   const handleCopyAnalysis = async () => {
     try {
       await navigator.clipboard.writeText(
-        `التحليل الاستثماري لخبر (${item.title}):\n` +
-          `التوجه: ${sentimentKey === 'positive' ? 'إيجابي' : sentimentKey === 'negative' ? 'سلبي' : 'محايد'}\n` +
-          `التوصية: ${action}\n` +
-          `الأسهم: ${(item.tickers || []).join(', ')}\n\n` +
-          `التحليل: ${item.reasoning}`
+        withOfficialLinks(
+          `التحليل الاستثماري لخبر (${item.title}):\n` +
+            `التوجه: ${sentimentKey === 'positive' ? 'إيجابي' : sentimentKey === 'negative' ? 'سلبي' : 'محايد'}\n` +
+            `التوصية: ${action}\n` +
+            `الأسهم: ${(item.tickers || []).join(', ')}\n\n` +
+            `التحليل: ${item.reasoning}`
+        )
       );
       setCopied(true);
       toast.success('تم نسخ التحليل الاستثماري');
@@ -350,7 +353,7 @@ function ShareAndActions({ item }: { item: NewsItem }) {
     if (item.url) {
       parts.push(`\nالمصدر: ${item.url}`);
     }
-    return parts.join('\n');
+    return withOfficialLinks(parts.join('\n'));
   }, [item]);
 
   const handleCopy = async () => {
@@ -386,12 +389,12 @@ function ShareAndActions({ item }: { item: NewsItem }) {
   };
 
   const handleWhatsApp = () => {
-    const text = encodeURIComponent(`*${item.title}*\n\n${item.summary || ''}\n\n${getTargetUrl()}`);
+    const text = encodeURIComponent(`*${item.title}*\n\n${item.summary || ''}\n\n${getTargetUrl()}\n\n${OFFICIAL_LINKS_SHORT}`);
     window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleTelegram = () => {
-    const text = encodeURIComponent(`${item.title}\n\n${item.summary || ''}`);
+    const text = encodeURIComponent(`${item.title}\n\n${item.summary || ''}\n\n${OFFICIAL_LINKS_SHORT}`);
     window.open(`https://t.me/share/url?url=${encodeURIComponent(getTargetUrl())}&text=${text}`, '_blank', 'noopener,noreferrer');
   };
 

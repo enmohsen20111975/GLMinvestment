@@ -23,6 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { withOfficialLinks } from '@/lib/official-links';
 
 interface QuickPublishButtonProps {
   ticker: string;
@@ -110,12 +111,12 @@ ${reasonsList}
 
   const handleCopyReport = () => {
     const fullReport = generateFullReportText();
-    navigator.clipboard.writeText(fullReport);
+    navigator.clipboard.writeText(withOfficialLinks(fullReport));
     toast.success('تم نسخ التقرير الشامل بنجاح إلى الحافظة!');
   };
 
   const handleSubmit = async () => {
-    const finalContent = analysis || generateFullReportText();
+    const finalContent = withOfficialLinks(analysis || generateFullReportText());
     setLoading(true);
     try {
       const response = await fetch('/api/user-posts', {

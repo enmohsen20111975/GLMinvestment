@@ -1,17 +1,38 @@
 'use client';
 
 import React from 'react';
-import { Globe, Shield, FileText, AlertTriangle, Facebook, MessageCircle, Send } from 'lucide-react';
+import { Globe, Shield, FileText, AlertTriangle, Facebook, MessageCircle, Send, Smartphone } from 'lucide-react';
 import Link from 'next/link';
+import { OFFICIAL_LINKS } from '@/lib/official-links';
 
 export function Footer() {
   return (
     <footer className="border-t border-border bg-card/50 mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-4">
         {/* Social Media Links */}
-        <div className="flex items-center justify-center gap-6 mb-3 pb-3 border-b border-border/50">
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-3 pb-3 border-b border-border/50 flex-wrap">
           <a
-            href="https://www.facebook.com/profile.php?id=61590600300048"
+            href={OFFICIAL_LINKS.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors min-h-[44px] py-2"
+            title="الموقع الرسمي"
+          >
+            <Globe className="w-4 h-4" />
+            <span>الموقع</span>
+          </a>
+          <a
+            href={OFFICIAL_LINKS.android}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-emerald-600 transition-colors min-h-[44px] py-2"
+            title="تطبيق أندرويد"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>أندرويد</span>
+          </a>
+          <a
+            href={OFFICIAL_LINKS.facebook}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-teal-600 transition-colors min-h-[44px] py-2"
@@ -21,17 +42,7 @@ export function Footer() {
             <span>فيسبوك</span>
           </a>
           <a
-            href="https://wa.me/201287644099"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-green-600 transition-colors min-h-[44px] py-2"
-            title="تواصل معنا عبر واتساب"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>واتساب</span>
-          </a>
-          <a
-            href="https://t.me/REDACTED_CHANNEL_NAME"
+            href={OFFICIAL_LINKS.telegram}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-teal-500 transition-colors min-h-[44px] py-2"
@@ -41,14 +52,14 @@ export function Footer() {
             <span>تليجرام</span>
           </a>
           <a
-            href="https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc"
+            href={OFFICIAL_LINKS.whatsapp}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-green-600 transition-colors min-h-[44px] py-2"
             title="انضم لجروب واتساب"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>جروب واتساب</span>
+            <span>واتساب</span>
           </a>
         </div>
 
@@ -56,13 +67,13 @@ export function Footer() {
           {/* Brand */}
           <div className="flex items-center gap-2">
             <a
-              href="https://m2y.net"
+              href={OFFICIAL_LINKS.website}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <Globe className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-primary">m2y.net</span>
+              <span className="text-xs font-bold text-primary">invist.m2y.net</span>
             </a>
             <span className="text-xs text-muted-foreground">دليل الاستثمار</span>
           </div>
@@ -104,12 +115,12 @@ export function Footer() {
           <p className="text-xs text-muted-foreground text-center sm:text-left">
             تعمل بتقنية{' '}
             <a
-              href="https://m2y.net"
+              href={OFFICIAL_LINKS.website}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              m2y.net
+              invist.m2y.net
             </a>
           </p>
         </div>
