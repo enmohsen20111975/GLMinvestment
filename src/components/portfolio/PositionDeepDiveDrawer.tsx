@@ -8,7 +8,7 @@ const TradingChartView = dynamic(
   () => import('@/components/analysis/TradingChartView').then((m) => m.TradingChartView),
   {
     loading: () => (
-      <div className="h-72 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center text-slate-500 text-xs animate-pulse">
+      <div className="h-[40vh] sm:h-72 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-center text-slate-500 text-xs animate-pulse">
         جارٍ تحميل الشارت...
       </div>
     ),
@@ -86,7 +86,7 @@ export const PositionDeepDiveDrawer: React.FC<PositionDeepDiveDrawerProps> = ({
         <div className="w-screen max-w-full md:max-w-xl lg:max-w-2xl bg-slate-900 border-l border-slate-800 text-slate-100 shadow-2xl flex flex-col h-full overflow-y-auto transform transition-transform duration-300 ease-in-out">
           
           {/* Drawer Header */}
-          <div className="sticky top-0 z-10 p-5 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between">
+          <div className="sticky top-0 z-10 p-3 sm:p-5 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <div className="px-3 py-1.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 font-bold text-lg">
                 {ticker}
@@ -106,7 +106,7 @@ export const PositionDeepDiveDrawer: React.FC<PositionDeepDiveDrawerProps> = ({
           </div>
 
           {/* Drawer Body */}
-          <div className="p-5 space-y-6 flex-1">
+          <div className="p-3 sm:p-5 space-y-4 sm:space-y-6 flex-1">
             {loading ? (
               <div className="py-20 text-center text-slate-400 text-sm animate-pulse space-y-3">
                 <Sparkles className="w-8 h-8 text-purple-400 mx-auto animate-spin" />
