@@ -112,11 +112,11 @@ export const WealthCharts: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2 h-72 rounded-2xl bg-slate-900/60 border border-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="sm:col-span-2 lg:col-span-2 h-[40vh] sm:h-72 rounded-2xl bg-slate-900/60 border border-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-sm">
           جارٍ تحميل رسم الثروة...
         </div>
-        <div className="h-72 rounded-2xl bg-slate-900/60 border border-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-sm">
+        <div className="h-[40vh] sm:h-72 rounded-2xl bg-slate-900/60 border border-slate-800 animate-pulse flex items-center justify-center text-slate-500 text-sm">
           جارٍ تحميل توزيع الأصول...
         </div>
       </div>
@@ -128,9 +128,9 @@ export const WealthCharts: React.FC = () => {
   return (
     <div className="space-y-6 mb-6 dir-rtl">
       {/* Upper Charts Row: Equity Curve (Line) + Allocation (Pie) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Equity Curve (LineChart 90 Days) */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-md">
+        <div className="sm:col-span-2 lg:col-span-2 p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-md">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
