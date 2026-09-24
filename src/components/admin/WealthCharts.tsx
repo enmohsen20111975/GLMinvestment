@@ -55,14 +55,109 @@ export function WealthCharts() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [wealthRes, smartRes] = await Promise.all([
-        fetch(`/api/money/wealth?section=history&period=${period}`),
-        fetch('/api/money/smart-monitor'),
+      // MONEY-TIER1.3: replaced broken /api/money/wealth (Python :8010 down → empty)
+      // with /api/portfolio/equity-curve which reads the REAL wealth_tracking
+      // table directly from stocks.db. Also replaced /api/money/smart-monitor
+      // with /api/portfolio/holdings (REAL holdings) + /api/portfolio/risk-summary.
+      const [equityRes, holdingsRes, riskRes] = await Promise.all([
+        fetch(`/api/portfolio/equity-curve?days=${period}`),
+        fetch(`/api/portfolio/holdings`),
+        fetch(`/api/portfolio/risk-summary`),
       ]);
-      const wealth = await wealthRes.json();
-      const smart = await smartRes.json();
-      if (wealth.success) setData(wealth.data);
-      if (smart.success) setSmartData(smart.data);
+      const equity = await equityRes.json();
+      const holdings = await holdingsRes.json();
+      const risk = await riskRes.json();
+      if (equity.success) {
+        const snapshots = equity.snapshots || [];
+        setData({
+          history: snapshots.map((s: any) => ({
+            date: s.snapshot_date,
+            invested: s.total_invested || 0,
+            current_value: s.total_current_value || 0,
+            pnl: s.total_pnl || 0,
+            pnl_pct: s.total_pnl_pct || 0,
+            net_wealth: (s.total_current_value || 0),
+            stocks_value: s.stocks_value || 0,
+            gold_value: s.gold_value || 0,
+            crypto_value: s.crypto_value || 0,
+            bank_value: s.bank_value || 0,
+            cash_value: s.cash_value || 0,
+          })),
+          stats: {
+            latest_invested: equity.current?.total_invested || equity.last_val || 0,
+            latest_current: equity.current?.total_current_value || equity.last_val || 0,
+            latest_pnl: equity.current?.total_pnl || 0,
+            latest_pnl_pct: equity.current?.total_pnl_pct || equity.total_change_pct || 0,
+            allocation: {
+              stocks: equity.current?.stocks_value || 0,
+              gold: equity.current?.gold_value || 0,
+              crypto: equity.current?.crypto_value || 0,
+              bank: equity.current?.bank_value || 0,
+              cash: equity.current?.cash_value || 0,
+              other: equity.current?.other_value || 0,
+            },
+            first_val: equity.first_val || 0,
+            last_val: equity.last_val || 0,
+            total_change_pct: equity.total_change_pct || 0,
+            trend_color: equity.trend_color || '#10b981',
+          },
+        });
+      }
+      if (holdings.success) {
+        const realHoldings = holdings.holdings || [];
+        const stockSignals = realHoldings
+          .filter((h: any) => h.asset_type === 'stock')
+          .map((h: any) => {
+            let action = 'HOLD';
+            let action_ar = '⏸️ احتفاظ';
+            if (h.pnl_percent <= -10) {
+              action = 'STOP_LOSS';
+              action_ar = '🚨 إيقاف خسارة';
+            } else if (h.pnl_percent <= -5) {
+              action = 'SELL';
+              action_ar = '⚠️ فكّر في البيع';
+            } else if (h.pnl_percent >= 15) {
+              action = 'TAKE_PROFIT';
+              action_ar = '✅ حقّق ربح';
+            } else if (h.pnl_percent >= 5) {
+              action = 'BUY_MORE';
+              action_ar = '💰 فرصة زيادة';
+            }
+            return {
+              ticker: h.ticker,
+              name: h.name,
+              buy_price: h.buy_price,
+              current_price: h.current_price,
+              pnl: h.pnl_amount,
+              pnl_pct: h.pnl_percent,
+              action,
+              action_ar,
+            };
+          });
+        const summary = holdings.summary || {};
+        setSmartData({
+          stock_signals: stockSignals,
+          alerts: stockSignals
+            .filter((s: any) => s.action === 'STOP_LOSS' || s.action === 'SELL')
+            .map((s: any) =>
+              `${s.ticker}: ${s.action_ar} (${s.pnl_pct >= 0 ? '+' : ''}${s.pnl_pct}%)`
+            ),
+          summary: {
+            total_invested: summary.total_invested || 0,
+            total_current_value: summary.total_current_value || 0,
+            total_pnl: summary.total_pnl || 0,
+            total_pnl_pct: summary.total_pnl_pct || 0,
+            sell_count: stockSignals.filter((s: any) => s.action === 'SELL' || s.action === 'STOP_LOSS').length,
+          },
+          wealth_plan: {
+            recommendations: (risk.sector_exposure || [])
+              .filter((s: any) => s.percentage > 30)
+              .map((s: any) =>
+                `⚠️ تركيز عالي في قطاع ${s.sector_ar || s.sector} (${s.percentage.toFixed(1)}%) — فكّر في تنويع المحفظة`
+              ),
+          },
+        });
+      }
     } catch (e) {
       console.error('[WealthCharts] fetch error:', e);
     } finally {
