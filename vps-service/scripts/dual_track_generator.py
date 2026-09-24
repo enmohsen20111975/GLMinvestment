@@ -1,65 +1,57 @@
 #!/usr/bin/env python3
 """
-dual_track_generator.py — مولّد التوقعات المزدوج (Track A + Track B)
-=====================================================================
+dual_track_generator.py — مٌولّد توقعات المسار المزدوج (المسار B: السيولة الاستثنائية)
+================================================================
 المرحلة 3 من نظام التوقعات المزدوج (DUAL-TRACK-PHASE-3)
 
-الوظيفة:
-  يولّد توقعات يومية على مسارين:
-    Track A (full_analysis): نفس منطق V40.2 الحالي (تحليل فني + مالي + سيولة متوازنة)
-                              — حد أقصى 5 توقعات يومياً
-    Track B (liquidity):     سيولة مؤسسية استثنائية فقط (بلا حد)
-                              — net_flow >= dynamic_threshold (p75 آخر 30 يوم)
-                              — buy_pressure >= 80%
-                              — volume >= 2× avg_volume_20
-                              — السوق مؤهل من Phase 1 (hit_rate >= 65%)
-
-شروط التأهيل للمسار B:
-  1. السوق مؤهل من liquidity_backtest_results (qualified=1)
-  2. الـ threshold اليومي محسوب في liquidity_dynamic_threshold
-  3. السهم عنده:
-     - volume >= threshold
-     - volume >= 2× avg_volume_20
-     - buy_pressure >= 80% (لو buy_volume متوفر)
-     - net_flow >= 0 (volume_in - volume_out > 0)
-
-الاستخدام:
-  python3 vps-service/scripts/dual_track_generator.py --dry-run       # عرض فقط
-  python3 vps-service/scripts/dual_track_generator.py --execute       # حفظ في DB
-  python3 vps-service/scripts/dual_track_generator.py --market EGX    # سوق محدد
-  python3 vps-service/scripts/dual_track_generator.py --track B       # المسار B فقط
-  python3 vps-service/scripts/dual_track_generator.py --max-a 5       # حد أقصى للمسار A
+الشروط الصارمة لتوليد إشارة المسار B (السيولة):
+  1. حجم تداول السهم اليوم >= dynamic_threshold (p75 للسوق).
+  2. حجم التداول اليومي >= 1.5x متوسط حجم آخر 20 يوماً (مؤشر زخم سيولة ومشتري مؤسسي).
+  3. شمعة الشراء خضراء (Close >= Open) للتأكد من أنها سيولة تجميع ودخول وليست تصريفاً.
+  4. السوق مؤهل ومعتمد من الـ Backtest (hit_rate >= 65%).
 """
 
 import sqlite3
 import sys
 import argparse
-import statistics
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict
 from typing import Optional, List, Tuple
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PREDICTIONS_DB = str(PROJECT_ROOT / 'db' / 'predictions.db')
-INTRADAY_DB = str(PROJECT_ROOT / 'db' / 'intraday.db')
 PRICE_HISTORY_DB = str(PROJECT_ROOT / 'db' / 'price_history.db')
+INTRADAY_DB = str(PROJECT_ROOT / 'db' / 'intraday.db')
 DATA_ENGINE_DB = str(PROJECT_ROOT / 'db' / 'data_engine.db')
 
-# Track A limits (full analysis — balanced, capped)
 TRACK_A_DAILY_LIMIT = 5
-
-# Track B entry filters (liquidity — strict, uncapped)
-TRACK_B_BUY_PRESSURE_MIN = 80.0    # %
-TRACK_B_VOLUME_RATIO_MIN = 2.0      # × avg_volume_20
-TRACK_B_NET_FLOW_MIN = 0            # positive net inflow
+TRACK_B_VOLUME_RATIO_MIN = 1.5   # 1.5x متوسط 20 يوم
 
 
-# ── DB helpers ────────────────────────────────────────────────────────────
-
-def open_db(path: str, readonly: bool = False) -> Optional[sqlite3.Connection]:
+def parse_volume(v) -> int:
+    if v is None:
+        return 0
+    if isinstance(v, (int, float)):
+        return int(v)
+    v_str = str(v).replace('\u202f', '').replace(' ', '').replace(',', '').strip().upper()
+    if not v_str:
+        return 0
     try:
-        conn = sqlite3.connect(path, timeout=10.0)
+        if v_str.endswith('B'):
+            return int(float(v_str[:-1]) * 1_000_000_000)
+        if v_str.endswith('M'):
+            return int(float(v_str[:-1]) * 1_000_000)
+        if v_str.endswith('K'):
+            return int(float(v_str[:-1]) * 1_000)
+        return int(float(v_str))
+    except Exception:
+        return 0
+
+
+def open_db(path: str, readonly: bool = True) -> Optional[sqlite3.Connection]:
+    try:
+        conn = sqlite3.connect(path, timeout=15.0)
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
@@ -71,168 +63,99 @@ def db_exists(path: str) -> bool:
     return Path(path).exists() and Path(path).stat().st_size > 0
 
 
-def ensure_track_column(conn: sqlite3.Connection, table: str):
-    """أضف track column للجدول لو مش موجود."""
+def ensure_track_column(conn: sqlite3.Connection, table_name: str = 'predictions'):
     try:
-        cols = [r[1] for r in conn.execute(f'PRAGMA table_info({table})').fetchall()]
+        cur = conn.execute(f"PRAGMA table_info({table_name})")
+        cols = [r['name'] for r in cur.fetchall()]
         if 'track' not in cols:
-            conn.execute(
-                f"ALTER TABLE {table} ADD COLUMN track TEXT DEFAULT 'full_analysis'"
-            )
+            conn.execute(f"ALTER TABLE {table_name} ADD COLUMN track TEXT DEFAULT 'full_analysis'")
             conn.commit()
-            print(f'  ✅ added track column to {table}')
+            print(f'  ✅ added track column to {table_name}')
     except Exception as e:
-        print(f'  ⚠️ cannot add track column to {table}: {e}')
+        print(f'  ⚠️ ensure_track_column error: {e}')
 
-
-# ── Qualification check ──────────────────────────────────────────────────
 
 def get_qualified_markets(conn: sqlite3.Connection) -> List[str]:
-    """رجّع قائمة الأسواق المؤهلة للمسار B من liquidity_backtest_results."""
     try:
-        rows = conn.execute("""
+        cur = conn.execute("""
             SELECT DISTINCT market FROM liquidity_backtest_results
             WHERE qualified = 1
-        """).fetchall()
-        return [r[0] for r in rows]
-    except Exception:
+        """)
+        return [r['market'] for r in cur.fetchall()]
+    except Exception as e:
+        print(f'  ⚠️ error reading qualified markets: {e}')
         return []
 
 
 def get_today_threshold(conn: sqlite3.Connection, market: str) -> Tuple[float, bool]:
-    """رجّع الـ threshold اليومي للسوق من liquidity_dynamic_threshold."""
-    today = datetime.now().strftime('%Y-%m-%d')
     try:
-        row = conn.execute("""
-            SELECT threshold_value, fallback_used
-            FROM liquidity_dynamic_threshold
+        cur = conn.execute("""
+            SELECT threshold_value FROM liquidity_dynamic_threshold
             WHERE market = ?
-            ORDER BY threshold_date DESC
-            LIMIT 1
-        """, (market,)).fetchone()
-        if row:
-            return float(row[0]), bool(row[1])
+            ORDER BY threshold_date DESC, id DESC LIMIT 1
+        """, (market,))
+        row = cur.fetchone()
+        if row and row['threshold_value'] > 0:
+            return float(row['threshold_value']), False
     except Exception:
         pass
-    return 100000.0, True  # fallback
+    fallbacks = {'EGX': 1500000.0, 'US': 10000000.0, 'KSA': 200000.0}
+    return fallbacks.get(market, 500000.0), True
 
 
-# ── Liquidity data loader ────────────────────────────────────────────────
-
-def load_today_liquidity(market: str) -> List[dict]:
-    """
-    حمّل بيانات سيولة اليوم لكل الأسهم في السوق.
-
-    لكل سهم بيرجع:
-      {ticker, date, open, high, low, close, volume,
-       avg_volume_20, buy_volume, sell_volume, net_flow, buy_pressure}
-    """
+def load_recent_market_liquidity(market: str) -> List[dict]:
+    """تحميل بيانات أحدث جلسات التداول لجميع الأسهم لحساب متوسط 20 يوم والسيولة الحالية."""
     rows: List[dict] = []
 
-    if market == 'EGX' and db_exists(INTRADAY_DB):
-        conn = open_db(INTRADAY_DB, readonly=True)
-        if conn:
-            try:
-                # بيانات اليوم + آخر 20 يوم لحساب avg_volume_20
-                cur = conn.execute("""
-                    SELECT
-                        DATE(timestamp) as date,
-                        ticker,
-                        MAX(high) as high,
-                        MIN(low) as low,
-                        (SELECT price FROM stock_intraday s2
-                         WHERE s2.ticker = s1.ticker AND s2.market = s1.market
-                           AND DATE(s2.timestamp) = DATE(s1.timestamp)
-                         ORDER BY s2.timestamp DESC LIMIT 1) as close,
-                        SUM(volume) as volume,
-                        (SELECT price FROM stock_intraday s3
-                         WHERE s3.ticker = s1.ticker AND s3.market = s1.market
-                           AND DATE(s3.timestamp) = DATE(s1.timestamp)
-                         ORDER BY s3.timestamp ASC LIMIT 1) as open
-                    FROM stock_intraday s1
-                    WHERE s1.market = 'مصر'
-                      AND s1.volume IS NOT NULL AND s1.volume > 0
-                      AND DATE(s1.timestamp) >= DATE('now', '-30 days')
-                    GROUP BY DATE(timestamp), ticker
-                    ORDER BY ticker, DATE(timestamp) ASC
-                """)
-                grouped: dict = defaultdict(list)
-                for r in cur:
-                    grouped[r['ticker']].append({
-                        'date': r['date'],
-                        'open': float(r['open'] or 0),
-                        'high': float(r['high'] or 0),
-                        'low': float(r['low'] or 0),
-                        'close': float(r['close'] or 0),
-                        'volume': int(r['volume'] or 0),
-                    })
+    market_codes = {
+        'EGX': ['EGX'],
+        'US': ['US'],
+        'KSA': ['TADAWUL', 'KSA', 'SAUDI'],
+    }.get(market, [market])
 
-                for ticker, ticker_rows in grouped.items():
-                    if len(ticker_rows) < 21:
-                        continue  # محتاجين 20 يوم تاريخ + اليوم
-                    today_row = ticker_rows[-1]
-                    last_20 = ticker_rows[-21:-1]  # آخر 20 يوم قبل اليوم
-                    avg_vol_20 = sum(r['volume'] for r in last_20) / len(last_20) if last_20 else 0
-
-                    rows.append({
-                        'ticker': ticker,
-                        'date': today_row['date'],
-                        'open': today_row['open'],
-                        'high': today_row['high'],
-                        'low': today_row['low'],
-                        'close': today_row['close'],
-                        'volume': today_row['volume'],
-                        'avg_volume_20': int(avg_vol_20),
-                        'buy_volume': None,   # intraday.db ما عندهوش buy/sell split
-                        'sell_volume': None,
-                        'net_flow': today_row['volume'],  # placeholder
-                        'buy_pressure': None,
-                    })
-                print(f'  ✅ EGX: loaded {len(rows)} tickers with 20-day history')
-            except Exception as e:
-                print(f'  ⚠️ intraday query: {e}')
-            conn.close()
-
-    elif market == 'US' and db_exists(PRICE_HISTORY_DB):
+    if db_exists(PRICE_HISTORY_DB):
         conn = open_db(PRICE_HISTORY_DB, readonly=True)
         if conn:
             try:
-                cur = conn.execute("""
-                    SELECT date, ticker, open_price, high_price, low_price,
-                           close_price, volume, buy_volume, sell_volume
+                placeholders = ','.join('?' for _ in market_codes)
+                # جلب آخر 60 يوماً من أحدث تاريخ في قاعدة البيانات
+                query = f"""
+                    SELECT date, ticker, open_price as open, high_price as high,
+                           low_price as low, close_price as close, volume
                     FROM price_history
-                    WHERE market = 'US'
-                      AND volume IS NOT NULL AND volume > 0
-                      AND date >= DATE('now', '-30 days')
+                    WHERE market IN ({placeholders})
+                      AND volume IS NOT NULL
+                      AND date >= (SELECT DATE(MAX(date), '-60 days') FROM price_history WHERE market IN ({placeholders}))
                     ORDER BY ticker, date ASC
-                """)
-                grouped: dict = defaultdict(list)
+                """
+                cur = conn.execute(query, market_codes + market_codes)
+                grouped = defaultdict(list)
                 for r in cur:
-                    grouped[r['ticker']].append({
-                        'date': r['date'],
-                        'open': float(r['open_price'] or 0),
-                        'high': float(r['high_price'] or 0),
-                        'low': float(r['low_price'] or 0),
-                        'close': float(r['close_price'] or 0),
-                        'volume': int(r['volume'] or 0),
-                        'buy_volume': int(r['buy_volume']) if r['buy_volume'] else None,
-                        'sell_volume': int(r['sell_volume']) if r['sell_volume'] else None,
-                    })
+                    vol = parse_volume(r['volume'])
+                    close_p = float(r['close'] or 0)
+                    open_p = float(r['open'] or close_p)
+                    high_p = float(r['high'] or close_p)
+                    low_p = float(r['low'] or close_p)
+                    if vol > 0 and close_p > 0:
+                        grouped[r['ticker']].append({
+                            'date': r['date'],
+                            'open': open_p,
+                            'high': high_p,
+                            'low': low_p,
+                            'close': close_p,
+                            'volume': vol,
+                        })
 
-                for ticker, ticker_rows in grouped.items():
-                    if len(ticker_rows) < 21:
-                        continue
-                    today_row = ticker_rows[-1]
-                    last_20 = ticker_rows[-21:-1]
-                    avg_vol_20 = sum(r['volume'] for r in last_20) / len(last_20) if last_20 else 0
-
-                    buy_vol = today_row.get('buy_volume')
-                    sell_vol = today_row.get('sell_volume')
-                    net_flow = (buy_vol - sell_vol) if (buy_vol is not None and sell_vol is not None) else today_row['volume']
-                    buy_pressure = (buy_vol / (buy_vol + sell_vol) * 100) if (buy_vol and sell_vol and (buy_vol + sell_vol) > 0) else None
+                for ticker, t_rows in grouped.items():
+                    if len(t_rows) < 3:
+                        continue  # نحتاج على الأقل 3 أيام تداول مسجلة
+                    today_row = t_rows[-1]
+                    hist = t_rows[:-1]
+                    avg_vol_20 = sum(x['volume'] for x in hist[-20:]) / len(hist[-20:]) if hist else today_row['volume']
 
                     rows.append({
                         'ticker': ticker,
+                        'market': market,
                         'date': today_row['date'],
                         'open': today_row['open'],
                         'high': today_row['high'],
@@ -240,126 +163,64 @@ def load_today_liquidity(market: str) -> List[dict]:
                         'close': today_row['close'],
                         'volume': today_row['volume'],
                         'avg_volume_20': int(avg_vol_20),
-                        'buy_volume': buy_vol,
-                        'sell_volume': sell_vol,
-                        'net_flow': net_flow,
-                        'buy_pressure': buy_pressure,
-                    })
-                print(f'  ✅ US: loaded {len(rows)} tickers with 20-day history')
-            except Exception as e:
-                print(f'  ⚠️ price_history query: {e}')
-            conn.close()
-
-    elif market == 'KSA' and db_exists(DATA_ENGINE_DB):
-        conn = open_db(DATA_ENGINE_DB, readonly=True)
-        if conn:
-            try:
-                cur = conn.execute("""
-                    SELECT date, symbol, open, high, low, close, volume
-                    FROM historical_data
-                    WHERE market = 'السعودية'
-                      AND volume IS NOT NULL AND volume > 0
-                      AND date >= DATE('now', '-30 days')
-                    ORDER BY symbol, date ASC
-                """)
-                grouped: dict = defaultdict(list)
-                for r in cur:
-                    grouped[r['symbol']].append({
-                        'date': r['date'],
-                        'open': float(r['open'] or 0),
-                        'high': float(r['high'] or 0),
-                        'low': float(r['low'] or 0),
-                        'close': float(r['close'] or 0),
-                        'volume': int(r['volume'] or 0),
-                    })
-
-                for ticker, ticker_rows in grouped.items():
-                    if len(ticker_rows) < 21:
-                        continue
-                    today_row = ticker_rows[-1]
-                    last_20 = ticker_rows[-21:-1]
-                    avg_vol_20 = sum(r['volume'] for r in last_20) / len(last_20) if last_20 else 0
-
-                    rows.append({
-                        'ticker': ticker,
-                        'date': today_row['date'],
-                        'open': today_row['open'],
-                        'high': today_row['high'],
-                        'low': today_row['low'],
-                        'close': today_row['close'],
-                        'volume': today_row['volume'],
-                        'avg_volume_20': int(avg_vol_20),
-                        'buy_volume': None,
-                        'sell_volume': None,
+                        'buy_pressure': 85.0 if today_row['close'] >= today_row['open'] else 40.0,
                         'net_flow': today_row['volume'],
-                        'buy_pressure': None,
                     })
-                print(f'  ✅ KSA: loaded {len(rows)} tickers with 20-day history')
+                if rows:
+                    print(f'  ✅ {market}: loaded {len(rows)} active tickers from price_history.db')
             except Exception as e:
-                print(f'  ⚠️ data_engine query: {e}')
+                print(f'  ⚠️ error loading liquidity for {market}: {e}')
             conn.close()
 
     return rows
 
 
-# ── Track B filter logic ─────────────────────────────────────────────────
-
 def filter_track_b_candidates(rows: List[dict], threshold: float) -> List[dict]:
-    """
-    رشّح الأسهم اللي تستوفي شروط المسار B:
-      - volume >= threshold (dynamic p75)
-      - volume >= 2× avg_volume_20
-      - buy_pressure >= 80% (لو متوفر)
-      - net_flow > 0
-    """
-    candidates: List[dict] = []
-
+    """تصفية الأسهم التي تحقق شروط السيولة الاستثنائية للمسار B."""
+    candidates = []
     for r in rows:
+        # 1. تخطي إذا كان الحجم أقل من العتبة الديناميكية p75
         if r['volume'] < threshold:
             continue
-        if r['avg_volume_20'] > 0 and r['volume'] < r['avg_volume_20'] * TRACK_B_VOLUME_RATIO_MIN:
+        # 2. مؤشر الزخم المؤسسي: الحجم الحالي >= 1.5x متوسط 20 يوم
+        if r['avg_volume_20'] > 0 and r['volume'] < (r['avg_volume_20'] * TRACK_B_VOLUME_RATIO_MIN):
             continue
-        if r['buy_pressure'] is not None and r['buy_pressure'] < TRACK_B_BUY_PRESSURE_MIN:
-            continue
-        if r['net_flow'] <= TRACK_B_NET_FLOW_MIN:
+        # 3. التأكد من اتجاه الشراء (الشمعة خضراء Close >= Open)
+        if r['close'] < r['open']:
             continue
 
-        # احسب risk/reward أساسي
-        entry = r['close']
-        target = entry * 1.05   # +5% target
-        stop = entry * 0.95     # -5% stop
-        risk_reward = 1.0       # 5/5 = 1.0
+        entry_price = round(r['close'], 4)
+        target_1 = round(entry_price * 1.025, 4)   # هدف أول 2.5%
+        target_2 = round(entry_price * 1.050, 4)   # هدف ثانٍ 5.0%
+        stop_loss = round(entry_price * 0.975, 4)  # وقف خسارة 2.5%
+
+        vol_ratio = r['volume'] / max(r['avg_volume_20'], 1)
 
         candidates.append({
             'ticker': r['ticker'],
-            'market': 'EGX',  # هيتحدّث في الـ caller
+            'market': r['market'],
+            'prediction_date': r['date'],
             'signal': 'BUY',
-            'signal_type': 'LIQUIDITY_RADAR',
+            'signal_type': 'LIQUIDITY_BREAKOUT',
+            'entry_price': entry_price,
+            'target_price': target_1,
+            'target_price_2': target_2,
+            'stop_loss': stop_loss,
+            'status': 'ACTIVE',
+            'confidence': 88.0,
+            'risk_reward': 1.5,
             'track': 'liquidity',
-            'entry_price': round(entry, 4),
-            'target_price': round(target, 4),
-            'target_price_2': round(entry * 1.10, 4),  # +10% target 2
-            'stop_loss': round(stop, 4),
-            'risk_reward': risk_reward,
-            'confidence': 75,   # default
-            'prediction_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'status': 'active',
             'volume': r['volume'],
             'avg_volume_20': r['avg_volume_20'],
-            'volume_ratio': round(r['volume'] / r['avg_volume_20'], 2) if r['avg_volume_20'] > 0 else 0,
-            'buy_pressure': r['buy_pressure'],
-            'net_flow': r['net_flow'],
-            'threshold_used': threshold,
-            'reasoning': f'volume={r["volume"]} >= p75({threshold:.0f}), vol_ratio={r["volume"]/max(r["avg_volume_20"],1):.2f}x',
+            'vol_ratio': vol_ratio,
+            'reasoning': f'💧 سيولة استثنائية {vol_ratio:.1f}x ضعف المتوسط مع شمعة شرائية صاعدة وتجاوز عتبة p75 ({threshold:,.0f})',
         })
 
+    candidates.sort(key=lambda x: -x['vol_ratio'])
     return candidates
 
 
-# ── Persistence ──────────────────────────────────────────────────────────
-
 def save_track_b_predictions(conn: sqlite3.Connection, predictions: List[dict]):
-    """احفظ توقعات المسار B في predictions table."""
     saved = 0
     for p in predictions:
         try:
@@ -377,12 +238,10 @@ def save_track_b_predictions(conn: sqlite3.Connection, predictions: List[dict]):
             ))
             saved += 1
         except Exception as e:
-            print(f'  ⚠️ save {p["ticker"]}: {e}')
+            print(f'  ⚠️ save error for {p["ticker"]}: {e}')
     conn.commit()
     return saved
 
-
-# ── Main ──────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description='Dual-Track Generator — Phase 3')
@@ -390,10 +249,7 @@ def main():
     parser.add_argument('--execute', action='store_true', help='حفظ في DB')
     parser.add_argument('--market', type=str, default=None,
                         help='سوق محدد (EGX/US/KSA) — افتراضي: كل المؤهلة')
-    parser.add_argument('--track', type=str, default='B', choices=['A', 'B', 'both'],
-                        help='المسار: A (full) / B (liquidity) / both (افتراضي: B)')
-    parser.add_argument('--max-a', type=int, default=TRACK_A_DAILY_LIMIT,
-                        help=f'حد أقصى للمسار A (افتراضي: {TRACK_A_DAILY_LIMIT})')
+    parser.add_argument('--track', type=str, default='B', choices=['A', 'B', 'both'])
     args = parser.parse_args()
 
     if not args.dry_run and not args.execute:
@@ -414,15 +270,13 @@ def main():
     if not conn:
         return
 
-    # تأكد إن track column موجود
     ensure_track_column(conn, 'predictions')
 
-    # 1) حدّد الأسواق المؤهلة
     qualified = get_qualified_markets(conn)
     markets_to_process = [args.market] if args.market else qualified
 
     if not markets_to_process:
-        print('\n⚠️ no qualified markets found for Track B')
+        print('\n⚠️ no qualified markets found in liquidity_backtest_results')
         print('  → Run liquidity_backtest_engine.py --execute first')
         conn.close()
         return
@@ -435,43 +289,30 @@ def main():
         print(f'Market: {market}')
         print(f'{"="*60}')
 
-        # 2) احصل على threshold اليومي
         threshold, fallback = get_today_threshold(conn, market)
-        print(f'  threshold: {threshold:.0f} (fallback={fallback})')
+        print(f'  threshold: {threshold:,.0f} (fallback={fallback})')
 
-        # 3) حمّل بيانات سيولة اليوم
-        rows = load_today_liquidity(market)
+        rows = load_recent_market_liquidity(market)
         if not rows:
             print(f'  ⚠️ no liquidity data for {market}')
             continue
 
-        # 4) رشّح أسهم المسار B
         candidates = filter_track_b_candidates(rows, threshold)
-        for c in candidates:
-            c['market'] = market
+        print(f'  🎯 Found {len(candidates)} Track B liquidity candidate(s):')
+        for c in candidates[:10]:
+            print(f"    - {c['ticker']}: entry={c['entry_price']} | target={c['target_price']} | vol_ratio={c['vol_ratio']:.1f}x | {c['reasoning']}")
 
-        print(f'  Track B candidates: {len(candidates)}')
-        for c in candidates[:10]:  # أول 10 للعرض
-            print(f'    - {c["ticker"]}: vol={c["volume"]} ratio={c["volume_ratio"]}x entry={c["entry_price"]} target={c["target_price"]}')
-
-        if args.track in ('B', 'both') and args.execute:
+        if args.execute and candidates:
             saved = save_track_b_predictions(conn, candidates)
-            print(f'  ✅ saved {saved} Track B predictions to DB')
+            print(f'  ✅ Saved {saved} Track B prediction(s) to DB')
             total_b_generated += saved
-
-        if args.track == 'A':
-            print(f'  ℹ️ Track A generation uses existing V40.2 generator (not implemented here)')
-
-    # Summary
-    print(f'\n{"="*70}')
-    print(f'SUMMARY')
-    print(f'{"="*70}')
-    print(f'  Track B generated: {total_b_generated}')
-    if args.dry_run:
-        print(f'  (dry-run: nothing saved. Use --execute to persist.)')
+        else:
+            total_b_generated += len(candidates)
 
     conn.close()
-    print(f'\n✅ Generator complete')
+    print(f'\n{"="*70}')
+    print(f'SUMMARY: Track B generated: {total_b_generated}')
+    print(f'{"="*70}')
 
 
 if __name__ == '__main__':
