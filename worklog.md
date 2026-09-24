@@ -18263,3 +18263,42 @@ Stage Summary:
 - كل الـ endpoints بترجع بيانات صادقة (fallback_used:true لما DBs مش موجودة)
 - مفيش أي mock data — كل حاجة بتحاول تقرأ من DBs الحقيقية
 - جاهز للـ VPS: العميل يحتاج الـ DBs الإنتاجية + تشغيل backtest + cron للـ generator
+
+---
+Task ID: MONEY-WEALTH-REBUILD-FINAL
+Agent: Main Agent (Z.ai Code) — Wealth Management Rebuild Lead
+Task: إعادة بناء كل ما ضاع من الجلسة الأولى (Wealth/Money) بـ methodology صارمة
+
+Work Log:
+- T1.1: src/app/api/portfolio/holdings/route.ts — استبدال 5 أسهم وهمية بـ REAL portfolio_assets (commit 6cda299)
+- T1.2: src/app/api/portfolio/watchlists/route.ts — استبدال mock بـ REAL user_stock_watchlists (commit 48f79fa)
+- T1.3: src/components/admin/WealthCharts.tsx — استبدال /api/money/wealth المكسور بـ /api/portfolio/equity-curve (commit f64f2ae)
+- T1.4: src/app/api/portfolio/bag-holder-rescue/route.ts — استبدال 503 بـ fallback حقيقي (commit 523c9d1)
+- T2.2: src/app/api/portfolio/smart-monitor/signals/route.ts — multi-factor signal حقيقي (commit 5805950)
+- T2.3: src/app/api/portfolio/risk-summary/route.ts — نسب قطاعات محسوبة فعلاً (commit ac65891)
+- استدعيت subagent بالتوازي لتنفيذ Tier 2 (6 ملفات):
+  - alert-engine.ts (646 lines) (commit d642a31)
+  - /api/alerts/scheduler (commit 3f9a069)
+  - /api/alerts/gold CRUD (commit fce4097)
+  - /api/notifications (commit f856609)
+  - /api/finance/seed-alert-thresholds (commit 5ddf301)
+  - TopUpRecommendationsPanel.tsx (commit 38a3dc0)
+- دمج TopUpRecommendationsPanel في EnhancedPortfolioView (commit 74c5ba4)
+- تحديث NotificationCenter.tsx بـ polling كل 60s + scheduler tick + beep (commit 6292b96)
+- إضافة القاعدة 50 MONEY-AS-CUSTOMER-LIFE للدستور (commit 8db63cf)
+
+Verification:
+- ✅ ESLint exit 0 (مشروع كامل نظيف)
+- ✅ كل الـ 14 ملف موجودة + مرفوعة على GitHub
+- ✅ لا يوجد mock data في الكود الفعلي (الكلمات في الـ comments فقط لشرح BEFORE)
+- ✅ 16 commits على GitHub من 6cda299..8db63cf
+- ✅ كل endpoints بترجع بيانات صادقة (401 بدون auth, empty array لو DB مفقود)
+
+Stage Summary:
+- 14 ملف (8 جديدة + 6 معدّلة)
+- 16 commits على GitHub بنجاح
+- محرك التنبيهات الموحّد شغّال (stock + gold + portfolio PnL alerts)
+- NotificationCenter متصل بـ /api/notifications + scheduler tick كل 60s
+- TopUpRecommendationsPanel مدمج في EnhancedPortfolioView
+- القاعدة 50 MONEY-AS-CUSTOMER-LIFE موثّقة في الدستور
+- كل الشغل اللي ضاع من الجلسة الأولى اتيعاد بنجاح + مرفوع على GitHub
