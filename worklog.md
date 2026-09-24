@@ -18213,3 +18213,53 @@ Stage Summary:
 - ✅ مفيش تكرار للروابط كـ string literal في أي مكان (كله من official-links.ts)
 - ✅ مفيش placeholders ناقصة (REDACTED_CHANNEL_NAME تم استبداله بـ Arabian_investment_guide)
 - 📦 ملفات مُعدّلة: NewsFeedView, QuickPublishButton, shared/ShareButton, sniper/OpportunityCard, layout/Footer, analysis/MarketAnalysisView, api/market/publish-status-image
+
+---
+Task ID: DUAL-TRACK-PHASE-1-5-FINAL
+Agent: Main Agent (Z.ai Code) — Dual-Track Implementation Lead
+Task: بناء نظام التوقعات المزدوج (المراحل 1-5) + رفع على GitHub
+
+Work Log:
+- المرحلة 1: بناء vps-service/scripts/liquidity_backtest_engine.py (backtest سيولة حقيقي)
+  - لكل يوم volume >= p75: هل السعر طلع >= 1.5% في 5 أيام؟
+  - مصادر: EGX→intraday.db, US→price_history.db, KSA→data_engine.historical_data
+  - يحفظ في: liquidity_backtest_results + liquidity_signal_outcomes
+- المرحلة 2: بناء src/app/api/predictions/dual-track/threshold/route.ts
+  - يحسب p75 من آخر 30 يوم + يحفظ في liquidity_dynamic_threshold
+- المرحلة 3: بناء src/app/api/predictions/dual-track/list/route.ts
+  - يعرض التوقعات مع track_label (📊 تحليل كامل / 💧 تحليل سيولة)
+- المرحلة 3: بناء vps-service/scripts/dual_track_generator.py (Track B generator)
+  - شروط: vol>=threshold + vol>=2×avg_20 + buy_pressure>=80% + net_flow>0
+- المرحلة 4: بناء src/app/api/predictions/dual-track/stats/route.ts
+  - combined_efficiency = (winA × 0.4) + (winB × 0.6)
+- المرحلة 1.5: بناء src/app/api/predictions/dual-track/backtest/route.ts
+  - يشغّل Python script + يرجع النتائج
+- المرحلة 5: بناء src/components/predictions/DualTrackPredictionsView.tsx
+  - Hero card + Track A/B cards + thresholds + top tickers + tabs
+  - زر تشغيل Backtest + زر إعادة حساب Threshold
+  - FRA disclaimer
+- تحديث src/lib/valid-views.ts (إضافة 'dual-track' route)
+- تحديث src/app/page.tsx (dynamicImport + case 'dual-track')
+- تحديث Documentation/00-CONSTITUTION.md (القاعدة 49)
+
+Verification:
+- ✅ ESLint exit 0
+- ✅ Python syntax valid (liquidity_backtest_engine.py + dual_track_generator.py)
+- ✅ /api/predictions/dual-track/threshold → رجع fallback_used بصدق (DBs مش موجودة)
+- ✅ /api/predictions/dual-track/list → رجع empty state بصدق
+- ✅ /api/predictions/dual-track/stats → رجع empty state بصدق
+- ✅ /api/predictions/dual-track/backtest → شغّل Python script بنجاح
+- ✅ Agent Browser: فتح #dual-track → ظهر "نظام التوقعات المزدوج" + tabs + buttons
+- ✅ التبديل بين tabs شغّال
+- ✅ زر "تشغيل Backtest" شغّال
+- ✅ 8 commits اترفعت على GitHub (https://github.com/enmohsen20111975/GLMinvestment)
+
+Stage Summary:
+- 10 ملفات (8 جديدة + 2 معدّلة)
+- 8 commits على GitHub
+- المسار A: تحليل كامل متوازن (≤5 يومياً)
+- المسار B: سيولة مؤسسية استثنائية (بلا حد، بشروط صارمة)
+- combined_efficiency = (winA × 0.4) + (winB × 0.6)
+- كل الـ endpoints بترجع بيانات صادقة (fallback_used:true لما DBs مش موجودة)
+- مفيش أي mock data — كل حاجة بتحاول تقرأ من DBs الحقيقية
+- جاهز للـ VPS: العميل يحتاج الـ DBs الإنتاجية + تشغيل backtest + cron للـ generator
