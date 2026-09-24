@@ -1337,8 +1337,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
               لا توجد نتائج مطابقة للفلاتر الحالية
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-auto">
-              <Table>
+            <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+              <Table className="min-w-[1100px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <SortableTh label="السهم" field="ticker" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
@@ -1683,17 +1683,17 @@ function TopPerformersTab() {
               لا توجد نتائج للفلاتر الحالية
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-auto">
-              <Table>
+            <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+              <Table className="min-w-[760px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <SortableTh label="السهم" field="ticker" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <TableHead className="text-right">القطاع</TableHead>
+                    <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">القطاع</TableHead>
                     <SortableTh label="سعر البداية" field="start_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
                     <SortableTh label="سعر النهاية" field="end_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
                     <SortableTh label="التغير %" field="change_pct" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
                     <SortableTh label="عدد الأيام" field="period_days" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <TableHead className="text-right">الحجم (نهاية)</TableHead>
+                    <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">الحجم (نهاية)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1824,7 +1824,7 @@ function SortableTh({
 }) {
   const isActive = current === field;
   return (
-    <TableHead className="text-right cursor-pointer select-none hover:bg-muted/40" onClick={() => onToggle(field)}>
+    <TableHead className="text-right cursor-pointer select-none hover:bg-muted/40 whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2" onClick={() => onToggle(field)}>
       <span className="inline-flex items-center gap-1">
         {label}
         <ArrowUpDown
