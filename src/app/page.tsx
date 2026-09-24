@@ -148,6 +148,10 @@ const PicksManagementView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوصيات" /> }),
   'إدارة التوصيات',
 );
+const DualTrackPredictionsView = withErrorBoundary(
+  dynamicImport(() => import('@/components/predictions/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
+  'التوقعات المزدوجة',
+);
 const LiveMonitor = withErrorBoundary(
   dynamicImport(() => import('@/components/dashboard/LiveMonitor'), { ssr: false }),
   'المراقبة الحية',
@@ -431,6 +435,8 @@ function AppShell() {
         return <PredictionTrackingView />;
       case 'picks-management':
         return <PicksManagementView />;
+      case 'dual-track':
+        return <DualTrackPredictionsView />;
       case 'reports':
         return <ReportsView />;
       case 'news':
