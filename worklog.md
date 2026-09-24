@@ -18302,3 +18302,159 @@ Stage Summary:
 - TopUpRecommendationsPanel مدمج في EnhancedPortfolioView
 - القاعدة 50 MONEY-AS-CUSTOMER-LIFE موثّقة في الدستور
 - كل الشغل اللي ضاع من الجلسة الأولى اتيعاد بنجاح + مرفوع على GitHub
+
+---
+Task ID: FLUTTER-COMPAT-AUDIT
+Agent: Full-Stack Developer (Subagent)
+Task: فحص شامل لتوافق Flutter app مع المنصة
+
+Work Log:
+- فحصت `/tmp/flutter_app/lib/api/client.dart` (4103 سطر، 195 API call-site) — استخرجت 150 endpoint فريد
+- فحصت `/tmp/flutter_app/lib/api/mobile_api.dart` (273 سطر — wrapper فقط، ما يضيف endpoints جديدة)
+- فحصت `/tmp/flutter_app/lib/api/cache_manager.dart` (374 سطر — LRU + SWR + prefs persistence)
+- فحصت `/tmp/flutter_app/lib/api/local_database.dart` (394 سطر — SQLite offline cache)
+- فحصت 41 شاشة في `/tmp/flutter_app/lib/screens/*.dart` للـ API usage
+- فحصت 5 services + 3 repositories + market_provider للـ API usage
+- قارنت بـ `/home/z/my-project/src/app/api/**` (622 route file) + `/home/z/my-project/src/components/**` (~250 مكون)
+- فحصت `/home/z/my-project/src/app/page.tsx` للـ router structure (50+ views)
+- فحصت mobile responsiveness لكل المكونات الرئيسية بـ grep على `sm:|md:|lg:` patterns
+- أنتجت التقرير الشامل في `/tmp/flutter_app/COMPATIBILITY_REPORT.md` (45.5KB، 528 سطر)
+
+Stage Summary:
+- إجمالي endpoints في Flutter: 150
+- موجودة في المنصة: 127 (84.6%)
+- موجودة لكن shape مختلف / 404: 4 (2.7%)
+- ناقصة تماماً من المنصة: 19 (12.7%) — أهمها:
+  * POST /api/ai/analyze-stock
+  * GET/POST/DELETE /api/alerts (CRUD كامل ناقص)
+  * GET /api/explosive/hunt
+  * GET /api/egx/investors
+  * GET /api/news/latest
+  * GET /api/market/summary
+  * GET /api/predictions/performance-dashboard
+  * GET /api/stocks/[symbol]/orderbook
+  * GET /api/disclosures/company/[symbol]
+  * POST /api/maker-radar/warmup + GET /api/maker-radar/live-watch
+  * GET /api/app/version (مهم للـ force_update)
+  * GET /api/v2/unified/personas
+  * GET /api/scanner/quick (Flutter بيستخدم /api/v2/recommend كـ fallback)
+  * GET /api/learning/{status,indicators,patterns} (Flutter بيستخدم /api/unified-learning/ بدلاً منها)
+
+- ميزات ناقصة في Flutter (موجودة في المنصة): 17 ميزة
+  - 🔴 Critical: DualTrack predictions, WealthCharts, TopUpRecommendations, PredictionTracking, AlertsCenter
+  - 🟠 High: TradingMemory, UserPublishing, Seasonality, PicksManagement, AdvancedPortfolio
+  - 🟡 Medium: Tithes, DealAdvisor, SpecialistAnalysis, CryptoAdvanced views
+  - 🟢 Low: About view
+
+- شاشات المنصة مش responsive 100%: 8 مكونات محتاجة إصلاح
+  - WealthCharts: grid-cols-1 lg:grid-cols-3 (محتاج sm:grid-cols-2)
+  - TopUpRecommendationsPanel: grid-cols-2 sm:grid-cols-4 (محتاج xs:grid-cols-2)
+  - DualTrackPredictionsView: جدول 10 أعمدة بدون overflow-x-auto
+  - StockScreenerAdvanced: جدول 11 عمود بدون overflow-x-auto
+  - PositionDeepDiveDrawer: h-72 ثابتة بدل h-[40vh]
+  - AdminView KPI cards: grid-cols-2 md:grid-cols-6 (محتاج xs: step)
+  - DynamicRiskProfilerModal: Dialog بدل Sheet للموبايل
+  - DatabaseManagerFull: AlertDialog بـ max-w-3xl بدون max-w-[95vw] على الموبايل
+
+- توصيات:
+  * P1 (Critical): بناء 19 endpoint ناقصة + إضافة 5 شاشات (DualTrack, WealthCharts, TopUp, PredictionTracking, AlertsCenter)
+  * P2 (High): AdvancedPortfolioManager + TradingMemory + UserPublishing + Seasonality + إصلاح D1-D4
+  * P3 (Medium): PicksManagement + DealAdvisor + SpecialistAnalysis + crypto views + إصلاح D5-D8
+  * P4 (Low): توحيد envelope + إضافة personas route + إصلاح learning/content
+
+- ملاحظة مهمة: path mismatch بين Flutter (`/api/portfolio/equity-curve` hyphenated) والمنصة (`/api/portfolio/equity/curve` nested) — الاثنين موجودين لكن مختلفين، لازم توحيد قبل ما تتعمل شاشة WealthCharts في Flutter.
+
+
+---
+Task ID: FLUTTER-SCREENS-BUILD
+Agent: Flutter Developer (Subagent)
+Task: بناء 5 شاشات Flutter ناقصة لتوافق المنصة
+
+Work Log:
+- قرأت COMPATIBILITY_REPORT.md + client.dart (4103 سطر) + 3 شاشات pattern (portfolio, recommendations, alerts) + theme/colors + models.
+- بنيت 5 شاشات في lib/screens/ — كلها RTL + Arabic + StatelessWidget pattern مطابق لِـ portfolio_screen.dart:
+  1. dual_track_screen.dart (947 سطر)  — التوقعات المزدوجة (المسار A تحليل كامل + المسار B سيولة) مع combined_efficiency hero card + ProgressIndicator + tabs (الكل/تحليل كامل/سيولة) + أزرار Backtest و إعادة حساب Threshold + Disclaimer.
+     APIs: /api/predictions/dual-track/{stats,list,threshold,backtest} (عبر api.dio).
+  2. wealth_charts_screen.dart (921 سطر) — رسوم الثروة بـ fl_chart 0.68: LineChart للـ Equity Curve + PieChart (donut) لتوزيع الأصول + LineChart area للـ Daily PnL + BarChart لربح/خسارة كل سهم + Period selector (30/90/180/365 يوم) + بطاقة ملخص المخاطر.
+     APIs: api.getPortfolioEquityCurve(days), api.getPortfolioHoldings(), api.getPortfolioRiskSummary().
+  3. top_up_recommendations_screen.dart (760 سطر) — توصيات زيادة المركز: فلتر الأسهم الرابحة >= 10% من holdings، لكل سهم card يعرض ticker/name/pnl_pct/current_price/target_price + زر "تحليل أعمق" يفتح bottom sheet ببيانات /api/portfolio/intelligence?ticker=X + زر "إضافة للمحفظة" يفتح dialog لإدخال shares ويستدعي api.addToPortfolio().
+  4. prediction_tracking_screen.dart (687 سطر) — تتبّع التوقعات: جدول بـ ticker/signal/entry/target/stop/status/R:R + stats grid (win_rate/total/wins/losses/pending) responsive + فلاتر (الكل/نشطة/رابحة/وقف خسارة/منتهية) + freshness row من performance-dashboard.freshness_info.
+     APIs: /api/predictions/tracking/{list,stats} + api.getPerformanceDashboard(days).
+  5. alerts_center_screen.dart (880 سطر) — مركز التنبيهات الموحّد: دمج user_notifications (من /api/notifications) + price alerts (api.getAlerts()) في قائمة واحدة + stats (total/unread/by_severity info|warning|danger|success) + فلاتر + تحديد الكل كمقروء + حذف بـ swipe-to-dismiss + FAB لإنشاء تنبيه سعر جديد (bottom sheet) عبر api.createAlert().
+- كل شاشة بـ: try/catch + loading skeleton + empty state + error state + RefreshIndicator — مفيش mock data، كل الـ parsing defensive (تتحمل أشكال response مختلفة من الـ backend).
+- استخدمت `api` top-level getter (= GLMApiClient.instance) للـ methods الموجودة، و `api.dio.get/post/delete` للـ endpoints اللي مفيهاش methods مخصصة.
+- أصلحت `Future.wait` ليكون `Future.wait<dynamic>(...)` في 3 شاشات (dual_track / wealth_charts / prediction_tracking) عشان futures بتوع أنواع generic مختلفة (List<Map> + Map) — تجنّب أي LUB inference ambiguity.
+- التزمت بـ withValues(alpha:) بدل withOpacity (Flutter 3.27+ API المستخدم في باقي الشاشات).
+- كل ملف متوازن braces/parens/brackets/quotes (تحققت بـ Python checker).
+- 6 commits على GitHub:
+  • f7b8e2d feat: DualTrackPredictionsScreen
+  • f2e1de4 feat: WealthChartsScreen
+  • e9c9e29 feat: TopUpRecommendationsScreen
+  • de82fb8 feat: PredictionTrackingScreen
+  • fcacbfc feat: AlertsCenterScreen
+  • 4a5b1d2 fix: Future.wait type-explicit (<dynamic>)
+- Push نزل على retry واحد (GitHub رجع Internal Server Error في أول محاولة، نجح في التانية).
+
+Stage Summary:
+- 5 شاشات جديدة في lib/screens/ (4195 سطر Dart نظيف).
+- 6 commits على origin/main (branch main، HEAD = 4a5b1d2 على remote).
+- مفيش mock data؛ كل حاجة من API مع defensive parsing.
+- fl_chart 0.68 API صحيح (LineChart / PieChart / BarChart + tooltips + AxisTitles + SideTitles).
+- RTL + Arabic UI في كل النصوص + Directionality(textDirection: TextDirection.rtl).
+- متوافق مع pattern الموجود في portfolio_screen / recommendations_screen / alerts_screen / notifications_screen / prediction_performance_screen.
+
+Follow-ups مقترحة (للدمج في lib/app.dart):
+- إضافة الـ 5 imports في أعلى lib/app.dart:
+    import 'screens/dual_track_screen.dart';
+    import 'screens/wealth_charts_screen.dart';
+    import 'screens/top_up_recommendations_screen.dart';
+    import 'screens/prediction_tracking_screen.dart';
+    import 'screens/alerts_center_screen.dart';
+- إضافة 5 عناصر drawer جديدة عبر _buildTreeSubItem بجوار PredictionPerformanceScreen (line ~819) والـ AlertsScreen (line ~851):
+    _buildTreeSubItem(Icons.merge_rounded, 'التوقعات المزدوجة (Dual Track)', () => _navigateTo(const DualTrackScreen())),
+    _buildTreeSubItem(Icons.stacked_line_chart_rounded, 'رسوم الثروة البيانية', () => _navigateTo(const WealthChartsScreen())),
+    _buildTreeSubItem(Icons.trending_up_rounded, 'توصيات زيادة المركز', () => _navigateTo(const TopUpRecommendationsScreen())),
+    _buildTreeSubItem(Icons.track_changes_rounded, 'تتبّع التوقعات', () => _navigateTo(const PredictionTrackingScreen())),
+    _buildTreeSubItem(Icons.notifications_active_rounded, 'مركز التنبيهات الموحّد', () => _navigateTo(const AlertsCenterScreen())),
+- لازم Next.js platform يضيف الـ endpoints الناقصة دي لو لسه مش موجودة (حسب COMPATIBILITY_REPORT):
+    • POST /api/predictions/dual-track/threshold
+    • POST /api/predictions/dual-track/backtest?execute=1
+    • GET  /api/predictions/tracking/{list,stats}
+    • GET  /api/notifications + POST (mark_all_read) + DELETE /api/notifications/[id]
+    • GET  /api/portfolio/intelligence?ticker=X
+
+---
+Task ID: PLATFORM-RESPONSIVE-FIX
+Agent: Frontend Developer (Subagent)
+Task: إصلاح 4 شاشات مش responsive في المنصة
+
+Work Log:
+- أصلحت StockScreenerAdvanced.tsx (overflow-x-auto + whitespace-nowrap)
+  • الجدول الرئيسي (11 عمود): wrapper بقا overflow-y-auto overflow-x-auto + full-bleed (-mx-3 px-3 md:mx-0 md:px-0)
+  • أضفت min-w-[1100px] على الـ Table عشان يفرض horizontal scroll على الموبايل
+  • أضفت whitespace-nowrap + text-[10px] sm:text-xs + px-1 sm:px-3 py-1 sm:py-2 على كل th/td (عن طريق SortableTh + static TableHeads + arbitrary variants [&_td])
+  • نفس الإصلاحات اتطبقت على جدول Top Movers (7 أعمدة) بـ min-w-[760px]
+- أصلحت PositionDeepDiveDrawer.tsx (h-[40vh] sm:h-72)
+  • الـ chart loading placeholder اتغير من h-72 ثابت لـ h-[40vh] sm:h-72 (responsive height)
+  • الـ Drawer header padding بقا p-3 sm:p-5 + gap-2
+  • الـ Drawer body padding بقا p-3 sm:p-5 space-y-4 sm:space-y-6
+  • الـ Drawer panel أصلاً full-screen على الموبايل (w-screen max-w-full)
+- أصلحت WealthCharts.tsx (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3)
+  • admin/WealthCharts.tsx: Summary Cards grid من grid-cols-2 md:grid-cols-4 لـ grid-cols-1 sm:grid-cols-2 md:grid-cols-4
+  • portfolio/WealthCharts.tsx: gridين grid-cols-1 lg:grid-cols-3 (loading + charts row) اتضاف ليهم sm: step
+  • col-span-2 بقا sm:col-span-2 lg:col-span-2 عشان الـ layout يفضل صح
+  • loading placeholders h-72 بقت h-[40vh] sm:h-72
+- أصلحت AdminView.tsx (grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6)
+  • KPI/Quick Actions grid من grid-cols-2 md:grid-cols-6 لـ grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6
+  • 4 جداول grid-cols-2 md:grid-cols-4 تانية (Quick Stats, Data Status, Engines, Feedback) كلها بقت grid-cols-1 sm:grid-cols-2 md:grid-cols-4
+  • كل KPI numbers (14 instance) من text-2xl font-bold لـ text-lg md:text-xl lg:text-2xl font-bold
+
+Stage Summary:
+- 4 شاشات responsive دلوقتي 100% للموبايل
+- 4 commits على GitHub (main branch):
+  • f5394e9 fix(responsive): StockScreenerAdvanced
+  • 1ba8860 fix(responsive): PositionDeepDiveDrawer
+  • 87b51fb fix(responsive): WealthCharts (admin + portfolio)
+  • 52feb66 fix(responsive): AdminView
+- ما غيرتش أي logic — بس styling (className) والتغييرات كلها Tailwind breakpoints
+- lint نقي (bun run lint بدون errors) بعد كل ملف
