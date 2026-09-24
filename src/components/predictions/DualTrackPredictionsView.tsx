@@ -342,16 +342,16 @@ export function DualTrackPredictionsView() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs">السهم</TableHead>
-                    <TableHead className="text-xs text-center">السوق</TableHead>
-                    <TableHead className="text-xs text-center">إجمالي</TableHead>
-                    <TableHead className="text-xs text-center">نجاحات</TableHead>
-                    <TableHead className="text-xs text-center">%</TableHead>
-                    <TableHead className="text-xs text-center">متوسط العائد</TableHead>
+                    <TableHead className="text-xs whitespace-nowrap">السهم</TableHead>
+                    <TableHead className="text-xs text-center whitespace-nowrap">السوق</TableHead>
+                    <TableHead className="text-xs text-center whitespace-nowrap">إجمالي</TableHead>
+                    <TableHead className="text-xs text-center whitespace-nowrap">نجاحات</TableHead>
+                    <TableHead className="text-xs text-center whitespace-nowrap">%</TableHead>
+                    <TableHead className="text-xs text-center whitespace-nowrap">متوسط العائد</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -392,18 +392,21 @@ export function DualTrackPredictionsView() {
         </CardHeader>
         <CardContent>
           <Tabs value={trackFilter} onValueChange={onTabChange}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all" className="text-xs">
+            <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsTrigger value="all" className="text-[10px] sm:text-xs px-1 sm:px-3 py-1.5">
                 <Eye className="w-3 h-3 ml-1" />
-                الكل
+                <span className="hidden sm:inline">الكل</span>
+                <span className="sm:hidden">الكل</span>
               </TabsTrigger>
-              <TabsTrigger value="full_analysis" className="text-xs">
+              <TabsTrigger value="full_analysis" className="text-[10px] sm:text-xs px-1 sm:px-3 py-1.5">
                 <BarChart3 className="w-3 h-3 ml-1" />
-                📊 تحليل كامل
+                <span className="hidden sm:inline">تحليل كامل</span>
+                <span className="sm:hidden">📊 كامل</span>
               </TabsTrigger>
-              <TabsTrigger value="liquidity" className="text-xs">
+              <TabsTrigger value="liquidity" className="text-[10px] sm:text-xs px-1 sm:px-3 py-1.5">
                 <Droplets className="w-3 h-3 ml-1" />
-                💧 سيولة
+                <span className="hidden sm:inline">سيولة</span>
+                <span className="sm:hidden">💧 سيولة</span>
               </TabsTrigger>
             </TabsList>
 
