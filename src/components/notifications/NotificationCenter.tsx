@@ -150,10 +150,81 @@ function NotificationItem({
 }
 
 export function NotificationCenter() {
-  const { notifications, unreadCount, isOpen, setOpen, markAllAsRead } = useNotificationStore();
+  const { notifications, unreadCount, isOpen, setOpen, markAllAsRead, addNotification } = useNotificationStore();
 
   const readNotifications = notifications.filter((n) => n.read);
   const unreadNotifications = notifications.filter((n) => !n.read);
+
+  // MONEY-TIER2.6: poll /api/notifications every 60s + fire scheduler tick
+  // so the alert engine keeps the table fresh (real stock/gold/portfolio alerts).
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let active = true;
+    let lastSeenId = 0;
+
+    async function tick() {
+      if (!active) return;
+      try {
+        // 1) Trigger alert engine (only_me=1 = scan only the current user)
+        await fetch('/api/alerts/scheduler?only_me=1', { method: 'POST' }).catch(() => {});
+
+        // 2) Fetch real notifications emitted by the engine
+        const res = await fetch('/api/notifications?limit=20', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success) return;
+
+        const newOnes = (data.notifications || []).filter(
+          (n: any) => Number(n.id) > lastSeenId
+        );
+        if (newOnes.length > 0 && lastSeenId > 0) {
+          // Inject into the in-memory store (so the bell badge increments).
+          for (const n of newOnes) {
+            const typeMap: Record<string, Notification['type']> = {
+              stock_price: 'price_alert',
+              gold_price: 'price_alert',
+              bag_holder_warning: 'portfolio_update',
+              top_up_opportunity: 'portfolio_update',
+              system: 'system',
+            };
+            addNotification({
+              type: typeMap[n.type] || 'system',
+              title: n.ticker ? `${n.ticker} \u2014 ${n.type}` : n.type,
+              message: n.message,
+              data: n.payload,
+            });
+          }
+          // Play a soft beep if sound enabled
+          try {
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 660;
+            const gain = ctx.createGain();
+            gain.gain.value = 0.06;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            setTimeout(() => { osc.stop(); ctx.close(); }, 180);
+          } catch { /* ignore */ }
+        }
+        if (data.notifications?.length > 0) {
+          lastSeenId = Math.max(...data.notifications.map((n: any) => Number(n.id)));
+        }
+      } catch { /* silent \u2014 poller should never crash the UI */ }
+    }
+
+    // First tick immediately, then every 60s
+    tick();
+    const id = setInterval(tick, 60_000);
+
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [addNotification]);
+
 
   return (
     <Sheet open={isOpen} onOpenChange={setOpen}>
