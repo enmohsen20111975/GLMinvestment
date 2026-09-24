@@ -1158,7 +1158,7 @@ export function AdminView() {
               <CardContent className="p-6">
                 <div className="text-center">
                   <div className={cn(
-                    "w-20 h-20 mx-auto rounded-full flex items-center justify-center text-2xl font-bold",
+                    "w-20 h-20 mx-auto rounded-full flex items-center justify-center text-lg md:text-xl lg:text-2xl font-bold",
                     healthScore >= 80 ? "bg-emerald-100 text-emerald-600" :
                       healthScore >= 50 ? "bg-amber-100 text-amber-600" :
                         "bg-red-100 text-red-600"
@@ -1182,25 +1182,25 @@ export function AdminView() {
             {/* Quick Stats */}
             <Card className="md:col-span-3">
               <CardContent className="p-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 rounded-lg bg-muted/50">
                     <Users className="w-6 h-6 mx-auto mb-2 text-blue-500" />
-                    <div className="text-2xl font-bold">{stats?.users?.total ?? 0}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold">{stats?.users?.total ?? 0}</div>
                     <div className="text-xs text-muted-foreground">مستخدم</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
                     <TrendingUp className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
-                    <div className="text-2xl font-bold">{stats?.stocks?.active ?? 0}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold">{stats?.stocks?.active ?? 0}</div>
                     <div className="text-xs text-muted-foreground">سهم نشط</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
                     <Target className="w-6 h-6 mx-auto mb-2 text-purple-500" />
-                    <div className="text-2xl font-bold">{predictionStats?.total_predictions ?? 0}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold">{predictionStats?.total_predictions ?? 0}</div>
                     <div className="text-xs text-muted-foreground">توقع</div>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-muted/50">
                     <BarChart3 className="w-6 h-6 mx-auto mb-2 text-amber-500" />
-                    <div className="text-2xl font-bold">{predictionStats?.success_rate?.toFixed?.(0) ?? 0}%</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold">{predictionStats?.success_rate?.toFixed?.(0) ?? 0}%</div>
                     <div className="text-xs text-muted-foreground">نسبة النجاح</div>
                   </div>
                 </div>
@@ -1237,7 +1237,7 @@ export function AdminView() {
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
               ) : dataStatus?.categories ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                   {dataStatus.categories.map((cat) => (
                     <div key={cat.category} className={cn(
                       "p-3 rounded-lg border-2",
@@ -1278,7 +1278,7 @@ export function AdminView() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <Button onClick={handleSync} disabled={syncing} className="h-auto py-4 flex-col gap-2">
                   <RefreshCw className={cn("w-6 h-6", syncing && "animate-spin")} />
                   <span>تحديث البيانات</span>
@@ -1388,7 +1388,7 @@ export function AdminView() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
                   <Server className="w-5 h-5 text-emerald-500" />
                   <div>
@@ -1540,25 +1540,25 @@ export function AdminView() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold">{analyticsData.summary.today_page_views}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold">{analyticsData.summary.today_page_views}</div>
                     <div className="text-xs text-muted-foreground">مشاهدات اليوم</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-emerald-500">{analyticsData.summary.today_unique_users}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-emerald-500">{analyticsData.summary.today_unique_users}</div>
                     <div className="text-xs text-muted-foreground">مستخدمون نشطون</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-amber-500">{analyticsData.summary.today_events}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-amber-500">{analyticsData.summary.today_events}</div>
                     <div className="text-xs text-muted-foreground">أحداث اليوم</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-red-500">{analyticsData.summary.today_errors}</div>
+                    <div className="text-lg md:text-xl lg:text-2xl font-bold text-red-500">{analyticsData.summary.today_errors}</div>
                     <div className="text-xs text-muted-foreground">أخطاء اليوم</div>
                   </CardContent>
                 </Card>
@@ -1649,13 +1649,13 @@ export function AdminView() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold">{userBehavior.length}</div>
+                  <div className="text-lg md:text-xl lg:text-2xl font-bold">{userBehavior.length}</div>
                   <div className="text-xs text-muted-foreground">مستخدمون نشطون (30 يوم)</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-500">
+                  <div className="text-lg md:text-xl lg:text-2xl font-bold text-blue-500">
                     {userBehavior.reduce((acc: number, u: any) => acc + (u.page_views || 0), 0)}
                   </div>
                   <div className="text-xs text-muted-foreground">إجمالي مشاهدات</div>
@@ -1663,7 +1663,7 @@ export function AdminView() {
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-amber-500">
+                  <div className="text-lg md:text-xl lg:text-2xl font-bold text-amber-500">
                     {userBehavior.reduce((acc: number, u: any) => acc + (u.feature_uses || 0), 0)}
                   </div>
                   <div className="text-xs text-muted-foreground">إجمالي استخدام ميزات</div>
@@ -1671,7 +1671,7 @@ export function AdminView() {
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-500">
+                  <div className="text-lg md:text-xl lg:text-2xl font-bold text-purple-500">
                     {userBehavior.length > 0 ? Math.round(userBehavior.reduce((acc: number, u: any) => acc + (u.page_views || 0), 0) / userBehavior.length) : 0}
                   </div>
                   <div className="text-xs text-muted-foreground">متوسط المشاهدات/مستخدم</div>
@@ -1944,7 +1944,7 @@ function UserFeedbackTab({
           </Button>
         </div>
         {total > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-3">
             {(['bug', 'suggestion', 'opinion', 'praise'] as const).map((t) => (
               <div key={t} className={cn('rounded-lg border px-3 py-2 text-center', FEEDBACK_TYPE_META[t].cls)}>
                 <div className="text-lg font-bold">{byType(t)}</div>
