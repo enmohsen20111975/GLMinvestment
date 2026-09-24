@@ -132,8 +132,9 @@ function tryFetchOrderBook(
   return null;
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ symbol: string }> }) {
-  const { symbol: rawSymbol } = await params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ ticker?: string; symbol?: string }> }) {
+  const resolved = await params;
+  const rawSymbol = resolved.ticker || resolved.symbol || '';
   const symbol = rawSymbol.toUpperCase().trim();
 
   try {
