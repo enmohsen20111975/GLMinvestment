@@ -81,6 +81,7 @@ import { MultiPortfolioSelector, getPortfolioColorClass } from '@/components/por
 import { MasterPortfolioSummary } from '@/components/portfolio/MasterPortfolioSummary';
 import { RealReturnPanel } from '@/components/portfolio/RealReturnPanel';
 import { BagHolderRescuePanel } from '@/components/portfolio/BagHolderRescuePanel';
+import { TopUpRecommendationsPanel } from '@/components/portfolio/TopUpRecommendationsPanel';
 import { RiskProfilerQuiz } from '@/components/portfolio/RiskProfilerQuiz';
 import { RoboAdvisorPanel } from '@/components/portfolio/RoboAdvisorPanel';
 import { cn } from '@/lib/utils';
@@ -1036,6 +1037,9 @@ function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: n
           autoAnalyze={rescueProps?.autoAnalyze}
         />
       </div>
+
+      {/* MONEY-TIER2.9: توصيات زيادة المركز — الأسهم الرابحة ≥ 10% */}
+      <TopUpRecommendationsPanel />
 
       {/* P37-PHASE-2B-4A: Currency badge — tells users which currency the
           aggregate wealth totals below are displayed in. Per-row raw market
