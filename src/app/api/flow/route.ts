@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 let cache: { t: number; d: unknown } | null = null;

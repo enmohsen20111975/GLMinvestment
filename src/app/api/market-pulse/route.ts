@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Market Pulse API - Proxy to Python Backend
  * نبض السوق اللحظي

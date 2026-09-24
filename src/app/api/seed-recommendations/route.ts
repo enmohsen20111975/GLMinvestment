@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * API to seed expert recommendations from JSON file
  * GET /api/seed-recommendations

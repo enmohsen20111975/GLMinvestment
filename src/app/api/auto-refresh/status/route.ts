@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 
 const DATA_ENGINE_URL = process.env.DATA_ENGINE_URL || 'http://localhost:5000'

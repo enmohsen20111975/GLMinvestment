@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Mobile Gold API - Gold and Silver Prices
  * أسعار الذهب والفضة

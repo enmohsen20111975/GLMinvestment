@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Live Monitor API - Proxy to Python Backend
  * لوحة المراقبة الحية

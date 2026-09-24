@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Mobile Subscription API - Subscription Plans
  * خطط الاشتراك

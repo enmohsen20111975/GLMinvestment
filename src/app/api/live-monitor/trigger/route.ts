@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 /**
  * Live Monitor - Trigger Update
  * تشغيل تحديث الأسعار يدوياً
