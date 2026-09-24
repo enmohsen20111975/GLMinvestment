@@ -1612,3 +1612,59 @@ VACUUM اتعمل لـ 3 DBs (stocks.db, predictions.db, auth.db).
 - **كل الـ APIs مجانية** + **بدون مفتاح** + **مرخّصة مصرياً**
 
 **المرجع:** `news-agent/collectors/scrappers/daleelak_api.py` + `data_engine/scrapers/metals_forex_fetcher.py`
+
+---
+
+### القاعدة 49 — نظام التوقعات المزدوج (DUAL-TRACK-PREDICTIONS — 2026-09-24)
+> **سبب الإضافة:** معدل المكاسب على السرفر الإنتاجي كان ضعيفاً (~40% perceived) رغم وجود بيانات تاريخية ضخمة (13K صفقة، 1,365 توقع EGX). الحل: تقسيم التوقعات لمسارين — المسار A (تحليل كامل متوازن) + المسار B (سيولة مؤسسية استثنائية فقط).
+
+**الفلسفة:**
+- **المسار A (full_analysis):** نفس منطق V40.2 الحالي — تحليل فني + مالي + سيولة متوازنة، حد أقصى 5 توقعات يومياً.
+- **المسار B (liquidity):** سيولة مؤسسية استثنائية فقط (بلا حد)، بشروط صارمة:
+  - `volume >= dynamic_threshold` (p75 آخر 30 يوم)
+  - `volume >= 2× avg_volume_20` (momentum)
+  - `buy_pressure >= 80%` (لو buy_volume متوفر)
+  - `net_flow > 0` (تدفق موجب)
+  - السوق مؤهل من الـ backtest (hit_rate ≥ 65%)
+
+**الكفاءة المجمّعة:**
+```
+combined_efficiency = (win_rate_A × 0.4) + (win_rate_B × 0.6)
+```
+المسار B يأخذ وزن أعلى (0.6) لأن إشاراته أندر وأقوى.
+
+**الـ artifacts (مرفوعة على GitHub):**
+
+| الملف | الدور |
+|---|---|
+| `vps-service/scripts/liquidity_backtest_engine.py` | Backtest حقيقي: لكل يوم volume >= p75، هل السعر طلع >= 1.5% في 5 أيام؟ |
+| `vps-service/scripts/dual_track_generator.py` | يولّد توقعات `track='liquidity'` بشروط صارمة |
+| `src/app/api/predictions/dual-track/threshold/route.ts` | يحسب p75 لكل سوق + يحفظ في `liquidity_dynamic_threshold` |
+| `src/app/api/predictions/dual-track/list/route.ts` | يعرض التوقعات مع `track_label` (📊 / 💧) |
+| `src/app/api/predictions/dual-track/stats/route.ts` | يحسب combined_efficiency + Track A/B win_rate |
+| `src/app/api/predictions/dual-track/backtest/route.ts` | يشغّل Python script ويرجع النتائج |
+| `src/components/predictions/DualTrackPredictionsView.tsx` | Frontend view: tabs + hero card + run backtest button |
+
+**DB Schema additions (predictions.db):**
+- `track TEXT DEFAULT 'full_analysis'` على `predictions` + `aiPrediction` + `persona_predictions`
+- جدول `liquidity_backtest_results` — نتائج الـ backtest لكل سوق/ticker
+- جدول `liquidity_dynamic_threshold` — threshold يومي ديناميكي
+- جدول `liquidity_signal_outcomes` — outcomes الـ signals الفردية
+
+**الـ Route:** `#dual-track` (tab جديد في الـ nav مع التوقعات)
+
+**شروط التشغيل على الـ VPS:**
+1. الـ DBs الإنتاجية لازم تكون في `db/` (intraday.db, price_history.db, predictions.db, data_engine.db)
+2. تشغيل `python3 vps-service/scripts/liquidity_backtest_engine.py --execute` مرة واحدة (يحسب threshold + backtest)
+3. إضافة cron يومي لتشغيل `dual_track_generator.py --execute` بعد إغلاق السوق
+4. إضافة cron أسبوعي لإعادة تشغيل الـ backtest (يحدث qualified status)
+
+**التحقق الذاتي الإلزامي:**
+- `/api/predictions/dual-track/threshold?market=all` → لازم يرجع `threshold_value > 0` لكل سوق
+- `/api/predictions/dual-track/stats` → لازم يرجع `combined_efficiency` رقم
+- `/api/predictions/dual-track/backtest?market=EGX&execute=1` → لازم يرجع `results[0].total_signals > 0`
+- لو أي endpoint رجع `fallback_used: true` → الـ DBs مش متاحة، لازم يتصلح الأول
+
+---
+
+*نهاية التحديثات 2026-09-24 — القاعدة 49 (DUAL-TRACK-PREDICTIONS).*
