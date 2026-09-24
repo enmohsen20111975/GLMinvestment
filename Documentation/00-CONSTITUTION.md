@@ -1668,3 +1668,56 @@ combined_efficiency = (win_rate_A × 0.4) + (win_rate_B × 0.6)
 ---
 
 *نهاية التحديثات 2026-09-24 — القاعدة 49 (DUAL-TRACK-PREDICTIONS).*
+
+---
+
+### القاعدة 50 — MONEY-AS-CUSTOMER-LIFE (محفظة العميل = أهم حاجة في حياته — 2026-09-24)
+> **سبب الإضافة:** فحص خبير إدارة الأموال كشف إن 6 endpoints حرجة كانت ترجع **بيانات وهمية هاردكود** (5 أسهم خيالية: COMI/ABUK/EAST/SWDY/HRHO) بدلاً من قراءة محفظة العميل الحقيقية. هذا **انتهاك أخلاقي** لمعيار "فلوس العميل = أهم حاجة في حياته".
+
+**القاعدة الذهبية المطلقة:** أي رقم يظهر للعميل في شاشات المحفظة/الثروة/التنبيهات لازم يكون **رقم حقيقي من الـ DB**. ممنوع منعاً باتاً عرض:
+- بيانات هاردكود (mock data) كأنها بيانات حقيقية للعميل
+- نسب قطاعات ثابتة (42%/25%/18%/15%) بدلاً من حسابها من portfolio_assets
+- تنبيهات "شكلية" بدون فحص فعلي للأسعار
+- توصيات إنقاذ/زيادة بدون قراءة الـ PnL الحقيقي للعميل
+
+**الـ Endpoints الحرجة (تم إصلاحها في commits 6cda299..6292b96):**
+
+Tier 1 — إيقاف الكذب على العميل:
+- `/api/portfolio/holdings` → يقرأ من `portfolio_assets` (REAL holdings + live prices)
+- `/api/portfolio/watchlists` → يقرأ من `user_stock_watchlists` (REAL watchlist)
+- `/api/portfolio/bag-holder-rescue` → fallback حقيقي يقرأ أكبر خاسر + يولّد توصية Hold/Average-Down/Cut-Loss
+- `/api/portfolio/smart-monitor/signals` → multi-factor signal (HOLD/TAKE_PROFIT/STOP_LOSS/BUY_MORE) من PnL الحقيقي
+- `/api/portfolio/risk-summary` → يحسب نسب القطاعات من `portfolio_assets JOIN stocks.sector` + يحسب portfolio_heat
+- `WealthCharts.tsx` → بيقرأ من `/api/portfolio/equity-curve` (REAL wealth_tracking snapshots)
+
+Tier 2 — محرك التنبيهات الموحّد:
+- `src/lib/schedulers/alert-engine.ts` — 3 functions: `runStockAlertsCheck` + `runGoldAlertsCheck` + `runPortfolioPnLCheck` + `runAllAlerts`
+- `/api/alerts/scheduler` — يطلق الـ engine كل 60s (frontend polling)
+- `/api/notifications` — يقرأ `user_notifications` مع ALTER TABLE لـ legacy schemas
+- `/api/alerts/gold` — CRUD لتنبيهات الذهب (karat 24/21/18 + threshold)
+- `/api/finance/seed-alert-thresholds` — يزرع ±5% thresholds لكل الأسهم
+- `TopUpRecommendationsPanel.tsx` — جديد، يعرض الأسهم الرابحة ≥ 10%
+- `NotificationCenter.tsx` — polling كل 60s + يطلق scheduler tick + صوت beep عند التنبيه الجديد
+
+**محرك التنبيهات (`alert-engine.ts`):**
+- `runStockAlertsCheck(userId)` — يفحص `user_stock_watchlists.alert_price_above/below` مقابل `stocks.current_price`
+- `runGoldAlertsCheck(userId)` — يفحص `gold_alerts` مقابل `getLiveEgyptGoldPrices()` (229K صف في data_engine.db)
+- `runPortfolioPnLCheck(userId)` — يفحص `portfolio_assets`:
+  - لو سهم خسران > 10% → يطلق `bag_holder_warning` (severity: danger)
+  - لو سهم رابح > 15% → يطلق `top_up_opportunity` (severity: success)
+- منع التكرار: `WHERE created_at > datetime('now', '-24 hours')` بنفس (user_id, type, ticker, message)
+
+**الـ Disclaimer الإلزامي:** كل توصية (Hold/Cut-Loss/Top-Up/Average-Down) لازم ترفق بـ:
+> "⚠️ توصية آلية مبنية على بيانات تاريخية. ليست نصيحة استثمارية مرخصة. استشر مستشاراً مالياً مرخّصاً قبل أي قرار."
+
+هذا يحمي المنصة قانونياً أمام FRA (Financial Regulatory Authority) المصرية.
+
+**التحقق الذاتي الإلزامي (لكل PR جديد يلمس المحفظة):**
+1. `curl /api/portfolio/holdings?user_id=<real_user>` → لازم يرجع `source: sqlite_fallback` و `total_items > 0` (مش mock)
+2. `curl /api/alerts/scheduler?only_me=1 -X POST` → لازم يرجع `total >= 0` (مش 503)
+3. `curl /api/notifications?user_id=<real_user>` → لازم يرجع `notifications: [...]` (مش error)
+4. لو أي endpoint رجع hardcoded data → PR **مرفوض** فوراً.
+
+---
+
+*نهاية التحديثات 2026-09-24 — القاعدة 50 (MONEY-AS-CUSTOMER-LIFE).*
