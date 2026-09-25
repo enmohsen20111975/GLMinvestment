@@ -28,10 +28,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user from token
+    // FIX: expires_at is stored as String (ISO format) in the DB per
+    // prisma/auth-schema.prisma. Prisma requires a String comparison,
+    // NOT a DateTime object — using `new Date()` causes PrismaClientValidationError.
+    // ISO strings sort chronographically, so `gt: nowIso` works correctly.
+    const nowIso = new Date().toISOString();
     const apiToken = await db.apiToken.findFirst({
       where: {
         token,
-        expires_at: { gt: new Date() },
+        expires_at: { gt: nowIso },
       },
       include: { user: true },
     });

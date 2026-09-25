@@ -25,6 +25,7 @@ import { getSessionUserId } from '@/lib/auth-helper';
 import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
@@ -40,25 +41,127 @@ function unauthorized() {
 }
 
 // ---------------------------------------------------------------------------
-// GET — keep existing behavior (proxy to Python live-monitor)
+// GET — try Python first; on failure require auth and return Prisma portfolio
+//       enriched with current_price from stocks.db (SQLite fallback).
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
-  try {
-    const url = new URL(req.url);
-    const qs = url.searchParams.toString();
-    const targetUrl = `${PY}/api/live-monitor${qs ? `?${qs}` : ''}`;
+  const url = new URL(req.url);
+  const qs = url.searchParams.toString();
+  const targetUrl = `${PY}/api/live-monitor${qs ? `?${qs}` : ''}`;
 
-    const options: RequestInit = { signal: AbortSignal.timeout(30000) };
-    const res = await fetch(targetUrl, options);
-    const data = await res.json();
-    return NextResponse.json(data);
+  // 1) Try Python first (5s timeout — mobile-friendly)
+  try {
+    const res = await fetch(targetUrl, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data);
+    }
+  } catch {}
+
+  // 2) Fallback — auth required
+  const { userId } = await getSessionUserId();
+  if (!userId) {
+    return unauthorized();
+  }
+
+  try {
+    // Load the user's portfolio items from Prisma (auth.db)
+    const items = await db.portfolioItem.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+    });
+
+    // Enrich stock holdings with current_price from stocks.db
+    let holdings: any[] = [];
+    let totalValue = 0;
+    let totalCost = 0;
+    try {
+      const path = require('path');
+      const fs = require('fs');
+      const Database = require('better-sqlite3');
+      const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
+      let sdb: any = null;
+      if (fs.existsSync(stocksDbPath)) {
+        sdb = new Database(stocksDbPath, { readonly: true });
+      }
+      holdings = items.map((it: any) => {
+        let livePrice = it.current_price;
+        if (it.asset_type === 'stock' && it.symbol && sdb) {
+          const row = sdb
+            .prepare('SELECT current_price FROM stocks WHERE ticker = ? COLLATE NOCASE')
+            .get(it.symbol);
+          if (row && row.current_price) livePrice = Number(row.current_price);
+        }
+        const shares = Number(it.shares || 0);
+        const purchase = Number(it.purchase_price || 0);
+        const value = (livePrice || purchase) * shares;
+        const cost = purchase * shares;
+        const pnl = value - cost;
+        const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+        totalValue += value;
+        totalCost += cost;
+        return {
+          id: it.id,
+          asset_type: it.asset_type,
+          ticker: it.symbol,
+          symbol: it.symbol,
+          name: it.name,
+          shares,
+          avg_price: purchase,
+          purchase_price: purchase,
+          current_price: livePrice,
+          currency: it.currency,
+          value,
+          cost,
+          pnl,
+          pnl_percent: Number(pnlPct.toFixed(2)),
+          notes: it.notes,
+          created_at: it.created_at,
+        };
+      });
+      if (sdb) sdb.close();
+    } catch {
+      // Even if SQLite enrichment fails, return the basic items
+      holdings = items.map((it: any) => ({
+        id: it.id,
+        asset_type: it.asset_type,
+        ticker: it.symbol,
+        symbol: it.symbol,
+        name: it.name,
+        shares: Number(it.shares || 0),
+        avg_price: Number(it.purchase_price || 0),
+        current_price: it.current_price,
+        currency: it.currency,
+        notes: it.notes,
+        created_at: it.created_at,
+      }));
+    }
+
+    const totalPnl = totalValue - totalCost;
+    const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+
+    return NextResponse.json({
+      success: true,
+      source: 'sqlite_fallback',
+      portfolio: {
+        holdings,
+        total_value: Number(totalValue.toFixed(2)),
+        total_cost: Number(totalCost.toFixed(2)),
+        total_pnl: Number(totalPnl.toFixed(2)),
+        total_pnl_percent: Number(totalPnlPct.toFixed(2)),
+        items_count: holdings.length,
+      },
+      generated_at: new Date().toISOString(),
+    });
   } catch (e) {
     return NextResponse.json(
       {
         success: false,
         error: e instanceof Error ? e.message : 'Unknown error',
       },
-      { status: 503 }
+      { status: 500 }
     );
   }
 }

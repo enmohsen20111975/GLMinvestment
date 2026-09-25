@@ -18754,3 +18754,161 @@ Stage Summary:
 - InvestorsFlowPanel بعرض تدفّق السيولة الحقيقي حسب القطاعات + تقدير مؤسسات/أفراد
 - MarketDepthPanel بعرض ضغط الشراء/البيع اللحظي من stock_intraday (340K صف)
 - كل الـ 5 شكاوى للمستخدم اتعالجت
+
+---
+Task ID: MOBILE-API-FIX
+Agent: Subagent C (Mobile API Fix)
+Task: إصلاح 17+1 مسار API للموبايل يرجعون 503 — Python backend غير شغّال في الـ sandbox
+
+Problem:
+- Flutter mobile app كل الـ API routes بتدي 503 لأنها بتعمل proxy لـ Python backend
+  (http://127.0.0.1:8010) اللي مش شغّال.
+- المستخدم اشتكى: "كل الى فية كان شغال الان معظم الوصلات API مش شغالة".
+- الـ pattern المُتّبع في `/api/market/overview/route.ts` بيقوم بـ:
+    1) Try Python first (timeout 5s)
+    2) Fallback إلى SQLite (better-sqlite3 readonly)
+    3) NO mock data — كل رقم من SQLite فعلي
+
+Fix Pattern (مطبّق على كل المسارات):
+- `fetch(targetUrl, { signal: AbortSignal.timeout(5000) })` (5s مش 30s — للموبايل)
+- على الفشل: قراءة من stocks.db / predictions.db / data_engine.db / auth.db
+- `source: 'sqlite_fallback'` flag في كل رد لتمييز المصدر
+- `export const dynamic = 'force-dynamic'` + `export const runtime = 'nodejs'`
+
+Routes Fixed (18 — task قال 17 بس mobile/crypto/portfolio كان #18):
+1.  mobile/summary            → stocks.db: total/adv/dec + top gainers/losers
+2.  mobile/recommendations    → stocks.db summary + predictions.db latest BUY (limit 20)
+3.  mobile/dashboard           → stocks.db summary + indices + top movers + latest predictions
+4.  mobile/market/overview     → market_indices + top stocks (mirrors /api/market/overview)
+5.  mobile/market/morning-bell → predictions.db morning_bell=1 LEFT JOIN morning_bell_signals
+6.  mobile/market/recommendations/ai-insights → predictions.db aggregate (win_rate, by_signal, by_market, by_status)
+7.  mobile/predictions         → predictions.db latest 50
+8.  mobile/predictions/exit-status → predictions.db WHERE status IN ('TARGET_HIT','STOPPED','CLOSED')
+9.  mobile/risk                → predictions.db active BUY + entry/stop/target distance + R:R + risk_flag
+10. mobile/reports             → stocks.db market report (breadth + 41 sectors turnover + indices + top movers)
+11. mobile/seasonality         → stock_daily_prices monthly avg returns (EGX only — per-ticker or aggregate)
+12. mobile/crypto              → data_engine.db crypto_prices latest snapshot (50 coins)
+13. mobile/crypto/analysis     → crypto_prices + computed signal from change_24h/7d (NOT mock)
+14. mobile/ai/recommendations  → predictions.db top BUY ranked by master_score DESC
+15. mobile/portfolio (GET)     → Prisma PortfolioItem + stocks.db current_price enrichment + P&L [auth required]
+16. mobile/portfolio/analyze   → Prisma holdings + HHI concentration + sector breakdown + risk_level [auth required]
+17. mobile/portfolio/intelligence → Prisma holdings + predictions.db signals + bullish/bearish count [auth required]
+18. mobile/crypto/portfolio    → Prisma holdings (asset_type='crypto') + crypto_prices current price [auth required]
+
+Verification:
+- ✅ `bun run lint` exit 0 (لا أخطاء، لا تحذيرات)
+- ✅ HTTP codes via `curl -m 15 -o /dev/null -w "%{http_code}"`:
+    14 public routes → 200
+    4 auth-required  → 401 (portfolio, portfolio/analyze, portfolio/intelligence, crypto/portfolio)
+    ZERO 503s
+- ✅ Real data samples (NOT mock):
+    • mobile/summary: 452 EGX stocks, 146 adv / 141 dec / 165 unchanged
+    • mobile/market/overview: EGX30=10285.60 (-0.25%), top 10 stocks by volume
+    • mobile/predictions: 3 predictions مع كل الحقول (entry/target/stop/return/holding_days)
+    • mobile/ai-insights: total=32, win_rate=28.13%, STRONG_BUY=20 (35% win), WATCH=12 (16.67% win)
+    • mobile/exit-status: HOLD=0, TAKE_PROFIT=1, REDUCE=0, EXIT=2
+    • mobile/crypto: 50 cryptos — BTC $79996 (+1.95%/24h)
+    • mobile/crypto/analysis: 20 coins, market_regime=BULLISH (18 adv / 2 dec)
+    • mobile/seasonality: 3 months — June 25.34% win, July 22.79%, August 35.46%
+    • mobile/risk: 20 BUY positions, avg_risk_reward=1.5, avg_risk_percent=8.71%
+    • mobile/reports: 452 stocks, 41 sectors, A/D ratio=1.04
+    • mobile/ai/recommendations: top by master_score — OCDI score=100, RR=1.5
+    • mobile/portfolio (no token): 401 "غير مصرح"
+
+Key Implementation Decisions:
+1. Python timeout = 5s (مش 30s) — مستخدم الموبايل ما يستناش 30s عشان fallback.
+2. SQLite `{ readonly: true }` — مفيش كتابة، تفادي قفل WAL بتاع Python service.
+3. portfolio routes الـ 4: auth مطلوب عبر `getSessionUserId()` من `@/lib/auth-helper`.
+   من غير Bearer token أو session cookie → 401 (مطابق لتوقّع Flutter app).
+4. crypto signals مُستنتجة من change_24h/change_7d الحقيقية (NOT mock):
+   - change_24h >= 5 && change_7d >= 0 → STRONG_BUY
+   - change_24h >= 2                   → BUY
+   - change_24h <= -5                  → SELL
+   - else                              → HOLD
+5. risk_level من HHI concentration (sum of squared weights × 10000):
+   - max_weight >= 50 || hhi >= 5000 → HIGH
+   - max_weight >= 30 || hhi >= 3000 → MEDIUM
+   - else                            → LOW
+6. exit-status action من status/hit_target/hit_stop:
+   - STOPPED || hit_stop=1   → EXIT
+   - TARGET_HIT || hit_target=1 → TAKE_PROFIT
+   - else                    → HOLD
+7. seasonality محدودة بـ EGX — stock_daily_prices فيها EGX فقط؛ للأسواق التانية
+   رسالة عربية واضحة بدل بيانات فاضية.
+8. `force-dynamic` + `runtime = 'nodejs'` على كل route — better-sqlite3 يحتاج Node runtime.
+
+Notes for Main Agent:
+- كل 18 route دلوقتي بـ نفس pattern بتاع /api/market/overview — متّسق وموحّد.
+- لما Python backend يرجع، الـ routes هتفضّل Python تلقائياً (الـ fallback بيتفعّل فقط
+  على `!res.ok` أو fetch throwing).
+- portfolio POST/DELETE كانت شغّالة أصلاً عبر Prisma — عدّلت GET فقط.
+- مفيش ملفات مساعدة جديدة — كل route مستقل بذاته (نفس convention بتاع /api/market/overview).
+
+Files Modified (18 — all in-place, no new routes created):
+- src/app/api/mobile/summary/route.ts
+- src/app/api/mobile/recommendations/route.ts
+- src/app/api/mobile/dashboard/route.ts
+- src/app/api/mobile/market/overview/route.ts
+- src/app/api/mobile/market/morning-bell/route.ts
+- src/app/api/mobile/market/recommendations/ai-insights/route.ts
+- src/app/api/mobile/predictions/route.ts
+- src/app/api/mobile/predictions/exit-status/route.ts
+- src/app/api/mobile/portfolio/route.ts (GET only — POST/DELETE unchanged)
+- src/app/api/mobile/portfolio/analyze/route.ts
+- src/app/api/mobile/portfolio/intelligence/route.ts
+- src/app/api/mobile/risk/route.ts
+- src/app/api/mobile/reports/route.ts
+- src/app/api/mobile/seasonality/route.ts
+- src/app/api/mobile/crypto/route.ts
+- src/app/api/mobile/crypto/analysis/route.ts
+- src/app/api/mobile/crypto/portfolio/route.ts
+- src/app/api/mobile/ai/recommendations/route.ts
+
+Files Created:
+- /home/z/my-project/agent-ctx/MOBILE-API-FIX-subagent-c.md (work record)
+
+---
+Task ID: MOBILE-API-ADMIN-TONE-FIX
+Agent: Main Agent (Z.ai Code) + Subagent C
+Task: إصلاح مسارات الـ mobile API المكسورة + حماية شاشات الأدمن + ضبط النبرة المالية
+
+Work Log:
+- **Subagent C** أصلح 18 مسار mobile API (كلها كانت ترجع 503 لأن Python backend مش شغّال):
+  - أضاف SQLite fallback لكل مسار (بنفس pattern بتاع /api/market/overview)
+  - 14 مسار عام بترجع 200 ببيانات حقيقية من SQLite
+  - 4 مسارات محمية بترجع 401 (صحيح بدون token)
+  - كل المسارات بتفضل تحاول Python أولاً (5s timeout) ثم fallback لـ SQLite
+- **Main Agent** أصلح خطأ Prisma الجذري في mobile/notifications:
+  - `expires_at: { gt: new Date() }` → `expires_at: { gt: nowIso }` (String comparison)
+  - سبب العطل: Prisma schema يعرّف expires_at كـ String لكن الكود كان يمرّر DateTime
+- **Main Agent** أضاف حماية صارمة لشاشات الأدمن (قاعدة 30 + 32):
+  - فصل ADMIN_VIEWS عن PROTECTED_VIEWS
+  - أي مستخدم مش أدمن بيت bounced للداشبورد لو حاول يفتح #admin
+  - استخدم `isAdmin()` من admin-auth.ts (client-safe) للتحقق
+- **Main Agent** ضبط النبرة المالية الاحترافية (قاعدة 31):
+  - AuthGateBanner: إزالة Rocket/Sparkles + تدرّج amber/emerald المُبهرج
+  - استبدال بـ Lock/KeyRound + تدرّج slate محايد احترافي
+  - "سجّل الدخول للوصول إلى المزايا الكاملة" → "سجّل الدخول للوصول إلى حسابك ومحفظتك"
+  - "سجّل الآن" → "تسجيل الدخول"
+  - "سجل مجاناً للوصول لكل المميزات" → "سجّل الدخول للوصول إلى حسابك"
+  - "سجّل مجاناً للوصول إلى كل المميزات" → "يرجى تسجيل الدخول للمتابعة"
+
+Verification (11/11 checks passed via Agent Browser):
+- ✅ EGX30 = 10285.60 (قيمة صحيحة)
+- ✅ EGX70 معروض
+- ✅ جدول الباك تست: 32 توقع
+- ✅ نسبة النجاح: 36.7%
+- ✅ مؤسسات 76% + تدفّق القطاعات + سيولة داخلة/هاربة
+- ✅ ضغط الشراء/البيع + VWAP
+- ✅ لا توجد عبارات تحفيزية (لا 🚀، لا "انطلق"، لا "المزايا الكاملة")
+- ✅ نبرة احترافية ("تسجيل الدخول"، "حسابك")
+- ✅ أسهم حقيقية محمّلة (COMI)
+- ✅ 18 مسار mobile API يشتغل (200/401 بدل 503)
+- ✅ شاشة الأدمن محمية من المستخدمين العاديين
+
+Stage Summary:
+- تطبيق الموبايل (Flutter) دلوقتي يقدر يوصل لكل APIs (بدل ما 17 مسار كان 503)
+- خطأ PrismaClientValidationError في mobile/notifications اتصلح (expires_at String comparison)
+- شاشات الأدمن محمية: المستخدم العادي مش يقدر يفتح #admin
+- النبرة المالية الاحترافية: لا تحميس، لا إيموجي مبالغ، لا عبارات AI hype
+- كل البيانات حقيقية من SQLite (لا mock data — قاعدة 27)

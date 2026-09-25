@@ -23,12 +23,13 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Sparkles, X, Rocket, Clock, AlertTriangle, Crown } from 'lucide-react';
+import { Sparkles, X, Rocket, Clock, AlertTriangle, Crown, Lock, KeyRound } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
 import { getTrialStatus } from '@/lib/subscription-gate';
 import { LoginPromptModal } from '@/components/auth/LoginPromptModal';
 import { Button } from '@/components/ui/button';
+import { isAdmin as checkIsAdmin } from '@/lib/admin-auth';
 import type { AppView } from '@/types';
 
 const REMINDER_INTERVAL_MS = 1_800_000; // 30 minutes — was 5 min (too naggy)
@@ -71,7 +72,6 @@ const PROTECTED_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
   'crypto-learning',
   'crypto-simulation',
   'settings',
-  'admin',
   // Hidden/legacy analytic views
   'finance',
   'backtesting',
@@ -79,8 +79,18 @@ const PROTECTED_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
   'v2-analysis',
 ] as AppView[]);
 
+// ADMIN_VIEWS — شاشات الأدمن فقط (قاعدة 30 + قاعدة 32).
+// أي مستخدم مش أدمن بيت bounced للداشبورد. مش بيعرضها AuthGateBanner.
+const ADMIN_VIEWS: ReadonlySet<AppView> = new Set<AppView>([
+  'admin',
+] as AppView[]);
+
 function isProtected(view: AppView): boolean {
   return PROTECTED_VIEWS.has(view);
+}
+
+function isAdminView(view: AppView): boolean {
+  return ADMIN_VIEWS.has(view);
 }
 
 function AuthGateBanner() {
@@ -97,32 +107,32 @@ function AuthGateBanner() {
       transition={{ type: 'spring', stiffness: 220, damping: 24 }}
       className="sticky top-0 z-40 w-full"
     >
-      <div className="relative bg-gradient-to-l from-amber-500 via-amber-600 to-emerald-600 text-white shadow-md">
+      <div className="relative bg-gradient-to-l from-slate-700 via-slate-800 to-slate-900 text-white shadow-md">
         <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3">
-          <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/20">
-            <Rocket className="size-4" />
+          <span className="hidden sm:inline-flex size-7 items-center justify-center rounded-full bg-white/15">
+            <Lock className="size-4" />
           </span>
-          <p className="flex-1 text-sm sm:text-base font-semibold leading-tight">
+          <p className="flex-1 text-sm sm:text-base font-medium leading-tight">
             <span className="inline-flex items-center gap-1.5">
-              <Sparkles className="size-3.5 inline sm:hidden" />
-              سجّل الدخول للوصول إلى المزايا الكاملة
+              <KeyRound className="size-3.5 inline sm:hidden" />
+              سجّل الدخول للوصول إلى حسابك ومحفظتك
             </span>
-            <span className="hidden sm:inline mr-2 text-white/85 font-normal">
-              — توقعات ذكية، تحليلات متقدمة، ومتابعة محفظتك في مكان واحد
+            <span className="hidden sm:inline mr-2 text-white/70 font-normal">
+              — توقعات، تحليلات، ومتابعة المحفظة
             </span>
           </p>
           <Button
             onClick={() => setShowLoginPrompt(true)}
             size="sm"
-            className="h-8 px-4 bg-white text-amber-700 hover:bg-white/90 font-bold shadow-sm"
+            className="h-8 px-4 bg-white text-slate-800 hover:bg-white/90 font-semibold shadow-sm"
           >
-            سجّل الآن
+            تسجيل الدخول
           </Button>
           <button
             type="button"
             onClick={() => setDismissed(true)}
             aria-label="إغلاق"
-            className="size-7 inline-flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            className="size-7 inline-flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors"
           >
             <X className="size-4" />
           </button>
@@ -252,7 +262,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setCurrentView('dashboard');
 
     toast.warning('هذه الصفحة تتطلب تسجيل الدخول', {
-      description: 'سجّل مجاناً للوصول إلى كل المميزات',
+      description: 'يرجى تسجيل الدخول للمتابعة',
       duration: 4000,
     });
 
@@ -261,6 +271,29 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }, 1500);
     return () => clearTimeout(t);
   }, [authChecked, isAuthenticated, user, currentView, setCurrentView, setShowLoginPrompt]);
+
+  // 1b. Admin-only Route Guard (قاعدة 30 + 32): شاشات الأدمن متاحة فقط للمديرين.
+  // أي مستخدم عادي (حتى لو مسجّل دخول) بيت bounced للداشبورد لو حاول يفتح #admin.
+  useEffect(() => {
+    if (!authChecked) return;
+    if (!isAdminView(currentView)) return;
+
+    // تحقق من صلاحية الأدمن — نستخدم isAdmin() من admin-auth.ts (client-side check
+    // على الـ email/username من session). للـ backend protection شوف /api/admin/auth/*.
+    const userEmail = (user as any)?.email || (user as any)?.username || null;
+    if (!checkIsAdmin(userEmail)) {
+      if (lastBouncedView.current === currentView) return;
+      lastBouncedView.current = currentView;
+      setCurrentView('dashboard');
+      toast.error('هذه الصفحة متاحة للمديرين فقط', {
+        duration: 4000,
+      });
+      const t = setTimeout(() => {
+        lastBouncedView.current = null;
+      }, 1500);
+      return () => clearTimeout(t);
+    }
+  }, [authChecked, user, currentView, setCurrentView]);
 
   // 2. Expired Trial Guard: bounce free users whose trial has expired (after 7-day warning) to subscription view
   useEffect(() => {
@@ -300,11 +333,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       if (useAppStore.getState().showLoginPrompt) return;
 
-      toast.info('سجل دخولك مجاناً للوصول لكل المميزات', {
-        description: 'توقعات، تحليلات، محفظة، تنبيهات والمزيد',
+      toast.info('سجّل الدخول للوصول إلى حسابك', {
+        description: 'توقعات، تحليلات، محفظة، وتنبيهات',
         duration: 5000,
         action: {
-          label: 'سجّل الآن',
+          label: 'تسجيل الدخول',
           onClick: () => useAppStore.getState().setShowLoginPrompt(true),
         },
       });
