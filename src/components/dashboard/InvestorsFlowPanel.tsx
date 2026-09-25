@@ -8,6 +8,13 @@
  * - العرب (شراء/بيع/صافي)
  * - الأجانب (شراء/بيع/صافي)
  * - إجمالي الصفقات
+ *
+ * UNIFIED-MARKET-VIEW (Task 1):
+ * - بيتقرأ `currentMarket` من useAppStore تلقائياً
+ * - لما السوق = EGX → بيجيب من /api/egx/investors (مصدر بيانات حقيقي)
+ * - لما السوق = TADAWUL/KSE/QSE → بيجرّب /api/{market}/investors (graceful empty state لو مش موجود)
+ * - لما السوق = CRYPTO → الـ parent بيشيله خالص (مش متاح للكريبتو)
+ * - مفيش أي mock data — بيتعرض "لا توجد بيانات" لو مفيش endpoint
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -15,6 +22,7 @@ import { Users, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
 
 interface InvestorData {
   date: string;
@@ -32,29 +40,70 @@ interface InvestorData {
   number_of_trades: number;
 }
 
+/**
+ * يبني URL المناسب للسوق. EGX عنده endpoint كامل، الأسواق التانية نجرّب
+ * `/api/{market_lower}/investors` ونتعامل graceful مع 404/أخطاء.
+ */
+function buildInvestorsUrl(market: MarketType): string {
+  const base = `/api/${market.toLowerCase()}/investors`;
+  return `${base}?latest=true&days=7`;
+}
+
 export function InvestorsFlowPanel() {
+  const currentMarket = useAppStore((s) => s.currentMarket);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<InvestorData | null>(null);
   const [history, setHistory] = useState<InvestorData[]>([]);
+  const [notAvailable, setNotAvailable] = useState(false);
 
   const loadData = useCallback(async () => {
+    setLoading(true);
+    setNotAvailable(false);
     try {
-      const res = await fetch('/api/egx/investors?latest=true&days=7');
+      const res = await fetch(buildInvestorsUrl(currentMarket));
+      // 404 أو أي خطأ في الـ network → نتعلّم إن الـ endpoint مش موجود لهذا السوق
+      if (!res.ok) {
+        setNotAvailable(true);
+        setData(null);
+        setHistory([]);
+        return;
+      }
       const json = await res.json();
       if (json.success) {
-        if (json.latest) setData(json.latest);
-        if (json.history) setHistory(json.history);
+        // الـ backend بيرجّع `latest_row` + `rows` للـ EGX endpoint، ونفس الشكل
+        // نتوقّعه من أي endpoint مستقبلي للأسواق التانية.
+        const latest = json.latest || json.latest_row || null;
+        if (latest) {
+          setData(latest as InvestorData);
+        } else {
+          setData(null);
+        }
+        if (json.history) setHistory(json.history as InvestorData[]);
+        else if (Array.isArray(json.rows) && json.rows.length > 0) {
+          setHistory(json.rows as InvestorData[]);
+        } else {
+          setHistory([]);
+        }
+        if (!latest) setNotAvailable(true);
+      } else {
+        setData(null);
+        setHistory([]);
+        setNotAvailable(true);
       }
     } catch {
-      // silent
+      setNotAvailable(true);
+      setData(null);
+      setHistory([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentMarket]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const marketNameAr = MARKET_NAMES_AR[currentMarket];
 
   if (loading) {
     return (
@@ -67,11 +116,15 @@ export function InvestorsFlowPanel() {
     );
   }
 
-  if (!data) {
+  if (!data || notAvailable) {
     return (
       <Card dir="rtl" className="p-4">
-        <div className="text-center text-xs text-muted-foreground py-4">
-          لا توجد بيانات مستثمرين متاحة حالياً
+        <div className="text-center text-xs text-muted-foreground py-4 space-y-1">
+          <div className="flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
+            <Users className="w-3.5 h-3.5" />
+            <span className="font-semibold">حركة المستثمرين — {marketNameAr}</span>
+          </div>
+          <p>لا توجد بيانات مستثمرين متاحة لهذا السوق حالياً</p>
         </div>
       </Card>
     );
@@ -94,12 +147,25 @@ export function InvestorsFlowPanel() {
     </div>
   );
 
+  // history بيتاستخدم في trend visualization مستقبلي — نخفي الـ unused warning
+  void history;
+
+  const currencyLabel =
+    currentMarket === 'EGX' ? 'ج.م'
+    : currentMarket === 'TADAWUL' ? 'ر.س'
+    : currentMarket === 'KSE' ? 'د.ك'
+    : currentMarket === 'QSE' ? 'ر.ق'
+    : '';
+
   return (
     <Card dir="rtl">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <Users className="w-4 h-4 text-amber-500" />
           حركة المستثمرين
+          <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-500/30">
+            {marketNameAr}
+          </Badge>
           {data.date && <Badge variant="outline" className="text-[10px]">{data.date}</Badge>}
         </CardTitle>
       </CardHeader>
@@ -121,7 +187,7 @@ export function InvestorsFlowPanel() {
         <div className="mt-3 pt-2 border-t border-border/50 space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">إجمالي التداول:</span>
-            <span className="font-bold">{formatNum(data.total_buys + data.total_sells)} ج.م</span>
+            <span className="font-bold">{formatNum(data.total_buys + data.total_sells)}{currencyLabel ? ' ' + currencyLabel : ''}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">عدد الصفقات:</span>
