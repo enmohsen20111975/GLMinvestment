@@ -1279,11 +1279,17 @@ export function StocksView() {
   }
 
   // ── Stocks List / Card View ──
+  // UNIFIED-MARKET-VIEW (Task 3): page title + subtitle بيتحدّدوا حسب currentMarket
+  const pageTitle = isCrypto ? 'العملات الرقمية' : 'الأسهم';
+  const pageSubtitle = isCrypto
+    ? 'تصفّح العملات الرقمية وتداولها'
+    : `تصفح جميع الأسهم المتداولة في ${MARKET_NAMES_AR[currentMarket] || 'السوق المحدد'}`;
+
   return (
     <div className="flex flex-col min-h-screen" dir="rtl">
       <Header
-        title="الأسهم"
-        subtitle={`تصفح جميع الأسهم المتداولة في ${MARKET_NAMES_AR[currentMarket] || 'السوق المحدد'}`}
+        title={pageTitle}
+        subtitle={pageSubtitle}
       />
       <main className="flex-1 p-3 md:p-6 max-w-7xl mx-auto w-full space-y-3 md:space-y-4">
         {/* ── Tabs ── */}
@@ -1448,13 +1454,19 @@ export function StocksView() {
                   )}
 
                   {/* Sector (single-select — kept for quick filter) — hidden for crypto (single sector) */}
+                  {/* UNIFIED-MARKET-VIEW (Task 3): for EGX use the curated SECTORS list (English names that
+                      match EGX data); for TADAWUL/KSE/QSE use `availableSectors` computed from loaded
+                      stocks so the dropdown is always accurate for the active market. */}
                   {!isCrypto && (
                     <Select value={selectedSector} onValueChange={handleSectorChange}>
                       <SelectTrigger className="w-auto min-w-[110px] sm:min-w-[130px] h-8 text-xs" size="sm">
                         <SelectValue placeholder="القطاع" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SECTORS.map((sector) => (
+                        {(isEGX
+                          ? SECTORS
+                          : ['الكل', ...availableSectors]
+                        ).map((sector) => (
                           <SelectItem key={sector} value={sector} className="text-xs">
                             {sector}
                           </SelectItem>
