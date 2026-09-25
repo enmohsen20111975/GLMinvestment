@@ -1065,25 +1065,11 @@ export function ExecutiveReportView({
               </div>
             )}
 
-            {/* Persona Filter */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-muted-foreground flex-shrink-0 w-16">الشخصية:</span>
-              {PERSONA_FILTER_OPTIONS.map((opt) => (
-                <button
-                  key={`pfilter-${opt.value}`}
-                  onClick={() => setFilterPersona(opt.value)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1',
-                    filterPersona === opt.value
-                      ? 'bg-amber-500 text-black border-amber-400'
-                      : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
-                  )}
-                >
-                  {opt.emoji && <span>{opt.emoji}</span>}
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            {/* FEAT5-PERSONA-REMOVAL: Persona Filter UI removed — production engine
+                is V40.2 balanced-only; clients must not see persona switcher
+                buttons. The `filterPersona` state stays in the data layer and
+                defaults to 'all' (shows every historical prediction regardless
+                of legacy persona tag). */}
 
             {/* Outcome Filter */}
             <div className="flex items-center gap-2 flex-wrap">

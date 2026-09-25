@@ -40,6 +40,8 @@ import { getMarketStatus } from '@/lib/market-hours';
 import {
   Dialog, DialogContent, DialogClose, DialogTitle,
 } from '@/components/ui/dialog';
+import { SafeWidget } from '@/components/dashboard/SafeWidget';
+import { MarketDepthLiquidityWidget } from '@/components/analysis/MarketDepthLiquidityWidget';
 
 // ============================================================================
 // Types — Maker Radar API contract
@@ -1584,6 +1586,18 @@ function StockDetailDrawer({
 
             {/* === Trading Plan (real numbers + dynamic analysis from price history) === */}
             <TradingPlanSection detail={detail} />
+
+            {/* === Market Depth / DOM (Liquidity Depth Widget) ===
+                 Reconstructed from stock_intraday tick volume — see API route. */}
+            <SafeWidget name="MarketDepthLiquidityWidget" fallback={
+              <Card className="p-3 border-dashed border-muted-foreground/30">
+                <div className="text-xs text-muted-foreground text-center">
+                  تعذّر تحميل دفتر الأوامر لهذا السهم
+                </div>
+              </Card>
+            }>
+              <MarketDepthLiquidityWidget ticker={ticker} compact />
+            </SafeWidget>
           </div>
         )}
       </div>

@@ -14,12 +14,47 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers } from 'lucide-react';
+import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Globe2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
+
+interface InvestorsDataRow {
+  date: string | null;
+  session_type: string | null;
+  individuals_buys_value: number | null;
+  individuals_sells_value: number | null;
+  individuals_net_value: number | null;
+  arab_institutions_buys_value: number | null;
+  arab_institutions_sells_value: number | null;
+  arab_institutions_net_value: number | null;
+  foreign_buys_value: number | null;
+  foreign_sells_value: number | null;
+  foreign_net_value: number | null;
+  total_buys_value: number | null;
+  total_sells_value: number | null;
+  number_of_trades: number | null;
+}
+
+interface InvestorsApiResponse {
+  success: boolean;
+  market: string;
+  source: string;
+  latest: boolean;
+  days: number;
+  rows: InvestorsDataRow[];
+  latest_row: InvestorsDataRow | null;
+  stats: {
+    total_sessions: number;
+    avg_individuals_net: number;
+    avg_arab_net: number;
+    avg_foreign_net: number;
+    total_trades: number;
+  };
+  auto_seeded?: boolean;
+}
 
 interface SectorFlow {
   sector: string;
@@ -92,27 +127,50 @@ export function InvestorsFlowPanel() {
   const [data, setData] = useState<LiquidityFlowData | null>(null);
   const [error, setError] = useState(false);
   const [days, setDays] = useState('30');
+  // Investor-flow data (Egyptians / Arabs / Foreigners buy/sell/net)
+  const [invData, setInvData] = useState<InvestorsDataRow[] | null>(null);
+  const [invSource, setInvSource] = useState<string>('');
+  const [invAutoSeeded, setInvAutoSeeded] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${days}`);
-      if (!res.ok) {
+      const [flowRes, invRes] = await Promise.all([
+        fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${days}`),
+        fetch(`/api/egx/investors?latest=false&days=${days}`).catch(() => null),
+      ]);
+      if (!flowRes.ok) {
         setError(true);
         setData(null);
-        return;
-      }
-      const json = (await res.json()) as LiquidityFlowData;
-      if (json.success) {
-        setData(json);
       } else {
-        setError(true);
-        setData(null);
+        const flowJson = (await flowRes.json()) as LiquidityFlowData;
+        if (flowJson.success) {
+          setData(flowJson);
+        } else {
+          setError(true);
+          setData(null);
+        }
+      }
+      // Investor flow data (only meaningful for EGX). Don't fail the panel if absent.
+      if (invRes && invRes.ok) {
+        const invJson = (await invRes.json()) as InvestorsApiResponse;
+        if (invJson.success && invJson.rows && invJson.rows.length > 0) {
+          setInvData(invJson.rows);
+          setInvSource(invJson.source || '');
+          setInvAutoSeeded(!!invJson.auto_seeded);
+        } else {
+          setInvData(null);
+          setInvSource(invJson.source || '');
+          setInvAutoSeeded(!!invJson.auto_seeded);
+        }
+      } else {
+        setInvData(null);
       }
     } catch {
       setError(true);
       setData(null);
+      setInvData(null);
     } finally {
       setLoading(false);
     }
@@ -306,6 +364,11 @@ export function InvestorsFlowPanel() {
           </div>
         </div>
 
+        {/* Egyptians / Arabs / Foreigners buy/sell/net — investor-flow table */}
+        {invData && invData.length > 0 && (
+          <InvestorsTable rows={invData} source={invSource} autoSeeded={invAutoSeeded} />
+        )}
+
         {/* Summary */}
         <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
           <span>
@@ -319,5 +382,101 @@ export function InvestorsFlowPanel() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * InvestorsTable — جدول تدفّق المستثمرين (مصريين / عرب / أجانب)
+ * يعرض آخر 3 جلسات من investors_data.
+ */
+function InvestorsTable({
+  rows,
+  source,
+  autoSeeded,
+}: {
+  rows: InvestorsDataRow[];
+  source: string;
+  autoSeeded: boolean;
+}) {
+  const slice = rows.slice(0, 3);
+  if (slice.length === 0) return null;
+
+  const fmtM = (n: number | null): string => {
+    if (n == null) return '—';
+    return fmtNum(n);
+  };
+  const fmtNet = (n: number | null): { text: string; cls: string } => {
+    if (n == null) return { text: '—', cls: 'text-muted-foreground' };
+    const sign = n >= 0 ? '+' : '';
+    return {
+      text: `${sign}${fmtNum(n)}`,
+      cls: n > 0 ? 'text-emerald-600 dark:text-emerald-400' : n < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground',
+    };
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
+        <span className="flex items-center gap-1">
+          <Globe2 className="w-3 h-3" />
+          تدفّق المستثمرين (مصريين / عرب / أجانب)
+        </span>
+        <Badge
+          variant="outline"
+          className={cn(
+            'text-[9px] px-1 py-0',
+            autoSeeded
+              ? 'text-amber-600 dark:text-amber-400 border-amber-500/30'
+              : 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+          )}
+          title={source}
+        >
+          {autoSeeded ? 'تقدير محسوب' : 'بيانات رسمية'}
+        </Badge>
+      </div>
+      <div className="max-h-60 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-1.5">
+        {slice.map((r, i) => {
+          const egy = fmtNet(r.individuals_net_value);
+          const arab = fmtNet(r.arab_institutions_net_value);
+          const forNet = fmtNet(r.foreign_net_value);
+          return (
+            <div key={r.date || i} className="rounded border border-border/40 p-1.5 text-[10px]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-foreground">{r.date}</span>
+                {r.number_of_trades != null && (
+                  <span className="text-muted-foreground tabular-nums">
+                    صفقات: {(r.number_of_trades / 1000).toFixed(0)}K
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-1 items-center">
+                <div className="text-muted-foreground">النوع</div>
+                <div className="text-center tabular-nums text-muted-foreground">شراء</div>
+                <div className="text-center tabular-nums text-muted-foreground">بيع</div>
+                <div className="text-center tabular-nums text-muted-foreground">صافي</div>
+
+                <div className="text-amber-600 dark:text-amber-400 font-medium">مصريين</div>
+                <div className="text-center tabular-nums">{fmtM(r.individuals_buys_value)}</div>
+                <div className="text-center tabular-nums">{fmtM(r.individuals_sells_value)}</div>
+                <div className={cn('text-center tabular-nums font-bold', egy.cls)}>{egy.text}</div>
+
+                <div className="text-cyan-600 dark:text-cyan-400 font-medium">عرب</div>
+                <div className="text-center tabular-nums">{fmtM(r.arab_institutions_buys_value)}</div>
+                <div className="text-center tabular-nums">{fmtM(r.arab_institutions_sells_value)}</div>
+                <div className={cn('text-center tabular-nums font-bold', arab.cls)}>{arab.text}</div>
+
+                <div className="text-violet-600 dark:text-violet-400 font-medium">أجانب</div>
+                <div className="text-center tabular-nums">{fmtM(r.foreign_buys_value)}</div>
+                <div className="text-center tabular-nums">{fmtM(r.foreign_sells_value)}</div>
+                <div className={cn('text-center tabular-nums font-bold', forNet.cls)}>{forNet.text}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-[9px] text-muted-foreground pt-0.5" title={source}>
+        المصدر: {source || 'stocks.db.investors_data'}
+      </div>
+    </div>
   );
 }

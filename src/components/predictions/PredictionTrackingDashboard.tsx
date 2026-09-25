@@ -1297,30 +1297,13 @@ export function PredictionTrackingDashboard({
             </div>
           </div>
 
-          {/* Sub Toolbar: Persona Filter + Search Bar + Sorting */}
+          {/* Sub Toolbar: Search Bar + Sorting
+              FEAT5-PERSONA-REMOVAL: Persona Quick Filter removed — production
+              engine is V40.2 balanced-only; client should not see persona
+              switcher buttons. The `selectedPersona` state is still controlled
+              by clicking the balanced breakdown card above (toggles between
+              'all' and 'balanced' for filtering historical predictions). */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            {/* Persona Quick Filter */}
-            <div className="flex items-center gap-1 w-full sm:w-auto">
-              <span className="text-xs text-muted-foreground font-bold ml-1 flex-shrink-0">الشخصية:</span>
-              {(['all', 'gambler', 'balanced', 'conservative'] as const).map((pKey) => (
-                <button
-                  key={`pfilter-${pKey}`}
-                  onClick={() => setSelectedPersona(pKey)}
-                  className={cn(
-                    'px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all',
-                    selectedPersona === pKey
-                      ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-extrabold'
-                      : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {pKey === 'all' && 'الكل'}
-                  {pKey === 'gambler' && ''}  // معطل
-                  {pKey === 'balanced' && '⚖️ المتوازن'}
-                  {pKey === 'conservative' && '🛡️ المستثمر'}
-                </button>
-              ))}
-            </div>
-
             {/* Search & Sort Controls */}
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {/* Search Bar */}

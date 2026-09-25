@@ -5221,61 +5221,6 @@ function PersonaTab({ market, persona }: { market: MarketType; persona: 'conserv
         return null;
       })()}
 
-      {/* ═══ P21: تبديل سريع للبرسونا (Quick Persona Switch) ═══
-          زر واضح وجوهري عشان العميل يغير بين (محافظ/متوازن/مغامر) بسهولة جوه التبويب.
-          التبديل بيتعمل عبر إرسال حدث 'switchPersona' للـ parent component. */}
-      {items.length > 0 && (
-        <Card className="border-dashed bg-muted/30">
-          <CardContent className="p-2.5 flex items-center justify-between flex-wrap gap-2">
-            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <span className="text-sm">👤</span>
-              الشخصية الحالية:
-            </span>
-            <div className="inline-flex rounded-md border border-border p-0.5 bg-background">
-              <button
-                onClick={() => {
-                  // P26: قيمة التبويب بقى 'conservative' (مش 'investor')
-                  const event = new CustomEvent('switchPersona', { detail: 'conservative' });
-                  window.dispatchEvent(event);
-                  const conservativeTab = document.querySelector('[data-state="inactive"][value="conservative"]') as HTMLButtonElement | null;
-                  conservativeTab?.click();
-                }}
-                className={cn(
-                  'px-3 py-1 text-xs rounded font-medium transition-colors flex items-center gap-1',
-                  isLongTerm ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                🛡️ محافظ
-              </button>
-              <button
-                onClick={() => {
-                  const balancedTab = document.querySelector('[data-state="inactive"][value="balanced"]') as HTMLButtonElement | null;
-                  balancedTab?.click();
-                }}
-                className={cn(
-                  'px-3 py-1 text-xs rounded font-medium transition-colors flex items-center gap-1',
-                  persona === 'balanced' ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                ⚖️ متوازن
-              </button>
-              <button
-                onClick={() => {
-                  const gamblerTab = document.querySelector('[data-state="inactive"][value="gambler"]') as HTMLButtonElement | null;
-                  gamblerTab?.click();
-                }}
-                className={cn(
-                  'px-3 py-1 text-xs rounded font-medium transition-colors flex items-center gap-1',
-                  persona === 'gambler' ? 'bg-fuchsia-100 dark:bg-fuchsia-950/50 text-fuchsia-700 dark:text-fuchsia-300 shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                🎯 مغامر
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* قائمة الكروت */}
       {viewMode === 'cards' && (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

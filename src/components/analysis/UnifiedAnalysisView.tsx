@@ -277,29 +277,9 @@ export default function UnifiedAnalysisView() {
             </div>
           </div>
 
-          {/* Persona Selector */}
-          <div className="bg-gray-900 border border-white/10 rounded-2xl p-5">
-            <h2 className="text-sm font-semibold text-gray-300 mb-3">👤 شخصية التداول</h2>
-            <div className="space-y-2">
-              {personas.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedPersona(p.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all ${
-                    selectedPersona === p.id
-                      ? 'bg-purple-600/30 border border-purple-500/50 text-purple-300'
-                      : 'bg-white/5 border border-transparent text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{PERSONA_ICONS[p.id] || '👤'}</span>
-                    <span className="font-medium">{p.name_ar}</span>
-                  </div>
-                  <span className="text-xs text-gray-400">{p.holding_days} يوم</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Persona Selector — REMOVED per Constitution §PERSONA-UNIFY-A
+              النظام موحّد على المحرك المتوازن (balanced) فقط. شاشات العميل لا تعرض
+              مبدّل شخصيات. لو احتجناها للأدمن فقط، تتعمل في AdminView مش هنا. */}
 
           {/* Effective Config */}
           {effectiveConfig && (
