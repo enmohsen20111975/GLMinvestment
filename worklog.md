@@ -18502,3 +18502,59 @@ Stage Summary:
 - Flutter app دلوقتي عنده كل ميزات المنصة (dual-track, wealth charts, top-up, prediction tracking, alerts center)
 - 18 endpoints ناقصة اتعملت — كلها بترجع بيانات حقيقية
 - 5 شاشات responsive fixes — كلها شغّالة على الموبايل
+
+---
+Task ID: UNIFIED-MARKET-VIEW
+Agent: Full-Stack Developer (Subagent)
+Task: شاشة عرض موحدة للأسواق + تحسين الـ Dashboard + مكون نشر موحّد
+
+Work Log:
+- قرأت الملفات المطلوبة: store.ts, TopBar.tsx, DashboardView.tsx, InvestorsFlowPanel.tsx, MarketDepthPanel.tsx, UnifiedHoldingsTable.tsx, StocksView.tsx, mini-sparkline.tsx
+- Task 1a — InvestorsFlowPanel بقت market-aware:
+  - بتقرأ `currentMarket` من `useAppStore` تلقائياً
+  - بتجرّب `/api/${market.toLowerCase()}/investors?latest=true&days=7` لكل سوق
+  - لما الـ endpoint مش موجود (TADAWUL/KSE/QSE) → graceful empty state فيه اسم السوق
+  - مفيش أي mock data — رسالة "لا توجد بيانات مستثمرين متاحة لهذا السوق"
+  - badge اسم السوق بيتعرض في الـ header + currency label ديناميكي
+- Task 1b — DashboardView بقت ديناميكية مع السوق:
+  - أضفت InvestorsFlowPanel + MarketDepthPanel كـ section 3.5 جديد
+  - بيتعرضوا بس لما currentMarket !== 'CRYPTO' (الـ panel مش متاح للكريبتو)
+  - MarketDepthPanel بيستخدم selectedTicker لو موجود، وإلا أول سهم محمّل، وإلا default لكل سوق
+    (COMI/EGX، 2222/TADAWUL، MBRK/KSE، QNB/QSE)
+  - SafeWidget wrappers بتوفّر error isolation
+- Task 2 — UnifiedPublishButton (src/components/shared/UnifiedPublishButton.tsx):
+  - زر dropdown فيه 6 أدوات: Telegram + Facebook + WhatsApp + Twitter + Copy + Image
+  - يقبل content + title + image (React.RefObject) + filename + hashtags + url
+  - بيستخدم withOfficialLinks() لإضافة بلوك الروابط الرسمية للنص المنشور
+  - بيستخدم html-to-image لتحويل العنصر لـ PNG (pixelRatio=2 + backgroundColor أبيض)
+  - sonner للـ toast notifications (success/error)
+  - split mode لو احتجنا أزرار منفصلة
+- Task 3 — StocksView بقت market-aware بشكل كامل:
+  - page title/subtitle بيتحدّدوا حسب currentMarket (العملات الرقمية / الأسهم)
+  - Sector dropdown بقت dynamic لـ TADAWUL/KSE/QSE (تستخدم availableSectors من loaded stocks)
+    قبل كده كانت hardcoded EGX English sectors — غلط للأسواق التانية
+  - Sparkline column شغّال لكل الأسواق (في desktop table + mobile list)
+  - loadStocks بتمرر market param للـ API → TADAWUL/KSE/QSE بتجيب أسهمها الحقيقية
+  - loadCryptoList بتستخدم لـ CRYPTO — نفس الجدول، بيانات مختلفة
+
+Verification:
+- ✅ bun run lint exit 0 بعد كل ملف
+- ✅ git commit + push بعد كل مهمة (4 commits)
+- ✅ InvestorsFlowPanel + MarketDepthPanel مربوطين في Dashboard
+- ✅ UnifiedPublishButton جاهز للاستخدام في أي شاشة
+- ✅ StocksView بتتعامل مع 5 أسواق (EGX/TADAWUL/KSE/QSE/CRYPTO)
+- ✅ لا mock data — كل البيانات من APIs حقيقية
+- ✅ TypeScript strict + shadcn/ui + RTL + Arabic
+
+Files Modified/Created:
+- MODIFIED: src/components/dashboard/InvestorsFlowPanel.tsx (market-aware)
+- MODIFIED: src/components/dashboard/DashboardView.tsx (wired panels)
+- CREATED: src/components/shared/UnifiedPublishButton.tsx (348 lines)
+- MODIFIED: src/components/stocks/StocksView.tsx (dynamic page header + sectors)
+
+Stage Summary:
+- Dashboard دلوقتي فيه InvestorsFlowPanel + MarketDepthPanel مع الـ market switcher
+- لما السوق = CRYPTO → InvestorsFlowPanel + MarketDepthPanel بيتشالوا (مش متاحين)
+- لما السوق = EGX/TADAWUL/KSE/QSE → البانلز بتظهر + InvestorsFlowPanel بيقرأ بيانات السوق
+- UnifiedPublishButton جاهز للدمج في أي شاشة محتاجة نشر (Recommendations، StockDetail، Reports)
+- StocksView شغّالة بشكل موحّد لكل الأسواق بدون تفريق بين "stocks" و "crypto"
