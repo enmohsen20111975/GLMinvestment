@@ -98,34 +98,56 @@ export async function GET() {
     intraDb.close();
 
     // Active stocks from stocks.db — top 30 by volume today
+    // ملاحظة: الـ schema ممكن ما يكون فيه change_percent أو is_egx30 — نتعامل مع كل الحالات
     let activeStocks: ActiveStock[] = [];
     if (fs.existsSync(stocksDbPath)) {
       const stocksDb = new Database(stocksDbPath, { readonly: true });
+      // اكتشف الأعمدة المتاحة
+      const tableInfo = stocksDb.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>;
+      const colNames = new Set(tableInfo.map(c => c.name));
+      const hasChangePercent = colNames.has('change_percent');
+      const hasIsEgx30 = colNames.has('is_egx30');
+      const hasEgx30Member = colNames.has('egx30_member');
+
+      const selectSql = `
+        SELECT
+          ticker, name_ar, sector, current_price, previous_close, volume, last_update
+          ${hasChangePercent ? ', change_percent' : ''}
+          ${hasIsEgx30 ? ', is_egx30' : hasEgx30Member ? ', egx30_member AS is_egx30' : ''}
+          ${colNames.has('is_egx100') ? ', is_egx100' : colNames.has('egx100_member') ? ', egx100_member AS is_egx100' : ''}
+        FROM stocks
+        WHERE market = 'EGX'
+        ORDER BY volume DESC
+        LIMIT 30
+      `;
       const stockRows = stocksDb
-        .prepare(
-          `SELECT
-             ticker, name_ar, sector, current_price, change_percent, volume,
-             is_egx30, is_egx100, last_update
-           FROM stocks
-           WHERE market = 'EGX'
-           ORDER BY volume DESC
-           LIMIT 30`
-        )
+        .prepare(selectSql)
         .all() as Array<Record<string, unknown>>;
-      activeStocks = stockRows.map((r) => ({
-        ticker: String(r.ticker || ''),
-        name_ar: String(r.name_ar || r.ticker || ''),
-        sector: String(r.sector || ''),
-        current_price: Number(r.current_price ?? 0),
-        change_percent: Number(r.change_percent ?? 0),
-        volume: Number(r.volume ?? 0),
-        is_egx30: Boolean(r.is_egx30),
-        is_egx100: Boolean(r.is_egx100),
-        last_update:
-          r.last_update === null || r.last_update === undefined
-            ? null
-            : String(r.last_update),
-      }));
+      activeStocks = stockRows.map((r) => {
+        // احسب change_percent لو مفيش column
+        let chgPct = 0;
+        if (hasChangePercent && r.change_percent != null) {
+          chgPct = Number(r.change_percent);
+        } else {
+          const curr = Number(r.current_price) || 0;
+          const prev = Number(r.previous_close) || 0;
+          chgPct = prev > 0 ? ((curr - prev) / prev) * 100 : 0;
+        }
+        return {
+          ticker: String(r.ticker || ''),
+          name_ar: String(r.name_ar || r.ticker || ''),
+          sector: String(r.sector || ''),
+          current_price: Number(r.current_price ?? 0),
+          change_percent: chgPct,
+          volume: Number(r.volume ?? 0),
+          is_egx30: Boolean(r.is_egx30),
+          is_egx100: Boolean(r.is_egx100),
+          last_update:
+            r.last_update === null || r.last_update === undefined
+              ? null
+              : String(r.last_update),
+        };
+      });
       stocksDb.close();
     }
 

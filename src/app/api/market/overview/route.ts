@@ -45,17 +45,38 @@ export async function GET(req: NextRequest) {
     };
     const dbMarket = marketMap[market.toUpperCase()] || 'EGX';
 
+    // اكتشف الأعمدة المتاحة في stocks table (الـ schema ممكن يختلف بين الإنتاج والـ init)
+    const tableInfo = db.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>;
+    const colNames = new Set(tableInfo.map(c => c.name));
+    const hasChangePercent = colNames.has('change_percent');
+    const hasValueTraded = colNames.has('value_traded') || colNames.has('turnover_egp');
+
+    // ابني الـ SELECT حسب الأعمدة المتاحة
+    const selectCols = [
+      'ticker', 'name_ar', 'name', 'current_price', 'previous_close', 'volume', 'sector',
+      ...(hasChangePercent ? ['change_percent'] : []),
+      ...(hasValueTraded ? (colNames.has('value_traded') ? ['value_traded'] : ['turnover_egp']) : []),
+    ].filter(c => colNames.has(c));
+
     const stocks = db.prepare(`
-      SELECT ticker, name_ar, name, current_price, previous_close, change_percent, volume, sector
-      FROM stocks WHERE market = ? COLLATE NOCASE
+      SELECT ${selectCols.join(', ')} FROM stocks WHERE market = ? COLLATE NOCASE
       ORDER BY volume DESC LIMIT 50
     `).all(dbMarket);
 
-    const advancing = stocks.filter((s: any) => Number(s.change_percent) > 0).length;
-    const declining = stocks.filter((s: any) => Number(s.change_percent) < 0).length;
-    const unchanged = stocks.length - advancing - declining;
-    const totalVolume = stocks.reduce((sum: number, s: any) => sum + Number(s.volume || 0), 0);
-    const totalTurnover = stocks.reduce((sum: number, s: any) => sum + (Number(s.current_price || 0) * Number(s.volume || 0)), 0);
+    // احسب change_percent لكل سهم لو مفيش column
+    const stocksWithChange = stocks.map((s: any) => {
+      if (hasChangePercent && s.change_percent != null) return s;
+      const curr = Number(s.current_price) || 0;
+      const prev = Number(s.previous_close) || 0;
+      s.change_percent = prev > 0 ? ((curr - prev) / prev) * 100 : 0;
+      return s;
+    });
+
+    const advancing = stocksWithChange.filter((s: any) => Number(s.change_percent) > 0).length;
+    const declining = stocksWithChange.filter((s: any) => Number(s.change_percent) < 0).length;
+    const unchanged = stocksWithChange.length - advancing - declining;
+    const totalVolume = stocksWithChange.reduce((sum: number, s: any) => sum + Number(s.volume || 0), 0);
+    const totalTurnover = stocksWithChange.reduce((sum: number, s: any) => sum + (Number(s.current_price || 0) * Number(s.volume || 0)), 0);
 
     // Market indices — استخدم getMarketIndices() المصحّحة (تعيد حساب change/change_percent
     // من الأسهم المكوّنة بشكل صحيح ومتّسق، بدل القيم الخاطئة المخزّنة في الجدول)
@@ -82,7 +103,7 @@ export async function GET(req: NextRequest) {
       success: true,
       market,
       summary: {
-        total_stocks: stocks.length,
+        total_stocks: stocksWithChange.length,
         advancing,
         declining,
         unchanged,
@@ -90,7 +111,7 @@ export async function GET(req: NextRequest) {
         total_turnover: totalTurnover,
       },
       indices,
-      top_stocks: stocks.slice(0, 10),
+      top_stocks: stocksWithChange.slice(0, 10),
       source: 'sqlite_fallback',
       generated_at: new Date().toISOString(),
     });

@@ -144,7 +144,8 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       const db = new Database(dbPath, { readonly: true });
 
       const placeH = markets.map(() => '?').join(',');
-      // Compute confluence_score in SQL: master_score + technical_score + risk_reward*10
+      // FIX: الـ status في الـ DB ممكن يكون lowercase ('active') أو uppercase ('ACTIVE').
+      // بنستخدم UPPER() للمقارنة case-insensitive.
       const rows = db.prepare(`
         SELECT
           ticker, signal, market,
@@ -153,7 +154,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
           prediction_date, persona, status
         FROM predictions
         WHERE signal IN ('BUY','STRONG_BUY')
-          AND status = 'ACTIVE'
+          AND UPPER(status) = 'ACTIVE'
           AND market IN (${placeH})
         ORDER BY
           (COALESCE(master_score, 0) + COALESCE(technical_score, 0) + COALESCE(risk_reward, 0) * 10) DESC,

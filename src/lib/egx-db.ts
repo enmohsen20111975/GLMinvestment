@@ -728,37 +728,48 @@ const INDEX_NAME_AR: Record<string, string> = {
   EGX33: 'مؤشر EGX 33 الإسلامي',
 }
 
-// Map index symbol → stocks-table membership column
-const INDEX_MEMBERSHIP_COL: Record<string, string> = {
-  EGX30: 'is_egx30',
-  EGX70: 'is_egx70',
-  EGX100: 'is_egx100',
+// Map index symbol → stocks-table membership column (both schema variants supported)
+const INDEX_MEMBERSHIP_COL: Record<string, string[]> = {
+  EGX30: ['is_egx30', 'egx30_member'],
+  EGX70: ['is_egx70', 'egx70_member'],
+  EGX100: ['is_egx100', 'egx100_member'],
 }
 
 /**
  * احسب change_percent للمؤشر من أسهمه المكوّنة (constituent-based).
  * - بيجيب الأسهم اللي member flag بتاعها = 1
- * - بيحسب المتوسط المرجّح بقيمة السوق (market cap) لـ change_percent
- * - لو مفيش market cap متاح، بيستخدم متوسط بسيط
- * - بيرجّع null لو مفيش أسهم مكوّنة
+ * - بيحسب change_percent من current_price vs previous_close (لو مفيش change_percent column)
+ * - بيحسب المتوسط المرجّح بقيمة السوق (market cap)
+ * - بيرجّع null لو مفيش أسهم مكوّنة أو الجدول فاضي
  */
 function computeConstituentChangePercent(
   db: SqliteDatabase,
-  membershipCol: string
+  membershipCols: string[]
 ): number | null {
   try {
-    // Safe column name (whitelist) — only is_egx30/is_egx70/is_egx100
-    if (!['is_egx30', 'is_egx70', 'is_egx100'].includes(membershipCol)) return null
+    // اكتشف العمود المتاح (is_egx30 أو egx30_member)
+    const tableInfo = db.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>
+    const availableCols = new Set(tableInfo.map(c => c.name))
+    const hasChangePercent = availableCols.has('change_percent')
+    const membershipCol = membershipCols.find(c => availableCols.has(c))
+    if (!membershipCol) return null
+
+    // ابني الـ SELECT حسب الأعمدة المتاحة
+    const selectCols = [
+      'current_price',
+      'previous_close',
+      'market_cap',
+      ...(hasChangePercent ? ['change_percent'] : []),
+    ].filter(c => availableCols.has(c))
 
     const rows = db
       .prepare(
-        `SELECT change_percent, current_price, previous_close, market_cap
+        `SELECT ${selectCols.join(', ')}
          FROM stocks
          WHERE ${membershipCol} = 1
-           AND market = 'EGX'
-           AND change_percent IS NOT NULL`
+           AND market = 'EGX'`
       )
-      .all() as Array<{ change_percent: number | null; current_price: number | null; previous_close: number | null; market_cap: number | null }>
+      .all() as Array<Record<string, unknown>>
 
     if (rows.length === 0) return null
 
@@ -769,7 +780,15 @@ function computeConstituentChangePercent(
     let equalCount = 0
 
     for (const r of rows) {
-      const cp = Number(r.change_percent)
+      // احسب change_percent: لو موجود استخدمه، غير كده احسبه من current vs previous
+      let cp: number
+      if (hasChangePercent && r.change_percent != null) {
+        cp = Number(r.change_percent)
+      } else {
+        const curr = Number(r.current_price) || 0
+        const prev = Number(r.previous_close) || 0
+        cp = prev > 0 ? ((curr - prev) / prev) * 100 : 0
+      }
       if (!Number.isFinite(cp)) continue
       const mc = Number(r.market_cap)
       if (Number.isFinite(mc) && mc > 0) {
@@ -814,11 +833,11 @@ export function getMarketIndices(): Record<string, unknown>[] {
     const result = raw.map((idx) => {
       const symbol = String(idx.symbol || '')
       const storedValue = Number(idx.current_value) || 0
-      const membershipCol = INDEX_MEMBERSHIP_COL[symbol]
+      const membershipCols = INDEX_MEMBERSHIP_COL[symbol]
 
       // 1) constituent-based change_percent (الأصدق)
-      const constituentCp = membershipCol
-        ? computeConstituentChangePercent(db, membershipCol)
+      const constituentCp = membershipCols
+        ? computeConstituentChangePercent(db, membershipCols)
         : null
 
       // 2) fallback: recompute from stored current_value vs previous_close

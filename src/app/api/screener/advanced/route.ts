@@ -63,6 +63,14 @@ export async function GET(req: NextRequest) {
     const Database = require('better-sqlite3');
     const db = new Database(stocksDbPath, { readonly: true });
 
+    // اكتشف الأعمدة المتاحة (الـ schema يختلف بين الإنتاج والـ init)
+    const tableInfo = db.prepare('PRAGMA table_info(stocks)').all() as Array<{ name: string }>;
+    const colNames = new Set(tableInfo.map(c => c.name));
+    const has = (col: string) => colNames.has(col);
+
+    // اكتشف عمود العضوية المتاح
+    const egx30Col = has('is_egx30') ? 'is_egx30' : has('egx30_member') ? 'egx30_member' : null;
+
     const marketRaw = (url.searchParams.get('market') || 'EGX').toUpperCase();
     const market = MARKET_MAP[marketRaw] || 'EGX';
 
@@ -110,18 +118,45 @@ export async function GET(req: NextRequest) {
     }
 
     // Build ORDER BY: NULLs last for sort column
+    // ملاحظة: الـ schema الجديد ممكن ما يكون فيه change_percent — نحسبه في SELECT
     const orderBy = sort === 'volume'
       ? 'volume DESC NULLS LAST'
       : sort === 'market_cap'
         ? 'market_cap DESC NULLS LAST'
-        : 'change_percent DESC NULLS LAST';
+        : 'chg_pct DESC NULLS LAST';
+
+    // ابني SELECT حسب الأعمدة المتاحة فقط
+    const selectParts: string[] = ['ticker', 'name_ar', 'name', 'sector', 'current_price', 'previous_close', 'volume'];
+    // chg_pct: احسب change_percent (لو column موجود استخدمه، غير كده احسبه)
+    selectParts.push(`CASE
+      WHEN ${has('change_percent') ? 'change_percent IS NOT NULL' : '0'} THEN ${has('change_percent') ? 'change_percent' : '0'}
+      WHEN previous_close > 0 THEN ((current_price - previous_close) / previous_close) * 100
+      ELSE 0
+    END AS chg_pct`);
+    if (has('change_percent')) selectParts.push('change_percent AS change_percent_raw');
+    if (has('turnover_egp')) selectParts.push('turnover_egp');
+    else selectParts.push('(current_price * volume) AS turnover_egp');
+    if (has('market_cap')) selectParts.push('market_cap');
+    else selectParts.push('0 AS market_cap');
+    if (has('signal')) selectParts.push('signal');
+    else selectParts.push('0 AS signal');
+    if (has('rsi')) selectParts.push('rsi');
+    else selectParts.push('NULL AS rsi');
+    if (has('ma_50')) selectParts.push('ma_50');
+    else selectParts.push('NULL AS ma_50');
+    if (has('ma_200')) selectParts.push('ma_200');
+    else selectParts.push('NULL AS ma_200');
+    if (has('support')) selectParts.push('support');
+    else if (has('support_level')) selectParts.push('support_level AS support');
+    else selectParts.push('NULL AS support');
+    if (has('resistance')) selectParts.push('resistance');
+    else if (has('resistance_level')) selectParts.push('resistance_level AS resistance');
+    else selectParts.push('NULL AS resistance');
+    if (has('trend')) selectParts.push('trend');
+    else selectParts.push('NULL AS trend');
 
     const sql = `
-      SELECT
-        ticker, name_ar, name, sector,
-        current_price, previous_close, change_percent, volume,
-        COALESCE(turnover_egp, current_price * volume) AS turnover_egp,
-        market_cap, signal, rsi, ma_50, ma_200, support, resistance, trend
+      SELECT ${selectParts.join(', ')}
       FROM stocks
       WHERE ${where.join(' AND ')}
       ORDER BY ${orderBy}
@@ -136,7 +171,7 @@ export async function GET(req: NextRequest) {
       name_ar: r.name_ar || r.name || r.ticker,
       sector: r.sector || '',
       current_price: Number(r.current_price || 0),
-      change_percent: Number(r.change_percent || 0),
+      change_percent: Number(r.chg_pct ?? r.change_percent_raw ?? 0),
       volume: Number(r.volume || 0),
       turnover_egp: Number(r.turnover_egp || 0),
       market_cap: Number(r.market_cap || 0),
