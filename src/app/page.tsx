@@ -140,6 +140,18 @@ const SmartConfluenceView = withErrorBoundary(
   dynamicImport(() => import('@/components/smart-assistant/SmartConfluenceView').then(m => ({ default: m.SmartConfluenceView })), { ssr: false }),
   'المساعد الذكي',
 );
+const AIView = withErrorBoundary(
+  dynamicImport(() => import('@/components/ai/AIView').then(m => ({ default: m.AIView })), { ssr: false, loading: () => <LazyTabLoader label="مساعد AI" /> }),
+  'مساعد AI',
+);
+const CandlestickWidget = withErrorBoundary(
+  dynamicImport(() => import('@/components/advanced-analysis/CandlestickWidget').then(m => ({ default: m.CandlestickWidget })), { ssr: false, loading: () => <LazyTabLoader label="الشموع اليابانية" /> }),
+  'الشموع اليابانية',
+);
+const FibonacciWidget = withErrorBoundary(
+  dynamicImport(() => import('@/components/advanced-analysis/FibonacciWidget').then(m => ({ default: m.FibonacciWidget })), { ssr: false, loading: () => <LazyTabLoader label="فيبوناتشي" /> }),
+  'فيبوناتشي',
+);
 const OpportunityCard = withErrorBoundary(
   dynamicImport(() => import('@/components/sniper/OpportunityCard').then(m => ({ default: m.OpportunityCard })), { ssr: false, loading: () => <LazyTabLoader label="فرص الصيد" /> }),
   'فرص الصيد',
@@ -439,6 +451,12 @@ function AppShell() {
             </button>
           </div>
         );
+      case 'ai-view':
+        return <AIView />;
+      case 'candlestick':
+        return <CandlestickWidget />;
+      case 'fibonacci':
+        return <FibonacciWidget />;
       case 'opportunity':
         return <OpportunityCard />;
       case 'performance-tracker':

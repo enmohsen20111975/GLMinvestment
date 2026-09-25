@@ -17,7 +17,9 @@ export const VALID_VIEWS: readonly string[] = [
   'advanced-portfolio', 'seasonality',
   'prediction-tracking', 'picks-management',
   'smart-confluence',
-  'dual-track',  // نظام التوقعات المزدوج (Track A + Track B)
+  'dual-track',
+  'ai-view', 'candlestick', 'fibonacci',
+  'opportunity', 'performance-tracker',  // نظام التوقعات المزدوج (Track A + Track B)
   'alerts-center', 'trading-memory', 'live-monitor', 'wealth',
   'trading-journal', 'publishing',
   'trading-chart', 'analysis', 'v2-analysis',
