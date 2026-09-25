@@ -140,6 +140,14 @@ const SmartConfluenceView = withErrorBoundary(
   dynamicImport(() => import('@/components/smart-assistant/SmartConfluenceView').then(m => ({ default: m.SmartConfluenceView })), { ssr: false }),
   'المساعد الذكي',
 );
+const OpportunityCard = withErrorBoundary(
+  dynamicImport(() => import('@/components/sniper/OpportunityCard').then(m => ({ default: m.OpportunityCard })), { ssr: false, loading: () => <LazyTabLoader label="فرص الصيد" /> }),
+  'فرص الصيد',
+);
+const PerformanceTracker = withErrorBoundary(
+  dynamicImport(() => import('@/components/sniper/PerformanceTracker').then(m => ({ default: m.PerformanceTracker })), { ssr: false, loading: () => <LazyTabLoader label="متتبع الأداء" /> }),
+  'متتبع الأداء',
+);
 const PredictionTrackingView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
   'تتبّع التوقعات',
@@ -431,6 +439,10 @@ function AppShell() {
             </button>
           </div>
         );
+      case 'opportunity':
+        return <OpportunityCard />;
+      case 'performance-tracker':
+        return <PerformanceTracker />;
       case 'prediction-tracking':
         return <PredictionTrackingView />;
       case 'picks-management':
