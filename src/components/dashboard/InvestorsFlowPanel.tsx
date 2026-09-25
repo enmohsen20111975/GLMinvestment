@@ -1,103 +1,122 @@
 'use client';
 
 /**
- * InvestorsFlowPanel — حركة المستثمرين (العرب + الأجانب)
- * =======================================================
- * يعرض تدفق الأموال من المستثمرين:
- * - الأفراد (شراء/بيع/صافي)
- * - العرب (شراء/بيع/صافي)
- * - الأجانب (شراء/بيع/صافي)
- * - إجمالي الصفقات
+ * InvestorsFlowPanel — حركة السيولة وتدفّق المستثمرين
+ * ===================================================
+ * بما إن مفيش جدول investors_data فعلي (بيانات المصريين/العرب/الأجانب) في الـ DB،
+ * البانل ده بيعرض التحليل الحقيقي اللي بيجاوب على نفس السؤال:
+ *  - فين السيولة رايحة؟ (تدفّق القطاعات: inflow/outflow)
+ *  - حركة مؤسسات ولا أفراد؟ (تقدير institutional vs retail من تحليل حجم الصفقات)
+ *  - الأسهم اللي بيتجمّع فيها واللي بتفرّخ منها
  *
- * UNIFIED-MARKET-VIEW (Task 1):
- * - بيتقرأ `currentMarket` من useAppStore تلقائياً
- * - لما السوق = EGX → بيجيب من /api/egx/investors (مصدر بيانات حقيقي)
- * - لما السوق = TADAWUL/KSE/QSE → بيجرّب /api/{market}/investors (graceful empty state لو مش موجود)
- * - لما السوق = CRYPTO → الـ parent بيشيله خالص (مش متاح للكريبتو)
- * - مفيش أي mock data — بيتعرض "لا توجد بيانات" لو مفيش endpoint
+ * مصدر البيانات: /api/market/liquidity-flow (stocks.db.stock_daily_prices JOIN stocks)
+ * - مفيش أي mock data — كل الأرقام من SQLite.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
 
-interface InvestorData {
-  date: string;
-  individuals_buys: number;
-  individuals_sells: number;
-  individuals_net: number;
-  arab_buys: number;
-  arab_sells: number;
-  arab_net: number;
-  foreign_buys: number;
-  foreign_sells: number;
-  foreign_net: number;
-  total_buys: number;
-  total_sells: number;
-  number_of_trades: number;
+interface SectorFlow {
+  sector: string;
+  total_turnover: number;
+  total_volume: number;
+  stocks_count: number;
+  avg_change_pct: number;
+  flow_direction: string;
+  change_in_turnover_pct: number;
 }
 
-/**
- * يبني URL المناسب للسوق. EGX عنده endpoint كامل، الأسواق التانية نجرّب
- * `/api/{market_lower}/investors` ونتعامل graceful مع 404/أخطاء.
- */
-function buildInvestorsUrl(market: MarketType): string {
-  const base = `/api/${market.toLowerCase()}/investors`;
-  return `${base}?latest=true&days=7`;
+interface StockFlow {
+  ticker: string;
+  name_ar: string;
+  sector: string;
+  total_turnover: number;
+  total_volume: number;
+  latest_change_pct: number;
+  latest_price: number;
 }
+
+interface InvestorTypeEstimate {
+  institutional_pct: number;
+  retail_pct: number;
+  block_trades_count: number;
+  avg_trade_value: number;
+  large_blocks: StockFlow[];
+}
+
+interface LiquidityFlowData {
+  success: boolean;
+  market: string;
+  days: number;
+  sector_flow: SectorFlow[];
+  top_inflow_stocks: StockFlow[];
+  top_outflow_stocks: StockFlow[];
+  investor_type_estimate: InvestorTypeEstimate;
+  summary: {
+    total_turnover: number;
+    total_volume: number;
+    net_flow_direction: string;
+    advancing_sectors: number;
+    declining_sectors: number;
+  };
+}
+
+function fmtNum(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
+  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (abs >= 1_000) return (n / 1_000).toFixed(0) + 'K';
+  return n.toFixed(0);
+}
+
+function fmtPct(n: number): string {
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(2)}%`;
+}
+
+const PERIOD_OPTIONS = [
+  { value: '1', label: 'اليوم' },
+  { value: '7', label: '7 أيام' },
+  { value: '30', label: '30 يوم' },
+  { value: '90', label: '90 يوم' },
+];
 
 export function InvestorsFlowPanel() {
-  const currentMarket = useAppStore((s) => s.currentMarket);
+  const currentMarket = useAppStore((s) => s.currentMarket) as MarketType;
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<InvestorData | null>(null);
-  const [history, setHistory] = useState<InvestorData[]>([]);
-  const [notAvailable, setNotAvailable] = useState(false);
+  const [data, setData] = useState<LiquidityFlowData | null>(null);
+  const [error, setError] = useState(false);
+  const [days, setDays] = useState('30');
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    setNotAvailable(false);
+    setError(false);
     try {
-      const res = await fetch(buildInvestorsUrl(currentMarket));
-      // 404 أو أي خطأ في الـ network → نتعلّم إن الـ endpoint مش موجود لهذا السوق
+      const res = await fetch(`/api/market/liquidity-flow?market=${currentMarket}&days=${days}`);
       if (!res.ok) {
-        setNotAvailable(true);
+        setError(true);
         setData(null);
-        setHistory([]);
         return;
       }
-      const json = await res.json();
+      const json = (await res.json()) as LiquidityFlowData;
       if (json.success) {
-        // الـ backend بيرجّع `latest_row` + `rows` للـ EGX endpoint، ونفس الشكل
-        // نتوقّعه من أي endpoint مستقبلي للأسواق التانية.
-        const latest = json.latest || json.latest_row || null;
-        if (latest) {
-          setData(latest as InvestorData);
-        } else {
-          setData(null);
-        }
-        if (json.history) setHistory(json.history as InvestorData[]);
-        else if (Array.isArray(json.rows) && json.rows.length > 0) {
-          setHistory(json.rows as InvestorData[]);
-        } else {
-          setHistory([]);
-        }
-        if (!latest) setNotAvailable(true);
+        setData(json);
       } else {
+        setError(true);
         setData(null);
-        setHistory([]);
-        setNotAvailable(true);
       }
     } catch {
-      setNotAvailable(true);
+      setError(true);
       setData(null);
-      setHistory([]);
     } finally {
       setLoading(false);
     }
-  }, [currentMarket]);
+  }, [currentMarket, days]);
 
   useEffect(() => {
     loadData();
@@ -110,115 +129,193 @@ export function InvestorsFlowPanel() {
       <Card dir="rtl" className="p-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin" />
-          جاري تحميل بيانات المستثمرين...
+          جاري تحميل بيانات تدفّق السيولة...
         </div>
       </Card>
     );
   }
 
-  if (!data || notAvailable) {
+  if (error || !data || (data.sector_flow.length === 0 && data.summary.total_turnover === 0)) {
     return (
       <Card dir="rtl" className="p-4">
         <div className="text-center text-xs text-muted-foreground py-4 space-y-1">
           <div className="flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400">
             <Users className="w-3.5 h-3.5" />
-            <span className="font-semibold">حركة المستثمرين — {marketNameAr}</span>
+            <span className="font-semibold">تدفّق السيولة — {marketNameAr}</span>
           </div>
-          <p>لا توجد بيانات مستثمرين متاحة لهذا السوق حالياً</p>
+          <p>لا توجد بيانات سيولة متاحة لهذا السوق حالياً</p>
         </div>
       </Card>
     );
   }
 
-  const formatNum = (n: number) => {
-    if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + 'K';
-    return n.toFixed(0);
-  };
-
-  const Row = ({ label, buys, sells, net }: { label: string; buys: number; sells: number; net: number }) => (
-    <div className="grid grid-cols-4 gap-1 items-center py-1.5 border-b border-border/30 last:border-0">
-      <div className="text-xs font-medium">{label}</div>
-      <div className="text-xs text-emerald-600 text-center">{formatNum(buys)}</div>
-      <div className="text-xs text-red-600 text-center">{formatNum(sells)}</div>
-      <div className={cn("text-xs text-center font-bold", net >= 0 ? "text-emerald-600" : "text-red-600")}>
-        {net >= 0 ? '+' : ''}{formatNum(net)}
-      </div>
-    </div>
-  );
-
-  // history بيتاستخدم في trend visualization مستقبلي — نخفي الـ unused warning
-  void history;
-
-  const currencyLabel =
-    currentMarket === 'EGX' ? 'ج.م'
-    : currentMarket === 'TADAWUL' ? 'ر.س'
-    : currentMarket === 'KSE' ? 'د.ك'
-    : currentMarket === 'QSE' ? 'ر.ق'
-    : '';
+  const inst = data.investor_type_estimate;
+  const instPct = Math.round(inst.institutional_pct || 0);
+  const retailPct = Math.round(inst.retail_pct || 0);
 
   return (
     <Card dir="rtl">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
+        <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
           <Users className="w-4 h-4 text-amber-500" />
-          حركة المستثمرين
+          حركة السيولة وتدفّق المستثمرين
           <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-500/30">
             {marketNameAr}
           </Badge>
-          {data.date && <Badge variant="outline" className="text-[10px]">{data.date}</Badge>}
+          <div className="flex gap-1 mr-auto">
+            {PERIOD_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                size="sm"
+                variant={days === opt.value ? 'default' : 'outline'}
+                className="h-6 px-2 text-[10px]"
+                onClick={() => setDays(opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {/* Header */}
-        <div className="grid grid-cols-4 gap-1 text-[10px] text-muted-foreground pb-1 border-b border-border/50">
-          <div>الفئة</div>
-          <div className="text-center text-emerald-500">شراء</div>
-          <div className="text-center text-red-500">بيع</div>
-          <div className="text-center">صافي</div>
+      <CardContent className="space-y-3">
+        {/* Investor Type Split — مؤسسات vs أفراد */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="flex items-center gap-1 font-medium">
+              <Building2 className="w-3 h-3 text-cyan-600" />
+              مؤسسات
+              <span className="text-cyan-600 dark:text-cyan-400 font-bold">{instPct}%</span>
+            </span>
+            <span className="flex items-center gap-1 font-medium">
+              <span className="text-amber-600 dark:text-amber-400 font-bold">{retailPct}%</span>
+              أفراد
+              <User className="w-3 h-3 text-amber-500" />
+            </span>
+          </div>
+          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="bg-cyan-500 dark:bg-cyan-500"
+              style={{ width: `${instPct}%` }}
+            />
+            <div
+              className="bg-amber-400 dark:bg-amber-500"
+              style={{ width: `${retailPct}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>صفقات كبيرة: {inst.block_trades_count?.toLocaleString('ar-EG') || 0}</span>
+            <span>متوسط قيمة الصفقة: {fmtNum(inst.avg_trade_value || 0)}</span>
+          </div>
         </div>
 
-        {/* Rows */}
-        <Row label="الأفراد" buys={data.individuals_buys} sells={data.individuals_sells} net={data.individuals_net} />
-        <Row label="العرب" buys={data.arab_buys} sells={data.arab_sells} net={data.arab_net} />
-        <Row label="الأجانب" buys={data.foreign_buys} sells={data.foreign_sells} net={data.foreign_net} />
+        {/* Sector Flow Table */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
+            <Layers className="w-3 h-3" />
+            تدفّق القطاعات
+          </div>
+          <div className="max-h-72 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-0.5">
+            {data.sector_flow.slice(0, 10).map((sec) => {
+              const isInflow = sec.flow_direction === 'inflow';
+              const isOutflow = sec.flow_direction === 'outflow';
+              return (
+                <div
+                  key={sec.sector}
+                  className="grid grid-cols-12 gap-1 items-center py-1 px-1 rounded hover:bg-muted/40 text-[11px]"
+                >
+                  <div className="col-span-5 truncate font-medium" title={sec.sector}>
+                    {sec.sector}
+                  </div>
+                  <div className="col-span-3 text-center tabular-nums text-muted-foreground">
+                    {fmtNum(sec.total_turnover)}
+                  </div>
+                  <div className={cn(
+                    'col-span-2 text-center tabular-nums font-semibold',
+                    sec.avg_change_pct > 0 ? 'text-emerald-600 dark:text-emerald-400'
+                      : sec.avg_change_pct < 0 ? 'text-red-600 dark:text-red-400'
+                      : 'text-muted-foreground'
+                  )}>
+                    {fmtPct(sec.avg_change_pct)}
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <Badge
+                      className={cn(
+                        'text-[9px] px-1 py-0',
+                        isInflow && 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
+                        isOutflow && 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300',
+                        !isInflow && !isOutflow && 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-300'
+                      )}
+                    >
+                      {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Top Buy / Sell Pressure */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Inflow */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              <TrendingUp className="w-3 h-3" />
+              سيولة داخلة
+            </div>
+            <div className="space-y-0.5">
+              {data.top_inflow_stocks.slice(0, 4).map((s) => (
+                <div key={s.ticker} className="flex items-center justify-between text-[10px] py-0.5">
+                  <div className="truncate" title={s.name_ar}>
+                    <span className="font-bold">{s.ticker}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-emerald-600 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
+                    <span className="text-muted-foreground tabular-nums">{fmtNum(s.total_turnover)}</span>
+                  </div>
+                </div>
+              ))}
+              {data.top_inflow_stocks.length === 0 && (
+                <div className="text-[10px] text-muted-foreground py-1">لا يوجد</div>
+              )}
+            </div>
+          </div>
+
+          {/* Outflow */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-red-600 dark:text-red-400">
+              <TrendingDown className="w-3 h-3" />
+              سيولة هاربة
+            </div>
+            <div className="space-y-0.5">
+              {data.top_outflow_stocks.slice(0, 4).map((s) => (
+                <div key={s.ticker} className="flex items-center justify-between text-[10px] py-0.5">
+                  <div className="truncate" title={s.name_ar}>
+                    <span className="font-bold">{s.ticker}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-red-600 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
+                    <span className="text-muted-foreground tabular-nums">{fmtNum(s.total_turnover)}</span>
+                  </div>
+                </div>
+              ))}
+              {data.top_outflow_stocks.length === 0 && (
+                <div className="text-[10px] text-muted-foreground py-1">لا يوجد</div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Summary */}
-        <div className="mt-3 pt-2 border-t border-border/50 space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">إجمالي التداول:</span>
-            <span className="font-bold">{formatNum(data.total_buys + data.total_sells)}{currencyLabel ? ' ' + currencyLabel : ''}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">عدد الصفقات:</span>
-            <span className="font-bold">{data.number_of_trades?.toLocaleString() || '—'}</span>
-          </div>
-        </div>
-
-        {/* Trend indicators */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
-          {data.arab_net >= 0 ? (
-            <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
-              <TrendingUp className="w-3 h-3 ml-1" />
-              العرب يشترون
-            </Badge>
-          ) : (
-            <Badge className="text-[10px] bg-red-500/10 text-red-600 border-red-500/30">
-              <TrendingDown className="w-3 h-3 ml-1" />
-              العرب يبيعون
-            </Badge>
-          )}
-          {data.foreign_net >= 0 ? (
-            <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
-              <TrendingUp className="w-3 h-3 ml-1" />
-              الأجانب يشترون
-            </Badge>
-          ) : (
-            <Badge className="text-[10px] bg-red-500/10 text-red-600 border-red-500/30">
-              <TrendingDown className="w-3 h-3 ml-1" />
-              الأجانب يبيعون
-            </Badge>
-          )}
+        <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>
+            إجمالي السيولة: <span className="font-bold text-foreground">{fmtNum(data.summary.total_turnover)}</span>
+          </span>
+          <span>
+            قطاعات صاعدة: <span className="font-bold text-emerald-600">{data.summary.advancing_sectors}</span>
+            {' / '}
+            <span className="font-bold text-red-600">{data.summary.declining_sectors}</span> هابطة
+          </span>
         </div>
       </CardContent>
     </Card>

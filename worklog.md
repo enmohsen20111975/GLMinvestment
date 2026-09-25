@@ -18558,3 +18558,199 @@ Stage Summary:
 - لما السوق = EGX/TADAWUL/KSE/QSE → البانلز بتظهر + InvestorsFlowPanel بيقرأ بيانات السوق
 - UnifiedPublishButton جاهز للدمج في أي شاشة محتاجة نشر (Recommendations، StockDetail، Reports)
 - StocksView شغّالة بشكل موحّد لكل الأسواق بدون تفريق بين "stocks" و "crypto"
+
+---
+Task ID: FIX-INDICES-1
+Agent: Main Agent (Z.ai Code)
+Task: إصلاح قيم مؤشرات EGX30/70/100/50/33 الخاطئة
+
+Work Log:
+- شخّصت المشكلة: جدول market_indices في stocks.db يحتوي قيم change/change_percent غير متّسقة رياضياً (مثلاً EGX30: current=10285 < prev=11129 لكن change=+194 موجب!)
+- عدّلت src/lib/egx-db.ts — أضفت دالة computeConstituentChangePercent() اللي بتحسب change_percent للمؤشر من أسهمه المكوّنة (is_egx30/is_egx70/is_egx100 flags) بمتوسط مرجّح بـ market_cap
+- أعدت كتابة getMarketIndices() بحيث:
+  1) تستخدم change_percent المحسوب من الأسهم المكوّنة (الأصدق)
+  2) fallback: إعادة حساب change/change_percent من current_value vs previous_close
+  3) تضيف name_ar للمؤشرات (مؤشر EGX 30، إلخ)
+  4) ترجع computation_source (constituents / stored_delta)
+- عدّلت src/app/api/market/overview/route.ts ليستخدم getMarketIndices() بدل الاستعلام المباشر من الجدول الخاطئ
+- أضفت Arabic names map (INDEX_NAME_AR) لأسماء المؤشرات
+
+Stage Summary:
+- EGX30 دلوقتي: 10285.60 (change=-25.65, pct=-0.25%) — متّسق رياضياً ✓
+- EGX70: 10562.33 (change=+24.17, pct=+0.23%) — متّسق ✓
+- EGX100: 5093.90 (change=-8.78, pct=-0.17%) — متّسق ✓
+- القيم دلوقتي بتعكس الحركة الحقيقية لأسهم المؤشر بدل القيم العشوائية المخزّنة
+- ملاحظة: EGX50/EGX33 مفيهمش membership flags فبيستخدموا stored_delta (fallback) — بس برضه متّسقين رياضياً
+
+---
+Task ID: 2-A
+Agent: Subagent A — Full-Stack Developer (Liquidity / Intraday / Backtest features)
+Task: 3 ميزات new fullstack ناقصة على المنصة (Liquidity Flow + Intraday Pressure + Predictions Backtest)
+
+Work Log:
+
+قرأت worklog.md (آخر ~150 سطر) لفهم السياق واتفقّدت القاعدة:
+- stocks.db: stocks (1047 row), stock_daily_prices (46001 row), market_indices (5 row)
+  ملاحظة مهمة: turnover IS NULL في كل صفوف stock_daily_prices (46001/46001)؛ كمان
+  value_traded + turnover_egp NULL لكل الأسواق في جدول stocks. كفاية: نحسب
+  turnover_estimate = price * volume لكل يوم (price = COALESCE(close, close_price, current_price))
+- intraday.db.stock_intraday (340137 row): ticker, market, timestamp(ISO), price, change_percent,
+  volume, open, high, low. تكسات COMI في 2026-08-17 (35 tick من 10:03 لـ 14:35)
+- predictions.db.predictions (35 row): status distribution: TARGET_HIT=11, STOPPED=19, ACTIVE=3,
+  CLOSED=2. win_rate=36.7%, avg_target_hit_return=+6.35%, avg_stopped_return=-8.54%
+
+Feature 1 — Liquidity Flow Study (حركة السيولة):
+- src/app/api/market/liquidity-flow/route.ts (NEW, 326 lines):
+  - Query: ?market=EGX&days=30
+  - يقرأ stocks JOIN stock_daily_prices في نافذة [latest_date - days, latest_date]
+    (ثبّتت النافذة على آخر يوم تداول فعلي بدل today — لأن السيرفر ممكن يكون له آخر
+    update أقدم من النهارده، والنافذة لازم تشمل البيانات الحقيقية)
+  - turnover_estimate = COALESCE(close, close_price, current_price) * parseVolume(volume)
+    (parseVolume بيتعامل مع نصوص زي '317.39 K')
+  - sector_flow: top 12 sectors sorted by total_turnover, with flow_direction (inflow if
+    avg_change_pct > 0.5, outflow if < -0.5, else neutral), change_in_turnover_pct مقارنة
+    بالنافذة السابقة (نفس عدد الأيام قبل cutoff)
+  - top_inflow_stocks / top_outflow_stocks: top 10 by turnover مع change موجب/سالب
+  - investor_type_estimate: institutional_pct = نسبة الأسهم اللي turnover >= 1M EGP،
+    retail_pct = 100 - institutional، block_trades_count، avg_trade_value، large_blocks (top 8)
+  - summary: total_turnover, total_volume, net_flow_direction (inflow/outflow/neutral
+    based على advancing vs declining sectors)، advancing_sectors، declining_sectors
+  - NO mock data — كل الأرقام من stocks.db فعلياً
+- src/components/dashboard/LiquidityFlowPanel.tsx (NEW, 'use client', 360 lines):
+  - يقرأ currentMarket من useAppStore + period selector (7d/30d/90d) كـ Select
+  - Header: market badge + net flow direction badge (صافي تدفّق داخلي/خارجي)
+  - Summary strip: إجمالي السيولة، إجمالي الحجم، قطاعات صاعدة، قطاعات هابطة
+  - Sector rotation table (RTL, max-h-80 overflow-y-auto + custom scrollbar):
+    القطاع | السيولة | الحجم | أسهم | التغيّر% (ملوّن) | التدفّق badge
+  - عمودين: "سيولة داخلة" (أخضر) | "سيولة هاربة" (أحمر) — قوائم مدمجة بـ ticker +
+    name + turnover + change% + تمرير مستقل لكل قائمة
+  - شريط تقدير نوع المستثمر: شريط أفقي مكدّس (مؤسسي purple + أفراد cyan) + متوسط
+    قيمة الصفقة + عدد صفقات الكتل + top 6 large blocks
+  - Loading skeleton، empty state ("لا توجد بيانات سيولة لهذا السوق")، error state
+  - RTL dir="rtl"، Arabic labels throughout
+
+Feature 2 — Intraday Buy/Sell Pressure (ضغط الشراء/البيع داخل الجلسة):
+- src/app/api/market/intraday-pressure/route.ts (NEW, 270 lines):
+  - Query: ?ticker=COMI&period=30min (5min/15min/30min/1h/session)
+  - يقرأ stock_intraday لـ ticker، يجيب آخر يوم تداول، يسحب كل تكسات اليوم
+  - باكتات زمنية حسب period (5/15/30/60 دقيقة أو session كاملة)
+  - لكل باكت: buy_volume (ticks where price > prevPrice), sell_volume (price < prevPrice),
+    neutral_volume (price = prevPrice), buy_pressure_pct, sell_pressure_pct, net_pressure,
+    vwap, avg_price, tick_count, OHLC
+  - session_summary: total_buy/sell/neutral_volume, net_pressure, buy_sell_ratio,
+    session_vwap, session_open/close/high/low, tick_count
+  - لو ticker مش موجود → success=true + buckets=[] + note
+- src/components/dashboard/IntradayPressurePanel.tsx (NEW, 'use client', 350 lines):
+  - Props: initialTicker?: string (default 'COMI')
+  - Header: ticker Input + بحث Button + period Select (5د/15د/30د/1ساعة/الجلسة كاملة)
+  - بطاقات ملخّص الجلسة (grid-cols-2 sm:grid-cols-3 lg:grid-cols-6):
+    الضغط الصافي، شراء:بيع، VWAP، الافتتاح، الإغلاق، أعلى/أدنى
+  - شارة تفسير: "ضغط شرائي" (buy > 55%) | "ضغط بيعي" (< 45%) | "متوازن" (45-55%)
+  - Pressure bars per bucket (max-h-80 overflow-y-auto): لكل باكت شريط أفقي مكدّس
+    (أخضر=شراء | أحمر=بيع) + time label + net pressure value + حجم + نسب شراء/بيع
+  - Volume totals cards (3 grid): إجمالي شراء/محايد/بيع
+  - Loading skeleton، empty state، error state. RTL + Arabic.
+
+Feature 3 — Predictions Backtest Table (جدول الباك تست):
+- src/app/api/predictions/backtest-list/route.ts (NEW, 140 lines):
+  - Query: ?market=EGX (EGX/CRYPTO/ALL)
+  - يرجّع آخر 100 predictions ordered by prediction_date DESC
+  - الحقول: ticker, signal, status, market, prediction_date, entry_price, target_price,
+    stop_loss, exit_price, actual_return, holding_days, risk_reward, is_correct
+  - fallback signal_type AS signal لو column مش موجود
+  - NO mock data — كل صف من predictions.db
+- src/components/dashboard/PredictionsBacktestTable.tsx (NEW, 'use client', 380 lines):
+  - يستهلك API موجود (/api/predictions/performance-dashboard) للـ KPIs + by_signal breakdown
+  - + الـ backtest-list API الجديد للقائمة الخام
+  - Period selector (7d/30d/90d/all) + market badge
+  - KPI row (4 cards responsive grid-cols-1 sm:grid-cols-2 lg:grid-cols-4):
+    إجمالي التوقعات | نسبة النجاح (ملوّن: green ≥50% / red <50%) | متوسط العائد |
+    إجمالي P&L (sum of actual_return)
+  - By-signal breakdown: BUY vs SELL vs WATCH مع counts + win rates
+  - Per-prediction table (MAIN deliverable, RTL):
+    columns: التاريخ | السهم | الإشارة | الدخول | الهدف | وقف الخسارة | الخروج |
+    العائد% | الحالة | أيام التقييم
+    - row tint: wins=green، losses=red، active=amber
+    - sticky header + min-w-[760px] (horizontal scroll على الموبايل)
+    - max-h-96 overflow-y-auto + custom scrollbar
+  - Loading skeleton، empty state ("لا توجد توقعات مسجّلة")، error state. RTL + Arabic.
+
+Verification:
+- ✅ bun run lint exit 0 (لا أخطاء، لا تحذيرات)
+- ✅ كل APIs رجّعت JSON فعلي على dev server:
+  • GET /api/market/liquidity-flow?market=EGX&days=30 → HTTP 200 (7727B)
+    sector_flow: 12 sectors top by turnover (Finance=115B, Process Industries=37B, ...)
+    top_inflow_stocks: 10, top_outflow_stocks: 10
+    investor_type_estimate: institutional_pct + retail_pct + block_trades_count + large_blocks
+    summary: total_turnover + advancing/declining sectors + net_flow_direction
+  • GET /api/market/intraday-pressure?ticker=COMI&period=30min → HTTP 200 (3593B)
+    buckets: 30-min windows من 10:00 لـ 14:30، buy/sell_pressure_pct + vwap + OHLC
+    session_summary: total volumes + buy_sell_ratio + session_vwap + OHLC + tick_count
+  • GET /api/predictions/backtest-list?market=EGX → HTTP 200 (9100B, 32 predictions)
+    آخر 100 توقّع مع كل الحقول المطلوبة (entry/target/stop_loss/exit/return/holding_days)
+  • GET /api/predictions/performance-dashboard?market=EGX&days=365 → HTTP 200 (2624B)
+    stats: total=32, win_rate=36.67%, avg_return=-3.081 (matching the spec)
+    by_signal: STRONG_BUY=20 (win 47.37%), WATCH=12 (win 18.18%)
+- ✅ مفيش mock data — كل رقم من SQLite فعلي
+- ✅ shadcn/ui components used: Card, CardHeader, CardTitle, CardContent, Badge, Button,
+  Input, Select, SelectTrigger/Content/Item, Skeleton, Table, TableHeader, TableBody,
+  TableRow, TableHead, TableCell
+- ✅ RTL dir="rtl" على كل components، Arabic labels throughout
+- ✅ Responsive: mobile-first، grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 + sticky headers
+- ✅ 'use client' + useAppStore for currentMarket على LiquidityFlowPanel و PredictionsBacktestTable
+- ✅ export const dynamic = 'force-dynamic'; export const runtime = 'nodejs'; على كل route.ts
+- ✅ better-sqlite3 readonly mode على كل DB access
+
+Files Created (6):
+- src/app/api/market/liquidity-flow/route.ts (NEW, 326 lines)
+- src/app/api/market/intraday-pressure/route.ts (NEW, 270 lines)
+- src/app/api/predictions/backtest-list/route.ts (NEW, 140 lines)
+- src/components/dashboard/LiquidityFlowPanel.tsx (NEW, 360 lines)
+- src/components/dashboard/IntradayPressurePanel.tsx (NEW, 350 lines)
+- src/components/dashboard/PredictionsBacktestTable.tsx (NEW, 380 lines)
+
+ملاحظات للـ Main Agent (مهم):
+- LiquidityFlowPanel.tsx + IntradayPressurePanel.tsx + PredictionsBacktestTable.tsx
+  مكونات مستقّلة (standalone) — جاهزة للدمج في DashboardView.tsx. أنا ما عدلتش
+  DashboardView عشان الـ Main Agent يربطهم بنفسه في الـ section المناسب.
+- performance-dashboard API بتستخدم today-based cutoff (real Date.now) فلما السيرفر
+  ساعته 2026-09-25 والـ predictions آخرها 2026-05-25، نافذة 7d/30d هترجع 0 stats.
+  الـ PredictionsBacktestTable component بيعالج ده بفلتر محلي على backtest-list بنفس
+  الـ cutoff logic، فالـ KPIs والجدول متّسقين. لو السوق حابب يعرض آخر توقعات
+  (بغض النظر عن window) فالـ "all" period بيعرض الـ 32 EGX كاملة.
+- الـ IntradayPressurePanel بياخد initialTicker prop (default 'COMI') — مفيد لو الـ Main
+  Agent حابب يربطه بـ selectedTicker من الـ store.
+
+---
+Task ID: RESTORE-MISSING-FEATURES
+Agent: Main Agent (Z.ai Code) + Subagent A
+Task: استرجاع الميزات المفقودة: المؤشرات + جدول التوقعات + حركة المستثمرين + عمق السوق + دراسة السيولة
+
+Work Log:
+- **Subagent A** بنى 3 ميزات full-stack جديدة (6 ملفات):
+  - `/api/market/liquidity-flow` + `LiquidityFlowPanel.tsx` (دراسة حركة السيولة حسب القطاعات)
+  - `/api/market/intraday-pressure` + `IntradayPressurePanel.tsx` (ضغط الشراء/البيع اللحظي)
+  - `/api/predictions/backtest-list` + `PredictionsBacktestTable.tsx` (جدول الباك تست الشامل)
+- **Main Agent** أعاد كتابة البانلز الموجودة لاستخدام بيانات حقيقية:
+  - `InvestorsFlowPanel.tsx` → حركة السيولة وتدفّق المستثمرين (مؤسسات 76% / أفراد 24% + تدفّق القطاعات + سيولة داخلة/هاربة)
+  - `MarketDepthPanel.tsx` → ضغط الشراء/البيع داخل الجلسة (timeline + VWAP + buy:sell ratio)
+- ربط `PredictionsBacktestTable` في `DashboardView` كقسم 3.6 جديد
+- أصلح الـ hero display لعرض `change_percent` بدل `change` (النقاط) → "▼ 0.25%" بدل "▼ 25.65%"
+- خزّن متجر الحالة (store.ts) بقراءة `idx.value || idx.current_value` لمرونة أكبر
+
+Verification (14/14 checks passed via Agent Browser):
+- ✅ EGX30 = 10285.60 (▼ 0.25%) — قيمة متّسقة رياضياً
+- ✅ EGX70 = 10,562.33 (+0.23%) — محسوب من الأسهم المكوّنة
+- ✅ EGX100 = 5,093.90 (-0.17%) — محسوب من الأسهم المكوّنة
+- ✅ جدول الباك تست: 32 توقع، نسبة نجاح 36.7%، متوسط عائد -3.08%، إجمالي P&L -92.43%
+- ✅ حركة المستثمرين: مؤسسات 76% / أفراد 24%، 291 صفقة كبيرة، تدفّق 12 قطاع
+- ✅ سيولة داخلة: COMI +1.50% / سيولة هاربة: CCAP -1.12%
+- ✅ ضغط الشراء/البيع: شراء 36.4% / بيع 57.8%، VWAP 139.05، جدول زمني للجلسة
+- ✅ كل البيانات حقيقية من SQLite (لا mock data)
+
+Stage Summary:
+- المؤشرات (EGX30/70/100/50/33) دلوقتي متّسقة رياضياً ومحسوبة من الأسهم المكوّنة
+- جدول الباك تست الشامل معروض بـ 32 توقع حقيقي + KPIs + per-prediction table
+- InvestorsFlowPanel بعرض تدفّق السيولة الحقيقي حسب القطاعات + تقدير مؤسسات/أفراد
+- MarketDepthPanel بعرض ضغط الشراء/البيع اللحظي من stock_intraday (340K صف)
+- كل الـ 5 شكاوى للمستخدم اتعالجت

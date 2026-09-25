@@ -18,6 +18,7 @@ import { LiveStockTicker } from '@/components/dashboard/LiveStockTicker';
 import { MarketPulseWidget } from '@/components/dashboard/MarketPulseWidget';
 import { InvestorsFlowPanel } from '@/components/dashboard/InvestorsFlowPanel';
 import { MarketDepthPanel } from '@/components/stocks/MarketDepthPanel';
+import { PredictionsBacktestTable } from '@/components/dashboard/PredictionsBacktestTable';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -312,7 +313,7 @@ export function DashboardView() {
               name: currentMarket === 'CRYPTO' ? 'Bitcoin' : `${currentMarket} 30 Index`,
               nameAr: marketNameAr,
               price: marketOverview?.indices?.[0]?.value ?? 0,
-              change: marketOverview?.indices?.[0]?.change ?? 0,
+              change: marketOverview?.indices?.[0]?.change_percent ?? 0,
               recommendation: marketOverview?.market_status?.is_open ? 'السوق مفتوح' : 'السوق مغلق',
               recommendationAr: marketOverview?.market_status?.is_open ? 'السوق مفتوح' : 'السوق مغلق',
               sector: 'نظرة عامة على السوق',
@@ -409,6 +410,15 @@ export function DashboardView() {
                 </SafeWidget>
                 <SafeWidget name="عمق السوق">
                   <MarketDepthPanel initialTicker={depthInitialTicker} />
+                </SafeWidget>
+              </section>
+            )}
+
+            {/* 3.6 جدول الباك تست الشامل للتوقعات — نسبة النجاح والأرباح/الخسائر */}
+            {showMarketFlowPanels && (
+              <section aria-label="جدول التوقعات والباك تست">
+                <SafeWidget name="جدول التوقعات والباك تست">
+                  <PredictionsBacktestTable />
                 </SafeWidget>
               </section>
             )}

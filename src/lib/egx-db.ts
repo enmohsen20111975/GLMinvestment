@@ -719,6 +719,79 @@ export function getStockByTicker(ticker: string): Record<string, unknown> | null
   }
 }
 
+// Arabic names for EGX indices
+const INDEX_NAME_AR: Record<string, string> = {
+  EGX30: 'مؤشر EGX 30',
+  EGX50: 'مؤشر EGX 50',
+  EGX70: 'مؤشر EGX 70',
+  EGX100: 'مؤشر EGX 100',
+  EGX33: 'مؤشر EGX 33 الإسلامي',
+}
+
+// Map index symbol → stocks-table membership column
+const INDEX_MEMBERSHIP_COL: Record<string, string> = {
+  EGX30: 'is_egx30',
+  EGX70: 'is_egx70',
+  EGX100: 'is_egx100',
+}
+
+/**
+ * احسب change_percent للمؤشر من أسهمه المكوّنة (constituent-based).
+ * - بيجيب الأسهم اللي member flag بتاعها = 1
+ * - بيحسب المتوسط المرجّح بقيمة السوق (market cap) لـ change_percent
+ * - لو مفيش market cap متاح، بيستخدم متوسط بسيط
+ * - بيرجّع null لو مفيش أسهم مكوّنة
+ */
+function computeConstituentChangePercent(
+  db: SqliteDatabase,
+  membershipCol: string
+): number | null {
+  try {
+    // Safe column name (whitelist) — only is_egx30/is_egx70/is_egx100
+    if (!['is_egx30', 'is_egx70', 'is_egx100'].includes(membershipCol)) return null
+
+    const rows = db
+      .prepare(
+        `SELECT change_percent, current_price, previous_close, market_cap
+         FROM stocks
+         WHERE ${membershipCol} = 1
+           AND market = 'EGX'
+           AND change_percent IS NOT NULL`
+      )
+      .all() as Array<{ change_percent: number | null; current_price: number | null; previous_close: number | null; market_cap: number | null }>
+
+    if (rows.length === 0) return null
+
+    // Weighted average by market_cap (fallback to equal weight)
+    let weightedSum = 0
+    let totalWeight = 0
+    let equalSum = 0
+    let equalCount = 0
+
+    for (const r of rows) {
+      const cp = Number(r.change_percent)
+      if (!Number.isFinite(cp)) continue
+      const mc = Number(r.market_cap)
+      if (Number.isFinite(mc) && mc > 0) {
+        weightedSum += cp * mc
+        totalWeight += mc
+      }
+      equalSum += cp
+      equalCount++
+    }
+
+    if (totalWeight > 0) {
+      return Math.round((weightedSum / totalWeight) * 10000) / 10000
+    }
+    if (equalCount > 0) {
+      return Math.round((equalSum / equalCount) * 10000) / 10000
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export function getMarketIndices(): Record<string, unknown>[] {
   const cached = getCached<Record<string, unknown>[]>('market_indices')
   if (cached) return cached
@@ -730,7 +803,45 @@ export function getMarketIndices(): Record<string, unknown>[] {
       .prepare('SELECT * FROM market_indices ORDER BY id ASC')
       .all() as Record<string, unknown>[]
 
-    const result = toPlainRows(rows)
+    const raw = toPlainRows(rows)
+
+    // FIX: القيم المخزّنة في market_indices غير متّسقة رياضياً (change/change_percent
+    // لا يطابقان current_value مقابل previous_close). هنا بنعيد الحساب بشكل صحيح:
+    //  1) نحاول نحسب change_percent من الأسهم المكوّنة (constituent-based) — ده الأصدق
+    //  2) نحسب change = current_value * cp / 100
+    //  3) نحسب previous_close = current_value - change
+    // كده كل القيم متّسقة وتعكس الحركة الحقيقية للسهم المكوّن للمؤشر.
+    const result = raw.map((idx) => {
+      const symbol = String(idx.symbol || '')
+      const storedValue = Number(idx.current_value) || 0
+      const membershipCol = INDEX_MEMBERSHIP_COL[symbol]
+
+      // 1) constituent-based change_percent (الأصدق)
+      const constituentCp = membershipCol
+        ? computeConstituentChangePercent(db, membershipCol)
+        : null
+
+      // 2) fallback: recompute from stored current_value vs previous_close
+      const storedPrev = Number(idx.previous_close) || 0
+      const fallbackChange = storedPrev > 0 ? storedValue - storedPrev : 0
+      const fallbackCp = storedPrev > 0 ? (fallbackChange / storedPrev) * 100 : 0
+
+      const changePercent = constituentCp != null ? constituentCp : fallbackCp
+      const change = Math.round(storedValue * changePercent / 100 * 100) / 100
+      const previousClose = Math.round((storedValue - change) * 100) / 100
+
+      return {
+        ...idx,
+        name_ar: idx.name_ar || INDEX_NAME_AR[symbol] || symbol,
+        current_value: storedValue,
+        previous_close: previousClose,
+        change,
+        change_percent: Math.round(changePercent * 10000) / 10000,
+        last_update: idx.last_update || idx.last_updated || null,
+        computation_source: constituentCp != null ? 'constituents' : 'stored_delta',
+      }
+    })
+
     setCache('market_indices', result)
     return result
   } catch (err) {

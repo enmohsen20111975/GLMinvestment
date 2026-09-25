@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getMarketIndices } from '@/lib/egx-db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -56,14 +57,23 @@ export async function GET(req: NextRequest) {
     const totalVolume = stocks.reduce((sum: number, s: any) => sum + Number(s.volume || 0), 0);
     const totalTurnover = stocks.reduce((sum: number, s: any) => sum + (Number(s.current_price || 0) * Number(s.volume || 0)), 0);
 
-    // Market indices
+    // Market indices — استخدم getMarketIndices() المصحّحة (تعيد حساب change/change_percent
+    // من الأسهم المكوّنة بشكل صحيح ومتّسق، بدل القيم الخاطئة المخزّنة في الجدول)
     let indices: any[] = [];
     try {
-      indices = db.prepare(`
-        SELECT symbol, name_ar, current_value, previous_close, change, change_percent
-        FROM market_indices WHERE symbol LIKE '%${dbMarket}%' OR name_ar LIKE '%${market}%'
-        LIMIT 5
-      `).all();
+      const allIndices = getMarketIndices();
+      const marketPrefix = dbMarket; // e.g. 'EGX'
+      indices = allIndices
+        .filter((idx) => String(idx.symbol || '').toUpperCase().includes(marketPrefix))
+        .slice(0, 5)
+        .map((idx) => ({
+          symbol: idx.symbol,
+          name_ar: idx.name_ar,
+          value: idx.current_value, // المتجر يتوقع `value` (موافق لـ market/indices)
+          previous_close: idx.previous_close,
+          change: idx.change,
+          change_percent: idx.change_percent,
+        }));
     } catch {}
 
     db.close();

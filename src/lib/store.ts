@@ -224,11 +224,11 @@ export function adaptMarketOverview(raw: Record<string, unknown>): MarketOvervie
       symbol: (idx.symbol as string) || (idx.name as string) || '',
       name: (idx.name as string) || '',
       name_ar: (idx.name_ar as string) || '',
-      value: (idx.value as number) || 0,
+      value: (idx.value as number) || (idx.current_value as number) || 0,
       previous_close: (idx.previous_close as number) || 0,
       change: (idx.change as number) || 0,
       change_percent: (idx.change_percent as number) || 0,
-      last_updated: (idx.last_updated as string) || null,
+      last_updated: (idx.last_updated as string) || (idx.last_update as string) || null,
     })),
     top_gainers: topGainers.map((s) => ({
       ticker: (s.ticker as string) || '',
