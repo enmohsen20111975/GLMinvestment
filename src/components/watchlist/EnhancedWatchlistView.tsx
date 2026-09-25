@@ -201,7 +201,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
     }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/watchlist-enhanced', {
+      const res = await fetch(`/api/watchlist-enhanced?market=${currentMarket}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -441,7 +441,7 @@ function EditStockDialog({
   const handleSave = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/watchlist-enhanced/${item.id}`, {
+      const res = await fetch(`/api/watchlist-enhanced/${item.id}?market=${currentMarket}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -747,6 +747,7 @@ export function EnhancedWatchlistView() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showIntelligence, setShowIntelligence] = useState(false);
+  const { currentMarket } = useAppStore();
   const { setDealAdvisorPrefill, setCurrentView } = useAppStore();
 
   const fetchData = useCallback(async (isRefresh = false) => {
@@ -756,7 +757,7 @@ export function EnhancedWatchlistView() {
       setLoading(true);
     }
     try {
-      const res = await fetch('/api/watchlist-enhanced');
+      const res = await fetch(`/api/watchlist-enhanced?market=${currentMarket}`);
       const data: WatchlistResponse = await res.json();
       setItems(data.items || []);
       setSummary(data.summary || null);

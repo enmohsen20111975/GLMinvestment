@@ -480,6 +480,7 @@ function CryptoSearchDropdown({
 // ==================== ASSETS TAB ====================
 
 function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: number | 'master' }) {
+  const { currentMarket } = useAppStore();
   const { loadStockDetail, setFxRates, displayCurrency, usdRate, sarRate, persona, setDealAdvisorPrefill, setCurrentView } = useAppStore();
   // P39-PHASE-2: state for the DynamicRiskProfilerModal (إعادة الاختبار button).
   const [profilerOpen, setProfilerOpen] = useState(false);

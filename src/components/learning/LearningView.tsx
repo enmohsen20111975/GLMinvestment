@@ -10,6 +10,7 @@ import {
   Receipt, Bitcoin, BookmarkCheck, BarChart3, Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
