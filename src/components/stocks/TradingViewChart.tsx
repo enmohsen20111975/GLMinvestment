@@ -106,17 +106,26 @@ const STOCH_D_COLOR = '#F59E0B'; // Amber
 const ATR_COLOR = '#6366F1';     // Indigo
 const OBV_COLOR = '#14B8A6';     // Teal
 
-const TIMEFRAMES = [
-  { key: '5m', label: '5\u062f', days: 0, isIntraday: true, period: '1w' },
-  { key: '15m', label: '15\u062f', days: 0, isIntraday: true, period: '1w' },
-  { key: '1h', label: '1\u0633', days: 0, isIntraday: true, period: '1w' },
-  { key: '1W', label: '1W', days: 7, isIntraday: false },
-  { key: '1M', label: '1M', days: 30, isIntraday: false },
-  { key: '3M', label: '3M', days: 90, isIntraday: false },
-  { key: '6M', label: '6M', days: 180, isIntraday: false },
-  { key: '1Y', label: '1Y', days: 365, isIntraday: false },
-  { key: 'ALL', label: 'ALL', days: 9999, isIntraday: false },
+export const RESOLUTIONS = [
+  { key: '5m', label: '5د', isIntraday: true },
+  { key: '15m', label: '15د', isIntraday: true },
+  { key: '30m', label: '30د', isIntraday: true },
+  { key: '1h', label: '1س', isIntraday: true },
+  { key: '1D', label: 'يومي', isIntraday: false },
+  { key: '1W', label: 'أسبوعي', isIntraday: false },
 ];
+
+export const RANGES = [
+  { key: '1d', label: '1D', days: 1 },
+  { key: '5d', label: '5D', days: 5 },
+  { key: '1m', label: '1M', days: 30 },
+  { key: '3m', label: '3M', days: 90 },
+  { key: '6m', label: '6M', days: 180 },
+  { key: '1y', label: '1Y', days: 365 },
+  { key: 'all', label: 'الكل', days: 9999 },
+];
+
+const TIMEFRAMES = RESOLUTIONS;
 
 // ─── Helper Functions ────────────────────────────────────────────────────────
 
@@ -803,7 +812,9 @@ export function TradingViewChart({
   const [lastPrice, setLastPrice] = useState<{ price: number; change: number; changePercent: number } | null>(null);
   const [hoveredPrice, setHoveredPrice] = useState<OhlcvBar | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [timeframe, setTimeframe] = useState<string>('1Y');
+  const [timeframe, setTimeframe] = useState<string>('15m');
+  const [currentRange, setCurrentRange] = useState<string>('1w');
+  const [dataSource, setDataSource] = useState<string>('intraday');
   const [chartType, setChartType] = useState<ChartType>('candlestick');
   const [indicators, setIndicators] = useState<IndicatorSettings>({
     sma20: true,
@@ -819,11 +830,9 @@ export function TradingViewChart({
     obv: false,
   });
 
-  // P37-PHASE-1: Market-closed banner (intraday fetch fell back to daily history)
+  // Market status & display modes
   const [marketClosed, setMarketClosed] = useState(false);
-  // P37-PHASE-1: Focus Mode — hide all secondary indicators, keep main + volume only
   const [focusMode, setFocusMode] = useState(false);
-  // P39-PHASE-3: Multi-Persona Dynamic Card visibility toggle (default hidden)
   const [multiPersonaOpen, setMultiPersonaOpen] = useState(false);
 
   // ─── Fetch Data ────────────────────────────────────────────────────────────
@@ -831,59 +840,48 @@ export function TradingViewChart({
   useEffect(() => {
     let cancelled = false;
 
-    // BRIEF-049: re-fetch when timeframe changes (5m/15m/1h need different API)
-    void timeframe;
-
     async function fetchData() {
       setIsLoading(true);
       setError(null);
-      setMarketClosed(false); // P37-PHASE-1: reset market-closed banner each fetch
+      setMarketClosed(false);
 
       try {
-        // BRIEF-049: For intraday timeframes (5m/15m/1h), fetch from /api/chart/[ticker]
-        // which reads from intraday.db (5-min snapshots) and resamples
-        const tfConfig = TIMEFRAMES.find((t) => t.key === timeframe);
+        const tfConfig = RESOLUTIONS.find((t) => t.key === timeframe);
         const isIntraday = tfConfig?.isIntraday === true;
 
         let json: any;
         let usedMarketClosedFallback = false;
 
-        if (isIntraday) {
-          // P37-PHASE-1: Try intraday first. On failure or empty data (EGX closed
-          // Fri/Sat, holidays, or upstream error), fall back to the latest 30
-          // daily candles so the chart still shows something useful and surface
-          // the "market closed" banner to the user.
-          const period = tfConfig?.period || '1d';
-          let intradayOk = false;
-          try {
-            const intradayRes = await fetch(`/api/chart/${ticker}?period=${period}&asset=stock&_t=${Date.now()}`);
-            if (intradayRes.ok) {
-              const intradayJson = await intradayRes.json();
-              if (intradayJson.success && (intradayJson.data || []).length > 0) {
-                json = intradayJson;
-                intradayOk = true;
-              }
+        // 1. Primary fetch: /api/chart/[ticker] with interval and period
+        try {
+          const chartRes = await fetch(
+            `/api/chart/${ticker}?interval=${timeframe}&period=${currentRange}&asset=stock&_t=${Date.now()}`
+          );
+          if (chartRes.ok) {
+            const chartJson = await chartRes.json();
+            if (chartJson.success && Array.isArray(chartJson.data) && chartJson.data.length > 0) {
+              json = chartJson;
+              setDataSource(chartJson.source || (isIntraday ? 'intraday' : 'daily'));
             }
-          } catch {
-            // swallow — fall through to daily-history fallback below
           }
-          if (!intradayOk) {
-            const dailyRes = await fetch(`/api/stocks/${ticker}/history?days=30`);
-            if (!dailyRes.ok) throw new Error(`HTTP ${dailyRes.status}`);
-            json = await dailyRes.json();
+        } catch {
+          // swallow and try fallback below
+        }
+
+        // 2. Fallback to /api/stocks/[ticker]/history if chart endpoint failed
+        if (!json || !json.data || json.data.length === 0) {
+          const days = isIntraday ? 30 : 365;
+          const historyRes = await fetch(`/api/stocks/${ticker}/history?days=${days}`);
+          if (historyRes.ok) {
+            json = await historyRes.json();
             usedMarketClosedFallback = true;
+            setDataSource('fallback_daily');
           }
-        } else {
-          // Fetch daily history
-          const res = await fetch(`/api/stocks/${ticker}/history?days=9999`);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          json = await res.json();
         }
 
         if (!cancelled) {
-          // BRIEF-049: Handle both intraday (data array) and daily (data array) formats
-          const rawData = json.data || [];
-          if (json.success && rawData.length > 0) {
+          const rawData = json?.data || [];
+          if (rawData.length > 0) {
             const sortedData = [...rawData]
               .sort((a, b) => {
                 const getTime = (d: any) => {
@@ -897,8 +895,6 @@ export function TradingViewChart({
               .filter((bar): bar is OhlcvBar => bar !== null);
             setAllData(sortedData);
 
-            // P37-PHASE-1: surface the "market closed" banner when we fell back
-            // from intraday to daily history.
             if (usedMarketClosedFallback || !getEGXMarketStatus().isOpen) {
               setMarketClosed(true);
             }
@@ -916,7 +912,7 @@ export function TradingViewChart({
               });
             }
           } else {
-            throw new Error(json.error || 'No historical data available');
+            throw new Error(json?.error || 'لا توجد بيانات متاحة لهذا الرمز');
           }
         }
       } catch (err) {
@@ -932,27 +928,47 @@ export function TradingViewChart({
 
     fetchData();
 
-    // NO AUTO-POLLING - السوق مقفول و مفيش حاجة تتحرك
-    // البيانات بتتجيب مرة واحدة لما المستخدم يختار سهم أو يضغط Refresh
-    // لو السوق فاتح، المستخدم يضغط زرار Refresh بنفسه
-
     return () => {
       cancelled = true;
     };
-  }, [ticker, timeframe]);
+  }, [ticker, timeframe, currentRange]);
 
-  // ─── Filter data by timeframe ────────────────────────────────────────────────
+  const handleResolutionChange = (resKey: string) => {
+    setTimeframe(resKey);
+    // If switching to intraday while range is year/all, narrow to 1w for performance
+    if (['5m', '15m', '30m'].includes(resKey) && ['1y', 'all'].includes(currentRange)) {
+      setCurrentRange('1w');
+    } else if (['1D', '1W'].includes(resKey) && currentRange === '1d') {
+      setCurrentRange('1m');
+    }
+  };
+
+  const handleRangeChange = (rKey: string) => {
+    setCurrentRange(rKey);
+    // If user clicks 1D or 5D on daily chart, switch to intraday so day candles show
+    if (['1d', '5d'].includes(rKey) && ['1D', '1W'].includes(timeframe)) {
+      setTimeframe(rKey === '1d' ? '5m' : '15m');
+    } else if (['1m', '3m', '6m', '1y', 'all'].includes(rKey) && ['5m', '15m'].includes(timeframe)) {
+      setTimeframe('1D');
+    }
+  };
+
+  // ─── Filter data by timeframe & range ────────────────────────────────────────
 
   const data = React.useMemo(() => {
     if (allData.length === 0) return [];
-    const tf = TIMEFRAMES.find((t) => t.key === timeframe);
-    if (!tf) return allData;
-    // BRIEF-049: Intraday timeframes return all data (already filtered by API)
-    if (tf.isIntraday || tf.days >= 9999) return allData;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - tf.days);
-    return allData.filter((b) => new Date(b.date) >= cutoff);
-  }, [allData, timeframe]);
+    const tf = RESOLUTIONS.find((t) => t.key === timeframe);
+    // Intraday candles already have the appropriate time range
+    if (tf?.isIntraday) return allData;
+
+    const rangeConfig = RANGES.find((r) => r.key === currentRange);
+    if (!rangeConfig || rangeConfig.days >= 9999) return allData;
+
+    const cutoffMs = Date.now() - rangeConfig.days * 86400 * 1000;
+    const getTs = (d: any) => typeof d === 'number' ? (d > 1e11 ? d : d * 1000) : new Date(d).getTime();
+    const filtered = allData.filter((b) => getTs(b.date) >= cutoffMs);
+    return filtered.length > 0 ? filtered : allData;
+  }, [allData, timeframe, currentRange]);
 
   // ─── Create Chart ──────────────────────────────────────────────────────────
 
@@ -1549,7 +1565,7 @@ export function TradingViewChart({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-sm font-semibold">{stockName || ticker}</span>
           <div className="flex items-center gap-2" dir="ltr">
             <span className="text-lg font-bold">{displayPrice.toFixed(3)}</span>
@@ -1568,6 +1584,21 @@ export function TradingViewChart({
               {displayChange.toFixed(3)} ({isPositive ? '+' : ''}
               {displayChangePercent.toFixed(2)}%)
             </span>
+          </div>
+
+          {/* Market Status Chip */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-background/50">
+            {getEGXMarketStatus().isOpen ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-emerald-600 dark:text-emerald-400">مباشر</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-muted-foreground">السوق مغلق</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -1603,126 +1634,179 @@ export function TradingViewChart({
         </div>
       )}
 
-      {/* Chart Type Selection */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-border bg-muted/5">
-        <span className="text-xs text-muted-foreground font-medium ml-2">النوع:</span>
-        {[
-          { key: 'candlestick' as const, label: 'شموع' },
-          { key: 'bar' as const, label: 'أعمدة' },
-          { key: 'area' as const, label: 'مساحة' },
-        ].map((type) => (
-          <button
-            key={type.key}
-            onClick={() => setChartType(type.key)}
-            className={cn(
-              'px-2 py-1 rounded text-xs font-medium transition-colors',
-              chartType === type.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
+      {/* TradingView Top Toolbar: Type, Resolution, Mode toggles */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/20 gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Chart Types */}
+          <div className="flex items-center bg-muted/70 p-0.5 rounded-md border border-border/60">
+            {[
+              { key: 'candlestick' as const, label: 'شموع' },
+              { key: 'bar' as const, label: 'أعمدة' },
+              { key: 'area' as const, label: 'مساحة' },
+            ].map((type) => (
+              <button
+                key={type.key}
+                onClick={() => setChartType(type.key)}
+                className={cn(
+                  'px-2 py-0.5 rounded text-xs font-medium transition-all',
+                  chartType === type.key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-4 w-px bg-border hidden sm:block" />
+
+          {/* Resolutions (Candle Intervals) */}
+          <div className="flex items-center bg-muted/70 p-0.5 rounded-md border border-border/60">
+            <span className="text-[10px] text-muted-foreground px-1 font-semibold hidden md:inline">الفريم:</span>
+            {RESOLUTIONS.map((res) => {
+              const active = timeframe === res.key;
+              return (
+                <button
+                  key={res.key}
+                  onClick={() => handleResolutionChange(res.key)}
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium transition-all flex items-center gap-0.5',
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-sm font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  title={res.isIntraday ? `شمعة لحظية: ${res.label}` : `شمعة: ${res.label}`}
+                >
+                  {res.label}
+                  {res.isIntraday && (
+                    <span className={cn('text-[9px]', active ? 'text-primary-foreground' : 'text-primary')}>
+                      ⚡
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 mr-auto">
+          {/* Focus Mode Toggle */}
+          <Button
+            variant={focusMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFocusMode((v) => !v)}
+            aria-pressed={focusMode}
+            title={focusMode ? 'إيقاف وضع التركيز' : 'إخفاء كل المؤشرات الفنية'}
+            className="h-7 px-2.5 text-xs gap-1"
           >
-            {type.label}
-          </button>
-        ))}
-      </div>
+            <Eye className="size-3.5" />
+            وضع التركيز
+          </Button>
 
-      {/* Timeframe Selection */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-border bg-muted/5 flex-wrap">
-        <span className="text-xs text-muted-foreground font-medium ml-2">الفترة:</span>
-        {TIMEFRAMES.map((tf) => (
-          <button
-            key={tf.key}
-            onClick={() => setTimeframe(tf.key)}
-            className={cn(
-              'px-2 py-1 rounded text-xs font-medium transition-colors',
-              timeframe === tf.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
+          {/* Multi-Persona Dynamic Card Toggle */}
+          <Button
+            variant={multiPersonaOpen ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMultiPersonaOpen((v) => !v)}
+            aria-pressed={multiPersonaOpen}
+            title={multiPersonaOpen ? 'إخفاء بطاقة الشخصيات' : 'إظهار بطاقة الشخصيات الديناميكية'}
+            className="h-7 px-2.5 text-xs gap-1"
           >
-            {tf.label}
-          </button>
-        ))}
-
-        {/* P37-PHASE-1: Focus Mode Toggle (mobile-friendly) */}
-        <Button
-          variant={focusMode ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setFocusMode((v) => !v)}
-          aria-pressed={focusMode}
-          title={focusMode ? 'إيقاف وضع التركيز' : 'إخفاء كل المؤشرات الفنية'}
-          className="ms-auto h-7 px-2.5 text-xs gap-1 shrink-0"
-        >
-          <Eye className="size-3.5" />
-          وضع التركيز
-        </Button>
-
-        {/* P39-PHASE-3: Multi-Persona Dynamic Card Toggle */}
-        <Button
-          variant={multiPersonaOpen ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setMultiPersonaOpen((v) => !v)}
-          aria-pressed={multiPersonaOpen}
-          title={multiPersonaOpen ? 'إخفاء بطاقة الشخصيات' : 'إظهار بطاقة الشخصيات الديناميكية'}
-          className="h-7 px-2.5 text-xs gap-1 shrink-0"
-        >
-          <Users className="size-3.5" />
-          شخصيات متعددة
-        </Button>
+            <Users className="size-3.5" />
+            شخصيات متعددة
+          </Button>
+        </div>
       </div>
 
       {/* Indicator Toggles */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-muted/10 flex-wrap">
-        <span className="text-xs text-muted-foreground font-medium">المؤشرات:</span>
-        {[
-          { key: 'sma20' as const, label: 'SMA 20', color: SMA20_COLOR },
-          { key: 'sma50' as const, label: 'SMA 50', color: SMA50_COLOR },
-          { key: 'sma200' as const, label: 'SMA 200', color: SMA200_COLOR },
-          { key: 'ema20' as const, label: 'EMA 20', color: EMA20_COLOR },
-          { key: 'bollingerBands' as const, label: 'BB', color: BB_COLOR },
-          { key: 'volume' as const, label: 'Volume', color: '#64748b' },
-          { key: 'rsi' as const, label: 'RSI', color: RSI_COLOR },
-          { key: 'macd' as const, label: 'MACD', color: MACD_COLOR },
-          { key: 'stochastic' as const, label: 'Stoch', color: STOCH_K_COLOR },
-          { key: 'atr' as const, label: 'ATR', color: ATR_COLOR },
-          { key: 'obv' as const, label: 'OBV', color: OBV_COLOR },
-        ].map((ind) => (
-          <button
-            key={ind.key}
-            onClick={() =>
-              setIndicators((prev) => ({ ...prev, [ind.key]: !prev[ind.key] }))
-            }
-            className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors',
-              indicators[ind.key]
-                ? 'bg-primary/20 text-primary'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            )}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: ind.color }}
-            />
-            {ind.label}
-          </button>
-        ))}
-      </div>
+      {!focusMode && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border bg-muted/10 flex-wrap">
+          <span className="text-[11px] text-muted-foreground font-medium ml-1">المؤشرات:</span>
+          {[
+            { key: 'sma20' as const, label: 'SMA 20', color: SMA20_COLOR },
+            { key: 'sma50' as const, label: 'SMA 50', color: SMA50_COLOR },
+            { key: 'sma200' as const, label: 'SMA 200', color: SMA200_COLOR },
+            { key: 'ema20' as const, label: 'EMA 20', color: EMA20_COLOR },
+            { key: 'bollingerBands' as const, label: 'BB', color: BB_COLOR },
+            { key: 'volume' as const, label: 'Volume', color: '#64748b' },
+            { key: 'rsi' as const, label: 'RSI', color: RSI_COLOR },
+            { key: 'macd' as const, label: 'MACD', color: MACD_COLOR },
+            { key: 'stochastic' as const, label: 'Stoch', color: STOCH_K_COLOR },
+            { key: 'atr' as const, label: 'ATR', color: ATR_COLOR },
+            { key: 'obv' as const, label: 'OBV', color: OBV_COLOR },
+          ].map((ind) => (
+            <button
+              key={ind.key}
+              onClick={() =>
+                setIndicators((prev) => ({ ...prev, [ind.key]: !prev[ind.key] }))
+              }
+              className={cn(
+                'flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors border',
+                indicators[ind.key]
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'bg-card/50 border-border/60 text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: ind.color }}
+              />
+              {ind.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* P37-PHASE-1: Market Closed Banner */}
-      {marketClosed && (
+      {/* Subtle Market Notice if using fallback daily candles */}
+      {marketClosed && dataSource === 'fallback_daily' && (
         <div
           role="status"
-          className="flex items-center gap-2 px-4 py-2 border-b border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          className="flex items-center justify-between px-3 py-1 border-b border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs"
         >
-          <Clock className="size-4 shrink-0" />
-          <span className="text-xs font-medium">
-            السوق مغلق - عرض أحدث بيانات متوفرة
-          </span>
+          <div className="flex items-center gap-1.5">
+            <Clock className="size-3.5 shrink-0" />
+            <span>السوق مغلق حالياً — تم عرض أحدث شموع يومية متوفرة</span>
+          </div>
+          <span className="text-[10px] opacity-75 hidden sm:inline">جلسة التداول: 10:00 ص - 2:30 م</span>
         </div>
       )}
 
       {/* Chart Container */}
       <div ref={containerRef} className="w-full" style={{ height: isFullscreen ? 'calc(100vh - 150px)' : `${height}px` }} />
+
+      {/* TradingView Bottom Range Bar (شريط النطاق الزمني السريع) */}
+      <div className="flex items-center justify-between px-3 py-1.5 border-t border-border bg-muted/20 text-xs select-none">
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] text-muted-foreground ml-1 font-medium">النطاق:</span>
+          {RANGES.map((r) => {
+            const active = currentRange === r.key;
+            return (
+              <button
+                key={r.key}
+                onClick={() => handleRangeChange(r.key)}
+                className={cn(
+                  'px-2 py-0.5 rounded text-xs font-semibold transition-all',
+                  active
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                )}
+              >
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground" dir="ltr">
+          <span>{data.length} candles</span>
+          <span className="text-border">|</span>
+          <span className="flex items-center gap-1.5">
+            <span className={cn('w-1.5 h-1.5 rounded-full', dataSource.includes('intraday') ? 'bg-emerald-500' : 'bg-blue-500')} />
+            {dataSource.includes('intraday') ? `Intraday (${timeframe})` : 'Daily History'}
+          </span>
+        </div>
+      </div>
 
       {/* P39-PHASE-3: Multi-Persona Dynamic Card — three scenarios on the same chart */}
       {multiPersonaOpen && (

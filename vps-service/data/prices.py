@@ -201,8 +201,24 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
     if not ticker:
         return []
 
-    # Normalize ticker: uppercase, strip suffix
-    ticker_norm = ticker.upper().strip().split(".")[0]
+    # Normalize ticker: uppercase, strip suffix, and resolve known aliases
+    raw_norm = ticker.upper().strip().split(".")[0]
+    ticker_norm = raw_norm
+    if ticker_norm in ('KORRA', 'KORAKORRAD'):
+        ticker_norm = 'KORA'
+    elif ticker_norm == 'COMMI':
+        ticker_norm = 'COMI'
+    else:
+        try:
+            import sqlite3
+            conn = sqlite3.connect(STOCKS_DB, timeout=2.0)
+            row = conn.execute("SELECT ticker FROM stocks WHERE UPPER(name) = ? OR UPPER(name_ar) = ?", (raw_norm, raw_norm)).fetchone()
+            conn.close()
+            if row:
+                ticker_norm = row[0]
+        except Exception:
+            pass
+
     limit = max(1, min(int(limit), 2000))  # clamp 1..2000
 
     cache_key = (ticker_norm, limit)
@@ -211,6 +227,8 @@ def load_price_history(ticker: str, limit: int = 120) -> List[Dict[str, Any]]:
         return cached
 
     data = _canonical_load(ticker_norm, limit)
+    if not data and ticker_norm != raw_norm:
+        data = _canonical_load(raw_norm, limit)
 
     # Ensure consistent key names (canonical returns date/open/high/low/close/volume)
     # but be defensive: some callers expect close_price/high_price. We standardize here.

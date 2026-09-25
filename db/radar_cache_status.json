@@ -1,13 +1,13 @@
 {
-  "last_warmup_started_at": "2026-09-05T19:18:23.727Z",
-  "last_warmup_finished_at": "2026-09-05T19:18:27.922Z",
-  "last_warmup_duration_ms": 4188,
+  "last_warmup_started_at": "2026-09-25T19:25:31.188Z",
+  "last_warmup_finished_at": "2026-09-25T19:25:31.374Z",
+  "last_warmup_duration_ms": 181,
   "last_warmup_status": "success",
   "last_error": null,
-  "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260905.json",
-  "cache_generated_at": "2026-09-05T19:18:27.893054",
+  "cache_file": "/home/meme/my_apps/GLMinvestment/scripts/output/maker_radar_20260925.json",
+  "cache_generated_at": "2026-09-25T22:25:31.343784",
   "cache_age_seconds": 0,
-  "total_scanned": 270,
-  "under_microscope_count": 81,
+  "total_scanned": 185,
+  "under_microscope_count": 96,
   "db_source": "data_engine.db::egksco_price_history"
 }

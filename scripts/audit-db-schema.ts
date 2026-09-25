@@ -239,3 +239,4 @@ console.log('\n=== data_engine.db exchange_rates schema ===');
   } catch (e: any) { console.log('Sample error:', e.message); }
   db.close();
 }
+} main();

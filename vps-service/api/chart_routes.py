@@ -681,6 +681,10 @@ def get_chart_data(ticker):
         if period not in VALID_PERIODS:
             period = '1w'
 
+        # Support explicit timeframe / interval (e.g. 5m, 15m, 30m, 1h, 60m)
+        interval = request.args.get('interval') or request.args.get('timeframe') or ''
+        interval = interval.lower().strip()
+
         asset = request.args.get('asset', '').lower()
         if asset and asset not in VALID_ASSETS:
             asset = ''
@@ -695,14 +699,18 @@ def get_chart_data(ticker):
         try:
             data = get_intraday_data(ticker_clean, period, asset)
 
-            # ── P31 TASK 3: Smart Chart intraday aggregation frequencies ──
-            # Per the Chart & Portfolio Data Binding Fix spec:
-            #   1D (period=1d) -> 5-minute candles  (was 15-min — too coarse for a single day)
-            #   1W (period=1w) -> 30-minute candles (was 60-min — lost intraday detail)
-            #   1M (period=1m) -> 60-minute candles (was 120-min — looked like daily)
-            if data and len(data) > 0 and period in ('1d', '1w', '1m'):
+            # ── Smart Chart intraday aggregation frequencies ──
+            if data and len(data) > 0 and (period in ('1d', '1w', '1m') or interval):
                 freq_minutes = 5
-                if period == '1m':
+                if interval == '5m':
+                    freq_minutes = 5
+                elif interval == '15m':
+                    freq_minutes = 15
+                elif interval == '30m':
+                    freq_minutes = 30
+                elif interval in ('1h', '60m'):
+                    freq_minutes = 60
+                elif period == '1m':
                     freq_minutes = 60      # 1-hour candles for 1M
                 elif period == '1w':
                     freq_minutes = 30      # 30-min candles for 1W
