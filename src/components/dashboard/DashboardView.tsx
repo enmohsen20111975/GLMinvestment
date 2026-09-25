@@ -16,6 +16,8 @@ import { AutoAnalysisWidget } from '@/components/auto-analysis-widget';
 import { MaestroWidget } from '@/components/dashboard/MaestroWidget';
 import { LiveStockTicker } from '@/components/dashboard/LiveStockTicker';
 import { MarketPulseWidget } from '@/components/dashboard/MarketPulseWidget';
+import { InvestorsFlowPanel } from '@/components/dashboard/InvestorsFlowPanel';
+import { MarketDepthPanel } from '@/components/stocks/MarketDepthPanel';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -102,7 +104,7 @@ interface WidgetDescriptor {
 }
 
 export function DashboardView() {
-  const { isLoading, loadDashboard, marketOverview, currentMarket, assetPreference, pinnedWidgets } = useAppStore();
+  const { isLoading, loadDashboard, marketOverview, currentMarket, assetPreference, pinnedWidgets, stocks, selectedTicker } = useAppStore();
   const [exporting, setExporting] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -244,6 +246,27 @@ export function DashboardView() {
 
   const showPinnedSection = mounted && pinnedList.length > 0;
 
+  // ─── UNIFIED-MARKET-VIEW (Task 1): market-driven panels ─────────────────
+  // InvestorsFlowPanel + MarketDepthPanel تظهر بس للأسواق التقليدية
+  // (EGX / TADAWUL / KSE / QSE) — ومش متاحة لـ CRYPTO.
+  const showMarketFlowPanels = currentMarket !== 'CRYPTO';
+
+  // أقرب ticker لعمق السوق — نفضّل selectedTicker لو موجود،
+  // وبعدها أول سهم محمّل في القائمة، وبعدها default لكل سوق.
+  const depthInitialTicker = useMemo(() => {
+    if (selectedTicker) return selectedTicker;
+    const firstStock = stocks.find((s) => s && s.ticker);
+    if (firstStock?.ticker) return firstStock.ticker;
+    // defaults معروفة لكل سوق — بتشتغل لو القائمة لسه محمّلة
+    switch (currentMarket) {
+      case 'TADAWUL': return '2222';   // Saudi Aramco
+      case 'KSE':     return 'MBRK';   // Boubyan Bank
+      case 'QSE':     return 'QNB';    // Qatar National Bank
+      case 'EGX':
+      default:        return 'COMI';   // Commercial International Bank
+    }
+  }, [selectedTicker, stocks, currentMarket]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* First-visit asset preference onboarding (P5-MOBILE-UX Part B.1) */}
@@ -373,6 +396,22 @@ export function DashboardView() {
                 </section>
               );
             })()}
+
+            {/* 3.5 حركة المستثمرين وعمق السوق — UNIFIED-MARKET-VIEW (Task 1) */}
+            {/* بيتعرض بس للأسواق التقليدية (EGX/TADAWUL/KSE/QSE)؛ مفيش للكريبتو */}
+            {showMarketFlowPanels && (
+              <section
+                aria-label="حركة المستثمرين وعمق السوق"
+                className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              >
+                <SafeWidget name="حركة المستثمرين">
+                  <InvestorsFlowPanel />
+                </SafeWidget>
+                <SafeWidget name="عمق السوق">
+                  <MarketDepthPanel initialTicker={depthInitialTicker} />
+                </SafeWidget>
+              </section>
+            )}
 
             {/* 4. توقعات اليوم والتحليل الآلي */}
             {(() => {
