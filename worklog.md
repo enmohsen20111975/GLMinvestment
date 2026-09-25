@@ -18611,3 +18611,70 @@ Files Modified:
 - MODIFIED: db/auth.db (Fixed SQLite schema & restored from backup)
 - MODIFIED: worklog.md (Detailed documentation for team sync)
 
+---
+Task ID: TRADINGVIEW-TIMEFRAME-FIX-001
+Agent: Antigravity AI Pair Programmer
+Task: حل أزمة عدم تغير فريم الوقت في الشارت، ومحاكاة TradingView، والربط الدقيق بين بيانات الدقائق والبيانات اليومية
+
+Work Log:
+1. التشخيص الجذري لمشكلة عدم تغير الفريم الزمني والسقوط في الشموع اليومية:
+   - تلف قواعد البيانات (Corrupted SQLite Databases):
+     اكتشاف صفحات تالفة (B-tree corruption / malformed disk image) في ملفات `stocks.db` و `data_engine.db` و `price_history.db` كانت تؤدي إلى فشل استعلامات الأسعار بصمت وانهيار دوال جلب الشموع.
+   - أقفال قاعدة البيانات المتكررة (Database Locked):
+     في `data_engine/intraday_storage.py`، كان يتم استدعاء `init_intraday_db()` تلقائياً في كل مرة تُستدعى فيها دالة `get_intraday_data()`، مما يسبب `sqlite3.OperationalError: database is locked` عند التزامن.
+   - عدم تطابق مسميات الرموز (Ticker Aliases):
+     السهم المعروض للمستخدم مثل `KORRA` مسجل في قواعد البيانات وجداول البورصة باسم `KORA` (مع تخزين الاسم العربي والإنجليزي `KORRA`). كان الباك إند يرد بـ "لا توجد بيانات لهذا الرمز" ويسقط الشارت إجبارياً إلى التاريخ اليومي الافتراضي.
+   - شرط التاريخ المتشدد في جلب البيانات اللحظية (Intraday Cutoff):
+     كان الاستعلام في `intraday_storage.py` يعتمد على `datetime.now() - 24 hours`، مما يعيد 0 صفوف في العطلات الأسبوعية (الجمعة/السبت) أو بعد إغلاق جلسة التداول بساعات، فتظهر رسالة السوق مغلق الخاطئة وتختفي الشموع اللحظية المحفوظة في `intraday.db`.
+   - خلل أسماء الأعمدة في جدول `stock_daily_prices`:
+     كانت الحقول `open, high, low, close` فارغة، بينما القيم الحقيقية مخزنة في أعمدة `open_price, high_price, low_price, close_price`.
+   - مقارنة التواريخ الخاطئة في واجهة React (`TradingViewChart.tsx`):
+     دالة `useMemo` كانت تمرر الطابع الزمني الرقمي بالثواني إلى `new Date(b.date)` مما يُفسر كمللي ثانية ويرجع سنة 1970، فيتسبب في رفض وحذف جميع الشموع عند اختيار أي فريم.
+
+2. الحلول الهندسية المنفذة:
+   أ. استعادة قواعد البيانات وضبط التزامن (Database Integrity & Concurrency):
+      - تنظيف ملفات `-wal` و `-shm` العالقة.
+      - استعادة النسخ النظيفة السليمة 100% من `db/backups/latest/` لملفات `stocks.db` و `data_engine.db` و `price_history.db`.
+      - التحقق الصارم عبر `PRAGMA integrity_check` وجميعها بحالة `ok`.
+      - إضافة إعدادات التزامن `PRAGMA journal_mode=WAL` و `busy_timeout=30000` و `timeout=30.0` وحذف استدعاء `init_intraday_db()` من عمليات القراءة.
+
+   ب. حل مشكلة الرموز البديلة (Canonical Ticker Aliases):
+      - إنشاء دالة تطبيع موحدة `resolveCanonicalTicker` و `normalize_ticker` في كافة طبقات النظام:
+        - `src/app/api/chart/[ticker]/route.ts`
+        - `src/app/api/stocks/[ticker]/history/route.ts`
+        - `vps-service/data/prices.py`
+        - `data_engine/intraday_storage.py`
+      - دعم التحويل التلقائي لأي رمز مكرر (مثل `KORRA` -> `KORA`).
+
+   ج. تحديث محرك الشارتات في بايثون (`vps-service/api/chart_routes.py`):
+      - دعم البارامتر الصريح `interval` و `timeframe` (`5m`, `15m`, `30m`, `1h`, `1D`, `1W`).
+      - دعم أحدث طابع زمني متوفر للسهم (`anchor timestamp`) لحساب فترة العرض دون السقوط عند إغلاق السوق أو العطلات.
+      - تجميع (Resampling) لقطات الـ 5 دقائق إلى 15 دقيقة و 30 دقيقة و 1 ساعة بدقة، وحساب فروق الأحجام الحقيقية (Volume Delta).
+
+   د. إعادة كتابة مسارات Next.js API:
+      - مسار `/api/chart/[ticker]`: يدعم الاستعلام اللحظي من الباك إند أو محلياً من `intraday.db` مباشرة، واليومي من `stock_daily_prices` باستخدام `COALESCE`، والأسبوعي عبر تجميع الشموع اليومية.
+      - مسار `/api/stocks/[ticker]/history`: تطبيع الرمز وتوفير بديل احتياطي فوري من SQLite المحلي.
+
+   هـ. محاكاة كاملة لتجربة TradingView الاحترافية في واجهة المستخدم (`TradingViewChart.tsx`):
+      - شريط فواصل الشموع العلوي (Candle Resolutions Bar): أزرار مستقلة تماماً لفواصل الشموع (`5د` | `15د` | `30د` | `1س` | `يومي` | `أسبوعي`) مع شارة الفريم اللحظي (⚡).
+      - شريط النطاق الزمني السريع السفلي (Bottom Range Bar) أسفل الشارت مباشرة: أزرار النطاق (`1D` | `5D` | `1M` | `3M` | `6M` | `1Y` | `الكل`) مع إحصائية عدد الشموع ومصدر البيانات الحقيقي.
+      - استبدال اللافتة الصفراء العريضة المزعجة بشارة حالة سوق مدمجة وأنيقة في الهيدر (`🟢 مباشر` عند فتح السوق أو `السوق مغلق` عند الإغلاق).
+      - إصلاح تصفية التواريخ بدعم الطوابع الزمنية الرقمية (UNIX seconds).
+
+3. الاختبار والتحقق (Verification & Results):
+   - نجاح البناء الكامل `npm run build` بنسبة 100% وبدون أي أخطاء (Exit code 0).
+   - اختبار نقطة النهاية لمختلف الفواصل الزمنية لسهم `KORRA` و `COMI`:
+     - فاصل 5 دقائق (1D): إعادة 60 شمعة لحظية حقيقية بدقة 5 دقائق.
+     - فاصل 15 دقيقة (1D): إعادة 24 شمعة لحظية مجمعة بدقة.
+     - فاصل 30 دقيقة (1D): إعادة 12 شمعة لحظية مجمعة بدقة.
+     - فاصل 1 ساعة (1D): إعادة 6 شموع لحظية مجمعة بدقة.
+     - فاصل يومي (1M): إعادة 30 شمعة يومية حقيقية.
+     - فاصل يومي (1Y): إعادة 55-62 شمعة يومية حقيقية.
+     - فاصل أسبوعي (1Y): إعادة 12-13 شمعة أسبوعية مجمعة بدقة.
+   - استقرار وتشغيل كافة خدمات PM2 الخمس:
+     - `nextjs` (Online)
+     - `python-backend` (Online)
+     - `data-engine` (Online)
+     - `ws-service` (Online)
+     - `telegram-poster` (Online)
+

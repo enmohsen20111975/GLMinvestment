@@ -56,12 +56,22 @@ COMMODITY_SYMBOLS = {'GOLD', 'XAU', 'SILVER', 'XAG', 'OIL', 'WTI', 'BRENT',
                      'EUR_USD', 'GBP_USD', 'USD_JPY', 'USD_EGP', 'SAR_USD'}
 
 
+_intraday_initialized = False
+
 # ============================================================================
 # DATABASE INITIALIZATION
 # ============================================================================
 def init_intraday_db():
-    """إنشاء قاعدة بيانات intraday.db وجداولها الثلاثة"""
-    conn = sqlite3.connect(INTRADAY_DB)
+    """إنشاء قاعدة بيانات intraday.db وجداولها الثلاثة (مرة واحدة فقط)"""
+    global _intraday_initialized
+    if _intraday_initialized:
+        return
+    conn = sqlite3.connect(INTRADAY_DB, timeout=30.0)
+    try:
+        conn.execute('PRAGMA journal_mode=WAL')
+        conn.execute('PRAGMA busy_timeout=30000')
+    except Exception:
+        pass
     c = conn.cursor()
 
     # 1. STOCK INTRADAY - أسهم كل الأسواق
@@ -638,16 +648,30 @@ def _detect_asset_type(ticker):
 def _normalize_ticker(ticker, asset):
     """
     تطبيع الرمز للبحث في قاعدة البيانات.
-    - الأسهم: نشيل suffixes زي .CA, .SR, .KW, .QA (نخلي COMI.CA → COMI)
+    - الأسهم: نشيل suffixes زي .CA, .SR, .KW, .QA مع دعم الأسماء البديلة (مثل KORRA -> KORA)
     - العملات والسلع: بنستخدم الرمز كما هو
     """
     upper = ticker.upper().strip()
     if asset == 'stock':
-        # Egyptian stocks: COMI.CA → COMI
-        # Saudi stocks: 1010.SR → 1010
-        # Just take the part before the first dot
-        if '.' in upper:
-            return upper.split('.')[0]
+        clean = upper.split('.')[0]
+        aliases = {'KORRA': 'KORA', 'COMMI': 'COMI'}
+        if clean in aliases:
+            return aliases[clean]
+        try:
+            import re
+            conn = sqlite3.connect(INTRADAY_DB)
+            row = conn.execute("SELECT ticker FROM stock_intraday WHERE ticker = ? LIMIT 1", (clean,)).fetchone()
+            if row:
+                conn.close()
+                return row[0]
+            dedup = re.sub(r'(.)\1+', r'\1', clean)
+            row = conn.execute("SELECT ticker FROM stock_intraday WHERE ticker = ? LIMIT 1", (dedup,)).fetchone()
+            conn.close()
+            if row:
+                return row[0]
+        except Exception:
+            pass
+        return clean
     return upper
 
 
@@ -663,23 +687,10 @@ def get_intraday_data(ticker, period='1w', asset=None):
     Returns:
         list of {timestamp, price, change_percent, volume, [open/high/low]}
     """
-    init_intraday_db()
-
     if asset is None:
         asset = _detect_asset_type(ticker)
 
     lookup_ticker = _normalize_ticker(ticker, asset)
-
-    # For 1d, 1w, 1m try intraday first
-    # DYNAMIC-061: Fetch ALL available data in the time range, no truncation.
-    # The chart will dynamically display whatever data exists (15-min candles
-    # for recent days, daily snapshots for older days).
-    if period == '1d':
-        cutoff = (datetime.now() - timedelta(hours=24)).isoformat()
-    elif period == '1w':
-        cutoff = (datetime.now() - timedelta(days=7)).isoformat()
-    else:  # 1m
-        cutoff = (datetime.now() - timedelta(days=35)).isoformat()
 
     # Per-asset table + column mapping (different schemas!)
     table_map = {
@@ -713,11 +724,41 @@ def get_intraday_data(ticker, period='1w', asset=None):
     change_col = cfg['change_col']
     volume_col = cfg['volume_col']
 
+    # For 1d, 1w, 1m: Determine cutoff based on anchor timestamp (latest recorded
+    # snapshot for the ticker) so that if market is closed, on weekend, or holiday,
+    # we return the latest available trading session rather than an empty array.
+    conn = sqlite3.connect(INTRADAY_DB, timeout=30.0)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute('PRAGMA busy_timeout=30000')
+    except Exception:
+        pass
+    c = conn.cursor()
+
+    anchor_dt = datetime.now()
+    try:
+        max_row = c.execute(f"SELECT max(timestamp) FROM {table} WHERE {sym_col} = ?", (lookup_ticker,)).fetchone()
+        if max_row and max_row[0]:
+            clean_max = str(max_row[0]).replace('+00:00', '').replace('+03:00', '').split('+')[0].strip()
+            for fmt in ('%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S'):
+                try:
+                    anchor_dt = datetime.strptime(clean_max, fmt)
+                    break
+                except ValueError:
+                    continue
+    except Exception:
+        pass
+
+    if period == '1d':
+        cutoff = (anchor_dt - timedelta(hours=24)).isoformat()
+    elif period == '1w':
+        cutoff = (anchor_dt - timedelta(days=7)).isoformat()
+    else:  # 1m
+        cutoff = (anchor_dt - timedelta(days=35)).isoformat()
+
     # Build SELECT with COALESCE for missing volume column
     volume_expr = f'{volume_col}' if volume_col else '0'
     result = []
-    conn = sqlite3.connect(INTRADAY_DB)
-    conn.row_factory = sqlite3.Row
 
     try:
         c = conn.cursor()
