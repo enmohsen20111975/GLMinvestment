@@ -81,6 +81,7 @@ import { MultiPortfolioSelector, getPortfolioColorClass } from '@/components/por
 import { MasterPortfolioSummary } from '@/components/portfolio/MasterPortfolioSummary';
 import { RealReturnPanel } from '@/components/portfolio/RealReturnPanel';
 import { BagHolderRescuePanel } from '@/components/portfolio/BagHolderRescuePanel';
+import { UnifiedHoldingsTable, type HoldingItem } from '@/components/portfolio/UnifiedHoldingsTable';
 import { TopUpRecommendationsPanel } from '@/components/portfolio/TopUpRecommendationsPanel';
 import { RiskProfilerQuiz } from '@/components/portfolio/RiskProfilerQuiz';
 import { RoboAdvisorPanel } from '@/components/portfolio/RoboAdvisorPanel';
