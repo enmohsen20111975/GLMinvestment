@@ -36,6 +36,15 @@ except ImportError:
 # P24-ADAPTIVE-MAESTRO: ربط أوزان تكييفية بحالة السوق
 try:
     from analyzers.adaptive_weights import get_adaptive_weights
+
+# V82 integration — The Ultimate EGX Engine
+try:
+    from analyzers.v82_analyzer import V82Analyzer, V82Signal
+    V82_AVAILABLE = True
+except ImportError:
+    V82_AVAILABLE = False
+    V82Analyzer = None
+    V82Signal = None
     ADAPTIVE_WEIGHTS_AVAILABLE = True
 except ImportError:
     ADAPTIVE_WEIGHTS_AVAILABLE = False
@@ -1247,6 +1256,18 @@ def calculate_maestro_score(regime_phase: RegimePhaseResult, timeframe_phase: Ti
     if volume_phase.liquidity_rating == 'low':
         maestro_score *= 0.90
     return clamp(round2(maestro_score), 0, 100)
+
+
+def _check_v82_gate(ticker, ohlcv_data, market_data=None):
+    """V82 9-Condition Gate check — returns (passed, signal)"""
+    if not V82_AVAILABLE:
+        return True, None  # skip if V82 not available
+    try:
+        analyzer = V82Analyzer()
+        signal = analyzer.analyze(ticker, ohlcv_data, market_data)
+        return signal.gate_passed, signal
+    except Exception:
+        return True, None  # fail open
 
 
 def determine_recommendation(maestro_score: float, regime: str, volume_ratio: float = 1.0, price_position: str = 'mid_range', distance_to_support_pct: float = 50.0, persona_type: str = 'balanced', stock_profile: dict = None, threshold_boost: float = 0.0) -> tuple:
