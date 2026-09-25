@@ -6,17 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Brain, 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  CheckCircle2, 
+import {
+  Brain,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  CheckCircle2,
   XCircle,
   AlertTriangle,
   Sparkles,
   RefreshCw
 } from 'lucide-react';
+import { toArabicError } from '@/lib/safe-error';
 
 interface WalkForwardResult {
   month: string;
@@ -65,10 +66,10 @@ export function AutoAnalysisWidget() {
           auto_analysis_eligible: data.auto_analysis_eligible ?? data.aggregate?.accuracy >= 55,
         });
       } else {
-        setError(data.error || 'فشل في تحميل النتائج');
+        setError(toArabicError(data.error, 'فشل في تحميل النتائج'));
       }
     } catch (err: any) {
-      setError(err.message || 'خطأ في الاتصال');
+      setError(toArabicError(err, 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.'));
     } finally {
       setLoading(false);
     }
@@ -186,8 +187,8 @@ export function AutoAnalysisWidget() {
             <span className="text-slate-400">مستوى الدقة</span>
             <span className="text-slate-300">{safeNum(testResult.overallAccuracy).toFixed(1)}%</span>
           </div>
-          <Progress 
-            value={safeNum(testResult.overallAccuracy)} 
+          <Progress
+            value={safeNum(testResult.overallAccuracy)}
             className="h-2 bg-slate-700"
           />
           <div className="flex justify-between text-xs text-slate-500">
@@ -202,7 +203,7 @@ export function AutoAnalysisWidget() {
           <div className="text-sm font-semibold text-slate-300">النتائج الشهرية</div>
           <div className="max-h-40 overflow-y-auto space-y-1">
             {(testResult.results ?? []).map((result, index) => (
-              <div 
+              <div
                 key={index}
                 className="flex items-center justify-between bg-slate-800/30 rounded-lg p-2 text-xs"
               >
@@ -233,8 +234,8 @@ export function AutoAnalysisWidget() {
 
         {/* Recommendation */}
         <div className={`p-3 rounded-lg border ${
-          testResult.auto_analysis_eligible 
-            ? 'bg-green-500/10 border-green-500/30' 
+          testResult.auto_analysis_eligible
+            ? 'bg-green-500/10 border-green-500/30'
             : 'bg-yellow-500/10 border-yellow-500/30'
         }`}>
           <div className="flex items-center gap-2 mb-1">

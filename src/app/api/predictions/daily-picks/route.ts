@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { preferComputedRiskReward } from '@/lib/risk-reward';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
     if (!fs.existsSync(dbPath)) {
       return NextResponse.json(
-        { success: false, error: 'predictions.db not found' },
+        { success: false, error: 'تعذّر الوصول إلى قاعدة بيانات التوقعات' },
         { status: 500 }
       );
     }
@@ -144,16 +145,23 @@ export async function GET(req: NextRequest) {
 
     const picks: DailyPick[] = rows.map((r) => {
       const lookup = stocksLookup.get(String(r.ticker));
+      const entryPrice = Number(r.entry_price ?? 0);
+      const targetPrice = Number(r.target_price ?? 0);
+      const stopLoss = Number(r.stop_loss ?? 0);
+      const storedRr = Number(r.risk_reward ?? 0);
+      // P0-FIX (PHASE1-CRITICAL-FIXES): prefer stored R:R if it's > 0,
+      // otherwise compute dynamically from entry/target/stop.
+      const riskReward = preferComputedRiskReward(entryPrice, targetPrice, stopLoss, storedRr);
       return {
         ticker: String(r.ticker || ''),
         market: String(r.market || market),
         signal: String(r.signal || ''),
         signal_type: r.signal_type === null ? null : String(r.signal_type),
-        entry_price: Number(r.entry_price ?? 0),
-        target_price: Number(r.target_price ?? 0),
+        entry_price: entryPrice,
+        target_price: targetPrice,
         target_price_2: r.target_price_2 === null ? null : Number(r.target_price_2),
-        stop_loss: Number(r.stop_loss ?? 0),
-        risk_reward: Number(r.risk_reward ?? 0),
+        stop_loss: stopLoss,
+        risk_reward: riskReward,
         master_score: Number(r.master_score ?? 0),
         technical_score: r.technical_score === null ? null : Number(r.technical_score),
         confidence: r.confidence === null ? null : Number(r.confidence),
@@ -205,7 +213,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: e instanceof Error ? e.message : 'Unknown error',
+        error: 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.',
         picks: [],
         count: 0,
       },

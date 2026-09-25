@@ -16,6 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { preferComputedRiskReward } from '@/lib/risk-reward';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
   if (!dbExists(PREDICTIONS_DB_PATH)) {
     return NextResponse.json({
       success: false,
-      error: 'predictions.db not found',
+      error: 'تعذّر الوصول إلى قاعدة بيانات التوقعات',
       path: PREDICTIONS_DB_PATH,
       predictions: [],
     }, { status: 500 });
@@ -131,7 +132,7 @@ export async function GET(req: NextRequest) {
         db.close();
         return NextResponse.json({
           success: false,
-          error: 'predictions table query failed: ' + String(err2),
+          error: 'تعذّر جلب قائمة التوقعات. يرجى المحاولة مرة أخرى.',
           market,
           predictions: [],
         }, { status: 500 });
@@ -140,22 +141,31 @@ export async function GET(req: NextRequest) {
 
     db.close();
 
-    const cleaned = rows.map((r) => ({
-      id: r.id,
-      ticker: r.ticker,
-      signal: r.signal || '—',
-      status: r.status || 'unknown',
-      market: r.market || market,
-      prediction_date: r.prediction_date,
-      entry_price: safeNum(r.entry_price),
-      target_price: safeNum(r.target_price),
-      stop_loss: safeNum(r.stop_loss),
-      exit_price: safeNum(r.exit_price),
-      actual_return: safeNum(r.actual_return),
-      holding_days: Number(r.holding_days) || 0,
-      risk_reward: safeNum(r.risk_reward),
-      is_correct: r.is_correct === 1 ? true : r.is_correct === 0 ? false : null,
-    }));
+    const cleaned = rows.map((r) => {
+      const entry = safeNum(r.entry_price);
+      const target = safeNum(r.target_price);
+      const stop = safeNum(r.stop_loss);
+      const storedRr = safeNum(r.risk_reward);
+      // P0-FIX (PHASE1-CRITICAL-FIXES): compute risk_reward dynamically from
+      // entry/target/stop so the UI never shows R:R = 0 for valid picks.
+      const riskReward = preferComputedRiskReward(entry ?? 0, target ?? 0, stop ?? 0, storedRr);
+      return {
+        id: r.id,
+        ticker: r.ticker,
+        signal: r.signal || '—',
+        status: r.status || 'unknown',
+        market: r.market || market,
+        prediction_date: r.prediction_date,
+        entry_price: entry,
+        target_price: target,
+        stop_loss: stop,
+        exit_price: safeNum(r.exit_price),
+        actual_return: safeNum(r.actual_return),
+        holding_days: Number(r.holding_days) || 0,
+        risk_reward: riskReward,
+        is_correct: r.is_correct === 1 ? true : r.is_correct === 0 ? false : null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -168,7 +178,7 @@ export async function GET(req: NextRequest) {
     console.error('[GET /api/predictions/backtest-list] Error:', e);
     return NextResponse.json({
       success: false,
-      error: e instanceof Error ? e.message : 'Unknown error',
+      error: 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.',
       predictions: [],
     }, { status: 500 });
   }

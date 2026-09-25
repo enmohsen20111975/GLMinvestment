@@ -5,19 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  RefreshCw, 
-  Bitcoin, 
-  Coins, 
-  Landmark, 
-  Building2, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  RefreshCw,
+  Bitcoin,
+  Coins,
+  Landmark,
+  Building2,
   Gem,
   Sparkles,
   AlertTriangle
 } from 'lucide-react';
+import { toArabicError } from '@/lib/safe-error';
 
 interface Prediction {
   id: string;
@@ -77,10 +78,10 @@ export function EidPredictionsWidget() {
         setPredictions(data.predictions);
         setLastUpdate(data.generated_at || new Date().toISOString());
       } else {
-        setError(data.error || 'فشل في تحميل التوقعات');
+        setError(toArabicError(data.error, 'فشل في تحميل التوقعات'));
       }
     } catch (err: any) {
-      setError(err.message || 'خطأ في الاتصال');
+      setError(toArabicError(err, 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -184,7 +185,7 @@ export function EidPredictionsWidget() {
           const Icon = iconMap[pred.symbol] || TrendingUp;
           const SignalIcon = signalIcons[pred.signal];
           const potentialGain = parseFloat(getPotentialGain(pred));
-          
+
           return (
             <div
               key={pred.id}
@@ -222,7 +223,7 @@ export function EidPredictionsWidget() {
                 <div className="flex items-center gap-2">
                   <span className="text-slate-500">الثقة:</span>
                   <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full ${pred.confidence >= 0.7 ? 'bg-green-500' : pred.confidence >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'}`}
                       style={{ width: `${pred.confidence * 100}%` }}
                     />

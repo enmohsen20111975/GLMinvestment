@@ -10,7 +10,8 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
+> **آخر تحديث: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
+> **آخر تحديث سابق: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
 > **آخر تحديث سابق:** 2026-09-03 (القاعدة 45) + 2026-09-02 (القاعدة 44 — NEWS-DB-SOT) + 2026-08-29 (القواعد 27-32: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
 > **المستودع:** https://github.com/enmohsen20111975/GLMinvestment
@@ -98,6 +99,15 @@
 ## 🚫 القواعد المطلقة (لا تُكسر أبدًا)
 
 هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
+
+> **فهرس القواعد (1–53):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–53 (التوسّعية).
+> - **1–8**: قواعد سلامة DBs + المعمارية + HARD cap + ATR + trailing + EXIT_POLICY + overrides + load_merged_history.
+> - **9–16**: trailing floor + EXIT_POLICY + overrides + DATA-UNIFY + liquidity + commit-guard + sandbox ≠ prod + VERIFY-BEFORE-DELETE.
+> - **17–24**: RELATIVE-PATHS + R:R ≥ 1.5 + loss ceiling + Python=Brain + V40.2 + dedup-by-ticker + PERSONA-UNIFY + fundamentals real.
+> - **25–32**: refactoring-gated + SANDBOX-RESET + NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM.
+> - **33–43**: PRODUCTION-WIRING + NO_DUPLICATE_SCREENS + ENGINE-UNIFY + DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER + DOCS-FIRST-LAST + REGIME-AND-AVG-DOWN + TELEGRAM-NOTIFICATIONS.
+> - **44–53**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS.
+> القاعدة 42 ظهرت بين 32 و 33 لأسباب تاريخية (تم إدراجها بعد فصل §4 KPIs) لكنها تخص §3.
 
 ### القاعدة 1 — لا تُلمس قواعد البيانات على الإنتاج
 - **ممنوع** الكتابة في أي `.db` على الإنتاج (`/root/GLMinvestment/db/*.db`).
@@ -1043,7 +1053,7 @@ curl -s http://localhost:8010/health
 أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ العمل في هذا المشروع **يقرأ هذا الملف**
 ويُقرّ بما يلي:
 
-1. قرأتُ `Documentation/00-CONSTITUTION.md` (هذا الملف) وفهمتُ القواعد المطلقة الـ 40.
+1. قرأتُ `Documentation/00-CONSTITUTION.md` (هذا الملف) وفهمتُ القواعد المطلقة الـ 53 (1-32 + 33-53).
 2. سأقرأ `01-PROJECT_ANATOMY.md` + `02-SCREENS_AND_COMPONENTS.md` + `SYSTEM_HOW_IT_THINKS.md` قبل أي تعديل.
 3. لن ألمس قواعد البيانات على الإنتاج (القاعدة 1).
 4. لن ألمس ملفات النظام (القاعدة 2).

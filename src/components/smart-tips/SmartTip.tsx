@@ -134,7 +134,7 @@ export function SmartTip({
       if (category) params.set('category', category);
 
       const res = await fetch(`/api/tips/random?${params.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error('تعذّر تحميل النصائح. يرجى المحاولة مرة أخرى.');
       const data = await res.json();
 
       if (data.success && data.tip) {

@@ -99,7 +99,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
         { cache: 'no-store' }
       );
       if (!res.ok) {
-        setError(`HTTP ${res.status}`);
+        setError('تعذّر جلب البيانات. يرجى المحاولة مرة أخرى.');
         setData(null);
         return;
       }
@@ -111,7 +111,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
       }
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'خطأ في الشبكة');
+      setError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
       setData(null);
     } finally {
       setLoading(false);

@@ -170,7 +170,7 @@ export function DualTrackPredictionsView() {
           const summary = results.map((r: any) =>
             `${r.market}: ${r.hit_rate || 0}% (${r.total_signals || 0} signals, ${r.qualified ? '✅' : '❌'})`
           ).join(' | ');
-          setBacktestResult(summary || 'No data');
+          setBacktestResult(summary || 'لا توجد بيانات متاحة');
           await fetchStats();
         }
       }

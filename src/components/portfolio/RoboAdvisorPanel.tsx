@@ -316,7 +316,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
         setProjError('يجب تسجيل الدخول لعرض التوقع المستقبلي');
         return;
       }
-      if (!res.ok) throw new Error('projection fetch failed');
+      if (!res.ok) throw new Error('تعذّر حساب التوقع المستقبلي');
       const data: ProjectionData = await res.json();
       setProjection(data?.success ? data : null);
     } catch (e) {
@@ -389,7 +389,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
         setEquity(null);
         return;
       }
-      if (!res.ok) throw new Error('equity-curve fetch failed');
+      if (!res.ok) throw new Error('تعذّر تحميل منحنى الثروة');
       const data: EquityData = await res.json();
       setEquity(data?.success ? data : null);
     } catch (e) {

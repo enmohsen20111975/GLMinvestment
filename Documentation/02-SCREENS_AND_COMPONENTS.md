@@ -4,7 +4,8 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-09-01 (إضافة NotebookAdminTab.tsx في AdminView + تحديث علامة "آخر تحديث" لتعكس الـ admin tab الجديد لـ Stock Notebooks).
+> **آخر تحديث:** 2026-09-25 (DOC-CONSOLIDATION pass: إضافة §0 شاشة الحالات المُجمَّعة (Screen Status Rollup) + تحديث عدّادات §1 — 274 component، 653 API route، 5-market + UI-Mirror + SQLite fallback).
+> **آخر تحديث سابق:** 2026-09-01 (إضافة NotebookAdminTab.tsx في AdminView + تحديث علامة "آخر تحديث" لتعكس الـ admin tab الجديد لـ Stock Notebooks).
 > **آخر تحديث سابق:** 2026-08-17 (post R:R fix commit `65a748f` + post fundamentals activation `04354a5` + post PERSONA-UNIFY-A `c14597d`).
 > **المصادر المُدمجة:** كل ملفات `Documentation/*.md` السابقة (PICKS-MANAGEMENT-SYSTEM · CLOSED_LOOP_FINAL · CURRENT_STATE · PERSONA_UNIFY_A_MEASUREMENT_REPORT · PROJECT_FULL_BLUEPRINT · API_DICTIONARY · V40_2_LIVE_INTEGRATION_PLAN · RR_FIX_FINAL_REPORT_20260817 · P0_V2_POST_DEPLOY_RUNBOOK · V34-INSTITUTIONAL-DECISION-ENGINE · GAPS_AND_MISSING · ULTRA-RESTORE-DATABASE-RECOVERY · DATA_ENGINE_FUNDAMENTALS_INVENTORY · FUNDAMENTALS_HISTORICAL_TEST_REPORT · RL-FIX-9-Predictions-Status-Logic · 03-REFACTORING_REPORT) + `audit_map.json` + `treadingView.code.text` + استكشاف آلي لـ `src/app/` + `src/components/`.
 >
@@ -14,12 +15,57 @@
 > 3. **`02-SCREENS_AND_COMPONENTS.md`** (هذا الملف) — كل شاشة وكل مكوّن.
 > 4. `SYSTEM_HOW_IT_THINKS.md` — منطق التحليل.
 >
-> **القاعدة الدستورية المرتبطة:** Rule 3 (لا تُنشئ صفحات Next.js جديدة — كل شيء في الـ single-page shell) · Rule 20 (Python = العقل، Node = عرض فقط) · Rule 25 (أي refactoring يحتاج موافقة المالك + VERIFY-BEFORE-DELETE).
+> **القاعدة الدستورية المرتبطة:** Rule 3 (لا تُنشئ صفحات Next.js جديدة — كل شيء في الـ single-page shell) · Rule 20 (Python = العقل، Node = عرض فقط) · Rule 25 (أي refactoring يحتاج موافقة المالك + VERIFY-BEFORE-DELETE) · Rule 53 (CRYPTO-IN-MARKETS — UI-Mirror Protocol).
+
+---
+
+## 0. شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-25)
+
+> **الهدف:** لقطة سريعة لحالة كل شاشة رئيسية في النظام. الحالات: ✅ working · ⚠️ partial · ❌ broken · 🚫 deprecated.
+> التفاصيل الكاملة لكل شاشة في §4 (الـ views) و §9 (الـ admin).
+
+| # | الشاشة (view ID) | الحالة | ملاحظات (2026-09-25) |
+|---|---|---|---|
+| 1 | `dashboard` | ✅ working | يعرض indices + backtest table + liquidity flow + intraday pressure + investors flow + crypto signals (حسب currentMarket). |
+| 2 | `stocks` (stock-filters / screener) | ✅ working | schema-aware SQLite fallback (Python → SQLite → data_engine.db) + dynamic sectors لكل سوق. |
+| 3 | `smart-confluence` | ✅ working | يعرض 20 BUY predictions مأخوذة من V40.2 generator. |
+| 4 | `trading-chart` | ⚠️ partial (1 non-critical error in widget) | الشارت يعرض 5m/15m/30m/1h/1D/1W + range bar؛ خطأ widget غير حر في `<TradingViewChart>` (معالَج عبر `<ErrorBoundary>` — لا يسبب crash). |
+| 5 | `recommendations` (متابعة التوقعات) | ✅ working | 6-7 tabs (3 personas + tracking + summary + missed + learn-from-errors). يستخدم `/api/predictions/honest-tracking/*`. |
+| 6 | `picks-management` | ✅ working | 5 daily picks + history + active management. |
+| 7 | `reports` | ✅ working | auth-protected — image cards (persona, market status, stock league, top trades). |
+| 8 | `live-monitor` | ✅ working | مراقبة لحظية + intraday pressure + market depth + investors flow (EGX/TADAWUL/KSE/QSE فقط). |
+| 9 | `trading-memory` | ✅ working | auth-protected — `/api/python/v4/insight/*` (⚠️ Blueprint `v4_bp` غير مسجّل — P1.9). |
+| 10 | `portfolio` | ✅ working | Enhanced portfolio view + multi-portfolio + position deep-dive + risk profiler quiz. |
+| 11 | `watchlist` | ✅ working | Enhanced watchlist + professional view. |
+| 12 | `alerts-center` | ✅ working | مركز التنبيهات + smart alerts panel + sniper scan polling. |
+| 13 | `wealth` | ✅ working | wealth charts + real return panel. |
+| 14 | `crypto` (+ 8 crypto sub-views) | ✅ working | UI-Mirror Protocol — نفس المكوّنات بـ `currentMarket='CRYPTO'`. |
+| 15 | `specialist-analysis` | ✅ working | تحليل المتخصصين + Fibonacci + Candlestick widgets. |
+| 16 | `learning` + `academy` | ✅ working | مركز التعلم + أكاديمية + CandlestickSimulator + StrategySandbox + PaperTradingWorkstation. |
+| 17 | `simulation` | ✅ working | محاكاة الورق + paper-trading-v2. |
+| 18 | `zakat` + `tithes` | ✅ working | Islamic finance (zakat + tithes). |
+| 19 | `subscription` | ✅ working | الباقات + Paymob + Google Play receipt verification. |
+| 20 | `auth` + `settings` + `about` | ✅ working | NextAuth (Google + Bearer) + user settings + static about. |
+| 21 | `admin` | ✅ working | 16+ sub-tabs (Maestro disabled per KILL-MAESTRO، NotebookAdminTab active، Backtest، Telegram، Crypto، Forex، SystemControl، Users، ...). |
+| 22 | `backtesting` | ⚠️ partial (hidden) | `<EGXBacktestDashboard />` — لا entry في الـ sidebar (legacy). |
+| 23 | `prediction-performance` / `prediction-credibility` | 🚫 deprecated (DEAD) | يرجّع placeholder — admin-only. |
+| 24 | `community` | 🚫 deprecated (DEAD) | شالها الـ sidebar + CommunityView orphan (581 LOC). |
+| 25 | `trading-journal` / `unified-analysis` / `StoredAnalysisView` | 🚫 deprecated (moved/distributed) | مُوزَّعة على admin / recommendations / specialist-analysis. |
+
+**الإحصائيات الإجمالية (2026-09-25):**
+- Next.js page routes: 20 (9 نشطة · 9 ميتة · 2 redirect)
+- Next.js API routes: **653 route.ts** (156 top-level directory + nested) · 257 proxy لـ Python · ~331 direct · 163 tiny-proxy boilerplate
+- Hash views في `page.tsx`: 45 (~35 نشطة · ~10 legacy/hidden/alias)
+- React components: **274 tsx** + 3 ts (non-tsx) = 277 total under `src/components/`
+- UI primitives المستخدمة: 49 (29 مستخدمة بكثرة + 20 orphan)
+- مكوّنات orphan (dead): 71 (50,442 LOC ميتة — 26.6%)
+- Flask Blueprints: 53 registered (33 DEPRECATED api files ~17,000 LOC)
 
 ---
 
 ## 📑 المحتويات
 
+0. [شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-25)](#0-شاشة-الحالات-المجمعة-screen-status-rollup--2026-09-25)
 1. [نظرة عامة + الإحصائيات الكلية](#1-نظرة-عامة--الإحصائيات-الكلية)
 2. [الشاشة الوحيدة المرئية: `/` (src/app/page.tsx)](#2-الشاشة-الوحيدة-المرئية--srcapppagetsx)
 3. [بنية الـ Sidebar / Nav / Header / Footer](#3-بنية-الـ-sidebar--nav--header--footer)
@@ -39,17 +85,19 @@
 
 ## 1. نظرة عامة + الإحصائيات الكلية
 
+> **(مُحدَّث 2026-09-25 — DOC-CONSOLIDATION)** القيم النهائية مُجمَّعة في §0 (Screen Status Rollup). القيم التالية هي الأرقام المرجعية من الكود الفعلي.
+
 | الفئة | العدد | الحالة |
 |------|------:|--------|
 | **Next.js page routes** | 20 | 9 نشطة · 9 ميتة · 2 redirect |
-| **Next.js API routes** | 588 | 257 proxy لـ Python · 331 direct · 163 "tiny-proxy" boilerplate (~4,700 LOC) |
+| **Next.js API routes** | **653** | 257 proxy لـ Python · 331 direct · 163 "tiny-proxy" boilerplate (~4,700 LOC) |
 | **Hash views في `page.tsx`** | 45 | ~35 نشطة · ~10 legacy/hidden/alias |
-| **React components** | 328 | 49 UI primitives + 279 non-UI |
+| **React components** | **274** (tsx) + 3 (ts) = 277 | 49 UI primitives + 228 non-UI |
 | **UI primitives المستخدمة** | 49 | 29 مستخدمة بكثرة · 20 orphan (~4,300 LOC) |
 | **مكوّنات orphan (ميتة)** | 71 | **50,442 LOC ميتة (26.6% من الإجمالي)** |
 | **مكوّنات massive (>500 LOC)** | 139 | 49 منها أيضًا orphan |
 | **`garage/` directory** | 7 ملفات | **8,247 LOC — كلها ميتة** |
-| **Flask Blueprints** | 32 مسجّل / 65 ملف | 33 DEPRECATED api files (~17,000 LOC) |
+| **Flask Blueprints** | 53 مسجّل / 65 ملف | 33 DEPRECATED api files (~17,000 LOC) |
 | **إجمالي LOC (Frontend components)** | ~189,785 | 100% |
 | **إجمالي LOC (API routes)** | ~66,885 | 100% |
 

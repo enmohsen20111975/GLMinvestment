@@ -917,7 +917,7 @@ export function TradingViewChart({
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load chart data');
+          setError('تعذّر تحميل بيانات الرسم البياني. يرجى المحاولة مرة أخرى.');
         }
       } finally {
         if (!cancelled) {

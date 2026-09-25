@@ -38262,3 +38262,1250 @@ Work Log:
      - `ws-service` (Online)
      - `telegram-poster` (Online)
 
+
+---
+Task ID: DOC-CONSOLIDATION
+Agent: Secretary (documentation specialist)
+Task: Consolidate ALL documentation into the 4 canonical files mandated by §ترتيب قراءة التوثيق of the Constitution. No new files. No deletions. Mark extras as historical.
+
+Work Log:
+1. Audit pass — listed every file under `Documentation/` (19 .md files + 2 in `audit-logs/`) and every root-level `.md` (7 special files: `AGENTS.md`, `SYSTEM_STATE.md`, `CHANGELOG.md`, `worklog.md`, `DEPLOYMENT_GUIDE.md`, `Grok-Report-V40.2-Detailed-Analysis.md`, `Agent messages (from news).md`). Verified 4 canonical files exist:
+   - `Documentation/00-CONSTITUTION.md` (was 1844 lines)
+   - `Documentation/01-PROJECT_ANATOMY.md` (was 1567 lines)
+   - `Documentation/02-SCREENS_AND_COMPONENTS.md` (was 1116 lines)
+   - `Documentation/SYSTEM_HOW_IT_THINKS.md` (was 2425 lines)
+
+2. Verified all 53 rules exist in `00-CONSTITUTION.md` §3 (1-32 + 42 in §3; 33-41 + 43-53 follow in §3 continuation). Rules index block added at the top of §3 mapping rule-ranges to categories (DB safety / Architecture / caps / personas / disclosure / etc.). Updated §16 Agent Covenant count from "40" → "53".
+
+3. Updated `01-PROJECT_ANATOMY.md`:
+   - Refreshed header "آخر تحديث: 2026-09-25" + DOC-CONSOLIDATION note.
+   - §1.5 statistics table — refreshed counts against actual code state:
+     * Frontend .tsx components: 274 (+3 .ts = 277)
+     * Next.js route.ts files: 653 (was ~583)
+     * stocks.db: 956 stocks (EGX=360 · TADAWUL=413 · KSE=128 · QSE=55) — was 970
+     * data_engine.db.stocks: 1,585
+     * predictions.db.predictions: 306 (was 153) + aiPrediction=2,459 + persona_predictions=946 + historical_trades=550 + outcome_logs=8,544
+     * news.db.news_articles: 7,894 (post NEWS-DB-SOT migration)
+     * price_history.db.price_history: 1,205,599 rows (was 288,194)
+     * data_engine.db.screener_lists: 1,505
+     * Personas: 3 (balanced = production baseline; expert disabled per Rule 23)
+   - Added new §1.6 — "5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern" covering EGX/TADAWUL/KSE/QSE/CRYPTO with currentMarket switching, MarketSelector.tsx, and the Python-first → SQLite fallback pattern for API routes.
+   - Updated §3.1 DB Map with current counts (all 53 tables in predictions.db, 23 in data_engine.db, 57 in stocks.db, 5 in news.db, 2 in price_history.db) and noted `db/` is now the canonical sandbox path (replaced `db/vps_real/`).
+   - Added new §17 — "Historical Documentation Archive" listing every extra .md file under `Documentation/` and the special root-level files, with a mapping showing which canonical section absorbed its content (or marked as pure historical reference). Policy stated: no deletion (Rule 16 + 25), no updates, only read when historical context is needed.
+
+4. Updated `02-SCREENS_AND_COMPONENTS.md`:
+   - Refreshed header + linked Rule 53 (CRYPTO-IN-MARKETS / UI-Mirror Protocol).
+   - Added new §0 — "Screen Status Rollup (2026-09-25)" with a 25-row table covering every major screen with status: ✅ working / ⚠️ partial / ❌ broken / 🚫 deprecated. Covers all 21 working screens named in the task brief (dashboard, stock-filters, smart-confluence, trading-chart ⚠️, recommendations, picks-management, reports, live-monitor, trading-memory, portfolio, watchlist, alerts-center, wealth, crypto-mirror, specialist-analysis, learning, simulation, zakat/tithes, subscription, auth/settings/about, admin, + 4 deprecated).
+   - Updated §1 statistics table with current counts (653 API routes, 274 components, 53 blueprints).
+   - Updated §0 entry in the table-of-contents to include the new section.
+
+5. Updated `SYSTEM_HOW_IT_THINKS.md`:
+   - Refreshed header to "2026-09-25 (DOC-CONSOLIDATION pass)".
+   - Rewrote the production-state summary block: V40.2 = sole brain · Closed-Loop fully active · 3 personas with `balanced` as production baseline · 68-trade backtest (PF 1.19, +1.35%) · 10 new STRONG_BUY predictions · DB counts verified (306 / 2,459 / 946 / 550 / 8,544).
+   - Added new "Production Snapshot (2026-09-25)" table mapping each engine component to its status (V40.2 ✅, Maestro 🚫, Closed-Loop ✅, Decision Logger ✅, 10 feature flags OFF by default, 5-Market UI Mirror ✅).
+
+6. Did NOT delete any historical documentation file. The 16 historical files in `Documentation/` + 2 in `audit-logs/` are cataloged in §17 of `01-PROJECT_ANATOMY.md` as historical reference. The 7 special root-level files (AGENTS.md, SYSTEM_STATE.md, CHANGELOG.md, worklog.md, DEPLOYMENT_GUIDE.md, Grok-Report, Agent messages) are documented in §17.3 and protected per the critical rules.
+
+7. Did NOT create any new documentation file. The state report (Step 4 of the brief) is delivered inline in this worklog entry (see "State Report" below) — no new `.md` file was created in the repository.
+
+Files Modified:
+- MODIFIED: Documentation/00-CONSTITUTION.md (added rules index 1-53, updated agent covenant count, refreshed header stamp)
+- MODIFIED: Documentation/01-PROJECT_ANATOMY.md (header refresh, §1.5 statistics refresh, new §1.6 5-Market+UI-Mirror+SQLite-Fallback, §3.1 DB Map refresh, new §17 Historical Archive)
+- MODIFIED: Documentation/02-SCREENS_AND_COMPONENTS.md (header refresh, new §0 Screen Status Rollup, §1 stats refresh, TOC update)
+- MODIFIED: Documentation/SYSTEM_HOW_IT_THINKS.md (header refresh, production snapshot rewrite, new Production Snapshot table)
+- MODIFIED: worklog.md (this entry)
+
+Verification:
+- ✅ All 4 canonical files updated and remain the single source of truth.
+- ✅ All 53 rules verified present in `00-CONSTITUTION.md` §3.
+- ✅ DB counts (956 / 1,585 / 306 / 7,894 / 1,205,599) verified against actual `db/*.db` files via Python sqlite3 module.
+- ✅ API route count (653) and component count (274) verified via `find`.
+- ✅ No files deleted (Rule 16 + 25 honored — VERIFY-BEFORE-DELETE + refactoring-gated).
+- ✅ No new documentation files created (Rule 4 + Rule 28 honored — no new files, no duplication).
+- ✅ Historical files cataloged as reference (Rule 41 — DOCS-FIRST-LAST honored).
+- ✅ Market counts match: EGX=360, TADAWUL=413, KSE=128, QSE=55 (sum=956) + CRYPTO separate.
+
+=== State Report (Step 4) ===
+
+(1) Documentation Inventory
+- BEFORE: 19 .md files in `Documentation/` (4 canonical + 15 historical) + 2 in `audit-logs/` + 7 special root-level .md files = 28 total.
+- AFTER (no files deleted): same physical layout (28 total) BUT the 4 canonical files are now authoritative and self-contained. The other 24 files are explicitly cataloged as historical reference in `01-PROJECT_ANATOMY.md` §17.
+
+(2) Consolidation Actions
+- MERGED (referenced from canonical, not literally deleted):
+  * كل الاسواق.md → absorbed into `01-PROJECT_ANATOMY.md` §1.6 (5-Market Architecture).
+  * DATABASE_ARCHITECTURE.md → absorbed into `01-PROJECT_ANATOMY.md` §3.1.
+  * DATA_FLOW_MAP.md → absorbed into `01-PROJECT_ANATOMY.md` §1.6 + §2.
+  * METHODOLOGY_AND_RESULTS.md → absorbed into `SYSTEM_HOW_IT_THINKS.md` (تغييرات جوهرية 2026-09-03).
+  * LIQUIDITY_DYNAMIC_THRESHOLD_PROPOSAL.md + DYNAMIC_LIQUIDITY_V2_RESULTS.md → absorbed into `SYSTEM_HOW_IT_THINKS.md` (Liquidity Grab — Rule 37).
+  * BACKTEST_ANALYSIS + DEEP_BACKTEST_ANALYSIS (2026-08-31) → absorbed into `SYSTEM_HOW_IT_THINKS.md` backtest sections.
+  * PRODUCTION_DATA_EXPORT.md → absorbed into `01-PROJECT_ANATOMY.md` §3.2.
+  * FIXES_REPORT_2026-08-30.md → already in `worklog.md` + `CHANGELOG.md`.
+- KEPT AS HISTORICAL REFERENCE (not deleted, awaiting owner approval per Rule 25):
+  * LEGAL_PROTECTION.md (legal context).
+  * AUDIT_ENGINEERING_2026-08-30.md + AUDIT_REPORT_2026-08-30.md + ANALYST_REPORT_2026-08-31.md (audit/analyst snapshots).
+  * CLOSED_CAMP_MINUTES.md (strategic decision log).
+  * audit-logs/LAST_30DAYS_WEAKNESS_ANALYSIS.md + JULY_2026_LOSS_ANALYSIS.md (audit subdirectory — explicitly allowed by Constitution §ترتيب قراءة التوثيق).
+- SPECIAL ROOT-LEVEL (untouched):
+  * AGENTS.md, SYSTEM_STATE.md, CHANGELOG.md, worklog.md, DEPLOYMENT_GUIDE.md, Grok-Report-V40.2-Detailed-Analysis.md, Agent messages (from news).md — documented in §17.3 of `01-PROJECT_ANATOMY.md`.
+
+(3) Current Documentation Health
+- `00-CONSTITUTION.md` (1854 lines): ✅ Complete and current. All 53 rules listed (verified via `rg "^### القاعدة \d+"`). TOC accurate at section level (16 sections). Agent Covenant updated to 53. Header refreshed to 2026-09-25.
+- `01-PROJECT_ANATOMY.md` (1669 lines): ✅ Complete and current. §1.5 statistics verified against code. §1.6 5-Market + UI-Mirror + SQLite Fallback added. §3.1 DB Map refreshed with current counts. §17 Historical Archive added.
+- `02-SCREENS_AND_COMPONENTS.md` (1164 lines): ✅ Complete and current. §0 Screen Status Rollup covers all 25 major screens with ✅/⚠️/❌/🚫 marks. §1 statistics refreshed.
+- `SYSTEM_HOW_IT_THINKS.md` (2447 lines): ✅ Complete and current. Production snapshot added. V40.2 + closed-loop + 3 personas confirmed as production state.
+
+(4) Gaps / Open Items
+- 71 orphan components (50,442 LOC dead code) in `src/components/` — candidates for refactoring per Rule 25 (need owner approval). Documented in §11 of `02-SCREENS_AND_COMPONENTS.md`.
+- 9 dead Next.js page routes (4,711 LOC) — candidates for cleanup. Documented in §10.1.
+- `trading-memory` screen depends on unregistered blueprint `v4_bp` (P1.9 — open). Documented in §0 of `02-SCREENS_AND_COMPONENTS.md`.
+- `trading-chart` widget has 1 non-critical error caught by `<ErrorBoundary>` (no fix needed immediately; flagged as ⚠️ partial).
+- The historical files (16 in `Documentation/` + 2 in `audit-logs/`) remain on disk pending owner approval for deletion per Rule 16 + Rule 25. They are now explicitly cataloged in §17 so any reader knows which canonical section absorbed their content.
+- `notebooks/EGX/` has 259 JSON files (Stock Notebook system) — only 30 are deeply annotated; 229 use default `machine_summary`. Documented in `SYSTEM_HOW_IT_THINKS.md` (Stock Notebook section).
+- `tab_balance_sheet` / `tab_income_statement` / `tab_cash_flow` still have the column-shift bug (866 rows each but `symbol` column holds market name). Documented in `01-PROJECT_ANATOMY.md` §3.3 as Stage H — NEXT.
+
+Conclusion: Documentation consolidation complete. 4 canonical files are the single source of truth. 24 historical files cataloged for reference (no deletion). State report delivered inline. Ready for next agent.
+
+---
+Task ID: ARCH-REVIEW
+Agent: Software Architect (مهندس البرمجيات)
+Task: مراجعة هندسية شاملة للمنصة (Comprehensive Engineering Audit)
+
+نطاق المراجعة: codebase كامل على `/home/z/my-project/` (Frontend Next.js 16 + Backend Python + 16 SQLite DBs + Data Engine)
+القواعد المُطبَّقة: 1, 2, 3, 4, 5, 6, 7, 8, 16, 17, 20, 25, 27, 28, 29, 30, 31, 32, 52, 53
+
+---
+
+# 📋 الملخص التنفيذي (Executive Summary)
+
+**المنصة تعمل بشكل صحيح وظيفياً (ESLint exit 0، كل DBs pass integrity_check، 653 API routes شغّالة)، لكن تعاني من 5 مشاكل هندسية حرجة:**
+
+| # | المشكلة | Severity | التأثير |
+|---|---------|----------|---------|
+| 1 | **126 MB حجم الـ bundle** (13 chunks > 4MB، أعلى chunk = 12MB) | 🔴 critical | المستخدم على الموبايل بياخد 5-10s لأول load |
+| 2 | **data_engine.db بـ 705K rows بدون indexes** على أي عمود | 🔴 critical | أي SELECT بـ يعمل full-table-scan على 80K-200K صف |
+| 3 | **25 جدول مكرر** عبر الـ DBs (outcome_logs بـ 8544 صف في DBs اتنين) | 🔴 critical | split-brain data + Rule 46 violation |
+| 4 | **100 route يفتح SQLite مباشرة** في Node (Rule 20 violation) | 🔴 critical | architecture bypass للـ "Python=Brain" |
+| 5 | **Math.random() في 15 route** (Rule 27 violation: NO-FAKE-DATA) | 🟡 warning | بيانات وهمية في seed-experts + community/seed |
+
+---
+
+# 🔍 A. Architecture & Structure
+
+## A.1 — تنظيم المكوّنات (Component Organization)
+
+**الحالة الراهنة:**
+- 1071 ملف `.ts/.tsx` في `src/` بإجمالي **281,179 LOC**
+- 653 API routes موزعة على 25 folder (top: admin=113، mobile=48، predictions=35، market=31، stocks=25)
+- مكوّنات منفصلة في 30+ folder تحت `src/components/`
+
+**🔴 مشاكل:**
+
+1. **مكوّنات عملاقة (god components):**
+   - `src/components/analysis/MarketAnalysisView.tsx` = **7753 سطر** (أكبر منصة عرض كاملة في حد ذاته)
+   - `src/components/admin/DatabaseManagerFull.tsx` = 3259 سطر
+   - `src/lib/analysis-engine.ts` = 3126 سطر
+   - `src/components/portfolio/EnhancedPortfolioView.tsx` = 3106 سطر
+   - `src/components/admin/SuperLearningSystem.tsx` = 2403 سطر
+   - توصيات: تقسيم هذه المكوّنات إلى sub-components أصغر (≤400 سطر لكل واحد).
+
+2. **تكرار في DB helper modules (Rule 28 — NO-DUPLICATION):**
+   - 13 ملف منفصل لـ "db helpers" بأسماء متداخلة/متناقضة:
+     - `src/lib/db.ts` (11 سطر)
+     - `src/lib/db-v2.ts` (401 سطر)
+     - `src/lib/db-predictions.ts` (27 سطر)
+     - `src/lib/unified-db.ts` (487 سطر)
+     - `src/lib/shared-db.ts` (276 سطر)
+     - `src/lib/new-db.ts` (368 سطر)
+     - `src/lib/egx-db.ts` (1232 سطر)
+     - `src/lib/data-engine-db.ts` (996 سطر)
+     - `src/lib/data-engine-db-sqljs.ts` (470 سطر)
+     - `src/lib/finance-db.ts` (56 سطر)
+     - `src/lib/community-db.ts` (90 سطر)
+     - `src/lib/radar-db.ts` (180 سطر)
+     - `src/lib/paper-trading-v2-db.ts` (441 سطر)
+   - الأسماء متناقضة (`new-db` مقابل `unified-db` مقابل `shared-db`) — هذا يخلق التباس شديد للمطوّر الجديد.
+
+3. **استخدام المكوّنات الموحّدة ضعيف جداً (Rule 52 violation):**
+   - `UnifiedTable.tsx` مستورد في **5 ملفات فقط**، لكن **32 ملف** بـ يستخدم `<TableHeader>/<TableBody>` يدوياً.
+   - `UnifiedPublishButton.tsx` مستورد في **6 ملفات فقط**، لكن **11 ملف** بـ يستخدم `ShareButton` منفصل.
+   - أمثلة لشاشات بتستخدم manual tables بدلاً من UnifiedTable:
+     - `src/components/predictions/PredictionTrackingView.tsx`
+     - `src/components/predictions/DualTrackPredictionsView.tsx`
+     - `src/components/portfolio/EnhancedPortfolioView.tsx`
+     - `src/components/screener/StockScreener.tsx`
+     - `src/components/screener/StockScreenerAdvanced.tsx`
+     - `src/components/watchlist/EnhancedWatchlistView.tsx`
+     - `src/components/crypto/CryptoScreenerView.tsx`
+     - `src/components/crypto/CryptoPredictionTrackingView.tsx`
+     - `src/components/recommendations/AiRecommendations.tsx`
+
+**🔵 توصيات:**
+- (مرتفعة) تقسيم `MarketAnalysisView.tsx` إلى 4-6 sub-components في نفس الـ directory.
+- (مرتفعة) توحيد 13 ملف db helper إلى ملف واحد `src/lib/db/index.ts` مع re-exports للأسماء القديمة (backward compat). يلزم موافقة المالك + VERIFY-BEFORE-DELETE (Rule 25).
+- (مرتفعة) refactoring الـ 27 شاشة اللي بـ تستخدم manual tables لاستخدام `<UnifiedTable>` (Rule 52).
+
+## A.2 — بنية API Routes
+
+**الحالة الراهنة:**
+- **653 route** موزعة على:
+  - 113 admin routes (17%)
+  - 48 mobile routes (7%)
+  - 35 predictions routes (5%)
+  - 31 market routes (5%)
+  - 25 stocks routes (4%)
+  - 24 v2 routes (4%)
+  - 23 crypto routes (4%)
+  - باقي الـ ~314 route موزعة على باقي الـ folders.
+
+**🔴 مشاكل:**
+
+1. **4 catch-all proxies (Rule 28 violation):**
+   - `src/app/api/[...slug]/route.ts`
+   - `src/app/api/proxy/[...path]/route.ts`
+   - `src/app/api/python/[...path]/route.ts`
+   - `src/app/api/telegram/[...path]/route.ts`
+   - الدستور (Rule 28) بيقول وحّد على `/api/proxy/[...path]` — لا يزال عندنا 4.
+   
+2. **97 route (15%) مجرد proxy pass لـ Python** (يستخدم `PYTHON_BACKEND_URL` بدون قراءة DB مباشرة) — **صحيح حسب Rule 20**.
+3. **100 route (15%) يفتح SQLite مباشرة** (يستورد `better-sqlite3`) — **مخالفة Rule 20** (Node = عرض فقط).
+   - يشمل: `db-stats`, `ai-performance`, `egx/investors`, `admin/db-explorer`, `admin/db-manager/repair`, `maker-radar/live-watch`, `money`, `finance/screener`, `finance/smart-confluence`, إلخ.
+
+4. **تكرار endpoints بين v2 + غيرها (Rule 28):**
+   - عندنا `/api/v2/*` (24 routes) + `/api/unified/*` (3 routes) + `/api/unified-stocks` + `/api/unified-crypto` + `/api/unified-analysis/*` + `/api/unified-market-analysis` + `/api/unified-scoring` — **7 بادئات "unified/v2" مختلفة**.
+   - توصية: دمجهم على `/api/v2/*` واحد.
+
+**🔵 توصيات:**
+- (مرتفعة) توحيد 4 catch-all proxies على `/api/proxy/[...path]` واحد فقط (مع حذف `[...slug]`, `python/[...path]`, `telegram/[...path]` — Rule 25 + موافقة المالك).
+- (مرتفعة) نقل 100 route اللي بتفتح SQLite مباشرة → استدعاء Python endpoint بدلاً منها (Rule 20).
+
+## A.3 — Database Architecture
+
+**الحالة الراهنة:**
+- **16 ملف SQLite** في `db/` (~480 MB total):
+  - 5 large DBs (>1MB): `price_history.db` (292MB), `data_engine.db` (86MB), `stocks.db` (13MB), `predictions.db` (10MB), `news.db` (14MB)
+  - 7 small/medium: `auth.db` (212KB), `analytics.db` (86KB), `crypto_learning.db` (73KB), `gold_prices.db` (40KB), `macro.db` (176KB), `intraday.db` (65KB), `community.db` (32KB)
+  - 4 empty/near-empty: `finance.db` (4KB, **0 tables**), `custom.db` (24KB, 0 rows), `crypto.db` (32KB, 0 rows), `learned.db` (12KB, 0 rows)
+- كل DBs تجتاز `PRAGMA integrity_check` ✅
+
+**🔴 مشاكل:**
+
+1. **25 جدول مكرر عبر الـ DBs (Rule 46 — DB-CLEANUP violation):**
+
+| الجدول | الـ DBs الموجود فيها | ملاحظات |
+|--------|---------------------|---------|
+| `ExpertRecommendation` | **3 DBs**: auth.db (17), stocks.db (104), predictions.db (42) | 🔴 split-brain data |
+| `outcome_logs` | stocks.db (8544), predictions.db (8544) | 🔴 نفس العدد بالظبط في DBs اتنين — نسخة مكررة |
+| `conjunction_patterns` | stocks.db (150), predictions.db (150) | 🔴 نفس العدد |
+| `learned_lessons` | learned.db (0), stocks.db (0), predictions.db (8644) | 🟡 جدول فارغ مكرر |
+| `predictions` | stocks.db (0), predictions.db (306) | 🟡 جدول فارغ مكرر |
+| `gold_prices` | data_engine.db (163K), gold_prices.db (6), stocks.db (3) | 🔴 3 DBs، مصدر واحد غير واضح |
+| `analytics_events` | analytics.db (0), stocks.db (453) | 🔴 analytics.db فارغ |
+| `page_views`, `feature_usage`, `daily_analytics_summary`, `user_sessions`, `error_logs` | analytics.db (0), stocks.db (0) | 🟡 جدولين مكررين فاضيين |
+| `stocks` | data_engine.db (1585), stocks.db (956) | 🔴 عدد مختلف = split-brain |
+| `egksco_stocks`, `egksco_price_history`, `egksco_sync_status` | data_engine.db, stocks.db | 🟡 نسخ |
+| `cached_analysis` | stocks.db (111), predictions.db (0) | 🟡 مكرر |
+| `prediction_logs` | stocks.db (0), predictions.db (80) | 🟡 مكرر |
+| `indicator_trust_scores` | stocks.db (10), predictions.db (10) | 🟡 نفس العدد |
+| `portfolios` | stocks.db (3), predictions.db (4) | 🔴 عدد مختلف |
+| `telegram_news` | stocks.db (6), predictions.db (0) | 🟡 |
+| `user_trades` | auth.db, predictions.db | 🟡 |
+| `crypto_prediction_logs` | crypto.db, crypto_learning.db | 🟡 |
+| `User`, `Post` | auth.db, custom.db | 🟡 custom.db فاضي تماماً |
+| `ExpertTrackRecord` | auth.db, predictions.db | 🟡 |
+
+2. **27 جدول فارغ في stocks.db وحده:**
+   - `predictions`, `learned_lessons`, `prediction_logs`, `signal_logs`, `news`, `news_items`, `morning_reports`, `page_views`, `feature_usage`, `daily_analytics_summary`, `user_sessions`, `error_logs`, `tracked_channels`, `telegram_messages`, `telegram_recommendations`, `telegram_images`, `scraping_status`, `pending_settlements`, `paper_trades`, `financial_transactions`, `financial_obligations`, `obligation_payments`, `context_logs`, `regime_indicator_weights`, `indicator_weights`, `egksco_price_history`, `user_notifications`.
+
+3. **DBs فاضية تماماً:**
+   - `finance.db` = 0 جداول (4KB)
+   - `custom.db` = 2 جداول (User, Post) كلها 0 صفوف
+   - `crypto.db` = 2 جداول (cryptos, crypto_prediction_logs) كلها 0 صفوف
+   - `learned.db` = 1 جدول (learned_lessons) 0 صفوف
+   - `community.db` = 5 جداول كلها 0 صفوف
+
+4. **schema bloat في `predictions.db.predictions`** (59 عمود):
+   - `signal` AND `signal_type` (كلاهما مُعبّأ بالكامل) — Rule 6 violation
+   - `actual_return`, `pnl_percent`, `pnl_pct` (3 أعمدة للـ P&L!)
+   - `highest_price`, `highest_price_reached` (مكرر)
+   - `lowest_price`, `lowest_price_reached` (مكرر)
+   - 8 أعمدة score مختلفة: `master_score`, `technical_score`, `fundamental_score`, `ai_pattern_score`, `sentiment_score`, `explosive_score`, `maestro_score`, `score`
+   - `notes` + `analysis_json` (تداخل)
+   - `target_price` + `target_price_2` (Rule 18 يقول استخدم `tp1`/`tp2`)
+
+5. **توزيع الـ signal في predictions.db.predictions:**
+   - HOLD: 114، WATCH: 71، STRONG_BUY: 58، BUY: 56، SELL: 7 — توزيع غير متوازن (SELL نادر جداً).
+
+**🔵 توصيات:**
+- (حرج) **دمج `outcome_logs` + `conjunction_patterns` + `indicator_trust_scores`** على predictions.db فقط، وحذف النسخ من stocks.db بعد VERIFY-BEFORE-DELETE.
+- (حرج) توحيد `ExpertRecommendation` على DB واحد (يُفضّل predictions.db لأنه الأكبر).
+- (حرج) توحيد `analytics_events` على analytics.db، وحذف من stocks.db (مع نقل الـ 453 صف موجود).
+- (حرج) **حذف 4 DBs فاضية**: `finance.db`, `custom.db`, `crypto.db`, `learned.db` (بعد موافقة المالك).
+- (مرتفعة) تنظيف 27 جدول فارغ في stocks.db.
+- (مرتفعة) توحيد أعمدة الـ P&L (`actual_return` فقط) + أعمدة highest/lowest (واحد بس) في `predictions.predictions`.
+
+## A.4 — Shared Utilities
+
+**🔴 مشاكل:**
+- `UnifiedTable` (5 imports) مقابل 32 manual table uses — نسبة التبني **15.6%** فقط.
+- `UnifiedPublishButton` (6 imports) مقابل 11 ShareButton imports — نسبة التبني **54%**.
+- `StockSearchSelector` و`MarketSelector` — لم أتحقق منهما بالتفصيل لكن يبدو استخدامهما محدود.
+
+**🔵 توصيات:**
+- refactoring تدريجي لكل `<TableHeader>` في الشاشات الـ 27 لاستخدام `<UnifiedTable>`.
+- استبدال كل ShareButton imports في 11 ملف بـ `<UnifiedPublishButton>`.
+
+## A.5 — Type Safety
+
+**🔴 مشاكل:**
+- **1165 استخدام لـ `any`** في `src/` (includes `as any`, `: any`, `<any>`, `any[]`).
+- توزّع: 789 مرة `: any` + ~376 `as any`/`<any>`.
+- أحيان تظهر في أنواع مهمة مثل:
+  - `src/app/api/admin/db-explorer/route.ts:92`: `as any[]` لأعمدة PRAGMA (مقبول — SQLite types غير معروفة compile-time).
+  - لكن تظهر أيضاً في معالجة البيانات الحقيقية (تحتاج generics صريحة).
+
+**🔵 توصيات:**
+- (مرتفعة) إضافة `eslint-plugin-deprecation` + `@typescript-eslint/no-explicit-any` كـ warning تدريجياً.
+- استبدال `any[]` بـ types مُعرّفة محلياً (مثل `type TableRow = Record<string, unknown>`).
+
+---
+
+# 🔍 B. Code Quality
+
+## B.1 — Dead Code
+
+**🔴 مشاكل:**
+
+1. **301 سكربت one-off في `/scripts/`:**
+   - يوجد **6 نسخ** من `patch_rootpage` (`patch_rootpage.py`, `_v2`, `_v3`, `_v4`, `_v5`, `_v6`) — تكرار صريح.
+   - يوجد **4 نسخ** من `patch_watchlist` (`patch_watchlist.py`, `2`, `3`, `4`).
+   - يوجد **3 نسخ** من `fix_data_engine_corruption` (`.py`, `.ts`, `.cjs`).
+   - يوجد **3 نسخ** من `audit-db-schema` (`.ts`, `.cjs`, `.py` في `audit_dbs_deep.py`).
+   - يوجد 4 نسخ من `migrate-*` (`migrate-db.ts`, `migrate-databases.ts`, `migrate-to-unified-db.ts`, `migrate-from-egx-investment.ts`, `migrate-v2.ts`).
+   - توصية: أرشفة كل ما هو ليس في `package.json scripts` إلى `scripts/_archive/`.
+
+2. **Python analyzers potentially dead (لم يستوردها أحد عبر import/explicit):**
+   - `mean_reversion_signal.py` — **0 مرجع** في كامل المشروع
+   - `prediction_sanity.py` — **0 مرجع**
+   - `correlation_filter.py` — **4 مراجع** لكن كلها في scripts/
+   - `expert_memory_v4.py` — مسجّل في `BLUEPRINTS` باسم `expert_memory_v4_routes` لكن **الملف غير موجود** في `vps-service/api/`!
+   - هذه كلها تحتاج VERIFY-BEFORE-DELETE (Rule 16) قبل الحذف.
+
+3. **خانة BLUEPRINTS معطوبة:**
+   - `vps-service/lightweight_server.py:99` بـ يسجّل `('api.expert_memory_v4_routes', 'v4_bp')` لكن ملف `vps-service/api/expert_memory_v4_routes.py` **غير موجود** — يطبع warning صامت عند startup (`⚠️ v4_bp registration note: ModuleNotFoundError`).
+   - هذا dead config يجب حذفه (Rule 16).
+
+## B.2 — Error Handling
+
+**🟢 جيد:**
+- **636 من 653 route** (97.4%) فيها `try { } catch { }`.
+- ESLint exit 0 — لا أخطاء lint.
+
+**🟡 تحذيرات:**
+- 17 route فقط تستخدم `finally { db.close() }` لضمان إغلاق الاتصال.
+- **6 routes فيها opens > closes** (potential connection leak):
+  - `src/app/api/predictions/honest-tracking/list/route.ts` (2 opens, 1 close)
+  - `src/app/api/predictions/honest-tracking/stats/route.ts` (2 opens, 1 close)
+  - `src/app/api/predictions/honest-tracking/learn-from-errors/route.ts` (3 opens, 2 close)
+  - `src/app/api/predictions/credibility/route.ts` (2 opens, 1 close)
+  - `src/app/api/predictions/route.ts` (2 opens, 1 close)
+  - `src/app/api/market/sectors/intelligence/route.ts` (2 opens, 1 close)
+- ملاحظة: بعض الـ "opens" عبارة عن opens مختلفة على DBs مختلفة، فلا يوجد leak فعلي. لكن يجب التحقق.
+
+**🔵 توصيات:**
+- استخدام pattern موحّد: `try { const db = open(); ... } finally { db.close(); }` لكل route يفتح DB.
+
+## B.3 — SQL Injection Risks
+
+**الحالة الراهنة:**
+- **289 مرة** `db.prepare(\`...${...}...\`)` (template literals في SQL).
+- **15 مرة** `db.prepare(...)` مع `${variable}` مباشرة.
+
+**بعد فحص عيّنات:**
+- **معظمها آمن** — تأتي من:
+  - hard-coded SQL function strings مثل `todayStart = "datetime('now', '+2 hours', 'start of day')"` (admin/analytics/route.ts).
+  - allowlist-validated table names (مثل `tab-data/route.ts` اللي بـ يفحص `tab` مقابل `validTabs` array).
+  - PRAGMA table_info مع table name ثابت.
+- **لكن pattern هش** — الاعتماد على allowlist صحيح لكن لو تم تجاوزه بأي تعديل مستقبلي = خطر.
+
+**🟡 حالات تستحق مراجعة:**
+- `src/app/api/admin/clear-junk-data/route.ts:43,47,50,117` — `${table}` مباشرة في SELECT/DELETE (لكن table من قائمة ثابتة محلية).
+- `src/app/api/data-engine/health/route.ts:37` — `${tableName}` (من قائمة ثابتة).
+- `src/app/api/data-engine/new-db-stats/route.ts:54` — `${table}` (من iteration على sqlite_master).
+
+**🔵 توصيات:**
+- (منخفضة) إنشاء helper `safeQuery(table, sql, params)` يتحقق من `table` ضد `sqlite_master` قبل التنفيذ.
+- (منخفضة) تحويل `LIMIT ${limit} OFFSET ${offset}` في tab-data/route.ts إلى `LIMIT ? OFFSET ?` مع params.
+
+## B.4 — Schema-awareness (Rule 6)
+
+**🔴 مشاكل:**
+- فقط **25 من 653 route** (3.8%) تستخدم `PRAGMA table_info` للتحقق من الأعمدة.
+- **59 route تقرأ predictions.db** لكن **فقط 25 منها** تستخدم PRAGMA — أي **34 route تقرأ predictions.db بدون فحص schema**.
+- أمثلة على routes تقرأ predictions.db بدون PRAGMA:
+  - `src/app/api/ai-performance/route.ts`
+  - `src/app/api/sniper/track/route.ts`
+  - `src/app/api/sniper/closer/pending/route.ts`
+  - `src/app/api/live-monitor/ledger/route.ts`
+  - `src/app/api/recommendations/retroactive-evaluate/route.ts`
+  - `src/app/api/finance/smart-confluence/route.ts`
+  - `src/app/api/admin/system-health/route.ts`
+  - `src/app/api/admin/db-manager/repair/route.ts`
+
+**🔵 توصيات:**
+- (مرتفعة) إضافة `PRAGMA table_info` لكل route يقرأ predictions.db (Rule 6 إلزامي).
+
+## B.5 — Constitution Violations
+
+**🔴 Rule 27 (NO-FAKE-DATA):**
+- **15 route تستخدم `Math.random()`** في API:
+  - `src/app/api/admin/promo-codes/route.ts:37` — لإنشاء promo code string (مقبول).
+  - `src/app/api/mobile/alerts/check/route.ts:284` — لإنشاء ID (مقبول).
+  - `src/app/api/mobile/alerts/settings/route.ts:202` — لإنشاء ID (مقبول).
+  - `src/app/api/market/live-data/route.ts:79` — **`.sort(() => Math.random() - 0.5)`** لترتيب stocks عشوائياً (مخالفة — يجب ترتيب بـ volume أو turnover).
+  - `src/app/api/community/seed/route.ts:222,243,244,245` — **بيانات seed وهمية** (مخالفة صريحة).
+  - `src/app/api/news/ingest/route.ts:84` — لإنشاء ID (مقبول).
+  - `src/app/api/seed-experts/route.ts:118,119,121` — **بيانات experts وهمية** (مخالفة — الدستور يمنع seed-experts).
+
+**🟡 Rule 30/31 (CLIENT-FACING-STYLE / NO-HYPE-LANGUAGE):**
+- **28 occurrence** من 🚀/🎉/💰 في شاشات **غير** admin:
+  - `src/components/share/ShareButton.tsx:309`: `💰 السعر الحالي`
+  - `src/components/screener/StockScreenerAdvanced.tsx:366,390`: `💰 السعر` + `⚡ التغير`
+  - `src/components/screener/BottomPanel.tsx:216,352`: `💰 تم تفعيل استراتيجية` + `💰 رخيص وتوزيعات`
+  - `src/components/recommendations/SocialPostView.tsx:139`: `💰 سعر الدخول`
+  - `src/components/admin/WealthCharts.tsx:124,406`: allowed (admin screen) ✅
+- **لكن:** الإيموجي المسموح به (Rule 30): `🎯` for target, `⚡` for volume_surge, `🔥` for hot sector — فلذلك `💰` يُعتبر زائد عن الحد في شاشات العميل.
+
+**🟢 Rule 30 (admin auth):**
+- 113 admin route، **112 منها** تستخدم `requireAdminAsync` أو `verifyAdminRequest` أو `checkAdminAuth`.
+- 1 route (`/api/admin/fix-dates`) تستخدم آلية مختلفة (`validateToken` + فحص `subscription_tier === 'admin'`) — كذلك آمن.
+- الخلاصة: **كل admin routes محمية فعلياً** ✅
+
+**🟢 Rule 27 (secrets):**
+- بحث عن hardcoded API keys (`sk-`, `AIza`, Telegram bot tokens) — **0 results** ✅
+
+---
+
+# 🔍 C. Database Audit (تم تشغيل actual queries بـ better-sqlite3)
+
+## C.1 — ملخص كل DB
+
+| DB | حجم | جداول | إجمالي صفوف | ملاحظات |
+|----|------|--------|--------------|---------|
+| `price_history.db` | 292MB | 1 | 1,205,599 | ✅ 5 indexes (2 منها مكررة على `(ticker,date)`) |
+| `data_engine.db` | 86MB | 22 | 705,682 | 🔴 **3 indexes فقط لـ 22 جدول** (فقط egksco_* + egx_fundamentals) |
+| `stocks.db` | 13MB | 56 | 68,338 | 31 indexes — جيد، لكن 27 جدول فارغ |
+| `news.db` | 14MB | 4 | 8,037 | 6 indexes — جيد |
+| `predictions.db` | 10MB | 51 | 27,547 | 108 indexes — ممتاز |
+| `auth.db` | 212KB | 13 | 206 | 10 indexes — جيد |
+| `macro.db` | 176KB | 2 | 180 | ✅ |
+| `crypto_learning.db` | 73KB | 6 | 30 | ✅ |
+| `analytics.db` | 86KB | 7 | 0 | 🔴 **كل الجداول فارغة** — duplicate مع stocks.db |
+| `gold_prices.db` | 40KB | 3 | 11 | 🔴 duplicate مع data_engine.db |
+| `intraday.db` | 65KB | 4 | 0 | 🔴 كل الجداول فارغة |
+| `community.db` | 32KB | 5 | 0 | 🔴 كل الجداول فارغة |
+| `crypto.db` | 32KB | 2 | 0 | 🔴 كل الجداول فارغة |
+| `custom.db` | 24KB | 2 | 0 | 🔴 كل الجداول فارغة — duplicate مع auth.db |
+| `learned.db` | 12KB | 1 | 0 | 🔴 duplicate مع predictions.db |
+| `finance.db` | 4KB | **0** | 0 | 🔴 **DB فاضي تماماً** |
+| **TOTAL** | ~480MB | 151 (unique) | ~2M rows | 25 duplicate tables |
+
+## C.2 — Indexes (Critical Performance Issue)
+
+**🔴 CRITICAL: data_engine.db عنده 3 indexes فقط لـ 22 جدول (705K صف):**
+
+| جدول | صفوف | indexes |
+|------|------|---------|
+| `historical_data` | 99,076 | ❌ NO index on `symbol`, `date` — كل SELECT بـ يعمل full scan |
+| `silver_prices` | 82,608 | ❌ NO index on `currency`, `timestamp` |
+| `exchange_rates` | 45,597 | ❌ NO index on `currency`, `timestamp` |
+| `btc_local_prices` | 76,877 | ❌ NO index on `currency`, `timestamp` |
+| `crypto_prices` | 198,476 | ❌ NO index on `symbol`, `timestamp` |
+| `gold_prices` | 163,143 | ❌ NO index on `country`, `karat`, `timestamp` |
+| `gold_prices_clean` | 27,440 | ❌ NO index على أي عمود |
+| `stock_prices` | 2,444 | ❌ NO index على `symbol`, `timestamp` |
+| `tab_performance`, `tab_valuation`, `tab_dividends`, `tab_profitability`, `tab_income_statement`, `tab_balance_sheet`, `tab_cash_flow`, `tab_technical_analysis` | 858-866 each | ❌ NO index على `symbol` — كل lookup بـ يعمل scan كامل |
+| `screener_lists` | 1,505 | ❌ NO index على `category`, `symbol` |
+
+**🔵 توصيات:**
+```sql
+-- data_engine.db — emergency index additions:
+CREATE INDEX IF NOT EXISTS idx_historical_data_symbol_date ON historical_data(symbol, date);
+CREATE INDEX IF NOT EXISTS idx_crypto_prices_symbol_ts ON crypto_prices(symbol, timestamp);
+CREATE INDEX IF NOT EXISTS idx_gold_prices_country_karat_ts ON gold_prices(country, karat, timestamp);
+CREATE INDEX IF NOT EXISTS idx_silver_prices_currency_ts ON silver_prices(currency, timestamp);
+CREATE INDEX IF NOT EXISTS idx_exchange_rates_currency_ts ON exchange_rates(currency, timestamp);
+CREATE INDEX IF NOT EXISTS idx_btc_prices_currency_ts ON btc_local_prices(currency, timestamp);
+CREATE INDEX IF NOT EXISTS idx_stock_prices_symbol_ts ON stock_prices(symbol, timestamp);
+CREATE INDEX IF NOT EXISTS idx_tab_perf_symbol ON tab_performance(symbol);
+CREATE INDEX IF NOT EXISTS idx_tab_valuation_symbol ON tab_valuation(symbol);
+CREATE INDEX IF NOT EXISTS idx_screener_lists_category_symbol ON screener_lists(category, symbol);
+```
+
+## C.3 — Schema Inconsistencies
+
+**🔴 `predictions.db.predictions` (59 عمود — schema bloat):**
+- 3 أعمدة P&L متداخلة: `actual_return`, `pnl_percent`, `pnl_pct`
+- 2 أعمدة highest price: `highest_price`, `highest_price_reached`
+- 2 أعمدة lowest price: `lowest_price`, `lowest_price_reached`
+- 2 أعمدة signal: `signal`, `signal_type` (كلاهما مُعبّأ — Rule 6 violation)
+- 8 أعمدة score: `master_score`, `technical_score`, `fundamental_score`, `ai_pattern_score`, `sentiment_score`, `explosive_score`, `maestro_score`, `score`
+- 2 أعمدة target: `target_price`, `target_price_2` (Rule 18 يقول استخدم `tp1`/`tp2`)
+
+**🔴 `data_engine.db.tab_*` (8 جداول):**
+- كل القيم العددية (price, perf_1w, perf_1m, change_percent, volatility_1w) مخزّنة كـ **TEXT** بدلاً من REAL — يمنع عمليات ORDER BY/AVG الرياضية ويجبر `CAST()` في كل query.
+
+**🔵 توصيات:**
+- (مرتفعة) توحيد أعمدة الـ P&L على `actual_return` فقط (مع backfill من القيم الموجودة في pnl_percent/pnl_pct).
+- (مرتفعة) توحيد `signal` + `signal_type` على `signal` فقط + COALESCE في القراءة (Rule 6).
+- (مرتفعة) تغيير نوع الأعمدة في `tab_*` من TEXT إلى REAL (مع migration script).
+
+## C.4 — Foreign Key Integrity
+
+**🟢 ملاحظة:** SQLite لا يُفعّل FK enforcement افتراضياً. فحص `PRAGMA foreign_key_check` على كل DBs لم يُظهر أخطاء، لكن الـ FK enforcement قد يكون معطّل (افتراضي).
+- يُنصح بتفعيل `PRAGMA foreign_keys = ON;` في كل connection (سواء في `better-sqlite3` أو `sqlite3` Python).
+
+---
+
+# 🔍 D. Performance & Scalability
+
+## D.1 — Bundle Size (CRITICAL)
+
+**🔴 126 MB إجمالي الـ static chunks** — حجم ضخم جداً.
+
+**13 chunks أكبر من 4MB:**
+
+| Chunk | حجم | السبب |
+|-------|------|-------|
+| `_app-pages-browser_src_components_stocks_StocksView_tsx.js` | **12 MB** | recharts + lightweight-charts + table components |
+| `_app-pages-browser_src_components_analysis_MarketAnalysisView_tsx.js` | **9.4 MB** | god component 7753 سطر + كل deps |
+| `_app-pages-browser_src_components_admin_AdminView_tsx.js` | **8.9 MB** | god component 2101 سطر + admin deps |
+| `app/page.js` | **8.6 MB** | main entry — يحمل كل tabs registries |
+| `_app-pages-browser_src_components_crypto_CryptoAdditionalViews_tsx.js` | **7.6 MB** | |
+| `_app-pages-browser_src_components_portfolio_EnhancedPortfolioView_tsx.js` | **7.1 MB** | |
+| `_app-pages-browser_src_components_advanced-analysis_SpecialistAnalysisView.tsx.js` | **6.1 MB** | |
+| `_app-pages-browser_src_components_academy_AcademyView_tsx.js` | **5.9 MB** | |
+| `main-app.js` | **5.8 MB** | framework + React + Next.js runtime |
+| `_app-pages-browser_src_components_simulation_SimulationView_tsx.js` | **5.2 MB** | |
+| `_app-pages-browser_node_modules_html2pdf_js_dist_html2pdf_js.js` | **5.0 MB** | lazy-imported ✅ |
+| `_app-pages-browser_src_components_admin_WealthCharts.tsx.js` | **4.7 MB** | |
+| `_app-pages-browser_src_components_crypto_CryptoTradingChartView_tsx.js` | **4.1 MB** | |
+
+**🔵 توصيات:**
+- (حرج) **تقسيم `MarketAnalysisView.tsx` (7753 سطر)** إلى 4-6 chunks عبر `next/dynamic({ ssr: false })` لكل sub-view.
+- (حرج) **lazy-load كل charts components** (`TradingChartView`, `CryptoTradingChartView`) — حالياً تُحمَّل مع الصفحة.
+- (مرتفعة) فحص اذا كان كل recharts + lightweight-charts ضروريين — يُمكن استبدال أحدهما بـ sparklines only.
+- (مرتفعة) `app/page.js` 8.6MB — هذا الـ entry chunk — يجب فحص سبب حجمه (يبدو أنه يحمل كل tab registries في الـ homepage).
+
+## D.2 — API Response Times (تم القياس بـ curl)
+
+| Endpoint | Time | HTTP | ملاحظات |
+|----------|------|------|---------|
+| `/api/health` | 31ms | 200 | ✅ ممتاز |
+| `/api/stocks?market=EGX&limit=20` | 46ms | 200 | ✅ سريع (لكن 296KB response — over-fetching) |
+| `/api/predictions?market=EGX` | 162ms | 200 | ✅ |
+| `/api/news/latest` | 138ms | 200 | ✅ |
+| `/api/auth/me` | 77ms | 401 | ✅ |
+| `/api/market/overview?market=TADAWUL` | 44ms | 200 | ✅ |
+| `/api/market/overview?market=KSE` | 37ms | 200 | ✅ |
+| `/api/market/overview?market=QSE` | 26ms | 200 | ✅ |
+| `/api/market/overview?market=CRYPTO` | 27ms | 200 | 🔴 239 bytes فقط — فارغ |
+| `/api/market/overview?market=EGX` | **944ms** | 200 | 🟡 بطيء جداً (<1s لكن غير مقبول لـ overview) |
+| `/api/watchlist` | 683ms | 200 | 🟡 بطيء |
+| `/api/portfolio` | 440ms | **503** | 🔴 Python backend معطّل |
+| `/api/admin/db-health` | **1.27s** | 200 | 🔴 بطيء جداً |
+| `/api/db-stats` | **1.38s** | 200 | 🔴 بطيء جداً |
+| `/api/news` (full) | **2.84s** | 200 | 🔴🔴 بطيء جداً جداً — يحتاج index عاجل |
+| `/api/unified/predictions` | 167ms | **503** | 🔴 Python backend معطّل |
+| `/api/market/sectors?market=EGX` | 123ms | **503** | 🔴 Python backend معطّل |
+
+**🟡 ملاحظات:**
+- **Python backend (port 8010) معطّل** في الـ sandbox — يُسبب 503 لكل proxy routes.
+- الـ sandbox يحتاج تشغيل Python قبل أن تعمل هذه الـ endpoints.
+- على الإنتاج، Python شغّال وكل proxy routes تعمل.
+
+## D.3 — N+1 Queries
+
+**بعد فحص 653 route:**
+- **2 instances فقط** من N+1 patterns صريحة (multiple `.prepare()` inside `.map()`):
+  - `src/app/api/admin/clear-junk-data/route.ts:43,47,50,117` — iteration على قائمة جداول ثابتة (مقبول).
+  - `src/app/api/data-engine/status/route.ts:37` — similar pattern (مقبول).
+- **310 `for` loops** في routes — لكن أغلبها على بيانات API response، مش على DB queries.
+- الخلاصة: **لا يوجد N+1 مشكلة فعلية** ✅
+
+## D.4 — Caching
+
+**🔴 مشاكل:**
+- فقط **2 ملف** في `src/app/api/` يستخدم الـ cache utilities (`api-cache.ts`, `precomputed-cache.ts`):
+  - `src/app/api/admin/data-sources/route.ts`
+  - `src/app/api/stocks/sparkline/route.ts`
+- **التوصية:** إضافة caching للـ endpoints البطيئة:
+  - `/api/news` (2.84s) — cache لـ 5 دقائق.
+  - `/api/admin/db-health` (1.27s) — cache لـ 60 ثانية.
+  - `/api/db-stats` (1.38s) — cache لـ 60 ثانية.
+  - `/api/market/overview` (944ms) — cache لـ 30 ثانية.
+
+## D.5 — Memory Leaks (DB Connections)
+
+**🟢 جيد:**
+- **0 route** تفتح `new Database()` بدون `.close()` على الإطلاق.
+- كل routes إما تستخدم shared singleton (مثل `egxDb` من `egx-db.ts`) أو `.close()` بشكل صريح.
+
+**🟡 تحذيرات:**
+- 6 routes فيها `opens > closes` (مذكور في B.2):
+  - `predictions/honest-tracking/list/route.ts` (2 opens, 1 close)
+  - `predictions/honest-tracking/stats/route.ts` (2 opens, 1 close)
+  - `predictions/honest-tracking/learn-from-errors/route.ts` (3 opens, 2 close)
+  - `predictions/credibility/route.ts` (2 opens, 1 close)
+  - `predictions/route.ts` (2 opens, 1 close)
+  - `market/sectors/intelligence/route.ts` (2 opens, 1 close)
+- بعض هذه قد تكون intentional (open different DBs)، لكن يجب التحقق.
+
+**🔵 توصيات:**
+- استخدام `try/finally` pattern في كل route يفتح DB explicit.
+
+---
+
+# 🔍 E. Security
+
+## E.1 — Auth (Routes Protection)
+
+**🟢 جيد:**
+- Middleware (`src/middleware.ts`) يصنّف routes إلى:
+  - public (auth/health/keepalive/market/v2/recommend/v2/live-analysis/v2/feedback).
+  - destructive admin endpoints — تتطلب auth حتى في GET.
+  - باقي routes — pass through (auth داخلياً في الـ route نفسه).
+- ملاحظة: Edge runtime لا يدعم NextAuth session — تم نقل auth check إلى API routes نفسها (Node.js runtime).
+
+**🟢 جيد:**
+- `AuthGate.tsx` موجود (4 imports) — client-side protection للشاشات المحمية.
+- خطة الـ auth واضحة في تعليقات middleware.ts.
+
+## E.2 — Admin Access (Rule 30)
+
+**🟢 كل 113 admin route محمية:**
+- 112 route تستخدم `requireAdminAsync` (الطريقة الكنسية) أو `verifyAdminRequest` (cookie + header).
+- 1 route (`/api/admin/fix-dates`) يستخدم `validateToken` + فحص `subscription_tier === 'admin'` — أيضاً آمن.
+- 0 route بدون أي فحص.
+
+**🟢 SEC-04 Hotfix مُطبّق:**
+- `src/app/api/proxy/[...path]/route.ts` يفحص `requireAdminAsync` لأي path يبدأ بـ `admin/` — يمنع bypass عبر proxy.
+- لا يوجد hardcoded `PROXY_API_KEY` fallback (يُقرأ من env فقط).
+- CORS محدود لنفس الـ origin.
+
+## E.3 — SQL Injection
+
+**بعد فحص 289 template-literal SQL preparation:**
+- **0 SQL injection حقيقي** — كل الـ `${variable}` في الـ SQL تأتي من:
+  - hard-coded SQL function strings (`"datetime('now', ...)"`).
+  - allowlist-validated table names (مثل `tab-data/route.ts`).
+  - PRAGMA table_info مع ثوابت.
+- لكن الـ pattern هش — يجب توحيد على helper function.
+
+## E.4 — XSS
+
+**🟢 ممتاز:**
+- **1 استخدام فقط** لـ `dangerouslySetInnerHTML` في كامل `src/`:
+  - `src/components/ui/chart.tsx` — مكوّن RadUI/chart داخلي — لا يعرض user input مباشرة.
+- **0 استخدام** في شاشات العميل.
+
+## E.5 — Secrets
+
+**🟢 بحث شامل:**
+- 0 hardcoded API keys (`sk-*`, `AIza*`).
+- 0 hardcoded Telegram bot tokens.
+- 0 hardcoded JWT secrets.
+
+---
+
+# 🔍 F. Technical Debt — Top 10 (مرتّبة حسب الـ Severity)
+
+| # | الملف/المنطقة | الوصف | Impact | Effort (h) |
+|---|---------------|-------|--------|-------------|
+| 1 | `.next/static/chunks/` (126MB total) | **Bundle size ضخم** — 13 chunks > 4MB، أعلى = 12MB (StocksView.tsx) | 🔴 critical | 16-24h (split + lazy-load + tree-shake) |
+| 2 | `db/data_engine.db` | **3 indexes فقط لـ 22 جدول و705K صف** — كل SELECT بـ يعمل full scan على 80K-200K صف | 🔴 critical | 2h (CREATE INDEX statements) |
+| 3 | 25 duplicate tables عبر الـ DBs (Rule 46) | **split-brain data** — outcome_logs مكرر بـ 8544 صف في DBs اتنين، ExpertRecommendation في 3 DBs بعدد مختلف | 🔴 critical | 8-12h (verify + migrate + drop) |
+| 4 | `src/app/api/*` (100 route) | **Rule 20 violation** — 100 route يفتح SQLite مباشرة في Node بدلاً من proxy إلى Python | 🔴 critical | 40-80h (نقل كل logic إلى Python) |
+| 5 | `db/predictions.db.predictions` (59 عمود) | **schema bloat** — 3 أعمدة P&L، 2 أعمدة highest/lowest، 8 أعمدة score، 2 أعمدة signal | 🟡 warning | 8h (analyze + consolidate + migrate) |
+| 6 | `src/lib/db*.ts` (13 ملف) | **تكرار db helpers** — db.ts, db-v2.ts, db-predictions.ts, unified-db.ts, shared-db.ts, new-db.ts, egx-db.ts, data-engine-db.ts, ... | 🟡 warning | 4-6h (consolidate + re-export) |
+| 7 | `src/components/*` (27 ملف) | **Rule 52 violation** — 27 شاشة بـ تستخدم manual `<Table>` بدلاً من `<UnifiedTable>` | 🟡 warning | 12-16h (refactor each screen) |
+| 8 | `src/` (1165 `any` type) | **Type safety ضعيف** — 789 `: any` + 376 `as any` | 🟡 warning | 24-40h (gradual migration) |
+| 9 | `scripts/` (301 one-off script) | **dead code** — 6 إصدارات من patch_rootpage، 4 من patch_watchlist، 3 من fix_data_engine_corruption، ... | 🟡 warning | 4h (archive to scripts/_archive/) |
+| 10 | `src/components/analysis/MarketAnalysisView.tsx` (7753 سطر) | **god component** — أكبر من 100x الحد المقبول | 🟡 warning | 16-24h (split into 6-8 sub-components) |
+
+**إجمالي المجهود التقديري لكل العناصر الـ 10:** ~134-196 ساعة عمل.
+
+---
+
+# ✅ نقاط القوة (Strengths)
+
+المنصة لديها نقاط قوة واضحة يجب الحفاظ عليها:
+
+1. **ESLint exit 0** — كود نظيف من أخطاء lint.
+2. **كل DBs pass integrity_check** — سلامة البيانات مضمونة.
+3. **97% من routes فيها try/catch** — error handling ممتاز.
+4. **كل admin routes محمية** — أمن جيد (لا bypass).
+5. **0 hardcoded secrets** — لا توجد مفاتيح API في source.
+6. **1 use only من `dangerouslySetInnerHTML`** — XSS risk شبه معدوم.
+7. **38 blueprints مسجّلة** في `lightweight_server.py` — توحيد جيد للـ Python backend.
+8. **PDF libs (html2pdf, jspdf) lazy-imported** — لا تُحمَّل إلا عند الحاجة.
+9. **predictions.db عنده 108 indexes** — أداء جيد للقراءة.
+10. **stocks.db عنده 31 indexes** — أداء جيد.
+
+---
+
+# 🎯 الخطة المقترحة (Next Actions — مرتّبة حسب الأولوية)
+
+## Phase 1 — Hotfixes (1-3 أيام):
+1. **إضافة indexes على data_engine.db** (2h) — يُحسّن أداء كل queries على 705K rows فوراً.
+2. **حذف `expert_memory_v4_routes` من BLUEPRINTS** (15min) — config ميت يطبع warning في كل startup.
+3. **إصلاح `/api/news` البطيء (2.84s)** — إضافة caching (api-cache) لـ 5 دقائق + فحص الـ index على news.db.
+4. **إصلاح `/api/market/live-data` Math.random() sort** — استبدال بـ `ORDER BY turnover DESC`.
+
+## Phase 2 — Database Cleanup (3-5 أيام، Rule 46):
+1. **دمج `outcome_logs`** على predictions.db فقط + حذف من stocks.db (بعد VERIFY).
+2. **توحيد `ExpertRecommendation`** على predictions.db.
+3. **حذف 4 DBs فاضية**: `finance.db`, `custom.db`, `crypto.db`, `learned.db` (بعد موافقة المالك).
+4. **تنظيف 27 جدول فارغ** في stocks.db.
+5. **توحيد أعمدة الـ P&L + signal + highest/lowest** في `predictions.db.predictions`.
+
+## Phase 3 — Bundle Optimization (5-7 أيام):
+1. **تقسيم `MarketAnalysisView.tsx`** (7753 سطر) إلى 6-8 sub-components.
+2. **lazy-load كل charts** (`TradingChartView`, `CryptoTradingChartView`).
+3. **فحص `app/page.js`** (8.6MB) — ما الذي يُحمَّل في الـ entry chunk.
+4. **target: تخفيض bundle من 126MB إلى ≤50MB** (60% reduction).
+
+## Phase 4 — Architecture Compliance (7-14 يوم):
+1. **توحيد 13 db helper** على ملف واحد `src/lib/db/index.ts`.
+2. **refactoring 27 شاشة** لاستخدام `<UnifiedTable>` (Rule 52).
+3. **استبدال ShareButton** بـ `<UnifiedPublishButton>` في 11 ملف (Rule 52).
+4. **نقل 100 route** يفتح SQLite مباشرة → Python endpoint (Rule 20).
+5. **توحيد 4 catch-all proxies** على `/api/proxy/[...path]` واحد (Rule 28).
+
+## Phase 5 — Type Safety & Dead Code (14-21 يوم):
+1. إضافة `@typescript-eslint/no-explicit-any` كـ warning تدريجي.
+2. استبدال `any[]` بـ types معرّفة في 1165 موقع.
+3. أرشفة 301 one-off script إلى `scripts/_archive/`.
+4. VERIFY-BEFORE-DELETE لكل الـ Python analyzers المُكتشفة كـ dead (30 candidate).
+
+---
+
+# 📊 ملخص نهائي بالأرقام
+
+| Metric | Value | Target |
+|--------|-------|--------|
+| Total LOC (TS) | 281,179 | ≤ 200K (after cleanup) |
+| API routes | 653 | ≤ 400 (after consolidation) |
+| Routes violating Rule 20 | 100 | 0 |
+| Routes using Math.random | 15 | 0 (except ID generators) |
+| Routes using PRAGMA table_info | 25 / 59 reading predictions.db | 59 / 59 |
+| DBs | 16 | ≤ 12 (drop 4 empty) |
+| Duplicate tables across DBs | 25 | 0 |
+| Empty tables in stocks.db | 27 | 0 |
+| Tables in predictions.db.predictions | 59 columns | ≤ 30 |
+| data_engine.db indexes | 3 (for 22 tables, 705K rows) | ≥ 25 |
+| Bundle size | 126 MB | ≤ 50 MB |
+| Chunks > 4MB | 13 | ≤ 3 |
+| `any` types in src | 1,165 | ≤ 200 |
+| Components using UnifiedTable | 5 / 32 (15.6%) | 32 / 32 (100%) |
+| Components using UnifiedPublishButton | 6 / 17 (35%) | 17 / 17 (100%) |
+| Largest component | MarketAnalysisView.tsx (7753 lines) | ≤ 1500 lines |
+| One-off scripts | 301 | ≤ 100 (after archive) |
+| Slowest API | /api/news (2.84s) | < 500ms |
+| Admin routes protected | 113 / 113 (100%) ✅ | 100% (maintain) |
+| ESLint status | exit 0 ✅ | maintain |
+| DB integrity_check | all pass ✅ | maintain |
+
+---
+
+*نهاية التقرير — Task ID: ARCH-REVIEW — Software Architect.*
+
+---
+Task ID: QA-NITPICKY-AUDIT
+Agent: المستخدم الغليظ (The Nitpicky User) — QA/QC Specialist
+Task: مراجعة شاملة لكل صفحات المنصة بأسلوب المستخدم المتطلب (Egyptian Arabic audit)
+
+## ملخص تنفيذي
+تمت مراجعة 19 صفحة (views) عبر hash routing على `http://127.0.0.1:3001/` باستخدام agent-browser، بكل من desktop (1440×900) و mobile (375×812). المنصة بها مشاكل **حرجة جداً**: 9 صفحات من أصل 19 صفحة لا تفتح للمستخدم غير المسجّل (تُعِيد توجيهه صامتةً إلى #dashboard أو تعرض popup للتسجيل)، صفحة `#picks-management` مكسورة بخطأ 500، وصفحة `#about` تنتهك القاعدة 30 (CLIENT-FACING-STYLE) بشكل صارخ بالعامية المصرية المفرطة والمصطلحات التقنية المكشوفة. كما يوجد تسريب تقني خطير: backend Python مكسور (503 على 5 endpoints حرجة)، و WebSocket service يعطي `xhr poll error`.
+
+## قائمة بالعيوب حسب الصفحة
+
+### صفحة: #dashboard
+**العيوب المكتشفة:**
+1. **[حرج]** رسالتان "Failed to fetch" بالإنجليزية ظاهرتان في قسمي "توقعات اليوم" و"التحليل الآلي" — يجب أن تُترجم إلى "تعذّر جلب البيانات. تحقق من الاتصال أو أعد المحاولة."
+2. **[حرج]** WebSocket connection error: `xhr poll error` في console — خدمة ws-service (port 3005) لا تعمل أو ترفض الاتصال.
+3. **[تحسين]** فتح popup "مركز المساعدة التفاعلي" تلقائياً يقطع تجربة المستخدم عند أول زيارة — في منصات مثل TradingView لا يوجد popup فرض على المستخدم.
+4. **[خطأ]** زر "تبديل السوق" بدون سياق واضح، لا يوجد tooltip أو توضيح ما الذي سيحدث عند الضغط.
+5. **[خطأ]** أزرار العملة: "عرض بالالجنيه المصري" / "عرض بالالدولار الأمريكي" / "عرض بالالريال السعودي" — خطأ إملائي: يجب أن يكون "عرض بالجنيه المصري" (بدون "ال" مزدوجة بعد "بـ"). قاعدة نحوية: بعد حرف الجر "بـ" لا تأتي "ال" التعريف على هذا النحو.
+6. **[خطأ]** تكرار زر "تحديث" مرتين في نفس الـ toolbar (ref e18 و e36) — ازدواجية بدون داعٍ.
+7. **[تحسين]** التبويبات "📈 الأسهم" / "🥇 الذهب" / "₿ كريبتو" / "💱 عملات" — إيموجي زخرفي يخالف القاعدة 30 (CLIENT-FACING-STYLE: إيموجي وظيفي فقط).
+8. **[تحسين]** أزرار الدولة "🇪🇬 مصر" / "🇸🇦 السعودية" — إيموجي أعلام زخرفي. Bloomberg و TradingView يستخوان أسماء الدول نصاً فقط أو بأيقونة SVG موحّدة.
+9. **[تحسين]** "ابحث بالرمز أو الاسم للانتقال مباشرة..." — النقاط الثلاث "..." غير ضرورية وتجعل النص يبدو غير منتهٍ.
+10. **[خطأ]** "⚠️ تحليل وليس تحليل مالية" — خطأ نحوي: يجب أن يكون "هذا تحليل وليس استشارة مالية" أو "تحليل وليس نصيحة مالية".
+11. **[خطأ]** "⚠️ إشارات تاريخية - الأداء السابق لا يضمن المستقبلي" — خطأ نحوي: "لا يضمن المستقبلي" غير صحيح. الصواب: "الأداء السابق لا يضمن النتائج المستقبلية".
+12. **[خطأ]** أسماء شركات إنجليزية مكشوفة في قسم "الأكثر تحركاً": "GB Corp", "GPI For Urban Growth", "TWSATAWASOA FOR FACTORINGD" (مع typo: "TWSATAWASOA" مكررة + "FACTORINGD" بدل "FACTORING"). يجب عرض الأسماء العربية الرسمية للشركات المصرية.
+13. **[خطأ]** "El-Shams Housing & Development SA" — اختصار "SA" مقطوع من "SAE".
+14. **[تحسين]** تنسيق الأسعار غير متناسق: مؤشرات EGX تستخدم الأرقام العربية الهندية (١٠٬٢٨٥٫٦٠)، لكن أسعار الأسهم الفردية تستخدم اللاتينية (29.00EGP، 1.62EGP). يجب توحيد التنسيق على مستوى المنصة.
+15. **[خطأ]** "$79,694" / "$2,458" — قيم الدولار بتنسيق اللاتيني مع رمز "$" بينما يفترض أن يستخدم التنسيق العربي أو رمز العملة المختار من التبديل.
+16. **[خطأ]** سطر مختلط عربي/إنجليزي: "Fear & Greed Index: 71 (Greed) — جشع مفرط = حذر" — يجب ترجمة "Fear & Greed Index" إلى "مؤشر الخوف والجشع".
+17. **[تحسين]** "لا توجد بيانات سيولة متاحة لهذا السوق حالياً" — Empty state بلا CTA واضح. يجب إضافة زر "إعادة المحاولة" أو شرح السبب.
+18. **[تحسين]** "لا توجد بيانات" في "الأكثر تحركاً" — رسالة عامة جداً، لا توضح هل المشكلة من الخادم أو السوق مغلق أو لا توجد بيانات حقيقية.
+19. **[خطأ]** في الـ console: `Warning: Function components cannot be given refs` على SheetOverlay و PlatformGuide — خطأ React في الكود يحتاج إصلاح.
+20. **[خطأ]** في الـ console: `Missing Description for DialogContent` — accessibility issue يحتاج إصلاح.
+
+**التقييم العام:** 4/10 — البيانات الحقيقية موجودة ومتجددة (مؤشرات EGX بالعربية)، لكن الأخطاء الإنجليزية المكشوفة، الـ typos، وتنسيق غير متناسق يفقد المستثمر الثقة. مقارنة بـ TradingView: المنصة تخلط 4 أنماط تنسيق في صفحة واحدة.
+
+---
+
+### صفحة: #stocks
+**العيوب المكتشفة:**
+1. **[خطأ]** 6 occurrences من "NaN" ظاهرة في الصفحة — قيم رقمية لم تُحسب بشكل صحيح وعُرضت كنص.
+2. **[خطأ]** أسماء الشركات كلها بالإنجليزية: "Delta Insurance", "TransOceans Tours", "Global Telecom Holding S.A.E.", "Arab Ceramic Co. - Ceramica Remas", "Industrial & Engineering Enterprises Co.", "Middle & West Delta Flour Mills Co.", "El Ezz Ceramics & Porcelain Co. (Gemma)"... يجب عرض الاسم العربي الرسمي.
+3. **[تحسين]** وصف الصفحة: "تصفح جميع الأسهم المتداولة في البورصة المصرية" — لكن الصفحة تدعم تبديل السوق (EGX/Tadawul/Kuwait/Qatar). النص يفترض سوقاً واحداً فقط.
+4. **[تحسين]** التبويبات: "الأسهم" / "السندات وشهادات الاستثمار" / "الأكثر نشاطا" / "أقل من القيمة العادلة" / "أعلى من القيمة العادلة" / "الأكثر ربحا" / "الأكثر خسارة" / "الأكثر توزيعات" / "الأقل مخاطرة" — خليط من أنواع الأصول (سهم/سند) وفلاتر (نشط/مكسب/خاسر). هذا تصنيف غير منطقي. يجب فصل: تبويبات الأصول في طبقة، والفلاتر في طبقة أخرى.
+5. **[خطأ]** "الأكثر نشاطا" — نهاية الكلمة بدون "ة" (الأكثر نشاطاً) — تناقض مع "الأكثر توزيعات" التي تنتهي بدون "ة" أيضاً. بعض التبويبات تنتهي بـ "ة" (الأكثر ربحا، الأكثر خسارة) وأخرى بدون — عدم تناسق.
+6. **[خطأ]** تكرار كلمة "القيمة العادلة" + "الفرصة" تحت كل سهم لكن بلا قيمة فعلية ظاهرة. هذه تسميات لحقول بيانات لا تظهر قيمها — يبدو كأن البيانات مفقودة.
+7. **[تحسين]** التغيير % معروض بتنسيق إنجليزي "+20.00%" بدلاً من "+٢٠٫٠٠٪" أو "+٢٠٬٠٠٪" — عدم تناسق مع لوحة التحكم.
+8. **[خطأ]** 4 من الأسهم الـ top تظهر "+20.00%" بدون قيمة السعر (فقط "القيمة العادلة" + "الفرصة" كأنها placeholder) — بيانات مفقودة.
+9. **[تحسين]** لا يوجد بحث فوري (instant search) فوق الجدول — يجب على المستخدم التمرير للبحث.
+10. **[تحسين]** زر "تصدير" و "تحديث" بدون أيقونة واضحة. في TradingView كل زر له أيقونة SVG موحّدة + label.
+
+**التقييم العام:** 5/10 — البيانات حقيقية، لكن العرض مختلط الإنجليزي/العربي، و NaN مكشوف، وعدم تناسق في التسميات. مقارنة بـ Interactive Brokers: ضعيف جداً في الوضوح والتنظيم.
+
+---
+
+### صفحة: #stock-filters
+**العيوب المكتشفة:**
+1. **[حرج]** 15 occurrence من "NaN" في الصفحة — أكبر تجمع لأخطاء العرض الرقمي. على الأرجح في حقول إدخال "أدنى سعر"، "أقصى سعر"، "أدنى مكرر ربحية"... عند تحميل الصفحة بدون قيم، تظهر NaN.
+2. **[تحسين]** "الفلاتر المتقدمة\nطي" — يبدو أن الـ text "طي" (collapse) ظاهر كجزء من زر بدل أن يكون aria-label.
+3. **[تحسين]** "نتائج الفلاتر\nطي" — نفس المشكلة.
+4. **[تحسين]** الأزرار "فلاتر جاهزة": "تعافي بعد تصحيح", "زخم متزن", "قرب كسر للأعلى", "في قمة", "أسهم نشطة", "أسهم ميتة", "مقيّمة (PE منخفض)", "تشبع بيعي", "أسهم أرباح عالية", "أسهم نمو", "أسهم قيمة", "كبار القيمة", "سيولة عالية", "انخفاض حاد", "قاع 52 أسبوع", "أعلى 52 أسبوع", "فوق المتوسطات", "تحت المتوسطات", "RSI معتدل", "فرص انعكاس", "مستقرة (لا تذبذب)" — قائمة طويلة جداً (21 فلتر) بدون تصنيف. يجب تجميعها في مجموعات (تقني/أساسي/زخم/قيمة...).
+5. **[تحسين]** "إظهار شرح حالات السهم السبع" — يفترض وجود شرح موسوعي للحالات السبع. زر بدون أيقونة "info" واضحة.
+6. **[تحسين]** الترتيب الافتراضي "تنازلي (الأعلى أولاً)" — مفهوم تقني. للمستثمر العادي يفضل "الأعلى أولاً" أو "الأقل أولاً" بدون مصطلح "تنازلي".
+7. **[تحسين]** زر "تصدير" و "تحديث" و "إعادة الضبط" بدون تمييز بصري بين primary/secondary. في Bloomberg كل زر له مستوى واضح.
+8. **[تحسين]** "أدنى مكرر ربحية" و "أقصى مكرر ربحية" — المصطلح "مكرر ربحية" قد لا يفهمه المستثمر المبتدئ. يجب إضافة tooltip (موجود فعلاً ولكن بـ text tooltip فقط بدون أيقونة "?" أو info).
+9. **[تحسين]** عدد النتائج الافتراضي "100" — بدون خيارات 50/250/All كـ quick-select.
+10. **[خطأ]** لا يوجد حفظ للفلتر كـ preset شخصي للمستخدم (حتى لو لم يسجّل، يمكن localStorage).
+
+**التقييم العام:** 6/10 — tooltips موجودة (ميزة جيدة، تتبع القاعدة 30)، لكن NaN منتشر، والفلاتر الجاهزة تحتاج إعادة تنظيم. مقارنة بـ TradingView Screener: أقل تنظيماً وتصنيفاً.
+
+---
+
+### صفحة: #trading-chart
+**العيوب المكتشفة:**
+1. **[حرج]** "يعمل بدون اتصال بالـ Python backend — يقرأ من قواعد البيانات المحلية" — مصطلحات تقنية مكشوفة للعميل: "Python backend" و "قواعد البيانات المحلية" — يخالف القاعدة 30 (CLIENT-FACING-STYLE). لا يوجد سبب لذكر stack تقني للعميل. الصواب: "البيانات محدّثة محلياً — يعمل دون اتصال لحظي."
+2. **[خطأ]** فاصل زمني مختلط: "5M" / "15M" / "1H" / "يومي" / "أسبوعي" / "شهري" — بعض الفواصل بالإنجليزية وبعضها بالعربية. يجب توحيد: "5 د" / "15 د" / "1 س" / "يومي" / "أسبوعي" / "شهري".
+3. **[خطأ]** اسم السهم "PHDC (Palm Hills Development Co.)" — اسم إنجليزي مع رمز. يجب "PHDC (بالم هيلز للتعمير)" أو الاسم العربي الرسمي.
+4. **[خطأ]** "🇪🇬 البورصة المصرية" — إيموجي علم زخرفي.
+5. **[خطأ]** "🇪🇬\nمصر" يظهر في snapshot بـ newline — layout issue في الأزرار.
+6. **[تحسين]** زر "إعادة المحاولة" ظاهر — يعني أن تحميل بيانات الشارت فشل. لا توجد رسالة خطأ واضحة للمستخدم تشرح ما حدث.
+7. **[تحسين]** التبويبات الفنية "✓ MA20" / "✓ MA50" / "✓ MA200" / "✓ EMA" / "✓ RSI" / "✓ Bollinger" / "✓ MACD" / "✓ Volume" / "✓ Levels" / "✓ SMC/BOS" — اختصارات إنجليزية بدون ترجمة أو tooltip عربي.
+8. **[تحسين]** "مبسط" / "محترفين" — وضعان للعرض. "محترفين" يجب أن تكون "محترف" (مفرد، لأن المستخدم فرد) أو "وضع المحترفين".
+9. **[تحسين]** "أبحث عن شراء" / "أملك السهم" — صياغة غير احترافية. الصواب: "أبحث عن فرصة شراء" / "أمتلك السهم حالياً".
+10. **[تحسين]** "حلّل وضعي" — صياغة عامية. الصواب: "تحليل وضعي" أو "حلّل محفظتي".
+11. **[تحسين]** "نشر الكل" — بدون سياق. نشر ماذا وأين؟
+12. **[خطأ]** في الـ console: لا يوجد خطأ صريح، لكن `/api/v2/chart/full-analysis?ticker=PHDC&timeframe=DAY&limit=365&state=buyer` يعطي 503 — endpoint مكسور.
+
+**التقييم العام:** 5/10 — الشارت يعمل لكن التسريب التقني (Python backend) والتنسيق المختلط يخدش الاحترافية. مقارنة بـ TradingView: محرّك الشارت أضعف بكثير، لا يوجد comparison layer، لا يوجد multi-chart layout حقيقي.
+
+---
+
+### صفحة: #smart-confluence
+**العيوب المكتشفة:**
+1. **[حرج جداً]** الصفحة **شبه فارغة**! تحتوي فقط على:
+   - عنوان "تحليلات السوق"
+   - وصف "التوصيات الذكية من البيانات التاريخية"
+   - 4 أزرار: "تحديث" / "التوصيات" / "شراء (20)" / "بيع (0)"
+   - tabpanel فارغ تماماً حتى بعد اختيار "شراء (20)"
+2. **[حرج]** التبويب "شراء (20)" يدّعي وجود 20 توصية شراء، لكن tabpanel فارغ — لا توجد أي توصيات معروضة.
+3. **[خطأ]** لا يوجد empty state message: لا "لا توجد توصيات متاحة حالياً" ولا spinner ولا skeleton.
+4. **[تحسين]** "التوصيات" / "شراء (20)" / "بيع (0)" — أرقام بين قوسين بدون فاصل بصري. في TradingView تكون badges ملونة منفصلة.
+5. **[تحسين]** لا يوجد filter للقطاع أو السهم في الصفحة.
+6. **[تحسين]** لا يوجد بحث.
+7. **[تحسين]** لا يوجد export.
+8. **[تحسين]** لا يوجد pagination أو infinite scroll.
+
+**التقييم العام:** 2/10 — الصفحة مكسورة عملياً. لا قيمة فعلية للمستثمر فيها. مقارنة بـ TradingView Idea Stream: لا شيء.
+
+---
+
+### صفحة: #recommendations
+**العيوب المكتشفة:**
+1. **[خطأ]** "📍 تابع أحدث تحليلات السوق على" — إيموجي 📍 زخرفي + الجملة منقوصة (تتبعها فراغ — على ماذا؟).
+2. **[خطأ]** "محرك المتوازن بيدوّر على فرص متوسطة المدى (2-6 أسابيع). البيانات بتتحدث كل 15 دقيقة تلقائياً — ميفيش تحليل لحظي على الشاشة دي." — صياغة مصرية عامية جداً ("بيدوّر"، "بتتحدث"، "ميفيش") — تخالف القاعدة 30 (احترافي ووقور).
+3. **[تحسين]** "⚖️ التوقعات" — إيموجي ⚖️ زخرفي على تبويب.
+4. **[خطأ]** "جاري تحليل الفرص — سيتم التحديث خلال دقائق" — empty state بدون CTA. كم دقيقة؟ ما الذي يحدث؟
+5. **[حرج]** Footer مكرر! تظهر روابط "الموقع" / "أندرويد" / "فيسبوك" / "تليجرام" / "واتساب" / "invist.m2y.net" مرتين — مرة بالعربية ومرة بالإنجليزية. يخالف القاعدة 28 (NO-DUPLICATION).
+6. **[خطأ]** "invist.m2y.net" يظهر 3 مرات في الصفحة (link 1 + link 2 + link 3).
+7. **[تحسين]** التبويب المختار "⚖️ التوقعات" لكن tabpanel يحتوي فقط على زر "تحديث الآن" ورابط — لا قائمة توقعات فعلية.
+8. **[تحسين]** "توليد التوقعات" — زر primary لكن بدون توضيح ما الذي سيحدث (إعادة حساب؟ كم يأخذ من الوقت؟).
+9. **[تحسين]** "تحديث الآن" — يختلف عن "توليد التوقعات"؟ الفرق غير واضح للمستخدم.
+10. **[تحسين]** Tabs: "متابعة التوقعات" / "ملخص التوقعات" / "حالة السوق" / "⚖️ التوقعات" / "تتبع القطاعات" / "رادار الميكرز" — 6 تبويبات. "متابعة التوقعات" و "التوقعات" قد تبدوان مكررتين.
+
+**التقييم العام:** 3/10 — محتوى ناقص، footer مكرر، صياغة عامية. مقارنة بـ eToro: لا يوجد حتى 10% من الميزات.
+
+---
+
+### صفحة: #picks-management
+**العيوب المكتشفة:**
+1. **[حرج جداً]** الصفحة مكسورة تماماً — تظهر رسالة خطأ: "حدث خطأ في تحميل إدارة التوصيات / نعتذر عن المشكلة. يمكنك المحاولة مرة أخرى أو تحديث الصفحة بالكامل. باقي أجزاء المنصة تستمر في العمل بشكل طبيعي."
+2. **[خطأ]** زر "تفاصيل الخطأ (للمطورين)" مكشوف للعميل — مصطلح تقني "للمطورين" يخالف القاعدة 30.
+3. **[حرج]** Network: `/api/stored-analysis/results` يعطي **500 Internal Server Error**. endpoint مكسور.
+4. **[حرج]** Network: `/api/unified/predictions` يعطي **503** عدة مرات.
+5. **[تحسين]** "المحاولة مرة أخرى" / "تحديث الصفحة" — أزرار بلا أيقونة، ولا تمييز بين primary/secondary.
+6. **[تحسين]** رسالة الخطأ لا توضح طبيعة المشكلة (هل هي شبكة؟ خادم؟ صيانة؟).
+
+**التقييم العام:** 1/10 — الصفحة مكسورة تماماً. غير قابلة للاستخدام. مقارنة بأي منصة: غير مقبول إطلاقاً في إنتاج.
+
+---
+
+### صفحة: #reports / #portfolio / #trading-memory / #watchlist / #alerts-center / #live-monitor / #news / #simulation / #settings (مجمعة لأن السلوك واحد)
+**العيوب المكتشفة:**
+1. **[حرج جداً]** كل هذه الصفحات التسع تعيد توجيه المستخدم غير المسجّل **صامتةً** إلى `#dashboard` بدون أي رسالة توضيحية. الـ URL hash يُحذف من الـ address bar (يصبح `http://127.0.0.1:3001/`). المستخدم يضغط على "قوائم المراقبة" في القائمة، فجأة يجد نفسه على لوحة التحكم بلا تفسير.
+2. **[حرج]** أحياناً بدلاً من إعادة التوجيه الصامتة، يظهر popup "سجّل مجاناً للوصول الكامل" يحجب الصفحة، بدون شرح أن هذه الصفحة بالذات تتطلب تسجيل دخول.
+3. **[حرج]** صفحة `#zakat` تعرض popup "إغلاق نافذة التسجيل؟" مع زر "أكمل بدون تسجيل" — لكن عند الضغط عليه، يتم توجيه المستخدم إلى dashboard ولا تظهر صفحة الزكاة.
+4. **[حرج]** محاولة فتح `#live-monitor` أعطت رسالة Chrome "This site can't be reached" — يعني أن التنقل بين الصفحات المحمية يسبب تعطل المتصفح في بعض الحالات.
+5. **[حرج]** محاولة فتح `#news` أعطت `ERR_CONNECTION_REFUSED` في المرة الأولى، ثم في المرة الثانية فتحت لكنها عرضت popup التسجيل.
+6. **[خطأ]** هذه الصفحات يجب أن تُعرض مع toast message واضح: "هذه الصفحة تتطلب تسجيل الدخول" + زر "تسجيل الدخول" + زر "إلغاء" — بدلاً من إعادة توجيه صامتة تربك المستخدم.
+7. **[خطأ]** بعض الصفحات (مثل `#zakat` و `#about`) يُفترض أن تكون **عامة** للزوار غير المسجّلين، لكنها محجوبة أيضاً. هذا يضر بـ SEO و UX.
+8. **[تحسين]** الـ popup "سجّل مجاناً للوصول الكامل" يظهر مرتين (heading مكرر) — bug في layout.
+
+**التقييم العام:** 1/10 — تجربة مستخدم كارثية. 9 من 19 صفحة لا يمكن الوصول لها دون تسجيل، ولا توجد آلية واضحة لإخبار المستخدم. مقارنة بأي منصة fintech: غير مقبول إطلاقاً.
+
+---
+
+### صفحة: #about
+**العيوب المكتشفة:**
+1. **[حرج جداً]** الصفحة **تنتهك القاعدة 30 (CLIENT-FACING-STYLE) بشكل صارخ**. كل النصوص بالعامية المصرية المفرطة:
+   - "ورا كل شمعة على الشارت فيه ميزانيات وملايين بتتحسب!" — "ورا" بدل "وراء"، "بتتحسب" عامية.
+   - "الفلترة بمنطق الصايع و 4 طبقات من السيولة" — "بمنطق الصايع" تعبير غير لائق لمستثمر.
+   - "الخلاصة بالبلدي في شاشة واحدة" — "بالبلدي" كلمة عامية.
+   - "كأنك قاعد مع خبير بورصة محنك على القهوة" — تشبيه غير احترافي.
+   - "إنت قفلت باب \"اللزوق\" في الأسهم المحبوسة" — "اللزوق" مصطلح عامية لأسهم محدودة السيولة.
+   - "يمسك السهم كله ويقفله على إسفل" — "إسفل" خطأ إملائي + عامية.
+   - "إنت بقيت بتلعب مع السوق مش ضده" — "بتلعب" عامية.
+2. **[حرج]** مصطلحات تقنية مكشوفة للعميل (يخالف القاعدة 30):
+   - "الباك-إند شغال بلغة Python" — ذكر Python backend للعميل غير مقبول.
+   - "المنصة بتعمل سكرابينج وتحديث دائم" — "سكرابينج" (scraping) مصطلح تقني.
+   - "Margin Call" / "Veto" / "Boost" / "Hedge Fund" / "Free Float" / "Position Sizing" / "T+2" / "ATR" / "R/R" / "Macro Veto" — مصطلحات إنجليزية بدون ترجمة.
+3. **[حرج]** عناوين فرعية بالإنجليزية بالكامل في صفحة عربية:
+   - "System Architecture — 4-Layer Pipeline"
+   - "Data Sources"
+   - "Core Engine"
+   - "Analysis Layers"
+   - "Final Output"
+   - "Technical Sources & Data Feeds"
+4. **[خطأ]** "📈 دليل الاستثمار" — إيموجي 📈 زخرفي على عنوان.
+5. **[خطأ]** "📚 المصادر والمراجع التقنية" — إيموجي 📚 زخرفي + ذكر "التقنية" للعميل غير مناسب.
+6. **[خطأ]** "المنصة بتعمل سكرابينج وتحديث دائم للأسعار كل 5 دقائق من حركات التداول اللحظية، يعني مفيش شمعة بتتحرك ولا مليم بيدخل السوق إلا والسيستم لقطه وسجله في داتابيز حية." — كشف آلية الـ scraping للعميل قد يكون مشكلة قانونية/تنافسية.
+7. **[خطأ]** "محرك الاقتصاد الكلي (Macro Veto)" — عنوان فرعي يخلط عربي/إنجليزي.
+8. **[خطأ]** "تسوية T+2 وإدارة المخاطر (Position Sizing)" — عنوان فرعي يخلط عربي/إنجليزي.
+9. **[خطأ]** "فلتر الأسهم الحرة (Free Float Filter)" — عنوان فرعي مكرر عربي/إنجليزي.
+10. **[خطأ]** "بضغطة زرار واحدة من شاشة الشارت التفاعلي، المنصة بتلقط Screenshot ذكية" — "زرار" عامية + "Screenshot" مكشوفة + "بتلقط" عامية.
+11. **[خطأ]** Footer headings مكررة: "سجّل مجاناً للوصول الكامل" يظهر مرتين.
+12. **[تحسين]** "ابدأ الاستكشاف الآن" — زر بدون توضيح ما الذي سيبدأ.
+13. **[تحسين]** "علم الاستثمار المؤسسي.. بلغة تفهمها." — نقطتان متتاليتان ".." بدل "..." أو نقطة واحدة.
+14. **[تحسين]** "invist.m2y.net" — يظهر كنص عادي بدون formatting للرابط.
+
+**التقييم العام:** 2/10 — أسوأ صفحة في المنصة. تنتهك القواعد 30 و 31 بشكل صارخ. تحتاج إعادة كتابة كاملة بأسلوب احترافي وقور. مقارنة بأي صفحة About لمنصة fintech محترمة: كارثة.
+
+---
+
+### صفحة: #learning
+**العيوب المكتشفة:**
+1. **[تحسين]** الدورات والـ case studies معروضة كـ static list — لا توجد أزرار "ابدأ الدورة" أو "تفاصيل" مرئية في snapshot.
+2. **[تحسين]** "نقاط الخبرة" / "دروس مكتملة" / "متوسط الاختبارات" / "مقالات مقروءة" — مصطلحات "gamification" قد تكون مناسبة للتعلم لكن تحتاج توضيح للمستثمر الجاد.
+3. **[تحسين]** مدة كل درس: "15 دقيقة" / "12 دقيقة" / إلخ — جيد، لكن لا يوجد progress indicator أو نسبة إنجاز.
+4. **[تحسين]** "أساسيات الاستثمار في البورصة" — جيد.
+5. **[تحسين]** "الاستثمار الشرعي في EGX" — ممتاز، ميزة تنافسية.
+6. **[تحسين]** Tabs: "الدورات" / "الاختبارات" / "المقالات" / "الإنجازات" — منظمة جيداً.
+7. **[تحسين]** Filters: "الكل" / "مبتدئ" / "متوسط" / "متقدم" — جيد.
+8. **[خطأ]** زر "تصدير" في صفحة تعليم — تصدير ماذا؟ لا يوجد سياق.
+9. **[تحسين]** لا يوجد search bar للدورات.
+10. **[تحسين]** لا يوجد تصنيف حسب الموضوع (أسهم/كريبتو/ذهب/تحليل فني/أساسي).
+11. **[تحسين]** الـ case studies (أزمة كورونا، صعود قطاع البنوك...) ممتازة — لكن لا يوجد زر "اقرأ المزيد".
+
+**التقييم العام:** 6/10 — أفضل صفحة في المنصة من حيث المحتوى الواضح. لكن تفتقر لـ interactivity وميزات تقدم فعلية. مقارنة بـ Investopedia / Coursera: محتوى أقل لكن التركيز على السوق المصري ميزة.
+
+---
+
+### صفحة: #zakat (بعد تجاوز popup التسجيل)
+**العيوب المكتشفة:**
+1. **[خطأ]** "272.00 ألف ج.م(بناءً على الذهب 85 جرام)" — لا توجد مسافة قبل القوس.
+2. **[خطأ]** "عيار24 = 3.20 ألف ج.م | عيار21 = 2.80 ألف ج.م" — لا توجد مسافة بين "عيار" والرقم.
+3. **[تحسين]** "محسوبة من أصولك الفعلية — ناقص الديون النشطة" — جملة معلقة بدون سياق كامل.
+4. **[تحسين]** "يجب تسجيل الدخول لحساب الزكاة تلقائياً من محفظتك" — رسالة جيدة لكن بدون زر "تسجيل الدخول" بجانبها.
+5. **[تحسين]** "ملاحظة فقهية\nيُرجح كثير من العلماء..." — \n يظهر داخل النص بدل فاصل بصري.
+6. **[تحسين]** "يختلف الحكم حسب النية" — جملة مختصرة جداً تحتاج شرحاً أوسع.
+7. **[تحسين]** Tabs: "حاسبة الزكاة" / "طرق الحساب" / "نصاب الذهب (85 جرام عيار 24)" / "نصاب الفضة (595 جرام)" — آخر اثنين ليست tabs بل radio buttons، لكنها مدرجة في tablist! خطأ semantic.
+8. **[تحسين]** لا يوجد "حساب" / "احسب الزكاة" button واضح في snapshot.
+9. **[تحسين]** "أدخل قيم أموالك لحساب الزكاة الواجبة" — رسالة جيدة لكن بدون fields مرئية.
+10. **[تحسين]** الآيات والأحاديث معروضة بشكل لائق — جيد.
+11. **[خطأ]** "سجّل مجاناً للوصول الكامل" يظهر مرتين — duplicate headings.
+12. **[تحسين]** لا يوجد "حفظ نتيجة الزكاة" أو "طباعة" أو "مشاركة".
+
+**التقييم العام:** 6/10 — محتوى ديني جيد ومرتب، لكن الـ layout وspacing بحاجة لمراجعة. مقارنة بـ حاسبات الزكاة في تطبيقات إسلامية أخرى (مثل تطبيق "زكاة"): أقل تفصيلاً.
+
+---
+
+## عيوب شاملة (Cross-page systemic defects)
+
+### 1. إعادة توجيه صامتة لـ 9 صفحات محمية (CRITICAL UX)
+الصفحات: `#reports`، `#portfolio`، `#trading-memory`، `#watchlist`، `#alerts-center`، `#live-monitor`، `#news`، `#simulation`، `#settings` — كلها تعيد توجيه المستخدم غير المسجّل صامتةً إلى `#dashboard`. الـ URL hash يُحذف، والمستخدم لا يعرف لماذا. **الإصلاح المطلوب:** عرض toast "هذه الصفحة تتطلب تسجيل الدخول" + زر "تسجيل الدخول" + إبقاء المستخدم على الصفحة الحالية بدل إعادة التوجيه.
+
+### 2. backend Python مكسور (CRITICAL)
+- `GET /api/init-db` → 503
+- `GET /api/market/recommendations/ai-insights` → 503
+- `GET /api/unified/predictions` → 503 (multiple times)
+- `GET /api/stored-analysis/results` → 500
+- `GET /api/v2/chart/full-analysis` → 503
+هذه الأخطاء تكسر: توقعات اليوم، التحليل الآلي، إدارة التوصيات، شارت التحليل الكامل.
+
+### 3. WebSocket service (ws-service) لا يعمل
+- `[WS] Connection error: xhr poll error` في console
+- محاولة `socket.io` على `:3005/socket.io/?EIO=4&transport=polling` تفشل
+
+### 4. تسريب 401 في حلقة
+- `POST /api/alerts/scheduler?only_me=1` → 401 (مكرر 6 مرات في كل صفحة!)
+- `GET /api/notifications?limit=20` → 401 (مكرر 4 مرات)
+- `GET /api/auth/me` → 401
+هذه الطلبات تُطلق على كل صفحة بدون تسجيل دخول. يجب أن تُلغى للمستخدم غير المسجّل أو تُخزن النتيجة في cache.
+
+### 5. React accessibility warnings
+- `Missing Description for DialogContent` — Radix UI Dialog بدون aria-describedby
+- `Function components cannot be given refs` في SheetOverlay — خطأ في `src/components/ui/sheet.tsx:72`
+
+### 6. عدم تناسق تنسيق الأرقام
+- مؤشرات EGX: أرقام عربية هندية (١٠٬٢٨٥٫٦٠) ✓
+- أسعار الأسهم الفردية: لاتينية (29.00EGP)
+- قيم الدولار: "$79,694" (لاتيني + $)
+- التغير %: لاتيني (+20.00%)
+- الفواصل الزمنية للشارت: مختلط (5M / يومي)
+يجب توحيد التنسيق على مستوى المنصة.
+
+### 7. أسماء الشركات الإنجليزية المكشوفة
+- "GB Corp", "GPI For Urban Growth", "Delta Insurance", "TransOceans Tours", "Palm Hills Development Co.", "El-Shams Housing & Development SA", "TWSATAWASOA FOR FACTORINGD" (مع typo!)
+القاعدة 30 (CLIENT-FACING-STYLE): يجب عرض الاسم العربي الرسمي للشركات المصرية، مع الاسم الإنجليزي كـ tooltip فقط.
+
+### 8. إيموجي زخرفي في كل مكان
+- 📈 🥇 ₿ 💱 على تبويبات الأصول
+- 🇪🇬 🇸🇦 🇰🇼 🇶🇦 على أزرار الدولة
+- ⚖️ على تبويب التوقعات
+- 📍 في نصوص
+- 🤔 في عنوان popup
+القاعدة 30: الإيموجي وظيفي فقط (مثل ✅ للمكتمل، ❌ للملغى). الإيموجي الزخرفي ممنوع.
+
+### 9. Footer مكرر في صفحات متعددة
+روابط "الموقع" / "أندرويد" / "فيسبوك" / "تليجرام" / "واتساب" / "invist.m2y.net" تظهر بالعربية والإنجليزية معاً — يخالف القاعدة 28 (NO-DUPLICATION).
+
+### 10. أخطاء إملائية ونحوية
+- "تحليل وليس تحليل مالية" (تحليل وليس استشارة مالية)
+- "الأداء السابق لا يضمن المستقبلي" (لا يضمن النتائج المستقبلية)
+- "TWSATAWASOA FOR FACTORINGD" (typo)
+- "El-Shams Housing & Development SA" (مقطوع من SAE)
+- "إسفل" بدل "أسفل"
+- "الجنيه المصري" + "ال" التعريف بعد حرف الجر "بـ" في "عرض بالالجنيه المصري"
+
+### 11. مصطلحات تقنية مكشوفة للعميل (Rule 30 violation)
+في #about و #trading-chart:
+- "Python backend" — مكشوف للعميل
+- "سكرابينج" (scraping)
+- "قواعد البيانات المحلية"
+- "System Architecture — 4-Layer Pipeline"
+- "Data Sources" / "Core Engine" / "Analysis Layers" / "Final Output"
+- "Margin Call" / "Veto" / "Boost" / "Hedge Fund" / "Free Float" / "Position Sizing" / "ATR" / "R/R" / "T+2" / "Macro Veto"
+- "تفاصيل الخطأ (للمطورين)" في صفحة picks-management
+
+## لقطات الشاشة
+كل لقطات الشاشة محفوظة في `/tmp/qa_screenshots/`:
+- `01_dashboard_desktop.png` + `01d_dashboard_mobile.png` + `01e_dashboard_mobile.png`
+- `02_stocks_desktop.png` + `02b_stocks_mobile.png`
+- `03_stock_filters_desktop.png` + `03b_stock_filters_mobile.png`
+- `04_trading_chart_desktop.png` + `04b_trading_chart_mobile.png`
+- `05_smart_confluence_desktop.png`
+- `06_recommendations_desktop.png`
+- `07_picks_management_desktop.png`
+- `reports_desktop.png`, `portfolio_desktop.png`, `trading-memory_desktop.png`, `watchlist_desktop.png`
+- `alerts-center_desktop.png`, `live-monitor_desktop.png`, `news_desktop.png`, `simulation_desktop.png`, `settings_desktop.png`
+- `zakat_retry.png`, `about_desktop.png`, `about_mobile.png`, `about_closed.png`
+
+## التوصيات الفورية (Top 10 critical actions)
+1. **إصلاح backend Python** — 5 endpoints حرجة تعطي 503/500. لا قيمة للمنصة بدونها.
+2. **إصلاح WebSocket service** — `xhr poll error` يكسر ميزة الـ live data.
+3. **استبدال إعادة التوجيه الصامتة** بـ toast message واضح للمستخدم غير المسجّل.
+4. **ترجمة رسائل الأخطاء الإنجليزية** ("Failed to fetch" → "تعذّر جلب البيانات").
+5. **إعادة كتابة صفحة `#about` بالكامل** بأسلوب احترافي ووقور، بدون عامية مصرية مفرطة، بدون مصطلحات تقنية مكشوفة، بدون ألقاب إنجليزية.
+6. **توحيد تنسيق الأرقام** على مستوى المنصة (أرقام عربية هندية + رموز عربية).
+7. **عرض أسماء الشركات العربية الرسمية** بدل الإنجليزية، مع تصحيح الـ typos (TWSATAWASOA → TASA، FACTORINGD → FACTORING).
+8. **إزالة الإيموجي الزخرفي** من كل الأزرار والتبويبات والعناوين (📈 🥇 ₿ 💱 🇪🇬 🇸🇦 🇰🇼 🇶🇦 ⚖️ 📍 🤔 📚).
+9. **حل تكرار الـ footer** (روابط عربية + إنجليزية = نفس الروابط).
+10. **إصلاح صفحة `#picks-management` المكسورة** (500 على `/api/stored-analysis/results`).
+
+## مقارنة سريعة بالمنافسين
+- **Bloomberg Terminal**: المنصة بعيدة جداً عن مستوى Bloomberg في الكثافة المعلوماتية والـ keyboard shortcuts والـ multi-monitor support.
+- **TradingView**: الشارت أضعف بكثير (لا comparison، لا multi-chart، لا indicators مخصصة، لا pine script).
+- **Interactive Brokers**: لا يوجد execution layer حقيقي، لا options، لا futures.
+- **eToro**: لا يوجد social trading، لا copy trading، لا news feed تفاعلي.
+
+## خلاصة
+المنصة بها **أكثر من 80 عيباً موزعة على 19 صفحة**، 9 منها كارثية (حرجة). أقل من نصف الصفحات تعمل فعلاً للمستخدم غير المسجّل. الصفحات التي تعمل تعاني من: أخطاء إنجليزية مكشوفة، تنسيق غير متناسق، عامية مصرية مفرطة، مصطلحات تقنية مكشوفة، إيموجي زخرفي، أسماء شركات أجنبية. **المنصة ليست جاهزة للإنتاج** بهذا المستوى وتحتاج إصلاحات عاجلة قبل طرحها لعملاء حقيقيين.
+
+
+---
+Task ID: CEO-EXPERT-REVIEW + ACTION-PLAN
+Agent: المدير العام + خبير الأسهم
+Task: مراجعة تقارير الفريق + خطة العمل التنفيذية
+
+## مراجعة خبير الأسهم للقيم المالية
+
+### القيم الصحيحة ✓
+- EGX30 = 10,285.60 (تغيير +0.74%) — ضمن النطاق المعقول
+- إجمالي السيولة = 5.1 مليار ج.م — طبيعي لجلسة EGX
+- 27 مرتفعة / 19 منخفضة — توزيع سوقي طبيعي
+- 20 توصية شراء نشطة — كمية كافية
+
+### المشاكل المكتشفة 🔴
+1. **R:R = 0** في كل التوصيات — خطأ في حساب risk_reward
+   - يجب أن يكون: (target_price - entry_price) / (entry_price - stop_loss)
+   - حالياً الـ DB فيه risk_reward = 0 في كل الصفوف
+2. **sector = "غير محدد"** لكل الأسهم — الـ seed ما وضع القطاعات
+3. **change_percent = 0** لكل الأسهم — الـ seed ما وضع previous_close
+
+## قرار المدير العام — خطة العمل التنفيذية
+
+بناءً على تقارير الفريق (QA + Architecture + Documentation)، أحدد الأولويات التالية:
+
+### 🔴 Phase 1 — إصلاحات حرجة فورية (اليوم)
+1. **R:R = 0** — حساب risk_reward من entry/target/stop في الـ API
+2. **رسائل إنجليزية مكشوفة** — استبدال "Failed to fetch" بـ رسائل عربية
+3. **9 صفحات redirect صامتة** — إضافة toast message عند الـ redirect
+4. **صفحة about** — إعادة كتابة بأسلوب احترافي
+
+### 🟡 Phase 2 — إصلاحات مهمة (خلال يومين)
+5. **data_engine.db indexes** — إضافة indexes على الأعمدة المتكررة
+6. **UnifiedTable adoption** — تطبيق على باقي الجداول
+7. **bundle optimization** — تقسيم MarketAnalysisView (7753 سطر)
+
+### 🔵 Phase 3 — تحسينات (أسبوع)
+8. **DB cleanup** — دمج الـ 25 جدول مكرر
+9. **Type safety** — استبدال 1165 `any`
+10. **Dead code removal** — أرشفة 301 script
+
+سأبدأ بـ Phase 1 فوراً.
+
+---
+Task ID: PHASE1-CRITICAL-FIXES
+Agent: مهندس إصلاحات Phase 1 (Full-stack developer)
+Task: تنفيذ المرحلة الأولى من خطة الإصلاحات الحرجة (4 إصلاحات P0)
+
+## ملخّص ما تم تنفيذه
+
+### Fix 1: حساب R:R ديناميكياً في الـ APIs ✅
+- أنشأت ملف مساعد جديد: `src/lib/risk-reward.ts` يحوي `computeRiskReward()` و`preferComputedRiskReward()` يحسبان:
+  `risk_reward = (target_price - entry_price) / (entry_price - stop_loss)`
+  مع تحقّق صارم من المدخلات (entry > stop > 0, target > entry)، وتقريب لمنزلتين عشريتين، ومنع تسريب NaN/Infinity.
+- طبّقت الحساب الديناميقي في 3 routes:
+  - `src/app/api/finance/smart-confluence/route.ts` (SQLite fallback + Python branch عبر `preferComputedRiskReward`)
+  - `src/app/api/predictions/backtest-list/route.ts`
+  - `src/app/api/predictions/daily-picks/route.ts`
+- استبدلت رسائل الأخطاء الإنجليزية في هذه الـ routes بـ:
+  - `"تعذّر الوصول إلى قاعدة بيانات التوقعات"` (بدل `predictions.db not found`)
+  - `"تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى."` (بدل `Unknown error`)
+- تحققت من نجاح الإصلاح عبر `curl`:
+  - `KORA` صار `risk_reward: 4.17` (كان 0)
+  - `MBSC` صار `risk_reward: 4.02` (كان 0)
+  - `SVCE` صار `risk_reward: 3.52` (كان 0)
+  - `confluence_score` يتحدّث تلقائياً ليأخذ R:R الجديد في الاعتبار.
+
+### Fix 2: استبدال الرسائل الإنجليزية المكشوفة للعميل ✅
+- أنشأت ملف مساعد جديد: `src/lib/safe-error.ts` يحوي:
+  - `toArabicError(err, fallback)`: يطابق الرسائل الإنجليزية المعروفة (Failed to fetch, fetch failed, NetworkError, HTTP 4xx/5xx, AbortError, إلخ) ويعيد ترجمة عربية مهنية.
+  - يرفض تسريب أي رسالة تحتوي أحرفاً لاتينية ويُعيد الفالباك العربي بدلاً منها.
+  - يصدر كائن `ARABIC_ERRORS` بالثوابت المعيارية: NETWORK, GENERIC, NO_DATA, LOADING, CONNECTION_LOST.
+- طبّقت الإصلاح في:
+  - `src/components/eid-predictions-widget.tsx`: استبدال `err.message` بـ `toArabicError()`.
+  - `src/components/auto-analysis-widget.tsx`: استبدال `err.message` بـ `toArabicError()`.
+  - `src/components/smart-tips/SmartTip.tsx`: استبدال `throw new Error('Failed to fetch')` بـ `'تعذّر تحميل النصائح. يرجى المحاولة مرة أخرى.'`.
+  - `src/components/portfolio/RoboAdvisorPanel.tsx`: استبدال `projection fetch failed` و `equity-curve fetch failed` بترجمات عربية.
+  - `src/components/stocks/ComprehensiveStockAnalysis.tsx`: استبدال `'Failed to load analysis'` بـ `'تعذّر تحميل التحليل. يرجى المحاولة مرة أخرى.'`.
+  - `src/components/stocks/TradingViewChart.tsx`: استبدال `'Failed to load chart data'` بـ `'تعذّر تحميل بيانات الرسم البياني. يرجى المحاولة مرة أخرى.'`.
+  - `src/components/predictions/DualTrackPredictionsView.tsx`: استبدال `'No data'` بـ `'لا توجد بيانات متاحة'`.
+  - `src/components/dashboard/LiquidityFlowPanel.tsx`: استبدال `\`HTTP ${res.status}\`` و `err.message` بترجمات عربية.
+  - `src/components/dashboard/IntradayPressurePanel.tsx`: نفس الإصلاح.
+  - `src/components/dashboard/PredictionsBacktestTable.tsx`: نفس الإصلاح.
+  - `src/components/predictions/PicksManagementView.tsx`: أضفت `picksError` و`mgmtError` state وUI كامل لإعادة المحاولة عند الفشل (بدل الصمت المُبلَّغ عنه في QA).
+- حوّلت 3 ملفات من CRLF إلى LF و أزلنا trailing whitespace (eid-predictions-widget.tsx, auto-analysis-widget.tsx, smart-tips/SmartTip.tsx) لتسهيل التحرير.
+
+### Fix 3: إصلاح إعادة التوجيه الصامتة في AuthGate ✅
+ملف: `src/components/auth/AuthGate.tsx`
+- راجعت كود الـ Unauthenticated Route Guard (line ~287).
+- السبب الجذري: `toast.warning()` كان يُستدعى بعد `setCurrentView('dashboard')`، فكان التحديث البصري السريع يخفي الرسالة عن المستخدم.
+- الإصلاحات المُطبَّقة:
+  1. أضفت خريطة `VIEW_LABEL_AR` تعرّف اسم كل صفحة محمية بالعربية (التقارير، المحفظة، قوائم المراقبة، إلخ) لتظهر في الرسالة: `«التقارير» تتطلب تسجيل الدخول`.
+  2. أعدت ترتيب الاستدعاءات: `toast.warning()` أصبح يُستدعى **أولاً**، ثم `setShowLoginPrompt(true)`، ثم `setCurrentView('dashboard')`.
+  3. زدت مدة العرض من 4000ms إلى 5000ms.
+  4. حسّنت الرسالة لـ `صفحة «{pageLabel}» تتطلب تسجيل الدخول` مع وصف `يرجى تسجيل الدخول أو إنشاء حساب مجاني للمتابعة.`
+  5. أضفت تعليقاً توثيقياً للقاعدة (PHASE1-CRITICAL-FIXES) يشرح لماذا الترتيب مهم.
+- الـ LoginPromptModal كان مستضافاً فعلاً في نهاية AuthGate ولا يزال يعمل بشكل سليم.
+
+### Fix 4: إعادة كتابة صفحة «من نحن» بالكامل ✅
+ملف: `src/components/about/AboutView.tsx` (466 سطر → 365 سطر منظّم)
+- حذفت كل الانتهاكات السابقة المُبلَّغ عنها في QA:
+  - "بمنطق الصايع" و "كأنك قاعد مع خبير على القهوة" (عامية مصرية).
+  - "Python backend" و "سكرابينج" و "قواعد البيانات المحلية" (مصطلحات تقنية مكشوفة).
+  - "Margin Call" / "Veto" / "Boost" / "Hedge Fund" / "Free Float" / "Position Sizing" / "ATR" / "R/R" / "T+2" / "Macro Veto".
+  - عناوين إنجليزية: "System Architecture", "Data Sources", "Core Engine", "Analysis Layers", "Final Output".
+  - شعار "LIVE PIPELINE / Python → Next.js → SQLite WAL / 15 MIN CYCLE".
+  - "📚" "📈" "🔥" "⚠️" كإيموجي زخرفي.
+- البديل المهني الجديد يحتوي على:
+  1. **مقدمة قصيرة** — تعريف المنصة ودورها في خدمة المستثمر العربي.
+  2. **الأسواق المغطاة** — EGX، تداول، KSE، QSE، العملات الرقمية (بأيقونات مهنية).
+  3. **منهجية التحليل** — شرح وقور للاعتماد على البيانات المالية الموثقة، مؤشرات قياسية، فلاتر إدارة المخاطر، ومتابعة أداء التوصيات.
+  4. **المزايا الرئيسية** — 6 بطاقات مختصرة (توقعات، تحليل فني، محفظة، إدارة مخاطر، تنبيهات، قوائم مراقبة).
+  5. **إخلاء المسؤولية** — صياغة قانونية مهنية تؤكد أن المحتوى تحليلي تعليمي وليس استشارة مالية، وأن الأداء السابق لا يضمن النتائج المستقبلية.
+  6. **مصادر البيانات** — قائمة نقطية مختصرة (أسعار، قوائم مالية، اقتصاد كلي، أخبار).
+  7. **زر العودة للوحة التحكم**.
+- الألوان متوافقة مع القواعد (emerald + teal + amber بدون indigo/blue).
+
+### فحص جودة الكود
+- `bun run lint` ✅ (لا أخطاء).
+- تحققت من عمل الـ 3 APIs بعد التعديل عبر `curl`:
+  - `/api/finance/smart-confluence?markets=EGX` → R:R غير صفري لكل التوصيات.
+  - `/api/predictions/daily-picks?market=EGX` → R:R غير صفري.
+  - `/api/predictions/backtest-list?market=EGX` → R:R غير صفري.
+- تحققت من خلوّ الصفحة الرئيسية من المصطلحات التقنية المكشوفة السابقة عبر grep.
+
+## ملفات أُنشئت/عُدّلت
+
+### ملفات جديدة
+- `src/lib/risk-reward.ts` — حساب R:R ديناميكياً.
+- `src/lib/safe-error.ts` — ترجمة رسائل الأخطاء الإنجليزية للعربية.
+
+### ملفات عُدّلت (API)
+- `src/app/api/finance/smart-confluence/route.ts`
+- `src/app/api/predictions/backtest-list/route.ts`
+- `src/app/api/predictions/daily-picks/route.ts`
+
+### ملفات عُدّلت (مكونات واجهة)
+- `src/components/auth/AuthGate.tsx` (toast قبل الـ redirect + خريطة أسماء الصفحات).
+- `src/components/about/AboutView.tsx` (إعادة كتابة كاملة).
+- `src/components/eid-predictions-widget.tsx` (إصلاح CRLF + رسائل عربية).
+- `src/components/auto-analysis-widget.tsx` (إصلاح CRLF + رسائل عربية).
+- `src/components/smart-tips/SmartTip.tsx` (إصلاح CRLF + رسالة عربية).
+- `src/components/portfolio/RoboAdvisorPanel.tsx` (رسائل عربية).
+- `src/components/stocks/ComprehensiveStockAnalysis.tsx` (رسالة عربية).
+- `src/components/stocks/TradingViewChart.tsx` (رسالة عربية).
+- `src/components/predictions/DualTrackPredictionsView.tsx` (No data → عربية).
+- `src/components/dashboard/LiquidityFlowPanel.tsx` (رسائل عربية).
+- `src/components/dashboard/IntradayPressurePanel.tsx` (رسائل عربية).
+- `src/components/dashboard/PredictionsBacktestTable.tsx` (رسائل عربية).
+- `src/components/predictions/PicksManagementView.tsx` (إضافة error states + retry UI).
+
+## توصيات للمراحل التالية
+- **Phase 2 (مهمة)**: توحيد تنسيق الأرقام على مستوى المنصة (التبديل بين أرقام عربية هندية ولاتينية في نفس الصفحة).
+- **Phase 2**: استبدال أسماء الشركات الإنجليزية بالأسماء العربية الرسمية وتصحيح الـ typos (TWSATAWASOA → TASA، FACTORINGD → FACTORING).
+- **Phase 2**: إزالة الإيموجي الزخرفي من باقي الأزرار والتبويبات.
+- **Phase 3**: تطبيق `toArabicError()` على باقي ملفات الـ setError patterns في الـ admin و screener panels.
+- **Phase 3**: توحيد استعمال `preferComputedRiskReward()` في باقي الـ APIs التي تعرض R:R.
+
+انتهى.

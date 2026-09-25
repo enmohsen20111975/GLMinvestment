@@ -10,6 +10,10 @@
  * For each prediction computes a confluence_score from:
  *   master_score + technical_score + (risk_reward * 10)
  *
+ * risk_reward is computed dynamically from (entry/target/stop) — see
+ * src/lib/risk-reward.ts. The DB column risk_reward is often 0/null so we
+ * always override it with the calculated value when inputs are valid.
+ *
  * Returns top-20:
  *   { ticker, signal, entry_price, target_price, stop_loss,
  *     risk_reward, master_score, confluence_score, prediction_date, market }
@@ -21,6 +25,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { computeRiskReward, preferComputedRiskReward } from '@/lib/risk-reward';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -92,24 +97,32 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       if (res.ok) {
         const pyData = await res.json();
         if (pyData.success && Array.isArray(pyData.predictions)) {
-          let mapped: ConfluencePick[] = pyData.predictions.map((p: any) => ({
-            ticker: String(p.symbol || p.ticker || ''),
-            market: String(p.market || 'EGX'),
-            signal: String(p.signal || p.recommendation || 'HOLD'),
-            recommendation: String(p.recommendation || p.signal || 'HOLD'),
-            recommendation_ar: String(p.signal_ar || p.recommendation_ar || ''),
-            score: Number(p.confidence || p.confluence_score || p.score || 0),
-            confidence: Number(p.confidence || 0),
-            entry_price: Number(p.entry_price || p.price || 0),
-            target_price: Number(p.target_price || 0),
-            stop_loss: Number(p.stop_loss || 0),
-            risk_reward: Number(p.risk_reward || 0),
-            master_score: Number(p.master_score || p.maestro_score || 0),
-            confluence_score: Number(p.confluence_score || p.score || 0),
-            prediction_date: String(p.prediction_date || p.date || ''),
-            sector: String(p.sector || ''),
-            name_ar: String(p.name_ar || p.name || p.ticker || ''),
-          }));
+          let mapped: ConfluencePick[] = pyData.predictions.map((p: any) => {
+            const entryPrice = Number(p.entry_price || p.price || 0);
+            const targetPrice = Number(p.target_price || 0);
+            const stopLoss = Number(p.stop_loss || 0);
+            const storedRr = Number(p.risk_reward || 0);
+            return {
+              ticker: String(p.symbol || p.ticker || ''),
+              market: String(p.market || 'EGX'),
+              signal: String(p.signal || p.recommendation || 'HOLD'),
+              recommendation: String(p.recommendation || p.signal || 'HOLD'),
+              recommendation_ar: String(p.signal_ar || p.recommendation_ar || ''),
+              score: Number(p.confidence || p.confluence_score || p.score || 0),
+              confidence: Number(p.confidence || 0),
+              entry_price: entryPrice,
+              target_price: targetPrice,
+              stop_loss: stopLoss,
+              // P0-FIX (PHASE1-CRITICAL-FIXES): prefer stored R:R if it's > 0,
+              // otherwise compute from entry/target/stop.
+              risk_reward: preferComputedRiskReward(entryPrice, targetPrice, stopLoss, storedRr),
+              master_score: Number(p.master_score || p.maestro_score || 0),
+              confluence_score: Number(p.confluence_score || p.score || 0),
+              prediction_date: String(p.prediction_date || p.date || ''),
+              sector: String(p.sector || ''),
+              name_ar: String(p.name_ar || p.name || p.ticker || ''),
+            };
+          });
           if (markets.length > 0 && !markets.includes('ALL')) {
             mapped = mapped.filter((p) =>
               markets.some(
@@ -136,7 +149,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
       if (!fs.existsSync(dbPath)) {
         return NextResponse.json(
-          { success: false, error: 'predictions.db not found', data: [], count: 0 },
+          { success: false, error: 'تعذّر الوصول إلى قاعدة بيانات التوقعات', data: [], count: 0 },
           { status: 500 }
         );
       }
@@ -184,7 +197,14 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       const data: ConfluencePick[] = rows.map((r) => {
         const masterScore = Number(r.master_score ?? r.maestro_score ?? 0);
         const technicalScore = Number(r.technical_score ?? 0);
-        const riskReward = Number(r.risk_reward ?? 0);
+        // P0-FIX (PHASE1-CRITICAL-FIXES): compute risk_reward dynamically.
+        // The DB column is frequently 0/null — compute from entry/target/stop
+        // so the client never sees R:R = 0 when the pick actually has a valid
+        // entry/target/stop.
+        const entryPrice = Number(r.entry_price ?? 0);
+        const targetPrice = Number(r.target_price ?? 0);
+        const stopLoss = Number(r.stop_loss ?? 0);
+        const riskReward = computeRiskReward(entryPrice, targetPrice, stopLoss, Number(r.risk_reward ?? 0));
         const confluence = masterScore + technicalScore + riskReward * 10;
         const lookup = stocksLookup.get(String(r.ticker));
         return {
@@ -195,9 +215,9 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
           recommendation_ar: '',
           score: masterScore,
           confidence: Number(r.confidence ?? 0),
-          entry_price: Number(r.entry_price ?? 0),
-          target_price: Number(r.target_price ?? 0),
-          stop_loss: Number(r.stop_loss ?? 0),
+          entry_price: entryPrice,
+          target_price: targetPrice,
+          stop_loss: stopLoss,
           risk_reward: riskReward,
           master_score: masterScore,
           confluence_score: Math.round(confluence * 100) / 100,
@@ -221,7 +241,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       return NextResponse.json(
         {
           success: false,
-          error: e instanceof Error ? e.message : 'Unknown error',
+          error: 'تعذّر جلب التوصيات. يرجى المحاولة مرة أخرى.',
           data: [],
           count: 0,
         },

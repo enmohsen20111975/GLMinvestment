@@ -407,10 +407,12 @@ export function PicksManagementView() {
   const [picks, setPicks] = useState<DailyPick[]>([]);
   const [picksStats, setPicksStats] = useState<DailyStats | null>(null);
   const [loadingPicks, setLoadingPicks] = useState(true);
+  const [picksError, setPicksError] = useState<string | null>(null);
 
   const [management, setManagement] = useState<ManagementAdvice[]>([]);
   const [mgmtSummary, setMgmtSummary] = useState<ManagementSummary | null>(null);
   const [loadingMgmt, setLoadingMgmt] = useState(true);
+  const [mgmtError, setMgmtError] = useState<string | null>(null);
 
   const [picksDate, setPicksDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [persona, setPersona] = useState<string>('all');
@@ -421,6 +423,7 @@ export function PicksManagementView() {
   // ---- Fetch Daily Picks ----
   const fetchPicks = useCallback(async () => {
     setLoadingPicks(true);
+    setPicksError(null);
     try {
       const params = new URLSearchParams({
         date: picksDate,
@@ -430,6 +433,9 @@ export function PicksManagementView() {
       });
       if (persona !== 'all') params.set('persona', persona);
       const res = await fetch(`/api/predictions/daily-picks?${params.toString()}`, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('تعذّر جلب التوصيات. يرجى المحاولة مرة أخرى.');
+      }
       const json = await res.json();
       if (json.success) {
         setPicks(json.picks || []);
@@ -437,10 +443,12 @@ export function PicksManagementView() {
       } else {
         setPicks([]);
         setPicksStats(null);
+        setPicksError(json.error || 'تعذّر جلب التوصيات. يرجى المحاولة مرة أخرى.');
       }
     } catch (e) {
       console.error('fetch picks error:', e);
       setPicks([]);
+      setPicksError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
     } finally {
       setLoadingPicks(false);
     }
@@ -449,10 +457,14 @@ export function PicksManagementView() {
   // ---- Fetch Active Management ----
   const fetchManagement = useCallback(async () => {
     setLoadingMgmt(true);
+    setMgmtError(null);
     try {
       const params = new URLSearchParams({ limit: '100', market: market });
       if (persona !== 'all') params.set('persona', persona);
       const res = await fetch(`/api/predictions/active-management?${params.toString()}`, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('تعذّر جلب إدارة المراكز. يرجى المحاولة مرة أخرى.');
+      }
       const json = await res.json();
       if (json.success) {
         setManagement(json.management || []);
@@ -460,10 +472,12 @@ export function PicksManagementView() {
       } else {
         setManagement([]);
         setMgmtSummary(null);
+        setMgmtError(json.error || 'تعذّر جلب إدارة المراكز. يرجى المحاولة مرة أخرى.');
       }
     } catch (e) {
       console.error('fetch management error:', e);
       setManagement([]);
+      setMgmtError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
     } finally {
       setLoadingMgmt(false);
     }
@@ -613,6 +627,20 @@ export function PicksManagementView() {
                 <Skeleton key={i} className="h-64 w-full rounded-xl" />
               ))}
             </div>
+          ) : picksError ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500" />
+              <p className="font-medium text-foreground">{picksError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => fetchPicks()}
+              >
+                <RefreshCw className="h-4 w-4 ml-2" />
+                إعادة المحاولة
+              </Button>
+            </div>
           ) : picks.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">
               <Target className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -682,6 +710,20 @@ export function PicksManagementView() {
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full" />
               ))}
+            </div>
+          ) : mgmtError ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-500" />
+              <p className="font-medium text-foreground">{mgmtError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => fetchManagement()}
+              >
+                <RefreshCw className="h-4 w-4 ml-2" />
+                إعادة المحاولة
+              </Button>
             </div>
           ) : filteredManagement.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">

@@ -1,8 +1,9 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-03
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-25
+> (DOC-CONSOLIDATION pass: تحديث الـ header + تأكيد حالة الإنتاج الحالية: V40.2 = العقل الوحيد · Closed-Loop مفعّل · 3 personas مع `balanced` فقط في الإنتاج كـ baseline · 10 توقعات V40.2 new · Backtest 68 trade +1.35%).
+> **آخر تحديث سابق:** 2026-09-03
 > (WAVE-1+2+3 DB Cleanup + Position Sizing + News Impact 5 levels + Screener Integration + Migration price_history → data_engine.db.egksco_price_history + Backtest محترم 68 trade + 10 توقعات جديدة بالكنوز المدفونة).
-> **آخر تحديث سابق:** 2026-09-01 (Stock Notebook + Disclosure + Decision Logger + Unified Exit + News Fetcher + 10 Feature Flags + باك-تست B0/B1/B2/B3).
 > **كل ملفات التوثيق السابقة في `/Documentation/*.md` دُمجت في الـ 4 ملفات الرئيسية:**
 > 1. `Documentation/00-CONSTITUTION.md` — الحوكمة والقواعد.
 > 2. `Documentation/01-PROJECT_ANATOMY.md` — التشريح الكامل (المعمارية، المحركات، DBs، تدفق البيانات).
@@ -12,9 +13,30 @@
 > **المنهجية:** كل رقم/صيغة/مسار/سلوك مُتحقَّق منه ضد الكود الفعلي + الأرشيف الإنتاجي
 > (`data/all.zip` بعد WAVE-1+2+3 cleanup).
 >
-> **النتيجة على الإنتاج الحالي (2026-09-03):** V40.2 هو العقل الوحيد.
-> Backtest محترم بـ الكنوز المدفونة: 68 trade، WR 36.76%، PF 1.19، Return +1.35%.
-> 10 توقعات جديدة STRONG_BUY بناءً على screener + fundamentals + ATR + RSI + volume.
+> **النتيجة على الإنتاج الحالي (2026-09-25):** V40.2 هو العقل الوحيد.
+> - **Closed-Loop مفعّل بالكامل:** كل توقع في `predictions.db` بيمر بـ 5 حالات (`PENDING → TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED`) — راجع `00-CONSTITUTION.md` §7.
+> - **3 personas فاعلة:** `conservative` + `balanced` (الـ **baseline الموحّد للإنتاج** — 81.8% من predictions) + `gambler`. شخصية `expert` معطّلة (Rule 23 — PERSONA-UNIFY-A). كل الـ personas بتشتق من نفس V40.2 score (بدل reclassify).
+> - **Backtest محترم بالكنوز المدفونة:** 68 trade، WR 36.76%، PF 1.19، Return +1.35% (period: 2026-02-01 → 2026-08-27).
+> - **10 توقعات جديدة** STRONG_BUY/BUY بناءً على screener + fundamentals + ATR + RSI + volume (Top 5: CIEB, HRHO, HELI, ABUK, MASR).
+> - **`predictions.db.predictions` = 306 صف** نشط · `aiPrediction` = 2,459 · `persona_predictions` = 946 · `historical_trades` = 550 · `outcome_logs` = 8,544.
+
+---
+
+## ⚡ الحالة الإنتاجية الحالية (Production Snapshot — 2026-09-25)
+
+| المكوّن | الحالة | المصدر |
+|---|---|---|
+| **V40.2 daily generator** | ✅ الإنتاج | `vps-service/jobs/v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل |
+| **Maestro orchestrator** | 🚫 معطّل (KILL-MAESTRO 2026-08-31) | `maestro_orchestrator.py` signal_id = None |
+| **Closed-Loop (5-state)** | ✅ مفعّل | `00-CONSTITUTION.md` §6 + §7 (Closed-Loop) |
+| **Personas في الإنتاج** | `balanced` فقط (baseline) | `compute_persona_fit()` يشتق conservative + gambler من نفس V40.2 score (Rule 23) |
+| **Daily picks (Top 5)** | ✅ الإنتاج | `predictions/daily-picks` من V40.2 (10 توقعات STRONG_BUY/BUY) |
+| **Active management** | ✅ الإنتاج | `predictions/active-management` — مفتوح لكل الصفقات في `predictions.db` |
+| **Honest-tracking** | ✅ الإنتاج | 7 endpoints تحت `/api/predictions/honest-tracking/*` (2,545 LOC) |
+| **Backtest engine** | ✅ V38 (sandbox + production-wiring للـ position sizing) | `v38_backtest_engine.py` (1,817 LOC) |
+| **Decision Logger** | ✅ الإنتاج (default ON — غير gated) | `decision_logger.py::log_decision()` يكتب في `decision_log.db` |
+| **10 Feature Flags V40.2** | كلها OFF افتراضياً | تُفعَّل بـ `engine_settings.py` بعد walk-forward |
+| **5-Market UI Mirror** | ✅ الإنتاج (Rule 53) | `MarketSelector` يبدّل `currentMarket` بين EGX/TADAWUL/KSE/QSE/CRYPTO |
 
 ---
 

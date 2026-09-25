@@ -192,7 +192,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
       const json = await res.json();
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load analysis');
+      setError('تعذّر تحميل التحليل. يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);
     }

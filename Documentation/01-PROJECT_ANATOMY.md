@@ -5,7 +5,8 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-09-01** (إضافة Stock Notebook System + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags + تحديث العدّادات: blueprints=40، api files=38، notebooks/EGX=259 ملف JSON).
+> **آخر تحديث: 2026-09-25** (DOC-CONSOLIDATION pass: تحديث العدّادات الإجمالية + إضافة §17 Historical Documentation Archive (كل ملفات `Documentation/*.md` غير الأساسية مُؤرشفة كمرجع تاريخي، لم تُحذف) + إضافة §1.6 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern + تحديث §3.1 DB Map بالأرقام الحالية.)
+> **آخر تحديث سابق:** 2026-09-01 (Stock Notebook System + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags + تحديث العدّادات: blueprints=40، api files=38، notebooks/EGX=259 ملف JSON).
 > **آخر تحديث سابق:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
 > **كل ملفات `Documentation/*.md` السابقة دُمجت في الملفات الأربعة الرئيسية:**
 > `00-CONSTITUTION.md` (الدستور) · `01-PROJECT_ANATOMY.md` (هذا الملف) ·
@@ -406,26 +407,63 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 
 **القاعدة الذهبية:** كل الـ routes الباقية تستخدم **relative-path-only** عبر `EGXPY_SERVICE_URL` (default `http://localhost:8010`). لا استدعاء مباشر لـ `localhost:8010` من الـ frontend؛ لازم يمر عبر `Next.js /api/proxy/[...path]`.
 
-### 1.5 الإحصائيات الكلية (2026-08-17)
+### 1.5 الإحصائيات الكلية (2026-09-25 — DOC-CONSOLIDATION refresh)
 
 | المؤشر | القيمة |
 |---|---|
 | Backend .py files | ~395 |
 | Backend LOC | ~229,490 |
-| Frontend .ts/.tsx files | ~1,104 |
+| Frontend `.tsx` files (components) | **274** (+ 3 `.ts` non-tsx = 277 total under `src/components/`) |
 | Frontend LOC | ~343,000 |
 | Flask Blueprints (registered) | 53 |
 | Python `@bp.route` decorators | ~599 |
-| Next.js `route.ts` files | ~583 |
+| Next.js `route.ts` files | **653** (تحت `src/app/api/` — 156 مجلد top-level + nested) |
 | محرك قرار مؤسسي | V39/V40.2 (institutional_decision_engine.py, ~520 LOC) |
 | محرك backtest | V38 (v38_backtest_engine.py, 1,817 LOC) |
-| Personas | 4 (gambler / balanced / conservative / expert) |
-| عدد الأسهم | 970 ticker في `stocks.db` (EGX=375, السعودية=390, الكويت=138, قطر=67) |
-| التوقعات في الإنتاج (post-archive 20260817) | 153 predictions، 148 closed (2026-01-01 → 2026-08-17) |
-| Live WR (reference) | ≈ 69.2% (26 صفقة مقفولة) |
+| Personas (نموذج التوقع) | **3 فاعلة في الإنتاج**: `conservative` + `balanced` (الـ baseline 81.8%) + `gambler` — `expert` معطّلة (Rule 23 — PERSONA-UNIFY-A) |
+| عدد الأسهم في `stocks.db` | **956 سهم** (EGX=360 · TADAWUL=413 · KSE=128 · QSE=55) — لا يشمل CRYPTO (بياناتها في `data_engine.db.crypto_prices` + `crypto.db`) |
+| الأسهم في `data_engine.db.stocks` | **1,585 سهم** (EGX + تداول + الكويت + قطر + أوامر) |
+| التوقعات النشطة في `predictions.db.predictions` | **306 predictions** (post-archive + V40.2 daily generator output) |
+| سجل التوقعات `aiPrediction` | 2,459 صف |
+| `persona_predictions` (per-persona tracks) | 946 صف |
+| `historical_trades` | 550 صفقة تاريخية |
+| `outcome_logs` | 8,544 سجل outcome |
+| `news.db.news_articles` | **7,894 خبر** (post NEWS-DB-SOT migration) |
+| `price_history.db.price_history` | **1,205,599 صف** (سجل الأسعار الموحّد EGX) |
+| `data_engine.db.historical_data` | 99,076 صف OHLC تاريخي |
+| `data_engine.db.screener_lists` | 1,505 إدخال في 5 فئات (most_active / unusual_volume / gainers / losers / volume) |
+| Live WR (reference, balanced) | ≈ 69.2% (26 صفقة مقفولة) |
 | Live PF (reference) | ≈ 4.46 |
 | Fair re-sim PF (post-R:R fix) | 1.453 (148 trades، +0.189%/trade عن القاعدة العادلة) |
 | R:R الحالي | dynamic 1.5 (normal) / 2.0 (outperform) — engine_settings |
+
+### 1.6 الـ 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern (2026-09-25)
+
+**الأسواق الخمسة المدعومة (5-Market Architecture):**
+
+| السوق | الكود (currentMarket) | المصدر | عدد الأسهم |
+|---|---|---|---:|
+| EGX (مصر) | `EGX` | `stocks.db` + `data_engine.db` | 360 (stocks.db) / 1,585 (data_engine.db) |
+| TADAWUL (السعودية) | `TADAWUL` | `stocks.db` | 413 |
+| KSE (الكويت) | `KSE` | `stocks.db` | 128 |
+| QSE (قطر) | `QSE` | `stocks.db` | 55 |
+| CRYPTO | `CRYPTO` | `data_engine.db.crypto_prices` + `crypto.db` | (~200 active tickers) |
+
+**UI-Mirror Protocol (القاعدة 53 — CRYPTO-IN-MARKETS):**
+- شاشات الأسهم (`DashboardView`, `StocksView`, `EnhancedWatchlistView`, `TradingChartView`) بتتشارك نفس المكوّنات مع `currentMarket='CRYPTO'` بدل إنشاء شاشات منفصلة.
+- الـ `<MarketSwitcher />` (`src/components/shared/MarketSelector.tsx`) هو نقطة التبديل الوحيدة؛ يكتب `currentMarket` في `useAppStore` ويُعيد تحميل الـ view.
+- لما `currentMarket='CRYPTO'` → `InvestorsFlowPanel` + `MarketDepthPanel` بـ تختفي (مش متاحة للكريبتو) — باقي الـ widgets بتشتغل بـ thresholds مكيّفة (القاعدة 8: ATR stop [5%,15%] للكريبتو بدل [3%,9%] للأسهم).
+- `loadStocks(market)` بـ يمرر `market` لـ `/api/stocks?market=X` → كل سوق بـ يجيب بياناته الحقيقية بدون تفرع شاشات.
+
+**SQLite Fallback Pattern (القاعدة 20 — Python = العقل، Node = العرض فقط):**
+- Python backend على `localhost:8010` هو المصدر الرئيسي لكل التحليلات والتوقعات (V40.2 + V38 backtest + V39/V40.2 institutional decision engine).
+- لو Python down → Node بـ يـ fall back لـ **SQLite مباشر** عبر `src/lib/sqlite-compat.ts` + `src/lib/sqlite-wrapper.ts` (better-sqlite3 read-only).
+- الـ endpoints الحساسة للتوقعات (`/api/predictions/honest-tracking/*`) بـ تقرأ من `predictions.db` مباشرة من Node — ده **architecture violation مقبول مؤقتًا** للأداء (Rule 20 استثناء موثّق).
+- النمط العام لكل API route في `src/app/api/`:
+  1. **حاول Python أولاً** (`fetch(EGXPY_SERVICE_URL + path)`).
+  2. **لو Python رفض/تأخر → اقرأ من SQLite** عبر الـ unified readers.
+  3. **لو SQLite فاضي → اقرأ من `data_engine.db`** (tier-3 fallback).
+- الأمثلة: `/api/stocks?market=EGX` (Python → SQLite)، `/api/predictions/daily-picks` (Python → SQLite)، `/api/chart/[ticker]` (Python intraday → SQLite `intraday.db` → `price_history.db`).
 
 ---
 
@@ -636,25 +674,25 @@ GLMinvestment/                              # ← PROJECT ROOT
 > **القاعدة:** كل قواعد البيانات SQLite + WAL mode + `busy_timeout=30000`. لا PostgreSQL، لا Redis، لا message queue.
 > Production archive: `active_databases_20260817_full.zip` (77,021,220 bytes، MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8`، 17 DBs).
 
-### 3.1 قواعد البيانات الرئيسية (db/vps_real/)
+### 3.1 قواعد البيانات الرئيسية (db/) — مُحدّث 2026-09-25
 
-| DB | الدور | Key tables + counts | ملاحظات |
+> ملاحظة: الـ archive `db/vps_real/` القديم تم استبداله بالعمل المباشر في `db/` بعد DB-CLEANUP-WAVE-1+2+3 (القاعدة 46). الـ canonical path دلوقتي هو `db/` (sandbox) و `/root/GLMinvestment/db/` (production).
+
+| DB | الدور | Key tables + counts (2026-09-25) | ملاحظات |
 |---|---|---|---|
-| **`predictions.db`** | V40.2 prediction store | 153 predictions (2026-01-01 → 2026-08-17)، 148 closed | `fundamental_score = 50` placeholder لكل الصفوف (مالم يُعدّل بعد Stage G) |
-| **`data_engine.db`** | Market + fundamentals | `historical_data`=99,076 · `stock_prices`=2,495 · `tab_balance_sheet`=866 · `tab_income_statement`=866 · `tab_cash_flow`=866 · `tab_valuation`=858 · `tab_profitability`=858 · `tab_dividends`=858 · `tab_performance`=858 · `tab_technical_analysis`=863 · `egx_fundamentals`=**0** | ⚠️ 3 جداول (balance_sheet/income_statement/cash_flow) عندها **column-shift bug** — `symbol` column بتحمل market name بدل الـ ticker. كل tab_* بـ symbol **ARABIC not ticker** (e.g., `ALCNالاسكندرية`). |
-| **`price_history.db`** | EGX OHLC (primary price source) | 288,194 rows، 1,260 tickers، 2025-01-09 → 2026-08-17 | المصدر الرئيسي للـ `load_merged_history()` |
-| **`stocks.db`** | Ticker metadata | 970 tickers (السعودية=390, مصر=375, الكويت=138, قطر=67) | mixed: Saudi (numeric) + EGX (concatenated) + Kuwait + Qatar |
+| **`predictions.db`** | V40.2 prediction store | `predictions`=**306** · `aiPrediction`=2,459 · `persona_predictions`=946 · `historical_trades`=550 · `outcome_logs`=8,544 · `live_ai_signals`=945 · `morning_bell_signals`=82 · `learned_lessons`=8,644 · `exit_notifications`=3,773 (53 table إجماليًا) | `fundamental_score` بقى real (بعد FUNDAMENTALS-ACTIVATION commit `04354a5`) — لا placeholder 50. |
+| **`data_engine.db`** | Market + fundamentals + metals + crypto | `stocks`=**1,585** · `historical_data`=99,076 · `stock_prices`=2,444 · `crypto_prices`=198,476 · `btc_local_prices`=76,877 · `gold_prices`=163,143 · `gold_prices_clean`=27,440 · `silver_prices`=82,608 · `exchange_rates`=45,597 · `screener_lists`=**1,505** · `tab_balance_sheet`=866 · `tab_income_statement`=866 · `tab_cash_flow`=866 · `tab_valuation`=858 · `tab_profitability`=858 · `tab_dividends`=858 · `tab_performance`=858 · `tab_technical_analysis`=863 · `egksco_price_history`=0 (هاجر لـ data_engine.db) · `egx_fundamentals`=0 (يُجمَع عبر `egx_fundamental_fetcher.py`) | الـ canonical price source بعد WAVE-2 migration: `data_engine.db.egksco_price_history`. `price_history.db` محتفظ بيه كـ safety net. |
+| **`price_history.db`** | EGX OHLC (primary price source) | `price_history`=**1,205,599** rows، 1,260 tickers (EGX focus)، 2025-01-09 → 2026-09-25 | المصدر الرئيسي للـ `load_merged_history()` |
+| **`stocks.db`** | Ticker metadata (5-market) | `stocks`=**956** (EGX=360 · TADAWUL=413 · KSE=128 · QSE=55) · `egksco_stocks`=250 · `ExpertRecommendation`=104 · `cached_analysis`=111 · `market_pulse_cache`=2,132 · `market_indices`=5 · `investors_data`=7 · `egksco_sync_status`=451 · `gold_prices`=3 (legacy) · `indicator_trust_scores`=10 (57 table إجماليًا) | mixed: Saudi (numeric) + EGX (concatenated) + Kuwait + Qatar — CRYPTO منفصل في `data_engine.db.crypto_prices` |
 | **`auth.db`** | Prisma-managed (auth) | User, Session, Account, VerificationToken | الوحيدة اللي Node.js بـ يكتب فيها مباشرة (Prisma) |
-| **`analytics.db`** | Persona + scoring cache | — | تُقرأ من Python |
-| **`learned.db`** | Learning engine weights | — | تُكتب من `learning_engine.py` + `lesson_store.py` |
-| **`news.db`** | News sentiment | — | Pillar 3 (sentiment) |
-| **`community.db`** | Community posts + sentiment | — | (community page = DEAD — انظر §8.1) |
-| **`telegram_data.db`** | Telegram events cache | — | mini-service telegram-events بـ يكتب |
-| **`intraday.db`** | Intraday OHLC | — | `intraday_aggregator.py` بـ يحوّلها لـ price_history.db |
-| **`gold_prices.db`** / **`silver_prices.db`** | metals prices | — | (gold/silver removal planned — v3.66.2) |
-| **`crypto.db`** / **`crypto-lab.db`** / **`crypto_learning.db`** | crypto prices + lab + learning | — | (crypto page = DEAD candidate) |
-| **`exchange_rates.db`** | EGP/SAR/KWD/QAR vs USD | — | portfolio conversion |
-| **`ai_search_cache.db`** | DuckDuckGo + Ollama cache | — | يقلل الـ LLM calls |
+| **`analytics.db`** | Persona + scoring cache | 86 KB | تُقرأ من Python |
+| **`learned.db`** | Learning engine weights | 12 KB | تُكتب من `learning_engine.py` + `lesson_store.py` |
+| **`news.db`** | News sentiment | `news_articles`=**7,894** · `news_agent_articles`=100 · `market_news`=43 (post NEWS-DB-SOT migration) | Pillar 3 (sentiment). المصدر الوحيد للأخبار (القاعدة 44). |
+| **`community.db`** | Community posts + sentiment | 32 KB | (community page = DEAD candidate) |
+| **`intraday.db`** | Intraday OHLC | 65 KB | `intraday_aggregator.py` بـ يحوّلها لـ price_history.db |
+| **`gold_prices.db`** / **`crypto.db`** / **`crypto_learning.db`** | metals prices + crypto prices + crypto learning | crypto.db=32 KB · crypto_learning.db=72 KB · gold_prices.db=40 KB | (gold/silver removal planned — v3.66.2; crypto.db صار secondary بعد دمج crypto في `data_engine.db`) |
+| **`finance.db`** / **`macro.db`** / **`custom.db`** | finance portfolio / macro indicators / custom widgets | finance.db=4 KB · macro.db=176 KB · custom.db=24 KB | finance.db شبه فاضي؛ macro.db فيه `macro_indicators`=3 |
+| **`decision_log.db`** | Decision Logger | table `decision_log` | يُكتب من `decision_logger.py::log_decision()` (القاعدة 37 — Decision Logger) |
 
 ### 3.2 موقع القواعد
 
@@ -1565,3 +1603,67 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
 | 2026-09-01 | `01-PROJECT_ANATOMY.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook System (1,065 LOC + 259 JSON + 7 API endpoints + NotebookAdminTab.tsx)، Unified Exit Engine (518 LOC + MARKET_PROFILES)، Decision Logger (338 LOC + decision_log.db)، News Impact Scorer (432 LOC + 14 event types)، EGX Disclosure Engine (875 LOC + 12 disclosure types)، Crypto Modules (4 ملفات: crypto_strict_filters + crypto_short_holding_exit + crypto_news_fetcher + crypto_disclosure_engine)، Feature Flags V40.2 (10 flags)، News Fetcher Analyzer + news_signals_reader + /api/news/ingest. |
+| 2026-09-25 | `01-PROJECT_ANATOMY.md` | DOC-CONSOLIDATION: تحديث §1.5 الإحصائيات (956 stocks، 1,585 data_engine، 306 predictions، 7,894 news، 1,205,599 price_history، 653 API route، 274 component). إضافة §1.6 (5-Market + UI-Mirror + SQLite Fallback). تحديث §3.1 DB Map بالأرقام الحالية. إضافة §17 Historical Documentation Archive. |
+
+---
+
+## 17. Historical Documentation Archive (DOC-CONSOLIDATION — 2026-09-25)
+
+> **القاعدة الدستورية 25 + 41 (DOCS-FIRST-LAST):** التوثيق الإلزامي = 4 ملفات فقط (`00-CONSTITUTION.md` + `01-PROJECT_ANATOMY.md` + `02-SCREENS_AND_COMPONENTS.md` + `SYSTEM_HOW_IT_THINKS.md`).
+>
+> كل ملفات `Documentation/*.md` غير الأربعة الرئيسية مُؤرشفة هنا كـ **مرجع تاريخي (historical reference)** — **لم تُحذف** (احترامًا للقاعدة 16 — VERIFY-BEFORE-DELETE والقاعدة 25). القصد منها توفير السياق التاريخي للقرارات التي اتُّخذت في الفترات الماضية. أي تعديل جديد لازم يُدمج في الـ 4 canonical files.
+
+### 17.1 الملفات الأربعة الأساسية (Canonical — مُلزمة بالقراءة)
+
+| # | الملف | الدور |
+|---|---|---|
+| 1 | `Documentation/00-CONSTITUTION.md` | الدستور والقواعد الـ 53. |
+| 2 | `Documentation/01-PROJECT_ANATOMY.md` (هذا الملف) | التشريح الكامل: المعمارية + DBs + APIs + 5 markets. |
+| 3 | `Documentation/02-SCREENS_AND_COMPONENTS.md` | كل شاشة وكل مكوّن بحالته (ACTIVE/DEAD/DUPLICATE). |
+| 4 | `Documentation/SYSTEM_HOW_IT_THINKS.md` | منطق المحرك (V40.2 + closed-loop + 3 personas). |
+
+### 17.2 الملفات الأخرى في `Documentation/` (Historical — للقراءة عند الحاجة فقط)
+
+| الملف | الدور التاريخي | المحتوى المُدمَج في canonical؟ |
+|---|---|---|
+| `Documentation/كل الاسواق.md` | خريطة الأسواق الأربعة + CRYPTO قبل توحيد الـ 5-Market Architecture. | ✅ مُدمَج في §1.6 (5-Market + UI-Mirror). |
+| `Documentation/DATABASE_ARCHITECTURE.md` | تصميم قواعد البيانات القديم (10 DBs قبل DB-CLEANUP-WAVE-1+2+3). | ✅ مُدمَج في §3.1 (DB Map updated 2026-09-25). |
+| `Documentation/DATA_FLOW_MAP.md` | تدفق البيانات من scrapers → DBs → engines → API → UI. | ✅ مُدمَج في §1.6 (SQLite Fallback Pattern) + §2 (Directory Tree). |
+| `Documentation/METHODOLOGY_AND_RESULTS.md` | منهجية V40.2 + نتائج backtest تاريخية. | ✅ مُدمَج في `SYSTEM_HOW_IT_THINKS.md` §تغييرات جوهرية (2026-09-03). |
+| `Documentation/LEGAL_PROTECTION.md` | الإطار القانوني + إخلاء المسؤولية. | ⚠️ يُحتفظ به كمرجع قانوني. مدمَج جزئيًا في `legal/disclaimer` + `legal/privacy` + `legal/terms` pages. |
+| `Documentation/PRODUCTION_DATA_EXPORT.md` | دليل تصدير بيانات الإنتاج. | ✅ مُدمَج في §3.2 (موقع القواعد). |
+| `Documentation/LIQUIDITY_DYNAMIC_THRESHOLD_PROPOSAL.md` | اقتراح عتبة سيولة ديناميكية V2. | ✅ مُدمَج في `SYSTEM_HOW_IT_THINKS.md` (Liquidity Grab — القاعدة 37). |
+| `Documentation/DYNAMIC_LIQUIDITY_V2_RESULTS.md` | نتائج A/B test للـ dynamic liquidity V2. | ✅ مُدمَج في `SYSTEM_HOW_IT_THINKS.md` (Backtest results). |
+| `Documentation/AUDIT_ENGINEERING_2026-08-30.md` | تدقيق هندسي شامل (2026-08-30). | ⚠️ مرجع تاريخي — لا يحتاج دمج. |
+| `Documentation/AUDIT_REPORT_2026-08-30.md` | تقرير تدقيق نفس الفترة. | ⚠️ مرجع تاريخي — لا يحتاج دمج. |
+| `Documentation/ANALYST_REPORT_2026-08-31.md` | تقرير محلل (2026-08-31). | ⚠️ مرجع تاريخي — لا يحتاج دمج. |
+| `Documentation/BACKTEST_ANALYSIS_2026-08-31.md` | تحليل backtest (2026-08-31). | ✅ مُدمَج في `SYSTEM_HOW_IT_THINKS.md` (V68 + V72 backtest). |
+| `Documentation/DEEP_BACKTEST_ANALYSIS_2026-08-31.md` | تحليل backtest عميق. | ✅ مُدمَج في `SYSTEM_HOW_IT_THINKS.md` (Backtest محترم). |
+| `Documentation/FIXES_REPORT_2026-08-30.md` | تقرير إصلاحات (2026-08-30). | ✅ مُدمَج في `worklog.md` + `CHANGELOG.md`. |
+| `Documentation/CLOSED_CAMP_MINUTES.md` | محاضر Closed-Camp (اجتماع تصحيح المسار). | ⚠️ مرجع تاريخي للقرارات الاستراتيجية. |
+| `Documentation/audit-logs/LAST_30DAYS_WEAKNESS_ANALYSIS.md` | تحليل ضعف آخر 30 يوم. | ⚠️ في `audit-logs/` subdirectory (مسموح به دستوريًا). |
+| `Documentation/audit-logs/JULY_2026_LOSS_ANALYSIS.md` | تحليل خسائر يوليو 2026. | ⚠️ في `audit-logs/` subdirectory (مسموح به دستوريًا). |
+
+### 17.3 الملفات الخاصة في جذر المشروع (Special — لا تُمسح)
+
+> هذه الملفات في جذر المشروع (مش في `Documentation/`) وذات طابع تشغيلي/تاريخي خاص:
+
+| الملف | الدور |
+|---|---|
+| `AGENTS.md` | دليل سير العمل اليومي (golden rules + runbooks + sandbox). مُلزَم بالقراءة بعد الـ 4 canonical files. |
+| `SYSTEM_STATE.md` | آخر حالة للنظام + سجل الإصلاحات (P0-v2 → RL-FIX-9 → R:R-FIX → FUNDAMENTALS-ACTIVATION). |
+| `CHANGELOG.md` | سجل التغييرات الكامل — يُقرأ آخر 3 إدخالات فقط (في الأعلى). |
+| `worklog.md` | سجل العمل اليومي (gitignored) — يُقرأ آخر ~150 سطر. |
+| `DEPLOYMENT_GUIDE.md` | دليل النشر الكامل على VPS (Caddy + PM2 + backup). |
+| `Grok-Report-V40.2-Detailed-Analysis.md` | تحليل V40.2 من Grok (مرجع تاريخي لمراجعة Grok على V40.2). |
+| `Agent messages (from news).md` | سجل رسائل News Agent (مرجع تكامل News-Submodule — القاعدة 47). |
+
+### 17.4 سياسة التعامل مع الـ Historical Archive
+
+1. **لا تُحذف** (القاعدة 16 — VERIFY-BEFORE-DELETE + القاعدة 25 — refactoring-gated).
+2. **لا تُحدَّث** بمحتوى جديد — أي جديد يُدمَج في canonical files فقط.
+3. **تُقرأ عند الحاجة** فقط لو في سياق تاريخي محدد (مثلاً: ليه اخترنا V40.2 مش V62؟ — راجع `METHODOLOGY_AND_RESULTS.md`).
+4. **موافقة المالك مطلوبة** لحذف أي منها بعد انتهاء الحاجة إليها (القاعدة 25).
+5. الـ `audit-logs/` subdirectory استثناء صريح (مسموح دستوريًا) — يحتوي على تقارير تدقيق دورية.
+
+> **نتيجة DOC-CONSOLIDATION (2026-09-25):** 4 ملفات canonical حيّة + 17 ملف historical محفوظ في `Documentation/` (16 + 2 في `audit-logs/`) + 7 ملفات خاصة في جذر المشروع. إجمالي 28 ملف `.md` توثيقي — لا يحتاج أي ملف جديد.

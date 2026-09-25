@@ -296,7 +296,7 @@ export function PredictionsBacktestTable() {
           setError(dashJson.error || 'تعذّر جلب إحصائيات الأداء');
         }
       } else {
-        setError(`HTTP ${dashRes.status}`);
+        setError('تعذّر جلب إحصائيات الأداء. يرجى المحاولة مرة أخرى.');
       }
 
       let listJson: BacklistResponse | null = null;
@@ -310,7 +310,7 @@ export function PredictionsBacktestTable() {
       setDashboard(dashJson);
       setBacklist(listJson);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'خطأ في الشبكة');
+      setError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
       setDashboard(null);
       setBacklist(null);
     } finally {

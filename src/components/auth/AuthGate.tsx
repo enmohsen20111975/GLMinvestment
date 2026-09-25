@@ -35,6 +35,42 @@ import type { AppView } from '@/types';
 const REMINDER_INTERVAL_MS = 1_800_000; // 30 minutes — was 5 min (too naggy)
 
 /**
+ * Arabic labels for the protected views so the redirect toast can tell the
+ * user exactly which page they tried to access.
+ */
+const VIEW_LABEL_AR: Partial<Record<AppView, string>> = {
+  'stock-detail': 'تفاصيل السهم',
+  'portfolio': 'المحفظة الموحدة',
+  'advanced-portfolio': 'المحفظة المتقدمة',
+  'watchlist': 'قوائم المراقبة',
+  'advanced-analysis': 'التحليل المتقدم',
+  'unified-analysis': 'التحليل الموحّد',
+  'specialist-analysis': 'تحليل المتخصصين',
+  'prediction-performance': 'أداء التوقعات',
+  'prediction-credibility': 'مصداقية التوقعات',
+  'seasonality': 'الموسمية',
+  'reports': 'التقارير',
+  'learning': 'التعلم',
+  'simulation': 'المحاكاة',
+  'alerts-center': 'مركز التنبيهات',
+  'trading-memory': 'ذاكرة التداول',
+  'trading-journal': 'يوميات التداول',
+  'publishing': 'النشر',
+  'crypto-detail': 'تفاصيل العملة الرقمية',
+  'crypto-portfolio': 'محفظة العملات الرقمية',
+  'crypto-watchlist': 'قوائم مراقبة العملات',
+  'crypto-recommendations': 'توصيات العملات الرقمية',
+  'crypto-analysis': 'تحليل العملات الرقمية',
+  'crypto-learning': 'تعلّم العملات الرقمية',
+  'crypto-simulation': 'محاكاة العملات الرقمية',
+  'settings': 'الإعدادات',
+  'finance': 'التمويل',
+  'backtesting': 'الاختبار الراجع',
+  'ai-analysis': 'التحليل بالذكاء الاصطناعي',
+  'v2-analysis': 'تحليل متقدم',
+};
+
+/**
  * Views that REQUIRE authentication or an active subscription.
  *
  * NOTE (FIX Aug 2026): 'recommendations' and 'analysis' were REMOVED from
@@ -255,16 +291,26 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!isProtected(currentView)) return;
     if (currentView === 'auth') return;
 
+    // Guard against re-firing on the same view (prevents toast spam if the
+    // hash navigation triggers the effect multiple times for the same view).
     if (lastBouncedView.current === currentView) return;
     lastBouncedView.current = currentView;
 
-    setShowLoginPrompt(true);
-    setCurrentView('dashboard');
+    const pageLabel = VIEW_LABEL_AR[currentView] || 'هذه الصفحة';
 
-    toast.warning('هذه الصفحة تتطلب تسجيل الدخول', {
-      description: 'يرجى تسجيل الدخول للمتابعة',
-      duration: 4000,
+    // P0-FIX (PHASE1-CRITICAL-FIXES): fire the toast BEFORE the state changes
+    // so the user has clear visual feedback about WHY they are being
+    // redirected to the dashboard. Previously the toast was queued after
+    // setCurrentView('dashboard') which made the redirect feel silent.
+    toast.warning(`صفحة «${pageLabel}» تتطلب تسجيل الدخول`, {
+      description: 'يرجى تسجيل الدخول أو إنشاء حساب مجاني للمتابعة.',
+      duration: 5000,
     });
+
+    // Open the LoginPromptModal so the user has a one-click path to register.
+    setShowLoginPrompt(true);
+    // Then redirect to the dashboard so the URL hash matches the visible view.
+    setCurrentView('dashboard');
 
     const t = setTimeout(() => {
       lastBouncedView.current = null;
