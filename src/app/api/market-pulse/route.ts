@@ -55,7 +55,44 @@ export async function GET() {
       if (cache && Date.now() - cache.timestamp < STALE_CACHE_TTL) {
         return NextResponse.json(cache.data);
       }
-      return NextResponse.json(FALLBACK_RESPONSE);
+    
+    // P0-FIX: SQLite fallback — read market pulse from stocks.db
+    try {
+      const path = require('path');
+      const fs = require('fs');
+      const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
+      if (fs.existsSync(stocksDbPath)) {
+        const Database = require('better-sqlite3');
+        const db = new Database(stocksDbPath, { readonly: true });
+        const stocks = db.prepare("SELECT change_percent FROM stocks WHERE market = 'EGX'").all();
+        const advancing = stocks.filter((s: any) => Number(s.change_percent) > 0).length;
+        const declining = stocks.filter((s: any) => Number(s.change_percent) < 0).length;
+        const total = stocks.length;
+        const unchanged = total - advancing - declining;
+        const breadth = total > 0 ? ((advancing - declining) / total * 100) : 0;
+        db.close();
+        return NextResponse.json({
+          success: true,
+          source: 'sqlite_fallback',
+          data: {
+            cairo_time: new Date().toISOString(),
+            is_trading_hours: false,
+            market_status: 'CLOSED',
+            breadth: Math.round(breadth * 10) / 10,
+            advancing,
+            declining,
+            unchanged,
+            total,
+            pulse_value: Math.max(-5, Math.min(5, Math.round(breadth / 10))),
+            sentiment: breadth > 10 ? 'GREED' : breadth < -10 ? 'FEAR' : 'NEUTRAL',
+          }
+        });
+      }
+    } catch (e) {
+      console.error('[market-pulse] SQLite fallback error:', e);
+    }
+    
+  return NextResponse.json(FALLBACK_RESPONSE);
     }
 
     const data = await response.json();
@@ -68,6 +105,43 @@ export async function GET() {
     if (cache) {
       return NextResponse.json(cache.data);
     }
-    return NextResponse.json(FALLBACK_RESPONSE);
+  
+    // P0-FIX: SQLite fallback — read market pulse from stocks.db
+    try {
+      const path = require('path');
+      const fs = require('fs');
+      const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
+      if (fs.existsSync(stocksDbPath)) {
+        const Database = require('better-sqlite3');
+        const db = new Database(stocksDbPath, { readonly: true });
+        const stocks = db.prepare("SELECT change_percent FROM stocks WHERE market = 'EGX'").all();
+        const advancing = stocks.filter((s: any) => Number(s.change_percent) > 0).length;
+        const declining = stocks.filter((s: any) => Number(s.change_percent) < 0).length;
+        const total = stocks.length;
+        const unchanged = total - advancing - declining;
+        const breadth = total > 0 ? ((advancing - declining) / total * 100) : 0;
+        db.close();
+        return NextResponse.json({
+          success: true,
+          source: 'sqlite_fallback',
+          data: {
+            cairo_time: new Date().toISOString(),
+            is_trading_hours: false,
+            market_status: 'CLOSED',
+            breadth: Math.round(breadth * 10) / 10,
+            advancing,
+            declining,
+            unchanged,
+            total,
+            pulse_value: Math.max(-5, Math.min(5, Math.round(breadth / 10))),
+            sentiment: breadth > 10 ? 'GREED' : breadth < -10 ? 'FEAR' : 'NEUTRAL',
+          }
+        });
+      }
+    } catch (e) {
+      console.error('[market-pulse] SQLite fallback error:', e);
+    }
+    
+  return NextResponse.json(FALLBACK_RESPONSE);
   }
 }
