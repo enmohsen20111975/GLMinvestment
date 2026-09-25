@@ -34,6 +34,7 @@ import {
   BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   Legend,
 } from 'recharts';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 
 // RL-FIX-7: 999 = YTD (من أول السنة) — من 1 يناير للسنة الحالية
 export type ReportTimeframe = 1 | 2 | 7 | 14 | 30 | 60 | 90 | 180 | 365 | 999 | 0;
@@ -910,6 +911,22 @@ export function ExecutiveReportView({
   const totalTrades = stats.total;
   const timeframeLabel = TIMEFRAME_OPTIONS.find((t) => t.value === days)?.label || '';
 
+  // نص المشاركة لملخص الأداء — ينتج من statsByStock
+  const reportShareText = useMemo(() => {
+    const lines: string[] = [
+      `📊 ملخص أداء التوقعات — ${market} · ${timeframeLabel}`,
+      '',
+      `إجمالي الصفقات: ${totalTrades}`,
+      `نسبة النجاح: ${winRate.toFixed(1)}%`,
+      `معامل الربحية: ${profitFactor >= 999 ? '∞' : profitFactor.toFixed(2)}`,
+      `رابحة: ${stats.wins} / خاسرة: ${stats.losses} / معلقة: ${stats.pending}`,
+      `صافي العائد: ${stats.totalProfit >= 0 ? '+' : ''}${stats.totalProfit.toFixed(2)}%`,
+      '',
+      '⚠️ لأغراض إعلامية فقط وليست نصيحة استثمارية.',
+    ];
+    return lines.join('\n');
+  }, [market, timeframeLabel, totalTrades, winRate, profitFactor, stats]);
+
   return (
     <div className={cn('w-full max-w-6xl mx-auto space-y-5', className)} dir="rtl">
       {/* ════════════════ Control Bar ════════════════ */}
@@ -957,6 +974,16 @@ export function ExecutiveReportView({
             <Download className="w-4 h-4 ml-1.5" />
             تصدير PNG 📸
           </Button>
+
+          <UnifiedPublishButton
+            content={reportShareText}
+            title={`ملخص أداء التوقعات — ${market} · ${timeframeLabel}`}
+            image={reportContainerRef}
+            filename={`executive_report_${market}_${new Date().toISOString().split('T')[0]}`}
+            hashtags={['EGX', 'بورصة', 'توقعات']}
+            variant="outline"
+            size="sm"
+          />
 
           {onClose && (
             <Button variant="ghost" size="sm" onClick={onClose} className="h-10 px-3 text-sm flex-shrink-0">

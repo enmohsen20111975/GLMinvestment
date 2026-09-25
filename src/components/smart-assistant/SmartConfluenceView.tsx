@@ -74,7 +74,9 @@ export function SmartConfluenceView() {
         const res = await fetch('/api/finance/smart-confluence', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ markets: ['EGX', 'EG', 'SAU', 'KWT', 'QAT'], perMarket: 5, totalLimit: 20 })
+          // نجيب من كل الأسواق (EGX + CRYPTO + TADAWUL + KSE + QSE) عشان كل
+          // التوصيات النشطة تظهر، بصرف نظر عن السوق اللي كانت فيه.
+          body: JSON.stringify({ markets: ['EGX', 'CRYPTO', 'TADAWUL', 'KSE', 'QSE'], perMarket: 5, totalLimit: 20 })
         });
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {

@@ -10,6 +10,7 @@
  *       - Facebook
  *       - WhatsApp
  *       - Twitter / X
+ *       - LinkedIn  (مضاف لتطابق شاشة الأخبار)
  *
  *   ▸ نسخ النص (clipboard)
  *
@@ -34,7 +35,7 @@ import React, { useState, useCallback } from 'react';
 import { toPng } from 'html-to-image';
 import {
   Share2, Send, Facebook, MessageCircle, Twitter, Copy, Image as ImageIcon,
-  Loader2, Check, ChevronDown,
+  Loader2, Check, ChevronDown, Linkedin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -105,6 +106,11 @@ function buildTwitterUrl(text: string, url: string, hashtags: string[]): string 
     params.set('hashtags', hashtags.join(','));
   }
   return `https://twitter.com/intent/tweet?${params.toString()}`;
+}
+
+function buildLinkedInUrl(url: string): string {
+  // LinkedIn sharer بياخد url فقط (الـ summary ملغي في API الجديد)
+  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -179,6 +185,11 @@ export function UnifiedPublishButton({
     toast.success('تم فتح تويتر للنشر');
   }, [fullContent, url, hashtags]);
 
+  const handleLinkedIn = useCallback(() => {
+    openShareWindow(buildLinkedInUrl(url));
+    toast.success('تم فتح لينكد إن للنشر');
+  }, [url]);
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(fullContent);
@@ -239,6 +250,10 @@ export function UnifiedPublishButton({
             <DropdownMenuItem onClick={handleTwitter} className="gap-2 text-xs cursor-pointer">
               <Twitter className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
               تويتر / X
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLinkedIn} className="gap-2 text-xs cursor-pointer">
+              <Linkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+              لينكد إن
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -314,6 +329,10 @@ export function UnifiedPublishButton({
         <DropdownMenuItem onClick={handleTwitter} className="gap-2 text-xs cursor-pointer">
           <Twitter className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
           تويتر / X
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLinkedIn} className="gap-2 text-xs cursor-pointer">
+          <Linkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+          لينكد إن
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs">أدوات محلية</DropdownMenuLabel>

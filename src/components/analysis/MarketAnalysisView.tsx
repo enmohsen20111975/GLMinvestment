@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   TrendingUp, TrendingDown, Clock, Calendar,
   BarChart3, Target, AlertTriangle, CheckCircle,
@@ -7246,7 +7247,96 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
   );
 }
 
-// ─── جدول التوقعات (شراء/بيع) ────────────────────────────────────────────────
+// ─── جدول التوقعات (شراء/بيع) — UnifiedTable ──────────────────────────────────
+type PredictionRow = Record<string, unknown>;
+const predictionsColumns: Column<PredictionRow>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    width: 'min-w-[140px]',
+    render: (p) => (
+      <div className="flex flex-col">
+        <div className="font-semibold text-sm">{String(p.ticker ?? '')}</div>
+        {p.name ? <div className="text-xs text-muted-foreground">{String(p.name)}</div> : null}
+      </div>
+    ),
+  },
+  {
+    key: 'signal',
+    header: 'الإشارة',
+    align: 'center',
+    render: (p) => {
+      const sig = String(p.signal ?? '');
+      const isBuy = sig === 'BUY' || sig === 'STRONG_BUY';
+      return (
+        <Badge variant="outline" className={cn(
+          'text-xs',
+          isBuy
+            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+            : 'text-red-700 bg-red-50 border-red-200'
+        )}>
+          {sig === 'STRONG_BUY' ? 'شراء قوي' : sig === 'BUY' ? 'شراء' : sig === 'STRONG_SELL' ? 'بيع قوي' : sig || '—'}
+        </Badge>
+      );
+    },
+  },
+  {
+    key: 'entry_price',
+    header: 'سعر الدخول',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (p) => (typeof p.entry_price === 'number' ? p.entry_price.toFixed(2) : '—'),
+  },
+  {
+    key: 'target_price',
+    header: 'الهدف',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm text-emerald-600',
+    render: (p) => (typeof p.target_price === 'number' ? p.target_price.toFixed(2) : '—'),
+  },
+  {
+    key: 'stop_loss',
+    header: 'الوقف',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm text-red-600',
+    render: (p) => (typeof p.stop_loss === 'number' ? p.stop_loss.toFixed(2) : '—'),
+  },
+  {
+    key: 'r_multiple',
+    header: 'R/R',
+    align: 'center',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (p) => (typeof p.r_multiple === 'number' ? p.r_multiple.toFixed(2) : '—'),
+  },
+  {
+    key: 'confidence',
+    header: 'الثقة',
+    align: 'center',
+    sortable: true,
+    render: (p) => (typeof p.confidence === 'number' && p.confidence > 0
+      ? <Badge variant="secondary" className="text-xs">{p.confidence.toFixed(0)}%</Badge>
+      : <span className="text-muted-foreground">—</span>
+    ),
+  },
+  {
+    key: 'reason',
+    header: 'السبب',
+    align: 'right',
+    className: 'text-xs text-muted-foreground max-w-xs',
+    render: (p) => {
+      const r = p.reason;
+      if (typeof r !== 'string' || !r) return <span className="text-muted-foreground">—</span>;
+      return <span className="truncate block max-w-[280px]" title={r}>{r.slice(0, 80)}</span>;
+    },
+  },
+];
+
 function PredictionsTable({ predictions }: { predictions: any[] }) {
   if (predictions.length === 0) {
     return (
@@ -7261,56 +7351,101 @@ function PredictionsTable({ predictions }: { predictions: any[] }) {
   return (
     <Card>
       <CardContent className="p-0">
-        <div className="max-h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead>السهم</TableHead>
-                <TableHead className="text-center">الإشارة</TableHead>
-                <TableHead className="text-right">سعر الدخول</TableHead>
-                <TableHead className="text-right">الهدف</TableHead>
-                <TableHead className="text-right">الوقف</TableHead>
-                <TableHead className="text-center">R/R</TableHead>
-                <TableHead className="text-center">الثقة</TableHead>
-                <TableHead className="text-right">السبب</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {predictions.map((p) => (
-                <TableRow key={p.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="font-semibold text-sm">{p.ticker}</div>
-                    <div className="text-xs text-muted-foreground">{p.name}</div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className={cn(
-                      'text-xs',
-                      p.signal === 'BUY' || p.signal === 'STRONG_BUY'
-                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-                        : 'text-red-700 bg-red-50 border-red-200'
-                    )}>
-                      {p.signal === 'STRONG_BUY' ? 'شراء قوي' : p.signal === 'BUY' ? 'شراء' : p.signal === 'STRONG_SELL' ? 'بيع قوي' : p.signal}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">{p.entry_price?.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm text-emerald-600">{p.target_price?.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm text-red-600">{p.stop_loss?.toFixed(2)}</TableCell>
-                  <TableCell className="text-center font-mono text-sm">{p.r_multiple?.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">
-                    {p.confidence && <Badge variant="secondary" className="text-xs">{p.confidence.toFixed(0)}%</Badge>}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground max-w-xs">{p.reason?.slice(0, 80)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<PredictionRow>
+          columns={predictionsColumns}
+          data={predictions as PredictionRow[]}
+          keyField="id"
+          maxHeight="max-h-[600px]"
+          dense
+          emptyTextAr="مفيش توقعات متاحة"
+          rowClassName={() => 'hover:bg-muted/50'}
+        />
       </CardContent>
     </Card>
   );
 }
 
-// ─── جدول حالة الأسهم النشطة ────────────────────────────────────────────────
+// ─── جدول حالة الأسهم النشطة — UnifiedTable ─────────────────────────────────
+const activeStatusColumns: Column<PredictionRow>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    width: 'min-w-[140px]',
+    render: (s) => (
+      <div className="flex flex-col">
+        <div className="font-semibold text-sm">{String(s.ticker ?? '')}</div>
+        {s.name ? <div className="text-xs text-muted-foreground">{String(s.name)}</div> : null}
+      </div>
+    ),
+  },
+  {
+    key: 'original_signal',
+    header: 'الإشارة',
+    align: 'center',
+    render: (s) => (
+      <Badge variant="outline" className="text-xs">{String(s.original_signal ?? '—')}</Badge>
+    ),
+  },
+  {
+    key: 'original_entry_price',
+    header: 'دخول',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (s) => (typeof s.original_entry_price === 'number' ? s.original_entry_price.toFixed(2) : '—'),
+  },
+  {
+    key: 'current_price',
+    header: 'السعر الحالي',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (s) => (typeof s.current_price === 'number' ? s.current_price.toFixed(2) : '—'),
+  },
+  {
+    key: 'progress_percent',
+    header: 'التقدم',
+    align: 'center',
+    sortable: true,
+    render: (s) => {
+      const p = typeof s.progress_percent === 'number' ? s.progress_percent : 0;
+      return (
+        <div className="flex flex-col items-center">
+          <span className={cn(
+            'font-mono text-sm font-bold',
+            p >= 70 ? 'text-emerald-600' : p >= 30 ? 'text-amber-600' : p < 0 ? 'text-red-600' : 'text-muted-foreground'
+          )}>
+            {p > 0 ? '+' : ''}{p.toFixed(1)}%
+          </span>
+          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className={cn(
+              'h-full',
+              p >= 70 ? 'bg-emerald-500' : p >= 30 ? 'bg-amber-500' : p < 0 ? 'bg-red-500' : 'bg-teal-500'
+            )} style={{ width: `${Math.max(0, Math.min(100, p))}%` }} />
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    key: 'status',
+    header: 'الحالة',
+    align: 'center',
+    render: (s) => (
+      <Badge variant="outline" className="text-xs">{String(s.status ?? '—')}</Badge>
+    ),
+  },
+  {
+    key: 'expected_action',
+    header: 'الإجراء المتوقع',
+    align: 'right',
+    className: 'text-xs font-medium',
+    render: (s) => (s.expected_action ? String(s.expected_action) : <span className="text-muted-foreground">—</span>),
+  },
+];
+
 function ActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
   if (activeStatus.length === 0) {
     return (
@@ -7325,56 +7460,15 @@ function ActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
   return (
     <Card>
       <CardContent className="p-0">
-        <div className="max-h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead>السهم</TableHead>
-                <TableHead className="text-center">الإشارة</TableHead>
-                <TableHead className="text-right">دخول</TableHead>
-                <TableHead className="text-right">السعر الحالي</TableHead>
-                <TableHead className="text-center">التقدم</TableHead>
-                <TableHead className="text-center">الحالة</TableHead>
-                <TableHead className="text-right">الإجراء المتوقع</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeStatus.map((s) => (
-                <TableRow key={s.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="font-semibold text-sm">{s.ticker}</div>
-                    <div className="text-xs text-muted-foreground">{s.name}</div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className="text-xs">{s.original_signal}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">{s.original_entry_price?.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{s.current_price?.toFixed(2)}</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex flex-col items-center">
-                      <span className={cn(
-                        'font-mono text-sm font-bold',
-                        s.progress_percent >= 70 ? 'text-emerald-600' : s.progress_percent >= 30 ? 'text-amber-600' : s.progress_percent < 0 ? 'text-red-600' : 'text-muted-foreground'
-                      )}>
-                        {s.progress_percent > 0 ? '+' : ''}{s.progress_percent?.toFixed(1)}%
-                      </span>
-                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className={cn(
-                          'h-full',
-                          s.progress_percent >= 70 ? 'bg-emerald-500' : s.progress_percent >= 30 ? 'bg-amber-500' : s.progress_percent < 0 ? 'bg-red-500' : 'bg-teal-500'
-                        )} style={{ width: `${Math.max(0, Math.min(100, s.progress_percent))}%` }} />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className="text-xs">{s.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-xs font-medium">{s.expected_action}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<PredictionRow>
+          columns={activeStatusColumns}
+          data={activeStatus as PredictionRow[]}
+          keyField="id"
+          maxHeight="max-h-[600px]"
+          dense
+          emptyTextAr="مفيش توقعات نشطة حالياً"
+          rowClassName={() => 'hover:bg-muted/50'}
+        />
       </CardContent>
     </Card>
   );

@@ -1805,3 +1805,40 @@ combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
 ---
 
 *نهاية التحديثات 2026-09-24 — القاعدة 51 (MULTI-MARKET-DUAL-TRACK).*
+
+---
+
+### القاعدة 52 — العناصر الموحدة لإعادة الاستخدام (UNIFIED-REUSABLE-COMPONENTS — 2026-09-25)
+
+> **سبب الإضافة:** توجيه صريح من المالك (2026-09-25): "انت لية مستعملتش عنصر الجدول الموحد فى كل مكان فى المشروع بمعنى فعلياً فى كل مكان وأى مكان فية جدول استبدله. وانت لية مش مستخدم العنصر الموحد للنشر فى كل مكان داخل المشروع ويكون فية كل الى موجود فى عنصر النشر الى فى شاشة الأخبار". المنصة كتلة واحدة — كل شاشة لازم تستخدم نفس العناصر الموحدة، مش كل شاشة تبني element خاص بها.
+
+**أ. الجدول الموحد (UnifiedTable):**
+- **المكوّن:** `src/components/shared/UnifiedTable.tsx` — جدول generic قابل لإعادة الاستخدام.
+- **الاستخدام الإلزامي:** أي شاشة فيها جدول بيانات (توقعات، قطاعات، أسهم، توصيات، محفظة، إلخ) **لازم** تستخدم `<UnifiedTable>` بدل بناء `<Table><TableHeader>...` يدوياً.
+- **الميزات:** loading skeleton، empty state عربي، sticky header، sortable columns، horizontal scroll، custom scrollbar، row hover/click، dense mode، RTL.
+- **الاستثناءات الوحيدة:** الجداول اللي فيها expandable rows أو features خاصة جداً (مثل sectors-tracking table اللي بيتوسّع كل row) — بس حتى دي لازم تتـ refactored لما UnifiedTable يدعم expansion.
+
+**ب. زر النشر الموحد (UnifiedPublishButton):**
+- **المكوّن:** `src/components/shared/UnifiedPublishButton.tsx` — زر نشر dropdown فيه كل منصات النشر.
+- **الاستخدام الإلزامي:** أي شاشة فيها محتوى قابل للنشر (توقعات، تقارير، أخبار، تحليلات، dashboard) **لازم** تستخدم `<UnifiedPublishButton>` بدل بناء أزرار مشاركة منفصلة.
+- **المنصات المدعومة:** Telegram + Facebook + WhatsApp + Twitter + LinkedIn + Copy + Image export (PNG). ده نفس الـ feature set بتاع شاشة الأخبار.
+- **الـ split mode:** لو الشاشة محتاجة أزرار منفصلة، استخدم `<UnifiedPublishButton split />`.
+
+**ج. قاعدة عدم التكرار في الـ UI Components:**
+- **ممنوع** إنشاء component جديد بنفس وظيفة component موجود. لو محتاج جدول → `UnifiedTable`. لو محتاج نشر → `UnifiedPublishButton`. لو محتاج بحث عن سهم → `StockSearchSelector`. لو محتاج تبديل سوق → `ExchangeSelector`.
+- قبل بناء أي component جديد، اسأل: "هل فيه component موجود بـ يعمل ده؟" (Grep في `src/components/shared/`).
+
+---
+
+### القاعدة 53 — دمج الكريبتو في الأسواق (CRYPTO-IN-MARKETS — 2026-09-25)
+
+> **سبب الإضافة:** توجيه صريح من المالك (2026-09-25): "فى قائمة المزيد يوجد العديد من صفحات الكريبتو فى حين انى امرتك تدمج الكريبتو داخل الأسواق". الكريبتو سوق مثل أي سوق آخر — يُختار من مبدّل الأسواق (Market Switcher)، مش من قائمة منفصلة.
+
+- **مبدّل الأسواق (ExchangeSelector في TopBar):** هو الطريق الوحيد للتبديل بين الأسواق (EGX/TADAWUL/KSE/QSE/CRYPTO). لما السوق = CRYPTO، كل شاشات السوق (stocks، trading-chart، recommendations، إلخ) بتعمل mirror تلقائياً وتعرض بيانات الكريبتو (UI-Mirror Protocol).
+- **قائمة "المزيد" (TopBar → المزيد):** **ممنوع** وضع أي إدخالات crypto منفصلة (crypto، crypto-live، crypto-recommendations، crypto-trading-chart، crypto-screener، crypto-analysis، crypto-learning، crypto-simulation). كل دي اتشالت من القائمة في 2026-09-25.
+- **deep links:** الـ hash routes القديمة (مثلاً `#crypto-trading-chart`) لسه شغّالة كـ redirects للـ unified view المناسب (عشان الـ backwards compatibility مع الـ Flutter app) — بس مش معروضة في الـ UI.
+- **الاستثناء الوحيد:** ودجت "إشارات الكريبتو" على الداشبورد — بتظهر بس لما `currentMarket === 'CRYPTO'` كجزء من الـ widget registry (مش قائمة منفصلة).
+
+---
+
+*نهاية التحديثات 2026-09-25 — القواعد 52 (UNIFIED-REUSABLE-COMPONENTS) + 53 (CRYPTO-IN-MARKETS).*

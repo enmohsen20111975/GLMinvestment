@@ -22,15 +22,31 @@
  * Reference: Documentation/03-REFACTORING_REPORT.md §P0.3 + §13 Example 3.
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
 
 import { proxyRequest } from '@/app/api/proxy/[...path]/route';
+import { handleV4Stats } from '@/app/api/v4/stats/route';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+/**
+ * P0-FIX (API-FALLBACKS-WAVE-2): special-case `v4/stats`.
+ * The Python backend is down in this sandbox, so the unified proxy below
+ * returns 502 for every path. `/api/python/v4/stats` is consumed by the
+ * TradingMemoryView (client-facing) — we intercept it here, try Python
+ * first (5s timeout), then fall back to SQLite via handleV4Stats().
+ *
+ * Every other path continues to use the standard proxyRequest() pipeline.
+ */
 export async function GET(request: NextRequest, context: RouteContext) {
-  return proxyRequest(request, context);
+  const { path } = await context.params;
+  const joined = path.join('/');
+  if (joined === 'v4/stats' || joined === 'v4\\stats') {
+    return handleV4Stats(request);
+  }
+  return proxyRequest(request, { params: context.params });
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Download, Zap, RefreshCw, Pin } from 'lucide-react';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { Header } from '@/components/layout/Header';
@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShareButton } from '@/components/share/ShareButton';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { StockSelector } from '@/components/stocks/StockSelector';
 import { toast } from 'sonner';
 import { SafeWidget } from '@/components/dashboard/SafeWidget';
@@ -108,6 +109,7 @@ export function DashboardView() {
   const { isLoading, loadDashboard, marketOverview, currentMarket, assetPreference, pinnedWidgets, stocks, selectedTicker } = useAppStore();
   const [exporting, setExporting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -140,6 +142,23 @@ export function DashboardView() {
 
   // Get market name for subtitle
   const marketNameAr = MARKET_NAMES_AR[currentMarket];
+
+  // نص المشاركة للوححة التحكم — ينتج تلقائياً من حالة السوق الحالية.
+  const dashboardShareText = useMemo(() => {
+    const idxVal = marketOverview?.indices?.[0]?.value;
+    const idxChg = marketOverview?.indices?.[0]?.change_percent;
+    const isOpen = marketOverview?.market_status?.is_open;
+    const lines: string[] = [
+      `📊 لوحة تحكم ${marketNameAr}`,
+      '',
+      idxVal != null ? `قيمة المؤشر: ${idxVal.toLocaleString('ar-EG')}` : '',
+      idxChg != null ? `التغير: ${idxChg >= 0 ? '+' : ''}${idxChg.toFixed(2)}%` : '',
+      `حالة السوق: ${isOpen ? 'مفتوح' : 'مغلق'}`,
+      '',
+      '🔔 تابع تحليلات السوق المصرية لحظياً عبر منصة دليل الاستثمار.',
+    ].filter(Boolean);
+    return lines.join('\n');
+  }, [marketOverview, marketNameAr]);
 
   // ---------- Widget registry (P5-MOBILE-UX Part B) ----------
   // Each entry controls (a) asset-preference visibility and (b) pin toggle.
@@ -323,6 +342,15 @@ export function DashboardView() {
             <Download className="w-4 h-4" />
             {exporting ? 'جارٍ التصدير...' : 'تصدير PDF'}
           </Button>
+          <UnifiedPublishButton
+            content={dashboardShareText}
+            title={`لوحة تحكم ${marketNameAr}`}
+            image={dashboardRef}
+            filename={`dashboard_${currentMarket}_${new Date().toISOString().slice(0, 10)}`}
+            hashtags={['EGX', 'بورصة', 'توصيات']}
+            variant="outline"
+            size="sm"
+          />
         </div>
       </div>
 
@@ -341,7 +369,7 @@ export function DashboardView() {
         {!mounted || isLoading ? (
           <DashboardSkeleton />
         ) : (
-          <div id="dashboard-export" className="space-y-4 p-3 md:p-4" dir="rtl">
+          <div id="dashboard-export" ref={dashboardRef} className="space-y-4 p-3 md:p-4" dir="rtl">
             {/* Pinned section — widgets the user pinned appear at the top */}
             {showPinnedSection && (
               <section aria-label="ودجات مثبتة" className="space-y-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Download,
   FileBarChart,
@@ -41,6 +41,7 @@ import { adaptAiInsights } from '@/lib/store';
 import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 import { DailyMarketReport } from './DailyMarketReport';
 import { StockAnalysisReport } from './StockAnalysisReport';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 
 /* ============================
    Stored-Analysis Types & Helpers (P15-TASK-4)
@@ -314,6 +315,7 @@ function SectorReport() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const sectorReportRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -399,7 +401,7 @@ function SectorReport() {
   };
 
   return (
-    <div id="sector-report-content" className="space-y-6 print:space-y-4" dir="rtl">
+    <div id="sector-report-content" ref={sectorReportRef} className="space-y-6 print:space-y-4" dir="rtl">
       {/* Report Header */}
       <div className="border-b-2 border-primary pb-4 mb-2">
         <div className="flex items-center justify-between">
@@ -431,6 +433,15 @@ function SectorReport() {
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {copied ? 'تم النسخ' : 'نسخ التقرير'}
         </Button>
+        <UnifiedPublishButton
+          content={insights ? generateSectorShareText(insights) : 'تقرير القطاعات'}
+          title="تقرير القطاعات اليومي"
+          image={sectorReportRef}
+          filename={`sector_report_${new Date().toISOString().split('T')[0]}`}
+          hashtags={['EGX', 'بورصة', 'قطاعات']}
+          variant="outline"
+          size="sm"
+        />
       </div>
 
       {/* Summary Cards */}
@@ -589,6 +600,7 @@ function RecommendationsReport() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const recReportRef = useRef<HTMLDivElement>(null);
   // P15-TASK-4: stored-analyses is the live source for Top 10 Buy/Sell.
   // Falls back to the pulse-derived stock_statuses when stored-analysis is empty.
   const [storedBuys, setStoredBuys] = useState<ReportStock[]>([]);
@@ -755,7 +767,7 @@ function RecommendationsReport() {
   };
 
   return (
-    <div id="recommendations-report-content" className="space-y-6 print:space-y-4" dir="rtl">
+    <div id="recommendations-report-content" ref={recReportRef} className="space-y-6 print:space-y-4" dir="rtl">
       {/* Report Header */}
       <div className="border-b-2 border-primary pb-4 mb-2">
         <div className="flex items-center justify-between">
@@ -796,6 +808,15 @@ function RecommendationsReport() {
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {copied ? 'تم النسخ' : 'نسخ التقرير'}
         </Button>
+        <UnifiedPublishButton
+          content={insights ? generateRecommendationsShareText(insights, usingStoredAnalysis) : 'تقرير التحليلات'}
+          title="تقرير التحليلات اليومي"
+          image={recReportRef}
+          filename={`recommendations_report_${new Date().toISOString().split('T')[0]}`}
+          hashtags={['EGX', 'بورصة', 'توصيات']}
+          variant="outline"
+          size="sm"
+        />
       </div>
 
       {/* Market Summary */}

@@ -18,6 +18,7 @@ import { Users, Building2, User, TrendingUp, TrendingDown, Loader2, Layers, Glob
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { cn } from '@/lib/utils';
 import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
 
@@ -113,6 +114,67 @@ function fmtPct(n: number): string {
   const sign = n >= 0 ? '+' : '';
   return `${sign}${n.toFixed(2)}%`;
 }
+
+// ─── Columns for UnifiedTable (Sector Flow) ──────────────────────────────────
+const sectorFlowColumns: Column<SectorFlow>[] = [
+  {
+    key: 'sector',
+    header: 'القطاع',
+    align: 'right',
+    sortable: true,
+    width: 'min-w-[140px]',
+    className: 'font-medium truncate',
+    render: (s) => (
+      <span className="truncate block max-w-[180px]" title={s.sector}>
+        {s.sector}
+      </span>
+    ),
+  },
+  {
+    key: 'total_turnover',
+    header: 'السيولة',
+    align: 'center',
+    sortable: true,
+    className: 'tabular-nums text-muted-foreground',
+    render: (s) => fmtNum(s.total_turnover),
+  },
+  {
+    key: 'avg_change_pct',
+    header: 'التغيّر %',
+    align: 'center',
+    sortable: true,
+    className: 'tabular-nums font-semibold',
+    render: (s) => {
+      const cls = s.avg_change_pct > 0
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : s.avg_change_pct < 0
+        ? 'text-red-600 dark:text-red-400'
+        : 'text-muted-foreground';
+      return <span className={cn(cls, 'font-semibold')}>{fmtPct(s.avg_change_pct)}</span>;
+    },
+  },
+  {
+    key: 'flow_direction',
+    header: 'الاتجاه',
+    align: 'center',
+    render: (s) => {
+      const isInflow = s.flow_direction === 'inflow';
+      const isOutflow = s.flow_direction === 'outflow';
+      return (
+        <Badge
+          className={cn(
+            'text-[9px] px-1 py-0',
+            isInflow && 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
+            isOutflow && 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300',
+            !isInflow && !isOutflow && 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-300'
+          )}
+        >
+          {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
+        </Badge>
+      );
+    },
+  },
+];
 
 const PERIOD_OPTIONS = [
   { value: '1', label: 'اليوم' },
@@ -266,51 +328,20 @@ export function InvestorsFlowPanel() {
           </div>
         </div>
 
-        {/* Sector Flow Table */}
+        {/* Sector Flow Table (UnifiedTable) */}
         <div className="space-y-1">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground pb-1 border-b border-border/50">
             <Layers className="w-3 h-3" />
             تدفّق القطاعات
           </div>
-          <div className="max-h-72 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-0.5">
-            {data.sector_flow.slice(0, 10).map((sec) => {
-              const isInflow = sec.flow_direction === 'inflow';
-              const isOutflow = sec.flow_direction === 'outflow';
-              return (
-                <div
-                  key={sec.sector}
-                  className="grid grid-cols-12 gap-1 items-center py-1 px-1 rounded hover:bg-muted/40 text-[11px]"
-                >
-                  <div className="col-span-5 truncate font-medium" title={sec.sector}>
-                    {sec.sector}
-                  </div>
-                  <div className="col-span-3 text-center tabular-nums text-muted-foreground">
-                    {fmtNum(sec.total_turnover)}
-                  </div>
-                  <div className={cn(
-                    'col-span-2 text-center tabular-nums font-semibold',
-                    sec.avg_change_pct > 0 ? 'text-emerald-600 dark:text-emerald-400'
-                      : sec.avg_change_pct < 0 ? 'text-red-600 dark:text-red-400'
-                      : 'text-muted-foreground'
-                  )}>
-                    {fmtPct(sec.avg_change_pct)}
-                  </div>
-                  <div className="col-span-2 flex justify-center">
-                    <Badge
-                      className={cn(
-                        'text-[9px] px-1 py-0',
-                        isInflow && 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
-                        isOutflow && 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300',
-                        !isInflow && !isOutflow && 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-300'
-                      )}
-                    >
-                      {isInflow ? 'داخل' : isOutflow ? 'هارب' : 'محايد'}
-                    </Badge>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <UnifiedTable<SectorFlow>
+            columns={sectorFlowColumns}
+            data={data.sector_flow.slice(0, 10)}
+            keyField="sector"
+            maxHeight="max-h-72"
+            dense
+            emptyTextAr="مفيش تدفّق قطاعات متاح"
+          />
         </div>
 
         {/* Top Buy / Sell Pressure */}

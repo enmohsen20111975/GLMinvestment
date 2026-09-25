@@ -93,7 +93,8 @@ const navSections: NavSection[] = [
       { id: 'stock-filters', label: 'فلاتر الأسهم', icon: Filter },
       { id: 'trading-chart', label: 'الشارت التفاعلي', icon: TrendingUp },
       { id: 'smart-confluence', label: 'تحليلات السوق', icon: Sparkles },
-      { id: 'screener', label: 'الفلاتر المتقدمة', icon: Filter },
+      // ملاحظة: 'screener' اتحذف من هنا لأنه كان بيستخدم نفس TradingChartView (تكرار بلا معنى).
+      // المستخدم اللي بيفتح #screener بيتم redirect تلقائياً لـ #trading-chart في page.tsx.
     ],
   },
   {
@@ -129,14 +130,9 @@ const navSections: NavSection[] = [
       { id: 'learning', label: 'مركز التعلم', icon: GraduationCap },
       { id: 'simulation', label: 'المحاكاة', icon: Gamepad2 },
       { id: 'academy', label: 'أكاديمية M2y', icon: GraduationCap },
-      { id: 'crypto', label: 'الكريبتو', icon: Activity },
-      { id: 'crypto-live', label: 'الجدول الحي للكريبتو', icon: Activity },
-      { id: 'crypto-recommendations', label: 'تحليلات الكريبتو', icon: Target },
-      { id: 'crypto-trading-chart', label: 'شارت الكريبتو', icon: BarChart3 },
-      { id: 'crypto-screener', label: 'فلاتر الكريبتو', icon: Filter },
-      { id: 'crypto-analysis', label: 'التحليل المتقدم للكريبتو', icon: Brain },
-      { id: 'crypto-learning', label: 'تعلم الكريبتو', icon: GraduationCap },
-      { id: 'crypto-simulation', label: 'محاكاة الكريبتو', icon: Gamepad2 },
+      // الكريبتو اتدمج في الـ Market Switcher (قائمة منسدلة الأسواق في أعلى الـ TopBar).
+      // المستخدم بيبدّل لسوق CRYPTO من هناك، وكل شاشات السوق (stocks/trading-chart/إلخ)
+      // بتعمل mirror تلقائياً وتعرض بيانات الكريبتو. مفيش حاجة لـ 8 إدخالات crypto منفصلة.
       { id: 'zakat', label: 'حاسبة الزكاة', icon: HandCoins },
       { id: 'tithes', label: 'حاسبة العُشر', icon: HandCoins },
       { id: 'subscription', label: 'الباقات والاشتراكات', icon: Crown, highlight: true },

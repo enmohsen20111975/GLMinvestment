@@ -16,17 +16,16 @@
  * NO mock data — كل الأرقام من predictions.db عبر APIs حقيقية.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { History, Target, TrendingUp, TrendingDown, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { History, Target, TrendingUp, TrendingDown, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { cn } from '@/lib/utils';
-import { useAppStore, MARKET_NAMES_AR, type MarketType } from '@/lib/store';
+import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 
 interface DashboardStats {
   total: number;
@@ -156,6 +155,120 @@ function fmtDate(s: string | null | undefined): string {
   return d;
 }
 
+// ─── Columns definition for UnifiedTable ────────────────────────────────────
+const backtestColumns: Column<BacktestRow>[] = [
+  {
+    key: 'prediction_date',
+    header: 'التاريخ',
+    align: 'right',
+    sortable: true,
+    className: 'text-muted-foreground',
+    render: (r) => fmtDate(r.prediction_date),
+  },
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    className: 'font-semibold',
+  },
+  {
+    key: 'signal',
+    header: 'الإشارة',
+    align: 'center',
+    render: (r) => <SignalBadge signal={r.signal} />,
+  },
+  {
+    key: 'entry_price',
+    header: 'الدخول',
+    align: 'left',
+    sortable: true,
+    className: 'font-mono',
+    render: (r) => fmtNum(r.entry_price),
+  },
+  {
+    key: 'target_price',
+    header: 'الهدف',
+    align: 'left',
+    sortable: true,
+    className: 'font-mono text-emerald-700 dark:text-emerald-400',
+    render: (r) => fmtNum(r.target_price),
+  },
+  {
+    key: 'stop_loss',
+    header: 'وقف الخسارة',
+    align: 'left',
+    sortable: true,
+    className: 'font-mono text-red-700 dark:text-red-400',
+    render: (r) => fmtNum(r.stop_loss),
+  },
+  {
+    key: 'exit_price',
+    header: 'الخروج',
+    align: 'left',
+    className: 'font-mono',
+    render: (r) => fmtNum(r.exit_price),
+  },
+  {
+    key: 'actual_return',
+    header: 'العائد%',
+    align: 'center',
+    sortable: true,
+    className: 'font-bold font-mono',
+    render: (r) => {
+      const ret = r.actual_return;
+      if (ret == null) return <span className="text-muted-foreground">—</span>;
+      const cls = ret > 0
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : ret < 0
+        ? 'text-red-600 dark:text-red-400'
+        : 'text-muted-foreground';
+      return <span className={cn(cls, 'font-bold')}>{`${ret > 0 ? '+' : ''}${ret.toFixed(2)}%`}</span>;
+    },
+  },
+  {
+    key: 'status',
+    header: 'الحالة',
+    align: 'center',
+    render: (r) => <StatusBadge status={r.status} />,
+  },
+  {
+    key: 'holding_days',
+    header: 'أيام التقييم',
+    align: 'center',
+    sortable: true,
+    className: 'text-muted-foreground',
+    render: (r) => r.holding_days || 0,
+  },
+];
+
+// ─── Share text builder ────────────────────────────────────────────────────
+function buildBacktestShareText(
+  dashboard: DashboardResponse | null,
+  rows: BacktestRow[],
+  marketNameAr: string,
+): string {
+  if (!dashboard) return `جدول الباك تست — ${marketNameAr}`;
+  const stats = dashboard.stats;
+  const totalPnl = rows.reduce((sum, r) => sum + (r.actual_return || 0), 0);
+  const lines: string[] = [
+    `📊 جدول الباك تست — ${marketNameAr}`,
+    '',
+    `إجمالي التوقعات: ${stats.total}`,
+    `نسبة النجاح: ${stats.win_rate.toFixed(1)}%`,
+    `متوسط العائد: ${stats.avg_return >= 0 ? '+' : ''}${stats.avg_return.toFixed(2)}%`,
+    `إجمالي P&L: ${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}%`,
+    '',
+    `آخر ${Math.min(rows.length, 5)} توقّع:`,
+  ];
+  rows.slice(0, 5).forEach((r) => {
+    const ret = r.actual_return == null ? '—' : `${r.actual_return >= 0 ? '+' : ''}${r.actual_return.toFixed(2)}%`;
+    lines.push(`  • ${r.ticker} — ${r.signal} — ${ret}`);
+  });
+  lines.push('', '⚠️ لأغراض إعلامية فقط وليست نصيحة استثمارية.');
+  return lines.join('\n');
+}
+
 export function PredictionsBacktestTable() {
   const currentMarket = useAppStore((s) => s.currentMarket);
   const [period, setPeriod] = useState<PeriodKey>('all');
@@ -163,6 +276,7 @@ export function PredictionsBacktestTable() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [backlist, setBacklist] = useState<BacklistResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const tableCardRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -291,6 +405,15 @@ export function PredictionsBacktestTable() {
               <SelectItem value="all">{PERIOD_LABEL['all']}</SelectItem>
             </SelectContent>
           </Select>
+          <UnifiedPublishButton
+            content={buildBacktestShareText(dashboard, filteredRows, marketNameAr)}
+            title={`جدول الباك تست — ${marketNameAr}`}
+            image={tableCardRef}
+            filename={`backtest_${currentMarket}_${new Date().toISOString().slice(0, 10)}`}
+            hashtags={['EGX', 'بورصة', 'توقعات']}
+            variant="outline"
+            size="sm"
+          />
         </div>
       </CardHeader>
 
@@ -346,73 +469,26 @@ export function PredictionsBacktestTable() {
           </div>
         )}
 
-        {/* Per-prediction table */}
-        {filteredRows.length === 0 ? (
-          <div className="text-center text-xs text-muted-foreground py-6">
-            لا توجد توقعات مسجّلة في النافذة المحددة
-          </div>
-        ) : (
-          <div className="rounded-md border border-border/30 overflow-hidden">
-            <div className="max-h-96 overflow-y-auto
-                            [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent
-                            [&::-webkit-scrollbar-thumb]:bg-border/60 [&::-webkit-scrollbar-thumb]:rounded-full">
-              <Table className="min-w-[760px] text-xs">
-                <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-                  <TableRow className="text-[10px] text-muted-foreground hover:bg-transparent">
-                    <TableHead className="text-right px-2 py-2 whitespace-nowrap">التاريخ</TableHead>
-                    <TableHead className="text-right px-2 py-2 whitespace-nowrap">السهم</TableHead>
-                    <TableHead className="text-center px-2 py-2 whitespace-nowrap">الإشارة</TableHead>
-                    <TableHead className="text-left px-2 py-2 whitespace-nowrap">الدخول</TableHead>
-                    <TableHead className="text-left px-2 py-2 whitespace-nowrap">الهدف</TableHead>
-                    <TableHead className="text-left px-2 py-2 whitespace-nowrap">وقف الخسارة</TableHead>
-                    <TableHead className="text-left px-2 py-2 whitespace-nowrap">الخروج</TableHead>
-                    <TableHead className="text-center px-2 py-2 whitespace-nowrap">العائد%</TableHead>
-                    <TableHead className="text-center px-2 py-2 whitespace-nowrap">الحالة</TableHead>
-                    <TableHead className="text-center px-2 py-2 whitespace-nowrap">أيام التقييم</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRows.map((r) => {
-                    const ret = r.actual_return;
-                    const isWin = WIN_STATUSES.has(r.status);
-                    const isLoss = LOSS_STATUSES.has(r.status);
-                    const isActive = ACTIVE_STATUSES.has(r.status);
-                    const rowTone = isWin
-                      ? 'bg-emerald-500/5 hover:bg-emerald-500/10'
-                      : isLoss
-                      ? 'bg-red-500/5 hover:bg-red-500/10'
-                      : isActive
-                      ? 'bg-amber-500/5 hover:bg-amber-500/10'
-                      : 'hover:bg-muted/30';
-                    return (
-                      <TableRow key={r.id} className={cn('border-b border-border/20', rowTone)}>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap text-muted-foreground">{fmtDate(r.prediction_date)}</TableCell>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap font-semibold">{r.ticker}</TableCell>
-                        <TableCell className="px-2 py-1.5 text-center"><SignalBadge signal={r.signal} /></TableCell>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap text-left font-mono">{fmtNum(r.entry_price)}</TableCell>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap text-left font-mono text-emerald-700 dark:text-emerald-400">{fmtNum(r.target_price)}</TableCell>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap text-left font-mono text-red-700 dark:text-red-400">{fmtNum(r.stop_loss)}</TableCell>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap text-left font-mono">{fmtNum(r.exit_price)}</TableCell>
-                        <TableCell
-                          className={cn(
-                            'px-2 py-1.5 whitespace-nowrap text-center font-bold font-mono',
-                            ret == null ? 'text-muted-foreground' :
-                            ret > 0 ? 'text-emerald-600 dark:text-emerald-400' :
-                            ret < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
-                          )}
-                        >
-                          {ret == null ? '—' : `${ret > 0 ? '+' : ''}${ret.toFixed(2)}%`}
-                        </TableCell>
-                        <TableCell className="px-2 py-1.5 text-center"><StatusBadge status={r.status} /></TableCell>
-                        <TableCell className="px-2 py-1.5 whitespace-nowrap text-center text-muted-foreground">{r.holding_days || 0}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
+        {/* Per-prediction table (UnifiedTable) */}
+        <div ref={tableCardRef} className="rounded-md border border-border/30 overflow-hidden">
+          <UnifiedTable<BacktestRow>
+            columns={backtestColumns}
+            data={filteredRows}
+            keyField="id"
+            maxHeight="max-h-96"
+            dense
+            emptyTextAr="لا توجد توقعات مسجّلة في النافذة المحددة"
+            rowClassName={(r) => {
+              const isWin = WIN_STATUSES.has(r.status);
+              const isLoss = LOSS_STATUSES.has(r.status);
+              const isActive = ACTIVE_STATUSES.has(r.status);
+              if (isWin) return 'bg-emerald-500/5 hover:bg-emerald-500/10';
+              if (isLoss) return 'bg-red-500/5 hover:bg-red-500/10';
+              if (isActive) return 'bg-amber-500/5 hover:bg-amber-500/10';
+              return '';
+            }}
+          />
+        </div>
       </CardContent>
     </Card>
   );

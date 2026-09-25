@@ -51,6 +51,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { UnifiedTable } from '@/components/shared/UnifiedTable';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HelpTooltip, HELP_DEFINITIONS } from '@/components/ui/help-tooltip';
 import { RefreshAnalyticsButton } from './RefreshAnalyticsButton';
@@ -594,118 +595,172 @@ function V2StocksTable() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto max-h-[62vh] overflow-y-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow className="sticky top-0 bg-background z-10">
-                <TableHead className="w-10 text-center">#</TableHead>
-                <TableHead className="w-20">الرمز</TableHead>
-                <TableHead className="hidden md:table-cell min-w-[120px]">الاسم</TableHead>
-                <TableHead className="text-center">العائد المتوقع</TableHead>
-                <TableHead className="text-center">المخاطرة %</TableHead>
-                <TableHead className="text-center">R/R</TableHead>
-                <TableHead className="text-center hidden lg:table-cell">الهدف</TableHead>
-                <TableHead className="text-center hidden lg:table-cell">وقف الخسارة</TableHead>
-                <TableHead className="text-center hidden lg:table-cell">الحماية</TableHead>
-                <TableHead className="text-center hidden lg:table-cell">مستوى المخاطرة</TableHead>
-                <TableHead className="text-center hidden sm:table-cell w-16">الثقة</TableHead>
-                <TableHead className="text-center w-24">التحليل</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedStocks.map((stock, idx) => {
-                const rec = getV2RecommendationBadge(stock.recommendation);
-                const globalRank = idx + 1;
-                const changePct = getChangePercent(stock);
-                const riskCol = getRiskColor(stock.riskAssessment.level);
-                const capBadge = stock.marketCapCategory ? getCapBadge(stock.marketCapCategory) : null;
-                const liqBadge = stock.volume ? getLiquidityBadge(stock.volume.liquidityRating) : null;
-                const volRatio = stock.volume ? stock.volume.volumeRatio : 0;
-                const dqBadge = stock.dataQuality ? getDataQualityBadge(stock.dataQuality.level) : null;
-                const expectedReturn = getExpectedReturnPct(stock);
-                const riskPerTrade = getRiskPerTradePct(stock);
-                const rrRatio = getRRRatio(stock);
-                const capitalProtection = getCapitalProtectionInfo(stock);
-
-                return (
-                  <TableRow
-                    key={stock.ticker}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => loadStockDetail(stock.ticker)}
-                  >
-                    <TableCell className="text-center text-xs text-muted-foreground font-mono">{globalRank}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold text-xs text-foreground">{stock.ticker}</span>
-                        {!stock.safetyPassed && (
-                          <AlertTriangle className="w-3 h-3 text-amber-500" title="لم يجتز فلتر الأمان" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <span className="text-xs text-muted-foreground truncate max-w-[140px] block">{stock.nameAr}</span>
-                    </TableCell>
-                    {/* Expected Return - FINANCIAL FIRST */}
-                    <TableCell className="text-center">
-                      <span className={cn('text-xs font-bold', expectedReturn >= 10 ? 'text-emerald-600' : expectedReturn >= 5 ? 'text-amber-600' : 'text-red-600')}>
-                        +{expectedReturn.toFixed(1)}%
-                      </span>
-                    </TableCell>
-                    {/* Risk per Trade - FINANCIAL FIRST */}
-                    <TableCell className="text-center">
-                      <span className="text-xs font-medium text-red-600">
-                        {riskPerTrade.toFixed(1)}%
-                      </span>
-                    </TableCell>
-                    {/* R/R Ratio - FINANCIAL FIRST */}
-                    <TableCell className="text-center">
-                      <span className={cn('text-xs font-bold', rrRatio >= 2 ? 'text-emerald-600' : rrRatio >= 1.2 ? 'text-amber-600' : 'text-red-600')}>
-                        {rrRatio.toFixed(2)}
-                      </span>
-                    </TableCell>
-                    {/* Target Price */}
-                    <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">{safeNum(stock.exitStrategy.targetPrice).toFixed(2)}</span>
-                    </TableCell>
-                    {/* Stop Loss */}
-                    <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
-                      <span className="text-red-600 dark:text-red-400">{safeNum(stock.exitStrategy.stopLoss).toFixed(2)}</span>
-                    </TableCell>
-                    {/* Capital Protection Badge */}
-                    <TableCell className="text-center hidden lg:table-cell">
-                      <Badge variant="outline" className={cn('text-[8px] font-bold border-0', capitalProtection.bg, capitalProtection.color)}>
-                        {capitalProtection.label}
-                      </Badge>
-                    </TableCell>
-                    {/* Risk Level Badge */}
-                    <TableCell className="text-center hidden lg:table-cell">
-                      <Badge variant="outline" className={cn('text-[8px] font-bold border-0', riskCol.bg, riskCol.color)}>
-                        {stock.riskAssessment.levelAr || stock.riskAssessment.level}
-                      </Badge>
-                    </TableCell>
-                    {/* Confidence - SECONDARY */}
-                    <TableCell className="text-center hidden sm:table-cell">
-                      <Badge variant="outline" className={cn(
-                        'text-xs font-bold border-0',
-                        stock.confidence >= 70 && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400',
-                        stock.confidence >= 50 && stock.confidence < 70 && 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
-                        stock.confidence < 50 && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
-                      )}>
-                        {safeNum(stock.confidence).toFixed(0)}%
-                      </Badge>
-                    </TableCell>
-                    {/* Recommendation */}
-                    <TableCell className="text-center">
-                      <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-bold', rec.bg, rec.color, rec.border)}>
-                        {rec.icon}
-                        <span>{rec.label}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <div className="rounded-md border overflow-hidden">
+          <UnifiedTable<StockRecommendation>
+            columns={[
+              {
+                key: 'rank',
+                header: '#',
+                align: 'center',
+                width: 'w-10',
+                className: 'text-xs text-muted-foreground font-mono',
+                render: (_s) => {
+                  const idx = sortedStocks.findIndex(x => x.ticker === _s.ticker);
+                  return idx >= 0 ? idx + 1 : '—';
+                },
+              },
+              {
+                key: 'ticker',
+                header: 'الرمز',
+                align: 'right',
+                width: 'w-20',
+                render: (s) => (
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-xs text-foreground">{s.ticker}</span>
+                    {!s.safetyPassed && (
+                      <AlertTriangle className="w-3 h-3 text-amber-500" title="لم يجتز فلتر الأمان" />
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: 'nameAr',
+                header: 'الاسم',
+                align: 'right',
+                width: 'min-w-[120px]',
+                className: 'hidden md:table-cell',
+                render: (s) => (
+                  <span className="text-xs text-muted-foreground truncate max-w-[140px] block">{s.nameAr}</span>
+                ),
+              },
+              {
+                key: 'expectedReturn',
+                header: 'العائد المتوقع',
+                align: 'center',
+                sortable: true,
+                render: (s) => {
+                  const er = getExpectedReturnPct(s);
+                  return (
+                    <span className={cn('text-xs font-bold', er >= 10 ? 'text-emerald-600' : er >= 5 ? 'text-amber-600' : 'text-red-600')}>
+                      +{er.toFixed(1)}%
+                    </span>
+                  );
+                },
+              },
+              {
+                key: 'riskPerTrade',
+                header: 'المخاطرة %',
+                align: 'center',
+                sortable: true,
+                render: (s) => {
+                  const r = getRiskPerTradePct(s);
+                  return <span className="text-xs font-medium text-red-600">{r.toFixed(1)}%</span>;
+                },
+              },
+              {
+                key: 'rrRatio',
+                header: 'R/R',
+                align: 'center',
+                sortable: true,
+                render: (s) => {
+                  const r = getRRRatio(s);
+                  return (
+                    <span className={cn('text-xs font-bold', r >= 2 ? 'text-emerald-600' : r >= 1.2 ? 'text-amber-600' : 'text-red-600')}>
+                      {r.toFixed(2)}
+                    </span>
+                  );
+                },
+              },
+              {
+                key: 'targetPrice',
+                header: 'الهدف',
+                align: 'center',
+                className: 'hidden lg:table-cell font-mono text-xs',
+                render: (s) => (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    {safeNum(s.exitStrategy.targetPrice).toFixed(2)}
+                  </span>
+                ),
+              },
+              {
+                key: 'stopLoss',
+                header: 'وقف الخسارة',
+                align: 'center',
+                className: 'hidden lg:table-cell font-mono text-xs',
+                render: (s) => (
+                  <span className="text-red-600 dark:text-red-400">{safeNum(s.exitStrategy.stopLoss).toFixed(2)}</span>
+                ),
+              },
+              {
+                key: 'capitalProtection',
+                header: 'الحماية',
+                align: 'center',
+                className: 'hidden lg:table-cell',
+                render: (s) => {
+                  const cp = getCapitalProtectionInfo(s);
+                  return (
+                    <Badge variant="outline" className={cn('text-[8px] font-bold border-0', cp.bg, cp.color)}>
+                      {cp.label}
+                    </Badge>
+                  );
+                },
+              },
+              {
+                key: 'riskLevel',
+                header: 'مستوى المخاطرة',
+                align: 'center',
+                className: 'hidden lg:table-cell',
+                render: (s) => {
+                  const rc = getRiskColor(s.riskAssessment.level);
+                  return (
+                    <Badge variant="outline" className={cn('text-[8px] font-bold border-0', rc.bg, rc.color)}>
+                      {s.riskAssessment.levelAr || s.riskAssessment.level}
+                    </Badge>
+                  );
+                },
+              },
+              {
+                key: 'confidence',
+                header: 'الثقة',
+                align: 'center',
+                width: 'w-16',
+                sortable: true,
+                className: 'hidden sm:table-cell',
+                render: (s) => (
+                  <Badge variant="outline" className={cn(
+                    'text-xs font-bold border-0',
+                    s.confidence >= 70 && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400',
+                    s.confidence >= 50 && s.confidence < 70 && 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+                    s.confidence < 50 && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+                  )}>
+                    {safeNum(s.confidence).toFixed(0)}%
+                  </Badge>
+                ),
+              },
+              {
+                key: 'recommendation',
+                header: 'التحليل',
+                align: 'center',
+                width: 'w-24',
+                render: (s) => {
+                  const r = getV2RecommendationBadge(s.recommendation);
+                  return (
+                    <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-bold', r.bg, r.color, r.border)}>
+                      {r.icon}
+                      <span>{r.label}</span>
+                    </div>
+                  );
+                },
+              },
+            ]}
+            data={sortedStocks}
+            keyField="ticker"
+            maxHeight="max-h-[62vh]"
+            dense
+            onRowClick={(s) => loadStockDetail(s.ticker)}
+            rowClassName={() => 'cursor-pointer hover:bg-muted/50 transition-colors'}
+            emptyTextAr="مفيش أسهم تطابق الفلتر الحالي"
+          />
         </div>
       </CardContent>
     </Card>

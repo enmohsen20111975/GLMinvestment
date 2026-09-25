@@ -33,6 +33,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { withOfficialLinks, OFFICIAL_LINKS_SHORT } from '@/lib/official-links';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 
 // ==================== TYPES ====================
 
@@ -406,96 +407,38 @@ function ShareAndActions({ item }: { item: NewsItem }) {
     );
   };
 
+  // hashtags من tickers (إذا وُجدت) — تُضاف للنشر على فيسبوك/تويتر.
+  const hashtags = item.tickers && item.tickers.length > 0 ? item.tickers : ['EGX', 'بورصة'];
+  // URL المشارة — يستخدم item.url إن وُجد، وإلا رابط المنصة الرسمي.
+  const shareUrl = item.url || (typeof window !== 'undefined' ? window.location.href : 'https://invist.m2y.net');
+
   return (
     <div className="space-y-2 pt-2">
       <span className="text-[11px] font-medium text-muted-foreground block">مشاركة ونشر:</span>
-      <div className="grid grid-cols-2 gap-1.5">
-        {/* فيسبوك */}
+      {/* UnifiedPublishButton — يوحد كل منصات النشر + النسخ في زر واحد */}
+      <UnifiedPublishButton
+        content={fullTextToShare}
+        title={item.title}
+        url={shareUrl}
+        hashtags={hashtags}
+        filename={`news_${item.id}`}
+        variant="outline"
+        size="sm"
+        split
+      />
+      {/* رابط المصدر الأصلي */}
+      {item.url && (
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          onClick={handleFacebook}
-          title="مشاركة على فيسبوك"
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#1877F2]/10 hover:border-[#1877F2]/30 hover:text-[#1877F2] transition-colors"
+          onClick={() => window.open(item.url, '_blank')}
+          title="الانتقال إلى موقع المصدر الأصلي"
+          className="h-8 w-full text-xs gap-1.5 justify-center hover:bg-muted text-muted-foreground hover:text-foreground"
         >
-          <FacebookIcon className="w-3.5 h-3.5" />
-          <span>فيسبوك</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+          <span>رابط المصدر الأصلي</span>
         </Button>
-
-        {/* إكس (تويتر) */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleTwitter}
-          title="مشاركة على إكس / تويتر"
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <TwitterXIcon className="w-3.5 h-3.5" />
-          <span>تويتر (X)</span>
-        </Button>
-
-        {/* واتساب */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleWhatsApp}
-          title="مشاركة عبر واتساب"
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#25D366]/10 hover:border-[#25D366]/30 hover:text-[#25D366] transition-colors"
-        >
-          <WhatsAppIcon className="w-3.5 h-3.5" />
-          <span>واتساب</span>
-        </Button>
-
-        {/* تليجرام */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleTelegram}
-          title="مشاركة عبر تليجرام"
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#229ED9]/10 hover:border-[#229ED9]/30 hover:text-[#229ED9] transition-colors"
-        >
-          <TelegramIcon className="w-3.5 h-3.5" />
-          <span>تليجرام</span>
-        </Button>
-
-        {/* لينكد إن */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleLinkedIn}
-          title="مشاركة على لينكد إن"
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-[#0A66C2]/10 hover:border-[#0A66C2]/30 hover:text-[#0A66C2] transition-colors"
-        >
-          <LinkedInIcon className="w-3.5 h-3.5" />
-          <span>لينكد إن</span>
-        </Button>
-
-        {/* نسخ الخبر */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopy}
-          title="نسخ نص الخبر بالكامل"
-          className="h-8 text-xs gap-1.5 justify-center hover:bg-muted transition-colors"
-        >
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-          <span>{copied ? 'تم النسخ' : 'نسخ الخبر'}</span>
-        </Button>
-
-        {/* رابط المصدر الأصلي */}
-        {item.url && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(item.url, '_blank')}
-            title="الانتقال إلى موقع المصدر الأصلي"
-            className="h-8 text-xs gap-1.5 justify-center col-span-2 hover:bg-muted text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>رابط المصدر الأصلي</span>
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

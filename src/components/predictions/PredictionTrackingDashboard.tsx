@@ -13,9 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose,
 } from '@/components/ui/dialog';
@@ -835,6 +833,292 @@ export function PredictionTrackingDashboard({
     [filteredPredictions, data],
   );
 
+  // ── UnifiedTable columns for the desktop predictions table ────────────────
+  // كل render function بتاخد row (LivePrediction) وبترد ReactNode.
+  // الـ columns بتعتمد على focusTickers (مكروم) لذا الـ memo بيتحدث معها.
+  const desktopTableColumns = useMemo<Column<LivePrediction>[]>(() => [
+    {
+      key: 'ticker',
+      header: 'السهم والشخصية',
+      align: 'right',
+      width: 'min-w-[180px]',
+      render: (p) => {
+        const personaCfg = PERSONA_CONFIG[p.persona];
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-mono font-black text-sm text-foreground">
+                {p.ticker}
+              </span>
+              <Badge variant="outline" className={cn('text-[9px] py-0 px-1.5 font-bold', personaCfg.badgeBg)}>
+                {personaCfg.emoji} {personaCfg.nameAr}
+              </Badge>
+              {focusTickers[p.ticker] && (
+                <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="مكرر في عدة شخصيات — إشارة قوية">
+                  🎯 تركيز ×{focusTickers[p.ticker].count}
+                </Badge>
+              )}
+              {p.morning_bell && (
+                <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
+                  🔔 جرس الصباح
+                </Badge>
+              )}
+              {p.evidence_count != null && p.evidence_count > 0 && (
+                <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 whitespace-nowrap" title="عدد الأدلة المتوافقة (V40)">
+                  ✅ {p.evidence_count}/6
+                </Badge>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+              {p.nameAr || p.ticker}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'entryDate',
+      header: 'تاريخ التوقع',
+      align: 'right',
+      width: 'min-w-[110px]',
+      className: 'font-mono',
+      render: (p) => (
+        <div className="flex flex-col">
+          <span className="text-[9px] text-muted-foreground">تاريخ التوقع</span>
+          <span className="font-bold text-foreground text-[11px]">{formatDateShort(p.entryDate)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'entryPrice',
+      header: 'الأسعار (دخول/وقف)',
+      align: 'right',
+      width: 'min-w-[120px]',
+      className: 'font-mono',
+      render: (p) => (
+        <div className="flex flex-col">
+          <span className="font-bold text-foreground">📥 {fmtPrice(p.entryPrice)}</span>
+          <span className="text-rose-600 dark:text-rose-400 text-[11px]">🛑 {fmtPrice(p.stopLoss)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'targetPrice',
+      header: 'المستهدف الأول',
+      align: 'right',
+      width: 'min-w-[120px]',
+      className: 'font-mono',
+      render: (p) => (
+        <div className="flex flex-col">
+          <span className="text-[9px] text-muted-foreground">المستهدف الأول</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">🎯 {fmtPrice(p.targetPrice)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'targetPrice2',
+      header: 'المستهدف الثاني',
+      align: 'right',
+      width: 'min-w-[120px]',
+      className: 'font-mono',
+      render: (p) => {
+        const hasTarget2 = p.targetPrice2 != null && Number(p.targetPrice2) > 0;
+        return (
+          <div className="flex flex-col">
+            <span className="text-[9px] text-muted-foreground">المستهدف الثاني</span>
+            {hasTarget2 ? (
+              <span className="text-teal-600 dark:text-teal-400 font-bold">🎯 {fmtPrice(p.targetPrice2)}</span>
+            ) : (
+              <span className="text-muted-foreground font-bold">—</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'currentPrice',
+      header: 'السعر الحالي + تاريخ التنفيذ',
+      align: 'right',
+      width: 'min-w-[140px]',
+      className: 'font-mono font-bold',
+      render: (p) => {
+        const isClosed = p.outcome !== 'PENDING';
+        const lastPrice = isClosed ? p.exitPrice : p.currentPrice;
+        const executionDate = p.executionDate || p.closedAt;
+        return (
+          <div className="flex flex-col">
+            <span>{fmtPrice(lastPrice)}</span>
+            <span className="text-[10px] text-muted-foreground font-normal">
+              {executionDate ? `تنفيذ: ${formatDateShort(executionDate)}` : 'معلّقة ⏳'}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'outcome',
+      header: 'الحالة الرسمية',
+      align: 'right',
+      width: 'min-w-[120px]',
+      render: (p) => {
+        const trailingProfit = isTrailingProfit(p);
+        return trailingProfit ? (
+          <Badge className={cn('text-[10px] font-bold whitespace-nowrap', TRAILING_PROFIT_CONFIG.badge)} title="السهم وصل لربح جزئي ثم ارتد — تم جني الأرباح قبل الهدف الكامل">
+            {TRAILING_PROFIT_CONFIG.label}
+          </Badge>
+        ) : (
+          <Badge className={cn('text-[10px] font-bold whitespace-nowrap', OUTCOME_CONFIG[p.outcome].badge)}>
+            {OUTCOME_CONFIG[p.outcome].label}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'liveOutcome',
+      header: 'الحالة الحية (معاينة)',
+      align: 'right',
+      width: 'min-w-[120px]',
+      render: (p) => {
+        const isClosed = p.outcome !== 'PENDING';
+        const liveOutcomeKey = p.liveOutcome ?? 'PENDING';
+        const showLivePreview = !isClosed && p.liveOutcome != null && p.liveOutcome !== 'PENDING';
+        const highest = Number(p.highestPriceReached ?? p.highest_price_reached ?? 0);
+        const liveReturnPct = computeLiveReturnPct(p);
+        const showLiveReturnBadge = !isClosed && liveReturnPct != null && highest > 0;
+        if (isClosed) {
+          return <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">✓ مؤكدة</span>;
+        }
+        if (showLiveReturnBadge) {
+          return (
+            <Badge
+              className={cn(
+                'text-[9px] font-bold whitespace-nowrap border border-dashed',
+                liveReturnPct != null && liveReturnPct >= 0
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40'
+                  : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/40'
+              )}
+              title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
+            >
+              معاينة: {liveReturnPct != null ? `${liveReturnPct >= 0 ? '+' : ''}${liveReturnPct.toFixed(2)}%` : '—'}
+            </Badge>
+          );
+        }
+        if (showLivePreview) {
+          return (
+            <Badge className={cn('text-[9px] font-bold whitespace-nowrap', LIVE_OUTCOME_CONFIG[liveOutcomeKey].badge)} title="الحالة الحية بناءً على السعر اللحظي (معاينة غير رسمية)">
+              {LIVE_OUTCOME_CONFIG[liveOutcomeKey].label}
+            </Badge>
+          );
+        }
+        return <span className="text-[10px] text-muted-foreground">—</span>;
+      },
+    },
+    {
+      key: 'returnPct',
+      header: 'العائد %',
+      align: 'right',
+      sortable: true,
+      width: 'min-w-[100px]',
+      className: 'font-mono font-black text-sm',
+      render: (p) => {
+        const ret = formatReturnPct(p.returnPct);
+        return <span className={cn('font-mono font-black text-sm', ret.color)}>{ret.text}</span>;
+      },
+    },
+    {
+      key: 'highestPriceReached',
+      header: 'أعلى سعر 📈',
+      align: 'right',
+      width: 'min-w-[100px]',
+      className: 'font-mono',
+      render: (p) => {
+        const highest = Number(p.highestPriceReached ?? p.highest_price_reached ?? 0);
+        return (
+          <span className={cn('text-[11px] font-bold', highest > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+            {highest > 0 ? fmtPrice(highest) : '—'}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'lowestPriceReached',
+      header: 'أقل سعر 📉',
+      align: 'right',
+      width: 'min-w-[100px]',
+      className: 'font-mono',
+      render: (p) => {
+        const lowest = Number(p.lowestPriceReached ?? p.lowest_price_reached ?? 0);
+        return (
+          <span className={cn('text-[11px] font-bold', lowest > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
+            {lowest > 0 ? fmtPrice(lowest) : '—'}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'maxProfitPct',
+      header: 'أقصى ربح %',
+      align: 'right',
+      width: 'min-w-[100px]',
+      className: 'font-mono',
+      render: (p) => {
+        const v = computeMaxProfitPct(p);
+        if (v == null) return <span className="text-[11px] text-muted-foreground">—</span>;
+        return (
+          <span className={cn('text-[11px] font-bold', v >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+            {v >= 0 ? '+' : ''}{v.toFixed(2)}%
+          </span>
+        );
+      },
+    },
+    {
+      key: 'maxLossPct',
+      header: 'أقصى خسارة %',
+      align: 'right',
+      width: 'min-w-[100px]',
+      className: 'font-mono',
+      render: (p) => {
+        const v = computeMaxLossPct(p);
+        if (v == null) return <span className="text-[11px] text-muted-foreground">—</span>;
+        return (
+          <span className={cn('text-[11px] font-bold', v < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
+            {v >= 0 ? '+' : ''}{v.toFixed(2)}%
+          </span>
+        );
+      },
+    },
+    {
+      key: 'daysSinceEntry',
+      header: 'المدة',
+      align: 'center',
+      width: 'min-w-[70px]',
+      className: 'font-mono font-bold',
+      render: (p) => {
+        const d = computeHoldingDays(p.entryDate, p.closedAt);
+        return d != null ? `${d}d` : (p.daysSinceEntry != null ? `${p.daysSinceEntry}d` : '—');
+      },
+    },
+    {
+      key: 'proof',
+      header: 'بطاقة الإثبات',
+      align: 'center',
+      width: 'min-w-[110px]',
+      render: (p) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedProofTrade(p);
+          }}
+          className="h-7 text-[11px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold gap-1"
+        >
+          إثبات الصفقة 🔍
+        </Button>
+      ),
+    },
+  ], [focusTickers]);
+
   // Handle Exporting Proof Image
   const handleExportProofImage = useCallback(async () => {
     if (!proofCardRef.current || !selectedProofTrade) return;
@@ -1612,258 +1896,17 @@ export function PredictionTrackingDashboard({
                 })}
               </div>
 
-              {/* Desktop Table View (on sm and up) */}
-              <div className="hidden sm:block overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-muted/40">
-                    <TableRow className="text-xs">
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">السهم والشخصية</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">تاريخ التوقع</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">الأسعار (دخول/وقف)</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">المستهدف الأول</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">المستهدف الثاني</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">السعر الحالي + تاريخ التنفيذ</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">الحالة الرسمية</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">الحالة الحية (معاينة)</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">العائد %</TableHead>
-                      {/* FIX-5B: أعمدة highest/lowest + أقصى ربح/خسارة direction-aware */}
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">أعلى سعر 📈</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">أقل سعر 📉</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">أقصى ربح %</TableHead>
-                      <TableHead className="text-right font-bold whitespace-nowrap text-[11px]">أقصى خسارة %</TableHead>
-                      <TableHead className="text-center font-bold whitespace-nowrap text-[11px]">المدة</TableHead>
-                      <TableHead className="text-center font-bold whitespace-nowrap text-[11px]">بطاقة الإثبات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="divide-y divide-border/30">
-                    {filteredPredictions.map((pred, idx) => {
-                      const ret = formatReturnPct(pred.returnPct);
-                      const isClosed = pred.outcome !== 'PENDING';
-                      const lastPrice = isClosed ? pred.exitPrice : pred.currentPrice;
-                      const personaCfg = PERSONA_CONFIG[pred.persona];
-                      // RL-FIX-6: live outcome preview — only meaningful when official is still PENDING
-                      const liveOutcomeKey = pred.liveOutcome ?? 'PENDING';
-                      const showLivePreview =
-                        !isClosed && pred.liveOutcome != null && pred.liveOutcome !== 'PENDING';
-                      const hasTarget2 =
-                        pred.targetPrice2 != null && Number(pred.targetPrice2) > 0;
-                      const executionDate = pred.executionDate || pred.closedAt;
-                      // FIX-5B: highest/lowest + maxProfit/maxLoss direction-aware
-                      const highest = Number(pred.highestPriceReached ?? pred.highest_price_reached ?? 0);
-                      const lowest = Number(pred.lowestPriceReached ?? pred.lowest_price_reached ?? 0);
-                      const maxProfitPct = computeMaxProfitPct(pred);
-                      const maxLossPct = computeMaxLossPct(pred);
-                      const trailingProfit = isTrailingProfit(pred);
-                      // FIX-5B: _live_return للـ PENDING — معاينة غير رسمية بـ لون كهرماني
-                      const liveReturnPct = computeLiveReturnPct(pred);
-                      const showLiveReturnBadge =
-                        !isClosed && liveReturnPct != null && highest > 0;
-
-                      return (
-                        <TableRow
-                          key={`desktop-pred-${pred.ticker}-${idx}`}
-                          className="hover:bg-emerald-500/5 transition-colors group cursor-pointer text-xs"
-                          onClick={() => setSelectedProofTrade(pred)}
-                        >
-                          {/* 1. السهم والشخصية */}
-                          <TableCell className="py-3">
-                            <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono font-black text-sm text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-                                  {pred.ticker}
-                                </span>
-                                <Badge variant="outline" className={cn('text-[9px] py-0 px-1.5 font-bold', personaCfg.badgeBg)}>
-                                  {personaCfg.emoji} {personaCfg.nameAr}
-                                </Badge>
-                                {focusTickers[pred.ticker] && (
-                                  <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="مكرر في عدة شخصيات — إشارة قوية">
-                                    🎯 تركيز ×{focusTickers[pred.ticker].count}
-                                  </Badge>
-                                )}
-                                {pred.morning_bell && (
-                                  <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title="جرس الصباح — أعلى ثقة وربحية متوقعة">
-                                    🔔 جرس الصباح
-                                  </Badge>
-                                )}
-                                {pred.evidence_count != null && pred.evidence_count > 0 && (
-                                  <Badge variant="outline" className="text-[9px] py-0 px-1.5 font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 whitespace-nowrap" title="عدد الأدلة المتوافقة (V40)">
-                                    ✅ {pred.evidence_count}/6
-                                  </Badge>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">
-                                {pred.nameAr || pred.ticker}
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          {/* 2. تاريخ التوقع */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-[9px] text-muted-foreground">تاريخ التوقع</span>
-                              <span className="font-bold text-foreground text-[11px]">{formatDateShort(pred.entryDate)}</span>
-                            </div>
-                          </TableCell>
-
-                          {/* 3. الأسعار (دخول/وقف) */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-foreground">📥 {fmtPrice(pred.entryPrice)}</span>
-                              <span className="text-rose-600 dark:text-rose-400 text-[11px]">🛑 {fmtPrice(pred.stopLoss)}</span>
-                            </div>
-                          </TableCell>
-
-                          {/* 4. المستهدف الأول */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-[9px] text-muted-foreground">المستهدف الأول</span>
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">🎯 {fmtPrice(pred.targetPrice)}</span>
-                            </div>
-                          </TableCell>
-
-                          {/* 5. المستهدف الثاني */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-[9px] text-muted-foreground">المستهدف الثاني</span>
-                              {hasTarget2 ? (
-                                <span className="text-teal-600 dark:text-teal-400 font-bold">🎯 {fmtPrice(pred.targetPrice2)}</span>
-                              ) : (
-                                <span className="text-muted-foreground font-bold">—</span>
-                              )}
-                            </div>
-                          </TableCell>
-
-                          {/* 6. السعر الحالي + تاريخ التنفيذ */}
-                          <TableCell className="font-mono font-bold whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span>{fmtPrice(lastPrice)}</span>
-                              <span className="text-[10px] text-muted-foreground font-normal">
-                                {executionDate
-                                  ? `تنفيذ: ${formatDateShort(executionDate)}`
-                                  : 'معلّقة ⏳'}
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          {/* 7. الحالة الرسمية */}
-                          <TableCell>
-                            {/* FIX-5B: لو exit_type === 'trailing_profit' → اعرض badge "💰 خرج بربح" */}
-                            {/* بـ لون زمردي مميز عن WIN الأخضر العادي. ده بيـ differentiate بين */}
-                            {/* "هدف محقق كامل" و"جني أرباح قبل الهدف" (trailing stop ratchet). */}
-                            {trailingProfit ? (
-                              <Badge
-                                className={cn('text-[10px] font-bold whitespace-nowrap', TRAILING_PROFIT_CONFIG.badge)}
-                                title="السهم وصل لربح جزئي ثم ارتد — تم جني الأرباح قبل الهدف الكامل"
-                              >
-                                {TRAILING_PROFIT_CONFIG.label}
-                              </Badge>
-                            ) : (
-                              <Badge className={cn('text-[10px] font-bold whitespace-nowrap', OUTCOME_CONFIG[pred.outcome].badge)}>
-                                {OUTCOME_CONFIG[pred.outcome].label}
-                              </Badge>
-                            )}
-                          </TableCell>
-
-                          {/* 8. الحالة الحية (معاينة) */}
-                          <TableCell className="whitespace-nowrap">
-                            {isClosed ? (
-                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">✓ مؤكدة</span>
-                            ) : showLiveReturnBadge ? (
-                              /* FIX-5B: _live_return للـ PENDING — اعرض badge "معاينة" بـ لون */
-                              /* كهرماني فيه النسبة المئوية للعائد اللحظي من current_price. */
-                              <Badge
-                                className={cn(
-                                  'text-[9px] font-bold whitespace-nowrap border border-dashed',
-                                  liveReturnPct != null && liveReturnPct >= 0
-                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40'
-                                    : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/40'
-                                )}
-                                title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
-                              >
-                                معاينة: {liveReturnPct != null
-                                  ? `${liveReturnPct >= 0 ? '+' : ''}${liveReturnPct.toFixed(2)}%`
-                                  : '—'}
-                              </Badge>
-                            ) : showLivePreview ? (
-                              <Badge
-                                className={cn('text-[9px] font-bold whitespace-nowrap', LIVE_OUTCOME_CONFIG[liveOutcomeKey].badge)}
-                                title="الحالة الحية بناءً على السعر اللحظي (معاينة غير رسمية)"
-                              >
-                                {LIVE_OUTCOME_CONFIG[liveOutcomeKey].label}
-                              </Badge>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-
-                          {/* 9. العائد % */}
-                          <TableCell className={cn('font-mono font-black text-sm whitespace-nowrap', ret.color)}>
-                            {ret.text}
-                          </TableCell>
-
-                          {/* FIX-5B: 10. أعلى سعر (highest_price_reached) */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            <span className={cn('text-[11px] font-bold', highest > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
-                              {highest > 0 ? fmtPrice(highest) : '—'}
-                            </span>
-                          </TableCell>
-
-                          {/* FIX-5B: 11. أقل سعر (lowest_price_reached) */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            <span className={cn('text-[11px] font-bold', lowest > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
-                              {lowest > 0 ? fmtPrice(lowest) : '—'}
-                            </span>
-                          </TableCell>
-
-                          {/* FIX-5B: 12. أقصى ربح % (direction-aware) */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            {maxProfitPct != null ? (
-                              <span className={cn('text-[11px] font-bold', maxProfitPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
-                                {maxProfitPct >= 0 ? '+' : ''}{maxProfitPct.toFixed(2)}%
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-
-                          {/* FIX-5B: 13. أقصى خسارة % (direction-aware) */}
-                          <TableCell className="font-mono whitespace-nowrap">
-                            {maxLossPct != null ? (
-                              <span className={cn('text-[11px] font-bold', maxLossPct < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
-                                {maxLossPct >= 0 ? '+' : ''}{maxLossPct.toFixed(2)}%
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-
-                          {/* 14. المدة */}
-                          <TableCell className="text-center font-mono font-bold whitespace-nowrap">
-                            {(() => {
-                              const d = computeHoldingDays(pred.entryDate, pred.closedAt);
-                              return d != null ? `${d}d` : (pred.daysSinceEntry != null ? `${pred.daysSinceEntry}d` : '—');
-                            })()}
-                          </TableCell>
-
-                          {/* 15. بطاقة الإثبات */}
-                          <TableCell className="text-center whitespace-nowrap">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProofTrade(pred);
-                              }}
-                              className="h-7 text-[11px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold gap-1"
-                            >
-                              إثبات الصفقة 🔍
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+              {/* Desktop Table View — UnifiedTable (on sm and up) */}
+              <div className="hidden sm:block">
+                <UnifiedTable<LivePrediction>
+                  columns={desktopTableColumns}
+                  data={filteredPredictions}
+                  keyField="ticker"
+                  maxHeight="max-h-[70vh]"
+                  emptyTextAr="مفيش صفقات تطابق الفلاتر الحالية"
+                  onRowClick={(p) => setSelectedProofTrade(p)}
+                  rowClassName={() => 'hover:bg-emerald-500/5 group cursor-pointer'}
+                />
               </div>
             </>
           )}
