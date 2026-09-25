@@ -18558,3 +18558,56 @@ Stage Summary:
 - لما السوق = EGX/TADAWUL/KSE/QSE → البانلز بتظهر + InvestorsFlowPanel بيقرأ بيانات السوق
 - UnifiedPublishButton جاهز للدمج في أي شاشة محتاجة نشر (Recommendations، StockDetail، Reports)
 - StocksView شغّالة بشكل موحّد لكل الأسواق بدون تفريق بين "stocks" و "crypto"
+
+---
+Task ID: STOCKS-DETAIL-FIX-AND-DB-RECOVERY
+Agent: Antigravity AI (Pair Programming)
+Task: إصلاح ReferenceError في StockDetail + استرجاع قواعد البيانات وتصحيح PM2 وتوثيق الكوميتات
+
+Work Log:
+1. إصلاح خطأ `ReferenceError: ticker is not defined` في `src/components/stocks/StockDetail.tsx`:
+   - السبب: تم إقحام `<MarketDepthPanel initialTicker={ticker} />` بالخطأ داخل المكون المصغر `MetricRow` الخاص بأسطر المؤشرات (P/E, P/B, RSI, etc.) حيث المتغير `ticker` غير موجود في الـ props.
+   - الحل: إزالة `MarketDepthPanel` من `MetricRow` ووضعه في مكانه الصحيح في الصفحة الرئيسية لـ `StockDetail` أسفل `DeltaVolumeBar` داخل `<ErrorBoundary title="عمق السعر ودفتر الأوامر">` مع تمرير `stock.ticker` المعرف رسمياً.
+   - تم التحقق من البناء بنجاح (`npm run build` انتهى بـ exit code 0).
+
+2. إصلاح أخطاء الاتصال وقواعد البيانات (`ERR_CONNECTION_RESET` / `ERR_CONNECTION_REFUSED`):
+   - السبب الجذري: ظهور خطأ Prisma: `malformed database schema (egx_predictions)` وتلف في بعض ترويسات ملفات SQLite مثل `auth.db` و `stocks.db` و `data_engine.db` نتيجة عمليات إغلاق أو تعارض في ملفات الـ WAL.
+   - تم فحص وفحص سلامة كل قواعد البيانات عبر `PRAGMA integrity_check` واسترجاع النسخ السليمة فوراً من `db/backups/latest`.
+   - تم مطابقة وتعديل أعمدة جدول `User` في `auth.db` للتوافق التام مع Prisma schema (`createdAt`, `updatedAt`).
+   - تم اختبار Prisma محلياً والتأكد من نجاح الاستعلامات بنسبة 100%.
+
+3. تنظيف بيئة PM2 وفصل مشاريع الطرف الثالث:
+   - تم حذف الخدمتين غير التابعتين للمشروع نهائياً:
+     - `learning-platform-api-dev` (Deleted)
+     - `learning-platform-web-dev` (Deleted)
+   - تم تنفيذ `pm2 save` لتثبيت التغييرات.
+   - التأكد من تشغيل واستقرار خدمات مشروع GLMinvestment الخمس فقط:
+     - `nextjs` (port 3000)
+     - `python-backend` (port 8010)
+     - `data-engine` (port 5000)
+     - `ws-service` (port 3005)
+     - `telegram-poster`
+
+4. توثيق وحماية الميزات السبع الكبرى للمشروع:
+   - القائمة العلوية TopBar ومبدل الأسواق: كومت `0c4c19527` و `2e3346970`.
+   - عمق السوق DOM بـ 5 مستويات: كومت `a03df9b0d` و `296d4343a` ومكون `MarketDepthLiquidityWidget.tsx`.
+   - حركة المستثمرين العرب والأجانب: كومت `687f20f5a` ومكون `InvestorsFlowWidget.tsx`.
+   - تبويبات التوقعات: كومت `4365a6198` و `1739701fc`.
+   - إلغاء تعدد الشخصيات واختيار السوق: كومت `906aefaf6` و `187516309` و `b6e59497b`.
+   - محرك الأخبار: كومت `4a626b02c` و `03ade6a94` و `c25fdf8fb`.
+   - محرك تليجرام: كومت `0c810d675` و `671f0dda6` و `ec5a8c052` و `c9997d143`.
+   - تم حفظ كافة هذه المكونات في فرع `features-gold-depth` و `origin/main`.
+
+Verification:
+- ✅ `npm run build` exit code 0
+- ✅ `curl http://localhost:3000/api/health` -> 200 OK
+- ✅ `curl http://localhost:3000/api/market/overview?market=EGX` -> 200 OK
+- ✅ `curl http://localhost:3000/api/unified/predictions?market=EGX` -> 200 OK
+- ✅ `curl http://localhost:3005/health` -> 200 OK (WebSocket Service)
+- ✅ PM2 processes: 5 online (0 crashed)
+
+Files Modified:
+- MODIFIED: src/components/stocks/StockDetail.tsx (Fixed ReferenceError: ticker is not defined)
+- MODIFIED: db/auth.db (Fixed SQLite schema & restored from backup)
+- MODIFIED: worklog.md (Detailed documentation for team sync)
+

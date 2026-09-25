@@ -118,7 +118,6 @@ function MetricRow({ label, value, highlight }: { label: string; value: string; 
       >
         {value}
       </span>
-      <MarketDepthPanel initialTicker={ticker} />
     </div>
   );
 }
@@ -1058,6 +1057,11 @@ export function StockDetail() {
       {/* Delta Volume — ضغط الشراء/البيع (عمق السوق) */}
       <ErrorBoundary title="عمق السوق">
         <DeltaVolumeBar ticker={stock.ticker} />
+      </ErrorBoundary>
+
+      {/* Market Depth DOM Panel — عمق السعر ودفتر الأوامر */}
+      <ErrorBoundary title="عمق السعر ودفتر الأوامر">
+        <MarketDepthPanel initialTicker={stock.ticker} />
       </ErrorBoundary>
 
       {/* Financial & Technical Metrics */}
