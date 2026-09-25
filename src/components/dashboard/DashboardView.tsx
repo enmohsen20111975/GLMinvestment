@@ -1,5 +1,5 @@
 'use client';
-import { DevilsCard } from '@/components/devil/DevilsCard';
+import { InvestorsFlowPanel } from './InvestorsFlowPanel';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Zap, RefreshCw, Pin } from 'lucide-react';
@@ -83,7 +83,7 @@ function DashboardSkeleton() {
           </div>
         </div>
       </div>
-      <DevilsCard />
+      <InvestorsFlowPanel />
     </div>
   );
 }
