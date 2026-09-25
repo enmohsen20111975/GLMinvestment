@@ -52,6 +52,7 @@ import {
   ClipboardList,
   Ticket,
   Gauge,
+  Boxes,
   Newspaper,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -76,6 +77,7 @@ import { PlatformPerformanceView } from './platform-performance/PlatformPerforma
 import { NewsManagementTab as NewsManagementTabComponent } from './NewsManagementTab';
 import { NotebookAdminTab } from './NotebookAdminTab';
 import { BacktestTab } from './BacktestTab';
+import { SystemTopologyGraph } from './SystemTopologyGraph';
 
 // V38 Backtest Dashboard & HistoricalPredictionsV2 — REMOVED (2026-08-13)
 // Consolidated into نظام التعلم الذكي الموحد (Maestro) — single engine
@@ -348,7 +350,7 @@ interface DataStatus {
   categories: DataStatusItem[];
 }
 
-type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control';
+type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control' | 'architecture';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -961,6 +963,7 @@ export function AdminView() {
         { id: 'news-control', label: 'إدارة الأخبار', icon: <Newspaper className="w-3.5 h-3.5" /> },
         { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" /> },
         { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" /> },
+        { id: 'architecture', label: 'المخطط الهندسي', icon: <Boxes className="w-3.5 h-3.5" /> },
         { id: 'crypto', label: 'الكريبتو', icon: <Coins className="w-3.5 h-3.5" /> },
         { id: 'gold-silver', label: 'الذهب والفضة', icon: <Coins className="w-3.5 h-3.5" /> },
         { id: 'multi-market', label: 'الأسواق المتعددة', icon: <Network className="w-3.5 h-3.5" /> },
@@ -1840,6 +1843,13 @@ export function AdminView() {
         <div className="space-y-6">
           <DataScraperControl />
           <SystemControlPanel />
+        </div>
+      )}
+
+      {/* ==================== ARCHITECTURE DIAGRAM TAB ==================== */}
+      {activeTab === 'architecture' && (
+        <div className="space-y-6">
+          <SystemTopologyGraph />
         </div>
       )}
 
