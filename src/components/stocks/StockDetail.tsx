@@ -1,4 +1,5 @@
 'use client';
+import { MarketDepthPanel } from './MarketDepthPanel';
 
 import React, { Component, useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
 import {
@@ -117,6 +118,7 @@ function MetricRow({ label, value, highlight }: { label: string; value: string; 
       >
         {value}
       </span>
+      <MarketDepthPanel initialTicker={ticker} />
     </div>
   );
 }

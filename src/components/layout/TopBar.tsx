@@ -1,4 +1,5 @@
 'use client';
+import { ExchangeSelector } from './ExchangeSelector';
 
 /**
  * TopBar — القائمة العلوية المرتبة
@@ -175,6 +176,8 @@ export function TopBar() {
                 M2Y
               </div>
               <span className="hidden sm:inline">دليل الاستثمار</span>
+            </button>
+            <ExchangeSelector />
             </button>
           </div>
 
