@@ -2342,19 +2342,33 @@ def unified_predictions():
             req_limit = request.args.get('limit', 100, type=int) if request.method != 'POST' else 100
             limit = max(1, min(req_limit, 200))
 
-            m_param = (market or 'ALL').upper()
+            m_param = (market or 'ALL').upper().strip()
             m_where = ""
             m_args = []
+            _pred_m_cond = ""
             if m_param not in ('ALL', ''):
                 if m_param in ('EGX', 'EGYPT', 'مصر'):
-                    m_where = "WHERE market IN ('EGX', 'EGYPT', 'مصر')"
+                    m_where = "WHERE (market IN ('EGX', 'EGYPT', 'مصر') OR (market IS NULL AND ticker NOT GLOB '[0-9]*')) AND ticker NOT GLOB '[0-9]*'"
+                    _pred_m_cond = "((market IN ('EGX', 'EGYPT', 'مصر') OR (market IS NULL AND ticker NOT GLOB '[0-9]*')) AND ticker NOT GLOB '[0-9]*')"
                 elif m_param in ('TADAWUL', 'KSA', 'SAUDI', 'السعودية'):
-                    m_where = "WHERE market IN ('TADAWUL', 'KSA', 'SAUDI', 'السعودية')"
+                    m_where = "WHERE (market IN ('TADAWUL', 'KSA', 'SAUDI', 'السعودية') OR ticker GLOB '[0-9]*')"
+                    _pred_m_cond = "(market IN ('TADAWUL', 'KSA', 'SAUDI', 'السعودية') OR ticker GLOB '[0-9]*')"
                 elif m_param in ('KSE', 'KWT', 'KUWAIT', 'الكويت'):
                     m_where = "WHERE market IN ('KSE', 'KWT', 'KUWAIT', 'الكويت')"
+                    _pred_m_cond = "market IN ('KSE', 'KWT', 'KUWAIT', 'الكويت')"
+                elif m_param in ('QSE', 'QATAR', 'قطر'):
+                    m_where = "WHERE market IN ('QSE', 'QATAR', 'قطر')"
+                    _pred_m_cond = "market IN ('QSE', 'QATAR', 'قطر')"
+                elif m_param in ('CRYPTO', 'BINANCE'):
+                    m_where = "WHERE market IN ('CRYPTO', 'BINANCE')"
+                    _pred_m_cond = "market IN ('CRYPTO', 'BINANCE')"
+                elif m_param in ('US', 'USA', 'NASDAQ', 'NYSE'):
+                    m_where = "WHERE market IN ('US', 'USA', 'NASDAQ', 'NYSE')"
+                    _pred_m_cond = "market IN ('US', 'USA', 'NASDAQ', 'NYSE')"
                 else:
                     m_where = "WHERE market = ?"
                     m_args.append(m_param)
+                    _pred_m_cond = f"market = '{m_param}'"
 
             query_sql = f"""
                 SELECT ticker, market, recommendation, maestro_score,
@@ -2421,6 +2435,8 @@ def unified_predictions():
                     # that exist, so we don't crash on legacy schemas.
                     _where_parts = ["created_at IS NOT NULL"]
                     _where_args = []
+                    if _pred_m_cond:
+                        _where_parts.append(_pred_m_cond)
                     if "created_at" in _pred_cols:
                         _where_parts.append("date(created_at) < date(?)")
                         _where_args.append(_today_str_h)
@@ -2562,7 +2578,8 @@ def unified_predictions():
                 _fallback_predictions = []
                 try:
                     _today_str_e = datetime.now().strftime('%Y-%m-%d')
-                    _ep = conn.execute("""
+                    _ep_m_sql = f"AND {_pred_m_cond}" if _pred_m_cond else ""
+                    _ep = conn.execute(f"""
                         SELECT ticker, signal, signal_type, created_at,
                                entry_price, target_price, stop_loss, score,
                                closed_at, actual_return,
@@ -2570,6 +2587,7 @@ def unified_predictions():
                                highest_price_reached, lowest_price_reached
                         FROM predictions
                         WHERE created_at IS NOT NULL
+                          {_ep_m_sql}
                           AND date(created_at) >= date(?, '-14 days')
                         ORDER BY created_at DESC LIMIT 80
                     """, (_today_str_e,)).fetchall()
@@ -2672,8 +2690,9 @@ def unified_predictions():
                 _co_cols = {row[1] for row in conn.execute("PRAGMA table_info(predictions)").fetchall()}
                 if 'outcome_date' in _co_cols:
                     _co_select = [c for c in ['ticker','entry_price','exit_type','actual_return','outcome_date'] if c in _co_cols]
+                    _co_m_sql = f"AND {_pred_m_cond}" if _pred_m_cond else ""
                     _co_sql = (f"SELECT {', '.join(_co_select)} FROM predictions "
-                               f"WHERE outcome_date IS NOT NULL ORDER BY outcome_date DESC LIMIT 500")
+                               f"WHERE outcome_date IS NOT NULL {_co_m_sql} ORDER BY outcome_date DESC LIMIT 500")
                     for _cor in conn.execute(_co_sql).fetchall():
                         _ctk = (_cor['ticker'] or '').upper().replace('.CA','').replace('.SR','').strip()
                         if _ctk:
@@ -3078,6 +3097,7 @@ def unified_predictions():
             # غير متزامن مع الـ DB الفعلي). بنستخدم master_score كـ proxy ونحط
             # confidence افتراضي 50.
             # RL-FIX-9: أضفنا exit_type + persona في الـ SELECT علشان الـ status mapping الجديد.
+            _prev_m_sql = f"AND {_pred_m_cond}" if _pred_m_cond else ""
             _prev_rows = conn.execute(f"""
                 SELECT ticker, signal, signal_type, prediction_date, persona,
                        entry_price, target_price, stop_loss, master_score,
@@ -3089,6 +3109,7 @@ def unified_predictions():
                   AND prediction_date != ''
                   AND date(prediction_date) >= date(?, '-220 days')
                   {_persona_clause}
+                  {_prev_m_sql}
                 ORDER BY prediction_date DESC
                 LIMIT 500
             """, (_today_str, *_persona_params)).fetchall()

@@ -118,6 +118,47 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
         fallbackReason = `KSA data_engine error: ${(e as Error).message}`;
       }
     }
+  } else if (market === 'CRYPTO') {
+    // 🪙 الكريبتو — من data_engine.db.crypto_prices (تداول 24/7)
+    if (!dbExists(DATA_ENGINE_DB_PATH)) {
+      fallbackReason = 'data_engine.db not found';
+    } else {
+      try {
+        const db = openDb(DATA_ENGINE_DB_PATH);
+        const rows = db.prepare(`
+          SELECT total_volume as volume FROM crypto_prices
+          WHERE total_volume IS NOT NULL AND total_volume > 0
+            AND timestamp >= datetime('now', '-30 days')
+          LIMIT 50000
+        `).all() as any[];
+        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        db.close();
+      } catch (e) {
+        fallbackReason = `CRYPTO data_engine error: ${(e as Error).message}`;
+      }
+    }
+  } else if (market === 'GOLD') {
+    // 🥇 الذهب — من data_engine.db.gold_prices_clean
+    // الذهب ما عندهوش volume بالمعنى التقليدي — نستخدم price_per_gram كـ proxy
+    // الأهم هو تجاوز SMA(10) — لكن هنا نحسب threshold على تغيرات السعر
+    if (!dbExists(DATA_ENGINE_DB_PATH)) {
+      fallbackReason = 'data_engine.db not found';
+    } else {
+      try {
+        const db = openDb(DATA_ENGINE_DB_PATH);
+        // احسب التغير اليومي كـ "volume" proxy
+        const rows = db.prepare(`
+          SELECT price_per_gram as volume FROM gold_prices_clean
+          WHERE price_per_gram IS NOT NULL AND price_per_gram > 0
+            AND timestamp >= datetime('now', '-30 days')
+          LIMIT 10000
+        `).all() as any[];
+        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        db.close();
+      } catch (e) {
+        fallbackReason = `GOLD data_engine error: ${(e as Error).message}`;
+      }
+    }
   }
 
   if (volumes.length === 0) {
@@ -193,7 +234,7 @@ function saveThreshold(result: ThresholdResult): void {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const market = url.searchParams.get('market') || 'EGX';
-  const markets = market === 'all' ? ['EGX', 'US', 'KSA'] : [market];
+  const markets = market === 'all' ? ['EGX', 'KSA', 'US', 'CRYPTO', 'GOLD'] : [market];
 
   const results: ThresholdResult[] = [];
   for (const m of markets) {
@@ -213,7 +254,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const markets = ['EGX', 'US', 'KSA'];
+  const markets = ['EGX', 'KSA', 'US', 'CRYPTO', 'GOLD'];
   const results: ThresholdResult[] = [];
   for (const m of markets) {
     const result = calculateThresholdForMarket(m);

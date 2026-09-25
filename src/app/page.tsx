@@ -6,8 +6,7 @@ import React from 'react';
 import dynamicImport from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
-import { VALID_VIEWS, VALID_VIEWS_SET } from '@/lib/valid-views';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { TopBar } from '@/components/layout/TopBar';
 import { DashboardView } from '@/components/dashboard/DashboardView';
@@ -141,26 +140,6 @@ const SmartConfluenceView = withErrorBoundary(
   dynamicImport(() => import('@/components/smart-assistant/SmartConfluenceView').then(m => ({ default: m.SmartConfluenceView })), { ssr: false }),
   'المساعد الذكي',
 );
-const AIView = withErrorBoundary(
-  dynamicImport(() => import('@/components/ai/AIView').then(m => ({ default: m.AIView })), { ssr: false, loading: () => <LazyTabLoader label="مساعد AI" /> }),
-  'مساعد AI',
-);
-const CandlestickWidget = withErrorBoundary(
-  dynamicImport(() => import('@/components/advanced-analysis/CandlestickWidget').then(m => ({ default: m.CandlestickWidget })), { ssr: false, loading: () => <LazyTabLoader label="الشموع اليابانية" /> }),
-  'الشموع اليابانية',
-);
-const FibonacciWidget = withErrorBoundary(
-  dynamicImport(() => import('@/components/advanced-analysis/FibonacciWidget').then(m => ({ default: m.FibonacciWidget })), { ssr: false, loading: () => <LazyTabLoader label="فيبوناتشي" /> }),
-  'فيبوناتشي',
-);
-const OpportunityCard = withErrorBoundary(
-  dynamicImport(() => import('@/components/sniper/OpportunityCard').then(m => ({ default: m.OpportunityCard })), { ssr: false, loading: () => <LazyTabLoader label="فرص الصيد" /> }),
-  'فرص الصيد',
-);
-const PerformanceTracker = withErrorBoundary(
-  dynamicImport(() => import('@/components/sniper/PerformanceTracker').then(m => ({ default: m.PerformanceTracker })), { ssr: false, loading: () => <LazyTabLoader label="متتبع الأداء" /> }),
-  'متتبع الأداء',
-);
 const PredictionTrackingView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
   'تتبّع التوقعات',
@@ -172,6 +151,10 @@ const PicksManagementView = withErrorBoundary(
 const DualTrackPredictionsView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
   'التوقعات المزدوجة',
+);
+const V82DecisionPanel = withErrorBoundary(
+  dynamicImport(() => import('@/components/v82/V82DecisionPanel').then(m => ({ default: m.V82DecisionPanel })), { ssr: false, loading: () => <LazyTabLoader label="محرك V82" /> }),
+  'محرك V82',
 );
 const LiveMonitor = withErrorBoundary(
   dynamicImport(() => import('@/components/dashboard/LiveMonitor'), { ssr: false }),
@@ -369,6 +352,19 @@ function SessionSync() {
 function AppShell() {
   const { currentView } = useAppStore();
   const setCurrentViewFromHash = useAppStore((s) => s.setCurrentViewFromHash);
+  const currentMarket = useAppStore((s) => s.currentMarket);
+  const setCurrentMarket = useAppStore((s) => s.setCurrentMarket);
+
+  // UNIFIED-MARKET-UX (Task 2): Crypto view → CRYPTO market
+  // لما المستخدم يدخل على crypto-* view (سواء من الـ TopBar أو من deep link)،
+  // احنا بنفعّل وضع الكريبتو في الـ store فوراً عشان الـ unified components
+  // يجيبوا بيانات الكريبتو بدل بيانات الأسهم. الـ effect ده بيشيل تعقيد الـ
+  // setCurrentMarket اللي كان متكرر في كل handler منفصل.
+  React.useEffect(() => {
+    if (isCryptoView(currentView) && currentMarket !== 'CRYPTO') {
+      setCurrentMarket('CRYPTO');
+    }
+  }, [currentView, currentMarket, setCurrentMarket]);
 
   // Direct hash → view sync (robust fallback that survives hydration errors)
   // Reads URL hash on mount and on hashchange, sets the current view directly.
@@ -452,22 +448,14 @@ function AppShell() {
             </button>
           </div>
         );
-      case 'ai-view':
-        return <AIView />;
-      case 'candlestick':
-        return <CandlestickWidget />;
-      case 'fibonacci':
-        return <FibonacciWidget />;
-      case 'opportunity':
-        return <OpportunityCard />;
-      case 'performance-tracker':
-        return <PerformanceTracker />;
       case 'prediction-tracking':
         return <PredictionTrackingView />;
       case 'picks-management':
         return <PicksManagementView />;
       case 'dual-track':
         return <DualTrackPredictionsView />;
+      case 'v82':
+        return <V82DecisionPanel initialTicker="COMI" />;
       case 'reports':
         return <ReportsView />;
       case 'news':
@@ -511,34 +499,52 @@ function AppShell() {
       case 'publishing':
         return <UserPublishingView />;
       
-      // === العملات الرقمية (Crypto) — COMPLETE UI MIRROR ===
-      // Carbon copy of stocks: same DashboardView / StocksView / Watchlist,
-      // only the data source changes (currentMarket='CRYPTO' is set by the
-      // Sidebar when a crypto nav item is clicked).
+      // === العملات الرقمية (Crypto) — UNIFIED-MARKET-UX (Task 2) ============
+      // كل الـ crypto-* views دلوقتي بـ redirect للـ unified view المناسب
+      // (نفس الـ component اللي بيستعمله السوق العادي) + setCurrentMarket('CRYPTO')
+      // بيشتغل تلقائياً من useEffect في AppShell. الفرق الوحيد بين الكريبتو
+      // والأسهم هو قيمة currentMarket في الـ store — الـ unified component بياخد
+      // البيانات من هناك فبيعرض بيانات الكريبتو بشكل تلقائي (UI-Mirror Protocol).
+      //
+      // Mapping (see CRYPTO_VIEW_REDIRECTS in valid-views.ts):
+      //   crypto               → dashboard        (DashboardView + CRYPTO)
+      //   crypto-live          → stocks           (StocksView + CRYPTO)
+      //   crypto-recommendations → recommendations (MarketAnalysisView + CRYPTO)
+      //   crypto-trading-chart → trading-chart    (TradingChartView + CRYPTO)
+      //   crypto-screener      → stock-filters    (StockScreenerAdvancedView + CRYPTO)
+      //   crypto-analysis      → smart-confluence  (SmartConfluenceView + CRYPTO)
+      //   crypto-learning      → learning         (LearningView + CRYPTO)
+      //   crypto-simulation    → simulation       (SimulationView + CRYPTO)
       case 'crypto':
+        // unified: dashboard + setCurrentMarket('CRYPTO')
         return <DashboardView />;
       case 'crypto-live':
+        // unified: stocks + setCurrentMarket('CRYPTO')
         return <StocksView />;
       case 'crypto-portfolio':
         return <CryptoPortfolioView />;
       case 'crypto-watchlist':
         return <EnhancedWatchlistView />;
       case 'crypto-recommendations':
-        // V40.4 §5 UI Mirror Protocol: crypto views use the SAME unified
-        // MarketAnalysisView shell as stocks, with initialMarket="CRYPTO".
-        return <MarketAnalysisView initialMarket="CRYPTO" />;
+        // unified: recommendations (MarketAnalysisView) + setCurrentMarket('CRYPTO')
+        return <MarketAnalysisView />;
       case 'crypto-analysis':
-        return <CryptoAdvancedAnalysisView />;
+        // unified: smart-confluence (SmartConfluenceView) + setCurrentMarket('CRYPTO')
+        return <SmartConfluenceView />;
       case 'crypto-learning':
-        return CryptoLearningView ? <CryptoLearningView /> : <div className="p-4">Loading...</div>;
+        // unified: learning (LearningView) + setCurrentMarket('CRYPTO')
+        return <LearningView />;
       case 'crypto-simulation':
-        return CryptoSimulationView ? <CryptoSimulationView /> : <div className="p-4">Loading...</div>;
+        // unified: simulation (SimulationView) + setCurrentMarket('CRYPTO')
+        return <SimulationView />;
       case 'crypto-trading-chart':
-        return <CryptoTradingChartView initialTicker="BTC" />;
+        // unified: trading-chart (TradingChartView) + setCurrentMarket('CRYPTO')
+        return <TradingChartView />;
       case 'crypto-prediction-tracking':
         return <CryptoPredictionTrackingView />;
       case 'crypto-screener':
-        return <CryptoScreenerView />;
+        // unified: stock-filters (StockScreenerAdvancedView) + setCurrentMarket('CRYPTO')
+        return <StockScreenerAdvancedView />;
       
       // === حسابات دينية ===
       case 'zakat':

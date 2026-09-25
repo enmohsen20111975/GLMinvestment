@@ -65,8 +65,18 @@ function ensureTrackColumn(db: any): void {
 }
 
 function calculateTrackStats(db: any, track: string, weight: number): TrackStats {
+  // CUMULATIVE-RETURN-FIX: استخدم actual_return للحساب، مش status بس
+  // لأن كتير من التوقعات status='active' بس actual_return موجود (تم الإغلاق فعلاً)
   let query = `
-    SELECT status, actual_return FROM predictions
+    SELECT
+      COUNT(*) as total,
+      SUM(CASE WHEN COALESCE(actual_return, 0) > 0 THEN 1 ELSE 0 END) as wins,
+      SUM(CASE WHEN COALESCE(actual_return, 0) < 0 THEN 1 ELSE 0 END) as losses,
+      SUM(CASE WHEN actual_return IS NULL OR actual_return = 0 THEN 1 ELSE 0 END) as expired,
+      SUM(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN 1 ELSE 0 END) as resolved,
+      SUM(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN actual_return ELSE 0 END) as returns_sum,
+      SUM(CASE WHEN actual_return IS NOT NULL AND actual_return != 0 THEN 1 ELSE 0 END) as returns_count
+    FROM predictions
     WHERE market IS NOT NULL
   `;
   const params: any[] = [];
@@ -77,24 +87,16 @@ function calculateTrackStats(db: any, track: string, weight: number): TrackStats
     params.push(track);
   }
 
-  const rows = db.prepare(query).all(...params) as any[];
-  let wins = 0, losses = 0, expired = 0, total = 0;
-  let returnsSum = 0;
-  let returnsCount = 0;
+  const row = db.prepare(query).get(...params) as any;
 
-  for (const r of rows) {
-    total++;
-    const ret = Number(r.actual_return) || 0;
-    if (ret !== 0) {
-      returnsSum += ret;
-      returnsCount++;
-    }
-    if (WIN_STATUSES.has(r.status)) wins++;
-    else if (LOSS_STATUSES.has(r.status)) losses++;
-    else if (EXPIRED_STATUSES.has(r.status)) expired++;
-  }
+  const total = Number(row?.total || 0);
+  const wins = Number(row?.wins || 0);
+  const losses = Number(row?.losses || 0);
+  const expired = Number(row?.expired || 0);
+  const resolved = Number(row?.resolved || 0);
+  const returnsSum = Number(row?.returns_sum || 0);
+  const returnsCount = Number(row?.returns_count || 0);
 
-  const resolved = wins + losses;
   return {
     track,
     total,
@@ -187,14 +189,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const db = openDb(PREDICTIONS_DB_PATH);
+    // QA-FIX: open with readonly=false so ensureTrackColumn can ALTER TABLE
+    const db = openDb(PREDICTIONS_DB_PATH, false);
     ensureTrackColumn(db);
 
     const trackA = calculateTrackStats(db, 'full_analysis', 0.4);
     const trackB = calculateTrackStats(db, 'liquidity', 0.6);
+    // CUMULATIVE-RETURN-FIX: hit_rate أصلاً في percentage form (0-100)
+    // combined = (winA × 0.4) + (winB × 0.6) — كل القيم percentages
     const combinedEfficiency = Math.round(
       ((trackA.hit_rate * 0.4) + (trackB.hit_rate * 0.6)) * 100
     ) / 100;
+    // hit_rate is already in percentage form (0-100), so the × 100 above
+    // gives us 2 decimal places of precision (e.g., 14.15% → 1415 → /100 → 14.15)
 
     const marketStats = getMarketStats(db);
     const topTickers = getTopTickers(db, 10);

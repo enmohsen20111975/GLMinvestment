@@ -60,7 +60,7 @@ export async function GET() {
   try {
     const minVersion = process.env.APP_MIN_VERSION || '2.4.0';
     const latestVersion = process.env.APP_LATEST_VERSION || '2.4.0';
-    const updateUrl = process.env.APP_UPDATE_URL || 'https://play.google.com/store/apps/details?id=com.glminvestment.app';
+    const updateUrl = process.env.APP_UPDATE_URL || 'https://play.google.com/store/apps/details?id=com.egx.investment';
     const forceUpdate = parseBool(process.env.APP_FORCE_UPDATE, false);
 
     // latest release notes
@@ -85,7 +85,7 @@ export async function GET() {
         error: e instanceof Error ? e.message : 'Unknown error',
         min_version: '2.4.0',
         latest_version: '2.4.0',
-        update_url: 'https://play.google.com/store/apps/details?id=com.glminvestment.app',
+        update_url: 'https://play.google.com/store/apps/details?id=com.egx.investment',
         force_update: false,
       },
       { status: 500 }

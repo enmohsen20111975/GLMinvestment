@@ -1,5 +1,4 @@
 'use client';
-import { ExchangeSelector } from './ExchangeSelector';
 
 /**
  * TopBar — القائمة العلوية المرتبة
@@ -18,6 +17,12 @@ import { ExchangeSelector } from './ExchangeSelector';
  *   - Active state highlighting
  *   - Currency selector + theme toggle + notifications
  *   - Safe-area-inset support
+ *
+ * UNIFIED-MARKET-UX (Task 1):
+ *   - Market Switcher dropdown بجانب الـ logo يبدّل السوق بين:
+ *     🇪🇬 EGX / 🇸🇦 TADAWUL / 🇰🇼 KSE / 🇶🇦 QSE / 🪙 CRYPTO
+ *   - لما المستخدم يغيّر → setCurrentMarket(newMarket) + redirect لـ #dashboard
+ *   - currency label بيتحدّث تلقائياً من MARKET_CURRENCY_LABEL
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -26,13 +31,34 @@ import {
   Crown, Sparkles, FileBarChart, Newspaper, GraduationCap, Gamepad2,
   Wallet, Eye, HandCoins, Shield, RadioTower, Brain,
   Activity, BarChart3, Settings, Menu, X, ChevronDown,
-  Bell, Sun, Moon, DollarSign, Search, type LucideIcon,
+  Bell, Sun, Moon, DollarSign, Search, Globe, type LucideIcon,
 } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import {
+  useAppStore,
+  MarketType,
+  MARKET_NAMES_AR,
+  MARKET_CURRENCY_LABEL,
+} from '@/lib/store';
 import { cn } from '@/lib/utils';
 import type { AppView } from '@/types';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
+
+// ── خيارات السوق للـ Market Switcher ─────────────────────────────────────
+// 5 أسواق مدعومة بالبيانات الفعلية (see store.ts MarketType union)
+interface MarketOption {
+  value: MarketType;
+  label: string;
+  flag: string;
+  currency: string;
+}
+const MARKET_OPTIONS: MarketOption[] = [
+  { value: 'EGX',      label: 'مصر',        flag: '🇪🇬', currency: 'EGP' },
+  { value: 'TADAWUL',  label: 'السعودية',   flag: '🇸🇦', currency: 'SAR' },
+  { value: 'KSE',      label: 'الكويت',     flag: '🇰🇼', currency: 'KWD' },
+  { value: 'QSE',      label: 'قطر',        flag: '🇶🇦', currency: 'QAR' },
+  { value: 'CRYPTO',   label: 'كريبتو',     flag: '🪙', currency: 'USD' },
+];
 
 interface NavItem {
   id: AppView;
@@ -121,16 +147,21 @@ const navSections: NavSection[] = [
 ];
 
 export function TopBar() {
-  const { currentView, setCurrentView } = useAppStore();
+  const { currentView, setCurrentView, currentMarket, setCurrentMarket } = useAppStore();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [marketMenuOpen, setMarketMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const marketMenuRef = useRef<HTMLDivElement>(null);
 
   // إغلاق الـ dropdown لما تضغط خارجها
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setActiveSection(null);
+      }
+      if (marketMenuRef.current && !marketMenuRef.current.contains(e.target as Node)) {
+        setMarketMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -158,6 +189,24 @@ export function TopBar() {
     }
   };
 
+  // ─── UNIFIED-MARKET-UX: تبديل السوق ─────────────────────────────────────
+  // 1) setCurrentMarket(newMarket) في الـ store → كل الـ components بيتحدّثوا تلقائياً
+  // 2) redirect لـ #dashboard (الرئيسية) زي ما العميل طلب
+  // 3) currency label بيتحدّث من MARKET_CURRENCY_LABEL تلقائياً
+  const handleMarketChange = (market: MarketType) => {
+    setCurrentMarket(market);
+    setMarketMenuOpen(false);
+    setMobileMenuOpen(false);
+    // ننتقل للرئيسية عشان المستخدم يشوف بيانات السوق الجديد من الصفر
+    setCurrentView('dashboard');
+    if (typeof window !== 'undefined') {
+      window.location.hash = 'dashboard';
+    }
+  };
+
+  const activeMarketOption = MARKET_OPTIONS.find(m => m.value === currentMarket) ?? MARKET_OPTIONS[0];
+  const activeMarketCurrency = MARKET_CURRENCY_LABEL[currentMarket];
+
   return (
     <>
       <header
@@ -165,8 +214,8 @@ export function TopBar() {
         dir="rtl"
       >
         <div className="flex h-14 items-center justify-between px-3 md:px-6">
-          {/* Logo + Brand */}
-          <div className="flex items-center gap-2">
+          {/* Logo + Brand + Market Switcher */}
+          <div className="flex items-center gap-2 md:gap-3">
             <button
               onClick={() => handleNavClick('dashboard')}
               className="flex items-center gap-2 font-bold text-sm md:text-base hover:opacity-80 transition-opacity"
@@ -177,8 +226,65 @@ export function TopBar() {
               </div>
               <span className="hidden sm:inline">دليل الاستثمار</span>
             </button>
-            <ExchangeSelector />
-            </button>
+
+            {/* Market Switcher (UNIFIED-MARKET-UX Task 1) */}
+            <div className="relative" ref={marketMenuRef}>
+              <button
+                onClick={() => setMarketMenuOpen(!marketMenuOpen)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border text-xs font-medium transition-colors',
+                  marketMenuOpen
+                    ? 'bg-primary/10 text-primary border-primary/30'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+                aria-expanded={marketMenuOpen}
+                aria-haspopup="true"
+                aria-label="تبديل السوق"
+                title={`السوق الحالي: ${MARKET_NAMES_AR[currentMarket]}`}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                <span className="text-base leading-none">{activeMarketOption.flag}</span>
+                <span className="hidden sm:inline">{activeMarketOption.label}</span>
+                <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {activeMarketCurrency}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    'h-3 w-3 transition-transform',
+                    marketMenuOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {marketMenuOpen && (
+                <div className="absolute top-full right-0 mt-1 w-52 rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95 z-50">
+                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-b border-border mb-1">
+                    اختر السوق
+                  </div>
+                  {MARKET_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleMarketChange(opt.value)}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs transition-colors',
+                        currentMarket === opt.value
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )}
+                    >
+                      <span className="text-base leading-none">{opt.flag}</span>
+                      <span className="flex-1 text-right">{opt.label}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {opt.currency}
+                      </span>
+                      {currentMarket === opt.value && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Desktop Navigation */}
@@ -259,6 +365,33 @@ export function TopBar() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-background">
             <nav className="grid gap-1 p-3" dir="rtl">
+              {/* Market Switcher (mobile) */}
+              <div className="space-y-1 pb-2 border-b border-border mb-2">
+                <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  <Globe className="h-3 w-3" />
+                  اختر السوق
+                </div>
+                <div className="grid grid-cols-1 gap-1">
+                  {MARKET_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleMarketChange(opt.value)}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors',
+                        currentMarket === opt.value
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-muted-foreground hover:bg-accent'
+                      )}
+                    >
+                      <span className="text-base leading-none">{opt.flag}</span>
+                      <span className="flex-1 text-right">{opt.label}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {opt.currency}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               {navSections.map((section) => (
                 <div key={section.id} className="space-y-1">
                   <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">

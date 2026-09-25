@@ -1681,12 +1681,26 @@ def get_live_tracking():
         # قبل كده كان الفلتر على (created_at OR prediction_date) للكل → صفقات مقفولة
         # حديثاً بس دخولها قديم كانت بتختفي غلط، وتوقعات معلّقة من شهر كانت بتظهر
         # في نافذة 7 أيام غلط.
+        _m_sql = "1=1"
+        _m_params = []
+        if market in ('EGX', 'EGYPT', 'مصر'):
+            _m_sql = "((market IN ('EGX', 'EGYPT', 'مصر') OR (market IS NULL AND ticker NOT GLOB '[0-9]*')) AND ticker NOT GLOB '[0-9]*')"
+        elif market in ('TADAWUL', 'KSA', 'SAUDI', 'السعودية'):
+            _m_sql = "(market IN ('TADAWUL', 'KSA', 'SAUDI', 'السعودية') OR ticker GLOB '[0-9]*')"
+        elif market in ('KSE', 'KWT', 'KUWAIT', 'الكويت'):
+            _m_sql = "market IN ('KSE', 'KWT', 'KUWAIT', 'الكويت')"
+        elif market in ('QSE', 'QATAR', 'قطر'):
+            _m_sql = "market IN ('QSE', 'QATAR', 'قطر')"
+        elif market in ('CRYPTO', 'BINANCE'):
+            _m_sql = "market IN ('CRYPTO', 'BINANCE')"
+        elif market in ('US', 'USA', 'NASDAQ', 'NYSE'):
+            _m_sql = "market IN ('US', 'USA', 'NASDAQ', 'NYSE')"
+        elif market not in ('ALL', ''):
+            _m_sql = "market = ?"
+            _m_params.append(market)
+
         if days_window > 0 and days_window < 999:
             cutoff = (datetime.now() - timedelta(days=days_window)).strftime('%Y-%m-%d')
-            # 🔥 P0-UI FIX: أضفنا data_quality للـ SELECT + فلتر clean-only على المقفولة.
-            # الـ toxic rows (AGIN/UNFO بـ actual_return ≈ -10814%) بقت تتصنف 'toxic'
-            # بعد purge_prediction_disasters.py، فبنفلترها من الـ KPIs.
-            # PENDING (outcome_date IS NULL) بتفضل تظهر بس ما بتدخلش في الـ stats.
             cursor.execute(
                 "SELECT id, ticker, persona, signal, signal_type, "
                 "prediction_date, created_at, entry_price, target_price, stop_loss, "
@@ -1694,7 +1708,7 @@ def get_live_tracking():
                 "outcome_date, actual_return, actual_exit_price, is_correct, "
                 f"exit_type, holding_days{_dq_sel}{_tp2_sel}{_hpr_sel}{_lpr_sel} "
                 "FROM predictions "
-                "WHERE market = ? "
+                f"WHERE {_m_sql} "
                 "  AND ( "
                 "        (outcome_date IS NOT NULL AND substr(outcome_date, 1, 10) >= ?"
                 f"{_dq_where}{_cap_where}) "
@@ -1702,11 +1716,10 @@ def get_live_tracking():
                 "        (outcome_date IS NULL AND substr(created_at, 1, 10) >= ?) "
                 "      ) "
                 "ORDER BY created_at DESC "
-                "LIMIT 15000",  # RL-FIX-8: 3000 → 15000 علشان نرجع بيانات تاريخية كاملة
-                (market, cutoff, cutoff),
+                "LIMIT 15000",
+                tuple(_m_params + [cutoff, cutoff]),
             )
         else:
-            # 🔥 P0-UI FIX: نفس فلتر clean-only على المقفولة في النافذة الكاملة.
             cursor.execute(
                 "SELECT id, ticker, persona, signal, signal_type, "
                 "prediction_date, created_at, entry_price, target_price, stop_loss, "
@@ -1714,15 +1727,15 @@ def get_live_tracking():
                 "outcome_date, actual_return, actual_exit_price, is_correct, "
                 f"exit_type, holding_days{_dq_sel}{_tp2_sel}{_hpr_sel}{_lpr_sel} "
                 "FROM predictions "
-                "WHERE market = ? "
+                f"WHERE {_m_sql} "
                 "  AND ( "
                 "        (outcome_date IS NOT NULL"
                 f"{_dq_where}{_cap_where}) "
                 "        OR outcome_date IS NULL "
                 "      ) "
                 "ORDER BY created_at DESC "
-                "LIMIT 20000",  # RL-FIX-8: 5000 → 20000 علشان الـ All-time view
-                (market,),
+                "LIMIT 20000",
+                tuple(_m_params),
             )
         rows = [dict(r) for r in cursor.fetchall()]
         conn.close()

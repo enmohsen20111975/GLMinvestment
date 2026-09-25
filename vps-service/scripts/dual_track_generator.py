@@ -28,6 +28,47 @@ DATA_ENGINE_DB = str(PROJECT_ROOT / 'db' / 'data_engine.db')
 TRACK_A_DAILY_LIMIT = 5
 TRACK_B_VOLUME_RATIO_MIN = 1.5   # 1.5x متوسط 20 يوم
 
+# ── Market-specific configuration (matches liquidity_backtest_engine.py) ──
+# كل سوق له شروطه الخاصة حسب السلوك المُثبت في الـ backtest
+MARKET_CONFIG = {
+    'EGX': {
+        'target_pct': 2.5,        'stop_pct': 2.0,         'holding_days': 5,
+        'require_green_candle': True,
+        'require_positive_momentum': False,
+        'min_change_24h': None,
+        'description': '🇪🇬 مصر — شمعة خضراء إلزامية (تجميع مش تصريف)',
+    },
+    'KSA': {
+        'target_pct': 2.0,        'stop_pct': 1.8,         'holding_days': 5,
+        'require_green_candle': True,
+        'require_positive_momentum': False,
+        'min_change_24h': None,
+        'description': '🇸🇦 السعودية — صافي سيولة موجب',
+    },
+    'US': {
+        'target_pct': 3.0,        'stop_pct': 1.5,         'holding_days': 5,
+        'require_green_candle': True,
+        'require_positive_momentum': False,
+        'min_change_24h': None,
+        'description': '🇺🇸 أمريكا — وقف خسارة ديناميكي 1.5×ATR',
+    },
+    'CRYPTO': {
+        'target_pct': 3.0,        'stop_pct': 2.5,         'holding_days': 4,
+        'require_green_candle': False,
+        'require_positive_momentum': True,
+        'min_change_24h': 2.0,    # شرط إلزامي: change_24h >= +2.0%
+        'description': '🪙 الكريبتو — زخم صاعد +2% إلزامي',
+    },
+    'GOLD': {
+        'target_pct': 1.5,        'stop_pct': 1.5,         'holding_days': 7,
+        'require_green_candle': False,
+        'require_positive_momentum': True,
+        'min_change_24h': None,
+        'use_sma_10': True,
+        'description': '🥇 الذهب — تجاوز متوسط 10 أيام + زخم الأونصة',
+    },
+}
+
 
 def parse_volume(v) -> int:
     if v is None:
@@ -172,12 +213,142 @@ def load_recent_market_liquidity(market: str) -> List[dict]:
                 print(f'  ⚠️ error loading liquidity for {market}: {e}')
             conn.close()
 
+    # ── CRYPTO: من data_engine.db.crypto_prices ────────────────────────
+    if market == 'CRYPTO' and not rows and db_exists(DATA_ENGINE_DB):
+        conn = open_db(DATA_ENGINE_DB, readonly=True)
+        if conn:
+            try:
+                cur = conn.execute("""
+                    SELECT DATE(timestamp) as date, symbol as ticker,
+                           MIN(price_usd) as low, MAX(price_usd) as high,
+                           (SELECT price_usd FROM crypto_prices c2
+                            WHERE c2.symbol = c1.symbol AND DATE(c2.timestamp) = DATE(c1.timestamp)
+                            ORDER BY timestamp ASC LIMIT 1) as open,
+                           (SELECT price_usd FROM crypto_prices c3
+                            WHERE c3.symbol = c1.symbol AND DATE(c3.timestamp) = DATE(c1.timestamp)
+                            ORDER BY timestamp DESC LIMIT 1) as close,
+                           MAX(total_volume) as volume,
+                           AVG(price_change_24h) as change_24h
+                    FROM crypto_prices c1
+                    WHERE total_volume IS NOT NULL AND total_volume > 0
+                      AND DATE(timestamp) >= DATE('now', '-60 days')
+                    GROUP BY DATE(timestamp), symbol
+                    ORDER BY symbol, DATE(timestamp) ASC
+                """)
+                grouped = defaultdict(list)
+                for r in cur:
+                    vol = parse_volume(r['volume'])
+                    close_p = float(r['close'] or 0)
+                    if vol > 0 and close_p > 0:
+                        grouped[r['ticker']].append({
+                            'date': r['date'],
+                            'open': float(r['open'] or close_p),
+                            'high': float(r['high'] or close_p),
+                            'low': float(r['low'] or close_p),
+                            'close': close_p,
+                            'volume': vol,
+                            'change_24h': float(r['change_24h'] or 0),
+                        })
+
+                for ticker, t_rows in grouped.items():
+                    if len(t_rows) < 3:
+                        continue
+                    today_row = t_rows[-1]
+                    hist = t_rows[:-1]
+                    avg_vol_20 = sum(x['volume'] for x in hist[-20:]) / len(hist[-20:]) if hist else today_row['volume']
+                    rows.append({
+                        'ticker': ticker,
+                        'market': market,
+                        'date': today_row['date'],
+                        'open': today_row['open'],
+                        'high': today_row['high'],
+                        'low': today_row['low'],
+                        'close': today_row['close'],
+                        'volume': today_row['volume'],
+                        'avg_volume_20': int(avg_vol_20),
+                        'buy_pressure': 85.0 if today_row['close'] >= today_row['open'] else 40.0,
+                        'net_flow': today_row['volume'],
+                        'change_24h': today_row.get('change_24h', 0),
+                    })
+                if rows:
+                    print(f'  ✅ CRYPTO: loaded {len(rows)} active coins from data_engine.db.crypto_prices')
+            except Exception as e:
+                print(f'  ⚠️ crypto query error: {e}')
+            conn.close()
+
+    # ── GOLD: من data_engine.db.gold_prices_clean ──────────────────────
+    if market == 'GOLD' and not rows and db_exists(DATA_ENGINE_DB):
+        conn = open_db(DATA_ENGINE_DB, readonly=True)
+        if conn:
+            try:
+                cur = conn.execute("""
+                    SELECT DATE(timestamp) as date,
+                           MIN(price_per_gram) as low, MAX(price_per_gram) as high,
+                           (SELECT price_per_gram FROM gold_prices_clean g2
+                            WHERE DATE(g2.timestamp) = DATE(g1.timestamp)
+                            ORDER BY timestamp ASC LIMIT 1) as open,
+                           (SELECT price_per_gram FROM gold_prices_clean g3
+                            WHERE DATE(g3.timestamp) = DATE(g1.timestamp)
+                            ORDER BY timestamp DESC LIMIT 1) as close
+                    FROM gold_prices_clean g1
+                    WHERE price_per_gram IS NOT NULL AND price_per_gram > 0
+                      AND DATE(timestamp) >= DATE('now', '-60 days')
+                    GROUP BY DATE(timestamp)
+                    ORDER BY DATE(timestamp) ASC
+                """)
+                t_rows = []
+                for r in cur:
+                    close_p = float(r['close'] or 0)
+                    if close_p > 0:
+                        t_rows.append({
+                            'date': r['date'],
+                            'open': float(r['open'] or close_p),
+                            'high': float(r['high'] or close_p),
+                            'low': float(r['low'] or close_p),
+                            'close': close_p,
+                            'volume': 1000000,
+                            'change_24h': 0,
+                        })
+                # احسب SMA(10) للذهب
+                if len(t_rows) >= 11:
+                    today_row = t_rows[-1]
+                    hist = t_rows[:-1]
+                    sma_10 = sum(x['close'] for x in hist[-10:]) / 10.0
+                    rows.append({
+                        'ticker': 'XAU',
+                        'market': market,
+                        'date': today_row['date'],
+                        'open': today_row['open'],
+                        'high': today_row['high'],
+                        'low': today_row['low'],
+                        'close': today_row['close'],
+                        'volume': 1000000,
+                        'avg_volume_20': 1000000,
+                        'buy_pressure': 85.0 if today_row['close'] >= today_row['open'] else 40.0,
+                        'net_flow': 1000000,
+                        'change_24h': today_row.get('change_24h', 0),
+                        'sma_10': sma_10,
+                    })
+                if rows:
+                    print(f'  ✅ GOLD: loaded 1 XAU ticker from data_engine.db.gold_prices_clean')
+            except Exception as e:
+                print(f'  ⚠️ gold query error: {e}')
+            conn.close()
+
     return rows
 
 
-def filter_track_b_candidates(rows: List[dict], threshold: float) -> List[dict]:
-    """تصفية الأسهم التي تحقق شروط السيولة الاستثنائية للمسار B."""
+def filter_track_b_candidates(rows: List[dict], threshold: float, market: str) -> List[dict]:
+    """تصفية الأسهم التي تحقق شروط السيولة الاستثنائية للمسار B حسب شروط كل سوق."""
     candidates = []
+    cfg = MARKET_CONFIG.get(market, MARKET_CONFIG['EGX'])
+    target_pct = cfg['target_pct']
+    stop_pct = cfg['stop_pct']
+    require_green_candle = cfg.get('require_green_candle', False)
+    require_positive_momentum = cfg.get('require_positive_momentum', False)
+    min_change_24h = cfg.get('min_change_24h', None)
+    use_sma_10 = cfg.get('use_sma_10', False)
+
     for r in rows:
         # 1. تخطي إذا كان الحجم أقل من العتبة الديناميكية p75
         if r['volume'] < threshold:
@@ -185,20 +356,42 @@ def filter_track_b_candidates(rows: List[dict], threshold: float) -> List[dict]:
         # 2. مؤشر الزخم المؤسسي: الحجم الحالي >= 1.5x متوسط 20 يوم
         if r['avg_volume_20'] > 0 and r['volume'] < (r['avg_volume_20'] * TRACK_B_VOLUME_RATIO_MIN):
             continue
-        # 3. التأكد من اتجاه الشراء (الشمعة خضراء Close >= Open)
-        if r['close'] < r['open']:
+        # 3. شمعة خضراء (Close >= Open) — إلزامي لأسواق الأسهم (تجميع مش تصريف)
+        if require_green_candle and r['close'] < r['open']:
             continue
+        # 4. زخم إيجابي (للكريبتو والذهب)
+        if require_positive_momentum:
+            change_24h = r.get('change_24h', None)
+            if min_change_24h is not None:
+                if change_24h is None or change_24h < min_change_24h:
+                    continue
+            # للذهب: تجاوز SMA(10)
+            if use_sma_10:
+                sma_10 = r.get('sma_10', None)
+                if sma_10 is not None and r['close'] < sma_10:
+                    continue
 
         entry_price = round(r['close'], 4)
-        target_1 = round(entry_price * 1.025, 4)   # هدف أول 2.5%
-        target_2 = round(entry_price * 1.050, 4)   # هدف ثانٍ 5.0%
-        stop_loss = round(entry_price * 0.975, 4)  # وقف خسارة 2.5%
+        target_1 = round(entry_price * (1.0 + target_pct / 100.0), 4)
+        target_2 = round(entry_price * (1.0 + (target_pct * 1.5) / 100.0), 4)
+        stop_loss = round(entry_price * (1.0 - stop_pct / 100.0), 4)
 
         vol_ratio = r['volume'] / max(r['avg_volume_20'], 1)
 
+        # بناء سبب الإشارة حسب نوع السوق
+        reasons = [f'💧 سيولة استثنائية {vol_ratio:.1f}x']
+        if require_green_candle:
+            reasons.append('شمعة خضراء (تجميع)')
+        if min_change_24h is not None and r.get('change_24h') is not None:
+            reasons.append(f'تغير +{r["change_24h"]:.2f}% (≥ +{min_change_24h}%)')
+        if use_sma_10:
+            reasons.append('تجاوز SMA(10)')
+        reasons.append(f'p75={threshold:,.0f}')
+        reasoning = ' • '.join(reasons)
+
         candidates.append({
             'ticker': r['ticker'],
-            'market': r['market'],
+            'market': market,
             'prediction_date': r['date'],
             'signal': 'BUY',
             'signal_type': 'LIQUIDITY_BREAKOUT',
@@ -208,12 +401,13 @@ def filter_track_b_candidates(rows: List[dict], threshold: float) -> List[dict]:
             'stop_loss': stop_loss,
             'status': 'ACTIVE',
             'confidence': 88.0,
-            'risk_reward': 1.5,
+            'risk_reward': round(target_pct / stop_pct, 2) if stop_pct > 0 else 1.5,
             'track': 'liquidity',
             'volume': r['volume'],
             'avg_volume_20': r['avg_volume_20'],
             'vol_ratio': vol_ratio,
-            'reasoning': f'💧 سيولة استثنائية {vol_ratio:.1f}x ضعف المتوسط مع شمعة شرائية صاعدة وتجاوز عتبة p75 ({threshold:,.0f})',
+            'market_config': f'+{target_pct}%/-{stop_pct}%/{cfg["holding_days"]}d',
+            'reasoning': reasoning,
         })
 
     candidates.sort(key=lambda x: -x['vol_ratio'])
@@ -297,7 +491,7 @@ def main():
             print(f'  ⚠️ no liquidity data for {market}')
             continue
 
-        candidates = filter_track_b_candidates(rows, threshold)
+        candidates = filter_track_b_candidates(rows, threshold, market)
         print(f'  🎯 Found {len(candidates)} Track B liquidity candidate(s):')
         for c in candidates[:10]:
             print(f"    - {c['ticker']}: entry={c['entry_price']} | target={c['target_price']} | vol_ratio={c['vol_ratio']:.1f}x | {c['reasoning']}")

@@ -1,5 +1,4 @@
 'use client';
-import { InvestorsFlowPanel } from './InvestorsFlowPanel';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Zap, RefreshCw, Pin } from 'lucide-react';
@@ -83,7 +82,6 @@ function DashboardSkeleton() {
           </div>
         </div>
       </div>
-      <InvestorsFlowPanel />
     </div>
   );
 }

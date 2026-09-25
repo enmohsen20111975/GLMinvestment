@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const db = openDb(PREDICTIONS_DB_PATH);
+    // QA-FIX: open with readonly=false so ensureTrackColumn can ALTER TABLE
+    const db = openDb(PREDICTIONS_DB_PATH, false);
     ensureTrackColumn(db);
 
     let trackClause = '';

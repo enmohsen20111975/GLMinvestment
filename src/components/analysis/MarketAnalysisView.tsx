@@ -1,5 +1,4 @@
 'use client';
-import { AnalysisFlowDiagram } from './AnalysisFlowDiagram';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7708,7 +7707,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           </div>
         </CardContent>
       </Card>
-      <AnalysisFlowDiagram persona="investor" />
     </div>
   );
 }

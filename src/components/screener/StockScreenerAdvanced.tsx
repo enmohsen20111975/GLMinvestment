@@ -24,6 +24,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/components/ui/collapsible';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -251,6 +256,69 @@ function StateBadge({ state, reason }: { state: string; reason?: string }) {
         )}
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+// ─── UNIFIED-MARKET-UX (Task 3): Collapsible Section ───────────────────────
+// كل فلتر/section في #stock-filters لازم يكون قابل للطي والفرد.
+// CollapsibleSection بيلفّ Card في Collapsible شادوكل radix،
+// default-open=true عشان كل الـ sections مفتوحة افتراضياً (زي ما العميل طلب).
+// الـ trigger هو الـ CardHeader كله (عنوان + أيقونة chevron بتلف).
+interface CollapsibleSectionProps {
+  title: React.ReactNode;
+  icon?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  contentClassName?: string;
+}
+
+function CollapsibleSection({
+  title,
+  icon,
+  defaultOpen = true,
+  children,
+  className,
+  contentClassName,
+}: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className={className}>
+        <CardHeader className="pb-2">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center justify-between w-full text-right cursor-pointer hover:opacity-80 transition-opacity"
+              aria-expanded={open}
+            >
+              <CardTitle className="text-base flex items-center gap-2 flex-1">
+                {icon}
+                {title}
+              </CardTitle>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                {open ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    <span className="hidden sm:inline">طي</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    <span className="hidden sm:inline">فرد</span>
+                  </>
+                )}
+              </span>
+            </button>
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className={cn('space-y-3', contentClassName)}>
+            {children}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 
@@ -957,45 +1025,36 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         </div>
       </div>
 
-      {/* Presets */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-600" />
-            فلاتر جاهزة
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {presets.map((preset) => {
-              const Icon = preset.icon;
-              return (
-                <Button
-                  key={preset.label}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => applyPreset(preset)}
-                  className={cn('gap-1.5 border', colorMap[preset.color])}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {preset.label}
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Presets — UNIFIED-MARKET-UX (Task 3): Collapsible */}
+      <CollapsibleSection
+        title="فلاتر جاهزة"
+        icon={<Zap className="w-4 h-4 text-amber-600" />}
+      >
+        <div className="flex flex-wrap gap-2">
+          {presets.map((preset) => {
+            const Icon = preset.icon;
+            return (
+              <Button
+                key={preset.label}
+                variant="outline"
+                size="sm"
+                onClick={() => applyPreset(preset)}
+                className={cn('gap-1.5 border', colorMap[preset.color])}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {preset.label}
+              </Button>
+            );
+          })}
+        </div>
+      </CollapsibleSection>
 
-      {/* Filters Panel */}
+      {/* Filters Panel — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       {showFilters && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              الفلاتر المتقدمة
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <CollapsibleSection
+          title="الفلاتر المتقدمة"
+          icon={<Filter className="w-4 h-4" />}
+        >
             {/* Search row */}
             <div className="relative max-w-sm">
               <Search className="absolute right-2 top-2.5 w-4 h-4 text-muted-foreground" />
@@ -1298,8 +1357,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+        </CollapsibleSection>
       )}
 
       {/* Inline summary KPIs (no cards) */}
@@ -1312,32 +1370,35 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         <KPIBox label="زخم الحجم" value={summary?.volume_surge_count ?? 0} color="text-amber-600" />
       </div>
 
-      {/* Results Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-              جاري تحميل الأسهم...
+      {/* Results Table — UNIFIED-MARKET-UX (Task 3): Collapsible */}
+      <CollapsibleSection
+        title="نتائج الفلاتر"
+        icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
+        contentClassName="p-0 space-y-0"
+      >
+        {loading ? (
+          <div className="p-8 text-center text-muted-foreground">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+            جاري تحميل الأسهم...
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-600">
+            <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
+            {error}
+            <div className="mt-3">
+              <Button variant="outline" size="sm" onClick={fetchScreener} className="gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5" />
+                إعادة المحاولة
+              </Button>
             </div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-600">
-              <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
-              {error}
-              <div className="mt-3">
-                <Button variant="outline" size="sm" onClick={fetchScreener} className="gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  إعادة المحاولة
-                </Button>
-              </div>
-            </div>
-          ) : filteredStocks.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
-              لا توجد نتائج مطابقة للفلاتر الحالية
-            </div>
-          ) : (
-            <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+          </div>
+        ) : filteredStocks.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            <Search className="w-6 h-6 mx-auto mb-2 opacity-50" />
+            لا توجد نتائج مطابقة للفلاتر الحالية
+          </div>
+        ) : (
+          <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
               <Table className="min-w-[1100px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
@@ -1412,9 +1473,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </CollapsibleSection>
 
       {/* Footer hint */}
       <div className="text-xs text-muted-foreground text-center pt-1">
@@ -1499,15 +1559,11 @@ function TopPerformersTab() {
 
   return (
     <div className="space-y-3">
-      {/* Filters Card */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-600" />
-            أعلى الأسهم أرباحاً / خسارة
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Filters Card — UNIFIED-MARKET-UX (Task 3): Collapsible */}
+      <CollapsibleSection
+        title="أعلى الأسهم أرباحاً / خسارة"
+        icon={<Trophy className="w-4 h-4 text-amber-600" />}
+      >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <FilterField label="الفترة">
               <Select value={period} onValueChange={setPeriod}>
@@ -1572,8 +1628,7 @@ function TopPerformersTab() {
             </Button>
             <ExportDropdown shareText={topPerformersShareText} disabled={!topPerformersShareText} />
           </div>
-        </CardContent>
-      </Card>
+      </CollapsibleSection>
 
       {/* Summary KPIs inline */}
       {summary && (
@@ -1589,146 +1644,153 @@ function TopPerformersTab() {
         </div>
       )}
 
-      {/* Best / Worst performer */}
+      {/* Best / Worst performer — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       {summary && (summary.best_performer || summary.worst_performer) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {summary.best_performer && (
-            <Card className="border-emerald-500/30 bg-emerald-500/5">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                    الأعلى ربحاً — {periodLabel}
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-between cursor-pointer"
-                  onClick={() => loadStockDetail(summary.best_performer!.ticker)}
-                >
-                  <div>
-                    <div className="font-mono font-bold text-lg">{summary.best_performer.ticker}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {summary.best_performer.name_ar || summary.best_performer.name}
-                      {summary.best_performer.sector && ` • ${summary.best_performer.sector}`}
+        <CollapsibleSection
+          title="الأفضل والأ أسوأ سهم"
+          icon={<Trophy className="w-4 h-4 text-amber-500" />}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {summary.best_performer && (
+              <Card className="border-emerald-500/30 bg-emerald-500/5">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                      الأعلى ربحاً — {periodLabel}
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => loadStockDetail(summary.best_performer!.ticker)}
+                  >
+                    <div>
+                      <div className="font-mono font-bold text-lg">{summary.best_performer.ticker}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {summary.best_performer.name_ar || summary.best_performer.name}
+                        {summary.best_performer.sector && ` • ${summary.best_performer.sector}`}
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-emerald-600 font-mono font-bold text-xl">
+                        +{summary.best_performer.change_pct}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatNumber(summary.best_performer.start_price)} → {formatNumber(summary.best_performer.end_price)}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-left">
-                    <div className="text-emerald-600 font-mono font-bold text-xl">
-                      +{summary.best_performer.change_pct}%
+                </CardContent>
+              </Card>
+            )}
+            {summary.worst_performer && (
+              <Card className="border-red-500/30 bg-red-500/5">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingDown className="w-4 h-4 text-red-500" />
+                    <span className="text-sm font-semibold text-red-700 dark:text-red-300">
+                      الأعلى خسارة — {periodLabel}
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => loadStockDetail(summary.worst_performer!.ticker)}
+                  >
+                    <div>
+                      <div className="font-mono font-bold text-lg">{summary.worst_performer.ticker}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {summary.worst_performer.name_ar || summary.worst_performer.name}
+                        {summary.worst_performer.sector && ` • ${summary.worst_performer.sector}`}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatNumber(summary.best_performer.start_price)} → {formatNumber(summary.best_performer.end_price)}
+                    <div className="text-left">
+                      <div className="text-red-600 font-mono font-bold text-xl">
+                        {summary.worst_performer.change_pct}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatNumber(summary.worst_performer.start_price)} → {formatNumber(summary.worst_performer.end_price)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {summary.worst_performer && (
-            <Card className="border-red-500/30 bg-red-500/5">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingDown className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-semibold text-red-700 dark:text-red-300">
-                    الأعلى خسارة — {periodLabel}
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-between cursor-pointer"
-                  onClick={() => loadStockDetail(summary.worst_performer!.ticker)}
-                >
-                  <div>
-                    <div className="font-mono font-bold text-lg">{summary.worst_performer.ticker}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {summary.worst_performer.name_ar || summary.worst_performer.name}
-                      {summary.worst_performer.sector && ` • ${summary.worst_performer.sector}`}
-                    </div>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-red-600 font-mono font-bold text-xl">
-                      {summary.worst_performer.change_pct}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatNumber(summary.worst_performer.start_price)} → {formatNumber(summary.worst_performer.end_price)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </CollapsibleSection>
       )}
 
-      {/* Results Table */}
-      <Card>
-        <CardContent className="p-0">
-          {loading && !data ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-              جاري تحميل أعلى الأسهم أرباحاً / خسارة...
+      {/* Results Table — UNIFIED-MARKET-UX (Task 3): Collapsible */}
+      <CollapsibleSection
+        title="جدول النتائج"
+        icon={<BarChart3 className="w-4 h-4 text-emerald-600" />}
+        contentClassName="p-0 space-y-0"
+      >
+        {loading && !data ? (
+          <div className="p-8 text-center text-muted-foreground">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+            جاري تحميل أعلى الأسهم أرباحاً / خسارة...
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-600">
+            <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
+            {error}
+            <div className="mt-3">
+              <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5" />
+                إعادة المحاولة
+              </Button>
             </div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-600">
-              <AlertTriangle className="w-6 h-6 mx-auto mb-2" />
-              {error}
-              <div className="mt-3">
-                <Button variant="outline" size="sm" onClick={fetchData} className="gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  إعادة المحاولة
-                </Button>
-              </div>
-            </div>
-          ) : sortedResults.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              لا توجد نتائج للفلاتر الحالية
-            </div>
-          ) : (
-            <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
-              <Table className="min-w-[760px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <SortableTh label="السهم" field="ticker" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">القطاع</TableHead>
-                    <SortableTh label="سعر البداية" field="start_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <SortableTh label="سعر النهاية" field="end_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <SortableTh label="التغير %" field="change_pct" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <SortableTh label="عدد الأيام" field="period_days" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                    <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">الحجم (نهاية)</TableHead>
+          </div>
+        ) : sortedResults.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            لا توجد نتائج للفلاتر الحالية
+          </div>
+        ) : (
+          <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
+            <Table className="min-w-[760px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <SortableTh label="السهم" field="ticker" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
+                  <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">القطاع</TableHead>
+                  <SortableTh label="سعر البداية" field="start_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
+                  <SortableTh label="سعر النهاية" field="end_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
+                  <SortableTh label="التغير %" field="change_pct" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
+                  <SortableTh label="عدد الأيام" field="period_days" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
+                  <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">الحجم (نهاية)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedResults.map((s) => (
+                  <TableRow
+                    key={`${s.ticker}-${s.start_date}`}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => loadStockDetail(s.ticker)}
+                  >
+                    <TableCell>
+                      <div className="font-mono font-bold text-sm">{s.ticker}</div>
+                      <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {s.name_ar || s.name}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{s.sector || '—'}</TableCell>
+                    <TableCell className="font-mono text-sm">{formatNumber(s.start_price)}</TableCell>
+                    <TableCell className="font-mono text-sm">{formatNumber(s.end_price)}</TableCell>
+                    <TableCell className={cn('font-mono font-bold', s.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                      {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {s.period_days} يوم
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {formatVolume(s.end_volume)}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedResults.map((s) => (
-                    <TableRow
-                      key={`${s.ticker}-${s.start_date}`}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => loadStockDetail(s.ticker)}
-                    >
-                      <TableCell>
-                        <div className="font-mono font-bold text-sm">{s.ticker}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {s.name_ar || s.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{s.sector || '—'}</TableCell>
-                      <TableCell className="font-mono text-sm">{formatNumber(s.start_price)}</TableCell>
-                      <TableCell className="font-mono text-sm">{formatNumber(s.end_price)}</TableCell>
-                      <TableCell className={cn('font-mono font-bold', s.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                        {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {s.period_days} يوم
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {formatVolume(s.end_volume)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CollapsibleSection>
 
       {/* Footer hint */}
       <div className="text-xs text-muted-foreground text-center pt-1">

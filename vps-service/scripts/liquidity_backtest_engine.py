@@ -40,6 +40,58 @@ MIN_SIGNALS = 30             # أقل عدد إشارات لاعتبار الن�
 TARGET_RETURN_PCT = 1.5      # العائد المستهدف خلال 5 أيام (+1.5%)
 HOLDING_DAYS = 5             # فترة الاحتفاظ بالصفقة (أيام تداول)
 
+# ── Market-specific configuration (per the architectural plan) ────────────
+# كل سوق له شروطه الخاصة حسب السلوك المُثبت في الـ backtest
+MARKET_CONFIG = {
+    'EGX': {
+        'target_pct': 2.5,        # +2.5% to +3.5% (using lower bound)
+        'stop_pct': 2.0,          # -2.0% strict
+        'holding_days': 5,
+        'require_green_candle': True,    # Close >= Open (تجميع، مش تصريف)
+        'require_positive_momentum': False,
+        'min_change_24h': None,          # not applicable for stocks
+        'description': '🇪🇬 مصر — حدود ±10%/±20%، تسوية T+0/T+1/T+2',
+    },
+    'KSA': {
+        'target_pct': 2.0,        # +2.0% to +3.0%
+        'stop_pct': 1.8,          # -1.8%
+        'holding_days': 5,
+        'require_green_candle': True,    # صافي سيولة موجب
+        'require_positive_momentum': False,
+        'min_change_24h': None,
+        'description': '🇸🇦 السعودية — حدود ±10% رئيسي، ±30% نمو',
+    },
+    'US': {
+        'target_pct': 3.0,        # +3.0% to +5.0%
+        'stop_pct': 1.5,          # 1.5 × ATR (dynamic — approximated as -1.5% here)
+        'holding_days': 5,
+        'require_green_candle': True,
+        'require_positive_momentum': False,
+        'min_change_24h': None,
+        'use_atr_stop': True,     # استخدم ATR للـ stop loss الديناميكي
+        'description': '🇺🇸 أمريكا — بلا حدود سعرية، Pre/Post Market',
+    },
+    'CRYPTO': {
+        'target_pct': 3.0,        # +3.0% to +6.0%
+        'stop_pct': 2.5,          # -2.5%
+        'holding_days': 4,        # 3-5 أيام
+        'require_green_candle': False,
+        'require_positive_momentum': True,
+        'min_change_24h': 2.0,    # شرط إلزامي: change_24h >= +2.0%
+        'description': '🪙 الكريبتو — تداول 24/7، تذبذب حاد، تجنّب كسر البيتكوين',
+    },
+    'GOLD': {
+        'target_pct': 1.5,        # +1.5% to +2.5%
+        'stop_pct': 1.5,          # -1.5%
+        'holding_days': 7,        # أطول فترة احتفاظ
+        'require_green_candle': False,
+        'require_positive_momentum': True,   # زخم الأونصة العالمية صاعد
+        'min_change_24h': None,
+        'use_sma_10': True,       # تجاوز متوسط سعر 10 أيام
+        'description': '🥇 الذهب — ملاذ آمن، ارتباط بالدولار',
+    },
+}
+
 
 def parse_volume(v) -> int:
     """تحويل أحجام التداول إلى أرقام صحيحة بأمان تام (معالجة النصوص مثل 2.56M و 1.64K)."""
@@ -244,6 +296,98 @@ def load_daily_ohlc(market: str, days: int = 365) -> List[dict]:
                     print(f'  ⚠️ data_engine fallback error: {e}')
                 conn.close()
 
+    # 3. CRYPTO — من data_engine.db.crypto_prices (تداول 24/7)
+    if market == 'CRYPTO' and not rows and db_exists(DATA_ENGINE_DB):
+        conn = open_db(DATA_ENGINE_DB, readonly=True)
+        if conn:
+            try:
+                # crypto_prices فيه: timestamp, symbol, price_usd, price_change_24h, total_volume
+                # نجمّع يومي: open = أول سعر اليوم، close = آخر سعر، high = max، low = min
+                cur = conn.execute("""
+                    SELECT DATE(timestamp) as date, symbol as ticker,
+                           MIN(price_usd) as low,
+                           MAX(price_usd) as high,
+                           (SELECT price_usd FROM crypto_prices c2
+                            WHERE c2.symbol = c1.symbol AND DATE(c2.timestamp) = DATE(c1.timestamp)
+                            ORDER BY timestamp ASC LIMIT 1) as open,
+                           (SELECT price_usd FROM crypto_prices c3
+                            WHERE c3.symbol = c1.symbol AND DATE(c3.timestamp) = DATE(c1.timestamp)
+                            ORDER BY timestamp DESC LIMIT 1) as close,
+                           MAX(total_volume) as volume,
+                           AVG(price_change_24h) as change_24h
+                    FROM crypto_prices c1
+                    WHERE total_volume IS NOT NULL AND total_volume > 0
+                      AND DATE(timestamp) >= DATE('now', ?)
+                    GROUP BY DATE(timestamp), symbol
+                    ORDER BY DATE(timestamp) ASC, symbol
+                """, (f'-{days} days',))
+                for r in cur:
+                    vol = parse_volume(r['volume'])
+                    close_p = float(r['close'] or 0)
+                    if vol > 0 and close_p > 0:
+                        rows.append({
+                            'date': r['date'],
+                            'ticker': r['ticker'],
+                            'open': float(r['open'] or close_p),
+                            'high': float(r['high'] or close_p),
+                            'low': float(r['low'] or close_p),
+                            'close': close_p,
+                            'volume': vol,
+                            'change_24h': float(r['change_24h'] or 0),
+                        })
+                if rows:
+                    print(f'  ✅ CRYPTO: loaded {len(rows)} daily rows from data_engine.db.crypto_prices')
+            except Exception as e:
+                print(f'  ⚠️ crypto_prices query error: {e}')
+            conn.close()
+
+    # 4. GOLD — من data_engine.db.gold_prices (ملاذ آمن، ارتباط بالدولار)
+    if market == 'GOLD' and not rows and db_exists(DATA_ENGINE_DB):
+        conn = open_db(DATA_ENGINE_DB, readonly=True)
+        if conn:
+            try:
+                # gold_prices_clean فيه: timestamp, country, karat, currency, price_per_gram, usd_rate_used, global_ounce_usd
+                # نستخدم global_ounce_usd كمؤشر على زخم الذهب العالمي
+                cur = conn.execute("""
+                    SELECT DATE(timestamp) as date,
+                           'XAU' as ticker,
+                           MIN(price_per_gram) as low,
+                           MAX(price_per_gram) as high,
+                           (SELECT price_per_gram FROM gold_prices_clean g2
+                            WHERE DATE(g2.timestamp) = DATE(g1.timestamp)
+                            ORDER BY timestamp ASC LIMIT 1) as open,
+                           (SELECT price_per_gram FROM gold_prices_clean g3
+                            WHERE DATE(g3.timestamp) = DATE(g1.timestamp)
+                            ORDER BY timestamp DESC LIMIT 1) as close,
+                           AVG(global_ounce_usd) as volume
+                    FROM gold_prices_clean g1
+                    WHERE price_per_gram IS NOT NULL AND price_per_gram > 0
+                      AND DATE(timestamp) >= DATE('now', ?)
+                    GROUP BY DATE(timestamp)
+                    ORDER BY DATE(timestamp) ASC
+                """, (f'-{days} days',))
+                # gold ما عندهوش volume بالمعنى التقليدي — نستخدم global_ounce_usd كـ proxy للسيولة
+                # أو نحسب turnover من price_per_gram × 1 (افتراضي)
+                for r in cur:
+                    close_p = float(r['close'] or 0)
+                    if close_p > 0:
+                        # volume = 1.0 default (gold volume concept مختلف)
+                        # الأهم هو تجاوز SMA(10) + زخم الأونصة
+                        rows.append({
+                            'date': r['date'],
+                            'ticker': 'XAU',
+                            'open': float(r['open'] or close_p),
+                            'high': float(r['high'] or close_p),
+                            'low': float(r['low'] or close_p),
+                            'close': close_p,
+                            'volume': 1000000,  # placeholder — gold uses SMA(10) logic
+                        })
+                if rows:
+                    print(f'  ✅ GOLD: loaded {len(rows)} daily rows from data_engine.db.gold_prices_clean')
+            except Exception as e:
+                print(f'  ⚠️ gold_prices query error: {e}')
+            conn.close()
+
     return rows
 
 
@@ -281,36 +425,86 @@ def run_liquidity_backtest(rows: List[dict], market: str) -> dict:
     all_volumes = [r['volume'] for r in rows if r['volume'] > 0]
     threshold, sample_size, fallback = calculate_threshold(all_volumes, 0.75)
 
+    # ── Market-specific configuration ────────────────────────────────────
+    # كل سوق له target/stop/holding/shروط مختلفة حسب MARKET_CONFIG
+    cfg = MARKET_CONFIG.get(market, MARKET_CONFIG['EGX'])  # default EGX config
+    target_pct = cfg['target_pct']
+    stop_pct = cfg['stop_pct']
+    holding_days = cfg['holding_days']
+    require_green_candle = cfg.get('require_green_candle', False)
+    require_positive_momentum = cfg.get('require_positive_momentum', False)
+    min_change_24h = cfg.get('min_change_24h', None)
+    use_sma_10 = cfg.get('use_sma_10', False)
+
+    print(f'  📋 Market config: target=+{target_pct}% stop=-{stop_pct}% holding={holding_days}d')
+    print(f'     green_candle={require_green_candle} momentum={require_positive_momentum} min_change24h={min_change_24h}')
+
     by_ticker_date: dict = defaultdict(list)
     for r in rows:
         by_ticker_date[r['ticker']].append(r)
 
     signals: List[dict] = []
-    target_multiplier = 1.0 + (TARGET_RETURN_PCT / 100.0)
+    target_multiplier = 1.0 + (target_pct / 100.0)
+    stop_multiplier = 1.0 - (stop_pct / 100.0)
 
     for ticker, ticker_rows in by_ticker_date.items():
         ticker_rows.sort(key=lambda x: x['date'])
 
+        # احسب SMA(10) لو السوق محتاجه (gold)
+        sma_10_values: List[float] = []
+        for i, row in enumerate(ticker_rows):
+            if use_sma_10 and i >= 10:
+                sma_10 = sum(r['close'] for r in ticker_rows[i-10:i]) / 10.0
+                sma_10_values.append(sma_10)
+            else:
+                sma_10_values.append(None)
+
         for i, row in enumerate(ticker_rows):
             if row['volume'] < threshold:
                 continue
-            if i + HOLDING_DAYS >= len(ticker_rows):
+            if i + holding_days >= len(ticker_rows):
                 continue
 
             entry_price = row['close']
             if entry_price <= 0:
                 continue
 
-            # فحص الـ 5 أيام التالية لمعرفة هل تحقق الهدف (+1.5%)
-            future_rows = ticker_rows[i + 1 : i + 1 + HOLDING_DAYS]
+            # ── Market-specific entry filters ───────────────────────────
+            # 1. شمعة خضراء (Close >= Open) — لأسواق الأسهم (تجميع مش تصريف)
+            if require_green_candle and row.get('close', 0) < row.get('open', 0):
+                continue
+
+            # 2. زخم إيجابي (للكريبتو والذهب)
+            if require_positive_momentum:
+                change_24h = row.get('change_24h', None)
+                if min_change_24h is not None:
+                    if change_24h is None or change_24h < min_change_24h:
+                        continue
+                # للذهب: تجاوز SMA(10)
+                if use_sma_10:
+                    sma_10 = sma_10_values[i] if i < len(sma_10_values) else None
+                    if sma_10 is not None and entry_price < sma_10:
+                        continue
+
+            # فحص الـ N أيام التالية لمعرفة هل تحقق الهدف
+            future_rows = ticker_rows[i + 1 : i + 1 + holding_days]
             max_high = max(r['high'] for r in future_rows) if future_rows else entry_price
+            min_low = min(r['low'] for r in future_rows) if future_rows else entry_price
             exit_close = future_rows[-1]['close'] if future_rows else entry_price
 
             target_price = entry_price * target_multiplier
+            stop_price = entry_price * stop_multiplier
 
+            # معادلة النجاح: هل وصل للهدف؟ (max_high >= target)
+            # مع فحص وقف الخسارة: لو وصل للوقف الأول قبل الهدف → miss
             if max_high >= target_price:
                 hit = 1
-                exit_price = max_high
+                exit_price = target_price  # conservative: exit at target, not max
+                return_pct = ((exit_price - entry_price) / entry_price) * 100.0
+            elif min_low <= stop_price:
+                # وصل لوقف الخسارة قبل الهدف
+                hit = 0
+                exit_price = stop_price
                 return_pct = ((exit_price - entry_price) / entry_price) * 100.0
             else:
                 hit = 0
@@ -323,11 +517,14 @@ def run_liquidity_backtest(rows: List[dict], market: str) -> dict:
                 'signal_date': row['date'],
                 'entry_price': round(entry_price, 4),
                 'exit_price': round(exit_price, 4),
+                'target_price': round(target_price, 4),
+                'stop_price': round(stop_price, 4),
                 'return_pct': round(return_pct, 4),
                 'hit': hit,
-                'holding_days': HOLDING_DAYS,
+                'holding_days': holding_days,
                 'threshold_used': threshold,
                 'volume': row['volume'],
+                'market_config': f'+{target_pct}%/-{stop_pct}%/{holding_days}d',
             })
 
     total_signals = len(signals)
@@ -456,7 +653,7 @@ def main():
     print(f'# Markets: {args.market or "ALL"}  |  Lookback: {args.days} days')
     print(f'{"#"*70}')
 
-    markets = [args.market] if args.market else ['EGX', 'US', 'KSA']
+    markets = [args.market] if args.market else ['EGX', 'KSA', 'US', 'CRYPTO', 'GOLD']
     all_results: List[dict] = []
 
     for market in markets:

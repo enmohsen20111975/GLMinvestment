@@ -995,6 +995,7 @@ export function EnhancedWatchlistView() {
                     <TableRow>
                       <TableHead className="text-xs">السهم</TableHead>
                       <TableHead className="text-xs text-center">السعر الحالي</TableHead>
+                      <TableHead className="text-xs text-center">شارت 7 أيام</TableHead>
                       {hasGainLoss && <TableHead className="text-xs text-center">سعر الشراء</TableHead>}
                       {hasGainLoss && <TableHead className="text-xs text-center">الكمية</TableHead>}
                       {hasGainLoss && <TableHead className="text-xs text-center">المستثمر</TableHead>}
@@ -1044,6 +1045,19 @@ export function EnhancedWatchlistView() {
                           {/* Current Price */}
                           <TableCell className="text-center">
                             <p className="font-semibold text-sm">{formatCurrency(item.current_price)}</p>
+                          </TableCell>
+
+                          {/* UNIFIED-MARKET-UX (Task 4): 7-day Sparkline */}
+                          <TableCell className="text-center">
+                            <div className="w-32 mx-auto" dir="ltr">
+                              <MiniSparkline
+                                ticker={item.ticker}
+                                days={7}
+                                height={28}
+                                width={120}
+                                showArea
+                              />
+                            </div>
                           </TableCell>
 
                           {/* Purchase Price */}

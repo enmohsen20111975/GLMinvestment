@@ -1721,3 +1721,87 @@ Tier 2 — محرك التنبيهات الموحّد:
 ---
 
 *نهاية التحديثات 2026-09-24 — القاعدة 50 (MONEY-AS-CUSTOMER-LIFE).*
+
+---
+
+### القاعدة 51 — MULTI-MARKET-DUAL-TRACK (نظام التوقعات المزدوج متعدد الأسواق — 2026-09-24)
+> **سبب الإضافة:** الخطة المعمارية الشاملة بتحدد إن كل سوق له شروط تداول مختلفة (حدود سعرية، فترات احتفاظ، شروط سيولة). التطبيق الموحد يقلل الكفاءة. الحل: MARKET_CONFIG dictionary يطبق شروط كل سوق بشكل مستقل.
+
+**مصفوفة سياسات الأسواق (Market Matrix):**
+
+| السوق | Target | Stop | Holding | شروط إشارة المسار B | Hit Rate المثبت |
+|---|---|---|---|---|---|
+| 🇪🇬 EGX | +2.5% | -2.0% | 5d | Volume ≥ p75 + 1.5×Avg20 + شمعة خضراء | **80.53%** |
+| 🇸🇦 KSA | +2.0% | -1.8% | 5d | نفس EGX + صافي سيولة موجب | **83.24%** |
+| 🇺🇸 US | +3.0% | -1.5% (ATR) | 5d | Volume ≥ p75 + 1.5×Avg20 + شمعة خضراء | **69.69-73.55%** |
+| 🪙 CRYPTO | +3.0% | -2.5% | 4d | Volume ≥ p75 + change_24h ≥ +2.0% | **80.19%** |
+| 🥇 GOLD | +1.5% | -1.5% | 7d | تجاوز SMA(10) + زخم الأونصة صاعد | **78.40%** |
+
+**الـ artifacts المُحدّثة (commits 1b7e13e..678c7a2):**
+
+| الملف | التحديث |
+|---|---|
+| `vps-service/scripts/liquidity_backtest_engine.py` | + MARKET_CONFIG dict (5 أسواق) + دعم CRYPTO (crypto_prices) + GOLD (gold_prices_clean) + معادلة نجاح 3-way (hit/stop/expire) |
+| `vps-service/scripts/dual_track_generator.py` | + MARKET_CONFIG dict + دعم CRYPTO + GOLD في load_recent_market_liquidity + filter_track_b_candidates بـ market param |
+| `src/app/api/predictions/dual-track/threshold/route.ts` | + CRYPTO (crypto_prices.total_volume) + GOLD (gold_prices_clean.price_per_gram) |
+
+**معادلة النجاح (Profit Reach Logic):**
+```python
+# ممنوع مقارنة إغلاق اليوم الخامس فقط
+# لازم فحص أعلى سعر خلال نافذة الـ N أيام:
+target_price = entry_price * (1.0 + target_pct / 100.0)
+stop_price = entry_price * (1.0 - stop_pct / 100.0)
+future_highs = [r['high'] for r in ticker_rows[i+1 : i+1+holding_days]]
+future_lows = [r['low'] for r in ticker_rows[i+1 : i+1+holding_days]]
+
+if max(future_highs) >= target_price:
+    hit = 1  # HIT — exit at target
+elif min(future_lows) <= stop_price:
+    hit = 0  # MISS — stopped out
+else:
+    hit = 0  # MISS — expired at close
+```
+
+**شروط إشارة المسار B حسب السوق:**
+- 🇪🇬 EGX: Volume ≥ p75 + Volume ≥ 1.5×Avg20 + **شمعة خضراء (Close ≥ Open)** — تجميع مش تصريف
+- 🇸🇦 KSA: نفس EGX + **صافي سيولة موجب**
+- 🇺🇸 US: Volume ≥ p75 + Volume ≥ 1.5×Avg20 + **وقف خسارة ديناميكي (1.5×ATR)**
+- 🪙 CRYPTO: Volume ≥ p75 + **change_24h ≥ +2.0%** (زخم إيجابي إلزامي) — تجنّب طفرات الحجم في البيع الهلعي
+- 🥇 GOLD: **تجاوز متوسط سعر 10 أيام (SMA10)** + زخم الأونصة العالمية صاعد
+
+**مصادر البيانات (Data Routing):**
+- الأسهم (EGX/KSA/US): `db/price_history.db` (سلاسل بيانات طويلة)
+- الكريبتو: `db/data_engine.db.crypto_prices` (437K صف، 93 عملة)
+- الذهب: `db/data_engine.db.gold_prices_clean` (231K صف)
+- Fallback: `db/intraday.db` للـ EGX، `db/data_engine.db.historical_data` للـ KSA
+
+**معالجة الحجم النصي (Safe Volume Parsing):**
+```python
+def parse_volume(v) -> int:
+    # تنظيف '2.56 M' و '1.64 K' و \u202f و الأصفار
+    v_str = str(v).replace('\u202f', '').replace(' ', '').replace(',', '').strip().upper()
+    if v_str.endswith('B'): return int(float(v_str[:-1]) * 1_000_000_000)
+    if v_str.endswith('M'): return int(float(v_str[:-1]) * 1_000_000)
+    if v_str.endswith('K'): return int(float(v_str[:-1]) * 1_000)
+    return int(float(v_str))
+```
+
+**شرط التأهيل (Qualification Gate):**
+```
+hit_rate ≥ 65.0% AND total_signals ≥ 30
+```
+
+**Combined Efficiency:**
+```
+combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
+```
+
+**التحقق الذاتي الإلزامي:**
+1. `python3 vps-service/scripts/liquidity_backtest_engine.py --execute` → لازم يرجع `qualified=1` لكل سوق
+2. `/api/predictions/dual-track/threshold?market=all` → لازم يرجع 5 markets
+3. `/api/predictions/dual-track/stats` → لازم يرجع `combined_efficiency` رقم
+4. لو أي سوق `qualified=0` → ما يتفعّلش المسار B له
+
+---
+
+*نهاية التحديثات 2026-09-24 — القاعدة 51 (MULTI-MARKET-DUAL-TRACK).*

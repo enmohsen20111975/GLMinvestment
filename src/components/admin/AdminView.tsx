@@ -52,7 +52,6 @@ import {
   ClipboardList,
   Ticket,
   Gauge,
-  Boxes,
   Newspaper,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -77,7 +76,9 @@ import { PlatformPerformanceView } from './platform-performance/PlatformPerforma
 import { NewsManagementTab as NewsManagementTabComponent } from './NewsManagementTab';
 import { NotebookAdminTab } from './NotebookAdminTab';
 import { BacktestTab } from './BacktestTab';
-import { SystemTopologyGraph } from './SystemTopologyGraph';
+import { DbBackupPanel } from './DbBackupPanel';
+import { SystemMonitorPanel } from './SystemMonitorPanel';
+import { UserManagementPanel } from './UserManagementPanel';
 
 // V38 Backtest Dashboard & HistoricalPredictionsV2 — REMOVED (2026-08-13)
 // Consolidated into نظام التعلم الذكي الموحد (Maestro) — single engine
@@ -350,7 +351,50 @@ interface DataStatus {
   categories: DataStatusItem[];
 }
 
-type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'system-control' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control' | 'architecture';
+// ============================================================================
+// AdminTab — every tab identifier that can be rendered inside the admin shell.
+//
+// AUDIT (ADMIN-ADVANCED-FEATURES, 2026-09-24):
+//   - 'dashboard'              → live, rendered
+//   - 'problems'               → live, rendered (SystemProblemsTab)
+//   - 'general'                → live, rendered (EnginesStatusTab — alias "المحركات")
+//   - 'engine-settings'        → live, rendered (EngineSettingsTab)
+//   - 'data-engine'            → live, rendered (DataEngineTab)
+//   - 'learning'               → live, rendered (SuperLearningSystem + RegimeDetectionWidget)
+//   - 'historical-predictions' → live, rendered (iframe to /admin/honest-predictions)
+//   - 'backtest'               → live, rendered (BacktestTab — V40.2 advanced)
+//   - 'platform-performance'   → live, rendered (PlatformPerformanceView)
+//   - 'notebooks'              → live, rendered (NotebookAdminTab)
+//   - 'news-control'           → live, rendered (NewsManagementTab)
+//   - 'databases'               → live, rendered (DatabaseManagerFull)
+//   - 'system-control'         → live, rendered (DataScraperControl + SystemControlPanel)
+//   - 'db-backup'              → live, rendered (DbBackupPanel — NEW)
+//   - 'system-monitor'         → live, rendered (SystemMonitorPanel — NEW)
+//   - 'crypto'                 → live, rendered (CryptoAdminPanel)
+//   - 'gold-silver'            → live, rendered (GoldSilverTab)
+//   - 'multi-market'           → live, rendered (MultiMarketTab)
+//   - 'forex'                  → live, rendered (ForexTab)
+//   - 'sectors'                → live, rendered (SectorClassificationAdmin)
+//   - 'users'                  → live, rendered (UsersManagement — legacy, analytics-heavy)
+//   - 'user-management'        → live, rendered (UserManagementPanel — NEW, bulk ops)
+//   - 'behavior'               → live, rendered (inline analytics table)
+//   - 'promo-codes'            → live, rendered (PromoCodesAdmin)
+//   - 'feedback'               → live, rendered (UserFeedbackTab)
+//   - 'telegram'               → live, rendered (TelegramTab)
+//   - 'reports'                → live, rendered (iframe to /admin/reports)
+//   - 'educational-cards'     → live, rendered (iframe to /admin/educational-cards)
+//   - 'expert-recs'           → live, rendered (HumanRecommendationsAdmin)
+//
+// DEAD / NEVER-RENDERED TABS (kept in the union only for backward compat with
+// query-string deep links — they would silently do nothing if a user opened one):
+//   - 'egx'                   → DEAD: no {activeTab === 'egx'} block exists.
+//                                Was historically an alias for the learning tab.
+//
+// DISABLED TABS (kept as commented {false && ...} blocks for future revival):
+//   - MaestroCommandCenter    → disabled (legacy monolith — replaced by EnginesStatusTab)
+//   - MaestroDashboard        → disabled (same as above — alias)
+// ============================================================================
+type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'user-management' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'db-backup' | 'system-control' | 'system-monitor' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -927,6 +971,7 @@ export function AdminView() {
       accent: 'border-emerald-500/40 bg-emerald-500/5',
       tabs: [
         { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" /> },
+        { id: 'system-monitor', label: 'مراقبة الموارد', icon: <Monitor className="w-3.5 h-3.5" /> },
         { id: 'problems', label: 'مشاكل النظام', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
       ],
     },
@@ -962,8 +1007,8 @@ export function AdminView() {
       tabs: [
         { id: 'news-control', label: 'إدارة الأخبار', icon: <Newspaper className="w-3.5 h-3.5" /> },
         { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" /> },
+        { id: 'db-backup', label: 'نسخ احتياطي', icon: <Upload className="w-3.5 h-3.5" /> },
         { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" /> },
-        { id: 'architecture', label: 'المخطط الهندسي', icon: <Boxes className="w-3.5 h-3.5" /> },
         { id: 'crypto', label: 'الكريبتو', icon: <Coins className="w-3.5 h-3.5" /> },
         { id: 'gold-silver', label: 'الذهب والفضة', icon: <Coins className="w-3.5 h-3.5" /> },
         { id: 'multi-market', label: 'الأسواق المتعددة', icon: <Network className="w-3.5 h-3.5" /> },
@@ -977,7 +1022,8 @@ export function AdminView() {
       icon: <Users className="w-4 h-4" />,
       accent: 'border-rose-500/40 bg-rose-500/5',
       tabs: [
-        { id: 'users', label: 'المستخدمين', icon: <Users className="w-3.5 h-3.5" /> },
+        { id: 'user-management', label: 'إدارة المستخدمين', icon: <Users className="w-3.5 h-3.5" /> },
+        { id: 'users', label: 'تحليلات المستخدمين', icon: <BarChart3 className="w-3.5 h-3.5" /> },
         { id: 'behavior', label: 'تحليل الاستخدام', icon: <BarChart3 className="w-3.5 h-3.5" /> },
         { id: 'promo-codes', label: 'أكواد الخصم', icon: <Ticket className="w-3.5 h-3.5" /> },
         { id: 'feedback', label: 'آراء المستخدمين', icon: <MessageSquareText className="w-3.5 h-3.5" />, count: feedbackCount },
@@ -1447,6 +1493,9 @@ export function AdminView() {
       )}
 
       {/* ==================== MAESTRO COMMAND CENTER ==================== */}
+      {/* DEAD TAB — disabled {false && ...} block. Kept for future revival. */}
+      {/* The legacy MaestroCommandCenter monolith (~3000 lines) was replaced */}
+      {/* by EnginesStatusTab (= 'general' tab) for performance & maintainability. */}
       {false && (
         <MaestroCommandCenter />
       )}
@@ -1501,6 +1550,7 @@ export function AdminView() {
       )}
 
       {/* ==================== MAESTRO TAB ==================== */}
+      {/* DEAD TAB — disabled {false && ...} block. Alias of MaestroCommandCenter above. */}
       {false && (
         <MaestroDashboard />
       )}
@@ -1535,7 +1585,7 @@ export function AdminView() {
         <SectorClassificationAdmin />
       )}
 
-      {/* ==================== USERS TAB ==================== */}
+      {/* ==================== USERS TAB (analytics-heavy legacy — for activity/usage) ==================== */}
       {activeTab === 'users' && (
         <div className="space-y-6">
           {analyticsData && (
@@ -1628,6 +1678,13 @@ export function AdminView() {
           )}
           <UsersManagement />
         </div>
+      )}
+
+      {/* ==================== USER MANAGEMENT TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
+      {/* New bulk-operations panel: list, multi-select, bulk role/status change, */}
+      {/* bulk delete. Distinct from legacy 'users' tab (which is analytics-focused). */}
+      {activeTab === 'user-management' && (
+        <UserManagementPanel />
       )}
 
       {/* ==================== BEHAVIOR TAB ==================== */}
@@ -1838,18 +1895,25 @@ export function AdminView() {
         <DatabaseManagerFull />
       )}
 
+      {/* ==================== DB BACKUP TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
+      {/* Compresses every db/*.db into sub-60MB zip archives in /data, then */}
+      {/* optionally commits + pushes them to GitHub via `git add -f`. */}
+      {activeTab === 'db-backup' && (
+        <DbBackupPanel />
+      )}
+
+      {/* ==================== SYSTEM MONITOR TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
+      {/* Live CPU / Memory / Disk usage + service status (Next.js, Python, */}
+      {/* Data Engine, News Agent, WebSocket, Telegram, DBs). Auto-refresh 5s. */}
+      {activeTab === 'system-monitor' && (
+        <SystemMonitorPanel />
+      )}
+
       {/* ==================== SYSTEM CONTROL TAB ==================== */}
       {activeTab === 'system-control' && (
         <div className="space-y-6">
           <DataScraperControl />
           <SystemControlPanel />
-        </div>
-      )}
-
-      {/* ==================== ARCHITECTURE DIAGRAM TAB ==================== */}
-      {activeTab === 'architecture' && (
-        <div className="space-y-6">
-          <SystemTopologyGraph />
         </div>
       )}
 

@@ -1636,6 +1636,7 @@ export function StocksView() {
                       )}
                       <TableHead className="text-left font-semibold text-xs">السعر {currencyLabel}</TableHead>
                       <TableHead className="text-left font-semibold text-xs">يوم %</TableHead>
+                      <TableHead className="text-center font-semibold text-xs w-32">شارت 7 أيام</TableHead>
                       <TableHead className="text-left font-semibold text-xs">أسبوع %</TableHead>
                       {!isCrypto && (
                         <TableHead className="text-left font-semibold text-xs">شهر %</TableHead>
@@ -1740,6 +1741,18 @@ export function StocksView() {
                                 <Minus className="w-3.5 h-3.5" />
                               )}
                               {formatPercent(change)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {/* UNIFIED-MARKET-UX (Task 4): Sparkline لكل سهم */}
+                            <div className="w-32 mx-auto" dir="ltr">
+                              <MiniSparkline
+                                ticker={item.ticker}
+                                days={7}
+                                height={28}
+                                width={120}
+                                showArea
+                              />
                             </div>
                           </TableCell>
                           <TableCell className="text-left">
