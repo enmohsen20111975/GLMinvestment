@@ -39968,3 +39968,41 @@ Task: تنفيذ النقاط العشر اللي طلبها المستخدم
 1. 1c69a4e — N5+N7+N8+N9 (screener fundamentals + collapse + radar + auth + wording)
 2. 17a3c01 — N1+N4+N6 (page transitions + remove confluence + double-click)
 3. a9efd99 — N2 (Flutter API compatibility)
+
+---
+Task ID: THEME-TOGGLE + N10-AUDIT + FINAL
+Agent: المدير العام
+Task: إصلاح الثيم + إكمال المتبقي
+
+## Theme Toggle (Light/Dark) — ثابت في كل الشاشات ✅
+- TopBar desktop: زر Sun/Moon بين Robo toggle والـ auth
+- TopBar mobile menu: قسم "المظهر" في آخر القائمة
+- next-themes useTheme() — بيحفظ في localStorage تلقائياً
+- mounted check لمنع hydration mismatch
+- Sun (amber) في dark mode → switch to light
+- Moon (slate) في light mode → switch to dark
+- Verified via Agent Browser: light → click → dark ✓
+
+## N10: مدير الأموال + ستي بيت — Audit ✅
+- /api/money/wealth → 200 (empty data for unauth — safe)
+- /api/money/smart-monitor → 200 (empty data — safe)
+- /api/portfolio/* → 401 (correct — auth required)
+- Portfolio components (EnhancedPortfolioView, UnifiedHoldingsTable, WealthCharts)
+  all handle null/undefined correctly ('—' not NaN)
+- Empty states are proper Arabic messages
+
+## كل النقاط العشر مكتملة:
+1. ✅ N1: Framer Motion page transitions
+2. ✅ N2: Flutter API compatibility (40 endpoints)
+3. ✅ N3: Data sources report
+4. ✅ N4: smart-confluence removed from nav
+5. ✅ N5: stock-filters collapse + fundamentals
+6. ✅ N6: double-click/long-press stock detail
+7. ✅ N7: توصيات → توقعات
+8. ✅ N8: رادار السيولة separate screen
+9. ✅ N9: login/logout + username
+10. ✅ N10: money/portfolio audit (safe + proper empty states)
+11. ✅ Theme toggle (light/dark) — persistent across all screens
+
+## جاهز لمحرك التوقعات
+كل الشغل الأساسي مكتمل. المنصة جاهزة لبدء العمل على محرك التوقعات.
