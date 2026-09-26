@@ -375,6 +375,55 @@ DEFAULT_SETTINGS: Dict[str, float] = {
     "exit_engine_overextended_gain_pct": 15.0,  # P41: ربح مفرط يستدعي جني أسرع
     "exit_engine_reversal_rvol_threshold": 2.0,  # P41: RVOL الذي يُفعّل إشارة انعكاس
     "exit_engine_reversal_loss_pct": -2.0,    # P41: خسارة % تستدعي خروج انعكاسي
+
+    # ===== PHASE-C: V40.2 hardcoded thresholds → dynamic =====
+    # كل القيم دي كانت hardcoded في v40_2_daily_generator.py
+    # دلوقتي قابلة للتعديل من لوحة الأدمن بدون لمس الكود
+
+    # --- V40.2 generator config ---
+    "v402_max_picks_per_day": 5,             # max predictions per day
+    "v402_min_ticker_days": 30,              # min historical days required
+    "v402_scan_interval": 1,                 # scan every N trading days
+    "v402_buy_threshold": 75,                # V38BacktestEngine buy_threshold
+    "v402_min_evidence_count": 3,            # min proofs for a valid prediction
+
+    # --- Don't Chase filter ---
+    "v402_chase_daily_gain_max": 12.0,       # reject if daily gain > 12%
+    "v402_chase_roc3_max": 18.0,             # reject if 3-day ROC > 18%
+    "v402_chase_roc5_max": 28.0,             # reject if 5-day ROC > 28%
+
+    # --- Near-peak filter ---
+    "v402_near_peak_threshold": 95,          # reject if near peak >= 95%
+    "v402_near_peak_rsi_max": 65,            # reject if RSI > 65 at peak
+
+    # --- Drawdown filter ---
+    "v402_drawdown_from_high_min": 5.0,      # flag if drawdown >= 5% from recent high
+
+    # --- Pattern win-rate filter ---
+    "v402_pattern_wr_min": 0.65,             # penalize if pattern WR < 65%
+    "v402_pattern_wr_boost": 0.75,           # boost if pattern WR >= 75%
+
+    # --- Soft surge detector ---
+    "v402_soft_surge_vol_ratio": 2.0,        # volume ratio threshold for soft surge
+    "v402_soft_surge_roc5_min": 3.0,         # 5-day ROC min for soft surge
+    "v402_soft_surge_rr_min": 1.8,           # min R:R for soft surge picks
+
+    # --- Fundamentals filter ---
+    "v402_fund_score_min": 30.0,             # reject if fundamental score < 30
+
+    # --- V68 probability thresholds ---
+    "v402_v68_prob_strong": 70,              # V68 probability for strong signal
+    "v402_v68_prob_moderate": 50,             # V68 probability for moderate signal
+    "v402_v68_mag_rr_min": 2.0,              # V68 magnetude R:R minimum
+
+    # --- Sector filter ---
+    "v402_sector_min_count": 3,              # min stocks in sector for stats
+    "v402_sector_decline_threshold": -1.0,   # sector avg change for decline flag
+    "v402_sector_rising_pct_max": 0.25,      # max rising ratio for decline flag
+
+    # --- Volume / liquidity guards ---
+    "v402_dead_volume_threshold": 1000,       # volume below this = dead stock
+    "v402_penny_stock_price": 1.0,            # price below this = penny stock
 }
 
 # ──────────────────────────────────────────────────────────────────────────

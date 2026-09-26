@@ -113,9 +113,10 @@ PREDICTIONS_DB = os.environ.get('V40_2_PREDICTIONS_DB') or os.path.join(PROJECT_
 
 DEFAULT_START = '2026-01-01'
 DEFAULT_END = '2026-06-10'  # historical default (sandbox run)
-SCAN_INTERVAL = 1  # TUNED: daily scan (was 3 — missed daily breakouts)
-MAX_PICKS_PER_DAY = 5
-MIN_TICKER_DAYS = 30  # was 200 — data_engine.db has ~42 days max
+# PHASE-C: قراءة من engine_settings (dynamic — admin-configurable)
+SCAN_INTERVAL = int(get_setting('v402_scan_interval', default=1))
+MAX_PICKS_PER_DAY = int(get_setting('v402_max_picks_per_day', default=5))
+MIN_TICKER_DAYS = int(get_setting('v402_min_ticker_days', default=30))
 
 # ── V68 ORACLE FEATURE TOGGLES (A/B testing — 2026-08-31) ──
 # كل ميزة V68 ممكن تتعطل/تتفعل عبر env var عشان نعمل A/B backtest.
@@ -546,7 +547,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         print("🔍 DRY-RUN: would process the above dates. No DB writes.", flush=True)
 
     # PHASE-A: تمرير market_code للمحرك عشان يستخدم MARKET_PROFILES
-    engine = V38BacktestEngine(buy_threshold=75, use_v393=True, market_code=market_code)
+    # PHASE-C: buy_threshold من engine_settings (dynamic)
+    _buy_thresh = int(get_setting('v402_buy_threshold', default=75))
+    engine = V38BacktestEngine(buy_threshold=_buy_thresh, use_v393=True, market_code=market_code)
     engine._load_fundamentals()
     engine._load_benchmark()  # V40.2: load benchmark per market
 
@@ -577,11 +580,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             _liq_avg_turnover = _liq_avg_vol * _liq_price if _liq_avg_vol > 0 else 0
 
             # penny stock filter
-            if _liq_price < 1.0:
+            if _liq_price < float(get_setting('v402_penny_stock_price', default=1.0)):
                 continue
 
             # dead stock filter (volume = 0)
-            if _liq_vol < 1000:
+            if _liq_vol < float(get_setting('v402_dead_volume_threshold', default=1000)):
                 continue
 
             # dynamic liquidity threshold (per-price: <5→80K, 5-15→200K, >15→400K)
@@ -749,7 +752,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                                     _near_sma50_soft = abs((_closes_soft[-1] - _sma50_soft) / _sma50_soft * 100) <= 3 if _sma50_soft > 0 else False
 
                                     # SOFT-SURGE: vol_ratio ≥ 2.0 + ROC5 > 3% + (فوق أو قريب SMA50)
-                                    if _vol_ratio_soft >= 2.0 and _roc5_soft > 3.0 and (_above_sma50_soft or _near_sma50_soft):
+                                    if _vol_ratio_soft >= float(get_setting('v402_soft_surge_vol_ratio', default=2.0)) and _roc5_soft > float(get_setting('v402_soft_surge_roc5_min', default=3.0)) and (_above_sma50_soft or _near_sma50_soft):
                                         # احسب ATR للـ entry/target/stop
                                         _highs_soft = highs[:day_idx+1]
                                         _lows_soft = lows[:day_idx+1]
@@ -782,7 +785,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
                                         # تأكد R:R ≥ 1.8
                                         _rr_soft = (_target_soft - _entry_soft) / (_entry_soft - _stop_soft) if (_entry_soft - _stop_soft) > 0 else 0
-                                        if _rr_soft >= 1.8:
+                                        if _rr_soft >= float(get_setting('v402_soft_surge_rr_min', default=1.8)):
                                             signal = 'STRONG_BUY'
                                             result['entry'] = round(_entry_soft, 4)
                                             result['target'] = round(_target_soft, 4)
@@ -843,7 +846,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _today_vol = volumes[day_idx] if day_idx < len(volumes) else 0
                 _yest_vol = volumes[day_idx - 1] if day_idx >= 1 and day_idx - 1 < len(volumes) else 0
                 if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: vol check today={_today_vol} yest={_yest_vol}", flush=True)
-                if _today_vol < 1000 or _yest_vol < 1000:
+                _dead_vol = float(get_setting('v402_dead_volume_threshold', default=1000))
+                if _today_vol < _dead_vol or _yest_vol < _dead_vol:
                     continue  # skip dead stocks
             except Exception:
                 pass  # safe fallback
@@ -867,13 +871,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _chase_rejected = False
                 _chase_reason = ''
                 if ticker == "AMOC": print(f"[DNA-TRACE] AMOC: chase check daily_gain={_daily_gain:.2f}% roc3={_roc3:.2f}% roc5={_roc5:.2f}%", flush=True)
-                if _daily_gain > 12.0:
+                if _daily_gain > float(get_setting('v402_chase_daily_gain_max', default=12.0)):
                     _chase_rejected = True
                     _chase_reason = f'daily_gain=+{_daily_gain:.1f}% > +12%'
-                elif _roc3 > 18.0:
+                elif _roc3 > float(get_setting('v402_chase_roc3_max', default=18.0)):
                     _chase_rejected = True
                     _chase_reason = f'ROC3=+{_roc3:.1f}% > +18%'
-                elif _roc5 > 28.0:
+                elif _roc5 > float(get_setting('v402_chase_roc5_max', default=28.0)):
                     _chase_rejected = True
                     _chase_reason = f'ROC5=+{_roc5:.1f}% > +28%'
 
@@ -912,7 +916,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         _avg_l = _losses / 14
                         _rsi_quick = 100 - (100 / (1 + (_avg_g / _avg_l if _avg_l > 0 else 999))) if _avg_l > 0 else 100
                     # رفض لو قرب القمة + RSI مرتفع
-                    if _near_peak >= 95 and _rsi_quick > 65:
+                    if _near_peak >= float(get_setting('v402_near_peak_threshold', default=95)) and _rsi_quick > float(get_setting('v402_near_peak_rsi_max', default=65)):
                         continue
                 except Exception:
                     pass
@@ -922,7 +926,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     _recent_high = max(highs[max(0, day_idx - 5):day_idx + 1])
                     _drawdown_from_high = ((_recent_high - entry) / _recent_high * 100) if _recent_high > 0 else 0
                     # لو السعر نزل أكتر من 5% من آخر high خلال 5 أيام → في تصحيح
-                    if _drawdown_from_high >= 5.0:
+                    if _drawdown_from_high >= float(get_setting('v402_drawdown_from_high_min', default=5.0)):
                         continue
                 except Exception:
                     pass  # safe fallback
@@ -951,11 +955,12 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 from analyzers.feedback_loop import FeedbackLoop
                 _fb = FeedbackLoop()
                 _pattern_wr = _fb.get_pattern_win_rate(signal)
-                if _pattern_wr > 0 and _pattern_wr < 0.65:
+                _pattern_wr_min = float(get_setting('v402_pattern_wr_min', default=0.65))
+                if _pattern_wr > 0 and _pattern_wr < _pattern_wr_min:
                     # أداء ضعيف → قلل score
-                    result['score'] = max(0, int(result['score'] * _pattern_wr / 0.65))
+                    result['score'] = max(0, int(result['score'] * _pattern_wr / _pattern_wr_min))
                     result['proofs']['feedback_warning'] = f'⚠️ أداء تاريخي ضعيف لهذا النمط (WR={_pattern_wr*100:.0f}%)'
-                elif _pattern_wr >= 0.75:
+                elif _pattern_wr >= float(get_setting('v402_pattern_wr_boost', default=0.75)):
                     # أداء كويس → boost
                     result['score'] = min(100, result['score'] + 5)
                     result['proofs']['feedback_boost'] = f'✅ أداء تاريخي قوي (WR={_pattern_wr*100:.0f}%)'
@@ -1024,7 +1029,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # الحل: رفض أي إشارة evidence < min_evidence_count (default=3).
             try:
                 from analyzers.engine_settings import get_setting
-                _min_ev = int(get_setting('min_evidence_count', default=3))
+                _min_ev = int(get_setting('v402_min_evidence_count', default=int(get_setting('min_evidence_count', default=3))))
             except Exception:
                 _min_ev = 3
             if evidence < _min_ev:
@@ -1049,7 +1054,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # if _fit_persona != 'gambler' and _fund_avail and _fund_score < 30.0:
             #     continue
             # UNIFIED-BALANCED-ONLY: veto دايماً (balanced logic)
-            if _fund_avail and _fund_score < 30.0:
+            if _fund_avail and _fund_score < float(get_setting('v402_fund_score_min', default=30.0)):
                 continue
 
             # ── EGX-STRATEGY-FINAL (2026-08-30): Entry Gate الشامل ──
