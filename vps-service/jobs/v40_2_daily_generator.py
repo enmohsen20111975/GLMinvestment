@@ -291,7 +291,7 @@ def get_scan_dates(start_date, end_date, scan_interval):
     return []
 
 
-def get_tickers(min_days=MIN_TICKER_DAYS):
+def get_tickers(min_days=MIN_TICKER_DAYS, market_code='EGX'):
     """Get tickers with enough historical data.
 
     PHASE-2-DB-UNIFY (2026-08-29): price_history.db is the canonical source.
@@ -434,11 +434,12 @@ def delete_old_v40_predictions(start_date=None, end_date=None):
 # باك-تست: رفض التوقع لو القطاع هابط → رفع WR +1.5% + عائد +12.56%
 _sector_heat_cache = {}
 
-def load_sector_heat():
-    """تحميل حرارة القطاعات من stocks.db (مرة واحدة)."""
+def load_sector_heat(market_code='EGX'):
+    """تحميل حرارة القطاعات من stocks.db (مرة واحدة لكل سوق)."""
     global _sector_heat_cache
-    if _sector_heat_cache:
-        return _sector_heat_cache
+    cache_key = market_code
+    if cache_key in _sector_heat_cache:
+        return _sector_heat_cache[cache_key]
     
     try:
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
@@ -447,18 +448,21 @@ def load_sector_heat():
         cur.execute("""
             SELECT sector, AVG(change_percent) as avg_change, COUNT(*) as cnt
             FROM stocks
-            WHERE is_active = 1 AND market = 'EGX' 
+            WHERE is_active = 1 AND market = ?
             AND sector IS NOT NULL AND change_percent IS NOT NULL
             GROUP BY sector HAVING COUNT(*) >= 3
-        """)
+        """, (market_code,))
+        result = {}
         for row in cur.fetchall():
-            _sector_heat_cache[row[0]] = row[1]
+            result[row[0]] = row[1]
         conn.close()
-        print(f"[V40.2] Sector heat loaded: {len(_sector_heat_cache)} sectors", flush=True)
+        _sector_heat_cache[cache_key] = result
+        print(f"[V40.2] Sector heat loaded: {len(result)} sectors ({market_code})", flush=True)
     except Exception as e:
         print(f"[V40.2] ⚠️ Sector heat load failed: {e}", flush=True)
+        _sector_heat_cache[cache_key] = {}
     
-    return _sector_heat_cache
+    return _sector_heat_cache.get(cache_key, {})
 
 def get_ticker_sector(ticker):
     """جيب قطاع السهم من stocks.db."""
@@ -466,7 +470,7 @@ def get_ticker_sector(ticker):
         _db_dir = Path(__file__).resolve().parents[2] / 'db'
         conn = sqlite3.connect(str(_db_dir / 'stocks.db'), timeout=5.0)
         cur = conn.cursor()
-        cur.execute("SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1", (ticker,))
+        cur.execute("SELECT sector FROM stocks WHERE ticker = ? AND market = ? LIMIT 1", (ticker, market_code))
         row = cur.fetchone()
         conn.close()
         return row[0] if row else None
@@ -476,7 +480,8 @@ def get_ticker_sector(ticker):
 
 def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                   max_picks=MAX_PICKS_PER_DAY, dry_run=False, keep_old=False,
-                  max_tickers=None, tickers_offset=0, force=False):
+                  max_tickers=None, tickers_offset=0, force=False,
+                  market_code='EGX'):
     """Main generation loop.
 
     Args:
@@ -489,7 +494,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     print("  V40.2 Prediction Generator (CLI-enabled)", flush=True)
     print(f"  Period: {start_date} → {end_date} | Scan every {scan_interval} days", flush=True)
     print(f"  Max picks/day: {max_picks} | Morning bell: top 1", flush=True)
-    print(f"  Strict kill-filters: ON | Real EGX30ETF benchmark: ON", flush=True)
+    print(f"  Market: {market_code} | Strict kill-filters: ON", flush=True)
     print(f"  Dry-run: {dry_run} | Keep old: {keep_old} | Force: {force}", flush=True)
     if max_tickers is not None:
         print(f"  ⚡ BATCH MODE: max_tickers={max_tickers}, offset={tickers_offset}", flush=True)
@@ -508,7 +513,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         print("❌ No scan dates to process. Exiting.", flush=True)
         return
 
-    tickers = get_tickers()
+    tickers = get_tickers(market_code=market_code)
     # Rule 28: Filter out toxic tickers (blocklisted)
     blocklist = _load_toxic_blocklist()
     if blocklist:
@@ -530,9 +535,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     if dry_run:
         print("🔍 DRY-RUN: would process the above dates. No DB writes.", flush=True)
 
-    engine = V38BacktestEngine(buy_threshold=75, use_v393=True)
+    # PHASE-A: تمرير market_code للمحرك عشان يستخدم MARKET_PROFILES
+    engine = V38BacktestEngine(buy_threshold=75, use_v393=True, market_code=market_code)
     engine._load_fundamentals()
-    engine._load_benchmark()  # V40.2: load EGX30ETF benchmark explicitly
+    engine._load_benchmark()  # V40.2: load benchmark per market
 
     signals_by_date = defaultdict(list)
     total_tickers = len(tickers)
@@ -1137,8 +1143,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                 _sec_conn.row_factory = _sec_sql.Row
                 # جيب sector السهم
                 _sec_row = _sec_conn.execute(
-                    "SELECT sector FROM stocks WHERE ticker = ? AND market = 'EGX' LIMIT 1",
-                    (ticker,)
+                    "SELECT sector FROM stocks WHERE ticker = ? AND market = ? LIMIT 1",
+                    (ticker, market_code)
                 ).fetchone()
                 _stock_sector = _sec_row['sector'] if _sec_row and _sec_row['sector'] else None
                 if _stock_sector and _stock_sector not in ('', '—', None, 'Diversified', 'diversified', 'غير مصنف', 'N/A', 'nan'):
@@ -1149,9 +1155,9 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             AVG(change_percent) as avg_chg,
                             SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising,
                             SUM(CASE WHEN change_percent < 0 THEN 1 ELSE 0 END) as falling
-                        FROM stocks 
-                        WHERE market = 'EGX' AND sector = ? AND change_percent IS NOT NULL
-                    """, (_stock_sector,)).fetchone()
+                        FROM stocks
+                        WHERE market = ? AND sector = ? AND change_percent IS NOT NULL
+                    """, (market_code, _stock_sector)).fetchone()
                     if _sec_stats and _sec_stats['n'] >= 3:
                         _n = _sec_stats['n']
                         _avg_chg = float(_sec_stats['avg_chg'] or 0)
@@ -1827,7 +1833,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             if os.environ.get('V40_2_NOTEBOOK_CONTEXT', '0') == '1':
                 try:
                     from analyzers.stock_notebook import get_notebook_context_for_v402
-                    _nb_ctx = get_notebook_context_for_v402(ticker, market='EGX')
+                    _nb_ctx = get_notebook_context_for_v402(ticker, market=market_code)
                     if _nb_ctx['has_notebook']:
                         # Hard reject لو danger_level = 5
                         if _nb_ctx['should_reject']:
@@ -2592,8 +2598,8 @@ def main():
                         help='⚡ BATCH MODE: skip أول N tickers (للـ resume بعد run سابق)')
     parser.add_argument('--force', action='store_true',
                         help='تخطّى أى circuit breaker / quality gate / cooldown ومنع التشغيل')
-    parser.add_argument('--market', default='EGX', choices=['EGX', 'CRYPTO'],
-                        help='السوق: EGX (افتراضي) أو CRYPTO (Aug 2026 — جديد)')
+    parser.add_argument('--market', default='EGX', choices=['EGX', 'KSA', 'KSE', 'QSE', 'CRYPTO'],
+                        help='السوق: EGX (افتراضي) / KSA / KSE / QSE / CRYPTO')
     args = parser.parse_args()
 
     # Determine date range
@@ -2658,6 +2664,7 @@ def main():
             max_tickers=args.max_tickers,
             tickers_offset=args.tickers_offset,
             force=args.force,
+            market_code=args.market,
         )
 
 

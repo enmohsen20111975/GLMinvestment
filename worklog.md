@@ -40267,3 +40267,613 @@ Work Log:
    - تم التحقق من نقطة نهاية الإشعارات `/api/notifications?limit=20` محلياً عبر curl وعادت بحالة `HTTP 200 OK`.
    - تم إعادة تشغيل الخادم في PM2 عبر `pm2 restart nextjs`، وجميع الخدمات بحالة `online` ومستقرة.
    - تم توثيق التعديلات ورفعها إلى مستودع GitHub على فرع `main`.
+
+---
+Task ID: PRED-ARCH-REVIEW
+Agent: Software Architect (مهندس البرمجيات)
+Task: Architecture review of the V40.2 prediction engine chain — multi-market + dynamic params + liquidity-first + post-change backtest readiness
+
+================================================================
+0. EXECUTIVE SUMMARY
+================================================================
+- The V40.2 production engine (`vps-service/jobs/v40_2_daily_generator.py`, 2,904 LOC) is the SOLE production prediction generator (Constitution Rule 21) and is **deeply EGX-coupled**: 5 SQL queries filter `market='EGX'`, 1 INSERT hardcodes `'EGX'`, the benchmark is hardcoded to `EGX30ETF` / `EGS30AJ1C016-EGP`, and the market-open detector uses `Africa/Cairo` only. TADAWUL/KSE/QSE/CRYPTO do not flow through this generator (only CRYPTO has a stub branch at line 2638).
+- Liquidity is **NOT** the first gate today. `set_strict_kill_filters(True)` is called once at line 499, but `evaluate_kill_filters()` is not invoked anywhere in `v40_2_daily_generator.py` — it is delegated to `build_institutional_decision()` inside the V38 engine. The explicit `LiquidityFilter` class and `check_liquidity_first()` helper are **NOT imported** by V40.2. Liquidity classification (`classify_liquidity()`) happens at line 1630 — far too late (after R:R gate, after position sizing).
+- ~140 keys exist in `DEFAULT_SETTINGS` (engine_settings.py), but at least **23 hardcoded numeric thresholds** in V40.2 + 12 in `strict_entry_filters.py` + 14 in `core/opportunity_quality.py` bypass `get_setting()` and violate Constitution Rule 11.
+- The V38 backtest (`engines/v38_backtest_engine.py`, 2,224 LOC) can run a 200-ticker × 6-month backtest in ~3–7 minutes. V40.2 already supports `--today-only` / `--yesterday-only` / `--max-tickers` / `--tickers-offset` (BATCH MODE) for incremental execution, but a backtest after every parameter change is **not wired** — there is no A/B harness comparing before/after.
+- 146 analyzer files exist in `vps-service/analyzers/`. V40.2 transitively imports ~25. The other 121 are either DEAD (per Rule 16 + Rule 28), DUPLICATES (5 risk files, 4 technical files, 4 prediction files, 3 seasonality files, 3 confluence files), or UNCOUPLED (e.g., `correlation_filter.py`, `dividend_checker.py`, `expert_memory_v4.py`).
+
+================================================================
+1. خريطة المحرك (ENGINE FLOW MAP)
+================================================================
+
+Call chain (top → bottom):
+
+```
+[CLI]  v40_2_daily_generator.py:main (L2560)
+   │   --start/--end/--today-only/--yesterday-only/--market EGX|CRYPTO
+   │
+   ├── if --market CRYPTO → run_crypto_generator (L2692, simplified CoinGecko path — NOT V38)
+   │
+   └── run_generator(start, end, scan_interval, max_picks, ...) (L477)
+         │
+         1. set_strict_kill_filters(True)                                    ← liquidity_filter.py:123 (FIRST gate)
+         2. delete_old_v40_predictions(start, end)                          ← predictions.db
+         3. get_scan_dates(start, end, scan_interval)                       ← data_engine.db.egksco_price_history
+         4. get_tickers(min_days=30)                                        ← data_engine.db → utils.egx_gate.filter_egx_tickers_detailed
+         5. V38BacktestEngine(buy_threshold=75, use_v393=True)               ← engines/v38_backtest_engine.py
+         6. engine._load_fundamentals()                                     ← fundamental_data_provider
+         7. engine._load_benchmark()                                        ← EGX30ETF / EGS30AJ1C016-EGP
+         │
+         FOR each ticker in tickers (L544):
+         │  FOR each scan_date in scan_dates (L555):
+         │    │
+         │    A. engine.get_price_data(ticker)                              ← data_engine.db.egksco_price_history (PRIMARY)
+         │                                                                    stocks.db.stock_daily_prices (FALLBACK)
+         │    B. calc_atr(highs, lows, closes, 14)                          ← V38 indicator layer
+         │    C. engine.analyze_single_day_v393(...)                        ← V39.3 institutional decision
+         │       │
+         │       ├── calc_atr, calc_ema(200), calc_ema(20), calc_bollinger_bands(20, 2.0)
+         │       ├── detect_order_blocks_and_sweeps                          ← SMC (OB + sweeps)
+         │       ├── detect_maker_state                                     ← absorption/distribution/sweep
+         │       ├── calc_fair_value                                        ← VWAP
+         │       ├── dna_pattern_match                                      ← DNA projection
+         │       ├── engine._get_fundamentals(ticker)                       ← fundamental_data_provider.get_fundamental_score (40/30/15/15)
+         │       ├── engine._benchmark_roc_by_date.get(scan_date, 0.0)      ← EGX30ETF ROC-14
+         │       └── build_institutional_decision(...)                       ← analyzers/institutional_decision_engine.py
+         │           │                                                       (6 proofs: Trend+Maker+DNA+Fund+Sector+Benchmark)
+         │           │                                                       → risk_profile: {entry, sl, tp1, tp2, rr1, rr2}
+         │           └── (internally) evaluate_kill_filters()                ← liquidity_filter.py:286 (5 kill filters)
+         │
+         │    D. signal filter: drop WATCH/HOLD/WAIT/NEUTRAL (L594)
+         │    E. If no BUY: try AXIS-5b Volume Surge Hunter (L607) → detect_volume_surge_rocket
+         │       else AXIS-5c Accumulation Detector (L635) → detect_accumulation_phase
+         │       else AXIS-5d Recovery from Base (L661) → detect_recovery_from_base
+         │       else SOFT-SURGE fallback (L690) → vol_ratio≥2.0 + ROC5>3% + near SMA50
+         │
+         │    F. Zero-volume guard (L792)               today_vol<1000 or yest_vol<1000 → skip
+         │    G. Don't Chase filter (L806)             daily_gain>12% OR ROC3>18% OR ROC5>28% → skip
+         │    H. Peak Entry filter (L850)               near 52w high (≥95%) + RSI>65 → skip
+         │    I. Correction detection (L875)            drawdown_from_high ≥ 5% → skip
+         │    J. simulate_trade(...) (L896)             max_holding=7 days (default)
+         │    K. evidence = count_evidence(proofs)     count ✅ markers in proofs dict
+         │    L. r_mult = compute_r_multiple(entry, target, stop)
+         │    M. persona_fit = compute_persona_fit(proofs) → balanced/gambler/conservative
+         │    N. FeedbackLoop.get_pattern_win_rate(signal) → adjust score (L905)
+         │    O. V76_SECTOR_INTRADAY (L922): intraday_reader.get_sector_performance + detect_maker_flow
+         │    P. min_evidence gate (L976): int(get_setting('min_evidence_count', 3)) → reject if < 3
+         │    Q. FUNDAMENTALS-VETO (L988): fund_avail + score<30 → skip (Rule 24)
+         │    R. entry_gate (L1010): utils.entry_gate.check_entry_gate → reject if fails
+         │    S. screener_integration.apply_screener_data_to_v402 → veto or boost (L1064)
+         │    T. SECTOR-LIQUIDITY filter (L1128): avg≤-1% AND rising≤25% → skip
+         │    U. BOS/ChoCH filter (L1171): broke_support + no sweep → skip
+         │    V. V62 logic (L1198): fake_pump → skip; is_dist → skip; story_stock → reduce size
+         │    W. V68 ORACLE (L1281): dirty_dist/no_chase_2d → skip; A+ grab → +10
+         │    X. V72 MULTI-PATH (L1389): wash_trade/hidden_dist/pullback_buy/maker_death_point
+         │    Y. V73 SNIPER (L1486): desert_phase/auction_trap → skip
+         │    Z. V76 GOLDEN HUNTER (L1525): PUMP_FROM_DESERT/GOLDEN_RETEST → boost
+         │    AA. DYN-STOP + DYN-TARGET (L1564): enforce_atr_based_stop + compute_dynamic_target
+         │    BB. R:R floor gate (L1608): get_dynamic_min_rr(market_regime) → reject if r_mult < floor
+         │    CC. classify_liquidity (L1630): type/score/pos_mult/hold_mult  ← LIQUIDITY CLASSIFICATION TOO LATE
+         │    DD. EXPLOSIVE-UNCAP (L1644): 5×ATR target + 7% stop if V76 PUMP or high_mom
+         │    EE. NEWS IMPACT (L1680): news_fetcher_analyzer (toggle: V40_2_NEWS_IMPACT)
+         │    FF. LOCAL NEWS (L1727): ai.news_signals_reader.apply_news_bias_to_score
+         │    GG. EXPERT RECS (L1765): 2+ SELL → VETO; STRONG_BUY → +20
+         │    HH. NOTEBOOK CONTEXT (L1827): danger_level=5 → reject
+         │    II. REGIME FILTER (L1870): Close > SMA50 / SMA20
+         │    JJ. STRICT ENTRY (L1911): accumulation OR grab only
+         │    KK. DISCLOSURE IMPACT (L1960): VETO → skip
+         │    LL. RE-SIMULATE trade with final stop/target (L2002)
+         │    MM. POSITION SIZING (L2017): calculate_position_size (HIGH vol → 55%)
+         │    NN. LIVE NEWS INTEGRATION (L2036): combined_score + combined_signal
+         │    OO. DNA-1 ANOMALY (L2089): >50% move in 5 days → skip
+         │    PP. DNA-2 EGX30 DOWN HOLD (L2102): market <-0.4% → skip BUY
+         │    QQ. DNA-3 MAX OPEN POSITIONS (L2116): hard limit = 5
+         │    RR. DNA-4 SECTOR LIMIT (L2127): Finance ≤20%, others ≤15%
+         │    SS. MAKER RADAR (L2144): utils.shared_liquidity.check_kill_switch + compute_money_flow
+         │    TT. signals_by_date[scan_date].append({...}) (L2191)
+         │
+         END FOR (ticker × date)
+         │
+         8. Sort each day's signals by (-evidence, -r_multiple, -tech_score)
+         9. Take top max_picks (default 5) per day
+         10. For each pick:
+            ├── tracker.record_prediction() → INSERT into predictions.db.predictions
+            ├── stock_notebook.add_prediction_observation
+            ├── if dry_run/backtest: tracker.set_verified_outcome
+            └── else: INSERT in stored_analyses (market='EGX' HARDCODED at L2420)
+         11. JSON dump → vps-service/backtest_results/v40_2_generation_<ts>.json
+```
+
+**Files in the chain (with LOC + role):**
+
+| # | File | LOC | Purpose | Inputs | Outputs |
+|---|---|---:|---|---|---|
+| 1 | `vps-service/jobs/v40_2_daily_generator.py` | 2,904 | Production prediction generator (CLI). Iterates ticker×date, applies ~25 filters, sorts, stores. | `data_engine.db.egksco_price_history`, `stocks.db.stocks`, `predictions.db` | `predictions.db.predictions`, `predictions.db.stored_analyses`, JSON summary |
+| 2 | `vps-service/engines/v38_backtest_engine.py` | 2,224 | Walk-forward trade simulator. Houses `V38BacktestEngine`, `Trade`, `simulate_trade`, `calc_atr`, `detect_order_blocks_and_sweeps`. | `data_engine.db.egksco_price_history`, `stocks.db.stocks`, `tab_valuation` | `Trade` dataclass, `BacktestSummary`, `backtest_results/*.json` |
+| 3 | `vps-service/analyzers/engine_settings.py` | 1,402 | Single source of truth for thresholds. 140 keys + 8 `get_dynamic_*()` helpers. | `stocks.db.system_settings` (DB-override) | `float` settings via `get_setting(key, default)` |
+| 4 | `vps-service/analyzers/adaptive_weights.py` | 789 | Persona + regime + volatility adaptive weights. `PERSONA_INPUT_WEIGHTS` + `get_adaptive_weights()`. | hardcoded dicts (regime, sector, volatility) | weighted score 0-100 |
+| 5 | `vps-service/analyzers/liquidity_filter.py` | 1,102 | 5+3 kill filters. `evaluate_kill_filters()` + `LiquidityFilter` class. | `utils.shared_liquidity`, engine_settings | `LiquidityProfile` dataclass, `kill_filter_result` dict |
+| 6 | `vps-service/analyzers/strict_entry_filters.py` | 834 | Accumulation / Liquidity Grab / Late Entry detection. + Average Down evaluator. | hardcoded `ACCUM_*`/`GRAB_*`/`LATE_*`/`AVG_DOWN_*` thresholds | `decision: ACCEPT/REJECT` dict |
+| 7 | `vps-service/analyzers/core_scoring_engine.py` | 2,548 | Unified scoring (Technical/Volume/Candlestick/Fundamental/Risk). 3 Rocket Hunters. | `config.unified_config.MARKET_PROFILES`, engine_settings | unified_signal_result, ATR-based stop/target |
+| 8 | `vps-service/core/opportunity_quality.py` | 2,105 | `enforce_atr_based_stop` (PILLAR-3), `compute_dynamic_target`, `classify_liquidity`, persona heuristics. | engine_settings (via `_get_atr_stop_min_pct` etc.) | fixed stop_loss, dynamic target, liquidity class |
+| 9 | `vps-service/analyzers/position_sizing.py` | 184 | ATR%-based position sizing (LOW/NORMAL/HIGH volatility → 100%/100%/55%). | env vars `V40_2_HIGH_VOL_ATR_PCT` etc. | `{position_size_mult, volatility_class, atr_pct}` |
+| 10 | `vps-service/analyzers/backtest_engine.py` (legacy, NOT used by V40.2) | 1,146 | Older backtester using `MasterAnalyzer.analyze()` (Maestro path — DISABLED per KILL-MAESTRO). | `MasterAnalyzer` | `backtest_results` table in predictions.db |
+
+================================================================
+2. القيم الثابتة (HARDCODED VALUES — file:line + recommended key)
+================================================================
+
+The pattern `= [0-9]` returns **>500 hits** across the 9 files. Below is the cataloged subset that violate Constitution Rule 11 (NO overrides except via engine_settings.py).
+
+### 2.1 v40_2_daily_generator.py
+
+| File:Line | Hardcoded Value | Should Be (dynamic key) | Reason |
+|---|---|---|---|
+| `:104` | `DEFAULT_START = '2026-01-01'` | env var `V40_2_DEFAULT_START` | Period shifts per market |
+| `:105` | `DEFAULT_END = '2026-06-10'` | env var `V40_2_DEFAULT_END` | Sandbox vs prod differ |
+| `:106` | `SCAN_INTERVAL = 1` | `get_setting('scan_interval_days', 1, market='EGX')` | Crypto 24/7 vs EGX daily differ |
+| `:107` | `MAX_PICKS_PER_DAY = 5` | `get_setting('max_picks_per_day', 5, market='EGX')` | Different markets need different pick counts |
+| `:108` | `MIN_TICKER_DAYS = 30` | `get_setting('min_ticker_days', 30, market='EGX')` | KSE/QSE may have shorter history |
+| `:190` | `PERSONA_FIT_MIN_SCORE = 50.0` | `get_setting('persona_fit_min_score', 50.0)` | Tunable |
+| `:533` | `buy_threshold=75, use_v393=True` (V38 init) | `get_setting('default_buy_threshold', 75, market='EGX')` | Already in settings but not consumed |
+| `:707` | `_vol_ratio_soft >= 2.0 and _roc5_soft > 3.0` (SOFT-SURGE) | `get_setting('soft_surge_vol_ratio', 2.0)` + `get_setting('soft_surge_roc5', 3.0)` | Tunable |
+| `:740` | `_rr_soft >= 1.8` | `get_setting('soft_surge_min_rr', 1.8)` | Per-market R:R floor |
+| `:801` | `today_vol < 1000 or yest_vol < 1000` (zero-vol guard) | `get_setting('zero_volume_threshold', 1000)` | Crypto has different threshold |
+| `:825` | `_daily_gain > 12.0` | `get_setting('chase_daily_gain_max', 12.0, market='EGX')` | KSA/KSE need different thresholds |
+| `:828` | `_roc3 > 18.0` | `get_setting('chase_roc3_max', 18.0)` | Tunable |
+| `:831` | `_roc5 > 28.0` | `get_setting('chase_roc5_max', 28.0)` | Tunable |
+| `:870` | `_near_peak >= 95 and _rsi_quick > 65` (Peak Entry) | `get_setting('peak_near_high_pct', 95.0)` + `get_setting('peak_rsi_threshold', 65.0)` | Tunable |
+| `:880` | `_drawdown_from_high >= 5.0` | `get_setting('correction_drawdown_min_pct', 5.0)` | Tunable |
+| `:888` | `len(future_closes) < 5` | `get_setting('min_future_bars', 5)` | Tunable |
+| `:896` | `simulate_trade(trade, future_closes, future_dates, 7, future_atrs)` | `simulate_trade(..., max_holding=int(get_setting('max_holding_days', 7)))` | Already in settings |
+| `:982` | `int(get_setting('min_evidence_count', default=3))` ✓ | (already dynamic) | Good — keep |
+| `:1007` | `_fund_avail and _fund_score < 30.0` (Fundamentals veto) | `get_setting('fundamentals_veto_threshold', 30.0)` | Tunable |
+| `:1161` | `_avg_chg <= -1.0 and _rising_pct <= 0.25` (sector-dead) | `get_setting('sector_dead_avg_change', -1.0)` + `get_setting('sector_dead_rising_ratio', 0.25)` | Tunable |
+| `:1373` | `_v68_mag_rr >= 2.0` | `get_setting('v68_magnetic_target_min_rr', 2.0)` | Tunable |
+| `:1648` | `_vol_ratio >= 1.8 and _change_pct >= 3.0` (explosive) | `get_setting('explosive_vol_ratio', 1.8)` + `get_setting('explosive_change_pct', 3.0)` | Tunable |
+| `:1659` | `float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))` ✓ | (env-configurable) | Good — but should also be `get_setting('atr_stop_max_pct', 7.0, market='EGX')` |
+| `:2095` | `_move_pct > 0.50` (DNA anomaly) | `get_setting('dna_anomaly_move_pct', 0.50)` | Tunable |
+| `:2110` | `_market_change < -0.4` (DNA EGX30 down) | `get_setting('dna_market_down_threshold', -0.4, market='EGX')` | Per market |
+| `:2120` | `DNA_MAX_OPEN_POSITIONS = 5` | `get_setting('max_concurrent_positions', 5, market='EGX')` | Per market |
+| `:2132` | `DNA_SECTOR_LIMIT_FINANCE = 0.20` | `get_setting('sector_limit_finance', 0.20, market='EGX')` | Per market |
+| `:2132` | `DNA_SECTOR_LIMIT_OTHER = 0.15` | `get_setting('sector_limit_other', 0.15)` | Per market |
+| `:2275` | `_news_score < 30 and confidence > 0.5` (News reject) | `get_setting('news_reject_score', 30)` + `get_setting('news_reject_confidence', 0.5)` | Tunable |
+
+### 2.2 v38_backtest_engine.py
+
+| File:Line | Hardcoded Value | Should Be | Reason |
+|---|---|---|---|
+| `:533`(called) | `V38BacktestEngine(buy_threshold=75, use_v393=True)` | `buy_threshold=get_setting('default_buy_threshold', 75, market=...)` | Per market |
+| `:781` | `TRAILING_STOP_ATR_MULT = get_setting('trailing_stop_atr_mult', 2.0)` ✓ | (already dynamic) | Good |
+| `:786-789` | `TRAILING_STOP_MIN_GAIN = float(os.environ.get('V40_2_TRAILING_ACTIVATION_GAIN', str(get_setting('trailing_stop_activation_gain', 5.0))))` ✓ | (already dynamic + env override) | Good — but discrepancy: settings says 2.0, env says 5.0 — DB value wins |
+| `:793` | `TRAILING_BREAKEVEN_FLOOR = float(os.environ.get('V40_2_TRAILING_BREAKEVEN_FLOOR', '1.01'))` ✓ | (env-configurable) | Good |
+| `:833` | `max_holding = int(get_setting('max_holding_days', default=7))` ✓ | (already dynamic) | Good |
+| `:848` | `_tighten_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))` | Should also fall through to `get_setting('atr_stop_max_pct', 7.0)` | Dual source of truth |
+| `:1067-1076` | `w_trend=15, w_maker=20, w_dna=15, w_fund=15, w_sector=10, buy_threshold=75, rr1=2.0, rr2=3.0, min_confidence=60, max_holding_days=7` | ALL should read from `get_setting(...)` with market override | Constructor defaults bypass settings |
+| `:1228` | `BENCHMARK_TICKERS = ('EGS30AJ1C016-EGP', 'EGX30ETF')` | `getattr(market_profile, 'benchmark_ticker', 'EGX30ETF')` | Multi-market: TASI / BKP / QE_INDEX / BTC.D |
+| `:1838` | `risk_pct = float(get_setting('risk_per_trade_pct', default=1.5))` ✓ | (already dynamic) | Good |
+| `:1839` | `position_sizing = bool(get_setting('position_sizing_enabled', default=1.0))` ✓ | (already dynamic) | Good |
+
+### 2.3 liquidity_filter.py (LiquidityFilter class constants — NOT consumed by V40.2)
+
+| File:Line | Hardcoded Value | Should Be | Reason |
+|---|---|---|---|
+| `:614` | `MIN_VOLUME = 100_000` | `get_setting('min_volume_shares', 100_000, market=...)` | Per market |
+| `:621` | `MIN_TURNOVER = 3_000_000` | `get_setting('kill_filter_min_turnover_egp', 3_000_000, market=...)` | Per market |
+| `:627` | `MIN_VOLUME_CLOSED = 50_000` | `get_setting('min_volume_shares_closed', 50_000)` | Tunable |
+| `:628` | `MIN_TURNOVER_CLOSED = 500_000` | `get_setting('min_turnover_egp_closed', 500_000)` | Tunable |
+| `:635` | `DYNAMIC_TURNOVER_VOLUME_SPIKE_THRESHOLD = 2.5` | `get_setting('liquidity_spike_threshold', 2.5)` | Tunable |
+| `:636` | `DYNAMIC_TURNOVER_SPIKE_FLOOR = 300_000` | `get_setting('liquidity_spike_floor', 300_000, market=...)` | Per market (EGP vs SAR vs KWD) |
+| `:637` | `DYNAMIC_TURNOVER_DEAD_MARKET_RATIO = 0.7` | `get_setting('liquidity_dead_market_ratio', 0.7)` | Tunable |
+| `:638` | `DYNAMIC_TURNOVER_DEAD_MARKET_CEILING = 700_000` | `get_setting('liquidity_dead_market_ceiling', 700_000)` | Tunable |
+| `:641` | `MIN_STOCK_PRICE = 1.00` (EGX penny stock) | `get_setting('min_stock_price', 1.00, market='EGX')` | Per market — KSA may use 5 SAR |
+| `:646-649` | `FREE_FLOAT_CRITICAL=5.0, FREE_FLOAT_RISKY=15.0, FREE_FLOAT_CRITICAL_MULT=0.2, FREE_FLOAT_RISKY_MULT=0.5` ✓ | (already wired to settings at L931-934) | Good |
+
+### 2.4 strict_entry_filters.py — 12 module-level constants NOT in engine_settings
+
+| File:Line | Hardcoded Value | Recommended engine_settings Key |
+|---|---|---|
+| `:53` | `ACCUM_LOOKBACK = 20` | `accum_lookback_days` |
+| `:54` | `ACCUM_RANGE_MAX_PCT = 18.0` | `accum_range_max_pct` |
+| `:55` | `ACCUM_VOL_MAX_RATIO = 1.4` | `accum_vol_max_ratio` |
+| `:56` | `ACCUM_RECENT_GAIN_MAX_PCT = 15.0` | `accum_recent_gain_max_pct` |
+| `:57` | `ACCUM_DIST_FROM_20D_HIGH_MIN_PCT = 6.0` | `accum_dist_from_high_min_pct` |
+| `:60-63` | `GRAB_LOOKBACK=10, GRAB_SUPPORT_LOOKBACK=20, GRAB_PENETRATION_PCT=0.5, GRAB_RECOVERY_PCT=0.0` | `grab_*` |
+| `:66-68` | `LATE_DIST_FROM_HIGH_MAX_PCT=8.0, LATE_RSI_THRESHOLD=70.0, LATE_RECENT_GAIN_PCT=18.0` | `late_*` (CONFLICTS with `rsi_overbought_base=70` — same concept, two sources) |
+| `:478-485` | `AVG_DOWN_BREAK_MIN_PCT=3.0, AVG_DOWN_BREAK_MAX_PCT=8.0, AVG_DOWN_RECOVERY_DAYS=3, AVG_DOWN_RECOVERY_RATIO=0.5, AVG_DOWN_VOL_RATIO_MIN=1.1, AVG_DOWN_PROXIMITY_TO_SMA50=8.0, AVG_DOWN_SIZE_PCT=50.0, AVG_DOWN_LOOKBACK_BARS=10` | `avg_down_*` family (8 keys) |
+
+### 2.5 core/opportunity_quality.py — 23 module constants
+
+Lines: 97, 98, 103, 104, 114, 115, 117, 118, 293, 294, 389, 392, 571, 572, 967, 970, 971, 974-976, 1003-1007, 1031, 1052-1058, 1874, 1877 — most have `OPPORTUNITY_*`, `LIVE_STRICT_*`, `ATR_STOP_*`, `INVESTOR_*`, `BALANCED_*`, `SECTOR_HEAT_*` prefixes. These should all migrate to `engine_settings.py` with market override suffixes.
+
+Note: `ATR_STOP_MIN_PCT = 3.0` (L571) conflicts with `engine_settings.py:208` which sets it to `5.0`. The DB has it as `3.0`. Three sources of truth for one value — Rule 11 violation.
+
+### 2.6 core_scoring_engine.py — _ADAPTIVE_RR_TABLE dict (L554)
+
+Hardcoded 5 personas × 4 vol_bands = 20 (stop_mult, target_mult) tuples. Should be in engine_settings as `adaptive_rr_<persona>_<vol_band>_stop_mult` and `adaptive_rr_<persona>_<vol_band>_target_mult` (40 keys total).
+
+### 2.7 position_sizing.py — env-configurable (good)
+
+All 5 thresholds are env-var configurable (`V40_2_HIGH_VOL_ATR_PCT`, `V40_2_LOW_VOL_ATR_PCT`, `V40_2_HIGH_VOL_SIZE_MULT`, `V40_2_NORMAL_VOL_SIZE_MULT`, `V40_2_LOW_VOL_SIZE_MULT`, `V40_2_MARKET_AVG_ATR_PCT`). However, these should also be `get_setting(...)` for admin UI control.
+
+================================================================
+3. فصل الأسواق (MARKET SEPARATION — what needs to change)
+================================================================
+
+### 3.1 Hardcoded EGX references in V40.2 generator
+
+| File:Line | Code | Fix |
+|---|---|---|
+| `v40_2_daily_generator.py:450` | `WHERE is_active = 1 AND market = 'EGX'` | `WHERE is_active = 1 AND market = ?` (param `market`) |
+| `v40_2_daily_generator.py:469` | `WHERE ticker = ? AND market = 'EGX'` | `WHERE ticker = ? AND market = ?` |
+| `v40_2_daily_generator.py:1140` | `WHERE ticker = ? AND market = 'EGX'` | `WHERE ticker = ? AND market = ?` |
+| `v40_2_daily_generator.py:1153` | `WHERE market = 'EGX' AND sector = ?` | `WHERE market = ? AND sector = ?` |
+| `v40_2_daily_generator.py:1830` | `get_notebook_context_for_v402(ticker, market='EGX')` | `get_notebook_context_for_v402(ticker, market=args.market)` |
+| `v40_2_daily_generator.py:2420` | `VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)` | `VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)` (param `market`) |
+| `v40_2_daily_generator.py:2595` | `--market default='EGX', choices=['EGX', 'CRYPTO']` | Add 'TADAWUL', 'KSE', 'QSE' |
+
+### 3.2 EGX-specific helpers (need market-aware versions)
+
+| File:Line | Code | Fix |
+|---|---|---|
+| `liquidity_filter.py:137-155` | `_is_egx_market_open()` hardcoded to `Africa/Cairo` timezone + EGX weekend (Fri+Sat) | Replace with `is_market_open(market_code)` — KSA: `Asia/Riyadh` (Fri+Sat), KSE: `Asia/Kuwait` (Fri+Sat), QSE: `Asia/Qatar` (Fri+Sat), CRYPTO: 24/7 (always open) |
+| `v38_backtest_engine.py:1228` | `BENCHMARK_TICKERS = ('EGS30AJ1C016-EGP', 'EGX30ETF')` | Use `MARKET_PROFILES[market_code].benchmark_ticker` — already defined in `config/unified_config.py:375` (EGX), `:425` (TASI for KSA), `:471` (BKP for KSE), `:503+` (QSE), CRYPTO: BTC.D |
+| `v40_2_daily_generator.py:314, 332, 364, 390` | `from utils.egx_gate import filter_egx_tickers_detailed` | Need `filter_tadawul_tickers_detailed`, `filter_kse_tickers_detailed`, etc. — OR a generic `filter_market_tickers(raw_tickers, market_code)` |
+| `v40_2_daily_generator.py:150` | `DNA_EGX30_DOWN_HOLD` env var | Generalize to `DNA_BENCHMARK_DOWN_HOLD` + `DNA_BENCHMARK_DOWN_THRESHOLD` |
+| `v40_2_daily_generator.py:450-453` | `load_sector_heat()` queries EGX only | Generalize: `WHERE is_active = 1 AND market = ?` |
+
+### 3.3 DB reality check (verified live)
+
+```
+stocks.db.stocks:        EGX=384, TADAWUL=413, KSE=128, QSE=55 (no CRYPTO)
+data_engine.db.egksco_price_history: 304 symbols (only EGX — market column = 'EGX' or 'مصر')
+data_engine.db.crypto_prices:        116 symbols (CRYPTO only)
+data_engine.db.historical_data:      multi-market (Saudi/US/gold — NOT EGX)
+```
+
+The `egksco_price_history` table (PRIMARY data source for V40.2) **does not contain** any TADAWUL/KSE/QSE data — it only has EGX. The `stocks.db.stock_daily_prices` fallback table likely has multi-market data, but `filter_egx_tickers_detailed` (called in `get_tickers()`) explicitly REJECTS non-EGX tickers.
+
+### 3.4 Multi-market infrastructure ALREADY EXISTS but UNUSED
+
+`config/unified_config.py:334-525` defines `MARKET_PROFILES` dict with 5 entries (EGX, KSA=TADAWUL, KSE, QSE, CRYPTO) — each has:
+- `currency` (EGP/SAR/KWD/QAR/USD)
+- `weights` (per-analyzer weights)
+- `default_strategy` (T1/SWING/POSITION)
+- `min_score_buy`, `min_score_strong`, `min_volume_filter`, `min_value_traded`, `min_rr`
+- `stop_method`, `stop_atr_mult`, `stop_fixed_pct`, `stop_max_pct`, `stop_min_pct`
+- `target_rr_mult`, `target_min_pct`, `target_max_pct`
+- `max_concurrent_trades`, `position_size_pct`
+- `rsi_overbought`, `rsi_oversold`, `rsi_extreme_high`, `rsi_extreme_low`
+- `benchmark_ticker` (EGX30ETF / TASI / BKP / QE_INDEX / BTC.D)
+- `min_turnover_local` (per-currency floor — 500K EGP, 2M SAR, 50K KWD, etc.)
+- `atr_stop_min_pct`, `atr_stop_max_pct`, `dynamic_rr_normal`, `dynamic_rr_outperform`
+
+**BUT** V40.2 generator NEVER passes `market_code` to V38BacktestEngine (`V38BacktestEngine(buy_threshold=75, use_v393=True)` — no `market_code` argument at L533). The `analyze_single_day_v393(market_profile=None)` defaults to None → no per-market clamping (lines 1633-1690 fall back to global PILLAR-3 settings).
+
+### 3.5 Required changes for multi-market (prioritized)
+
+| # | Change | Effort | Impact |
+|---|---|---|---|
+| 1 | V40.2 generator: read `--market` arg → pass to `V38BacktestEngine(market_code=args.market)` | 1 LOC change + plumbing | Unlocks all per-market profiles |
+| 2 | V40.2 generator: parametrize all 5 `market = 'EGX'` SQL filters with `?` placeholder | 5 SQL edits | DB queries return market-specific tickers |
+| 3 | V40.2 generator: replace `filter_egx_tickers_detailed` with `filter_market_tickers(raw, market)` generic | Refactor `utils/egx_gate.py` → `utils/market_gate.py` with per-market canonical lists | Works for 5 markets |
+| 4 | `liquidity_filter.py`: parametrize `_is_egx_market_open()` → `is_market_open(market_code)` with timezone map | 1 function rewrite + 5 timezone entries | Per-market session awareness |
+| 5 | `v38_backtest_engine.py:_load_benchmark()`: read benchmark ticker from MARKET_PROFILES instead of hardcoded tuple | 3 LOC change | Per-market benchmark |
+| 6 | `engine_settings.py`: add `_<market>` suffix variants for ALL keys (e.g., `min_turnover_egp`, `min_turnover_sar`, `min_turnover_kwd`, `min_turnover_qar`, `min_turnover_usd`) + modify `get_setting(key, default, market=None)` signature | ~140 new keys + 1 helper refactor | Per-market admin tunability |
+| 7 | `v40_2_daily_generator.py:150` `DNA_EGX30_DOWN_HOLD` → `DNA_BENCHMARK_DOWN_HOLD` (read benchmark from market profile) | 1 constant rename + 1 helper | Works for any benchmark |
+
+================================================================
+4. محرك السيولة (LIQUIDITY ENGINE — current integration + recommended primary gate)
+================================================================
+
+### 4.1 Current integration status
+
+**Where it sits in the call chain:** Step A of V40.2 (line 499: `set_strict_kill_filters(True)`) sets a global flag, but **`evaluate_kill_filters()` itself is NOT directly called by V40.2**. The kill filters are invoked indirectly inside `build_institutional_decision()` (within `analyze_single_day_v393`). The explicit `LiquidityFilter` class (with `analyze()` method) is **never imported** by V40.2 generator.
+
+**What `set_strict_kill_filters(True)` does (liquidity_filter.py:123-131):**
+- Sets module-level `_STRICT_KILL_FILTERS = True`
+- Effect: When `_STRICT_KILL_FILTERS=True`, the closed-market relaxation (3M→600K turnover, 60→9 bars) is **bypassed** so backtests always use full thresholds regardless of wall-clock time. This is correct for backtest reproducibility.
+
+**Dynamic thresholds in liquidity_filter.py:**
+- `evaluate_kill_filters()` reads `_admin_min_turnover = get_setting('kill_filter_min_turnover_egp', 3_000_000)` ✓
+- Reads `_min_price`, `_max_vol_volatility`, `_min_data_bars`, `_min_rs` from settings ✓
+- DYNAMIC-LIQUIDITY-V2 via `utils.shared_liquidity` provides per-price-bucket thresholds: `< 5 EGP → 80K, 5-15 EGP → 200K, > 15 EGP → 400K` (admin-configurable via env override `_SHARED_DYNAMIC_THRESHOLDS`)
+- **BUT** these are still EGP-denominated — KSA needs SAR, KWD for KSE, etc.
+
+**Liquidity classification (where it's called):**
+- `classify_liquidity()` (from `core.opportunity_quality.py:799`) is called at V40.2 line 1630 — AFTER:
+  - The R:R gate (line 1617)
+  - The fundamentals veto (line 1007)
+  - The entry gate (line 1040)
+  - The strict entry filter (line 1911)
+  - The disclosure/news/notebook/regime filters (lines 1680-1999)
+- This is **architecturally wrong** — liquidity should be the FIRST gate (Constitution Rule 13 + Owner directive "السيولة أولاً، التحليل تانياً").
+
+### 4.2 Recommended primary gate (liquidity-first architecture)
+
+```
+PROPOSED ORDER (liquidity-first):
+
+1. evaluate_kill_filters(ticker, closes, volumes, current_price, avg_turnover, ...) → reject if any fail
+   ├── Liquidity turnover (dynamic per-price bucket)
+   ├── Penny stock price floor
+   ├── Volume volatility CV (wash trading)
+   ├── Data bars count (minimum history)
+   └── Relative strength (RS = stock_roc - benchmark_change)
+
+2. LiquidityFilter.analyze(ticker, ...) → LiquidityProfile
+   ├── level (EXCLUDED / WEAK / MODERATE / LIQUID / HIGH)
+   ├── is_tradeable
+   ├── liquidity_mult (0.0-1.0)
+   └── free_float_warning (if applicable)
+
+3. If profile.is_tradeable == False → SKIP THIS TICKER ENTIRELY (don't waste CPU on V38 analysis)
+   If profile.liquidity_mult < 0.3 → SKIP (or apply 2% bypass position size if explosive_surge)
+   If profile.liquidity_mult < 0.6 → reduce position size by 50%
+
+4. ONLY THEN: run analyze_single_day_v393(...)
+5. ONLY THEN: apply all other filters (Don't Chase, Peak Entry, V62/V68/V72/V73, etc.)
+6. classify_liquidity() at line 1630 — KEEP as a confirmation/annotation step (not the primary gate)
+```
+
+**Estimated impact:** Rejecting illiquid tickers BEFORE V38 analysis would save ~30-50% of CPU time on EGX backtest (current run processes 304 tickers × 30 dates × ~20 filters each ≈ 180K filter evaluations; liquidity-first would cut this to ~90K by killing illiquid tickers before the expensive V38 analysis).
+
+### 4.3 Dynamic threshold gaps to fill
+
+| Gap | Fix |
+|---|---|
+| `_is_egx_market_open()` hardcoded to EGX/Cairo | Replace with `is_market_open(market_code)` using a timezone map per market |
+| `dynamic_min_turnover(price, market_dead)` has no `market_code` param | Add `market_code` → fetch currency-specific floor from `MARKET_PROFILES[market_code].min_turnover_local` |
+| `evaluate_kill_filters()` has no `market_code` param | Add `market_code` → use `MARKET_PROFILES[market_code]` for per-market thresholds (ATR stop range, RR floor, etc.) |
+| `kill_filter_min_relative_strength` discrepancy: `engine_settings.py:340` says `-1.0`, but `liquidity_filter.py:329` falls back to `-2.0` | Unify to single source (`get_setting('kill_filter_min_relative_strength', -1.0)`) |
+| `market_dead` detector is `TODO` at line 355 | Implement using `MARKET_PROFILES[market_code].benchmark_ticker` 5-day ROC |
+
+================================================================
+5. المحركات غير المستخدمة (ANALYZERS NOT USED BY V40.2)
+================================================================
+
+### 5.1 Analyzers V40.2 transitively imports (24 active)
+
+`engine_settings`, `liquidity_filter` (only `set_strict_kill_filters` — NOT `LiquidityFilter` class), `prediction_tracker`, `adaptive_weights`, `core_scoring_engine`, `institutional_decision_engine` (via V38), `v68_oracle`, `v72_multi_path`, `v73_sniper`, `v76_golden_hunter`, `stock_notebook`, `feedback_loop`, `intraday_reader`, `screener_integration`, `news_fetcher_analyzer`, `live_news_integration`, `decision_logger`, `regime_filter` (flagged), `strict_entry_filters` (flagged), `egx_disclosure_engine` (flagged), `position_sizing`, `fundamental_data_provider` (via V38), `maestro_orchestrator` (only `run_expert_memory_phase` — lessons read), and CRYPTO-path: `crypto_strict_filters`, `crypto_disclosure_engine`, `crypto_news_fetcher`.
+
+### 5.2 Analyzers NOT imported but could add value (verified against §16 VERIFY-BEFORE-DELETE)
+
+| Analyzer | LOC | Why it could help V40.2 |
+|---|---:|---|
+| `correlation_filter.py` | — | Reject BUY if a highly-correlated ticker is already in `signals_by_date[scan_date]` — prevents sector concentration (DNA-4 SECTOR_LIMIT is crude; correlation is precise) |
+| `dividend_checker.py` | — | Hard veto on ex-dividend date (V40.2 has disclosure engine but no explicit ex-date veto) |
+| `dynamic_target_engine.py` | — | Could replace the hardcoded `target = entry + 2.0*atr` fallback in `compute_dynamic_target` |
+| `event_impact_tracker.py` | — | Tracks earnings/IPO/M&A events — currently V40.2 has only `news_impact_scorer` (keyword-based) |
+| `expert_memory_v4.py` | — | Per Rule 16: "الواجهة تستخدمه (`ExpertMemoryPanel` + `TradingMemoryView`) لكن `v4_bp` غير مسجّل" — was almost deleted, needs blueprint registration not deletion |
+| `mean_reversion_signal.py` | — | Counter-trend BUY signals (V40.2 is trend-following only — adds diversity) |
+| `multi_timeframe_engine.py` | — | Daily/weekly/monthly confluence (V40.2 only uses daily) |
+| `prediction_optimizer.py` | — | Has `REGIME_ATR_MULTIPLIERS` already migrated to engine_settings — but the optimizer itself is unused |
+| `seasonality_engine_v2.py` | — | Day-of-week / month-of-year effects (V40.2 has no seasonality) |
+| `sector_relative.py` | — | Stock vs sector leader/laggard (V40.2 has crude sector_heat only) |
+| `session_timing.py` | — | EGX session timing (open/lunch/close) — V40.2 has no intraday timing awareness |
+| `short_holding_exit.py` | — | Flagged as `V40_2_SHORT_HOLDING` but OFF by default — could improve exit timing |
+| `unified_exit_engine.py` | 518 | Flagged as `V40_2_UNIFIED_EXIT` but OFF — replaces both `short_holding_exit` + `crypto_short_holding_exit` |
+| `volume_profile.py` | — | VWAP + OBV — V40.2 has `calc_fair_value` only (basic VWAP) |
+| `support_resistance_calculator.py` | — | Could feed better support/resistance into `compute_dynamic_target` swing detection |
+
+### 5.3 Likely DEPRECATED (per KILL-MAESTRO 2026-08-31 + Rule 28 NO-DUPLICATION — need VERIFY-BEFORE-DELETE per Rule 16)
+
+| Analyzer | Status | Reason |
+|---|---|---|
+| `maestro_orchestrator.py` | ❌ KILLED | Rule 21 KILL-MAESTRO — `signal_id = None`, not writing predictions. V40.2 only calls `run_expert_memory_phase` (lessons read-only) |
+| `confluence_engine.py` / `confluence_engine_v3.py` | ⚠️ Likely duplicate | Superseded by `smart_confluence_engine.py` (in `engines/`) + `institutional_decision_engine.py` |
+| `risk.py` / `risk_adaptive.py` / `risk_manager.py` | ⚠️ Triplicate | 3 risk files — need consolidation per Rule 28 |
+| `technical.py` / `technical_analyzer.py` / `technical_target_engine.py` / `technical_weighted.py` | ⚠️ Quadruplicate | 4 technical files |
+| `prediction_optimizer.py` / `prediction_sanity.py` / `prediction_tracker.py` / `prediction_validator.py` | ⚠️ Quadruplicate | 4 prediction files — only `prediction_tracker` is used by V40.2 |
+| `seasonality_first_engine.py` / `seasonality_engine_v2.py` / `seasonality_scorer.py` | ⚠️ Triplicate | 3 seasonality files |
+| `unified_analysis.py` / `unified_analyzer.py` / `unified_exit_engine.py` / `unified_learning_engine.py` / `unified_maestro.py` | ⚠️ Duplicate family | 5 `unified_*` files — per Rule 28, `src/lib/v2/` parallel stack is being deleted, these may be Python counterparts |
+| `expert_memory.py` / `expert_memory_bridge.py` / `expert_memory_v4.py` | ⚠️ Triplicate | 3 expert memory files |
+| `crypto_analyzer.py` / `crypto_circuit.py` / `crypto_confluence_engine.py` / `crypto_maestro.py` / `crypto_prediction_engine.py` / `crypto_quality_gate.py` / `crypto_regime.py` / `crypto_risk.py` | ⚠️ Octuplicate | 8 crypto files — only `crypto_strict_filters`, `crypto_disclosure_engine`, `crypto_news_fetcher`, `crypto_short_holding_exit` are used |
+| `backtest_engine.py` (analyzers/, NOT engines/) | ⚠️ Duplicate of v38 | Uses `MasterAnalyzer.analyze()` (Maestro path — DISABLED) |
+| `real_backtester.py` / `real_return_engine.py` | ⚠️ Likely duplicate | Two more backtesters — `v38_backtest_engine.py` is the canonical one |
+| `historical_prediction_generator.py` (in engines/) | ⚠️ Possible duplicate | Batch backfill — V40.2 generator handles this |
+| `live_prediction_engine.py` (in engines/) | ⚠️ Active but separate | 15-min prediction cycle — different use case |
+
+**Count of analyzer files:** 146 in `analyzers/` + 10 in `engines/` + 10 in `engine/` = **166 total**. Of these, **~25 are active** in V40.2 (15%) and **~141 are dead/duplicate/orphan** (85%). Per Constitution Rule 28 + Rule 16, these need cataloging + VERIFY-BEFORE-DELETE before any removal.
+
+================================================================
+6. خطة التحسين (PRIORITIZED IMPROVEMENT PLAN)
+================================================================
+
+### Phase A — Quick wins (1-2 days, low risk, high impact)
+
+| # | Task | File:Line | Effort | Risk |
+|---|---|---|---|---|
+| A1 | Pass `market_code=args.market` to `V38BacktestEngine(...)` constructor (L533) | `v40_2_daily_generator.py:533` | 1 LOC | None |
+| A2 | Replace 5 hardcoded `market = 'EGX'` SQL filters with parameterized `?` (lines 450, 469, 1140, 1153, 2420) | `v40_2_daily_generator.py` | 5 edits | None |
+| A3 | Replace `_is_egx_market_open()` with `is_market_open(market_code)` using timezone map (5 markets) | `liquidity_filter.py:137-155` | 1 function rewrite | None (additive) |
+| A4 | Replace hardcoded `BENCHMARK_TICKERS = ('EGS30AJ1C016-EGP', 'EGX30ETF')` with `MARKET_PROFILES[market_code].benchmark_ticker` | `v38_backtest_engine.py:1228` | 3 LOC | None |
+| A5 | Add `--market TADAWUL/KSE/QSE` choices to argparse | `v40_2_daily_generator.py:2595` | 1 line edit | None |
+| A6 | Add `'DNA_EGX30_DOWN_HOLD'` → `'DNA_BENCHMARK_DOWN_HOLD'` env var rename (keep backward compat alias) | `v40_2_daily_generator.py:150` | 1 line + alias | None |
+| A7 | Resolve `kill_filter_min_relative_strength` discrepancy (-1.0 in settings vs -2.0 fallback in liquidity_filter) | `liquidity_filter.py:329` + `engine_settings.py:340` | 1 line | None |
+| A8 | Wire `MAX_PICKS_PER_DAY` to `get_setting('max_picks_per_day', 5, market=...)` | `v40_2_daily_generator.py:107` | 2 LOC | None |
+
+### Phase B — Liquidity-first architecture (2-3 days, medium risk, high impact)
+
+| # | Task | File:Line | Effort | Risk |
+|---|---|---|---|---|
+| B1 | In `run_generator()`, after `get_tickers()`, call `LiquidityFilter.analyze()` for each ticker → cache `LiquidityProfile` | `v40_2_daily_generator.py:511` (after tickers loaded) | ~30 LOC | None (additive) |
+| B2 | Skip tickers where `profile.is_tradeable == False` BEFORE calling `engine.get_price_data()` and `analyze_single_day_v393()` | `v40_2_daily_generator.py:544` (start of ticker loop) | 5 LOC | None — saves CPU |
+| B3 | Reduce `result['score']` by `profile.liquidity_mult` factor (or skip if `liquidity_mult < 0.3` without explosive_surge) | `v40_2_daily_generator.py:2199` | 3 LOC | Could affect backtest results — must run backtest before/after |
+| B4 | Move `evaluate_kill_filters()` call to the TOP of the per-(ticker,date) loop — before `analyze_single_day_v393()` | `v40_2_daily_generator.py:555` | 1 call insertion | Big behavioral change — needs A/B backtest |
+| B5 | Pass `market_code` to `evaluate_kill_filters(...)` so per-market thresholds (turnover currency, ATR range) are honored | `liquidity_filter.py:286` signature + body | ~15 LOC | None |
+
+### Phase C — Dynamic params migration (3-5 days, low risk per change, many changes)
+
+| # | Task | Files | Effort | Risk |
+|---|---|---|---|---|
+| C1 | Migrate 23 V40.2 hardcoded values to `get_setting(...)` calls (see §2.1 table) | `v40_2_daily_generator.py` | ~46 LOC | None (per change) |
+| C2 | Migrate 12 strict_entry_filters constants to `engine_settings.DEFAULT_SETTINGS` | `strict_entry_filters.py` + `engine_settings.py` | ~24 LOC | None |
+| C3 | Migrate 14 opportunity_quality constants to `engine_settings.DEFAULT_SETTINGS` | `core/opportunity_quality.py` + `engine_settings.py` | ~28 LOC | None |
+| C4 | Add `market` parameter to `get_setting(key, default, market=None)` signature — when `market` is provided, look up `<key>_<market>` first, then fall back to `<key>` | `engine_settings.py:462` | 1 function refactor + ~140 new market-suffixed keys | None — backward compatible |
+| C5 | Add market-specific keys: `min_turnover_egp`, `min_turnover_sar`, `min_turnover_kwd`, `min_turnover_qar`, `min_turnover_usd` (5 currencies × ~10 liquidity keys = 50 new keys) | `engine_settings.py` | ~50 entries | None |
+| C6 | Unify `atr_stop_min_pct` / `atr_stop_max_pct` (3 sources: engine_settings=5.0/9.0, opportunity_quality=3.0/9.0, DB=3.0/9.0) → single source = `engine_settings.py` | `engine_settings.py:208` + `opportunity_quality.py:571-572` | 2 deletions | Document change in worklog |
+
+### Phase D — Backtest-after-every-change harness (2-3 days, medium risk, essential)
+
+| # | Task | Effort | Risk |
+|---|---|---|---|
+| D1 | Create `vps-service/scripts/run_incremental_backtest.py` — wraps `v40_2_daily_generator.py --today-only --dry-run` + `BacktestSummary` JSON dump + git diff of summary JSON | ~150 LOC | None |
+| D2 | Add `--before-change` / `--after-change` A/B comparison: run backtest twice (git stash before, then run again) → print WR/PF/MaxDD delta | ~50 LOC | None |
+| D3 | Wire as git pre-commit hook: blocks commit if PF drops > 5% or WR drops > 2pp vs HEAD | ~30 LOC shell | Could block legitimate commits — needs `--no-verify` escape hatch |
+| D4 | Add `vps-service/backtest_results/latest.json` symlink → latest summary (for admin UI dashboard) | 1 symlink | None |
+
+### Phase E — Analyzer cleanup (5-10 days, requires VERIFY-BEFORE-DELETE per Rule 16)
+
+| # | Task | Effort | Risk |
+|---|---|---|---|
+| E1 | Catalog all 141 unused analyzer files with: (a) blueprint registration check (lightweight_server.py L50-83), (b) frontend `fetch()` check (src/), (c) performance log check (ask owner) | 2-3 days | None (audit only) |
+| E2 | Tag files as: KEEP / DUPLICATE-CONSOLIDATE / DEAD-DELETE / NEEDS-INTEGRATION | 1 day | None |
+| E3 | Integrate 6 high-value analyzers into V40.2 (per §5.2): `correlation_filter`, `dividend_checker`, `event_impact_tracker`, `multi_timeframe_engine`, `seasonality_engine_v2`, `volume_profile` | 5-7 days | Each requires A/B backtest before enabling |
+| E4 | Consolidate triplicate/quadruplicate families (risk, technical, prediction, seasonality, expert_memory, crypto) — pick canonical, delete rest (with owner approval per Rule 25) | 3-5 days | Medium — need to migrate any unique logic from each duplicate |
+| E5 | Register `v4_bp` blueprint in `lightweight_server.py` (Rule 16: was almost deleted, frontend uses it) | 1 LOC | None |
+
+### Phase F — Multi-market data pipeline (separate, owner-gated)
+
+| # | Task | Effort | Risk |
+|---|---|---|---|
+| F1 | Extend `egksco_scraper.py` (or write new scrapers) to fetch TADAWUL/KSE/QSE daily prices into `egksco_price_history` (with `market` column populated) | 3-5 days | None |
+| F2 | Extend `data_engine.db.historical_data` (already has Saudi/US/gold) to feed V40.2 via `get_price_data()` fallback | 2 days | None |
+| F3 | Per-market benchmark loaders: TASI (KSA), BKP (KSE), QE_INDEX (QSE), BTC.D (CRYPTO) | 2 days | None |
+
+### Total estimated effort (Phases A-E): ~20-30 working days
+
+================================================================
+7. القيود والمخاطر (CONSTRAINTS & RISKS)
+================================================================
+
+1. **Constitution Rule 1**: NO writes to production DBs (`/root/GLMinvestment/db/*.db`) — all changes must be validated in sandbox (`/home/z/my-project/db/vps_real/`).
+2. **Constitution Rule 11**: `engine_settings.py` is the SINGLE source of truth — every numeric threshold must go through `get_setting()`. The 23+12+14 hardcoded values cataloged above are Rule 11 violations.
+3. **Constitution Rule 16 (VERIFY-BEFORE-DELETE)**: Cannot delete the 141 unused analyzers without triple verification (frontend fetch + blueprint registration + performance log). The 2014 misclassification of `expert_memory_v4` (was almost deleted, then re-classified as KEEP) is the cautionary tale.
+4. **Constitution Rule 25**: Any refactoring (rename, merge, delete) needs owner approval + separate branch + tests after each file.
+5. **Constitution Rule 26 (SANDBOX-RESET-SAVEREGUARD)**: Sandbox resets periodically — must `git push` every 1-2 hours during this work.
+6. **Constitution Rule 28 (NO-DUPLICATION)**: 5 risk files, 4 technical files, 4 prediction files, 3 seasonality files, 3 confluence files, 5 unified_* files — each family needs consolidation.
+7. **Backtest reproducibility**: The DB-stored settings (e.g., `atr_stop_min_pct = 3.0` in DB vs `5.0` in `DEFAULT_SETTINGS`) mean two environments (sandbox vs prod) may diverge. The `get_setting()` fallback chain must be documented per environment.
+8. **A/B testing discipline**: Per Constitution Rule 21 + PROJECT_ANATOMY §1.6, every change to V40.2 must be A/B backtested before being merged. The DNA-WINNER flags (lines 144-159) are the result of past A/B tests — every new flag must follow the same pattern: `os.environ.get('FLAG_NAME', '1') == '1'`.
+
+================================================================
+8. SUMMARY OF FINDINGS
+================================================================
+
+**Critical gaps (must fix for multi-market):**
+1. V40.2 generator has 5 hardcoded `market = 'EGX'` SQL filters + 1 hardcoded INSERT value.
+2. `_is_egx_market_open()` is EGX/Cairo-only — no equivalent for KSA/KSE/QSE/CRYPTO.
+3. `BENCHMARK_TICKERS` hardcoded to EGX30ETF — `MARKET_PROFILES` already has per-market benchmark_ticker but it's UNUSED.
+4. V40.2 generator never passes `market_code` to `V38BacktestEngine(...)` — per-market clamping (ATR stop range, R:R floor) is dead code.
+
+**Critical gaps (must fix for liquidity-first):**
+5. `LiquidityFilter.analyze()` is NEVER called by V40.2 — only `set_strict_kill_filters(True)` is invoked.
+6. `classify_liquidity()` is called at line 1630 (after R:R gate, after position sizing) — should be the FIRST gate.
+7. `evaluate_kill_filters()` is delegated to `build_institutional_decision()` inside V38 — not directly controllable from V40.2.
+
+**Critical gaps (must fix for dynamic params):**
+8. 23 hardcoded numeric thresholds in V40.2 generator (see §2.1).
+9. 12 module constants in `strict_entry_filters.py` bypass engine_settings.
+10. 14 module constants in `core/opportunity_quality.py` bypass engine_settings.
+11. 3-source contradiction for `atr_stop_min_pct` (settings=5.0, opportunity_quality=3.0, DB=3.0).
+12. `kill_filter_min_relative_strength` contradiction (settings=-1.0, liquidity_filter fallback=-2.0).
+
+**Critical gaps (must fix for post-change backtest):**
+13. No automated A/B backtest harness — every change requires manual `python3 v40_2_daily_generator.py --today-only --dry-run` + visual diff of summary JSON.
+14. No git pre-commit hook to block PF-degrading commits.
+
+**Good news (already done):**
+- `MARKET_PROFILES` dict exists with 5 markets fully defined (per-market ATR range, R:R floor, benchmark, currency, weights).
+- `engine_settings.py` has 140 keys + 8 dynamic helpers (`get_dynamic_min_rr`, `get_dynamic_buy_threshold`, etc.).
+- `set_strict_kill_filters(True)` is correctly called for backtest reproducibility.
+- V40.2 already supports BATCH MODE (`--max-tickers`, `--tickers-offset`) for resuming interrupted backtests.
+- DNA-WINNER pattern (env-flagged features + A/B backtest annotation) is a proven model for incremental changes.
+
+---
+
+End of architecture review. Next actions (immediate):
+1. Implement Phase A (1-2 days) — unlocks multi-market plumbing with zero behavioral change.
+2. Implement Phase D (2-3 days) — A/B backtest harness (essential for all subsequent changes).
+3. Then proceed with Phase B (liquidity-first) + Phase C (dynamic params) in parallel.
+4. Phase E (analyzer cleanup) requires owner approval per Rule 25 — present the catalog in §5.3 to the owner for triage.
+5. Phase F (multi-market data pipeline) is owner-gated — schedule separately.
+
+
+---
+Task ID: PRED-EXPERT-ANALYSIS
+Agent: Stock Expert (Z.ai Code — Analysis sub-agent)
+Task: تحليل عميق لأداء محرك التوقعات V40.2 (2904 LOC) + V38 Backtest Engine (2224 LOC) + engine_settings.py (1401 LOC) + liquidity_filter.py (1101 LOC) + adaptive_weights.py (789 LOC) + تحليل بيانات predictions.db (1,359 predictions عبر 13 شهر)
+
+Work Log:
+1. الهدف:
+   تنفيذ تحليل شامل لأداء محرك التوقعات V40.2 الإنتاجي لتحديد المشاكل الجذرية الكامنة وراء انهيار الأداء الحالي (WR 87.6% → 18.3% في 10 أشهر) وتقديم 10 توصيات محددة قابلة للتنفيذ.
+
+2. السياق المُقَرأ (Read First — التزاماً بـ Rule 41):
+   - `worklog.md` آخر 100 سطر: آخر المهام كانت إصلاحات UI/Backend (AdminView, PredictionsTab, db-backup).
+   - `Documentation/00-CONSTITUTION.md` Rules 7-12 (HARD cap, ATR stop, trailing, EXIT_POLICY, no overrides, load_merged_history), Rules 21-23 (V40.2 المصدر الوحيد, dedup-by-ticker, UNIFIED-BALANCED-ONLY), Rules 33-43 (PRODUCTION-WIRING, ENGINE-UNIFY, DISCLOSURE-ENGINE, STRICT-ENTRY, SHORT-HOLDING, DISTRIBUTION-EXIT, NEWS-FETCHER, DOCS-FIRST-LAST, REGIME-AND-AVG-DOWN, TELEGRAM-NOTIFICATIONS).
+   - `Documentation/SYSTEM_HOW_IT_THINKS.md` أول 200 سطر: V40.2 = العقل الوحيد، Closed-Loop مفعّل، 3 personas فاعلة، backtest 68 صفقة +1.35%، 10 توقعات V40.2 جديدة.
+
+3. القراءات الكودية المنفذة:
+   أ. `vps-service/jobs/v40_2_daily_generator.py` كامل (2904 سطر) — فهم الـ flow الكامل من ticker selection إلى final signal + identification لـ 28+ hardcoded value.
+   ب. `vps-service/engines/v38_backtest_engine.py` كامل (2224 سطر) — فهم scoring mechanism (6 إثباتات موزونة), ATR/RSI/Bollinger/VWAP calculations, Order Blocks & Liquidity Sweeps.
+   ج. `vps-service/analyzers/engine_settings.py` (1401 سطر) — توثيق 100+ DEFAULT_SETTINGS keys + 8 dynamic helper functions (get_dynamic_buy_threshold, get_dynamic_min_rr, etc).
+   د. `vps-service/analyzers/liquidity_filter.py` (1101 سطر) — 8 kill filters (Liquidity, Price, Volume Volatility, Data Bars, Relative Strength, Wash Trading, Distribution Trap, Dead Money).
+   هـ. `vps-service/analyzers/adaptive_weights.py` (789 سطر) — PERSONA_INPUT_WEIGHTS + get_adaptive_weights (مع regime + volatility + liquidity multipliers).
+
+4. تحليل بيانات predictions.db (1,359 صف):
+   - تأكيد الأرقام المذكورة في الـ context: WR=64.20%, avg return=25.74% (بدون HARD cap), HELI=144.4%, AMOC=85.23%, ABUK=55.5%, ORTE=-7.96%, BTFH=-4.26%, MTEZ=-2.57%.
+   - اكتشاف الانهيار الحاد: WR 87.6% (نوفمبر 2025) → 23.8% (أغسطس 2026) → 18.3% (سبتمبر 2026).
+   - اكتشاف Max loss streak = 29 (Circuit Breaker لم يطلق — مخالفة Rule 33).
+   - اكتشاف Score calibration paradox: score 80-90 يحقق 38-39% WR بينما score 40-55 يحقق 59-64% WR (الأسوأ يكون في الـ "high score" zone).
+   - اكتشاف Holding days dead zone: WR=0% في فترة 8-14 يوم, WR=16.2% في 4-7 يوم, بسبب max_holding=7 hardcoded في simulate_trade.
+   - اكتشاف أن `evidence_count=0` و `kill_filter_result=EMPTY` و `exit_reason=NULL` في كل الـ 1359 صف رغم أن V40.2 generator يمررها للـ tracker (DB schema/INSERT mismatch في PredictionTracker).
+   - اكتشاف أن status column فيه 9 قيم مختلطة (expired/EXPIRED, closed_stop/STOPPED, ACTIVE/active) — مخالفة Rule 6 (5-state taxonomy).
+   - اكتشاف أن persona distribution يخالف Rule 23: 809 balanced + 58 conservative + 53 gambler (legacy من Maestro قبل الإيقاف).
+
+5. التقرير النهائي:
+   تمت كتابة تقرير شامل بالعربية (~600 سطر) في:
+   `/home/z/my-project/vps-service/backtest_results/PRED-EXPERT-ANALYSIS_report.md`
+
+   يحتوي على 6 أقسام رئيسية:
+   1. محرك التوقعات الحالي — flow كامل + نقاط القوة والضعف
+   2. القيم الثابتة — 28+ hardcoded value مع الـ setting المُقترح لكل واحدة
+   3. تحليل الأداء — 10 جداول تحليلية (by ticker, sector, score, holding, RR, signal, evidence, exit_reason, status, monthly)
+   4. محرك السيولة — كيف يعمل حالياً + المعمارية المُقترحة لجعله primary gate
+   5. الأسواق المنفصلة — MARKET_PROFILES لـ EGX/TADAWUL/KSE/QSE/CRYPTO
+   6. التوصيات العشر — مع الأثر المتوقع لكل توصية
+
+6. النتائج الرئيسية (Key Findings):
+   - V40.2 يستدعي `get_setting()` مرة واحدة فقط (line 982 لـ min_evidence_count) — كل باقي الـ thresholds hardcoded (مخالفة Rule 11).
+   - `get_adaptive_weights()` موجود لكن غير مستخدم في V40.2 (يستخدم فقط في master_analyzer.py + maestro_orchestrator.py — وكلاهما معطل).
+   - `evaluate_kill_filters()` يُستدعى فقط داخل `build_institutional_decision()` وليس كبوابة أولى في V40.2 — ينتج عنه أن `kill_filter_result` column فارغ في كل الصفوف.
+   - النظام في حالة انهيار حقيقي: WR انخفض من 87.6% → 18.3% خلال 10 أشهر بدون circuit breaker intervention.
+   - الـ Score calibration مكسور: scores 80-90 أسوأ من scores 30-55 — يُشير إلى أن proof_weight_makers=26 يُعطي درجات عالية للأسهم في وضع distribution.
+   - مشكلة الـ Holding Days Dead Zone (4-21 يوم WR=0-16%) بسبب `simulate_trade(max_holding=7)` hardcoded.
+
+7. التوصيات العشر المُقدَّمة:
+   1. إصلاح DB Schema — استرجاع evidence_count, kill_filter_result, exit_reason.
+   2. توحيد status column على 5 states (Rule 6).
+   3. استبدال كل hardcoded thresholds بـ get_setting (28+ value).
+   4. تفعيل Circuit Breaker في V40.2 (Rule 33).
+   5. جعل محرك السيولة البوابة الرئيسية (Liquidity Gate).
+   6. ربط get_adaptive_weights() بـ V40.2.
+   7. إصلاح Score Calibration paradox (score 80-90 أسوأ من 40-55).
+   8. حل مشكلة الـ Holding Days Dead Zone (max_holding ديناميكي).
+   9. تطبيق Multi-Market Architecture (5 أسواق مع MarketProfile).
+   10. نظام الـ Persona الحقيقي (إلغاء UNIFIED-BALANCED-ONLY بعد موافقة المالك).
+
+8. الإجراءات التالية المقترحة:
+   - الحصول على موافقة المالك على التوصيات 4, 5, 7, 9, 10 (لأنها تغييرات سلوكية حقيقية).
+   - تنفيذ التوصيات 1, 2, 3, 6, 8 فوراً (لا تتطلب موافقة المالك لأنها fixes للـ bugs الموجودة).
+   - عمل A/B backtest قبل/بعد كل توصية لقياس الأثر الفعلي.
+
+9. الملفات المتأثرة بالتحليل (لم يتم تعديلها — تحليل فقط):
+   - `vps-service/jobs/v40_2_daily_generator.py` (للقراءة فقط)
+   - `vps-service/engines/v38_backtest_engine.py` (للقراءة فقط)
+   - `vps-service/analyzers/engine_settings.py` (للقراءة فقط)
+   - `vps-service/analyzers/liquidity_filter.py` (للقراءة فقط)
+   - `vps-service/analyzers/adaptive_weights.py` (للقراءة فقط)
+   - `db/predictions.db` (للقراءة فقط — Rule 1)
+
+10. المرجع النهائي:
+    `/home/z/my-project/vps-service/backtest_results/PRED-EXPERT-ANALYSIS_report.md` (التقرير الشامل بالعربية)
