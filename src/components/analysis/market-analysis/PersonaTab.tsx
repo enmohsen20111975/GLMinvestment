@@ -42,6 +42,7 @@ import { RefreshAnalyticsButton } from '@/components/recommendations/RefreshAnal
 import { ExpertRecommendationsPanel } from '@/components/analysis/ExpertRecommendationsPanel';
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
 import { DailyPicksPoster } from '@/components/daily-picks/DailyPicksPoster';
+import { PreviousPredictionsArchive } from './PredictionsTab';
 
 import type {
   StockData,

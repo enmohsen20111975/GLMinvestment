@@ -360,7 +360,7 @@ export async function POST(req: NextRequest) {
     if (uploadToGithub && createdArchives.length > 0) {
       try {
         const cwd = process.cwd();
-        const addArgs = ['-f', 'add', ...createdArchives.map(a => `data/${a.archive_name}`)];
+        const addArgs = ['add', '-f', ...createdArchives.map(a => `data/${a.archive_name}`)];
         await runGit(addArgs, cwd);
 
         const commitMsg = `chore(backup): DB snapshot ${stamp} (${createdArchives.length} file${createdArchives.length > 1 ? 's' : ''})`;
@@ -372,6 +372,9 @@ export async function POST(req: NextRequest) {
         }
 
         try {
+          try {
+            await runGit(['pull', '--rebase', 'origin', 'HEAD'], cwd);
+          } catch { /* ignore pull error */ }
           await runGit(['push', 'origin', 'HEAD'], cwd);
           gitResult.pushed = true;
           gitResult.message = `تم رفع ${createdArchives.length} ملف أرشيف إلى GitHub بنجاح.`;

@@ -360,7 +360,7 @@ function ProofPredictionsTableView({
 // ============================================================================
 
 
-function PreviousPredictionsArchive({
+export function PreviousPredictionsArchive({
   predictions,
   title = 'توقعات سابقة',
 }: {
