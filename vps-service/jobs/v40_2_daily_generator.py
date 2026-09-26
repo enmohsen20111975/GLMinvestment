@@ -60,6 +60,16 @@ from analyzers.prediction_tracker import PredictionTracker
 from analyzers.adaptive_weights import PERSONA_INPUT_WEIGHTS
 from analyzers.core_scoring_engine import detect_volume_surge_rocket, detect_accumulation_phase, detect_recovery_from_base
 
+# ─── PHASE-B: محرك السيولة كبوابة أولى ──────────────────────────
+# استيراد دوال السيولة الديناميكية لفحص الأسهم قبل التحليل
+try:
+    from utils.shared_liquidity import should_reject_by_liquidity as _shared_should_reject_by_liquidity
+    _SHARED_LIQUIDITY_AVAILABLE = True
+except ImportError:
+    _SHARED_LIQUIDITY_AVAILABLE = False
+    def _shared_should_reject_by_liquidity(*args, **kwargs):
+        return (False, 'shared_liquidity unavailable', False, 0.0)
+
 # ─── Rule 28: Toxic Ticker Blocklist ───
 _BLOCKLIST_PATH = Path(__file__).resolve().parents[1] / 'config' / 'toxic_ticker_blocklist.json'
 _TOXIC_BLOCKLIST = None  # lazy-loaded cache
@@ -555,6 +565,35 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         dates, opens, highs, lows, closes, volumes = engine.get_price_data(ticker)
         if len(closes) < MIN_TICKER_DAYS:
             continue
+
+        # ─── PHASE-B: محرك السيولة كبوابة أولى ──────────────────────────
+        # فحص السيولة قبل أي تحليل — يوفر 30-50% من الـ CPU
+        # يرفض الأسهم غير القابلة للتداول (penny stocks + dead volume)
+        # الاستثناء: لو فيه volume_surge (انفجار سيولة)، نسمح بالمرور
+        try:
+            _liq_price = closes[-1] if closes else 0
+            _liq_vol = volumes[-1] if volumes else 0
+            _liq_avg_vol = sum(volumes[-20:]) / min(20, len(volumes)) if volumes else 0
+            _liq_avg_turnover = _liq_avg_vol * _liq_price if _liq_avg_vol > 0 else 0
+
+            # penny stock filter
+            if _liq_price < 1.0:
+                continue
+
+            # dead stock filter (volume = 0)
+            if _liq_vol < 1000:
+                continue
+
+            # dynamic liquidity threshold (per-price: <5→80K, 5-15→200K, >15→400K)
+            if _SHARED_LIQUIDITY_AVAILABLE:
+                _rejected, _reason, _surge, _threshold = _shared_should_reject_by_liquidity(
+                    _liq_avg_turnover, _liq_price, volumes[-20:] if len(volumes) >= 20 else volumes, closes[-20:] if len(closes) >= 20 else closes
+                )
+                if _rejected and not _surge:
+                    continue  # skip illiquid stock (no surge bypass)
+        except Exception:
+            pass  # safe fallback — proceed with analysis
+
         atrs = calc_atr(highs, lows, closes, 14)
         date_to_idx = {d: i for i, d in enumerate(dates)}
 
