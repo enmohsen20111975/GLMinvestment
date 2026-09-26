@@ -16,7 +16,8 @@ from collectors.keyword_filter import filter_instance
 log = logging.getLogger('RSSCollector')
 
 DEFAULT_FEEDS = [
-    'https://www.mubasher.info/api/news/ar/feed/EG',
+    'https://www.masrawy.com/rss/feed/206/%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF',
+    'https://hapijournal.com/feed/',
     'https://argaam.com/ar/rss',
     'https://www.amwalalghad.com/feed/',
     'https://www.youm7.com/Section/56/RSS',  # اقتصاد
