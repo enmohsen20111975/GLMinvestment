@@ -34,6 +34,7 @@ import {
   Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle, type LucideIcon,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
+import { useTheme } from 'next-themes';
 import {
   useAppStore,
   MarketType,
@@ -148,6 +149,8 @@ const navSections: NavSection[] = [
 export function TopBar() {
   const { currentView, setCurrentView, currentMarket, setCurrentMarket } = useAppStore();
   const { data: session, status } = useSession();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [marketMenuOpen, setMarketMenuOpen] = useState(false);
@@ -160,6 +163,10 @@ export function TopBar() {
   const isAuthenticated = status === 'authenticated' && !!session?.user;
   const userDisplayName = (session?.user as Record<string, unknown>)?.name as string || (session?.user as Record<string, unknown>)?.email as string || (session?.user as Record<string, unknown>)?.username as string || null;
   const userInitial = userDisplayName ? userDisplayName.charAt(0).toUpperCase() : '?';
+
+  // mount check للـ theme (next-themes بتحتاج client-side)
+  useEffect(() => { setMounted(true); }, []);
+  const isDark = theme === 'dark';
 
   // إغلاق الـ dropdown لما تضغط خارجها
   useEffect(() => {
@@ -369,6 +376,22 @@ export function TopBar() {
               <RoboNotifierToggle />
             </div>
 
+            {/* Theme toggle — ثابت في كل الشاشات (light/dark) */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                className="flex items-center justify-center h-8 w-8 rounded-lg border border-border bg-background transition-colors hover:bg-accent"
+                aria-label={isDark ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
+                title={isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}
+              >
+                {isDark ? (
+                  <Sun className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <Moon className="h-4 w-4 text-slate-600" />
+                )}
+              </button>
+            )}
+
             {/* N9: تسجيل الدخول/الخروج + اسم المستخدم */}
             {isAuthenticated ? (
               <div className="relative" ref={userMenuRef}>
@@ -474,6 +497,23 @@ export function TopBar() {
                   ))}
                 </div>
               ))}
+
+              {/* Theme toggle في قائمة الموبايل */}
+              {mounted && (
+                <div className="space-y-1 pt-2 border-t border-border">
+                  <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                    {isDark ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}
+                    المظهر
+                  </div>
+                  <button
+                    onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-accent transition-colors"
+                  >
+                    {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                    <span className="flex-1 text-right">{isDark ? 'الوضع الفاتح' : 'الوضع الداكن'}</span>
+                  </button>
+                </div>
+              )}
             </nav>
           </div>
         )}
