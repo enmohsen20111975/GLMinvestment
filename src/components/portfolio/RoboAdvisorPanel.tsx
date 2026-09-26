@@ -58,14 +58,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { cn } from '@/lib/utils';
 
 // ────────────────────────────────────────────────────────────
@@ -1161,6 +1155,95 @@ interface TransactionRow {
   pnlPct: number;
 }
 
+// ─── UnifiedTable columns for transactions ────────────────────────────────────
+const transactionColumns: Column<TransactionRow>[] = [
+  {
+    key: 'date',
+    header: 'التاريخ',
+    align: 'right',
+    sortable: true,
+    filterable: true,
+    className: 'whitespace-nowrap text-muted-foreground',
+    render: (t) => fmtDate(t.date),
+  },
+  {
+    key: 'name',
+    header: 'الأصل',
+    align: 'right',
+    sortable: true,
+    filterable: true,
+    className: 'font-medium',
+  },
+  {
+    key: 'type',
+    header: 'النوع',
+    align: 'right',
+    sortable: true,
+    filterable: true,
+    render: (t) => (
+      <span
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
+        style={{
+          backgroundColor: `${typeColor(t.type)}22`,
+          color: typeColor(t.type),
+        }}
+      >
+        {typeLabel(t.type)}
+      </span>
+    ),
+  },
+  {
+    key: 'invested',
+    header: 'السعر المشترى',
+    align: 'right',
+    sortable: true,
+    className: 'whitespace-nowrap',
+    render: (t) => fmtEGP(t.invested),
+  },
+  {
+    key: 'current',
+    header: 'القيمة الحالية',
+    align: 'right',
+    sortable: true,
+    className: 'whitespace-nowrap font-medium',
+    render: (t) => fmtEGP(t.current),
+  },
+  {
+    key: 'pnl',
+    header: 'الربح/الخسارة',
+    align: 'right',
+    sortable: true,
+    render: (t) => {
+      const isProfit = t.pnl >= 0;
+      return (
+        <span className={cn(
+          'whitespace-nowrap font-bold',
+          isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+        )}>
+          {isProfit ? '+' : ''}{fmtEGP(t.pnl)}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'pnlPct',
+    header: 'النسبة %',
+    align: 'right',
+    sortable: true,
+    render: (t) => {
+      const isProfit = t.pnl >= 0;
+      return (
+        <span className={cn(
+          'whitespace-nowrap font-bold',
+          isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+        )}>
+          {fmtPct(t.pnlPct)}
+        </span>
+      );
+    },
+  },
+];
+
 function TransactionsCard({ transactions }: { transactions: TransactionRow[] }) {
   return (
     <Card className="border-emerald-200 dark:border-emerald-900/50">
@@ -1185,73 +1268,16 @@ function TransactionsCard({ transactions }: { transactions: TransactionRow[] }) 
             لا توجد معاملات لعرضها
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto custom-scrollbar rounded-lg border border-border">
-            <Table className="text-xs sm:text-sm">
-              <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-right font-semibold">التاريخ</TableHead>
-                  <TableHead className="text-right font-semibold">الأصل</TableHead>
-                  <TableHead className="text-right font-semibold">النوع</TableHead>
-                  <TableHead className="text-right font-semibold">السعر المشترى</TableHead>
-                  <TableHead className="text-right font-semibold">القيمة الحالية</TableHead>
-                  <TableHead className="text-right font-semibold">الربح/الخسارة</TableHead>
-                  <TableHead className="text-right font-semibold">النسبة %</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((t) => {
-                  const isProfit = t.pnl >= 0;
-                  return (
-                    <TableRow key={t.id} className="border-border">
-                      <TableCell className="text-right whitespace-nowrap text-muted-foreground">
-                        {fmtDate(t.date)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {t.name}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span
-                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium"
-                          style={{
-                            backgroundColor: `${typeColor(t.type)}22`,
-                            color: typeColor(t.type),
-                          }}
-                        >
-                          {typeLabel(t.type)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        {fmtEGP(t.invested)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap font-medium">
-                        {fmtEGP(t.current)}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right whitespace-nowrap font-bold',
-                          isProfit
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-red-600 dark:text-red-400'
-                        )}
-                      >
-                        {isProfit ? '+' : ''}
-                        {fmtEGP(t.pnl)}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right whitespace-nowrap font-bold',
-                          isProfit
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-red-600 dark:text-red-400'
-                        )}
-                      >
-                        {fmtPct(t.pnlPct)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+          <div className="rounded-lg border border-border">
+            <UnifiedTable<TransactionRow>
+              columns={transactionColumns}
+              data={transactions}
+              keyField="id"
+              dense
+              columnToggle
+              filterable
+              maxHeight="max-h-96"
+            />
           </div>
         )}
       </CardContent>

@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   TrendingUp, TrendingDown, Clock, Calendar,
   BarChart3, Target, AlertTriangle, CheckCircle,
@@ -584,7 +584,110 @@ function ActiveStatusTable({ activeStatus }: { activeStatus: Array<Record<string
   );
 }
 
-// ─── جدول أسهم تحت المراقبة ─────────────────────────────────────────────────
+// ─── جدول أسهم تحت المراقبة — UnifiedTable ────────────────────────────────────
+
+type WatchlistRow = {
+  id: string | number;
+  ticker: string;
+  name?: string;
+  watch_type?: string;
+  priority?: string;
+  current_price?: number | null;
+  change_percent?: number | null;
+  rsi?: number | null;
+  volume_surge?: number | null;
+  watch_reason?: string;
+};
+
+const watchlistColumns: Column<WatchlistRow>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    sortable: true,
+    filterable: true,
+    render: (w) => (
+      <div>
+        <div className="font-semibold text-sm">{w.ticker}</div>
+        <div className="text-xs text-muted-foreground">{w.name}</div>
+      </div>
+    ),
+  },
+  {
+    key: 'watch_type',
+    header: 'النوع',
+    align: 'center',
+    filterable: true,
+    render: (w) => (
+      <Badge variant="outline" className="text-xs">{w.watch_type}</Badge>
+    ),
+  },
+  {
+    key: 'priority',
+    header: 'الأولوية',
+    align: 'center',
+    sortable: true,
+    filterable: true,
+    render: (w) => (
+      <Badge variant="outline" className={cn(
+        'text-xs',
+        w.priority === 'HIGH' ? 'text-red-700 bg-red-50 border-red-200'
+        : w.priority === 'MEDIUM' ? 'text-amber-700 bg-amber-50 border-amber-200'
+        : 'text-gray-700 bg-gray-50 border-gray-200'
+      )}>
+        {w.priority === 'HIGH' ? 'عالية' : w.priority === 'MEDIUM' ? 'متوسطة' : 'منخفضة'}
+      </Badge>
+    ),
+  },
+  {
+    key: 'current_price',
+    header: 'السعر',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (w) => w.current_price?.toFixed(2) ?? '—',
+  },
+  {
+    key: 'change_percent',
+    header: 'التغير',
+    align: 'right',
+    sortable: true,
+    render: (w) => (
+      <Badge variant="outline" className={cn(
+        'font-mono text-xs',
+        (w.change_percent ?? 0) >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+      )}>
+        {(w.change_percent ?? 0) >= 0 ? '+' : ''}{w.change_percent?.toFixed(2)}%
+      </Badge>
+    ),
+  },
+  {
+    key: 'rsi',
+    header: 'RSI',
+    align: 'center',
+    sortable: true,
+    className: 'font-mono text-xs',
+    render: (w) => w.rsi?.toFixed(0) || '—',
+  },
+  {
+    key: 'volume_surge',
+    header: 'حجم',
+    align: 'center',
+    sortable: true,
+    className: 'font-mono text-xs',
+    render: (w) => (w.volume_surge ?? 0) > 1 ? `${w.volume_surge?.toFixed(1)}x` : '—',
+  },
+  {
+    key: 'watch_reason',
+    header: 'السبب',
+    align: 'right',
+    className: 'text-xs text-muted-foreground max-w-xs',
+    render: (w) => (
+      <span className="block max-w-xs truncate" title={w.watch_reason}>
+        {w.watch_reason}
+      </span>
+    ),
+  },
+];
 
 function WatchlistTable({ watchlist }: { watchlist: Array<Record<string, unknown>> }) {
   if (watchlist.length === 0) {
@@ -600,57 +703,16 @@ function WatchlistTable({ watchlist }: { watchlist: Array<Record<string, unknown
   return (
     <Card>
       <CardContent className="p-0">
-        <div className="max-h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <TableHead>السهم</TableHead>
-                <TableHead className="text-center">النوع</TableHead>
-                <TableHead className="text-center">الأولوية</TableHead>
-                <TableHead className="text-right">السعر</TableHead>
-                <TableHead className="text-right">التغير</TableHead>
-                <TableHead className="text-center">RSI</TableHead>
-                <TableHead className="text-center">حجم</TableHead>
-                <TableHead className="text-right">السبب</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {watchlist.map((w) => (
-                <TableRow key={w.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="font-semibold text-sm">{w.ticker}</div>
-                    <div className="text-xs text-muted-foreground">{w.name}</div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className="text-xs">{w.watch_type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className={cn(
-                      'text-xs',
-                      w.priority === 'HIGH' ? 'text-red-700 bg-red-50 border-red-200' : w.priority === 'MEDIUM' ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-gray-700 bg-gray-50 border-gray-200'
-                    )}>
-                      {w.priority === 'HIGH' ? 'عالية' : w.priority === 'MEDIUM' ? 'متوسطة' : 'منخفضة'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">{w.current_price?.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="outline" className={cn(
-                      'font-mono text-xs',
-                      w.change_percent >= 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
-                    )}>
-                      {w.change_percent >= 0 ? '+' : ''}{w.change_percent?.toFixed(2)}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center font-mono text-xs">{w.rsi?.toFixed(0) || '—'}</TableCell>
-                  <TableCell className="text-center font-mono text-xs">
-                    {w.volume_surge > 1 ? `${w.volume_surge.toFixed(1)}x` : '—'}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground max-w-xs">{w.watch_reason}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<WatchlistRow>
+          columns={watchlistColumns}
+          data={watchlist as unknown as WatchlistRow[]}
+          keyField="id"
+          dense
+          columnToggle
+          filterable
+          maxHeight="max-h-[600px]"
+          rowClassName={() => 'hover:bg-muted/50'}
+        />
       </CardContent>
     </Card>
   );

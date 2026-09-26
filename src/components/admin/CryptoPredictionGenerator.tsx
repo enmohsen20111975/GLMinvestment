@@ -23,19 +23,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -252,6 +245,104 @@ export function CryptoPredictionGenerator() {
   const getFearGreedConfig = (value: number) => {
     return Object.values(FEAR_GREED_CONFIG).find(c => value >= c.min && value <= c.max) || FEAR_GREED_CONFIG.neutral;
   };
+
+  // ─── UnifiedTable columns ────────────────────────────────────────────
+  const predictionsColumns: Column<CryptoPrediction>[] = [
+    {
+      key: 'selected',
+      header: '',
+      align: 'center',
+      width: 'w-12',
+      hideable: false,
+      render: (p) => (
+        <Checkbox
+          checked={p.selected}
+          onCheckedChange={() => togglePredictionSelection(p.id)}
+        />
+      ),
+    },
+    {
+      key: 'symbol',
+      header: 'العملة',
+      sortable: true,
+      filterable: true,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <span className="font-bold">{p.symbol}</span>
+          <span className="text-xs text-muted-foreground">{p.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono',
+      render: (p) => `$${p.price.toFixed(4)}`,
+    },
+    {
+      key: 'signal',
+      header: 'الإشارة',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-28',
+      render: (p) => (
+        <Badge className={cn('text-white', SIGNAL_CONFIG[p.signal as keyof typeof SIGNAL_CONFIG]?.bg)}>
+          {SIGNAL_CONFIG[p.signal as keyof typeof SIGNAL_CONFIG]?.icon} {p.signal_ar}
+        </Badge>
+      ),
+    },
+    {
+      key: 'maestro_score',
+      header: 'الدرجة',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <Progress value={p.maestro_score} className="w-16 h-2" />
+          <span className="text-sm font-medium">{p.maestro_score.toFixed(0)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'target_price',
+      header: 'الهدف',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-green-600 font-mono',
+      render: (p) => `$${p.target_price.toFixed(4)}`,
+    },
+    {
+      key: 'stop_loss',
+      header: 'وقف الخسارة',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-red-600 font-mono',
+      render: (p) => `$${p.stop_loss.toFixed(4)}`,
+    },
+    {
+      key: 'risk_reward',
+      header: 'R/R',
+      align: 'center',
+      sortable: true,
+      width: 'w-20',
+      render: (p) => <Badge variant="outline">{p.risk_reward.toFixed(1)}</Badge>,
+    },
+    {
+      key: 'position_size_pct',
+      header: 'الحجم',
+      align: 'right',
+      sortable: true,
+      width: 'w-20',
+      render: (p) => `${p.position_size_pct.toFixed(1)}%`,
+    },
+  ];
 
   // Render
   return (
@@ -482,68 +573,15 @@ export function CryptoPredictionGenerator() {
           {/* Predictions Table */}
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>العملة</TableHead>
-                      <TableHead>السعر</TableHead>
-                      <TableHead>الإشارة</TableHead>
-                      <TableHead>الدرجة</TableHead>
-                      <TableHead>الهدف</TableHead>
-                      <TableHead>وقف الخسارة</TableHead>
-                      <TableHead>R/R</TableHead>
-                      <TableHead>الحجم</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {predictions.map((pred) => (
-                      <TableRow
-                        key={pred.id}
-                        className={cn(pred.selected && 'bg-primary/5')}
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={pred.selected}
-                            onCheckedChange={() => togglePredictionSelection(pred.id)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold">{pred.symbol}</span>
-                            <span className="text-xs text-muted-foreground">{pred.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>${pred.price.toFixed(4)}</TableCell>
-                        <TableCell>
-                          <Badge className={cn('text-white', SIGNAL_CONFIG[pred.signal as keyof typeof SIGNAL_CONFIG]?.bg)}>
-                            {SIGNAL_CONFIG[pred.signal as keyof typeof SIGNAL_CONFIG]?.icon} {pred.signal_ar}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={pred.maestro_score} className="w-16 h-2" />
-                            <span className="text-sm font-medium">{pred.maestro_score.toFixed(0)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-green-600">
-                          ${pred.target_price.toFixed(4)}
-                        </TableCell>
-                        <TableCell className="text-red-600">
-                          ${pred.stop_loss.toFixed(4)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{pred.risk_reward.toFixed(1)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {pred.position_size_pct.toFixed(1)}%
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <UnifiedTable
+                columns={predictionsColumns}
+                data={predictions}
+                keyField="id"
+                dense
+                columnToggle
+                filterable
+                rowClassName={(p) => cn(p.selected && 'bg-primary/5')}
+              />
             </CardContent>
           </Card>
         </TabsContent>

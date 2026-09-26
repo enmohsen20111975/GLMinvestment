@@ -15,14 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Tabs,
   TabsContent,
@@ -580,130 +574,105 @@ export default function CryptoScreenerView() {
               </Button>
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-auto -mx-2">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead className="w-12 text-center">#</TableHead>
-                    <TableHead>العملة</TableHead>
-                    <TableHead
-                      className="text-right cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleSort('price_usd')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        السعر
-                        <ArrowUpDown className="h-3 w-3" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="text-right cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleSort('price_change_24h')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        24h
-                        <ArrowUpDown className="h-3 w-3" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="text-right cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleSort('price_change_7d')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        7d
-                        <ArrowUpDown className="h-3 w-3" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="text-right cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleSort('market_cap')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        القيمة السوقية
-                        <ArrowUpDown className="h-3 w-3" />
-                      </span>
-                    </TableHead>
-                    <TableHead
-                      className="text-right cursor-pointer hover:bg-muted/50"
-                      onClick={() => toggleSort('total_volume')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        حجم التداول
-                        <ArrowUpDown className="h-3 w-3" />
-                      </span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((coin) => {
-                    const change24 = formatChange(coin.price_change_24h);
-                    const change7d = formatChange(coin.price_change_7d);
-                    return (
-                      <TableRow
-                        key={coin.id || coin.symbol}
-                        className="hover:bg-muted/50"
-                      >
-                        <TableCell className="text-center text-xs text-muted-foreground">
-                          {coin.rank ?? '—'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
-                              {coin.symbol.slice(0, 3)}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-sm">
-                                {coin.symbol}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {coin.name}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          {formatPrice(coin.price_usd)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'font-mono text-xs',
-                              change24.positive
-                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                : 'text-red-600 bg-red-50 border-red-200'
-                            )}
-                          >
-                            {change24.text}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'font-mono text-xs',
-                              change7d.positive
-                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                : 'text-red-600 bg-red-50 border-red-200'
-                            )}
-                          >
-                            {change7d.text}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          ${formatNumber(coin.market_cap)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          ${formatNumber(coin.total_volume)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable<CryptoCoin>
+              columns={screenerColumns}
+              data={filtered}
+              keyField="id"
+              dense
+              columnToggle
+              filterable
+              maxHeight="max-h-[600px]"
+              rowClassName={() => 'hover:bg-muted/50'}
+            />
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+// ─── UnifiedTable columns ─────────────────────────────────────────────────────
+const screenerColumns: Column<CryptoCoin>[] = [
+  {
+    key: 'rank',
+    header: '#',
+    align: 'center',
+    sortable: true,
+    width: 'w-12',
+    className: 'text-xs text-muted-foreground',
+    render: (c) => c.rank ?? '—',
+  },
+  {
+    key: 'symbol',
+    header: 'العملة',
+    sortable: true,
+    filterable: true,
+    render: (c) => (
+      <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
+          {c.symbol.slice(0, 3)}
+        </div>
+        <div>
+          <div className="font-semibold text-sm">{c.symbol}</div>
+          <div className="text-xs text-muted-foreground">{c.name}</div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'price_usd',
+    header: 'السعر',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (c) => formatPrice(c.price_usd),
+  },
+  {
+    key: 'price_change_24h',
+    header: '24h',
+    align: 'right',
+    sortable: true,
+    render: (c) => {
+      const ch = formatChange(c.price_change_24h);
+      return (
+        <Badge variant="outline" className={cn('font-mono text-xs',
+          ch.positive ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+        )}>
+          {ch.text}
+        </Badge>
+      );
+    },
+  },
+  {
+    key: 'price_change_7d',
+    header: '7d',
+    align: 'right',
+    sortable: true,
+    render: (c) => {
+      const ch = formatChange(c.price_change_7d);
+      return (
+        <Badge variant="outline" className={cn('font-mono text-xs',
+          ch.positive ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+        )}>
+          {ch.text}
+        </Badge>
+      );
+    },
+  },
+  {
+    key: 'market_cap',
+    header: 'القيمة السوقية',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (c) => `$${formatNumber(c.market_cap)}`,
+  },
+  {
+    key: 'total_volume',
+    header: 'حجم التداول',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (c) => `$${formatNumber(c.total_volume)}`,
+  },
+];

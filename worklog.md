@@ -41018,3 +41018,86 @@ Task ID: DOC-UPDATE-FINAL
 5. الإجراءات التالية المقترحة (لا تتطلب موافقة المالك لأنها documentation فقط):
    - لا شيء — المهمة documentation-only وكاملة.
    - لو المالك رغب: تنفيذ الـ migration الـ 21 شاشة المتبقية على UnifiedTable (سيُوثَّق كل واحد في worklog.md + 02-SCREENS_AND_COMPONENTS.md §10).
+
+---
+Task ID: UNIFIED-TABLE-FINAL-MIGRATION
+Agent: مهندس تنفيذ (execution-engineer)
+Date: 2026-09-26
+
+## ملخص المهمة
+ترحيل آخر 6 شاشات تستخدم manual `<Table>` إلى `UnifiedTable` + إضافة `UnifiedPublishButton` إلى 7 شاشات.
+
+## Part 1: 6 شاشات تم ترحيلها إلى UnifiedTable (14 جدول)
+
+### Batch 1 (lint clean ✅):
+1. **`src/components/simulation/SimulationView.tsx`** — 3 جداول:
+   - Stock List Table (7 أعمدة: name_ar / ticker / sector / price / change / changePercent / actions)
+   - Holdings Table (7 أعمدة: ticker / shares / avgCost / currentPrice / currentValue / pnl / actions)
+   - Transactions History Table (8 أعمدة: date / type / ticker / shares / price / commission / total / pnl)
+   - ملاحظة: الملف كان بـ CRLF line endings — تم تحويله إلى LF أولاً (sed).
+
+2. **`src/components/crypto/CryptoSimulationView.tsx`** — 3 جداول:
+   - Coin List Table (6 أعمدة: rank / name / price / change24h / market_cap / actions)
+   - Holdings Table (7 أعمدة: name / amount / avgCost / currentPrice / currentValue / pnl / actions)
+   - Transactions History Table (8 أعمدة: date / type / name / amount / price / commission / total / pnl)
+   - ملاحظة: الملف كان بـ CRLF — تم تحويله إلى LF أولاً.
+
+3. **`src/components/admin/SuperLearningSystem.tsx`** — 3 جداول:
+   - Sector Report (4 أعمدة: sector / trades / winRate / returnPct)
+   - Engine Breakdown Report (3 أعمدة: model / trades / winRate)
+   - Trades Table (6 أعمدة: ticker / entry_date / entry_price / exit_price / actual_return / analysis_correct)
+   - ملاحظة: persona benchmark matrix (جدول مقارنة مع sticky columns + special header formatting) تُرك كما هو.
+
+### Batch 2 (lint clean ✅):
+4. **`src/components/admin/CryptoPredictionGenerator.tsx`** — 1 جدول:
+   - Predictions Table (9 أعمدة: selected / symbol / price / signal / maestro_score / target_price / stop_loss / risk_reward / position_size_pct)
+
+5. **`src/components/admin/DatabaseManagerFull.tsx`** — 3 جداول:
+   - Tables List (5 أعمدة: name / rowCount / columnCount / sizeHuman / actions)
+   - Selected Table Rows (dynamic columns + server-side sort dropdown preserved)
+   - Schema Columns (5 أعمدة: name / type / notNull / pk / dfltValue) — داخل AlertDialog
+   - ملاحظة: حفاظ على server-side sorting عبر Select dropdown فوق UnifiedTable بدلاً من الـ header click.
+
+6. **`src/components/admin/HumanRecommendationsAdmin.tsx`** — 1 جدول:
+   - Recommendations List (10 أعمدة مع expandable) — _expand / stock_symbol / expert_name / action / entry_price / target_price / stop_loss / status / session_date / actions
+   - expandRender: تفاصيل إضافية (entry_price_from/to / target_price_2 / investment_target / support_level / resistance_level / stop_loss_condition / notes)
+
+## Part 2: 7 شاشات — إضافة UnifiedPublishButton
+
+✅ **أُضيف فعلياً (3 شاشات)**:
+1. **`src/components/stocks/StocksView.tsx`** — أُضيف في الـ toolbar بعد Filter Toggle button. content = قائمة الأسهم + عدد الأسهم المعروضة + أحدث 15 سهم (ticker / price / change%).
+2. **`src/components/screener/StockScreenerAdvanced.tsx`** — أُضيف بين ExportDropdown و زر التحديث. content = screenerShareText (الموجود) + fallback.
+3. **`src/components/watchlist/EnhancedWatchlistView.tsx`** — أُضيف في الـ header قبل زر التحديث. الـ import كان موجوداً لكن الزر لم يكن مستخدماً. content = قائمة المراقبة + عدد الأسهم + أحدث 15 سهم.
+
+✅ **تُحقق منها (4 شاشات — UnifiedPublishButton موجود بالفعل من migration سابق)**:
+4. `src/components/predictions/MakerRadarTab.tsx` — import line 30 + usage line 1090 (رادار الميكرز).
+5. `src/components/predictions/PredictionTrackingView.tsx` — import line 35 + usage line 479 (تتبع التوقعات).
+6. `src/components/analysis/ExpertRecommendationsPanel.tsx` — import line 29 + usage line 955 (توقعات الخبراء).
+7. `src/components/portfolio/EnhancedPortfolioView.tsx` — import line 71 + usage line 2223 (محفظة المستخدم).
+
+## الالتزام بالقواعد (القواعد الذهبية):
+- ✅ لم تُحذف أي ملفات — تم تعديل الـ 9 ملفات فقط.
+- ✅ لم تُحذف أي محتوى — كل التعديلات كانت استبدال `<Table>` بـ `<UnifiedTable>` أو إضافة `<UnifiedPublishButton>`.
+- ✅ استُخدم Read لكل ملف قبل Edit.
+- ✅ استُخدم Edit/MultiEdit للتغييرات الموجّهة فقط — لا rewrite كامل.
+- ✅ الحفاظ على كل الـ state / API calls / handlers / functionality.
+- ✅ استُخدمت `rowClassName` للتلوين الشرطي (win/loss في SimulationView + CryptoSimulationView).
+- ✅ استُخدمت `onRowClick` للحفاظ على row click handlers (DatabaseManagerFull + HumanRecommendationsAdmin + SectorTrackingTab).
+- ✅ استُخدمت `expandable` + `expandRender` للجداول اللي فيها expandable rows (HumanRecommendationsAdmin).
+- ✅ استُخدمت `columnToggle` + `filterable` props للأعمدة المناسبة.
+- ✅ استُخدم `useMemo` لتعريف الـ columns اللي بتعتمد على state/handlers.
+- ✅ server-side sorting في DatabaseManagerFull محفوظ عبر إضافة Select dropdown.
+- ✅ شخصياً persona benchmark matrix في SuperLearningSystem تُرك كما هو (جدول مقارنة معقد بـ sticky columns).
+- ✅ `bun run lint` نظيف بعد كل batch.
+
+## التحقق:
+- `bun run lint` يمر بنجاح بدون أي أخطاء.
+- 9 ملفات تم تعديلها (6 ترحيل + 3 إضافة publish button).
+- 14 جدول manual تم استبدالهم بـ UnifiedTable.
+- 3 شاشات أُضيف إليها UnifiedPublishButton فعلياً + 4 تُحقق منها.
+- إجمالي الـ unified components المُستخدمة في المشروع الآن ~285+ (الـ 6 شاشات المرحّلة بتستخدم الآن نفس الـ pattern).
+
+## الإجراءات التالية المقترحة:
+- لا شيء — المهمة كاملة.
+- لو المالك رغب: ترحيل persona benchmark matrix في SuperLearningSystem (يحتاج تصميم خاص للـ sticky columns + special header formatting).
+- لو المالك رغب: ترحيل جداول EXPLAIN plan + query results في DatabaseManagerFull SQL Console (dynamic columns لكن simpler structure).

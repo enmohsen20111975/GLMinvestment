@@ -67,14 +67,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // PortfolioIntelligenceSection removed - feature disabled
 import { MultiPortfolioSelector, getPortfolioColorClass } from '@/components/portfolio/MultiPortfolioSelector';
@@ -2047,6 +2041,73 @@ function IncomeExpenseTab() {
     }
   };
 
+  // ─── UnifiedTable columns for transactions ────────────────────────────────────
+  const transactionColumns: Column<FinancialTransaction>[] = [
+    {
+      key: 'type',
+      header: 'النوع',
+      sortable: true,
+      filterable: true,
+      render: (t) => (
+        <Badge className={t.type === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
+          {t.type === 'income' ? 'دخل' : 'مصروف'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'التصنيف',
+      sortable: true,
+      filterable: true,
+      className: 'text-sm',
+    },
+    {
+      key: 'amount',
+      header: 'المبلغ',
+      align: 'center',
+      sortable: true,
+      render: (t) => (
+        <span className={cn('font-semibold text-sm', t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+          {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+        </span>
+      ),
+    },
+    {
+      key: 'description',
+      header: 'الوصف',
+      filterable: true,
+      className: 'text-xs text-muted-foreground',
+      render: (t) => (
+        <span className="block max-w-[150px] truncate" title={t.description || ''}>
+          {t.description || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'transaction_date',
+      header: 'التاريخ',
+      sortable: true,
+      filterable: true,
+      className: 'text-xs text-muted-foreground',
+      render: (t) => <span dir="ltr">{t.transaction_date}</span>,
+    },
+    {
+      key: '_delete',
+      header: 'إجراءات',
+      align: 'center',
+      render: (t) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-muted-foreground hover:text-red-500"
+          onClick={(e) => { e.stopPropagation(); if (t.id != null) handleDelete(t.id); }}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      ),
+    },
+  ];
+
   const changeMonth = (dir: number) => {
     const d = new Date(parseInt(year), parseInt(month) - 1 + dir, 1);
     setMonth(String(d.getMonth() + 1).padStart(2, '0'));
@@ -2156,48 +2217,34 @@ function IncomeExpenseTab() {
       {/* Transactions Table */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">المعاملات الأخيرة</CardTitle>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <CardTitle className="text-sm">المعاملات الأخيرة</CardTitle>
+            {transactions.length > 0 && (
+              <UnifiedPublishButton
+                variant="outline"
+                size="sm"
+                title="المعاملات الأخيرة"
+                content={`المعاملات الأخيرة\n${transactions.slice(0, 20).map((t, i) => `${i + 1}. ${t.type === 'income' ? 'دخل' : 'مصروف'} — ${t.category} — ${formatCurrency(t.amount)} ج.م — ${t.transaction_date}`).join('\n')}`}
+                filename={`transactions-${Date.now()}`}
+                hashtags={['معاملات', 'محفظة']}
+                triggerLabel="نشر"
+              />
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">لا توجد معاملات لهذا الشهر</p>
           ) : (
-            <div className="overflow-x-auto max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">النوع</TableHead>
-                    <TableHead className="text-xs">التصنيف</TableHead>
-                    <TableHead className="text-xs text-center">المبلغ</TableHead>
-                    <TableHead className="text-xs">الوصف</TableHead>
-                    <TableHead className="text-xs">التاريخ</TableHead>
-                    <TableHead className="text-xs text-center">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell>
-                        <Badge className={t.type === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
-                          {t.type === 'income' ? 'دخل' : 'مصروف'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{t.category}</TableCell>
-                      <TableCell className={cn('text-center font-semibold text-sm', t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                        {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{t.description || '—'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground" dir="ltr">{t.transaction_date}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-red-500" onClick={() => handleDelete(t.id!)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable<FinancialTransaction>
+              columns={transactionColumns}
+              data={transactions}
+              keyField="id"
+              dense
+              columnToggle
+              filterable
+              maxHeight="max-h-96"
+            />
           )}
         </CardContent>
       </Card>

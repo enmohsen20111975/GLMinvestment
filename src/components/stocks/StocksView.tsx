@@ -43,6 +43,7 @@ import {
 import { StockSelector } from './StockSelector';
 import { StockIconMini } from './StockIcon';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1702,6 +1703,18 @@ export function StocksView() {
                   <span className="h-2 w-2 rounded-full bg-amber-400" />
                 )}
               </Button>
+
+              {/* Publish Button */}
+              <UnifiedPublishButton
+                variant="outline"
+                size="sm"
+                className="h-9 text-xs"
+                title={`قائمة الأسهم — ${MARKET_NAMES_AR[currentMarket] || currentMarket}`}
+                content={`قائمة الأسهم — ${MARKET_NAMES_AR[currentMarket] || currentMarket}\nعدد الأسهم المعروضة: ${baseData.length}\nالفرز: ${selectedSort}\n\n${baseData.slice(0, 15).map((s, i) => `${i + 1}. ${s.ticker} — ${safeNum(s.last_price ?? s.close).toFixed(2)} (${safeNum(s.change_pct ?? s.change_percent).toFixed(2)}%)`).join('\n')}`}
+                filename={`stocks-${currentMarket}-${Date.now()}`}
+                hashtags={['أسهم', currentMarket, 'بورصة']}
+                triggerLabel="نشر"
+              />
 
             </div>
 

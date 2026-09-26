@@ -24,14 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
@@ -104,7 +97,85 @@ function personaSignal(it: StoredAnalysisResult, persona: 'investor' | 'gambler'
   return String(it.analysisJson?.[persona]?.signal || '').toUpperCase();
 }
 
-/** Convert a stored-analysis item into the unified ReportStock shape (investor persona). */
+// ─── UnifiedTable columns builder for recommendation tables ──────────────────
+type RecKind = 'buy' | 'hold' | 'sell';
+
+function recommendationColumns(kind: RecKind): Column<ReportStock & { _idx: number }>[] {
+  return [
+    {
+      key: '_idx',
+      header: '#',
+      align: 'right',
+      sortable: true,
+      className: 'text-muted-foreground text-xs',
+      render: (s) => s._idx,
+    },
+    {
+      key: 'name_ar',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      render: (s) => (
+        <div>
+          <p className="text-sm font-semibold">{s.name_ar}</p>
+          <p className="text-xs text-muted-foreground">{s.ticker}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'sector',
+      header: 'القطاع',
+      sortable: true,
+      filterable: true,
+      className: 'text-xs',
+    },
+    {
+      key: 'current_price',
+      header: 'السعر',
+      align: 'left',
+      sortable: true,
+      className: 'tabular-nums text-sm',
+      render: (s) => (Number(s.current_price) || 0).toFixed(2),
+    },
+    {
+      key: 'price_change',
+      header: 'التغيير',
+      align: 'left',
+      sortable: true,
+      render: (s) => {
+        if (s.source === 'stored') {
+          return <span className="tabular-nums text-sm text-muted-foreground">—</span>;
+        }
+        const chg = Number(s.price_change) || 0;
+        return (
+          <span className={cn('tabular-nums text-sm', chg >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+            {chg >= 0 ? '+' : ''}{(chg || 0).toFixed(2)}%
+          </span>
+        );
+      },
+    },
+    {
+      key: 'score',
+      header: 'الدرجة',
+      align: 'left',
+      sortable: true,
+      render: (s) => {
+        const score = s.score ?? 0;
+        const badgeCls = kind === 'buy'
+          ? score >= 75 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'
+          : kind === 'hold'
+            ? score >= 50 ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+            : score >= 35 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-red-200 text-red-800 dark:bg-red-800/40 dark:text-red-200';
+        return (
+          <Badge variant="secondary" className={cn('font-bold', badgeCls)}>
+            {score.toFixed(1)}
+          </Badge>
+        );
+      },
+    },
+  ];
+}
+
 function storedToReportStock(it: StoredAnalysisResult): ReportStock {
   const inv = it.analysisJson?.investor || {};
   const gamb = it.analysisJson?.gambler || {};
@@ -511,42 +582,67 @@ function SectorReport() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold">#</TableHead>
-                  <TableHead className="text-xs font-semibold">القطاع</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">عدد الأسهم</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">متوسط التغير %</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">الأداء</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedSectors.map((sector, i) => {
-                  const isUp = sector.avg_change_percent >= 0;
+          <UnifiedTable<{ name: string; count: number; avg_change_percent: number; _idx: number }>
+            columns={[
+              {
+                key: '_idx',
+                header: '#',
+                align: 'right',
+                sortable: true,
+                className: 'text-muted-foreground text-xs',
+                render: (s) => s._idx,
+              },
+              {
+                key: 'name',
+                header: 'القطاع',
+                sortable: true,
+                filterable: true,
+                className: 'font-medium text-sm',
+              },
+              {
+                key: 'count',
+                header: 'عدد الأسهم',
+                align: 'left',
+                sortable: true,
+                className: 'tabular-nums text-sm',
+              },
+              {
+                key: 'avg_change_percent',
+                header: 'متوسط التغير %',
+                align: 'left',
+                sortable: true,
+                render: (s) => {
+                  const isUp = s.avg_change_percent >= 0;
                   return (
-                    <TableRow key={sector.name}>
-                      <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                      <TableCell className="font-medium text-sm">{sector.name}</TableCell>
-                      <TableCell className="text-left tabular-nums text-sm">{sector.count}</TableCell>
-                      <TableCell className={cn('text-left tabular-nums text-sm font-bold', isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                        {isUp ? '+' : ''}{(sector.avg_change_percent ?? 0).toFixed(2)}%
-                      </TableCell>
-                      <TableCell className="text-left">
-                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn('h-full rounded-full', isUp ? 'bg-emerald-500' : 'bg-red-500')}
-                            style={{ width: `${Math.min(Math.abs(sector.avg_change_percent) * 10, 100)}%` }}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <span className={cn('tabular-nums text-sm font-bold', isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                      {isUp ? '+' : ''}{(s.avg_change_percent ?? 0).toFixed(2)}%
+                    </span>
                   );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                },
+              },
+              {
+                key: '_perf',
+                header: 'الأداء',
+                align: 'left',
+                render: (s) => {
+                  const isUp = s.avg_change_percent >= 0;
+                  return (
+                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-full', isUp ? 'bg-emerald-500' : 'bg-red-500')}
+                        style={{ width: `${Math.min(Math.abs(s.avg_change_percent) * 10, 100)}%` }}
+                      />
+                    </div>
+                  );
+                },
+              },
+            ]}
+            data={sortedSectors.map((s, i) => ({ ...s, _idx: i + 1 }))}
+            keyField="name"
+            dense
+            columnToggle
+            filterable
+          />
         </CardContent>
       </Card>
 
@@ -928,49 +1024,16 @@ function RecommendationsReport() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-72 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent sticky top-0 bg-background">
-                  <TableHead className="text-xs font-semibold">#</TableHead>
-                  <TableHead className="text-xs font-semibold">السهم</TableHead>
-                  <TableHead className="text-xs font-semibold">القطاع</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">السعر</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">التغيير</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">الدرجة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {buyRows.map((stock, i) => {
-                  const price = Number(stock.current_price) || 0;
-                  return (
-                  <TableRow key={stock.ticker}>
-                    <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                    <TableCell>
-                      <p className="text-sm font-semibold">{stock.name_ar}</p>
-                      <p className="text-xs text-muted-foreground">{stock.ticker}</p>
-                    </TableCell>
-                    <TableCell className="text-xs">{stock.sector}</TableCell>
-                    <TableCell className="text-left tabular-nums text-sm">{(price || 0).toFixed(2)}</TableCell>
-                    {renderChangeCell(stock)}
-                    <TableCell className="text-left">
-                      <Badge variant="secondary" className={cn('font-bold', (stock.score ?? 0) >= 75 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300')}>
-                        {(stock.score ?? 0).toFixed(1)}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-                {buyRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
-                      لا توجد تحليلات شراء حالياً
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <UnifiedTable<ReportStock & { _idx: number }>
+            columns={recommendationColumns('buy')}
+            data={buyRows.map((s, i) => ({ ...s, _idx: i + 1 }))}
+            keyField="ticker"
+            dense
+            columnToggle
+            filterable
+            maxHeight="max-h-72"
+            emptyTextAr="لا توجد تحليلات شراء حالياً"
+          />
         </CardContent>
       </Card>
 
@@ -988,49 +1051,16 @@ function RecommendationsReport() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-72 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent sticky top-0 bg-background">
-                  <TableHead className="text-xs font-semibold">#</TableHead>
-                  <TableHead className="text-xs font-semibold">السهم</TableHead>
-                  <TableHead className="text-xs font-semibold">القطاع</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">السعر</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">التغيير</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">الدرجة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {holdRows.map((stock, i) => {
-                  const price = Number(stock.current_price) || 0;
-                  return (
-                  <TableRow key={stock.ticker}>
-                    <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                    <TableCell>
-                      <p className="text-sm font-semibold">{stock.name_ar}</p>
-                      <p className="text-xs text-muted-foreground">{stock.ticker}</p>
-                    </TableCell>
-                    <TableCell className="text-xs">{stock.sector}</TableCell>
-                    <TableCell className="text-left tabular-nums text-sm">{(price || 0).toFixed(2)}</TableCell>
-                    {renderChangeCell(stock)}
-                    <TableCell className="text-left">
-                      <Badge variant="secondary" className={cn('font-bold', (stock.score ?? 0) >= 50 ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300')}>
-                        {(stock.score ?? 0).toFixed(1)}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-                {holdRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
-                      لا توجد تحليلات تجميع أو احتفاظ حالياً
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <UnifiedTable<ReportStock & { _idx: number }>
+            columns={recommendationColumns('hold')}
+            data={holdRows.map((s, i) => ({ ...s, _idx: i + 1 }))}
+            keyField="ticker"
+            dense
+            columnToggle
+            filterable
+            maxHeight="max-h-72"
+            emptyTextAr="لا توجد تحليلات تجميع أو احتفاظ حالياً"
+          />
         </CardContent>
       </Card>
 
@@ -1048,49 +1078,16 @@ function RecommendationsReport() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-72 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent sticky top-0 bg-background">
-                  <TableHead className="text-xs font-semibold">#</TableHead>
-                  <TableHead className="text-xs font-semibold">السهم</TableHead>
-                  <TableHead className="text-xs font-semibold">القطاع</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">السعر</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">التغيير</TableHead>
-                  <TableHead className="text-xs font-semibold text-left">الدرجة</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sellRows.map((stock, i) => {
-                  const price = Number(stock.current_price) || 0;
-                  return (
-                  <TableRow key={stock.ticker}>
-                    <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                    <TableCell>
-                      <p className="text-sm font-semibold">{stock.name_ar}</p>
-                      <p className="text-xs text-muted-foreground">{stock.ticker}</p>
-                    </TableCell>
-                    <TableCell className="text-xs">{stock.sector}</TableCell>
-                    <TableCell className="text-left tabular-nums text-sm">{(price || 0).toFixed(2)}</TableCell>
-                    {renderChangeCell(stock)}
-                    <TableCell className="text-left">
-                      <Badge variant="secondary" className={cn('font-bold', (stock.score ?? 0) >= 35 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-red-200 text-red-800 dark:bg-red-800/40 dark:text-red-200')}>
-                        {(stock.score ?? 0).toFixed(1)}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-                {sellRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground text-sm py-8">
-                      لا توجد تحليلات بيع حالياً
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <UnifiedTable<ReportStock & { _idx: number }>
+            columns={recommendationColumns('sell')}
+            data={sellRows.map((s, i) => ({ ...s, _idx: i + 1 }))}
+            keyField="ticker"
+            dense
+            columnToggle
+            filterable
+            maxHeight="max-h-72"
+            emptyTextAr="لا توجد تحليلات بيع حالياً"
+          />
         </CardContent>
       </Card>
 

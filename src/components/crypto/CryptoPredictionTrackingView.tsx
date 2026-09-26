@@ -14,14 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Tabs,
   TabsContent,
@@ -117,6 +111,137 @@ function getRiskReward(p: CryptoPrediction): number | null {
   if (risk === 0) return null;
   return reward / risk;
 }
+
+// ─── UnifiedTable columns ─────────────────────────────────────────────────────
+const predictionColumns: Column<CryptoPrediction>[] = [
+  {
+    key: 'ticker',
+    header: 'العملة',
+    sortable: true,
+    filterable: true,
+    render: (p) => (
+      <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
+          {p.ticker.slice(0, 3)}
+        </div>
+        <span className="font-semibold text-sm">{p.ticker}</span>
+      </div>
+    ),
+  },
+  {
+    key: 'signal',
+    header: 'الإشارة',
+    align: 'center',
+    sortable: true,
+    filterable: true,
+    render: (p) => (
+      <Badge variant="outline" className={cn('text-xs',
+        p.signal === 'BUY' ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+        : p.signal === 'SELL' ? 'text-red-600 bg-red-50 border-red-200'
+        : 'text-amber-600 bg-amber-50 border-amber-200'
+      )}>
+        {p.signal}
+      </Badge>
+    ),
+  },
+  {
+    key: 'prediction_date',
+    header: 'التاريخ',
+    align: 'right',
+    sortable: true,
+    filterable: true,
+    className: 'text-xs font-mono text-muted-foreground',
+  },
+  {
+    key: 'entry_price',
+    header: 'سعر الدخول',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (p) => formatPrice(p.entry_price),
+  },
+  {
+    key: 'target_price',
+    header: 'الهدف',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm text-emerald-600',
+    render: (p) => formatPrice(p.target_price),
+  },
+  {
+    key: 'stop_loss',
+    header: 'الوقف',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm text-red-600',
+    render: (p) => formatPrice(p.stop_loss),
+  },
+  {
+    key: '_potential',
+    header: 'عائد محتمل',
+    align: 'center',
+    sortable: true,
+    render: (p) => {
+      const potential = getPotentialReturn(p);
+      return potential !== null ? (
+        <Badge variant="outline" className="text-xs font-mono text-emerald-600 bg-emerald-50 border-emerald-200">
+          +{potential.toFixed(1)}%
+        </Badge>
+      ) : '—';
+    },
+  },
+  {
+    key: '_rr',
+    header: 'R:R',
+    align: 'center',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (p) => {
+      const rr = getRiskReward(p);
+      return rr !== null ? rr.toFixed(2) : '—';
+    },
+  },
+  {
+    key: 'confidence',
+    header: 'الثقة',
+    align: 'center',
+    sortable: true,
+    render: (p) => p.confidence !== null ? (
+      <Badge variant="secondary" className="text-xs">{p.confidence.toFixed(0)}</Badge>
+    ) : '—',
+  },
+  {
+    key: '_status',
+    header: 'الحالة',
+    align: 'center',
+    render: (p) => {
+      const isClosed = !!p.outcome_date;
+      if (!isClosed) {
+        return (
+          <Badge variant="outline" className="text-xs text-amber-600 bg-amber-50 border-amber-200">
+            <Clock className="h-3 w-3 ml-1" />
+            نشط
+          </Badge>
+        );
+      }
+      const actual = formatPercent(p.actual_return);
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <Badge variant="outline" className={cn('text-xs',
+            p.hit_target === 1 ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+            : p.hit_stop === 1 ? 'text-red-600 bg-red-50 border-red-200'
+            : 'text-muted-foreground'
+          )}>
+            {p.hit_target === 1 ? '🎯 هدف' : p.hit_stop === 1 ? '🛑 وقف' : '—'}
+          </Badge>
+          <span className={cn('text-xs font-mono', actual.positive ? 'text-emerald-600' : 'text-red-600')}>
+            {actual.text}
+          </span>
+        </div>
+      );
+    },
+  },
+];
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -220,6 +345,15 @@ export default function CryptoPredictionTrackingView() {
           <RefreshCw className={cn('h-4 w-4 ml-2', loading && 'animate-spin')} />
           تحديث
         </Button>
+        <UnifiedPublishButton
+          variant="outline"
+          size="sm"
+          title="متابعة توقعات العملات الرقمية"
+          content={`متابعة توقعات العملات الرقمية\nإجمالي: ${stats.total} · مغلقة: ${stats.closed} · مكاسب: ${stats.wins} · خسائر: ${stats.losses}\nنسبة النجاح: ${winRate.toFixed(1)}%\n\nأحدث التوقعات:\n${filtered.slice(0, 15).map((p, i) => `${i + 1}. ${p.ticker} — ${p.signal} — دخول ${formatPrice(p.entry_price)} — هدف ${formatPrice(p.target_price)} — وقف ${formatPrice(p.stop_loss)}`).join('\n')}`}
+          filename={`crypto-predictions-${Date.now()}`}
+          hashtags={['crypto', 'توقعات', 'بيتكوين']}
+          triggerLabel="نشر"
+        />
       </div>
 
       {/* Stats Cards */}
@@ -303,157 +437,18 @@ export default function CryptoPredictionTrackingView() {
               <TabsTrigger value="closed">مغلقة ({stats.closed})</TabsTrigger>
             </TabsList>
             <TabsContent value={tab} className="mt-4">
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">
-                    جاري تحميل التوقعات...
-                  </span>
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <AlertTriangle className="h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    لا توجد توقعات تطابق الفلاتر
-                  </p>
-                </div>
-              ) : (
-                <div className="max-h-[600px] overflow-auto -mx-2">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10">
-                      <TableRow>
-                        <TableHead>العملة</TableHead>
-                        <TableHead className="text-center">الإشارة</TableHead>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">سعر الدخول</TableHead>
-                        <TableHead className="text-right">الهدف</TableHead>
-                        <TableHead className="text-right">الوقف</TableHead>
-                        <TableHead className="text-center">عائد محتمل</TableHead>
-                        <TableHead className="text-center">R:R</TableHead>
-                        <TableHead className="text-center">الثقة</TableHead>
-                        <TableHead className="text-center">الحالة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filtered.map((p) => {
-                        const potential = getPotentialReturn(p);
-                        const rr = getRiskReward(p);
-                        const actual = formatPercent(p.actual_return);
-                        const isClosed = !!p.outcome_date;
-                        return (
-                          <TableRow
-                            key={p.id}
-                            className="hover:bg-muted/50"
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
-                                  {p.ticker.slice(0, 3)}
-                                </div>
-                                <span className="font-semibold text-sm">
-                                  {p.ticker}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  'text-xs',
-                                  p.signal === 'BUY'
-                                    ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                    : p.signal === 'SELL'
-                                      ? 'text-red-600 bg-red-50 border-red-200'
-                                      : 'text-amber-600 bg-amber-50 border-amber-200'
-                                )}
-                              >
-                                {p.signal}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right text-xs font-mono text-muted-foreground">
-                              {p.prediction_date}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {formatPrice(p.entry_price)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm text-emerald-600">
-                              {formatPrice(p.target_price)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm text-red-600">
-                              {formatPrice(p.stop_loss)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {potential !== null ? (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs font-mono text-emerald-600 bg-emerald-50 border-emerald-200"
-                                >
-                                  +{potential.toFixed(1)}%
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center font-mono text-sm">
-                              {rr !== null ? rr.toFixed(2) : '—'}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {p.confidence !== null ? (
-                                <Badge variant="secondary" className="text-xs">
-                                  {p.confidence.toFixed(0)}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {isClosed ? (
-                                <div className="flex flex-col items-center gap-1">
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      'text-xs',
-                                      p.hit_target === 1
-                                        ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                        : p.hit_stop === 1
-                                          ? 'text-red-600 bg-red-50 border-red-200'
-                                          : 'text-muted-foreground'
-                                    )}
-                                  >
-                                    {p.hit_target === 1
-                                      ? '🎯 هدف'
-                                      : p.hit_stop === 1
-                                        ? '🛑 وقف'
-                                        : '—'}
-                                  </Badge>
-                                  <span
-                                    className={cn(
-                                      'text-xs font-mono',
-                                      actual.positive
-                                        ? 'text-emerald-600'
-                                        : 'text-red-600'
-                                    )}
-                                  >
-                                    {actual.text}
-                                  </span>
-                                </div>
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs text-amber-600 bg-amber-50 border-amber-200"
-                                >
-                                  <Clock className="h-3 w-3 ml-1" />
-                                  نشط
-                                </Badge>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <UnifiedTable<CryptoPrediction>
+                columns={predictionColumns}
+                data={filtered}
+                loading={loading}
+                loadingRows={6}
+                keyField="id"
+                dense
+                columnToggle
+                filterable
+                maxHeight="max-h-[600px]"
+                emptyTextAr="لا توجد توقعات تطابق الفلاتر"
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

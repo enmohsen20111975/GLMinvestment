@@ -38,14 +38,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   Dialog,
   DialogContent,
@@ -620,6 +613,304 @@ export function CryptoSimulationView() {
     }));
   }, [simState.history]);
 
+  // ─── UnifiedTable columns ────────────────────────────────────────────
+  const coinListColumns: Column<CryptoCoin>[] = useMemo(() => ([
+    {
+      key: 'market_cap_rank',
+      header: '#',
+      align: 'right',
+      sortable: true,
+      width: 'w-12',
+      className: 'text-muted-foreground',
+    },
+    {
+      key: 'name',
+      header: 'العملة',
+      sortable: true,
+      filterable: true,
+      render: (c) => (
+        <div className="flex items-center gap-2">
+          {c.image ? (
+            <img src={c.image} alt={c.name} className="w-8 h-8 rounded-full" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-muted" />
+          )}
+          <div>
+            <p className="font-medium">{c.name}</p>
+            <Badge variant="outline" className="font-mono text-xs">{c.symbol}</Badge>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'current_price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono font-bold',
+      render: (c) => formatCurrency(c.current_price),
+    },
+    {
+      key: 'price_change_percentage_24h',
+      header: 'التغير 24h',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      render: (c) => (
+        <Badge
+          variant={(c.price_change_percentage_24h ?? 0) >= 0 ? 'default' : 'destructive'}
+          className={cn((c.price_change_percentage_24h ?? 0) >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
+        >
+          <span className="flex items-center gap-1">
+            {(c.price_change_percentage_24h ?? 0) >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {(c.price_change_percentage_24h ?? 0) >= 0 ? '+' : ''}{c.price_change_percentage_24h?.toFixed(2)}%
+          </span>
+        </Badge>
+      ),
+    },
+    {
+      key: 'market_cap',
+      header: 'القيمة السوقية',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'font-mono text-muted-foreground',
+      render: (c) => formatCurrency(c.market_cap),
+    },
+    {
+      key: 'actions',
+      header: 'إجراءات',
+      align: 'center',
+      width: 'w-40',
+      hideable: false,
+      render: (c) => (
+        <div className="flex items-center justify-center gap-1">
+          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={(e) => { e.stopPropagation(); openTradeDialog(c, 'buy'); }}>
+            <Plus className="h-3 w-3" />
+            شراء
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); openTradeDialog(c, 'sell'); }}>
+            <Minus className="h-3 w-3" />
+            بيع
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className={cn("h-7 w-7 p-0", simState.watchlist.includes(c.id) && "text-amber-500")}
+            onClick={(e) => { e.stopPropagation(); toggleWatchlist(c.id); }}
+          >
+            <Star className={cn("h-4 w-4", simState.watchlist.includes(c.id) && "fill-amber-500")} />
+          </Button>
+        </div>
+      ),
+    },
+  ]), [openTradeDialog, simState.watchlist, toggleWatchlist]);
+
+  const holdingsColumns: Column<CryptoPosition & { _coin?: CryptoCoin; _currentValue?: number; _pnl?: number; _pnlPercent?: number }>[] = useMemo(() => ([
+    {
+      key: 'name',
+      header: 'العملة',
+      sortable: true,
+      filterable: true,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          {p._coin?.image ? (
+            <img src={p._coin.image} alt={p.name} className="w-8 h-8 rounded-full" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-muted" />
+          )}
+          <div>
+            <p className="font-medium">{p.name}</p>
+            <Badge variant="outline" className="font-mono text-xs">{p.symbol}</Badge>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'الكمية',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono text-xs',
+      render: (p) => formatCryptoAmount(p.amount, p.symbol),
+    },
+    {
+      key: 'avgCost',
+      header: 'متوسط التكلفة',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono',
+      render: (p) => formatCurrency(p.avgCost),
+    },
+    {
+      key: '_currentPrice',
+      header: 'السعر الحالي',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono',
+      render: (p) => formatCurrency(p._coin?.current_price ?? 0),
+    },
+    {
+      key: '_currentValue',
+      header: 'القيمة الحالية',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'font-mono font-bold',
+      render: (p) => formatCurrency(p._currentValue ?? 0),
+    },
+    {
+      key: '_pnl',
+      header: 'الربح/الخسارة',
+      align: 'right',
+      sortable: true,
+      width: 'w-36',
+      render: (p) => (
+        <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          <p>{(p._pnl ?? 0) >= 0 ? '+' : ''}{formatCurrency(p._pnl ?? 0)}</p>
+          <p className="text-xs">({(p._pnlPercent ?? 0) >= 0 ? '+' : ''}{(p._pnlPercent ?? 0).toFixed(2)}%)</p>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'إجراء',
+      align: 'center',
+      width: 'w-24',
+      hideable: false,
+      render: (p) => (
+        <div className="flex items-center justify-center">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+            onClick={(e) => { if (p._coin) { e.stopPropagation(); openTradeDialog(p._coin, 'sell'); } }}
+          >
+            <Minus className="h-3 w-3" />
+            بيع
+          </Button>
+        </div>
+      ),
+    },
+  ]), [openTradeDialog]);
+
+  const transactionsColumns: Column<CryptoTransaction>[] = useMemo(() => ([
+    {
+      key: 'date',
+      header: 'التاريخ',
+      sortable: true,
+      width: 'w-32',
+      render: (t) => (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {new Date(t.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+        </span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'النوع',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-24',
+      render: (t) => (
+        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}>
+          {t.type === 'buy' ? (
+            <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
+          ) : (
+            <span className="flex items-center gap-1"><ArrowUpRight className="h-3 w-3" /> بيع</span>
+          )}
+        </Badge>
+      ),
+    },
+    {
+      key: 'name',
+      header: 'العملة',
+      sortable: true,
+      filterable: true,
+      render: (t) => (
+        <div>
+          <p className="font-medium text-sm">{t.name}</p>
+          <Badge variant="outline" className="font-mono text-xs">{t.symbol}</Badge>
+        </div>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'الكمية',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono text-xs',
+      render: (t) => formatCryptoAmount(t.amount, t.symbol),
+    },
+    {
+      key: 'price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono',
+      render: (t) => formatCurrency(t.price),
+    },
+    {
+      key: 'commission',
+      header: 'العمولة',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono text-muted-foreground text-xs',
+      render: (t) => formatCurrency(t.commission),
+    },
+    {
+      key: 'total',
+      header: 'الإجمالي',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono font-bold',
+      render: (t) => formatCurrency(t.total),
+    },
+    {
+      key: 'pnl',
+      header: 'الربح/الخسارة',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      render: (t) => (
+        t.pnl !== undefined ? (
+          <span className={cn('font-mono font-medium text-sm', t.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+            {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        )
+      ),
+    },
+  ]), []);
+
+  // Pre-compute enriched holdings data for UnifiedTable
+  const holdingsRows = useMemo(() => {
+    return simState.positions.map((pos) => {
+      const coin = cryptos.find((c) => c.id === pos.coinId);
+      if (!coin) return null;
+      const currentValue = pos.amount * coin.current_price;
+      const costValue = pos.amount * pos.avgCost;
+      const pnl = currentValue - costValue;
+      const pnlPercent = costValue > 0 ? (pnl / costValue) * 100 : 0;
+      return { ...pos, _coin: coin, _currentValue: currentValue, _pnl: pnl, _pnlPercent: pnlPercent };
+    }).filter((r): r is CryptoPosition & { _coin: CryptoCoin; _currentValue: number; _pnl: number; _pnlPercent: number } => r !== null);
+  }, [simState.positions, cryptos]);
+
+  // Pre-compute enriched transactions data for UnifiedTable (most-recent-first)
+  const transactionsRows = useMemo(() => {
+    return [...filteredTransactions].reverse();
+  }, [filteredTransactions]);
+
   // ─── Render ────────────────────────────────────────────────────────
 
   if (loading) {
@@ -957,85 +1248,20 @@ export function CryptoSimulationView() {
           <Card>
             <CardContent className="p-0">
               <div className="max-h-[600px] overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">#</TableHead>
-                      <TableHead className="text-right">العملة</TableHead>
-                      <TableHead className="text-right">السعر</TableHead>
-                      <TableHead className="text-right">التغير 24h</TableHead>
-                      <TableHead className="text-right">القيمة السوقية</TableHead>
-                      <TableHead className="text-center">إجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCryptos.map((coin) => (
-                      <TableRow
-                        key={coin.id}
-                        className={cn(
-                          'transition-colors',
-                          flashingCoins[coin.id] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-950/20',
-                          flashingCoins[coin.id] === 'down' && 'bg-red-50/50 dark:bg-red-950/20'
-                        )}
-                      >
-                        <TableCell className="text-muted-foreground">{coin.market_cap_rank}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {coin.image ? (
-                              <img src={coin.image} alt={coin.name} className="w-8 h-8 rounded-full" />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-muted" />
-                            )}
-                            <div>
-                              <p className="font-medium">{coin.name}</p>
-                              <Badge variant="outline" className="font-mono text-xs">{coin.symbol}</Badge>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono font-bold">{formatCurrency(coin.current_price)}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={coin.price_change_percentage_24h >= 0 ? 'default' : 'destructive'}
-                            className={cn(coin.price_change_percentage_24h >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
-                          >
-                            <span className="flex items-center gap-1">
-                              {coin.price_change_percentage_24h >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                              {coin.price_change_percentage_24h >= 0 ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2)}%
-                            </span>
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-muted-foreground">{formatCurrency(coin.market_cap)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => openTradeDialog(coin, 'buy')}>
-                              <Plus className="h-3 w-3" />
-                              شراء
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openTradeDialog(coin, 'sell')}>
-                              <Minus className="h-3 w-3" />
-                              بيع
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className={cn("h-7 w-7 p-0", simState.watchlist.includes(coin.id) && "text-amber-500")}
-                              onClick={() => toggleWatchlist(coin.id)}
-                            >
-                              <Star className={cn("h-4 w-4", simState.watchlist.includes(coin.id) && "fill-amber-500")} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredCryptos.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          لا توجد نتائج مطابقة للبحث
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                <UnifiedTable<CryptoCoin>
+                  columns={coinListColumns}
+                  data={filteredCryptos}
+                  keyField="id"
+                  dense
+                  columnToggle
+                  filterable
+                  maxHeight="max-h-[600px]"
+                  rowClassName={(c) => cn(
+                    'transition-colors',
+                    flashingCoins[c.id] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-950/20',
+                    flashingCoins[c.id] === 'down' && 'bg-red-50/50 dark:bg-red-950/20',
+                  )}
+                />
               </div>
             </CardContent>
           </Card>
@@ -1101,62 +1327,15 @@ export function CryptoSimulationView() {
                   </div>
                 ) : (
                   <div className="max-h-[400px] overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">العملة</TableHead>
-                          <TableHead className="text-right">الكمية</TableHead>
-                          <TableHead className="text-right">متوسط التكلفة</TableHead>
-                          <TableHead className="text-right">السعر الحالي</TableHead>
-                          <TableHead className="text-right">القيمة الحالية</TableHead>
-                          <TableHead className="text-right">الربح/الخسارة</TableHead>
-                          <TableHead className="text-center">إجراء</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {simState.positions.map((pos) => {
-                          const coin = cryptos.find((c) => c.id === pos.coinId);
-                          if (!coin) return null;
-                          const currentValue = pos.amount * coin.current_price;
-                          const costValue = pos.amount * pos.avgCost;
-                          const pnl = currentValue - costValue;
-                          const pnlPercent = costValue > 0 ? (pnl / costValue) * 100 : 0;
-                          return (
-                            <TableRow key={pos.coinId}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {coin.image ? (
-                                    <img src={coin.image} alt={coin.name} className="w-8 h-8 rounded-full" />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-full bg-muted" />
-                                  )}
-                                  <div>
-                                    <p className="font-medium">{coin.name}</p>
-                                    <Badge variant="outline" className="font-mono text-xs">{pos.symbol}</Badge>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-mono text-xs">{formatCryptoAmount(pos.amount, pos.symbol)}</TableCell>
-                              <TableCell className="font-mono">{formatCurrency(pos.avgCost)}</TableCell>
-                              <TableCell className="font-mono">{formatCurrency(coin.current_price)}</TableCell>
-                              <TableCell className="font-mono font-bold">{formatCurrency(currentValue)}</TableCell>
-                              <TableCell>
-                                <div className={cn('font-mono font-medium', pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                                  <p>{pnl >= 0 ? '+' : ''}{formatCurrency(pnl)}</p>
-                                  <p className="text-xs">({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)</p>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50" onClick={() => openTradeDialog(coin, 'sell')}>
-                                  <Minus className="h-3 w-3" />
-                                  بيع
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                    <UnifiedTable
+                      columns={holdingsColumns}
+                      data={holdingsRows}
+                      keyField="coinId"
+                      dense
+                      columnToggle
+                      filterable
+                      maxHeight="max-h-[400px]"
+                    />
                   </div>
                 )}
               </CardContent>
@@ -1260,57 +1439,15 @@ export function CryptoSimulationView() {
                 </div>
               ) : (
                 <div className="max-h-[500px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">النوع</TableHead>
-                        <TableHead className="text-right">العملة</TableHead>
-                        <TableHead className="text-right">الكمية</TableHead>
-                        <TableHead className="text-right">السعر</TableHead>
-                        <TableHead className="text-right">العمولة</TableHead>
-                        <TableHead className="text-right">الإجمالي</TableHead>
-                        <TableHead className="text-right">الربح/الخسارة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[...filteredTransactions].reverse().map((tx) => (
-                        <TableRow key={tx.id}>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                            {new Date(tx.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={tx.type === 'buy' ? 'default' : 'destructive'} className={cn(tx.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}>
-                              {tx.type === 'buy' ? (
-                                <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
-                              ) : (
-                                <span className="flex items-center gap-1"><ArrowUpRight className="h-3 w-3" /> بيع</span>
-                              )}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium text-sm">{tx.name}</p>
-                              <Badge variant="outline" className="font-mono text-xs">{tx.symbol}</Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">{formatCryptoAmount(tx.amount, tx.symbol)}</TableCell>
-                          <TableCell className="font-mono">{formatCurrency(tx.price)}</TableCell>
-                          <TableCell className="font-mono text-muted-foreground text-xs">{formatCurrency(tx.commission)}</TableCell>
-                          <TableCell className="font-mono font-bold">{formatCurrency(tx.total)}</TableCell>
-                          <TableCell>
-                            {tx.pnl !== undefined ? (
-                              <span className={cn('font-mono font-medium text-sm', tx.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                                {tx.pnl >= 0 ? '+' : ''}{formatCurrency(tx.pnl)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <UnifiedTable
+                    columns={transactionsColumns}
+                    data={transactionsRows}
+                    keyField="id"
+                    dense
+                    columnToggle
+                    filterable
+                    maxHeight="max-h-[500px]"
+                  />
                 </div>
               )}
             </CardContent>

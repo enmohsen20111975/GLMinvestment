@@ -26,9 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Collapsible,
   CollapsibleContent,
@@ -1084,9 +1083,20 @@ function RadarSection({
             <p className="text-xs text-muted-foreground">{subtitle}</p>
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {stocks.length} أسهم
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">
+            {stocks.length} أسهم
+          </Badge>
+          <UnifiedPublishButton
+            variant="outline"
+            size="sm"
+            title={`رادار الميكرز — ${title}`}
+            content={`رادار الميكرز — ${title}\n${stocks.map((s, i) => `${i + 1}. ${s.ticker} — ${fmtNum(s.current_price)} EGP${s.maker_activity ? ` — ميكرز: ${s.maker_activity}` : ''}${s.accumulation ? ` — ${s.accumulation}` : ''}`).join('\n')}`}
+            filename={`maker-radar-${accent}-${Date.now()}`}
+            hashtags={['EGX', 'رادار_الميكرز', 'بورصة_مصر']}
+            triggerLabel="نشر الرادار"
+          />
+        </div>
       </div>
 
       <div className="p-2 md:p-3">
@@ -1115,169 +1125,281 @@ interface StockTableProps {
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
+type RadarStockRow = RadarStock & { _idx: number };
+
 function StockTable({
   stocks, accent, sectorForTicker, changePercentForTicker, onSelect, onTrackToggle,
 }: StockTableProps) {
   const a = accentClasses[accent];
+
+  // إعداد الـ columns للجدول الموحّد
+  const columns: Column<RadarStockRow>[] = [
+    {
+      key: '_idx',
+      header: '#',
+      align: 'center',
+      width: 'w-10',
+      sortable: true,
+      className: 'text-center text-muted-foreground font-mono text-[11px]',
+      render: (r) => r._idx,
+    },
+    {
+      key: 'ticker',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      hideable: true,
+      render: (stock) => (
+        <div className="flex items-center gap-1.5">
+          <span className="font-bold text-sm">{stock.ticker}</span>
+          {stock.isTracked && (
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="متابَع" />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'current_price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      className: 'font-mono font-semibold',
+      render: (stock) => fmtNum(stock.current_price),
+    },
+    {
+      key: 'changePct',
+      header: 'التغير%',
+      align: 'right',
+      sortable: true,
+      filterable: true,
+      render: (stock) => {
+        const changePct = changePercentForTicker(stock.ticker);
+        return (
+          <span className={`font-mono font-semibold ${pnlColorClass(changePct)}`}>
+            {changePct != null ? fmtPct(changePct) : '-'}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'roc_10d',
+      header: 'ROC10',
+      align: 'right',
+      sortable: true,
+      className: 'hidden sm:table-cell font-mono',
+      render: (stock) => (
+        <span className={`font-mono ${pnlColorClass(stock.roc_10d)}`}>
+          {fmtPct(stock.roc_10d)}
+        </span>
+      ),
+    },
+    {
+      key: 'roc_30d',
+      header: 'ROC30',
+      align: 'right',
+      sortable: true,
+      className: 'hidden lg:table-cell font-mono',
+      render: (stock) => (
+        <span className={`font-mono ${pnlColorClass(stock.roc_30d ?? undefined)}`}>
+          {fmtPct(stock.roc_30d)}
+        </span>
+      ),
+    },
+    {
+      key: 'volume_ratio_10d_vs_20d',
+      header: 'حجم نسبي',
+      align: 'right',
+      sortable: true,
+      className: 'hidden sm:table-cell font-mono',
+      render: (stock) => {
+        const volRatio = stock.volume_ratio_10d_vs_20d;
+        const volHighlight = volRatio >= 1.5;
+        return (
+          <span className={`font-mono ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
+            {volRatio.toFixed(2)}×
+          </span>
+        );
+      },
+    },
+    {
+      key: 'signalCount',
+      header: 'الإشارات',
+      align: 'center',
+      render: (stock) => {
+        const signalCount =
+          stock.pre_surge_details?.signal_count ??
+          stock.quiet_details?.signal_count ?? null;
+        const signalMax = stock.pre_surge_details ? 4 : stock.quiet_details ? 6 : null;
+        return signalCount != null && signalMax != null ? (
+          <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${a.badge}`}>
+            {signalCount}/{signalMax}
+          </Badge>
+        ) : '—';
+      },
+    },
+    {
+      key: 'maker_activity',
+      header: 'ميكرز',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      className: 'hidden md:table-cell',
+      render: (stock) => (
+        <span className={
+          stock.maker_activity === 'عالي'
+            ? 'text-rose-600 dark:text-rose-400 font-bold'
+            : stock.maker_activity === 'متوسط'
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-muted-foreground'
+        }>
+          {stock.maker_activity || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'buy_pct',
+      header: 'شراء%',
+      align: 'center',
+      sortable: true,
+      className: 'hidden lg:table-cell font-mono text-xs',
+      render: (stock) => (
+        <span className={
+          (stock.buy_pct ?? 0) >= 60 ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+          : (stock.buy_pct ?? 0) <= 40 ? 'text-rose-600 dark:text-rose-400 font-bold'
+          : 'text-muted-foreground'
+        }>
+          {stock.buy_pct != null ? `${stock.buy_pct}%` : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'net_flow_egp',
+      header: 'Net Flow',
+      align: 'center',
+      sortable: true,
+      className: 'hidden lg:table-cell font-mono text-xs',
+      render: (stock) => (
+        <span className={pnlColorClass(stock.net_flow_egp ?? undefined)}>
+          {stock.net_flow_egp != null
+            ? `${stock.net_flow_egp >= 0 ? '+' : ''}${(Math.abs(stock.net_flow_egp) / 1_000_000).toFixed(1)}M`
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'life_cycle',
+      header: 'دورة الحياة',
+      align: 'center',
+      className: 'hidden xl:table-cell text-xs',
+      filterable: true,
+      render: (stock) => {
+        if (stock.kill_switch) {
+          return <span className="text-rose-600 dark:text-rose-400 font-bold">⚠️ KILL</span>;
+        }
+        if (!stock.life_cycle || stock.life_cycle === 'عادي') {
+          return <span className="text-muted-foreground">-</span>;
+        }
+        return (
+          <span className={
+            stock.life_cycle.includes('انفجار') ? 'text-emerald-600 font-bold'
+            : stock.life_cycle.includes('توزيع') ? 'text-rose-600 font-bold'
+            : stock.life_cycle.includes('نعاس') ? 'text-amber-600'
+            : stock.life_cycle.includes('حبس') ? 'text-rose-600 font-bold'
+            : 'text-muted-foreground'
+          }>
+            {stock.life_cycle}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'accumulation',
+      header: 'تجميع/تصريف',
+      align: 'center',
+      className: 'hidden md:table-cell',
+      filterable: true,
+      render: (stock) => (
+        <span className={
+          stock.accumulation?.includes('تجميع قوي')
+            ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+            : stock.accumulation?.includes('تصريف قوي')
+              ? 'text-rose-600 dark:text-rose-400 font-semibold'
+              : stock.accumulation?.includes('تجميع')
+                ? 'text-emerald-500 dark:text-emerald-500'
+                : 'text-amber-500 dark:text-amber-500'
+        }>
+          {stock.accumulation || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'expected',
+      header: 'المتوقع',
+      className: 'hidden xl:table-cell text-xs text-muted-foreground',
+      filterable: true,
+      render: (stock) => stock.expected || '-',
+    },
+    {
+      key: 'sector',
+      header: 'القطاع',
+      className: 'hidden md:table-cell text-muted-foreground text-xs',
+      filterable: true,
+      render: (stock) => sectorForTicker(stock.ticker) || '—',
+    },
+    {
+      key: 'position_size',
+      header: 'الحجم',
+      align: 'right',
+      sortable: true,
+      render: (stock) => {
+        const psPct = (stock.position_size * 100).toFixed(1);
+        return (
+          <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-mono">
+            {psPct}%
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'isTracked',
+      header: '⭐',
+      align: 'center',
+      width: 'w-10',
+      render: (stock) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); onTrackToggle(stock.ticker, stock.current_price, !!stock.isTracked); }}
+          className="text-muted-foreground hover:text-amber-500 transition-colors p-1 rounded"
+          title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
+          aria-label={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
+        >
+          {stock.isTracked ? (
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+          ) : (
+            <StarOff className="h-4 w-4" />
+          )}
+        </button>
+      ),
+    },
+  ];
+
+  // إضافة index لكل صف
+  const data: RadarStockRow[] = useMemo(
+    () => stocks.map((s, i) => ({ ...s, _idx: i + 1 })),
+    [stocks],
+  );
+
   return (
-    <div className="overflow-x-auto -mx-1">
-      <Table className="text-xs">
-        <TableHeader>
-          <TableRow className={`${a.headerBg} border-b ${a.border} hover:bg-transparent sticky top-0 z-10`}>
-            <TableHead className="w-10 text-center font-semibold h-9">#</TableHead>
-            <TableHead className="font-semibold h-9">السهم</TableHead>
-            <TableHead className="font-semibold text-right h-9">السعر</TableHead>
-            <TableHead className="font-semibold text-right h-9">التغير%</TableHead>
-            <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">ROC10</TableHead>
-            <TableHead className="font-semibold text-right h-9 hidden lg:table-cell">ROC30</TableHead>
-            <TableHead className="font-semibold text-right h-9 hidden sm:table-cell">حجم نسبي</TableHead>
-            <TableHead className="font-semibold text-center h-9">الإشارات</TableHead>
-            <TableHead className="font-semibold text-center h-9 hidden md:table-cell">ميكرز</TableHead>
-            <TableHead className="font-semibold text-center h-9 hidden lg:table-cell">شراء%</TableHead>
-            <TableHead className="font-semibold text-center h-9 hidden lg:table-cell">Net Flow</TableHead>
-            <TableHead className="font-semibold text-center h-9 hidden xl:table-cell">دورة الحياة</TableHead>
-            <TableHead className="font-semibold text-center h-9 hidden md:table-cell">تجميع/تصريف</TableHead>
-            <TableHead className="font-semibold h-9 hidden xl:table-cell">المتوقع</TableHead>
-            <TableHead className="font-semibold h-9 hidden md:table-cell">القطاع</TableHead>
-            <TableHead className="font-semibold text-right h-9">الحجم</TableHead>
-            <TableHead className="w-10 text-center font-semibold h-9">⭐</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {stocks.map((stock, idx) => {
-            const volRatio = stock.volume_ratio_10d_vs_20d;
-            const volHighlight = volRatio >= 1.5;
-
-            const signalCount =
-              stock.pre_surge_details?.signal_count ??
-              stock.quiet_details?.signal_count ?? null;
-            const signalMax = stock.pre_surge_details ? 4 : stock.quiet_details ? 6 : null;
-
-            const changePct = changePercentForTicker(stock.ticker);
-            const psPct = (stock.position_size * 100).toFixed(1);
-            const sector = sectorForTicker(stock.ticker);
-
-            return (
-              <TableRow
-                key={stock.ticker}
-                onClick={() => onSelect(stock.ticker)}
-                className="cursor-pointer odd:bg-muted/20 hover:bg-muted/50 transition-colors"
-              >
-                <TableCell className="text-center text-muted-foreground font-mono text-[11px]">{idx + 1}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sm">{stock.ticker}</span>
-                    {stock.isTracked && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="متابَع" />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono font-semibold text-right">{fmtNum(stock.current_price)}</TableCell>
-                <TableCell className={`font-mono font-semibold text-right ${pnlColorClass(changePct)}`}>
-                  {changePct != null ? fmtPct(changePct) : '-'}
-                </TableCell>
-                <TableCell className={`font-mono text-right hidden sm:table-cell ${pnlColorClass(stock.roc_10d)}`}>
-                  {fmtPct(stock.roc_10d)}
-                </TableCell>
-                <TableCell className={`font-mono text-right hidden lg:table-cell ${pnlColorClass(stock.roc_30d ?? undefined)}`}>
-                  {fmtPct(stock.roc_30d)}
-                </TableCell>
-                <TableCell className={`font-mono text-right hidden sm:table-cell ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
-                  {volRatio.toFixed(2)}×
-                </TableCell>
-                <TableCell className="text-center">
-                  {signalCount != null && signalMax != null ? (
-                    <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${a.badge}`}>
-                      {signalCount}/{signalMax}
-                    </Badge>
-                  ) : '—'}
-                </TableCell>
-                <TableCell className="text-center hidden md:table-cell">
-                  <span className={
-                    stock.maker_activity === 'عالي'
-                      ? 'text-rose-600 dark:text-rose-400 font-bold'
-                      : stock.maker_activity === 'متوسط'
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-muted-foreground'
-                  }>
-                    {stock.maker_activity || '-'}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
-                  <span className={
-                    (stock.buy_pct ?? 0) >= 60 ? 'text-emerald-600 dark:text-emerald-400 font-bold'
-                    : (stock.buy_pct ?? 0) <= 40 ? 'text-rose-600 dark:text-rose-400 font-bold'
-                    : 'text-muted-foreground'
-                  }>
-                    {stock.buy_pct != null ? `${stock.buy_pct}%` : '-'}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
-                  <span className={pnlColorClass(stock.net_flow_egp ?? undefined)}>
-                    {stock.net_flow_egp != null
-                      ? `${stock.net_flow_egp >= 0 ? '+' : ''}${(Math.abs(stock.net_flow_egp) / 1_000_000).toFixed(1)}M`
-                      : '-'}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center hidden xl:table-cell text-xs">
-                  {stock.kill_switch ? (
-                    <span className="text-rose-600 dark:text-rose-400 font-bold">⚠️ KILL</span>
-                  ) : stock.life_cycle && stock.life_cycle !== 'عادي' ? (
-                    <span className={
-                      stock.life_cycle.includes('انفجار') ? 'text-emerald-600 font-bold'
-                      : stock.life_cycle.includes('توزيع') ? 'text-rose-600 font-bold'
-                      : stock.life_cycle.includes('نعاس') ? 'text-amber-600'
-                      : stock.life_cycle.includes('حبس') ? 'text-rose-600 font-bold'
-                      : 'text-muted-foreground'
-                    }>
-                      {stock.life_cycle}
-                    </span>
-                  ) : <span className="text-muted-foreground">-</span>}
-                </TableCell>
-                <TableCell className="text-center hidden md:table-cell">
-                  <span className={
-                    stock.accumulation?.includes('تجميع قوي')
-                      ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                      : stock.accumulation?.includes('تصريف قوي')
-                        ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                        : stock.accumulation?.includes('تجميع')
-                          ? 'text-emerald-500 dark:text-emerald-500'
-                          : 'text-amber-500 dark:text-amber-500'
-                  }>
-                    {stock.accumulation || '-'}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden xl:table-cell text-xs text-muted-foreground">
-                  {stock.expected || '-'}
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
-                  {sector || '—'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-mono">
-                    {psPct}%
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onTrackToggle(stock.ticker, stock.current_price, !!stock.isTracked); }}
-                    className="text-muted-foreground hover:text-amber-500 transition-colors p-1 rounded"
-                    title={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
-                    aria-label={stock.isTracked ? 'إزالة من المتابعة' : 'أضف للمتابعة'}
-                  >
-                    {stock.isTracked ? (
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ) : (
-                      <StarOff className="h-4 w-4" />
-                    )}
-                  </button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <UnifiedTable<RadarStockRow>
+      columns={columns}
+      data={data}
+      keyField="ticker"
+      dense
+      columnToggle
+      filterable
+      onRowClick={(row) => onSelect(row.ticker)}
+      rowClassName={(_row, idx) => (idx % 2 === 1 ? 'bg-muted/20' : undefined)}
+      className={`-mx-1 ${a.border}`}
+    />
   );
 }
 

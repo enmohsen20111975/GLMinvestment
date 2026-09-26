@@ -25,14 +25,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -153,6 +147,184 @@ interface StoredRec {
   expected_duration?: string;
   created_at?: string;
 }
+
+// ============================================================================
+// UnifiedTable types & static columns (module-level)
+// ============================================================================
+
+type TableRecWithIdx = TableRec & { _idx: number };
+
+const parsedRecColumns: Column<ParsedTextRec>[] = [
+  {
+    key: 'seq',
+    header: '#',
+    align: 'right',
+    className: 'text-xs text-muted-foreground',
+    render: (p) => p.seq || '—',
+  },
+  {
+    key: 'stock',
+    header: 'السهم',
+    className: 'text-xs font-medium',
+    render: (p) => p.stock || '—',
+  },
+  {
+    key: 'code',
+    header: 'الرمز',
+    className: 'text-xs font-mono font-bold text-emerald-700',
+    filterable: true,
+    render: (p) => p.code || '—',
+  },
+  {
+    key: 'buyPrice',
+    header: 'الدخول',
+    align: 'right',
+    className: 'text-xs',
+    render: (p) => p.buyPrice || '—',
+  },
+  {
+    key: 'targets',
+    header: 'الأهداف',
+    align: 'right',
+    className: 'text-xs',
+    render: (p) =>
+      [p.target1, p.target2, p.target3].filter(Boolean).join(' ← ') || '—',
+  },
+  {
+    key: 'stopLoss',
+    header: 'الوقف',
+    align: 'right',
+    className: 'text-xs text-rose-600',
+    render: (p) => p.stopLoss || '—',
+  },
+  {
+    key: 'support',
+    header: 'الدعم',
+    align: 'right',
+    className: 'text-xs',
+    render: (p) => p.support || '—',
+  },
+  {
+    key: 'resistance',
+    header: 'المقاومة',
+    align: 'right',
+    className: 'text-xs',
+    render: (p) => p.resistance || '—',
+  },
+  {
+    key: 'type',
+    header: 'النوع',
+    align: 'right',
+    className: 'text-xs',
+    filterable: true,
+    render: (p) => p.type || '—',
+  },
+  {
+    key: 'notes',
+    header: 'ملاحظات',
+    align: 'right',
+    className: 'text-xs max-w-[200px] truncate',
+    render: (p) => (
+      <span className="block max-w-[200px] truncate" title={p.notes}>
+        {p.notes || '—'}
+      </span>
+    ),
+  },
+];
+
+const storedRecColumns: Column<StoredRec>[] = [
+  {
+    key: 'session_date',
+    header: 'التاريخ',
+    align: 'right',
+    sortable: true,
+    className: 'text-xs whitespace-nowrap text-muted-foreground',
+    render: (r) => r.session_date || r.created_at?.slice(0, 10) || '—',
+  },
+  {
+    key: 'expert_name',
+    header: 'الخبير',
+    align: 'right',
+    sortable: true,
+    filterable: true,
+    className: 'text-xs whitespace-nowrap',
+    render: (r) => r.expert_name || '—',
+  },
+  {
+    key: 'stock_symbol',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    filterable: true,
+    render: (r) => (
+      <div className="flex flex-col">
+        <span className="font-mono font-bold text-emerald-700">
+          {r.stock_symbol}
+        </span>
+        {r.stock_name_ar && (
+          <span className="text-[10px] text-muted-foreground">
+            {r.stock_name_ar}
+          </span>
+        )}
+      </div>
+    ),
+  },
+  {
+    key: 'action',
+    header: 'الإجراء',
+    align: 'right',
+    filterable: true,
+    render: (r) => actionBadge(r.action),
+  },
+  {
+    key: 'entry_price',
+    header: 'الدخول',
+    align: 'right',
+    sortable: true,
+    className: 'text-xs font-mono',
+    render: (r) => fmtNum(r.entry_price),
+  },
+  {
+    key: 'target_price',
+    header: 'الهدف',
+    align: 'right',
+    className: 'text-xs font-mono text-emerald-700',
+    render: (r) =>
+      `${fmtNum(r.target_price)}${r.target_price_2 ? ` ← ${fmtNum(r.target_price_2)}` : ''}`,
+  },
+  {
+    key: 'stop_loss',
+    header: 'الوقف',
+    align: 'right',
+    className: 'text-xs font-mono text-rose-600',
+    render: (r) => fmtNum(r.stop_loss),
+  },
+  {
+    key: 'status',
+    header: 'الحالة',
+    align: 'right',
+    filterable: true,
+    render: (r) => statusBadge(r.status),
+  },
+  {
+    key: 'recommendation_reason',
+    header: 'السبب',
+    align: 'right',
+    className: 'text-xs max-w-[180px] truncate text-muted-foreground',
+    render: (r) => (
+      <span className="block max-w-[180px] truncate" title={r.recommendation_reason || ''}>
+        {r.recommendation_reason || '—'}
+      </span>
+    ),
+  },
+  {
+    key: '_chevron',
+    header: '',
+    align: 'right',
+    className: 'text-xs',
+    render: () => <ChevronLeft className="w-4 h-4 text-muted-foreground" />,
+  },
+];
 
 // ============================================================================
 // Helpers
@@ -580,6 +752,186 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
   };
 
   // ========================================================================
+  // UnifiedTable — editable grid columns + data with _idx
+  // ========================================================================
+
+  const rowsWithIdx: TableRecWithIdx[] = rows.map((r, i) => ({ ...r, _idx: i }));
+
+  const tableEditorColumns: Column<TableRecWithIdx>[] = [
+    {
+      key: '_idx',
+      header: '#',
+      align: 'right',
+      className: 'text-xs text-muted-foreground',
+      render: (r) => r._idx + 1,
+    },
+    {
+      key: 'stock_symbol',
+      header: 'الرمز',
+      render: (r) => (
+        <Input
+          value={r.stock_symbol}
+          onChange={(e) => updateRow(r._idx, 'stock_symbol', e.target.value)}
+          placeholder="COMI"
+          className="h-9 w-24 font-mono"
+        />
+      ),
+    },
+    {
+      key: 'stock_name_ar',
+      header: 'الاسم (عربي)',
+      render: (r) => (
+        <Input
+          value={r.stock_name_ar}
+          onChange={(e) => updateRow(r._idx, 'stock_name_ar', e.target.value)}
+          placeholder="التعمير"
+          className="h-9 w-32"
+        />
+      ),
+    },
+    {
+      key: 'entry_price',
+      header: 'سعر الدخول',
+      align: 'right',
+      render: (r) => (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={r.entry_price}
+          onChange={(e) => updateRow(r._idx, 'entry_price', e.target.value)}
+          placeholder="1.91"
+          className="h-9 w-20"
+        />
+      ),
+    },
+    {
+      key: 'target_price',
+      header: 'الهدف ١',
+      align: 'right',
+      render: (r) => (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={r.target_price}
+          onChange={(e) => updateRow(r._idx, 'target_price', e.target.value)}
+          placeholder="2.20"
+          className="h-9 w-20"
+        />
+      ),
+    },
+    {
+      key: 'target_price_2',
+      header: 'الهدف ٢',
+      align: 'right',
+      render: (r) => (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={r.target_price_2}
+          onChange={(e) => updateRow(r._idx, 'target_price_2', e.target.value)}
+          placeholder="2.50"
+          className="h-9 w-20"
+        />
+      ),
+    },
+    {
+      key: 'stop_loss',
+      header: 'وقف الخسارة',
+      align: 'right',
+      render: (r) => (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={r.stop_loss}
+          onChange={(e) => updateRow(r._idx, 'stop_loss', e.target.value)}
+          placeholder="1.75"
+          className="h-9 w-20"
+        />
+      ),
+    },
+    {
+      key: 'support_level',
+      header: 'الدعم',
+      align: 'right',
+      render: (r) => (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={r.support_level}
+          onChange={(e) => updateRow(r._idx, 'support_level', e.target.value)}
+          placeholder="1.80"
+          className="h-9 w-20"
+        />
+      ),
+    },
+    {
+      key: 'resistance_level',
+      header: 'المقاومة',
+      align: 'right',
+      render: (r) => (
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={r.resistance_level}
+          onChange={(e) => updateRow(r._idx, 'resistance_level', e.target.value)}
+          placeholder="2.00"
+          className="h-9 w-20"
+        />
+      ),
+    },
+    {
+      key: 'action',
+      header: 'الإجراء',
+      align: 'right',
+      render: (r) => (
+        <Select
+          value={r.action}
+          onValueChange={(v) => updateRow(r._idx, 'action', v)}
+        >
+          <SelectTrigger className="h-9 w-28">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="BUY">شراء</SelectItem>
+            <SelectItem value="SELL">بيع</SelectItem>
+            <SelectItem value="HOLD">انتظار</SelectItem>
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      key: 'recommendation_reason',
+      header: 'ملاحظات',
+      align: 'right',
+      render: (r) => (
+        <Input
+          value={r.recommendation_reason}
+          onChange={(e) => updateRow(r._idx, 'recommendation_reason', e.target.value)}
+          placeholder="اختراق مقاومة..."
+          className="h-9 w-40"
+        />
+      ),
+    },
+    {
+      key: '_delete',
+      header: 'حذف',
+      align: 'center',
+      render: (r) => (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(e) => { e.stopPropagation(); removeRow(r._idx); }}
+          disabled={rows.length <= 1}
+          className="h-9 w-9 p-0 text-rose-600 hover:bg-rose-50"
+          aria-label="حذف الصف"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      ),
+    },
+  ];
+
+  // ========================================================================
   // Render
   // ========================================================================
 
@@ -588,15 +940,28 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
       {/* Header */}
       <Card className="border-emerald-200/60 bg-gradient-to-l from-emerald-50/60 to-transparent">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-emerald-800">
-            <ClipboardList className="w-5 h-5" />
-            توقعات الخبراء — {MARKET_NAMES_AR[market]}
-          </CardTitle>
-          <CardDescription>
-            أدخل توقعات الخبراء يدويًا (جدول) أو انسخها من نص عربي (واتساب/تيليجرام)
-            ودع الذكاء الاصطناعي يحللها ويستوردها. هذه التوقعات تغيّر تفكير الآلة عبر
-            وكيل آخر على الباك إند.
-          </CardDescription>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-emerald-800">
+                <ClipboardList className="w-5 h-5" />
+                توقعات الخبراء — {MARKET_NAMES_AR[market]}
+              </CardTitle>
+              <CardDescription>
+                أدخل توقعات الخبراء يدويًا (جدول) أو انسخها من نص عربي (واتساب/تيليجرام)
+                ودع الذكاء الاصطناعي يحللها ويستوردها. هذه التوقعات تغيّر تفكير الآلة عبر
+                وكيل آخر على الباك إند.
+              </CardDescription>
+            </div>
+            <UnifiedPublishButton
+              variant="outline"
+              size="sm"
+              title="توقعات الخبراء"
+              content={`توقعات الخبراء — ${MARKET_NAMES_AR[market]}\nالخبير: ${expertName || '—'} — ${sessionDate} (${sessionType})\n\n${filteredStored.slice(0, 20).map((r, i) => `${i + 1}. ${r.stock_symbol} — ${r.action === 'SELL' ? 'بيع' : r.action === 'HOLD' ? 'انتظار' : 'شراء'} — دخول ${fmtNum(r.entry_price)} — هدف ${fmtNum(r.target_price)}${r.target_price_2 ? ` ← ${fmtNum(r.target_price_2)}` : ''} — وقف ${fmtNum(r.stop_loss)}`).join('\n')}`}
+              filename={`expert-recs-${market}-${Date.now()}`}
+              hashtags={['توقعات', 'خبراء', MARKET_NAMES_AR[market]]}
+              triggerLabel="نشر"
+            />
+          </div>
         </CardHeader>
       </Card>
 
@@ -697,146 +1062,17 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 sm:p-2">
-              {/* Desktop: table; Mobile: stacked cards */}
-              <div className="hidden lg:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-emerald-50/60">
-                      <TableHead className="text-right text-xs">#</TableHead>
-                      <TableHead className="text-right text-xs">الرمز</TableHead>
-                      <TableHead className="text-right text-xs">الاسم (عربي)</TableHead>
-                      <TableHead className="text-right text-xs">سعر الدخول</TableHead>
-                      <TableHead className="text-right text-xs">الهدف ١</TableHead>
-                      <TableHead className="text-right text-xs">الهدف ٢</TableHead>
-                      <TableHead className="text-right text-xs">وقف الخسارة</TableHead>
-                      <TableHead className="text-right text-xs">الدعم</TableHead>
-                      <TableHead className="text-right text-xs">المقاومة</TableHead>
-                      <TableHead className="text-right text-xs">الإجراء</TableHead>
-                      <TableHead className="text-right text-xs">ملاحظات</TableHead>
-                      <TableHead className="text-right text-xs">حذف</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((r, idx) => (
-                      <TableRow key={idx} className="hover:bg-emerald-50/30">
-                        <TableCell className="text-xs text-muted-foreground align-top pt-3">
-                          {idx + 1}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            value={r.stock_symbol}
-                            onChange={(e) => updateRow(idx, 'stock_symbol', e.target.value)}
-                            placeholder="COMI"
-                            className="h-9 w-24 font-mono"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            value={r.stock_name_ar}
-                            onChange={(e) => updateRow(idx, 'stock_name_ar', e.target.value)}
-                            placeholder="التعمير"
-                            className="h-9 w-32"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={r.entry_price}
-                            onChange={(e) => updateRow(idx, 'entry_price', e.target.value)}
-                            placeholder="1.91"
-                            className="h-9 w-20"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={r.target_price}
-                            onChange={(e) => updateRow(idx, 'target_price', e.target.value)}
-                            placeholder="2.20"
-                            className="h-9 w-20"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={r.target_price_2}
-                            onChange={(e) => updateRow(idx, 'target_price_2', e.target.value)}
-                            placeholder="2.50"
-                            className="h-9 w-20"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={r.stop_loss}
-                            onChange={(e) => updateRow(idx, 'stop_loss', e.target.value)}
-                            placeholder="1.75"
-                            className="h-9 w-20"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={r.support_level}
-                            onChange={(e) => updateRow(idx, 'support_level', e.target.value)}
-                            placeholder="1.80"
-                            className="h-9 w-20"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={r.resistance_level}
-                            onChange={(e) => updateRow(idx, 'resistance_level', e.target.value)}
-                            placeholder="2.00"
-                            className="h-9 w-20"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Select
-                            value={r.action}
-                            onValueChange={(v) => updateRow(idx, 'action', v)}
-                          >
-                            <SelectTrigger className="h-9 w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="BUY">شراء</SelectItem>
-                              <SelectItem value="SELL">بيع</SelectItem>
-                              <SelectItem value="HOLD">انتظار</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Input
-                            value={r.recommendation_reason}
-                            onChange={(e) => updateRow(idx, 'recommendation_reason', e.target.value)}
-                            placeholder="اختراق مقاومة..."
-                            className="h-9 w-40"
-                          />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeRow(idx)}
-                            disabled={rows.length <= 1}
-                            className="h-9 w-9 p-0 text-rose-600 hover:bg-rose-50"
-                            aria-label="حذف الصف"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              {/* Desktop: UnifiedTable; Mobile: stacked cards */}
+              <div className="hidden lg:block">
+                <UnifiedTable<TableRecWithIdx>
+                  columns={tableEditorColumns}
+                  data={rowsWithIdx}
+                  keyField="_idx"
+                  dense
+                  className="border-emerald-100"
+                  rowClassName={() => 'hover:bg-emerald-50/30'}
+                  emptyTextAr="أضف صفًا لإدخال التوقعات"
+                />
               </div>
 
               {/* Mobile stacked cards */}
@@ -1097,53 +1333,16 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                       على رمز سهم بين قوسين مثل (COMI) وأسعار دخول/هدف.
                     </div>
                   ) : (
-                    <div className="max-h-96 overflow-y-auto rounded-lg border border-emerald-100 bg-white">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-emerald-50/90 backdrop-blur z-10">
-                          <TableRow>
-                            <TableHead className="text-right text-xs">#</TableHead>
-                            <TableHead className="text-right text-xs">السهم</TableHead>
-                            <TableHead className="text-right text-xs">الرمز</TableHead>
-                            <TableHead className="text-right text-xs">الدخول</TableHead>
-                            <TableHead className="text-right text-xs">الأهداف</TableHead>
-                            <TableHead className="text-right text-xs">الوقف</TableHead>
-                            <TableHead className="text-right text-xs">الدعم</TableHead>
-                            <TableHead className="text-right text-xs">المقاومة</TableHead>
-                            <TableHead className="text-right text-xs">النوع</TableHead>
-                            <TableHead className="text-right text-xs">ملاحظات</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {parsedRecs.map((p, i) => (
-                            <TableRow key={i} className="hover:bg-emerald-50/40">
-                              <TableCell className="text-xs text-muted-foreground">
-                                {p.seq || i + 1}
-                              </TableCell>
-                              <TableCell className="text-xs font-medium">
-                                {p.stock || '—'}
-                              </TableCell>
-                              <TableCell className="text-xs font-mono font-bold text-emerald-700">
-                                {p.code || '—'}
-                              </TableCell>
-                              <TableCell className="text-xs">{p.buyPrice || '—'}</TableCell>
-                              <TableCell className="text-xs">
-                                {[p.target1, p.target2, p.target3]
-                                  .filter(Boolean)
-                                  .join(' ← ') || '—'}
-                              </TableCell>
-                              <TableCell className="text-xs text-rose-600">
-                                {p.stopLoss || '—'}
-                              </TableCell>
-                              <TableCell className="text-xs">{p.support || '—'}</TableCell>
-                              <TableCell className="text-xs">{p.resistance || '—'}</TableCell>
-                              <TableCell className="text-xs">{p.type || '—'}</TableCell>
-                              <TableCell className="text-xs max-w-[200px] truncate" title={p.notes}>
-                                {p.notes || '—'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                    <div className="rounded-lg border border-emerald-100 bg-white">
+                      <UnifiedTable<ParsedTextRec>
+                        columns={parsedRecColumns}
+                        data={parsedRecs}
+                        keyField="code"
+                        dense
+                        maxHeight="max-h-96"
+                        className="border-emerald-100"
+                        rowClassName={() => 'hover:bg-emerald-50/40'}
+                      />
                     </div>
                   )}
                 </div>
@@ -1220,74 +1419,20 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
             </div>
           ) : (
             <div
-              className="max-h-96 overflow-y-auto rounded-lg border border-emerald-100 bg-white er-scroll"
+              className="rounded-lg border border-emerald-100 bg-white"
               style={{ scrollbarWidth: 'thin' }}
             >
-              <Table>
-                <TableHeader className="sticky top-0 bg-emerald-50/95 backdrop-blur z-10">
-                  <TableRow>
-                    <TableHead className="text-right text-xs">التاريخ</TableHead>
-                    <TableHead className="text-right text-xs">الخبير</TableHead>
-                    <TableHead className="text-right text-xs">السهم</TableHead>
-                    <TableHead className="text-right text-xs">الإجراء</TableHead>
-                    <TableHead className="text-right text-xs">الدخول</TableHead>
-                    <TableHead className="text-right text-xs">الهدف</TableHead>
-                    <TableHead className="text-right text-xs">الوقف</TableHead>
-                    <TableHead className="text-right text-xs">الحالة</TableHead>
-                    <TableHead className="text-right text-xs">السبب</TableHead>
-                    <TableHead className="text-right text-xs"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStored.map((r) => (
-                    <TableRow
-                      key={r.id}
-                      className="cursor-pointer hover:bg-emerald-50/40"
-                      onClick={() => openDetails(r)}
-                    >
-                      <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
-                        {r.session_date || r.created_at?.slice(0, 10) || '—'}
-                      </TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {r.expert_name || '—'}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <div className="flex flex-col">
-                          <span className="font-mono font-bold text-emerald-700">
-                            {r.stock_symbol}
-                          </span>
-                          {r.stock_name_ar && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {r.stock_name_ar}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">{actionBadge(r.action)}</TableCell>
-                      <TableCell className="text-xs font-mono">
-                        {fmtNum(r.entry_price)}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-emerald-700">
-                        {fmtNum(r.target_price)}
-                        {r.target_price_2 ? ` ← ${fmtNum(r.target_price_2)}` : ''}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-rose-600">
-                        {fmtNum(r.stop_loss)}
-                      </TableCell>
-                      <TableCell className="text-xs">{statusBadge(r.status)}</TableCell>
-                      <TableCell
-                        className="text-xs max-w-[180px] truncate text-muted-foreground"
-                        title={r.recommendation_reason || ''}
-                      >
-                        {r.recommendation_reason || '—'}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UnifiedTable<StoredRec>
+                columns={storedRecColumns}
+                data={filteredStored}
+                keyField="id"
+                dense
+                columnToggle
+                filterable
+                maxHeight="max-h-96"
+                onRowClick={(r) => openDetails(r)}
+                rowClassName={() => 'cursor-pointer hover:bg-emerald-50/40'}
+              />
             </div>
           )}
         </CardContent>

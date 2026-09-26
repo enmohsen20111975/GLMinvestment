@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   Table,
   TableBody,
@@ -968,6 +969,139 @@ export function SuperLearningSystem() {
     { name: 'خاسرة', value: results.losing_trades, color: COLORS.losers }
   ] : [];
 
+  // ─── UnifiedTable columns ────────────────────────────────────────────
+  interface SectorBreakdownRow { sector: string; trades: number; winRate: number; returnPct: number; }
+  interface EngineBreakdownRow { model: string; trades: number; winRate: number; }
+
+  const sectorReportColumns: Column<SectorBreakdownRow>[] = useMemo(() => ([
+    {
+      key: 'sector',
+      header: 'القطاع',
+      sortable: true,
+      filterable: true,
+      className: 'text-xs font-medium',
+    },
+    {
+      key: 'trades',
+      header: 'التوقعات',
+      align: 'center',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-xs text-center font-mono',
+    },
+    {
+      key: 'winRate',
+      header: 'نسبة النجاح',
+      align: 'center',
+      sortable: true,
+      width: 'w-28',
+      render: (r) => (
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 font-mono text-[11px]">
+          {r.winRate}%
+        </Badge>
+      ),
+    },
+    {
+      key: 'returnPct',
+      header: 'العائد',
+      align: 'left',
+      sortable: true,
+      width: 'w-28',
+      className: 'text-xs text-left font-mono font-semibold text-emerald-600',
+      render: (r) => `+${r.returnPct}%`,
+    },
+  ]), []);
+
+  const engineReportColumns: Column<EngineBreakdownRow>[] = useMemo(() => ([
+    {
+      key: 'model',
+      header: 'نموذج المحرك',
+      sortable: true,
+      filterable: true,
+      className: 'text-xs font-medium',
+    },
+    {
+      key: 'trades',
+      header: 'التوقعات',
+      align: 'center',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-xs text-center font-mono',
+    },
+    {
+      key: 'winRate',
+      header: 'نسبة النجاح',
+      align: 'center',
+      sortable: true,
+      width: 'w-28',
+      render: (r) => (
+        <Badge variant="outline" className="bg-purple-500/10 text-purple-600 font-mono text-[11px]">
+          {r.winRate}%
+        </Badge>
+      ),
+    },
+  ]), []);
+
+  const tradesColumns: Column<BacktestTrade>[] = useMemo(() => ([
+    {
+      key: 'ticker',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      className: 'font-medium',
+      render: (t) => t?.ticker || '-',
+    },
+    {
+      key: 'entry_date',
+      header: 'التاريخ',
+      sortable: true,
+      width: 'w-28',
+      render: (t) => t?.entry_date || '-',
+    },
+    {
+      key: 'entry_price',
+      header: 'الدخول',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      render: (t) => safeToFixed(t?.entry_price, 2),
+    },
+    {
+      key: 'exit_price',
+      header: 'الخروج',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      render: (t) => safeToFixed(t?.exit_price, 2),
+    },
+    {
+      key: 'actual_return',
+      header: 'العائد',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      render: (t) => (
+        <span className={safeNumber(t?.actual_return) >= 0 ? "text-green-600" : "text-red-600"}>
+          {safeNumber(t?.actual_return) >= 0 ? '+' : ''}{safeToFixed(t?.actual_return, 2)}%
+        </span>
+      ),
+    },
+    {
+      key: 'analysis_correct',
+      header: 'صحيح؟',
+      align: 'center',
+      width: 'w-20',
+      render: (t) => t?.analysis_correct ? (
+        <CheckCircle2 className="w-4 h-4 text-green-500 inline-block" />
+      ) : (
+        <XCircle className="w-4 h-4 text-red-500 inline-block" />
+      ),
+    },
+  ]), [safeToFixed, safeNumber]);
+
+  // Slice trades for table display
+  const tradesTableRows = useMemo(() => trades.slice(0, 50), [trades]);
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
@@ -1417,32 +1551,14 @@ export function SuperLearningSystem() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">القطاع</TableHead>
-                      <TableHead className="text-xs text-center">التوقعات</TableHead>
-                      <TableHead className="text-xs text-center">نسبة النجاح</TableHead>
-                      <TableHead className="text-xs text-left">العائد</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sectorBreakdown.map((row, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="text-xs font-medium">{row.sector}</TableCell>
-                        <TableCell className="text-xs text-center font-mono">{row.trades}</TableCell>
-                        <TableCell className="text-xs text-center">
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 font-mono text-[11px]">
-                            {row.winRate}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-left font-mono font-semibold text-emerald-600">
-                          +{row.returnPct}%
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <UnifiedTable
+                  columns={sectorReportColumns}
+                  data={sectorBreakdown}
+                  keyField="sector"
+                  dense
+                  columnToggle
+                  filterable
+                />
               </CardContent>
             </Card>
 
@@ -1455,28 +1571,14 @@ export function SuperLearningSystem() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">نموذج المحرك</TableHead>
-                      <TableHead className="text-xs text-center">التوقعات</TableHead>
-                      <TableHead className="text-xs text-center">نسبة النجاح</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {engineBreakdown.map((row, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="text-xs font-medium">{row.model}</TableCell>
-                        <TableCell className="text-xs text-center font-mono">{row.trades}</TableCell>
-                        <TableCell className="text-xs text-center">
-                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 font-mono text-[11px]">
-                            {row.winRate}%
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <UnifiedTable
+                  columns={engineReportColumns}
+                  data={engineBreakdown}
+                  keyField="model"
+                  dense
+                  columnToggle
+                  filterable
+                />
               </CardContent>
             </Card>
           </div>
@@ -1865,40 +1967,15 @@ export function SuperLearningSystem() {
                 <Card>
                   <CardHeader><CardTitle className="text-sm">الصفقات</CardTitle></CardHeader>
                   <CardContent>
-                    <div className="overflow-x-auto max-h-[400px]">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-card">
-                          <TableRow>
-                            <TableHead>السهم</TableHead>
-                            <TableHead>التاريخ</TableHead>
-                            <TableHead>الدخول</TableHead>
-                            <TableHead>الخروج</TableHead>
-                            <TableHead>العائد</TableHead>
-                            <TableHead>صحيح؟</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {trades.slice(0, 50).map((trade, idx) => (
-                            <TableRow key={trade?.id || idx}>
-                              <TableCell className="font-medium">{trade?.ticker || '-'}</TableCell>
-                              <TableCell>{trade?.entry_date || '-'}</TableCell>
-                              <TableCell>{safeToFixed(trade?.entry_price, 2)}</TableCell>
-                              <TableCell>{safeToFixed(trade?.exit_price, 2)}</TableCell>
-                              <TableCell className={safeNumber(trade?.actual_return) >= 0 ? "text-green-600" : "text-red-600"}>
-                                {safeNumber(trade?.actual_return) >= 0 ? '+' : ''}{safeToFixed(trade?.actual_return, 2)}%
-                              </TableCell>
-                              <TableCell>
-                                {trade.analysis_correct ? (
-                                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                ) : (
-                                  <XCircle className="w-4 h-4 text-red-500" />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <UnifiedTable
+                      columns={tradesColumns}
+                      data={tradesTableRows}
+                      keyField="id"
+                      dense
+                      columnToggle
+                      filterable
+                      maxHeight="max-h-[400px]"
+                    />
                   </CardContent>
                 </Card>
               )}

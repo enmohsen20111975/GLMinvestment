@@ -31,15 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Tooltip,
   TooltipContent,
@@ -159,6 +152,170 @@ interface StatCardProps {
   valueColor?: string;
 }
 
+
+// ============================================================
+// UnifiedTable Columns Definition
+// ============================================================
+
+const predictionColumns: Column<TrackedPick>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    sortable: true,
+    filterable: true,
+    className: 'font-bold',
+    render: (p) => (
+      <div className="flex flex-col">
+        <span className="text-sm">{p.ticker}</span>
+        <span className="text-[10px] text-muted-foreground">
+          {p.market}
+        </span>
+      </div>
+    ),
+  },
+  {
+    key: 'pick_date',
+    header: 'تاريخ التوقع',
+    sortable: true,
+    className: 'text-xs text-muted-foreground',
+    render: (p) => shortDate(p.pick_date),
+  },
+  {
+    key: 'entry_price',
+    header: 'الدخول',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-xs',
+    render: (p) => formatNumber(p.entry_price),
+  },
+  {
+    key: 'stop_loss',
+    header: 'الوقف',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-xs text-rose-600 dark:text-rose-400',
+    render: (p) => formatNumber(p.stop_loss),
+  },
+  {
+    key: 'target_price',
+    header: 'الهدف',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-xs text-emerald-600 dark:text-emerald-400',
+    render: (p) => formatNumber(p.target_price),
+  },
+  {
+    key: 'risk_reward',
+    header: 'R/R',
+    align: 'right',
+    sortable: true,
+    render: (p) => (
+      <Badge
+        variant="outline"
+        className="font-mono text-[11px] border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
+      >
+        {formatNumber(p.risk_reward, 1)}
+      </Badge>
+    ),
+  },
+  {
+    key: 'current_price',
+    header: 'السعر الحالي',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-xs',
+    render: (p) => (p.current_price !== null ? formatNumber(p.current_price) : '—'),
+  },
+  {
+    key: 'change_vs_entry',
+    header: 'الفرق',
+    align: 'right',
+    sortable: true,
+    render: (p) => {
+      if (p.current_price === null) return '—';
+      const diff = p.current_price - p.entry_price;
+      const cls = p.current_price > p.entry_price
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : p.current_price < p.entry_price
+          ? 'text-rose-600 dark:text-rose-400'
+          : '';
+      return (
+        <span className={cn('font-mono text-xs font-bold', cls)}>
+          {diff > 0 ? '+' : ''}
+          {formatNumber(diff)}
+          <span className="text-[9px] text-muted-foreground ml-0.5">
+            ({formatPct((diff / p.entry_price) * 100, true)})
+          </span>
+        </span>
+      );
+    },
+  },
+  {
+    key: 'profit_loss_pct',
+    header: 'العائد %',
+    align: 'right',
+    sortable: true,
+    render: (p) => {
+      const pnl = p.profit_loss_pct;
+      const pnlColor =
+        pnl === null
+          ? 'text-muted-foreground'
+          : pnl >= 0
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : 'text-rose-600 dark:text-rose-400';
+      return (
+        <span className={cn('font-mono text-xs font-bold', pnlColor)}>
+          {formatPct(pnl, true)}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'status',
+    header: 'الحالة',
+    align: 'center',
+    sortable: true,
+    filterable: true,
+    render: (p) => (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <Badge
+                variant="outline"
+                className={cn(
+                  'text-[11px] whitespace-nowrap',
+                  STATUS_BADGE_CLASS[p.status]
+                )}
+              >
+                {p.status === 'target_hit' && (
+                  <TrendingUp className="h-3 w-3 ml-1" />
+                )}
+                {p.status === 'stop_hit' && (
+                  <TrendingDown className="h-3 w-3 ml-1" />
+                )}
+                {p.status === 'pending' && (
+                  <Clock className="h-3 w-3 ml-1" />
+                )}
+                {p.status === 'expired' && (
+                  <Clock className="h-3 w-3 ml-1" />
+                )}
+                {STATUS_LABEL_AR[p.status]}
+              </Badge>
+            </span>
+          </TooltipTrigger>
+          {p.verification_date && (
+            <TooltipContent side="top">
+              <p className="text-xs">
+                آخر تحقق: {shortDate(p.verification_date)}
+              </p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
+    ),
+  },
+];
 
 // ============================================================
 // Main Component
@@ -319,6 +476,20 @@ export function PredictionTrackingView() {
           <MarketSelector size="sm" />
           {/* تم إزالة زرار "توليد توقعات V40.2" + "تحقق الآن" — كانوا بـ يسببوا نتائج عشوائية */}
           {/* التوقعات بـ تتولّد تلقائياً من V40.2 (cron job) — مش محتاجين تدخل يدوي */}
+          <UnifiedPublishButton
+            variant="outline"
+            size="sm"
+            title="تتبع التوقعات"
+            content={`تتبع التوقعات — ${MARKET_NAMES_AR[currentMarket]}
+إجمالي: ${display.total} · قيد الانتظار: ${display.pending}
+نسبة النجاح: ${display.successRate} · نسبة الفشل: ${display.failureRate}
+
+أحدث التوقعات:
+${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatNumber(p.entry_price)} — هدف ${formatNumber(p.target_price)} — وقف ${formatNumber(p.stop_loss)} — R/R ${formatNumber(p.risk_reward, 1)} — ${STATUS_LABEL_AR[p.status]}`).join('\n')}`}
+            filename={`prediction-tracking-${currentMarket}-${Date.now()}`}
+            hashtags={['توقعات', 'EGX', 'بورصة']}
+            triggerLabel="نشر"
+          />
           <Button
             size="sm"
             variant="outline"
@@ -454,140 +625,19 @@ export function PredictionTrackingView() {
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-2">
-          {loadingList ? (
-            <div className="p-4 space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : picks.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">
-              <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">لا توجد توقعات متتبعة بعد</p>
-              <p className="text-sm mt-1">
-                ستظهر التوقعات هنا تلقائياً عند توليدها.
-              </p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[60vh] sm:h-[65vh] w-full" dir="rtl">
-              <div className="min-w-[860px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead className="text-right">السهم</TableHead>
-                      <TableHead className="text-right">تاريخ التوقع</TableHead>
-                      <TableHead className="text-right">الدخول</TableHead>
-                      <TableHead className="text-right">الوقف</TableHead>
-                      <TableHead className="text-right">الهدف</TableHead>
-                      <TableHead className="text-right">R/R</TableHead>
-                      <TableHead className="text-right">السعر الحالي</TableHead>
-                      <TableHead className="text-right">الفرق</TableHead>
-                      <TableHead className="text-right">العائد %</TableHead>
-                      <TableHead className="text-right">الحالة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {picks.map((p) => {
-                      const pnl = p.profit_loss_pct;
-                      const pnlColor =
-                        pnl === null
-                          ? 'text-muted-foreground'
-                          : pnl >= 0
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-rose-600 dark:text-rose-400';
-                      return (
-                        <TableRow key={p.id} className="hover:bg-muted/40">
-                          <TableCell className="font-bold">
-                            <div className="flex flex-col">
-                              <span className="text-sm">{p.ticker}</span>
-                              <span className="text-[10px] text-muted-foreground">
-                                {p.market}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {shortDate(p.pick_date)}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {formatNumber(p.entry_price)}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs text-rose-600 dark:text-rose-400">
-                            {formatNumber(p.stop_loss)}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
-                            {formatNumber(p.target_price)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className="font-mono text-[11px] border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
-                            >
-                              {formatNumber(p.risk_reward, 1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {p.current_price !== null ? formatNumber(p.current_price) : '—'}
-                          </TableCell>
-                          <TableCell className={cn('font-mono text-xs font-bold', p.current_price !== null && p.current_price > p.entry_price ? 'text-emerald-600 dark:text-emerald-400' : p.current_price !== null && p.current_price < p.entry_price ? 'text-rose-600 dark:text-rose-400' : '')}>
-                            {p.current_price !== null ? (
-                              <>
-                                {p.current_price > p.entry_price ? '+' : ''}
-                                {formatNumber(p.current_price - p.entry_price)}
-                                <span className="text-[9px] text-muted-foreground ml-0.5">
-                                  ({formatPct(((p.current_price - p.entry_price) / p.entry_price) * 100, true)})
-                                </span>
-                              </>
-                            ) : '—'}
-                          </TableCell>
-                          <TableCell className={cn('font-mono text-xs font-bold', pnlColor)}>
-                            {formatPct(pnl, true)}
-                          </TableCell>
-                          <TableCell>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <Badge
-                                      variant="outline"
-                                      className={cn(
-                                        'text-[11px] whitespace-nowrap',
-                                        STATUS_BADGE_CLASS[p.status]
-                                      )}
-                                    >
-                                      {p.status === 'target_hit' && (
-                                        <TrendingUp className="h-3 w-3 ml-1" />
-                                      )}
-                                      {p.status === 'stop_hit' && (
-                                        <TrendingDown className="h-3 w-3 ml-1" />
-                                      )}
-                                      {p.status === 'pending' && (
-                                        <Clock className="h-3 w-3 ml-1" />
-                                      )}
-                                      {p.status === 'expired' && (
-                                        <Clock className="h-3 w-3 ml-1" />
-                                      )}
-                                      {STATUS_LABEL_AR[p.status]}
-                                    </Badge>
-                                  </span>
-                                </TooltipTrigger>
-                                {p.verification_date && (
-                                  <TooltipContent side="top">
-                                    <p className="text-xs">
-                                      آخر تحقق: {shortDate(p.verification_date)}
-                                    </p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </ScrollArea>
-          )}
+          <UnifiedTable<TrackedPick>
+            columns={predictionColumns}
+            data={picks}
+            loading={loadingList}
+            loadingRows={8}
+            emptyTextAr="لا توجد توقعات متتبعة بعد — ستظهر التوقعات هنا تلقائياً عند توليدها."
+            keyField="id"
+            dense
+            columnToggle
+            filterable
+            maxHeight="h-[60vh] sm:h-[65vh]"
+            rowClassName={() => 'hover:bg-muted/40'}
+          />
         </CardContent>
       </Card>
 

@@ -41,14 +41,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -831,6 +825,206 @@ export function EnhancedWatchlistView() {
 
   const hasGainLoss = items.some((i) => i.purchase_price && i.quantity);
 
+  // ─── UnifiedTable columns (built once per render — depends on handlers/state) ─
+  const watchlistColumns: Column<EnhancedWatchlistItem>[] = [
+    {
+      key: 'ticker',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      render: (item) => (
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              {(item.ticker || '').slice(0, 2)}
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-sm">{item.ticker}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[120px]">{item.name_ar}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'current_price',
+      header: 'السعر الحالي',
+      align: 'center',
+      sortable: true,
+      render: (item) => <p className="font-semibold text-sm">{formatCurrency(item.current_price)}</p>,
+    },
+    {
+      key: 'sparkline',
+      header: 'شارت 7 أيام',
+      align: 'center',
+      hideable: true,
+      render: (item) => (
+        <div className="w-32 mx-auto" dir="ltr">
+          <MiniSparkline ticker={item.ticker} days={7} height={28} width={120} showArea />
+        </div>
+      ),
+    },
+    {
+      key: 'purchase_price',
+      header: 'سعر الشراء',
+      align: 'center',
+      sortable: true,
+      hideable: true,
+      render: (item) => (
+        <p className="text-sm text-muted-foreground">
+          {item.purchase_price ? formatCurrency(item.purchase_price) : '—'}
+        </p>
+      ),
+    },
+    {
+      key: 'quantity',
+      header: 'الكمية',
+      align: 'center',
+      sortable: true,
+      hideable: true,
+      render: (item) => (
+        <p className="text-sm">
+          {item.quantity ? item.quantity.toLocaleString('ar-EG') : '—'}
+        </p>
+      ),
+    },
+    {
+      key: 'total_invested',
+      header: 'المستثمر',
+      align: 'center',
+      sortable: true,
+      hideable: true,
+      render: (item) => <p className="text-sm font-medium">{formatCurrency(item.total_invested)}</p>,
+    },
+    {
+      key: 'current_value',
+      header: 'القيمة الحالية',
+      align: 'center',
+      sortable: true,
+      hideable: true,
+      render: (item) => <p className="text-sm font-medium">{formatCurrency(item.current_value)}</p>,
+    },
+    {
+      key: 'gain_loss',
+      header: 'الربح/الخسارة',
+      align: 'center',
+      sortable: true,
+      hideable: true,
+      render: (item) => {
+        const isProfitable = item.gain_loss >= 0;
+        return (
+          <div className="flex flex-col items-center gap-0.5">
+            <span className={cn(
+              'text-sm font-semibold',
+              isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+            )}>
+              {formatCurrency(Math.abs(item.gain_loss))}
+            </span>
+            <Badge className={cn(
+              'text-[10px] px-1.5',
+              isProfitable
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+            )}>
+              {formatPercent(item.gain_loss_percent)}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'price_change',
+      header: 'التغير',
+      align: 'center',
+      sortable: true,
+      render: (item) => (
+        <div className="flex items-center justify-center gap-1">
+          {item.price_change >= 0 ? (
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+          ) : (
+            <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+          )}
+          <span className={cn(
+            'text-xs font-semibold',
+            item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+          )}>
+            {formatPercent(item.price_change_percent)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'alerts',
+      header: 'التنبيهات',
+      align: 'center',
+      render: (item) => {
+        const hasAlertAbove = item.alert_price_above !== null;
+        const hasAlertBelow = item.alert_price_below !== null;
+        const hasAlertChange = item.alert_change_percent !== null;
+        const hasAnyAlert = hasAlertAbove || hasAlertBelow || hasAlertChange;
+        const isAboveTriggered = hasAlertAbove && item.current_price >= item.alert_price_above!;
+        const isBelowTriggered = hasAlertBelow && item.current_price <= item.alert_price_below!;
+        return (
+          <div className="flex items-center justify-center gap-1">
+            {hasAnyAlert ? (
+              <div className="relative">
+                <Bell className="w-4 h-4 text-amber-500" />
+                {(isAboveTriggered || isBelowTriggered) && (
+                  <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </div>
+            ) : (
+              <BellOff className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: '_actions',
+      header: 'إجراءات',
+      align: 'center',
+      render: (item) => (
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-primary hover:bg-primary/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDealAdvisorPrefill({
+                ticker: item.ticker,
+                entryPrice: item.purchase_price ?? null,
+                entryQty: item.quantity ?? null,
+                source: 'watchlist',
+              });
+              setCurrentView('trading-chart');
+            }}
+            title="مستشار الصفقة"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+            onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div dir="rtl" className="min-h-screen bg-background">
       <div className="p-4 md:p-6 space-y-6">
@@ -862,6 +1056,16 @@ export function EnhancedWatchlistView() {
               <Brain className="w-4 h-4 ml-1.5" />
               {showIntelligence ? 'القائمة العادية' : 'التحليل الذكي'}
             </Button>
+            <UnifiedPublishButton
+              variant="outline"
+              size="sm"
+              className="h-8"
+              title="قائمة المراقبة"
+              content={`قائمة المراقبة — ${watchlist.length} سهم${lastUpdate ? `\nآخر تحديث: ${lastUpdate.toLocaleString('ar-EG')}` : ''}\n\n${watchlist.slice(0, 15).map((w, i) => `${i + 1}. ${w.ticker} — ${w.name_ar || w.name || ''}${w.last_price ? ` — ${w.last_price}` : ''}${w.change_percent != null ? ` (${w.change_percent >= 0 ? '+' : ''}${w.change_percent.toFixed(2)}%)` : ''}`).join('\n')}`}
+              filename={`watchlist-${Date.now()}`}
+              hashtags={['مراقبة', 'أسهم', 'بورصة']}
+              triggerLabel="نشر"
+            />
             <Button
               variant="outline"
               size="sm"
@@ -990,212 +1194,19 @@ export function EnhancedWatchlistView() {
         {!showIntelligence && items.length > 0 && (
           <Card className="hidden md:block">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">السهم</TableHead>
-                      <TableHead className="text-xs text-center">السعر الحالي</TableHead>
-                      <TableHead className="text-xs text-center">شارت 7 أيام</TableHead>
-                      {hasGainLoss && <TableHead className="text-xs text-center">سعر الشراء</TableHead>}
-                      {hasGainLoss && <TableHead className="text-xs text-center">الكمية</TableHead>}
-                      {hasGainLoss && <TableHead className="text-xs text-center">المستثمر</TableHead>}
-                      {hasGainLoss && <TableHead className="text-xs text-center">القيمة الحالية</TableHead>}
-                      {hasGainLoss && <TableHead className="text-xs text-center">الربح/الخسارة</TableHead>}
-                      <TableHead className="text-xs text-center">التغير</TableHead>
-                      <TableHead className="text-xs text-center">التنبيهات</TableHead>
-                      <TableHead className="text-xs text-center">إجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => {
-                      const hasAlertAbove = item.alert_price_above !== null;
-                      const hasAlertBelow = item.alert_price_below !== null;
-                      const hasAlertChange = item.alert_change_percent !== null;
-                      const hasAnyAlert = hasAlertAbove || hasAlertBelow || hasAlertChange;
-
-                      const isAboveTriggered = hasAlertAbove && item.current_price >= item.alert_price_above!;
-                      const isBelowTriggered = hasAlertBelow && item.current_price <= item.alert_price_below!;
-
-                      const isProfitable = item.gain_loss >= 0;
-
-                      return (
-                        <TableRow
-                          key={item.id}
-                          className={cn(
-                            'hover:bg-muted/50',
-                            hasGainLoss && item.purchase_price && item.quantity && isProfitable && 'bg-emerald-50/50 dark:bg-emerald-950/10',
-                            hasGainLoss && item.purchase_price && item.quantity && !isProfitable && 'bg-red-50/50 dark:bg-red-950/10'
-                          )}
-                        >
-                          {/* Stock Name */}
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                                  {(item.ticker || '').slice(0, 2)}
-                                </span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-bold text-sm">{item.ticker}</p>
-                                <p className="text-xs text-muted-foreground truncate max-w-[120px]">{item.name_ar}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-
-                          {/* Current Price */}
-                          <TableCell className="text-center">
-                            <p className="font-semibold text-sm">{formatCurrency(item.current_price)}</p>
-                          </TableCell>
-
-                          {/* UNIFIED-MARKET-UX (Task 4): 7-day Sparkline */}
-                          <TableCell className="text-center">
-                            <div className="w-32 mx-auto" dir="ltr">
-                              <MiniSparkline
-                                ticker={item.ticker}
-                                days={7}
-                                height={28}
-                                width={120}
-                                showArea
-                              />
-                            </div>
-                          </TableCell>
-
-                          {/* Purchase Price */}
-                          {hasGainLoss && (
-                            <TableCell className="text-center">
-                              <p className="text-sm text-muted-foreground">
-                                {item.purchase_price ? formatCurrency(item.purchase_price) : '—'}
-                              </p>
-                            </TableCell>
-                          )}
-
-                          {/* Quantity */}
-                          {hasGainLoss && (
-                            <TableCell className="text-center">
-                              <p className="text-sm">
-                                {item.quantity ? item.quantity.toLocaleString('ar-EG') : '—'}
-                              </p>
-                            </TableCell>
-                          )}
-
-                          {/* Invested */}
-                          {hasGainLoss && (
-                            <TableCell className="text-center">
-                              <p className="text-sm font-medium">
-                                {formatCurrency(item.total_invested)}
-                              </p>
-                            </TableCell>
-                          )}
-
-                          {/* Current Value */}
-                          {hasGainLoss && (
-                            <TableCell className="text-center">
-                              <p className="text-sm font-medium">
-                                {formatCurrency(item.current_value)}
-                              </p>
-                            </TableCell>
-                          )}
-
-                          {/* Gain/Loss */}
-                          {hasGainLoss && (
-                            <TableCell className="text-center">
-                              <div className="flex flex-col items-center gap-0.5">
-                                <span className={cn(
-                                  'text-sm font-semibold',
-                                  isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                                )}>
-                                  {formatCurrency(Math.abs(item.gain_loss))}
-                                </span>
-                                <Badge className={cn(
-                                  'text-[10px] px-1.5',
-                                  isProfitable
-                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                )}>
-                                  {formatPercent(item.gain_loss_percent)}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                          )}
-
-                          {/* Price Change */}
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              {item.price_change >= 0 ? (
-                                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                              ) : (
-                                <TrendingDown className="w-3.5 h-3.5 text-red-500" />
-                              )}
-                              <span className={cn(
-                                'text-xs font-semibold',
-                                item.price_change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                              )}>
-                                {formatPercent(item.price_change_percent)}
-                              </span>
-                            </div>
-                          </TableCell>
-
-                          {/* Alerts */}
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              {hasAnyAlert ? (
-                                <div className="relative">
-                                  <Bell className="w-4 h-4 text-amber-500" />
-                                  {(isAboveTriggered || isBelowTriggered) && (
-                                    <span className="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full" />
-                                  )}
-                                </div>
-                              ) : (
-                                <BellOff className="w-4 h-4 text-muted-foreground" />
-                              )}
-                            </div>
-                          </TableCell>
-
-                          {/* Actions */}
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-primary hover:bg-primary/10"
-                                onClick={() => {
-                                  setDealAdvisorPrefill({
-                                    ticker: item.ticker,
-                                    entryPrice: item.purchase_price ?? null,
-                                    entryQty: item.quantity ?? null,
-                                    source: 'watchlist',
-                                  });
-                                  setCurrentView('trading-chart');
-                                }}
-                                title="مستشار الصفقة"
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                                onClick={() => handleEdit(item)}
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
-                                onClick={() => setDeleteId(item.id)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              <UnifiedTable<EnhancedWatchlistItem>
+                columns={watchlistColumns}
+                data={items}
+                keyField="id"
+                dense
+                columnToggle
+                filterable
+                rowClassName={(item) => cn(
+                  'hover:bg-muted/50',
+                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss >= 0 && 'bg-emerald-50/50 dark:bg-emerald-950/10',
+                  hasGainLoss && item.purchase_price && item.quantity && item.gain_loss < 0 && 'bg-red-50/50 dark:bg-red-950/10',
+                )}
+              />
             </CardContent>
           </Card>
         )}

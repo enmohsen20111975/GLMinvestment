@@ -1,7 +1,7 @@
 'use client';
 import { StatCard } from '@/components/ui/stat-card';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Download,
   TrendingUp,
@@ -17,18 +17,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
-import type { MarketOverview, AiInsights } from '@/types';
+import type { MarketOverview, AiInsights, MarketIndex, StockMini } from '@/types';
 import { toast } from 'sonner';
 import { adaptMarketOverview, adaptAiInsights } from '@/lib/store';
 import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
@@ -77,12 +71,135 @@ function formatNumber(n: number | undefined | null, digits = 2): string {
   });
 }
 
+/* ========== UnifiedTable columns: indices + top movers ========== */
+
+type IndexRow = MarketIndex & { _idx?: number };
+
+const indexColumns: Column<IndexRow>[] = [
+  {
+    key: 'name_ar',
+    header: 'المؤشر',
+    sortable: true,
+    filterable: true,
+    className: 'font-medium text-sm',
+  },
+  {
+    key: 'value',
+    header: 'القيمة',
+    align: 'left',
+    sortable: true,
+    className: 'tabular-nums text-sm font-semibold',
+    render: (idx) => (Number(idx.value) || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 }),
+  },
+  {
+    key: 'change',
+    header: 'التغيير',
+    align: 'left',
+    sortable: true,
+    render: (idx) => {
+      const chg = Number(idx.change) || 0;
+      const isUp = chg >= 0;
+      return (
+        <span className={cn('inline-flex items-center gap-1 tabular-nums text-sm font-medium',
+          isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+          {isUp ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+          {Math.abs(chg).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'change_percent',
+    header: 'النسبة %',
+    align: 'left',
+    sortable: true,
+    render: (idx) => {
+      const chgPct = Number(idx.change_percent) || 0;
+      const isUp = chgPct >= 0;
+      return (
+        <Badge variant="secondary" className={cn('font-bold text-xs',
+          isUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+               : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300')}>
+          {isUp ? '+' : ''}{chgPct.toFixed(2)}%
+        </Badge>
+      );
+    },
+  },
+];
+
+type StockMiniRow = StockMini & { _idx?: number };
+
+function buildTopMoverColumns(isGainer: boolean): Column<StockMiniRow>[] {
+  return [
+    {
+      key: '_idx',
+      header: '#',
+      align: 'right',
+      sortable: true,
+      className: 'text-muted-foreground text-xs',
+      render: (s) => s._idx,
+    },
+    {
+      key: 'name_ar',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      render: (s) => (
+        <div>
+          <p className="text-sm font-semibold">{s.name_ar}</p>
+          <p className="text-xs text-muted-foreground">{s.ticker}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'current_price',
+      header: 'السعر',
+      align: 'left',
+      sortable: true,
+      className: 'tabular-nums text-sm font-medium',
+      render: (s) => (Number(s.current_price) || 0).toLocaleString('ar-EG', { maximumFractionDigits: 2 }),
+    },
+    {
+      key: 'price_change',
+      header: 'التغيير',
+      align: 'left',
+      sortable: true,
+      render: (s) => {
+        const priceChg = Number(s.price_change) || 0;
+        if (priceChg === 0) return '—';
+        const price = Number(s.current_price) || 0;
+        const prevPrice = price - priceChg;
+        const chgPct = prevPrice > 0 ? ((priceChg / prevPrice) * 100) : 0;
+        return (
+          <span className={cn('inline-flex items-center gap-1 tabular-nums text-sm font-bold',
+            isGainer ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+            {priceChg >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+            {Math.abs(priceChg).toFixed(2)} ({priceChg >= 0 ? '+' : ''}{chgPct.toFixed(2)}%)
+          </span>
+        );
+      },
+    },
+    {
+      key: 'volume',
+      header: 'الحجم',
+      align: 'left',
+      sortable: true,
+      className: 'tabular-nums text-xs text-muted-foreground',
+      render: (s) => {
+        const vol = Number(s.volume) || 0;
+        return vol ? (vol >= 1000000 ? `${(vol / 1000000).toFixed(2)}M` : vol.toLocaleString()) : '—';
+      },
+    },
+  ];
+}
+
 /* ========== Index Performance Table ========== */
 function IndexTable({
   indices,
 }: {
   indices: MarketOverview['indices'];
 }) {
+  const data: IndexRow[] = indices.map((idx, i) => ({ ...idx, _idx: i + 1 }));
   return (
     <Card className="overflow-hidden border shadow-sm">
       <CardHeader className="pb-3">
@@ -92,45 +209,14 @@ function IndexTable({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs font-semibold">المؤشر</TableHead>
-                <TableHead className="text-xs font-semibold text-left">القيمة</TableHead>
-                <TableHead className="text-xs font-semibold text-left">التغيير</TableHead>
-                <TableHead className="text-xs font-semibold text-left">النسبة %</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {indices.map((idx) => {
-                const val = Number(idx.value) || 0;
-                const chg = Number(idx.change) || 0;
-                const chgPct = Number(idx.change_percent) || 0;
-                const isUp = chg >= 0;
-                return (
-                  <TableRow key={idx.symbol}>
-                    <TableCell className="font-medium text-sm">{idx.name_ar}</TableCell>
-                    <TableCell className="text-left tabular-nums text-sm font-semibold">
-                      {val.toLocaleString('ar-EG', { maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className={cn('text-left tabular-nums text-sm font-medium', isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                      <span className="inline-flex items-center gap-1">
-                        {isUp ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-                        {Math.abs(chg).toLocaleString('ar-EG', { maximumFractionDigits: 2 })}
-                      </span>
-                    </TableCell>
-                    <TableCell className={cn('text-left tabular-nums text-sm font-bold', isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                      <Badge variant="secondary" className={cn('font-bold text-xs', isUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300')}>
-                        {isUp ? '+' : ''}{chgPct.toFixed(2)}%
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<IndexRow>
+          columns={indexColumns}
+          data={data}
+          keyField="symbol"
+          dense
+          columnToggle
+          filterable
+        />
       </CardContent>
     </Card>
   );
@@ -147,6 +233,8 @@ function TopMoversTable({
   type: 'gainers' | 'losers';
 }) {
   const isGainer = type === 'gainers';
+  const data: StockMiniRow[] = stocks.slice(0, 5).map((s, i) => ({ ...s, _idx: i + 1 }));
+  const columns = useMemo(() => buildTopMoverColumns(isGainer), [isGainer]);
   return (
     <Card className="overflow-hidden border shadow-sm">
       <CardHeader className="pb-3">
@@ -160,53 +248,14 @@ function TopMoversTable({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs font-semibold">#</TableHead>
-                <TableHead className="text-xs font-semibold">السهم</TableHead>
-                <TableHead className="text-xs font-semibold text-left">السعر</TableHead>
-                <TableHead className="text-xs font-semibold text-left">التغيير</TableHead>
-                <TableHead className="text-xs font-semibold text-left">الحجم</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stocks.slice(0, 5).map((stock, i) => {
-                const price = Number(stock.current_price) || 0;
-                const priceChg = Number(stock.price_change) || 0;
-                const vol = Number(stock.volume) || 0;
-                const prevPrice = price - priceChg;
-                const chgPct = prevPrice > 0 ? ((priceChg / prevPrice) * 100) : 0;
-                return (
-                <TableRow key={stock.ticker}>
-                  <TableCell className="text-muted-foreground text-xs">{i + 1}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm font-semibold">{stock.name_ar}</p>
-                      <p className="text-xs text-muted-foreground">{stock.ticker}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-left tabular-nums text-sm font-medium">
-                    {price.toLocaleString('ar-EG', { maximumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell className={cn('text-left tabular-nums text-sm font-bold', isGainer ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                    {priceChg !== 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        {priceChg >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-                        {Math.abs(priceChg).toFixed(2)} ({priceChg >= 0 ? '+' : ''}{chgPct.toFixed(2)}%)
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-left tabular-nums text-xs text-muted-foreground">
-                    {vol ? (vol >= 1000000 ? `${(vol / 1000000).toFixed(2)}M` : vol.toLocaleString()) : '—'}
-                  </TableCell>
-                </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<StockMiniRow>
+          columns={columns}
+          data={data}
+          keyField="ticker"
+          dense
+          columnToggle
+          filterable
+        />
       </CardContent>
     </Card>
   );

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import {
   Plus, Trash2, Edit, RefreshCw, Search, Filter,
@@ -360,6 +360,150 @@ export function HumanRecommendationsAdmin() {
     return price.toFixed(2);
   };
 
+  // ─── UnifiedTable columns ────────────────────────────────────────────
+  const recsColumns: Column<ExpertRecommendation>[] = [
+    {
+      key: '_expand',
+      header: '',
+      align: 'center',
+      width: 'w-12',
+      hideable: false,
+      render: (r) => expandedId === r.id
+        ? <ChevronUp className="w-4 h-4 inline-block" />
+        : <ChevronDown className="w-4 h-4 inline-block" />,
+    },
+    {
+      key: 'stock_symbol',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      render: (r) => (
+        <div>
+          <span className="font-bold">{r.stock_symbol}</span>
+          {r.stock_name_ar && (
+            <span className="text-muted-foreground mr-2 text-sm">{r.stock_name_ar}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'expert_name',
+      header: 'المحلل',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-32',
+      render: (r) => {
+        const expert = EXPERTS.find(e => e.code === r.expert_name);
+        return <Badge variant="outline">{expert?.name_ar || r.expert_name}</Badge>;
+      },
+    },
+    {
+      key: 'action',
+      header: 'الإجراء',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-28',
+      render: (r) => {
+        const action = ACTIONS.find(a => a.value === r.action);
+        return (
+          <Badge className={cn("text-white", action?.color || 'bg-gray-500')}>
+            {action?.label || r.action}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'entry_price',
+      header: 'الدخول',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      render: (r) => formatPrice(r.entry_price),
+    },
+    {
+      key: 'target_price',
+      header: 'الهدف',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-emerald-600 font-medium',
+      render: (r) => formatPrice(r.target_price),
+    },
+    {
+      key: 'stop_loss',
+      header: 'الاستوب',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-red-600',
+      render: (r) => formatPrice(r.stop_loss),
+    },
+    {
+      key: 'status',
+      header: 'الحالة',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-28',
+      render: (r) => {
+        const status = STATUSES.find(s => s.value === r.status);
+        return (
+          <Badge className={cn("text-white", status?.color || 'bg-gray-500')}>
+            {status?.label || r.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'session_date',
+      header: 'التاريخ',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'text-sm text-muted-foreground',
+    },
+    {
+      key: 'actions',
+      header: 'إجراءات',
+      align: 'center',
+      width: 'w-20',
+      hideable: false,
+      render: (r) => (
+        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+            <Edit className="w-4 h-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>حذف التوقعة</AlertDialogTitle>
+                <AlertDialogDescription>
+                  هل أنت متأكد من حذف توقعة {r.stock_symbol}؟
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-500 hover:bg-red-600"
+                  onClick={() => handleDelete(r.id)}
+                >
+                  حذف
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      ),
+    },
+  ];
+
   // Loading state
   if (loading) {
     return (
@@ -468,137 +612,53 @@ export function HumanRecommendationsAdmin() {
               <p>لا توجد توقعات</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead>السهم</TableHead>
-                  <TableHead>المحلل</TableHead>
-                  <TableHead>الإجراء</TableHead>
-                  <TableHead>الدخول</TableHead>
-                  <TableHead>الهدف</TableHead>
-                  <TableHead>الاستوب</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead className="w-20">إجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRecs.map((rec) => {
-                  const isExpanded = expandedId === rec.id;
-                  const expert = EXPERTS.find(e => e.code === rec.expert_name);
-                  const action = ACTIONS.find(a => a.value === rec.action);
-                  const status = STATUSES.find(s => s.value === rec.status);
-
-                  return (
-                    <React.Fragment key={rec.id}>
-                      <TableRow
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setExpandedId(isExpanded ? null : rec.id)}
-                      >
-                        <TableCell>
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <span className="font-bold">{rec.stock_symbol}</span>
-                            {rec.stock_name_ar && (
-                              <span className="text-muted-foreground mr-2 text-sm">{rec.stock_name_ar}</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{expert?.name_ar || rec.expert_name}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={cn("text-white", action?.color || 'bg-gray-500')}>
-                            {action?.label || rec.action}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatPrice(rec.entry_price)}</TableCell>
-                        <TableCell className="text-emerald-600 font-medium">{formatPrice(rec.target_price)}</TableCell>
-                        <TableCell className="text-red-600">{formatPrice(rec.stop_loss)}</TableCell>
-                        <TableCell>
-                          <Badge className={cn("text-white", status?.color || 'bg-gray-500')}>
-                            {status?.label || rec.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{rec.session_date}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(rec)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>حذف التوقعة</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    هل أنت متأكد من حذف توقعة {rec.stock_symbol}؟
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-red-500 hover:bg-red-600"
-                                    onClick={() => handleDelete(rec.id)}
-                                  >
-                                    حذف
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {isExpanded && (
-                        <TableRow className="bg-muted/30">
-                          <TableCell colSpan={10} className="p-4">
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="font-medium">منطقة الدخول:</span>{' '}
-                                {formatPrice(rec.entry_price_from)} - {formatPrice(rec.entry_price_to)}
-                              </div>
-                              <div>
-                                <span className="font-medium">الهدف الثاني:</span>{' '}
-                                {formatPrice(rec.target_price_2)}
-                              </div>
-                              <div>
-                                <span className="font-medium">الهدف الاستثماري:</span>{' '}
-                                {formatPrice(rec.investment_target)}
-                              </div>
-                              <div>
-                                <span className="font-medium">الدعم:</span>{' '}
-                                {formatPrice(rec.support_level)}
-                              </div>
-                              <div>
-                                <span className="font-medium">المقاومة:</span>{' '}
-                                {formatPrice(rec.resistance_level)}
-                              </div>
-                              <div>
-                                <span className="font-medium">شرط الاستوب:</span>{' '}
-                                {rec.stop_loss_condition || '—'}
-                              </div>
-                              {rec.notes && (
-                                <div className="col-span-3">
-                                  <span className="font-medium">ملاحظات:</span>{' '}
-                                  {rec.notes}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <UnifiedTable
+              columns={recsColumns}
+              data={filteredRecs}
+              keyField="id"
+              dense
+              columnToggle
+              filterable
+              expandable
+              onRowClick={(r) => setExpandedId(expandedId === r.id ? null : r.id)}
+              rowClassName={() => 'cursor-pointer hover:bg-muted/50'}
+              expandRender={(rec) => (
+                <div className="p-4 bg-muted/30">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">منطقة الدخول:</span>{' '}
+                      {formatPrice(rec.entry_price_from)} - {formatPrice(rec.entry_price_to)}
+                    </div>
+                    <div>
+                      <span className="font-medium">الهدف الثاني:</span>{' '}
+                      {formatPrice(rec.target_price_2)}
+                    </div>
+                    <div>
+                      <span className="font-medium">الهدف الاستثماري:</span>{' '}
+                      {formatPrice(rec.investment_target)}
+                    </div>
+                    <div>
+                      <span className="font-medium">الدعم:</span>{' '}
+                      {formatPrice(rec.support_level)}
+                    </div>
+                    <div>
+                      <span className="font-medium">المقاومة:</span>{' '}
+                      {formatPrice(rec.resistance_level)}
+                    </div>
+                    <div>
+                      <span className="font-medium">شرط الاستوب:</span>{' '}
+                      {rec.stop_loss_condition || '—'}
+                    </div>
+                    {rec.notes && (
+                      <div className="col-span-3">
+                        <span className="font-medium">ملاحظات:</span>{' '}
+                        {rec.notes}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            />
           )}
         </CardContent>
       </Card>

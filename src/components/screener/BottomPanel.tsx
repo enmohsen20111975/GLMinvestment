@@ -18,14 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Filter,
   Newspaper,
@@ -524,105 +518,136 @@ function ScreenerTab({
 
       {/* جدول النتائج */}
       <div className="flex-1 min-w-0">
-        <ScrollArea className="h-full max-h-72">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-[10px] h-8">الرمز</TableHead>
-                <TableHead className="text-[10px] h-8 hidden sm:table-cell">الاسم</TableHead>
-                <TableHead className="text-[10px] h-8 hidden md:table-cell">القطاع</TableHead>
-                <TableHead className="text-[10px] h-8 text-left">السعر</TableHead>
-                <TableHead className="text-[10px] h-8 text-center">التغير%</TableHead>
-                <TableHead className="text-[10px] h-8 text-left hidden lg:table-cell">الحجم</TableHead>
-                <TableHead className="text-[10px] h-8 text-center hidden lg:table-cell">RSI</TableHead>
-                <TableHead className="text-[10px] h-8 text-center">إجراء</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-6">
-                    <AlertCircle className="w-4 h-4 mx-auto mb-1 opacity-50" />
-                    لا توجد نتائج مطابقة للفلاتر
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.slice(0, 50).map(s => {
-                  const isUp = (s.price_change ?? 0) >= 0;
-                  const rsi = s._rsi;
-                  return (
-                    <TableRow
-                      key={s.ticker}
-                      className="cursor-pointer hover:bg-muted/40 h-8"
-                      onClick={() => onSelectTicker(s.ticker)}
-                    >
-                      <TableCell className="text-xs font-bold py-1">{s.ticker}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground hidden sm:table-cell py-1 max-w-[120px] truncate">
-                        {s.name_ar || s.name}
-                      </TableCell>
-                      <TableCell className="text-[10px] hidden md:table-cell py-1">
-                        {s.sector ? <Badge variant="outline" className="text-[8px] px-1 py-0">{s.sector}</Badge> : '—'}
-                      </TableCell>
-                      <TableCell className="text-xs tabular-nums text-left py-1" dir="ltr">
-                        {formatPrice(s.current_price ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-center py-1">
-                        <span className={cn(
-                          'text-[10px] font-semibold inline-flex items-center gap-0.5',
-                          isUp ? 'text-emerald-600' : 'text-rose-600'
-                        )} dir="ltr">
-                          {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                          {(s.price_change ?? 0).toFixed(2)}%
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-[10px] tabular-nums text-left hidden lg:table-cell py-1" dir="ltr">
-                        {formatVolume(s.volume ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-center py-1">
-                        {rsi !== null ? (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-[9px] px-1 py-0',
-                              rsi >= 70 ? 'border-rose-500 text-rose-600' :
-                              rsi <= 30 ? 'border-emerald-500 text-emerald-600' :
-                              'text-muted-foreground'
-                            )}
-                          >
-                            {rsi.toFixed(0)}
-                          </Badge>
-                        ) : '—'}
-                      </TableCell>
-                      <TableCell className="text-center py-1">
-                        <div className="flex items-center justify-center gap-0.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-[9px] text-emerald-600 hover:text-emerald-700"
-                            onClick={(e) => { e.stopPropagation(); onAddToChart(s.ticker); }}
-                          >
-                            + شارت
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="w-6 h-6 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => { e.stopPropagation(); onOpenDetail(s.ticker); }}
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+        <UnifiedTable<ScreenerStock & { _rsi: number | null }>
+          columns={screenerResultColumns(onAddToChart, onOpenDetail)}
+          data={filtered.slice(0, 50)}
+          keyField="ticker"
+          dense
+          columnToggle
+          filterable
+          maxHeight="max-h-72"
+          emptyTextAr="لا توجد نتائج مطابقة للفلاتر"
+          onRowClick={(s) => onSelectTicker(s.ticker)}
+          rowClassName={() => 'cursor-pointer hover:bg-muted/40'}
+        />
       </div>
     </div>
   );
+}
+
+// ─── UnifiedTable columns builder for screener results ──────────────────────
+function screenerResultColumns(
+  onAddToChart: (ticker: string) => void,
+  onOpenDetail: (ticker: string) => void,
+): Column<ScreenerStock & { _rsi: number | null }>[] {
+  return [
+    {
+      key: 'ticker',
+      header: 'الرمز',
+      sortable: true,
+      filterable: true,
+      className: 'text-xs font-bold',
+    },
+    {
+      key: 'name_ar',
+      header: 'الاسم',
+      sortable: true,
+      filterable: true,
+      className: 'text-xs text-muted-foreground hidden sm:table-cell max-w-[120px] truncate',
+      render: (s) => (
+        <span className="block max-w-[120px] truncate">
+          {s.name_ar || s.name}
+        </span>
+      ),
+    },
+    {
+      key: 'sector',
+      header: 'القطاع',
+      filterable: true,
+      className: 'text-[10px] hidden md:table-cell',
+      render: (s) => s.sector ? (
+        <Badge variant="outline" className="text-[8px] px-1 py-0">{s.sector}</Badge>
+      ) : '—',
+    },
+    {
+      key: 'current_price',
+      header: 'السعر',
+      align: 'left',
+      sortable: true,
+      className: 'text-xs tabular-nums',
+      render: (s) => <span dir="ltr">{formatPrice(s.current_price ?? 0)}</span>,
+    },
+    {
+      key: 'price_change',
+      header: 'التغير%',
+      align: 'center',
+      sortable: true,
+      render: (s) => {
+        const isUp = (s.price_change ?? 0) >= 0;
+        return (
+          <span className={cn(
+            'text-[10px] font-semibold inline-flex items-center gap-0.5',
+            isUp ? 'text-emerald-600' : 'text-rose-600'
+          )} dir="ltr">
+            {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+            {(s.price_change ?? 0).toFixed(2)}%
+          </span>
+        );
+      },
+    },
+    {
+      key: 'volume',
+      header: 'الحجم',
+      align: 'left',
+      sortable: true,
+      className: 'text-[10px] tabular-nums hidden lg:table-cell',
+      render: (s) => <span dir="ltr">{formatVolume(s.volume ?? 0)}</span>,
+    },
+    {
+      key: '_rsi',
+      header: 'RSI',
+      align: 'center',
+      sortable: true,
+      className: 'hidden lg:table-cell',
+      render: (s) => {
+        const rsi = s._rsi;
+        return rsi !== null ? (
+          <Badge variant="outline" className={cn('text-[9px] px-1 py-0',
+            rsi >= 70 ? 'border-rose-500 text-rose-600' :
+            rsi <= 30 ? 'border-emerald-500 text-emerald-600' :
+            'text-muted-foreground'
+          )}>
+            {rsi.toFixed(0)}
+          </Badge>
+        ) : '—';
+      },
+    },
+    {
+      key: '_actions',
+      header: 'إجراء',
+      align: 'center',
+      render: (s) => (
+        <div className="flex items-center justify-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[9px] text-emerald-600 hover:text-emerald-700"
+            onClick={(e) => { e.stopPropagation(); onAddToChart(s.ticker); }}
+          >
+            + شارت
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-6 h-6 text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onOpenDetail(s.ticker); }}
+          >
+            <ExternalLink className="w-3 h-3" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 }
 
 // ─── تبويب: التفاصيل (Details) ────────────────────────────────────────────

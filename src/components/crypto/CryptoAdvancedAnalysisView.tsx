@@ -14,14 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Bitcoin,
   TrendingUp,
@@ -508,144 +502,159 @@ export default function CryptoAdvancedAnalysisView() {
               </p>
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-auto -mx-2">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead className="w-12 text-center">#</TableHead>
-                    <TableHead>العملة</TableHead>
-                    <TableHead className="text-right">السعر</TableHead>
-                    <TableHead className="text-right">24h</TableHead>
-                    <TableHead className="text-right">7d</TableHead>
-                    <TableHead className="text-center">RSI</TableHead>
-                    <TableHead className="text-center">الحالة</TableHead>
-                    <TableHead className="text-center">الاتجاه</TableHead>
-                    <TableHead className="text-center">إشارة</TableHead>
-                    <TableHead className="text-right">القيمة</TableHead>
-                    <TableHead className="text-right">التذبذب</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((a, idx) => {
-                    const change24 = formatChange(a.change_24h);
-                    const change7d = formatChange(a.change_7d);
-                    const cls = classifyCryptoState(a.rsi, a.change_24h, a.above_ma50);
-                    return (
-                      <TableRow key={a.symbol} className="hover:bg-muted/50">
-                        <TableCell className="text-center text-xs text-muted-foreground">
-                          {idx + 1}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
-                              {a.symbol.slice(0, 3)}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-sm">{a.symbol}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {a.name}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          {formatPrice(a.price)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'font-mono text-xs',
-                              change24.positive
-                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                : 'text-red-600 bg-red-50 border-red-200'
-                            )}
-                          >
-                            {change24.text}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'font-mono text-xs',
-                              change7d.positive
-                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                : 'text-red-600 bg-red-50 border-red-200'
-                            )}
-                          >
-                            {change7d.text}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-mono text-sm">
-                          {a.rsi !== null ? a.rsi.toFixed(1) : '—'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant="outline"
-                            className={cn('text-xs', cls.color)}
-                          >
-                            {cls.state_ar}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {a.trend && (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'text-xs',
-                                a.trend === 'UPTREND'
-                                  ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                  : a.trend === 'DOWNTREND'
-                                    ? 'text-red-600 bg-red-50 border-red-200'
-                                    : 'text-slate-600 bg-slate-50 border-slate-200'
-                              )}
-                            >
-                              {a.trend === 'UPTREND'
-                                ? 'صاعد'
-                                : a.trend === 'DOWNTREND'
-                                  ? 'هابط'
-                                  : 'عرضي'}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {a.signal && (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'text-xs font-bold',
-                                a.signal === 'BUY'
-                                  ? 'text-emerald-700 bg-emerald-100 border-emerald-300'
-                                  : a.signal === 'SELL'
-                                    ? 'text-red-700 bg-red-100 border-red-300'
-                                    : 'text-slate-600 bg-slate-50 border-slate-200'
-                              )}
-                            >
-                              {a.signal}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          ${formatNumber(a.market_cap)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          {a.volatility !== null
-                            ? a.volatility.toFixed(2) + '%'
-                            : '—'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable<CryptoAnalysis & { _idx: number }>
+              columns={analysisColumns}
+              data={filtered.map((a, i) => ({ ...a, _idx: i + 1 }))}
+              keyField="symbol"
+              dense
+              columnToggle
+              filterable
+              maxHeight="max-h-[600px]"
+            />
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+// ─── UnifiedTable columns ─────────────────────────────────────────────────────
+const analysisColumns: Column<CryptoAnalysis & { _idx: number }>[] = [
+  {
+    key: '_idx',
+    header: '#',
+    align: 'center',
+    sortable: true,
+    width: 'w-12',
+    className: 'text-xs text-muted-foreground',
+    render: (a) => a._idx,
+  },
+  {
+    key: 'symbol',
+    header: 'العملة',
+    sortable: true,
+    filterable: true,
+    render: (a) => (
+      <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
+          {a.symbol.slice(0, 3)}
+        </div>
+        <div>
+          <div className="font-semibold text-sm">{a.symbol}</div>
+          <div className="text-xs text-muted-foreground">{a.name}</div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'price',
+    header: 'السعر',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (a) => formatPrice(a.price),
+  },
+  {
+    key: 'change_24h',
+    header: '24h',
+    align: 'right',
+    sortable: true,
+    render: (a) => {
+      const c = formatChange(a.change_24h);
+      return (
+        <Badge variant="outline" className={cn('font-mono text-xs',
+          c.positive ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+        )}>
+          {c.text}
+        </Badge>
+      );
+    },
+  },
+  {
+    key: 'change_7d',
+    header: '7d',
+    align: 'right',
+    sortable: true,
+    render: (a) => {
+      const c = formatChange(a.change_7d);
+      return (
+        <Badge variant="outline" className={cn('font-mono text-xs',
+          c.positive ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-red-600 bg-red-50 border-red-200'
+        )}>
+          {c.text}
+        </Badge>
+      );
+    },
+  },
+  {
+    key: 'rsi',
+    header: 'RSI',
+    align: 'center',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (a) => a.rsi !== null ? a.rsi.toFixed(1) : '—',
+  },
+  {
+    key: '_state',
+    header: 'الحالة',
+    align: 'center',
+    filterable: true,
+    render: (a) => {
+      const cls = classifyCryptoState(a.rsi, a.change_24h, a.above_ma50);
+      return (
+        <Badge variant="outline" className={cn('text-xs', cls.color)}>
+          {cls.state_ar}
+        </Badge>
+      );
+    },
+  },
+  {
+    key: 'trend',
+    header: 'الاتجاه',
+    align: 'center',
+    filterable: true,
+    render: (a) => a.trend ? (
+      <Badge variant="outline" className={cn('text-xs',
+        a.trend === 'UPTREND' ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+        : a.trend === 'DOWNTREND' ? 'text-red-600 bg-red-50 border-red-200'
+        : 'text-slate-600 bg-slate-50 border-slate-200'
+      )}>
+        {a.trend === 'UPTREND' ? 'صاعد' : a.trend === 'DOWNTREND' ? 'هابط' : 'عرضي'}
+      </Badge>
+    ) : '—',
+  },
+  {
+    key: 'signal',
+    header: 'إشارة',
+    align: 'center',
+    filterable: true,
+    render: (a) => a.signal ? (
+      <Badge variant="outline" className={cn('text-xs font-bold',
+        a.signal === 'BUY' ? 'text-emerald-700 bg-emerald-100 border-emerald-300'
+        : a.signal === 'SELL' ? 'text-red-700 bg-red-100 border-red-300'
+        : 'text-slate-600 bg-slate-50 border-slate-200'
+      )}>
+        {a.signal}
+      </Badge>
+    ) : '—',
+  },
+  {
+    key: 'market_cap',
+    header: 'القيمة',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (a) => `$${formatNumber(a.market_cap)}`,
+  },
+  {
+    key: 'volatility',
+    header: 'التذبذب',
+    align: 'right',
+    sortable: true,
+    className: 'font-mono text-sm',
+    render: (a) => a.volatility !== null ? a.volatility.toFixed(2) + '%' : '—',
+  },
+];
 
 // ─── RSI helper ─────────────────────────────────────────────────────────────
 

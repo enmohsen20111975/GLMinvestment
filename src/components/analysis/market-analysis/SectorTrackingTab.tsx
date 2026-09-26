@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   TrendingUp, TrendingDown, Clock, Calendar,
   BarChart3, Target, AlertTriangle, CheckCircle,
@@ -192,33 +193,11 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
     return arr;
   };
 
-  const SortHeader = ({ field, label, className, onSort }: { field: SectorSortField; label: string; className?: string; onSort?: (f: SectorSortField) => void }) => (
-    <TableHead
-      className={cn('text-right cursor-pointer select-none hover:bg-muted/60 transition-colors', className)}
-      onClick={() => (onSort || handleSort)(field)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        {sortBy === field && (
-          <span className="text-[10px] text-muted-foreground">{sortOrder === 'desc' ? '▼' : '▲'}</span>
-        )}
-      </span>
-    </TableHead>
-  );
-
-  const StockSortHeader = ({ field, label, className }: { field: SectorStockSortField; label: string; className?: string }) => (
-    <TableHead
-      className={cn('text-right cursor-pointer select-none hover:bg-muted/60 transition-colors', className)}
-      onClick={() => handleStockSort(field)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        {stockSortBy === field && (
-          <span className="text-[10px] text-muted-foreground">{stockSortOrder === 'desc' ? '▼' : '▲'}</span>
-        )}
-      </span>
-    </TableHead>
-  );
+  // ملاحظة: SortHeader / StockSortHeader components أصبحت غير مستخدمة بعد الترحيل لـ UnifiedTable
+  // (الذي بيوفر sort built-in)، لكن بنحتفظ بـ handleSort/handleStockSort لاستخدامهما المحتمل
+  // في فلترة خارجية مستقبلاً. بنستخدم sortBy/sortOrder/stockSortBy/stockSortOrder لطلب الـ API.
+  void handleSort;
+  void handleStockSort;
 
   if (loading && !data) {
     return (
@@ -259,6 +238,244 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
   const ms = data.market_summary;
   const sectors = data.sectors || [];
   const rotation = data.rotation;
+
+  // ─── UnifiedTable columns (sector overview + nested stock grid) ────────────
+  const sectorColumns: Column<SectorTrackingEntry>[] = [
+    {
+      key: 'sector',
+      header: 'القطاع',
+      sortable: true,
+      filterable: true,
+      className: 'font-medium',
+      render: (s) => {
+        const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="text-base">{heat.icon}</span>
+            <span className="font-bold">{s.sector}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'heat_level',
+      header: 'الحرارة',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-24',
+      render: (s) => {
+        const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
+        return (
+          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', heat.bg, heat.text)}>
+            {heat.label}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'avg_change',
+      header: 'متوسط التغير %',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      render: (s) => (
+        <span className={cn('font-mono font-bold', avgChangeHeatClass(s.avg_change),
+          s.avg_change >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
+          {s.avg_change >= 0 ? '+' : ''}{s.avg_change}%
+        </span>
+      ),
+    },
+    {
+      key: 'turnover',
+      header: 'إجمالي السيولة',
+      align: 'right',
+      sortable: true,
+      width: 'w-36',
+      className: 'font-mono text-xs',
+      render: (s) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="font-bold">{formatEGPShort(s.turnover)}</span>
+          <span className="text-muted-foreground text-[10px]">
+            {s.turnover_pct}% من السوق
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'gainers',
+      header: 'رابحة',
+      align: 'right',
+      sortable: true,
+      width: 'w-20',
+      className: 'font-mono text-emerald-600 font-bold',
+    },
+    {
+      key: 'losers',
+      header: 'خاسرة',
+      align: 'right',
+      sortable: true,
+      width: 'w-20',
+      className: 'font-mono text-rose-600 font-bold',
+    },
+    {
+      key: 'leader_change',
+      header: 'سهم القائد',
+      align: 'right',
+      sortable: true,
+      width: 'w-40',
+      render: (s) => s.leader_ticker ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); loadStockDetail(s.leader_ticker); }}
+          className="flex items-center gap-1.5 text-xs hover:bg-muted/60 rounded px-1.5 py-0.5 transition-colors"
+          title={`عرض تفاصيل ${s.leader_ticker}`}
+        >
+          <span className="text-amber-600">👑</span>
+          <span className="font-mono font-bold">{s.leader_ticker}</span>
+          <span className={cn('font-mono', s.leader_change != null && s.leader_change >= 0 ? 'text-emerald-600' : 'text-rose-600')}>
+            {s.leader_change != null && s.leader_change >= 0 ? '+' : ''}{s.leader_change ?? '—'}%
+          </span>
+        </button>
+      ) : '—',
+    },
+    {
+      key: 'total_market_cap',
+      header: 'القيمة السوقية',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'font-mono text-xs',
+      render: (s) => s.total_market_cap > 0 ? formatEGPShort(s.total_market_cap) : '—',
+    },
+    {
+      key: 'stock_count',
+      header: 'التفاصيل',
+      align: 'right',
+      width: 'w-24',
+      render: (s) => (
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border">
+          <span>عرض ({s.stocks?.length || 0})</span>
+          <span className="text-[10px]">▼</span>
+        </span>
+      ),
+    },
+  ];
+
+  const stockColumns: Column<SectorTrackingStock>[] = [
+    {
+      key: 'ticker',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      width: 'w-44',
+      render: (st) => (
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono font-bold text-xs">{st.ticker}</span>
+          <span className="text-muted-foreground text-[11px] truncate max-w-[140px]">
+            {st.name_ar || st.name}
+          </span>
+          {st.volume_surge && (
+            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'current_price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono text-xs',
+      render: (st) => formatNumber(st.current_price),
+    },
+    {
+      key: 'change_percent',
+      header: 'التغير %',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      render: (st) => (
+        <span className={cn('font-mono text-xs font-bold', stockChangeHeatClass(st.change_percent),
+          st.change_percent >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
+          {st.change_percent >= 0 ? '+' : ''}{st.change_percent}%
+        </span>
+      ),
+    },
+    {
+      key: 'volume',
+      header: 'الحجم',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono text-xs text-muted-foreground',
+      render: (st) => formatVolumeShort(st.volume),
+    },
+    {
+      key: 'turnover_egp',
+      header: 'السيولة (ج.م)',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'font-mono text-xs',
+      render: (st) => st.turnover_egp > 0 ? formatEGPShort(st.turnover_egp) : '—',
+    },
+    {
+      key: 'market_cap',
+      header: 'القيمة السوقية',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'font-mono text-xs',
+      render: (st) => st.market_cap > 0 ? formatEGPShort(st.market_cap) : '—',
+    },
+    {
+      key: 'above_ma50',
+      header: 'فوق/تحت MA50',
+      align: 'right',
+      width: 'w-24',
+      filterable: true,
+      render: (st) => st.above_ma50 == null ? (
+        <span className="text-muted-foreground text-xs">—</span>
+      ) : st.above_ma50 ? (
+        <span className="inline-flex items-center gap-0.5 text-emerald-600 text-xs font-medium">
+          <TrendingUp className="w-3 h-3" /> فوق
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-0.5 text-rose-600 text-xs font-medium">
+          <TrendingDown className="w-3 h-3" /> تحت
+        </span>
+      ),
+    },
+    {
+      key: 'rsi',
+      header: 'RSI',
+      align: 'right',
+      sortable: true,
+      width: 'w-20',
+      className: 'font-mono text-xs',
+      render: (st) => st.rsi != null ? (
+        <span className={cn(
+          st.rsi >= 70 ? 'text-rose-600' : st.rsi <= 30 ? 'text-emerald-600' : 'text-muted-foreground'
+        )}>
+          {st.rsi.toFixed(0)}
+        </span>
+      ) : '—',
+    },
+    {
+      key: 'distance_from_52w_high',
+      header: 'من قمة 52أ',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono text-xs',
+      render: (st) => st.distance_from_52w_high != null ? (
+        <span className="text-muted-foreground">
+          -{st.distance_from_52w_high}%
+        </span>
+      ) : '—',
+    },
+  ];
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -303,6 +520,15 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
             <RefreshCw className="w-3.5 h-3.5" />
             تحديث
           </Button>
+          <UnifiedPublishButton
+            variant="outline"
+            size="sm"
+            title="تتبع حركة القطاعات"
+            content={`تتبع حركة القطاعات — ${marketCode}\nعدد القطاعات: ${ms?.total_sectors ?? 0} | عدد الأسهم: ${ms?.total_sectors ?? 0}\nمتوسط التغير: ${ms?.avg_change ?? 0}%\n\n${sectors.slice(0, 15).map((s, i) => `${i + 1}. ${s.sector} — ${s.avg_change >= 0 ? '+' : ''}${s.avg_change}% — رابحة ${s.gainers}/خاسرة ${s.losers} — السيولة ${formatEGPShort(s.turnover)}`).join('\n')}`}
+            filename={`sector-tracking-${marketCode}-${Date.now()}`}
+            hashtags={['قطاعات', marketCode, 'بورصة']}
+            triggerLabel="نشر"
+          />
         </div>
       </div>
 
@@ -363,248 +589,58 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
         </div>
       )}
 
-      {/* ============= الجدول الرئيسي للقطاعات (sortable + heatmap بسيط) ============= */}
+      {/* ============= الجدول الرئيسي للقطاعات — UnifiedTable (expandable) ============= */}
       <div className="rounded-lg border border-border overflow-hidden">
-        <div className="max-h-[640px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-              <TableRow className="bg-muted/40">
-                <SortHeader field="sector" label="القطاع" />
-                <SortHeader field="heat_level" label="الحرارة" className="w-24" />
-                <SortHeader field="avg_change" label="متوسط التغير %" className="w-32" />
-                <SortHeader field="turnover" label="إجمالي السيولة" className="w-36" />
-                <SortHeader field="gainers" label="رابحة" className="w-20" />
-                <SortHeader field="losers" label="خاسرة" className="w-20" />
-                <SortHeader field="leader_change" label="سهم القائد" className="w-40" />
-                <SortHeader field="total_market_cap" label="القيمة السوقية" className="w-32" />
-                <TableHead className="text-right w-24">التفاصيل</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sectors.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                    لا توجد قطاعات مطابقة للفلاتر الحالية
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sectors.map(s => {
-                  const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
-                  const isExpanded = expandedSector === s.sector;
-                  return (
-                    <React.Fragment key={s.sector}>
-                      <TableRow
-                        className={cn(
-                          'cursor-pointer hover:bg-muted/40 transition-colors',
-                          isExpanded && 'bg-muted/30'
-                        )}
-                        onClick={() => setExpandedSector(isExpanded ? null : s.sector)}
-                      >
-                        {/* القطاع */}
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-base">{heat.icon}</span>
-                            <span className="font-bold">{s.sector}</span>
-                          </div>
-                        </TableCell>
-                        {/* الحرارة */}
-                        <TableCell>
-                          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border', heat.bg, heat.text)}>
-                            {heat.label}
-                          </span>
-                        </TableCell>
-                        {/* متوسط التغير — heatmap بسيط */}
-                        <TableCell className={cn('font-mono font-bold', avgChangeHeatClass(s.avg_change))}>
-                          <span className={cn(s.avg_change >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
-                            {s.avg_change >= 0 ? '+' : ''}{s.avg_change}%
-                          </span>
-                        </TableCell>
-                        {/* إجمالي السيولة */}
-                        <TableCell className="font-mono text-xs">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold">{formatEGPShort(s.turnover)}</span>
-                            <span className="text-muted-foreground text-[10px]">
-                              {s.turnover_pct}% من السوق
-                            </span>
-                          </div>
-                        </TableCell>
-                        {/* رابحة */}
-                        <TableCell className="font-mono text-emerald-600 font-bold">
-                          {s.gainers}
-                        </TableCell>
-                        {/* خاسرة */}
-                        <TableCell className="font-mono text-rose-600 font-bold">
-                          {s.losers}
-                        </TableCell>
-                        {/* سهم القائد */}
-                        <TableCell>
-                          {s.leader_ticker && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                loadStockDetail(s.leader_ticker);
-                              }}
-                              className="flex items-center gap-1.5 text-xs hover:bg-muted/60 rounded px-1.5 py-0.5 transition-colors"
-                              title={`عرض تفاصيل ${s.leader_ticker}`}
-                            >
-                              <span className="text-amber-600">👑</span>
-                              <span className="font-mono font-bold">{s.leader_ticker}</span>
-                              <span className={cn('font-mono', s.leader_change != null && s.leader_change >= 0 ? 'text-emerald-600' : 'text-rose-600')}>
-                                {s.leader_change != null && s.leader_change >= 0 ? '+' : ''}{s.leader_change ?? '—'}%
-                              </span>
-                            </button>
-                          )}
-                        </TableCell>
-                        {/* القيمة السوقية */}
-                        <TableCell className="font-mono text-xs">
-                          {s.total_market_cap > 0 ? formatEGPShort(s.total_market_cap) : '—'}
-                        </TableCell>
-                        {/* زر التوسعة */}
-                        <TableCell>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedSector(isExpanded ? null : s.sector);
-                            }}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border hover:bg-muted/60 transition-colors"
-                            aria-expanded={isExpanded}
-                          >
-                            {isExpanded ? (
-                              <>
-                                <span>إخفاء</span>
-                                <span className="text-[10px]">▲</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>عرض ({s.stocks?.length || 0})</span>
-                                <span className="text-[10px]">▼</span>
-                              </>
-                            )}
-                          </button>
-                        </TableCell>
-                      </TableRow>
-
-                      {/* ============= الجدول الفرعي للأسهم (collapsible) ============= */}
-                      {isExpanded && s.stocks && s.stocks.length > 0 && (
-                        <TableRow className="bg-muted/20 hover:bg-muted/20">
-                          <TableCell colSpan={9} className="p-2">
-                            <div className="rounded-md border border-border bg-background overflow-hidden">
-                              <div className="px-3 py-2 bg-muted/40 border-b border-border flex items-center justify-between">
-                                <span className="text-xs font-semibold">
-                                  أسهم قطاع {s.sector} — {s.stocks.length} سهم
-                                </span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  اضغط على أي صف لعرض تفاصيل السهم
-                                </span>
-                              </div>
-                              <div className="max-h-80 overflow-y-auto">
-                                <Table>
-                                  <TableHeader className="bg-muted/30 sticky top-0">
-                                    <TableRow>
-                                      <StockSortHeader field="ticker" label="السهم" className="w-44" />
-                                      <StockSortHeader field="current_price" label="السعر" className="w-24" />
-                                      <StockSortHeader field="change_percent" label="التغير %" className="w-28" />
-                                      <StockSortHeader field="volume" label="الحجم" className="w-24" />
-                                      <StockSortHeader field="turnover_egp" label="السيولة (ج.م)" className="w-32" />
-                                      <StockSortHeader field="market_cap" label="القيمة السوقية" className="w-32" />
-                                      <TableHead className="text-right w-24">فوق/تحت MA50</TableHead>
-                                      <StockSortHeader field="rsi" label="RSI" className="w-20" />
-                                      <StockSortHeader field="distance_from_52w_high" label="من قمة 52أ" className="w-28" />
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {sortStocks(s.stocks).map(st => {
-                                      const isAboveMa50 = st.above_ma50;
-                                      return (
-                                        <TableRow
-                                          key={st.ticker}
-                                          className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                          onClick={() => loadStockDetail(st.ticker)}
-                                          title={`عرض تفاصيل ${st.ticker}`}
-                                        >
-                                          {/* السهم */}
-                                          <TableCell className="py-1.5">
-                                            <div className="flex items-center gap-1.5">
-                                              <span className="font-mono font-bold text-xs">{st.ticker}</span>
-                                              <span className="text-muted-foreground text-[11px] truncate max-w-[140px]">
-                                                {st.name_ar || st.name}
-                                              </span>
-                                              {st.volume_surge && (
-                                                <Zap className="w-3 h-3 text-amber-500 shrink-0" />
-                                              )}
-                                            </div>
-                                          </TableCell>
-                                          {/* السعر */}
-                                          <TableCell className="font-mono text-xs py-1.5">
-                                            {formatNumber(st.current_price)}
-                                          </TableCell>
-                                          {/* التغير % — heatmap بسيط */}
-                                          <TableCell className={cn('font-mono text-xs font-bold py-1.5', stockChangeHeatClass(st.change_percent))}>
-                                            <span className={st.change_percent >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}>
-                                              {st.change_percent >= 0 ? '+' : ''}{st.change_percent}%
-                                            </span>
-                                          </TableCell>
-                                          {/* الحجم */}
-                                          <TableCell className="font-mono text-xs text-muted-foreground py-1.5">
-                                            {formatVolumeShort(st.volume)}
-                                          </TableCell>
-                                          {/* السيولة */}
-                                          <TableCell className="font-mono text-xs py-1.5">
-                                            {st.turnover_egp > 0 ? formatEGPShort(st.turnover_egp) : '—'}
-                                          </TableCell>
-                                          {/* القيمة السوقية */}
-                                          <TableCell className="font-mono text-xs py-1.5">
-                                            {st.market_cap > 0 ? formatEGPShort(st.market_cap) : '—'}
-                                          </TableCell>
-                                          {/* فوق/تحت MA50 */}
-                                          <TableCell className="py-1.5">
-                                            {isAboveMa50 == null ? (
-                                              <span className="text-muted-foreground text-xs">—</span>
-                                            ) : isAboveMa50 ? (
-                                              <span className="inline-flex items-center gap-0.5 text-emerald-600 text-xs font-medium">
-                                                <TrendingUp className="w-3 h-3" /> فوق
-                                              </span>
-                                            ) : (
-                                              <span className="inline-flex items-center gap-0.5 text-rose-600 text-xs font-medium">
-                                                <TrendingDown className="w-3 h-3" /> تحت
-                                              </span>
-                                            )}
-                                          </TableCell>
-                                          {/* RSI */}
-                                          <TableCell className="font-mono text-xs py-1.5">
-                                            {st.rsi != null ? (
-                                              <span className={cn(
-                                                st.rsi >= 70 ? 'text-rose-600' : st.rsi <= 30 ? 'text-emerald-600' : 'text-muted-foreground'
-                                              )}>
-                                                {st.rsi.toFixed(0)}
-                                              </span>
-                                            ) : '—'}
-                                          </TableCell>
-                                          {/* من قمة 52 أسبوع */}
-                                          <TableCell className="font-mono text-xs py-1.5">
-                                            {st.distance_from_52w_high != null ? (
-                                              <span className="text-muted-foreground">
-                                                -{st.distance_from_52w_high}%
-                                              </span>
-                                            ) : '—'}
-                                          </TableCell>
-                                        </TableRow>
-                                      );
-                                    })}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {data && sectors.length > 0 && (
+          <UnifiedTable<SectorTrackingEntry>
+            key={`sectors-${marketCode}-${heatFilter}-${withRotation ? '1' : '0'}`}
+            columns={sectorColumns}
+            data={sectors}
+            keyField="sector"
+            expandable
+            defaultExpandedKey={sectors[0]?.sector}
+            expandRender={(s) => {
+              const heat = HEAT_LEVEL_STYLE[s.heat_level] || HEAT_LEVEL_STYLE.NEUTRAL;
+              void heat;
+              return (
+                <div className="rounded-md border border-border bg-background overflow-hidden m-1">
+                  <div className="px-3 py-2 bg-muted/40 border-b border-border flex items-center justify-between">
+                    <span className="text-xs font-semibold">
+                      أسهم قطاع {s.sector} — {s.stocks.length} سهم
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      اضغط على أي صف لعرض تفاصيل السهم
+                    </span>
+                  </div>
+                  <UnifiedTable<SectorTrackingStock>
+                    columns={stockColumns}
+                    data={sortStocks(s.stocks)}
+                    keyField="ticker"
+                    dense
+                    columnToggle
+                    filterable
+                    maxHeight="max-h-80"
+                    onRowClick={(st) => loadStockDetail(st.ticker)}
+                    rowClassName={() => 'cursor-pointer hover:bg-muted/50 transition-colors'}
+                  />
+                </div>
+              );
+            }}
+            columnToggle
+            filterable
+            maxHeight="max-h-[640px]"
+            rowClassName={(s) => cn(
+              'cursor-pointer hover:bg-muted/40 transition-colors',
+              expandedSector === s.sector && 'bg-muted/30',
+            )}
+            onRowClick={(s) => setExpandedSector(prev => prev === s.sector ? null : s.sector)}
+          />
+        )}
+        {data && sectors.length === 0 && (
+          <div className="text-center text-muted-foreground py-8">
+            لا توجد قطاعات مطابقة للفلاتر الحالية
+          </div>
+        )}
       </div>
 
       {/* ملاحظة للعميل — شرح الألوان */}

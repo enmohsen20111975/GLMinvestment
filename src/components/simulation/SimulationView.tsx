@@ -38,14 +38,7 @@ import { ShareButton } from '@/components/share/ShareButton';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   Dialog,
   DialogContent,
@@ -587,6 +580,287 @@ export function SimulationView() {
     }));
   }, [simState.history]);
 
+  // ─── UnifiedTable columns ────────────────────────────────────────────
+  const stockListColumns: Column<EGXStock>[] = useMemo(() => ([
+    {
+      key: 'name_ar',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      className: 'font-medium',
+      render: (s) => s.name_ar,
+    },
+    {
+      key: 'ticker',
+      header: 'الرمز',
+      sortable: true,
+      filterable: true,
+      width: 'w-24',
+      render: (s) => <Badge variant="outline" className="font-mono">{s.ticker}</Badge>,
+    },
+    {
+      key: 'sector',
+      header: 'القطاع',
+      sortable: true,
+      filterable: true,
+      className: 'text-muted-foreground text-sm',
+    },
+    {
+      key: 'price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono font-bold',
+      render: (s) => formatNumber(s.price),
+    },
+    {
+      key: 'change',
+      header: 'التغير',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      render: (s) => (
+        <span className={cn('font-mono inline-flex items-center gap-1', s.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          {s.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+          {s.change >= 0 ? '+' : ''}{formatNumber(s.change)}
+        </span>
+      ),
+    },
+    {
+      key: 'changePercent',
+      header: 'النسبة',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      render: (s) => (
+        <Badge
+          variant={s.changePercent >= 0 ? 'default' : 'destructive'}
+          className={cn(s.changePercent >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
+        >
+          {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'إجراءات',
+      align: 'center',
+      width: 'w-32',
+      hideable: false,
+      render: (s) => (
+        <div className="flex items-center justify-center gap-1">
+          <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'buy'); }}>
+            <Plus className="h-3 w-3" />
+            شراء
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); openTradeDialog(s, 'sell'); }}>
+            <Minus className="h-3 w-3" />
+            بيع
+          </Button>
+        </div>
+      ),
+    },
+  ]), [openTradeDialog]);
+
+  const holdingsColumns: Column<Position & { _stock?: EGXStock; _currentValue?: number; _pnl?: number; _pnlPercent?: number }>[] = useMemo(() => ([
+    {
+      key: 'ticker',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      render: (p) => (
+        <div>
+          <p className="font-medium">{p._stock?.name_ar || p.ticker}</p>
+          <Badge variant="outline" className="font-mono text-xs">{p.ticker}</Badge>
+        </div>
+      ),
+    },
+    {
+      key: 'shares',
+      header: 'العدد',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono',
+    },
+    {
+      key: 'avgCost',
+      header: 'متوسط التكلفة',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono',
+      render: (p) => formatNumber(p.avgCost),
+    },
+    {
+      key: '_currentPrice',
+      header: 'السعر الحالي',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono',
+      render: (p) => formatNumber(p._stock?.price ?? 0),
+    },
+    {
+      key: '_currentValue',
+      header: 'القيمة الحالية',
+      align: 'right',
+      sortable: true,
+      width: 'w-32',
+      className: 'font-mono font-bold',
+      render: (p) => formatCurrency(p._currentValue ?? 0),
+    },
+    {
+      key: '_pnl',
+      header: 'الربح/الخسارة',
+      align: 'right',
+      sortable: true,
+      width: 'w-36',
+      render: (p) => (
+        <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+          <p>{(p._pnl ?? 0) >= 0 ? '+' : ''}{formatCurrency(p._pnl ?? 0)}</p>
+          <p className="text-xs">({(p._pnlPercent ?? 0) >= 0 ? '+' : ''}{(p._pnlPercent ?? 0).toFixed(2)}%)</p>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'إجراء',
+      align: 'center',
+      width: 'w-24',
+      hideable: false,
+      render: (p) => (
+        <div className="flex items-center justify-center">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+            onClick={(e) => { if (p._stock) { e.stopPropagation(); openTradeDialog(p._stock, 'sell'); } }}
+          >
+            <Minus className="h-3 w-3" />
+            بيع
+          </Button>
+        </div>
+      ),
+    },
+  ]), [openTradeDialog]);
+
+  const transactionsColumns: Column<Transaction & { _stockName?: string }>[] = useMemo(() => ([
+    {
+      key: 'date',
+      header: 'التاريخ',
+      sortable: true,
+      width: 'w-32',
+      render: (t) => (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {new Date(t.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+        </span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'النوع',
+      align: 'center',
+      sortable: true,
+      filterable: true,
+      width: 'w-24',
+      render: (t) => (
+        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className={cn(t.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}>
+          {t.type === 'buy' ? (
+            <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
+          ) : (
+            <span className="flex items-center gap-1"><ArrowUpRight className="h-3 w-3" /> بيع</span>
+          )}
+        </Badge>
+      ),
+    },
+    {
+      key: 'ticker',
+      header: 'السهم',
+      sortable: true,
+      filterable: true,
+      render: (t) => (
+        <div>
+          <p className="font-medium text-sm">{t._stockName || t.ticker}</p>
+          <Badge variant="outline" className="font-mono text-xs">{t.ticker}</Badge>
+        </div>
+      ),
+    },
+    {
+      key: 'shares',
+      header: 'العدد',
+      align: 'right',
+      sortable: true,
+      width: 'w-20',
+      className: 'font-mono',
+    },
+    {
+      key: 'price',
+      header: 'السعر',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono',
+      render: (t) => formatNumber(t.price),
+    },
+    {
+      key: 'commission',
+      header: 'العمولة',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'font-mono text-muted-foreground text-xs',
+      render: (t) => formatNumber(t.commission),
+    },
+    {
+      key: 'total',
+      header: 'الإجمالي',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'font-mono font-bold',
+      render: (t) => formatCurrency(t.total),
+    },
+    {
+      key: 'pnl',
+      header: 'الربح/الخسارة',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      render: (t) => (
+        t.pnl !== undefined ? (
+          <span className={cn('font-mono font-medium text-sm', t.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+            {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        )
+      ),
+    },
+  ]), []);
+
+  // Pre-compute enriched holdings data for UnifiedTable
+  const holdingsRows = useMemo(() => {
+    return simState.positions.map((pos) => {
+      const stock = stocks.find((s) => s.ticker === pos.ticker);
+      if (!stock) return null;
+      const currentValue = pos.shares * stock.price;
+      const costValue = pos.shares * pos.avgCost;
+      const pnl = currentValue - costValue;
+      const pnlPercent = costValue > 0 ? (pnl / costValue) * 100 : 0;
+      return { ...pos, _stock: stock, _currentValue: currentValue, _pnl: pnl, _pnlPercent: pnlPercent };
+    }).filter((r): r is Position & { _stock: EGXStock; _currentValue: number; _pnl: number; _pnlPercent: number } => r !== null);
+  }, [simState.positions, stocks]);
+
+  // Pre-compute enriched transactions data for UnifiedTable (most-recent-first)
+  const transactionsRows = useMemo(() => {
+    return [...filteredTransactions].reverse().map((tx) => {
+      const stock = stocks.find((s) => s.ticker === tx.ticker);
+      return { ...tx, _stockName: stock?.name_ar };
+    });
+  }, [filteredTransactions, stocks]);
+
   // ─── Render ────────────────────────────────────────────────────────
 
   if (stocks.length === 0) {
@@ -922,71 +1196,20 @@ export function SimulationView() {
           <Card>
             <CardContent className="p-0">
               <div className="max-h-[600px] overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">السهم</TableHead>
-                      <TableHead className="text-right">الرمز</TableHead>
-                      <TableHead className="text-right">القطاع</TableHead>
-                      <TableHead className="text-right">السعر</TableHead>
-                      <TableHead className="text-right">التغير</TableHead>
-                      <TableHead className="text-right">النسبة</TableHead>
-                      <TableHead className="text-center">إجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStocks.map((stock) => (
-                      <TableRow
-                        key={stock.ticker}
-                        className={cn(
-                          'transition-colors',
-                          flashingTickers[stock.ticker] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-950/20',
-                          flashingTickers[stock.ticker] === 'down' && 'bg-red-50/50 dark:bg-red-950/20'
-                        )}
-                      >
-                        <TableCell className="font-medium">{stock.name_ar}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono">{stock.ticker}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{stock.sector}</TableCell>
-                        <TableCell className="font-mono font-bold">{formatNumber(stock.price)}</TableCell>
-                        <TableCell className={cn('font-mono', stock.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                          <span className="flex items-center gap-1">
-                            {stock.change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                            {stock.change >= 0 ? '+' : ''}{formatNumber(stock.change)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={stock.changePercent >= 0 ? 'default' : 'destructive'}
-                            className={cn(stock.changePercent >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
-                          >
-                            {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => openTradeDialog(stock, 'buy')}>
-                              <Plus className="h-3 w-3" />
-                              شراء
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => openTradeDialog(stock, 'sell')}>
-                              <Minus className="h-3 w-3" />
-                              بيع
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredStocks.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          لا توجد نتائج مطابقة للبحث
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                <UnifiedTable<EGXStock>
+                  columns={stockListColumns}
+                  data={filteredStocks}
+                  keyField="ticker"
+                  dense
+                  columnToggle
+                  filterable
+                  maxHeight="max-h-[600px]"
+                  rowClassName={(s) => cn(
+                    'transition-colors',
+                    flashingTickers[s.ticker] === 'up' && 'bg-emerald-50/50 dark:bg-emerald-950/20',
+                    flashingTickers[s.ticker] === 'down' && 'bg-red-50/50 dark:bg-red-950/20',
+                  )}
+                />
               </div>
             </CardContent>
           </Card>
@@ -1052,55 +1275,15 @@ export function SimulationView() {
                   </div>
                 ) : (
                   <div className="max-h-[400px] overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">السهم</TableHead>
-                          <TableHead className="text-right">العدد</TableHead>
-                          <TableHead className="text-right">متوسط التكلفة</TableHead>
-                          <TableHead className="text-right">السعر الحالي</TableHead>
-                          <TableHead className="text-right">القيمة الحالية</TableHead>
-                          <TableHead className="text-right">الربح/الخسارة</TableHead>
-                          <TableHead className="text-center">إجراء</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {simState.positions.map((pos) => {
-                          const stock = stocks.find((s) => s.ticker === pos.ticker);
-                          if (!stock) return null;
-                          const currentValue = pos.shares * stock.price;
-                          const costValue = pos.shares * pos.avgCost;
-                          const pnl = currentValue - costValue;
-                          const pnlPercent = costValue > 0 ? (pnl / costValue) * 100 : 0;
-                          return (
-                            <TableRow key={pos.ticker}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium">{stock.name_ar}</p>
-                                  <Badge variant="outline" className="font-mono text-xs">{pos.ticker}</Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-mono">{pos.shares}</TableCell>
-                              <TableCell className="font-mono">{formatNumber(pos.avgCost)}</TableCell>
-                              <TableCell className="font-mono">{formatNumber(stock.price)}</TableCell>
-                              <TableCell className="font-mono font-bold">{formatCurrency(currentValue)}</TableCell>
-                              <TableCell>
-                                <div className={cn('font-mono font-medium', pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                                  <p>{pnl >= 0 ? '+' : ''}{formatCurrency(pnl)}</p>
-                                  <p className="text-xs">({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)</p>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50" onClick={() => openTradeDialog(stock, 'sell')}>
-                                  <Minus className="h-3 w-3" />
-                                  بيع
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                    <UnifiedTable
+                      columns={holdingsColumns}
+                      data={holdingsRows}
+                      keyField="ticker"
+                      dense
+                      columnToggle
+                      filterable
+                      maxHeight="max-h-[400px]"
+                    />
                   </div>
                 )}
               </CardContent>
@@ -1209,60 +1392,15 @@ export function SimulationView() {
                 </div>
               ) : (
                 <div className="max-h-[500px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">النوع</TableHead>
-                        <TableHead className="text-right">السهم</TableHead>
-                        <TableHead className="text-right">العدد</TableHead>
-                        <TableHead className="text-right">السعر</TableHead>
-                        <TableHead className="text-right">العمولة</TableHead>
-                        <TableHead className="text-right">الإجمالي</TableHead>
-                        <TableHead className="text-right">الربح/الخسارة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[...filteredTransactions].reverse().map((tx) => {
-                        const stock = stocks.find((s) => s.ticker === tx.ticker);
-                        return (
-                          <TableRow key={tx.id}>
-                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                              {new Date(tx.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={tx.type === 'buy' ? 'default' : 'destructive'} className={cn(tx.type === 'buy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}>
-                                {tx.type === 'buy' ? (
-                                  <span className="flex items-center gap-1"><ArrowDownRight className="h-3 w-3" /> شراء</span>
-                                ) : (
-                                  <span className="flex items-center gap-1"><ArrowUpRight className="h-3 w-3" /> بيع</span>
-                                )}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium text-sm">{stock?.name_ar || tx.ticker}</p>
-                                <Badge variant="outline" className="font-mono text-xs">{tx.ticker}</Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-mono">{tx.shares}</TableCell>
-                            <TableCell className="font-mono">{formatNumber(tx.price)}</TableCell>
-                            <TableCell className="font-mono text-muted-foreground text-xs">{formatNumber(tx.commission)}</TableCell>
-                            <TableCell className="font-mono font-bold">{formatCurrency(tx.total)}</TableCell>
-                            <TableCell>
-                              {tx.pnl !== undefined ? (
-                                <span className={cn('font-mono font-medium text-sm', tx.pnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                                  {tx.pnl >= 0 ? '+' : ''}{formatCurrency(tx.pnl)}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">-</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  <UnifiedTable
+                    columns={transactionsColumns}
+                    data={transactionsRows}
+                    keyField="id"
+                    dense
+                    columnToggle
+                    filterable
+                    maxHeight="max-h-[500px]"
+                  />
                 </div>
               )}
             </CardContent>

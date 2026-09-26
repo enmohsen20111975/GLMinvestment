@@ -72,6 +72,7 @@ import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1143,6 +1144,16 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             disabled={!filteredStocks.length}
             showCsv
             onExportCsv={exportCSV}
+          />
+          <UnifiedPublishButton
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            title="نتائج فلتر الأسهم المتقدم"
+            content={screenerShareText || `فلتر الأسهم — ${filteredStocks.length} سهم`}
+            filename={`screener-${market}-${Date.now()}`}
+            hashtags={['فلتر', 'أسهم', market]}
+            triggerLabel="نشر"
           />
           <Button variant="default" size="sm" onClick={fetchScreener} disabled={loading} className="gap-1.5">
             <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />

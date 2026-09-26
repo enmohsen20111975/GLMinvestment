@@ -67,6 +67,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import {
   Table,
   TableBody,
   TableCell,
@@ -2121,6 +2129,106 @@ interface TablesPanelProps {
 }
 
 function TablesPanel(props: TablesPanelProps) {
+  const tablesListColumns: Column<TableSummary>[] = useMemo(() => ([
+    {
+      key: 'name',
+      header: 'اسم الجدول',
+      sortable: true,
+      filterable: true,
+      className: 'font-mono text-xs',
+    },
+    {
+      key: 'rowCount',
+      header: 'الصفوف',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-xs',
+      render: (t) => t.rowCount.toLocaleString('en-US'),
+    },
+    {
+      key: 'columnCount',
+      header: 'الأعمدة',
+      align: 'right',
+      sortable: true,
+      width: 'w-24',
+      className: 'text-xs',
+    },
+    {
+      key: 'sizeHuman',
+      header: 'حجم تقديري',
+      align: 'right',
+      sortable: true,
+      width: 'w-28',
+      className: 'text-xs',
+    },
+    {
+      key: 'actions',
+      header: 'إجراءات',
+      align: 'center',
+      width: 'w-32',
+      hideable: false,
+      render: (t) => (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => props.onViewSchema(t.name)}
+              >
+                <Info className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>عرض الـ schema</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-amber-600 hover:text-amber-700"
+                onClick={() => props.onTruncateTable(t.name)}
+              >
+                <Eraser className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>تفريغ الجدول (DELETE)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={() => props.onDropTable(t.name)}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>حذف الجدول (DROP)</TooltipContent>
+          </Tooltip>
+        </div>
+      ),
+    },
+  ]), [props]);
+
+  // Build dynamic columns for the selected-table rows based on schema
+  const selectedTableColumns: Column<Record<string, unknown>>[] = useMemo(() => {
+    if (!props.tableRows || props.tableRows.columns.length === 0) return [];
+    return props.tableRows.columns.map((col) => ({
+      key: col.name,
+      header: col.name,
+      sortable: true,
+      filterable: true,
+      align: 'right' as const,
+      className: 'text-xs max-w-[240px] truncate',
+      render: (row: Record<string, unknown>) => formatCell(row[col.name]),
+      headerClassName: 'cursor-pointer hover:bg-accent select-none',
+    }));
+  }, [props.tableRows]);
+
   return (
     <div className="space-y-3">
       {/* Tables list */}
@@ -2157,79 +2265,20 @@ function TablesPanel(props: TablesPanelProps) {
               لا توجد جداول في هذه القاعدة
             </div>
           ) : (
-            <div className="max-h-72 overflow-y-auto custom-scrollbar">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">اسم الجدول</TableHead>
-                    <TableHead className="text-right">الصفوف</TableHead>
-                    <TableHead className="text-right">الأعمدة</TableHead>
-                    <TableHead className="text-right">حجم تقديري</TableHead>
-                    <TableHead className="text-right">إجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {props.tables.map((t) => (
-                    <TableRow
-                      key={t.name}
-                      className={cn(
-                        'cursor-pointer',
-                        props.selectedTable === t.name && 'bg-emerald-50 dark:bg-emerald-950/20'
-                      )}
-                      onClick={() => props.onSelectTable(t.name)}
-                    >
-                      <TableCell className="font-mono text-xs">{t.name}</TableCell>
-                      <TableCell className="text-xs">{t.rowCount.toLocaleString('en-US')}</TableCell>
-                      <TableCell className="text-xs">{t.columnCount}</TableCell>
-                      <TableCell className="text-xs">{t.sizeHuman}</TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => props.onViewSchema(t.name)}
-                              >
-                                <Info className="w-3.5 h-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>عرض الـ schema</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-amber-600 hover:text-amber-700"
-                                onClick={() => props.onTruncateTable(t.name)}
-                              >
-                                <Eraser className="w-3.5 h-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>تفريغ الجدول (DELETE)</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                onClick={() => props.onDropTable(t.name)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>حذف الجدول (DROP)</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable
+              columns={tablesListColumns}
+              data={props.tables || []}
+              keyField="name"
+              dense
+              columnToggle
+              filterable
+              maxHeight="max-h-72"
+              rowClassName={(t) => cn(
+                'cursor-pointer',
+                props.selectedTable === t.name && 'bg-emerald-50 dark:bg-emerald-950/20',
+              )}
+              onRowClick={(t) => props.onSelectTable(t.name)}
+            />
           )}
         </CardContent>
       </Card>
@@ -2310,60 +2359,46 @@ function TablesPanel(props: TablesPanelProps) {
                   </span>
                 </div>
 
+                {/* Rows + Sort Control */}
+                <div className="flex items-center justify-end gap-2 mb-2 px-1">
+                  {props.tableRows && props.tableRows.columns.length > 0 && (
+                    <Select value={props.sortBy} onValueChange={(v) => props.onSort(v)}>
+                      <SelectTrigger className="w-[200px] h-8 text-xs">
+                        <ArrowDownUp className="w-3 h-3 ml-1" />
+                        <SelectValue placeholder="ترتيب حسب..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {props.tableRows.columns.map((col) => (
+                          <SelectItem key={col.name} value={col.name}>
+                            {col.name} {props.sortBy === col.name ? (props.sortDir === 'asc' ? '↑' : '↓') : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {props.sortBy && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => props.onSort(props.sortBy)}
+                    >
+                      {props.sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                      {props.sortDir === 'asc' ? 'تصاعدي' : 'تنازلي'}
+                    </Button>
+                  )}
+                </div>
+
                 {/* Rows */}
                 <div className="max-h-96 overflow-auto custom-scrollbar border rounded-md">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
-                      <TableRow>
-                        {props.tableRows.columns.map((col) => (
-                          <TableHead
-                            key={col.name}
-                            className="text-right cursor-pointer hover:bg-accent select-none"
-                            onClick={() => props.onSort(col.name)}
-                          >
-                            <div className="flex items-center gap-1">
-                              <span>{col.name}</span>
-                              {col.pk && (
-                                <Badge variant="outline" className="text-[8px] px-1 py-0">
-                                  <KeyRound className="w-2 h-2" />
-                                  PK
-                                </Badge>
-                              )}
-                              {props.sortBy === col.name ? (
-                                props.sortDir === 'asc' ? (
-                                  <ArrowUp className="w-3 h-3 text-emerald-600" />
-                                ) : (
-                                  <ArrowDown className="w-3 h-3 text-emerald-600" />
-                                )
-                              ) : (
-                                <ArrowDownUp className="w-2.5 h-2.5 text-muted-foreground/50" />
-                              )}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground font-normal">{col.type || 'any'}</div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {props.tableRows.rows.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={props.tableRows.columns.length} className="py-8 text-center text-muted-foreground">
-                            لا توجد صفوف في هذا الجدول
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        props.tableRows.rows.map((row, i) => (
-                          <TableRow key={i}>
-                            {props.tableRows!.columns.map((col) => (
-                              <TableCell key={col.name} className="text-xs max-w-[240px] truncate">
-                                {formatCell(row[col.name])}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                  <UnifiedTable
+                    columns={selectedTableColumns}
+                    data={props.tableRows.rows}
+                    keyField="_rowIndex"
+                    dense
+                    maxHeight="max-h-96"
+                    emptyTextAr="لا توجد صفوف في هذا الجدول"
+                  />
                 </div>
               </>
             )}
@@ -2398,28 +2433,18 @@ function TablesPanel(props: TablesPanelProps) {
                         الأعمدة ({props.schema.columns.length})
                       </div>
                       <div className="border rounded-md">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="text-right">الاسم</TableHead>
-                              <TableHead className="text-right">النوع</TableHead>
-                              <TableHead className="text-right">NOT NULL</TableHead>
-                              <TableHead className="text-right">PK</TableHead>
-                              <TableHead className="text-right">افتراضي</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {props.schema.columns.map((c) => (
-                              <TableRow key={c.name}>
-                                <TableCell className="font-mono text-xs">{c.name}</TableCell>
-                                <TableCell className="text-xs">{c.type || 'any'}</TableCell>
-                                <TableCell className="text-xs">{c.notNull ? '✅' : '—'}</TableCell>
-                                <TableCell className="text-xs">{c.pk ? '✅' : '—'}</TableCell>
-                                <TableCell className="font-mono text-[11px]">{c.dfltValue ?? '—'}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                        <UnifiedTable
+                          columns={[
+                            { key: 'name', header: 'الاسم', sortable: true, filterable: true, className: 'font-mono text-xs' },
+                            { key: 'type', header: 'النوع', align: 'right', sortable: true, width: 'w-24', className: 'text-xs', render: (c) => c.type || 'any' },
+                            { key: 'notNull', header: 'NOT NULL', align: 'right', width: 'w-24', className: 'text-xs', render: (c) => c.notNull ? '✅' : '—' },
+                            { key: 'pk', header: 'PK', align: 'right', width: 'w-20', className: 'text-xs', render: (c) => c.pk ? '✅' : '—' },
+                            { key: 'dfltValue', header: 'افتراضي', align: 'right', className: 'font-mono text-[11px]', render: (c) => c.dfltValue ?? '—' },
+                          ]}
+                          data={props.schema.columns}
+                          keyField="name"
+                          dense
+                        />
                       </div>
                     </div>
                     <div>
