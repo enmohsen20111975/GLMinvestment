@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import React from 'react';
 import dynamicImport from 'next/dynamic';
 import { useSession } from 'next-auth/react';
+import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';
 import { MobileNav } from '@/components/layout/MobileNav';
@@ -601,7 +602,15 @@ function AppShell() {
         <div className="flex-1 flex flex-col overflow-x-hidden">
           <div className="flex-1 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
             <main className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
-              {renderView()}
+              {/* N1: page transition animation — fade + slight slide for professional feel */}
+              <motion.div
+                key={currentView}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
+                {renderView()}
+              </motion.div>
             </main>
             <Footer />
           </div>

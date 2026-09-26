@@ -958,6 +958,11 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
     loadStockDetail(ticker);
   };
 
+  // N6: double-click / long-press يفتح شاشة التفاصيل الكاملة للسهم
+  const onRowDoubleClick = (ticker: string) => {
+    loadStockDetail(ticker);
+  };
+
   // ── UnifiedTable columns for screener results ──
   const screenerColumns: Column<ScreenerStock>[] = useMemo(
     () => [
@@ -1526,6 +1531,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             data={filteredStocks}
             keyField="ticker"
             onRowClick={(row) => onRowClick(row.ticker)}
+            onRowDoubleClick={(row) => onRowDoubleClick(row.ticker)}
+            onRowLongPress={(row) => onRowDoubleClick(row.ticker)}
             dense
             maxHeight="max-h-[600px]"
             emptyTextAr="لا توجد نتائج مطابقة للفلاتر الحالية"

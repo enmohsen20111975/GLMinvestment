@@ -39837,3 +39837,57 @@ Task: رفع نسبة اعتماد UnifiedTable من 5/32 (15.6%) إلى ≥15/3
 - **PHASE4E**: بعد migration كامل لـ db-helpers، يمكن البدء في دمج implementations المتكررة (مثل `getStocksDb` في 5 ملفات) في ملف واحد canonical.
 
 انتهى.
+
+---
+Task ID: N3-DATA-SOURCES-REPORT
+Agent: المدير العام
+Task: تقرير مصادر البيانات المتاحة والمستخدمة
+
+## مصادر البيانات الحالية
+
+### 1. أسعار الأسهم المصرية (EGX)
+- **المصدر الأساسي:** قاعدة بيانات محلية (stocks.db) — 956 سهم
+  - السعر الحالي، السابق، الافتتاح، الأعلى، الأدنى
+  - Volume, market_cap, pe_ratio, pb_ratio, eps, roe, roa
+  - ma_50, ma_200, rsi, support, resistance, trend
+- **المصدر البديل (scraping):** Mubasher.info
+  - `https://www.mubasher.info/eg/stocks/{TICKER}`
+  - مع rate limiting (3-8 ثواني بين الطلبات)
+  - في `src/lib/egx-data-sources.ts`
+- **مصدر تاريخي:** data_engine.db (1585 سهم + historical_data)
+
+### 2. أسعار الذهب والمعادن
+- **المصدر:** data_engine.db (gold_prices: 163K صف، silver_prices: 82K صف)
+- **API خارجي:** FCSAPI (في multi-source-adapter.ts)
+  - بيجيب سعر الأونصة بالدولار + يحوّله لـ EGP
+  - بيحسب عيارات 24/22/21/18 من سعر الأونصة
+
+### 3. أسعار العملات (Exchange Rates)
+- **المصدر:** data_engine.db (exchange_rates: 45K صف)
+- **API خارجي:** FCSAPI (نفس المصدر بتاع الذهب)
+
+### 4. أسعار الكريبتو
+- **المصدر:** data_engine.db (crypto_prices: 198K صف)
+- **API خارجي:** ممكن CoinGecko (مجاني) أو Binance API
+
+### 5. الأخبار
+- **المصدر الأساسي:** news.db (7894 خبر في news_articles)
+- **المصادر المتاحة:**
+  - news-agent/ (Python service) — بيجمع من RSS + Telegram channels
+  - newsapi.org (يتطلب API key — موجود في news_api_keys table)
+  - gnews.io (يتطلب API key)
+  - mediastack.com (يتطلب API key)
+  - currentsapi.services (يتطلب API key)
+  - telegram_channels (4 قنوات تليجرام مُتابعة)
+
+### 6. بيانات المستثمرين (مصريين/عرب/أجانب)
+- **المصدر الرسمي:** EGX — `https://www.egyptse.com/en/markets/foreign-trading`
+- **Scraper:** `vps-service/scrappers/egx_investors_scraper.py`
+  - بيحاول الموقع الرسمي أولاً (10s timeout)
+  - لو فشل بيحسب تقدير من stock_daily_prices
+
+### التوصيات
+1. **الأسعار:** الـ DB المحلي فيه بيانات كافية للقراءة فقط. للـ real-time، نشغّل Python scraper على VPS.
+2. **الذهب:** FCSAPI شغّال لكن محدود (60 request/hour). ممكن نضيف GoldAPI.io كـ fallback.
+3. **الأخبار:** news-agent شغّال لكن محتاج تفعيل على VPS. الـ RSS sources في `news-agent/collectors/`.
+4. **المستثمرون:** الـ scraper موجود لكن محتاج تشغيل يومي على VPS.

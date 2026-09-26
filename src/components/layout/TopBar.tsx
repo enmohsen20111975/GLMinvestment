@@ -94,10 +94,10 @@ const navSections: NavSection[] = [
       { id: 'stocks', label: 'الأسهم', icon: CandlestickChart },
       { id: 'stock-filters', label: 'فلاتر الأسهم', icon: Filter },
       { id: 'trading-chart', label: 'الشارت التفاعلي', icon: TrendingUp },
-      { id: 'smart-confluence', label: 'تحليلات السوق', icon: Sparkles },
       { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity, highlight: true },
-      // ملاحظة: 'screener' اتحذف من هنا لأنه كان بيستخدم نفس TradingChartView (تكرار بلا معنى).
-      // المستخدم اللي بيفتح #screener بيتم redirect تلقائياً لـ #trading-chart في page.tsx.
+      // ملاحظة: 'smart-confluence' و 'screener' اتشالوا من القائمة:
+      // - smart-confluence: المستخدم قال إنها بلا معنى/هدف — الـ hash لسه شغّال للـ backwards compat
+      // - screener: كان بيستخدم نفس TradingChartView (تكرار بلا معنى)
     ],
   },
   {

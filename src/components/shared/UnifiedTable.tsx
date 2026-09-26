@@ -76,8 +76,12 @@ export interface UnifiedTableProps<T> {
   maxHeight?: string;
   /** هل الهيدر sticky؟ (default: true) */
   stickyHeader?: boolean;
-  /** handler الضغط على صف */
+  /** handler الضغط على صف (single click) */
   onRowClick?: (row: T) => void;
+  /** handler double-click على صف (desktop) — لفتح شاشة التفاصيل الكاملة */
+  onRowDoubleClick?: (row: T) => void;
+  /** handler long-press على صف (mobile) — بديل الـ double-click على الموبايل */
+  onRowLongPress?: (row: T) => void;
   /** حقل المفتاح الفريد للـ row (default: أول عمود key) */
   keyField?: keyof T | string;
   /** وضع مضغوط (padding أصغر) */
@@ -138,6 +142,8 @@ export function UnifiedTable<T extends Record<string, unknown>>({
   maxHeight,
   stickyHeader = true,
   onRowClick,
+  onRowDoubleClick,
+  onRowLongPress,
   keyField,
   dense = false,
   dir = 'rtl',
@@ -330,6 +336,41 @@ export function UnifiedTable<T extends Record<string, unknown>>({
                   extraCls,
                 )}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
+                onContextMenu={(e) => {
+                  if (onRowLongPress) {
+                    e.preventDefault();
+                    onRowLongPress(row);
+                  }
+                }}
+                onTouchStart={(e) => {
+                  if (onRowLongPress) {
+                    const touch = e.touches[0];
+                    const timer = setTimeout(() => {
+                      onRowLongPress(row);
+                    }, 600);
+                    // Store timer for cleanup
+                    (e.currentTarget as HTMLElement).dataset.longPressTimer = String(timer);
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  if (onRowLongPress) {
+                    const timer = (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                    if (timer) {
+                      clearTimeout(Number(timer));
+                      delete (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                    }
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (onRowLongPress) {
+                    const timer = (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                    if (timer) {
+                      clearTimeout(Number(timer));
+                      delete (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                    }
+                  }
+                }}
               >
                 {columns.map((col, ci) => {
                   const cellKey = `cell-${rk}-${ci}`;
