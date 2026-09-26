@@ -22,14 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   ArrowUpDown,
   TrendingUp,
   TrendingDown,
@@ -50,6 +42,7 @@ import {
 } from 'lucide-react';
 import { StockSelector } from './StockSelector';
 import { StockIconMini } from './StockIcon';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -830,7 +823,7 @@ export function StocksView() {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedPreset, setSelectedPreset] = useState('all');
-  const [presetData, setPresetData] = useState<any[]>([]);
+  const [presetData, setPresetData] = useState<Array<Record<string, unknown>>>([]);
   const [presetLoading, setPresetLoading] = useState(false);
   const [presetPeriod, setPresetPeriod] = useState('1d');
   const [presetScanDate, setPresetScanDate] = useState<string | null>(null);
@@ -1112,7 +1105,7 @@ export function StocksView() {
     const cMin = changeMin !== '' ? Number(changeMin) : null;
     const cMax = changeMax !== '' ? Number(changeMax) : null;
 
-    return presetDisplayData.filter((stock: any) => {
+    return presetDisplayData.filter((stock: Record<string, unknown>) => {
       // Search filter
       if (debouncedSearch) {
         const q = debouncedSearch.toLowerCase();
@@ -1166,6 +1159,308 @@ export function StocksView() {
   );
 
   const resetPage = useCallback(() => setPage(1), []);
+
+  // ── UnifiedTable columns (desktop) ──
+  type DesktopRow = Record<string, unknown>;
+  const stocksColumns: Column<DesktopRow>[] = useMemo(() => {
+    const cols: Column<DesktopRow>[] = [
+      {
+        key: 'icon',
+        header: '',
+        align: 'right',
+        width: 'w-12',
+        render: (row) => (
+          <StockIconMini
+            ticker={String(row.ticker ?? '')}
+            name={String(row.name ?? '')}
+            sector={String(row.sector ?? '')}
+          />
+        ),
+      },
+      {
+        key: 'ticker',
+        header: 'الرمز',
+        align: 'right',
+        sortable: true,
+        render: (row) => (
+          <div className="flex items-center gap-1">
+            <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
+              {formatCleanTicker(String(row.ticker ?? ''))}
+            </span>
+            {row.egx30_member && (
+              <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
+                30
+              </span>
+            )}
+            {row.egx70_member && (
+              <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                70
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'name_ar',
+        header: 'الاسم',
+        align: 'right',
+        render: (row) => (
+          <div className="max-w-[160px] truncate text-sm" dir="rtl">
+            {String(row.name_ar ?? '')}
+          </div>
+        ),
+      },
+    ];
+
+    if (!isCrypto) {
+      cols.push({
+        key: 'sector',
+        header: 'القطاع',
+        align: 'right',
+        sortable: true,
+        render: (row) => (
+          <span
+            className={cn(
+              'inline-block text-[10px] px-2 py-0.5 rounded font-medium max-w-[120px] truncate',
+              getSectorColor(row.sector as string | undefined),
+            )}
+            title={row.sector as string | undefined}
+          >
+            {(row.sector as string) || '—'}
+          </span>
+        ),
+      });
+    }
+
+    cols.push(
+      {
+        key: 'current_price',
+        header: `السعر ${currencyLabel}`,
+        align: 'left',
+        sortable: true,
+        render: (row) => (
+          <span className="font-semibold text-sm tabular-nums">
+            {safeNum(row.current_price as number).toFixed(2)}
+          </span>
+        ),
+      },
+      {
+        key: 'change_1d',
+        header: 'يوم %',
+        align: 'left',
+        sortable: true,
+        render: (row) => {
+          const change = row.change_1d != null ? row.change_1d : (row.price_change ?? 0);
+          const isPositive = Number(change) > 0;
+          const isNegative = Number(change) < 0;
+          return (
+            <div
+              className={cn(
+                'flex items-center gap-1 justify-end text-sm font-medium tabular-nums',
+                isPositive
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : isNegative
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-muted-foreground'
+              )}
+            >
+              {isPositive ? (
+                <TrendingUp className="w-3.5 h-3.5" />
+              ) : isNegative ? (
+                <TrendingDown className="w-3.5 h-3.5" />
+              ) : (
+                <Minus className="w-3.5 h-3.5" />
+              )}
+              {formatPercent(change)}
+            </div>
+          );
+        },
+      },
+      {
+        key: 'sparkline',
+        header: 'شارت 7 أيام',
+        align: 'center',
+        width: 'w-32',
+        render: (row) => (
+          <div className="w-32 mx-auto" dir="ltr">
+            <MiniSparkline
+              ticker={String(row.ticker ?? '')}
+              days={7}
+              height={28}
+              width={120}
+              showArea
+            />
+          </div>
+        ),
+      },
+      {
+        key: 'change_1w',
+        header: 'أسبوع %',
+        align: 'left',
+        sortable: true,
+        render: (row) => {
+          const change1w = row.change_1w ?? null;
+          return (
+            <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1w))}>
+              {formatPercent(change1w)}
+            </span>
+          );
+        },
+      },
+    );
+
+    if (!isCrypto) {
+      cols.push({
+        key: 'change_1m',
+        header: 'شهر %',
+        align: 'left',
+        sortable: true,
+        render: (row) => {
+          const change1m = row.change_1m ?? null;
+          return (
+            <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1m))}>
+              {formatPercent(change1m)}
+            </span>
+          );
+        },
+      });
+    }
+
+    cols.push({
+      key: 'volume_int',
+      header: 'حجم اليوم',
+      align: 'left',
+      sortable: true,
+      render: (row) => {
+        const volToday = row.volume_int ?? (row.volume ?? 0);
+        return (
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {formatVolume(volToday)}
+          </span>
+        );
+      },
+    });
+
+    if (!isCrypto) {
+      cols.push(
+        {
+          key: 'volume_week',
+          header: 'حجم الأسبوع',
+          align: 'left',
+          sortable: true,
+          render: (row) => {
+            const volWeek = row.volume_week ?? null;
+            return (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {formatVolume(volWeek)}
+              </span>
+            );
+          },
+        },
+        {
+          key: 'fair_value',
+          header: 'القيمة العادلة',
+          align: 'left',
+          sortable: true,
+          render: (row) => {
+            const fairValue = row.fair_value ?? null;
+            const currentPrice = Number(row.current_price ?? 0);
+            return (
+              <span
+                className={cn(
+                  'text-xs tabular-nums font-medium',
+                  fairValue != null && currentPrice && fairValue > currentPrice
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : fairValue != null && currentPrice && fairValue < currentPrice
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-muted-foreground',
+                )}
+              >
+                {fairValue != null ? safeNum(fairValue).toFixed(2) : '—'}
+              </span>
+            );
+          },
+        },
+        {
+          key: 'upside_percent',
+          header: 'الفرصة %',
+          align: 'left',
+          sortable: true,
+          render: (row) => {
+            const upside = row.upside_percent ?? null;
+            return (
+              <span
+                className={cn(
+                  'text-xs tabular-nums font-medium',
+                  upside != null && upside > 5 ? 'text-emerald-600 dark:text-emerald-400' :
+                  upside != null && upside < -5 ? 'text-red-600 dark:text-red-400' :
+                  'text-muted-foreground',
+                )}
+              >
+                {upside != null ? formatPercent(upside, 1) : '—'}
+              </span>
+            );
+          },
+        },
+        {
+          key: 'pe_ratio',
+          header: 'مكرر الربحية',
+          align: 'left',
+          sortable: true,
+          render: (row) => {
+            const peRatio = row.pe_ratio ?? null;
+            return (
+              <span className="text-xs tabular-nums">
+                {peRatio != null && peRatio > 0 ? peRatio.toFixed(1) : '—'}
+              </span>
+            );
+          },
+        },
+      );
+    }
+
+    cols.push(
+      {
+        key: 'market_cap',
+        header: 'القيمة السوقية',
+        align: 'right',
+        sortable: true,
+        render: (row) => (
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {formatMarketCap(safeNum(row.market_cap as number))}
+          </span>
+        ),
+      },
+      {
+        key: 'share',
+        header: '',
+        align: 'center',
+        width: 'w-10',
+        render: (row) => {
+          const change = row.change_1d != null ? row.change_1d : (row.price_change ?? 0);
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ShareButton
+                iconOnly
+                variant="ghost"
+                size="icon"
+                stockData={{
+                  ticker: String(row.ticker ?? ''),
+                  name: String(row.name ?? ''),
+                  nameAr: String(row.name_ar ?? ''),
+                  price: Number(row.current_price ?? 0),
+                  change,
+                  sector: String(row.sector ?? ''),
+                }}
+              />
+            </div>
+          );
+        },
+      },
+    );
+
+    return cols;
+  }, [isCrypto, currencyLabel]);
 
   const handleSectorChange = useCallback((value: string) => {
     setSelectedSector(value);
@@ -1637,232 +1932,27 @@ export function StocksView() {
             <>
               {/* Desktop Table */}
               <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-right font-semibold text-xs w-12"></TableHead>
-                      <TableHead className="text-right font-semibold text-xs">الرمز</TableHead>
-                      <TableHead className="text-right font-semibold text-xs">الاسم</TableHead>
-                      {!isCrypto && (
-                        <TableHead className="text-right font-semibold text-xs">القطاع</TableHead>
-                      )}
-                      <TableHead className="text-left font-semibold text-xs">السعر {currencyLabel}</TableHead>
-                      <TableHead className="text-left font-semibold text-xs">يوم %</TableHead>
-                      <TableHead className="text-center font-semibold text-xs w-32">شارت 7 أيام</TableHead>
-                      <TableHead className="text-left font-semibold text-xs">أسبوع %</TableHead>
-                      {!isCrypto && (
-                        <TableHead className="text-left font-semibold text-xs">شهر %</TableHead>
-                      )}
-                      <TableHead className="text-left font-semibold text-xs">حجم اليوم</TableHead>
-                      {!isCrypto && (
-                        <TableHead className="text-left font-semibold text-xs">حجم الأسبوع</TableHead>
-                      )}
-                      {!isCrypto && (
-                        <TableHead className="text-left font-semibold text-xs">القيمة العادلة</TableHead>
-                      )}
-                      {!isCrypto && (
-                        <TableHead className="text-left font-semibold text-xs">الفرصة %</TableHead>
-                      )}
-                      {!isCrypto && (
-                        <TableHead className="text-left font-semibold text-xs">مكرر الربحية</TableHead>
-                      )}
-                      <TableHead className="text-right font-semibold text-xs">القيمة السوقية</TableHead>
-                      <TableHead className="text-center font-semibold text-xs w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedStocks.map((item) => {
-                      // Unified item shape — presetData items use `change_1d`, regular stocks use `price_change`.
-                      const anyItem = item as any;
-                      const change = anyItem.change_1d != null ? anyItem.change_1d : (item.price_change ?? 0);
-                      const change1w = anyItem.change_1w ?? null;
-                      const change1m = anyItem.change_1m ?? null;
-                      const fairValue = anyItem.fair_value ?? null;
-                      const upside = anyItem.upside_percent ?? null;
-                      const volToday = anyItem.volume_int ?? (anyItem.volume ?? 0);
-                      const volWeek = anyItem.volume_week ?? null;
-                      const peRatio = anyItem.pe_ratio ?? null;
-                      const isPositive = change > 0;
-                      const isNegative = change < 0;
-                      return (
-                        <TableRow
-                          key={item.ticker}
-                          className="cursor-pointer group"
-                          onClick={() => handleRowClick(item.ticker)}
-                        >
-                          <TableCell>
-                            <StockIconMini
-                              ticker={item.ticker}
-                              name={item.name}
-                              sector={item.sector}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
-                                {formatCleanTicker(item.ticker)}
-                              </span>
-                              {(item as Stock).egx30_member && (
-                                <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium">
-                                  30
-                                </span>
-                              )}
-                              {(item as Stock).egx70_member && (
-                                <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
-                                  70
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="max-w-[160px] truncate text-sm" dir="rtl">
-                              {item.name_ar}
-                            </div>
-                          </TableCell>
-                          {!isCrypto && (
-                            <TableCell>
-                              <span className={cn(
-                                'inline-block text-[10px] px-2 py-0.5 rounded font-medium max-w-[120px] truncate',
-                                getSectorColor(item.sector)
-                              )} title={item.sector}>
-                                {item.sector || '—'}
-                              </span>
-                            </TableCell>
-                          )}
-                          <TableCell className="text-left">
-                            <span className="font-semibold text-sm tabular-nums">
-                              {safeNum(item.current_price).toFixed(2)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-left">
-                            <div
-                              className={cn(
-                                'flex items-center gap-1 justify-end text-sm font-medium tabular-nums',
-                                isPositive
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : isNegative
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-muted-foreground'
-                              )}
-                            >
-                              {isPositive ? (
-                                <TrendingUp className="w-3.5 h-3.5" />
-                              ) : isNegative ? (
-                                <TrendingDown className="w-3.5 h-3.5" />
-                              ) : (
-                                <Minus className="w-3.5 h-3.5" />
-                              )}
-                              {formatPercent(change)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {/* UNIFIED-MARKET-UX (Task 4): Sparkline لكل سهم */}
-                            <div className="w-32 mx-auto" dir="ltr">
-                              <MiniSparkline
-                                ticker={item.ticker}
-                                days={7}
-                                height={28}
-                                width={120}
-                                showArea
-                              />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-left">
-                            <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1w))}>
-                              {formatPercent(change1w)}
-                            </span>
-                          </TableCell>
-                          {!isCrypto && (
-                            <TableCell className="text-left">
-                              <span className={cn('text-xs tabular-nums font-medium', changeColorClass(change1m))}>
-                                {formatPercent(change1m)}
-                              </span>
-                            </TableCell>
-                          )}
-                          <TableCell className="text-left">
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {formatVolume(volToday)}
-                            </span>
-                          </TableCell>
-                          {!isCrypto && (
-                            <TableCell className="text-left">
-                              <span className="text-xs text-muted-foreground tabular-nums">
-                                {formatVolume(volWeek)}
-                              </span>
-                            </TableCell>
-                          )}
-                          {!isCrypto && (
-                            <TableCell className="text-left">
-                              <span className={cn(
-                                'text-xs tabular-nums font-medium',
-                                fairValue != null && item.current_price && fairValue > Number(item.current_price)
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : fairValue != null && item.current_price && fairValue < Number(item.current_price)
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-muted-foreground'
-                              )}>
-                                {fairValue != null ? safeNum(fairValue).toFixed(2) : '—'}
-                              </span>
-                            </TableCell>
-                          )}
-                          {!isCrypto && (
-                            <TableCell className="text-left">
-                              <span className={cn(
-                                'text-xs tabular-nums font-medium',
-                                upside != null && upside > 5 ? 'text-emerald-600 dark:text-emerald-400' :
-                                upside != null && upside < -5 ? 'text-red-600 dark:text-red-400' :
-                                'text-muted-foreground'
-                              )}>
-                                {upside != null ? formatPercent(upside, 1) : '—'}
-                              </span>
-                            </TableCell>
-                          )}
-                          {!isCrypto && (
-                            <TableCell className="text-left">
-                              <span className="text-xs tabular-nums">
-                                {peRatio != null && peRatio > 0 ? peRatio.toFixed(1) : '—'}
-                              </span>
-                            </TableCell>
-                          )}
-                          <TableCell>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {formatMarketCap(safeNum(item.market_cap))}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <ShareButton
-                                iconOnly
-                                variant="ghost"
-                                size="icon"
-                                stockData={{
-                                  ticker: item.ticker,
-                                  name: item.name,
-                                  nameAr: item.name_ar,
-                                  price: item.current_price,
-                                  change: change,
-                                  sector: item.sector,
-                                }}
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <UnifiedTable<Record<string, unknown>>
+                  columns={stocksColumns}
+                  data={paginatedStocks as unknown as Record<string, unknown>[]}
+                  keyField="ticker"
+                  onRowClick={(row) => handleRowClick(String(row.ticker))}
+                  stickyHeader
+                  dense={false}
+                  maxHeight="max-h-[70vh]"
+                  emptyTextAr="لا توجد أسهم مطابقة للبحث"
+                />
               </div>
 
               {/* Mobile List — compact view (ticker, name, price, change %, fair_value, upside) */}
               <div className="md:hidden divide-y divide-border/50">
                 {paginatedStocks.map((item) => {
-                  const anyItem = item as any;
-                  const change = anyItem.change_1d != null ? anyItem.change_1d : (item.price_change ?? 0);
-                  const change1w = anyItem.change_1w ?? null;
-                  const fairValue = anyItem.fair_value ?? null;
-                  const upside = anyItem.upside_percent ?? null;
-                  const isPositive = change > 0;
-                  const isNegative = change < 0;
+                  const change = item.change_1d != null ? item.change_1d : (item.price_change ?? 0);
+                  const change1w = item.change_1w ?? null;
+                  const fairValue = item.fair_value ?? null;
+                  const upside = item.upside_percent ?? null;
+                  const isPositive = Number(change) > 0;
+                  const isNegative = Number(change) < 0;
                   return (
                     <div
                       key={item.ticker}

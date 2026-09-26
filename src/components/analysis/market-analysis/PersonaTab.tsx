@@ -61,6 +61,7 @@ import type {
   SectorStockSortField,
   MorningBellStock,
   PredictionRow,
+  StockDetail,
 } from './types';
 import {
   pickValidPrice,
@@ -772,8 +773,8 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
             const highPrice = pickValidPrice(
               stockInfo?.high_price && stockInfo?.low_price && stockInfo.high_price !== stockInfo.low_price ? stockInfo.high_price : undefined,
               stockInfo?.high_52w && stockInfo?.low_52w && stockInfo.high_52w !== stockInfo.low_52w ? stockInfo.high_52w : undefined,
-              (pd as any).high,
-              (pd as any).resistance,
+              pd.high,
+              pd.resistance,
               stockInfo?.resistance,
               pd.target && pd.entry ? Math.max(Number(pd.target), Number(pd.entry)) : pd.target,
               stockInfo?.high_price
@@ -781,8 +782,8 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
             const lowPrice = pickValidPrice(
               stockInfo?.high_price && stockInfo?.low_price && stockInfo.high_price !== stockInfo.low_price ? stockInfo.low_price : undefined,
               stockInfo?.high_52w && stockInfo?.low_52w && stockInfo.high_52w !== stockInfo.low_52w ? stockInfo.low_52w : undefined,
-              (pd as any).low,
-              (pd as any).support,
+              pd.low,
+              pd.support,
               stockInfo?.support,
               pd.stop && pd.entry ? Math.min(Number(pd.stop), Number(pd.entry)) : pd.stop,
               stockInfo?.low_price
@@ -881,7 +882,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
   subTab: 'details' | 'chart' | 'verdict';
   onSubTabChange: (tab: 'details' | 'chart' | 'verdict') => void;
   onBack: () => void;
-  stockDetail: any;
+  stockDetail: StockDetail | null;
 }) {
   const currencyLabel = MARKET_CURRENCY_LABEL[market] || 'ج.م';
   // P26: خريطة الشخصية المعروضة لمفتاح analysisJson + fallback للحقول العلوية للسهم
@@ -1041,7 +1042,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
         </div>
       </div>
 
-      <Tabs value={subTab} onValueChange={(v) => onSubTabChange(v as any)} className="w-full">
+      <Tabs value={subTab} onValueChange={(v) => onSubTabChange(v as 'details' | 'chart' | 'verdict')} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="details">بيانات السهم</TabsTrigger>
           <TabsTrigger value="chart">الشارت</TabsTrigger>
@@ -1319,7 +1320,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
   const [subTab, setSubTab] = useState<'details' | 'chart' | 'verdict'>('details');
   // P42-NO-FREEZE: ترقيم صفحات الكروت (5 لكل صفحة)
   const [personaPage, setPersonaPage] = useState(0);
-  const [stockDetail, setStockDetail] = useState<any>(null);
+  const [stockDetail, setStockDetail] = useState<StockDetail | null>(null);
   // P6-PREDICTIONS: أرشيف التوقعات السابقة (يتم عرضه أسفل الـ PersonaTableView).
   // بيتسحب من نفس /api/unified/predictions تحت مفتاح previous_predictions.
   const [previousPredictions, setPreviousPredictions] = useState<PreviousPrediction[]>([]);
@@ -1401,7 +1402,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         // - المتوازن/المضارب: يشوف كل التوقعات بما فيها البيع (SELL/STRONG_SELL/REDUCE).
         const investorSignals = new Set(['BUY', 'STRONG_BUY', 'ACCUMULATE', 'HOLD']);
         const filtered = isLongTerm
-          ? prev.filter((p: any) => investorSignals.has(String(p.signal || '').toUpperCase()))
+          ? prev.filter((p: Record<string, unknown>) => investorSignals.has(String(p.signal || '').toUpperCase()))
           : prev;
         setPreviousPredictions(filtered);
       } catch (err) {
@@ -1437,11 +1438,11 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         // P16-PERSONA-DIVERGENCE: لو الـ cached items فيها fundamentals،
         // نستخدم pickPersonaDiverged (فلترة وترتيب مستقل لكل persona).
         // غير كده، fallback لـ pickPersonaMix (السلوك القديم).
-        const hasFundamentals = (cache.storedAnalysis as any[]).some(
+        const hasFundamentals = (cache.storedAnalysis as unknown as StoredAnalysisItem[] | undefined)?.some(
           (it) => it?.fundamentals && (it.fundamentals.is_gambler_opportunity !== undefined || it.fundamentals.is_investor_opportunity !== undefined)
         );
         // P42-NO-FREEZE: cap cached items to 20 before persona sort (bounds client work)
-        const cachedCapped = (cache.storedAnalysis as any[]).slice(0, 20);
+        const cachedCapped = ((cache.storedAnalysis as unknown as StoredAnalysisItem[]) || []).slice(0, 20);
         const filtered = hasFundamentals
           ? pickPersonaDiverged(cachedCapped, persona, PERSONA_DISPLAY_LIMIT)
           : pickPersonaMix(cachedCapped, persona, PERSONA_DISPLAY_LIMIT);
@@ -1510,7 +1511,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
         });
         if (fbRes.ok) {
           const fbData = await fbRes.json();
-          const preds: any[] = Array.isArray(fbData.predictions) ? fbData.predictions : [];
+          const preds: Array<Record<string, unknown>> = Array.isArray(fbData.predictions) ? fbData.predictions : [];
           const mappedPreds = preds.map((p): StoredAnalysisItem | null => {
             const signal = String(p.signal || 'HOLD').toUpperCase();
             const confidence = Number(p.confidence || p.score || 0);
@@ -1564,7 +1565,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               },
             } as StoredAnalysisItem;
           });
-          const mappedFiltered = mappedPreds.filter((x: any): x is StoredAnalysisItem => x !== null);
+          const mappedFiltered = mappedPreds.filter((x): x is StoredAnalysisItem => x !== null);
           if (mappedFiltered.length > 0) {
             setItems(enrichItems(mappedFiltered.slice(0, PERSONA_DISPLAY_LIMIT), nameMap));
             setDataSource('predictions');
@@ -1594,11 +1595,11 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
       (async () => {
         const nameMap = await buildNameMap(marketCode);
         // P16-PERSONA-DIVERGENCE: استخدم pickPersonaDiverged لو fundamentals موجودة
-        const hasFundamentals = (cache.storedAnalysis as any[]).some(
+        const hasFundamentals = (cache.storedAnalysis as unknown as StoredAnalysisItem[] | undefined)?.some(
           (it) => it?.fundamentals && (it.fundamentals.is_gambler_opportunity !== undefined || it.fundamentals.is_investor_opportunity !== undefined)
         );
         // P42-NO-FREEZE: cap cached items to 20 before persona sort (bounds client work)
-        const cachedCapped = (cache.storedAnalysis as any[]).slice(0, 20);
+        const cachedCapped = ((cache.storedAnalysis as unknown as StoredAnalysisItem[]) || []).slice(0, 20);
         const filtered = hasFundamentals
           ? pickPersonaDiverged(cachedCapped, persona, PERSONA_DISPLAY_LIMIT)
           : pickPersonaMix(cachedCapped, persona, PERSONA_DISPLAY_LIMIT);

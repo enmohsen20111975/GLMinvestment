@@ -49,17 +49,17 @@ interface ComprehensiveData {
   ticker: string;
   market: string;
   timestamp: string;
-  basic?: any;
-  price?: any;
-  keyMetrics?: any;
-  technical?: any;
-  priceHistory?: any[];
-  maestro?: any;
-  hunter?: any;
-  board?: any;
-  news?: any[];
-  predictions?: any[];
-  professional?: any;
+  basic?: Record<string, unknown> | null;
+  price?: Record<string, unknown> | null;
+  keyMetrics?: Record<string, unknown> | null;
+  technical?: Record<string, unknown> | null;
+  priceHistory?: Array<Record<string, unknown>>;
+  maestro?: Record<string, unknown> | null;
+  hunter?: Record<string, unknown> | null;
+  board?: Record<string, unknown> | null;
+  news?: Array<Record<string, unknown>>;
+  predictions?: Array<Record<string, unknown>>;
+  professional?: Record<string, unknown> | null;
   errors: string[];
   elapsed_ms: number;
 }
@@ -386,7 +386,7 @@ function StockHeaderBar({
 // Quick Stats Row (4 cards)
 // ============================================================================
 
-function QuickStatsRow({ price, tech, metrics, maestro }: { price: any; tech: any; metrics: any; maestro: any }) {
+function QuickStatsRow({ price, tech, metrics, maestro }: { price: Record<string, unknown> | null | undefined; tech: Record<string, unknown> | null | undefined; metrics: Record<string, unknown> | null | undefined; maestro: Record<string, unknown> | null | undefined }) {
   const stats = [
     {
       label: 'السعر',
@@ -586,7 +586,7 @@ function OverviewTab({ data }: { data: ComprehensiveData }) {
 // Technical Tab
 // ============================================================================
 
-function TechnicalTab({ tech, price, priceHistory }: { tech: any; price: any; priceHistory: any[] }) {
+function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unknown> | null | undefined; price: Record<string, unknown> | null | undefined; priceHistory: Array<Record<string, unknown>> }) {
   const rsi = Number(tech.rsi || 0);
   const rsiStatus = rsi > 70 ? 'تشبع شرائي ⚠️' : rsi < 30 ? 'تشبع بيعي ✅' : 'محايد';
   const rsiColor = rsi > 70 ? 'text-red-500' : rsi < 30 ? 'text-emerald-500' : 'text-amber-500';
@@ -748,7 +748,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: any; price: any; pr
 // Fundamental Tab
 // ============================================================================
 
-function FundamentalTab({ metrics, basic }: { metrics: any; basic: any }) {
+function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> | null | undefined; basic: Record<string, unknown> | null | undefined }) {
   const items = [
     { label: 'القيمة السوقية', value: formatMarketCap(metrics.market_cap), icon: DollarSign },
     { label: 'P/E (السعر/الربح)', value: metrics.pe_ratio ? metrics.pe_ratio.toFixed(1) : '—', icon: BarChart3 },
@@ -867,7 +867,7 @@ function ValuationRow({ label, value, low, high, lowLabel, highLabel, reverse }:
 // Maestro Tab
 // ============================================================================
 
-function MaestroTab({ maestro, hunter, board }: { maestro: any; hunter: any; board: any }) {
+function MaestroTab({ maestro, hunter, board }: { maestro: Record<string, unknown> | null | undefined; hunter: Record<string, unknown> | null | undefined; board: Record<string, unknown> | null | undefined }) {
   const m = maestro?.maestroAnalysis || maestro || {};
 
   return (
@@ -1014,7 +1014,7 @@ function MaestroTab({ maestro, hunter, board }: { maestro: any; hunter: any; boa
   );
 }
 
-function PhaseCard({ title, phase }: { title: string; phase: any }) {
+function PhaseCard({ title, phase }: { title: string; phase: Record<string, unknown> | null | undefined }) {
   const score = phase?.score || 0;
   return (
     <div className="p-3 rounded-lg bg-muted/30">
@@ -1031,7 +1031,7 @@ function PhaseCard({ title, phase }: { title: string; phase: any }) {
 // Charts Tab
 // ============================================================================
 
-function ChartsTab({ priceHistory, tech }: { priceHistory: any[]; tech: any }) {
+function ChartsTab({ priceHistory, tech }: { priceHistory: Array<Record<string, unknown>>; tech: Record<string, unknown> | null | undefined }) {
   if (!priceHistory || priceHistory.length === 0) {
     return (
       <Card>
@@ -1074,7 +1074,7 @@ function ChartsTab({ priceHistory, tech }: { priceHistory: any[]; tech: any }) {
 }
 
 function PriceWithMAChart({ history, ma50, ma200, support, resistance }: {
-  history: any[]; ma50: number; ma200: number; support: number; resistance: number;
+  history: Array<Record<string, unknown>>; ma50: number; ma200: number; support: number; resistance: number;
 }) {
   const data = history.map((h) => ({
     date: shortDate(h.date || h.price_date || ''),
@@ -1139,7 +1139,7 @@ function PriceWithMAChart({ history, ma50, ma200, support, resistance }: {
   );
 }
 
-function VolumeChart({ history }: { history: any[] }) {
+function VolumeChart({ history }: { history: Array<Record<string, unknown>> }) {
   const data = history.map((h) => ({
     date: shortDate(h.date || h.price_date || ''),
     volume: Number(h.volume || 0),
@@ -1153,7 +1153,7 @@ function VolumeChart({ history }: { history: any[] }) {
         <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatVolume(v)} />
         <Tooltip
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
-          formatter={(v: any) => [formatVolume(v), 'الحجم']}
+          formatter={(v: unknown) => [formatVolume(Number(v)), 'الحجم']}
         />
         <Bar dataKey="volume" fill="#6366f1" name="الحجم" />
       </BarChart>
@@ -1165,7 +1165,7 @@ function VolumeChart({ history }: { history: any[] }) {
 // News Tab
 // ============================================================================
 
-function NewsTab({ news }: { news: any[] }) {
+function NewsTab({ news }: { news: Array<Record<string, unknown>> }) {
   if (!news || news.length === 0) {
     return (
       <Card>
@@ -1214,7 +1214,7 @@ function NewsTab({ news }: { news: any[] }) {
 // Predictions Tab
 // ============================================================================
 
-function PredictionsTab({ predictions }: { predictions: any[] }) {
+function PredictionsTab({ predictions }: { predictions: Array<Record<string, unknown>> }) {
   if (!predictions || predictions.length === 0) {
     return (
       <Card>
@@ -1288,7 +1288,7 @@ function PredictionsTab({ predictions }: { predictions: any[] }) {
 // AI Tab
 // ============================================================================
 
-function AITab({ professional, ticker }: { professional: any; ticker: string }) {
+function AITab({ professional, ticker }: { professional: Record<string, unknown> | null | undefined; ticker: string }) {
   if (!professional) {
     return (
       <Card>

@@ -15,8 +15,12 @@ import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { getLastCleanClose } from '@/lib/data-engine-db-sqljs';
 import { getLiveEgyptGoldPrices } from '@/lib/data-engine-db';
+import type Database from 'better-sqlite3';
 
 export const dynamic = 'force-dynamic';
+
+/** Generic SQL row returned by better-sqlite3. */
+type SqlRow = Record<string, unknown>;
 
 // ── P31-PORTFOLIO-SMART-MATH: Wealth vs Yield asset classification ──
 // Wealth Assets (تحفظ الثروة): value from market, Yield = 0% (gold, real_estate, car, stock, crypto).
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     // Check if portfolio_assets table exists
     try {
-      const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='portfolio_assets'").get() as any;
+      const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='portfolio_assets'").get() as SqlRow | undefined;
       if (!tableCheck) {
         return NextResponse.json({
           success: true,
@@ -86,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     // P30: Use id DESC — some DB instances don't have the added_at column
     querySql += " ORDER BY id DESC";
-    const assets = db.prepare(querySql).all(...queryParams) as any[];
+    const assets = db.prepare(querySql).all(...queryParams) as Array<SqlRow>;
 
     // Fetch gold prices & exchange rates
     const goldPrices = await getGoldPrices(db);
@@ -134,7 +138,7 @@ export async function GET(request: NextRequest) {
           // (4) avg_buy_price (purchase price — P&L = 0, not -100%)
           const stockRow = db.prepare(
             "SELECT current_price, previous_close FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1"
-          ).get(asset.stock_ticker) as any;
+          ).get(asset.stock_ticker) as { current_price?: number | string; previous_close?: number | string } | undefined;
 
           let livePrice = 0;
           let priceSource = 'none';
@@ -154,7 +158,7 @@ export async function GET(request: NextRequest) {
             try {
               const histRow = db.prepare(
                 "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
-              ).get(asset.stock_ticker) as any;
+              ).get(asset.stock_ticker) as { close_price?: number | string } | undefined;
               if (histRow && Number(histRow.close_price) > 0) {
                 livePrice = Number(histRow.close_price);
                 priceSource = 'stock_price_history';
@@ -512,7 +516,8 @@ export async function GET(request: NextRequest) {
 // The `db` parameter is kept for signature compatibility but ignored — gold prices
 // are no longer read from stocks.db (which had 3 stale rows from 2026-06-03).
 // See Documentation/DB_CLEANUP_PLAN_v3.65.1.md P0-2.
-async function getGoldPrices(db: any): Promise<{ '24k': number; '21k': number; '18k': number }> {
+async function getGoldPrices(db: Database.Database): Promise<{ '24k': number; '21k': number; '18k': number }> {
+  void db; // gold prices are sourced from data_engine (see v3.65.1)
   const fallback = { '24k': 4200, '21k': 3675, '18k': 3150 };
   try {
     const live = getLiveEgyptGoldPrices();
@@ -529,14 +534,14 @@ async function getGoldPrices(db: any): Promise<{ '24k': number; '21k': number; '
   }
 }
 
-async function getExchangeRates(db: any): Promise<Record<string, number>> {
+async function getExchangeRates(db: Database.Database): Promise<Record<string, number>> {
   const fallback: Record<string, number> = { USD: 48.5, EUR: 52.8, GBP: 62.5, SAR: 12.9, AED: 13.2 };
   try {
-    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='exchange_rates'").get() as any;
+    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='exchange_rates'").get() as SqlRow | undefined;
     if (!tableCheck) return fallback;
-    const rows = db.prepare("SELECT currency_from, rate FROM exchange_rates").all() as any[];
+    const rows = db.prepare("SELECT currency_from, rate FROM exchange_rates").all() as Array<{ currency_from: string; rate: number | string }>;
     for (const r of rows) {
-      if (r.currency_from && r.rate > 0) {
+      if (r.currency_from && Number(r.rate) > 0) {
         fallback[r.currency_from.toUpperCase()] = Number(r.rate);
       }
     }
@@ -550,7 +555,7 @@ async function getExchangeRates(db: any): Promise<Record<string, number>> {
 // Reads the user's monthly expenses from `user_financial_settings` (created
 // idempotently). Default 0 — the frontend can later add an input to set this.
 // This powers the "net monthly change = monthly_yield - monthly_expenses" math.
-async function getMonthlyExpenses(db: any, userId: string): Promise<number> {
+async function getMonthlyExpenses(db: Database.Database, userId: string): Promise<number> {
   try {
     db.prepare(`
       CREATE TABLE IF NOT EXISTS user_financial_settings (
@@ -562,7 +567,7 @@ async function getMonthlyExpenses(db: any, userId: string): Promise<number> {
     `).run();
     const row = db.prepare(
       "SELECT monthly_expenses FROM user_financial_settings WHERE user_id = ? LIMIT 1"
-    ).get(userId) as any;
+    ).get(userId) as SqlRow | undefined;
     return Number(row?.monthly_expenses || 0);
   } catch {
     return 0;
@@ -574,17 +579,17 @@ async function getMonthlyExpenses(db: any, userId: string): Promise<number> {
 // installments, credit) from `financial_obligations`. These are subtracted
 // from gross assets to compute the true net worth.
 // Formula: net_worth = gross_assets − total_remaining_obligations
-async function getTotalObligations(db: any, userId: string): Promise<number> {
+async function getTotalObligations(db: Database.Database, userId: string): Promise<number> {
   try {
     const tableCheck = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='financial_obligations'"
-    ).get() as any;
+    ).get() as SqlRow | undefined;
     if (!tableCheck) return 0;
     const row = db.prepare(
       "SELECT COALESCE(SUM(remaining_amount), 0) AS total " +
       "FROM financial_obligations " +
       "WHERE user_id = ? AND (status = 'active' OR status IS NULL OR status = '')"
-    ).get(userId) as any;
+    ).get(userId) as SqlRow | undefined;
     return Number(row?.total || 0);
   } catch {
     return 0;

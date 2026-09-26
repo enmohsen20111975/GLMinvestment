@@ -37,15 +37,15 @@ interface MarketStats {
   color: string;
 }
 
-async function fetchFromPythonBackend(market: string): Promise<any> {
+async function fetchFromPythonBackend(market: string): Promise<Record<string, unknown> | null> {
   try {
     const response = await fetch(`${PYTHON_BACKEND}/api/signals?market=${market}&limit=1000`, {
       signal: AbortSignal.timeout(5000)
     });
     if (response.ok) {
-      return await response.json();
+      return await response.json() as Record<string, unknown>;
     }
-  } catch (error) {
+  } catch {
     // Python backend not available
   }
   return null;
@@ -57,11 +57,11 @@ async function getMarketStatsFromPython(): Promise<MarketStats[]> {
   for (const market of MARKETS) {
     try {
       const data = await fetchFromPythonBackend(market.code);
-      if (data && data.signals) {
-        const signals = data.signals;
+      const signals = (data?.signals ?? []) as Array<Record<string, unknown>>;
+      if (data && Array.isArray(signals) && signals.length > 0) {
         const total = signals.length;
-        const successful = signals.filter((s: any) => s.hit_target === 1 || s.hit_target === true).length;
-        const stopped = signals.filter((s: any) => s.hit_stop === 1 || s.hit_stop === true).length;
+        const successful = signals.filter((s) => s.hit_target === 1 || s.hit_target === true).length;
+        const stopped = signals.filter((s) => s.hit_stop === 1 || s.hit_stop === true).length;
         const active = total - successful - stopped;
         const closed = successful + stopped;
 
@@ -76,7 +76,7 @@ async function getMarketStatsFromPython(): Promise<MarketStats[]> {
           color: market.color
         });
       }
-    } catch (error) {
+    } catch {
       // Continue to next market
     }
   }
@@ -84,18 +84,18 @@ async function getMarketStatsFromPython(): Promise<MarketStats[]> {
   return stats;
 }
 
-function getMarketStatsFromLocal(db: any): MarketStats[] {
+function getMarketStatsFromLocal(db: Database.Database): MarketStats[] {
   const stats: MarketStats[] = [];
 
   try {
     const realPredictions = db.prepare(`
       SELECT *, 'EGX' as market FROM real_predictions
-    `).all() as any[];
+    `).all() as Array<Record<string, unknown>>;
 
     const globalPredictions = db.prepare(`
       SELECT *, symbol as ticker, signal_type as prediction_type
       FROM global_predictions
-    `).all() as any[];
+    `).all() as Array<Record<string, unknown>>;
 
     const predictions = [...realPredictions, ...globalPredictions];
 
@@ -103,9 +103,9 @@ function getMarketStatsFromLocal(db: any): MarketStats[] {
       return [];
     }
 
-    const byMarket: Record<string, any[]> = {};
+    const byMarket: Record<string, Array<Record<string, unknown>>> = {};
     for (const p of predictions) {
-      const m = p.market || 'EGX';
+      const m = String(p.market || 'EGX');
       if (!byMarket[m]) byMarket[m] = [];
       byMarket[m].push(p);
     }
@@ -113,8 +113,8 @@ function getMarketStatsFromLocal(db: any): MarketStats[] {
     for (const market of MARKETS) {
       const marketPredictions = byMarket[market.code] || [];
       const total = marketPredictions.length;
-      const successful = marketPredictions.filter((p: any) => p.hit_target === 1 || p.hitTarget === true).length;
-      const stopped = marketPredictions.filter((p: any) => p.hit_stop === 1 || p.hitStop === true).length;
+      const successful = marketPredictions.filter((p) => p.hit_target === 1 || p.hitTarget === true).length;
+      const stopped = marketPredictions.filter((p) => p.hit_stop === 1 || p.hitStop === true).length;
       const active = total - successful - stopped;
       const closed = successful + stopped;
 
@@ -141,9 +141,9 @@ function tableExists(db: Database.Database, tableName: string): boolean {
   return !!db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(tableName);
 }
 
-function parseReasons(reasons: any): string[] {
+function parseReasons(reasons: unknown): string[] {
   if (!reasons) return [];
-  if (Array.isArray(reasons)) return reasons;
+  if (Array.isArray(reasons)) return reasons as string[];
   if (typeof reasons === 'string') {
     try {
       return JSON.parse(reasons);
@@ -182,14 +182,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const predictions: any[] = [];
+    const predictions: Array<Record<string, unknown>> = [];
 
     if (hasRealPredictions) {
-      predictions.push(...db.prepare(`SELECT *, 'EGX' as market FROM real_predictions`).all() as any[]);
+      predictions.push(...(db.prepare(`SELECT *, 'EGX' as market FROM real_predictions`).all() as Array<Record<string, unknown>>));
     }
 
     if (hasGlobalPredictions) {
-      predictions.push(...db.prepare(`SELECT *, symbol as ticker, signal_type as prediction_type, signal_date as date FROM global_predictions`).all() as any[]);
+      predictions.push(...(db.prepare(`SELECT *, symbol as ticker, signal_type as prediction_type, signal_date as date FROM global_predictions`).all() as Array<Record<string, unknown>>));
     }
 
     db.close();

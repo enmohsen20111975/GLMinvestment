@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Shield, Star, TrendingUp, TrendingDown, Layers, Search, Eye } from 'lucide-react';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 
 export interface HoldingItem {
   ticker: string;
@@ -86,6 +87,211 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
       w.name.includes(searchQuery)
   );
 
+  // ─── UnifiedTable columns ────────────────────────────────────────────────
+  type HoldingRow = Record<string, unknown>;
+
+  const holdingsColumns: Column<HoldingRow>[] = useMemo(
+    () => [
+      {
+        key: 'ticker',
+        header: 'السهم',
+        align: 'right',
+        sortable: true,
+        render: (row) => (
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-100 group-hover:text-purple-400 transition-colors">
+              {String(row.ticker ?? '')}
+            </span>
+            <span className="text-[11px] text-slate-400 font-normal truncate max-w-[120px]">
+              {String(row.name ?? '')}
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              <Shield className="w-3 h-3" /> 🛡️ في محفظتك
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'sub_portfolio',
+        header: 'المحفظة الفرعية',
+        align: 'right',
+        sortable: true,
+        render: (row) => (
+          <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium border border-slate-700/50 text-[11px]">
+            {String(row.sub_portfolio ?? '') || 'محفظة رئيسية'}
+          </span>
+        ),
+      },
+      {
+        key: 'buy_price',
+        header: 'سعر الشراء',
+        align: 'left',
+        sortable: true,
+        render: (row) => (
+          <span className="text-slate-300">{Number(row.buy_price ?? 0).toFixed(2)} ج.م</span>
+        ),
+      },
+      {
+        key: 'current_price',
+        header: 'السعر الحالي',
+        align: 'left',
+        sortable: true,
+        render: (row) => (
+          <span className="text-slate-100 font-bold">{Number(row.current_price ?? 0).toFixed(2)} ج.م</span>
+        ),
+      },
+      {
+        key: 'pnl_percent',
+        header: 'الربح/الخسارة (EGP & %)',
+        align: 'left',
+        sortable: true,
+        render: (row) => {
+          const pnlPercent = Number(row.pnl_percent ?? 0);
+          const pnlAmount = row.pnl_amount as number | string | undefined;
+          const isProfitable = pnlPercent >= 0;
+          return (
+            <div className="flex items-center gap-1.5">
+              {isProfitable ? (
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              ) : (
+                <TrendingDown className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              )}
+              <span
+                className={`font-bold ${isProfitable ? 'text-emerald-400' : 'text-red-400'}`}
+              >
+                {isProfitable ? `+${pnlAmount}` : pnlAmount} ج.م (
+                {isProfitable ? `+${pnlPercent}%` : `${pnlPercent}%`})
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'current_score',
+        header: 'Score السهم',
+        align: 'center',
+        sortable: true,
+        render: (row) => (
+          <span className="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400">
+            {Number(row.current_score ?? 80)}
+          </span>
+        ),
+      },
+      {
+        key: 'watchlist',
+        header: 'متابعة',
+        align: 'center',
+        render: (row) => (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleStar(String(row.ticker ?? ''));
+            }}
+            className="p-1 rounded-md hover:bg-slate-700/50 text-amber-400 transition-colors"
+            aria-label="تبديل المتابعة"
+          >
+            <Star className={`w-4 h-4 ${row.in_watchlist ? 'fill-amber-400' : ''}`} />
+          </button>
+        ),
+      },
+      {
+        key: 'action',
+        header: 'إجراء',
+        align: 'left',
+        render: (row) => (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectPosition(String(row.ticker ?? ''));
+            }}
+            className="px-3 py-1 text-[11px] font-bold rounded-lg bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1 ml-auto"
+          >
+            <Eye className="w-3 h-3" /> التفاصيل
+          </button>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const watchlistColumns: Column<HoldingRow>[] = useMemo(
+    () => [
+      {
+        key: 'ticker',
+        header: 'السهم',
+        align: 'right',
+        sortable: true,
+        render: (row) => (
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-100 group-hover:text-purple-400 transition-colors">
+              {String(row.ticker ?? '')}
+            </span>
+            <span className="text-[11px] text-slate-400 font-normal">{String(row.name ?? '')}</span>
+            {row.in_portfolio && (
+              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                🛡️ في محفظتك
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'current_price',
+        header: 'السعر الحالي',
+        align: 'left',
+        sortable: true,
+        render: (row) => (
+          <span className="text-slate-100 font-bold">{Number(row.current_price ?? 0).toFixed(2)} ج.م</span>
+        ),
+      },
+      {
+        key: 'change_pct',
+        header: 'التغير اليومي',
+        align: 'left',
+        sortable: true,
+        render: (row) => {
+          const changePct = Number(row.change_pct ?? 0);
+          const isPos = changePct >= 0;
+          return (
+            <span className={`font-bold ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>
+              {isPos ? `+${changePct}%` : `${changePct}%`}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'current_score',
+        header: 'Score السهم',
+        align: 'center',
+        sortable: true,
+        render: (row) => (
+          <span className="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400">
+            {Number(row.current_score ?? 75)}
+          </span>
+        ),
+      },
+      {
+        key: 'action',
+        header: 'إجراء',
+        align: 'left',
+        render: (row) => (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectPosition(String(row.ticker ?? ''));
+            }}
+            className="px-3 py-1 text-[11px] font-bold rounded-lg bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1 ml-auto"
+          >
+            <Eye className="w-3 h-3" /> التفاصيل
+          </button>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onSelectPosition]
+  );
+
   return (
     <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-md dir-rtl">
       {/* Header & Tabs */}
@@ -140,154 +346,35 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
 
       {/* Table Section */}
       {loading ? (
-        <div className="p-8 text-center text-slate-500 text-sm animate-pulse">
-          جارٍ تحميل أسهم المحفظة والمتابعة...
-        </div>
+        <UnifiedTable<HoldingRow>
+          columns={activeTab === 'holdings' ? holdingsColumns : watchlistColumns}
+          data={[]}
+          loading
+          loadingRows={6}
+          emptyTextAr="جارٍ تحميل أسهم المحفظة والمتابعة..."
+        />
       ) : activeTab === 'holdings' ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold">
-                <th className="py-3 px-4">السهم</th>
-                <th className="py-3 px-4">المحفظة الفرعية</th>
-                <th className="py-3 px-4">سعر الشراء</th>
-                <th className="py-3 px-4">السعر الحالي</th>
-                <th className="py-3 px-4">الربح/الخسارة (EGP & %)</th>
-                <th className="py-3 px-4 text-center">Score السهم</th>
-                <th className="py-3 px-4 text-center">متابعة</th>
-                <th className="py-3 px-4 text-left">إجراء</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs font-medium">
-              {filteredHoldings.map((item) => {
-                const isProfitable = item.pnl_percent >= 0;
-                return (
-                  <tr
-                    key={item.ticker}
-                    onClick={() => onSelectPosition(item.ticker)}
-                    className="hover:bg-slate-800/50 transition-colors cursor-pointer group"
-                  >
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-100 group-hover:text-purple-400 transition-colors">
-                          {item.ticker}
-                        </span>
-                        <span className="text-[11px] text-slate-400 font-normal truncate max-w-[120px]">
-                          {item.name}
-                        </span>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                          <Shield className="w-3 h-3" /> 🛡️ في محفظتك
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium border border-slate-700/50 text-[11px]">
-                        {item.sub_portfolio || 'محفظة رئيسية'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300">{item.buy_price.toFixed(2)} ج.م</td>
-                    <td className="py-3.5 px-4 text-slate-100 font-bold">{item.current_price.toFixed(2)} ج.م</td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5">
-                        {isProfitable ? (
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        ) : (
-                          <TrendingDown className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                        )}
-                        <span
-                          className={`font-bold ${isProfitable ? 'text-emerald-400' : 'text-red-400'}`}
-                        >
-                          {isProfitable ? `+${item.pnl_amount}` : item.pnl_amount} ج.م (
-                          {isProfitable ? `+${item.pnl_percent}%` : `${item.pnl_percent}%`})
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400">
-                        {item.current_score || 80}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => toggleStar(item.ticker)}
-                        className="p-1 rounded-md hover:bg-slate-700/50 text-amber-400 transition-colors"
-                      >
-                        <Star className={`w-4 h-4 ${item.in_watchlist ? 'fill-amber-400' : ''}`} />
-                      </button>
-                    </td>
-                    <td className="py-3.5 px-4 text-left">
-                      <button
-                        onClick={() => onSelectPosition(item.ticker)}
-                        className="px-3 py-1 text-[11px] font-bold rounded-lg bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1 ml-auto"
-                      >
-                        <Eye className="w-3 h-3" /> التفاصيل
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <UnifiedTable<HoldingRow>
+          columns={holdingsColumns}
+          data={filteredHoldings as unknown as HoldingRow[]}
+          keyField="ticker"
+          onRowClick={(row) => onSelectPosition(String(row.ticker ?? ''))}
+          emptyTextAr="لا توجد أسهم مملوكة"
+          rowClassName={(row) =>
+            Number(row.pnl_percent ?? 0) >= 0 ? 'bg-emerald-500/5' : 'bg-red-500/5'
+          }
+        />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold">
-                <th className="py-3 px-4">السهم</th>
-                <th className="py-3 px-4">السعر الحالي</th>
-                <th className="py-3 px-4">التغير اليومي</th>
-                <th className="py-3 px-4 text-center">Score السهم</th>
-                <th className="py-3 px-4 text-left">إجراء</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs font-medium">
-              {filteredWatchlist.map((item) => {
-                const isPos = item.change_pct >= 0;
-                return (
-                  <tr
-                    key={item.ticker}
-                    onClick={() => onSelectPosition(item.ticker)}
-                    className="hover:bg-slate-800/50 transition-colors cursor-pointer group"
-                  >
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-100 group-hover:text-purple-400 transition-colors">
-                          {item.ticker}
-                        </span>
-                        <span className="text-[11px] text-slate-400 font-normal">{item.name}</span>
-                        {item.in_portfolio && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                            🛡️ في محفظتك
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-100 font-bold">{item.current_price.toFixed(2)} ج.م</td>
-                    <td className="py-3.5 px-4">
-                      <span className={`font-bold ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {isPos ? `+${item.change_pct}%` : `${item.change_pct}%`}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400">
-                        {item.current_score || 75}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-left">
-                      <button
-                        onClick={() => onSelectPosition(item.ticker)}
-                        className="px-3 py-1 text-[11px] font-bold rounded-lg bg-purple-600/20 text-purple-300 border border-purple-500/30 hover:bg-purple-600 hover:text-white transition-all flex items-center gap-1 ml-auto"
-                      >
-                        <Eye className="w-3 h-3" /> التفاصيل
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <UnifiedTable<HoldingRow>
+          columns={watchlistColumns}
+          data={filteredWatchlist as unknown as HoldingRow[]}
+          keyField="ticker"
+          onRowClick={(row) => onSelectPosition(String(row.ticker ?? ''))}
+          emptyTextAr="لا توجد أسهم في قائمة المتابعة"
+          rowClassName={(row) =>
+            Number(row.change_pct ?? 0) >= 0 ? 'bg-emerald-500/5' : 'bg-red-500/5'
+          }
+        />
       )}
     </div>
   );

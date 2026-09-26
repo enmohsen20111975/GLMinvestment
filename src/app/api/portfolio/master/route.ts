@@ -3,8 +3,12 @@ import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { getLastCleanClose } from '@/lib/data-engine-db-sqljs';
 import { getLiveEgyptGoldPrices } from '@/lib/data-engine-db';
+import type Database from 'better-sqlite3';
 
 export const dynamic = 'force-dynamic';
+
+/** Generic SQL row returned by better-sqlite3. */
+type SqlRow = Record<string, unknown>;
 
 // ── P31-PORTFOLIO-SMART-MATH: asset classification (mirrors calculate-values) ──
 const YIELD_ASSET_TYPES = new Set(['bank', 'certificate', 'fund', 'bond', 'savings_account', 'deposit']);
@@ -62,7 +66,7 @@ export async function GET(req: NextRequest) {
     // NOTE: Use `id DESC` not `added_at DESC` — some DB instances don't have the added_at column.
     const allAssets = db.prepare(
       "SELECT * FROM portfolio_assets WHERE user_id = ? ORDER BY id DESC"
-    ).all(userId) as any[];
+    ).all(userId) as Array<SqlRow>;
 
     // ── STEP 2: Compute live current_value for each asset ──
     // (reuse the fallback chain from calculate-values for stocks)
@@ -71,7 +75,7 @@ export async function GET(req: NextRequest) {
     const exchangeRates = await getExchangeRates(db);
     let totalInvestedAll = 0;
     let totalCurrentAll = 0;
-    const assetsByPortfolio: Record<string, any[]> = {};
+    const assetsByPortfolio: Record<string, Array<SqlRow & { _live_current?: number; _live_invested?: number }>> = {};
 
     for (const asset of allAssets) {
       const type = asset.type || 'other';
@@ -86,7 +90,7 @@ export async function GET(req: NextRequest) {
         try {
           const stockRow = db.prepare(
             "SELECT current_price, previous_close FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1"
-          ).get(asset.stock_ticker) as any;
+          ).get(asset.stock_ticker) as { current_price?: number | string; previous_close?: number | string } | undefined;
           let livePrice = 0;
           if (stockRow) {
             if (Number(stockRow.current_price) > 0) livePrice = Number(stockRow.current_price);
@@ -96,7 +100,7 @@ export async function GET(req: NextRequest) {
             try {
               const histRow = db.prepare(
                 "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
-              ).get(asset.stock_ticker) as any;
+              ).get(asset.stock_ticker) as { close_price?: number | string } | undefined;
               if (histRow && Number(histRow.close_price) > 0) livePrice = Number(histRow.close_price);
             } catch { /* table may not exist */ }
           }
@@ -161,7 +165,7 @@ export async function GET(req: NextRequest) {
     // ── STEP 3: Fetch sub-portfolios for display ──
     const subPortfolios = db.prepare(
       "SELECT * FROM portfolios WHERE (user_id = ? OR user_id = 'default') AND is_master = 0 ORDER BY id ASC"
-    ).all(userId) as any[];
+    ).all(userId) as Array<SqlRow>;
 
     const aggregated = {
       total_value: 0,
@@ -171,7 +175,7 @@ export async function GET(req: NextRequest) {
       net_pnl_pct: 0,
     };
 
-    const portfolioDetails: any[] = [];
+    const portfolioDetails: Array<SqlRow> = [];
     const seenPortfolioIds = new Set<string>();
 
     // ── STEP 4: Build sub-portfolio details ──
@@ -314,7 +318,8 @@ export async function GET(req: NextRequest) {
 // The `db` parameter is kept for signature compatibility but ignored — gold prices
 // are no longer read from stocks.db (which had 3 stale rows from 2026-06-03).
 // See Documentation/DB_CLEANUP_PLAN_v3.65.1.md P0-2.
-async function getGoldPrices(db: any): Promise<{ '24k': number; '21k': number; '18k': number }> {
+async function getGoldPrices(db: Database.Database): Promise<{ '24k': number; '21k': number; '18k': number }> {
+  void db; // gold prices are sourced from data_engine (see v3.65.1)
   const fallback = { '24k': 4200, '21k': 3675, '18k': 3150 };
   try {
     const live = getLiveEgyptGoldPrices();
@@ -333,14 +338,14 @@ async function getGoldPrices(db: any): Promise<{ '24k': number; '21k': number; '
 
 // ── P34 TASK 2: Exchange rates helper (mirrors calculate-values) ──
 // Needed so crypto (USD-denominated) can be converted to EGP.
-async function getExchangeRates(db: any): Promise<Record<string, number>> {
+async function getExchangeRates(db: Database.Database): Promise<Record<string, number>> {
   const fallback: Record<string, number> = { USD: 48.5, EUR: 52.8, GBP: 62.5, SAR: 12.9, AED: 13.2 };
   try {
-    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='exchange_rates'").get() as any;
+    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='exchange_rates'").get() as SqlRow | undefined;
     if (!tableCheck) return fallback;
-    const rows = db.prepare("SELECT currency_from, rate FROM exchange_rates").all() as any[];
+    const rows = db.prepare("SELECT currency_from, rate FROM exchange_rates").all() as Array<{ currency_from: string; rate: number | string }>;
     for (const r of rows) {
-      if (r.currency_from && r.rate > 0) {
+      if (r.currency_from && Number(r.rate) > 0) {
         fallback[r.currency_from.toUpperCase()] = Number(r.rate);
       }
     }
@@ -352,17 +357,17 @@ async function getExchangeRates(db: any): Promise<Record<string, number>> {
 
 // ── P34 TASK 3: Active obligations reader (debt deduction) ──
 // Mirrors calculate-values. Returns sum of remaining_amount for active debts.
-async function getTotalObligations(db: any, userId: string): Promise<number> {
+async function getTotalObligations(db: Database.Database, userId: string): Promise<number> {
   try {
     const tableCheck = db.prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='financial_obligations'"
-    ).get() as any;
+    ).get() as SqlRow | undefined;
     if (!tableCheck) return 0;
     const row = db.prepare(
       "SELECT COALESCE(SUM(remaining_amount), 0) AS total " +
       "FROM financial_obligations " +
       "WHERE user_id = ? AND (status = 'active' OR status IS NULL OR status = '')"
-    ).get(userId) as any;
+    ).get(userId) as SqlRow | undefined;
     return Number(row?.total || 0);
   } catch {
     return 0;

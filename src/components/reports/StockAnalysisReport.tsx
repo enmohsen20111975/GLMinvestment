@@ -22,15 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
@@ -379,6 +372,52 @@ function TechnicalIndicatorsTable({ analysis }: { analysis: ProfessionalAnalysis
     { name: 'ROC (20)', value: `${ind.roc.roc_20.toFixed(2)}%`, signal: '' },
   ];
 
+  const indicatorColumns: Column<(typeof rows)[number]>[] = [
+    {
+      key: 'name',
+      header: 'المؤشر',
+      align: 'right',
+      sortable: true,
+      render: (row) => <span className="text-sm font-medium">{row.name}</span>,
+    },
+    {
+      key: 'value',
+      header: 'القيمة',
+      align: 'left',
+      sortable: true,
+      render: (row) => (
+        <span className="text-left tabular-nums text-sm">{row.value || '—'}</span>
+      ),
+    },
+    {
+      key: 'signal',
+      header: 'الإشارة',
+      align: 'left',
+      render: (row) =>
+        row.signal ? (
+          <Badge variant="secondary" className={cn(
+            'text-xs',
+            getSignalColor(row.signal) &&
+              getScoreBg(
+                row.signal.includes('شراء') ||
+                  row.signal.includes('صاعد') ||
+                  row.signal.includes('إيجابي')
+                  ? 80
+                  : row.signal.includes('بيع') ||
+                      row.signal.includes('هابط') ||
+                      row.signal.includes('سلبي')
+                    ? 30
+                    : 50,
+              ),
+          )}>
+            {row.signal}
+          </Badge>
+        ) : (
+          '—'
+        ),
+    },
+  ];
+
   return (
     <Card className="overflow-hidden border shadow-sm">
       <CardHeader className="pb-2">
@@ -388,32 +427,14 @@ function TechnicalIndicatorsTable({ analysis }: { analysis: ProfessionalAnalysis
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto max-h-96 overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent sticky top-0 bg-background">
-                <TableHead className="text-xs font-semibold">المؤشر</TableHead>
-                <TableHead className="text-xs font-semibold text-left">القيمة</TableHead>
-                <TableHead className="text-xs font-semibold text-left">الإشارة</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row, i) => (
-                <TableRow key={i}>
-                  <TableCell className="text-sm font-medium">{row.name}</TableCell>
-                  <TableCell className="text-left tabular-nums text-sm">{row.value || '—'}</TableCell>
-                  <TableCell className="text-left">
-                    {row.signal ? (
-                      <Badge variant="secondary" className={cn('text-xs', getSignalColor(row.signal) && getScoreBg(row.signal.includes('شراء') || row.signal.includes('صاعد') || row.signal.includes('إيجابي') ? 80 : row.signal.includes('بيع') || row.signal.includes('هابط') || row.signal.includes('سلبي') ? 30 : 50))}>
-                        {row.signal}
-                      </Badge>
-                    ) : '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<(typeof rows)[number]>
+          columns={indicatorColumns}
+          data={rows}
+          keyField="name"
+          dense
+          maxHeight="max-h-96"
+          emptyTextAr="لا توجد مؤشرات متاحة"
+        />
       </CardContent>
     </Card>
   );

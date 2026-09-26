@@ -112,10 +112,10 @@ class DbCompat {
         this._name = name;
     }
 
-    prepare(sql: string): any {
+    prepare(sql: string): { get: (...params: unknown[]) => unknown; all: (...params: unknown[]) => Array<Record<string, unknown>>; run: (...params: unknown[]) => { changes: number } } {
         const stmt = this._db.prepare(sql);
         return {
-            get: (...params: any[]) => {
+            get: (...params: unknown[]) => {
                 stmt.bind(params);
                 if (stmt.step()) {
                     const row = stmt.getAsObject();
@@ -125,14 +125,14 @@ class DbCompat {
                 stmt.free();
                 return undefined;
             },
-            all: (...params: any[]) => {
+            all: (...params: unknown[]) => {
                 stmt.bind(params);
-                const rows: any[] = [];
+                const rows: Array<Record<string, unknown>> = [];
                 while (stmt.step()) rows.push(stmt.getAsObject());
                 stmt.free();
                 return rows;
             },
-            run: (...params: any[]) => {
+            run: (...params: unknown[]) => {
                 stmt.bind(params);
                 stmt.step();
                 stmt.free();
@@ -145,7 +145,7 @@ class DbCompat {
         this._db.run(sql);
     }
 
-    pragma(): any[] {
+    pragma(): Array<Record<string, unknown>> {
         return [];
     }
 
@@ -229,6 +229,11 @@ export interface MarketStats {
     unchanged: number;
 }
 
+/** Result row shape for `SELECT COUNT(*) as count ...` queries. */
+interface CountRow {
+    count?: number | string | null;
+}
+
 export interface MarketBreakdown {
     market: string;
     market_code: string;
@@ -307,15 +312,15 @@ export async function getMarketStats(market?: string): Promise<MarketStats> {
         let total = 0, rising = 0, falling = 0, unchanged = 0;
 
         if (marketName) {
-            total = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE market = ?').get(marketName) as any)?.count || 0;
-            rising = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent > 0 AND market = ?').get(marketName) as any)?.count || 0;
-            falling = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent < 0 AND market = ?').get(marketName) as any)?.count || 0;
-            unchanged = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE (change_percent = 0 OR change_percent IS NULL) AND market = ?').get(marketName) as any)?.count || 0;
+            total = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE market = ?').get(marketName) as CountRow)?.count) || 0;
+            rising = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent > 0 AND market = ?').get(marketName) as CountRow)?.count) || 0;
+            falling = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent < 0 AND market = ?').get(marketName) as CountRow)?.count) || 0;
+            unchanged = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE (change_percent = 0 OR change_percent IS NULL) AND market = ?').get(marketName) as CountRow)?.count) || 0;
         } else {
-            total = (db.prepare('SELECT COUNT(*) as count FROM stocks').get() as any)?.count || 0;
-            rising = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent > 0').get() as any)?.count || 0;
-            falling = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent < 0').get() as any)?.count || 0;
-            unchanged = (db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent = 0 OR change_percent IS NULL').get() as any)?.count || 0;
+            total = Number((db.prepare('SELECT COUNT(*) as count FROM stocks').get() as CountRow)?.count) || 0;
+            rising = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent > 0').get() as CountRow)?.count) || 0;
+            falling = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent < 0').get() as CountRow)?.count) || 0;
+            unchanged = Number((db.prepare('SELECT COUNT(*) as count FROM stocks WHERE change_percent = 0 OR change_percent IS NULL').get() as CountRow)?.count) || 0;
         }
 
         return { total, rising, falling, unchanged };
@@ -370,9 +375,9 @@ export async function getMarketBreakdown(): Promise<MarketBreakdown[]> {
     };
 
     try {
-        const rows = db.prepare('SELECT market, COUNT(*) as count, SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising, SUM(CASE WHEN change_percent < 0 THEN 1 ELSE 0 END) as falling FROM stocks GROUP BY market ORDER BY count DESC').all() as any[];
+        const rows = db.prepare('SELECT market, COUNT(*) as count, SUM(CASE WHEN change_percent > 0 THEN 1 ELSE 0 END) as rising, SUM(CASE WHEN change_percent < 0 THEN 1 ELSE 0 END) as falling FROM stocks GROUP BY market ORDER BY count DESC').all() as Array<{ market: string; count: number; rising: number | null; falling: number | null }>;
 
-        return rows.map((row: any) => {
+        return rows.map((row) => {
             const info = marketInfo[row.market] || { code: row.market, name: row.market, country: row.market, flag: '🌐' };
             return { market: row.market, market_code: info.code, market_name: info.name, country: info.country, flag: info.flag, count: row.count, rising: row.rising || 0, falling: row.falling || 0 };
         });
@@ -459,7 +464,7 @@ export async function getLastCleanClose(ticker: string): Promise<{ price: number
         // egksco_price_history: SELECT most recent close_price WHERE symbol = ?
         const row = db.prepare(
             "SELECT close_price, price_date AS date FROM egksco_price_history WHERE symbol = ? AND close_price > 0 ORDER BY price_date DESC LIMIT 1"
-        ).get(base) as any;
+        ).get(base) as { close_price?: number | string; date?: string } | undefined;
         if (row && Number(row.close_price) > 0) {
             return { price: Number(row.close_price), source: 'egksco', date: String(row.date || '') };
         }

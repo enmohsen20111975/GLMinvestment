@@ -29,9 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs';
@@ -91,6 +89,68 @@ interface StatsResponse {
   dynamic_thresholds: Threshold[];
   backtest_results: any[];
 }
+
+// ── UnifiedTable columns for top tickers (Rule 52) ──
+const topTickerColumns: Column<Record<string, unknown>>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    render: (t) => <span className="text-xs font-bold">{String(t.ticker ?? '')}</span>,
+  },
+  {
+    key: 'market',
+    header: 'السوق',
+    align: 'center',
+    sortable: true,
+    render: (t) => <span className="text-xs text-center inline-block w-full">{String(t.market ?? '')}</span>,
+  },
+  {
+    key: 'total',
+    header: 'إجمالي',
+    align: 'center',
+    sortable: true,
+    render: (t) => <span className="text-xs text-center inline-block w-full">{String(t.total ?? 0)}</span>,
+  },
+  {
+    key: 'wins',
+    header: 'نجاحات',
+    align: 'center',
+    sortable: true,
+    render: (t) => (
+      <span className="text-xs text-center text-emerald-600 inline-block w-full">{String(t.wins ?? 0)}</span>
+    ),
+  },
+  {
+    key: 'hit_rate',
+    header: '%',
+    align: 'center',
+    sortable: true,
+    render: (t) => (
+      <span className="text-xs text-center font-semibold inline-block w-full">{t.hit_rate}%</span>
+    ),
+  },
+  {
+    key: 'avg_return',
+    header: 'متوسط العائد',
+    align: 'center',
+    sortable: true,
+    render: (t) => {
+      const avgReturn = Number(t.avg_return ?? 0);
+      return (
+        <span
+          className={cn(
+            'text-xs text-center font-medium inline-block w-full',
+            avgReturn >= 0 ? 'text-emerald-600' : 'text-red-600',
+          )}
+        >
+          {avgReturn >= 0 ? '+' : ''}{avgReturn}%
+        </span>
+      );
+    },
+  },
+];
 
 export function DualTrackPredictionsView() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
@@ -342,39 +402,13 @@ export function DualTrackPredictionsView() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs whitespace-nowrap">السهم</TableHead>
-                    <TableHead className="text-xs text-center whitespace-nowrap">السوق</TableHead>
-                    <TableHead className="text-xs text-center whitespace-nowrap">إجمالي</TableHead>
-                    <TableHead className="text-xs text-center whitespace-nowrap">نجاحات</TableHead>
-                    <TableHead className="text-xs text-center whitespace-nowrap">%</TableHead>
-                    <TableHead className="text-xs text-center whitespace-nowrap">متوسط العائد</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topTickers.slice(0, 8).map((t: any, i: number) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs font-bold">{t.ticker}</TableCell>
-                      <TableCell className="text-xs text-center">{t.market}</TableCell>
-                      <TableCell className="text-xs text-center">{t.total}</TableCell>
-                      <TableCell className="text-xs text-center text-emerald-600">{t.wins}</TableCell>
-                      <TableCell className="text-xs text-center font-semibold">
-                        {t.hit_rate}%
-                      </TableCell>
-                      <TableCell className={cn(
-                        'text-xs text-center font-medium',
-                        t.avg_return >= 0 ? 'text-emerald-600' : 'text-red-600'
-                      )}>
-                        {t.avg_return >= 0 ? '+' : ''}{t.avg_return}%
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable<Record<string, unknown>>
+              columns={topTickerColumns}
+              data={topTickers.slice(0, 8) as unknown as Record<string, unknown>[]}
+              keyField="ticker"
+              dense
+              emptyTextAr="لا توجد أسهم مميزة"
+            />
           </CardContent>
         </Card>
       )}

@@ -67,6 +67,72 @@ export interface StockData {
   // بتاخد الأولوية في تحديد حالة التوقع (TARGET_HIT / STOPPED) على الواجهة.
   max_high_since_pred?: number | null;
   min_low_since_pred?: number | null;
+  // Helper-only fields populated by the prediction pipeline (enrichment, not stored).
+  high_price?: number | null;
+  low_price?: number | null;
+  horizon?: string | null;
+  timeframe?: string | null;
+  regime?: string | null;
+  persona?: string | null;
+  persona_type?: string | null;
+}
+
+/** Lightweight live-price snapshot returned by the market-prices API. */
+export interface LiveStock {
+  current_price?: number | null;
+  close?: number | null;
+  high_price?: number | null;
+  low_price?: number | null;
+  change_percent?: number | null;
+  [key: string]: unknown;
+}
+
+/** Detailed stock snapshot returned by /api/stocks/[ticker]/detail. */
+export interface StockDetail {
+  ticker?: string;
+  name?: string;
+  name_ar?: string;
+  current_price?: number | null;
+  change_percent?: number | null;
+  change_value?: number | null;
+  high_price?: number | null;
+  low_price?: number | null;
+  pe_ratio?: number | null;
+  sector?: string | null;
+  logo_url?: string | null;
+  [key: string]: unknown;
+}
+
+/** Prediction row shape returned by /api/predictions/* endpoints (subset of fields used by mapPredictionToStockData). */
+export interface PredictionRow {
+  id?: string | number;
+  ticker?: string;
+  symbol?: string;
+  name?: string;
+  market?: string;
+  signal?: string | number;
+  signal_ar?: string;
+  recommendation?: string;
+  current_price?: number | string | null;
+  entry_price?: number | string | null;
+  target_price?: number | string | null;
+  stop_loss?: number | string | null;
+  high_price?: number | string | null;
+  high?: number | string | null;
+  low_price?: number | string | null;
+  change_percent?: number | string | null;
+  risk_reward?: number | string | null;
+  master_score?: number | string | null;
+  confidence?: number | string | null;
+  sector?: string | null;
+  volume?: number | string | null;
+  prediction_date?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  date?: string | null;
+  status?: string | null;
+  status_ar?: string | null;
+  [key: string]: unknown;
 }
 
 // ============================================================================
@@ -178,6 +244,11 @@ export interface PersonaData {
   support_level?: number | null;
   resistance_level?: number | null;
   price_vs_sr?: string;
+  /** Legacy aliases used by some response shapes (kept for compat). */
+  high?: number | null;
+  low?: number | null;
+  support?: number | null;
+  resistance?: number | null;
 }
 
 

@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 
 export interface AnalysisCacheData {
-  stocks: any[] | null;
-  predictions: any[] | null;
-  closedPredictions: any[] | null;
-  storedAnalysis: any[] | null;
+  /**
+   * Stock rows from /api/stocks. Shape varies per market source (EGX/TADAWUL/crypto…)
+   * so we keep it as an opaque record array. Callers must narrow at consumption.
+   */
+  stocks: Record<string, unknown>[] | null;
+  /** Open predictions from /api/unified/predictions (opaque record array). */
+  predictions: Record<string, unknown>[] | null;
+  /** Closed predictions from the same endpoint (opaque record array). */
+  closedPredictions: Record<string, unknown>[] | null;
+  /** Stored Maestro analyses — opaque record array (consumers narrow to StoredAnalysisItem). */
+  storedAnalysis: Record<string, unknown>[] | null;
   lastFetched: number;
   market: string;
   isFetching: boolean;
@@ -18,9 +25,9 @@ export interface AnalysisCacheData {
 }
 
 interface AnalysisStore extends AnalysisCacheData {
-  setStocks: (stocks: any[]) => void;
-  setPredictions: (predictions: any[], closed: any[]) => void;
-  setStoredAnalysis: (items: any[]) => void;
+  setStocks: (stocks: Record<string, unknown>[]) => void;
+  setPredictions: (predictions: Record<string, unknown>[], closed: Record<string, unknown>[]) => void;
+  setStoredAnalysis: (items: Record<string, unknown>[]) => void;
   setFetching: (isFetching: boolean) => void;
   setMarket: (market: string) => void;
   setLiveMode: (liveMode: boolean) => void;

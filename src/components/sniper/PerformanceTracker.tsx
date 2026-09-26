@@ -4,14 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   TrendingUp,
   TrendingDown,
@@ -161,6 +154,60 @@ function getLessonCategoryIcon(category: string) {
 // ============================================================================
 // Component
 // ============================================================================
+
+// UnifiedTable columns for closed predictions (Rule 52)
+const closedPredictionColumns: Column<ClosedPrediction>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    render: (p) => <span className="text-xs font-medium">{p.ticker}</span>,
+  },
+  {
+    key: 'signal_ar',
+    header: 'الإشارة',
+    align: 'right',
+    render: (p) => <span className="text-xs">{p.signal_ar}</span>,
+  },
+  {
+    key: 'result',
+    header: 'النتيجة',
+    align: 'right',
+    render: (p) => getResultBadge(p.result),
+  },
+  {
+    key: 'pnl_pct',
+    header: 'الربح%',
+    align: 'right',
+    sortable: true,
+    render: (p) => (
+      <span className={cn('text-xs font-semibold', getPnlColor(p.pnl_pct))}>
+        {formatPnl(p.pnl_pct)}
+      </span>
+    ),
+  },
+  {
+    key: 'hold_days',
+    header: 'المدة',
+    align: 'right',
+    sortable: true,
+    render: (p) => (
+      <span className="text-xs text-muted-foreground">
+        {p.hold_days !== null ? `${p.hold_days} يوم` : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'closed_at',
+    header: 'تاريخ الإغلاق',
+    align: 'right',
+    sortable: true,
+    render: (p) => (
+      <span className="text-xs text-muted-foreground">{formatDate(p.closed_at)}</span>
+    ),
+  },
+];
 
 export function PerformanceTracker() {
   const [data, setData] = useState<PerformanceData | null>(null);
@@ -356,44 +403,14 @@ export function PerformanceTracker() {
               لا توجد توقعات مغلقة بعد
             </div>
           ) : (
-            <div className="max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right text-xs">السهم</TableHead>
-                    <TableHead className="text-right text-xs">الإشارة</TableHead>
-                    <TableHead className="text-right text-xs">النتيجة</TableHead>
-                    <TableHead className="text-right text-xs">الربح%</TableHead>
-                    <TableHead className="text-right text-xs">المدة</TableHead>
-                    <TableHead className="text-right text-xs">تاريخ الإغلاق</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentClosed.map((pred) => (
-                    <TableRow key={pred.id}>
-                      <TableCell className="text-xs font-medium">
-                        {pred.ticker}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {pred.signal_ar}
-                      </TableCell>
-                      <TableCell>
-                        {getResultBadge(pred.result)}
-                      </TableCell>
-                      <TableCell className={cn('text-xs font-semibold', getPnlColor(pred.pnl_pct))}>
-                        {formatPnl(pred.pnl_pct)}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {pred.hold_days !== null ? `${pred.hold_days} يوم` : '—'}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatDate(pred.closed_at)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable<ClosedPrediction>
+              columns={closedPredictionColumns}
+              data={recentClosed}
+              keyField="id"
+              maxHeight="max-h-96"
+              dense
+              emptyTextAr="لا توجد توقعات مغلقة بعد"
+            />
           )}
         </CardContent>
       </Card>

@@ -16,14 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
@@ -60,7 +52,6 @@ import {
   ChevronDown,
   ChevronUp,
   HelpCircle,
-  ArrowUpDown,
   AlertTriangle,
   Trophy,
   BarChart3,
@@ -80,6 +71,7 @@ import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -966,6 +958,135 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
     loadStockDetail(ticker);
   };
 
+  // ── UnifiedTable columns for screener results ──
+  const screenerColumns: Column<ScreenerStock>[] = useMemo(
+    () => [
+      {
+        key: 'ticker',
+        header: 'السهم',
+        align: 'right',
+        sortable: true,
+        render: (s) => (
+          <div>
+            <div className="font-mono font-bold text-sm">{s.ticker}</div>
+            <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+              {s.name_ar || s.name}
+            </div>
+            <div className="text-xs text-muted-foreground">{s.sector}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'current_price',
+        header: 'السعر',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-sm">{formatNumber(s.current_price)}</span>
+        ),
+      },
+      {
+        key: 'change_percent',
+        header: 'التغير %',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
+            {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
+          </span>
+        ),
+      },
+      {
+        key: 'sparkline',
+        header: 'الرسم البياني',
+        align: 'center',
+        render: (s) => (
+          <MiniSparkline ticker={s.ticker} height={24} width={80} showArea={false} />
+        ),
+      },
+      {
+        key: 'volume',
+        header: 'الحجم',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {formatVolume(s.volume)}
+            {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
+          </span>
+        ),
+      },
+      {
+        key: 'turnover_egp',
+        header: 'السيولة (ج.م)',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {formatEGP(s.turnover_egp)}
+          </span>
+        ),
+      },
+      {
+        key: 'pe_ratio',
+        header: 'مكرر الربحية',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs">
+            {s.pe_ratio !== null ? formatNumber(s.pe_ratio, 1) : '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'roe',
+        header: 'ROE %',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs">
+            {s.roe !== null ? formatNumber(s.roe, 1) : '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'rsi',
+        header: 'RSI',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs">
+            {s.rsi !== null ? formatNumber(s.rsi, 0) : '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'stock_state',
+        header: 'حالة السهم',
+        align: 'right',
+        sortable: true,
+        render: (s) => <StateBadge state={s.stock_state} reason={s.stock_state_reason} />,
+      },
+      {
+        key: 'above_ma_50',
+        header: 'فوق MA50',
+        align: 'center',
+        sortable: true,
+        render: (s) =>
+          s.above_ma_50 ? (
+            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs px-2 py-0.5">
+              فوق
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs px-2 py-0.5">
+              تحت
+            </Badge>
+          ),
+      },
+    ],
+    []
+  );
+
   // CSV export
   const exportCSV = () => {
     const headers = ['Ticker', 'Name', 'Sector', 'Price', 'Change%', 'Volume', 'Turnover', 'PE', 'ROE', 'RSI', 'State', 'Momentum'];
@@ -1398,81 +1519,15 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             لا توجد نتائج مطابقة للفلاتر الحالية
           </div>
         ) : (
-          <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
-              <Table className="min-w-[1100px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <SortableTh label="السهم" field="ticker" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="السعر" field="current_price" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="التغير %" field="change_percent" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="الرسم البياني" field="ticker" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="الحجم" field="volume" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="السيولة (ج.م)" field="turnover_egp" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="مكرر الربحية" field="pe_ratio" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="ROE %" field="roe" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="RSI" field="rsi" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="حالة السهم" field="stock_state" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                    <SortableTh label="فوق MA50" field="above_ma_50" current={clientSortField} dir={clientSortDir} onToggle={toggleSort} />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStocks.map((s) => (
-                    <TableRow
-                      key={s.ticker}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => onRowClick(s.ticker)}
-                    >
-                      <TableCell>
-                        <div className="font-mono font-bold text-sm">{s.ticker}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-                          {s.name_ar || s.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{s.sector}</div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {formatNumber(s.current_price)}
-                      </TableCell>
-                      <TableCell className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
-                        {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
-                      </TableCell>
-                      <TableCell>
-                        <MiniSparkline ticker={s.ticker} height={24} width={80} showArea={false} />
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {formatVolume(s.volume)}
-                        {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {formatEGP(s.turnover_egp)}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {s.pe_ratio !== null ? formatNumber(s.pe_ratio, 1) : '—'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {s.roe !== null ? formatNumber(s.roe, 1) : '—'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {s.rsi !== null ? formatNumber(s.rsi, 0) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <StateBadge state={s.stock_state} reason={s.stock_state_reason} />
-                      </TableCell>
-                      <TableCell>
-                        {s.above_ma_50 ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs px-2 py-0.5">
-                            فوق
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs px-2 py-0.5">
-                            تحت
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+          <UnifiedTable<ScreenerStock>
+            columns={screenerColumns}
+            data={filteredStocks}
+            keyField="ticker"
+            onRowClick={(row) => onRowClick(row.ticker)}
+            dense
+            maxHeight="max-h-[600px]"
+            emptyTextAr="لا توجد نتائج مطابقة للفلاتر الحالية"
+          />
         )}
       </CollapsibleSection>
 
@@ -1543,6 +1598,86 @@ function TopPerformersTab() {
       return dir * String(av).localeCompare(String(bv));
     });
   }, [results, sortField, sortDir]);
+
+  // ── UnifiedTable columns for top performers ──
+  const topPerformerColumns: Column<TopPerformerStock>[] = useMemo(
+    () => [
+      {
+        key: 'ticker',
+        header: 'السهم',
+        align: 'right',
+        sortable: true,
+        render: (s) => (
+          <div>
+            <div className="font-mono font-bold text-sm">{s.ticker}</div>
+            <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+              {s.name_ar || s.name}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'sector',
+        header: 'القطاع',
+        align: 'right',
+        sortable: true,
+        render: (s) => (
+          <span className="text-xs text-muted-foreground">{s.sector || '—'}</span>
+        ),
+      },
+      {
+        key: 'start_price',
+        header: 'سعر البداية',
+        align: 'left',
+        sortable: true,
+        render: (s) => <span className="font-mono text-sm">{formatNumber(s.start_price)}</span>,
+      },
+      {
+        key: 'end_price',
+        header: 'سعر النهاية',
+        align: 'left',
+        sortable: true,
+        render: (s) => <span className="font-mono text-sm">{formatNumber(s.end_price)}</span>,
+      },
+      {
+        key: 'change_pct',
+        header: 'التغير %',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span
+            className={cn(
+              'font-mono font-bold',
+              s.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600',
+            )}
+          >
+            {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
+          </span>
+        ),
+      },
+      {
+        key: 'period_days',
+        header: 'عدد الأيام',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs text-muted-foreground">{s.period_days} يوم</span>
+        ),
+      },
+      {
+        key: 'end_volume',
+        header: 'الحجم (نهاية)',
+        align: 'left',
+        sortable: true,
+        render: (s) => (
+          <span className="font-mono text-xs text-muted-foreground">
+            {formatVolume(s.end_volume)}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
 
   const toggleSort = (field: 'ticker' | 'start_price' | 'end_price' | 'change_pct' | 'period_days') => {
     if (sortField === field) {
@@ -1746,49 +1881,15 @@ function TopPerformersTab() {
             لا توجد نتائج للفلاتر الحالية
           </div>
         ) : (
-          <div className="max-h-[600px] overflow-y-auto overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
-            <Table className="min-w-[760px] [&_td]:whitespace-nowrap [&_td]:text-[10px] sm:[&_td]:text-xs [&_td]:px-1 [&_td]:py-1 sm:[&_td]:px-3 sm:[&_td]:py-2">
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <SortableTh label="السهم" field="ticker" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                  <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">القطاع</TableHead>
-                  <SortableTh label="سعر البداية" field="start_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                  <SortableTh label="سعر النهاية" field="end_price" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                  <SortableTh label="التغير %" field="change_pct" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                  <SortableTh label="عدد الأيام" field="period_days" current={sortField} dir={sortDir} onToggle={toggleSort as (f: string) => void} />
-                  <TableHead className="text-right whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2">الحجم (نهاية)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedResults.map((s) => (
-                  <TableRow
-                    key={`${s.ticker}-${s.start_date}`}
-                    className="hover:bg-muted/50 cursor-pointer"
-                    onClick={() => loadStockDetail(s.ticker)}
-                  >
-                    <TableCell>
-                      <div className="font-mono font-bold text-sm">{s.ticker}</div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {s.name_ar || s.name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{s.sector || '—'}</TableCell>
-                    <TableCell className="font-mono text-sm">{formatNumber(s.start_price)}</TableCell>
-                    <TableCell className="font-mono text-sm">{formatNumber(s.end_price)}</TableCell>
-                    <TableCell className={cn('font-mono font-bold', s.change_pct >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                      {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {s.period_days} يوم
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {formatVolume(s.end_volume)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <UnifiedTable<TopPerformerStock>
+            columns={topPerformerColumns}
+            data={sortedResults}
+            keyField="ticker"
+            onRowClick={(row) => loadStockDetail(row.ticker)}
+            dense
+            maxHeight="max-h-[600px]"
+            emptyTextAr="لا توجد نتائج للفلاتر الحالية"
+          />
         )}
       </CollapsibleSection>
 
@@ -1868,35 +1969,6 @@ function KPIBox({ label, value, color }: { label: string; value: React.ReactNode
       <div className="text-[11px] text-muted-foreground truncate">{label}</div>
       <div className={cn('text-base font-bold font-mono', color)}>{value}</div>
     </div>
-  );
-}
-
-function SortableTh({
-  label,
-  field,
-  current,
-  dir,
-  onToggle,
-}: {
-  label: string;
-  field: string;
-  current: string | null;
-  dir: 'asc' | 'desc';
-  onToggle: (field: string) => void;
-}) {
-  const isActive = current === field;
-  return (
-    <TableHead className="text-right cursor-pointer select-none hover:bg-muted/40 whitespace-nowrap text-[10px] sm:text-xs px-1 sm:px-3 py-1 sm:py-2" onClick={() => onToggle(field)}>
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <ArrowUpDown
-          className={cn('w-3 h-3 transition-opacity', isActive ? 'opacity-100' : 'opacity-30')}
-        />
-        {isActive && (
-          <span className="text-[10px] text-muted-foreground">{dir === 'desc' ? '↓' : '↑'}</span>
-        )}
-      </span>
-    </TableHead>
   );
 }
 

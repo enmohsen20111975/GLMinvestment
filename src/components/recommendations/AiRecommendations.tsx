@@ -42,16 +42,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UnifiedTable } from '@/components/shared/UnifiedTable';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HelpTooltip, HELP_DEFINITIONS } from '@/components/ui/help-tooltip';
 import { RefreshAnalyticsButton } from './RefreshAnalyticsButton';
@@ -1541,67 +1533,126 @@ function OldStockTable() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto max-h-[62vh] overflow-y-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow className="sticky top-0 bg-background z-10">
-                <TableHead className="w-12 text-center">#</TableHead>
-                <TableHead className="w-20">الرمز</TableHead>
-                <TableHead className="hidden md:table-cell">الاسم</TableHead>
-                <TableHead className="hidden lg:table-cell">القطاع</TableHead>
-                <TableHead className="text-center">السعر</TableHead>
-                <TableHead className="text-center">التغير</TableHead>
-                <TableHead className="text-center">القيمة العادلة</TableHead>
-                <TableHead className="text-center hidden md:table-cell">التقييم</TableHead>
-                <TableHead className="text-center w-20">النتيجة</TableHead>
-                <TableHead className="text-center w-20">التحليل</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedStocks.map((stock, idx) => {
-                const rec = getOldRecommendation(stock.score);
-                const globalRank = idx + 1;
-                const changeColor = stock.price_change >= 0 ? 'text-emerald-600' : 'text-red-600';
-                return (
-                  <TableRow key={stock.ticker} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => loadStockDetail(stock.ticker)}>
-                    <TableCell className="text-center text-xs text-muted-foreground font-mono">{globalRank}</TableCell>
-                    <TableCell><span className="font-bold text-xs">{stock.ticker}</span></TableCell>
-                    <TableCell className="hidden md:table-cell"><span className="text-xs text-muted-foreground truncate max-w-[120px] block">{stock.name_ar}</span></TableCell>
-                    <TableCell className="hidden lg:table-cell"><Badge variant="outline" className="text-xs font-normal">{stock.sector}</Badge></TableCell>
-                    <TableCell className="text-center font-mono text-xs">{safeNum(stock.current_price).toFixed(2)}</TableCell>
-                    <TableCell className={cn('text-center font-mono text-xs font-medium', changeColor)}>
-                      {stock.price_change >= 0 ? '+' : ''}{safeNum(stock.price_change).toFixed(2)}%
-                    </TableCell>
-                    <TableCell className="text-center font-mono text-xs">{safeNum(stock.fair_value).toFixed(2)}</TableCell>
-                    <TableCell className="text-center hidden md:table-cell">
-                      <Badge variant="outline" className={cn(
-                        'text-xs font-bold border-0',
-                        stock.verdict === 'undervalued' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400',
-                        stock.verdict === 'fair' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
-                        stock.verdict === 'overvalued' && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
-                      )}>{stock.verdict_ar}</Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center gap-1.5 justify-center">
-                        <Progress value={stock.score} className={cn('h-1.5 w-16', getScoreBarColor(stock.score))} />
-                        <span className={cn('text-xs font-bold min-w-[24px]', rec.color)}>{safeNum(stock.score).toFixed(0)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-bold', rec.bg, rec.color, rec.border)}>
-                        {rec.icon}<span>{rec.label}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<StockStatusItem>
+          columns={oldStockColumns}
+          data={sortedStocks}
+          keyField="ticker"
+          onRowClick={(row) => loadStockDetail(row.ticker)}
+          maxHeight="max-h-[62vh]"
+          dense
+          emptyTextAr="لا توجد أسهم مطابقة"
+        />
       </CardContent>
     </Card>
   );
 }
+
+// ── UnifiedTable columns for OldStockTable ──
+const oldStockColumns: Column<StockStatusItem>[] = [
+  {
+    key: 'ticker',
+    header: 'الرمز',
+    align: 'right',
+    width: 'w-20',
+    sortable: true,
+    render: (row) => <span className="font-bold text-xs">{row.ticker}</span>,
+  },
+  {
+    key: 'name_ar',
+    header: 'الاسم',
+    align: 'right',
+    sortable: true,
+    className: 'hidden md:table-cell',
+    render: (row) => (
+      <span className="text-xs text-muted-foreground truncate max-w-[120px] block">{row.name_ar}</span>
+    ),
+  },
+  {
+    key: 'sector',
+    header: 'القطاع',
+    align: 'right',
+    sortable: true,
+    className: 'hidden lg:table-cell',
+    render: (row) => <Badge variant="outline" className="text-xs font-normal">{row.sector}</Badge>,
+  },
+  {
+    key: 'current_price',
+    header: 'السعر',
+    align: 'center',
+    sortable: true,
+    render: (row) => (
+      <span className="text-center font-mono text-xs">{safeNum(row.current_price).toFixed(2)}</span>
+    ),
+  },
+  {
+    key: 'price_change',
+    header: 'التغير',
+    align: 'center',
+    sortable: true,
+    render: (row) => {
+      const changeColor = row.price_change >= 0 ? 'text-emerald-600' : 'text-red-600';
+      return (
+        <span className={cn('text-center font-mono text-xs font-medium', changeColor)}>
+          {row.price_change >= 0 ? '+' : ''}{safeNum(row.price_change).toFixed(2)}%
+        </span>
+      );
+    },
+  },
+  {
+    key: 'fair_value',
+    header: 'القيمة العادلة',
+    align: 'center',
+    sortable: true,
+    render: (row) => (
+      <span className="text-center font-mono text-xs">{safeNum(row.fair_value).toFixed(2)}</span>
+    ),
+  },
+  {
+    key: 'verdict',
+    header: 'التقييم',
+    align: 'center',
+    sortable: true,
+    className: 'hidden md:table-cell',
+    render: (row) => (
+      <Badge variant="outline" className={cn(
+        'text-xs font-bold border-0',
+        row.verdict === 'undervalued' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400',
+        row.verdict === 'fair' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400',
+        row.verdict === 'overvalued' && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+      )}>{row.verdict_ar}</Badge>
+    ),
+  },
+  {
+    key: 'score',
+    header: 'النتيجة',
+    align: 'center',
+    sortable: true,
+    width: 'w-20',
+    render: (row) => {
+      const rec = getOldRecommendation(row.score);
+      return (
+        <div className="flex items-center gap-1.5 justify-center">
+          <Progress value={row.score} className={cn('h-1.5 w-16', getScoreBarColor(row.score))} />
+          <span className={cn('text-xs font-bold min-w-[24px]', rec.color)}>{safeNum(row.score).toFixed(0)}</span>
+        </div>
+      );
+    },
+  },
+  {
+    key: 'analysis',
+    header: 'التحليل',
+    align: 'center',
+    width: 'w-20',
+    render: (row) => {
+      const rec = getOldRecommendation(row.score);
+      return (
+        <div className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-bold', rec.bg, rec.color, rec.border)}>
+          {rec.icon}<span>{rec.label}</span>
+        </div>
+      );
+    },
+  },
+];
 
 function OldBestOpportunities() {
   const { aiInsights, loadStockDetail } = useAppStore();

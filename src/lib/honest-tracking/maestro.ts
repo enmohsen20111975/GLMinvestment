@@ -151,9 +151,97 @@ export const DEFAULT_PARAMS: MaestroParams = {
   minProfitPct: 0.03,
 };
 
+/** Stocks.db row shape used by the Maestro engine for fundamental scoring. */
+export interface StockRow {
+  ticker?: string;
+  sector?: string | null;
+  pe_ratio?: number | string | null;
+  roe?: number | string | null;
+  profit_margin?: number | string | null;
+  dividend_yield?: number | string | null;
+  [key: string]: unknown;
+}
+
+/** Generic SQL row — better-sqlite3 returns unknown objects. */
+type SqlRow = Record<string, unknown>;
+
+/** Aggregated count row returned by `SELECT COUNT(*) as c ...` queries. */
+interface CountRow extends SqlRow {
+  c?: number | string | null;
+}
+
+/** Aggregated stats row returned by the overall predictions query. */
+interface OverallStatsRow extends SqlRow {
+  total?: number | string | null;
+  closed?: number | string | null;
+  active?: number | string | null;
+  target_hits?: number | string | null;
+  stopped?: number | string | null;
+  profit_taken?: number | string | null;
+  expired?: number | string | null;
+  wins?: number | string | null;
+  buys?: number | string | null;
+  sells?: number | string | null;
+  avg_return?: number | string | null;
+  avg_profit?: number | string | null;
+  avg_loss?: number | string | null;
+  net_pl?: number | string | null;
+  avg_rr?: number | string | null;
+  avg_holding_days?: number | string | null;
+  avg_confidence?: number | string | null;
+}
+
+/** Per-market aggregation row used internally by computeComprehensiveStats. */
+interface MarketAgg {
+  total: number;
+  wins: number;
+  losses: number;
+  closed: number;
+  active: number;
+  pending: number;
+  net_pl: number;
+  sr_adoption: number;
+  candle_adoption: number;
+}
+
+export interface ByMarketRow {
+  market: string;
+  total: number;
+  wins: number;
+  losses: number;
+  closed: number;
+  active: number;
+  pending: number;
+  win_rate: number;
+  net_pl: number;
+  avg_return: number | null;
+  sr_adoption: number;
+  candle_adoption: number;
+}
+
+export interface CandlestickPatternStat {
+  name: string;
+  count: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+}
+
+/** Lesson row — produced by extractLessons and stored in prediction_lessons. */
+export interface PredictionLesson {
+  type: string;
+  category: string;
+  rule: string;
+  evidence: string;
+  failure_rate: number;
+  sample_size: number;
+  recommendation: string;
+  created_at?: string;
+}
+
 export function computeDynamicParams(
   baseParams: MaestroParams,
-  stock: any,
+  stock: StockRow | null | undefined,
   ind: Indicators | null,
 ): MaestroParams {
   const p: MaestroParams = { ...baseParams };
@@ -227,7 +315,7 @@ export function computeDynamicParams(
  */
 export function computeDynamicParamsV2(
   baseParams: MaestroParams,
-  stock: any,
+  stock: StockRow | null | undefined,
   ind: Indicators | null,
 ): MaestroParams {
   // Step 1: Get the existing dynamic params as the base
@@ -626,7 +714,7 @@ export interface SignalDecision {
 }
 
 /** Fundamental score from stocks.db row (P/E, ROE, etc.). */
-function fundamentalScoreFromStock(s: any): number {
+function fundamentalScoreFromStock(s: StockRow | null | undefined): number {
   if (!s) return 50;
   let score = 50;
   // P/E: 5..20 is healthy
@@ -658,7 +746,7 @@ function fundamentalScoreFromStock(s: any): number {
 
 export function deriveSignal(
   ind: Indicators,
-  stock: any,
+  stock: StockRow | null | undefined,
   params: MaestroParams,
 ): SignalDecision {
   // ════════════════════════════════════════════════════════════════════════
@@ -690,7 +778,7 @@ export function deriveSignal(
 function buildNotes(
   ind: Indicators,
   dec: SignalDecision,
-  stock: any,
+  stock: StockRow | null | undefined,
   dynNotes?: { regime?: string; squeeze?: string; targetSrc?: string; stopSrc?: string },
 ): string {
   const parts: string[] = [];
@@ -726,7 +814,7 @@ function buildNotes(
 function buildAnalysisJson(
   ind: Indicators,
   dec: SignalDecision,
-  stock: any,
+  stock: StockRow | null | undefined,
   entry: number, target: number, stop: number,
 ): string {
   return JSON.stringify({
@@ -1311,14 +1399,14 @@ export function verifyPendingPredictions(limit: number): VerifyResult {
 // LEARNING ENGINE (inlined from learn-from-errors/route.ts)
 // ============================================================================
 
-export function extractLessons(db: Database.Database): any[] {
-  const lessons: any[] = [];
+export function extractLessons(db: Database.Database): PredictionLesson[] {
+  const lessons: PredictionLesson[] = [];
   try {
     const overall = db.prepare(`
       SELECT COUNT(*) as total,
         SUM(CASE WHEN outcome_date IS NOT NULL THEN 1 ELSE 0 END) as closed
       FROM predictions
-    `).get() as any;
+    `).get() as OverallStatsRow;
     const closed = Number(overall?.closed || 0);
     if (closed === 0) return lessons;
 
@@ -1328,14 +1416,15 @@ export function extractLessons(db: Database.Database): any[] {
       WHERE outcome_date IS NOT NULL AND is_correct = 0
       AND notes LIKE '%RSI=%'
       AND CAST(SUBSTR(notes, INSTR(notes, 'RSI=') + 4, 5) AS REAL) > 70
-    `).get() as any;
-    if (highRsiFailed?.c > 3) {
+    `).get() as CountRow;
+    if (Number(highRsiFailed?.c || 0) > 3) {
+      const sample = Number(highRsiFailed.c);
       lessons.push({
         type: 'technical', category: 'مؤشرات فنية',
         rule: 'لا تشتري عند RSI مرتفع (>70)',
-        evidence: `${highRsiFailed.c} صفقة خاسرة من ${closed} عند RSI > 70`,
-        failure_rate: Math.round((Number(highRsiFailed.c) / closed) * 100),
-        sample_size: Number(highRsiFailed.c),
+        evidence: `${sample} صفقة خاسرة من ${closed} عند RSI > 70`,
+        failure_rate: Math.round((sample / closed) * 100),
+        sample_size: sample,
         recommendation: 'تفعيل فلتر RSI — تجنب الشراء إذا RSI > 70 إلا في حالة Momentum Accumulation',
         created_at: new Date().toISOString(),
       });
@@ -1347,14 +1436,15 @@ export function extractLessons(db: Database.Database): any[] {
       WHERE outcome_date IS NOT NULL AND is_correct = 0
       AND notes LIKE '%RSI=%'
       AND CAST(SUBSTR(notes, INSTR(notes, 'RSI=') + 4, 5) AS REAL) < 30
-    `).get() as any;
-    if (lowRsiFailed?.c > 3) {
+    `).get() as CountRow;
+    if (Number(lowRsiFailed?.c || 0) > 3) {
+      const sample = Number(lowRsiFailed.c);
       lessons.push({
         type: 'technical', category: 'مؤشرات فنية',
         rule: 'لا تبيع عند RSI منخفض (<30) — قد يكون ارتداد',
-        evidence: `${lowRsiFailed.c} صفقة خاسرة من ${closed} عند RSI < 30`,
-        failure_rate: Math.round((Number(lowRsiFailed.c) / closed) * 100),
-        sample_size: Number(lowRsiFailed.c),
+        evidence: `${sample} صفقة خاسرة من ${closed} عند RSI < 30`,
+        failure_rate: Math.round((sample / closed) * 100),
+        sample_size: sample,
         recommendation: 'تفعيل فلتر — عندما RSI < 30، انتظر تأكيد انعكاس قبل الدخول',
         created_at: new Date().toISOString(),
       });
@@ -1364,15 +1454,16 @@ export function extractLessons(db: Database.Database): any[] {
     const stopHit = db.prepare(`
       SELECT COUNT(*) as c, AVG(actual_return) as avg_ret FROM predictions
       WHERE outcome_date IS NOT NULL AND hit_stop = 1
-    `).get() as any;
-    if (stopHit?.c > 5) {
-      const failureRate = Math.round((Number(stopHit.c) / closed) * 100);
+    `).get() as CountRow & { avg_ret?: number | null };
+    if (Number(stopHit?.c || 0) > 5) {
+      const sample = Number(stopHit.c);
+      const failureRate = Math.round((sample / closed) * 100);
       lessons.push({
         type: 'risk', category: 'إدارة مخاطر',
-        rule: `${stopHit.c} صفقة ضربت وقف الخسارة — قد يكون الوقف ضيق جداً`,
-        evidence: `${stopHit.c} صفقة ضربت الوقف من ${closed} (${failureRate}%)`,
+        rule: `${sample} صفقة ضربت وقف الخسارة — قد يكون الوقف ضيق جداً`,
+        evidence: `${sample} صفقة ضربت الوقف من ${closed} (${failureRate}%)`,
         failure_rate: failureRate,
-        sample_size: Number(stopHit.c),
+        sample_size: sample,
         recommendation: 'توسيع الوقف باستخدام ATR × 2.5 بدل 2.0، أو استخدام Trailing Stop',
         created_at: new Date().toISOString(),
       });
@@ -1384,14 +1475,15 @@ export function extractLessons(db: Database.Database): any[] {
       WHERE outcome_date IS NOT NULL AND is_correct = 0
       AND target_price IS NOT NULL AND stop_loss IS NOT NULL AND entry_price > 0
       AND (target_price - entry_price) / (entry_price - stop_loss) < 1.5
-    `).get() as any;
-    if (lowRR?.c > 3) {
+    `).get() as CountRow;
+    if (Number(lowRR?.c || 0) > 3) {
+      const sample = Number(lowRR.c);
       lessons.push({
         type: 'risk', category: 'إدارة مخاطر',
         rule: 'صفقات بنسبة R:R أقل من 1.5 فشلت بنسبة عالية',
-        evidence: `${lowRR.c} صفقة خاسرة من ${closed} بـ R:R < 1.5`,
-        failure_rate: Math.round((Number(lowRR.c) / closed) * 100),
-        sample_size: Number(lowRR.c),
+        evidence: `${sample} صفقة خاسرة من ${closed} بـ R:R < 1.5`,
+        failure_rate: Math.round((sample / closed) * 100),
+        sample_size: sample,
         recommendation: 'رفع الحد الأدنى لـ R:R إلى 1.5 على الأقل، ويفضل 2.0',
         created_at: new Date().toISOString(),
       });
@@ -1401,20 +1493,22 @@ export function extractLessons(db: Database.Database): any[] {
     const sellWins = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE signal_type = 'SELL' AND outcome_date IS NOT NULL AND is_correct = 1
-    `).get() as any;
+    `).get() as CountRow;
     const sellTotal = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE signal_type = 'SELL' AND outcome_date IS NOT NULL
-    `).get() as any;
-    if (sellTotal?.c > 5) {
-      const sellWinRate = Math.round((Number(sellWins?.c || 0) / Number(sellTotal.c)) * 100);
+    `).get() as CountRow;
+    if (Number(sellTotal?.c || 0) > 5) {
+      const total = Number(sellTotal.c);
+      const wins = Number(sellWins?.c || 0);
+      const sellWinRate = Math.round((wins / total) * 100);
       if (sellWinRate < 40) {
         lessons.push({
           type: 'strategy', category: 'استراتيجية',
           rule: `إشارات البيع أداؤها ضعيف — نسبة نجاح ${sellWinRate}%`,
-          evidence: `${sellWins?.c || 0} فوز من ${sellTotal.c} صفقة بيع`,
+          evidence: `${wins} فوز من ${total} صفقة بيع`,
           failure_rate: 100 - sellWinRate,
-          sample_size: Number(sellTotal.c),
+          sample_size: total,
           recommendation: 'تجنب صفقات البيع المكشوف في الأسواق الصاعدة — ركز على الشراء فقط',
           created_at: new Date().toISOString(),
         });
@@ -1431,7 +1525,7 @@ export function extractLessons(db: Database.Database): any[] {
         SUM(CASE WHEN notes LIKE '%persona=balanced%' THEN 1 ELSE 0 END) as balanced_total,
         SUM(CASE WHEN notes LIKE '%persona=balanced%' AND is_correct = 1 THEN 1 ELSE 0 END) as balanced_wins
       FROM predictions WHERE outcome_date IS NOT NULL
-    `).get() as any;
+    `).get() as SqlRow;
     if (personaRows) {
       const gTotal = Number(personaRows.gambler_total || 0);
       const gWins = Number(personaRows.gambler_wins || 0);
@@ -1479,20 +1573,20 @@ export function extractLessons(db: Database.Database): any[] {
  * prediction_lessons table without trying to re-extract or write anything.
  * Used by computeComprehensiveStats (which opens the DB readonly).
  */
-function readLessons(db: Database.Database): any[] {
+function readLessons(db: Database.Database): PredictionLesson[] {
   try {
     return db.prepare(`
       SELECT type, category, rule, evidence, failure_rate, sample_size, recommendation, created_at
       FROM prediction_lessons
       ORDER BY failure_rate DESC, sample_size DESC
       LIMIT 20
-    `).all() as any[];
+    `).all() as PredictionLesson[];
   } catch {
     return [];
   }
 }
 
-export function runLearningEngine(): any[] {
+export function runLearningEngine(): PredictionLesson[] {
   const db = openPredictionsDb(true);
   ensureSchema(db);
   try {
@@ -1530,11 +1624,11 @@ export interface ComprehensiveStats {
   candlestick_adoption_rate: number;
   date_range: { earliest: string | null; latest: string | null };
   markets_covered: string[];
-  by_market: any[];
+  by_market: ByMarketRow[];
   monthly_breakdown: Array<{ month: string; net_pl: number; closed: number; wins: number; win_rate: number }>;
   cumulative_returns: Array<{ date: string; cumulative_return: number; closed: number }>;
-  candlestick_patterns: any[];
-  lessons: any[];
+  candlestick_patterns: CandlestickPatternStat[];
+  lessons: PredictionLesson[];
 }
 
 export function computeComprehensiveStats(): ComprehensiveStats {
@@ -1560,13 +1654,13 @@ export function computeComprehensiveStats(): ComprehensiveStats {
         AVG(CASE WHEN outcome_date IS NOT NULL THEN holding_days END) as avg_holding_days,
         AVG(CASE WHEN outcome_date IS NOT NULL AND master_score IS NOT NULL THEN master_score END) as avg_confidence
       FROM predictions
-    `).get() as any;
+    `).get() as OverallStatsRow;
 
     const allRows = db.prepare(`
       SELECT ticker, market, signal_type, outcome_date, hit_target, hit_stop,
              actual_return, is_correct, notes, prediction_date
       FROM predictions
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
 
     // By market
     const inferMarket = (ticker: string, marketCol: string | null): string => {
@@ -1575,10 +1669,10 @@ export function computeComprehensiveStats(): ComprehensiveStats {
       if (/^\d+$/.test(ticker)) return 'TADAWUL';
       return 'EGX';
     };
-    const byMarketMap: Record<string, any> = {};
+    const byMarketMap: Record<string, MarketAgg> = {};
     const returnsByMarket: Record<string, number[]> = {};
     for (const r of allRows) {
-      const m = inferMarket(r.ticker, r.market);
+      const m = inferMarket(String(r.ticker || ''), (r.market as string | null) ?? null);
       if (!byMarketMap[m]) byMarketMap[m] = { total: 0, wins: 0, losses: 0, closed: 0, active: 0, pending: 0, net_pl: 0, sr_adoption: 0, candle_adoption: 0 };
       if (!returnsByMarket[m]) returnsByMarket[m] = [];
       byMarketMap[m].total++;
@@ -1594,10 +1688,11 @@ export function computeComprehensiveStats(): ComprehensiveStats {
         byMarketMap[m].active++;
         byMarketMap[m].pending++;
       }
-      if (r.notes && (r.notes.includes('support=') || r.notes.includes('resistance='))) byMarketMap[m].sr_adoption++;
-      if (r.notes && r.notes.includes('candle=')) byMarketMap[m].candle_adoption++;
+      const notes = (r.notes as string | null) ?? null;
+      if (notes && (notes.includes('support=') || notes.includes('resistance='))) byMarketMap[m].sr_adoption++;
+      if (notes && notes.includes('candle=')) byMarketMap[m].candle_adoption++;
     }
-    const byMarket = Object.keys(byMarketMap).sort().map((market) => {
+    const byMarket: ByMarketRow[] = Object.keys(byMarketMap).sort().map((market) => {
       const v = byMarketMap[market];
       const returns = returnsByMarket[market];
       const avgReturn = returns && returns.length > 0
@@ -1623,28 +1718,28 @@ export function computeComprehensiveStats(): ComprehensiveStats {
     const dateRange = db.prepare(`
       SELECT MIN(prediction_date) as earliest, MAX(prediction_date) as latest
       FROM predictions
-    `).get() as any;
+    `).get() as SqlRow;
 
     // S/R adoption
     const srCount = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE notes LIKE '%support=%' OR notes LIKE '%resistance=%'
-    `).get() as any;
-    const srRate = overall.total > 0 ? Math.round((Number(srCount.c) / overall.total) * 1000) / 10 : 0;
+    `).get() as CountRow;
+    const srRate = Number(overall.total || 0) > 0 ? Math.round((Number(srCount.c || 0) / Number(overall.total)) * 1000) / 10 : 0;
 
     const candleCount = db.prepare(`
       SELECT COUNT(*) as c FROM predictions WHERE notes LIKE '%candle=%'
-    `).get() as any;
-    const candleRate = overall.total > 0 ? Math.round((Number(candleCount.c) / overall.total) * 1000) / 10 : 0;
+    `).get() as CountRow;
+    const candleRate = Number(overall.total || 0) > 0 ? Math.round((Number(candleCount.c || 0) / Number(overall.total)) * 1000) / 10 : 0;
 
     // Candlestick patterns performance
     const candlePatterns = db.prepare(`
       SELECT notes, hit_target, hit_stop, is_correct, outcome_date
       FROM predictions WHERE notes LIKE '%candle=%'
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
     const patternMap: Record<string, { count: number; wins: number; losses: number }> = {};
     for (const r of candlePatterns) {
-      const match = (r.notes || '').match(/candle=([A-Z_]+)/);
+      const match = (String(r.notes || '')).match(/candle=([A-Z_]+)/);
       if (!match) continue;
       const pat = match[1];
       if (!patternMap[pat]) patternMap[pat] = { count: 0, wins: 0, losses: 0 };
@@ -1654,7 +1749,7 @@ export function computeComprehensiveStats(): ComprehensiveStats {
         else patternMap[pat].losses++;
       }
     }
-    const patternStats = Object.entries(patternMap).map(([name, v]) => ({
+    const patternStats: CandlestickPatternStat[] = Object.entries(patternMap).map(([name, v]) => ({
       name, count: v.count, wins: v.wins, losses: v.losses,
       win_rate: v.count > 0 ? Math.round((v.wins / (v.wins + v.losses)) * 1000) / 10 : 0,
     })).sort((a, b) => b.count - a.count);
@@ -1670,13 +1765,13 @@ export function computeComprehensiveStats(): ComprehensiveStats {
       FROM predictions
       GROUP BY SUBSTR(prediction_date, 1, 7)
       ORDER BY month ASC
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
     const monthly_breakdown = monthlyRows.map(r => ({
-      month: r.month,
+      month: String(r.month || ''),
       net_pl: Math.round(Number(r.net_pl || 0) * 100) / 100,
       closed: Number(r.closed || 0),
       wins: Number(r.wins || 0),
-      win_rate: r.closed > 0 ? Math.round((Number(r.wins) / Number(r.closed)) * 1000) / 10 : 0,
+      win_rate: Number(r.closed || 0) > 0 ? Math.round((Number(r.wins) / Number(r.closed)) * 1000) / 10 : 0,
     }));
 
     // Cumulative returns time-series (closed predictions sorted by outcome_date)
@@ -1685,7 +1780,7 @@ export function computeComprehensiveStats(): ComprehensiveStats {
       FROM predictions
       WHERE outcome_date IS NOT NULL AND actual_return IS NOT NULL
       ORDER BY outcome_date ASC
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
     let cum = 0;
     const cumulative_returns: Array<{ date: string; cumulative_return: number; closed: number }> = [];
     let i = 0;
@@ -1729,18 +1824,18 @@ export function computeComprehensiveStats(): ComprehensiveStats {
       buy_signals: Number(overall?.buys || 0),
       sell_signals: Number(overall?.sells || 0),
       real_win_rate: closed > 0 ? Math.round((wins / closed) * 1000) / 10 : 0,
-      avg_return: overall.avg_return !== null ? Math.round(Number(overall.avg_return) * 100) / 100 : null,
-      avg_profit: overall.avg_profit !== null ? Math.round(Number(overall.avg_profit) * 100) / 100 : null,
-      avg_loss: overall.avg_loss !== null ? Math.round(Number(overall.avg_loss) * 100) / 100 : null,
+      avg_return: overall.avg_return != null ? Math.round(Number(overall.avg_return) * 100) / 100 : null,
+      avg_profit: overall.avg_profit != null ? Math.round(Number(overall.avg_profit) * 100) / 100 : null,
+      avg_loss: overall.avg_loss != null ? Math.round(Number(overall.avg_loss) * 100) / 100 : null,
       net_pl: Math.round(Number(overall.net_pl || 0) * 100) / 100,
-      avg_risk_reward: overall.avg_rr !== null ? Math.round(Number(overall.avg_rr) * 100) / 100 : null,
-      avg_holding_days: overall.avg_holding_days !== null ? Math.round(Number(overall.avg_holding_days) * 10) / 10 : null,
-      avg_confidence: overall.avg_confidence !== null ? Math.round(Number(overall.avg_confidence)) : null,
+      avg_risk_reward: overall.avg_rr != null ? Math.round(Number(overall.avg_rr) * 100) / 100 : null,
+      avg_holding_days: overall.avg_holding_days != null ? Math.round(Number(overall.avg_holding_days) * 10) / 10 : null,
+      avg_confidence: overall.avg_confidence != null ? Math.round(Number(overall.avg_confidence)) : null,
       sr_adoption_rate: srRate,
       candlestick_adoption_rate: candleRate,
       date_range: {
-        earliest: dateRange.earliest || null,
-        latest: dateRange.latest || null,
+        earliest: (dateRange.earliest as string | null) || null,
+        latest: (dateRange.latest as string | null) || null,
       },
       markets_covered: byMarket.map(m => m.market),
       by_market: byMarket,

@@ -17,6 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type Database from 'better-sqlite3';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,14 +33,17 @@ function dbExists(path: string): boolean {
   }
 }
 
-function openDb(path: string, readonly = true): any {
+function openDb(path: string, readonly = true): Database.Database {
   const Database = require('better-sqlite3');
-  return new Database(path, { readonly });
+  return new Database(path, { readonly }) as Database.Database;
 }
 
 const WIN_STATUSES = new Set(['TARGET_HIT', 'closed_win']);
 const LOSS_STATUSES = new Set(['closed_stop', 'STOPPED']);
 const EXPIRED_STATUSES = new Set(['EXPIRED', 'expired', 'CLOSED']);
+
+/** Generic SQL row returned by better-sqlite3. */
+type SqlRow = Record<string, unknown>;
 
 interface TrackStats {
   track: string;
@@ -53,9 +57,9 @@ interface TrackStats {
   weight: number;
 }
 
-function ensureTrackColumn(db: any): void {
+function ensureTrackColumn(db: Database.Database): void {
   try {
-    const cols = (db.prepare('PRAGMA table_info(predictions)').all() as any[]).map(c => c.name);
+    const cols = (db.prepare('PRAGMA table_info(predictions)').all() as Array<SqlRow>).map(c => String(c.name));
     if (!cols.includes('track')) {
       db.prepare("ALTER TABLE predictions ADD COLUMN track TEXT DEFAULT 'full_analysis'").run();
     }
@@ -64,7 +68,7 @@ function ensureTrackColumn(db: any): void {
   }
 }
 
-function calculateTrackStats(db: any, track: string, weight: number): TrackStats {
+function calculateTrackStats(db: Database.Database, track: string, weight: number): TrackStats {
   // CUMULATIVE-RETURN-FIX: استخدم actual_return للحساب، مش status بس
   // لأن كتير من التوقعات status='active' بس actual_return موجود (تم الإغلاق فعلاً)
   let query = `
@@ -79,7 +83,7 @@ function calculateTrackStats(db: any, track: string, weight: number): TrackStats
     FROM predictions
     WHERE market IS NOT NULL
   `;
-  const params: any[] = [];
+  const params: Array<string> = [];
   if (track === 'full_analysis') {
     query += ` AND (track IS NULL OR track = '' OR track = 'full_analysis')`;
   } else {
@@ -87,7 +91,7 @@ function calculateTrackStats(db: any, track: string, weight: number): TrackStats
     params.push(track);
   }
 
-  const row = db.prepare(query).get(...params) as any;
+  const row = db.prepare(query).get(...params) as SqlRow;
 
   const total = Number(row?.total || 0);
   const wins = Number(row?.wins || 0);
@@ -110,7 +114,7 @@ function calculateTrackStats(db: any, track: string, weight: number): TrackStats
   };
 }
 
-function getMarketStats(db: any): any[] {
+function getMarketStats(db: Database.Database): Array<SqlRow> {
   try {
     return db.prepare(`
       SELECT market,
@@ -122,13 +126,13 @@ function getMarketStats(db: any): any[] {
       FROM predictions
       WHERE market IS NOT NULL
       GROUP BY market
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
   } catch {
     return [];
   }
 }
 
-function getTopTickers(db: any, limit = 10): any[] {
+function getTopTickers(db: Database.Database, limit = 10): Array<SqlRow> {
   try {
     return db.prepare(`
       SELECT ticker, market,
@@ -142,13 +146,13 @@ function getTopTickers(db: any, limit = 10): any[] {
       HAVING total >= 5
       ORDER BY wins DESC, avg_return DESC
       LIMIT ?
-    `).all(limit) as any[];
+    `).all(limit) as Array<SqlRow>;
   } catch {
     return [];
   }
 }
 
-function getThresholds(db: any): any[] {
+function getThresholds(db: Database.Database): Array<SqlRow> {
   try {
     return db.prepare(`
       SELECT market, threshold_date, threshold_value, sample_size, fallback_used
@@ -156,20 +160,20 @@ function getThresholds(db: any): any[] {
       WHERE (market, threshold_date) IN (
         SELECT market, MAX(threshold_date) FROM liquidity_dynamic_threshold GROUP BY market
       )
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
   } catch {
     return [];
   }
 }
 
-function getBacktestResults(db: any): any[] {
+function getBacktestResults(db: Database.Database): Array<SqlRow> {
   try {
     return db.prepare(`
       SELECT market, ticker, total_signals, successful_signals, hit_rate,
              avg_return, qualified, dynamic_threshold, backtest_start, backtest_end
       FROM liquidity_backtest_results
       ORDER BY market
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
   } catch {
     return [];
   }

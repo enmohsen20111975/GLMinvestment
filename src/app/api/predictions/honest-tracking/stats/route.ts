@@ -25,11 +25,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import path from 'path';
 import { ensureSchema } from '@/lib/honest-tracking/maestro';
+import type { PredictionLesson } from '@/lib/honest-tracking/maestro';
 
 export const dynamic = 'force-dynamic';
 
 // Gold-standard constants (mirror /api/admin/platform-performance)
 const HARD_CAP = 50.0; // Constitution Rule 7: ABS(actual_return) <= 50
+
+/** Generic SQL row returned by better-sqlite3.get()/.all(). */
+type SqlRow = Record<string, unknown>;
+
+/** Result row shape for `SELECT COUNT(*) as c ...` queries. */
+interface CountRow extends SqlRow {
+  c?: number | string | null;
+}
+
+/** Aggregated stats row returned by the overall predictions query. */
+interface OverallStatsRow extends SqlRow {
+  total?: number | string | null;
+  closed?: number | string | null;
+  active?: number | string | null;
+  target_hits?: number | string | null;
+  stopped?: number | string | null;
+  profit_taken?: number | string | null;
+  expired?: number | string | null;
+  wins?: number | string | null;
+  buys?: number | string | null;
+  sells?: number | string | null;
+  avg_return?: number | string | null;
+  avg_profit?: number | string | null;
+  avg_loss?: number | string | null;
+  net_pl?: number | string | null;
+  avg_rr?: number | string | null;
+  avg_holding_days?: number | string | null;
+  avg_confidence?: number | string | null;
+}
 
 function openDb(): Database.Database {
   const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
@@ -91,7 +121,7 @@ export async function GET(request: NextRequest) {
         AVG(CASE WHEN is_closed THEN holding_days END) as avg_holding_days,
         AVG(CASE WHEN is_closed AND master_score IS NOT NULL THEN master_score END) as avg_confidence
       FROM pred
-    `).get() as any;
+    `).get() as OverallStatsRow;
 
     // By market — use actual market column with fallback
     // KPI-AUDIT: include morning_bell for channel separation
@@ -100,7 +130,7 @@ export async function GET(request: NextRequest) {
              hit_target, hit_stop, actual_return, pnl_pct, is_correct, notes,
              morning_bell, prediction_date, entry_price, persona
       FROM predictions
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
 
     const byMarketMap: Record<string, { total: number; wins: number; losses: number; closed: number; active: number; pending: number; win_rate: number; net_pl: number; sr_adoption: number; avg_return: number | null }> = {};
     const returnsByMarket: Record<string, number[]> = {};
@@ -249,31 +279,31 @@ export async function GET(request: NextRequest) {
     const dateRange = db.prepare(`
       SELECT MIN(prediction_date) as earliest, MAX(prediction_date) as latest
       FROM predictions
-    `).get() as any;
+    `).get() as SqlRow;
 
     // S/R confidence
     const srCount = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE notes LIKE '%support=%' OR notes LIKE '%resistance=%'
-    `).get() as any;
-    const srRate = overall.total > 0 ? Math.round((Number(srCount.c) / overall.total) * 1000) / 10 : 0;
+    `).get() as CountRow;
+    const srRate = Number(overall.total || 0) > 0 ? Math.round((Number(srCount.c || 0) / Number(overall.total)) * 1000) / 10 : 0;
 
     // Candlestick patterns
     const candleCount = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE notes LIKE '%candle=%'
-    `).get() as any;
-    const candlestickRate = overall.total > 0 ? Math.round((Number(candleCount.c) / overall.total) * 1000) / 10 : 0;
+    `).get() as CountRow;
+    const candlestickRate = Number(overall.total || 0) > 0 ? Math.round((Number(candleCount.c || 0) / Number(overall.total)) * 1000) / 10 : 0;
 
     // Candlestick pattern performance
     const candlePatterns = db.prepare(`
       SELECT notes, hit_target, hit_stop, is_correct, outcome_date
       FROM predictions
       WHERE notes LIKE '%candle=%'
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
     const patternMap: Record<string, { count: number; wins: number; losses: number }> = {};
     for (const r of candlePatterns) {
-      const match = (r.notes || '').match(/candle=([A-Z_]+)/);
+      const match = (String(r.notes ?? '')).match(/candle=([A-Z_]+)/);
       if (!match) continue;
       const pat = match[1];
       if (!patternMap[pat]) patternMap[pat] = { count: 0, wins: 0, losses: 0 };
@@ -305,13 +335,13 @@ export async function GET(request: NextRequest) {
       FROM predictions
       GROUP BY SUBSTR(prediction_date, 1, 7)
       ORDER BY month ASC
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
     const monthly_breakdown = monthlyRows.map(r => ({
-      month: r.month,
+      month: String(r.month || ''),
       net_pl: Math.round(Number(r.net_pl || 0) * 100) / 100,
       closed: Number(r.closed || 0),
       wins: Number(r.wins || 0),
-      win_rate: r.closed > 0 ? Math.round((Number(r.wins) / Number(r.closed)) * 1000) / 10 : 0,
+      win_rate: Number(r.closed || 0) > 0 ? Math.round((Number(r.wins) / Number(r.closed)) * 1000) / 10 : 0,
     }));
 
     // Cumulative returns time-series (closed predictions sorted by outcome_date / closed_at)
@@ -323,7 +353,7 @@ export async function GET(request: NextRequest) {
         AND COALESCE(actual_return, pnl_pct) IS NOT NULL
         AND COALESCE(outcome_date, closed_at) IS NOT NULL
       ORDER BY close_date ASC
-    `).all() as any[];
+    `).all() as Array<SqlRow>;
     let cum = 0;
     const cumulative_returns: Array<{ date: string; cumulative_return: number; closed: number }> = [];
     let closedIdx = 0;
@@ -459,8 +489,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function extractLessons(db: Database.Database, overall: any): any[] {
-  const lessons: any[] = [];
+function extractLessons(db: Database.Database, overall: OverallStatsRow): PredictionLesson[] {
+  const lessons: PredictionLesson[] = [];
   const closed = Number(overall?.closed || 0);
   if (closed === 0) return lessons;
 
@@ -471,16 +501,17 @@ function extractLessons(db: Database.Database, overall: any): any[] {
       WHERE outcome_date IS NOT NULL AND is_correct = 0
       AND notes LIKE '%RSI=%'
       AND CAST(SUBSTR(notes, INSTR(notes, 'RSI=') + 4, 5) AS REAL) > 70
-    `).get() as any;
-    if (highRsiFailed?.c > 3) {
-      const failureRate = Math.round((Number(highRsiFailed.c) / closed) * 100);
+    `).get() as CountRow;
+    if (Number(highRsiFailed?.c || 0) > 3) {
+      const sample = Number(highRsiFailed.c);
+      const failureRate = Math.round((sample / closed) * 100);
       lessons.push({
         type: 'technical',
         category: 'مؤشرات فنية',
         rule: 'لا تشتري عند RSI مرتفع (>70)',
-        evidence: `${highRsiFailed.c} صفقة خاسرة من ${closed} عند RSI > 70`,
+        evidence: `${sample} صفقة خاسرة من ${closed} عند RSI > 70`,
         failure_rate: failureRate,
-        sample_size: Number(highRsiFailed.c),
+        sample_size: sample,
         recommendation: 'تفعيل فلتر RSI — تجنب الشراء إذا RSI > 70 إلا في حالة Momentum Accumulation',
         created_at: new Date().toISOString(),
       });
@@ -492,16 +523,17 @@ function extractLessons(db: Database.Database, overall: any): any[] {
       WHERE outcome_date IS NOT NULL AND is_correct = 0
       AND notes LIKE '%RSI=%'
       AND CAST(SUBSTR(notes, INSTR(notes, 'RSI=') + 4, 5) AS REAL) < 30
-    `).get() as any;
-    if (lowRsiFailed?.c > 3) {
-      const failureRate = Math.round((Number(lowRsiFailed.c) / closed) * 100);
+    `).get() as CountRow;
+    if (Number(lowRsiFailed?.c || 0) > 3) {
+      const sample = Number(lowRsiFailed.c);
+      const failureRate = Math.round((sample / closed) * 100);
       lessons.push({
         type: 'technical',
         category: 'مؤشرات فنية',
         rule: 'لا تبيع عند RSI منخفض (<30) — قد يكون ارتداد',
-        evidence: `${lowRsiFailed.c} صفقة خاسرة من ${closed} عند RSI < 30`,
+        evidence: `${sample} صفقة خاسرة من ${closed} عند RSI < 30`,
         failure_rate: failureRate,
-        sample_size: Number(lowRsiFailed.c),
+        sample_size: sample,
         recommendation: 'تفعيل فلتر — عندما RSI < 30، انتظر تأكيد انعكاس قبل الدخول',
         created_at: new Date().toISOString(),
       });
@@ -511,16 +543,17 @@ function extractLessons(db: Database.Database, overall: any): any[] {
     const stopHit = db.prepare(`
       SELECT COUNT(*) as c, AVG(actual_return) as avg_ret FROM predictions
       WHERE outcome_date IS NOT NULL AND hit_stop = 1
-    `).get() as any;
-    if (stopHit?.c > 5) {
-      const failureRate = Math.round((Number(stopHit.c) / closed) * 100);
+    `).get() as CountRow;
+    if (Number(stopHit?.c || 0) > 5) {
+      const sample = Number(stopHit.c);
+      const failureRate = Math.round((sample / closed) * 100);
       lessons.push({
         type: 'risk',
         category: 'إدارة مخاطر',
         rule: 'وقف الخسارة ضيق جداً — {stopHit.c} صفقة ضربت الوقف',
-        evidence: `${stopHit.c} صفقة ضربت الوقف من ${closed} (${failureRate}%)`,
+        evidence: `${sample} صفقة ضربت الوقف من ${closed} (${failureRate}%)`,
         failure_rate: failureRate,
-        sample_size: Number(stopHit.c),
+        sample_size: sample,
         recommendation: 'توسيع الوقف باستخدام ATR × 2.5 بدل 2.0، أو استخدام Trailing Stop',
         created_at: new Date().toISOString(),
       });
@@ -532,16 +565,17 @@ function extractLessons(db: Database.Database, overall: any): any[] {
       WHERE outcome_date IS NOT NULL AND is_correct = 0
       AND target_price IS NOT NULL AND stop_loss IS NOT NULL AND entry_price > 0
       AND (target_price - entry_price) / (entry_price - stop_loss) < 1.5
-    `).get() as any;
-    if (lowRR?.c > 3) {
-      const failureRate = Math.round((Number(lowRR.c) / closed) * 100);
+    `).get() as CountRow;
+    if (Number(lowRR?.c || 0) > 3) {
+      const sample = Number(lowRR.c);
+      const failureRate = Math.round((sample / closed) * 100);
       lessons.push({
         type: 'risk',
         category: 'إدارة مخاطر',
         rule: 'صفقات بنسبة R:R أقل من 1.5 فشلت بنسبة عالية',
-        evidence: `${lowRR.c} صفقة خاسرة من ${closed} بـ R:R < 1.5`,
+        evidence: `${sample} صفقة خاسرة من ${closed} بـ R:R < 1.5`,
         failure_rate: failureRate,
-        sample_size: Number(lowRR.c),
+        sample_size: sample,
         recommendation: 'رفع الحد الأدنى لـ R:R إلى 1.5 على الأقل، ويفضل 2.0',
         created_at: new Date().toISOString(),
       });
@@ -551,21 +585,23 @@ function extractLessons(db: Database.Database, overall: any): any[] {
     const sellWins = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE signal_type = 'SELL' AND outcome_date IS NOT NULL AND is_correct = 1
-    `).get() as any;
+    `).get() as CountRow;
     const sellTotal = db.prepare(`
       SELECT COUNT(*) as c FROM predictions
       WHERE signal_type = 'SELL' AND outcome_date IS NOT NULL
-    `).get() as any;
-    if (sellTotal?.c > 5) {
-      const sellWinRate = Math.round((Number(sellWins?.c || 0) / Number(sellTotal.c)) * 100);
+    `).get() as CountRow;
+    if (Number(sellTotal?.c || 0) > 5) {
+      const total = Number(sellTotal.c);
+      const wins = Number(sellWins?.c || 0);
+      const sellWinRate = Math.round((wins / total) * 100);
       if (sellWinRate < 40) {
         lessons.push({
           type: 'strategy',
           category: 'استراتيجية',
           rule: 'إشارات البيع أداؤها ضعيف — نسبة نجاح {sellWinRate}%',
-          evidence: `${sellWins?.c || 0} فوز من ${sellTotal.c} صفقة بيع`,
+          evidence: `${wins} فوز من ${total} صفقة بيع`,
           failure_rate: 100 - sellWinRate,
-          sample_size: Number(sellTotal.c),
+          sample_size: total,
           recommendation: 'تجنب صفقات البيع المكشوف في الأسواق الصاعدة — ركز على الشراء فقط',
           created_at: new Date().toISOString(),
         });

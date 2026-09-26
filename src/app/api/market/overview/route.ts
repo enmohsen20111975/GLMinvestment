@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getMarketIndices } from '@/lib/egx-db';
+import type Database from 'better-sqlite3';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'stocks.db not found' }, { status: 500 });
     }
     const Database = require('better-sqlite3');
-    const db = new Database(stocksDbPath, { readonly: true });
+    const db: Database.Database = new Database(stocksDbPath, { readonly: true });
 
     const marketMap: Record<string, string> = {
       EGX: 'EGX', TADAWUL: 'TADAWUL', KSA: 'TADAWUL',
@@ -64,7 +65,19 @@ export async function GET(req: NextRequest) {
     `).all(dbMarket);
 
     // احسب change_percent لكل سهم لو مفيش column
-    const stocksWithChange = stocks.map((s: any) => {
+    type StockRow = {
+      ticker?: string;
+      name_ar?: string;
+      name?: string;
+      current_price?: number | string | null;
+      previous_close?: number | string | null;
+      volume?: number | string | null;
+      sector?: string | null;
+      change_percent?: number | string | null;
+      value_traded?: number | string | null;
+      turnover_egp?: number | string | null;
+    };
+    const stocksWithChange = (stocks as StockRow[]).map((s) => {
       if (hasChangePercent && s.change_percent != null) return s;
       const curr = Number(s.current_price) || 0;
       const prev = Number(s.previous_close) || 0;
@@ -72,15 +85,15 @@ export async function GET(req: NextRequest) {
       return s;
     });
 
-    const advancing = stocksWithChange.filter((s: any) => Number(s.change_percent) > 0).length;
-    const declining = stocksWithChange.filter((s: any) => Number(s.change_percent) < 0).length;
+    const advancing = stocksWithChange.filter((s) => Number(s.change_percent) > 0).length;
+    const declining = stocksWithChange.filter((s) => Number(s.change_percent) < 0).length;
     const unchanged = stocksWithChange.length - advancing - declining;
-    const totalVolume = stocksWithChange.reduce((sum: number, s: any) => sum + Number(s.volume || 0), 0);
-    const totalTurnover = stocksWithChange.reduce((sum: number, s: any) => sum + (Number(s.current_price || 0) * Number(s.volume || 0)), 0);
+    const totalVolume = stocksWithChange.reduce((sum, s) => sum + Number(s.volume || 0), 0);
+    const totalTurnover = stocksWithChange.reduce((sum, s) => sum + (Number(s.current_price || 0) * Number(s.volume || 0)), 0);
 
     // Market indices — استخدم getMarketIndices() المصحّحة (تعيد حساب change/change_percent
     // من الأسهم المكوّنة بشكل صحيح ومتّسق، بدل القيم الخاطئة المخزّنة في الجدول)
-    let indices: any[] = [];
+    let indices: Array<{ symbol?: string; name_ar?: string; value?: number | null; previous_close?: number | null; change?: number | null; change_percent?: number | null }> = [];
     try {
       const allIndices = getMarketIndices();
       const marketPrefix = dbMarket; // e.g. 'EGX'

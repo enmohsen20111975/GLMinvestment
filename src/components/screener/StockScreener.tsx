@@ -13,14 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   Activity,
   TrendingUp,
@@ -159,6 +152,125 @@ function getChangeColor(change: number): string {
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
+
+// UnifiedTable columns for screener stocks (Rule 52)
+const screenerStockColumns: Column<ScreenerStock>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    render: (s) => (
+      <div>
+        <div className="font-mono font-bold text-sm">{s.ticker}</div>
+        <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+          {s.name_ar || s.name}
+        </div>
+        <div className="text-xs text-muted-foreground">{s.sector}</div>
+      </div>
+    ),
+  },
+  {
+    key: 'current_price',
+    header: 'السعر',
+    align: 'left',
+    sortable: true,
+    render: (s) => <span className="font-mono text-sm">{formatNumber(s.current_price)}</span>,
+  },
+  {
+    key: 'change_percent',
+    header: 'التغير',
+    align: 'left',
+    sortable: true,
+    render: (s) => (
+      <span className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
+        {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
+      </span>
+    ),
+  },
+  {
+    key: 'volume',
+    header: 'الحجم',
+    align: 'left',
+    sortable: true,
+    render: (s) => (
+      <span className="font-mono text-xs text-muted-foreground">
+        {formatVolume(s.volume)}
+        {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
+      </span>
+    ),
+  },
+  {
+    key: 'rsi',
+    header: 'RSI',
+    align: 'left',
+    sortable: true,
+    render: (s) => (
+      <span className="font-mono text-xs">
+        {s.rsi !== null ? formatNumber(s.rsi, 0) : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'correction_status',
+    header: 'الحالة',
+    align: 'right',
+    render: (s) => getCorrectionBadge(s.correction_status),
+  },
+  {
+    key: 'momentum_score',
+    header: 'الزخم',
+    align: 'left',
+    sortable: true,
+    render: (s) => (
+      <div className="flex items-center gap-1">
+        <span className={cn(
+          'font-mono text-xs font-bold',
+          s.momentum_score > 5 ? 'text-emerald-600' :
+          s.momentum_score < 0 ? 'text-red-600' : 'text-muted-foreground'
+        )}>
+          {s.momentum_score > 0 ? '+' : ''}{formatNumber(s.momentum_score, 1)}
+        </span>
+        {s.momentum_score > 5 && <TrendingUp className="w-3 h-3 text-emerald-500" />}
+        {s.momentum_score < 0 && <TrendingDown className="w-3 h-3 text-red-500" />}
+      </div>
+    ),
+  },
+  {
+    key: 'distance_from_52w_high',
+    header: 'من القمة',
+    align: 'left',
+    sortable: true,
+    render: (s) => (
+      <span className="font-mono text-xs text-muted-foreground">
+        {s.distance_from_52w_high !== null
+          ? `${formatNumber(s.distance_from_52w_high, 1)}%`
+          : '—'}
+      </span>
+    ),
+  },
+  {
+    key: 'sector_comparison',
+    header: 'مقارنة بالقطاع',
+    align: 'right',
+    render: (s) => <SectorComparison stockSector={s.sector} stockChange={s.change_percent} />,
+  },
+  {
+    key: 'moving_averages',
+    header: 'المتوسطات',
+    align: 'right',
+    render: (s) => (
+      <div className="flex gap-1">
+        <Badge variant={s.above_ma_50 ? 'default' : 'outline'} className="text-xs px-1.5">
+          50
+        </Badge>
+        <Badge variant={s.above_ma_200 ? 'default' : 'outline'} className="text-xs px-1.5">
+          200
+        </Badge>
+      </div>
+    ),
+  },
+];
 
 export function StockScreener() {
   // Filters state
@@ -462,86 +574,14 @@ export function StockScreener() {
               لا توجد نتائج مطابقة
             </div>
           ) : (
-            <div className="max-h-[600px] overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead className="text-right">السهم</TableHead>
-                    <TableHead className="text-right">السعر</TableHead>
-                    <TableHead className="text-right">التغير</TableHead>
-                    <TableHead className="text-right">الرسم البياني (30 يوم)</TableHead>
-                    <TableHead className="text-right">الحجم</TableHead>
-                    <TableHead className="text-right">RSI</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">الزخم</TableHead>
-                    <TableHead className="text-right">من القمة</TableHead>
-                    <TableHead className="text-right">مقارنة بالقطاع</TableHead>
-                    <TableHead className="text-right">المتوسطات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStocks.map((s) => (
-                    <TableRow key={s.ticker} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="font-mono font-bold text-sm">{s.ticker}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-                          {s.name_ar || s.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{s.sector}</div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {formatNumber(s.current_price)}
-                      </TableCell>
-                      <TableCell className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
-                        {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
-                      </TableCell>
-                      
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {formatVolume(s.volume)}
-                        {s.volume_surge && <Zap className="inline w-3 h-3 text-amber-500 mr-1" />}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {s.rsi !== null ? formatNumber(s.rsi, 0) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {getCorrectionBadge(s.correction_status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className={cn(
-                            'font-mono text-xs font-bold',
-                            s.momentum_score > 5 ? 'text-emerald-600' :
-                            s.momentum_score < 0 ? 'text-red-600' : 'text-muted-foreground'
-                          )}>
-                            {s.momentum_score > 0 ? '+' : ''}{formatNumber(s.momentum_score, 1)}
-                          </span>
-                          {s.momentum_score > 5 && <TrendingUp className="w-3 h-3 text-emerald-500" />}
-                          {s.momentum_score < 0 && <TrendingDown className="w-3 h-3 text-red-500" />}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {s.distance_from_52w_high !== null
-                          ? `${formatNumber(s.distance_from_52w_high, 1)}%`
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <SectorComparison stockSector={s.sector} stockChange={s.change_percent} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Badge variant={s.above_ma_50 ? 'default' : 'outline'} className="text-xs px-1.5">
-                            50
-                          </Badge>
-                          <Badge variant={s.above_ma_200 ? 'default' : 'outline'} className="text-xs px-1.5">
-                            200
-                          </Badge>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <UnifiedTable<ScreenerStock>
+              columns={screenerStockColumns}
+              data={filteredStocks}
+              keyField="ticker"
+              maxHeight="max-h-[600px]"
+              dense
+              emptyTextAr="لا توجد نتائج مطابقة"
+            />
           )}
         </CardContent>
       </Card>

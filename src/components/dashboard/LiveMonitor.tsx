@@ -39,18 +39,11 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import { getEGXMarketStatus } from '@/lib/market-hours';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 
 // ============================================================
 // Types
@@ -638,6 +631,142 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
     ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30'
     : 'border-rose-200 bg-rose-50 dark:border-rose-900 dark:bg-rose-950/30';
 
+  // ── UnifiedTable columns for portfolio items ──
+  const portfolioColumns: Column<PortfolioItem>[] = [
+    {
+      key: 'type',
+      header: 'النوع',
+      align: 'right',
+      render: (item) => <TypeBadge type={item.type} />,
+    },
+    {
+      key: 'name',
+      header: 'الاسم/الرمز',
+      align: 'right',
+      sortable: true,
+      render: (item) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-slate-900 dark:text-white">
+            {item.name}
+          </span>
+          {item.stock_ticker && (
+            <span className="font-mono text-[10px] text-slate-500">
+              {item.stock_ticker}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'quantity',
+      header: 'الكمية',
+      align: 'center',
+      sortable: true,
+      render: (item) => (
+        <span className="text-center text-xs tabular-nums inline-block w-full">
+          {item.quantity != null ? intFmt.format(item.quantity) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'avg_buy_price',
+      header: 'سعر الشراء',
+      align: 'center',
+      sortable: true,
+      render: (item) => (
+        <span className="text-center text-xs tabular-nums inline-block w-full" dir="ltr">
+          {item.avg_buy_price != null ? formatNumber(item.avg_buy_price) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'live_price',
+      header: 'السعر الحي',
+      align: 'center',
+      sortable: true,
+      render: (item) => {
+        const recent = isRecentlyUpdated(item.price_updated);
+        return (
+          <span className="text-center text-xs tabular-nums inline-block w-full" dir="ltr">
+            {item.live_price != null ? (
+              <span
+                className={cn(
+                  'font-medium transition-colors',
+                  recent && 'text-emerald-600 dark:text-emerald-400',
+                )}
+              >
+                {formatNumber(item.live_price)}
+                {recent && (
+                  <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 align-middle" />
+                )}
+              </span>
+            ) : (
+              '—'
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'current_value',
+      header: 'القيمة الحالية',
+      align: 'center',
+      sortable: true,
+      render: (item) => (
+        <span className="text-center text-xs tabular-nums inline-block w-full" dir="ltr">
+          {formatNumber(item.current_value)}
+        </span>
+      ),
+    },
+    {
+      key: 'gain_loss',
+      header: 'الربح/الخسارة',
+      align: 'center',
+      sortable: true,
+      render: (item) => {
+        const positive = item.gain_loss >= 0;
+        const gainColor = positive
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : 'text-rose-600 dark:text-rose-400';
+        return (
+          <span
+            className={cn(
+              'text-center text-xs font-semibold tabular-nums inline-block w-full',
+              gainColor,
+            )}
+            dir="ltr"
+          >
+            {positive ? '+' : ''}
+            {formatNumber(item.gain_loss)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'gain_loss_pct',
+      header: '%',
+      align: 'center',
+      sortable: true,
+      render: (item) => {
+        const positive = item.gain_loss >= 0;
+        const gainColor = positive
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : 'text-rose-600 dark:text-rose-400';
+        return (
+          <span
+            className={cn(
+              'text-center text-xs font-semibold tabular-nums inline-block w-full',
+              gainColor,
+            )}
+            dir="ltr"
+          >
+            {formatPercent(item.gain_loss_pct)}
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
     <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <CardHeader className="pb-3">
@@ -707,126 +836,21 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
           </div>
         </div>
 
-        {/* Items table */}
+        {/* Items table — UnifiedTable (Rule 52) */}
         <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
-          <Table>
-            <TableHeader className="bg-slate-50 dark:bg-slate-950/50">
-              <TableRow className="border-slate-200 hover:bg-transparent dark:border-slate-800">
-                <TableHead className="text-xs">النوع</TableHead>
-                <TableHead className="text-xs">الاسم/الرمز</TableHead>
-                <TableHead className="text-center text-xs">الكمية</TableHead>
-                <TableHead className="text-center text-xs">سعر الشراء</TableHead>
-                <TableHead className="text-center text-xs">السعر الحي</TableHead>
-                <TableHead className="text-center text-xs">القيمة الحالية</TableHead>
-                <TableHead className="text-center text-xs">الربح/الخسارة</TableHead>
-                <TableHead className="text-center text-xs">%</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {portfolio.items.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="py-8 text-center text-sm text-slate-400"
-                  >
-                    لا توجد عناصر في المحفظة
-                  </TableCell>
-                </TableRow>
-              )}
-              {portfolio.items.map((item) => {
-                const positive = item.gain_loss >= 0;
-                const recent = isRecentlyUpdated(item.price_updated);
-                const gainColor = positive
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-rose-600 dark:text-rose-400';
-                return (
-                  <TableRow
-                    key={item.id}
-                    className={cn(
-                      'border-slate-100 transition-colors dark:border-slate-800/60',
-                      'hover:bg-slate-50/60 dark:hover:bg-slate-800/30',
-                      recent &&
-                        'bg-emerald-50/40 dark:bg-emerald-950/20 border-s-2 border-s-emerald-500',
-                    )}
-                  >
-                    <TableCell>
-                      <TypeBadge type={item.type} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-slate-900 dark:text-white">
-                          {item.name}
-                        </span>
-                        {item.stock_ticker && (
-                          <span className="font-mono text-[10px] text-slate-500">
-                            {item.stock_ticker}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center text-xs tabular-nums">
-                      {item.quantity != null
-                        ? intFmt.format(item.quantity)
-                        : '—'}
-                    </TableCell>
-                    <TableCell
-                      className="text-center text-xs tabular-nums"
-                      dir="ltr"
-                    >
-                      {item.avg_buy_price != null
-                        ? formatNumber(item.avg_buy_price)
-                        : '—'}
-                    </TableCell>
-                    <TableCell
-                      className="text-center text-xs tabular-nums"
-                      dir="ltr"
-                    >
-                      {item.live_price != null ? (
-                        <span
-                          className={cn(
-                            'font-medium transition-colors',
-                            recent && 'text-emerald-600 dark:text-emerald-400',
-                          )}
-                        >
-                          {formatNumber(item.live_price)}
-                          {recent && (
-                            <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 align-middle" />
-                          )}
-                        </span>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className="text-center text-xs tabular-nums"
-                      dir="ltr"
-                    >
-                      {formatNumber(item.current_value)}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'text-center text-xs font-semibold tabular-nums',
-                        gainColor,
-                      )}
-                      dir="ltr"
-                    >
-                      {positive ? '+' : ''}
-                      {formatNumber(item.gain_loss)}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'text-center text-xs font-semibold tabular-nums',
-                        gainColor,
-                      )}
-                      dir="ltr"
-                    >
-                      {formatPercent(item.gain_loss_pct)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <UnifiedTable<PortfolioItem>
+            columns={portfolioColumns}
+            data={portfolio.items}
+            keyField="id"
+            dense
+            emptyTextAr="لا توجد عناصر في المحفظة"
+            rowClassName={(item) => {
+              const recent = isRecentlyUpdated(item.price_updated);
+              return recent
+                ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-s-2 border-s-emerald-500'
+                : undefined;
+            }}
+          />
         </div>
       </CardContent>
     </Card>

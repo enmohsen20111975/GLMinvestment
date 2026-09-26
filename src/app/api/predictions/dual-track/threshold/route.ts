@@ -19,6 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type Database from 'better-sqlite3';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,9 +43,9 @@ interface ThresholdResult {
   p90?: number;
 }
 
-function openDb(path: string, readonly = true): any {
+function openDb(path: string, readonly = true): Database.Database {
   const Database = require('better-sqlite3');
-  return new Database(path, { readonly });
+  return new Database(path, { readonly }) as Database.Database;
 }
 
 function dbExists(path: string): boolean {
@@ -77,8 +78,8 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
           SELECT volume FROM stock_intraday
           WHERE market = 'مصر' AND volume IS NOT NULL AND volume > 0
             AND timestamp >= datetime('now', '-30 days')
-        `).all() as any[];
-        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        `).all() as Array<{ volume: number | string }>;
+        volumes = rows.map((r) => Number(r.volume)).filter(v => v > 0);
         db.close();
       } catch (e) {
         fallbackReason = `EGX intraday error: ${(e as Error).message}`;
@@ -94,8 +95,8 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
           SELECT volume FROM price_history
           WHERE market = 'US' AND volume IS NOT NULL AND volume > 0
             AND date >= date('now', '-30 days')
-        `).all() as any[];
-        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        `).all() as Array<{ volume: number | string }>;
+        volumes = rows.map((r) => Number(r.volume)).filter(v => v > 0);
         db.close();
       } catch (e) {
         fallbackReason = `US price_history error: ${(e as Error).message}`;
@@ -111,8 +112,8 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
           SELECT volume FROM historical_data
           WHERE market = 'السعودية' AND volume IS NOT NULL AND volume > 0
             AND date >= date('now', '-30 days')
-        `).all() as any[];
-        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        `).all() as Array<{ volume: number | string }>;
+        volumes = rows.map((r) => Number(r.volume)).filter(v => v > 0);
         db.close();
       } catch (e) {
         fallbackReason = `KSA data_engine error: ${(e as Error).message}`;
@@ -130,8 +131,8 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
           WHERE total_volume IS NOT NULL AND total_volume > 0
             AND timestamp >= datetime('now', '-30 days')
           LIMIT 50000
-        `).all() as any[];
-        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        `).all() as Array<{ volume: number | string }>;
+        volumes = rows.map((r) => Number(r.volume)).filter(v => v > 0);
         db.close();
       } catch (e) {
         fallbackReason = `CRYPTO data_engine error: ${(e as Error).message}`;
@@ -152,8 +153,8 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
           WHERE price_per_gram IS NOT NULL AND price_per_gram > 0
             AND timestamp >= datetime('now', '-30 days')
           LIMIT 10000
-        `).all() as any[];
-        volumes = rows.map((r: any) => Number(r.volume)).filter(v => v > 0);
+        `).all() as Array<{ volume: number | string }>;
+        volumes = rows.map((r) => Number(r.volume)).filter(v => v > 0);
         db.close();
       } catch (e) {
         fallbackReason = `GOLD data_engine error: ${(e as Error).message}`;
@@ -188,7 +189,7 @@ function calculateThresholdForMarket(market: string): ThresholdResult | null {
   };
 }
 
-function ensureThresholdTable(db: any): void {
+function ensureThresholdTable(db: Database.Database): void {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS liquidity_dynamic_threshold (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

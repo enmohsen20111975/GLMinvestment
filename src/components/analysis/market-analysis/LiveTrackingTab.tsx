@@ -105,8 +105,8 @@ import {
 
 
 function LiveTrackingTab({ market }: { market: MarketType }) {
-  const [activeStatus, setActiveStatus] = useState<any[]>([]);
-  const [watchlist, setWatchlist] = useState<any[]>([]);
+  const [activeStatus, setActiveStatus] = useState<Array<Record<string, unknown>>>([]);
+  const [watchlist, setWatchlist] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<'active' | 'watchlist'>('active');
   const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
@@ -165,7 +165,7 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
             <span className="text-xs">حققت الهدف</span>
           </div>
           <div className="text-lg font-bold text-emerald-600">
-            {activeStatus.filter((s: any) => s.hit_target === 1 || s.status === 'TARGET_HIT').length}
+            {activeStatus.filter((s) => s.hit_target === 1 || s.status === 'TARGET_HIT').length}
           </div>
         </Card>
         <Card className="p-3">
@@ -174,7 +174,7 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
             <span className="text-xs">قرب الهدف</span>
           </div>
           <div className="text-lg font-bold text-amber-600">
-            {activeStatus.filter((s: any) => {
+            {activeStatus.filter((s) => {
               const progress = s.progress_percent || 0;
               return progress >= 70 && progress < 100;
             }).length}
@@ -235,7 +235,7 @@ function LiveTrackingTab({ market }: { market: MarketType }) {
 // زر الإرسال لتليجرام يستخدم Python TelegramNotifier عبر proxy
 
 function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [sendingTelegram, setSendingTelegram] = useState(false);
   const marketCode = market === 'CRYPTO' ? 'CRYPTO' : 'EGX';
@@ -309,7 +309,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
             <span className="text-xs">شراء</span>
           </div>
           <div className="text-lg font-bold text-emerald-600">
-            {predictions.filter((p: any) => ['BUY', 'STRONG_BUY'].includes(p.signal || p.signal_type)).length}
+            {predictions.filter((p) => ['BUY', 'STRONG_BUY'].includes(String(p.signal || p.signal_type))).length}
           </div>
         </Card>
         <Card className="p-3">
@@ -318,7 +318,7 @@ function TomorrowPredictionsPanel({ market }: { market: MarketType }) {
             <span className="text-xs">بيع</span>
           </div>
           <div className="text-lg font-bold text-red-600">
-            {predictions.filter((p: any) => ['SELL', 'STRONG_SELL'].includes(p.signal || p.signal_type)).length}
+            {predictions.filter((p) => ['SELL', 'STRONG_SELL'].includes(String(p.signal || p.signal_type))).length}
           </div>
         </Card>
       </div>
@@ -445,7 +445,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
 ];
 
 
-function PredictionsTable({ predictions }: { predictions: any[] }) {
+function PredictionsTable({ predictions }: { predictions: Array<Record<string, unknown>> }) {
   if (predictions.length === 0) {
     return (
       <Card>
@@ -556,7 +556,7 @@ const activeStatusColumns: Column<PredictionRow>[] = [
 ];
 
 
-function ActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
+function ActiveStatusTable({ activeStatus }: { activeStatus: Array<Record<string, unknown>> }) {
   if (activeStatus.length === 0) {
     return (
       <Card>
@@ -586,7 +586,7 @@ function ActiveStatusTable({ activeStatus }: { activeStatus: any[] }) {
 
 // ─── جدول أسهم تحت المراقبة ─────────────────────────────────────────────────
 
-function WatchlistTable({ watchlist }: { watchlist: any[] }) {
+function WatchlistTable({ watchlist }: { watchlist: Array<Record<string, unknown>> }) {
   if (watchlist.length === 0) {
     return (
       <Card>

@@ -29,10 +29,31 @@ export interface PredictionValidationResult {
   checks: Array<{ check: string; passed: boolean; message: string }>;
 }
 
+/** Shape of a prediction row as returned by /api/predictions/* endpoints. */
+export interface PredictionInput {
+  ticker?: string;
+  stock_symbol?: string;
+  symbol?: string;
+  entry_price?: number | string | null;
+  stop_loss?: number | string | null;
+  target_price?: number | string | null;
+  signal_type?: string;
+  signal?: string;
+  actual_return?: number | string | null;
+  profit_loss_percent?: number | string | null;
+  exit_type?: string;
+  exit_type_ar?: string;
+  holding_days?: number | string | null;
+  days_held?: number | string | null;
+  prediction_date?: string | null;
+  date?: string | null;
+  [key: string]: unknown;
+}
+
 /**
  * فحص تنبؤ واحد + إرجاع valid/reason.
  */
-export function validatePrediction(pred: any): PredictionValidationResult {
+export function validatePrediction(pred: PredictionInput): PredictionValidationResult {
   const checks: Array<{ check: string; passed: boolean; message: string }> = [];
   let hasError = false;
   let hasWarning = false;
@@ -211,9 +232,9 @@ export function validatePrediction(pred: any): PredictionValidationResult {
 /**
  * إزالة التكرارات — نفس السهم في نفس اليوم → خد الأحدث فقط.
  */
-export function deduplicatePredictions(predictions: any[]): any[] {
-  const seen = new Map<string, any>();
-  const noDate: any[] = [];
+export function deduplicatePredictions(predictions: PredictionInput[]): PredictionInput[] {
+  const seen = new Map<string, PredictionInput>();
+  const noDate: PredictionInput[] = [];
   for (const pred of predictions) {
     const ticker = pred.ticker || pred.stock_symbol || pred.symbol || '';
     const predDate = (pred.prediction_date || pred.date || '').toString().slice(0, 10);
@@ -230,9 +251,9 @@ export function deduplicatePredictions(predictions: any[]): any[] {
 /**
  * فحص batch كامل + إرجاع الصالح فقط.
  */
-export function filterValidPredictions(predictions: any[]): {
-  valid: any[];
-  invalid: any[];
+export function filterValidPredictions(predictions: PredictionInput[]): {
+  valid: PredictionInput[];
+  invalid: Array<PredictionInput & { _validation_error: string; _validation_checks: Array<{ check: string; passed: boolean; message: string }> }>;
   stats: { total: number; valid: number; invalid: number; deduped: number };
 } {
   if (!predictions || predictions.length === 0) {
@@ -243,8 +264,8 @@ export function filterValidPredictions(predictions: any[]): {
   const deduped = deduplicatePredictions(predictions);
   const dedupedCount = originalCount - deduped.length;
 
-  const valid: any[] = [];
-  const invalid: any[] = [];
+  const valid: PredictionInput[] = [];
+  const invalid: Array<PredictionInput & { _validation_error: string; _validation_checks: Array<{ check: string; passed: boolean; message: string }> }> = [];
 
   for (const pred of deduped) {
     const result = validatePrediction(pred);

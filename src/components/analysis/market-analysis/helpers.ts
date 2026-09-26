@@ -13,12 +13,15 @@ import type {
   StoredAnalysisItem,
   PersonaData,
   NameMap,
+  StockDetail,
+  LiveStock,
+  PredictionRow,
 } from './types';
 
 // ============================================================================
 // pickValidPrice
 // ============================================================================
-export function pickValidPrice(...candidates: any[]): number | undefined {
+export function pickValidPrice(...candidates: Array<unknown>): number | undefined {
   for (const c of candidates) {
     if (c != null) {
       const n = Number(c);
@@ -79,7 +82,7 @@ export function formatDateShort(dateStr: string | null | undefined): string {
 // ============================================================================
 // mapPredictionToStockData
 // ============================================================================
-export function mapPredictionToStockData(p: any): StockData {
+export function mapPredictionToStockData(p: PredictionRow): StockData {
   const entryPrice = Number(p.entry_price) || Number(p.current_price) || 0;
   const currPrice = Number(p.current_price) || entryPrice;
   let target = Number(p.target_price) || 0;
@@ -408,18 +411,18 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
 // P43-VIRAL-SHARE: قالب التحليل الشامل الغني — يجمع سيناريو المستثمر + المضارب +
 // الـ 8 طبقات الفنية + SMC (الحيتان) + الأساسيات + Footer ثابت.
 // يُستخدم في زر "نسخ شامل" و"بطاقة تحليل" داخل StockDetailPanel.
-export function formatComprehensiveStockText(item: StoredAnalysisItem, market: MarketType, stockDetail?: any): string {
+export function formatComprehensiveStockText(item: StoredAnalysisItem, market: MarketType, stockDetail?: StockDetail): string {
   const ticker = item.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
   const name = item.nameAr || item.name || ticker;
   const inv = item.analysisJson?.investor || {};
   const gam = item.analysisJson?.gambler || {};
   const fund = item.fundamentals || {};
 
-  const price = pickValidPrice(stockDetail?.current_price, inv.entry, gam.entry, fund as any) || 0;
+  const price = pickValidPrice(stockDetail?.current_price, inv.entry, gam.entry, fund.pe_ratio) || 0;
   const changePct = stockDetail?.change_percent != null
     ? stockDetail.change_percent
-    : (fund as any)?.change_1d != null
-    ? (fund as any).change_1d
+    : fund?.change_1d != null
+    ? fund.change_1d
     : 0;
   const changeIcon = changePct > 0 ? '🟢' : changePct < 0 ? '🔴' : '🟡';
 
@@ -478,12 +481,12 @@ export function formatComprehensiveStockText(item: StoredAnalysisItem, market: M
   if (gates) {
     text += `${gates.trend ? '✅' : '❌'} الاتجاه العام: ${gates.trend ? 'صاعد (مؤكد)' : 'هابط/عرضي'}\n`;
   }
-  const rsi = inv.rsi || gam.rsi || (fund as any)?.rsi;
+  const rsi = inv.rsi || gam.rsi || fund?.rsi;
   if (rsi != null) {
     const rsiStatus = rsi > 70 ? 'تشبع شرائي' : rsi < 30 ? 'تشبع بيعي' : 'صحي';
     text += `🟡 القوة النسبية (RSI): ${rsi.toFixed(0)} (${rsiStatus})\n`;
   }
-  const volRatio = inv.volume_ratio || gam.volume_ratio || (fund as any)?.volume_ratio;
+  const volRatio = inv.volume_ratio || gam.volume_ratio || fund?.volume_ratio;
   if (volRatio != null) {
     text += `${volRatio > 1.2 ? '✅' : '🟡'} الحجم: ${volRatio.toFixed(1)}x ${volRatio > 1.2 ? '(دخول سيولة)' : '(طبيعي)'}\n`;
   }
@@ -515,10 +518,10 @@ export function formatComprehensiveStockText(item: StoredAnalysisItem, market: M
   text += `\n`;
 
   // ── الأساسيات ──
-  const pe = pickValidPrice(inv.pe_ratio, gam.pe_ratio, (fund as any)?.pe_ratio, stockDetail?.pe_ratio);
-  const roe = pickValidPrice(inv.roe, gam.roe, (fund as any)?.roe);
-  const volatility = pickValidPrice(inv.volatility, gam.volatility, (fund as any)?.volatility);
-  const fairValue = (fund as any)?.fair_value_upside;
+  const pe = pickValidPrice(inv.pe_ratio, gam.pe_ratio, fund?.pe_ratio, stockDetail?.pe_ratio);
+  const roe = pickValidPrice(inv.roe, gam.roe, fund?.roe);
+  const volatility = pickValidPrice(inv.volatility, gam.volatility, fund?.volatility);
+  const fairValue = fund?.fair_value_upside;
   if (pe != null || roe != null) {
     text += `📊 التقييم الأساسي (Fundamentals):\n`;
     if (pe != null) {
@@ -593,8 +596,8 @@ export function formatAllExpertPredictionsText(stocks: StockData[], market: Mark
 // ============================================================================
 export function isTraderPrediction(stock: StockData): boolean {
   const rec = String(stock.recommendation || stock.signal || '').toUpperCase();
-  const horizon = String((stock as any).horizon || (stock as any).timeframe || (stock as any).regime || '').toLowerCase();
-  const persona = String((stock as any).persona || (stock as any).persona_type || '').toLowerCase();
+  const horizon = String(stock.horizon || stock.timeframe || stock.regime || '').toLowerCase();
+  const persona = String(stock.persona || stock.persona_type || '').toLowerCase();
 
   if (
     rec.includes('SWING') ||
@@ -619,11 +622,11 @@ export function isTraderPrediction(stock: StockData): boolean {
   return true;
 }
 
-export function evalPrediction(stock: StockData, liveStock?: any) {
+export function evalPrediction(stock: StockData, liveStock?: LiveStock) {
   const entryPrice = Number(stock.entry_price || stock.current_price) || 0;
   const currentPrice = Number(liveStock?.current_price || liveStock?.close || stock.current_price) || entryPrice;
-  const rawHigh = Number(liveStock?.high_price || (stock as any).high_price || currentPrice);
-  const rawLow = Number(liveStock?.low_price || (stock as any).low_price || currentPrice);
+  const rawHigh = Number(liveStock?.high_price || stock.high_price || currentPrice);
+  const rawLow = Number(liveStock?.low_price || stock.low_price || currentPrice);
   
   // Guard against 52-week high/low leakage into daily high/low
   const highPrice = (rawHigh > currentPrice * 2.0 && currentPrice > 0) ? currentPrice : rawHigh;
@@ -838,7 +841,7 @@ export async function buildNameMap(marketCode: string): Promise<NameMap> {
     const res = await fetch(`/api/stocks?market=${marketCode}&limit=600`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
-      const list: any[] = data.stocks || [];
+      const list: Array<{ ticker?: string; symbol?: string; name?: string; name_ar?: string; logo_url?: string | null }> = data.stocks || [];
       for (const s of list) {
         const tk = String(s.ticker || s.symbol || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
         if (!tk) continue;
@@ -856,9 +859,9 @@ export function enrichItems(items: StoredAnalysisItem[], nameMap: NameMap): Stor
     const tk = it.ticker.replace(/\.(CA|SR|KW|AE|BH|QA)$/, '');
     const mapped = nameMap[tk];
     // لو الاسم والـ logo موجودين على it، نكمل منهم — بس نستخدم mapped كـ fallback
-    const name = it.name || (it as any).name || mapped?.name;
-    const nameAr = it.nameAr || (it as any).name_ar || mapped?.name_ar || mapped?.name;
-    const logoUrl = it.logoUrl || (it as any).logo_url || mapped?.logo_url || null;
+    const name = it.name || mapped?.name;
+    const nameAr = it.nameAr || mapped?.name_ar || mapped?.name;
+    const logoUrl = it.logoUrl || mapped?.logo_url || null;
     return {
       ...it,
       name,
@@ -944,13 +947,13 @@ export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conse
   const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
 
   // فقط الـ items اللي عندها fundamentals معرّفة وبتطابق persona flag
-  const diverged = items.filter((it: any) => {
+  const diverged = items.filter((it) => {
     const f = it?.fundamentals;
     return f && (f[flagKey] === true || f[flagKey] === 1);
   });
 
   // مرّتبة بـ rank score تنازلياً
-  const sorted = diverged.sort((a: any, b: any) => {
+  const sorted = diverged.sort((a, b) => {
     const ra = (a?.fundamentals?.[rankKey] as number) || 0;
     const rb = (b?.fundamentals?.[rankKey] as number) || 0;
     return rb - ra;
@@ -966,7 +969,7 @@ export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conse
   const byPersonaScore = (a: StoredAnalysisItem, b: StoredAnalysisItem) =>
     (b.analysisJson?.[_personaKey]?.score ?? 0) - (a.analysisJson?.[_personaKey]?.score ?? 0);
   const signalTier = items
-    .filter((it: any) => {
+    .filter((it) => {
       const sig = String(it?.analysisJson?.[_personaKey]?.signal || '').toUpperCase();
       return sig === 'BUY' || sig === 'STRONG_BUY' || sig === 'ACCUMULATE';
     })

@@ -5,6 +5,44 @@ import path from 'path';
 export const dynamic = 'force-dynamic';
 export const revalidate = 30;
 
+interface MetalPriceRow {
+  timestamp: string;
+  country: string | null;
+  currency: string | null;
+  karat: string | null;
+  price_per_gram: number | null;
+  price_per_ounce: number | null;
+}
+
+interface ExchangeRateRow {
+  currency: string;
+  rate_to_usd: number;
+  timestamp: string;
+}
+
+interface KaratPrice {
+  key: string;
+  name_ar: string;
+  price_per_gram: number | null;
+  price_per_ounce: number | null;
+  country: string | null;
+  currency: string | null;
+}
+
+interface MetalUnitPrice {
+  key: string;
+  name_ar: string;
+  price_per_gram: number | null;
+  price_per_ounce: number | null;
+  country: string | null;
+}
+
+interface OuncePrice {
+  price: number;
+  name_ar: string;
+  currency: string;
+}
+
 /**
  * GET /api/metals/gold
  *
@@ -27,7 +65,7 @@ export async function GET() {
       FROM gold_prices
       WHERE timestamp = (SELECT MAX(timestamp) FROM gold_prices)
       ORDER BY karat
-    `).all() as any[];
+    `).all() as MetalPriceRow[];
 
     // جلب كل العملات من آخر تحديث
     const allRates = db.prepare(`
@@ -35,17 +73,17 @@ export async function GET() {
       FROM exchange_rates
       WHERE timestamp = (SELECT MAX(timestamp) FROM exchange_rates)
       ORDER BY currency
-    `).all() as any[];
+    `).all() as ExchangeRateRow[];
 
     db.close();
 
     // تنظيم المعادن
-    const goldKarats: any[] = [];
-    const silverKarats: any[] = [];
-    let goldPound: any = null;
-    let silverPound: any = null;
-    let goldOunce: any = null;
-    let silverOunce: any = null;
+    const goldKarats: KaratPrice[] = [];
+    const silverKarats: KaratPrice[] = [];
+    let goldPound: MetalUnitPrice | null = null;
+    let silverPound: MetalUnitPrice | null = null;
+    let goldOunce: OuncePrice | null = null;
+    let silverOunce: OuncePrice | null = null;
 
     for (const m of allMetals) {
       const karat = (m.karat || '').toLowerCase();
@@ -55,7 +93,7 @@ export async function GET() {
       if (karat.includes('gold-') || karat.includes('عيار') && !karat.includes('silver')) {
         // Gold
         const num = (m.karat || '').match(/\d+/);
-        const key = num ? num[0] : m.karat;
+        const key = num ? num[0] : (m.karat || '');
         if (karat.includes('pound') || karat.includes('جنيه')) {
           goldPound = { key: 'gold-pound', name_ar: 'جنيه ذهب', price_per_gram: priceGram, price_per_ounce: priceOz, country: m.country };
         } else {
@@ -71,7 +109,7 @@ export async function GET() {
       } else if (karat.includes('silver') || karat.includes('فضة')) {
         // Silver
         const num = (m.karat || '').match(/\d+/);
-        const key = num ? num[0] : m.karat;
+        const key = num ? num[0] : (m.karat || '');
         if (karat.includes('pound') || karat.includes('جنيه')) {
           silverPound = { key: 'silver-pound', name_ar: 'جنيه فضة', price_per_gram: priceGram, price_per_ounce: priceOz, country: m.country };
         } else {
@@ -165,11 +203,12 @@ export async function GET() {
         total_currencies: currencies.length,
       },
     });
-  } catch (error: any) {
-    console.error('[/api/metals/gold] Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[/api/metals/gold] Error:', message);
     return NextResponse.json({
       success: false,
-      error: error?.message || 'خطأ في جلب بيانات المعادن',
+      error: message || 'خطأ في جلب بيانات المعادن',
     }, { status: 500 });
   }
 }

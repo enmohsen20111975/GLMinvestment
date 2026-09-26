@@ -5,14 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Landmark,
   FileText,
   Calendar,
@@ -24,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 
 // Types
 interface TreasuryBond {
@@ -140,6 +133,108 @@ function BondsSkeleton() {
     </div>
   );
 }
+
+// UnifiedTable columns for bonds (Rule 52 — uses UnifiedTable instead of manual <Table>)
+const bondColumns: Column<TreasuryBond>[] = [
+  {
+    key: 'symbol',
+    header: 'الرمز / الاسم',
+    align: 'right',
+    sortable: true,
+    render: (bond) => (
+      <div className="flex flex-col gap-0.5">
+        <span className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">
+          {bond.symbol}
+        </span>
+        <span className="text-xs text-muted-foreground">{bond.name_ar}</span>
+      </div>
+    ),
+  },
+  {
+    key: 'current_price',
+    header: 'السعر',
+    align: 'left',
+    sortable: true,
+    render: (bond) => (
+      <span className="text-left tabular-nums inline-block w-full">
+        <span className="font-semibold text-sm">
+          {bond.type === 'investment_certificate'
+            ? bond.current_price.toLocaleString()
+            : bond.current_price.toFixed(2)}
+        </span>
+        <span className="text-xs text-muted-foreground mr-1">ج.م</span>
+      </span>
+    ),
+  },
+  {
+    key: 'coupon_rate',
+    header: 'العائد السنوي',
+    align: 'left',
+    sortable: true,
+    render: (bond) =>
+      bond.coupon_rate > 0 ? (
+        <span className="text-left tabular-nums inline-flex items-center gap-1 w-full justify-start">
+          <Percent className="w-3 h-3 text-muted-foreground" />
+          <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+            {bond.coupon_rate.toFixed(2)}%
+          </span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground text-sm">—</span>
+      ),
+  },
+  {
+    key: 'ytm',
+    header: 'العائد للاستحقاق',
+    align: 'left',
+    sortable: true,
+    render: (bond) => (
+      <span className="text-left tabular-nums inline-flex items-center gap-1 w-full justify-start">
+        <TrendingUp className="w-3 h-3 text-amber-500" />
+        <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
+          {bond.ytm.toFixed(2)}%
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: 'duration',
+    header: 'المدة',
+    align: 'right',
+    sortable: true,
+    render: (bond) => <span className="text-sm">{bond.duration}</span>,
+  },
+  {
+    key: 'maturity_date',
+    header: 'تاريخ الاستحقاق',
+    align: 'right',
+    sortable: true,
+    render: (bond) => {
+      const maturityDate = new Date(bond.maturity_date);
+      const daysToMaturity = Math.ceil(
+        (maturityDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      );
+      return (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">
+            {maturityDate.toLocaleDateString('ar-EG')}
+          </span>
+          <Badge
+            variant={daysToMaturity < 90 ? 'default' : 'secondary'}
+            className={cn(
+              'text-[10px] w-fit',
+              daysToMaturity < 90 &&
+                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+            )}
+          >
+            <Clock className="w-3 h-3 ml-1" />
+            {daysToMaturity} يوم
+          </Badge>
+        </div>
+      );
+    },
+  },
+];
 
 export function TreasuryBondsView() {
   const [activeTab, setActiveTab] = useState<TabType>('government_bonds');
@@ -280,34 +375,13 @@ export function TreasuryBondsView() {
               </div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent bg-muted/50">
-                  <TableHead className="text-right font-semibold">الرمز / الاسم</TableHead>
-                  <TableHead className="text-left font-semibold">السعر</TableHead>
-                  <TableHead className="text-left font-semibold">العائد السنوي</TableHead>
-                  <TableHead className="text-left font-semibold">العائد للاستحقاق</TableHead>
-                  <TableHead className="text-right font-semibold">المدة</TableHead>
-                  <TableHead className="text-right font-semibold">تاريخ الاستحقاق</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentBonds.length > 0 ? (
-                  currentBonds.map((bond) => (
-                    <BondRow key={bond.symbol} bond={bond} />
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex flex-col items-center gap-2">
-                        <FileText className="w-8 h-8 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">لا توجد بيانات متاحة في هذا القسم</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <UnifiedTable<TreasuryBond>
+              columns={bondColumns}
+              data={currentBonds}
+              keyField="symbol"
+              emptyTextAr="لا توجد بيانات متاحة في هذا القسم"
+              emptyText="لا توجد بيانات متاحة في هذا القسم"
+            />
           )}
         </CardContent>
       </Card>

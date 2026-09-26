@@ -108,9 +108,12 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         ]);
 
         if (cancelled) return;
-        useAnalysisStore.getState().setStocks(stocksRes.stocks || []);
-        useAnalysisStore.getState().setPredictions(predsRes.predictions || [], predsRes.closed_predictions || []);
-        useAnalysisStore.getState().setStoredAnalysis(storedRes.data || []);
+        useAnalysisStore.getState().setStocks((stocksRes.stocks || []) as Record<string, unknown>[]);
+        useAnalysisStore.getState().setPredictions(
+          (predsRes.predictions || []) as Record<string, unknown>[],
+          (predsRes.closed_predictions || []) as Record<string, unknown>[],
+        );
+        useAnalysisStore.getState().setStoredAnalysis((storedRes.data || []) as unknown as Record<string, unknown>[]);
       } finally {
         if (!cancelled) {
           useAnalysisStore.getState().setFetching(false);

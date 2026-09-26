@@ -95,6 +95,14 @@ interface RadarStock {
   price_stability: number;
   range_10d_pct: number;
   roc_10d: number | null;
+  roc_30d?: number | null;
+  maker_activity?: string | null;
+  buy_pct?: number | null;
+  net_flow_egp?: number | null;
+  kill_switch?: boolean | null;
+  life_cycle?: string | null;
+  accumulation?: string | null;
+  expected?: string | null;
   path: RadarPath;
   position_size: number;
   reason: string;
@@ -1171,8 +1179,8 @@ function StockTable({
                 <TableCell className={`font-mono text-right hidden sm:table-cell ${pnlColorClass(stock.roc_10d)}`}>
                   {fmtPct(stock.roc_10d)}
                 </TableCell>
-                <TableCell className={`font-mono text-right hidden lg:table-cell ${pnlColorClass((stock as any).roc_30d)}`}>
-                  {fmtPct((stock as any).roc_30d)}
+                <TableCell className={`font-mono text-right hidden lg:table-cell ${pnlColorClass(stock.roc_30d ?? undefined)}`}>
+                  {fmtPct(stock.roc_30d)}
                 </TableCell>
                 <TableCell className={`font-mono text-right hidden sm:table-cell ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
                   {volRatio.toFixed(2)}×
@@ -1186,61 +1194,61 @@ function StockTable({
                 </TableCell>
                 <TableCell className="text-center hidden md:table-cell">
                   <span className={
-                    (stock as any).maker_activity === 'عالي'
+                    stock.maker_activity === 'عالي'
                       ? 'text-rose-600 dark:text-rose-400 font-bold'
-                      : (stock as any).maker_activity === 'متوسط'
+                      : stock.maker_activity === 'متوسط'
                         ? 'text-amber-600 dark:text-amber-400'
                         : 'text-muted-foreground'
                   }>
-                    {(stock as any).maker_activity || '-'}
+                    {stock.maker_activity || '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
                   <span className={
-                    (stock as any).buy_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400 font-bold'
-                    : (stock as any).buy_pct <= 40 ? 'text-rose-600 dark:text-rose-400 font-bold'
+                    (stock.buy_pct ?? 0) >= 60 ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                    : (stock.buy_pct ?? 0) <= 40 ? 'text-rose-600 dark:text-rose-400 font-bold'
                     : 'text-muted-foreground'
                   }>
-                    {(stock as any).buy_pct != null ? `${(stock as any).buy_pct}%` : '-'}
+                    {stock.buy_pct != null ? `${stock.buy_pct}%` : '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center hidden lg:table-cell font-mono text-xs">
-                  <span className={pnlColorClass((stock as any).net_flow_egp)}>
-                    {(stock as any).net_flow_egp != null
-                      ? `${(stock as any).net_flow_egp >= 0 ? '+' : ''}${(Math.abs((stock as any).net_flow_egp) / 1_000_000).toFixed(1)}M`
+                  <span className={pnlColorClass(stock.net_flow_egp ?? undefined)}>
+                    {stock.net_flow_egp != null
+                      ? `${stock.net_flow_egp >= 0 ? '+' : ''}${(Math.abs(stock.net_flow_egp) / 1_000_000).toFixed(1)}M`
                       : '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center hidden xl:table-cell text-xs">
-                  {(stock as any).kill_switch ? (
+                  {stock.kill_switch ? (
                     <span className="text-rose-600 dark:text-rose-400 font-bold">⚠️ KILL</span>
-                  ) : (stock as any).life_cycle && (stock as any).life_cycle !== 'عادي' ? (
+                  ) : stock.life_cycle && stock.life_cycle !== 'عادي' ? (
                     <span className={
-                      (stock as any).life_cycle.includes('انفجار') ? 'text-emerald-600 font-bold'
-                      : (stock as any).life_cycle.includes('توزيع') ? 'text-rose-600 font-bold'
-                      : (stock as any).life_cycle.includes('نعاس') ? 'text-amber-600'
-                      : (stock as any).life_cycle.includes('حبس') ? 'text-rose-600 font-bold'
+                      stock.life_cycle.includes('انفجار') ? 'text-emerald-600 font-bold'
+                      : stock.life_cycle.includes('توزيع') ? 'text-rose-600 font-bold'
+                      : stock.life_cycle.includes('نعاس') ? 'text-amber-600'
+                      : stock.life_cycle.includes('حبس') ? 'text-rose-600 font-bold'
                       : 'text-muted-foreground'
                     }>
-                      {(stock as any).life_cycle}
+                      {stock.life_cycle}
                     </span>
                   ) : <span className="text-muted-foreground">-</span>}
                 </TableCell>
                 <TableCell className="text-center hidden md:table-cell">
                   <span className={
-                    (stock as any).accumulation?.includes('تجميع قوي')
+                    stock.accumulation?.includes('تجميع قوي')
                       ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                      : (stock as any).accumulation?.includes('تصريف قوي')
+                      : stock.accumulation?.includes('تصريف قوي')
                         ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                        : (stock as any).accumulation?.includes('تجميع')
+                        : stock.accumulation?.includes('تجميع')
                           ? 'text-emerald-500 dark:text-emerald-500'
                           : 'text-amber-500 dark:text-amber-500'
                   }>
-                    {(stock as any).accumulation || '-'}
+                    {stock.accumulation || '-'}
                   </span>
                 </TableCell>
                 <TableCell className="hidden xl:table-cell text-xs text-muted-foreground">
-                  {(stock as any).expected || '-'}
+                  {stock.expected || '-'}
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
                   {sector || '—'}

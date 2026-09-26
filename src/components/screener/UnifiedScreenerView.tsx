@@ -10,9 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   RefreshCw, Download, Filter, Search, AlertTriangle,
   TrendingUp, TrendingDown, Zap, ChevronUp, ChevronDown,
@@ -218,54 +216,216 @@ function AdvancedScreenerTab() {
 
       {/* Table */}
       <Card><CardContent className="p-0">
-        <div className="max-h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-              <TableRow>
-                <SortHead field="ticker" label="السهم" />
-                <SortHead field="current_price" label="السعر" cls="w-20" />
-                <SortHead field="change_percent" label="التغير" cls="w-20" />
-                <SortHead field="volume" label="الحجم" cls="w-20" />
-                <SortHead field="turnover_egp" label="التداول" cls="w-24" />
-                <SortHead field="market_cap" label="قيمة سوقية" cls="w-24" />
-                <SortHead field="pe_ratio" label="P/E" cls="w-16" />
-                <SortHead field="roe" label="ROE" cls="w-16" />
-                <SortHead field="dividend_yield" label="توزيع" cls="w-16" />
-                <SortHead field="rsi" label="RSI" cls="w-16" />
-                <TableHead className="text-right w-20">MA</TableHead>
-                <TableHead className="text-right w-20">52w</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">لا توجد نتائج</TableCell></TableRow>
-              ) : filtered.map(s => (
-                <TableRow key={s.ticker} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="font-mono font-bold text-xs">{s.ticker}</div>
-                    <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{s.name_ar || s.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{s.sector}</div>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{fmt(s.current_price)}</TableCell>
-                  <TableCell className={cn('font-mono text-xs font-bold', chgColor(s.change_percent))}>{s.change_percent > 0 ? '+' : ''}{fmt(s.change_percent)}%</TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.volume)}{s.volume_surge && <Zap className="inline w-2.5 h-2.5 text-amber-500 ml-0.5" />}</TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.turnover_egp)}</TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.market_cap)}</TableCell>
-                  <TableCell className="font-mono text-xs">{s.pe_ratio !== null ? fmt(s.pe_ratio, 1) : '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">{s.roe !== null ? fmt(s.roe, 1) : '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">{s.dividend_yield !== null ? fmt(s.dividend_yield, 1) : '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">{s.rsi !== null ? fmt(s.rsi, 0) : '—'}</TableCell>
-                  <TableCell><div className="flex gap-0.5"><Badge variant={s.above_ma_50 ? 'default' : 'outline'} className="text-[8px] px-1">50</Badge><Badge variant={s.above_ma_200 ? 'default' : 'outline'} className="text-[8px] px-1">200</Badge></div></TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground">{s.distance_from_52w_high !== null ? `${fmt(s.distance_from_52w_high, 0)}%` : '—'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<ScreenerStock>
+          columns={unifiedScreenerColumns}
+          data={filtered}
+          keyField="ticker"
+          dense
+          maxHeight="max-h-[600px]"
+          emptyTextAr="لا توجد نتائج"
+        />
       </CardContent></Card>
     </div>
   );
 }
+
+// ─── UnifiedTable columns for UnifiedScreenerView (Rule 52) ──
+const unifiedScreenerColumns: Column<ScreenerStock>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    render: (s) => (
+      <div>
+        <div className="font-mono font-bold text-xs">{s.ticker}</div>
+        <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{s.name_ar || s.name}</div>
+        <div className="text-[10px] text-muted-foreground">{s.sector}</div>
+      </div>
+    ),
+  },
+  {
+    key: 'current_price',
+    header: 'السعر',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => <span className="font-mono text-xs">{fmt(s.current_price)}</span>,
+  },
+  {
+    key: 'change_percent',
+    header: 'التغير',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => (
+      <span className={cn('font-mono text-xs font-bold', chgColor(s.change_percent))}>
+        {s.change_percent > 0 ? '+' : ''}{fmt(s.change_percent)}%
+      </span>
+    ),
+  },
+  {
+    key: 'volume',
+    header: 'الحجم',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => (
+      <span className="font-mono text-[10px] text-muted-foreground">
+        {fmtVol(s.volume)}
+        {s.volume_surge && <Zap className="inline w-2.5 h-2.5 text-amber-500 ml-0.5" />}
+      </span>
+    ),
+  },
+  {
+    key: 'turnover_egp',
+    header: 'التداول',
+    align: 'left',
+    sortable: true,
+    width: 'w-24',
+    render: (s) => (
+      <span className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.turnover_egp)}</span>
+    ),
+  },
+  {
+    key: 'market_cap',
+    header: 'قيمة سوقية',
+    align: 'left',
+    sortable: true,
+    width: 'w-24',
+    render: (s) => (
+      <span className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.market_cap)}</span>
+    ),
+  },
+  {
+    key: 'pe_ratio',
+    header: 'P/E',
+    align: 'left',
+    sortable: true,
+    width: 'w-16',
+    render: (s) => (
+      <span className="font-mono text-xs">{s.pe_ratio !== null ? fmt(s.pe_ratio, 1) : '—'}</span>
+    ),
+  },
+  {
+    key: 'roe',
+    header: 'ROE',
+    align: 'left',
+    sortable: true,
+    width: 'w-16',
+    render: (s) => (
+      <span className="font-mono text-xs">{s.roe !== null ? fmt(s.roe, 1) : '—'}</span>
+    ),
+  },
+  {
+    key: 'dividend_yield',
+    header: 'توزيع',
+    align: 'left',
+    sortable: true,
+    width: 'w-16',
+    render: (s) => (
+      <span className="font-mono text-xs">{s.dividend_yield !== null ? fmt(s.dividend_yield, 1) : '—'}</span>
+    ),
+  },
+  {
+    key: 'rsi',
+    header: 'RSI',
+    align: 'left',
+    sortable: true,
+    width: 'w-16',
+    render: (s) => (
+      <span className="font-mono text-xs">{s.rsi !== null ? fmt(s.rsi, 0) : '—'}</span>
+    ),
+  },
+  {
+    key: 'ma',
+    header: 'MA',
+    align: 'right',
+    width: 'w-20',
+    render: (s) => (
+      <div className="flex gap-0.5">
+        <Badge variant={s.above_ma_50 ? 'default' : 'outline'} className="text-[8px] px-1">50</Badge>
+        <Badge variant={s.above_ma_200 ? 'default' : 'outline'} className="text-[8px] px-1">200</Badge>
+      </div>
+    ),
+  },
+  {
+    key: 'distance_from_52w_high',
+    header: '52w',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => (
+      <span className="font-mono text-[10px] text-muted-foreground">
+        {s.distance_from_52w_high !== null ? `${fmt(s.distance_from_52w_high, 0)}%` : '—'}
+      </span>
+    ),
+  },
+];
+
+const topPerformerColumns2: Column<TopPerformerStock>[] = [
+  {
+    key: 'ticker',
+    header: 'السهم',
+    align: 'right',
+    sortable: true,
+    render: (s) => (
+      <div>
+        <div className="font-mono font-bold text-xs">{s.ticker}</div>
+        <div className="text-[10px] text-muted-foreground truncate max-w-[150px]">{s.name_ar || s.name}</div>
+        {s.sector && <div className="text-[10px] text-muted-foreground">{s.sector}</div>}
+      </div>
+    ),
+  },
+  {
+    key: 'start_price',
+    header: 'سعر بداية',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => <span className="font-mono text-xs">{fmt(s.start_price)}</span>,
+  },
+  {
+    key: 'end_price',
+    header: 'سعر نهاية',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => <span className="font-mono text-xs">{fmt(s.end_price)}</span>,
+  },
+  {
+    key: 'change_pct',
+    header: 'التغير',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => (
+      <span className={cn('font-mono text-xs font-bold', chgColor(s.change_pct))}>
+        {s.change_pct >= 0 ? '+' : ''}{fmt(s.change_pct)}%
+      </span>
+    ),
+  },
+  {
+    key: 'period_days',
+    header: 'أيام',
+    align: 'left',
+    sortable: true,
+    width: 'w-16',
+    render: (s) => (
+      <span className="font-mono text-[10px] text-muted-foreground">{s.period_days}</span>
+    ),
+  },
+  {
+    key: 'end_volume',
+    header: 'حجم',
+    align: 'left',
+    sortable: true,
+    width: 'w-20',
+    render: (s) => (
+      <span className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.end_volume)}</span>
+    ),
+  },
+];
 
 // ─── Top Performers Tab ──────────────────────────────────────────────────────
 
@@ -337,28 +497,14 @@ function TopPerformersTab() {
 
       {/* Table */}
       <Card><CardContent className="p-0">
-        <div className="max-h-[600px] overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10"><TableRow>
-              <TableHead className="text-right">السهم</TableHead><TableHead className="text-right w-20">سعر بداية</TableHead>
-              <TableHead className="text-right w-20">سعر نهاية</TableHead><TableHead className="text-right w-20">التغير</TableHead>
-              <TableHead className="text-right w-16">أيام</TableHead><TableHead className="text-right w-20">حجم</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {results.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا توجد نتائج</TableCell></TableRow> :
-              results.map(s => (
-                <TableRow key={`${s.ticker}-${s.start_date}`} className="hover:bg-muted/50">
-                  <TableCell><div className="font-mono font-bold text-xs">{s.ticker}</div><div className="text-[10px] text-muted-foreground truncate max-w-[150px]">{s.name_ar || s.name}</div>{s.sector && <div className="text-[10px] text-muted-foreground">{s.sector}</div>}</TableCell>
-                  <TableCell className="font-mono text-xs">{fmt(s.start_price)}</TableCell>
-                  <TableCell className="font-mono text-xs">{fmt(s.end_price)}</TableCell>
-                  <TableCell className={cn('font-mono text-xs font-bold', chgColor(s.change_pct))}>{s.change_pct >= 0 ? '+' : ''}{fmt(s.change_pct)}%</TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground">{s.period_days}</TableCell>
-                  <TableCell className="font-mono text-[10px] text-muted-foreground">{fmtVol(s.end_volume)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <UnifiedTable<TopPerformerStock>
+          columns={topPerformerColumns2}
+          data={results}
+          keyField="ticker"
+          dense
+          maxHeight="max-h-[600px]"
+          emptyTextAr="لا توجد نتائج"
+        />
       </CardContent></Card>
     </div>
   );

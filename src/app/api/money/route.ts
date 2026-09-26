@@ -16,6 +16,9 @@ import path from 'path';
 
 export const revalidate = 10;
 
+/** Generic SQL row returned by better-sqlite3. */
+type SqlRow = Record<string, unknown>;
+
 export async function GET(request: NextRequest) {
   try {
     const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Find user — try session, then first portfolio user
     let userId: string | null = null;
     try {
-      const user = db.prepare('SELECT DISTINCT user_id FROM portfolio_assets LIMIT 1').get() as any;
+      const user = db.prepare('SELECT DISTINCT user_id FROM portfolio_assets LIMIT 1').get() as { user_id?: string } | undefined;
       userId = user?.user_id || null;
     } catch {}
 
@@ -47,21 +50,21 @@ export async function GET(request: NextRequest) {
     const section = searchParams.get('section') || 'overview';
 
     if (section === 'overview') {
-      const portfolio = db.prepare('SELECT * FROM portfolio_assets WHERE user_id = ?').all(userId) as any[];
+      const portfolio = db.prepare('SELECT * FROM portfolio_assets WHERE user_id = ?').all(userId) as Array<SqlRow>;
       const watchlist = db.prepare(`
         SELECT w.*, s.ticker, s.name, s.current_price, s.change_percent
         FROM user_stock_watchlists w
         LEFT JOIN stocks s ON w.stock_id = s.id
         WHERE w.user_id = ?
-      `).all(userId) as any[];
+      `).all(userId) as Array<SqlRow>;
 
       let alertsCount = 0;
       try {
-        const a = db.prepare('SELECT COUNT(*) as c FROM price_alerts WHERE user_id = ? AND is_active = 1').get(userId) as any;
+        const a = db.prepare('SELECT COUNT(*) as c FROM price_alerts WHERE user_id = ? AND is_active = 1').get(userId) as { c?: number } | undefined;
         alertsCount = a?.c || 0;
       } catch {}
 
-      let journal = { total: 0, open: 0, wins: 0, losses: 0 } as any;
+      let journal: { total: number; open: number; wins: number; losses: number } = { total: 0, open: 0, wins: 0, losses: 0 };
       try {
         journal = db.prepare(`
           SELECT COUNT(*) as total,
@@ -113,16 +116,20 @@ export async function GET(request: NextRequest) {
         LEFT JOIN stocks s ON p.stock_ticker = s.ticker
         WHERE p.user_id = ?
         ORDER BY p.total_invested DESC
-      `).all(userId) as any[];
+      `).all(userId) as Array<SqlRow>;
 
       const enriched = assets.map(a => {
-        const liveValue = a.live_price ? a.live_price * (a.quantity || 0) : a.current_value || 0;
-        const pnl = liveValue - (a.total_invested || 0);
+        const livePrice = Number(a.live_price ?? 0);
+        const qty = Number(a.quantity ?? 0);
+        const invested = Number(a.total_invested ?? 0);
+        const current = Number(a.current_value ?? 0);
+        const liveValue = livePrice ? livePrice * qty : current;
+        const pnl = liveValue - invested;
         return {
           ...a,
           live_value: Math.round(liveValue * 100) / 100,
           pnl: Math.round(pnl * 100) / 100,
-          pnl_pct: a.total_invested > 0 ? Math.round(pnl / a.total_invested * 10000) / 100 : 0,
+          pnl_pct: invested > 0 ? Math.round(pnl / invested * 10000) / 100 : 0,
         };
       });
 
@@ -138,7 +145,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN stocks s ON w.stock_id = s.id
         WHERE w.user_id = ?
         ORDER BY w.added_at DESC
-      `).all(userId) as any[];
+      `).all(userId) as Array<SqlRow>;
 
       db.close();
       return NextResponse.json({ success: true, data: items });
@@ -151,9 +158,9 @@ export async function GET(request: NextRequest) {
         LEFT JOIN stocks s ON j.ticker = s.ticker
         WHERE j.user_id = ?
         ORDER BY j.entry_date DESC
-      `).all(userId) as any[];
+      `).all(userId) as Array<SqlRow>;
 
-      let stats: any = { total: 0, open: 0, winning: 0, losing: 0, total_pnl: 0, avg_return: 0 };
+      let stats: { total: number; open: number; winning: number; losing: number; total_pnl: number; avg_return: number } = { total: 0, open: 0, winning: 0, losing: 0, total_pnl: 0, avg_return: 0 };
       try {
         stats = db.prepare(`
           SELECT COUNT(*) as total,

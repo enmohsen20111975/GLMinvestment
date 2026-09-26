@@ -116,8 +116,9 @@ async function vpsApiGet<T>(endpoint: string, params?: Record<string, string>): 
     }
 
     return result.data ?? (result as unknown as T);
-  } catch (err: any) {
-    console.error(`[vps-api] ${endpoint} failed:`, err.message);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[vps-api] ${endpoint} failed:`, message);
     return null;
   }
 }
@@ -126,10 +127,37 @@ async function vpsApiGet<T>(endpoint: string, params?: Record<string, string>): 
 
 interface PythonResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: string;
   source?: string;
   cached?: boolean;
+}
+
+/** Quote shape returned by the VPS API for `/api/stock/{symbol}`. */
+interface VpsStockQuote {
+  symbol?: string;
+  price?: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  volume?: number;
+  change?: number;
+  change_percent?: number;
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
+/** Quote shape returned by the VPS API for `/api/gold` (adds original_symbol/exchange). */
+interface VpsGoldQuote extends VpsStockQuote {
+  original_symbol?: string;
+  exchange?: string;
+}
+
+/** Per-ticker error returned by the Python tv_fetcher batch endpoint. */
+interface TvFetcherBatchError {
+  ticker?: string;
+  error?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -226,13 +254,13 @@ export async function fetchQuote(ticker: string): Promise<EgxpyQuote | null> {
   // Try VPS API first
   if (VPS_API_URL) {
     try {
-      const data = await vpsApiGet<any>(`/api/stock/${symbol}`);
+      const data = await vpsApiGet<VpsStockQuote>(`/api/stock/${symbol}`);
       if (data) {
         const quote: EgxpyQuote = {
           ticker: symbol,
           exchange: 'EGX',
           current_price: data.price,
-          previous_close: data.open || data.price - data.change,
+          previous_close: data.open || (data.price != null && data.change != null ? data.price - data.change : undefined),
           open_price: data.open || data.price,
           high_price: data.high || data.price,
           low_price: data.low || data.price,
@@ -245,22 +273,24 @@ export async function fetchQuote(ticker: string): Promise<EgxpyQuote | null> {
         setCache(cacheKey, quote);
         return quote;
       }
-    } catch (err: any) {
-      console.warn(`[tv-bridge] VPS API failed for ${symbol}:`, err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[tv-bridge] VPS API failed for ${symbol}:`, message);
     }
   }
 
   // Fall back to Python
   try {
-    const result = await runTvFetcherJSON<any>(['quote', symbol], 20_000);
-    if (result.error || !result.success) {
+    const result = await runTvFetcherJSON<EgxpyQuote & { success?: boolean; error?: string }>(['quote', symbol], 20_000);
+    if (result.error || result.success === false) {
       console.warn(`[tv-bridge] No data for ${symbol}:`, result.error);
       return null;
     }
     setCache(cacheKey, result);
     return result as EgxpyQuote;
-  } catch (err: any) {
-    console.error(`[tv-bridge] fetchQuote(${symbol}) failed:`, err.message);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[tv-bridge] fetchQuote(${symbol}) failed:`, message);
     return null;
   }
 }
@@ -302,15 +332,15 @@ export async function fetchBatchQuotes(tickers: string[]): Promise<EgxpyQuote[]>
   // Try VPS API first
   if (VPS_API_URL) {
     try {
-      const data = await vpsApiGet<any[]>('/api/stocks');
+      const data = await vpsApiGet<VpsStockQuote[]>('/api/stocks');
       if (data && Array.isArray(data)) {
         const quotes: EgxpyQuote[] = data
-          .filter((item: any) => symbols.includes(item.symbol?.toUpperCase()))
-          .map((item: any) => ({
-            ticker: item.symbol.toUpperCase(),
+          .filter((item) => symbols.includes(String(item.symbol ?? '').toUpperCase()))
+          .map((item) => ({
+            ticker: String(item.symbol).toUpperCase(),
             exchange: 'EGX',
             current_price: item.price,
-            previous_close: item.open || item.price - item.change,
+            previous_close: item.open || (item.price != null && item.change != null ? item.price - item.change : undefined),
             open_price: item.open || item.price,
             high_price: item.high || item.price,
             low_price: item.low || item.price,
@@ -323,25 +353,27 @@ export async function fetchBatchQuotes(tickers: string[]): Promise<EgxpyQuote[]>
         setCache(cacheKey, quotes);
         return quotes;
       }
-    } catch (err: any) {
-      console.warn('[tv-bridge] VPS API batch failed:', err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('[tv-bridge] VPS API batch failed:', message);
     }
   }
 
   // Fall back to Python
   try {
     const timeout = Math.max(30_000, symbols.length * 2000);
-    const result = await runTvFetcherJSON<{ results: EgxpyQuote[]; errors: any[] }>(
+    const result = await runTvFetcherJSON<{ results: EgxpyQuote[]; errors: TvFetcherBatchError[] }>(
       ['batch', symbols.join(',')],
       timeout
     );
     if (result.errors?.length) {
-      console.warn(`[tv-bridge] Batch errors:`, result.errors.map(e => e.ticker).join(', '));
+      console.warn(`[tv-bridge] Batch errors:`, result.errors.map(e => e.ticker).filter(Boolean).join(', '));
     }
     setCache(cacheKey, result.results);
     return result.results;
-  } catch (err: any) {
-    console.error(`[tv-bridge] fetchBatchQuotes failed:`, err.message);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[tv-bridge] fetchBatchQuotes failed:`, message);
     return [];
   }
 }
@@ -358,13 +390,13 @@ export async function fetchAllStocks(): Promise<EgxpyQuote[]> {
   // Try VPS API
   if (VPS_API_URL) {
     try {
-      const data = await vpsApiGet<any[]>('/api/stocks');
+      const data = await vpsApiGet<VpsStockQuote[]>('/api/stocks');
       if (data && Array.isArray(data)) {
-        const quotes: EgxpyQuote[] = data.map((item: any) => ({
-          ticker: item.symbol.toUpperCase(),
+        const quotes: EgxpyQuote[] = data.map((item) => ({
+          ticker: String(item.symbol).toUpperCase(),
           exchange: 'EGX',
           current_price: item.price,
-          previous_close: item.open || item.price - item.change,
+          previous_close: item.open || (item.price != null && item.change != null ? item.price - item.change : undefined),
           open_price: item.open || item.price,
           high_price: item.high || item.price,
           low_price: item.low || item.price,
@@ -377,8 +409,9 @@ export async function fetchAllStocks(): Promise<EgxpyQuote[]> {
         setCache(cacheKey, quotes);
         return quotes;
       }
-    } catch (err: any) {
-      console.warn('[tv-bridge] VPS API fetchAllStocks failed:', err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('[tv-bridge] VPS API fetchAllStocks failed:', message);
     }
   }
 
@@ -415,13 +448,13 @@ export async function fetchGoldPrices(): Promise<EgxpyQuote[]> {
   // Try VPS API
   if (VPS_API_URL) {
     try {
-      const data = await vpsApiGet<any[]>('/api/gold');
+      const data = await vpsApiGet<VpsGoldQuote[]>('/api/gold');
       if (data && Array.isArray(data)) {
-        const quotes: EgxpyQuote[] = data.map((item: any) => ({
-          ticker: item.original_symbol || item.symbol.toUpperCase(),
+        const quotes: EgxpyQuote[] = data.map((item) => ({
+          ticker: item.original_symbol || String(item.symbol).toUpperCase(),
           exchange: item.exchange || 'TVC',
           current_price: item.price,
-          previous_close: item.open || item.price - item.change,
+          previous_close: item.open || (item.price != null && item.change != null ? item.price - item.change : undefined),
           open_price: item.open || item.price,
           high_price: item.high || item.price,
           low_price: item.low || item.price,
@@ -434,8 +467,9 @@ export async function fetchGoldPrices(): Promise<EgxpyQuote[]> {
         setCache(cacheKey, quotes);
         return quotes;
       }
-    } catch (err: any) {
-      console.warn('[tv-bridge] VPS API fetchGoldPrices failed:', err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('[tv-bridge] VPS API fetchGoldPrices failed:', message);
     }
   }
 
@@ -446,8 +480,9 @@ export async function fetchGoldPrices(): Promise<EgxpyQuote[]> {
  * Fetch stock record from local SQLite database.
  * Returns null on any failure.
  */
-export async function fetchDbStock(ticker: string): Promise<any | null> {
+export async function fetchDbStock(_ticker: string): Promise<Record<string, unknown> | null> {
   // Not implemented - use the light DB directly
+  void _ticker;
   return null;
 }
 
