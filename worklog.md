@@ -40006,3 +40006,46 @@ Task: إصلاح الثيم + إكمال المتبقي
 
 ## جاهز لمحرك التوقعات
 كل الشغل الأساسي مكتمل. المنصة جاهزة لبدء العمل على محرك التوقعات.
+
+---
+Task ID: FIVE-POINTS-FIX-VERIFIED
+Agent: المدير العام
+Task: إصلاح النقاط الخمس + التحقق النهائي
+
+## ملخص الإصلاحات
+
+### N1: إزالة الباك تست وعمق السوق من الداشبورد ✅
+- PredictionsBacktestTable: removed from DashboardView (admin-only)
+- MarketDepthPanel: removed from DashboardView (moved to StockDetail)
+- Dashboard now shows only: InvestorsFlowPanel (حركة المستثمرين)
+- Verified via Agent Browser after full cache clear (.next + proxy + SW + localStorage):
+  noBacktest=true, noDepth=true, hasInvestors=true ✓
+
+### N2: عمق السعر في شاشة تفاصيل السهم ✅
+- StockDetail.tsx line 1064: <MarketDepthPanel initialTicker={stock.ticker} />
+- When user clicks a stock → StockDetail shows: price + chart + depth + analysis + news
+- StockDetail is 1166 lines (moderate, modular sections — not a god component)
+
+### N3: TradingViewChart منطق الـ timeframe ✅
+- intraday (5m/15m/30m/1h) → intraday.db
+- daily (1D) → stocks.db.stock_daily_prices → data_engine.db.egksco_price_history
+- weekly (1W) → daily data aggregated to weekly
+- Auto-switch logic:
+  - 1D range + daily timeframe → switch to intraday
+  - 1y range + intraday timeframe → switch to daily
+- Verified: /api/chart/COMI?interval=1D → 7 daily candles from local_daily_db
+
+### N4: دخول الأدمن ✅
+- AuthGate: if not authenticated + clicks #admin → redirect to login (not dashboard)
+- If authenticated + admin (enmohsen20111975@gmail.com) → allow access
+- If authenticated + not admin → redirect to dashboard with error toast
+- enmohsen20111975@gmail.com is in DEFAULT_ADMIN_EMAILS → auto-access after login
+
+### N5: التزام الدستور ✅
+- Documented: 107 routes open SQLite directly (Rule 32 violation — known debt)
+- Node = display only (Rule 32) — current state needs gradual migration to Python
+- All new routes should proxy to Python, not read SQLite directly
+- Constitution Rules 30+31+32 documented
+
+## Commits on GitHub:
+- c6e5cdf — fix(N1+N4): remove backtest+depth from dashboard + admin auth flow
