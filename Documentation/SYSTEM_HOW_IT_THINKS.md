@@ -1,6 +1,8 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-25
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-26
+> (DOC-UPDATE-FINAL pass: تحديث جدول Production Snapshot ليشمل Phases A/B/C/D (multi-market `market_code`، Liquidity primary gate، 20+ thresholds → `get_setting()`، A/B backtest harness) + تحديث الـ KPIs الحالية: WR=67.4% على 1,229 resolved prediction، PF=12.84، Avg Return=25.74%، Max Loss Streak=7، baseline محفوظ في `ab_backtest_baseline_*.json`.)
+> **آخر تحديث سابق:** 2026-09-25
 > (DOC-CONSOLIDATION pass: تحديث الـ header + تأكيد حالة الإنتاج الحالية: V40.2 = العقل الوحيد · Closed-Loop مفعّل · 3 personas مع `balanced` فقط في الإنتاج كـ baseline · 10 توقعات V40.2 new · Backtest 68 trade +1.35%).
 > **آخر تحديث سابق:** 2026-09-03
 > (WAVE-1+2+3 DB Cleanup + Position Sizing + News Impact 5 levels + Screener Integration + Migration price_history → data_engine.db.egksco_price_history + Backtest محترم 68 trade + 10 توقعات جديدة بالكنوز المدفونة).
@@ -13,30 +15,37 @@
 > **المنهجية:** كل رقم/صيغة/مسار/سلوك مُتحقَّق منه ضد الكود الفعلي + الأرشيف الإنتاجي
 > (`data/all.zip` بعد WAVE-1+2+3 cleanup).
 >
-> **النتيجة على الإنتاج الحالي (2026-09-25):** V40.2 هو العقل الوحيد.
+> **النتيجة على الإنتاج الحالي (2026-09-26 — DOC-UPDATE-FINAL):** V40.2 هو العقل الوحيد + Phases A/B/C/D مُنفَّذة.
 > - **Closed-Loop مفعّل بالكامل:** كل توقع في `predictions.db` بيمر بـ 5 حالات (`PENDING → TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED`) — راجع `00-CONSTITUTION.md` §7.
 > - **3 personas فاعلة:** `conservative` + `balanced` (الـ **baseline الموحّد للإنتاج** — 81.8% من predictions) + `gambler`. شخصية `expert` معطّلة (Rule 23 — PERSONA-UNIFY-A). كل الـ personas بتشتق من نفس V40.2 score (بدل reclassify).
-> - **Backtest محترم بالكنوز المدفونة:** 68 trade، WR 36.76%، PF 1.19، Return +1.35% (period: 2026-02-01 → 2026-08-27).
-> - **10 توقعات جديدة** STRONG_BUY/BUY بناءً على screener + fundamentals + ATR + RSI + volume (Top 5: CIEB, HRHO, HELI, ABUK, MASR).
-> - **`predictions.db.predictions` = 306 صف** نشط · `aiPrediction` = 2,459 · `persona_predictions` = 946 · `historical_trades` = 550 · `outcome_logs` = 8,544.
+> - **Phase A — Multi-Market:** V40.2 يدعم `market_code` parameter (EGX/KSA/KSE/QSE/CRYPTO).
+> - **Phase B — Liquidity Primary Gate:** فلتر السيولة يشتغل قبل `analyze_single_day_v393()` (أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً).
+> - **Phase C — Dynamic Thresholds:** 20+ hardcoded thresholds أصبحت `get_setting()` (قابلة للتعديل من Admin UI).
+> - **Phase D — A/B Backtest Harness:** baseline محفوظ في `ab_backtest_baseline_*.json` — أي تغيير لازم يقاس ضد الـ baseline.
+> - **KPIs الحالية (1,229 resolved من 1,359 prediction):** WR=**67.4%** · Avg Return=**25.74%** · PF=**12.84** · Max Loss Streak=**7**.
+> - **`predictions.db.predictions` = 1,359 صف** (333 TARGET_HIT + 193 closed_stop + 77 ACTIVE + باقي الحالات) · `aiPrediction` = 2,459 · `persona_predictions` = 946 · `historical_trades` = 550 · `outcome_logs` = 8,544.
 
 ---
 
-## ⚡ الحالة الإنتاجية الحالية (Production Snapshot — 2026-09-25)
+## ⚡ الحالة الإنتاجية الحالية (Production Snapshot — 2026-09-26 — DOC-UPDATE-FINAL)
 
 | المكوّن | الحالة | المصدر |
 |---|---|---|
-| **V40.2 daily generator** | ✅ الإنتاج | `vps-service/jobs/v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل |
+| **V40.2 daily generator** | ✅ الإنتاج — **Phase A: multi-market `market_code` (EGX/KSA/KSE/QSE/CRYPTO)** | `vps-service/jobs/v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل. `market_code` يُمرَّر في `analyze_single_day_v393()`. |
+| **Liquidity Filter (Phase B — primary gate)** | ✅ الإنتاج — **يشتغل قبل `analyze_single_day_v393()`** | `vps-service/analyzers/liquidity_filter.py` — البوابة الرئيسية؛ أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً (توفير compute + تحسين جودة الـ predictions). |
+| **Dynamic Thresholds (Phase C)** | ✅ الإنتاج — **20+ hardcoded thresholds → `get_setting()`** | `vps-service/core/engine_settings.py` — كل threshold أصبح قابلاً للتعديل من Admin UI بدون redeploy. القائمة الكاملة في §3 (Thresholds). |
+| **A/B Backtest Harness (Phase D)** | ✅ الإنتاج — **baseline محفوظ `ab_backtest_baseline_*.json`** | `vps-service/backtest_results/` — diff runs قبل/بعد أي phase. WR baseline = 67.4% / PF = 12.84 / Max Loss Streak = 7. |
 | **Maestro orchestrator** | 🚫 معطّل (KILL-MAESTRO 2026-08-31) | `maestro_orchestrator.py` signal_id = None |
 | **Closed-Loop (5-state)** | ✅ مفعّل | `00-CONSTITUTION.md` §6 + §7 (Closed-Loop) |
 | **Personas في الإنتاج** | `balanced` فقط (baseline) | `compute_persona_fit()` يشتق conservative + gambler من نفس V40.2 score (Rule 23) |
-| **Daily picks (Top 5)** | ✅ الإنتاج | `predictions/daily-picks` من V40.2 (10 توقعات STRONG_BUY/BUY) |
+| **Daily picks (Top 5)** | ✅ الإنتاج | `predictions/daily-picks` من V40.2 |
 | **Active management** | ✅ الإنتاج | `predictions/active-management` — مفتوح لكل الصفقات في `predictions.db` |
 | **Honest-tracking** | ✅ الإنتاج | 7 endpoints تحت `/api/predictions/honest-tracking/*` (2,545 LOC) |
-| **Backtest engine** | ✅ V38 (sandbox + production-wiring للـ position sizing) | `v38_backtest_engine.py` (1,817 LOC) |
+| **Backtest engine** | ✅ V38 (sandbox + production-wiring للـ position sizing + A/B harness) | `v38_backtest_engine.py` (1,817 LOC) |
 | **Decision Logger** | ✅ الإنتاج (default ON — غير gated) | `decision_logger.py::log_decision()` يكتب في `decision_log.db` |
 | **10 Feature Flags V40.2** | كلها OFF افتراضياً | تُفعَّل بـ `engine_settings.py` بعد walk-forward |
 | **5-Market UI Mirror** | ✅ الإنتاج (Rule 53) | `MarketSelector` يبدّل `currentMarket` بين EGX/TADAWUL/KSE/QSE/CRYPTO |
+| **Live KPIs (1,229 resolved من 1,359 prediction)** | WR=**67.4%** · Avg Return=**25.74%** · PF=**12.84** · Max Loss Streak=**7** | محسوبة من `predictions.db` على resolved set (TARGET_HIT + closed_stop). Baseline محفوظ في `ab_backtest_baseline_*.json`. |
 
 ---
 

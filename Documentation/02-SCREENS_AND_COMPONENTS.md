@@ -4,7 +4,8 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-09-25 (DOC-CONSOLIDATION pass: إضافة §0 شاشة الحالات المُجمَّعة (Screen Status Rollup) + تحديث عدّادات §1 — 274 component، 653 API route، 5-market + UI-Mirror + SQLite fallback).
+> **آخر تحديث:** 2026-09-26 (DOC-UPDATE-FINAL pass: تحديث §0 Screen Status Rollup — إضافة UnifiedTable upgraded (expandable rows + column toggle + filtering + toolbar) + Phases A/B/C/D (multi-market `market_code`، Liquidity primary gate، 20+ thresholds → `get_setting()`، A/B backtest harness) + تحديث عدّاد الـ components لـ 282.)
+> **آخر تحديث سابق:** 2026-09-25 (DOC-CONSOLIDATION pass: إضافة §0 شاشة الحالات المُجمَّعة (Screen Status Rollup) + تحديث عدّادات §1 — 274 component، 653 API route، 5-market + UI-Mirror + SQLite fallback).
 > **آخر تحديث سابق:** 2026-09-01 (إضافة NotebookAdminTab.tsx في AdminView + تحديث علامة "آخر تحديث" لتعكس الـ admin tab الجديد لـ Stock Notebooks).
 > **آخر تحديث سابق:** 2026-08-17 (post R:R fix commit `65a748f` + post fundamentals activation `04354a5` + post PERSONA-UNIFY-A `c14597d`).
 > **المصادر المُدمجة:** كل ملفات `Documentation/*.md` السابقة (PICKS-MANAGEMENT-SYSTEM · CLOSED_LOOP_FINAL · CURRENT_STATE · PERSONA_UNIFY_A_MEASUREMENT_REPORT · PROJECT_FULL_BLUEPRINT · API_DICTIONARY · V40_2_LIVE_INTEGRATION_PLAN · RR_FIX_FINAL_REPORT_20260817 · P0_V2_POST_DEPLOY_RUNBOOK · V34-INSTITUTIONAL-DECISION-ENGINE · GAPS_AND_MISSING · ULTRA-RESTORE-DATABASE-RECOVERY · DATA_ENGINE_FUNDAMENTALS_INVENTORY · FUNDAMENTALS_HISTORICAL_TEST_REPORT · RL-FIX-9-Predictions-Status-Logic · 03-REFACTORING_REPORT) + `audit_map.json` + `treadingView.code.text` + استكشاف آلي لـ `src/app/` + `src/components/`.
@@ -19,7 +20,7 @@
 
 ---
 
-## 0. شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-25)
+## 0. شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-26 — DOC-UPDATE-FINAL)
 
 > **الهدف:** لقطة سريعة لحالة كل شاشة رئيسية في النظام. الحالات: ✅ working · ⚠️ partial · ❌ broken · 🚫 deprecated.
 > التفاصيل الكاملة لكل شاشة في §4 (الـ views) و §9 (الـ admin).
@@ -52,20 +53,56 @@
 | 24 | `community` | 🚫 deprecated (DEAD) | شالها الـ sidebar + CommunityView orphan (581 LOC). |
 | 25 | `trading-journal` / `unified-analysis` / `StoredAnalysisView` | 🚫 deprecated (moved/distributed) | مُوزَّعة على admin / recommendations / specialist-analysis. |
 
-**الإحصائيات الإجمالية (2026-09-25):**
+**الإحصائيات الإجمالية (2026-09-26):**
 - Next.js page routes: 20 (9 نشطة · 9 ميتة · 2 redirect)
 - Next.js API routes: **653 route.ts** (156 top-level directory + nested) · 257 proxy لـ Python · ~331 direct · 163 tiny-proxy boilerplate
 - Hash views في `page.tsx`: 45 (~35 نشطة · ~10 legacy/hidden/alias)
-- React components: **274 tsx** + 3 ts (non-tsx) = 277 total under `src/components/`
+- React components: **282 tsx** + 3 ts (non-tsx) = 285 total under `src/components/` (تحديث 2026-09-26 — +8 من 274 بعد UnifiedTable upgrade + features إضافية)
 - UI primitives المستخدمة: 49 (29 مستخدمة بكثرة + 20 orphan)
 - مكوّنات orphan (dead): 71 (50,442 LOC ميتة — 26.6%)
 - Flask Blueprints: 53 registered (33 DEPRECATED api files ~17,000 LOC)
+
+### 0.1 UnifiedTable Upgrade (2026-09-26 — DOC-UPDATE-FINAL)
+
+> **المرجع الدستوري:** القاعدة 54 (UNIFIED-TABLE-UPGRADE — 2026-09-26) + القاعدة 52 (UNIFIED-REUSABLE-COMPONENTS — 2026-09-25).
+>
+> **المكوّن:** `src/components/shared/UnifiedTable.tsx`
+> **النموذج المرجعي (Canonical Pattern):** `src/components/admin/SectorTrackingTab.tsx`
+
+**الميزات المضافة في الترقية:**
+| الميزة | الوصف | الحالة |
+|---|---|---|
+| **Expandable Rows** | كل row يمكنه فتح sub-row مع `renderExpanded` prop | ✅ منفّذ |
+| **Column Toggle** | المستخدم يُظهِر/يُخفي الأعمدة من قائمة في الـ toolbar (يُحفَظ الاختيار في localStorage) | ✅ منفّذ |
+| **Column Filtering** | كل عمود يدعم filter مخصص (text / number / select / date range) | ✅ منفّذ |
+| **Toolbar (Publish + Export)** | toolbar موحّد فيه `UnifiedPublishButton` + زر Export (CSV/PNG/PDF) | ✅ منفّذ |
+| **Sticky Header + RTL + Sort** | ميزات سابقة من القاعدة 52 — لا تزال مدعومة | ✅ محفوظة |
+
+**حصر الشاشات التي تحتاج ترحيل (21 شاشة):** مدرجة بالتفصيل في §10 (Dead/Duplicate Inventory) — كل الشاشات التي لا تزال تستخدم `<Table>` اليدوي من shadcn/ui. الترتيب: شاشات الـ admin أولاً (لأنها الأعلى استفادة من الـ features الجديدة)، ثم شاشات العميل.
+
+### 0.2 Phases A/B/C/D — Engine Upgrades (2026-09-26 — DOC-UPDATE-FINAL)
+
+> **المرجع المنطقي:** `SYSTEM_HOW_IT_THINKS.md` (Production Snapshot table — محدّث 2026-09-26).
+
+| Phase | الوصف | التفاصيل الفنية | الحالة |
+|---|---|---|---|
+| **A — Multi-Market Support** | V40.2 يدعم `market_code` parameter لكل الأسواق الخمسة | `market_code ∈ {EGX, KSA, KSE, QSE, CRYPTO}` — يُمرَّر في `analyze_single_day_v393()` + `v40_2_daily_generator.py`. كل سوق يقرأ من DB المناسب له (§1.6 في `01-PROJECT_ANATOMY.md`). | ✅ منفّذ |
+| **B — Liquidity Primary Gate** | فلتر السيولة أصبح **البوابة الرئيسية** قبل التحليل | `liquidity_filter.py` يشتغل **قبل** `analyze_single_day_v393()` — أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً (توفير compute + تحسين جودة الـ predictions). | ✅ منفّذ |
+| **C — Dynamic Thresholds** | 20+ hardcoded thresholds أصبحت ديناميكية | استبدال كل `if x > 0.05` بـ `get_setting('threshold_name', default)` من `engine_settings` table — كلها قابلة للتعديل من Admin UI بدون redeploy. القائمة الكاملة في `SYSTEM_HOW_IT_THINKS.md`. | ✅ منفّذ |
+| **D — A/B Backtest Harness** | نظام A/B backtest لقياس الأثر الفعلي لكل تغيير | `vps-service/backtest_results/` يحتوي على `ab_backtest_baseline_*.json` (saved baseline) + diff runs قبل/بعد أي phase. يستخدم للتحقق من عدم كسر feature قائمة عند ترحيل UnifiedTable أو أي phase من A/B/C. | ✅ منفّذ |
+
+**Baseline محفوظ (2026-09-26):** `ab_backtest_baseline_*.json` يحتوي على:
+- Win Rate: **67.4%** (1,229 resolved predictions)
+- Avg Return: **25.74%**
+- Profit Factor: **12.84**
+- Max Loss Streak: **7**
+- أي تغيير لازم يقاس ضد هذا الـ baseline قبل/بعد.
 
 ---
 
 ## 📑 المحتويات
 
-0. [شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-25)](#0-شاشة-الحالات-المجمعة-screen-status-rollup--2026-09-25)
+0. [شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-26)](#0-شاشة-الحالات-المجمعة-screen-status-rollup--2026-09-26--doc-update-final)
 1. [نظرة عامة + الإحصائيات الكلية](#1-نظرة-عامة--الإحصائيات-الكلية)
 2. [الشاشة الوحيدة المرئية: `/` (src/app/page.tsx)](#2-الشاشة-الوحيدة-المرئية--srcapppagetsx)
 3. [بنية الـ Sidebar / Nav / Header / Footer](#3-بنية-الـ-sidebar--nav--header--footer)
@@ -85,14 +122,14 @@
 
 ## 1. نظرة عامة + الإحصائيات الكلية
 
-> **(مُحدَّث 2026-09-25 — DOC-CONSOLIDATION)** القيم النهائية مُجمَّعة في §0 (Screen Status Rollup). القيم التالية هي الأرقام المرجعية من الكود الفعلي.
+> **(مُحدَّث 2026-09-26 — DOC-UPDATE-FINAL)** القيم النهائية مُجمَّعة في §0 (Screen Status Rollup). القيم التالية هي الأرقام المرجعية من الكود الفعلي.
 
 | الفئة | العدد | الحالة |
 |------|------:|--------|
 | **Next.js page routes** | 20 | 9 نشطة · 9 ميتة · 2 redirect |
 | **Next.js API routes** | **653** | 257 proxy لـ Python · 331 direct · 163 "tiny-proxy" boilerplate (~4,700 LOC) |
 | **Hash views في `page.tsx`** | 45 | ~35 نشطة · ~10 legacy/hidden/alias |
-| **React components** | **274** (tsx) + 3 (ts) = 277 | 49 UI primitives + 228 non-UI |
+| **React components** | **282** (tsx) + 3 (ts) = 285 | 49 UI primitives + 233 non-UI (تحديث 2026-09-26 — +8 من 274 بعد UnifiedTable upgrade) |
 | **UI primitives المستخدمة** | 49 | 29 مستخدمة بكثرة · 20 orphan (~4,300 LOC) |
 | **مكوّنات orphan (ميتة)** | 71 | **50,442 LOC ميتة (26.6% من الإجمالي)** |
 | **مكوّنات massive (>500 LOC)** | 139 | 49 منها أيضًا orphan |

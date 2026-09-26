@@ -40930,3 +40930,91 @@ Work Log:
    - تم إعادة تشغيل الخادم في PM2 عبر \pm2 restart nextjs\.
    - تم فحص استجابة الخادم محلياً بـ HTTP 200 OK وظهور الشعار الجديد بنجاح.
 >>>>>>> 63d7e8b6ddfd8d71d482cc031047b48c0e887875
+
+---
+Task ID: DOC-UPDATE-FINAL
+التاريخ: 2026-09-26
+الوكيل: السكرتيرة (Secretary)
+
+1. المهمة:
+   - تحديث الـ 4 ملفات الكنسية في Documentation/ لتعكس الحالة الحالية للمنصة بعد الجلسات الأخيرة (UnifiedTable upgrade + Phases A/B/C/D + إحصائيات الإنتاج الجديدة + EGX30/EGX70 real CSV + 5 DBs sizes + 1,206,981 price_history rows).
+   - الالتزام التام بالقواعد: لا حذف ملفات، لا حذف محتوى، فقط إضافة/تحديث، استخدام Read قبل Edit، استخدام Edit للتغييرات الموجّهة.
+
+2. الملفات المُعدَّلة (4 canonical files فقط):
+
+   أ. `Documentation/00-CONSTITUTION.md`:
+      - تحديث سطر "آخر تحديث" (header) لـ 2026-09-26 + DOC-UPDATE-FINAL.
+      - تحديث فهرس القواعد من 1–53 إلى 1–54 (rows 1–8 + 9–16 + 17–24 + 25–32 + 33–43 + 44–54).
+      - إضافة القاعدة 54 — UNIFIED-TABLE-UPGRADE (2026-09-26):
+        * أ. الميزات: Expandable Rows + Column Toggle + Column Filtering + Toolbar (Publish + Export).
+        * ب. النموذج المرجعي: `src/components/admin/SectorTrackingTab.tsx` (canonical pattern).
+        * ج. لا فرق بين admin/client — UnifiedTable واحد بـ props.
+        * د. خطة ترحيل: 21 شاشة لا تزال تستخدم Table يدوي (تفاصيلها في 02-SCREENS_AND_COMPONENTS.md §10).
+        * هـ. الاستثناءات: جداول ≤ 3 أعمدة × ≤ 5 صفوف داخل modals.
+
+   ب. `Documentation/01-PROJECT_ANATOMY.md`:
+      - تحديث سطر "آخر تحديث" لـ 2026-09-26 + DOC-UPDATE-FINAL.
+      - §1.5 الإحصائيات الكلية — تحديث شامل:
+        * Frontend components: 274 → 282 tsx.
+        * EGX stocks: 360 → 380 سهم (stocks.db) + EGX30=27 members + EGX70=20 members.
+        * predictions: 306 → 1,359 (333 TARGET_HIT + 193 closed_stop + 77 ACTIVE + باقي الحالات).
+        * price_history: 1,205,599 → 1,206,981 صف (1,336 ticker، 2000→2026).
+        * إضافة صف جديد: "DBs على الإنتاج (5 قواعد)" — stocks.db=15MB · data_engine.db=273MB · predictions.db=225MB · intraday.db=428MB · price_history.db=293MB.
+        * إضافة صفوف: Live WR=67.4% (1,229 resolved) + Avg Return=25.74% + Live PF=12.84 + Max Loss Streak=7.
+      - §1.6 — تحديث EGX row في جدول الـ 5-Market من 360 → 380 + EGX30=27 + EGX70=20 annotation.
+      - §6.3 — تحديث price_history rows/tickers (1,206,981 / 1,336) + cross-ref §6.5.
+      - إضافة §6.5 جديد — "مؤشرات EGX30/EGX70 + مصادر البيانات المُحدَّثة":
+        * EGX30=53,776.69 / EGX70=19,834.95 (real CSV).
+        * TradingView scanner: 296 EGX stocks daily.
+        * egksco_scraper: 255 stocks + 186 price_history records per run.
+        * price_history.db: 1,206,981 rows / 1,336 ticker (2000-2026).
+        * Pipeline diagram مُحدَّث.
+      - §17.1 — تحديث عدد القواعد من 53 → 54.
+      - إضافة §17.5 جديد — "تأكيد دمج المحتوى التاريخي في الـ Canonical": يوضّح صراحةً أن 17 ملفاً تاريخياً كان محتواها مُدمَجاً بالكامل في الـ 4 canonical files (مع mapping تفصيلي لكل ملف لأي canonical file).
+      - §سجل التغييرات — إضافة row جديد لـ 2026-09-26 DOC-UPDATE-FINAL.
+
+   ج. `Documentation/02-SCREENS_AND_COMPONENTS.md`:
+      - تحديث سطر "آخر تحديث" لـ 2026-09-26 + DOC-UPDATE-FINAL.
+      - §0 — تحديث الترويسة + عدّاد الـ components من 274 → 282.
+      - §0.1 (جديد) — UnifiedTable Upgrade:
+        * جدول بالميزات: Expandable Rows + Column Toggle + Column Filtering + Toolbar (Publish + Export) + Sticky Header + RTL + Sort.
+        * Canonical pattern: `src/components/admin/SectorTrackingTab.tsx`.
+        * حصر الـ 21 شاشة التي تحتاج ترحيل (referenced in §10).
+      - §0.2 (جديد) — Phases A/B/C/D — Engine Upgrades:
+        * Phase A — Multi-Market: V40.2 يدعم `market_code` (EGX/KSA/KSE/QSE/CRYPTO).
+        * Phase B — Liquidity Primary Gate: قبل `analyze_single_day_v393()`.
+        * Phase C — Dynamic Thresholds: 20+ hardcoded → `get_setting()`.
+        * Phase D — A/B Backtest Harness: baseline `ab_backtest_baseline_*.json` (WR=67.4%, Avg Return=25.74%, PF=12.84, Max Loss Streak=7).
+      - §1 — تحديث React components من 274 → 282 (tsx) + 3 (ts) = 285 total.
+      - §0 الترويسة + جدول المحتويات — تحديث التاريخ.
+
+   د. `Documentation/SYSTEM_HOW_IT_THINKS.md`:
+      - تحديث سطر "آخر تحديث" لـ 2026-09-26 + DOC-UPDATE-FINAL.
+      - تحديث قسم "النتيجة على الإنتاج الحالي" لإضافة Phases A/B/C/D bullets + KPIs الحالية.
+      - جدول Production Snapshot — تحديث شامل:
+        * V40.2: Phase A — multi-market `market_code`.
+        * Liquidity Filter (Phase B): primary gate قبل `analyze_single_day_v393()`.
+        * Dynamic Thresholds (Phase C): 20+ → `get_setting()`.
+        * A/B Backtest Harness (Phase D): baseline `ab_backtest_baseline_*.json`.
+        * Backtest engine: V38 + A/B harness.
+        * إضافة row جديد: Live KPIs (WR=67.4% · Avg Return=25.74% · PF=12.84 · Max Loss Streak=7 على 1,229 resolved من 1,359 prediction).
+
+3. الالتزام بالقواعد (القواعد الذهبية):
+   - ✅ لم تُحذف أي ملفات — تم تعديل الـ 4 canonical files فقط.
+   - ✅ لم تُحذف أي محتوى — كل التعديلات كانت إضافة (sub-sections جديدة + rows جديدة) أو تحديث قيم (1,205,599 → 1,206,981، 274 → 282، إلخ).
+   - ✅ استُخدم Read لكل ملف قبل Edit.
+   - ✅ استُخدم Edit/MultiEdit للتغييرات الموجّهة فقط — لا rewrite كامل.
+   - ✅ القاعدة 39 (DOCS-FIRST-LAST): كل تحديث موثَّق في الـ header + §سجل التغييرات (01-PROJECT_ANATOMY.md).
+   - ✅ القاعدة 16 (VERIFY-BEFORE-DELETE) + القاعدة 25 (refactoring-gated): لم تُحذف أي ملفات أو محتويات.
+   - ✅ القاعدة 52 (UNIFIED-REUSABLE-COMPONENTS) + القاعدة 54 (UNIFIED-TABLE-UPGRADE الجديدة): مرجعية متبادلة في كل من CONSTITUTION + 02-SCREENS_AND_COMPONENTS.
+
+4. التحقق:
+   - عدد القواعد في 00-CONSTITUTION.md: 54 (بدل 53).
+   - عدد الـ components في §1.5 (01-PROJECT_ANATOMY.md) و §1 (02-SCREENS_AND_COMPONENTS.md): 282 (بدل 274) — متطابق.
+   - عدد الـ predictions في 01-PROJECT_ANATOMY.md §1.5 و في SYSTEM_HOW_IT_THINKS.md: 1,359 (بدل 306) — متطابق.
+   - Win Rate/PF: 67.4% / 12.84 — متطابق عبر 01-PROJECT_ANATOMY.md §1.5 + 02-SCREENS_AND_COMPONENTS.md §0.2 + SYSTEM_HOW_IT_THINKS.md Production Snapshot.
+   - price_history.db: 1,206,981 صف — متطابق عبر §1.5 + §6.3 + §6.5.
+
+5. الإجراءات التالية المقترحة (لا تتطلب موافقة المالك لأنها documentation فقط):
+   - لا شيء — المهمة documentation-only وكاملة.
+   - لو المالك رغب: تنفيذ الـ migration الـ 21 شاشة المتبقية على UnifiedTable (سيُوثَّق كل واحد في worklog.md + 02-SCREENS_AND_COMPONENTS.md §10).

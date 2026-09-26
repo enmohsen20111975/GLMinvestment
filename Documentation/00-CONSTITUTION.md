@@ -10,7 +10,8 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
+> **آخر تحديث: 2026-09-26** (DOC-UPDATE-FINAL pass by Secretary agent: إضافة القاعدة 54 — UNIFIED-TABLE-UPGRADE (ترقية UnifiedTable لتشمل expandable rows + column toggle + column filtering + toolbar publishing/export + اعتماد SectorTrackingTab كنموذج وحيد لكل الشاشات + حصر 21 شاشة لا تزال تستخدم Table يدوي بحاجة لـ migration) + تحديث فهرس القواعد لـ 54 قاعدة. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
 > **آخر تحديث سابق: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
 > **آخر تحديث سابق:** 2026-09-03 (القاعدة 45) + 2026-09-02 (القاعدة 44 — NEWS-DB-SOT) + 2026-08-29 (القواعد 27-32: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
 > **المالك:** `enmohsen20111975` · **المدير والمبرمج:** Z.ai Code (full autonomy)
@@ -100,13 +101,13 @@
 
 هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
 
-> **فهرس القواعد (1–53):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–53 (التوسّعية).
+> **فهرس القواعد (1–54):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية).
 > - **1–8**: قواعد سلامة DBs + المعمارية + HARD cap + ATR + trailing + EXIT_POLICY + overrides + load_merged_history.
 > - **9–16**: trailing floor + EXIT_POLICY + overrides + DATA-UNIFY + liquidity + commit-guard + sandbox ≠ prod + VERIFY-BEFORE-DELETE.
 > - **17–24**: RELATIVE-PATHS + R:R ≥ 1.5 + loss ceiling + Python=Brain + V40.2 + dedup-by-ticker + PERSONA-UNIFY + fundamentals real.
 > - **25–32**: refactoring-gated + SANDBOX-RESET + NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM.
 > - **33–43**: PRODUCTION-WIRING + NO_DUPLICATE_SCREENS + ENGINE-UNIFY + DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER + DOCS-FIRST-LAST + REGIME-AND-AVG-DOWN + TELEGRAM-NOTIFICATIONS.
-> - **44–53**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS.
+> - **44–54**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS + UNIFIED-TABLE-UPGRADE.
 > القاعدة 42 ظهرت بين 32 و 33 لأسباب تاريخية (تم إدراجها بعد فصل §4 KPIs) لكنها تخص §3.
 
 ### القاعدة 1 — لا تُلمس قواعد البيانات على الإنتاج
@@ -1850,6 +1851,36 @@ combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
 - **الاستثناء الوحيد:** ودجت "إشارات الكريبتو" على الداشبورد — بتظهر بس لما `currentMarket === 'CRYPTO'` كجزء من الـ widget registry (مش قائمة منفصلة).
 
 ---
+
+### القاعدة 54 — ترقية الجدول الموحد (UNIFIED-TABLE-UPGRADE — 2026-09-26)
+
+> **سبب الإضافة:** تتمةً للقاعدة 52 (UNIFIED-REUSABLE-COMPONENTS). بعد إقرار UnifiedTable كجدول وحيد، تبيّن أن 21 شاشة لا تزال تستخدم `<Table>` اليدوي من shadcn/ui، وأن بعض الشاشات كانت محتاجة ميزات (expandable rows + column toggle + filtering + toolbar) كانت السبب المُعلَن لعدم الترحيل. الجلسة الحالية رفعت UnifiedTable ليدعم كل هذه الميزات، فأصبح الترحيل إلزامياً ومُمكَّناً فنياً. النموذج المرجعي المعتمد هو `SectorTrackingTab`.
+
+**أ. ميزات UnifiedTable بعد الترقية:**
+- **Expandable Rows:** كل row يمكنه فتح تفاصيلاً فرعية (sub-row) — مدعوم بـ `renderExpanded` prop.
+- **Column Toggle:** المستخدم يمكنه إظهار/إخفاء الأعمدة من قائمة في الـ toolbar (تم حفظ الاختيار في localStorage).
+- **Column Filtering:** كل عمود يدعم filter مخصص (text / number / select / date range).
+- **Toolbar (Publish + Export):** toolbar موحّد في رأس الجدول فيه `UnifiedPublishButton` (القاعدة 52) + زر Export (CSV/PNG/PDF).
+
+**ب. النموذج المرجعي (Canonical Pattern):**
+- `src/components/admin/SectorTrackingTab.tsx` هو المرجع الوحيد لكيفية استخدام UnifiedTable في أي شاشة جديدة أو مُحدَّثة. أي شاشة فيها جدول **لازم** تتبع نفس البنية (columns config → data fetch → UnifiedTable wrapper).
+- يُمنَع إدخال أي مكوّن جدول جديد (لا `<Table>` يدوي، ولا `DataGrid`، ولا `react-data-table`، إلخ). UnifiedTable هو المكوّن الوحيد.
+
+**ج. شاشات Admin + Client — لا فرق:**
+- لا يوجد جدول مخصّص للـ admin وآخر للعميل. UnifiedTable واحد يخدم كلتا الجهتين، والفروقات تُدار بـ props (مثلاً `dense`, `showToolbar`, `defaultHiddenColumns`).
+
+**د. خطة الترحيل (Migration Plan):**
+- **21 شاشة** لا تزال تستخدم `<Table>` يدوي وتحتاج ترحيل إلى `<UnifiedTable>`. حصرها مذكور في `02-SCREENS_AND_COMPONENTS.md` §0.
+- الترتيب: تبدأ بشاشات الـ admin (لأنها الأعلى استخداماً للـ features الجديدة)، ثم شاشات العميل.
+- كل ترحيل لازم يمر بـ A/B snapshot قبل/بعد للتأكد من عدم كسر feature قائمة (قاعدة 39 — DOCS-FIRST-LAST).
+
+**هـ. الاستثناءات الوحيدة:**
+- الجداول الصغيرة جداً (≤ 3 أعمدة × ≤ 5 صفوف) داخل modals أو tooltips — يمكن استخدام `<Table>` العادي لتفادي overhead.
+- الجداول التي تحتاج rendering مخصّص للخلايا مع canvas/SVG معقّد — تُدرَس حالةً بحالة، والأفضل دائماً تضمينها كـ `renderCell` داخل UnifiedTable.
+
+---
+
+*نهاية التحديثات 2026-09-26 — القاعدة 54 (UNIFIED-TABLE-UPGRADE).*
 
 *نهاية التحديثات 2026-09-25 — القواعد 52 (UNIFIED-REUSABLE-COMPONENTS) + 53 (CRYPTO-IN-MARKETS).*
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"

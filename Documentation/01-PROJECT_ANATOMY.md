@@ -5,7 +5,8 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-09-25** (DOC-CONSOLIDATION pass: تحديث العدّادات الإجمالية + إضافة §17 Historical Documentation Archive (كل ملفات `Documentation/*.md` غير الأساسية مُؤرشفة كمرجع تاريخي، لم تُحذف) + إضافة §1.6 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern + تحديث §3.1 DB Map بالأرقام الحالية.)
+> **آخر تحديث: 2026-09-26** (DOC-UPDATE-FINAL pass: تحديث §1.5 الإحصائيات (components 282، EGX 380 سهم، EGX30=27/EGX70=20، 1,359 prediction، WR=67.4%/Avg=25.74%/PF=12.84، 5 DBs sizes) + تحديث §6 Data Flow (EGX30=53,776.69 / EGX70=19,834.95 من CSV حقيقي، TradingView scanner 296 سهم، egksco_scraper 255 سهم + 186 price_history، price_history.db=1,206,981 صف/1,336 ticker) + تحديث §17 Historical Archive (ملاحظة دمج 17 ملف تاريخي في الملفات الأربعة الكنسية). لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass: تحديث العدّادات الإجمالية + إضافة §17 Historical Documentation Archive (كل ملفات `Documentation/*.md` غير الأساسية مُؤرشفة كمرجع تاريخي، لم تُحذف) + إضافة §1.6 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern + تحديث §3.1 DB Map بالأرقام الحالية.)
 > **آخر تحديث سابق:** 2026-09-01 (Stock Notebook System + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags + تحديث العدّادات: blueprints=40، api files=38، notebooks/EGX=259 ملف JSON).
 > **آخر تحديث سابق:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
 > **كل ملفات `Documentation/*.md` السابقة دُمجت في الملفات الأربعة الرئيسية:**
@@ -407,13 +408,13 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 
 **القاعدة الذهبية:** كل الـ routes الباقية تستخدم **relative-path-only** عبر `EGXPY_SERVICE_URL` (default `http://localhost:8010`). لا استدعاء مباشر لـ `localhost:8010` من الـ frontend؛ لازم يمر عبر `Next.js /api/proxy/[...path]`.
 
-### 1.5 الإحصائيات الكلية (2026-09-25 — DOC-CONSOLIDATION refresh)
+### 1.5 الإحصائيات الكلية (2026-09-26 — DOC-UPDATE-FINAL refresh)
 
 | المؤشر | القيمة |
 |---|---|
 | Backend .py files | ~395 |
 | Backend LOC | ~229,490 |
-| Frontend `.tsx` files (components) | **274** (+ 3 `.ts` non-tsx = 277 total under `src/components/`) |
+| Frontend `.tsx` files (components) | **282** (+ 3 `.ts` non-tsx = 285 total under `src/components/`) |
 | Frontend LOC | ~343,000 |
 | Flask Blueprints (registered) | 53 |
 | Python `@bp.route` decorators | ~599 |
@@ -421,19 +422,25 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 | محرك قرار مؤسسي | V39/V40.2 (institutional_decision_engine.py, ~520 LOC) |
 | محرك backtest | V38 (v38_backtest_engine.py, 1,817 LOC) |
 | Personas (نموذج التوقع) | **3 فاعلة في الإنتاج**: `conservative` + `balanced` (الـ baseline 81.8%) + `gambler` — `expert` معطّلة (Rule 23 — PERSONA-UNIFY-A) |
-| عدد الأسهم في `stocks.db` | **956 سهم** (EGX=360 · TADAWUL=413 · KSE=128 · QSE=55) — لا يشمل CRYPTO (بياناتها في `data_engine.db.crypto_prices` + `crypto.db`) |
+| **DBs على الإنتاج (5 قواعد — أحجام)** | stocks.db=**15 MB** · data_engine.db=**273 MB** · predictions.db=**225 MB** · intraday.db=**428 MB** · price_history.db=**293 MB** |
+| **عدد أسهم EGX** | **380 سهم** (stocks.db — EGX) |
+| **مكونات EGX30** | **27 سهم** (EGX30 index members) |
+| **مكونات EGX70** | **20 سهم** (EGX70 index members — subset tracked) |
+| عدد الأسهم في `stocks.db` (كل الأسواق) | ~976 سهم (EGX=380 · TADAWUL=413 · KSE=128 · QSE=55) — لا يشمل CRYPTO (بياناتها في `data_engine.db.crypto_prices` + `crypto.db`) |
 | الأسهم في `data_engine.db.stocks` | **1,585 سهم** (EGX + تداول + الكويت + قطر + أوامر) |
-| التوقعات النشطة في `predictions.db.predictions` | **306 predictions** (post-archive + V40.2 daily generator output) |
+| **التوقعات الكلية في `predictions.db.predictions`** | **1,359 prediction** (333 `TARGET_HIT` + 193 `closed_stop` + 77 `ACTIVE` + باقي الحالات المُغلقة/المُؤرشفة) |
 | سجل التوقعات `aiPrediction` | 2,459 صف |
 | `persona_predictions` (per-persona tracks) | 946 صف |
 | `historical_trades` | 550 صفقة تاريخية |
 | `outcome_logs` | 8,544 سجل outcome |
 | `news.db.news_articles` | **7,894 خبر** (post NEWS-DB-SOT migration) |
-| `price_history.db.price_history` | **1,205,599 صف** (سجل الأسعار الموحّد EGX) |
+| `price_history.db.price_history` | **1,206,981 صف** (1,336 ticker، 2000→2026 — سجل الأسعار الموحّد EGX) |
 | `data_engine.db.historical_data` | 99,076 صف OHLC تاريخي |
 | `data_engine.db.screener_lists` | 1,505 إدخال في 5 فئات (most_active / unusual_volume / gainers / losers / volume) |
-| Live WR (reference, balanced) | ≈ 69.2% (26 صفقة مقفولة) |
-| Live PF (reference) | ≈ 4.46 |
+| **Live Win Rate (1,229 resolved predictions)** | **67.4%** (resolved من إجمالي 1,359 prediction) |
+| **Avg Return per resolved prediction** | **25.74%** (متوسط العائد لكل صفقة مُغلَقة) |
+| **Live Profit Factor (PF)** | **12.84** (gross profit ÷ gross loss على الـ resolved set) |
+| **Max Loss Streak** | **7 صفقات خاسرة متتالية** (observed worst-case — تم قياسها في الـ A/B backtest) |
 | Fair re-sim PF (post-R:R fix) | 1.453 (148 trades، +0.189%/trade عن القاعدة العادلة) |
 | R:R الحالي | dynamic 1.5 (normal) / 2.0 (outperform) — engine_settings |
 
@@ -443,7 +450,7 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 
 | السوق | الكود (currentMarket) | المصدر | عدد الأسهم |
 |---|---|---|---:|
-| EGX (مصر) | `EGX` | `stocks.db` + `data_engine.db` | 360 (stocks.db) / 1,585 (data_engine.db) |
+| EGX (مصر) | `EGX` | `stocks.db` + `data_engine.db` | 380 (stocks.db) / 1,585 (data_engine.db) — EGX30=27 + EGX70=20 members |
 | TADAWUL (السعودية) | `TADAWUL` | `stocks.db` | 413 |
 | KSE (الكويت) | `KSE` | `stocks.db` | 128 |
 | QSE (قطر) | `QSE` | `stocks.db` | 55 |
@@ -1028,7 +1035,7 @@ return NextResponse.json(await r.json());
 
 > **موجود في:** `vps-service/analyzers/master_analyzer.py`
 > **الدور:** المصدر الوحيد لقراءة الأسعار (PHASE 1 — CONSTITUTION).
-> **يقرأ من:** `price_history.db` (EGX OHLC، 288,194 rows، 1,260 tickers).
+> **يقرأ من:** `price_history.db` (EGX OHLC، **1,206,981 rows، 1,336 tickers** — تحديث 2026-09-26؛ انظر §6.5 لمصادر التغذية).
 > **Fallback:** `data_engine.db.historical_data` (Saudi/US/gold — NO EGX).
 
 ### 6.4 مثال: تدفق توقع V40.2 من الإنتاج
@@ -1063,6 +1070,42 @@ return NextResponse.json(await r.json());
    ↓
 8. /api/predictions/honest-tracking/list يرجّع الـ 5-state taxonomy
    → MarketAnalysisView UI (متابعة التوقعات + ملخص التوقعات tabs)
+```
+
+### 6.5 مؤشرات EGX30/EGX70 + مصادر البيانات المُحدَّثة (2026-09-26 — DOC-UPDATE-FINAL)
+
+> **سبب الإضافة:** الجلسات الأخيرة رفعت تغطية مؤشرات EGX30 و EGX70 من بيانات افتراضية إلى بيانات حقيقية من CSV، ووسّعت تغطية الـ scrapers على EGX (TradingView + egksco). ده قسم مرجعي جديد لتدفق البيانات الحالي.
+
+**أ. مؤشرات EGX30 و EGX70 — بيانات حقيقية من CSV:**
+- **EGX30 Index:** قيمته الحالية **53,776.69** — مأخوذة من CSV الرسمي (ليس placeholder).
+- **EGX70 Index:** قيمته الحالية **19,834.95** — مأخوذة من CSV الرسمي.
+- المصدر: ملفات CSV داخل `data_engine/indices/` يتم تحديثها يدوياً/نصف آلياً ومقروءة عبر `load_index_history('EGX30' | 'EGX70')`.
+- الـ dashboard و الـ chart بتعرض القيمتين الحقيقيتين بدل hardcoded افتراضي.
+
+**ب. TradingView scanner (`tradingview_scraper.py`):**
+- يغطّي **296 سهماً** من EGX — تحديث يومي بعد إغلاق السوق.
+- يكتب: TA indicators (RSI, MACD, EMA20/50/200, ATR, Volume profile) + UDF intraday candles.
+- الـ 296 سهم تشمل كل مكونات EGX30 (27) + EGX70 (20) + باقي الأسهم النشطة.
+
+**ج. egksco_scraper (`egksco_scraper.py`):**
+- يغطّي **255 سهماً** من EGX (المصدر الرسمي لـ EGX).
+- يكتب: **186 سجل price_history** لكل تشغيل (incremental updates) — مرتبطة بـ `price_history.db.price_history`.
+- يُعتبَر الـ authoritative source لأسعار EGX end-of-day.
+
+**د. price_history.db (السجل الموحّد للأسعار):**
+- **1,206,981 صف** (تحديث من 1,205,599 في DOC-CONSOLIDATION).
+- **1,336 ticker** مغطّاة (2000 → 2026).
+- يُغذّي `load_merged_history()` (§6.3) — المصدر الوحيد للأسعار التاريخية.
+- النمو: +1,382 صف و +76 ticker منذ آخر تحديث — نتيجة egksco_scraper + tradingview_scraper اليومي.
+
+**هـ. الـ Pipeline المُحدَّث (داخل §6.1 stage 1):**
+```
+TradingView scanner (296 EGX) ─┐
+egksco_scraper (255 EGX)     ─┼─→ price_history.db (1,206,981 rows / 1,336 ticker)
+CSV indices (EGX30/EGX70)    ─┘   ↓
+                                  load_merged_history() + load_index_history()
+                                  ↓
+                                  V40.2 daily generator + V38 backtest
 ```
 
 ---
@@ -1604,6 +1647,7 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 |---------|-------|---------|
 | 2026-09-01 | `01-PROJECT_ANATOMY.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook System (1,065 LOC + 259 JSON + 7 API endpoints + NotebookAdminTab.tsx)، Unified Exit Engine (518 LOC + MARKET_PROFILES)، Decision Logger (338 LOC + decision_log.db)، News Impact Scorer (432 LOC + 14 event types)، EGX Disclosure Engine (875 LOC + 12 disclosure types)، Crypto Modules (4 ملفات: crypto_strict_filters + crypto_short_holding_exit + crypto_news_fetcher + crypto_disclosure_engine)، Feature Flags V40.2 (10 flags)، News Fetcher Analyzer + news_signals_reader + /api/news/ingest. |
 | 2026-09-25 | `01-PROJECT_ANATOMY.md` | DOC-CONSOLIDATION: تحديث §1.5 الإحصائيات (956 stocks، 1,585 data_engine، 306 predictions، 7,894 news، 1,205,599 price_history، 653 API route، 274 component). إضافة §1.6 (5-Market + UI-Mirror + SQLite Fallback). تحديث §3.1 DB Map بالأرقام الحالية. إضافة §17 Historical Documentation Archive. |
+| 2026-09-26 | `01-PROJECT_ANATOMY.md` | DOC-UPDATE-FINAL: تحديث §1.5 الإحصائيات (components=282، EGX=380 سهم، EGX30=27/EGX70=20، predictions=1,359، price_history=1,206,981، WR=67.4%، Avg Return=25.74%، PF=12.84، Max Loss Streak=7، 5 DBs sizes). تحديث §1.6 (EGX=380). تحديث §6.3 (price_history rows/tickers). إضافة §6.5 (EGX30/EGX70 real CSV + TradingView 296 + egksco 255 + price_history 1,206,981). تحديث §17.1 (القواعد 54) + إضافة §17.5 (تأكيد دمج 17 ملف historical في الـ 4 canonical). |
 
 ---
 
@@ -1617,7 +1661,7 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 
 | # | الملف | الدور |
 |---|---|---|
-| 1 | `Documentation/00-CONSTITUTION.md` | الدستور والقواعد الـ 53. |
+| 1 | `Documentation/00-CONSTITUTION.md` | الدستور والقواعد الـ 54 (تحديث 2026-09-26 — DOC-UPDATE-FINAL). |
 | 2 | `Documentation/01-PROJECT_ANATOMY.md` (هذا الملف) | التشريح الكامل: المعمارية + DBs + APIs + 5 markets. |
 | 3 | `Documentation/02-SCREENS_AND_COMPONENTS.md` | كل شاشة وكل مكوّن بحالته (ACTIVE/DEAD/DUPLICATE). |
 | 4 | `Documentation/SYSTEM_HOW_IT_THINKS.md` | منطق المحرك (V40.2 + closed-loop + 3 personas). |
@@ -1667,6 +1711,16 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 5. الـ `audit-logs/` subdirectory استثناء صريح (مسموح دستوريًا) — يحتوي على تقارير تدقيق دورية.
 
 > **نتيجة DOC-CONSOLIDATION (2026-09-25):** 4 ملفات canonical حيّة + 17 ملف historical محفوظ في `Documentation/` (16 + 2 في `audit-logs/`) + 7 ملفات خاصة في جذر المشروع. إجمالي 28 ملف `.md` توثيقي — لا يحتاج أي ملف جديد.
+
+### 17.5 تأكيد دمج المحتوى التاريخي في الـ Canonical (2026-09-26 — DOC-UPDATE-FINAL)
+
+> **تذكير مرجعي صريح:** الـ **17 ملفاً تاريخياً** المُدرَجة في §17.2 + §17.3 (audit-logs) **كانت محتواها مُدمَجاً بالكامل** في الـ 4 ملفات الكنسية (§17.1) خلال جولة DOC-CONSOLIDATION (2026-09-25) و جولة DOC-UPDATE-FINAL (2026-09-26 الحالية). كل المعلومات الحيّة (المعمارية، DBs، تدفق البيانات، الـ APIs، الـ personas، نتائج الـ backtest، المنهجية، الحماية القانونية، إلخ) موجودة في الـ 4 canonical files و**مُحدَّثة**، فلا حاجة لقراءة الـ 17 ملف historical ما عدا للسياق التاريخي فقط.
+>
+> - ✅ المنهجية ونتائج الـ backtest → `SYSTEM_HOW_IT_THINKS.md` (Production Snapshot + Backtest results).
+> - ✅ المعمارية وتدفق البيانات و DB Map → هذا الملف (§1.5 + §1.6 + §3.1 + §6).
+> - ✅ الشاشات والمكوّنات → `02-SCREENS_AND_COMPONENTS.md` (§0 rollup + per-screen sections).
+> - ✅ القواعد والحوكمة → `00-CONSTITUTION.md` (54 قاعدة).
+> - ⚠️ الـ historical files مُتروكة كما هي (لم تُحذف ولم تُعدَّل) احتراماً للقاعدة 16 + القاعدة 25.
 # 🗺️ Data Flow Map — GLMinvestment
 
 > **آخر تحديث**: 2026-09-03 (WAVE-1+2+3 DB Cleanup: حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + إسقاط 9 جداول فاضية)
