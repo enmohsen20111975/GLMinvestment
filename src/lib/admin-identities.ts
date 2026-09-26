@@ -31,6 +31,7 @@ const DEFAULT_ADMIN_EMAILS: readonly string[] = Object.freeze([
   'enmohsen20111975@gmail.com', // صاحب المنصة
   'enmohsen2011975@gmail.com', // admin قديم
   'ceo@m2y.net',
+  'mohseny@m2y.net',
 ]);
 
 /** Historical default admin usernames (pre-P0.1 baseline). */

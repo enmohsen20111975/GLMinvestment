@@ -40049,3 +40049,40 @@ Task: إصلاح النقاط الخمس + التحقق النهائي
 
 ## Commits on GitHub:
 - c6e5cdf — fix(N1+N4): remove backtest+depth from dashboard + admin auth flow
+
+---
+Task ID: ADMIN-AUTH-REGISTER-MOHSENY-001
+Agent: Antigravity AI Pair Programmer
+Task: تسجيل واعتماد حساب الأدمن (mohseny) رسمياً، وإصلاح استعلامات المصادقة وقواعد البيانات، والرفع إلى GitHub
+
+Work Log:
+1. المشكلة الأساسية:
+   - المستخدم حاول تسجيل الدخول باسم المستخدم `mohseny` وكلمة المرور `M2y@01287644099`.
+   - عملية الدخول كانت تفشل لسببين:
+     أ. قاعدة بيانات المستخدمين والمصادقة `db/auth.db` أصابها تلف (`malformed database schema (egx_predictions)`) مما عطل استعلامات جدول `User`.
+     ب. ملف `src/app/api/auth/[...nextauth]/route.ts` كان يفحص فقط مصفوفة ثابتة للإيميلات لا تحتوي على `mohseny@m2y.net`، وكان يتجاهل اسم المستخدم في التحقق من صلاحية الأدمن.
+
+2. الحلول المنفذة:
+   - **استعادة وسلامة قاعدة البيانات (`db/auth.db`):**
+     تم استعادة النسخة النظيفة المعتمدة من `db/backups/latest/auth.db` والتي تحتوي على المستخدم `mohseny` مع الـ CUID `mohseny-admin-cuid` والإيميل `mohseny@m2y.net` ودرجة الاشتراك `subscription_tier: admin` وكلمة المرور المشفرة بـ bcrypt hash `$2b$12$E8webiMgn4ptfjWn6UfJaebd8P5cdIcnUIGY/3i3zn/hWam84EKFO`. تم فحص سلامة القاعدة عبر `PRAGMA integrity_check` وحالتها `ok`.
+   - **إضافة الإيميل المعتمد لمركز هويات الأدمن (`src/lib/admin-identities.ts`):**
+     تمت إضافة `'mohseny@m2y.net'` إلى قائمة `DEFAULT_ADMIN_EMAILS` المعتمدة مع بقاء `mohseny` في `DEFAULT_ADMIN_USERNAMES`.
+   - **ترقية مسار المصادقة في NextAuth (`src/app/api/auth/[...nextauth]/route.ts`):**
+     - في دالة `authorize`: تم دعم التحقق الصارم عبر تشفير bcrypt للحساب الرئيسي `mohseny` مع ميزة إنشاء/تحديث تلقائي في قاعدة البيانات (Upsert) بصلاحية `admin`.
+     - في دوال `jwt` و `session`: تم ربط التحقق من الأدمن بدوال `getServerAdminEmails` و `getServerAdminUsernames` و `isServerAdmin` لضمان أن جلسة `mohseny` تأخذ فوراً وبشكل دائم:
+       `is_admin: true` و `subscription_tier: 'admin'`.
+   - **ترقية `verifyAdminCredentials` في `src/lib/admin-auth-server.ts`:**
+     دعم التحقق من حساب `mohseny` عبر تشفير bcrypt لجميع مسارات لوحة التحكم و `/api/admin/*`.
+
+3. نتائج الاختبار والتحقق:
+   - اجتياز جميع اختبارات المصادقة والحماية في `src/__tests__/test_phase_a_hotfix.test.ts` بنسبة 100% (10 tests passed).
+   - تجربة تسجيل الدخول الفعلي بطلب HTTP كامل (CSRF + POST Credentials + Session Cookie):
+     - كود الاستجابة: `200 OK`
+     - نتيجة الجلسة:
+       `id: "mohseny-admin-cuid"`
+       `username: "mohseny"`
+       `email: "mohseny@m2y.net"`
+       `is_admin: true`
+       `subscription_tier: "admin"`
+   - نجاح البناء الكامل `npm run build` بنسبة 100% وبدون أخطاء (Exit code 0).
+
