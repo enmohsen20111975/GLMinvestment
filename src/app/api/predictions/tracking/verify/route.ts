@@ -1,7 +1,7 @@
 /**
  * POST /api/predictions/tracking/verify
  * ======================================
- * Proxy to Python Backend — التحقق من التوصيات المعلقة
+ * Proxy to Python Backend — التحقق من التوقعات المعلقة
  *
  * Body (optional): { market: "EGX" }
  */

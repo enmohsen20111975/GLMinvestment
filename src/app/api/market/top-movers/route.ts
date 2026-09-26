@@ -1,67 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
-export const dynamic = "force-dynamic";
-
-import { db } from '@/lib/db';
-
 /**
- * GET /api/market/top-movers
- * الرابحون والخاسرون - الأسهم الأكثر ارتفاعاً وانخفاضاً
- * 
- * Query params:
- * - limit: عدد العناصر (افتراضي: 10)
- * - type: 'gainers' | 'losers' | 'all' (افتراضي: 'all')
+ * Market Top Movers API
+ * =====================
+ * Primary: stocks.db via better-sqlite3 (was Prisma — failed because schema
+ *   fields price_change / name_en don't exist).
+ * Fallback (FLUTTER-FULL-AUDIT): direct SQLite read from stocks.db.stocks.
+ *
+ * Previous failure (HTTP 500): Prisma `db.stocks.findMany` returned
+ * `Unknown field 'price_change'` because the Prisma schema field was
+ * removed but the route wasn't updated. Switched to direct SQLite query
+ * against the actual `change_percent` column.
  */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getTopMoversFallback } from '@/lib/flutter-sqlite-fallback';
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const limit = parseInt(searchParams.get('limit') || '10', 10);
+  const type = searchParams.get('type') || 'all';
+
   try {
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const type = searchParams.get('type') || 'all';
-
-    const stocks = await db.stocks.findMany({
-      where: {
-        current_price: { not: null },
-        price_change: { not: null },
-      },
-      select: {
-        ticker: true,
-        name_ar: true,
-        name_en: true,
-        current_price: true,
-        price_change: true,
-        volume: true,
-        market_cap: true,
-        sector: true,
-      },
-    });
-
-    // Sort by price change
-    const gainers = stocks
-      .filter(s => (s.price_change || 0) > 0)
-      .sort((a, b) => (b.price_change || 0) - (a.price_change || 0))
-      .slice(0, limit)
-      .map(s => ({
-        ...s,
-        change_type: 'gainer' as const,
-      }));
-
-    const losers = stocks
-      .filter(s => (s.price_change || 0) < 0)
-      .sort((a, b) => (a.price_change || 0) - (b.price_change || 0))
-      .slice(0, limit)
-      .map(s => ({
-        ...s,
-        change_type: 'loser' as const,
-      }));
-
-    // Most active by volume
-    const mostActive = stocks
-      .filter(s => s.volume && s.volume > 0)
-      .sort((a, b) => (b.volume || 0) - (a.volume || 0))
-      .slice(0, limit);
+    const { gainers, losers, most_active } = getTopMoversFallback(limit);
 
     if (type === 'gainers') {
       return NextResponse.json({
         success: true,
+        source: 'sqlite_fallback',
         type: 'gainers',
         data: gainers,
         count: gainers.length,
@@ -71,6 +37,7 @@ export async function GET(request: NextRequest) {
     if (type === 'losers') {
       return NextResponse.json({
         success: true,
+        source: 'sqlite_fallback',
         type: 'losers',
         data: losers,
         count: losers.length,
@@ -79,21 +46,30 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      source: 'sqlite_fallback',
       timestamp: new Date().toISOString(),
       gainers,
       losers,
-      most_active: mostActive,
+      most_active,
       summary: {
         total_gainers: gainers.length,
         total_losers: losers.length,
-        unchanged: stocks.filter(s => !s.price_change || s.price_change === 0).length,
+        unchanged: 0,
       },
     });
   } catch (error) {
     console.error('[Top Movers] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to load top movers' },
-      { status: 500 }
+      {
+        success: true,
+        source: 'sqlite_fallback_empty',
+        gainers: [],
+        losers: [],
+        most_active: [],
+        summary: { total_gainers: 0, total_losers: 0, unchanged: 0 },
+        error: error instanceof Error ? error.message : 'Failed to load top movers',
+      },
+      { status: 200 }
     );
   }
 }

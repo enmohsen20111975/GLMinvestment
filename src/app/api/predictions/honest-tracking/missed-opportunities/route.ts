@@ -5,9 +5,9 @@
  * ويطلع 4 قوائم:
  *
  * 1. missed_bulls  → قلنا SELL/STRONG_SELL والسهم طلع >10% (فرص ضاعت)
- * 2. false_positives → قلنا BUY/STRONG_BUY والسهم نزل >10% (توصيات غلط)
- * 3. correct_buys   → قلنا BUY والسهم طلع >10% (توصيات صحيحة)
- * 4. correct_sells  → قلنا SELL والسهم نزل >10% (توصيات صحيحة)
+ * 2. false_positives → قلنا BUY/STRONG_BUY والسهم نزل >10% (توقعات غلط)
+ * 3. correct_buys   → قلنا BUY والسهم طلع >10% (توقعات صحيحة)
+ * 4. correct_sells  → قلنا SELL والسهم نزل >10% (توقعات صحيحة)
  *
  * مصادر البيانات (كلها read-only):
  *   - predictions.db  → predictions table (entry_price, signal, prediction_date)
@@ -298,7 +298,7 @@ export async function GET(request: NextRequest) {
       false_positives: falsePositives.slice(0, limit),
       correct_buys: correctBuys.slice(0, limit),
       correct_sells: correctSells.slice(0, limit),
-      note: '🔴 missed_bulls = فرص ضاعت (قلنا بيع والسهم طلع). false_positives = توصيات شراء غلط. ✅ correct = توصيات صحيحة. ⏱️ price_is_stale=true لو السعر مش طازة (أكتر من 15 دقيقة من آخر تحديث).',
+      note: '🔴 missed_bulls = فرص ضاعت (قلنا بيع والسهم طلع). false_positives = توقعات شراء غلط. ✅ correct = توقعات صحيحة. ⏱️ price_is_stale=true لو السعر مش طازة (أكتر من 15 دقيقة من آخر تحديث).',
     });
   } catch (err) {
     return NextResponse.json(

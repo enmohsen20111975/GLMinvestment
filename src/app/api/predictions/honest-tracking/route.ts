@@ -52,7 +52,7 @@ export async function GET() {
         list: '/api/predictions/honest-tracking/list — قائمة التوقعات مع كل التفاصيل (فلترة + ترتيب)',
         verify_pending: 'POST /api/predictions/honest-tracking/verify-pending — تحقق من التوقعات المعلقة',
         learn_from_errors: 'POST /api/predictions/honest-tracking/learn-from-errors — استخراج الدروس من الأخطاء',
-        missed_opportunities: 'GET /api/predictions/honest-tracking/missed-opportunities — 🔴 الفرص الضائعة + التوصيات الغلط (نظرة المحلل الخبير)',
+        missed_opportunities: 'GET /api/predictions/honest-tracking/missed-opportunities — 🔴 الفرص الضائعة + التوقعات الغلط (نظرة المحلل الخبير)',
       },
       note: '✅ نظام تتبّع حقيقي — كل البيانات من predictions table مع التحقق من الأسعار الفعلية',
     });

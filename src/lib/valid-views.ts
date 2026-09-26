@@ -23,6 +23,7 @@ export const VALID_VIEWS: readonly string[] = [
   'advanced-portfolio', 'seasonality',
   'prediction-tracking', 'picks-management',
   'smart-confluence',
+  'liquidity-radar',
   'dual-track',
   'v82',  // محرك القرار المؤسسي V82
   'alerts-center', 'trading-memory', 'live-monitor', 'wealth',

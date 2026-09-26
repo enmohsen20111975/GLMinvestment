@@ -6,6 +6,11 @@
  * GET /api/money?section=watchlist — قائمة المراقبة
  * GET /api/money?section=alerts — التنبيهات
  * GET /api/money?section=journal — ذاكرة التداول
+ *
+ * Rule 50 (MONEY-AS-CUSTOMER-LIFE): فلوس العميل = أهم حاجة في حياته.
+ * لا يجوز كشف بيانات محفظته لأي طرف غير موثّق. القاعدة السابقة كانت
+ * تختار `LIMIT 1 user_id` من portfolio_assets وتعرضه لأي طلب — تسريب بيانات.
+ * تم الإصلاح: استخدم getSessionUserId() من @/lib/auth-helper وفشل مغلق عند غياب الـ session.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -13,38 +18,44 @@ export const dynamic = "force-dynamic";
 
 import Database from 'better-sqlite3';
 import path from 'path';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 export const revalidate = 10;
 
 /** Generic SQL row returned by better-sqlite3. */
 type SqlRow = Record<string, unknown>;
 
+const EMPTY_DATA = {
+  portfolio: { total_assets: 0, total_invested: 0, total_current_value: 0, total_pnl: 0, total_pnl_pct: 0, assets: [] as SqlRow[] },
+  watchlist: { count: 0, items: [] as SqlRow[] },
+  alerts: { active: 0 },
+  journal: { total: 0, open: 0, wins: 0, losses: 0, win_rate: 0 },
+  obligations: { count: 0, total_remaining: 0 },
+};
+
 export async function GET(request: NextRequest) {
   try {
+    // ── Rule 50: AUTHENTICATE FIRST — fail closed if no session ─────────────
+    const { userId } = await getSessionUserId();
+    if (!userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'يجب تسجيل الدخول للوصول إلى بياناتك المالية',
+          error_en: 'Authentication required to access your money data',
+          data: EMPTY_DATA,
+        },
+        { status: 401 }
+      );
+    }
+
     const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
     const db = new Database(dbPath, { readonly: true, timeout: 5000 });
     db.pragma('busy_timeout = 5000');
 
-    // Find user — try session, then first portfolio user
-    let userId: string | null = null;
-    try {
-      const user = db.prepare('SELECT DISTINCT user_id FROM portfolio_assets LIMIT 1').get() as { user_id?: string } | undefined;
-      userId = user?.user_id || null;
-    } catch {}
-
-    if (!userId) {
-      db.close();
-      return NextResponse.json({
-        success: true,
-        data: {
-          portfolio: { total_assets: 0, total_invested: 0, total_current_value: 0, total_pnl: 0, total_pnl_pct: 0, assets: [] },
-          watchlist: { count: 0, items: [] },
-          alerts: { active: 0 },
-          journal: { total: 0, open: 0, wins: 0, losses: 0, win_rate: 0 },
-          obligations: { count: 0, total_remaining: 0 },
-        },
-      });
-    }
+    // AUTHENTICATED userId from session — never read another user's data.
+    // (Previously this picked `LIMIT 1` user_id from portfolio_assets — a
+    //  severe data leak. See Rule 50.)
 
     const { searchParams } = new URL(request.url);
     const section = searchParams.get('section') || 'overview';
@@ -152,13 +163,21 @@ export async function GET(request: NextRequest) {
     }
 
     if (section === 'journal') {
-      const trades = db.prepare(`
-        SELECT j.*, s.name as stock_name
-        FROM trading_journal j
-        LEFT JOIN stocks s ON j.ticker = s.ticker
-        WHERE j.user_id = ?
-        ORDER BY j.entry_date DESC
-      `).all(userId) as Array<SqlRow>;
+      // `trading_journal` table may not exist in stocks.db (verified during
+      // MONEY-PORTFOLIO-AUDIT). Wrap in try/catch and return honest empty
+      // state instead of 500. Rule 27 (NO-FAKE-DATA).
+      let trades: SqlRow[] = [];
+      try {
+        trades = db.prepare(`
+          SELECT j.*, s.name as stock_name
+          FROM trading_journal j
+          LEFT JOIN stocks s ON j.ticker = s.ticker
+          WHERE j.user_id = ?
+          ORDER BY j.entry_date DESC
+        `).all(userId) as Array<SqlRow>;
+      } catch (journalErr) {
+        console.error('[Money API] trading_journal query failed (table likely missing):', journalErr instanceof Error ? journalErr.message : journalErr);
+      }
 
       let stats: { total: number; open: number; winning: number; losing: number; total_pnl: number; avg_return: number } = { total: 0, open: 0, winning: 0, losing: 0, total_pnl: 0, avg_return: 0 };
       try {

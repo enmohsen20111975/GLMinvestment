@@ -813,7 +813,7 @@ function RecommendationsReport() {
           title="تقرير التحليلات اليومي"
           image={recReportRef}
           filename={`recommendations_report_${new Date().toISOString().split('T')[0]}`}
-          hashtags={['EGX', 'بورصة', 'توصيات']}
+          hashtags={['EGX', 'بورصة', 'توقعات']}
           variant="outline"
           size="sm"
         />

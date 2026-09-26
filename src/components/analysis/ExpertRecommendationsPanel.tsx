@@ -2,13 +2,13 @@
 
 /**
  * ExpertRecommendationsPanel
- * لوحة إدخال توصيات الخبراء — وضعان:
+ * لوحة إدخال توقعات الخبراء — وضعان:
  *  1) جدول (Table mode): إدخال يدوي صف بصف.
  *  2) نص كامل (Full text mode): لصق نص عربي من واتساب ثم تحليله بالذكاء الاصطناعي واستيراده.
  *
- * أسفل الوضعين: قائمة "التوصيات المحفوظة" مع فلترة وبحث وتفاصيل قابلة للتوسيع.
+ * أسفل الوضعين: قائمة "التوقعات المحفوظة" مع فلترة وبحث وتفاصيل قابلة للتوسيع.
  *
- * التركيب: داخل تبويب "توصيات الخبراء" في MarketAnalysisView.
+ * التركيب: داخل تبويب "توقعات الخبراء" في MarketAnalysisView.
  * لا يستخدم ألوان indigo/blue — اللمسة الأساسية emerald/teal.
  */
 
@@ -432,7 +432,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
       const recs: ParsedTextRec[] = data.recommendations || [];
       setParsedRecs(recs);
       if (recs.length === 0) {
-        toast.info('لم يتم العثور على توصيات في النص — تأكد من التنسيق');
+        toast.info('لم يتم العثور على توقعات في النص — تأكد من التنسيق');
       } else {
         toast.success(`تم تحليل ${recs.length} توقع من النص`);
       }
@@ -486,7 +486,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
     }
     const recs = buildImportFromParsed();
     if (recs.length === 0) {
-      toast.error('لا توجد توصيات قابلة للاستيراد بعد التحليل');
+      toast.error('لا توجد توقعات قابلة للاستيراد بعد التحليل');
       return;
     }
     setConfirming(true);
@@ -590,11 +590,11 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-emerald-800">
             <ClipboardList className="w-5 h-5" />
-            توصيات الخبراء — {MARKET_NAMES_AR[market]}
+            توقعات الخبراء — {MARKET_NAMES_AR[market]}
           </CardTitle>
           <CardDescription>
-            أدخل توصيات الخبراء يدويًا (جدول) أو انسخها من نص عربي (واتساب/تيليجرام)
-            ودع الذكاء الاصطناعي يحللها ويستوردها. هذه التوصيات تغيّر تفكير الآلة عبر
+            أدخل توقعات الخبراء يدويًا (جدول) أو انسخها من نص عربي (واتساب/تيليجرام)
+            ودع الذكاء الاصطناعي يحللها ويستوردها. هذه التوقعات تغيّر تفكير الآلة عبر
             وكيل آخر على الباك إند.
           </CardDescription>
         </CardHeader>
@@ -680,7 +680,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
               <CardTitle className="flex items-center justify-between text-base">
                 <span className="flex items-center gap-2">
                   <ListChecks className="w-4 h-4 text-emerald-600" />
-                  إدخال جدول التوصيات
+                  إدخال جدول التوقعات
                 </span>
                 <Button
                   size="sm"
@@ -1093,7 +1093,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
                   {parsedRecs.length === 0 ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                       <AlertTriangle className="w-4 h-4 inline ml-1" />
-                      لم يتمكن المحلل من استخراج توصيات من النص. تأكد من أن النص يحتوي
+                      لم يتمكن المحلل من استخراج توقعات من النص. تأكد من أن النص يحتوي
                       على رمز سهم بين قوسين مثل (COMI) وأسعار دخول/هدف.
                     </div>
                   ) : (
@@ -1159,7 +1159,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
           <CardTitle className="flex items-center justify-between text-base">
             <span className="flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-emerald-600" />
-              التوصيات المحفوظة
+              التوقعات المحفوظة
               <Badge variant="secondary" className="mr-1">
                 {filteredStored.length}
               </Badge>
@@ -1216,7 +1216,7 @@ export function ExpertRecommendationsPanel({ market }: { market: MarketType }) {
           ) : filteredStored.length === 0 ? (
             <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/30 p-8 text-center text-sm text-muted-foreground">
               <ClipboardList className="w-8 h-8 mx-auto mb-2 text-emerald-400" />
-              لا توجد توصيات محفوظة بعد. ابدأ بإدخالها من الجدول أو النص بالأعلى.
+              لا توجد توقعات محفوظة بعد. ابدأ بإدخالها من الجدول أو النص بالأعلى.
             </div>
           ) : (
             <div

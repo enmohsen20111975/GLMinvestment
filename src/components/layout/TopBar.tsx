@@ -31,8 +31,9 @@ import {
   Crown, Sparkles, FileBarChart, Newspaper, GraduationCap, Gamepad2,
   Wallet, Eye, HandCoins, Shield, RadioTower, Brain,
   Activity, BarChart3, Settings, Menu, X, ChevronDown,
-  Bell, Sun, Moon, DollarSign, Search, Globe, type LucideIcon,
+  Bell, Sun, Moon, DollarSign, Search, Globe, LogIn, LogOut, UserCircle, type LucideIcon,
 } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 import {
   useAppStore,
   MarketType,
@@ -43,6 +44,7 @@ import { cn } from '@/lib/utils';
 import type { AppView } from '@/types';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
+import { toast } from 'sonner';
 
 // ── خيارات السوق للـ Market Switcher ─────────────────────────────────────
 // 5 أسواق مدعومة بالبيانات الفعلية (see store.ts MarketType union)
@@ -93,6 +95,7 @@ const navSections: NavSection[] = [
       { id: 'stock-filters', label: 'فلاتر الأسهم', icon: Filter },
       { id: 'trading-chart', label: 'الشارت التفاعلي', icon: TrendingUp },
       { id: 'smart-confluence', label: 'تحليلات السوق', icon: Sparkles },
+      { id: 'liquidity-radar', label: 'رادار السيولة', icon: Activity, highlight: true },
       // ملاحظة: 'screener' اتحذف من هنا لأنه كان بيستخدم نفس TradingChartView (تكرار بلا معنى).
       // المستخدم اللي بيفتح #screener بيتم redirect تلقائياً لـ #trading-chart في page.tsx.
     ],
@@ -144,11 +147,19 @@ const navSections: NavSection[] = [
 
 export function TopBar() {
   const { currentView, setCurrentView, currentMarket, setCurrentMarket } = useAppStore();
+  const { data: session, status } = useSession();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [marketMenuOpen, setMarketMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const marketMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // حالة المستخدم
+  const isAuthenticated = status === 'authenticated' && !!session?.user;
+  const userDisplayName = (session?.user as Record<string, unknown>)?.name as string || (session?.user as Record<string, unknown>)?.email as string || (session?.user as Record<string, unknown>)?.username as string || null;
+  const userInitial = userDisplayName ? userDisplayName.charAt(0).toUpperCase() : '?';
 
   // إغلاق الـ dropdown لما تضغط خارجها
   useEffect(() => {
@@ -158,6 +169,9 @@ export function TopBar() {
       }
       if (marketMenuRef.current && !marketMenuRef.current.contains(e.target as Node)) {
         setMarketMenuOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -354,6 +368,55 @@ export function TopBar() {
             <div className="hidden sm:block">
               <RoboNotifierToggle />
             </div>
+
+            {/* N9: تسجيل الدخول/الخروج + اسم المستخدم */}
+            {isAuthenticated ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs transition-colors hover:bg-accent"
+                  aria-label="حساب المستخدم"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">
+                    {userInitial}
+                  </span>
+                  <span className="hidden sm:inline font-medium text-foreground max-w-[120px] truncate">
+                    {userDisplayName}
+                  </span>
+                  <ChevronDown className={cn('h-3 w-3 text-muted-foreground transition-transform', userMenuOpen && 'rotate-180')} />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute left-0 mt-2 w-48 rounded-lg border border-border bg-popover p-1 shadow-lg z-50" dir="rtl">
+                    <div className="px-3 py-2 border-b border-border mb-1">
+                      <p className="text-xs font-semibold text-foreground truncate">{userDisplayName}</p>
+                      <p className="text-[10px] text-muted-foreground">مسجّل الدخول</p>
+                    </div>
+                    <button
+                      onClick={() => { setCurrentView('settings' as AppView); setUserMenuOpen(false); window.location.hash = 'settings'; }}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors"
+                    >
+                      <Settings className="h-3.5 w-3.5" />
+                      الإعدادات
+                    </button>
+                    <button
+                      onClick={() => { signOut({ callbackUrl: '/' }); toast.info('تم تسجيل الخروج بنجاح'); }}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      تسجيل الخروج
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => { setCurrentView('auth' as AppView); window.location.hash = 'auth'; }}
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">تسجيل الدخول</span>
+              </button>
+            )}
           </div>
         </div>
 

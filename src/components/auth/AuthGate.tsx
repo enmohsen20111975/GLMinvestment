@@ -59,7 +59,7 @@ const VIEW_LABEL_AR: Partial<Record<AppView, string>> = {
   'crypto-detail': 'تفاصيل العملة الرقمية',
   'crypto-portfolio': 'محفظة العملات الرقمية',
   'crypto-watchlist': 'قوائم مراقبة العملات',
-  'crypto-recommendations': 'توصيات العملات الرقمية',
+  'crypto-recommendations': 'توقعات العملات الرقمية',
   'crypto-analysis': 'تحليل العملات الرقمية',
   'crypto-learning': 'تعلّم العملات الرقمية',
   'crypto-simulation': 'محاكاة العملات الرقمية',

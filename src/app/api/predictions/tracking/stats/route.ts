@@ -1,7 +1,7 @@
 /**
  * GET /api/predictions/tracking/stats
  * ====================================
- * Proxy to Python Backend — إحصائيات نسبة نجاح توصيات الصياد
+ * Proxy to Python Backend — إحصائيات نسبة نجاح توقعات الصياد
  *
  * Query: market=EGX, days=30
  */

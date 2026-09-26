@@ -153,7 +153,7 @@ function PredictionsPerformanceChart({ stocks }: { stocks: StockData[] }) {
         <h4 className="font-extrabold text-sm text-teal-800 dark:text-teal-300 flex items-center gap-2">
           📊 الأداء التراكمي وتوزيع الصفقات حسب الأيام
         </h4>
-        <span className="text-xs text-muted-foreground font-mono">تتبع تلقائي لمعدلات الأرباح والتوصيات الصادرة</span>
+        <span className="text-xs text-muted-foreground font-mono">تتبع تلقائي لمعدلات الأرباح والتوقعات الصادرة</span>
       </div>
       <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -683,7 +683,7 @@ function PredictionsTab({ market }: { market: MarketType }) {
                 🏆 نتائج ودقة التوقعات الفنية والمالية المتقدمة — {MARKET_NAMES_AR[market] || market}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                توثيق تلقائي مباشر للنتائج والأرباح المحققة لكافة الصفقات والتوصيات الصادرة عن المنصة
+                توثيق تلقائي مباشر للنتائج والأرباح المحققة لكافة الصفقات والتوقعات الصادرة عن المنصة
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={fetchPredictions} className="gap-1.5 border-teal-400 text-teal-700 dark:text-teal-300">
@@ -724,7 +724,7 @@ function PredictionsTab({ market }: { market: MarketType }) {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           {/* تصفية المستثمر vs المضارب */}
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-teal-800 dark:text-teal-200 ml-1">فئة التوصيات:</span>
+            <span className="text-xs font-bold text-teal-800 dark:text-teal-200 ml-1">فئة التوقعات:</span>
             {([
               ['all', '🌐 جميع الصفقات'],
               ['investor', '📊 توقعات المستثمر'],

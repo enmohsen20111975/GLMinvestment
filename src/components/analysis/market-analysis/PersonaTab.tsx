@@ -1381,7 +1381,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
 
   // P6-PREDICTIONS: جلب أرشيف التوقعات السابقة من /api/unified/predictions.
   // الـ endpoint بيرجّع previous_predictions كـ list — بنعرضها في تبويب البرسونا
-  // عشان المستخدم يشوف أداء التوقعات السابقة جنب التوصيات الحالية.
+  // عشان المستخدم يشوف أداء التوقعات السابقة جنب التوقعات الحالية.
   // RL-FIX-9: بنمرّر persona للـ API علشان كل تبويب يعرض توقعاته الخاصة
   // (مش نفس الأرشيف لكل التبويبات).
   useEffect(() => {
@@ -1890,7 +1890,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
       {/* ═══ P21-PERSONA-CONSTRAINTS (Aug 2026): HOLD Banner for Conservative ═══
           لما تبقى إشارات كلها HOLD في تبويب المستثمر، اعرض رسالة واضحة فوق الكروت
           عشان العميل يفهم إن دي حماية لرأس المال، مش "منصة ميتة".
-          المضارب لازم يبدأ يعرض توصيات الشراء اللحظية (بعد تعديل الباك-إند). */}
+          المضارب لازم يبدأ يعرض توقعات الشراء اللحظية (بعد تعديل الباك-إند). */}
       {isLongTerm && (() => {
         const holdItems = items.filter((it) => {
           // P26: استخدم _personaKey (investor للـ conservative) بدل ما نظبظبط 'investor'
@@ -1909,7 +1909,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                     وضع السوق الحالي لا يناسب الاستثمار طويل المدى
                   </p>
                   <p className="text-xs text-emerald-800 dark:text-emerald-300">
-                    التوصيات الحالية للانتظار والحفاظ على رأس المال ({holdItems.length} من {items.length} سهم).
+                    التوقعات الحالية للانتظار والحفاظ على رأس المال ({holdItems.length} من {items.length} سهم).
                     لو عايز فرص شراء يومية/أسبوعية، حوّل لتبويب المضارب 🎯 — السهم اللي مش فرصة استثمار ممكن يكون فرصة مضاربة.
                   </p>
                 </div>

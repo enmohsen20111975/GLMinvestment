@@ -75,7 +75,7 @@ export function SmartConfluenceView() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           // نجيب من كل الأسواق (EGX + CRYPTO + TADAWUL + KSE + QSE) عشان كل
-          // التوصيات النشطة تظهر، بصرف نظر عن السوق اللي كانت فيه.
+          // التوقعات النشطة تظهر، بصرف نظر عن السوق اللي كانت فيه.
           body: JSON.stringify({ markets: ['EGX', 'CRYPTO', 'TADAWUL', 'KSE', 'QSE'], perMarket: 5, totalLimit: 20 })
         });
         const json = await res.json();
@@ -125,7 +125,7 @@ export function SmartConfluenceView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">تحليلات السوق</h1>
-          <p className="text-muted-foreground">التوصيات الذكية من البيانات التاريخية</p>
+          <p className="text-muted-foreground">التوقعات الذكية من البيانات التاريخية</p>
         </div>
         <Button onClick={() => window.location.reload()} variant="outline" size="sm">
           <Activity className="h-4 w-4 ml-2" />
@@ -154,7 +154,7 @@ export function SmartConfluenceView() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 w-full max-w-md">
-          <TabsTrigger value="predictions">التوصيات</TabsTrigger>
+          <TabsTrigger value="predictions">التوقعات</TabsTrigger>
           <TabsTrigger value="buy">شراء ({buyPicks.length})</TabsTrigger>
           <TabsTrigger value="sell">بيع ({sellPicks.length})</TabsTrigger>
         </TabsList>
@@ -164,8 +164,8 @@ export function SmartConfluenceView() {
             <Card>
               <CardContent className="p-8 text-center">
                 <CheckCircle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
-                <h3 className="text-lg font-bold mb-2">لا توجد توصيات متاحة حالياً</h3>
-                <p className="text-muted-foreground">جاري تحديث قاعدة البيانات بالتوصيات الجديدة</p>
+                <h3 className="text-lg font-bold mb-2">لا توجد توقعات متاحة حالياً</h3>
+                <p className="text-muted-foreground">جاري تحديث قاعدة البيانات بالتوقعات الجديدة</p>
               </CardContent>
             </Card>
           ) : (
@@ -221,7 +221,7 @@ export function SmartConfluenceView() {
 
         <TabsContent value="buy" className="space-y-3 mt-4">
           {buyPicks.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">لا توجد توصيات شراء حالياً</CardContent></Card>
+            <Card><CardContent className="p-8 text-center text-muted-foreground">لا توجد توقعات شراء حالياً</CardContent></Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {buyPicks.map((pick, idx) => (
@@ -246,7 +246,7 @@ export function SmartConfluenceView() {
 
         <TabsContent value="sell" className="space-y-3 mt-4">
           {sellPicks.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">لا توجد توصيات بيع حالياً</CardContent></Card>
+            <Card><CardContent className="p-8 text-center text-muted-foreground">لا توجد توقعات بيع حالياً</CardContent></Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {sellPicks.map((pick, idx) => (

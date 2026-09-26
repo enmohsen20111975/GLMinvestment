@@ -1,19 +1,14 @@
 /**
  * GET /api/confluence/analyze/[ticker]
- * =====================================
- * Confluence analysis proxy for a single ticker.
- *
- * The Python backend at port 8010 ALREADY implements this endpoint and
- * returns 200 with a fully-formed board-consensus payload. We just proxy
- * it through Next.js so the Flutter app can hit a single origin.
- *
- * Path: ${PY}/api/confluence/analyze/<ticker>
- *
- * If Python is unreachable or returns non-2xx, we return a clearly-marked
- * 502 with a fallback empty board so the UI can degrade gracefully.
+ * -------------------------------------
+ * Primary: Python /api/confluence/analyze/<ticker> (board-consensus payload).
+ * Fallback (FLUTTER-FULL-AUDIT): predictions.db — return latest prediction
+ *   for ticker as a minimal "confluence" so Flutter's analysis screen
+ *   doesn't show "connection error". Previously returned 503.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getStockRecommendationFallback } from '@/lib/flutter-sqlite-fallback';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,59 +22,59 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const qs = searchParams.toString();
 
+  if (!ticker) {
+    return NextResponse.json(
+      { success: false, error: 'ticker is required', error_ar: 'السهم مطلوب' },
+      { status: 400 }
+    );
+  }
+
+  // 1. Try Python
+  const targetUrl = `${PY}/api/confluence/analyze/${encodeURIComponent(ticker)}${qs ? `?${qs}` : ''}`;
   try {
-    if (!ticker) {
-      return NextResponse.json(
-        { success: false, error: 'ticker is required', error_ar: 'السهم مطلوب' },
-        { status: 400 }
-      );
-    }
-
-    const targetUrl = `${PY}/api/confluence/analyze/${encodeURIComponent(ticker)}${qs ? `?${qs}` : ''}`;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers: { Accept: 'application/json' },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(5000),
       cache: 'no-store',
     });
-    clearTimeout(timeout);
-
     if (res.ok) {
       const data = await res.json();
       return NextResponse.json(data, { status: 200 });
     }
-
-    // Non-2xx: try to pass through Python's body, else synthesize an error
-    let errBody: any = null;
-    try { errBody = await res.json(); } catch { /* ignore */ }
-
-    return NextResponse.json(
-      {
-        success: false,
-        ticker,
-        status: res.status,
-        error: 'تعذّر تحليل السهم',
-        error_en: 'Analysis unavailable',
-        details: errBody || `HTTP ${res.status}`,
-        board_consensus: null,
-      },
-      { status: 502 }
-    );
-  } catch (error) {
-    const isAbort = error instanceof Error && error.name === 'AbortError';
-    return NextResponse.json(
-      {
-        success: false,
-        ticker,
-        error: isAbort ? 'انتهت مهلة الطلب' : 'تعذر الوصول لخدمة التحليل الموحد',
-        error_en: isAbort ? 'Request timeout' : 'Confluence service unavailable',
-        details: error instanceof Error ? error.message : String(error),
-        board_consensus: null,
-      },
-      { status: 503 }
-    );
+  } catch {
+    // fall through
   }
+
+  // 2. SQLite fallback — predictions.db latest prediction as confluence
+  const rec = getStockRecommendationFallback(ticker);
+  return NextResponse.json({
+    success: true,
+    source: 'sqlite_fallback',
+    ticker,
+    board_consensus: rec
+      ? {
+          signal: rec.signal,
+          signal_ar: rec.signal_ar,
+          entry_price: rec.entry_price,
+          target_price: rec.target_price,
+          stop_loss: rec.stop_loss,
+          risk_reward: rec.risk_reward,
+          master_score: rec.master_score,
+          confidence: rec.confidence,
+          persona: rec.persona,
+          prediction_date: rec.prediction_date,
+        }
+      : null,
+    components: [],
+    score_breakdown: rec
+      ? {
+          technical: rec.technical_score,
+          fundamental: rec.fundamental_score,
+          ai_pattern: rec.ai_pattern_score,
+          sentiment: rec.sentiment_score,
+        }
+      : null,
+    message: 'Python backend unreachable — using latest prediction as confluence proxy',
+  });
 }

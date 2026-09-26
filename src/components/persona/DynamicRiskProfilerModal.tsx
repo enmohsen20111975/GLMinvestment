@@ -284,7 +284,7 @@ export function DynamicRiskProfilerModal({
               </div>
 
               <div className="text-[10px] text-muted-foreground bg-muted/40 rounded p-2 text-center">
-                سيتم تطبيق الشخصية فوراً على جميع شاشات التحليلات والمحفظة والتوصيات.
+                سيتم تطبيق الشخصية فوراً على جميع شاشات التحليلات والمحفظة والتوقعات.
               </div>
             </Card>
           )}

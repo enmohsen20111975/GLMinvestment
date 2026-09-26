@@ -154,6 +154,33 @@ export async function GET(req: NextRequest) {
     else selectParts.push('NULL AS resistance');
     if (has('trend')) selectParts.push('trend');
     else selectParts.push('NULL AS trend');
+    // البيانات المالية (fundamentals) — مهمة جداً لشاشة الفلاتر
+    if (has('pe_ratio')) selectParts.push('pe_ratio');
+    else selectParts.push('NULL AS pe_ratio');
+    if (has('pb_ratio')) selectParts.push('pb_ratio');
+    else selectParts.push('NULL AS pb_ratio');
+    if (has('eps')) selectParts.push('eps');
+    else selectParts.push('NULL AS eps');
+    if (has('roe')) selectParts.push('roe');
+    else selectParts.push('NULL AS roe');
+    if (has('roa')) selectParts.push('roa');
+    else selectParts.push('NULL AS roa');
+    if (has('dividend_yield')) selectParts.push('dividend_yield');
+    else selectParts.push('NULL AS dividend_yield');
+    if (has('debt_to_equity')) selectParts.push('debt_to_equity');
+    else selectParts.push('NULL AS debt_to_equity');
+    if (has('beta')) selectParts.push('beta');
+    else selectParts.push('NULL AS beta');
+    if (has('high_52w')) selectParts.push('high_52w');
+    else selectParts.push('NULL AS high_52w');
+    if (has('low_52w')) selectParts.push('low_52w');
+    else selectParts.push('NULL AS low_52w');
+    if (has('open_price')) selectParts.push('open_price');
+    else selectParts.push('NULL AS open_price');
+    if (has('high_price')) selectParts.push('high_price');
+    else selectParts.push('NULL AS high_price');
+    if (has('low_price')) selectParts.push('low_price');
+    else selectParts.push('NULL AS low_price');
 
     const sql = `
       SELECT ${selectParts.join(', ')}
@@ -182,6 +209,20 @@ export async function GET(req: NextRequest) {
       support: r.support === null ? null : Number(r.support),
       resistance: r.resistance === null ? null : Number(r.resistance),
       trend: r.trend || null,
+      // fundamentals
+      pe_ratio: r.pe_ratio === null || r.pe_ratio === undefined ? null : Number(r.pe_ratio),
+      pb_ratio: r.pb_ratio === null || r.pb_ratio === undefined ? null : Number(r.pb_ratio),
+      eps: r.eps === null || r.eps === undefined ? null : Number(r.eps),
+      roe: r.roe === null || r.roe === undefined ? null : Number(r.roe),
+      roa: r.roa === null || r.roa === undefined ? null : Number(r.roa),
+      dividend_yield: r.dividend_yield === null || r.dividend_yield === undefined ? null : Number(r.dividend_yield),
+      debt_to_equity: r.debt_to_equity === null || r.debt_to_equity === undefined ? null : Number(r.debt_to_equity),
+      beta: r.beta === null || r.beta === undefined ? null : Number(r.beta),
+      high_52w: r.high_52w === null || r.high_52w === undefined ? null : Number(r.high_52w),
+      low_52w: r.low_52w === null || r.low_52w === undefined ? null : Number(r.low_52w),
+      open_price: r.open_price === null || r.open_price === undefined ? null : Number(r.open_price),
+      high_price: r.high_price === null || r.high_price === undefined ? null : Number(r.high_price),
+      low_price: r.low_price === null || r.low_price === undefined ? null : Number(r.low_price),
     }));
 
     db.close();

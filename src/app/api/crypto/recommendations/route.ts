@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/crypto/recommendations
- * توصيات العملات الرقمية من predictions.db (market='CRYPTO')
+ * توقعات العملات الرقمية من predictions.db (market='CRYPTO')
  * بيرجع التوقعات النشطة (Pending) مرتبة حسب التاريخ
  *
  * Query params:

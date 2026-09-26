@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'فشل جلب توصيات الشخصية',
+        error: 'فشل جلب توقعات الشخصية',
         error_en: 'Failed to fetch persona recommendations',
         details: error instanceof Error ? error.message : String(error),
         recommendations: [],

@@ -241,7 +241,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
       return NextResponse.json(
         {
           success: false,
-          error: 'تعذّر جلب التوصيات. يرجى المحاولة مرة أخرى.',
+          error: 'تعذّر جلب التوقعات. يرجى المحاولة مرة أخرى.',
           data: [],
           count: 0,
         },
@@ -251,7 +251,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
   } catch (error) {
     console.error('[/api/finance/smart-confluence] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'فشل في جلب التوصيات', data: [], count: 0 },
+      { success: false, error: 'فشل في جلب التوقعات', data: [], count: 0 },
       { status: 500 }
     );
   }

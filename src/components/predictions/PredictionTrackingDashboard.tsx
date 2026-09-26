@@ -349,7 +349,7 @@ const DAYS_OPTIONS: Array<{ value: DaysWindow; label: string }> = [
 // يفلتر التوقعات الضعيفة من كل الإحصائيات (KPI cards + persona cards + chart + table)
 type QualityMode = 'top_picks' | 'all';
 const QUALITY_MODE_OPTIONS: Array<{ value: QualityMode; label: string; desc: string; emoji: string }> = [
-  { value: 'top_picks', label: 'أفضل التوقعات', desc: 'أقصى 5 توصيات/يوم لكل شخصية (الثقة ≥ الحد)', emoji: '⭐' },
+  { value: 'top_picks', label: 'أفضل التوقعات', desc: 'أقصى 5 توقعات/يوم لكل شخصية (الثقة ≥ الحد)', emoji: '⭐' },
   { value: 'all', label: 'كل التوقعات', desc: 'بدون فلترة (للتحليل الشامل)', emoji: '📊' },
 ];
 const CONFIDENCE_OPTIONS: Array<{ value: number; label: string }> = [
@@ -1175,7 +1175,7 @@ export function PredictionTrackingDashboard({
                 سجل أداء التوقعات ودلائل صحة الصفقات
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                سجل موثق بالكامل لكافة الصفقات والتوصيات الصادرة من المحرك الفني الذكي، مع متابعة دقيقة لنسبة النجاح والأهداف المحققة.
+                سجل موثق بالكامل لكافة الصفقات والتوقعات الصادرة من المحرك الفني الذكي، مع متابعة دقيقة لنسبة النجاح والأهداف المحققة.
               </p>
             </div>
 
@@ -1429,7 +1429,7 @@ export function PredictionTrackingDashboard({
               {/* Persona Stats Grid */}
               <div className="grid grid-cols-3 gap-2 text-center my-2 p-2 bg-muted/40 rounded-xl border border-border/50">
                 <div>
-                  <div className="text-[10px] text-muted-foreground">التوصيات</div>
+                  <div className="text-[10px] text-muted-foreground">التوقعات</div>
                   <div className="font-mono font-bold text-xs">{pStats.total}</div>
                 </div>
                 <div>
@@ -1554,7 +1554,7 @@ export function PredictionTrackingDashboard({
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-emerald-500" />
               <CardTitle className="text-base font-black">
-                جدول صفقات التوصيات الموثقة ({filteredPredictions.length} صفقة)
+                جدول صفقات التوقعات الموثقة ({filteredPredictions.length} صفقة)
               </CardTitle>
             </div>
 

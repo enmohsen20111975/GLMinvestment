@@ -202,11 +202,11 @@ const SIGNAL_FILTER_OPTIONS: Array<{ value: FilterSignal; label: string }> = [
 ];
 
 // RL-FIX-10: وضع الجودة — يتحكم في هل نعرض كل التوقعات ولا أفضلها بس
-// 'top_picks' = أفضل 5 توصيات/يوم لكل شخصية (الافتراضي — منطقي للعميل)
+// 'top_picks' = أفضل 5 توقعات/يوم لكل شخصية (الافتراضي — منطقي للعميل)
 // 'all' = كل التوقعات (للتحليل الشامل)
 type QualityMode = 'top_picks' | 'all';
 const QUALITY_MODE_OPTIONS: Array<{ value: QualityMode; label: string; desc: string; emoji: string }> = [
-  { value: 'top_picks', label: 'أفضل التوقعات', desc: 'أقصى 5 توصيات/يوم لكل شخصية', emoji: '⭐' },
+  { value: 'top_picks', label: 'أفضل التوقعات', desc: 'أقصى 5 توقعات/يوم لكل شخصية', emoji: '⭐' },
   { value: 'all', label: 'كل التوقعات', desc: 'بدون فلترة (للتحليل الشامل)', emoji: '📊' },
 ];
 
@@ -487,7 +487,7 @@ export function ExecutiveReportView({
         const score = Number(p.confidence ?? p.maestroScore ?? 0);
         return score >= minConfidence;
       });
-      // (ب) top-N لكل (يوم، شخصية) — خد أعلى 5 توصيات
+      // (ب) top-N لكل (يوم، شخصية) — خد أعلى 5 توقعات
       const groupKey = (p: LivePredictionItem) => {
         const dateStr = String(p.entryDate || '').slice(0, 10);
         return `${dateStr}__${p.persona}`;
@@ -1066,7 +1066,7 @@ export function ExecutiveReportView({
               ))}
               <span className="text-[10px] text-muted-foreground mr-auto">
                 {qualityMode === 'top_picks'
-                  ? '5 توصيات/يوم لكل شخصية — أرقام منطقية'
+                  ? '5 توقعات/يوم لكل شخصية — أرقام منطقية'
                   : 'كل التوقعات — للتحليل الشامل'}
               </span>
             </div>
@@ -1686,7 +1686,7 @@ export function ExecutiveReportView({
                   />
                   {/* False Positives — قلنا شراء والسهم نزل */}
                   <MissedOppCard
-                    title="توصيات خاطئة"
+                    title="توقعات خاطئة"
                     subtitle="قلنا شراء والسهم نزل"
                     icon={<TrendingDown className="w-5 h-5 text-rose-400" />}
                     accent="rose"
@@ -1695,7 +1695,7 @@ export function ExecutiveReportView({
                   />
                   {/* Correct Buys — قلنا شراء والسهم طلع */}
                   <MissedOppCard
-                    title="توصيات صحيحة (شراء)"
+                    title="توقعات صحيحة (شراء)"
                     subtitle="قلنا شراء والسهم طلع"
                     icon={<CheckCircle className="w-5 h-5 text-emerald-400" />}
                     accent="emerald"
@@ -1704,7 +1704,7 @@ export function ExecutiveReportView({
                   />
                   {/* Correct Sells — قلنا بيع والسهم نزل */}
                   <MissedOppCard
-                    title="توصيات صحيحة (بيع)"
+                    title="توقعات صحيحة (بيع)"
                     subtitle="قلنا بيع والسهم نزل"
                     icon={<CheckCircle className="w-5 h-5 text-teal-400" />}
                     accent="teal"
@@ -1968,7 +1968,7 @@ function StatRow({
 
 // ════════════════════════════════════════════════════════════════════════════
 // MissedOppCard — بطاقة الفرص الضائعة والتحليل البعدي
-// بتعمل review على التوقعات السابقة: فرص ضاعت / توصيات خاطئة / توصيات صحيحة (شراء/بيع)
+// بتعمل review على التوقعات السابقة: فرص ضاعت / توقعات خاطئة / توقعات صحيحة (شراء/بيع)
 // ════════════════════════════════════════════════════════════════════════════
 const MISSED_OPP_ACCENTS: Record<string, { ring: string; bar: string; value: string }> = {
   amber: { ring: 'border-amber-500/30', bar: 'bg-amber-500', value: 'text-amber-400' },

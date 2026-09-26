@@ -88,7 +88,7 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
 }
 
 /**
- * تطبق الـ Paywall على نتائج التوصيات.
+ * تطبق الـ Paywall على نتائج التوقعات.
  *
  * للمجانيين:
  * - Top 3 سيولة: أسماء ظاهرة (التذوق)

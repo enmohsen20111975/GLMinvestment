@@ -770,7 +770,7 @@ function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
           <div>
             <CardTitle className="text-base">تنبيهات التزن الذكي</CardTitle>
             <p className="text-xs text-muted-foreground">
-              توصيات تلقائية لإعادة توازن محفظتك
+              توقعات تلقائية لإعادة توازن محفظتك
             </p>
           </div>
         </div>

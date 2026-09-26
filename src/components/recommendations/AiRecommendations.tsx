@@ -1845,7 +1845,7 @@ export function AiRecommendations() {
   const [liveLoading, setLiveLoading] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   // أغسطس 2026 (FIX 1 — إيقاف التحديث التلقائي الزفت):
-  // المستخدم اشتكى إن شاشة التوصيات بتعمل Refresh مستمر كل 15 دقيقة وبتكسر
+  // المستخدم اشتكى إن شاشة التوقعات بتعمل Refresh مستمر كل 15 دقيقة وبتكسر
   // الباك-إند. الـ polling الافتراضي بقى OFF — الواجهة بتعمل Fetch مرة واحدة
   // لما الصفحة تفتح بس. لو المستخدم عايز تحديث، بيدوس زرار "تحديث" اليدوي.
   // الـ auto-refresh ممكن يتفعّل يدوي عبر الـ toggle لو حد عاوزه، بس افتراضياً OFF.

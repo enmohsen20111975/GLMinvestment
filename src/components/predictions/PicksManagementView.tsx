@@ -2,10 +2,10 @@
 import { StatCard } from '@/components/ui/stat-card';
 
 /**
- * PicksManagementView — فن إدارة التوصيات
+ * PicksManagementView — فن إدارة التوقعات
  * ===========================================
  * تبويب جديد يجمع:
- *  1. توصيات اليوم (Top 5) — أعلى 5 توصيات بناءً على نسبة الثقة
+ *  1. توقعات اليوم (Top 5) — أعلى 5 توقعات بناءً على نسبة الثقة
  *  2. إدارة المراكز المفتوحة — HOLD/TRAILING/EXIT/ADD/REDUCE لكل مركز
  *
  * فلسفة المكون:
@@ -434,7 +434,7 @@ export function PicksManagementView() {
       if (persona !== 'all') params.set('persona', persona);
       const res = await fetch(`/api/predictions/daily-picks?${params.toString()}`, { cache: 'no-store' });
       if (!res.ok) {
-        throw new Error('تعذّر جلب التوصيات. يرجى المحاولة مرة أخرى.');
+        throw new Error('تعذّر جلب التوقعات. يرجى المحاولة مرة أخرى.');
       }
       const json = await res.json();
       if (json.success) {
@@ -443,7 +443,7 @@ export function PicksManagementView() {
       } else {
         setPicks([]);
         setPicksStats(null);
-        setPicksError(json.error || 'تعذّر جلب التوصيات. يرجى المحاولة مرة أخرى.');
+        setPicksError(json.error || 'تعذّر جلب التوقعات. يرجى المحاولة مرة أخرى.');
       }
     } catch (e) {
       console.error('fetch picks error:', e);
@@ -495,7 +495,7 @@ export function PicksManagementView() {
     setRefreshing(true);
     await Promise.all([fetchPicks(), fetchManagement()]);
     setRefreshing(false);
-    toast.success('تم تحديث التوصيات والإدارة');
+    toast.success('تم تحديث التوقعات والإدارة');
   };
 
   // Filter management by urgency + استبعاد المراكز بدون بيانات
@@ -518,9 +518,9 @@ export function PicksManagementView() {
             <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold">إدارة التوصيات</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">إدارة التوقعات</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              فن اختيار ومراقبة التوصيات — أعلى 5 توصيات/يوم + إدارة المراكز المفتوحة
+              فن اختيار ومراقبة التوقعات — أعلى 5 توقعات/يوم + إدارة المراكز المفتوحة
             </p>
           </div>
         </div>
@@ -544,7 +544,7 @@ export function PicksManagementView() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">كل التوصيات</SelectItem>
+              <SelectItem value="all">كل التوقعات</SelectItem>
               <SelectItem value="balanced">⚖️ المتوازن</SelectItem>
             </SelectContent>
           </Select>
@@ -567,7 +567,7 @@ export function PicksManagementView() {
           <StatCard
             title="مراكز مفتوحة"
             value={mgmtSummary.total}
-            hint="إجمالي التوصيات النشطة"
+            hint="إجمالي التوقعات النشطة"
             icon={<Activity className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
             iconBg="bg-purple-100 dark:bg-purple-950/50"
           />
@@ -604,10 +604,10 @@ export function PicksManagementView() {
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Crown className="h-5 w-5 text-amber-600" />
-                توصيات اليوم — أعلى 5
+                توقعات اليوم — أعلى 5
               </CardTitle>
               <CardDescription className="mt-1">
-                التوصيات الأعلى ثقةً لهذا اليوم — منطق واقعي: لا تشتري أكثر من 5 أسهم/يوم
+                التوقعات الأعلى ثقةً لهذا اليوم — منطق واقعي: لا تشتري أكثر من 5 أسهم/يوم
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -644,9 +644,9 @@ export function PicksManagementView() {
           ) : picks.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">
               <Target className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">لا توجد توصيات عالية الثقة لهذا اليوم</p>
+              <p className="font-medium">لا توجد توقعات عالية الثقة لهذا اليوم</p>
               <p className="text-sm mt-1">
-                جرب تاريخاً آخر أو اختر شخصية مختلفة. التوصيات تُفلتر عند confidence ≥ 50%.
+                جرب تاريخاً آخر أو اختر شخصية مختلفة. التوقعات تُفلتر عند confidence ≥ 50%.
               </p>
               {picksStats && picksStats.total_for_day > 0 && (
                 <p className="text-xs mt-2 text-amber-600 dark:text-amber-400">
@@ -685,7 +685,7 @@ export function PicksManagementView() {
                 إدارة المراكز المفتوحة
               </CardTitle>
               <CardDescription className="mt-1">
-                توصيات إدارة لكل مركز نشط — انتظر / زود / بيع / خفّض — فن إدارة المحفظة
+                توقعات إدارة لكل مركز نشط — انتظر / زود / بيع / خفّض — فن إدارة المحفظة
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -730,7 +730,7 @@ export function PicksManagementView() {
               <Clock className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">لا توجد مراكز مفتوحة</p>
               <p className="text-sm mt-1">
-                ستظهر المراكز هنا عند توليد توصيات جديدة.
+                ستظهر المراكز هنا عند توليد توقعات جديدة.
               </p>
             </div>
           ) : (

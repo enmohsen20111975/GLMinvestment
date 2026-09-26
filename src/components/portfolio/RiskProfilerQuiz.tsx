@@ -419,7 +419,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                     توزيعك الحالي مخالف لشخصيتك الاستثمارية!
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                    علشان ترجع للتقسيمة الصح، اتبع التوصيات دي:
+                    علشان ترجع للتقسيمة الصح، اتبع التوقعات دي:
                   </p>
                 </div>
               </div>

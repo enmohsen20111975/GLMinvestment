@@ -1040,7 +1040,7 @@ function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: n
         />
       </div>
 
-      {/* MONEY-TIER2.9: توصيات زيادة المركز — الأسهم الرابحة ≥ 10% */}
+      {/* MONEY-TIER2.9: توقعات زيادة المركز — الأسهم الرابحة ≥ 10% */}
       <TopUpRecommendationsPanel />
 
       {/* P37-PHASE-2B-4A: Currency badge — tells users which currency the

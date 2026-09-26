@@ -1,7 +1,7 @@
 /**
  * GET /api/predictions/tracking/list
  * ==================================
- * Proxy to Python Backend — قائمة توصيات الصياد المتتبعة
+ * Proxy to Python Backend — قائمة توقعات الصياد المتتبعة
  *
  * Query: market=EGX, status=pending, limit=50
  */

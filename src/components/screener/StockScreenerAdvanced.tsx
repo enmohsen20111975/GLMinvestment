@@ -1171,10 +1171,12 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       </CollapsibleSection>
 
       {/* Filters Panel — UNIFIED-MARKET-UX (Task 3): Collapsible */}
+      {/* N5: الفلاتر المتقدمة مطوية افتراضياً لتحسين تجربة المستخدم أول التحميل */}
       {showFilters && (
         <CollapsibleSection
           title="الفلاتر المتقدمة"
           icon={<Filter className="w-4 h-4" />}
+          defaultOpen={false}
         >
             {/* Search row */}
             <div className="relative max-w-sm">

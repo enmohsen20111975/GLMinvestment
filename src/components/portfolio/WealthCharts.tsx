@@ -53,8 +53,15 @@ export const WealthCharts: React.FC = () => {
 
     async function fetchChartsData() {
       try {
+        // Rule 50: equity-curve endpoint requires a logged-in session.
+        // Use the SQLite fallback route (`/api/portfolio/equity-curve`,
+        // hyphen) — NOT the Python proxy (`/api/portfolio/equity/curve`,
+        // slash). The proxy returns 502 when Python is down, which would
+        // leave the wealth chart permanently empty even though the
+        // `wealth_tracking` table has real snapshots. The hyphen route
+        // reads from `wealth_tracking` directly. See api/portfolio/equity-curve/route.ts.
         const [eqRes, allocRes, cfRes, inflRes] = await Promise.allSettled([
-          fetch('/api/portfolio/equity/curve?days=90').then((r) => r.json()),
+          fetch('/api/portfolio/equity-curve?days=90').then((r) => r.json()),
           fetch('/api/portfolio/state').then((r) => r.json()),
           fetch('/api/portfolio/cashflow').then((r) => r.json()),
           fetch('/api/finance/inflation').then((r) => r.json()),
@@ -69,7 +76,11 @@ export const WealthCharts: React.FC = () => {
           }
 
           if (eqRes.status === 'fulfilled' && eqRes.value?.success) {
-            const snapshots: EquitySnapshot[] = eqRes.value.equity_snapshots || [];
+            // The hyphen route returns `snapshots` (NOT `equity_snapshots`).
+            // Previous code read `equity_snapshots` which never existed →
+            // chart always showed empty state.
+            const snapshotsRaw: unknown = eqRes.value.snapshots ?? eqRes.value.equity_snapshots ?? [];
+            const snapshots: EquitySnapshot[] = Array.isArray(snapshotsRaw) ? snapshotsRaw as EquitySnapshot[] : [];
             // Compute inflation-adjusted real_value for each snapshot
             const inflRate = inflRes.status === 'fulfilled' && typeof inflRes.value?.rate === 'number' && inflRes.value.rate > 0
               ? inflRes.value.rate

@@ -347,7 +347,7 @@ export function DashboardView() {
             title={`لوحة تحكم ${marketNameAr}`}
             image={dashboardRef}
             filename={`dashboard_${currentMarket}_${new Date().toISOString().slice(0, 10)}`}
-            hashtags={['EGX', 'بورصة', 'توصيات']}
+            hashtags={['EGX', 'بورصة', 'توقعات']}
             variant="outline"
             size="sm"
           />

@@ -365,7 +365,7 @@ export function formatAllPersonaPicksText(items: StoredAnalysisItem[], persona: 
     : persona === 'balanced'
     ? 'المتوازن ⚖️'
     : 'المضارب 🎯';
-  let text = `📊 *توصيات ${personaName} - ${marketName}*\n`;
+  let text = `📊 *توقعات ${personaName} - ${marketName}*\n`;
   text += `📅 ${formatDateLabel().dateStr}\n`;
   text += `━━━━━━━━━━━━━━━━━━━\n\n`;
 

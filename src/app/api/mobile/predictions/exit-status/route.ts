@@ -1,7 +1,7 @@
 /**
  * GET /api/mobile/predictions/exit-status
  * ======================================
- * P41 Exit Engine (Mobile) — حالة الخروج اللحظي للتوصيات النشطة.
+ * P41 Exit Engine (Mobile) — حالة الخروج اللحظي للتوقعات النشطة.
  *
  * Tries Python /api/market/exit-status first.
  * Falls back to predictions.db — SELECT WHERE status IN ('TARGET_HIT', 'STOPPED', 'CLOSED')

@@ -145,8 +145,8 @@ const PredictionTrackingView = withErrorBoundary(
   'تتبّع التوقعات',
 );
 const PicksManagementView = withErrorBoundary(
-  dynamicImport(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوصيات" /> }),
-  'إدارة التوصيات',
+  dynamicImport(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوقعات" /> }),
+  'إدارة التوقعات',
 );
 const DualTrackPredictionsView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
@@ -475,6 +475,14 @@ function AppShell() {
       // === المساعد المالي الذكي (Smart Assistant) ===
       case 'smart-confluence':
         return <SmartConfluenceView />;
+
+      // === رادار السيولة (Liquidity Radar) — شاشة منفصلة ===
+      // N8: كان تبويب جوّه MarketAnalysisView باسم "رادار الميكرز". دلوقتي شاشة مستقلة
+      // قابلة للوصول مباشرة من القائمة. أهم خدمة للمستثمرين (80% من الأرباح).
+      case 'liquidity-radar': {
+        const MakerRadar = dynamicImport(() => import('@/components/predictions/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), { ssr: false, loading: () => <LazyTabLoader label="رادار السيولة" /> });
+        return <MakerRadar market={useAppStore.getState().currentMarket === 'CRYPTO' ? 'EGX' : useAppStore.getState().currentMarket} />;
+      }
       
       // === الذكاء الاصطناعي (Intelligence) ===
       case 'alerts-center':

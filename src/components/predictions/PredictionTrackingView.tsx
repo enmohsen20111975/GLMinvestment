@@ -2,12 +2,12 @@
 import { StatCard } from '@/components/ui/stat-card';
 
 /**
- * PredictionTrackingView — تتبع التوصيات (Feature 3)
+ * PredictionTrackingView — تتبع التوقعات (Feature 3)
  * =========================================================
  * بيعرض:
- * - كروت إحصائية: إجمالي التوصيات، المعلقة، نسبة النجاح، نسبة الفشل
+ * - كروت إحصائية: إجمالي التوقعات، المعلقة، نسبة النجاح، نسبة الفشل
  * - جدول قابل للفلترة بالسوق والحالة
- * - زرار "تحقق الآن" للتحقق اليدوي من التوصيات المعلقة
+ * - زرار "تحقق الآن" للتحقق اليدوي من التوقعات المعلقة
  *
  * مصدر البيانات: /api/predictions/tracking/{stats,list,verify}
  * (Python Backend على المنفذ 8010 — Node.js للعرض فقط)
@@ -244,7 +244,7 @@ export function PredictionTrackingView() {
         // refresh
         await Promise.all([fetchStats(currentMarket), fetchList(currentMarket, statusFilter)]);
       } else {
-        toast.error(json.error || 'فشل التحقق من التوصيات');
+        toast.error(json.error || 'فشل التحقق من التوقعات');
       }
     } catch (e: any) {
       toast.error(e?.message || 'فشل الاتصال بالخادم');
@@ -309,9 +309,9 @@ export function PredictionTrackingView() {
             <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold">تتبع التوصيات</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">تتبع التوقعات</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              متابعة نسبة نجاح التوصيات عبر الزمن
+              متابعة نسبة نجاح التوقعات عبر الزمن
             </p>
           </div>
         </div>
@@ -342,7 +342,7 @@ export function PredictionTrackingView() {
         ) : (
           <>
             <StatCard
-              title="إجمالي التوصيات"
+              title="إجمالي التوقعات"
               value={display.total}
               hint={`آخر ${stats?.days ?? 30} يوم — ${MARKET_NAMES_AR[currentMarket]}`}
               icon={<ListChecks className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
@@ -351,7 +351,7 @@ export function PredictionTrackingView() {
             <StatCard
               title="قيد الانتظار"
               value={display.pending}
-              hint="توصيات لم تُحل بعد"
+              hint="توقعات لم تُحل بعد"
               icon={<Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
               iconBg="bg-amber-100 dark:bg-amber-950/50"
               valueColor="text-amber-600 dark:text-amber-400"
@@ -413,7 +413,7 @@ export function PredictionTrackingView() {
                 </span>
               </div>
               <span className="text-xs text-muted-foreground">
-                التوصيات المحلولة: {stats.resolved ?? 0} من {stats.total ?? 0}
+                التوقعات المحلولة: {stats.resolved ?? 0} من {stats.total ?? 0}
               </span>
             </div>
           </CardContent>
@@ -427,7 +427,7 @@ export function PredictionTrackingView() {
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ListChecks className="h-5 w-5 text-emerald-600" />
-                سجل التوصيات
+                سجل التوقعات
               </CardTitle>
               <CardDescription className="mt-1">
                 {picks.length} توقع — {MARKET_NAMES_AR[currentMarket]}
@@ -463,9 +463,9 @@ export function PredictionTrackingView() {
           ) : picks.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">
               <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">لا توجد توصيات متتبعة بعد</p>
+              <p className="font-medium">لا توجد توقعات متتبعة بعد</p>
               <p className="text-sm mt-1">
-                ستظهر التوصيات هنا تلقائياً عند توليدها.
+                ستظهر التوقعات هنا تلقائياً عند توليدها.
               </p>
             </div>
           ) : (

@@ -182,7 +182,7 @@ export function TopUpRecommendationsPanel() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-emerald-500" />
               <div>
-                <h3 className="font-bold text-base">توصيات زيادة المركز</h3>
+                <h3 className="font-bold text-base">توقعات زيادة المركز</h3>
                 <p className="text-xs text-muted-foreground">
                   الأسهم الرابحة ≥ 10% — فرص لتعزيز المكاسب
                 </p>
@@ -421,7 +421,7 @@ export function TopUpRecommendationsPanel() {
 
           {/* Disclaimer */}
           <div className="text-[10px] text-muted-foreground text-center leading-relaxed">
-            التوصيات لأغراض إعلامية فقط ولا تُعدّ نصحاً استثمارياً. راجع مستشارك المالي قبل أي قرار.
+            التوقعات لأغراض إعلامية فقط ولا تُعدّ نصحاً استثمارياً. راجع مستشارك المالي قبل أي قرار.
           </div>
         </CardContent>
       </Card>

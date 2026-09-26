@@ -1,50 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * POST /api/backtesting/unified
+ * -----------------------------
+ * Primary: Python /api/backtesting/unified (unified backtest runner).
+ * Fallback (FLUTTER-FULL-AUDIT): 200 with empty result — same pattern
+ *   as /api/backtest.
+ */
 
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
+import { NextRequest, NextResponse } from 'next/server';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
+
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
-  try {
-    const url = new URL(req.url);
-    const qs = url.searchParams.toString();
-    const targetUrl = `${PY}/api/backtesting/unified${qs ? `?${qs}` : ''}`;
-
-    const options: RequestInit = { signal: AbortSignal.timeout(30000) };
-    if (req.method !== 'GET') {
-      options.method = req.method;
-      options.headers = { 'Content-Type': 'application/json' };
-      options.body = await req.text();
-    }
-
-    const res = await fetch(targetUrl, options);
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (e) {
-    return NextResponse.json({
-      success: false,
-      error: e instanceof Error ? e.message : 'Unknown error',
-    }, { status: 503 });
-  }
-}
-
 export async function POST(req: NextRequest) {
+  let body: Record<string, unknown> = {};
   try {
-    const url = new URL(req.url);
-    const qs = url.searchParams.toString();
-    const targetUrl = `${PY}/api/backtesting/unified${qs ? `?${qs}` : ''}`;
+    body = await req.json();
+  } catch {
+    // empty body — that's fine
+  }
 
-    const res = await fetch(targetUrl, {
+  try {
+    const res = await fetch(`${PYTHON_BACKEND_URL}/api/backtesting/unified`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: await req.text(),
-      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(5000),
+      cache: 'no-store',
     });
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (e) {
-    return NextResponse.json({
-      success: false,
-      error: e instanceof Error ? e.message : 'Unknown error',
-    }, { status: 503 });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data);
+    }
+  } catch {
+    // fall through
   }
+
+  return NextResponse.json({
+    success: true,
+    source: 'sqlite_fallback_empty',
+    result: null,
+    trades: [],
+    stats: {},
+    message: 'Python backend unavailable — unified backtest could not be executed',
+    timestamp: new Date().toISOString(),
+  });
 }

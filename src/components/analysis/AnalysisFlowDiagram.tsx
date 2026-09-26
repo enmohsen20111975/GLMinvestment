@@ -9,7 +9,7 @@
  *  2) Analysis Agent  — 13 مؤشر فني (SMFI, Blood Filter, Monte Carlo, Sniper, ...)
  *  3) Strategy Agent  — تصويت موزون + توليد الإشارة (entry/target/stop)
  *  4) Risk Agent      — إدارة المخاطر (Kelly, R/R, position sizing)
- *  5) Expert Memory   — توصيات الخبراء تعدّل درجة الثقة (تغيير طريقة التفكير)
+ *  5) Expert Memory   — توقعات الخبراء تعدّل درجة الثقة (تغيير طريقة التفكير)
  *  → Final Signal
  *
  * الألوان: emerald للمستثمر، fuchsia للمضارب (لا أزرول/indigo).
@@ -93,7 +93,7 @@ const INVESTOR_STAGES: Stage[] = [
     icon: Brain,
     title: 'ذاكرة الخبراء',
     subtitle: 'Expert Memory — تعديل الثقة',
-    items: ['قراءة توصيات الخبراء', 'توافق ← +ثقة', 'تعارض ← −ثقة + تحذير', 'تغيير طريقة التفكير'],
+    items: ['قراءة توقعات الخبراء', 'توافق ← +ثقة', 'تعارض ← −ثقة + تحذير', 'تغيير طريقة التفكير'],
     accent: 'text-emerald-700 dark:text-emerald-300',
     ring: 'border-emerald-300 dark:border-emerald-700',
     bg: 'bg-emerald-50/70 dark:bg-emerald-950/30',
@@ -158,7 +158,7 @@ const GAMBLER_STAGES: Stage[] = [
     icon: Brain,
     title: 'ذاكرة الخبراء',
     subtitle: 'Expert Memory — تعديل الثقة',
-    items: ['قراءة توصيات الخبراء', 'توافق ← +ثقة', 'تعارض ← −ثقة + تحذير', 'تغيير طريقة التفكير'],
+    items: ['قراءة توقعات الخبراء', 'توافق ← +ثقة', 'تعارض ← −ثقة + تحذير', 'تغيير طريقة التفكير'],
     accent: 'text-fuchsia-700 dark:text-fuchsia-300',
     ring: 'border-fuchsia-300 dark:border-fuchsia-700',
     bg: 'bg-fuchsia-50/70 dark:bg-fuchsia-950/30',
@@ -217,7 +217,7 @@ export function AnalysisFlowDiagram({ persona, className }: Props) {
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
-          من البيانات الخام إلى الإشارة النهائية — يمر كل سهم بخمس مراحل. ذاكرة الخبراء (المرحلة 5) تعدّل طريقة تفكير الآلة بناءً على توصياتك.
+          من البيانات الخام إلى الإشارة النهائية — يمر كل سهم بخمس مراحل. ذاكرة الخبراء (المرحلة 5) تعدّل طريقة تفكير الآلة بناءً على توقعاتك.
         </p>
       </div>
 

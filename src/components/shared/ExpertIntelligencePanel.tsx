@@ -3,7 +3,7 @@
 /**
  * ExpertIntelligencePanel
  * لوحة ذكاء المحلل الخبير — 3 طبقات على نفس البيانات:
- *   1) الفرص الضائعة والتوصيات الغلط (missed-opportunities)
+ *   1) الفرص الضائعة والتوقعات الغلط (missed-opportunities)
  *   2) ذكاء القطاعات (sector-intelligence)
  *   3) الإجماع الخبير الموحّد (expert-consensus)
  *
@@ -263,7 +263,7 @@ export function ExpertIntelligencePanel({
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
               <AlertOctagon className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <span>الفرص الضائعة والتوصيات الغلط</span>
+              <span>الفرص الضائعة والتوقعات الغلط</span>
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={fetchMissedOpportunities} disabled={missedOppLoading} className="flex-shrink-0 h-9 w-9 p-0">
               <RefreshCw className={cn('h-4 w-4', missedOppLoading && 'animate-spin')} />
@@ -357,7 +357,7 @@ export function ExpertIntelligencePanel({
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                    <span className="font-medium text-xs sm:text-sm">توصيات شراء غلط</span>
+                    <span className="font-medium text-xs sm:text-sm">توقعات شراء غلط</span>
                     <Badge className="text-[10px] bg-orange-100 text-orange-700">متوسط: {missedOpp.summary.avg_false_loss_pct}%</Badge>
                   </div>
                   <div className="max-h-72 overflow-y-auto border rounded-lg divide-y">
@@ -390,7 +390,7 @@ export function ExpertIntelligencePanel({
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <ThumbsUp className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span className="font-medium text-xs sm:text-sm">توصيات صحيحة</span>
+                    <span className="font-medium text-xs sm:text-sm">توقعات صحيحة</span>
                   </div>
                   <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
                     {missedOpp.correct_buys?.slice(0, 5).map((op: any, idx: number) => (
@@ -581,7 +581,7 @@ export function ExpertIntelligencePanel({
                 onValueChange={(v) => { setConsensusVerdict(v); fetchConsensusList(v); }}
               >
                 <SelectTrigger className="w-28 sm:w-40 h-8 text-xs">
-                  <SelectValue placeholder="كل التوصيات" />
+                  <SelectValue placeholder="كل التوقعات" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">الكل</SelectItem>
