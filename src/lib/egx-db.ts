@@ -842,8 +842,24 @@ export function getMarketIndices(): Record<string, unknown>[] {
 
       // 2) fallback: recompute from stored current_value vs previous_close
       const storedPrev = Number(idx.previous_close) || 0
-      const fallbackChange = storedPrev > 0 ? storedValue - storedPrev : 0
-      const fallbackCp = storedPrev > 0 ? (fallbackChange / storedPrev) * 100 : 0
+      // FIX: لو storedPrev غير منطقي (يختلف عن current_value بأكثر من 30%)
+      // والمؤشر قديم (آخر تحديث من مارس)، نعتبره "مغلق" — previous = current
+      const isStaleData = !idx.last_update || String(idx.last_update).includes('2026-03')
+      const isPrevInconsistent = storedPrev > 0 && Math.abs((storedValue - storedPrev) / storedPrev) > 0.30
+
+      let effectivePrev = storedPrev
+      let fallbackChange = 0
+      let fallbackCp = 0
+
+      if (isStaleData && isPrevInconsistent) {
+        // بيانات قديمة متناقضة — اعتبر المؤشر مغلق (لا تغيير)
+        effectivePrev = storedValue
+        fallbackChange = 0
+        fallbackCp = 0
+      } else if (storedPrev > 0) {
+        fallbackChange = storedValue - storedPrev
+        fallbackCp = (fallbackChange / storedPrev) * 100
+      }
 
       const changePercent = constituentCp != null ? constituentCp : fallbackCp
       const change = Math.round(storedValue * changePercent / 100 * 100) / 100
@@ -857,7 +873,7 @@ export function getMarketIndices(): Record<string, unknown>[] {
         change,
         change_percent: Math.round(changePercent * 10000) / 10000,
         last_update: idx.last_update || idx.last_updated || null,
-        computation_source: constituentCp != null ? 'constituents' : 'stored_delta',
+        computation_source: constituentCp != null ? 'constituents' : (isStaleData && isPrevInconsistent ? 'stale_neutralized' : 'stored_delta'),
       }
     })
 
