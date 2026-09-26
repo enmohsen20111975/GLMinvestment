@@ -39891,3 +39891,80 @@ Task: تقرير مصادر البيانات المتاحة والمستخدمة
 2. **الذهب:** FCSAPI شغّال لكن محدود (60 request/hour). ممكن نضيف GoldAPI.io كـ fallback.
 3. **الأخبار:** news-agent شغّال لكن محتاج تفعيل على VPS. الـ RSS sources في `news-agent/collectors/`.
 4. **المستثمرون:** الـ scraper موجود لكن محتاج تشغيل يومي على VPS.
+
+---
+Task ID: TEN-POINTS-IMPLEMENTATION
+Agent: المدير العام + الفريق
+Task: تنفيذ النقاط العشر اللي طلبها المستخدم
+
+## ملخص التنفيذ (9/10 مكتملة)
+
+### N1: تحسين الواجهات بـ React ✅
+- أضفت Framer Motion page transitions (fade + slide, 0.2s)
+- key={currentView} لإعادة الـ animation عند تبديل الصفحة
+- professional, non-flashy
+
+### N2: Flutter API Compatibility ✅
+- فحصت 40 endpoint من Flutter app
+- أصلحت portfolio (503→200) + predictions/tracking/list (502→200)
+- كل الـ 40 endpoints بترجع 200 أو 401 (auth-required)
+- Flutter هو المرجع (في الإنتاج) — كل APIs شغّالة
+
+### N3: تقرير مصادر البيانات ✅
+- أسعار الأسهم: stocks.db (956 سهم) + Mubasher scraper
+- الذهب/المعادن: data_engine.db + FCSAPI
+- العملات: data_engine.db + FCSAPI
+- الكريبتو: data_engine.db (198K صف)
+- الأخبار: news.db (7894 خبر) + news-agent + 4 API providers
+- المستثمرون: egyptse.com scraper
+
+### N4: smart-confluence — أزالة من القائمة ✅
+- المستخدم قال إنها بلا معنى/هدف
+- أزلتها من قائمة "السوق" في TopBar
+- الـ hash لسه شغّال للـ backwards compat
+
+### N5: stock-filters — طي الفلاتر + بيانات كاملة ✅
+- الفلاتر المتقدمة defaultOpen=false (مطوية أول التحميل)
+- أضفت 13 عمود fundamental للـ screener API:
+  pe_ratio, pb_ratio, eps, roe, roa, dividend_yield,
+  debt_to_equity, beta, high_52w, low_52w, open/high/low prices
+- كانت بترجع null لأن SELECT ما كانش بيضمها
+
+### N6: شاشة تفاصيل السهم الموحدة ✅
+- UnifiedTable: أضفت onRowDoubleClick + onRowLongPress props
+- Desktop: double-click يفتح StockDetail
+- Mobile: long-press (600ms) يفتح StockDetail
+- Touch events مع timer cleanup (no false triggers)
+- مطبّق على StockScreenerAdvanced
+
+### N7: استبدال توصيات → توقعات ✅
+- 110 occurrence في 15 ملف (non-admin)
+- تجنّب المشاكل القانونية
+
+### N8: رادار السيولة — شاشة منفصلة ✅
+- 'liquidity-radar' في valid-views
+- TopBar: "رادار السيولة" في قائمة السوق (highlight: true)
+- page.tsx: case 'liquidity-radar' يعرض MakerRadarTab مستقلة
+- الوصول المباشر من القائمة (أولوية قصوى)
+
+### N9: تسجيل الدخول/الخروج + اسم المستخدم ✅
+- TopBar: useSession + signOut من next-auth
+- لو مسجّل: دائرة بحرف أول + اسم + dropdown (إعدادات + خروج)
+- لو مش مسجّل: زر "تسجيل الدخول"
+- toast عند تسجيل الخروج
+
+### N10: مدير الأموال + ستي بيت ⏳
+- Subagents فشلوا بسبب timeout
+- يحتاج إعادة في جلسة منفصلة
+
+## Verification (Agent Browser):
+- ✅ "تسجيل الدخول" ظاهر في TopBar
+- ✅ لا توجد "توصيات" في أي مكان
+- ✅ "رادار السيولة" في قائمة السوق المنسدلة
+- ✅ smart-confluence مش في القائمة
+- ✅ Dashboard يعرض بـ 23854 حرف (محتوى كامل)
+
+## Commits على GitHub:
+1. 1c69a4e — N5+N7+N8+N9 (screener fundamentals + collapse + radar + auth + wording)
+2. 17a3c01 — N1+N4+N6 (page transitions + remove confluence + double-click)
+3. a9efd99 — N2 (Flutter API compatibility)
