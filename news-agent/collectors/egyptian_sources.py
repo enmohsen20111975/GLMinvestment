@@ -228,6 +228,173 @@ class AlborsaaSource(EgyptianSource):
                 .strip())
 
 
+class AlmalnewsSource(EgyptianSource):
+    """جريدة المال — almalnews.com — أخبار الشركات + البورصة + الإفصاحات"""
+
+    name = 'almalnews'
+    enabled_env = 'ALMALNEWS_ENABLED'
+
+    CATEGORIES = [
+        ('الأسواق', 'الأسواق'),
+        ('الشركات', 'الشركات'),
+        ('الاقتصاد', 'الاقتصاد'),
+    ]
+
+    def fetch_articles(self, limit: int = 15) -> list[dict]:
+        delay = float(os.getenv('EGYPTIAN_DELAY_SECONDS', DEFAULT_DELAY_SECONDS))
+        articles: list[dict] = []
+        seen_urls: set[str] = set()
+
+        for slug, label in self.CATEGORIES:
+            if len(articles) >= limit:
+                break
+            url = f'https://almalnews.com/category/{quote(slug)}'
+            try:
+                resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
+            except Exception as e:
+                log.warning(f'Almalnews[{label}]: network error — {e}')
+                continue
+            if resp.status_code != 200:
+                log.warning(f'Almalnews[{label}]: HTTP {resp.status_code}')
+                continue
+
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for art_tag in soup.find_all('article'):
+                if len(articles) >= limit:
+                    break
+                link = art_tag.find('a', href=True)
+                if not link:
+                    continue
+                art_url = link['href']
+                if 'almalnews.com' not in art_url or art_url in seen_urls:
+                    continue
+                title_tag = art_tag.find(['h2', 'h3'])
+                title = title_tag.get_text(strip=True) if title_tag else link.get_text(strip=True)
+                title = self._clean_html_entities(title)
+                if len(title) < 15:
+                    continue
+                seen_urls.add(art_url)
+                articles.append({
+                    'title': title,
+                    'body': title,
+                    'url': art_url,
+                    'image_urls': [],
+                    'source': registry.get_web_display('web_almalnews', 'جريدة المال'),
+                    'published_at': '',
+                })
+            time.sleep(delay)
+
+        return articles[:limit]
+
+
+class HapijournalSource(EgyptianSource):
+    """حابي — hapijournal.com — سوق المال + البنوك + الاستثمار"""
+
+    name = 'hapijournal'
+    enabled_env = 'HAPIJOURNAL_ENABLED'
+
+    CATEGORIES = [
+        ('stock-market', 'سوق المال'),
+        ('banks', 'البنوك'),
+    ]
+
+    def fetch_articles(self, limit: int = 15) -> list[dict]:
+        delay = float(os.getenv('EGYPTIAN_DELAY_SECONDS', DEFAULT_DELAY_SECONDS))
+        articles: list[dict] = []
+        seen_urls: set[str] = set()
+
+        for slug, label in self.CATEGORIES:
+            if len(articles) >= limit:
+                break
+            url = f'https://hapijournal.com/new/category/{slug}/'
+            try:
+                resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
+            except Exception as e:
+                log.warning(f'Hapijournal[{label}]: network error — {e}')
+                continue
+            if resp.status_code != 200:
+                log.warning(f'Hapijournal[{label}]: HTTP {resp.status_code}')
+                continue
+
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for art_tag in soup.find_all('article'):
+                if len(articles) >= limit:
+                    break
+                link = art_tag.find('a', href=True)
+                if not link:
+                    continue
+                art_url = link['href']
+                if 'hapijournal.com' not in art_url or art_url in seen_urls:
+                    continue
+                title_tag = art_tag.find(['h2', 'h3'])
+                title = title_tag.get_text(strip=True) if title_tag else link.get_text(strip=True)
+                title = self._clean_html_entities(title)
+                if len(title) < 15:
+                    continue
+                seen_urls.add(art_url)
+                articles.append({
+                    'title': title,
+                    'body': title,
+                    'url': art_url,
+                    'image_urls': [],
+                    'source': registry.get_web_display('web_hapijournal', 'حابي'),
+                    'published_at': '',
+                })
+            time.sleep(delay)
+
+        return articles[:limit]
+
+
+class MasrawySource(EgyptianSource):
+    """مصراوي — masrawy.com — اقتصاد + عملات + بورصة"""
+
+    name = 'masrawy'
+    enabled_env = 'MASRAWY_ENABLED'
+
+    def fetch_articles(self, limit: int = 15) -> list[dict]:
+        delay = float(os.getenv('EGYPTIAN_DELAY_SECONDS', DEFAULT_DELAY_SECONDS))
+        articles: list[dict] = []
+        seen_urls: set[str] = set()
+
+        url = 'https://www.masrawy.com/channel/economy'
+        try:
+            resp = self.session.get(url, timeout=REQUEST_TIMEOUT)
+        except Exception as e:
+            log.warning(f'Masrawy: network error — {e}')
+            return []
+        if resp.status_code != 200:
+            log.warning(f'Masrawy: HTTP {resp.status_code}')
+            return []
+
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        for art_tag in soup.find_all('article'):
+            if len(articles) >= limit:
+                break
+            link = art_tag.find('a', href=True)
+            if not link:
+                continue
+            art_url = link['href']
+            if 'masrawy.com' not in art_url or art_url in seen_urls:
+                continue
+            title_tag = art_tag.find(['h2', 'h3'])
+            title = title_tag.get_text(strip=True) if title_tag else link.get_text(strip=True)
+            title = self._clean_html_entities(title)
+            if len(title) < 15:
+                continue
+            seen_urls.add(art_url)
+            articles.append({
+                'title': title,
+                'body': title,
+                'url': art_url,
+                'image_urls': [],
+                'source': registry.get_web_display('web_masrawy', 'مصراوي'),
+                'published_at': '',
+            })
+        time.sleep(delay)
+
+        return articles[:limit]
+
+
 class EgyptianSourcesCollector:
     """يدير كل المصادر المصرية المتخصصة"""
 
@@ -237,6 +404,9 @@ class EgyptianSourcesCollector:
         self.store = store
         self.sources: list[EgyptianSource] = [
             AlborsaaSource(store),
+            AlmalnewsSource(store),
+            HapijournalSource(store),
+            MasrawySource(store),
         ]
 
     def is_enabled(self) -> bool:

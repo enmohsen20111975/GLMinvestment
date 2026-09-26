@@ -88,6 +88,24 @@ DEFAULT_SOURCES = {
         'enabled': True,
         'description': 'جريدة البورصة - قسم البورصة والشركات',
     },
+    'web_almalnews': {
+        'display_name': 'جريدة المال',
+        'source_type': 'web',
+        'enabled': True,
+        'description': 'جريدة المال - أخبار الشركات + البورصة + الإفصاحات',
+    },
+    'web_hapijournal': {
+        'display_name': 'حابي',
+        'source_type': 'web',
+        'enabled': True,
+        'description': 'حابي - سوق المال + البنوك + الاستثمار',
+    },
+    'web_masrawy': {
+        'display_name': 'مصراوي',
+        'source_type': 'web',
+        'enabled': True,
+        'description': 'مصراوي - اقتصاد + عملات + بورصة',
+    },
 }
 
 
