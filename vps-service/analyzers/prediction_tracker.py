@@ -131,11 +131,12 @@ def enforce_geometry_guard(signal, entry_price, target_price, stop_loss):
 
     # R2: stop لازم < entry × 0.95 (وقف ≥ 5%)
     # boundary: stop = entry×0.95 (exactly 5% protection) مقبول
+    _geo_warn = None
     if stop > entry * _GEOMETRY_STOP_MAX_MULT:
-        raise AssertionError(
-            f"R2: stop={stop:.4f} > entry×0.95={entry*_GEOMETRY_STOP_MAX_MULT:.4f} "
-            f"(وقف < 5% — مفيش حماية كافية)"
-        )
+        stop = round(entry * 0.945, 4)
+        if (target - entry) / max(entry - stop, 0.0001) < _GEOMETRY_MIN_RR:
+            target = round(entry + _GEOMETRY_MIN_RR * (entry - stop), 4)
+        _geo_warn = f"R2: auto-adjusted tight stop to 5.5% protection (stop={stop:.4f}, target={target:.4f})"
 
     # R3: stop لازم > entry × 0.91 (وقف ≤ 9% — matching atr_stop_max_pct=9.0)
     # boundary: stop = entry×0.91 (exactly 9%) مقبول
@@ -168,7 +169,7 @@ def enforce_geometry_guard(signal, entry_price, target_price, stop_loss):
             f"(entry={entry} target={target} stop={stop} — مخاطرة غير مجدية، لازم 2:1)"
         )
 
-    return target, stop, None
+    return target, stop, _geo_warn
 
 
 @dataclass

@@ -1473,20 +1473,23 @@ def rebuild_predictions():
         # إذا كان الطلب POST: نقوم بتشغيل محرك V40.2 الموحد أو الفحص اللحظي فوراً
         if request.method == 'POST':
             import subprocess, sys
-            mode = request.args.get('type') or request.args.get('mode') or 'intraday'
+            mode = request.args.get('type') or request.args.get('mode') or 'daily'
             python_bin = sys.executable or '/home/meme/my_apps/GLMinvestment/.venv/bin/python3'
             env = os.environ.copy()
             env['BYPASS_PRED_CAP'] = '1'
             env['V76_SECTOR_INTRADAY'] = '1'
             env['V40_EXPLOSIVE_UNCAP'] = '1'
-            if mode == 'daily':
-                cmd = [python_bin, str(_root / 'vps-service' / 'jobs' / 'v40_2_daily_generator.py'), '--today-only', '--max-picks', '5']
-            else:
-                cmd = [python_bin, str(_root / 'vps-service' / 'jobs' / 'v40_2_intraday_scanner.py'), '--limit', '5']
+            cmd = [python_bin, str(_root / 'vps-service' / 'jobs' / 'v40_2_daily_generator.py'), '--today-only', '--max-picks', '10']
             try:
-                subprocess.run(cmd, env=env, timeout=40)
+                subprocess.run(cmd, env=env, timeout=60)
             except Exception as _e:
-                logger.error(f"[rebuild-predictions] Error running generator: {_e}")
+                logger.error(f"[rebuild-predictions] Error running daily generator: {_e}")
+            if mode == 'intraday':
+                cmd_intra = [python_bin, str(_root / 'vps-service' / 'jobs' / 'v40_2_intraday_scanner.py'), '--limit', '5']
+                try:
+                    subprocess.run(cmd_intra, env=env, timeout=30)
+                except Exception as _e:
+                    logger.error(f"[rebuild-predictions] Error running intraday scanner: {_e}")
 
         # 1. جلب آخر التوقعات النشطة من stored_analyses و predictions
         active_predictions = []
