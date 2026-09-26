@@ -405,6 +405,7 @@ export function AdminView() {
   const { data: session } = useSession();
   const { user } = useAppStore();
   const userEmail = user?.email || session?.user?.email || '';
+  const userName = (user as any)?.username || (user as any)?.name || (session?.user as any)?.name || (session?.user as any)?.username || '';
   const isAdminUser =
     (user as any)?.is_admin === true ||
     (user as any)?.subscription_tier === 'admin' ||

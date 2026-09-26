@@ -40218,6 +40218,28 @@ Work Log:
    - فحص وتأكيد تنسيق ترميز الملفات (UTF-8 with BOM / CSV) والأعمدة القياسية (تاريخ، آخر سعر، سعر الفتح، عالي، منخفض، الحجم، التغير %).
    - إضافة الملفات إلى تتبع Git ورفعها مباشرة إلى المستودع الرسمي على فرع `main`.
 
+---
+Task ID: TASK-ADMIN-VIEW-USERNAME-FIX-006
+Agent: Antigravity AI Pair Programmer
+Task: إصلاح خطأ انهيار لوحة الأدمن (ReferenceError: userName is not defined في AdminView.tsx)
+
+Work Log:
+1. المشكلة وجذر الخلل:
+   - ظهور خطأ في وحدة تحكم المتصفح: `[ErrorBoundary:لوحة الأدمن] Caught error: ReferenceError: userName is not defined at aF...`
+   - السبب الجذري: في دالة `AdminView()` بملف `src/components/admin/AdminView.tsx`، كان يتم التحقق من شروط صلاحيات المدير `isAdminUser` بالاعتماد على متغير `userName`، بينما لم يتم تعريفه مسبقاً من كائن المستخدم `user` أو كائن الجلسة `session`.
+
+2. الحل التقني المنفذ:
+   - في `src/components/admin/AdminView.tsx`:
+     - استخراج `userName` بشكل آمن ومحمي:
+       `const userName = (user as any)?.username || (user as any)?.name || (session?.user as any)?.name || (session?.user as any)?.username || '';`
+     - ضمان عمل كافة شروط التحقق من صلاحيات المدير `isAdmin(userEmail, userName)` و `['mohseny', 'admin'].includes(userName.toLowerCase())` بدون أي استثناء أو خطأ مرجعي.
+
+3. التحقق والاختبار:
+   - فحص الـ Build عبر `npm run build`: نجح بالكامل دون أي أخطاء (Exit code 0).
+   - إعادة تشغيل خادم Next.js في PM2 (`pm2 restart nextjs`)، والخدمة تعمل بنجاح (online, HTTP 200).
+   - زوال الخطأ من لوحة تحكم الأدمن بالكامل.
+
+
 
 
 
