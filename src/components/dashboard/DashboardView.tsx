@@ -17,8 +17,6 @@ import { MaestroWidget } from '@/components/dashboard/MaestroWidget';
 import { LiveStockTicker } from '@/components/dashboard/LiveStockTicker';
 import { MarketPulseWidget } from '@/components/dashboard/MarketPulseWidget';
 import { InvestorsFlowPanel } from '@/components/dashboard/InvestorsFlowPanel';
-import { MarketDepthPanel } from '@/components/stocks/MarketDepthPanel';
-import { PredictionsBacktestTable } from '@/components/dashboard/PredictionsBacktestTable';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -271,22 +269,6 @@ export function DashboardView() {
   // (EGX / TADAWUL / KSE / QSE) — ومش متاحة لـ CRYPTO.
   const showMarketFlowPanels = currentMarket !== 'CRYPTO';
 
-  // أقرب ticker لعمق السوق — نفضّل selectedTicker لو موجود،
-  // وبعدها أول سهم محمّل في القائمة، وبعدها default لكل سوق.
-  const depthInitialTicker = useMemo(() => {
-    if (selectedTicker) return selectedTicker;
-    const firstStock = stocks.find((s) => s && s.ticker);
-    if (firstStock?.ticker) return firstStock.ticker;
-    // defaults معروفة لكل سوق — بتشتغل لو القائمة لسه محمّلة
-    switch (currentMarket) {
-      case 'TADAWUL': return '2222';   // Saudi Aramco
-      case 'KSE':     return 'MBRK';   // Boubyan Bank
-      case 'QSE':     return 'QNB';    // Qatar National Bank
-      case 'EGX':
-      default:        return 'COMI';   // Commercial International Bank
-    }
-  }, [selectedTicker, stocks, currentMarket]);
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* First-visit asset preference onboarding (P5-MOBILE-UX Part B.1) */}
@@ -426,27 +408,17 @@ export function DashboardView() {
               );
             })()}
 
-            {/* 3.5 حركة المستثمرين وعمق السوق — UNIFIED-MARKET-VIEW (Task 1) */}
+            {/* 3.5 حركة المستثمرين — UNIFIED-MARKET-VIEW (Task 1) */}
             {/* بيتعرض بس للأسواق التقليدية (EGX/TADAWUL/KSE/QSE)؛ مفيش للكريبتو */}
+            {/* N1: عمق السوق اتشال من هنا — بيرجع لشاشة تفاصيل السهم (StockDetail) */}
+            {/* N1: جدول الباك تست اتشال — أدمن فقط، مش للعميل */}
             {showMarketFlowPanels && (
               <section
-                aria-label="حركة المستثمرين وعمق السوق"
+                aria-label="حركة المستثمرين"
                 className="grid grid-cols-1 lg:grid-cols-2 gap-4"
               >
                 <SafeWidget name="حركة المستثمرين">
                   <InvestorsFlowPanel />
-                </SafeWidget>
-                <SafeWidget name="عمق السوق">
-                  <MarketDepthPanel initialTicker={depthInitialTicker} />
-                </SafeWidget>
-              </section>
-            )}
-
-            {/* 3.6 جدول الباك تست الشامل للتوقعات — نسبة النجاح والأرباح/الخسائر */}
-            {showMarketFlowPanels && (
-              <section aria-label="جدول التوقعات والباك تست">
-                <SafeWidget name="جدول التوقعات والباك تست">
-                  <PredictionsBacktestTable />
                 </SafeWidget>
               </section>
             )}

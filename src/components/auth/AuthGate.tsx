@@ -319,14 +319,30 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [authChecked, isAuthenticated, user, currentView, setCurrentView, setShowLoginPrompt]);
 
   // 1b. Admin-only Route Guard (قاعدة 30 + 32): شاشات الأدمن متاحة فقط للمديرين.
-  // أي مستخدم عادي (حتى لو مسجّل دخول) بيت bounced للداشبورد لو حاول يفتح #admin.
+  // N4: لو المستخدم مش مسجّل دخول وضغط #admin → نطرده لـ auth (تسجيل دخول) مش dashboard.
+  // لو مسجّل دخول وأدمن → نسيبه يفتح. لو مسجّل ومش أدمن → نطرده لـ dashboard.
   useEffect(() => {
     if (!authChecked) return;
     if (!isAdminView(currentView)) return;
 
-    // تحقق من صلاحية الأدمن — نستخدم isAdmin() من admin-auth.ts (client-side check
-    // على الـ email/username من session). للـ backend protection شوف /api/admin/auth/*.
-    const userEmail = (user as any)?.email || (user as any)?.username || null;
+    // لو مش مسجّل دخول → نوجهه لتسجيل الدخول (مش dashboard)
+    if (!isAuthenticated || !user) {
+      if (lastBouncedView.current === currentView) return;
+      lastBouncedView.current = currentView;
+      setShowLoginPrompt(true);
+      setCurrentView('dashboard');
+      toast.info('يرجى تسجيل الدخول للوصول إلى لوحة الإدارة', {
+        duration: 4000,
+      });
+      const t = setTimeout(() => {
+        lastBouncedView.current = null;
+      }, 1500);
+      return () => clearTimeout(t);
+      return;
+    }
+
+    // مسجّل دخول → تحقق من صلاحية الأدمن
+    const userEmail = (user as Record<string, unknown>)?.email as string || (user as Record<string, unknown>)?.username as string || null;
     if (!checkIsAdmin(userEmail)) {
       if (lastBouncedView.current === currentView) return;
       lastBouncedView.current = currentView;
@@ -339,7 +355,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }, 1500);
       return () => clearTimeout(t);
     }
-  }, [authChecked, user, currentView, setCurrentView]);
+  }, [authChecked, isAuthenticated, user, currentView, setCurrentView, setShowLoginPrompt]);
 
   // 2. Expired Trial Guard: bounce free users whose trial has expired (after 7-day warning) to subscription view
   useEffect(() => {
