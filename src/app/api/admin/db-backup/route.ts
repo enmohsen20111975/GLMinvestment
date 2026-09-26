@@ -6,13 +6,32 @@ import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120;
+export const maxDuration = 180;
 
 const execFileAsync = promisify(execFile);
 
 const DB_DIR = join(process.cwd(), 'db');
 const DATA_DIR = join(process.cwd(), 'data');
 const DEFAULT_MAX_ZIP_MB = 60; // 60MB default per archive
+
+// System PATH injection to prevent spawn ENOENT under PM2 / WSL
+const SYSTEM_PATH = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
+const EXEC_ENV = {
+  ...process.env,
+  PATH: `${SYSTEM_PATH}:${process.env.PATH || ''}`,
+};
+
+function resolveBinary(name: string, candidates: string[]): string {
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return name;
+}
+
+const ZIP_BIN = resolveBinary('zip', ['/usr/bin/zip', '/bin/zip']);
+const SPLIT_BIN = resolveBinary('split', ['/usr/bin/split', '/bin/split']);
+const GIT_BIN = resolveBinary('git', ['/usr/bin/git', '/bin/git']);
+const PYTHON_BIN = resolveBinary('python3', ['/usr/bin/python3', '/bin/python3']);
 
 // Core active databases that require caution when deleting
 const CORE_DATABASES = new Set([
@@ -45,7 +64,7 @@ interface BackupArchive {
 
 /**
  * Walk the DB directory and collect every *.db file (ignoring -shm / -wal /
- * -journal sidecars — those are SQLite write-ahead logs that can be rebuilt).
+ * -journal sidecars).
  */
 function listDbFiles(): DbInfo[] {
   if (!existsSync(DB_DIR)) return [];
@@ -119,9 +138,46 @@ function chunkDbs(dbs: DbInfo[], maxBytes: number): DbInfo[][] {
   return batches;
 }
 
+/**
+ * Reliable zip creation with fallback to Python zipfile
+ */
+async function compressToZip(archivePath: string, filePaths: string[]): Promise<void> {
+  try {
+    // 1. Try system zip binary with explicit environment
+    await execFileAsync(ZIP_BIN, ['-j', '-q', '-y', archivePath, ...filePaths], {
+      env: EXEC_ENV,
+      maxBuffer: 50 * 1024 * 1024,
+      timeout: 180_000,
+    });
+    if (existsSync(archivePath)) return;
+  } catch (err) {
+    // If system zip failed or ENOENT, try Python fallback
+    const pyCode = `
+import zipfile, os, sys
+archive = sys.argv[1]
+files = sys.argv[2:]
+with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+    for f in files:
+        if os.path.exists(f):
+            z.write(f, os.path.basename(f))
+`;
+    await execFileAsync(PYTHON_BIN, ['-c', pyCode, archivePath, ...filePaths], {
+      env: EXEC_ENV,
+      maxBuffer: 50 * 1024 * 1024,
+      timeout: 180_000,
+    });
+    if (!existsSync(archivePath)) {
+      throw err;
+    }
+  }
+}
+
+async function runGit(args: string[], cwd: string): Promise<{ stdout: string; stderr: string }> {
+  return execFileAsync(GIT_BIN, args, { cwd, env: EXEC_ENV, maxBuffer: 20 * 1024 * 1024, timeout: 60_000 });
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/admin/db-backup
-// Returns: list of DBs + their sizes/modified times + existing archives
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
@@ -158,12 +214,6 @@ export async function GET(req: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // POST /api/admin/db-backup
-// Body: {
-//   upload_to_github?: boolean;
-//   prune_older_than_days?: number;
-//   selected_dbs?: string[];
-//   max_part_size_mb?: number;
-// }
 // ---------------------------------------------------------------------------
 
 interface PostBody {
@@ -179,10 +229,6 @@ interface BackupResult {
   size_bytes: number;
   size_mb: string;
   included_dbs: string[];
-}
-
-async function runGit(args: string[], cwd: string): Promise<{ stdout: string; stderr: string }> {
-  return execFileAsync('git', args, { cwd, maxBuffer: 20 * 1024 * 1024, timeout: 60_000 });
 }
 
 export async function POST(req: NextRequest) {
@@ -219,7 +265,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Optional pruning of old archives before creating new ones
+    // Optional pruning of old archives
     let prunedCount = 0;
     if (pruneOlderThanDays > 0) {
       const cutoff = Date.now() - pruneOlderThanDays * 24 * 60 * 60 * 1000;
@@ -241,14 +287,11 @@ export async function POST(req: NextRequest) {
       const suffix = batches.length > 1 ? `_part${i + 1}` : '';
       const archiveName = `db_backup_${stamp}${suffix}.zip`;
       const archivePath = join(DATA_DIR, archiveName);
-
       const dbNames = batch.map(b => b.name);
+      const dbPaths = batch.map(b => b.path);
+
       try {
-        // -j: junk paths (store just the file basename)
-        await execFileAsync('zip', ['-j', '-q', '-y', archivePath, ...batch.map(b => b.path)], {
-          maxBuffer: 50 * 1024 * 1024,
-          timeout: 120_000,
-        });
+        await compressToZip(archivePath, dbPaths);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         errors.push(`فشل ضغط ${archiveName}: ${msg}`);
@@ -265,14 +308,14 @@ export async function POST(req: NextRequest) {
       if (st.size > maxZipBytes) {
         try {
           const chunkPrefix = archivePath.replace(/\.zip$/, '_split_');
-          await execFileAsync('split', [
+          await execFileAsync(SPLIT_BIN, [
             '-b', `${maxZipBytes}`,
             '-d',
             '-a', '2',
             '--additional-suffix=.zip.part',
             archivePath,
             chunkPrefix,
-          ], { timeout: 120_000 });
+          ], { env: EXEC_ENV, timeout: 120_000 });
 
           // Remove the oversized parent zip
           unlinkSync(archivePath);
@@ -365,7 +408,6 @@ export async function POST(req: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // DELETE /api/admin/db-backup
-// Body: { target_type: 'database' | 'archive', file_names: string[] }
 // ---------------------------------------------------------------------------
 
 interface DeleteBody {
