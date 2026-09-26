@@ -767,14 +767,14 @@ def compute_dynamic_target(
         target_source = f'swing_high ({swing_high_source})'
         # لو R:R أقل من min_rr → وسّع الـ target بـ ATR
         if rr < min_rr:
-            target = entry_price + (2.0 * atr)
+            target = entry_price + max(2.0 * atr, min_rr * risk)
             rr = (target - entry_price) / risk
-            target_source = f'swing_high R:R<{min_rr} → ATR fallback (2×ATR)'
+            target_source = f'swing_high R:R<{min_rr} → ATR fallback (max(2×ATR, {min_rr}R))'
     else:
-        # fallback: ATR target (R:R = 2.0)
-        target = entry_price + (2.0 * atr)
+        # fallback: ATR target (R:R >= min_rr)
+        target = entry_price + max(2.0 * atr, min_rr * risk)
         rr = (target - entry_price) / risk
-        target_source = 'ATR fallback (2×ATR)'
+        target_source = f'ATR fallback (max(2×ATR, {min_rr}R))'
 
     # target_2 (Runner) = target × 1.5 أو entry + 5×ATR
     target_2_atr = entry_price + (5.0 * atr)

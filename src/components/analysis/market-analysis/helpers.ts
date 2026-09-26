@@ -880,7 +880,7 @@ export function enrichItems(items: StoredAnalysisItem[], nameMap: NameMap): Stor
 export function pickPersonaMix(items: StoredAnalysisItem[], persona: 'conservative' | 'balanced' | 'gambler', limit = 5): StoredAnalysisItem[] {
   // P26: balanced = عرض عام بدون فلتر persona-specific، مرتّب بالـ maestroScore.
   if (persona === 'balanced') {
-    const actionableBalanced = ['strong_buy', 'buy', 'swing_buy', 't1_buy', 'accumulate', 'strong_sell', 'sell', 'hold', 'wait', 'reduce'];
+    const actionableBalanced = ['institutional_buy', 'strong_buy', 'buy', 'swing_buy', 't1_buy', 'accumulate', 'strong_sell', 'sell', 'hold', 'wait', 'reduce'];
     return items
       .filter((it) => actionableBalanced.includes((it.recommendation || '').toLowerCase()))
       .sort((a, b) => (b.maestroScore || 0) - (a.maestroScore || 0))
@@ -890,7 +890,7 @@ export function pickPersonaMix(items: StoredAnalysisItem[], persona: 'conservati
   const _personaKey = persona === 'conservative' ? 'investor' : 'gambler';
   // RELAX-INVESTOR-001: أضفنا 'accumulate' للـ actionable list عشان تبويب
   // المستثمر يعرض أسهم ACCUMULATE (تجميع) مش بس BUY/SELL/HOLD.
-  const actionable = ['strong_buy', 'buy', 'swing_buy', 't1_buy', 'accumulate', 'strong_sell', 'sell', 'hold', 'wait', 'reduce'];
+  const actionable = ['institutional_buy', 'strong_buy', 'buy', 'swing_buy', 't1_buy', 'accumulate', 'strong_sell', 'sell', 'hold', 'wait', 'reduce'];
   const valid = items.filter(
     (it) =>
       it.analysisJson && it.analysisJson[_personaKey] &&
@@ -902,13 +902,13 @@ export function pickPersonaMix(items: StoredAnalysisItem[], persona: 'conservati
 
   // RELAX-INVESTOR-001: أضفنا ACCUMULATE لقائمة الشراء عشان تتعامل كفرصة.
   const buys = valid
-    .filter((it) => ['BUY', 'STRONG_BUY', 'ACCUMULATE'].includes(String(it.analysisJson?.[_personaKey]?.signal).toUpperCase()))
+    .filter((it) => ['BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY'].includes(String(it.analysisJson?.[_personaKey]?.signal).toUpperCase()))
     .sort(byScore);
   const sells = valid
-    .filter((it) => ['SELL', 'STRONG_SELL', 'REDUCE'].includes(String(it.analysisJson?.[_personaKey]?.signal).toUpperCase()))
+    .filter((it) => ['SELL', 'STRONG_SELL', 'REDUCE', 'INSTITUTIONAL_SELL'].includes(String(it.analysisJson?.[_personaKey]?.signal).toUpperCase()))
     .sort(byScore);
   const others = valid
-    .filter((it) => !['BUY', 'STRONG_BUY', 'ACCUMULATE', 'SELL', 'STRONG_SELL', 'REDUCE'].includes(String(it.analysisJson?.[_personaKey]?.signal).toUpperCase()))
+    .filter((it) => !['BUY', 'STRONG_BUY', 'ACCUMULATE', 'INSTITUTIONAL_BUY', 'SELL', 'STRONG_SELL', 'REDUCE', 'INSTITUTIONAL_SELL'].includes(String(it.analysisJson?.[_personaKey]?.signal).toUpperCase()))
     .sort(byScore);
 
   const buyN = Math.min(Math.ceil(limit / 2), buys.length);
@@ -935,7 +935,7 @@ export function pickPersonaMix(items: StoredAnalysisItem[], persona: 'conservati
 export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conservative' | 'balanced' | 'gambler', limit = 5): StoredAnalysisItem[] {
   // P26: balanced = عرض عام بدون فلتر persona-specific، مرتّب بالـ maestroScore.
   if (persona === 'balanced') {
-    const actionableBalanced = ['strong_buy', 'buy', 'swing_buy', 't1_buy', 'accumulate', 'strong_sell', 'sell', 'hold', 'wait', 'reduce'];
+    const actionableBalanced = ['institutional_buy', 'strong_buy', 'buy', 'swing_buy', 't1_buy', 'accumulate', 'strong_sell', 'sell', 'hold', 'wait', 'reduce'];
     return items
       .filter((it) => actionableBalanced.includes((it.recommendation || '').toLowerCase()))
       .sort((a, b) => (b.maestroScore || 0) - (a.maestroScore || 0))
@@ -971,7 +971,7 @@ export function pickPersonaDiverged(items: StoredAnalysisItem[], persona: 'conse
   const signalTier = items
     .filter((it) => {
       const sig = String(it?.analysisJson?.[_personaKey]?.signal || '').toUpperCase();
-      return sig === 'BUY' || sig === 'STRONG_BUY' || sig === 'ACCUMULATE';
+      return sig === 'BUY' || sig === 'STRONG_BUY' || sig === 'ACCUMULATE' || sig === 'INSTITUTIONAL_BUY';
     })
     .sort(byPersonaScore);
 

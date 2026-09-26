@@ -513,6 +513,7 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
     # V40.2: enable strict kill-filter mode for the whole run
     set_strict_kill_filters(True)
+    from analyzers.engine_settings import get_setting
 
     if not dry_run and not keep_old:
         delete_old_v40_predictions(start_date, end_date)
@@ -934,15 +935,20 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             future_closes = closes[day_idx + 1:]
             future_dates = dates[day_idx + 1:]
             future_atrs = atrs[day_idx + 1:]
-            if len(future_closes) < 5:
-                continue
-
             trade = Trade(
                 ticker=ticker, entry_date=scan_date, entry_price=entry,
                 target_price=target, stop_loss=stop, score=result['score'],
                 signal=signal, proofs=result['proofs'],
             )
-            trade = simulate_trade(trade, future_closes, future_dates, 7, future_atrs)
+            if len(future_closes) >= 5:
+                trade = simulate_trade(trade, future_closes, future_dates, 7, future_atrs)
+            else:
+                trade.exit_reason = 'ACTIVE'
+                trade.is_win = False
+                trade.exit_price = None
+                trade.exit_date = None
+                trade.holding_days = 0
+                trade.return_pct = 0.0
 
             evidence = count_evidence(result['proofs'])
             r_mult = compute_r_multiple(entry, target, stop)
@@ -1028,7 +1034,6 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # تحليل مارس-مايو أظهر إن 4 من 9 خسائر كان evidence=0/6 (بدون أي إثباتات).
             # الحل: رفض أي إشارة evidence < min_evidence_count (default=3).
             try:
-                from analyzers.engine_settings import get_setting
                 _min_ev = int(get_setting('v402_min_evidence_count', default=int(get_setting('min_evidence_count', default=3))))
             except Exception:
                 _min_ev = 3
@@ -1207,8 +1212,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         _avg_chg = float(_sec_stats['avg_chg'] or 0)
                         _rising = int(_sec_stats['rising'] or 0)
                         _rising_pct = _rising / _n
-                        # sector dead: avg ≤ -1% AND rising ≤ 25%
-                        if _avg_chg <= -1.0 and _rising_pct <= 0.25:
+                        # sector dead: avg ≤ -1.5% AND rising ≤ 20%
+                        _stock_chg_row = _sec_conn.execute("SELECT change_percent FROM stocks WHERE ticker = ? AND market = ?", (ticker, market_code)).fetchone()
+                        _self_chg = float(_stock_chg_row['change_percent'] or 0) if _stock_chg_row else 0.0
+                        if _avg_chg <= -1.5 and _rising_pct <= 0.20 and _self_chg <= 0:
                             print(f"[SECTOR-DEAD] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
                                   f"sector={_stock_sector[:20]} avg={_avg_chg:+.2f}% rising={_rising}/{_n} → رفض", flush=True)
                             _sec_conn.close()

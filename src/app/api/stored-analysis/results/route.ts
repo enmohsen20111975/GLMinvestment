@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: { Accept: 'application/json' },
       signal: controller.signal,
+      cache: 'no-store',
     });
     clearTimeout(timeout);
 

@@ -23,11 +23,11 @@
   },
   "rss_mubasher": {
     "display_name": "مباشر",
-    "source_type": "rss",
+    "source_type": "web",
     "enabled": true,
-    "description": "مباشر - البورصة المصرية (Mubasher)",
+    "description": "مباشر - البورصة المصرية (Mubasher) - HTML scraping",
     "feeds": [
-      "https://www.mubasher.info/api/news/ar/feed/EG"
+      "https://www.mubasher.info/news/eg/now/latest"
     ]
   },
   "rss_argaam": {
@@ -48,6 +48,24 @@
       "https://www.amwalalghad.com/feed/"
     ]
   },
+  "rss_masrawy": {
+    "display_name": "mastafy",
+    "source_type": "rss",
+    "enabled": true,
+    "description": "mastafy - اقتصاد (RSS feed ID 206)",
+    "feeds": [
+      "https://www.masrawy.com/rss/feed/206/%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF"
+    ]
+  },
+  "rss_hapijournal": {
+    "display_name": "حابي",
+    "source_type": "rss",
+    "enabled": true,
+    "description": "حابي - سوق المال + البنوك + Investment (RSS feed)",
+    "feeds": [
+      "https://hapijournal.com/feed/"
+    ]
+  },
   "rss_youm7": {
     "display_name": "اليوم السابع - اقتصاد",
     "source_type": "rss",
@@ -64,9 +82,24 @@
     "description": "بحث DuckDuckGo عبر GLMinvestment analyzer"
   },
   "web_alborsaa": {
-    "display_name": "جريدة البورصة",
+    "display_name": "journalist البورصة",
     "source_type": "web",
     "enabled": true,
-    "description": "جريدة البورصة - قسم البورصة والشركات"
+    "description": "journalist البورصة - قسم البورصة والوات",
+    "feeds": []
+  },
+  "web_almalnews": {
+    "display_name": "journalist المال",
+    "source_type": "web",
+    "enabled": true,
+    "description": "journalist المال - أخبار الشركة + البورصة + الإفصالات",
+    "feeds": []
+  },
+  "web_mubasher": {
+    "display_name": "مباشر",
+    "source_type": "web",
+    "enabled": true,
+    "description": "مباشر - البورصة المصرية (Mubasher) - HTML scraping",
+    "feeds": []
   }
 }
