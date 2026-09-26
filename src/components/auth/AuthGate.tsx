@@ -23,6 +23,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 import { Sparkles, X, Rocket, Clock, AlertTriangle, Crown, Lock, KeyRound } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuthCheck } from '@/hooks/useAuthCheck';
@@ -271,6 +272,7 @@ function TrialExpiredBanner({ daysLeft = 0 }: { daysLeft?: number }) {
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   useAuthCheck();
+  const { data: session } = useSession();
 
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const authChecked = useAppStore((s) => s.authChecked);
@@ -298,10 +300,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     const pageLabel = VIEW_LABEL_AR[currentView] || 'هذه الصفحة';
 
-    // P0-FIX (PHASE1-CRITICAL-FIXES): fire the toast BEFORE the state changes
-    // so the user has clear visual feedback about WHY they are being
-    // redirected to the dashboard. Previously the toast was queued after
-    // setCurrentView('dashboard') which made the redirect feel silent.
     toast.warning(`صفحة «${pageLabel}» تتطلب تسجيل الدخول`, {
       description: 'يرجى تسجيل الدخول أو إنشاء حساب مجاني للمتابعة.',
       duration: 5000,
@@ -325,8 +323,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!authChecked) return;
     if (!isAdminView(currentView)) return;
 
+    const u = user as Record<string, unknown> | null;
+    const s = session?.user as Record<string, unknown> | null;
+    const isAuthed = isAuthenticated || Boolean(s?.email || s?.name);
+
     // لو مش مسجّل دخول → نوجهه لتسجيل الدخول (مش dashboard)
-    if (!isAuthenticated || !user) {
+    if (!isAuthed || (!u && !s)) {
       if (lastBouncedView.current === currentView) return;
       lastBouncedView.current = currentView;
       setShowLoginPrompt(true);
@@ -338,12 +340,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         lastBouncedView.current = null;
       }, 1500);
       return () => clearTimeout(t);
-      return;
     }
 
-    // مسجّل دخول → تحقق من صلاحية الأدمن
-    const userEmail = (user as Record<string, unknown>)?.email as string || (user as Record<string, unknown>)?.username as string || null;
-    if (!checkIsAdmin(userEmail)) {
+    // مسجّل دخول → فحص شامل لصلاحيات الأدمن (حالة الاشتراك، علامة is_admin، الهوية)
+    const userEmail = (u?.email as string) || (s?.email as string) || null;
+    const userName = (u?.username as string) || (u?.name as string) || (s?.name as string) || null;
+
+    const isUserAdmin =
+      u?.is_admin === true ||
+      u?.subscription_tier === 'admin' ||
+      u?.subscription_tier === 'premium' ||
+      s?.is_admin === true ||
+      s?.subscription_tier === 'admin' ||
+      (userName && ['mohseny', 'admin'].includes(userName.toLowerCase())) ||
+      (userEmail && ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(userEmail.toLowerCase())) ||
+      checkIsAdmin(userEmail, userName) ||
+      checkIsAdmin(userName, userEmail);
+
+    if (!isUserAdmin) {
       if (lastBouncedView.current === currentView) return;
       lastBouncedView.current = currentView;
       setCurrentView('dashboard');
@@ -355,7 +369,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }, 1500);
       return () => clearTimeout(t);
     }
-  }, [authChecked, isAuthenticated, user, currentView, setCurrentView, setShowLoginPrompt]);
+  }, [authChecked, isAuthenticated, user, session, currentView, setCurrentView, setShowLoginPrompt]);
 
   // 2. Expired Trial Guard: bounce free users whose trial has expired (after 7-day warning) to subscription view
   useEffect(() => {

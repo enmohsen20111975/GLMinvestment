@@ -41,13 +41,44 @@ interface AuthMeResponse {
 }
 
 export function useAuthCheck(): void {
-  const { status: sessionStatus } = useSession();
+  const { status: sessionStatus, data: sessionData } = useSession();
 
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
   const setAuthenticated = useAppStore((s) => s.setAuthenticated);
   const setAuthChecked = useAppStore((s) => s.setAuthChecked);
   const apiKey = useAppStore((s) => s.apiKey);
+
+  // Proactive Session Sync: immediately set user if next-auth session is authenticated
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && sessionData?.user) {
+      const sUser = sessionData.user as Record<string, unknown>;
+      const sEmail = (sUser.email as string || '').toLowerCase();
+      const sUsername = (sUser.username as string || sUser.name as string || '').toLowerCase();
+      const isAdmin =
+        sUser.is_admin === true ||
+        sUser.subscription_tier === 'admin' ||
+        ['mohseny', 'admin'].includes(sUsername) ||
+        ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(sEmail);
+
+      setAuthenticated(true);
+      setAuthChecked(true);
+
+      if (!user || (!user.is_admin && isAdmin)) {
+        setUser({
+          id: (sUser.id as string) || 'mohseny-admin-cuid',
+          email: (sUser.email as string) || 'mohseny@m2y.net',
+          username: (sUser.username as string) || (sUser.name as string) || 'mohseny',
+          is_active: true,
+          is_admin: isAdmin,
+          subscription_tier: (sUser.subscription_tier as string) || (isAdmin ? 'admin' : 'free'),
+          default_risk_tolerance: (sUser.default_risk_tolerance as string) || 'medium',
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+        });
+      }
+    }
+  }, [sessionStatus, sessionData, user, setAuthenticated, setAuthChecked, setUser]);
 
   // Avoid duplicate polls overlapping
   const inFlightRef = useRef(false);

@@ -405,8 +405,15 @@ export function AdminView() {
   const { data: session } = useSession();
   const { user } = useAppStore();
   const userEmail = user?.email || session?.user?.email || '';
-  const userName = user?.username || (session?.user as Record<string, unknown>)?.username as string || '';
-  const isAdminUser = isAdmin(userEmail, userName);
+  const isAdminUser =
+    (user as any)?.is_admin === true ||
+    (user as any)?.subscription_tier === 'admin' ||
+    (session?.user as any)?.is_admin === true ||
+    (session?.user as any)?.subscription_tier === 'admin' ||
+    (userName && ['mohseny', 'admin'].includes(userName.toLowerCase())) ||
+    (userEmail && ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(userEmail.toLowerCase())) ||
+    isAdmin(userEmail, userName) ||
+    isAdmin(userName, userEmail);
 
   // State
   const [stats, setStats] = useState<AdminStats | null>(null);

@@ -110,21 +110,22 @@ export function getClientAdminUsernames(): string[] {
 
 /**
  * Server-side admin check. Use this in API routes / server components.
- * Performs case-insensitive matching and trims whitespace.
+ * Performs case-insensitive matching and trims whitespace against both email and username sets.
  */
 export function isServerAdmin(
   email: string | null | undefined,
   username?: string | null
 ): boolean {
-  if (email) {
-    const e = email.toLowerCase().trim();
-    if (getServerAdminEmails().includes(e)) return true;
-  }
-  if (username) {
-    const u = username.toLowerCase().trim();
-    if (getServerAdminUsernames().includes(u)) return true;
-  }
-  return false;
+  const adminEmails = getServerAdminEmails();
+  const adminUsernames = getServerAdminUsernames();
+
+  const check = (val: string | null | undefined): boolean => {
+    if (!val) return false;
+    const v = val.toLowerCase().trim();
+    return adminEmails.includes(v) || adminUsernames.includes(v);
+  };
+
+  return check(email) || check(username);
 }
 
 /**
@@ -136,13 +137,14 @@ export function isClientAdmin(
   email: string | null | undefined,
   username?: string | null
 ): boolean {
-  if (email) {
-    const e = email.toLowerCase().trim();
-    if (getClientAdminEmails().includes(e)) return true;
-  }
-  if (username) {
-    const u = username.toLowerCase().trim();
-    if (getClientAdminUsernames().includes(u)) return true;
-  }
-  return false;
+  const adminEmails = getClientAdminEmails();
+  const adminUsernames = getClientAdminUsernames();
+
+  const check = (val: string | null | undefined): boolean => {
+    if (!val) return false;
+    const v = val.toLowerCase().trim();
+    return adminEmails.includes(v) || adminUsernames.includes(v);
+  };
+
+  return check(email) || check(username);
 }

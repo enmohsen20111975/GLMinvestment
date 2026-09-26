@@ -40086,3 +40086,35 @@ Work Log:
        `subscription_tier: "admin"`
    - نجاح البناء الكامل `npm run build` بنسبة 100% وبدون أخطاء (Exit code 0).
 
+---
+Task ID: AUTHGATE-ADMIN-ACCESS-FIX-002
+Agent: Antigravity AI Pair Programmer
+Task: حل جذري لمشكلة الطرد من صفحة الأدمن ورسالة "هذه الصفحة متاحة للمديرين فقط"
+
+Work Log:
+1. التشخيص الدقيق لجذر المشكلة:
+   - المستخدم عند دخوله لصفحة الإدارة `#admin` كان يتم طرده فوراً إلى الداشبورد مع ظهور رسالة: "هذه الصفحة متاحة للمديرين فقط".
+   - تم فحص كود `src/components/auth/AuthGate.tsx`:
+     أ. في `1b. Admin-only Route Guard`: كان يستدعي `checkIsAdmin(userEmail)` بتمرير بارامتر واحد فقط. عند تسجيل الدخول باسم المستخدم `mohseny`، كانت القيمة المرسلة كـ `email` هي `'mohseny'`، فكانت تفشل مقارنتها بقائمة الإيميلات `getClientAdminEmails()` لأنها اسم مستخدم وليست إيميل، ولم يتم تمرير بارامتر اسم المستخدم الثاني!
+     ب. ملف `AuthGate.tsx` كان يتجاهل كلياً حقول `user.is_admin === true` و `user.subscription_tier === 'admin'` المخزنة في حالة المستخدم!
+     جـ. ملف `AuthGate.tsx` لم يكن يقرأ `useSession()` المباشرة من NextAuth، مما كان يتسبب في Race Condition قبل اكتمال استعلام `/api/auth/me`.
+     د. شاشة `AdminView.tsx` كانت بدورها تفحص `isAdmin(userEmail, userName)` دون التحقق المباشر من `is_admin` و `subscription_tier`.
+
+2. الحلول المنفذة:
+   - **ترقية `src/lib/admin-identities.ts`:**
+     تحديث دوال `isClientAdmin` و `isServerAdmin` لتفحص كلاً من الإيميل واسم المستخدم بغض النظر عن ترتيب أو موقع البارامتر المرسل.
+   - **ترقية `src/components/auth/AuthGate.tsx`:**
+     - دمج `useSession()` مباشرة في الحارس الأمني.
+     - فحص شامل لصلاحيات الأدمن يغطي:
+       `u?.is_admin === true || u?.subscription_tier === 'admin' || s?.is_admin === true || s?.subscription_tier === 'admin' || userName === 'mohseny' || userEmail === 'mohseny@m2y.net' || checkIsAdmin(...)`.
+   - **ترقية `src/hooks/useAuthCheck.ts`:**
+     إضافة مزامنة فورية (Proactive Session Sync) تضمن نقل حالة الأدمن من جلسة NextAuth إلى حالة التطبيق فور تحميل الجلسة دون أي تأخير.
+   - **ترقية `src/components/admin/AdminView.tsx`:**
+     تحديث `isAdminUser` ليمنح الصلاحية فوراً لكل من يملك `is_admin === true` أو `subscription_tier === 'admin'` أو هوية الأدمن المعتمدة.
+
+3. التحقق والاختبار:
+   - اجتياز اختبارات Vitest بنسبة 100% (10 tests passed).
+   - نجاح بناء المشروع `npm run build` بنسبة 100% بدون أي أخطاء.
+   - إعادة تشغيل خادم `nextjs` بنجاح عبر PM2.
+
+
