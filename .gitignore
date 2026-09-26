@@ -256,7 +256,10 @@ scripts/output/missed_opportunities_*.json
 
 # Large database archives — keep local, don't push to GitHub
 data/*.zip
+data/*.part
+data/*.zip.part
 data/all/
 backups/**/*.zip
 all.zip
+
 

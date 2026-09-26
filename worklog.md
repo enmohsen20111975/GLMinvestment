@@ -40269,6 +40269,7 @@ Work Log:
    - تم توثيق التعديلات ورفعها إلى مستودع GitHub على فرع `main`.
 
 ---
+<<<<<<< HEAD
 Task ID: PRED-ARCH-REVIEW
 Agent: Software Architect (مهندس البرمجيات)
 Task: Architecture review of the V40.2 prediction engine chain — multi-market + dynamic params + liquidity-first + post-change backtest readiness
@@ -40877,3 +40878,55 @@ Work Log:
 
 10. المرجع النهائي:
     `/home/z/my-project/vps-service/backtest_results/PRED-EXPERT-ANALYSIS_report.md` (التقرير الشامل بالعربية)
+=======
+## المهمة: حل خطأ [ErrorBoundary:التقارير] (Minified React error #31) وتتبع خطأ الإشعارات /api/notifications 500
+التاريخ: 2026-09-26
+
+1. تفاصيل الأخطاء المرصودة:
+   أ. خطأ انهيار تبويب التقارير:
+      - الخطأ: `[ErrorBoundary:التقارير] Caught error: Error: Minified React error #31 (Objects are not valid as a React child - found: object with keys {$$typeof, render, displayName})`
+      - السبب: المكون الموحد `src/components/ui/stat-card.tsx` كان يدرج `{icon}` كعنصر JSX مباشرة دون فحص إذا كان الممرر هو React Element أم Component Type/forwardRef. في `src/components/reports/DailyMarketReport.tsx`، كانت بطاقات الإحصاءات تستدعى بـ `icon={BarChart3}` و `icon={TrendingUp}` و `icon={TrendingDown}` و `icon={Minus}` (تمرير تعريف المكون من lucide-react وليس عنصر JSX `<BarChart3 />`)، مما أدى إلى انهيار المكون فور تحميل تبويب التقارير.
+   ب. خطأ `GET /api/notifications?limit=20 500`:
+      - السبب: سجلات الأخطاء السابقة كشفت عن استثناء من Prisma أثناء الـ session resolution بسبب تلف سابق في جدول `egx_predictions` في قاعدة البيانات قبل استعادة النسخ السليمة المعتمدة. تم التحقق من النقطة بعد استعادة القواعد السليمة وتبين أنها تعمل الآن بكفاءة تامة وتستجيب بـ HTTP 200 OK سواء مع جلسة مستخدم أو بدونها.
+
+2. الحلول المنفذة:
+   - في `src/components/ui/stat-card.tsx`:
+     - إضافة دالة حماية ذكية `renderStatIcon()` تدعم تلقائياً وتفصل بين عناصر JSX الجاهزة (`React.isValidElement`) وبين مكونات الأيقونات (Lucide components / forwardRef functions) وتقوم برندرها بأمان تام `<IconComponent className="w-4 h-4" />` دون إلقاء استثناء React child.
+     - دعم كامل لخصائص `color` و `bg` و `subtext` و `className` التي كانت تستخدمها التقارير وشاشات الأدمن.
+   - في `src/components/reports/DailyMarketReport.tsx`:
+     - تحديث استدعاءات `StatCard` لتمرير عناصر JSX صريحة `<BarChart3 className="w-4 h-4" />` لتعزيز الاستقرار.
+
+3. التحقق وإعادة التشغيل:
+   - تم عمل `npm run build` بنجاح كامل بدون أي أخطاء (Exit code 0).
+   - تم إعادة تشغيل الخادم في PM2: `pm2 restart nextjs` والتأكد من استقرار العملية.
+   - تم فحص استجابة `/api/notifications?limit=20` محلياً عبر curl وعادت بنجاح `{"success":true,"notifications":[],"unread_count":0,"total_returned":0}`.
+
+
+---
+## المهمة: اعتماد وتطبيق الهوية البصرية وشعار المنصة الرسمي من data/main-icon.png
+التاريخ: 2026-09-26
+
+1. تفاصيل المهمة:
+   - اعتماد الصورة الرسمية عالية الدقة \data/main-icon.png\ (شعار الثور الذهبي والبيتكوين مع عبارة «دليل الاستثمار - تحليل الأسهم والعملات الرقمية») كأيقونة رئيسية وهوية بصرية موحدة للمنصة عبر كل الواجهات والملفات الثابتة.
+
+2. التنفيذ الفني:
+   - معالجة وتوليد جميع مقاسات الصور والأيقونات بدقة فائقة باستخدام Lanczos Resampling:
+     * \public/logo-full.png\ و \public/logo-new.png\ (1672x940): الشعار الكامل والخلفية للبانر ووسوم Open Graph و Twitter Cards.
+     * \public/logo-square.png\ و \public/logo.png\ (512x512): شعار المربع الدائري المخصص للأيقونات، القوائم الجانبية، وشاشات المنصة.
+     * \public/icon-512.png\ و \public/icon-512x512.png\ (512x512): أيقونات PWA وتطبيقات الويب التقدمية.
+     * \public/icon-192.png\ و \public/icon-192x192.png\ (192x192): أيقونات الشاشات المحمولة.
+     * \public/apple-touch-icon.png\ (180x180): أيقونة أجهزة Apple و iOS.
+     * \public/favicon-32.png\ و \public/favicon-32x32.png\ (32x32): أيقونة التبويب في المتصفح.
+     * \public/favicon-16x16.png\ (16x16): المقاس المصغر للـ Favicon.
+     * \public/favicon.ico\: أيقونة متعددة المقاسات (16, 32, 48, 64).
+   - تحديث شريط التنقل العلوي \src/components/layout/TopBar.tsx\:
+     * استبدال العنصر النصي القديم المربع (\M2Y\) بالشعار الرسمي الفاخر للمنصة (\/logo-square.png\) مع إطار وحواف ناعمة.
+   - تحديث الفوتر \src/components/layout/Footer.tsx\:
+     * دمج الشعار الرسمي بجانب اسم المنصة والرابط الرسمي \invist.m2y.net\.
+   - مراجعة توافق \Sidebar.tsx\ و \layout.tsx\ و \manifest.json\ للتأكد من ربط الشعار الجديد بكافة الوسوم والمكونات.
+
+3. التحقق والاختبار:
+   - تم بناء المشروع كاملاً pm run build\ بنجاح تام (Exit code 0).
+   - تم إعادة تشغيل الخادم في PM2 عبر \pm2 restart nextjs\.
+   - تم فحص استجابة الخادم محلياً بـ HTTP 200 OK وظهور الشعار الجديد بنجاح.
+>>>>>>> 63d7e8b6ddfd8d71d482cc031047b48c0e887875

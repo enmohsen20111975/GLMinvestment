@@ -66,6 +66,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Brand */}
           <div className="flex items-center gap-2">
+            <img src="/logo-square.png" alt="دليل الاستثمار" className="w-5 h-5 rounded object-contain shadow-sm" />
             <a
               href={OFFICIAL_LINKS.website}
               target="_blank"

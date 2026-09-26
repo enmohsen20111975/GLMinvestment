@@ -238,9 +238,11 @@ export function TopBar() {
               className="flex items-center gap-2 font-bold text-sm md:text-base hover:opacity-80 transition-opacity"
               aria-label="الرئيسية"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-bold">
-                M2Y
-              </div>
+              <img
+                src="/logo-square.png"
+                alt="دليل الاستثمار"
+                className="h-8 w-8 rounded-lg object-contain shadow-sm border border-border/40 bg-card"
+              />
               <span className="hidden sm:inline">دليل الاستثمار</span>
             </button>
 
