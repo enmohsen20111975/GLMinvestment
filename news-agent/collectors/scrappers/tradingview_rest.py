@@ -333,27 +333,45 @@ def save_to_db(stocks: List[Dict], market: str = 'مصر') -> int:
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     for s in stocks:
         try:
-            cursor.execute('''
-                INSERT INTO stocks
-                (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(symbol) DO UPDATE SET
-                    price = excluded.price,
-                    change_percent = excluded.change_percent,
-                    volume = excluded.volume,
-                    market_cap = excluded.market_cap,
-                    sector = CASE WHEN excluded.sector != '' THEN excluded.sector ELSE stocks.sector END,
-                    name = CASE WHEN excluded.name != '' AND excluded.name != excluded.symbol THEN excluded.name ELSE stocks.name END,
-                    tabs_data = excluded.tabs_data,
-                    last_update = excluded.last_update
-            ''', (
-                s.get('symbol', ''), s.get('name', ''),
-                float(s.get('price', 0) or 0),
-                float(s.get('change_percent', 0) or 0),
-                s.get('volume', ''), s.get('market_cap', ''),
-                s.get('sector', ''), market,
-                json.dumps(s.get('tabs_data', {}), ensure_ascii=False), now,
-            ))
+            # data_engine.db.stocks ليس فيه UNIQUE على symbol — استخدم check-then-update/insert
+            # tabs_data يجب أن يكون JSON string، مش dict
+            tabs_json = s.get('tabs_data', '')
+            if isinstance(tabs_json, dict):
+                tabs_json = json.dumps(tabs_json, ensure_ascii=False)
+            elif not isinstance(tabs_json, str):
+                tabs_json = str(tabs_json) if tabs_json else ''
+
+            existing = cursor.execute('SELECT id FROM stocks WHERE symbol = ?', (s.get('symbol', ''),)).fetchone()
+            if existing:
+                cursor.execute('''
+                    UPDATE stocks SET
+                        price = ?, change_percent = ?, volume = ?, market_cap = ?,
+                        sector = CASE WHEN ? != '' THEN ? ELSE sector END,
+                        name = CASE WHEN ? != '' AND ? != ? THEN ? ELSE name END,
+                        tabs_data = ?, last_update = ?, is_active = 1
+                    WHERE symbol = ?
+                ''', (
+                    float(s.get('price', 0) or 0),
+                    float(s.get('change_percent', 0) or 0),
+                    s.get('volume', ''), s.get('market_cap', ''),
+                    s.get('sector', ''), s.get('sector', ''),
+                    s.get('name', ''), s.get('name', ''), s.get('symbol', ''), s.get('name', ''),
+                    tabs_json, now,
+                    s.get('symbol', ''),
+                ))
+            else:
+                cursor.execute('''
+                    INSERT INTO stocks
+                    (symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                ''', (
+                    s.get('symbol', ''), s.get('name', ''),
+                    float(s.get('price', 0) or 0),
+                    float(s.get('change_percent', 0) or 0),
+                    s.get('volume', ''), s.get('market_cap', ''),
+                    s.get('sector', ''), market,
+                    tabs_json, now,
+                ))
             saved += 1
         except Exception as e:
             log(f"⚠️ DB save error for {s.get('symbol', '?')}: {e}", 'warning')
