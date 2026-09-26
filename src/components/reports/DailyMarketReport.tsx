@@ -508,7 +508,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
           <StatCard
             label="إجمالي الأسهم"
             value={summary.total_stocks ?? 0}
-            icon={BarChart3}
+            icon={<BarChart3 className="w-4 h-4" />}
             color="text-primary"
             bg="bg-primary/10"
             subtext={`${(summary.gainers ?? 0) + (summary.losers ?? 0) + (summary.unchanged ?? 0)} سهم متداول`}
@@ -516,7 +516,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
           <StatCard
             label="المرتفعة"
             value={summary.gainers ?? 0}
-            icon={TrendingUp}
+            icon={<TrendingUp className="w-4 h-4" />}
             color="text-emerald-600 dark:text-emerald-400"
             bg="bg-emerald-50 dark:bg-emerald-950/40"
             subtext={`${(((summary.gainers ?? 0) / (summary.total_stocks || 1)) * 100).toFixed(1)}% من السوق`}
@@ -524,7 +524,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
           <StatCard
             label="المنخفضة"
             value={summary.losers ?? 0}
-            icon={TrendingDown}
+            icon={<TrendingDown className="w-4 h-4" />}
             color="text-red-600 dark:text-red-400"
             bg="bg-red-50 dark:bg-red-950/40"
             subtext={`${(((summary.losers ?? 0) / (summary.total_stocks || 1)) * 100).toFixed(1)}% من السوق`}
@@ -532,7 +532,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
           <StatCard
             label="بدون تغيير"
             value={summary.unchanged ?? 0}
-            icon={Minus}
+            icon={<Minus className="w-4 h-4" />}
             color="text-amber-600 dark:text-amber-400"
             bg="bg-amber-50 dark:bg-amber-950/40"
             subtext={`${(((summary.unchanged ?? 0) / (summary.total_stocks || 1)) * 100).toFixed(1)}% من السوق`}

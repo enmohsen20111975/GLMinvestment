@@ -40267,3 +40267,27 @@ Work Log:
    - تم التحقق من نقطة نهاية الإشعارات `/api/notifications?limit=20` محلياً عبر curl وعادت بحالة `HTTP 200 OK`.
    - تم إعادة تشغيل الخادم في PM2 عبر `pm2 restart nextjs`، وجميع الخدمات بحالة `online` ومستقرة.
    - تم توثيق التعديلات ورفعها إلى مستودع GitHub على فرع `main`.
+
+---
+## المهمة: حل خطأ [ErrorBoundary:التقارير] (Minified React error #31) وتتبع خطأ الإشعارات /api/notifications 500
+التاريخ: 2026-09-26
+
+1. تفاصيل الأخطاء المرصودة:
+   أ. خطأ انهيار تبويب التقارير:
+      - الخطأ: `[ErrorBoundary:التقارير] Caught error: Error: Minified React error #31 (Objects are not valid as a React child - found: object with keys {$$typeof, render, displayName})`
+      - السبب: المكون الموحد `src/components/ui/stat-card.tsx` كان يدرج `{icon}` كعنصر JSX مباشرة دون فحص إذا كان الممرر هو React Element أم Component Type/forwardRef. في `src/components/reports/DailyMarketReport.tsx`، كانت بطاقات الإحصاءات تستدعى بـ `icon={BarChart3}` و `icon={TrendingUp}` و `icon={TrendingDown}` و `icon={Minus}` (تمرير تعريف المكون من lucide-react وليس عنصر JSX `<BarChart3 />`)، مما أدى إلى انهيار المكون فور تحميل تبويب التقارير.
+   ب. خطأ `GET /api/notifications?limit=20 500`:
+      - السبب: سجلات الأخطاء السابقة كشفت عن استثناء من Prisma أثناء الـ session resolution بسبب تلف سابق في جدول `egx_predictions` في قاعدة البيانات قبل استعادة النسخ السليمة المعتمدة. تم التحقق من النقطة بعد استعادة القواعد السليمة وتبين أنها تعمل الآن بكفاءة تامة وتستجيب بـ HTTP 200 OK سواء مع جلسة مستخدم أو بدونها.
+
+2. الحلول المنفذة:
+   - في `src/components/ui/stat-card.tsx`:
+     - إضافة دالة حماية ذكية `renderStatIcon()` تدعم تلقائياً وتفصل بين عناصر JSX الجاهزة (`React.isValidElement`) وبين مكونات الأيقونات (Lucide components / forwardRef functions) وتقوم برندرها بأمان تام `<IconComponent className="w-4 h-4" />` دون إلقاء استثناء React child.
+     - دعم كامل لخصائص `color` و `bg` و `subtext` و `className` التي كانت تستخدمها التقارير وشاشات الأدمن.
+   - في `src/components/reports/DailyMarketReport.tsx`:
+     - تحديث استدعاءات `StatCard` لتمرير عناصر JSX صريحة `<BarChart3 className="w-4 h-4" />` لتعزيز الاستقرار.
+
+3. التحقق وإعادة التشغيل:
+   - تم عمل `npm run build` بنجاح كامل بدون أي أخطاء (Exit code 0).
+   - تم إعادة تشغيل الخادم في PM2: `pm2 restart nextjs` والتأكد من استقرار العملية.
+   - تم فحص استجابة `/api/notifications?limit=20` محلياً عبر curl وعادت بنجاح `{"success":true,"notifications":[],"unread_count":0,"total_returned":0}`.
+
