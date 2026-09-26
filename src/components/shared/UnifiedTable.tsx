@@ -60,6 +60,12 @@ export interface Column<T> {
   className?: string;
   /** كلاسات إضافية للهيدر */
   headerClassName?: string;
+  /** هل العمود قابل للإخفاء؟ (default: false) */
+  hideable?: boolean;
+  /** هل العمود يدعم الفلترة؟ (default: false) */
+  filterable?: boolean;
+  /** دالة فلترة مخصصة */
+  filterRender?: (column: Column<T>, value: string, onChange: (v: string) => void) => React.ReactNode;
 }
 
 export interface UnifiedTableProps<T> {
@@ -92,6 +98,25 @@ export interface UnifiedTableProps<T> {
   className?: string;
   /** كلاسات إضافية للصف */
   rowClassName?: (row: T, index: number) => string | undefined;
+  /** ─── ميزات متقدمة (مستوحاة من جدول حركة القطاعات) ─── */
+  /** هل الصفوف قابلة للتوسعة؟ (expandable rows مثل SectorTrackingTab) */
+  expandable?: boolean;
+  /** دالة render للمحتوى الموسّع (يظهر تحت الصف عند الضغط) */
+  expandRender?: (row: T) => React.ReactNode;
+  /** حقل يحدد إن كان الصف موسّعاً افتراضياً */
+  defaultExpandedKey?: string;
+  /** هل الجدول يدعم إخفاء/إظهار الأعمدة؟ (default: false) */
+  columnToggle?: boolean;
+  /** هل الجدول يدعم الفلترة؟ (default: false) */
+  filterable?: boolean;
+  /** عنوان الجدول (لعرضه فوق الـ column toggle) */
+  title?: string;
+  /** زر نشر موحّد (يظهر فوق الجدول) */
+  publishButton?: React.ReactNode;
+  /** زر تصدير (CSV/PDF) */
+  exportButton?: React.ReactNode;
+  /** أزرار إضافية فوق الجدول */
+  toolbarActions?: React.ReactNode;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -149,9 +174,22 @@ export function UnifiedTable<T extends Record<string, unknown>>({
   dir = 'rtl',
   className,
   rowClassName,
+  // ميزات متقدمة
+  expandable = false,
+  expandRender,
+  defaultExpandedKey,
+  columnToggle = false,
+  filterable = false,
+  title,
+  publishButton,
+  exportButton,
+  toolbarActions,
 }: UnifiedTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDirection>(null);
+  const [expandedKey, setExpandedKey] = useState<string | null>(defaultExpandedKey || null);
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
 
   const handleSort = useCallback((col: Column<T>) => {
     if (!col.sortable) return;
@@ -181,6 +219,35 @@ export function UnifiedTable<T extends Record<string, unknown>>({
     });
     return arr;
   }, [data, sortKey, sortDir]);
+
+  // فلترة البيانات حسب الـ filter values
+  const filteredData = useMemo(() => {
+    if (!filterable || Object.keys(filterValues).length === 0) return sortedData;
+    return sortedData.filter(row => {
+      for (const [colKey, filterVal] of Object.entries(filterValues)) {
+        if (!filterVal) continue;
+        const val = getCellValue(row, colKey);
+        if (val == null) continue;
+        if (!String(val).toLowerCase().includes(filterVal.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }, [sortedData, filterValues, filterable]);
+
+  // الأعمدة المرئية (بعد إخفاء المختارة)
+  const visibleColumns = useMemo(() => {
+    if (!columnToggle) return columns;
+    return columns.filter(col => !hiddenColumns.has(String(col.key)));
+  }, [columns, hiddenColumns, columnToggle]);
+
+  const toggleColumn = useCallback((colKey: string) => {
+    setHiddenColumns(prev => {
+      const next = new Set(prev);
+      if (next.has(colKey)) next.delete(colKey);
+      else next.add(colKey);
+      return next;
+    });
+  }, []);
 
   const cellPadding = dense ? 'px-2 py-1' : 'px-3 py-2';
   const headerPadding = dense ? 'px-2 py-1.5' : 'px-3 py-2.5';
@@ -281,126 +348,203 @@ export function UnifiedTable<T extends Record<string, unknown>>({
 
   // ─── Normal render ──────────────────────────────────────────────────────
   return (
-    <div className={wrapperCls} dir={dir}>
-      <Table className="text-xs">
-        <TableHeader className={headerCls}>
-          <TableRow className="bg-muted/40 hover:bg-transparent">
-            {columns.map((col, i) => {
-              const colKey = String(col.key);
-              const isActiveSort = sortKey === colKey && sortDir != null;
-              return (
-                <TableHead
-                  key={`h-${colKey}-${i}`}
-                  className={cn(
-                    headerPadding,
-                    'whitespace-nowrap text-[11px] font-bold text-muted-foreground',
-                    alignClass(col.align),
-                    col.width,
-                    col.sortable && 'cursor-pointer select-none hover:bg-muted/60 transition-colors',
-                    col.headerClassName,
-                  )}
-                  onClick={col.sortable ? () => handleSort(col) : undefined}
-                  aria-sort={isActiveSort ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {col.headerAr || col.header}
-                    {col.sortable && (
-                      <span className="inline-flex shrink-0">
-                        {isActiveSort ? (
-                          sortDir === 'asc'
-                            ? <ChevronUp className="w-3 h-3 text-foreground" />
-                            : <ChevronDown className="w-3 h-3 text-foreground" />
-                        ) : (
-                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
-                        )}
-                      </span>
+    <div className="space-y-2" dir={dir}>
+      {/* Toolbar: publish + export + column toggle + title */}
+      {(title || publishButton || exportButton || toolbarActions || columnToggle) && (
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            {title && <span className="text-sm font-bold">{title}</span>}
+            {toolbarActions}
+          </div>
+          <div className="flex items-center gap-2">
+            {columnToggle && (
+              <details className="relative">
+                <summary className="cursor-pointer text-xs px-2 py-1 rounded border border-border hover:bg-muted transition-colors list-none">
+                  الأعمدة ▼
+                </summary>
+                <div className="absolute right-0 mt-1 z-20 bg-background border border-border rounded-lg shadow-lg p-2 min-w-[160px] max-h-60 overflow-y-auto">
+                  {columns.map(col => {
+                    const colKey = String(col.key);
+                    const isHidden = hiddenColumns.has(colKey);
+                    return (
+                      <label key={colKey} className="flex items-center gap-2 py-1 cursor-pointer text-xs hover:bg-muted/40 px-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={!isHidden}
+                          onChange={() => toggleColumn(colKey)}
+                          className="w-3 h-3"
+                        />
+                        <span>{col.headerAr || col.header}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
+            {exportButton}
+            {publishButton}
+          </div>
+        </div>
+      )}
+
+      <div className={wrapperCls}>
+        <Table className="text-xs">
+          <TableHeader className={headerCls}>
+            <TableRow className="bg-muted/40 hover:bg-transparent">
+              {visibleColumns.map((col, i) => {
+                const colKey = String(col.key);
+                const isActiveSort = sortKey === colKey && sortDir != null;
+                return (
+                  <TableHead
+                    key={`h-${colKey}-${i}`}
+                    className={cn(
+                      headerPadding,
+                      'whitespace-nowrap text-[11px] font-bold text-muted-foreground',
+                      alignClass(col.align),
+                      col.width,
+                      col.sortable && 'cursor-pointer select-none hover:bg-muted/60 transition-colors',
+                      col.headerClassName,
                     )}
-                  </span>
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedData.map((row, ri) => {
-            const rk = keyField
-              ? String(getCellValue(row, keyField) ?? ri)
-              : String(ri);
-            const extraCls = rowClassName?.(row, ri);
-            return (
-              <TableRow
-                key={`row-${rk}`}
-                className={cn(
-                  'border-b border-border/30 transition-colors',
-                  onRowClick && 'cursor-pointer hover:bg-muted/40',
-                  extraCls,
-                )}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
-                onContextMenu={(e) => {
-                  if (onRowLongPress) {
-                    e.preventDefault();
-                    onRowLongPress(row);
-                  }
-                }}
-                onTouchStart={(e) => {
-                  if (onRowLongPress) {
-                    const touch = e.touches[0];
-                    const timer = setTimeout(() => {
-                      onRowLongPress(row);
-                    }, 600);
-                    // Store timer for cleanup
-                    (e.currentTarget as HTMLElement).dataset.longPressTimer = String(timer);
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  if (onRowLongPress) {
-                    const timer = (e.currentTarget as HTMLElement).dataset.longPressTimer;
-                    if (timer) {
-                      clearTimeout(Number(timer));
-                      delete (e.currentTarget as HTMLElement).dataset.longPressTimer;
-                    }
-                  }
-                }}
-                onTouchMove={(e) => {
-                  if (onRowLongPress) {
-                    const timer = (e.currentTarget as HTMLElement).dataset.longPressTimer;
-                    if (timer) {
-                      clearTimeout(Number(timer));
-                      delete (e.currentTarget as HTMLElement).dataset.longPressTimer;
-                    }
-                  }
-                }}
-              >
-                {columns.map((col, ci) => {
-                  const cellKey = `cell-${rk}-${ci}`;
-                  const content = col.render
-                    ? col.render(row)
-                    : (getCellValue(row, col.key) as React.ReactNode);
+                    onClick={col.sortable ? () => handleSort(col) : undefined}
+                    aria-sort={isActiveSort ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {col.headerAr || col.header}
+                      {col.sortable && (
+                        <span className="inline-flex shrink-0">
+                          {isActiveSort ? (
+                            sortDir === 'asc'
+                              ? <ChevronUp className="w-3 h-3 text-foreground" />
+                              : <ChevronDown className="w-3 h-3 text-foreground" />
+                          ) : (
+                            <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                          )}
+                        </span>
+                      )}
+                    </span>
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+            {/* Filter row */}
+            {filterable && (
+              <TableRow className="hover:bg-transparent border-b border-border/50">
+                {visibleColumns.map((col, i) => {
+                  const colKey = String(col.key);
                   return (
-                    <TableCell
-                      key={cellKey}
-                      className={cn(
-                        cellPadding,
-                        'whitespace-nowrap',
-                        alignClass(col.align),
-                        col.width,
-                        col.className,
+                    <TableHead key={`f-${colKey}-${i}`} className={cn(headerPadding, 'py-1')}>
+                      {col.filterable && (
+                        <input
+                          type="text"
+                          placeholder="فلتر..."
+                          value={filterValues[colKey] || ''}
+                          onChange={(e) => setFilterValues(prev => ({ ...prev, [colKey]: e.target.value }))}
+                          className="w-full h-6 text-[10px] px-1 rounded border border-border/50 bg-background/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        />
                       )}
-                    >
-                      {content == null || content === '' ? (
-                        <span className="text-muted-foreground">—</span>
-                      ) : (
-                        content
-                      )}
-                    </TableCell>
+                    </TableHead>
                   );
                 })}
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+            )}
+          </TableHeader>
+          <TableBody>
+            {filteredData.map((row, ri) => {
+              const rk = keyField
+                ? String(getCellValue(row, keyField) ?? ri)
+                : String(ri);
+              const extraCls = rowClassName?.(row, ri);
+              const isExpanded = expandable && expandedKey === rk;
+              return (
+                <React.Fragment key={`row-frag-${rk}`}>
+                  <TableRow
+                    key={`row-${rk}`}
+                    className={cn(
+                      'border-b border-border/30 transition-colors',
+                      (onRowClick || expandable) && 'cursor-pointer hover:bg-muted/40',
+                      isExpanded && 'bg-muted/20',
+                      extraCls,
+                    )}
+                    onClick={(e) => {
+                      if (expandable) {
+                        setExpandedKey(isExpanded ? null : rk);
+                      }
+                      if (onRowClick) onRowClick(row);
+                    }}
+                    onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row) : undefined}
+                    onContextMenu={(e) => {
+                      if (onRowLongPress) {
+                        e.preventDefault();
+                        onRowLongPress(row);
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      if (onRowLongPress) {
+                        const touch = e.touches[0];
+                        const timer = setTimeout(() => {
+                          onRowLongPress(row);
+                        }, 600);
+                        (e.currentTarget as HTMLElement).dataset.longPressTimer = String(timer);
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      if (onRowLongPress) {
+                        const timer = (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                        if (timer) {
+                          clearTimeout(Number(timer));
+                          delete (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                        }
+                      }
+                    }}
+                    onTouchMove={(e) => {
+                      if (onRowLongPress) {
+                        const timer = (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                        if (timer) {
+                          clearTimeout(Number(timer));
+                          delete (e.currentTarget as HTMLElement).dataset.longPressTimer;
+                        }
+                      }
+                    }}
+                  >
+                    {visibleColumns.map((col, ci) => {
+                      const cellKey = `cell-${rk}-${ci}`;
+                      const content = col.render
+                        ? col.render(row)
+                        : (getCellValue(row, col.key) as React.ReactNode);
+                      return (
+                        <TableCell
+                          key={cellKey}
+                          className={cn(
+                            cellPadding,
+                            'whitespace-nowrap',
+                            alignClass(col.align),
+                            col.width,
+                            col.className,
+                          )}
+                        >
+                          {content == null || content === '' ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            content
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                  {/* Expandable content row */}
+                  {isExpanded && expandRender && (
+                    <TableRow key={`expand-${rk}`} className="bg-muted/10 hover:bg-muted/10">
+                      <TableCell colSpan={visibleColumns.length} className="p-2">
+                        {expandRender(row)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
