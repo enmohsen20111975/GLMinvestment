@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
 
         if (data.success && data.data) {
-          let recommendations = data.data.map((coin: any) => ({
+          let recommendations = data.data.map((coin: Record<string, unknown>) => ({
             id: coin.id,
             symbol: coin.symbol,
             name: coin.name,
@@ -47,13 +47,13 @@ export async function GET(request: NextRequest) {
           // Filter by signal
           if (signal) {
             const signalLower = signal.toLowerCase();
-            recommendations = recommendations.filter((r: any) =>
+            recommendations = recommendations.filter((r: Record<string, unknown>) =>
               r.signal?.toLowerCase().includes(signalLower)
             );
           }
 
           // Sort by score
-          recommendations.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+          recommendations.sort((a: Record<string, unknown>, b: Record<string, unknown>) => (b.score || 0) - (a.score || 0));
 
           return NextResponse.json({
             success: true,
@@ -61,9 +61,9 @@ export async function GET(request: NextRequest) {
             recommendations: recommendations.slice(0, limit),
             summary: {
               total: recommendations.length,
-              buy: recommendations.filter((r: any) => r.signal?.includes('BUY')).length,
-              sell: recommendations.filter((r: any) => r.signal?.includes('SELL')).length,
-              hold: recommendations.filter((r: any) => r.signal?.includes('HOLD')).length,
+              buy: recommendations.filter((r: Record<string, unknown>) => r.signal?.includes('BUY')).length,
+              sell: recommendations.filter((r: Record<string, unknown>) => r.signal?.includes('SELL')).length,
+              hold: recommendations.filter((r: Record<string, unknown>) => r.signal?.includes('HOLD')).length,
             },
             market_regime: data.market_regime,
             source: 'python_backend',
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     const coins = await coingeckoResponse.json();
 
-    const recommendations = coins.map((coin: any) => {
+    const recommendations = coins.map((coin: Record<string, unknown>) => {
       const change = coin.price_change_percentage_24h || 0;
       const athChange = coin.ath_change_percentage || 0;
 
@@ -126,13 +126,13 @@ export async function GET(request: NextRequest) {
       recommendations,
       summary: {
         total: recommendations.length,
-        buy: recommendations.filter((r: any) => r.signal?.includes('BUY')).length,
-        sell: recommendations.filter((r: any) => r.signal?.includes('SELL')).length,
-        hold: recommendations.filter((r: any) => r.signal?.includes('HOLD')).length,
+        buy: recommendations.filter((r: Record<string, unknown>) => r.signal?.includes('BUY')).length,
+        sell: recommendations.filter((r: Record<string, unknown>) => r.signal?.includes('SELL')).length,
+        hold: recommendations.filter((r: Record<string, unknown>) => r.signal?.includes('HOLD')).length,
       },
       source: 'coingecko_fallback',
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     console.error('[Mobile Crypto Recommendations API] Error:', error);
     return NextResponse.json({
       success: false,

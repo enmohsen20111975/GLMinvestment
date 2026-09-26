@@ -23,7 +23,7 @@ function getPredictionsDbPath() {
   return path.join(process.cwd(), 'db', 'predictions.db');
 }
 
-function safeParseJson<T>(val: any, fallback: T): T {
+function safeParseJson<T>(val: Record<string, unknown>, fallback: T): T {
   if (!val) return fallback;
   if (typeof val !== 'string') return val as T;
   try {
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 
     // Build filter query
     let whereClauses: string[] = [];
-    let params: any[] = [];
+    let params: Record<string, unknown>[] = [];
 
     if (search) {
       whereClauses.push('(LOWER(title) LIKE ? OR LOWER(content) LIKE ? OR LOWER(tickers) LIKE ?)');
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
       ${whereSql}
       ORDER BY id DESC
       LIMIT ? OFFSET ?
-    `).all(...params, limit, offset) as any[];
+    `).all(...params, limit, offset) as Record<string, unknown>[];
 
     db.close();
 
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
       sources: sourceRows,
     });
-  } catch (err: any) {
+  } catch (err: Record<string, unknown>) {
     console.error('[Admin News GET] error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     // Parse tickers
     let tickers: string[] = [];
     if (Array.isArray(body.tickers)) {
-      tickers = body.tickers.map((t: any) => String(t).toUpperCase().trim()).filter(Boolean);
+      tickers = body.tickers.map((t: Record<string, unknown>) => String(t).toUpperCase().trim()).filter(Boolean);
     } else if (typeof body.tickers === 'string') {
       tickers = body.tickers
         .split(/[,،\s]+/)
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
       insertedId: result.lastInsertRowid,
       message: 'تمت إضافة الخبر بنجاح',
     });
-  } catch (err: any) {
+  } catch (err: Record<string, unknown>) {
     console.error('[Admin News POST] error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -271,7 +271,7 @@ export async function PUT(request: NextRequest) {
 
     let tickers: string[] = [];
     if (Array.isArray(body.tickers)) {
-      tickers = body.tickers.map((t: any) => String(t).toUpperCase().trim()).filter(Boolean);
+      tickers = body.tickers.map((t: Record<string, unknown>) => String(t).toUpperCase().trim()).filter(Boolean);
     } else if (typeof body.tickers === 'string') {
       tickers = body.tickers
         .split(/[,،\s]+/)
@@ -330,7 +330,7 @@ export async function PUT(request: NextRequest) {
       updated: result.changes > 0,
       message: 'تم تعديل وتحديث الخبر بنجاح',
     });
-  } catch (err: any) {
+  } catch (err: Record<string, unknown>) {
     console.error('[Admin News PUT] error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -425,7 +425,7 @@ export async function DELETE(request: NextRequest) {
       deletedCount,
       message: `تم حذف ${deletedCount} خبر بنجاح`,
     });
-  } catch (err: any) {
+  } catch (err: Record<string, unknown>) {
     console.error('[Admin News DELETE] error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

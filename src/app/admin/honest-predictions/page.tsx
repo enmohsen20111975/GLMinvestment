@@ -219,7 +219,7 @@ export default function HonestPredictionsPage() {
   const [monthlyBreakdown, setMonthlyBreakdown] = useState<MonthlyStat[]>([]);
   const [cumulativeReturns, setCumulativeReturns] = useState<CumulativePoint[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [testReport, setTestReport] = useState<any>(null);
+  const [testReport, setTestReport] = useState<Record<string, unknown>>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -238,7 +238,7 @@ export default function HonestPredictionsPage() {
 
   // Advanced Settings
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [dynamicParams, setDynamicParams] = useState<any>(null);
+  const [dynamicParams, setDynamicParams] = useState<Record<string, unknown>>(null);
   const [dynamicSource, setDynamicSource] = useState<string>('defaults');
 
   const fetchDynamicParams = useCallback(async () => {
@@ -402,7 +402,7 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل التوليد: ${data.error}`);
       }
-    } catch (e: any) {
+    } catch (e: Record<string, unknown>) {
       toast.error(`خطأ: ${e.message}`);
     } finally {
       setGenerating(false);
@@ -440,7 +440,7 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل التحقق: ${data.error}`);
       }
-    } catch (e: any) {
+    } catch (e: Record<string, unknown>) {
       toast.error(`خطأ: ${e.message}`);
     } finally {
       setVerifying(false);
@@ -471,7 +471,7 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل التعلم: ${data.error}`);
       }
-    } catch (e: any) {
+    } catch (e: Record<string, unknown>) {
       toast.error(`خطأ: ${e.message}`);
     } finally {
       setLearning(false);
@@ -517,7 +517,7 @@ export default function HonestPredictionsPage() {
       } else {
         toast.error(`فشل الاختبار الكامل: ${data.error}`);
       }
-    } catch (e: any) {
+    } catch (e: Record<string, unknown>) {
       toast.error(`خطأ في الاختبار: ${e.message}`);
     } finally {
       setTesting(false);
@@ -1099,7 +1099,7 @@ export default function HonestPredictionsPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" domain={[0, 100]} />
               <YAxis type="category" dataKey="market" tickFormatter={(v) => MARKET_NAMES[v] || v} width={70} />
-              <ReTooltip formatter={(val: any, name: string) => [`${val}%`, name === 'win_rate' ? 'نسبة الفوز' : '']} />
+              <ReTooltip formatter={(val: Record<string, unknown>, name: string) => [`${val}%`, name === 'win_rate' ? 'نسبة الفوز' : '']} />
               <Bar dataKey="win_rate" fill="#10b981" radius={[0, 4, 4, 0]} name="نسبة الفوز %" />
               <Bar dataKey="sr_adoption" fill="#8884d8" radius={[0, 4, 4, 0]} name="اعتماد S/R %" />
             </BarChart>
@@ -1178,7 +1178,7 @@ export default function HonestPredictionsPage() {
                   const map: Record<string, string> = { DOJI: 'دوجي', HAMMER: 'شاكوش', BULLISH_ENGULFING: 'ابتلاع صاعد', BEARISH_ENGULFING: 'ابتلاع هابط', MORNING_STAR: 'نجمة الصباح' };
                   return map[v] || v;
                 }} width={90} fontSize={11} />
-                <ReTooltip formatter={(val: any) => [`${val}%`, 'نسبة النجاح']} />
+                <ReTooltip formatter={(val: Record<string, unknown>) => [`${val}%`, 'نسبة النجاح']} />
                 <Bar dataKey="win_rate" fill="#f97316" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -1288,7 +1288,7 @@ export default function HonestPredictionsPage() {
                 <YAxis fontSize={11} tickFormatter={(v) => `${v.toFixed(0)}%`} />
                 <ReTooltip
                   contentStyle={{ direction: 'ltr', textAlign: 'left' }}
-                  formatter={(val: any, name: string) => [`${Number(val).toFixed(2)}%`, name === 'cumulative_return' ? 'العائد التراكمي' : '']}
+                  formatter={(val: Record<string, unknown>, name: string) => [`${Number(val).toFixed(2)}%`, name === 'cumulative_return' ? 'العائد التراكمي' : '']}
                   labelFormatter={(l) => `التاريخ: ${l}`}
                 />
                 <Area
@@ -1358,7 +1358,7 @@ export default function HonestPredictionsPage() {
                 <YAxis fontSize={11} tickFormatter={(v) => `${v}%`} />
                 <ReTooltip
                   contentStyle={{ direction: 'ltr', textAlign: 'left' }}
-                  formatter={(val: any, name: string) => {
+                  formatter={(val: Record<string, unknown>, name: string) => {
                     if (name === 'net_pl') return [`${Number(val).toFixed(2)}%`, 'صافي العائد'];
                     if (name === 'win_rate') return [`${Number(val).toFixed(1)}%`, 'نسبة الفوز'];
                     return [val, name];

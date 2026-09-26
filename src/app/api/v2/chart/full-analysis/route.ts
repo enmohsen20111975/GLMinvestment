@@ -87,11 +87,11 @@ export async function GET(request: NextRequest) {
     if (data && data.ohlcv && Array.isArray(data.ohlcv)) {
       const validTimes = new Set<number>();
       data.ohlcv = data.ohlcv
-        .map((c: any) => {
+        .map((c: Record<string, unknown>) => {
           const t = _toUnix(c?.time ?? c?.timestamp ?? c?.date);
           return { ...c, time: t, timestamp: t, date: t };
         })
-        .filter((c: any) => {
+        .filter((c: Record<string, unknown>) => {
           if (
             c.time <= 0 ||
             c.open == null || c.high == null || c.low == null || c.close == null ||
@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
           const arr = data.indicators[key];
           if (Array.isArray(arr)) {
             data.indicators[key] = arr
-              .map((p: any) => ({ ...p, time: _toUnix(p?.time) }))
-              .filter((p: any) => validTimes.has(p.time));
+              .map((p: Record<string, unknown>) => ({ ...p, time: _toUnix(p?.time) }))
+              .filter((p: Record<string, unknown>) => validTimes.has(p.time));
           }
         }
       }
@@ -120,19 +120,19 @@ export async function GET(request: NextRequest) {
       for (const k of ['cmf_data', 'vol_z_score_arr', 'macd_projection']) {
         if (Array.isArray(data[k])) {
           data[k] = data[k]
-            .map((p: any) => ({ ...p, time: _toUnix(p?.time) }))
-            .filter((p: any) => validTimes.has(p.time));
+            .map((p: Record<string, unknown>) => ({ ...p, time: _toUnix(p?.time) }))
+            .filter((p: Record<string, unknown>) => validTimes.has(p.time));
         }
       }
       // smart_markers: convert time + drop if not in validTimes
       if (Array.isArray(data.smart_markers)) {
         data.smart_markers = data.smart_markers
-          .map((m: any) => ({ ...m, time: _toUnix(m?.time) }))
-          .filter((m: any) => validTimes.has(m.time));
+          .map((m: Record<string, unknown>) => ({ ...m, time: _toUnix(m?.time) }))
+          .filter((m: Record<string, unknown>) => validTimes.has(m.time));
       }
       // bos_events + sweeps: convert time if present
       if (Array.isArray(data.bos_events)) {
-        data.bos_events = data.bos_events.map((e: any) =>
+        data.bos_events = data.bos_events.map((e: Record<string, unknown>) =>
           e?.time != null ? { ...e, time: _toUnix(e.time) } : e
         );
       }

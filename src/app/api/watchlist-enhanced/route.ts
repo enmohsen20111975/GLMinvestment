@@ -30,19 +30,19 @@ export async function GET(request: NextRequest) {
       FROM user_stock_watchlists w
       WHERE ${clause}
       ORDER BY w.added_at DESC
-    `).all(...params) as any[];
+    `).all(...params) as Record<string, unknown>[];
 
     stocksDb.close();
 
-    let enrichedItems: any[] = [];
+    let enrichedItems: Record<string, unknown>[] = [];
     try {
       const { getDataEngineDb } = await import('@/lib/data-engine-db');
       const deDb = getDataEngineDb();
-      enrichedItems = rows.map((row: any) => {
-        let stockInfo: any = { ticker: '', name: '', price: 0, change_percent: 0 };
+      enrichedItems = rows.map((row: Record<string, unknown>) => {
+        let stockInfo: Record<string, unknown> = { ticker: '', name: '', price: 0, change_percent: 0 };
         try {
           const sdb = new Database(stocksDbPath, { readonly: true });
-          const stockRow = sdb.prepare('SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1').get(row.stock_id) as any;
+          const stockRow = sdb.prepare('SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1').get(row.stock_id) as Record<string, unknown>;
           if (stockRow) {
             stockInfo.ticker = stockRow.ticker || '';
             stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         } catch {}
         if (stockInfo.ticker) {
           try {
-            const deRow = deDb.prepare('SELECT name, price, change_percent FROM stocks WHERE symbol = ? COLLATE NOCASE LIMIT 1').get(stockInfo.ticker) as any;
+            const deRow = deDb.prepare('SELECT name, price, change_percent FROM stocks WHERE symbol = ? COLLATE NOCASE LIMIT 1').get(stockInfo.ticker) as Record<string, unknown>;
             if (deRow) {
               stockInfo.name = deRow.name || stockInfo.name;
               stockInfo.price = Number(deRow.price || 0);
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         };
       });
     } catch {
-      enrichedItems = rows.map((row: any) => ({ id: row.id, ticker: '', name: '', price: 0 }));
+      enrichedItems = rows.map((row: Record<string, unknown>) => ({ id: row.id, ticker: '', name: '', price: 0 }));
     }
 
     return NextResponse.json({
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       total: enrichedItems.length,
       enhanced: true,
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     console.error('[/api/watchlist-enhanced] Error:', error);
     return NextResponse.json(
       { success: false, error: 'فشل في جلب قائمة المراقبة المحسّنة', items: [], total: 0 },

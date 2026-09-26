@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: data.error || 'فشل الفحص' }, { status: 404 })
         }
 
-        const results = data.results.map((item: any) => {
+        const results = data.results.map((item: Record<string, unknown>) => {
           const adj = item.persona_adjusted || {}
           const entryPrice = item.entry_price || item.current_price || 0
           
@@ -217,14 +217,14 @@ export async function POST(req: NextRequest) {
           }
         })
 
-        results.sort((a: any, b: any) => b.score - a.score)
+        results.sort((a: Record<string, unknown>, b: Record<string, unknown>) => b.score - a.score)
 
         const stats = {
-          strong_buy: results.filter((r: any) => r.signal === 'STRONG_BUY').length,
-          buy: results.filter((r: any) => r.signal === 'BUY' || r.signal === 'STRONG_BUY').length,
-          accumulate: results.filter((r: any) => r.signal === 'ACCUMULATE').length,
-          hold: results.filter((r: any) => r.signal === 'HOLD').length,
-          avg_score: results.length > 0 ? results.reduce((a: any, b: any) => a + b.score, 0) / results.length : 0,
+          strong_buy: results.filter((r: Record<string, unknown>) => r.signal === 'STRONG_BUY').length,
+          buy: results.filter((r: Record<string, unknown>) => r.signal === 'BUY' || r.signal === 'STRONG_BUY').length,
+          accumulate: results.filter((r: Record<string, unknown>) => r.signal === 'ACCUMULATE').length,
+          hold: results.filter((r: Record<string, unknown>) => r.signal === 'HOLD').length,
+          avg_score: results.length > 0 ? results.reduce((a: Record<string, unknown>, b: Record<string, unknown>) => a + b.score, 0) / results.length : 0,
           avg_rr: 0
         }
 
@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
 
       try {
         const baseTicker = ticker.split('.')[0]
-        const comparison: any = {}
+        const comparison: Record<string, unknown> = {}
 
         const mappedPersonas = [
           { id: 'scalper', py: 'active_trader', name_ar: 'مضارب سريع' },

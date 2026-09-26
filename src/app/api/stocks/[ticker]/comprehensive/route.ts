@@ -25,23 +25,23 @@ interface ComprehensiveResponse {
   market: string;
   timestamp: string;
   // Section 1: Basic Info + Price
-  basic?: any;
-  price?: any;
-  keyMetrics?: any;
+  basic?: Record<string, unknown>;
+  price?: Record<string, unknown>;
+  keyMetrics?: Record<string, unknown>;
   // Section 2: Technical
-  technical?: any;
-  priceHistory?: any[];
+  technical?: Record<string, unknown>;
+  priceHistory?: Record<string, unknown>[];
   // Section 3: Maestro
-  maestro?: any;
+  maestro?: Record<string, unknown>;
   // Section 4: Hunter / Board
-  hunter?: any;
-  board?: any;
+  hunter?: Record<string, unknown>;
+  board?: Record<string, unknown>;
   // Section 5: News
-  news?: any[];
+  news?: Record<string, unknown>[];
   // Section 6: Predictions
-  predictions?: any[];
+  predictions?: Record<string, unknown>[];
   // Section 7: Professional
-  professional?: any;
+  professional?: Record<string, unknown>;
   // Meta
   errors: string[];
   elapsed_ms: number;

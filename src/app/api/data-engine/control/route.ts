@@ -38,7 +38,7 @@ let fallbackState = {
   logs: [] as string[],
   errors: [] as string[],
   active_jobs: [] as string[],
-  historical_progress: null as any
+  historical_progress: null as Record<string, unknown>
 };
 
 // Check if Flask server is running
@@ -59,7 +59,7 @@ async function checkFlaskServer(): Promise<boolean> {
 }
 
 // Call Flask API
-async function callFlaskAPI(endpoint: string, method: string = 'GET'): Promise<any> {
+async function callFlaskAPI(endpoint: string, method: string = 'GET'): Promise<Record<string, unknown>> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -114,7 +114,7 @@ function loadHistoricalStatus() {
 
 // Get all database stats
 function getAllDbStats() {
-  const stats: any = {
+  const stats: Record<string, unknown> = {
     data_engine: { stocks: 0, crypto: 0, gold: 0, silver: 0, forex: 0 },
     stocks_db: { stocks: 0, daily_prices: 0 },
     historical: { records: 0, symbols: 0, categories: [] },
@@ -248,7 +248,7 @@ async function runScraper(scraperName: string): Promise<{ success: boolean; mess
       cwd: scrapersDir,
       timeout: 600000,
       maxBuffer: 1024 * 1024 * 10
-    }, (error: any, stdout: string, stderr: string) => {
+    }, (error: Record<string, unknown>, stdout: string, stderr: string) => {
       const ts = new Date().toLocaleTimeString('en-GB');
       if (error) {
         fallbackState.logs.push(`[${ts}] ❌ ${scraperName} error: ${error.message.slice(0, 100)}`);
@@ -260,7 +260,7 @@ async function runScraper(scraperName: string): Promise<{ success: boolean; mess
         // Update timestamp
         const key = `last_${scraperName}_update` as keyof typeof fallbackState;
         if (key in fallbackState) {
-          (fallbackState as any)[key] = new Date().toISOString();
+          (fallbackState as Record<string, unknown>)[key] = new Date().toISOString();
         }
         saveStatus();
         resolve({ success: true, message: `${scraperName} completed` });
@@ -280,7 +280,7 @@ async function runSync(): Promise<{ success: boolean; message: string }> {
   return new Promise((resolve) => {
     exec(`python3 "${syncScript}"`, {
       timeout: 120000
-    }, (error: any, stdout: string, stderr: string) => {
+    }, (error: Record<string, unknown>, stdout: string, stderr: string) => {
       const ts = new Date().toLocaleTimeString('en-GB');
       if (error) {
         fallbackState.logs.push(`[${ts}] ❌ Sync error: ${error.message.slice(0, 100)}`);
@@ -346,7 +346,7 @@ export async function GET(request: NextRequest) {
       historical_categories: dbStats.historical.categories,
       timestamp: new Date().toISOString()
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     return NextResponse.json({
       success: false,
       error: error.message,
@@ -411,7 +411,7 @@ export async function POST(request: NextRequest) {
         if (scraper) {
           const key = `${scraper}_running` as keyof typeof fallbackState;
           if (key in fallbackState) {
-            (fallbackState as any)[key] = !(fallbackState as any)[key];
+            (fallbackState as Record<string, unknown>)[key] = !(fallbackState as Record<string, unknown>)[key];
             saveStatus();
             return NextResponse.json({ success: true, scraper, running: fallbackState[key] });
           }
@@ -451,7 +451,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ success: false, error: `Unknown action: ${action}` }, { status: 400 });
     }
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       FROM user_stock_watchlists w
       WHERE ${clause}
       ORDER BY w.added_at DESC
-    `).all(...params) as any[];
+    `).all(...params) as Record<string, unknown>[];
 
     stocksDb.close();
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // enrich مع data_engine.db للأسعار والأسماء
-    let enrichedItems: any[] = [];
+    let enrichedItems: Record<string, unknown>[] = [];
     try {
       const { getDataEngineDb } = await import('@/lib/data-engine-db');
       const deDb = getDataEngineDb();
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       enrichedItems = rows.map((row) => {
         // محاولة جلب السعر والاسم من data_engine.db
         // stock_id في stocks.db ممكن يكون رقم، فنحاول نطابقه مع symbol
-        let stockInfo: any = { ticker: '', name: '', price: 0, change_percent: 0 };
+        let stockInfo: Record<string, unknown> = { ticker: '', name: '', price: 0, change_percent: 0 };
 
         // محاولة جلب الـ ticker من stocks.db عن طريق stock_id
         // لو مفيش، نستخدم الـ stock_id كـ ticker
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
           const stocksDb2 = new Database(stocksDbPath, { readonly: true });
           const stockRow = stocksDb2.prepare(
             'SELECT ticker, name, name_ar FROM stocks WHERE id = ? LIMIT 1'
-          ).get(row.stock_id) as any;
+          ).get(row.stock_id) as Record<string, unknown>;
           if (stockRow) {
             stockInfo.ticker = stockRow.ticker || '';
             stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
           try {
             const deRow = deDb.prepare(
               'SELECT name, price, change_percent FROM stocks WHERE symbol = ? COLLATE NOCASE LIMIT 1'
-            ).get(stockInfo.ticker) as any;
+            ).get(stockInfo.ticker) as Record<string, unknown>;
             if (deRow) {
               stockInfo.name = deRow.name || stockInfo.name;
               stockInfo.price = Number(deRow.price || 0);
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
       items: enrichedItems,
       total: enrichedItems.length,
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     console.error('[/api/mobile/watchlist] Error:', error);
     return NextResponse.json({
       success: true,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     try {
       const row = stocksDb.prepare(
         'SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1'
-      ).get(ticker) as any;
+      ).get(ticker) as Record<string, unknown>;
       if (row) {
         stockId = row.id;
       }
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       id: result.lastInsertRowid,
       message: 'تمت الإضافة لقائمة المراقبة',
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     console.error('[/api/mobile/watchlist POST] Error:', error);
     return NextResponse.json(
       { success: false, error: 'فشل في الإضافة' },
@@ -267,7 +267,7 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'تم الحذف من قائمة المراقبة',
     });
-  } catch (error: any) {
+  } catch (error: Record<string, unknown>) {
     console.error('[/api/mobile/watchlist DELETE] Error:', error);
     return NextResponse.json(
       { success: false, error: 'فشل في الحذف' },

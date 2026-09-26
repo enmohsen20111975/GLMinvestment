@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       FROM predictions
       WHERE status IN ('PENDING', 'STALE')
     `;
-    const params: any[] = [];
+    const params: Record<string, unknown>[] = [];
 
     if (market) {
       query += ` AND market = ?`;
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     query += ` ORDER BY prediction_date ASC LIMIT ?`;
     params.push(limit);
 
-    const pending = db.prepare(query).all(...params) as any[];
+    const pending = db.prepare(query).all(...params) as Record<string, unknown>[];
 
     if (pending.length === 0) {
       return NextResponse.json({
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     let stale = 0;
     let stillPending = 0;
     let recovered = 0; // STALE predictions that got new price data
-    const details: any[] = [];
+    const details: Record<string, unknown>[] = [];
 
     // Statement for closing a prediction (TARGET_HIT or STOPPED)
     const updateClosedStmt = db.prepare(`
@@ -337,11 +337,11 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   const db = openDb();
   try {
-    const pending = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'PENDING'").get() as any;
-    const stale = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'STALE'").get() as any;
-    const targetHit = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'TARGET_HIT'").get() as any;
-    const stopped = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'STOPPED'").get() as any;
-    const total = db.prepare("SELECT COUNT(*) as c FROM predictions").get() as any;
+    const pending = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'PENDING'").get() as Record<string, unknown>;
+    const stale = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'STALE'").get() as Record<string, unknown>;
+    const targetHit = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'TARGET_HIT'").get() as Record<string, unknown>;
+    const stopped = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status = 'STOPPED'").get() as Record<string, unknown>;
+    const total = db.prepare("SELECT COUNT(*) as c FROM predictions").get() as Record<string, unknown>;
 
     return NextResponse.json({
       success: true,

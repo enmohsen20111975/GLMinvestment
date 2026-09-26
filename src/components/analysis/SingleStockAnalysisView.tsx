@@ -685,11 +685,11 @@ export function SingleStockAnalysisView({
                 bbSqueezeLevel={data.bb_squeeze?.state}
                 bosEvents={data.bos_events}
                 livePrice={liveData?.today_candle?.close ?? null}
-                cmfData={(data as any).cmf_data}
-                macdProjection={(data as any).macd_projection}
-                smartMarkers={(data as any).smart_markers}
-                smcData={(data as any).smc_data}
-                fusionMetrics={(data as any).fusion_metrics}
+                cmfData={(data as Record<string, unknown>).cmf_data}
+                macdProjection={(data as Record<string, unknown>).macd_projection}
+                smartMarkers={(data as Record<string, unknown>).smart_markers}
+                smcData={(data as Record<string, unknown>).smc_data}
+                fusionMetrics={(data as Record<string, unknown>).fusion_metrics}
               />
             ) : (
               <div className="flex flex-col justify-center items-center h-full min-h-[440px] text-muted-foreground text-xs">
@@ -1247,7 +1247,7 @@ export function SingleStockAnalysisView({
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">SMA 20 / 50:</span>
-                      <span className="font-mono text-foreground">{(data.current_indicators as any).sma20?.toFixed(2) || '—'} / {(data.current_indicators as any).sma50?.toFixed(2) || '—'}</span>
+                      <span className="font-mono text-foreground">{(data.current_indicators as Record<string, unknown>).sma20?.toFixed(2) || '—'} / {(data.current_indicators as Record<string, unknown>).sma50?.toFixed(2) || '—'}</span>
                     </div>
                     <div className="flex justify-between text-[10px]">
                       <span className="text-muted-foreground">التقلب (ATR):</span>
@@ -1279,11 +1279,11 @@ export function SingleStockAnalysisView({
                   </span>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">مكرر الربحية (P/E):</span>
-                    <span className="font-mono font-bold text-foreground">{(data as any).fundamentals?.valuation?.pe_ratio?.toFixed(2) || '12.4x'}</span>
+                    <span className="font-mono font-bold text-foreground">{(data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio?.toFixed(2) || '12.4x'}</span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">ربحية السهم (EPS):</span>
-                    <span className="font-mono text-foreground">{(data as any).fundamentals?.profitability?.eps?.toFixed(2) || '1.85'} {currencyLabel}</span>
+                    <span className="font-mono text-foreground">{(data as Record<string, unknown>).fundamentals?.profitability?.eps?.toFixed(2) || '1.85'} {currencyLabel}</span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">العائد على الاستثمار:</span>
