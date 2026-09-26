@@ -40291,3 +40291,31 @@ Work Log:
    - تم إعادة تشغيل الخادم في PM2: `pm2 restart nextjs` والتأكد من استقرار العملية.
    - تم فحص استجابة `/api/notifications?limit=20` محلياً عبر curl وعادت بنجاح `{"success":true,"notifications":[],"unread_count":0,"total_returned":0}`.
 
+
+---
+## المهمة: اعتماد وتطبيق الهوية البصرية وشعار المنصة الرسمي من data/main-icon.png
+التاريخ: 2026-09-26
+
+1. تفاصيل المهمة:
+   - اعتماد الصورة الرسمية عالية الدقة \data/main-icon.png\ (شعار الثور الذهبي والبيتكوين مع عبارة «دليل الاستثمار - تحليل الأسهم والعملات الرقمية») كأيقونة رئيسية وهوية بصرية موحدة للمنصة عبر كل الواجهات والملفات الثابتة.
+
+2. التنفيذ الفني:
+   - معالجة وتوليد جميع مقاسات الصور والأيقونات بدقة فائقة باستخدام Lanczos Resampling:
+     * \public/logo-full.png\ و \public/logo-new.png\ (1672x940): الشعار الكامل والخلفية للبانر ووسوم Open Graph و Twitter Cards.
+     * \public/logo-square.png\ و \public/logo.png\ (512x512): شعار المربع الدائري المخصص للأيقونات، القوائم الجانبية، وشاشات المنصة.
+     * \public/icon-512.png\ و \public/icon-512x512.png\ (512x512): أيقونات PWA وتطبيقات الويب التقدمية.
+     * \public/icon-192.png\ و \public/icon-192x192.png\ (192x192): أيقونات الشاشات المحمولة.
+     * \public/apple-touch-icon.png\ (180x180): أيقونة أجهزة Apple و iOS.
+     * \public/favicon-32.png\ و \public/favicon-32x32.png\ (32x32): أيقونة التبويب في المتصفح.
+     * \public/favicon-16x16.png\ (16x16): المقاس المصغر للـ Favicon.
+     * \public/favicon.ico\: أيقونة متعددة المقاسات (16, 32, 48, 64).
+   - تحديث شريط التنقل العلوي \src/components/layout/TopBar.tsx\:
+     * استبدال العنصر النصي القديم المربع (\M2Y\) بالشعار الرسمي الفاخر للمنصة (\/logo-square.png\) مع إطار وحواف ناعمة.
+   - تحديث الفوتر \src/components/layout/Footer.tsx\:
+     * دمج الشعار الرسمي بجانب اسم المنصة والرابط الرسمي \invist.m2y.net\.
+   - مراجعة توافق \Sidebar.tsx\ و \layout.tsx\ و \manifest.json\ للتأكد من ربط الشعار الجديد بكافة الوسوم والمكونات.
+
+3. التحقق والاختبار:
+   - تم بناء المشروع كاملاً pm run build\ بنجاح تام (Exit code 0).
+   - تم إعادة تشغيل الخادم في PM2 عبر \pm2 restart nextjs\.
+   - تم فحص استجابة الخادم محلياً بـ HTTP 200 OK وظهور الشعار الجديد بنجاح.
