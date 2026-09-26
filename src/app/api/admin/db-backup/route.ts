@@ -3,16 +3,27 @@ import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { join, basename } from 'path';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const execFileAsync = promisify(execFile);
 
 const DB_DIR = join(process.cwd(), 'db');
 const DATA_DIR = join(process.cwd(), 'data');
-const MAX_ZIP_BYTES = 60 * 1024 * 1024; // 60MB hard cap per archive
+const DEFAULT_MAX_ZIP_MB = 60; // 60MB default per archive
+
+// Core active databases that require caution when deleting
+const CORE_DATABASES = new Set([
+  'stocks.db',
+  'auth.db',
+  'price_history.db',
+  'data_engine.db',
+  'predictions.db',
+  'market.db',
+  'intraday.db',
+]);
 
 interface DbInfo {
   name: string;
@@ -20,6 +31,7 @@ interface DbInfo {
   size_bytes: number;
   size_mb: string;
   modified: string | null;
+  is_core: boolean;
 }
 
 interface BackupArchive {
@@ -28,6 +40,7 @@ interface BackupArchive {
   size_bytes: number;
   size_mb: string;
   created: string | null;
+  is_part?: boolean;
 }
 
 /**
@@ -52,6 +65,7 @@ function listDbFiles(): DbInfo[] {
         size_bytes: st.size,
         size_mb: (st.size / 1024 / 1024).toFixed(2),
         modified: st.mtime.toISOString(),
+        is_core: CORE_DATABASES.has(entry),
       });
     } catch {
       // ignore unreadable entries
@@ -64,7 +78,7 @@ function listArchives(): BackupArchive[] {
   if (!existsSync(DATA_DIR)) return [];
   const out: BackupArchive[] = [];
   for (const entry of readdirSync(DATA_DIR)) {
-    if (!entry.endsWith('.zip')) continue;
+    if (!entry.endsWith('.zip') && !entry.includes('.zip.part')) continue;
     const full = join(DATA_DIR, entry);
     try {
       const st = statSync(full);
@@ -75,6 +89,7 @@ function listArchives(): BackupArchive[] {
         size_bytes: st.size,
         size_mb: (st.size / 1024 / 1024).toFixed(2),
         created: st.mtime.toISOString(),
+        is_part: entry.includes('.zip.part'),
       });
     } catch {
       // ignore
@@ -85,11 +100,7 @@ function listArchives(): BackupArchive[] {
 
 /**
  * Group DB files into batches where each batch's total uncompressed size is
- * under 60MB. SQLite DBs compress very well (~3-5x), so 60MB raw almost
- * always produces a sub-60MB zip — but we cap raw input to be safe.
- *
- * If a single DB is larger than 60MB raw, it gets its own zip (compression
- * will usually bring the archive under the limit).
+ * under maxBytes.
  */
 function chunkDbs(dbs: DbInfo[], maxBytes: number): DbInfo[][] {
   const batches: DbInfo[][] = [];
@@ -127,7 +138,7 @@ export async function GET(req: NextRequest) {
       timestamp: new Date().toISOString(),
       db_dir: DB_DIR,
       data_dir: DATA_DIR,
-      max_zip_mb: MAX_ZIP_BYTES / 1024 / 1024,
+      default_max_zip_mb: DEFAULT_MAX_ZIP_MB,
       databases: dbs,
       archives,
       summary: {
@@ -147,16 +158,19 @@ export async function GET(req: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // POST /api/admin/db-backup
-// Body: { upload_to_github?: boolean, prune_older_than_days?: number }
-//
-// Compresses each batch of DBs into a sub-60MB zip archive inside /data,
-// then optionally commits + pushes those archives to GitHub under the
-// data/ folder (uses `git add -f` because data/*.zip is gitignored).
+// Body: {
+//   upload_to_github?: boolean;
+//   prune_older_than_days?: number;
+//   selected_dbs?: string[];
+//   max_part_size_mb?: number;
+// }
 // ---------------------------------------------------------------------------
 
 interface PostBody {
   upload_to_github?: boolean;
   prune_older_than_days?: number;
+  selected_dbs?: string[];
+  max_part_size_mb?: number;
 }
 
 interface BackupResult {
@@ -168,7 +182,7 @@ interface BackupResult {
 }
 
 async function runGit(args: string[], cwd: string): Promise<{ stdout: string; stderr: string }> {
-  return execFileAsync('git', args, { cwd, maxBuffer: 10 * 1024 * 1024, timeout: 30_000 });
+  return execFileAsync('git', args, { cwd, maxBuffer: 20 * 1024 * 1024, timeout: 60_000 });
 }
 
 export async function POST(req: NextRequest) {
@@ -179,16 +193,30 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as PostBody;
     const uploadToGithub = body.upload_to_github === true;
     const pruneOlderThanDays = Math.max(0, Number(body.prune_older_than_days) || 0);
+    const maxPartSizeMb = Math.max(10, Math.min(95, Number(body.max_part_size_mb) || DEFAULT_MAX_ZIP_MB));
+    const maxZipBytes = maxPartSizeMb * 1024 * 1024;
 
     // Ensure data dir exists
     if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
-    const dbs = listDbFiles();
+    let dbs = listDbFiles();
     if (dbs.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'لا توجد قواعد بيانات للنسخ الاحتياطي (مجلد db/ فارغ).',
       }, { status: 400 });
+    }
+
+    // Filter by selected_dbs if provided
+    if (Array.isArray(body.selected_dbs) && body.selected_dbs.length > 0) {
+      const selectedSet = new Set(body.selected_dbs);
+      dbs = dbs.filter(d => selectedSet.has(d.name));
+      if (dbs.length === 0) {
+        return NextResponse.json({
+          success: false,
+          error: 'لم يتم العثور على أي من قواعد البيانات المحددة في مجلد db/.',
+        }, { status: 400 });
+      }
     }
 
     // Optional pruning of old archives before creating new ones
@@ -203,7 +231,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const batches = chunkDbs(dbs, MAX_ZIP_BYTES);
+    const batches = chunkDbs(dbs, maxZipBytes);
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const createdArchives: BackupResult[] = [];
     const errors: string[] = [];
@@ -216,11 +244,10 @@ export async function POST(req: NextRequest) {
 
       const dbNames = batch.map(b => b.name);
       try {
-        // -j: junk paths (store just the file basename) so the archive
-        // entries are clean (db/foo.db rather than absolute /home/...).
+        // -j: junk paths (store just the file basename)
         await execFileAsync('zip', ['-j', '-q', '-y', archivePath, ...batch.map(b => b.path)], {
           maxBuffer: 50 * 1024 * 1024,
-          timeout: 60_000,
+          timeout: 120_000,
         });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -233,19 +260,53 @@ export async function POST(req: NextRequest) {
         errors.push(`الملف ${archiveName} لم يُنشأ`);
         continue;
       }
-      if (st.size > MAX_ZIP_BYTES) {
-        try { unlinkSync(archivePath); } catch { /* ignore */ }
-        errors.push(`الأرشيف ${archiveName} تجاوز 60MB (${(st.size / 1024 / 1024).toFixed(1)}MB) وتم حذفه.`);
-        continue;
-      }
 
-      createdArchives.push({
-        archive_name: archiveName,
-        archive_path: archivePath,
-        size_bytes: st.size,
-        size_mb: (st.size / 1024 / 1024).toFixed(2),
-        included_dbs: dbNames,
-      });
+      // If compressed archive exceeds chosen maxPartSizeMb, split it into chunks
+      if (st.size > maxZipBytes) {
+        try {
+          const chunkPrefix = archivePath.replace(/\.zip$/, '_split_');
+          await execFileAsync('split', [
+            '-b', `${maxZipBytes}`,
+            '-d',
+            '-a', '2',
+            '--additional-suffix=.zip.part',
+            archivePath,
+            chunkPrefix,
+          ], { timeout: 120_000 });
+
+          // Remove the oversized parent zip
+          unlinkSync(archivePath);
+
+          // Find generated part files
+          const prefixBase = basename(chunkPrefix);
+          const partFiles = readdirSync(DATA_DIR)
+            .filter(f => f.startsWith(prefixBase) && f.endsWith('.zip.part'))
+            .sort();
+
+          for (const pFile of partFiles) {
+            const pPath = join(DATA_DIR, pFile);
+            const pSt = statSync(pPath);
+            createdArchives.push({
+              archive_name: pFile,
+              archive_path: pPath,
+              size_bytes: pSt.size,
+              size_mb: (pSt.size / 1024 / 1024).toFixed(2),
+              included_dbs: dbNames,
+            });
+          }
+        } catch (splitErr) {
+          const splitMsg = splitErr instanceof Error ? splitErr.message : String(splitErr);
+          errors.push(`فشل تجزئة الأرشيف الكبير ${archiveName}: ${splitMsg}`);
+        }
+      } else {
+        createdArchives.push({
+          archive_name: archiveName,
+          archive_path: archivePath,
+          size_bytes: st.size,
+          size_mb: (st.size / 1024 / 1024).toFixed(2),
+          included_dbs: dbNames,
+        });
+      }
     }
 
     // Optional GitHub upload
@@ -259,7 +320,7 @@ export async function POST(req: NextRequest) {
         const addArgs = ['-f', 'add', ...createdArchives.map(a => `data/${a.archive_name}`)];
         await runGit(addArgs, cwd);
 
-        const commitMsg = `chore(backup): DB snapshot ${stamp} (${createdArchives.length} archive${createdArchives.length > 1 ? 's' : ''})`;
+        const commitMsg = `chore(backup): DB snapshot ${stamp} (${createdArchives.length} file${createdArchives.length > 1 ? 's' : ''})`;
         try {
           await runGit(['commit', '-m', commitMsg], cwd);
           gitResult.committed = true;
@@ -270,7 +331,7 @@ export async function POST(req: NextRequest) {
         try {
           await runGit(['push', 'origin', 'HEAD'], cwd);
           gitResult.pushed = true;
-          gitResult.message = `تم رفع ${createdArchives.length} أرشيف إلى GitHub بنجاح.`;
+          gitResult.message = `تم رفع ${createdArchives.length} ملف أرشيف إلى GitHub بنجاح.`;
         } catch (e) {
           gitResult.message = `push failed: ${e instanceof Error ? e.message.slice(0, 200) : 'unknown'}`;
         }
@@ -283,13 +344,107 @@ export async function POST(req: NextRequest) {
       success: true,
       timestamp: new Date().toISOString(),
       stamp,
+      max_part_size_mb: maxPartSizeMb,
+      selected_count: dbs.length,
       archives: createdArchives,
       summary: {
         total_archives_created: createdArchives.length,
-        total_db_files: dbs.length,
+        total_db_files_backed_up: dbs.length,
         pruned_old_archives: prunedCount,
       },
       git: gitResult,
+      errors,
+    });
+  } catch (e) {
+    return NextResponse.json({
+      success: false,
+      error: e instanceof Error ? e.message : 'Unknown error',
+    }, { status: 500 });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/admin/db-backup
+// Body: { target_type: 'database' | 'archive', file_names: string[] }
+// ---------------------------------------------------------------------------
+
+interface DeleteBody {
+  target_type: 'database' | 'archive';
+  file_names: string[];
+}
+
+export async function DELETE(req: NextRequest) {
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
+
+  try {
+    const body = (await req.json().catch(() => ({}))) as DeleteBody;
+    const { target_type, file_names } = body;
+
+    if (!target_type || !Array.isArray(file_names) || file_names.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'طلب غير صالح. يجب تحديد نوع الهدف وقائمة بأسماء الملفات المراد حذفها.',
+      }, { status: 400 });
+    }
+
+    const baseDir = target_type === 'database' ? DB_DIR : DATA_DIR;
+    const deletedFiles: string[] = [];
+    let freedBytes = 0;
+    const errors: string[] = [];
+
+    for (const rawName of file_names) {
+      const fileName = basename(rawName.trim());
+      if (!fileName || fileName.includes('/') || fileName.includes('\\') || fileName.includes('..')) {
+        errors.push(`اسم ملف غير صالح: ${rawName}`);
+        continue;
+      }
+
+      const filePath = join(baseDir, fileName);
+      if (!existsSync(filePath)) {
+        errors.push(`الملف غير موجود: ${fileName}`);
+        continue;
+      }
+
+      try {
+        const st = statSync(filePath);
+        if (!st.isFile()) {
+          errors.push(`المسار ليس ملفاً عادياً: ${fileName}`);
+          continue;
+        }
+
+        freedBytes += st.size;
+        unlinkSync(filePath);
+        deletedFiles.push(fileName);
+
+        // If deleting a SQLite database, also remove sidecar files (-shm, -wal, -journal)
+        if (target_type === 'database' && fileName.endsWith('.db')) {
+          const sidecars = [`${fileName}-shm`, `${fileName}-wal`, `${fileName}-journal`];
+          for (const sc of sidecars) {
+            const scPath = join(baseDir, sc);
+            if (existsSync(scPath)) {
+              try {
+                const scSt = statSync(scPath);
+                freedBytes += scSt.size;
+                unlinkSync(scPath);
+              } catch {
+                // ignore sidecar cleanup errors
+              }
+            }
+          }
+        }
+      } catch (err) {
+        errors.push(`فشل حذف ${fileName}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      target_type,
+      deleted_count: deletedFiles.length,
+      deleted_files: deletedFiles,
+      freed_bytes: freedBytes,
+      freed_mb: (freedBytes / 1024 / 1024).toFixed(2),
       errors,
     });
   } catch (e) {

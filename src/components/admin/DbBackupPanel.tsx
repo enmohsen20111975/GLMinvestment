@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Database, HardDrive, Upload, RefreshCw, Loader2, Archive,
   CheckCircle2, AlertCircle, Trash2, Github, FileArchive,
+  Layers, CheckSquare, Square, AlertTriangle, ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -26,6 +29,7 @@ interface DbInfo {
   size_bytes: number;
   size_mb: string;
   modified: string | null;
+  is_core?: boolean;
 }
 
 interface BackupArchive {
@@ -34,6 +38,7 @@ interface BackupArchive {
   size_bytes: number;
   size_mb: string;
   created: string | null;
+  is_part?: boolean;
 }
 
 interface BackupResponse {
@@ -46,13 +51,15 @@ interface BackupResponse {
     total_size_mb: string;
     total_archives: number;
   };
-  max_zip_mb: number;
+  default_max_zip_mb?: number;
   timestamp: string;
 }
 
 interface PostResult {
   success: boolean;
   stamp: string;
+  max_part_size_mb?: number;
+  selected_count?: number;
   archives: Array<{
     archive_name: string;
     size_bytes: number;
@@ -61,7 +68,7 @@ interface PostResult {
   }>;
   summary: {
     total_archives_created: number;
-    total_db_files: number;
+    total_db_files_backed_up: number;
     pruned_old_archives: number;
   };
   git: {
@@ -72,6 +79,37 @@ interface PostResult {
   errors: string[];
   error?: string;
 }
+
+interface DeleteResult {
+  success: boolean;
+  target_type: 'database' | 'archive';
+  deleted_count: number;
+  deleted_files: string[];
+  freed_bytes: number;
+  freed_mb: string;
+  errors: string[];
+  error?: string;
+}
+
+interface DeleteModalState {
+  open: boolean;
+  targetType: 'database' | 'archive';
+  fileNames: string[];
+  totalMb: string;
+  hasCore: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Constants                                                         */
+/* ------------------------------------------------------------------ */
+
+const CHUNK_SIZE_OPTIONS = [
+  { value: 25, label: '25 MB' },
+  { value: 50, label: '50 MB' },
+  { value: 60, label: '60 MB (موصى به)', isDefault: true },
+  { value: 80, label: '80 MB' },
+  { value: 95, label: '95 MB (حد أقصى لـ GitHub)' },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -86,13 +124,6 @@ function formatRelative(iso: string | null): string {
   return `منذ ${Math.floor(diffMs / 86_400_000)} يوم`;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
@@ -100,18 +131,40 @@ function formatBytes(bytes: number): string {
 export function DbBackupPanel() {
   const [data, setData] = useState<BackupResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [zipping, setZipping] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadToGithub, setUploadToGithub] = useState(true);
-  const [pruneOld, setPruneOld] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState('');
 
+  // Form options
+  const [selectedDbs, setSelectedDbs] = useState<Set<string>>(new Set());
+  const [maxPartSizeMb, setMaxPartSizeMb] = useState<number>(60);
+  const [uploadToGithub, setUploadToGithub] = useState<boolean>(true);
+  const [pruneOld, setPruneOld] = useState<boolean>(false);
+
+  // Deletion modal
+  const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null);
+
+  // 1. Fetch data
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/db-backup', { credentials: 'same-origin' });
       const json: BackupResponse | { success: false; error: string } = await res.json();
       if (json.success) {
-        setData(json as BackupResponse);
+        const resp = json as BackupResponse;
+        setData(resp);
+        // By default, select all databases if selection is empty
+        setSelectedDbs((prev) => {
+          if (prev.size === 0) {
+            return new Set(resp.databases.map((d) => d.name));
+          }
+          // Filter out deleted dbs
+          const currentNames = new Set(resp.databases.map((d) => d.name));
+          const next = new Set<string>();
+          for (const name of prev) {
+            if (currentNames.has(name)) next.add(name);
+          }
+          return next;
+        });
       } else {
         toast.error((json as { error: string }).error || 'فشل تحميل قائمة القواعد');
       }
@@ -126,194 +179,423 @@ export function DbBackupPanel() {
     fetchData();
   }, [fetchData]);
 
-  const handleBackup = async () => {
-    setZipping(true);
-    try {
-      const res = await fetch('/api/admin/db-backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          upload_to_github: false, // backup only — separate upload step
-          prune_older_than_days: pruneOld ? 30 : 0,
-        }),
-      });
-      const json: PostResult = await res.json();
-      if (json.success) {
-        const created = json.archives?.length || 0;
-        if (created > 0) {
-          toast.success(`تم إنشاء ${created} أرشيف (${json.archives.reduce((s, a) => s + a.size_bytes, 0) / 1024 / 1024 | 0} MB).`);
-        } else {
-          toast.info('لم يُنشأ أي أرشيف — تحقق من السجل.');
-        }
-        if (json.errors?.length) {
-          for (const err of json.errors.slice(0, 3)) {
-            toast.error(err, { duration: 8000 });
-          }
-        }
-        fetchData();
-      } else {
-        toast.error(json.error || 'فشل إنشاء النسخة الاحتياطية');
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال');
-    } finally {
-      setZipping(false);
-    }
-  };
-
-  const handleUploadToGithub = async () => {
-    setUploading(true);
-    try {
-      // Run a backup AND push it in one shot (the endpoint handles git add+commit+push)
-      const res = await fetch('/api/admin/db-backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          upload_to_github: true,
-          prune_older_than_days: pruneOld ? 30 : 0,
-        }),
-      });
-      const json: PostResult = await res.json();
-      if (json.success) {
-        const created = json.archives?.length || 0;
-        if (created > 0) {
-          toast.success(`تم إنشاء ${created} أرشيف ورفعها على GitHub.`);
-        }
-        if (json.git?.pushed) {
-          toast.success('تم الرفع على GitHub بنجاح.', {
-            description: json.git.message,
-          });
-        } else if (json.git?.committed) {
-          toast.warning('تم الالتزام (commit) ولكن فشل الرفع (push).', {
-            description: json.git.message,
-            duration: 8000,
-          });
-        } else {
-          toast.warning('لم يتم الالتزام أو الرفع.', {
-            description: json.git?.message,
-            duration: 8000,
-          });
-        }
-        if (json.errors?.length) {
-          for (const err of json.errors.slice(0, 3)) {
-            toast.error(err, { duration: 8000 });
-          }
-        }
-        fetchData();
-      } else {
-        toast.error(json.error || 'فشل الرفع على GitHub');
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const dbs = data?.databases ?? [];
   const archives = data?.archives ?? [];
-  const totalSizeMb = parseFloat(data?.summary.total_size_mb || '0');
-  const busy = zipping || uploading;
+
+  // Selected summary calculations
+  const selectedSummary = useMemo(() => {
+    let bytes = 0;
+    let count = 0;
+    for (const db of dbs) {
+      if (selectedDbs.has(db.name)) {
+        bytes += db.size_bytes;
+        count++;
+      }
+    }
+    return {
+      count,
+      bytes,
+      mb: (bytes / 1024 / 1024).toFixed(1),
+    };
+  }, [dbs, selectedDbs]);
+
+  // Selection handlers
+  const handleToggleDb = (name: string) => {
+    setSelectedDbs((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedDbs(new Set(dbs.map((d) => d.name)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedDbs(new Set());
+  };
+
+  const handleSelectCoreOnly = () => {
+    const core = dbs.filter((d) => d.is_core).map((d) => d.name);
+    setSelectedDbs(new Set(core));
+    toast.info(`تم تحديد ${core.length} قواعد بيانات أساسية للنظام`);
+  };
+
+  const handleSelectNonCore = () => {
+    const nonCore = dbs.filter((d) => !d.is_core).map((d) => d.name);
+    setSelectedDbs(new Set(nonCore));
+    toast.info(`تم تحديد ${nonCore.length} قواعد بيانات إضافية أو قديمة`);
+  };
+
+  // 2. Backup Action
+  const handleExecuteBackup = async (pushToGithub: boolean) => {
+    if (selectedDbs.size === 0) {
+      toast.error('يرجى تحديد قاعدة بيانات واحدة على الأقل للنسخ الاحتياطي');
+      return;
+    }
+
+    setBusy(true);
+    setBusyLabel(pushToGithub ? 'جاري الضغط والتجزئة والرفع إلى GitHub...' : 'جاري ضغط وتجزئة القواعد المحددة...');
+
+    try {
+      const res = await fetch('/api/admin/db-backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          upload_to_github: pushToGithub,
+          prune_older_than_days: pruneOld ? 30 : 0,
+          selected_dbs: Array.from(selectedDbs),
+          max_part_size_mb: maxPartSizeMb,
+        }),
+      });
+
+      const json: PostResult = await res.json();
+      if (json.success) {
+        const created = json.archives?.length || 0;
+        const totalMb = json.archives?.reduce((s, a) => s + a.size_bytes, 0) / 1024 / 1024;
+
+        if (created > 0) {
+          toast.success(`تم إنشاء ${created} ملف أرشيف (الحجم الإجمالي: ${totalMb.toFixed(1)} MB) بمقاس أقصى ${maxPartSizeMb} MB`);
+        }
+
+        if (pushToGithub) {
+          if (json.git?.pushed) {
+            toast.success('تم رفع جميع الأرشيفات إلى GitHub بنجاح', {
+              description: json.git.message,
+            });
+          } else if (json.git?.committed) {
+            toast.warning('تم حفظ الـ Commit محلياً ولكن تعذر الرفع (push)', {
+              description: json.git.message,
+            });
+          } else {
+            toast.warning(json.git?.message || 'لم يكتمل الرفع إلى GitHub');
+          }
+        }
+
+        if (json.errors?.length) {
+          for (const err of json.errors.slice(0, 3)) {
+            toast.error(err, { duration: 8000 });
+          }
+        }
+
+        fetchData();
+      } else {
+        toast.error(json.error || 'فشلت عملية النسخ الاحتياطي');
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
+    } finally {
+      setBusy(false);
+      setBusyLabel('');
+    }
+  };
+
+  // 3. Deletion Modal Trigger
+  const openDeleteModalForSingle = (db: DbInfo) => {
+    setDeleteModal({
+      open: true,
+      targetType: 'database',
+      fileNames: [db.name],
+      totalMb: db.size_mb,
+      hasCore: !!db.is_core,
+    });
+  };
+
+  const openDeleteModalForSelected = () => {
+    if (selectedDbs.size === 0) {
+      toast.error('يرجى تحديد قواعد بيانات لحذفها');
+      return;
+    }
+    const files = dbs.filter((d) => selectedDbs.has(d.name));
+    const totalBytes = files.reduce((s, f) => s + f.size_bytes, 0);
+    const hasCore = files.some((f) => f.is_core);
+
+    setDeleteModal({
+      open: true,
+      targetType: 'database',
+      fileNames: files.map((f) => f.name),
+      totalMb: (totalBytes / 1024 / 1024).toFixed(1),
+      hasCore,
+    });
+  };
+
+  const openDeleteModalForArchive = (arc: BackupArchive) => {
+    setDeleteModal({
+      open: true,
+      targetType: 'archive',
+      fileNames: [arc.name],
+      totalMb: arc.size_mb,
+      hasCore: false,
+    });
+  };
+
+  const openDeleteModalForAllArchives = () => {
+    if (archives.length === 0) return;
+    const totalBytes = archives.reduce((s, a) => s + a.size_bytes, 0);
+    setDeleteModal({
+      open: true,
+      targetType: 'archive',
+      fileNames: archives.map((a) => a.name),
+      totalMb: (totalBytes / 1024 / 1024).toFixed(1),
+      hasCore: false,
+    });
+  };
+
+  // Execute Deletion
+  const handleConfirmDelete = async () => {
+    if (!deleteModal || deleteModal.fileNames.length === 0) return;
+
+    setBusy(true);
+    setBusyLabel(`جاري حذف ${deleteModal.fileNames.length} ملف...`);
+
+    try {
+      const res = await fetch('/api/admin/db-backup', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          target_type: deleteModal.targetType,
+          file_names: deleteModal.fileNames,
+        }),
+      });
+
+      const json: DeleteResult = await res.json();
+      if (json.success) {
+        toast.success(`تم حذف ${json.deleted_count} ملف بنجاح، وتم تحرير ${json.freed_mb} MB من مساحة التخزين.`);
+        if (json.errors?.length) {
+          for (const err of json.errors) {
+            toast.error(err);
+          }
+        }
+        setDeleteModal(null);
+        fetchData();
+      } else {
+        toast.error(json.error || 'فشلت عملية الحذف');
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'خطأ في الاتصال بالخادم');
+    } finally {
+      setBusy(false);
+      setBusyLabel('');
+    }
+  };
+
+  const isAllSelected = dbs.length > 0 && selectedDbs.size === dbs.length;
 
   return (
-    <div className="space-y-4" dir="rtl">
-      {/* Header + Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Archive className="w-5 h-5 text-emerald-500" />
-            النسخ الاحتياطي لقواعد البيانات + رفع GitHub
-          </CardTitle>
-          <CardDescription>
-            ضغط كل ملفات <code className="text-xs bg-muted px-1 rounded">db/*.db</code> في أرشيفات ZIP لا تتجاوز 60MB،
-            ثم رفعها إلى <code className="text-xs bg-muted px-1 rounded">data/</code> على GitHub.
-          </CardDescription>
+    <div className="space-y-5" dir="rtl">
+      {/* Header & Main Control Card */}
+      <Card className="border-border/70 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2.5">
+                <Archive className="w-6 h-6 text-emerald-500" />
+                النسخ الاحتياطي لقواعد البيانات وإدارتها + رفع GitHub
+              </CardTitle>
+              <CardDescription className="text-sm mt-1">
+                تحديد القواعد المراد نسخها أو مسحها، وتجزئة الأرشيفات الكبيرة تلقائياً لتفادي حدود GitHub.
+              </CardDescription>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={fetchData}
+                disabled={loading || busy}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                تحديث
+              </Button>
+            </div>
+          </div>
         </CardHeader>
+
         <CardContent className="space-y-4">
-          {/* Options */}
-          <div className="flex flex-wrap items-center gap-4 text-sm">
+          {/* Chunk Size Selector */}
+          <div className="p-3.5 rounded-lg bg-muted/40 border border-border/60 space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <label className="text-sm font-semibold flex items-center gap-2">
+                <Layers className="w-4 h-4 text-sky-500" />
+                أقصى حجم للملف المضغوط (تجزئة الأرشيفات الكبيرة):
+              </label>
+              <span className="text-xs text-muted-foreground">
+                (الملفات الضخمة مثل 1.6GB يتم تقسيمها تلقائياً لأجزاء تحت هذا الحد)
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {CHUNK_SIZE_OPTIONS.map((opt) => {
+                const active = maxPartSizeMb === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setMaxPartSizeMb(opt.value)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-md text-xs font-medium transition-all border',
+                      active
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-background hover:bg-muted text-foreground border-border'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Options & Settings */}
+          <div className="flex flex-wrap items-center gap-6 text-sm pt-1">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={uploadToGithub}
                 onCheckedChange={(v) => setUploadToGithub(v === true)}
               />
-              <span>رفع على GitHub بعد الضغط</span>
+              <span className="font-medium">رفع على GitHub مباشرة بعد الضغط</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={pruneOld}
                 onCheckedChange={(v) => setPruneOld(v === true)}
               />
-              <span>حذف النسخ الأقدم من 30 يوم</span>
+              <span className="text-muted-foreground">حذف النسخ القديمة في data/ الأقدم من 30 يوماً</span>
             </label>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-2">
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-2 border-t border-border/40">
             <Button
-              onClick={uploadToGithub ? handleUploadToGithub : handleBackup}
-              disabled={busy}
-              className="gap-2"
+              onClick={() => handleExecuteBackup(uploadToGithub)}
+              disabled={busy || selectedDbs.size === 0}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
               {busy
-                ? (uploading ? 'جاري الرفع على GitHub...' : 'جاري الضغط...')
-                : (uploadToGithub ? 'ضغط + رفع على GitHub' : 'ضغط قواعد البيانات فقط')}
+                ? busyLabel
+                : uploadToGithub
+                  ? `ضغط (${selectedSummary.count}) قواعد ورفعها لـ GitHub`
+                  : `ضغط (${selectedSummary.count}) قواعد فقط`}
             </Button>
+
+            {!uploadToGithub && (
+              <Button
+                onClick={() => handleExecuteBackup(true)}
+                disabled={busy || selectedDbs.size === 0}
+                variant="outline"
+                className="gap-2"
+              >
+                <Github className="w-4 h-4 text-violet-500" />
+                ضغط + رفع على GitHub
+              </Button>
+            )}
+
             <Button
-              onClick={fetchData}
-              disabled={loading}
-              variant="outline"
-              className="gap-2"
+              onClick={openDeleteModalForSelected}
+              disabled={busy || selectedDbs.size === 0}
+              variant="destructive"
+              className="gap-2 mr-auto"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              تحديث القائمة
+              <Trash2 className="w-4 h-4" />
+              حذف القواعد المحددة ({selectedSummary.count})
             </Button>
           </div>
 
-          {/* Summary */}
+          {/* Summary Cards */}
           {data && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
               <SummaryStat
                 icon={<Database className="w-4 h-4 text-emerald-500" />}
-                label="قواعد البيانات"
-                value={data.summary.total_dbs.toString()}
+                label="إجمالي قواعد البيانات"
+                value={`${data.summary.total_dbs} قاعدة`}
+                subValue={`${parseFloat(data.summary.total_size_mb).toFixed(1)} MB الكلي`}
               />
               <SummaryStat
-                icon={<HardDrive className="w-4 h-4 text-sky-500" />}
-                label="الحجم الكلي"
-                value={`${totalSizeMb.toFixed(1)} MB`}
+                icon={<CheckSquare className="w-4 h-4 text-sky-500" />}
+                label="القواعد المحددة للعمليات"
+                value={`${selectedSummary.count} من ${dbs.length}`}
+                subValue={`الحجم: ${selectedSummary.mb} MB`}
+              />
+              <SummaryStat
+                icon={<Layers className="w-4 h-4 text-indigo-500" />}
+                label="أقصى حجم للتجزئة"
+                value={`${maxPartSizeMb} MB`}
+                subValue="حد أمان GitHub"
               />
               <SummaryStat
                 icon={<FileArchive className="w-4 h-4 text-amber-500" />}
-                label="الأرشيفات الموجودة"
-                value={data.summary.total_archives.toString()}
-              />
-              <SummaryStat
-                icon={<Github className="w-4 h-4 text-violet-500" />}
-                label="حد الأرشيف الواحد"
-                value={`${data.max_zip_mb} MB`}
+                label="الأرشيفات في data/"
+                value={`${data.summary.total_archives} أرشيف`}
+                subValue="جاهزة أو مرفوعة"
               />
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* DB list */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Database className="w-4 h-4 text-emerald-500" />
-            قواعد البيانات ({dbs.length})
-          </CardTitle>
+      {/* Database Files Table */}
+      <Card className="border-border/70 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="w-4 h-4 text-emerald-500" />
+                قواعد البيانات المتاحة ({dbs.length})
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                اختر القواعد المراد نسخها احتياطياً أو احذف الملفات القديمة غير المستخدمة.
+              </CardDescription>
+            </div>
+
+            {/* Selection Quick Buttons */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={isAllSelected ? handleDeselectAll : handleSelectAll}
+                className="h-8 text-xs gap-1.5"
+              >
+                {isAllSelected ? <Square className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />}
+                {isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectCoreOnly}
+                className="h-8 text-xs text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40"
+              >
+                الأساسية فقط
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleSelectNonCore}
+                className="h-8 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+              >
+                غير الأساسية / القديمة
+              </Button>
+            </div>
+          </div>
         </CardHeader>
+
         <CardContent>
           {loading && dbs.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-11 w-full" />
               ))}
             </div>
           ) : dbs.length === 0 ? (
@@ -321,36 +603,85 @@ export function DbBackupPanel() {
               لا توجد قواعد بيانات في مجلد <code className="text-xs bg-muted px-1 rounded">db/</code>
             </div>
           ) : (
-            <div className="max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="max-h-[460px] overflow-y-auto border rounded-md [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-background z-10">
-                  <tr className="text-right border-b">
-                    <th className="p-2 font-medium">اسم الملف</th>
-                    <th className="p-2 font-medium">الحجم</th>
-                    <th className="p-2 font-medium">آخر تعديل</th>
-                    <th className="p-2 font-medium">الحالة</th>
+                <thead className="sticky top-0 bg-muted/80 backdrop-blur z-10 border-b">
+                  <tr className="text-right">
+                    <th className="p-2.5 w-10 text-center">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={(v) => (v ? handleSelectAll() : handleDeselectAll())}
+                        aria-label="تحديد الكل"
+                      />
+                    </th>
+                    <th className="p-2.5 font-medium">اسم قاعدة البيانات</th>
+                    <th className="p-2.5 font-medium">الحجم</th>
+                    <th className="p-2.5 font-medium">النوع</th>
+                    <th className="p-2.5 font-medium">آخر تعديل</th>
+                    <th className="p-2.5 font-medium text-center">الإجراءات</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/40">
                   {dbs.map((db) => {
                     const sizeMb = parseFloat(db.size_mb);
-                    const isLarge = sizeMb > 50;
+                    const isHuge = sizeMb > 200;
+                    const isMedium = sizeMb > 50 && !isHuge;
+                    const isSelected = selectedDbs.has(db.name);
+
                     return (
-                      <tr key={db.name} className="border-b hover:bg-muted/30">
-                        <td className="p-2 font-mono text-xs" dir="ltr">{db.name}</td>
-                        <td className="p-2 whitespace-nowrap">
-                          <span className={cn('font-medium', isLarge ? 'text-amber-600' : '')}>
-                            {db.size_mb} MB
+                      <tr
+                        key={db.name}
+                        onClick={() => handleToggleDb(db.name)}
+                        className={cn(
+                          'hover:bg-muted/40 cursor-pointer transition-colors',
+                          isSelected && 'bg-emerald-500/5 dark:bg-emerald-500/10'
+                        )}
+                      >
+                        <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => handleToggleDb(db.name)}
+                            aria-label={`تحديد ${db.name}`}
+                          />
+                        </td>
+                        <td className="p-2.5 font-mono text-xs font-semibold" dir="ltr">
+                          {db.name}
+                        </td>
+                        <td className="p-2.5 whitespace-nowrap">
+                          <span
+                            className={cn(
+                              'font-medium text-xs',
+                              isHuge ? 'text-red-500 font-bold' : isMedium ? 'text-amber-500 font-bold' : ''
+                            )}
+                          >
+                            {sizeMb > 1024 ? `${(sizeMb / 1024).toFixed(2)} GB` : `${db.size_mb} MB`}
                           </span>
                         </td>
-                        <td className="p-2 text-xs text-muted-foreground whitespace-nowrap">
+                        <td className="p-2.5 whitespace-nowrap">
+                          {db.is_core ? (
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px]">
+                              أساسية للنظام
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[11px] text-muted-foreground">
+                              إضافية / أرشيف
+                            </Badge>
+                          )}
+                        </td>
+                        <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">
                           {formatRelative(db.modified)}
                         </td>
-                        <td className="p-2">
-                          <Badge variant="outline" className="gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            متاح
-                          </Badge>
+                        <td className="p-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openDeleteModalForSingle(db)}
+                            className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                            title="حذف قاعدة البيانات"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -362,39 +693,82 @@ export function DbBackupPanel() {
         </CardContent>
       </Card>
 
-      {/* Existing archives */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileArchive className="w-4 h-4 text-amber-500" />
-            الأرشيفات الموجودة في <code className="text-xs bg-muted px-1 rounded">data/</code> ({archives.length})
-          </CardTitle>
+      {/* Existing Archives Table in data/ */}
+      <Card className="border-border/70 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileArchive className="w-4 h-4 text-amber-500" />
+              الأرشيفات الموجودة في <code className="text-xs bg-muted px-1 rounded">data/</code> ({archives.length})
+            </CardTitle>
+            {archives.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={openDeleteModalForAllArchives}
+                className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-200 dark:border-red-900"
+              >
+                <Trash2 className="w-3 h-3 ml-1" />
+                حذف كل الأرشيفات
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {archives.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              لا توجد أرشيفات بعد. اضغط &quot;ضغط قواعد البيانات&quot; للبدء.
+            <div className="text-center py-6 text-muted-foreground text-sm">
+              <AlertCircle className="w-7 h-7 mx-auto mb-1.5 opacity-50 text-amber-500" />
+              لا توجد ملفات أرشيف في <code className="text-xs bg-muted px-1 rounded">data/</code>. اضغط زر الضغط بالأعلى لإنشاء نسخة جديدة.
             </div>
           ) : (
-            <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div className="max-h-64 overflow-y-auto border rounded-md [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-muted-foreground/30 [&::-webkit-scrollbar-thumb]:rounded-full">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-background z-10">
-                  <tr className="text-right border-b">
-                    <th className="p-2 font-medium">اسم الأرشيف</th>
-                    <th className="p-2 font-medium">الحجم</th>
-                    <th className="p-2 font-medium">تاريخ الإنشاء</th>
+                <thead className="sticky top-0 bg-muted/80 backdrop-blur z-10 border-b">
+                  <tr className="text-right">
+                    <th className="p-2.5 font-medium">اسم الأرشيف</th>
+                    <th className="p-2.5 font-medium">الحجم</th>
+                    <th className="p-2.5 font-medium">النوع</th>
+                    <th className="p-2.5 font-medium">تاريخ الإنشاء</th>
+                    <th className="p-2.5 font-medium text-center">حذف</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/40">
                   {archives.map((arc) => (
-                    <tr key={arc.name} className="border-b hover:bg-muted/30">
-                      <td className="p-2 font-mono text-xs" dir="ltr">{arc.name}</td>
-                      <td className="p-2 whitespace-nowrap">
-                        <Badge variant="secondary">{arc.size_mb} MB</Badge>
+                    <tr key={arc.name} className="hover:bg-muted/30 transition-colors">
+                      <td className="p-2.5 font-mono text-xs" dir="ltr">
+                        {arc.name}
                       </td>
-                      <td className="p-2 text-xs text-muted-foreground whitespace-nowrap">
+                      <td className="p-2.5 whitespace-nowrap">
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {arc.size_mb} MB
+                        </Badge>
+                      </td>
+                      <td className="p-2.5 whitespace-nowrap">
+                        {arc.is_part ? (
+                          <Badge variant="outline" className="text-[10px] text-sky-600 border-sky-400">
+                            جزء مجزأ (Part)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                            أرشيف كامل
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="p-2.5 text-xs text-muted-foreground whitespace-nowrap">
                         {formatRelative(arc.created)}
+                      </td>
+                      <td className="p-2.5 text-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteModalForArchive(arc)}
+                          className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                          title="حذف هذا الأرشيف"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -404,6 +778,65 @@ export function DbBackupPanel() {
           )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog for File Deletion */}
+      <Dialog open={!!deleteModal} onOpenChange={(open) => !open && setDeleteModal(null)}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              تأكيد حذف {deleteModal?.targetType === 'database' ? 'قواعد البيانات' : 'ملفات الأرشيف'}
+            </DialogTitle>
+            <DialogDescription className="text-sm pt-2">
+              هل أنت متأكد من رغبتك في حذف الملفات التالية؟ هذه العملية نهائية ولا يمكن التراجع عنها.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteModal?.hasCore && (
+            <div className="p-3 rounded-md bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-red-700 dark:text-red-400 text-xs leading-relaxed">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-red-600" />
+              <div>
+                <strong>تحذير أمني:</strong> تحتوي القائمة على قاعدة بيانات أساسية لنظام المنصة (مثل stocks.db أو auth.db أو price_history.db). حذفها قد يؤثر على تشغيل النظام إذا لم تكن تملك نسخة احتياطية!
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>الملفات المحددة ({deleteModal?.fileNames.length}):</span>
+              <span>المساحة المحررة: <strong>{deleteModal?.totalMb} MB</strong></span>
+            </div>
+            <div className="max-h-36 overflow-y-auto border rounded bg-muted/30 p-2 font-mono text-xs space-y-1" dir="ltr">
+              {deleteModal?.fileNames.map((f) => (
+                <div key={f} className="text-foreground/80 flex items-center justify-between">
+                  <span>• {f}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteModal(null)}
+              disabled={busy}
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={busy}
+              className="gap-2"
+            >
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              تأكيد الحذف نهائياً
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -412,10 +845,16 @@ export function DbBackupPanel() {
 /*  Small presentational helper                                       */
 /* ------------------------------------------------------------------ */
 
-function SummaryStat({ icon, label, value }: {
+function SummaryStat({
+  icon,
+  label,
+  value,
+  subValue,
+}: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  subValue?: string;
 }) {
   return (
     <div className="p-3 rounded-lg bg-muted/40 border border-border/50">
@@ -424,6 +863,7 @@ function SummaryStat({ icon, label, value }: {
         {icon}
       </div>
       <div className="text-lg font-bold">{value}</div>
+      {subValue && <div className="text-[11px] text-muted-foreground mt-0.5">{subValue}</div>}
     </div>
   );
 }
