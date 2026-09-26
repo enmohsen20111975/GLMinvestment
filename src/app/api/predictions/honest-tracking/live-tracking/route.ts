@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       FROM predictions
       WHERE 1=1 ${dayFilter} ${scoreFilter} ${protSql}
       ${market !== 'all' ? `AND market = '${market.toUpperCase()}'` : ''}
-      ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) ASC, outcome_date DESC, closed_at DESC, prediction_date DESC, master_score DESC
+      ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) DESC, prediction_date DESC, master_score DESC, outcome_date DESC, closed_at DESC
       LIMIT ${limit * 3}
     `;
 

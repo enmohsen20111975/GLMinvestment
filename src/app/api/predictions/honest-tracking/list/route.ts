@@ -363,7 +363,7 @@ export async function GET(request: NextRequest) {
         persona${targetPrice2Sel}${v40Sel}
       FROM predictions
       ${whereClause}
-      ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) ASC, outcome_date DESC, closed_at DESC, prediction_date DESC, master_score DESC, id DESC
+      ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) DESC, prediction_date DESC, master_score DESC, outcome_date DESC, closed_at DESC, id DESC
       LIMIT ${maxRows}
     `).all() as any[];
     db.close();

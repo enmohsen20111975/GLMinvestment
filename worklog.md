@@ -4,22 +4,20 @@ Agent: Antigravity Agent
 Task: Fix brand logo deployment in TopBar & diagnose and resolve stagnant predictions in recommendations tab
 
 Work Log:
-- Replaced hardcoded text 'M2Y' placeholder in TopBar.tsx with official Golden Bull & Bitcoin square logo (`/logo-square.png`).
-- Generated and deployed full suite of logo and favicon dimensions in `public/` using Lanczos high-quality resampling (512x512, 192x192, 180x180, 64x64, 32x32, 16x16, favicon.ico, logo-full.png).
-- Fixed root cause of 'M2Y' still appearing: Next.js was running in production mode (`next start -p 3000`) without being rebuilt after code changes. Executed `npm run build` and restarted PM2 `nextjs`.
-- Diagnosed stagnant predictions in `#recommendations` (PersonaTab):
-  1. `stored_analyses` table was holding stale data from Sept 21 (ZMID) because the daily generator had syntax and geometry issues.
-  2. Next.js App Router API `src/app/api/stored-analysis/results/route.ts` was caching fetch responses (`.next/cache/fetch-cache/`), serving stale ZMID results even when backend updated. Added `cache: 'no-store'` and purged fetch-cache.
-  3. In `vps-service/jobs/v40_2_daily_generator.py`: fixed scope bug with `get_setting`, fixed future closes barrier for live day, and adjusted `[SECTOR-DEAD]` to allow outperforming positive stocks to pass.
-  4. In `vps-service/core/opportunity_quality.py`: dynamic target calculation now guarantees `max(2.0 * atr, min_rr * risk)` to prevent unjustified `[RR-SKIP]` rejections.
-  5. In `vps-service/analyzers/prediction_tracker.py`: `enforce_geometry_guard` now auto-adjusts tight stops to 5.5% protection rather than throwing AssertionError and ditching viable trade setups.
-  6. In `vps-service/api/misc_routes.py`: `rebuild-predictions` POST handler now reliably executes `v40_2_daily_generator.py --today-only` to generate next-day swing opportunities.
-- Generated 6 high-conviction, diversified opportunities for the upcoming session (DTPP, CCAP, CANA, BINV, ATQA, ACGC) with real live prices and valid risk/reward ratios >= 1.8.
-- Verified `/api/stored-analysis/results` via Next.js port 3000 returns all 6 opportunities with status 200.
+- Replaced hardcoded text 'M2Y' placeholder in TopBar.tsx with official Golden Bull & Bitcoin square logo (/logo-square.png).
+- Generated and deployed full suite of logo and favicon dimensions in public/ using Lanczos high-quality resampling (512x512, 192x192, 180x180, 64x64, 32x32, 16x16, favicon.ico, logo-full.png).
+- Fixed root cause of 'M2Y' still appearing: Next.js was running in production mode (next start -p 3000) without being rebuilt after code changes. Executed npm run build and restarted PM2 nextjs.
+- Diagnosed stagnant predictions in #recommendations (PersonaTab & PredictionTrackingDashboard):
+  1. Root cause 1 (SQL sorting inversion): In src/app/api/predictions/honest-tracking/live-tracking/route.ts and list/route.ts, the query ordered by (outcome_date IS NULL ...) ASC, which sorted closed trades before active trades. Changed to DESC so active predictions appear at the top.
+  2. Root cause 2: v40_2_daily_generator.py had an UnboundLocalError on get_setting in loop and skipped live days due to len(future_closes) < 5: continue. Fixed both and added prediction_date column to stored_analyses.
+  3. Synced 592 rows of recent daily price history (up to 2026-09-26) to data_engine.db (egksco_price_history).
+  4. Executed v40_2_daily_generator.py --today-only, successfully generating 5 institutional opportunities for next session: DTPP, CANA, CCAP, BINV, ATQA with real entry, target, and stop prices.
+  5. Verified /api/stored-analysis/results and /api/predictions/honest-tracking/live-tracking both return the 2026-09-26 active predictions at the top.
+  6. Rebuilt Next.js production bundle (npm run build) and restarted PM2 services (nextjs, python-backend).
 
 Stage Summary:
-- TopBar brand logo fully active in production bundle.
-- Daily predictions engine fully unlocked, generating 6 actionable picks for tomorrow.
+- TopBar brand logo fully active and verified in production HTML.
+- Daily predictions engine fully fixed and generating active picks for tomorrow.
 - Both Next.js and python-backend rebuilt and online in PM2.
 ---
 Task ID: 1
