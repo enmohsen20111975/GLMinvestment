@@ -1,0 +1,3119 @@
+
+## db/auth.db
+Size: 0.2 MB | Modified: 2026-09-27T08:09:00.865Z | Tables: 13
+
+### Account
+Rows: 0
+Schema:
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+    CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)
+Indexes:
+  - sqlite_autoindex_Account_1: (auto-index)
+  - Account_provider_providerAccountId_key: CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId")
+Columns: id:TEXT(PK)!, userId:TEXT!, type:TEXT!, provider:TEXT!, providerAccountId:TEXT!, refresh_token:TEXT, access_token:TEXT, expires_at:INTEGER, token_type:TEXT, scope:TEXT, id_token:TEXT, session_state:TEXT
+
+### ExpertRecommendation
+Rows: 17
+Schema:
+CREATE TABLE ExpertRecommendation (
+            id TEXT PRIMARY KEY,
+            stock_symbol TEXT NOT NULL,
+            stock_name_ar TEXT,
+            expert_name TEXT NOT NULL,
+            action TEXT NOT NULL,
+            recommendation_type TEXT DEFAULT 'detailed',
+            entry_price REAL NOT NULL,
+            entry_price_from REAL,
+            entry_price_to REAL,
+            target_price REAL,
+            target_price_2 REAL,
+            investment_target REAL,
+            stop_loss REAL,
+            session_date TEXT,
+            status TEXT DEFAULT 'PENDING',
+            final_price REAL,
+            profit_loss_percent REAL,
+            hit_target INTEGER DEFAULT 0,
+            hit_stop_loss INTEGER DEFAULT 0,
+            notes TEXT,
+            recommendation_date TEXT DEFAULT (datetime('now')),
+            closed_at TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - sqlite_autoindex_ExpertRecommendation_1: (auto-index)
+Columns: id:TEXT(PK), stock_symbol:TEXT!, stock_name_ar:TEXT, expert_name:TEXT!, action:TEXT!, recommendation_type:TEXT, entry_price:REAL!, entry_price_from:REAL, entry_price_to:REAL, target_price:REAL, target_price_2:REAL, investment_target:REAL, stop_loss:REAL, session_date:TEXT, status:TEXT, final_price:REAL, profit_loss_percent:REAL, hit_target:INTEGER, hit_stop_loss:INTEGER, notes:TEXT, recommendation_date:TEXT, closed_at:TEXT, created_at:TEXT, updated_at:TEXT
+
+### ExpertTrackRecord
+Rows: 0
+Schema:
+CREATE TABLE ExpertTrackRecord (
+            id TEXT PRIMARY KEY,
+            expert_name TEXT NOT NULL UNIQUE,
+            total_recommendations INTEGER DEFAULT 0,
+            successful INTEGER DEFAULT 0,
+            stopped INTEGER DEFAULT 0,
+            pending INTEGER DEFAULT 0,
+            success_rate REAL DEFAULT 0,
+            avg_return REAL DEFAULT 0,
+            best_return REAL,
+            worst_return REAL,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - sqlite_autoindex_ExpertTrackRecord_1: (auto-index)
+  - sqlite_autoindex_ExpertTrackRecord_2: (auto-index)
+Columns: id:TEXT(PK), expert_name:TEXT!, total_recommendations:INTEGER, successful:INTEGER, stopped:INTEGER, pending:INTEGER, success_rate:REAL, avg_return:REAL, best_return:REAL, worst_return:REAL, created_at:TEXT, updated_at:TEXT
+
+### Post
+Rows: 0
+Schema:
+CREATE TABLE "Post" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "content" TEXT,
+    "published" BOOLEAN NOT NULL DEFAULT false,
+    "authorId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)
+Indexes:
+  - sqlite_autoindex_Post_1: (auto-index)
+Columns: id:TEXT(PK)!, title:TEXT!, content:TEXT, published:BOOLEAN!, authorId:TEXT!, createdAt:DATETIME!, updatedAt:DATETIME!
+
+### PromoCode
+Rows: 5
+Schema:
+CREATE TABLE PromoCode (id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL, max_uses INTEGER DEFAULT 1, current_uses INTEGER DEFAULT 0, expires_at DATETIME, premium_days INTEGER DEFAULT 30, plan_tier TEXT DEFAULT 'premium', is_active BOOLEAN DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, redeemed_by TEXT)
+Indexes:
+  - sqlite_autoindex_PromoCode_1: (auto-index)
+  - sqlite_autoindex_PromoCode_2: (auto-index)
+Columns: id:TEXT(PK), code:TEXT!, max_uses:INTEGER, current_uses:INTEGER, expires_at:DATETIME, premium_days:INTEGER, plan_tier:TEXT, is_active:BOOLEAN, created_at:DATETIME, updated_at:DATETIME, redeemed_by:TEXT
+
+### Session
+Rows: 0
+Schema:
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" DATETIME NOT NULL,
+    CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)
+Indexes:
+  - sqlite_autoindex_Session_1: (auto-index)
+  - Session_sessionToken_key: CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken")
+Columns: id:TEXT(PK)!, sessionToken:TEXT!, userId:TEXT!, expires:DATETIME!
+
+### SubscriptionPlan
+Rows: 3
+Schema:
+CREATE TABLE SubscriptionPlan (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    name_ar TEXT NOT NULL,
+    price REAL NOT NULL DEFAULT 0,
+    price_yearly REAL,
+    trial_days INTEGER NOT NULL DEFAULT 0,
+    features TEXT NOT NULL,
+    max_watchlist INTEGER NOT NULL DEFAULT 5,
+    max_portfolio INTEGER NOT NULL DEFAULT 3,
+    max_alerts INTEGER NOT NULL DEFAULT 10,
+    ai_analysis INTEGER NOT NULL DEFAULT 0,
+    deep_analysis INTEGER NOT NULL DEFAULT 0,
+    priority_support INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)
+Indexes:
+  - sqlite_autoindex_SubscriptionPlan_1: (auto-index)
+  - sqlite_autoindex_SubscriptionPlan_2: (auto-index)
+Columns: id:TEXT(PK), name:TEXT!, name_ar:TEXT!, price:REAL!, price_yearly:REAL, trial_days:INTEGER!, features:TEXT!, max_watchlist:INTEGER!, max_portfolio:INTEGER!, max_alerts:INTEGER!, ai_analysis:INTEGER!, deep_analysis:INTEGER!, priority_support:INTEGER!, is_active:INTEGER!, sort_order:INTEGER!, created_at:TEXT!, updated_at:TEXT!
+
+### User
+Rows: 100
+Schema:
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "name" TEXT,
+    "username" TEXT,
+    "password_hash" TEXT,
+    "image" TEXT,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "subscription_tier" TEXT NOT NULL DEFAULT 'free',
+    "default_risk_tolerance" TEXT NOT NULL DEFAULT 'medium',
+    "last_login" DATETIME,
+    "email_verified" DATETIME,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" DATETIME NOT NULL
+, trial_ends_at DATETIME, trial_warning_sent_at DATETIME, trial_deletion_scheduled_at DATETIME)
+Indexes:
+  - sqlite_autoindex_User_1: (auto-index)
+  - User_email_key: CREATE UNIQUE INDEX "User_email_key" ON "User"("email")
+  - User_username_key: CREATE UNIQUE INDEX "User_username_key" ON "User"("username")
+Columns: id:TEXT(PK)!, email:TEXT!, name:TEXT, username:TEXT, password_hash:TEXT, image:TEXT, is_active:BOOLEAN!, subscription_tier:TEXT!, default_risk_tolerance:TEXT!, last_login:DATETIME, email_verified:DATETIME, created_at:DATETIME!, updated_at:DATETIME!, trial_ends_at:DATETIME, trial_warning_sent_at:DATETIME, trial_deletion_scheduled_at:DATETIME
+
+### UserSubscription
+Rows: 0
+Schema:
+CREATE TABLE UserSubscription (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    plan_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT,
+    trial_started_at TEXT,
+    trial_ends_at TEXT,
+    auto_renew INTEGER NOT NULL DEFAULT 0,
+    payment_method TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (plan_id) REFERENCES SubscriptionPlan(id)
+)
+Indexes:
+  - sqlite_autoindex_UserSubscription_1: (auto-index)
+  - sqlite_autoindex_UserSubscription_2: (auto-index)
+Columns: id:TEXT(PK), user_id:TEXT!, plan_id:TEXT!, status:TEXT!, started_at:TEXT!, expires_at:TEXT, trial_started_at:TEXT, trial_ends_at:TEXT, auto_renew:INTEGER!, payment_method:TEXT, created_at:TEXT!, updated_at:TEXT!
+
+### VerificationToken
+Rows: 0
+Schema:
+CREATE TABLE "VerificationToken" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" DATETIME NOT NULL
+)
+Indexes:
+  - VerificationToken_token_key: CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token")
+  - VerificationToken_identifier_token_key: CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token")
+Columns: identifier:TEXT!, token:TEXT!, expires:DATETIME!
+
+### api_tokens
+Rows: 6
+Schema:
+CREATE TABLE api_tokens (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    token TEXT UNIQUE NOT NULL,
+    device_info TEXT,
+    ip_address TEXT,
+    name TEXT,
+    expires_at TEXT NOT NULL,
+    last_used TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE
+  )
+Indexes:
+  - sqlite_autoindex_api_tokens_1: (auto-index)
+  - sqlite_autoindex_api_tokens_2: (auto-index)
+  - idx_api_tokens_user_id: CREATE INDEX idx_api_tokens_user_id ON api_tokens(user_id)
+  - idx_api_tokens_token: CREATE INDEX idx_api_tokens_token ON api_tokens(token)
+Columns: id:TEXT(PK), user_id:TEXT!, token:TEXT!, device_info:TEXT, ip_address:TEXT, name:TEXT, expires_at:TEXT!, last_used:TEXT, created_at:TEXT
+
+### task_runs
+Rows: 75
+Schema:
+CREATE TABLE task_runs (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        last_run DATETIME NOT NULL,
+        status TEXT DEFAULT 'completed',
+        result TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+Indexes:
+  - sqlite_autoindex_task_runs_1: (auto-index)
+Columns: id:TEXT(PK), task_id:TEXT!, last_run:DATETIME!, status:TEXT, result:TEXT, created_at:DATETIME
+
+### user_trades
+Rows: 0
+Schema:
+CREATE TABLE user_trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                ticker TEXT NOT NULL,
+                market TEXT DEFAULT 'EGX',
+                trade_type TEXT,
+                shares REAL,
+                price REAL,
+                trade_date TEXT,
+                notes TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+Indexes:
+  - idx_user_trades_user: CREATE INDEX idx_user_trades_user ON user_trades(user_id)
+  - idx_user_trades_ticker: CREATE INDEX idx_user_trades_ticker ON user_trades(ticker)
+Columns: id:INTEGER(PK), user_id:TEXT!, ticker:TEXT!, market:TEXT, trade_type:TEXT, shares:REAL, price:REAL, trade_date:TEXT, notes:TEXT, created_at:TEXT
+
+## db/custom.db
+Size: 0.02 MB | Modified: 2026-09-27T07:51:42.552Z | Tables: 2
+
+### Post
+Rows: 0
+Schema:
+CREATE TABLE "Post" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "content" TEXT,
+    "published" BOOLEAN NOT NULL DEFAULT false,
+    "authorId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)
+Indexes:
+  - sqlite_autoindex_Post_1: (auto-index)
+Columns: id:TEXT(PK)!, title:TEXT!, content:TEXT, published:BOOLEAN!, authorId:TEXT!, createdAt:DATETIME!, updatedAt:DATETIME!
+
+### User
+Rows: 0
+Schema:
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "name" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)
+Indexes:
+  - sqlite_autoindex_User_1: (auto-index)
+  - User_email_key: CREATE UNIQUE INDEX "User_email_key" ON "User"("email")
+Columns: id:TEXT(PK)!, email:TEXT!, name:TEXT, createdAt:DATETIME!, updatedAt:DATETIME!
+
+## db/data_engine.db
+Size: 272.46 MB | Modified: 2026-09-27T10:40:28.781Z | Tables: 22
+
+### btc_local_prices
+Rows: 84065
+Schema:
+CREATE TABLE btc_local_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            currency TEXT,
+            price REAL,
+            change_24h REAL,
+            UNIQUE(timestamp, currency)
+        )
+Indexes:
+  - sqlite_autoindex_btc_local_prices_1: (auto-index)
+  - idx_btc_local_prices_timestamp: CREATE INDEX idx_btc_local_prices_timestamp ON btc_local_prices (timestamp)
+Columns: id:INTEGER(PK), timestamp:TEXT, currency:TEXT, price:REAL, change_24h:REAL
+
+### crypto_prices
+Rows: 294526
+Schema:
+CREATE TABLE crypto_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            rank INTEGER,
+            symbol TEXT,
+            name TEXT,
+            price_usd REAL,
+            price_change_24h REAL,
+            price_change_7d REAL,
+            market_cap REAL,
+            market_cap_rank INTEGER,
+            total_volume REAL,
+            circulating_supply REAL,
+            UNIQUE(timestamp, symbol)
+        )
+Indexes:
+  - sqlite_autoindex_crypto_prices_1: (auto-index)
+  - idx_crypto_prices_symbol: CREATE INDEX idx_crypto_prices_symbol ON crypto_prices (symbol)
+  - idx_crypto_prices_timestamp: CREATE INDEX idx_crypto_prices_timestamp ON crypto_prices (timestamp)
+Columns: id:INTEGER(PK), timestamp:TEXT, rank:INTEGER, symbol:TEXT, name:TEXT, price_usd:REAL, price_change_24h:REAL, price_change_7d:REAL, market_cap:REAL, market_cap_rank:INTEGER, total_volume:REAL, circulating_supply:REAL
+
+### egksco_price_history
+Rows: 13246
+Schema:
+CREATE TABLE egksco_price_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        price_date TEXT NOT NULL,
+        open_price REAL,
+        high_price REAL,
+        low_price REAL,
+        close_price REAL,
+        volume INTEGER,
+        turnover REAL,
+        source TEXT DEFAULT 'egksco',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP, buy_volume INTEGER, sell_volume INTEGER, delta_volume INTEGER, delta_pct REAL, pressure TEXT, market TEXT DEFAULT "EGX",
+        UNIQUE(symbol, price_date, source)
+    )
+Indexes:
+  - sqlite_autoindex_egksco_price_history_1: (auto-index)
+  - idx_egksco_ph_symbol_date: CREATE INDEX idx_egksco_ph_symbol_date ON egksco_price_history(symbol, price_date DESC)
+  - idx_egksco_ph_sym_date: CREATE UNIQUE INDEX idx_egksco_ph_sym_date ON egksco_price_history(symbol, price_date)
+Columns: id:INTEGER(PK), symbol:TEXT!, price_date:TEXT!, open_price:REAL, high_price:REAL, low_price:REAL, close_price:REAL, volume:INTEGER, turnover:REAL, source:TEXT, created_at:TEXT, buy_volume:INTEGER, sell_volume:INTEGER, delta_volume:INTEGER, delta_pct:REAL, pressure:TEXT, market:TEXT
+
+### egksco_stocks
+Rows: 0
+Schema:
+CREATE TABLE egksco_stocks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT UNIQUE NOT NULL,
+                name TEXT,
+                market TEXT DEFAULT 'EGX',
+                sector TEXT,
+                last_price REAL,
+                change REAL,
+                change_percent REAL,
+                volume INTEGER,
+                turnover REAL,
+                last_updated TEXT
+            )
+Indexes:
+  - sqlite_autoindex_egksco_stocks_1: (auto-index)
+  - idx_egksco_symbol: CREATE INDEX idx_egksco_symbol ON egksco_stocks(symbol)
+Columns: id:INTEGER(PK), symbol:TEXT!, name:TEXT, market:TEXT, sector:TEXT, last_price:REAL, change:REAL, change_percent:REAL, volume:INTEGER, turnover:REAL, last_updated:TEXT
+
+### egx_fundamentals
+Rows: 0
+Schema:
+CREATE TABLE egx_fundamentals (
+                ticker TEXT PRIMARY KEY,
+                name TEXT,
+                pe_ratio REAL,
+                pb_ratio REAL,
+                roe REAL,
+                roa REAL,
+                debt_to_equity REAL,
+                current_ratio REAL,
+                dividend_yield REAL,
+                market_cap REAL,
+                shares_outstanding REAL,
+                sector TEXT,
+                industry TEXT,
+                last_updated TEXT
+            )
+Indexes:
+  - sqlite_autoindex_egx_fundamentals_1: (auto-index)
+  - idx_egx_fund_ticker: CREATE INDEX idx_egx_fund_ticker ON egx_fundamentals(ticker)
+Columns: ticker:TEXT(PK), name:TEXT, pe_ratio:REAL, pb_ratio:REAL, roe:REAL, roa:REAL, debt_to_equity:REAL, current_ratio:REAL, dividend_yield:REAL, market_cap:REAL, shares_outstanding:REAL, sector:TEXT, industry:TEXT, last_updated:TEXT
+
+### exchange_rates
+Rows: 48977
+Schema:
+CREATE TABLE exchange_rates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            currency TEXT,
+            rate_to_usd REAL,
+            UNIQUE(timestamp, currency)
+        )
+Indexes:
+  - sqlite_autoindex_exchange_rates_1: (auto-index)
+Columns: id:INTEGER(PK), timestamp:TEXT, currency:TEXT, rate_to_usd:REAL
+
+### gold_prices
+Rows: 187153
+Schema:
+CREATE TABLE gold_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            country TEXT,
+            currency TEXT,
+            karat TEXT,
+            price_per_gram REAL,
+            price_per_ounce REAL,
+            UNIQUE(timestamp, country, karat)
+        )
+Indexes:
+  - sqlite_autoindex_gold_prices_1: (auto-index)
+  - idx_gold_prices_timestamp: CREATE INDEX idx_gold_prices_timestamp ON gold_prices (timestamp)
+Columns: id:INTEGER(PK), timestamp:TEXT, country:TEXT, currency:TEXT, karat:TEXT, price_per_gram:REAL, price_per_ounce:REAL
+
+### gold_prices_clean
+Rows: 31360
+Schema:
+CREATE TABLE gold_prices_clean (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT NOT NULL,
+        country TEXT NOT NULL,
+        karat TEXT NOT NULL,
+        currency TEXT NOT NULL,
+        price_per_gram REAL,
+        usd_rate_used REAL,
+        global_ounce_usd REAL,
+        UNIQUE(timestamp, country, karat, currency)
+    )
+Indexes:
+  - sqlite_autoindex_gold_prices_clean_1: (auto-index)
+  - idx_gold_prices_clean_timestamp: CREATE INDEX idx_gold_prices_clean_timestamp ON gold_prices_clean (timestamp)
+Columns: id:INTEGER(PK), timestamp:TEXT!, country:TEXT!, karat:TEXT!, currency:TEXT!, price_per_gram:REAL, usd_rate_used:REAL, global_ounce_usd:REAL
+
+### historical_data
+Rows: 99076
+Schema:
+CREATE TABLE historical_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT,
+            name TEXT,
+            market TEXT,
+            date TEXT,
+            open REAL,
+            high REAL,
+            low REAL,
+            close REAL,
+            volume INTEGER,
+            last_fetch TEXT,
+            UNIQUE(symbol, date)
+        )
+Indexes:
+  - sqlite_autoindex_historical_data_1: (auto-index)
+  - idx_historical_data_symbol: CREATE INDEX idx_historical_data_symbol ON historical_data (symbol)
+  - idx_historical_data_date: CREATE INDEX idx_historical_data_date ON historical_data (date)
+  - idx_historical_data_market: CREATE INDEX idx_historical_data_market ON historical_data (market)
+Columns: id:INTEGER(PK), symbol:TEXT, name:TEXT, market:TEXT, date:TEXT, open:REAL, high:REAL, low:REAL, close:REAL, volume:INTEGER, last_fetch:TEXT
+
+### lost_and_found
+Rows: 38
+Schema:
+CREATE TABLE lost_and_found(rootpgno INTEGER, pgno INTEGER, nfield INTEGER, id INTEGER, c0, c1, c2, c3, c4)
+Indexes:
+Columns: rootpgno:INTEGER, pgno:INTEGER, nfield:INTEGER, id:INTEGER, c0:, c1:, c2:, c3:, c4:
+
+### screener_lists
+Rows: 1505
+Schema:
+CREATE TABLE screener_lists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category TEXT,
+            list_type TEXT,
+            market TEXT,
+            rank INTEGER,
+            symbol TEXT,
+            name TEXT,
+            scraped_at TEXT,
+            UNIQUE(category, market, symbol)
+        )
+Indexes:
+  - sqlite_autoindex_screener_lists_1: (auto-index)
+  - idx_screener_lists_symbol: CREATE INDEX idx_screener_lists_symbol ON screener_lists (symbol)
+  - idx_screener_lists_market: CREATE INDEX idx_screener_lists_market ON screener_lists (market)
+Columns: id:INTEGER(PK), category:TEXT, list_type:TEXT, market:TEXT, rank:INTEGER, symbol:TEXT, name:TEXT, scraped_at:TEXT
+
+### silver_prices
+Rows: 86038
+Schema:
+CREATE TABLE silver_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            country TEXT,
+            currency TEXT,
+            price_per_gram REAL,
+            price_per_ounce REAL,
+            UNIQUE(timestamp, country)
+        )
+Indexes:
+  - sqlite_autoindex_silver_prices_1: (auto-index)
+  - idx_silver_prices_timestamp: CREATE INDEX idx_silver_prices_timestamp ON silver_prices (timestamp)
+Columns: id:INTEGER(PK), timestamp:TEXT, country:TEXT, currency:TEXT, price_per_gram:REAL, price_per_ounce:REAL
+
+### stock_prices
+Rows: 692
+Schema:
+CREATE TABLE stock_prices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        symbol TEXT,
+        name TEXT,
+        price REAL,
+        change_percent REAL,
+        volume TEXT,
+        market_cap TEXT,
+        market TEXT,
+        UNIQUE(timestamp, symbol)
+    )
+Indexes:
+  - sqlite_autoindex_stock_prices_1: (auto-index)
+Columns: id:INTEGER(PK), timestamp:TEXT, symbol:TEXT, name:TEXT, price:REAL, change_percent:REAL, volume:TEXT, market_cap:TEXT, market:TEXT
+
+### stocks
+Rows: 296
+Schema:
+CREATE TABLE stocks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    name TEXT,
+    price REAL,
+    change_percent REAL,
+    volume TEXT,
+    market_cap TEXT,
+    market TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+, tabs_data TEXT, sector TEXT, analyst_rating TEXT, logo_url TEXT, last_update TEXT, is_active INTEGER DEFAULT 1, name_ar TEXT DEFAULT '')
+Indexes:
+  - idx_stocks_symbol: CREATE UNIQUE INDEX idx_stocks_symbol ON stocks(symbol)
+  - idx_stocks_market: CREATE INDEX idx_stocks_market ON stocks (market)
+Columns: id:INTEGER(PK), symbol:TEXT!, name:TEXT, price:REAL, change_percent:REAL, volume:TEXT, market_cap:TEXT, market:TEXT, created_at:TIMESTAMP, tabs_data:TEXT, sector:TEXT, analyst_rating:TEXT, logo_url:TEXT, last_update:TEXT, is_active:INTEGER, name_ar:TEXT
+
+### tab_balance_sheet
+Rows: 866
+Schema:
+CREATE TABLE "tab_balance_sheet" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            fiscal_period TEXT,
+            fiscal_end TEXT,
+            total_assets TEXT,
+            total_liabilities TEXT,
+            total_equity TEXT,
+            shares_outstanding TEXT,
+            shares_float TEXT,
+            current_assets TEXT,
+            current_liabilities TEXT,
+            cash TEXT,
+            debt TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_balance_sheet_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, fiscal_period:TEXT, fiscal_end:TEXT, total_assets:TEXT, total_liabilities:TEXT, total_equity:TEXT, shares_outstanding:TEXT, shares_float:TEXT, current_assets:TEXT, current_liabilities:TEXT, cash:TEXT, debt:TEXT
+
+### tab_cash_flow
+Rows: 866
+Schema:
+CREATE TABLE "tab_cash_flow" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            fiscal_period TEXT,
+            fiscal_end TEXT,
+            operating_cf TEXT,
+            investing_cf TEXT,
+            financing_cf TEXT,
+            free_cf TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_cash_flow_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, fiscal_period:TEXT, fiscal_end:TEXT, operating_cf:TEXT, investing_cf:TEXT, financing_cf:TEXT, free_cf:TEXT
+
+### tab_dividends
+Rows: 858
+Schema:
+CREATE TABLE "tab_dividends" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            dps_ttm TEXT,
+            dps_fy TEXT,
+            div_yield TEXT,
+            div_yield_fwd TEXT,
+            payout_ratio TEXT,
+            dps_growth TEXT,
+            cont_div TEXT,
+            cont_div_growth TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_dividends_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, dps_ttm:TEXT, dps_fy:TEXT, div_yield:TEXT, div_yield_fwd:TEXT, payout_ratio:TEXT, dps_growth:TEXT, cont_div:TEXT, cont_div_growth:TEXT
+
+### tab_income_statement
+Rows: 866
+Schema:
+CREATE TABLE "tab_income_statement" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            fiscal_period TEXT,
+            fiscal_end TEXT,
+            revenue TEXT,
+            revenue_growth TEXT,
+            gross_profit TEXT,
+            operating_income TEXT,
+            net_income TEXT,
+            eps_basic TEXT,
+            eps_diluted TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_income_statement_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, fiscal_period:TEXT, fiscal_end:TEXT, revenue:TEXT, revenue_growth:TEXT, gross_profit:TEXT, operating_income:TEXT, net_income:TEXT, eps_basic:TEXT, eps_diluted:TEXT
+
+### tab_performance
+Rows: 858
+Schema:
+CREATE TABLE "tab_performance" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            price TEXT,
+            change_percent TEXT,
+            perf_1w TEXT,
+            perf_1m TEXT,
+            perf_3m TEXT,
+            perf_6m TEXT,
+            perf_ytd TEXT,
+            perf_1y TEXT,
+            perf_5y TEXT,
+            perf_10y TEXT,
+            perf_all TEXT,
+            volatility_1w TEXT,
+            volatility_1m TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_performance_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, price:TEXT, change_percent:TEXT, perf_1w:TEXT, perf_1m:TEXT, perf_3m:TEXT, perf_6m:TEXT, perf_ytd:TEXT, perf_1y:TEXT, perf_5y:TEXT, perf_10y:TEXT, perf_all:TEXT, volatility_1w:TEXT, volatility_1m:TEXT
+
+### tab_profitability
+Rows: 858
+Schema:
+CREATE TABLE "tab_profitability" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            gross_margin TEXT,
+            operating_margin TEXT,
+            pretax_margin TEXT,
+            net_margin TEXT,
+            fcf_margin TEXT,
+            roa TEXT,
+            roe TEXT,
+            roc TEXT,
+            rd_ratio TEXT,
+            sga_ratio TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_profitability_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, gross_margin:TEXT, operating_margin:TEXT, pretax_margin:TEXT, net_margin:TEXT, fcf_margin:TEXT, roa:TEXT, roe:TEXT, roc:TEXT, rd_ratio:TEXT, sga_ratio:TEXT
+
+### tab_technical_analysis
+Rows: 863
+Schema:
+CREATE TABLE "tab_technical_analysis" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            technical_rating TEXT,
+            ma_rating TEXT,
+            oscillators_rating TEXT,
+            trend TEXT,
+            momentum TEXT,
+            rsi TEXT,
+            macd TEXT,
+            stoch TEXT,
+            adx TEXT,
+            atr TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_technical_analysis_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, technical_rating:TEXT, ma_rating:TEXT, oscillators_rating:TEXT, trend:TEXT, momentum:TEXT, rsi:TEXT, macd:TEXT, stoch:TEXT, adx:TEXT, atr:TEXT
+
+### tab_valuation
+Rows: 858
+Schema:
+CREATE TABLE "tab_valuation" (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            market TEXT NOT NULL,
+            market_cap TEXT,
+            market_cap_perf TEXT,
+            pe_ratio TEXT,
+            peg_ratio TEXT,
+            ps_ratio TEXT,
+            pb_ratio TEXT,
+            pcf_ratio TEXT,
+            pfcf_ratio TEXT,
+            pcash_ratio TEXT,
+            ev TEXT,
+            ev_revenue TEXT,
+            ev_ebit TEXT,
+            ev_ebitda TEXT,
+            UNIQUE(symbol, market)
+        )
+Indexes:
+  - sqlite_autoindex_tab_valuation_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, market:TEXT!, market_cap:TEXT, market_cap_perf:TEXT, pe_ratio:TEXT, peg_ratio:TEXT, ps_ratio:TEXT, pb_ratio:TEXT, pcf_ratio:TEXT, pfcf_ratio:TEXT, pcash_ratio:TEXT, ev:TEXT, ev_revenue:TEXT, ev_ebit:TEXT, ev_ebitda:TEXT
+
+## db/intraday.db
+Size: 427.47 MB | Modified: 2026-09-27T08:09:02.564Z | Tables: 5
+
+### commodity_intraday
+Rows: 59960
+Schema:
+CREATE TABLE commodity_intraday (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            price REAL NOT NULL,
+            change_percent REAL DEFAULT 0,
+            unit TEXT,
+            UNIQUE(symbol, timestamp)
+        )
+Indexes:
+  - sqlite_autoindex_commodity_intraday_1: (auto-index)
+  - idx_comm_symbol_ts: CREATE INDEX idx_comm_symbol_ts ON commodity_intraday(symbol, timestamp)
+  - idx_comm_ts: CREATE INDEX idx_comm_ts ON commodity_intraday(timestamp)
+Columns: id:INTEGER(PK), symbol:TEXT!, timestamp:TEXT!, price:REAL!, change_percent:REAL, unit:TEXT
+
+### crypto_intraday
+Rows: 324630
+Schema:
+CREATE TABLE crypto_intraday (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            name TEXT,
+            timestamp TEXT NOT NULL,
+            price_usd REAL NOT NULL,
+            change_24h REAL DEFAULT 0,
+            volume_24h REAL DEFAULT 0,
+            market_cap REAL DEFAULT 0,
+            UNIQUE(symbol, timestamp)
+        )
+Indexes:
+  - sqlite_autoindex_crypto_intraday_1: (auto-index)
+  - idx_crypto_symbol_ts: CREATE INDEX idx_crypto_symbol_ts ON crypto_intraday(symbol, timestamp)
+  - idx_crypto_ts: CREATE INDEX idx_crypto_ts ON crypto_intraday(timestamp)
+Columns: id:INTEGER(PK), symbol:TEXT!, name:TEXT, timestamp:TEXT!, price_usd:REAL!, change_24h:REAL, volume_24h:REAL, market_cap:REAL
+
+### intraday_meta
+Rows: 3
+Schema:
+CREATE TABLE intraday_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+Indexes:
+  - sqlite_autoindex_intraday_meta_1: (auto-index)
+Columns: key:TEXT(PK), value:TEXT
+
+### intraday_prices
+Rows: 0
+Schema:
+CREATE TABLE intraday_prices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker TEXT NOT NULL,
+                price_time TEXT NOT NULL,
+                price REAL,
+                volume INTEGER,
+                bid REAL,
+                ask REAL,
+                source TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+Indexes:
+  - idx_intraday_ticker_time: CREATE INDEX idx_intraday_ticker_time ON intraday_prices(ticker, price_time DESC)
+  - idx_intraday_time: CREATE INDEX idx_intraday_time ON intraday_prices(price_time DESC)
+Columns: id:INTEGER(PK), ticker:TEXT!, price_time:TEXT!, price:REAL, volume:INTEGER, bid:REAL, ask:REAL, source:TEXT, created_at:TEXT
+
+### stock_intraday
+Rows: 215632
+Schema:
+CREATE TABLE stock_intraday (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            market TEXT,
+            timestamp TEXT NOT NULL,
+            price REAL NOT NULL,
+            change_percent REAL DEFAULT 0,
+            volume INTEGER DEFAULT 0,
+            open REAL DEFAULT 0,
+            high REAL DEFAULT 0,
+            low REAL DEFAULT 0,
+            UNIQUE(ticker, timestamp)
+        )
+Indexes:
+  - sqlite_autoindex_stock_intraday_1: (auto-index)
+  - idx_stock_ticker_ts: CREATE INDEX idx_stock_ticker_ts ON stock_intraday(ticker, timestamp)
+  - idx_stock_ts: CREATE INDEX idx_stock_ts ON stock_intraday(timestamp)
+  - idx_stock_market: CREATE INDEX idx_stock_market ON stock_intraday(market)
+Columns: id:INTEGER(PK), ticker:TEXT!, market:TEXT, timestamp:TEXT!, price:REAL!, change_percent:REAL, volume:INTEGER, open:REAL, high:REAL, low:REAL
+
+## db/predictions.db
+Size: 224.34 MB | Modified: 2026-09-27T08:09:12.218Z | Tables: 45
+
+### ExpertRecommendation
+Rows: 17
+Schema:
+CREATE TABLE ExpertRecommendation (
+            id TEXT PRIMARY KEY,
+            stock_symbol TEXT NOT NULL,
+            stock_name_ar TEXT,
+            expert_name TEXT NOT NULL,
+            action TEXT NOT NULL,
+            recommendation_type TEXT DEFAULT 'detailed',
+            entry_price REAL NOT NULL,
+            entry_price_from REAL,
+            entry_price_to REAL,
+            target_price REAL,
+            target_price_2 REAL,
+            investment_target REAL,
+            stop_loss REAL,
+            session_date TEXT,
+            status TEXT DEFAULT 'PENDING',
+            final_price REAL,
+            profit_loss_percent REAL,
+            hit_target INTEGER DEFAULT 0,
+            hit_stop_loss INTEGER DEFAULT 0,
+            notes TEXT,
+            recommendation_date TEXT DEFAULT (datetime('now')),
+            closed_at TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - sqlite_autoindex_ExpertRecommendation_1: (auto-index)
+Columns: id:TEXT(PK), stock_symbol:TEXT!, stock_name_ar:TEXT, expert_name:TEXT!, action:TEXT!, recommendation_type:TEXT, entry_price:REAL!, entry_price_from:REAL, entry_price_to:REAL, target_price:REAL, target_price_2:REAL, investment_target:REAL, stop_loss:REAL, session_date:TEXT, status:TEXT, final_price:REAL, profit_loss_percent:REAL, hit_target:INTEGER, hit_stop_loss:INTEGER, notes:TEXT, recommendation_date:TEXT, closed_at:TEXT, created_at:TEXT, updated_at:TEXT
+
+### aiPrediction
+Rows: 2589
+Schema:
+CREATE TABLE aiPrediction (
+                    id TEXT PRIMARY KEY,
+                    stock_symbol TEXT NOT NULL,
+                    stock_name_ar TEXT,
+                    maestro_score REAL DEFAULT 50,
+                    confidence REAL DEFAULT 50,
+                    signal_type TEXT DEFAULT 'BUY',
+                    entry_price REAL NOT NULL,
+                    target_price REAL,
+                    stop_loss REAL,
+                    regime TEXT,
+                    phase_scores TEXT,
+                    prediction_date TEXT NOT NULL,
+                    status TEXT DEFAULT 'PENDING',
+                    final_price REAL,
+                    profit_loss_percent REAL,
+                    hit_target INTEGER DEFAULT 0,
+                    hit_stop_loss INTEGER DEFAULT 0,
+                    days_to_target INTEGER,
+                    signal_source_id TEXT,
+                    notes TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT
+                , risk_reward REAL DEFAULT 0, market TEXT DEFAULT "EGX")
+Indexes:
+  - sqlite_autoindex_aiPrediction_1: (auto-index)
+  - idx_symbol: CREATE INDEX idx_symbol ON aiPrediction(stock_symbol)
+  - idx_date: CREATE INDEX idx_date ON aiPrediction(prediction_date)
+  - idx_status: CREATE INDEX idx_status ON aiPrediction(status)
+  - idx_score: CREATE INDEX idx_score ON aiPrediction(maestro_score)
+Columns: id:TEXT(PK), stock_symbol:TEXT!, stock_name_ar:TEXT, maestro_score:REAL, confidence:REAL, signal_type:TEXT, entry_price:REAL!, target_price:REAL, stop_loss:REAL, regime:TEXT, phase_scores:TEXT, prediction_date:TEXT!, status:TEXT, final_price:REAL, profit_loss_percent:REAL, hit_target:INTEGER, hit_stop_loss:INTEGER, days_to_target:INTEGER, signal_source_id:TEXT, notes:TEXT, created_at:TEXT, updated_at:TEXT, risk_reward:REAL, market:TEXT
+
+### aiPredictionStats
+Rows: 1
+Schema:
+CREATE TABLE aiPredictionStats (
+                    id INTEGER PRIMARY KEY,
+                    total_predictions INTEGER DEFAULT 0,
+                    successful_predictions INTEGER DEFAULT 0,
+                    failed_predictions INTEGER DEFAULT 0,
+                    pending_predictions INTEGER DEFAULT 0,
+                    success_rate REAL DEFAULT 0,
+                    avg_return REAL DEFAULT 0,
+                    avg_maestro_score REAL DEFAULT 0,
+                    last_updated TEXT
+                )
+Indexes:
+Columns: id:INTEGER(PK), total_predictions:INTEGER, successful_predictions:INTEGER, failed_predictions:INTEGER, pending_predictions:INTEGER, success_rate:REAL, avg_return:REAL, avg_maestro_score:REAL, last_updated:TEXT
+
+### analysis_engine_status
+Rows: 1
+Schema:
+CREATE TABLE analysis_engine_status (
+                id TEXT PRIMARY KEY DEFAULT 'main',
+                is_running INTEGER DEFAULT 0,
+                current_market TEXT,
+                current_ticker TEXT,
+                total_analyzed INTEGER DEFAULT 0,
+                total_pending INTEGER DEFAULT 0,
+                last_full_analysis DATETIME,
+                last_run DATETIME,
+                next_scheduled_run DATETIME,
+                error_count INTEGER DEFAULT 0,
+                last_error TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+Indexes:
+  - sqlite_autoindex_analysis_engine_status_1: (auto-index)
+Columns: id:TEXT(PK), is_running:INTEGER, current_market:TEXT, current_ticker:TEXT, total_analyzed:INTEGER, total_pending:INTEGER, last_full_analysis:DATETIME, last_run:DATETIME, next_scheduled_run:DATETIME, error_count:INTEGER, last_error:TEXT, created_at:DATETIME, updated_at:DATETIME
+
+### analysis_jobs
+Rows: 0
+Schema:
+CREATE TABLE analysis_jobs (
+                id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+                job_type TEXT NOT NULL,
+                market TEXT,
+                ticker TEXT,
+                status TEXT DEFAULT 'pending',
+                progress REAL DEFAULT 0,
+                total_items INTEGER DEFAULT 0,
+                processed_items INTEGER DEFAULT 0,
+                result_summary TEXT,
+                error_message TEXT,
+                started_at DATETIME,
+                completed_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+Indexes:
+  - sqlite_autoindex_analysis_jobs_1: (auto-index)
+Columns: id:TEXT(PK), job_type:TEXT!, market:TEXT, ticker:TEXT, status:TEXT, progress:REAL, total_items:INTEGER, processed_items:INTEGER, result_summary:TEXT, error_message:TEXT, started_at:DATETIME, completed_at:DATETIME, created_at:DATETIME
+
+### cached_analysis
+Rows: 0
+Schema:
+CREATE TABLE cached_analysis (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            market TEXT DEFAULT 'EGX',
+            analysis_date TEXT,
+            analysis_json TEXT,
+            signal TEXT,
+            confidence REAL DEFAULT 0,
+            master_score REAL,
+            entry_price REAL,
+            target_price REAL,
+            stop_loss REAL,
+            risk_reward REAL,
+            indicators TEXT,
+            regime TEXT,
+            regime_score REAL,
+            liquidity_level TEXT,
+            is_tradeable INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(ticker, market, analysis_date)
+        )
+Indexes:
+  - sqlite_autoindex_cached_analysis_1: (auto-index)
+  - idx_pcached_ticker: CREATE INDEX idx_pcached_ticker ON cached_analysis(ticker)
+  - idx_pcached_market: CREATE INDEX idx_pcached_market ON cached_analysis(market, confidence DESC)
+  - idx_pcached_date: CREATE INDEX idx_pcached_date ON cached_analysis(analysis_date)
+Columns: id:INTEGER(PK), ticker:TEXT!, market:TEXT, analysis_date:TEXT, analysis_json:TEXT, signal:TEXT, confidence:REAL, master_score:REAL, entry_price:REAL, target_price:REAL, stop_loss:REAL, risk_reward:REAL, indicators:TEXT, regime:TEXT, regime_score:REAL, liquidity_level:TEXT, is_tradeable:INTEGER, created_at:TEXT
+
+### cash_transactions
+Rows: 0
+Schema:
+CREATE TABLE cash_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        transaction_type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        transaction_date TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+    , portfolio_id INTEGER)
+Indexes:
+  - idx_cash_user: CREATE INDEX idx_cash_user ON cash_transactions(user_id)
+  - idx_cash_date: CREATE INDEX idx_cash_date ON cash_transactions(transaction_date)
+  - idx_ct_pid: CREATE INDEX idx_ct_pid ON cash_transactions(portfolio_id)
+Columns: id:INTEGER(PK), user_id:TEXT!, transaction_type:TEXT!, amount:REAL!, transaction_date:TEXT!, notes:TEXT, created_at:TEXT, portfolio_id:INTEGER
+
+### corporate_actions
+Rows: 106
+Schema:
+CREATE TABLE corporate_actions (
+            id TEXT PRIMARY KEY,
+            ticker TEXT,
+            action_type TEXT,
+            action_date TEXT,
+            details TEXT,
+            source TEXT,
+            created_at TEXT
+        )
+Indexes:
+  - sqlite_autoindex_corporate_actions_1: (auto-index)
+  - idx_ca_ticker: CREATE INDEX idx_ca_ticker ON corporate_actions(ticker)
+  - idx_ca_type: CREATE INDEX idx_ca_type ON corporate_actions(action_type)
+  - idx_ca_date: CREATE INDEX idx_ca_date ON corporate_actions(action_date)
+Columns: id:TEXT(PK), ticker:TEXT, action_type:TEXT, action_date:TEXT, details:TEXT, source:TEXT, created_at:TEXT
+
+### crypto_lessons
+Rows: 0
+Schema:
+CREATE TABLE crypto_lessons (id INTEGER PRIMARY KEY AUTOINCREMENT, period_days INTEGER, total_closed INTEGER, win_rate REAL, loss_rate REAL, avg_pnl REAL, profit_factor REAL, by_signal TEXT, created_at TEXT DEFAULT (datetime('now')))
+Indexes:
+Columns: id:INTEGER(PK), period_days:INTEGER, total_closed:INTEGER, win_rate:REAL, loss_rate:REAL, avg_pnl:REAL, profit_factor:REAL, by_signal:TEXT, created_at:TEXT
+
+### crypto_predictions
+Rows: 0
+Schema:
+CREATE TABLE crypto_predictions (id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT, name TEXT, price REAL, signal TEXT, signal_ar TEXT, maestro_score REAL, confidence REAL, entry_price REAL, target_price REAL, stop_loss REAL, risk_reward REAL, position_size_pct REAL, market_regime TEXT, fear_greed REAL, btc_dominance REAL, reasons TEXT, warnings TEXT, status TEXT DEFAULT 'active', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')))
+Indexes:
+Columns: id:INTEGER(PK), symbol:TEXT, name:TEXT, price:REAL, signal:TEXT, signal_ar:TEXT, maestro_score:REAL, confidence:REAL, entry_price:REAL, target_price:REAL, stop_loss:REAL, risk_reward:REAL, position_size_pct:REAL, market_regime:TEXT, fear_greed:REAL, btc_dominance:REAL, reasons:TEXT, warnings:TEXT, status:TEXT, created_at:TEXT, updated_at:TEXT
+
+### crypto_predictions_log
+Rows: 151912
+Schema:
+CREATE TABLE crypto_predictions_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    signal TEXT,
+                    confidence REAL DEFAULT 0,
+                    entry_price REAL,
+                    target_price REAL,
+                    stop_loss REAL,
+                    analysis_json TEXT,
+                    created_at TEXT DEFAULT (datetime('now'))
+                , status TEXT DEFAULT 'open', exit_price REAL, exit_type TEXT, highest_price REAL, actual_return REAL, exited_at TEXT, remaining_pct REAL DEFAULT 1.0)
+Indexes:
+  - idx_crypto_pred_symbol_time: CREATE INDEX idx_crypto_pred_symbol_time
+                ON crypto_predictions_log(symbol, created_at)
+            
+  - idx_crypto_pred_status: CREATE INDEX idx_crypto_pred_status
+                ON crypto_predictions_log(status)
+            
+Columns: id:INTEGER(PK), symbol:TEXT!, signal:TEXT, confidence:REAL, entry_price:REAL, target_price:REAL, stop_loss:REAL, analysis_json:TEXT, created_at:TEXT, status:TEXT, exit_price:REAL, exit_type:TEXT, highest_price:REAL, actual_return:REAL, exited_at:TEXT, remaining_pct:REAL
+
+### equity_snapshots
+Rows: 0
+Schema:
+CREATE TABLE equity_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        snapshot_date TEXT NOT NULL,
+        total_value REAL NOT NULL DEFAULT 0,
+        total_invested REAL NOT NULL DEFAULT 0,
+        cash_balance REAL NOT NULL DEFAULT 0,
+        pnl REAL NOT NULL DEFAULT 0,
+        pnl_pct REAL NOT NULL DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now'))
+    , portfolio_id INTEGER)
+Indexes:
+  - idx_equity_user_date: CREATE INDEX idx_equity_user_date ON equity_snapshots(user_id, snapshot_date)
+  - idx_es_pid: CREATE INDEX idx_es_pid ON equity_snapshots(portfolio_id)
+Columns: id:INTEGER(PK), user_id:TEXT!, snapshot_date:TEXT!, total_value:REAL!, total_invested:REAL!, cash_balance:REAL!, pnl:REAL!, pnl_pct:REAL!, created_at:TEXT, portfolio_id:INTEGER
+
+### exit_notifications
+Rows: 3932
+Schema:
+CREATE TABLE exit_notifications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    prediction_id INTEGER NOT NULL,
+                    ticker TEXT NOT NULL,
+                    notification_type TEXT NOT NULL,
+                    message TEXT,
+                    current_price REAL,
+                    gain_pct REAL,
+                    momentum_5d REAL,
+                    momentum_20d REAL,
+                    sma20 REAL,
+                    rsi REAL,
+                    old_target REAL,
+                    new_target REAL,
+                    day_number INTEGER,
+                    created_at TEXT DEFAULT (datetime('now','localtime')),
+                    FOREIGN KEY (prediction_id) REFERENCES predictions(id)
+                )
+Indexes:
+  - idx_exit_notif_pred: CREATE INDEX idx_exit_notif_pred
+                ON exit_notifications(prediction_id)
+            
+  - idx_exit_notif_created: CREATE INDEX idx_exit_notif_created
+                ON exit_notifications(created_at DESC)
+            
+Columns: id:INTEGER(PK), prediction_id:INTEGER!, ticker:TEXT!, notification_type:TEXT!, message:TEXT, current_price:REAL, gain_pct:REAL, momentum_5d:REAL, momentum_20d:REAL, sma20:REAL, rsi:REAL, old_target:REAL, new_target:REAL, day_number:INTEGER, created_at:TEXT
+
+### historical_trades
+Rows: 13117
+Schema:
+CREATE TABLE historical_trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker TEXT NOT NULL,
+                    strategy TEXT NOT NULL,
+                    buy_date TEXT NOT NULL,
+                    buy_price REAL NOT NULL,
+                    sell_date TEXT,
+                    sell_price REAL,
+                    pnl_pct REAL,
+                    holding_days INTEGER,
+                    outcome TEXT,
+                    pattern_type TEXT,
+                    market_condition TEXT,
+                    rsi_at_buy REAL,
+                    volume_ratio_at_buy REAL,
+                    lesson_text TEXT,
+                    fed_to_ai INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+Indexes:
+  - idx_hist_ticker: CREATE INDEX idx_hist_ticker
+                ON historical_trades(ticker)
+            
+  - idx_hist_pattern: CREATE INDEX idx_hist_pattern
+                ON historical_trades(pattern_type, outcome)
+            
+  - idx_hist_strategy: CREATE INDEX idx_hist_strategy
+                ON historical_trades(strategy, outcome)
+            
+Columns: id:INTEGER(PK), ticker:TEXT!, strategy:TEXT!, buy_date:TEXT!, buy_price:REAL!, sell_date:TEXT, sell_price:REAL, pnl_pct:REAL, holding_days:INTEGER, outcome:TEXT, pattern_type:TEXT, market_condition:TEXT, rsi_at_buy:REAL, volume_ratio_at_buy:REAL, lesson_text:TEXT, fed_to_ai:INTEGER, created_at:TEXT
+
+### hunter_pick_tracking
+Rows: 0
+Schema:
+CREATE TABLE hunter_pick_tracking (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            market TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            stop_loss REAL NOT NULL,
+            target_price REAL NOT NULL,
+            risk_reward REAL NOT NULL,
+            pick_date TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            current_price REAL,
+            verification_date TEXT,
+            profit_loss_pct REAL,
+            narrative TEXT,
+            personas TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+Indexes:
+  - idx_hpt_ticker_date: CREATE INDEX idx_hpt_ticker_date
+        ON hunter_pick_tracking(ticker, pick_date)
+    
+  - idx_hpt_market_status: CREATE INDEX idx_hpt_market_status
+        ON hunter_pick_tracking(market, status)
+    
+Columns: id:INTEGER(PK), ticker:TEXT!, market:TEXT!, entry_price:REAL!, stop_loss:REAL!, target_price:REAL!, risk_reward:REAL!, pick_date:TEXT!, status:TEXT, current_price:REAL, verification_date:TEXT, profit_loss_pct:REAL, narrative:TEXT, personas:TEXT, created_at:TEXT, updated_at:TEXT
+
+### learned_lessons
+Rows: 19464
+Schema:
+CREATE TABLE learned_lessons (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lesson_type TEXT NOT NULL,
+                condition TEXT NOT NULL,
+                outcome TEXT NOT NULL,
+                failure_rate REAL,
+                occurrences INTEGER DEFAULT 0,
+                avg_return REAL,
+                recommendation TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            )
+Indexes:
+  - idx_learned_lessons_type_created: CREATE INDEX idx_learned_lessons_type_created ON learned_lessons(lesson_type, created_at)
+Columns: id:INTEGER(PK), lesson_type:TEXT!, condition:TEXT!, outcome:TEXT!, failure_rate:REAL, occurrences:INTEGER, avg_return:REAL, recommendation:TEXT, created_at:TEXT, updated_at:TEXT
+
+### liquidity_backtest_results
+Rows: 10
+Schema:
+CREATE TABLE liquidity_backtest_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            market TEXT NOT NULL,
+            ticker TEXT,
+            total_signals INTEGER DEFAULT 0,
+            successful_signals INTEGER DEFAULT 0,
+            failed_signals INTEGER DEFAULT 0,
+            hit_rate REAL DEFAULT 0,
+            avg_return REAL DEFAULT 0,
+            dynamic_threshold REAL DEFAULT 0,
+            backtest_start TEXT,
+            backtest_end TEXT,
+            backtest_days INTEGER,
+            qualified INTEGER DEFAULT 0,
+            notes TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(market, ticker, backtest_start, backtest_end)
+        )
+Indexes:
+  - sqlite_autoindex_liquidity_backtest_results_1: (auto-index)
+Columns: id:INTEGER(PK), market:TEXT!, ticker:TEXT, total_signals:INTEGER, successful_signals:INTEGER, failed_signals:INTEGER, hit_rate:REAL, avg_return:REAL, dynamic_threshold:REAL, backtest_start:TEXT, backtest_end:TEXT, backtest_days:INTEGER, qualified:INTEGER, notes:TEXT, created_at:TEXT
+
+### liquidity_dynamic_threshold
+Rows: 5
+Schema:
+CREATE TABLE liquidity_dynamic_threshold (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            market TEXT NOT NULL,
+            threshold_date TEXT NOT NULL,
+            threshold_value REAL NOT NULL,
+            percentile_method TEXT DEFAULT 'p75',
+            sample_size INTEGER DEFAULT 0,
+            fallback_used INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(market, threshold_date)
+        )
+Indexes:
+  - sqlite_autoindex_liquidity_dynamic_threshold_1: (auto-index)
+Columns: id:INTEGER(PK), market:TEXT!, threshold_date:TEXT!, threshold_value:REAL!, percentile_method:TEXT, sample_size:INTEGER, fallback_used:INTEGER, created_at:TEXT
+
+### liquidity_signal_outcomes
+Rows: 1308
+Schema:
+CREATE TABLE liquidity_signal_outcomes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            market TEXT NOT NULL,
+            ticker TEXT,
+            signal_date TEXT NOT NULL,
+            entry_price REAL,
+            exit_price REAL,
+            return_pct REAL,
+            hit INTEGER DEFAULT 0,
+            holding_days INTEGER DEFAULT 5,
+            threshold_used REAL,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(market, ticker, signal_date)
+        )
+Indexes:
+  - sqlite_autoindex_liquidity_signal_outcomes_1: (auto-index)
+Columns: id:INTEGER(PK), market:TEXT!, ticker:TEXT, signal_date:TEXT!, entry_price:REAL, exit_price:REAL, return_pct:REAL, hit:INTEGER, holding_days:INTEGER, threshold_used:REAL, created_at:TEXT
+
+### live_ai_signals
+Rows: 1636
+Schema:
+CREATE TABLE live_ai_signals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker TEXT NOT NULL,
+                    decision TEXT,
+                    confidence INTEGER,
+                    reason TEXT,
+                    narrative TEXT,
+                    source TEXT,
+                    indicators_json TEXT,
+                    detected_at TEXT NOT NULL,
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+Indexes:
+  - idx_live_ai_ticker: CREATE INDEX idx_live_ai_ticker ON live_ai_signals(ticker)
+  - idx_live_ai_detected: CREATE INDEX idx_live_ai_detected ON live_ai_signals(detected_at)
+Columns: id:INTEGER(PK), ticker:TEXT!, decision:TEXT, confidence:INTEGER, reason:TEXT, narrative:TEXT, source:TEXT, indicators_json:TEXT, detected_at:TEXT!, created_at:TEXT
+
+### morning_bell_signals
+Rows: 82
+Schema:
+CREATE TABLE morning_bell_signals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            market TEXT NOT NULL DEFAULT 'EGX',
+            signal_type TEXT NOT NULL DEFAULT 'MORNING_BELL',
+            signal_date TEXT NOT NULL,
+            watch_price REAL NOT NULL,
+            entry_ref REAL,
+            target_price REAL,
+            stop_loss REAL,
+            confidence REAL,
+            evidence_count INTEGER,
+            status TEXT NOT NULL DEFAULT 'WATCH',
+            skip_reason TEXT,
+            linked_prediction_id INTEGER,
+            outcome TEXT,
+            max_pct_move REAL DEFAULT 0,
+            highest_price REAL,
+            lowest_price REAL,
+            notes TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (linked_prediction_id) REFERENCES predictions(id)
+        )
+Indexes:
+  - idx_mb_status: CREATE INDEX idx_mb_status ON morning_bell_signals(status)
+  - idx_mb_date: CREATE INDEX idx_mb_date ON morning_bell_signals(signal_date DESC)
+  - idx_mb_ticker: CREATE INDEX idx_mb_ticker ON morning_bell_signals(ticker, signal_date)
+Columns: id:INTEGER(PK), ticker:TEXT!, market:TEXT!, signal_type:TEXT!, signal_date:TEXT!, watch_price:REAL!, entry_ref:REAL, target_price:REAL, stop_loss:REAL, confidence:REAL, evidence_count:INTEGER, status:TEXT!, skip_reason:TEXT, linked_prediction_id:INTEGER, outcome:TEXT, max_pct_move:REAL, highest_price:REAL, lowest_price:REAL, notes:TEXT, created_at:TEXT!, updated_at:TEXT
+
+### optimizer_params_history
+Rows: 14
+Schema:
+CREATE TABLE optimizer_params_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    optimized_at TEXT NOT NULL,
+                    window_days INTEGER DEFAULT 90,
+                    regime TEXT DEFAULT 'all',
+                    total INTEGER DEFAULT 0,
+                    win_rate REAL DEFAULT 0,
+                    profit_factor REAL DEFAULT 0,
+                    params_json TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+Indexes:
+Columns: id:INTEGER(PK), optimized_at:TEXT!, window_days:INTEGER, regime:TEXT, total:INTEGER, win_rate:REAL, profit_factor:REAL, params_json:TEXT, created_at:TEXT
+
+### persona_predictions
+Rows: 1669
+Schema:
+CREATE TABLE persona_predictions (
+                id TEXT PRIMARY KEY,
+                ticker TEXT NOT NULL,
+                market TEXT,
+                persona_type TEXT,
+                signal_type TEXT,
+                entry_price REAL,
+                target_price REAL,
+                stop_loss REAL,
+                prediction_date TEXT,
+                status TEXT DEFAULT 'PENDING',
+                final_price REAL,
+                profit_loss_percent REAL,
+                hit_target INTEGER DEFAULT 0,
+                hit_stop_loss INTEGER DEFAULT 0,
+                created_at TEXT
+            , persona TEXT DEFAULT 'balanced', signal TEXT, signal_ar TEXT, score REAL DEFAULT 0, confidence REAL DEFAULT 0, risk_reward REAL, rationale TEXT, rationale_ar TEXT, story_arc TEXT, analysis_json TEXT)
+Indexes:
+  - sqlite_autoindex_persona_predictions_1: (auto-index)
+  - idx_persona_ticker: CREATE INDEX idx_persona_ticker ON persona_predictions(ticker)
+  - idx_persona_type: CREATE INDEX idx_persona_type ON persona_predictions(persona_type)
+  - idx_persona_status: CREATE INDEX idx_persona_status ON persona_predictions(status)
+  - idx_persona_date: CREATE INDEX idx_persona_date ON persona_predictions(prediction_date)
+  - idx_persona_ticker_type: CREATE INDEX idx_persona_ticker_type ON persona_predictions(ticker, persona_type)
+  - idx_persona_persona: CREATE INDEX idx_persona_persona ON persona_predictions(persona)
+Columns: id:TEXT(PK), ticker:TEXT!, market:TEXT, persona_type:TEXT, signal_type:TEXT, entry_price:REAL, target_price:REAL, stop_loss:REAL, prediction_date:TEXT, status:TEXT, final_price:REAL, profit_loss_percent:REAL, hit_target:INTEGER, hit_stop_loss:INTEGER, created_at:TEXT, persona:TEXT, signal:TEXT, signal_ar:TEXT, score:REAL, confidence:REAL, risk_reward:REAL, rationale:TEXT, rationale_ar:TEXT, story_arc:TEXT, analysis_json:TEXT
+
+### platform_recommendations
+Rows: 0
+Schema:
+CREATE TABLE platform_recommendations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            name TEXT DEFAULT '',
+            market TEXT NOT NULL,
+            signal TEXT NOT NULL,
+            confidence INTEGER DEFAULT 50,
+            entry_price REAL DEFAULT 0,
+            target_price REAL DEFAULT 0,
+            stop_loss REAL DEFAULT 0,
+            predicted_date TEXT NOT NULL,
+            expiry_date TEXT NOT NULL,
+            status TEXT DEFAULT 'ACTIVE',
+            final_price REAL,
+            profit_loss REAL,
+            hit_target INTEGER DEFAULT 0,
+            hit_stop INTEGER DEFAULT 0,
+            technical_score INTEGER DEFAULT 50,
+            fundamental_score INTEGER DEFAULT 50,
+            volume_seasonal_score INTEGER DEFAULT 50,
+            confluence_score INTEGER DEFAULT 50,
+            rsi REAL DEFAULT 50,
+            macd_signal TEXT DEFAULT 'NEUTRAL',
+            pe_ratio REAL,
+            roe REAL,
+            technical_rating TEXT DEFAULT '',
+            phase_scores TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - idx_pr_date: CREATE INDEX idx_pr_date ON platform_recommendations(predicted_date)
+  - idx_pr_symbol: CREATE INDEX idx_pr_symbol ON platform_recommendations(symbol)
+  - idx_pr_status: CREATE INDEX idx_pr_status ON platform_recommendations(status)
+  - idx_pr_market: CREATE INDEX idx_pr_market ON platform_recommendations(market)
+Columns: id:INTEGER(PK), symbol:TEXT!, name:TEXT, market:TEXT!, signal:TEXT!, confidence:INTEGER, entry_price:REAL, target_price:REAL, stop_loss:REAL, predicted_date:TEXT!, expiry_date:TEXT!, status:TEXT, final_price:REAL, profit_loss:REAL, hit_target:INTEGER, hit_stop:INTEGER, technical_score:INTEGER, fundamental_score:INTEGER, volume_seasonal_score:INTEGER, confluence_score:INTEGER, rsi:REAL, macd_signal:TEXT, pe_ratio:REAL, roe:REAL, technical_rating:TEXT, phase_scores:TEXT, created_at:TEXT, updated_at:TEXT
+
+### portfolio_pnl_history
+Rows: 0
+Schema:
+CREATE TABLE portfolio_pnl_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        ticker TEXT,
+        pnl REAL NOT NULL DEFAULT 0,
+        pnl_pct REAL NOT NULL DEFAULT 0,
+        record_date TEXT NOT NULL,
+        source TEXT DEFAULT 'manual',
+        created_at TEXT DEFAULT (datetime('now'))
+    , portfolio_id INTEGER)
+Indexes:
+  - idx_pnl_user_date: CREATE INDEX idx_pnl_user_date ON portfolio_pnl_history(user_id, record_date)
+Columns: id:INTEGER(PK), user_id:TEXT!, ticker:TEXT, pnl:REAL!, pnl_pct:REAL!, record_date:TEXT!, source:TEXT, created_at:TEXT, portfolio_id:INTEGER
+
+### portfolio_positions
+Rows: 0
+Schema:
+CREATE TABLE portfolio_positions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        portfolio_id TEXT NOT NULL,
+        ticker TEXT NOT NULL,
+        value REAL NOT NULL DEFAULT 0,
+        stop_loss_pct REAL NOT NULL DEFAULT 8.0,
+        sector TEXT NOT NULL DEFAULT 'unknown',
+        correlation_group TEXT,
+        FOREIGN KEY (portfolio_id) REFERENCES portfolio_state(portfolio_id)
+    )
+Indexes:
+  - idx_pp_portfolio: CREATE INDEX idx_pp_portfolio ON portfolio_positions(portfolio_id)
+  - idx_pp_pid2: CREATE INDEX idx_pp_pid2 ON portfolio_positions(portfolio_id)
+Columns: id:INTEGER(PK), portfolio_id:TEXT!, ticker:TEXT!, value:REAL!, stop_loss_pct:REAL!, sector:TEXT!, correlation_group:TEXT
+
+### portfolio_state
+Rows: 0
+Schema:
+CREATE TABLE portfolio_state (
+        portfolio_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        value REAL NOT NULL DEFAULT 100000,
+        cash REAL NOT NULL DEFAULT 30000,
+        peak_value REAL NOT NULL DEFAULT 100000,
+        persona TEXT NOT NULL DEFAULT 'balanced',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+Indexes:
+  - sqlite_autoindex_portfolio_state_1: (auto-index)
+  - idx_ps_pid: CREATE INDEX idx_ps_pid ON portfolio_state(portfolio_id)
+Columns: portfolio_id:TEXT(PK), user_id:TEXT!, value:REAL!, cash:REAL!, peak_value:REAL!, persona:TEXT!, created_at:TEXT!, updated_at:TEXT!
+
+### portfolios
+Rows: 4
+Schema:
+CREATE TABLE portfolios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    broker TEXT DEFAULT 'manual',
+    market TEXT DEFAULT 'EGX',
+    currency TEXT DEFAULT 'EGP',
+    is_master INTEGER DEFAULT 0,
+    initial_capital REAL DEFAULT 100000,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+)
+Indexes:
+  - idx_portfolios_user: CREATE INDEX idx_portfolios_user ON portfolios(user_id)
+  - idx_portfolios_user_master: CREATE INDEX idx_portfolios_user_master ON portfolios(user_id, is_master)
+Columns: id:INTEGER(PK), user_id:TEXT!, name:TEXT!, broker:TEXT, market:TEXT, currency:TEXT, is_master:INTEGER, initial_capital:REAL, created_at:TEXT, updated_at:TEXT
+
+### prediction_lessons
+Rows: 4
+Schema:
+CREATE TABLE prediction_lessons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT, category TEXT, rule TEXT, evidence TEXT,
+    failure_rate REAL, sample_size INTEGER, recommendation TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+Indexes:
+Columns: id:INTEGER(PK), type:TEXT, category:TEXT, rule:TEXT, evidence:TEXT, failure_rate:REAL, sample_size:INTEGER, recommendation:TEXT, created_at:TEXT
+
+### prediction_outcomes
+Rows: 0
+Schema:
+CREATE TABLE prediction_outcomes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        prediction_id INTEGER NOT NULL,
+                        ticker TEXT NOT NULL,
+                        prediction_date TEXT NOT NULL,
+                        signal TEXT,
+                        confidence REAL,
+                        entry_price REAL,
+                        price_1d_later REAL,
+                        price_3d_later REAL,
+                        price_5d_later REAL,
+                        price_10d_later REAL,
+                        return_1d REAL,
+                        return_3d REAL,
+                        return_5d REAL,
+                        return_10d REAL,
+                        outcome TEXT,
+                        evaluated_at TEXT,
+                        UNIQUE(prediction_id)
+                    )
+Indexes:
+  - sqlite_autoindex_prediction_outcomes_1: (auto-index)
+  - idx_po_ticker: CREATE INDEX idx_po_ticker ON prediction_outcomes(ticker)
+  - idx_po_date: CREATE INDEX idx_po_date ON prediction_outcomes(prediction_date)
+Columns: id:INTEGER(PK), prediction_id:INTEGER!, ticker:TEXT!, prediction_date:TEXT!, signal:TEXT, confidence:REAL, entry_price:REAL, price_1d_later:REAL, price_3d_later:REAL, price_5d_later:REAL, price_10d_later:REAL, return_1d:REAL, return_3d:REAL, return_5d:REAL, return_10d:REAL, outcome:TEXT, evaluated_at:TEXT
+
+### prediction_outcomes_old
+Rows: 0
+Schema:
+CREATE TABLE "prediction_outcomes_old" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                prediction_id TEXT NOT NULL,
+                outcome_date TEXT NOT NULL,
+                exit_price REAL,
+                pnl_percent REAL,
+                hit_target INTEGER DEFAULT 0,
+                hit_stop INTEGER DEFAULT 0,
+                days_to_resolve INTEGER,
+                notes TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (prediction_id) REFERENCES predictions(id)
+            )
+Indexes:
+Columns: id:INTEGER(PK), prediction_id:TEXT!, outcome_date:TEXT!, exit_price:REAL, pnl_percent:REAL, hit_target:INTEGER, hit_stop:INTEGER, days_to_resolve:INTEGER, notes:TEXT, created_at:TEXT
+
+### predictions
+Rows: 1359
+Schema:
+CREATE TABLE predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker TEXT NOT NULL,
+                signal TEXT NOT NULL,
+                signal_type TEXT NOT NULL,
+                
+                prediction_date TEXT NOT NULL,
+                entry_price REAL NOT NULL,
+                target_price REAL,
+                stop_loss REAL,
+                master_score REAL,
+                
+                technical_score REAL DEFAULT 50,
+                fundamental_score REAL DEFAULT 50,
+                ai_pattern_score REAL DEFAULT 50,
+                sentiment_score REAL DEFAULT 50,
+                
+                outcome_date TEXT,
+                exit_price REAL,
+                actual_return REAL,
+                hit_target INTEGER DEFAULT 0,
+                hit_stop INTEGER DEFAULT 0,
+                is_correct INTEGER,
+                
+                holding_days INTEGER DEFAULT 0,
+                notes TEXT,
+                
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            , is_trend_following INTEGER DEFAULT 0, exit_type TEXT, trailing_stop_atr_mult REAL DEFAULT 2.5, initial_stop_atr_mult REAL DEFAULT 2.0, atr_at_entry REAL, highest_price_reached REAL, market TEXT DEFAULT 'EGX', exit_reason TEXT, risk_reward REAL, confidence REAL, lowest_price_reached REAL, stock_ticker TEXT, direction TEXT, score REAL DEFAULT 0, horizon TEXT, persona TEXT DEFAULT 'balanced', status TEXT DEFAULT 'active', pnl_percent REAL, closed_at DATETIME, analysis_json TEXT, updated_at DATETIME, signal_ar TEXT, maestro_score REAL DEFAULT 0, actual_exit_price REAL, highest_price REAL, lowest_price REAL, days_to_close INTEGER, pnl_pct REAL, data_quality TEXT, quality_flags TEXT, partial_exit_price REAL, partial_exit_date TEXT, partial_return_pct REAL, exit_policy TEXT DEFAULT 'fixed', target_price_2 REAL, explosive_score REAL DEFAULT 0, explosive_label TEXT DEFAULT '', evidence_count INTEGER DEFAULT 0, morning_bell INTEGER DEFAULT 0, kill_filter_result TEXT DEFAULT '', maker_entry_volume REAL, fuel_pct REAL, fuel_exhausted INTEGER DEFAULT 0, fuel_phase TEXT DEFAULT "", track TEXT DEFAULT 'full_analysis')
+Indexes:
+  - idx_predictions_ticker: CREATE INDEX idx_predictions_ticker ON predictions(ticker)
+  - idx_predictions_market: CREATE INDEX idx_predictions_market ON predictions(market)
+  - idx_predictions_date: CREATE INDEX idx_predictions_date ON predictions(prediction_date)
+  - idx_predictions_outcome: CREATE INDEX idx_predictions_outcome ON predictions(outcome_date)
+  - idx_predictions_status: CREATE INDEX idx_predictions_status ON predictions(outcome_date, hit_target, hit_stop)
+  - idx_predictions_created: CREATE INDEX idx_predictions_created ON predictions(created_at DESC)
+  - idx_predictions_signal: CREATE INDEX idx_predictions_signal ON predictions (signal)
+  - idx_predictions_prediction_date: CREATE INDEX idx_predictions_prediction_date ON predictions (prediction_date)
+Columns: id:INTEGER(PK), ticker:TEXT!, signal:TEXT!, signal_type:TEXT!, prediction_date:TEXT!, entry_price:REAL!, target_price:REAL, stop_loss:REAL, master_score:REAL, technical_score:REAL, fundamental_score:REAL, ai_pattern_score:REAL, sentiment_score:REAL, outcome_date:TEXT, exit_price:REAL, actual_return:REAL, hit_target:INTEGER, hit_stop:INTEGER, is_correct:INTEGER, holding_days:INTEGER, notes:TEXT, created_at:TEXT, is_trend_following:INTEGER, exit_type:TEXT, trailing_stop_atr_mult:REAL, initial_stop_atr_mult:REAL, atr_at_entry:REAL, highest_price_reached:REAL, market:TEXT, exit_reason:TEXT, risk_reward:REAL, confidence:REAL, lowest_price_reached:REAL, stock_ticker:TEXT, direction:TEXT, score:REAL, horizon:TEXT, persona:TEXT, status:TEXT, pnl_percent:REAL, closed_at:DATETIME, analysis_json:TEXT, updated_at:DATETIME, signal_ar:TEXT, maestro_score:REAL, actual_exit_price:REAL, highest_price:REAL, lowest_price:REAL, days_to_close:INTEGER, pnl_pct:REAL, data_quality:TEXT, quality_flags:TEXT, partial_exit_price:REAL, partial_exit_date:TEXT, partial_return_pct:REAL, exit_policy:TEXT, target_price_2:REAL, explosive_score:REAL, explosive_label:TEXT, evidence_count:INTEGER, morning_bell:INTEGER, kill_filter_result:TEXT, maker_entry_volume:REAL, fuel_pct:REAL, fuel_exhausted:INTEGER, fuel_phase:TEXT, track:TEXT
+
+### quant_cache
+Rows: 525
+Schema:
+CREATE TABLE quant_cache (
+                ticker              TEXT PRIMARY KEY,
+                smfi                REAL,
+                smfi_label          TEXT,
+                monte_carlo_prob    REAL,
+                monte_carlo_label   TEXT,
+                monte_carlo_horizon INTEGER,
+                smfi_bonus          REAL,
+                mc_bonus            REAL,
+                computed_at         TEXT,
+                computed_price      REAL
+            )
+Indexes:
+  - sqlite_autoindex_quant_cache_1: (auto-index)
+Columns: ticker:TEXT(PK), smfi:REAL, smfi_label:TEXT, monte_carlo_prob:REAL, monte_carlo_label:TEXT, monte_carlo_horizon:INTEGER, smfi_bonus:REAL, mc_bonus:REAL, computed_at:TEXT, computed_price:REAL
+
+### reports
+Rows: 0
+Schema:
+CREATE TABLE reports (
+                    id TEXT PRIMARY KEY,
+                    type TEXT NOT NULL,
+                    date TEXT NOT NULL,
+                    title TEXT,
+                    content TEXT,
+                    image_path TEXT,
+                    status TEXT DEFAULT 'pending',
+                    telegram_message_id TEXT,
+                    created_at TEXT DEFAULT (datetime('now')),
+                    published_at TEXT
+                )
+Indexes:
+  - sqlite_autoindex_reports_1: (auto-index)
+  - idx_reports_type: CREATE INDEX idx_reports_type ON reports(type)
+  - idx_reports_date: CREATE INDEX idx_reports_date ON reports(date)
+  - idx_reports_status: CREATE INDEX idx_reports_status ON reports(status)
+Columns: id:TEXT(PK), type:TEXT!, date:TEXT!, title:TEXT, content:TEXT, image_path:TEXT, status:TEXT, telegram_message_id:TEXT, created_at:TEXT, published_at:TEXT
+
+### session_event_sent_log
+Rows: 0
+Schema:
+CREATE TABLE session_event_sent_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            last_sent_at TEXT NOT NULL,
+            UNIQUE(ticker, event_type)
+        )
+Indexes:
+  - sqlite_autoindex_session_event_sent_log_1: (auto-index)
+Columns: id:INTEGER(PK), ticker:TEXT!, event_type:TEXT!, last_sent_at:TEXT!
+
+### session_events
+Rows: 0
+Schema:
+CREATE TABLE session_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            ticker TEXT,
+            market TEXT NOT NULL DEFAULT 'EGX',
+            price_at_event REAL,
+            ref_price REAL,
+            entry_price REAL,
+            target_price REAL,
+            stop_loss REAL,
+            change_pct REAL,
+            priority INTEGER NOT NULL DEFAULT 5,
+            message_ar TEXT NOT NULL,
+            telegram_sent INTEGER DEFAULT 0,
+            telegram_error TEXT,
+            created_at TEXT NOT NULL
+        )
+Indexes:
+  - idx_se_created: CREATE INDEX idx_se_created ON session_events(created_at DESC)
+  - idx_se_ticker_type: CREATE INDEX idx_se_ticker_type ON session_events(ticker, event_type, created_at)
+Columns: id:INTEGER(PK), event_type:TEXT!, ticker:TEXT, market:TEXT!, price_at_event:REAL, ref_price:REAL, entry_price:REAL, target_price:REAL, stop_loss:REAL, change_pct:REAL, priority:INTEGER!, message_ar:TEXT!, telegram_sent:INTEGER, telegram_error:TEXT, created_at:TEXT!
+
+### sniper_performance
+Rows: 26
+Schema:
+CREATE TABLE sniper_performance (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                period_start TEXT NOT NULL,
+                period_end TEXT NOT NULL,
+                total_predictions INTEGER,
+                target_hit_count INTEGER,
+                stopped_count INTEGER,
+                expired_count INTEGER,
+                win_rate REAL,
+                avg_return REAL,
+                avg_win REAL,
+                avg_loss REAL,
+                profit_factor REAL,
+                best_ticker TEXT,
+                worst_ticker TEXT,
+                lessons_count INTEGER,
+                created_at TEXT
+            )
+Indexes:
+Columns: id:INTEGER(PK), period_start:TEXT!, period_end:TEXT!, total_predictions:INTEGER, target_hit_count:INTEGER, stopped_count:INTEGER, expired_count:INTEGER, win_rate:REAL, avg_return:REAL, avg_win:REAL, avg_loss:REAL, profit_factor:REAL, best_ticker:TEXT, worst_ticker:TEXT, lessons_count:INTEGER, created_at:TEXT
+
+### stock_stories
+Rows: 899
+Schema:
+CREATE TABLE stock_stories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker TEXT,
+                pattern_type TEXT,
+                story_date TEXT,
+                story_text TEXT,
+                keywords TEXT,
+                outcome_pct REAL,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+Indexes:
+Columns: id:INTEGER(PK), ticker:TEXT, pattern_type:TEXT, story_date:TEXT, story_text:TEXT, keywords:TEXT, outcome_pct:REAL, created_at:TEXT
+
+### stored_analyses
+Rows: 0
+Schema:
+CREATE TABLE stored_analyses (
+                id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+                ticker TEXT NOT NULL,
+                market TEXT DEFAULT 'EGX',
+                maestro_score REAL DEFAULT 0,
+                recommendation TEXT DEFAULT 'hold',
+                recommendation_ar TEXT,
+                confidence REAL DEFAULT 0,
+                entry_price REAL DEFAULT 0,
+                target_price REAL,
+                stop_loss REAL,
+                risk_reward REAL DEFAULT 0,
+                regime TEXT,
+                regime_score REAL,
+                regime_confidence REAL,
+                timeframe_score REAL,
+                timeframe_aligned INTEGER DEFAULT 0,
+                timeframe_count INTEGER DEFAULT 0,
+                volume_ratio REAL,
+                liquidity_rating TEXT,
+                news_risk_level TEXT,
+                has_cbe_news INTEGER DEFAULT 0,
+                analysis_json TEXT,
+                analysis_type TEXT DEFAULT 'scheduled',
+                analysis_version TEXT DEFAULT '2.0',
+                turnover_egp REAL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, ai_decision TEXT, ai_confidence INTEGER, ai_reason TEXT, ai_narrative TEXT, ai_confidence_adjustment INTEGER, ai_raw TEXT, ai_updated_at TEXT, signal TEXT DEFAULT 'HOLD', technical_score REAL, fundamental_score REAL, is_gambler_opportunity INTEGER DEFAULT 0, is_investor_opportunity INTEGER DEFAULT 0, gambler_rank_score REAL DEFAULT 0, investor_rank_score REAL DEFAULT 0, pe_ratio REAL, roe REAL, change_1d REAL, change_1m REAL, volatility REAL, fair_value_upside REAL, smc_signal TEXT,
+                UNIQUE(ticker, market)
+            )
+Indexes:
+  - sqlite_autoindex_stored_analyses_1: (auto-index)
+  - sqlite_autoindex_stored_analyses_2: (auto-index)
+  - idx_stored_ticker: CREATE INDEX idx_stored_ticker ON stored_analyses(ticker)
+  - idx_stored_market: CREATE INDEX idx_stored_market ON stored_analyses(market)
+  - idx_stored_score: CREATE INDEX idx_stored_score ON stored_analyses(maestro_score)
+  - idx_stored_rec: CREATE INDEX idx_stored_rec ON stored_analyses(recommendation)
+  - idx_stored_ticker_date: CREATE INDEX idx_stored_ticker_date ON stored_analyses(ticker, created_at DESC)
+  - idx_stored_ticker_market: CREATE INDEX idx_stored_ticker_market ON stored_analyses(ticker, market)
+  - idx_stored_signal: CREATE INDEX idx_stored_signal ON stored_analyses(signal)
+Columns: id:TEXT(PK), ticker:TEXT!, market:TEXT, maestro_score:REAL, recommendation:TEXT, recommendation_ar:TEXT, confidence:REAL, entry_price:REAL, target_price:REAL, stop_loss:REAL, risk_reward:REAL, regime:TEXT, regime_score:REAL, regime_confidence:REAL, timeframe_score:REAL, timeframe_aligned:INTEGER, timeframe_count:INTEGER, volume_ratio:REAL, liquidity_rating:TEXT, news_risk_level:TEXT, has_cbe_news:INTEGER, analysis_json:TEXT, analysis_type:TEXT, analysis_version:TEXT, turnover_egp:REAL, created_at:DATETIME, updated_at:DATETIME, ai_decision:TEXT, ai_confidence:INTEGER, ai_reason:TEXT, ai_narrative:TEXT, ai_confidence_adjustment:INTEGER, ai_raw:TEXT, ai_updated_at:TEXT, signal:TEXT, technical_score:REAL, fundamental_score:REAL, is_gambler_opportunity:INTEGER, is_investor_opportunity:INTEGER, gambler_rank_score:REAL, investor_rank_score:REAL, pe_ratio:REAL, roe:REAL, change_1d:REAL, change_1m:REAL, volatility:REAL, fair_value_upside:REAL, smc_signal:TEXT
+
+### telegram_news
+Rows: 0
+Schema:
+CREATE TABLE telegram_news (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ticker TEXT,
+                        message_text TEXT NOT NULL,
+                        sentiment TEXT DEFAULT 'neutral',
+                        confidence INTEGER DEFAULT 50,
+                        source_group TEXT,
+                        message_date TEXT,
+                        created_at TEXT DEFAULT (datetime('now'))
+                    )
+Indexes:
+  - idx_tg_news_ticker_date: CREATE INDEX idx_tg_news_ticker_date
+                    ON telegram_news(ticker, message_date)
+                
+Columns: id:INTEGER(PK), ticker:TEXT, message_text:TEXT!, sentiment:TEXT, confidence:INTEGER, source_group:TEXT, message_date:TEXT, created_at:TEXT
+
+### telegram_signals
+Rows: 0
+Schema:
+CREATE TABLE telegram_signals (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ticker TEXT,
+                        message_text TEXT NOT NULL,
+                        sentiment TEXT DEFAULT 'neutral',
+                        confidence INTEGER DEFAULT 50,
+                        source_group TEXT,
+                        message_date TEXT,
+                        created_at TEXT DEFAULT (datetime('now'))
+                    )
+Indexes:
+  - idx_tg_sig_ticker_date: CREATE INDEX idx_tg_sig_ticker_date
+                    ON telegram_signals(ticker, message_date)
+                
+Columns: id:INTEGER(PK), ticker:TEXT, message_text:TEXT!, sentiment:TEXT, confidence:INTEGER, source_group:TEXT, message_date:TEXT, created_at:TEXT
+
+### trade_journal_entries
+Rows: 0
+Schema:
+CREATE TABLE trade_journal_entries (
+            trade_id TEXT PRIMARY KEY,
+            ticker TEXT NOT NULL,
+            direction TEXT NOT NULL DEFAULT 'long',
+            entry_price REAL NOT NULL,
+            shares INTEGER NOT NULL,
+            entry_date TEXT NOT NULL,
+            planned_stop REAL NOT NULL,
+            planned_target REAL NOT NULL,
+            planned_risk_reward REAL NOT NULL DEFAULT 0,
+            entry_reason TEXT DEFAULT '',
+            entry_reason_ar TEXT DEFAULT '',
+            strategy_used TEXT DEFAULT 'planned_scale_in',
+            persona_at_entry TEXT DEFAULT 'balanced',
+            market_condition TEXT DEFAULT 'neutral',
+            exit_price REAL,
+            exit_date TEXT,
+            exit_reason TEXT,
+            exit_reason_ar TEXT,
+            actual_stop_hit INTEGER DEFAULT 0,
+            actual_target_hit INTEGER DEFAULT 0,
+            actual_risk_reward REAL DEFAULT 0,
+            profit_loss REAL DEFAULT 0,
+            profit_loss_pct REAL DEFAULT 0,
+            days_held INTEGER DEFAULT 0,
+            is_closed INTEGER DEFAULT 0,
+            journal_required INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - sqlite_autoindex_trade_journal_entries_1: (auto-index)
+  - idx_journal_ticker: CREATE INDEX idx_journal_ticker
+            ON trade_journal_entries(ticker)
+  - idx_journal_dates: CREATE INDEX idx_journal_dates
+            ON trade_journal_entries(created_at)
+  - idx_journal_closed: CREATE INDEX idx_journal_closed
+            ON trade_journal_entries(is_closed)
+Columns: trade_id:TEXT(PK), ticker:TEXT!, direction:TEXT!, entry_price:REAL!, shares:INTEGER!, entry_date:TEXT!, planned_stop:REAL!, planned_target:REAL!, planned_risk_reward:REAL!, entry_reason:TEXT, entry_reason_ar:TEXT, strategy_used:TEXT, persona_at_entry:TEXT, market_condition:TEXT, exit_price:REAL, exit_date:TEXT, exit_reason:TEXT, exit_reason_ar:TEXT, actual_stop_hit:INTEGER, actual_target_hit:INTEGER, actual_risk_reward:REAL, profit_loss:REAL, profit_loss_pct:REAL, days_held:INTEGER, is_closed:INTEGER, journal_required:INTEGER, created_at:TEXT, updated_at:TEXT
+
+### trade_journal_reflections
+Rows: 0
+Schema:
+CREATE TABLE trade_journal_reflections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_id TEXT NOT NULL,
+            mistake TEXT,
+            mistake_ar TEXT,
+            lesson TEXT,
+            lesson_ar TEXT,
+            emotional_state TEXT,
+            followed_plan INTEGER DEFAULT 1,
+            grade TEXT,
+            notes TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (trade_id) REFERENCES trade_journal_entries(trade_id)
+        )
+Indexes:
+  - idx_reflections_trade: CREATE INDEX idx_reflections_trade
+            ON trade_journal_reflections(trade_id)
+Columns: id:INTEGER(PK), trade_id:TEXT!, mistake:TEXT, mistake_ar:TEXT, lesson:TEXT, lesson_ar:TEXT, emotional_state:TEXT, followed_plan:INTEGER, grade:TEXT, notes:TEXT, created_at:TEXT
+
+### trade_outcomes
+Rows: 0
+Schema:
+CREATE TABLE trade_outcomes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    ticker TEXT NOT NULL,
+                    buy_date TEXT,
+                    buy_price REAL,
+                    sell_date TEXT,
+                    sell_price REAL,
+                    quantity REAL,
+                    pnl REAL,                        -- الربح/الخسارة بالجنيه
+                    pnl_pct REAL,                    -- النسبة %
+                    holding_days INTEGER,
+                    outcome TEXT,                    -- 'WIN' / 'LOSS' / 'BREAKEVEN'
+
+                    -- التحليل: إيه اللي المشروع قاله قبل الشراء؟
+                    prediction_before_buy TEXT,      -- recommendation اللي كانت في stored_analyses
+                    maestro_score_before REAL,
+                    ai_decision_before TEXT,
+                    had_live_signal INTEGER DEFAULT 0,  -- هل فيه live_ai_signal قبل الشراء؟
+
+                    -- التعلّم: إيه الـ pattern الناجح/الفاشل؟
+                    pattern_type TEXT,               -- 'breakout' / 'volume_spike' / 'reversal' / 'accumulation'
+                    lessons TEXT,                    -- دروس مستفادة
+
+                    analyzed INTEGER DEFAULT 0,      -- هل الـ learning engine حله؟
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+Indexes:
+  - idx_outcomes_user: CREATE INDEX idx_outcomes_user ON trade_outcomes(user_id)
+  - idx_outcomes_ticker: CREATE INDEX idx_outcomes_ticker ON trade_outcomes(ticker)
+  - idx_outcomes_outcome: CREATE INDEX idx_outcomes_outcome ON trade_outcomes(outcome)
+Columns: id:INTEGER(PK), user_id:TEXT!, ticker:TEXT!, buy_date:TEXT, buy_price:REAL, sell_date:TEXT, sell_price:REAL, quantity:REAL, pnl:REAL, pnl_pct:REAL, holding_days:INTEGER, outcome:TEXT, prediction_before_buy:TEXT, maestro_score_before:REAL, ai_decision_before:TEXT, had_live_signal:INTEGER, pattern_type:TEXT, lessons:TEXT, analyzed:INTEGER, created_at:TEXT
+
+### user_trades
+Rows: 0
+Schema:
+CREATE TABLE user_trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    ticker TEXT NOT NULL,
+                    trade_type TEXT NOT NULL,        -- 'BUY' / 'SELL'
+                    price REAL NOT NULL,
+                    quantity REAL NOT NULL,
+                    trade_date TEXT NOT NULL,        -- ISO date
+                    notes TEXT,
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+Indexes:
+  - idx_trades_user: CREATE INDEX idx_trades_user ON user_trades(user_id)
+  - idx_trades_ticker: CREATE INDEX idx_trades_ticker ON user_trades(ticker)
+  - idx_trades_date: CREATE INDEX idx_trades_date ON user_trades(trade_date)
+Columns: id:INTEGER(PK), user_id:TEXT!, ticker:TEXT!, trade_type:TEXT!, price:REAL!, quantity:REAL!, trade_date:TEXT!, notes:TEXT, created_at:TEXT
+
+## db/price_history.db
+Size: 292.91 MB | Modified: 2026-09-27T08:09:03.877Z | Tables: 1
+
+### price_history
+Rows: 1206795
+Schema:
+CREATE TABLE price_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticker TEXT NOT NULL,
+  date TEXT NOT NULL,
+  open_price REAL,
+  high_price REAL,
+  low_price REAL,
+  close_price REAL,
+  volume INTEGER,
+  source TEXT DEFAULT 'system',
+  created_at TEXT DEFAULT (datetime('now')), adjusted INTEGER DEFAULT 0, market TEXT,
+  
+  UNIQUE(ticker, date)
+)
+Indexes:
+  - sqlite_autoindex_price_history_1: (auto-index)
+  - idx_price_history_ticker: CREATE INDEX idx_price_history_ticker ON price_history(ticker)
+  - idx_price_history_date: CREATE INDEX idx_price_history_date ON price_history(date)
+  - idx_price_history_ticker_date: CREATE INDEX idx_price_history_ticker_date ON price_history(ticker, date)
+  - idx_ph_ticker_date: CREATE INDEX idx_ph_ticker_date ON price_history(ticker, date)
+  - idx_ph_ticker_source: CREATE INDEX idx_ph_ticker_source ON price_history(ticker, source)
+Columns: id:INTEGER(PK), ticker:TEXT!, date:TEXT!, open_price:REAL, high_price:REAL, low_price:REAL, close_price:REAL, volume:INTEGER, source:TEXT, created_at:TEXT, adjusted:INTEGER, market:TEXT
+
+## db/stocks.db
+Size: 14.21 MB | Modified: 2026-09-27T09:30:51.262Z | Tables: 52
+
+### ExpertRecommendation
+Rows: 127
+Schema:
+CREATE TABLE ExpertRecommendation (
+    id TEXT PRIMARY KEY,
+    stock_symbol TEXT NOT NULL,
+    stock_name_ar TEXT,
+    expert_name TEXT NOT NULL DEFAULT 'خبير محلل',
+    action TEXT NOT NULL,
+    recommendation_type TEXT DEFAULT 'detailed',
+    entry_price REAL,
+    entry_price_from REAL,
+    entry_price_to REAL,
+    target_price REAL,
+    target_price_2 REAL,
+    investment_target REAL,
+    stop_loss REAL,
+    support_level REAL,
+    resistance_level REAL,
+    session_date TEXT,
+    status TEXT DEFAULT 'PENDING',
+    final_price REAL,
+    profit_loss_percent REAL,
+    hit_target INTEGER DEFAULT 0,
+    hit_stop_loss INTEGER DEFAULT 0,
+    notes TEXT,
+    recommendation_date TEXT DEFAULT (datetime('now')),
+    closed_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  , expert_source TEXT, entry_condition TEXT, stop_loss_condition TEXT, expected_profit_min REAL, expected_profit_max REAL, expected_profit_investment REAL, technical_analysis TEXT, fundamental_analysis TEXT, recommendation_reason TEXT, session_type TEXT DEFAULT 'صباحية', expected_duration TEXT, expected_duration_days INTEGER)
+Indexes:
+  - sqlite_autoindex_ExpertRecommendation_1: (auto-index)
+Columns: id:TEXT(PK), stock_symbol:TEXT!, stock_name_ar:TEXT, expert_name:TEXT!, action:TEXT!, recommendation_type:TEXT, entry_price:REAL, entry_price_from:REAL, entry_price_to:REAL, target_price:REAL, target_price_2:REAL, investment_target:REAL, stop_loss:REAL, support_level:REAL, resistance_level:REAL, session_date:TEXT, status:TEXT, final_price:REAL, profit_loss_percent:REAL, hit_target:INTEGER, hit_stop_loss:INTEGER, notes:TEXT, recommendation_date:TEXT, closed_at:TEXT, created_at:TEXT, updated_at:TEXT, expert_source:TEXT, entry_condition:TEXT, stop_loss_condition:TEXT, expected_profit_min:REAL, expected_profit_max:REAL, expected_profit_investment:REAL, technical_analysis:TEXT, fundamental_analysis:TEXT, recommendation_reason:TEXT, session_type:TEXT, expected_duration:TEXT, expected_duration_days:INTEGER
+
+### analytics_events
+Rows: 467
+Schema:
+CREATE TABLE analytics_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        user_id TEXT,
+        view TEXT,
+        action TEXT,
+        detail TEXT,
+        ip_hash TEXT,
+        user_agent TEXT,
+        screen_width INTEGER,
+        created_at TEXT DEFAULT (datetime('now', '+2 hours'))
+      , duration_sec INTEGER, session_id TEXT)
+Indexes:
+  - idx_analytics_type: CREATE INDEX idx_analytics_type ON analytics_events(type, created_at)
+  - idx_analytics_view: CREATE INDEX idx_analytics_view ON analytics_events(view, created_at)
+  - idx_analytics_user: CREATE INDEX idx_analytics_user ON analytics_events(user_id, created_at)
+Columns: id:INTEGER(PK), type:TEXT!, user_id:TEXT, view:TEXT, action:TEXT, detail:TEXT, ip_hash:TEXT, user_agent:TEXT, screen_width:INTEGER, created_at:TEXT, duration_sec:INTEGER, session_id:TEXT
+
+### cached_analysis
+Rows: 143
+Schema:
+CREATE TABLE cached_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticker TEXT UNIQUE,
+    sector TEXT,
+    current_price REAL DEFAULT 0,
+    recommendation TEXT DEFAULT 'hold',
+    composite_score REAL DEFAULT 0,
+    target_price REAL DEFAULT 0,
+    stop_loss REAL DEFAULT 0,
+    signal TEXT DEFAULT 'hold',
+    confidence REAL DEFAULT 0,
+    analysis_json TEXT DEFAULT '{}',
+    master_score REAL DEFAULT 0,
+    risk_level TEXT DEFAULT 'medium',
+    technical_score REAL DEFAULT 0,
+    fundamental_score REAL DEFAULT 0,
+    sentiment_score REAL DEFAULT 0,
+    risk_score REAL DEFAULT 0,
+    momentum_score REAL DEFAULT 0,
+    trend TEXT DEFAULT 'neutral',
+    liquidity_level TEXT DEFAULT 'medium',
+    volatility REAL DEFAULT 0,
+    upside_potential REAL DEFAULT 0,
+    is_tradeable INTEGER DEFAULT 1,
+    volume_trend TEXT DEFAULT 'stable',
+    price_strength REAL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT
+, analysis_date TEXT, price_change_1d REAL DEFAULT 0, price_change_1w REAL DEFAULT 0, price_change_1m REAL DEFAULT 0, confluence_score REAL DEFAULT 0, volume_seasonal_score REAL DEFAULT 0, timing_score REAL, pattern_score REAL, market_regime_score REAL, risk_reward REAL, entry_price REAL, market TEXT)
+Indexes:
+  - sqlite_autoindex_cached_analysis_1: (auto-index)
+  - idx_cached_ticker: CREATE INDEX idx_cached_ticker ON cached_analysis(ticker)
+  - idx_cached_date: CREATE INDEX idx_cached_date ON cached_analysis(analysis_date)
+  - idx_cached_tradeable: CREATE INDEX idx_cached_tradeable ON cached_analysis(is_tradeable, analysis_date)
+Columns: id:INTEGER(PK), ticker:TEXT, sector:TEXT, current_price:REAL, recommendation:TEXT, composite_score:REAL, target_price:REAL, stop_loss:REAL, signal:TEXT, confidence:REAL, analysis_json:TEXT, master_score:REAL, risk_level:TEXT, technical_score:REAL, fundamental_score:REAL, sentiment_score:REAL, risk_score:REAL, momentum_score:REAL, trend:TEXT, liquidity_level:TEXT, volatility:REAL, upside_potential:REAL, is_tradeable:INTEGER, volume_trend:TEXT, price_strength:REAL, created_at:TEXT, updated_at:TEXT, analysis_date:TEXT, price_change_1d:REAL, price_change_1w:REAL, price_change_1m:REAL, confluence_score:REAL, volume_seasonal_score:REAL, timing_score:REAL, pattern_score:REAL, market_regime_score:REAL, risk_reward:REAL, entry_price:REAL, market:TEXT
+
+### conjunction_patterns
+Rows: 150
+Schema:
+CREATE TABLE conjunction_patterns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                persona_name TEXT DEFAULT 'balanced',
+                sector TEXT NOT NULL,
+                regime TEXT NOT NULL,
+                rsi_bucket TEXT NOT NULL,
+                month INTEGER,
+                quarter TEXT,
+                total_signals INTEGER DEFAULT 0,
+                wins INTEGER DEFAULT 0,
+                losses INTEGER DEFAULT 0,
+                win_rate REAL DEFAULT 0,
+                avg_pnl REAL DEFAULT 0,
+                decision TEXT DEFAULT 'proceed',
+                confidence_adjustment REAL DEFAULT 0,
+                last_updated TEXT,
+                UNIQUE(persona_name, sector, regime, rsi_bucket, month)
+            )
+Indexes:
+  - sqlite_autoindex_conjunction_patterns_1: (auto-index)
+  - idx_conjunction_lookup: CREATE INDEX idx_conjunction_lookup ON conjunction_patterns(sector, regime, rsi_bucket, month)
+Columns: id:INTEGER(PK), persona_name:TEXT, sector:TEXT!, regime:TEXT!, rsi_bucket:TEXT!, month:INTEGER, quarter:TEXT, total_signals:INTEGER, wins:INTEGER, losses:INTEGER, win_rate:REAL, avg_pnl:REAL, decision:TEXT, confidence_adjustment:REAL, last_updated:TEXT
+
+### context_logs
+Rows: 0
+Schema:
+CREATE TABLE context_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticker TEXT,
+                sector TEXT,
+                regime TEXT,
+                rsi_bucket TEXT,
+                month INTEGER,
+                quarter TEXT,
+                persona TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+Indexes:
+Columns: id:INTEGER(PK), ticker:TEXT, sector:TEXT, regime:TEXT, rsi_bucket:TEXT, month:INTEGER, quarter:TEXT, persona:TEXT, created_at:TEXT
+
+### daily_analytics_summary
+Rows: 0
+Schema:
+CREATE TABLE daily_analytics_summary (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT UNIQUE,
+            total_page_views INTEGER DEFAULT 0,
+            unique_visitors INTEGER DEFAULT 0,
+            new_users INTEGER DEFAULT 0,
+            returning_users INTEGER DEFAULT 0,
+            total_sessions INTEGER DEFAULT 0,
+            avg_session_duration INTEGER DEFAULT 0,
+            bounce_rate REAL DEFAULT 0,
+            mobile_users INTEGER DEFAULT 0,
+            desktop_users INTEGER DEFAULT 0,
+            tablet_users INTEGER DEFAULT 0,
+            top_pages TEXT,
+            top_features TEXT,
+            top_stocks_viewed TEXT,
+            top_referrers TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - sqlite_autoindex_daily_analytics_summary_1: (auto-index)
+  - idx_das_date: CREATE INDEX idx_das_date ON daily_analytics_summary(date)
+Columns: id:INTEGER(PK), date:TEXT, total_page_views:INTEGER, unique_visitors:INTEGER, new_users:INTEGER, returning_users:INTEGER, total_sessions:INTEGER, avg_session_duration:INTEGER, bounce_rate:REAL, mobile_users:INTEGER, desktop_users:INTEGER, tablet_users:INTEGER, top_pages:TEXT, top_features:TEXT, top_stocks_viewed:TEXT, top_referrers:TEXT, created_at:TEXT
+
+### egksco_price_history
+Rows: 0
+Schema:
+CREATE TABLE egksco_price_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT NOT NULL,
+                date TEXT NOT NULL,
+                open_price REAL,
+                high_price REAL,
+                low_price REAL,
+                close_price REAL,
+                volume INTEGER,
+                value REAL,
+                source TEXT DEFAULT 'egksco',
+                UNIQUE(symbol, date)
+            )
+Indexes:
+  - sqlite_autoindex_egksco_price_history_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, date:TEXT!, open_price:REAL, high_price:REAL, low_price:REAL, close_price:REAL, volume:INTEGER, value:REAL, source:TEXT
+
+### egksco_stocks
+Rows: 250
+Schema:
+CREATE TABLE egksco_stocks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT UNIQUE NOT NULL,
+                name TEXT,
+                name_ar TEXT,
+                last_price REAL,
+                open_price REAL,
+                high_price REAL,
+                low_price REAL,
+                prev_close REAL,
+                change_pct REAL,
+                volume INTEGER,
+                value REAL,
+                trades_count INTEGER,
+                last_update TEXT,
+                source TEXT DEFAULT 'egksco',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+Indexes:
+  - sqlite_autoindex_egksco_stocks_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT!, name:TEXT, name_ar:TEXT, last_price:REAL, open_price:REAL, high_price:REAL, low_price:REAL, prev_close:REAL, change_pct:REAL, volume:INTEGER, value:REAL, trades_count:INTEGER, last_update:TEXT, source:TEXT, created_at:TEXT, updated_at:TEXT
+
+### egksco_sync_status
+Rows: 451
+Schema:
+CREATE TABLE egksco_sync_status (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sync_type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                stocks_count INTEGER DEFAULT 0,
+                new_stocks INTEGER DEFAULT 0,
+                updated_stocks INTEGER DEFAULT 0,
+                errors INTEGER DEFAULT 0,
+                duration_seconds REAL,
+                message TEXT,
+                sync_time TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+Indexes:
+Columns: id:INTEGER(PK), sync_type:TEXT!, status:TEXT!, stocks_count:INTEGER, new_stocks:INTEGER, updated_stocks:INTEGER, errors:INTEGER, duration_seconds:REAL, message:TEXT, sync_time:TEXT
+
+### error_logs
+Rows: 0
+Schema:
+CREATE TABLE error_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            error_type TEXT NOT NULL,
+            error_message TEXT,
+            stack_trace TEXT,
+            page_path TEXT,
+            user_id TEXT,
+            session_id TEXT,
+            user_agent TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+Columns: id:INTEGER(PK), error_type:TEXT!, error_message:TEXT, stack_trace:TEXT, page_path:TEXT, user_id:TEXT, session_id:TEXT, user_agent:TEXT, created_at:TEXT
+
+### feature_usage
+Rows: 0
+Schema:
+CREATE TABLE feature_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            session_id TEXT,
+            feature_name TEXT NOT NULL,
+            action TEXT,
+            metadata TEXT,
+            ticker TEXT,
+            duration_ms INTEGER,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - idx_fu_name: CREATE INDEX idx_fu_name ON feature_usage(feature_name)
+  - idx_fu_created: CREATE INDEX idx_fu_created ON feature_usage(created_at)
+Columns: id:INTEGER(PK), user_id:TEXT, session_id:TEXT, feature_name:TEXT!, action:TEXT, metadata:TEXT, ticker:TEXT, duration_ms:INTEGER, created_at:TEXT
+
+### financial_obligations
+Rows: 0
+Schema:
+CREATE TABLE financial_obligations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL DEFAULT '',
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        creditor TEXT NOT NULL DEFAULT '',
+        total_amount REAL NOT NULL DEFAULT 0,
+        remaining_amount REAL NOT NULL DEFAULT 0,
+        monthly_payment REAL NOT NULL DEFAULT 0,
+        interest_rate REAL,
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        next_payment_date TEXT,
+        status TEXT DEFAULT 'active',
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+Indexes:
+Columns: id:INTEGER(PK), user_id:TEXT!, type:TEXT!, name:TEXT!, creditor:TEXT!, total_amount:REAL!, remaining_amount:REAL!, monthly_payment:REAL!, interest_rate:REAL, start_date:TEXT!, end_date:TEXT, next_payment_date:TEXT, status:TEXT, notes:TEXT, created_at:TEXT, updated_at:TEXT
+
+### financial_transactions
+Rows: 0
+Schema:
+CREATE TABLE financial_transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL DEFAULT '',
+        type TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        is_recurring INTEGER DEFAULT 0,
+        recurring_frequency TEXT,
+        transaction_date TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )
+Indexes:
+Columns: id:INTEGER(PK), user_id:TEXT!, type:TEXT!, category:TEXT!, amount:REAL!, description:TEXT!, is_recurring:INTEGER, recurring_frequency:TEXT, transaction_date:TEXT!, notes:TEXT, created_at:TEXT
+
+### gold_alerts
+Rows: 0
+Schema:
+CREATE TABLE gold_alerts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL DEFAULT '',
+      karat INTEGER NOT NULL DEFAULT 24,
+      condition TEXT NOT NULL DEFAULT 'above',
+      threshold_price REAL,
+      is_active INTEGER DEFAULT 1,
+      last_triggered TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+Indexes:
+Columns: id:INTEGER(PK), user_id:TEXT!, karat:INTEGER!, condition:TEXT!, threshold_price:REAL, is_active:INTEGER, last_triggered:TEXT, created_at:TEXT
+
+### gold_prices
+Rows: 3
+Schema:
+CREATE TABLE gold_prices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        karat TEXT NOT NULL,
+        price_per_gram REAL NOT NULL,
+        currency TEXT DEFAULT 'EGP',
+        source TEXT,
+        last_update TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(karat, currency)
+      )
+Indexes:
+  - sqlite_autoindex_gold_prices_1: (auto-index)
+Columns: id:INTEGER(PK), karat:TEXT!, price_per_gram:REAL!, currency:TEXT, source:TEXT, last_update:TEXT
+
+### indicator_trust_scores
+Rows: 10
+Schema:
+CREATE TABLE indicator_trust_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                indicator_name TEXT NOT NULL,
+                persona_name TEXT DEFAULT 'balanced',
+                timeframe TEXT,
+                success_count INTEGER DEFAULT 0,
+                failure_count INTEGER DEFAULT 0,
+                trust_score REAL DEFAULT 0.5,
+                last_updated TEXT,
+                UNIQUE(indicator_name, persona_name, timeframe)
+            )
+Indexes:
+  - sqlite_autoindex_indicator_trust_scores_1: (auto-index)
+Columns: id:INTEGER(PK), indicator_name:TEXT!, persona_name:TEXT, timeframe:TEXT, success_count:INTEGER, failure_count:INTEGER, trust_score:REAL, last_updated:TEXT
+
+### investors_data
+Rows: 30
+Schema:
+CREATE TABLE investors_data (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  session_type TEXT,
+  individuals_buys_value REAL,
+  individuals_sells_value REAL,
+  individuals_net_value REAL,
+  arab_buys_value REAL,
+  arab_sells_value REAL,
+  arab_net_value REAL,
+  foreign_buys_value REAL,
+  foreign_sells_value REAL,
+  foreign_net_value REAL,
+  total_buys_value REAL,
+  total_sells_value REAL,
+  number_of_trades INTEGER,
+  source TEXT DEFAULT 'computed_estimate',
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(date)
+)
+Indexes:
+  - sqlite_autoindex_investors_data_1: (auto-index)
+Columns: id:INTEGER(PK), date:TEXT!, session_type:TEXT, individuals_buys_value:REAL, individuals_sells_value:REAL, individuals_net_value:REAL, arab_buys_value:REAL, arab_sells_value:REAL, arab_net_value:REAL, foreign_buys_value:REAL, foreign_sells_value:REAL, foreign_net_value:REAL, total_buys_value:REAL, total_sells_value:REAL, number_of_trades:INTEGER, source:TEXT, created_at:TEXT
+
+### learned_lessons
+Rows: 0
+Schema:
+CREATE TABLE learned_lessons (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lesson_type TEXT NOT NULL,
+                lesson_text TEXT NOT NULL,
+                context_json TEXT,
+                confidence REAL DEFAULT 0.5,
+                source TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )
+Indexes:
+Columns: id:INTEGER(PK), lesson_type:TEXT!, lesson_text:TEXT!, context_json:TEXT, confidence:REAL, source:TEXT, created_at:TEXT, updated_at:TEXT
+
+### macro_indicators
+Rows: 3
+Schema:
+CREATE TABLE macro_indicators (
+        date TEXT PRIMARY KEY,
+        usd_to_egp REAL,
+        cbe_interest_rate REAL,
+        usd_change_3d REAL,
+        created_at TEXT DEFAULT (datetime('now'))
+    , indicator_name TEXT, indicator_value REAL DEFAULT 0, unit TEXT DEFAULT '%', source TEXT, recorded_at TEXT, updated_at TEXT)
+Indexes:
+  - sqlite_autoindex_macro_indicators_1: (auto-index)
+  - idx_macro_indicators_name: CREATE UNIQUE INDEX idx_macro_indicators_name ON macro_indicators(indicator_name)
+Columns: date:TEXT(PK), usd_to_egp:REAL, cbe_interest_rate:REAL, usd_change_3d:REAL, created_at:TEXT, indicator_name:TEXT, indicator_value:REAL, unit:TEXT, source:TEXT, recorded_at:TEXT, updated_at:TEXT
+
+### market_indices
+Rows: 5
+Schema:
+CREATE TABLE market_indices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  symbol TEXT UNIQUE,
+  name TEXT,
+  name_ar TEXT,
+  current_value REAL,
+  previous_close REAL,
+  change REAL,
+  change_percent REAL,
+  is_shariah INTEGER DEFAULT 0,
+  last_update TEXT
+)
+Indexes:
+  - sqlite_autoindex_market_indices_1: (auto-index)
+Columns: id:INTEGER(PK), symbol:TEXT, name:TEXT, name_ar:TEXT, current_value:REAL, previous_close:REAL, change:REAL, change_percent:REAL, is_shariah:INTEGER, last_update:TEXT
+
+### market_pulse_cache
+Rows: 2132
+Schema:
+CREATE TABLE market_pulse_cache (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        regime TEXT,
+                        regime_5 TEXT,
+                        strength REAL,
+                        breadth REAL,
+                        risk_level TEXT,
+                        advancers INTEGER,
+                        decliners INTEGER,
+                        flat_count INTEGER,
+                        egx30_price REAL,
+                        sma20 REAL,
+                        sma50 REAL,
+                        sma200 REAL,
+                        atr_pct REAL,
+                        volatility_regime TEXT,
+                        trading_paused INTEGER DEFAULT 0,
+                        pause_reason TEXT,
+                        sector_top TEXT,
+                        sector_bottom TEXT,
+                        created_at TEXT DEFAULT (datetime('now'))
+                    )
+Indexes:
+Columns: id:INTEGER(PK), regime:TEXT, regime_5:TEXT, strength:REAL, breadth:REAL, risk_level:TEXT, advancers:INTEGER, decliners:INTEGER, flat_count:INTEGER, egx30_price:REAL, sma20:REAL, sma50:REAL, sma200:REAL, atr_pct:REAL, volatility_regime:TEXT, trading_paused:INTEGER, pause_reason:TEXT, sector_top:TEXT, sector_bottom:TEXT, created_at:TEXT
+
+### market_regime_log
+Rows: 34
+Schema:
+CREATE TABLE market_regime_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL UNIQUE,
+        regime TEXT NOT NULL,
+        confidence REAL DEFAULT 0,
+        egx30_close REAL,
+        egx30_change_pct REAL,
+        volume_ratio REAL,
+        adx REAL,
+        rsi REAL,
+        created_at TEXT DEFAULT (datetime('now'))
+    , stock_id INTEGER, regime_ar TEXT, ticker TEXT, reason TEXT, indicators TEXT)
+Indexes:
+  - sqlite_autoindex_market_regime_log_1: (auto-index)
+Columns: id:INTEGER(PK), date:TEXT!, regime:TEXT!, confidence:REAL, egx30_close:REAL, egx30_change_pct:REAL, volume_ratio:REAL, adx:REAL, rsi:REAL, created_at:TEXT, stock_id:INTEGER, regime_ar:TEXT, ticker:TEXT, reason:TEXT, indicators:TEXT
+
+### news_items
+Rows: 0
+Schema:
+CREATE TABLE news_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT,
+            published_at TEXT,
+            category TEXT DEFAULT 'general',
+            title TEXT,
+            content TEXT,
+            sentiment TEXT DEFAULT 'neutral',
+            importance INTEGER DEFAULT 1,
+            source TEXT,
+            url TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+Indexes:
+  - idx_news_ticker: CREATE INDEX idx_news_ticker ON news_items(ticker)
+  - idx_news_published: CREATE INDEX idx_news_published ON news_items(published_at DESC)
+  - idx_news_category: CREATE INDEX idx_news_category ON news_items(category, published_at DESC)
+Columns: id:INTEGER(PK), ticker:TEXT, published_at:TEXT, category:TEXT, title:TEXT, content:TEXT, sentiment:TEXT, importance:INTEGER, source:TEXT, url:TEXT, created_at:TEXT
+
+### obligation_payments
+Rows: 0
+Schema:
+CREATE TABLE obligation_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        obligation_id INTEGER NOT NULL,
+        user_id TEXT NOT NULL DEFAULT '',
+        amount REAL NOT NULL,
+        payment_date TEXT NOT NULL,
+        principal_amount REAL DEFAULT 0,
+        interest_amount REAL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (obligation_id) REFERENCES financial_obligations(id)
+      )
+Indexes:
+Columns: id:INTEGER(PK), obligation_id:INTEGER!, user_id:TEXT!, amount:REAL!, payment_date:TEXT!, principal_amount:REAL, interest_amount:REAL, notes:TEXT, created_at:TEXT
+
+### outcome_logs
+Rows: 8544
+Schema:
+CREATE TABLE outcome_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trade_id INTEGER NOT NULL,
+                close_date TEXT NOT NULL,
+                actual_exit_price REAL,
+                close_reason TEXT,
+                gross_profit_loss REAL,
+                net_profit_loss REAL,
+                profit_loss_percent REAL,
+                days_open INTEGER,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+Indexes:
+Columns: id:INTEGER(PK), trade_id:INTEGER!, close_date:TEXT!, actual_exit_price:REAL, close_reason:TEXT, gross_profit_loss:REAL, net_profit_loss:REAL, profit_loss_percent:REAL, days_open:INTEGER, created_at:TEXT
+
+### page_views
+Rows: 0
+Schema:
+CREATE TABLE page_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            session_id TEXT,
+            page_path TEXT NOT NULL,
+            page_title TEXT,
+            referrer TEXT,
+            ip_hash TEXT,
+            user_agent TEXT,
+            device_type TEXT,
+            browser TEXT,
+            os TEXT,
+            country TEXT,
+            city TEXT,
+            load_time_ms INTEGER,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+  - idx_pv_path: CREATE INDEX idx_pv_path ON page_views(page_path)
+  - idx_pv_created: CREATE INDEX idx_pv_created ON page_views(created_at)
+Columns: id:INTEGER(PK), user_id:TEXT, session_id:TEXT, page_path:TEXT!, page_title:TEXT, referrer:TEXT, ip_hash:TEXT, user_agent:TEXT, device_type:TEXT, browser:TEXT, os:TEXT, country:TEXT, city:TEXT, load_time_ms:INTEGER, created_at:TEXT
+
+### pending_settlements
+Rows: 0
+Schema:
+CREATE TABLE pending_settlements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    ticker TEXT,
+    side TEXT NOT NULL,                  -- 'buy' | 'sell'
+    quantity REAL NOT NULL DEFAULT 0,
+    price REAL NOT NULL DEFAULT 0,
+    value REAL NOT NULL DEFAULT 0,        -- quantity * price
+    trade_date TEXT NOT NULL,             -- ISO timestamp when trade executed
+    settle_date TEXT NOT NULL,            -- trade_date + T2_SETTLEMENT_DAYS
+    settled INTEGER NOT NULL DEFAULT 0,   -- 0 = pending, 1 = settled (auto-flagged after T+2)
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+)
+Indexes:
+  - idx_ps_user_side_settled: CREATE INDEX idx_ps_user_side_settled ON pending_settlements(user_id, side, settled)
+  - idx_ps_user_trade_date: CREATE INDEX idx_ps_user_trade_date ON pending_settlements(user_id, trade_date)
+Columns: id:INTEGER(PK), user_id:TEXT!, ticker:TEXT, side:TEXT!, quantity:REAL!, price:REAL!, value:REAL!, trade_date:TEXT!, settle_date:TEXT!, settled:INTEGER!, notes:TEXT, created_at:TEXT
+
+### portfolio_assets
+Rows: 25
+Schema:
+CREATE TABLE portfolio_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL DEFAULT '',
+    type TEXT NOT NULL DEFAULT 'stock',
+    name TEXT NOT NULL,
+    total_invested REAL NOT NULL DEFAULT 0,
+    current_value REAL NOT NULL DEFAULT 0,
+    notes TEXT,
+    weight_grams REAL,
+    karat INTEGER,
+    purchase_price_per_gram REAL,
+    bank_name TEXT,
+    interest_rate REAL,
+    certificate_duration_months INTEGER,
+    certificate_return_rate REAL,
+    certificate_maturity_date TEXT,
+    fund_name TEXT,
+    fund_type TEXT,
+    stock_id INTEGER,
+    stock_ticker TEXT,
+    quantity REAL,
+    avg_buy_price REAL,
+    added_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  , portfolio_id TEXT DEFAULT 'default', market TEXT DEFAULT 'EGX', currency TEXT DEFAULT 'EGP', is_active INTEGER DEFAULT 1, asset_class TEXT DEFAULT 'stock', annual_yield REAL DEFAULT 0)
+Indexes:
+Columns: id:INTEGER(PK), user_id:TEXT!, type:TEXT!, name:TEXT!, total_invested:REAL!, current_value:REAL!, notes:TEXT, weight_grams:REAL, karat:INTEGER, purchase_price_per_gram:REAL, bank_name:TEXT, interest_rate:REAL, certificate_duration_months:INTEGER, certificate_return_rate:REAL, certificate_maturity_date:TEXT, fund_name:TEXT, fund_type:TEXT, stock_id:INTEGER, stock_ticker:TEXT, quantity:REAL, avg_buy_price:REAL, added_at:TEXT, updated_at:TEXT, portfolio_id:TEXT, market:TEXT, currency:TEXT, is_active:INTEGER, asset_class:TEXT, annual_yield:REAL
+
+### portfolios
+Rows: 3
+Schema:
+CREATE TABLE portfolios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      broker TEXT DEFAULT 'manual',
+      market TEXT DEFAULT 'EGX',
+      currency TEXT DEFAULT 'EGP',
+      color TEXT DEFAULT 'blue',
+      is_master INTEGER DEFAULT 0,
+      initial_capital REAL DEFAULT 100000,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+Indexes:
+Columns: id:INTEGER(PK), user_id:TEXT!, name:TEXT!, broker:TEXT, market:TEXT, currency:TEXT, color:TEXT, is_master:INTEGER, initial_capital:REAL, created_at:TEXT, updated_at:TEXT
+
+### radar_signal_tracking
+Rows: 96
+Schema:
+CREATE TABLE radar_signal_tracking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticker TEXT NOT NULL,
+    signal_date TEXT NOT NULL,
+    signal_type TEXT NOT NULL,
+    entry_price REAL NOT NULL,
+    path TEXT,
+    reason TEXT,
+    status TEXT DEFAULT 'pending',
+    outcome_7d REAL,
+    outcome_14d REAL,
+    outcome_30d REAL,
+    max_price_after REAL,
+    min_price_after REAL,
+    verified_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+Indexes:
+  - idx_radar_sig_ticker: CREATE INDEX idx_radar_sig_ticker ON radar_signal_tracking(ticker)
+  - idx_radar_sig_status: CREATE INDEX idx_radar_sig_status ON radar_signal_tracking(status)
+  - idx_radar_sig_type: CREATE INDEX idx_radar_sig_type ON radar_signal_tracking(signal_type)
+  - idx_radar_sig_date: CREATE INDEX idx_radar_sig_date ON radar_signal_tracking(signal_date)
+Columns: id:INTEGER(PK), ticker:TEXT!, signal_date:TEXT!, signal_type:TEXT!, entry_price:REAL!, path:TEXT, reason:TEXT, status:TEXT, outcome_7d:REAL, outcome_14d:REAL, outcome_30d:REAL, max_price_after:REAL, min_price_after:REAL, verified_at:TEXT, created_at:TEXT
+
+### real_evaluated_predictions
+Rows: 4035
+Schema:
+CREATE TABLE real_evaluated_predictions (
+            id INTEGER PRIMARY KEY,
+            ticker TEXT,
+            signal TEXT,
+            entry_price REAL,
+            exit_price REAL,
+            hit_target INTEGER,
+            hit_stop INTEGER,
+            return_pct REAL,
+            holding_days INTEGER,
+            evaluated_at TEXT DEFAULT (datetime('now'))
+        )
+Indexes:
+Columns: id:INTEGER(PK), ticker:TEXT, signal:TEXT, entry_price:REAL, exit_price:REAL, hit_target:INTEGER, hit_stop:INTEGER, return_pct:REAL, holding_days:INTEGER, evaluated_at:TEXT
+
+### regime_indicator_weights
+Rows: 0
+Schema:
+CREATE TABLE regime_indicator_weights (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                regime TEXT NOT NULL,
+                indicator_name TEXT NOT NULL,
+                weight REAL DEFAULT 0.5,
+                last_updated TEXT,
+                UNIQUE(regime, indicator_name)
+            )
+Indexes:
+  - sqlite_autoindex_regime_indicator_weights_1: (auto-index)
+Columns: id:INTEGER(PK), regime:TEXT!, indicator_name:TEXT!, weight:REAL, last_updated:TEXT
+
+### scraping_status
+Rows: 0
+Schema:
+CREATE TABLE scraping_status (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    channel_id TEXT NOT NULL UNIQUE,
+                    status TEXT DEFAULT 'idle',
+                    last_run TEXT,
+                    messages_scraped INTEGER DEFAULT 0,
+                    recommendations_found INTEGER DEFAULT 0,
+                    news_found INTEGER DEFAULT 0,
+                    error_message TEXT
+                )
+Indexes:
+  - sqlite_autoindex_scraping_status_1: (auto-index)
+Columns: id:INTEGER(PK), channel_id:TEXT!, status:TEXT, last_run:TEXT, messages_scraped:INTEGER, recommendations_found:INTEGER, news_found:INTEGER, error_message:TEXT
+
+### screener_presets
+Rows: 1710
+Schema:
+CREATE TABLE screener_presets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                preset TEXT NOT NULL,
+                ticker TEXT NOT NULL,
+                name TEXT,
+                name_ar TEXT,
+                market TEXT DEFAULT 'EGX',
+                sector TEXT,
+                current_price REAL,
+                previous_close REAL,
+                change_1d REAL,
+                change_1w REAL,
+                change_1m REAL,
+                volume INTEGER,
+                volume_week INTEGER,
+                volume_month INTEGER,
+                turnover_egp REAL,
+                fair_value REAL,
+                upside_percent REAL,
+                market_cap REAL,
+                pe_ratio REAL,
+                computed_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(ticker, market, preset)
+            )
+Indexes:
+  - sqlite_autoindex_screener_presets_1: (auto-index)
+Columns: id:INTEGER(PK), preset:TEXT!, ticker:TEXT!, name:TEXT, name_ar:TEXT, market:TEXT, sector:TEXT, current_price:REAL, previous_close:REAL, change_1d:REAL, change_1w:REAL, change_1m:REAL, volume:INTEGER, volume_week:INTEGER, volume_month:INTEGER, turnover_egp:REAL, fair_value:REAL, upside_percent:REAL, market_cap:REAL, pe_ratio:REAL, computed_at:TEXT
+
+### screener_results
+Rows: 173
+Schema:
+CREATE TABLE screener_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            preset TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            name TEXT,
+            market TEXT,
+            price REAL,
+            score REAL,
+            reason TEXT,
+            scan_date TEXT NOT NULL
+        )
+Indexes:
+Columns: id:INTEGER(PK), preset:TEXT!, symbol:TEXT!, name:TEXT, market:TEXT, price:REAL, score:REAL, reason:TEXT, scan_date:TEXT!
+
+### stock_adaptive_profiles
+Rows: 67
+Schema:
+CREATE TABLE stock_adaptive_profiles (
+                ticker TEXT PRIMARY KEY,
+                sector TEXT,
+                -- التذبذب التاريخي
+                volatility_percentile_90d REAL,
+                avg_atr_pct REAL,
+                -- سلوك الحجم
+                avg_volume_20d REAL,
+                volume_spike_threshold REAL,
+                -- النطاق الحقيقي اللي بيتحرك فيه
+                typical_move_1d REAL,
+                typical_move_5d REAL,
+                typical_move_15d REAL,
+                -- سلوك الأزمات
+                reaction_to_market_crashes TEXT,
+                crash_avg_drawdown REAL,
+                crash_recovery_days REAL,
+                -- شخصية السهم (من stock_dna_analyzer)
+                personality_type_en TEXT,
+                -- بيانات العينة
+                history_days INTEGER,
+                history_start_date TEXT,
+                history_end_date TEXT,
+                confidence TEXT,
+                updated_at TEXT,
+                profile_json TEXT,
+                FOREIGN KEY (ticker) REFERENCES stocks(ticker) ON DELETE CASCADE
+            )
+Indexes:
+  - sqlite_autoindex_stock_adaptive_profiles_1: (auto-index)
+  - idx_stock_adaptive_profiles_sector: CREATE INDEX idx_stock_adaptive_profiles_sector ON stock_adaptive_profiles(sector)
+  - idx_stock_adaptive_profiles_personality: CREATE INDEX idx_stock_adaptive_profiles_personality ON stock_adaptive_profiles(personality_type_en)
+Columns: ticker:TEXT(PK), sector:TEXT, volatility_percentile_90d:REAL, avg_atr_pct:REAL, avg_volume_20d:REAL, volume_spike_threshold:REAL, typical_move_1d:REAL, typical_move_5d:REAL, typical_move_15d:REAL, reaction_to_market_crashes:TEXT, crash_avg_drawdown:REAL, crash_recovery_days:REAL, personality_type_en:TEXT, history_days:INTEGER, history_start_date:TEXT, history_end_date:TEXT, confidence:TEXT, updated_at:TEXT, profile_json:TEXT
+
+### stock_daily_prices
+Rows: 17930
+Schema:
+CREATE TABLE stock_daily_prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            price_date TEXT NOT NULL,
+            open REAL,
+            high REAL,
+            low REAL,
+            close REAL,
+            volume INTEGER,
+            change_percent REAL,
+            fetch_time TEXT, open_price REAL, high_price REAL, low_price REAL, close_price REAL, turnover REAL, market TEXT,
+            UNIQUE(ticker, price_date)
+        )
+Indexes:
+  - sqlite_autoindex_stock_daily_prices_1: (auto-index)
+  - idx_sdp_ticker_date: CREATE INDEX idx_sdp_ticker_date ON stock_daily_prices(ticker, price_date DESC)
+  - idx_sdp_date: CREATE INDEX idx_sdp_date ON stock_daily_prices(price_date DESC)
+  - idx_sdp_ticker: CREATE INDEX idx_sdp_ticker ON stock_daily_prices(ticker)
+  - idx_stock_daily_prices_ticker: CREATE INDEX idx_stock_daily_prices_ticker ON stock_daily_prices (ticker)
+  - idx_stock_daily_prices_price_date: CREATE INDEX idx_stock_daily_prices_price_date ON stock_daily_prices (price_date)
+Columns: id:INTEGER(PK), ticker:TEXT!, price_date:TEXT!, open:REAL, high:REAL, low:REAL, close:REAL, volume:INTEGER, change_percent:REAL, fetch_time:TEXT, open_price:REAL, high_price:REAL, low_price:REAL, close_price:REAL, turnover:REAL, market:TEXT
+
+### stock_phase
+Rows: 1133
+Schema:
+CREATE TABLE stock_phase (
+            symbol TEXT PRIMARY KEY,
+            phase TEXT NOT NULL,
+            phase_ar TEXT NOT NULL,
+            summary_ar TEXT NOT NULL,
+            support REAL,
+            support_2 REAL,
+            resistance REAL,
+            resistance_2 REAL,
+            green_floor REAL,
+            invalidation REAL,
+            pct_to_support REAL,
+            pct_to_resistance REAL,
+            rvol REAL,
+            above_sma20 INTEGER,
+            above_sma50 INTEGER,
+            above_sma200 INTEGER,
+            atr_pct REAL,
+            chg_5d REAL,
+            chg_20d REAL,
+            correction_ending_score INTEGER DEFAULT 0,
+            breakout_ready INTEGER DEFAULT 0,
+            profit_taking_risk INTEGER DEFAULT 0,
+            last_close REAL,
+            computed_at TEXT NOT NULL,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+Indexes:
+  - sqlite_autoindex_stock_phase_1: (auto-index)
+  - idx_stock_phase_phase: CREATE INDEX idx_stock_phase_phase ON stock_phase(phase)
+Columns: symbol:TEXT(PK), phase:TEXT!, phase_ar:TEXT!, summary_ar:TEXT!, support:REAL, support_2:REAL, resistance:REAL, resistance_2:REAL, green_floor:REAL, invalidation:REAL, pct_to_support:REAL, pct_to_resistance:REAL, rvol:REAL, above_sma20:INTEGER, above_sma50:INTEGER, above_sma200:INTEGER, atr_pct:REAL, chg_5d:REAL, chg_20d:REAL, correction_ending_score:INTEGER, breakout_ready:INTEGER, profit_taking_risk:INTEGER, last_close:REAL, computed_at:TEXT!, updated_at:TEXT
+
+### stocks
+Rows: 976
+Schema:
+CREATE TABLE stocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ticker TEXT NOT NULL,
+            name TEXT,
+            name_ar TEXT,
+            market TEXT NOT NULL DEFAULT 'EGX',
+            sector TEXT,
+            industry TEXT,
+            current_price REAL,
+            previous_close REAL,
+            open_price REAL,
+            high_price REAL,
+            low_price REAL,
+            change_percent REAL,
+            volume INTEGER,
+            market_cap REAL,
+            pe_ratio REAL,
+            pb_ratio REAL,
+            ps_ratio REAL,
+            eps REAL,
+            roe REAL,
+            roa REAL,
+            debt_to_equity REAL,
+            current_ratio REAL,
+            book_value_per_share REAL,
+            ma_50 REAL,
+            ma_200 REAL,
+            rsi REAL,
+            support REAL,
+            resistance REAL,
+            signal REAL,
+            trend TEXT,
+            dividend_yield REAL,
+            profit_margin REAL,
+            avg_volume REAL,
+            beta REAL,
+            high_52w REAL,
+            low_52w REAL,
+            close REAL,
+            change_value REAL,
+            is_active INTEGER DEFAULT 1,
+            is_egx30 INTEGER DEFAULT 0,
+            is_egx70 INTEGER DEFAULT 0,
+            is_egx100 INTEGER DEFAULT 0,
+            last_update TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        , dps_ttm REAL DEFAULT 0, free_float_percentage REAL, free_float_shares INTEGER, change REAL, last_updated TEXT, currency TEXT DEFAULT 'EGP', exchange TEXT DEFAULT 'EGX', is_suspended INTEGER DEFAULT 0, is_egx INTEGER DEFAULT 1, turnover_egp REAL, value_traded REAL, logo_url TEXT DEFAULT '')
+Indexes:
+  - idx_stocks_market: CREATE INDEX idx_stocks_market ON stocks(market)
+  - idx_stocks_ticker: CREATE UNIQUE INDEX idx_stocks_ticker ON stocks(ticker)
+  - idx_stocks_sector: CREATE INDEX idx_stocks_sector ON stocks (sector)
+  - idx_stocks_is_egx30: CREATE INDEX idx_stocks_is_egx30 ON stocks (is_egx30)
+  - idx_stocks_is_egx70: CREATE INDEX idx_stocks_is_egx70 ON stocks (is_egx70)
+  - idx_stocks_is_egx100: CREATE INDEX idx_stocks_is_egx100 ON stocks (is_egx100)
+Columns: id:INTEGER(PK), ticker:TEXT!, name:TEXT, name_ar:TEXT, market:TEXT!, sector:TEXT, industry:TEXT, current_price:REAL, previous_close:REAL, open_price:REAL, high_price:REAL, low_price:REAL, change_percent:REAL, volume:INTEGER, market_cap:REAL, pe_ratio:REAL, pb_ratio:REAL, ps_ratio:REAL, eps:REAL, roe:REAL, roa:REAL, debt_to_equity:REAL, current_ratio:REAL, book_value_per_share:REAL, ma_50:REAL, ma_200:REAL, rsi:REAL, support:REAL, resistance:REAL, signal:REAL, trend:TEXT, dividend_yield:REAL, profit_margin:REAL, avg_volume:REAL, beta:REAL, high_52w:REAL, low_52w:REAL, close:REAL, change_value:REAL, is_active:INTEGER, is_egx30:INTEGER, is_egx70:INTEGER, is_egx100:INTEGER, last_update:TEXT, created_at:TEXT, updated_at:TEXT, dps_ttm:REAL, free_float_percentage:REAL, free_float_shares:INTEGER, change:REAL, last_updated:TEXT, currency:TEXT, exchange:TEXT, is_suspended:INTEGER, is_egx:INTEGER, turnover_egp:REAL, value_traded:REAL, logo_url:TEXT
+
+### stocks_backup
+Rows: 335
+Schema:
+CREATE TABLE "stocks_backup" (
+        id INTEGER PRIMARY KEY, ticker TEXT UNIQUE, name TEXT, 
+        market TEXT DEFAULT 'EGX', sector TEXT, current_price REAL, volume INTEGER
+    , is_active INTEGER DEFAULT 1, previous_close REAL DEFAULT 0, is_egx30 INTEGER DEFAULT 0, is_egx70 INTEGER DEFAULT 0, is_egx100 INTEGER DEFAULT 0, name_ar TEXT, open_price REAL DEFAULT 0, high_price REAL DEFAULT 0, low_price REAL DEFAULT 0, change_percent REAL DEFAULT 0, change_value REAL DEFAULT 0, pe_ratio REAL DEFAULT 0, pb_ratio REAL DEFAULT 0, market_cap REAL DEFAULT 0, dividend_yield REAL DEFAULT 0, eps REAL DEFAULT 0, beta REAL DEFAULT 0, avg_volume REAL DEFAULT 0, high_52w REAL DEFAULT 0, low_52w REAL DEFAULT 0, ma_50 REAL DEFAULT 0, ma_200 REAL DEFAULT 0, rsi REAL DEFAULT 0, macd REAL DEFAULT 0, signal REAL DEFAULT 0, support REAL DEFAULT 0, resistance REAL DEFAULT 0, trend TEXT DEFAULT 'neutral', last_update TEXT, roe REAL DEFAULT 0, profit_margin REAL DEFAULT 0, debt_to_equity REAL DEFAULT 0, close REAL DEFAULT 0)
+Indexes:
+  - sqlite_autoindex_stocks_backup_1: (auto-index)
+Columns: id:INTEGER(PK), ticker:TEXT, name:TEXT, market:TEXT, sector:TEXT, current_price:REAL, volume:INTEGER, is_active:INTEGER, previous_close:REAL, is_egx30:INTEGER, is_egx70:INTEGER, is_egx100:INTEGER, name_ar:TEXT, open_price:REAL, high_price:REAL, low_price:REAL, change_percent:REAL, change_value:REAL, pe_ratio:REAL, pb_ratio:REAL, market_cap:REAL, dividend_yield:REAL, eps:REAL, beta:REAL, avg_volume:REAL, high_52w:REAL, low_52w:REAL, ma_50:REAL, ma_200:REAL, rsi:REAL, macd:REAL, signal:REAL, support:REAL, resistance:REAL, trend:TEXT, last_update:TEXT, roe:REAL, profit_margin:REAL, debt_to_equity:REAL, close:REAL
+
+### system_settings
+Rows: 1
+Schema:
+CREATE TABLE system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                value_type TEXT DEFAULT 'float',
+                description TEXT,
+                category TEXT DEFAULT 'general',
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_by TEXT DEFAULT 'system'
+            )
+Indexes:
+  - sqlite_autoindex_system_settings_1: (auto-index)
+Columns: key:TEXT(PK), value:TEXT!, value_type:TEXT, description:TEXT, category:TEXT, updated_at:TEXT, updated_by:TEXT
+
+### telegram_images
+Rows: 0
+Schema:
+CREATE TABLE telegram_images (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message_id INTEGER NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    image_path TEXT NOT NULL,
+                    ocr_text TEXT,
+                    processed INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+Indexes:
+Columns: id:INTEGER(PK), message_id:INTEGER!, channel_id:TEXT!, image_path:TEXT!, ocr_text:TEXT, processed:INTEGER, created_at:TEXT
+
+### telegram_messages
+Rows: 0
+Schema:
+CREATE TABLE telegram_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message_id INTEGER NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    channel_name TEXT,
+                    text TEXT,
+                    message_type TEXT DEFAULT 'general',
+                    processed_text TEXT,
+                    confidence REAL DEFAULT 0,
+                    has_images INTEGER DEFAULT 0,
+                    image_paths TEXT,
+                    image_urls TEXT,
+                    is_reply INTEGER DEFAULT 0,
+                    reply_to_message_id INTEGER,
+                    reply_to_text TEXT,
+                    views INTEGER DEFAULT 0,
+                    forwards INTEGER DEFAULT 0,
+                    date TEXT,
+                    scraped_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(message_id, channel_id)
+                )
+Indexes:
+  - sqlite_autoindex_telegram_messages_1: (auto-index)
+Columns: id:INTEGER(PK), message_id:INTEGER!, channel_id:TEXT!, channel_name:TEXT, text:TEXT, message_type:TEXT, processed_text:TEXT, confidence:REAL, has_images:INTEGER, image_paths:TEXT, image_urls:TEXT, is_reply:INTEGER, reply_to_message_id:INTEGER, reply_to_text:TEXT, views:INTEGER, forwards:INTEGER, date:TEXT, scraped_at:TEXT
+
+### telegram_news
+Rows: 6
+Schema:
+CREATE TABLE telegram_news (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT,
+                    summary TEXT,
+                    sentiment TEXT DEFAULT 'neutral',
+                    symbols TEXT,
+                    raw_text TEXT,
+                    channel_name TEXT,
+                    market TEXT DEFAULT 'EGX',
+                    date TEXT,
+                    created_at TEXT DEFAULT (datetime('now'))
+                )
+Indexes:
+Columns: id:INTEGER(PK), title:TEXT, summary:TEXT, sentiment:TEXT, symbols:TEXT, raw_text:TEXT, channel_name:TEXT, market:TEXT, date:TEXT, created_at:TEXT
+
+### telegram_recommendations
+Rows: 0
+Schema:
+CREATE TABLE telegram_recommendations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message_id INTEGER NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    channel_name TEXT,
+                    symbol TEXT NOT NULL,
+                    market TEXT DEFAULT 'unknown',
+                    action TEXT,
+                    entry_price REAL,
+                    target_price REAL,
+                    stop_loss REAL,
+                    timeframe TEXT,
+                    confidence REAL DEFAULT 0,
+                    reasoning TEXT,
+                    original_text TEXT,
+                    expert_name TEXT,
+                    is_verified INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+Indexes:
+Columns: id:INTEGER(PK), message_id:INTEGER!, channel_id:TEXT!, channel_name:TEXT, symbol:TEXT!, market:TEXT, action:TEXT, entry_price:REAL, target_price:REAL, stop_loss:REAL, timeframe:TEXT, confidence:REAL, reasoning:TEXT, original_text:TEXT, expert_name:TEXT, is_verified:INTEGER, created_at:TEXT
+
+### tracked_channels
+Rows: 0
+Schema:
+CREATE TABLE tracked_channels (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    channel_id TEXT UNIQUE NOT NULL,
+                    channel_name TEXT,
+                    username TEXT,
+                    market TEXT DEFAULT 'unknown',
+                    content_type TEXT DEFAULT 'general',
+                    is_active INTEGER DEFAULT 1,
+                    last_scraped TEXT,
+                    total_messages INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+Indexes:
+  - sqlite_autoindex_tracked_channels_1: (auto-index)
+Columns: id:INTEGER(PK), channel_id:TEXT!, channel_name:TEXT, username:TEXT, market:TEXT, content_type:TEXT, is_active:INTEGER, last_scraped:TEXT, total_messages:INTEGER, created_at:TEXT
+
+### tuned_predictions_summary
+Rows: 1
+Schema:
+CREATE TABLE tuned_predictions_summary (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        raw_trades_count INTEGER,
+        raw_win_rate REAL,
+        tuned_trades_count INTEGER,
+        tuned_win_rate REAL,
+        tuned_avg_return REAL,
+        tuned_total_return REAL,
+        updated_at TEXT DEFAULT (datetime('now'))
+    )
+Indexes:
+Columns: id:INTEGER(PK), raw_trades_count:INTEGER, raw_win_rate:REAL, tuned_trades_count:INTEGER, tuned_win_rate:REAL, tuned_avg_return:REAL, tuned_total_return:REAL, updated_at:TEXT
+
+### user_financial_settings
+Rows: 0
+Schema:
+CREATE TABLE user_financial_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL UNIQUE,
+        monthly_expenses REAL DEFAULT 0,
+        updated_at TEXT DEFAULT (datetime('now'))
+      )
+Indexes:
+  - sqlite_autoindex_user_financial_settings_1: (auto-index)
+Columns: id:INTEGER(PK), user_id:TEXT!, monthly_expenses:REAL, updated_at:TEXT
+
+### user_notifications
+Rows: 96
+Schema:
+CREATE TABLE user_notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL DEFAULT '',
+      type TEXT NOT NULL DEFAULT 'system',
+      title TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      severity TEXT DEFAULT 'info',
+      payload TEXT,
+      ticker TEXT,
+      read INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+Indexes:
+  - idx_user_notif_dedup: CREATE INDEX idx_user_notif_dedup ON user_notifications(user_id, type, ticker)
+Columns: id:INTEGER(PK), user_id:TEXT!, type:TEXT!, title:TEXT!, message:TEXT!, severity:TEXT, payload:TEXT, ticker:TEXT, read:INTEGER, created_at:TEXT
+
+### user_sessions
+Rows: 0
+Schema:
+CREATE TABLE user_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE,
+            user_id TEXT,
+            ip_hash TEXT,
+            user_agent TEXT,
+            device_type TEXT,
+            browser TEXT,
+            os TEXT,
+            country TEXT,
+            city TEXT,
+            referrer TEXT,
+            landing_page TEXT,
+            exit_page TEXT,
+            page_views INTEGER DEFAULT 0,
+            duration_seconds INTEGER DEFAULT 0,
+            is_bounce INTEGER DEFAULT 0,
+            started_at TEXT DEFAULT (datetime('now')),
+            ended_at TEXT
+        )
+Indexes:
+  - sqlite_autoindex_user_sessions_1: (auto-index)
+  - idx_user_sessions_user: CREATE INDEX idx_user_sessions_user ON user_sessions(user_id)
+Columns: id:INTEGER(PK), session_id:TEXT, user_id:TEXT, ip_hash:TEXT, user_agent:TEXT, device_type:TEXT, browser:TEXT, os:TEXT, country:TEXT, city:TEXT, referrer:TEXT, landing_page:TEXT, exit_page:TEXT, page_views:INTEGER, duration_seconds:INTEGER, is_bounce:INTEGER, started_at:TEXT, ended_at:TEXT
+
+### user_stock_watchlists
+Rows: 67
+Schema:
+CREATE TABLE user_stock_watchlists (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT DEFAULT '',
+        stock_id INTEGER,
+        alert_price_above REAL,
+        alert_price_below REAL,
+        alert_change_percent REAL,
+        notes TEXT,
+        added_at TEXT DEFAULT (datetime('now')),
+        last_viewed TEXT,
+        view_count INTEGER DEFAULT 0
+      , purchase_price REAL DEFAULT NULL, quantity INTEGER DEFAULT NULL)
+Indexes:
+Columns: id:INTEGER(PK), user_id:TEXT, stock_id:INTEGER, alert_price_above:REAL, alert_price_below:REAL, alert_change_percent:REAL, notes:TEXT, added_at:TEXT, last_viewed:TEXT, view_count:INTEGER, purchase_price:REAL, quantity:INTEGER
+
+### wealth_tracking
+Rows: 36
+Schema:
+CREATE TABLE wealth_tracking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL DEFAULT 'default',
+    snapshot_date TEXT NOT NULL,
+    total_invested REAL DEFAULT 0,
+    total_current_value REAL DEFAULT 0,
+    total_pnl REAL DEFAULT 0,
+    total_pnl_pct REAL DEFAULT 0,
+    stocks_value REAL DEFAULT 0,
+    gold_value REAL DEFAULT 0,
+    crypto_value REAL DEFAULT 0,
+    bank_value REAL DEFAULT 0,
+    cash_value REAL DEFAULT 0,
+    other_value REAL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, snapshot_date)
+)
+Indexes:
+  - sqlite_autoindex_wealth_tracking_1: (auto-index)
+Columns: id:INTEGER(PK), user_id:TEXT!, snapshot_date:TEXT!, total_invested:REAL, total_current_value:REAL, total_pnl:REAL, total_pnl_pct:REAL, stocks_value:REAL, gold_value:REAL, crypto_value:REAL, bank_value:REAL, cash_value:REAL, other_value:REAL, created_at:TEXT

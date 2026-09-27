@@ -1,0 +1,3357 @@
+{
+  "Account": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 25,
+    "readCount": 1,
+    "writeCount": 0,
+    "readFiles": [
+      "src/lib/subscription-gate.ts"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/telegram/telegram_news_scraper.py",
+      "vps-service/portfolio/hard_protection.py",
+      "src/components/layout/MobileNav.tsx",
+      "src/components/layout/MobileMoreSheet.tsx",
+      "src/components/academy/PaperTradingWorkstation.tsx"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      }
+    ]
+  },
+  "ExpertRecommendation": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 19,
+    "readCount": 6,
+    "writeCount": 4,
+    "readFiles": [
+      "src/app/api/seed-experts/route.ts",
+      "vps-service/analyzers/unified_learning_engine.py",
+      "vps-service/analyzers/expert_memory_bridge.py",
+      "vps-service/analyzers/expert_memory_v4.py",
+      "src/app/api/mobile/expert-recommendations/route.ts",
+      "src/app/api/expert-recommendations/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/api/telegram_routes.py",
+      "src/app/api/seed-experts/route.ts",
+      "src/app/api/expert-recommendations/route.ts",
+      "src/app/api/expert-recommendations/import/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/components/admin/HumanRecommendationsAdmin.tsx",
+      "vps-service/api/telegram_routes.py",
+      "vps-service/analyzers/news_fetcher_analyzer.py",
+      "vps-service/analyzers/unified_learning_engine.py"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 17
+      },
+      {
+        "db": "db/predictions.db",
+        "rows": 17
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 127
+      }
+    ]
+  },
+  "ExpertTrackRecord": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 4,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "src/app/api/seed-recommendations/route.ts",
+      "src/app/api/expert-recommendations/experts/route.ts",
+      "src/lib/db-helpers.ts",
+      "src/lib/db-predictions.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      }
+    ]
+  },
+  "Post": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 415,
+    "readCount": 2,
+    "writeCount": 3,
+    "readFiles": [
+      "src/app/api/community/route.ts",
+      "src/app/api/mobile/community/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/community/seed/route.ts",
+      "src/app/api/community/route.ts",
+      "src/app/api/mobile/community/route.ts"
+    ],
+    "refFiles": [
+      "telegram-events/index.ts",
+      "vps-service/lightweight_server.py",
+      "vps-service/telegram/radar_card_publisher.py",
+      "data_engine/simple_server.py",
+      "vps-service/telegram/telegram_interactive_bot.py"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      },
+      {
+        "db": "db/custom.db",
+        "rows": 0
+      }
+    ]
+  },
+  "PromoCode": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 4,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/components/subscription/SubscriptionView.tsx",
+      "src/app/api/admin/promo-codes/route.ts",
+      "src/app/api/redeem-promo/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 5
+      }
+    ]
+  },
+  "Session": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 117,
+    "readCount": 2,
+    "writeCount": 0,
+    "readFiles": [
+      "src/app/api/money/route.ts",
+      "src/app/api/google-play/verify-receipt/route.ts"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/news_scraper.py",
+      "vps-service/lightweight_server.py",
+      "data_engine/intraday_storage.py",
+      "vps-service/telegram/telegram_news_scraper.py",
+      "src/middleware.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      }
+    ]
+  },
+  "SubscriptionPlan": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 17,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/app/api/admin/subscription/seed/route.ts",
+      "src/app/api/admin/subscription/set-plan/route.ts",
+      "src/lib/db.ts",
+      "src/lib/db-auth.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 3
+      }
+    ]
+  },
+  "User": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 235,
+    "readCount": 33,
+    "writeCount": 13,
+    "readFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/api/portfolio_routes.py",
+      "vps-service/ai/trade_recorder.py",
+      "vps-service/analyzers/smart_portfolio_monitor.py",
+      "src/app/api/watchlist/route.ts",
+      "src/app/api/watchlist/[id]/route.ts",
+      "src/app/api/alerts/route.ts",
+      "src/app/api/alerts/scheduler/route.ts",
+      "src/app/api/alerts/[id]/route.ts",
+      "src/app/api/alerts/create/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/api/analytics.py",
+      "vps-service/api/portfolio_routes.py",
+      "vps-service/ai/trade_recorder.py",
+      "src/app/api/watchlist/route.ts",
+      "src/app/api/watchlist/[id]/route.ts",
+      "src/app/api/alerts/[id]/route.ts",
+      "src/app/api/alerts/create/route.ts",
+      "src/app/api/admin/users/cleanup-expired/route.ts",
+      "src/app/api/community/seed/route.ts"
+    ],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_rest.py",
+      "data_engine/scrapers/auto_refresh_scheduler.py",
+      "data_engine/scrapers/smart_scheduler.py",
+      "data_engine/scrapers/egxpilot_scraper.py",
+      "data_engine/scrapers/metals_forex_fetcher.py"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 100
+      },
+      {
+        "db": "db/custom.db",
+        "rows": 0
+      }
+    ]
+  },
+  "UserSubscription": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 19,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "src/app/api/admin/subscription/set-plan/route.ts",
+      "src/app/api/payments/result/route.ts",
+      "src/app/api/paymob/callback/route.ts",
+      "src/lib/db.ts",
+      "src/lib/db-auth.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      }
+    ]
+  },
+  "VerificationToken": {
+    "status": "ORPHAN",
+    "refCount": 0,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      }
+    ]
+  },
+  "aiPrediction": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 22,
+    "readCount": 6,
+    "writeCount": 3,
+    "readFiles": [
+      "vps-service/api/v2_routes.py",
+      "vps-service/api/stock_analysis_routes.py",
+      "vps-service/api/ai_predictions_routes.py",
+      "vps-service/analyzers/market_daily_report.py",
+      "vps-service/scripts/close_predictions.py",
+      "vps-service/scripts/publish_today_picks.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/confluence_routes.py",
+      "vps-service/api/ai_predictions_routes.py",
+      "vps-service/scripts/publish_today_picks.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/core/analysis_runner.py",
+      "vps-service/api/prediction_tracking_routes.py",
+      "vps-service/api/maestro_routes.py",
+      "vps-service/api/v2_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 2589
+      }
+    ]
+  },
+  "aiPredictionStats": {
+    "status": "WRITE_ONLY",
+    "refCount": 2,
+    "readCount": 0,
+    "writeCount": 1,
+    "readFiles": [],
+    "writeFiles": [
+      "vps-service/api/ai_predictions_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/ai_predictions_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 1
+      }
+    ]
+  },
+  "analysis_engine_status": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/api/stored_analysis_routes.py",
+      "vps-service/analyzers/background_analyzer.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/core/migrator.py",
+      "vps-service/api/stored_analysis_routes.py",
+      "vps-service/analyzers/background_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 1
+      }
+    ]
+  },
+  "analysis_jobs": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 2,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/core/migrator.py",
+      "vps-service/analyzers/background_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "analytics_events": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 6,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "src/app/api/admin/analytics/route.ts",
+      "src/app/api/admin/users/route.ts",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/admin/users/cleanup-expired/route.ts",
+      "src/app/api/track/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/admin_routes.py",
+      "src/app/api/admin/analytics/route.ts",
+      "src/app/api/admin/users/route.ts",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 467
+      }
+    ]
+  },
+  "api_tokens": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 2,
+    "writeCount": 3,
+    "readFiles": [
+      "src/app/api/admin/fix-dates/route.ts",
+      "src/lib/token-helper.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/auth/google-signin/route.ts",
+      "src/app/api/auth/google/route.ts",
+      "src/app/api/auth/login/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/app/api/admin/fix-dates/route.ts",
+      "src/app/api/push/register/route.ts",
+      "src/lib/token-helper.ts",
+      "src/app/api/auth/google-signin/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 6
+      }
+    ]
+  },
+  "btc_local_prices": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/core/crypto_database.py"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/crypto_fetcher.py"
+    ],
+    "refFiles": [
+      "data_engine/scrapers/crypto_fetcher.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/crypto_database.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 84065
+      }
+    ]
+  },
+  "cached_analysis": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 21,
+    "readCount": 8,
+    "writeCount": 7,
+    "readFiles": [
+      "vps-service/align_production_symbols.py",
+      "vps-service/core/database.py",
+      "vps-service/api/ai_predictions_routes.py",
+      "vps-service/ai/nightly_analysis.py",
+      "vps-service/ai/hot_stocks_detector.py",
+      "vps-service/analyzers/live_indicator_engine.py",
+      "src/app/api/admin/purge-cache/route.ts",
+      "src/lib/new-db-queries.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/v40_2_intraday_scanner.py",
+      "vps-service/align_production_symbols.py",
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/core/database.py",
+      "vps-service/analyzers/background_analyzer.py",
+      "src/app/api/admin/db-manager/repair/route.ts",
+      "src/app/api/admin/purge-cache/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/jobs/v40_2_intraday_scanner.py",
+      "vps-service/jobs/market_scheduler.py",
+      "src/components/admin/PurgeCacheButton.tsx",
+      "vps-service/utils/db_paths.py",
+      "vps-service/align_production_symbols.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 143
+      }
+    ]
+  },
+  "cash_transactions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 1,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "commodity_intraday": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "writeFiles": [
+      "data_engine/intraday_storage.py"
+    ],
+    "refFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/intraday.db",
+        "rows": 59960
+      }
+    ]
+  },
+  "conjunction_patterns": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 12,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/expert_memory.py",
+      "vps-service/scripts/true_forward_test.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/expert_memory.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/migrator.py",
+      "vps-service/api/unified_learning_routes.py",
+      "vps-service/analyzers/expert_memory.py",
+      "vps-service/scripts/update_db_schema.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 150
+      }
+    ]
+  },
+  "context_logs": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 5,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/core/migrator.py",
+      "vps-service/analyzers/unified_learning_engine.py",
+      "vps-service/scripts/fix_tables.py",
+      "vps-service/scripts/init_db_tables.py",
+      "vps-service/scripts/init_learning_tables.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "corporate_actions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/jobs/fetch_corporate_actions.py",
+      "src/app/api/disclosures/company/[symbol]/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/fetch_corporate_actions.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/fetch_corporate_actions.py",
+      "src/app/api/disclosures/company/[symbol]/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 106
+      }
+    ]
+  },
+  "crypto_intraday": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "writeFiles": [
+      "data_engine/intraday_storage.py"
+    ],
+    "refFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/intraday.db",
+        "rows": 324630
+      }
+    ]
+  },
+  "crypto_lessons": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/engine/crypto_full_system.py"
+    ],
+    "writeFiles": [
+      "vps-service/engine/crypto_full_system.py"
+    ],
+    "refFiles": [
+      "vps-service/engine/crypto_full_system.py",
+      "vps-service/analyzers/educational_cards_engine.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "crypto_predictions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 4,
+    "writeCount": 3,
+    "readFiles": [
+      "vps-service/jobs/crypto_lab_scheduler.py",
+      "vps-service/engine/crypto_full_system.py",
+      "vps-service/scripts/test_crypto_monitor_exit.py",
+      "src/app/api/crypto-lab/predictions/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/crypto_lab_scheduler.py",
+      "vps-service/engine/crypto_full_system.py",
+      "vps-service/scripts/test_crypto_monitor_exit.py"
+    ],
+    "refFiles": [
+      "vps-service/engine/crypto_full_system.py",
+      "src/lib/scheduler/index.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "crypto_predictions_log": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 6,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/jobs/crypto_lab_scheduler.py",
+      "vps-service/scripts/test_crypto_monitor_exit.py",
+      "src/app/api/crypto-lab/predictions/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/crypto_lab_scheduler.py",
+      "vps-service/scripts/test_crypto_monitor_exit.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/crypto_lab_scheduler.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/main.py",
+      "vps-service/scripts/test_crypto_monitor_exit.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 151912
+      }
+    ]
+  },
+  "crypto_prices": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 52,
+    "readCount": 27,
+    "writeCount": 2,
+    "readFiles": [
+      "data_engine/sync.py",
+      "data_engine/main.py",
+      "data_engine/intraday_storage.py",
+      "vps-service/lightweight_server.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/crypto_lab_scheduler.py",
+      "vps-service/engine/crypto_engine.py",
+      "vps-service/engine/crypto_full_system.py",
+      "vps-service/api/prediction_tracking_routes.py",
+      "vps-service/analyzers/crypto_quality_gate.py"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/crypto_fetcher.py",
+      "vps-service/scripts/fetch_crypto_historical.py"
+    ],
+    "refFiles": [
+      "data_engine/simple_server.py",
+      "data_engine/sync.py",
+      "data_engine/engine_server.py",
+      "data_engine/scrapers/crypto_fetcher.py",
+      "vps-service/lightweight_server.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 294526
+      }
+    ]
+  },
+  "daily_analytics_summary": {
+    "status": "WRITE_ONLY",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 1,
+    "readFiles": [],
+    "writeFiles": [
+      "vps-service/api/analytics.py"
+    ],
+    "refFiles": [
+      "vps-service/api/analytics.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "egksco_price_history": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 31,
+    "readCount": 18,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/learning_engine.py",
+      "vps-service/api/top_performers_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/unified_analysis.py",
+      "vps-service/analyzers/screener_integration.py",
+      "vps-service/analyzers/feedback_loop.py",
+      "vps-service/analyzers/production_data_client.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/learning_engine.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 13246
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "egksco_stocks": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 14,
+    "readCount": 8,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/utils/lesson_store.py",
+      "vps-service/utils/live_price.py",
+      "vps-service/api/stored_analysis_routes.py",
+      "vps-service/analyzers/stock_notebook.py",
+      "vps-service/data/analyses.py",
+      "vps-service/data/egksco_scraper.py",
+      "vps-service/scripts/explosive_opportunity_hunter.py"
+    ],
+    "writeFiles": [
+      "vps-service/data/egksco_scraper.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/utils/lesson_store.py",
+      "vps-service/utils/live_price.py",
+      "vps-service/core/migrator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 0
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 250
+      }
+    ]
+  },
+  "egksco_sync_status": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/data/egksco_scraper.py"
+    ],
+    "writeFiles": [
+      "vps-service/data/egksco_scraper.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/data/egksco_scraper.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 451
+      }
+    ]
+  },
+  "egx_fundamentals": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 8,
+    "readCount": 4,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/api/sniper_routes.py",
+      "vps-service/api/misc_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/data/egx_fundamental_fetcher.py"
+    ],
+    "writeFiles": [
+      "vps-service/data/eodhd_fetcher.py",
+      "vps-service/data/egx_fundamental_fetcher.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/core/migrator.py",
+      "vps-service/api/sniper_routes.py",
+      "vps-service/api/misc_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 0
+      }
+    ]
+  },
+  "equity_snapshots": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/portfolio_routes.py",
+      "vps-service/ai/portfolio_routes.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "refFiles": [
+      "src/components/portfolio/WealthCharts.tsx",
+      "vps-service/api/portfolio_routes.py",
+      "vps-service/ai/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "error_logs": {
+    "status": "WRITE_ONLY",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 1,
+    "readFiles": [],
+    "writeFiles": [
+      "vps-service/api/analytics.py"
+    ],
+    "refFiles": [
+      "vps-service/api/analytics.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "exchange_rates": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 21,
+    "readCount": 11,
+    "writeCount": 1,
+    "readFiles": [
+      "data_engine/sync.py",
+      "data_engine/intraday_storage.py",
+      "vps-service/analyzers/reports_engine.py",
+      "src/app/api/metals/gold/route.ts",
+      "src/lib/data-engine-db-sqljs.ts",
+      "src/lib/data-engine-db.ts",
+      "src/app/api/finance/calculate-values/route.ts",
+      "src/app/api/portfolio/master/route.ts",
+      "src/app/api/data-engine/status/route.ts",
+      "src/app/api/data-engine/control/route.ts"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/metals_forex_fetcher.py"
+    ],
+    "refFiles": [
+      "data_engine/simple_server.py",
+      "data_engine/sync.py",
+      "data_engine/engine_server.py",
+      "data_engine/scrapers/crypto_fetcher.py",
+      "data_engine/scrapers/metals_forex_fetcher.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 48977
+      }
+    ]
+  },
+  "exit_notifications": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/jobs/daily_closer.py"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/daily_closer.py"
+    ],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 3932
+      }
+    ]
+  },
+  "feature_usage": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 4,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/api/analytics.py",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/api/analytics.py",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/api/analytics.py",
+      "vps-service/api/admin_routes.py",
+      "src/app/api/admin/analytics/route.ts",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "financial_obligations": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 6,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/scripts/wealth_tracker.py",
+      "src/app/api/finance/reports/route.ts",
+      "src/app/api/finance/obligations/route.ts",
+      "src/app/api/finance/obligations/payments/route.ts",
+      "src/app/api/finance/calculate-values/route.ts",
+      "src/app/api/portfolio/master/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/finance/obligations/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/scripts/wealth_tracker.py",
+      "src/app/api/finance/schema/route.ts",
+      "src/app/api/finance/reports/route.ts",
+      "src/app/api/finance/obligations/route.ts",
+      "src/app/api/finance/obligations/payments/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "financial_transactions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 5,
+    "readCount": 4,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/scripts/wealth_tracker.py",
+      "src/app/api/finance/transactions/route.ts",
+      "src/app/api/finance/transactions/[id]/route.ts",
+      "src/app/api/finance/reports/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/finance/transactions/route.ts",
+      "src/app/api/finance/transactions/[id]/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/scripts/wealth_tracker.py",
+      "src/app/api/finance/schema/route.ts",
+      "src/app/api/finance/transactions/route.ts",
+      "src/app/api/finance/transactions/[id]/route.ts",
+      "src/app/api/finance/reports/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "gold_alerts": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "src/app/api/alerts/gold/route.ts",
+      "src/lib/schedulers/alert-engine.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/alerts/gold/route.ts"
+    ],
+    "refFiles": [
+      "src/app/api/alerts/gold/route.ts",
+      "src/app/api/alerts/scheduler/route.ts",
+      "src/lib/schedulers/alert-engine.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "gold_prices": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 37,
+    "readCount": 16,
+    "writeCount": 1,
+    "readFiles": [
+      "data_engine/sync.py",
+      "data_engine/main.py",
+      "data_engine/intraday_storage.py",
+      "vps-service/analyzers/reports_engine.py",
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "vps-service/scripts/dual_track_generator.py",
+      "src/app/api/admin/engines-status/route.ts",
+      "src/app/api/metals/gold/route.ts",
+      "src/app/api/predictions/eid/route.ts",
+      "src/app/api/predictions/dual-track/threshold/route.ts"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/metals_forex_fetcher.py"
+    ],
+    "refFiles": [
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/tools/restore_from_local.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/db_manager.py",
+      "vps-service/analyzers/reports_engine.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 187153
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 3
+      }
+    ]
+  },
+  "gold_prices_clean": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 5,
+    "writeCount": 1,
+    "readFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "vps-service/scripts/dual_track_generator.py",
+      "src/lib/data-engine-db.ts",
+      "src/app/api/predictions/dual-track/threshold/route.ts"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/metals_forex_fetcher.py"
+    ],
+    "refFiles": [
+      "data_engine/scrapers/metals_forex_fetcher.py",
+      "data_engine/intraday_storage.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "vps-service/scripts/dual_track_generator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 31360
+      }
+    ]
+  },
+  "historical_data": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 24,
+    "readCount": 13,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/core/database.py",
+      "vps-service/analyzers/screener.py",
+      "vps-service/analyzers/v82_analyzer.py",
+      "vps-service/analyzers/sniper_engine.py",
+      "vps-service/data/us_stocks_fetcher.py",
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "vps-service/scripts/backtesting_engine.py",
+      "vps-service/scripts/backtest_sniper.py",
+      "src/app/api/predictions/dual-track/threshold/route.ts"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/historical_fetcher_5years.py",
+      "vps-service/data/us_stocks_fetcher.py"
+    ],
+    "refFiles": [
+      "data_engine/scrapers/historical_fetcher_5years.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "src/components/admin/SystemTopologyGraph.tsx",
+      "vps-service/utils/db_paths.py",
+      "vps-service/engine/stock_fundamentals.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 99076
+      }
+    ]
+  },
+  "historical_trades": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/ai/historical_trade_generator.py"
+    ],
+    "writeFiles": [
+      "vps-service/ai/historical_trade_generator.py"
+    ],
+    "refFiles": [
+      "src/components/dashboard/SeasonalitySignalsWidget.tsx",
+      "vps-service/ai/historical_trade_generator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 13117
+      }
+    ]
+  },
+  "hunter_pick_tracking": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 1,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/prediction_tracking_routes.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/prediction_tracking_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/api/prediction_tracking_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "indicator_trust_scores": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 8,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/analyzers/indicator_trust_scores.py",
+      "vps-service/analyzers/unified_learning_engine.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/indicator_trust_scores.py",
+      "vps-service/analyzers/unified_learning_engine.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/migrator.py",
+      "vps-service/analyzers/indicator_trust_scores.py",
+      "vps-service/analyzers/unified_learning_engine.py",
+      "vps-service/scripts/update_db_schema.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 10
+      }
+    ]
+  },
+  "intraday_meta": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "data_engine/intraday_storage.py"
+    ],
+    "writeFiles": [
+      "data_engine/intraday_storage.py"
+    ],
+    "refFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/intraday.db",
+        "rows": 3
+      }
+    ]
+  },
+  "intraday_prices": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 6,
+    "readCount": 2,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/utils/live_price.py",
+      "vps-service/analyzers/screener_integration.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "src/components/dashboard/LiveMonitor.tsx",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/utils/live_price.py",
+      "vps-service/core/migrator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/intraday.db",
+        "rows": 0
+      }
+    ]
+  },
+  "investors_data": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 4,
+    "readCount": 1,
+    "writeCount": 3,
+    "readFiles": [
+      "src/app/api/egx/investors/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/scrappers/egx_investors_scraper.py",
+      "src/app/api/egx/investors/seed/route.ts",
+      "src/app/api/egx/investors/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/scrappers/egx_investors_scraper.py",
+      "src/components/dashboard/InvestorsFlowPanel.tsx",
+      "src/app/api/egx/investors/seed/route.ts",
+      "src/app/api/egx/investors/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 30
+      }
+    ]
+  },
+  "learned_lessons": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 29,
+    "readCount": 13,
+    "writeCount": 5,
+    "readFiles": [
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/learning_engine.py",
+      "vps-service/utils/win_lesson_store.py",
+      "vps-service/utils/lesson_store.py",
+      "vps-service/engine/historical_backfill_engine.py",
+      "vps-service/api/sniper_routes.py",
+      "vps-service/api/learning_routes.py",
+      "vps-service/api/admin_routes.py",
+      "vps-service/scripts/build_sector_patterns.py",
+      "vps-service/scripts/verify_learning_improvement.py"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/learning_engine.py",
+      "vps-service/utils/win_lesson_store.py",
+      "vps-service/utils/lesson_store.py",
+      "vps-service/engine/historical_backfill_engine.py",
+      "vps-service/scripts/build_sector_patterns.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/learning_engine.py",
+      "src/components/admin/NotebookAdminTab.tsx",
+      "vps-service/utils/db_paths.py",
+      "vps-service/utils/win_lesson_store.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 19464
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "liquidity_backtest_results": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 4,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/scripts/dual_track_generator.py",
+      "src/app/api/predictions/dual-track/stats/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/scripts/liquidity_backtest_engine.py"
+    ],
+    "refFiles": [
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "vps-service/scripts/dual_track_generator.py",
+      "src/app/api/predictions/dual-track/backtest/route.ts",
+      "src/app/api/predictions/dual-track/stats/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 10
+      }
+    ]
+  },
+  "liquidity_dynamic_threshold": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 6,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/scripts/dual_track_generator.py",
+      "src/app/api/predictions/dual-track/list/route.ts",
+      "src/app/api/predictions/dual-track/stats/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "src/app/api/predictions/dual-track/threshold/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "vps-service/scripts/dual_track_generator.py",
+      "src/app/api/predictions/dual-track/backtest/route.ts",
+      "src/app/api/predictions/dual-track/list/route.ts",
+      "src/app/api/predictions/dual-track/threshold/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 5
+      }
+    ]
+  },
+  "liquidity_signal_outcomes": {
+    "status": "WRITE_ONLY",
+    "refCount": 2,
+    "readCount": 0,
+    "writeCount": 1,
+    "readFiles": [],
+    "writeFiles": [
+      "vps-service/scripts/liquidity_backtest_engine.py"
+    ],
+    "refFiles": [
+      "vps-service/scripts/liquidity_backtest_engine.py",
+      "src/app/api/predictions/dual-track/backtest/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 1308
+      }
+    ]
+  },
+  "live_ai_signals": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/ai/trade_recorder.py",
+      "vps-service/ai/live_ai_monitor.py"
+    ],
+    "writeFiles": [
+      "vps-service/ai/live_ai_monitor.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/ai/trade_recorder.py",
+      "vps-service/ai/live_ai_monitor.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 1636
+      }
+    ]
+  },
+  "lost_and_found": {
+    "status": "ORPHAN",
+    "refCount": 0,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 38
+      }
+    ]
+  },
+  "macro_indicators": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 11,
+    "readCount": 4,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/analyzers/macro_veto.py",
+      "vps-service/analyzers/real_return_engine.py",
+      "src/app/api/finance/real-return/route.ts",
+      "src/app/api/finance/inflation/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/fetch_inflation_worldbank.py",
+      "src/app/api/finance/inflation/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/fetch_inflation_worldbank.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/migrator.py",
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 3
+      }
+    ]
+  },
+  "market_indices": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 25,
+    "readCount": 19,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/import_egx30_production.py",
+      "vps-service/telegram/telegram_market_analysis.py",
+      "vps-service/telegram/telegram_morning_bell.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/engine/explosive_scanner.py",
+      "vps-service/engine/flow_system.py",
+      "vps-service/core/database.py",
+      "vps-service/api/maestro_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py"
+    ],
+    "writeFiles": [
+      "vps-service/import_egx30_production.py",
+      "vps-service/tests/test_phase_b_integrity.py"
+    ],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/import_egx30_production.py",
+      "vps-service/telegram/telegram_market_analysis.py",
+      "vps-service/telegram/telegram_morning_bell.py",
+      "vps-service/jobs/market_scheduler.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 5
+      }
+    ]
+  },
+  "market_pulse_cache": {
+    "status": "WRITE_ONLY",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 1,
+    "readFiles": [],
+    "writeFiles": [
+      "vps-service/jobs/market_scheduler.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 2132
+      }
+    ]
+  },
+  "market_regime_log": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 3,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/board_of_analysts.py",
+      "vps-service/analyzers/regime_detector.py",
+      "vps-service/analyzers/prediction_optimizer.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/regime_detector.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/board_of_analysts.py",
+      "vps-service/analyzers/regime_detector.py",
+      "vps-service/analyzers/prediction_optimizer.py",
+      "vps-service/scripts/update_db_schema.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 34
+      }
+    ]
+  },
+  "morning_bell_signals": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 0,
+    "readFiles": [
+      "src/app/api/mobile/market/morning-bell/route.ts"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/app/api/mobile/market/morning-bell/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 82
+      }
+    ]
+  },
+  "news_items": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 8,
+    "readCount": 3,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/analyzers/news_stop_filter.py",
+      "vps-service/analyzers/sentiment_analyzer.py",
+      "src/app/api/disclosures/company/[symbol]/route.ts"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/core/migrator.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/api/news_routes.py",
+      "vps-service/analyzers/news_stop_filter.py",
+      "vps-service/analyzers/sentiment_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "obligation_payments": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "src/app/api/finance/obligations/route.ts",
+      "src/app/api/finance/obligations/payments/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/finance/obligations/route.ts",
+      "src/app/api/finance/obligations/payments/route.ts"
+    ],
+    "refFiles": [
+      "src/app/api/finance/schema/route.ts",
+      "src/app/api/finance/obligations/route.ts",
+      "src/app/api/finance/obligations/payments/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "optimizer_params_history": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/prediction_optimizer.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/prediction_optimizer.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/prediction_optimizer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 14
+      }
+    ]
+  },
+  "outcome_logs": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 20,
+    "readCount": 5,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/admin_routes.py",
+      "vps-service/analyzers/unified_learning_engine.py",
+      "vps-service/analyzers/expert_memory.py",
+      "vps-service/scripts/true_forward_test.py",
+      "vps-service/scripts/verification.py"
+    ],
+    "writeFiles": [
+      "vps-service/scripts/backfill_signal_memory.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/engine/crypto_full_system.py",
+      "vps-service/engine/historical_backfill_engine.py",
+      "vps-service/core/migrator.py",
+      "vps-service/api/unified_learning_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 8544
+      }
+    ]
+  },
+  "page_views": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 6,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/api/analytics.py",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/api/analytics.py",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "refFiles": [
+      "src/components/admin/AdminView.tsx",
+      "vps-service/api/analytics.py",
+      "vps-service/api/admin_routes.py",
+      "src/app/api/admin/analytics/route.ts",
+      "src/app/api/admin/users/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "pending_settlements": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/portfolio/hard_protection.py"
+    ],
+    "writeFiles": [
+      "vps-service/portfolio/hard_protection.py"
+    ],
+    "refFiles": [
+      "vps-service/portfolio/hard_protection.py",
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "persona_predictions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 17,
+    "readCount": 5,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/core/persona_db.py",
+      "src/app/api/admin/close-predictions/route.ts",
+      "vps-service/scripts/persona_unify_a_measurement.py",
+      "vps-service/scripts/backfill_historical_predictions.py",
+      "vps-service/scripts/close_predictions.py"
+    ],
+    "writeFiles": [
+      "vps-service/core/persona_db.py",
+      "vps-service/scripts/backfill_historical_predictions.py"
+    ],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/migrator.py",
+      "vps-service/core/persona_db.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 1669
+      }
+    ]
+  },
+  "platform_recommendations": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/engines/historical_prediction_generator.py",
+      "vps-service/align_production_symbols.py"
+    ],
+    "writeFiles": [
+      "vps-service/engines/historical_prediction_generator.py",
+      "vps-service/align_production_symbols.py"
+    ],
+    "refFiles": [
+      "vps-service/engines/historical_prediction_generator.py",
+      "vps-service/align_production_symbols.py",
+      "src/components/reports/ReportsView.tsx"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "portfolio_assets": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 40,
+    "readCount": 33,
+    "writeCount": 3,
+    "readFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/daily_portfolio_yield.py",
+      "vps-service/portfolio/hard_protection.py",
+      "vps-service/api/portfolio_routes.py",
+      "vps-service/analyzers/live_autonomous_monitor.py",
+      "vps-service/analyzers/real_return_engine.py",
+      "vps-service/analyzers/smart_portfolio_monitor.py",
+      "vps-service/scripts/wealth_tracker.py",
+      "src/app/api/admin/db-health/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/admin/users/cleanup-expired/route.ts",
+      "src/app/api/finance/assets/route.ts",
+      "src/app/api/finance/assets/[id]/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/daily_portfolio_yield.py",
+      "vps-service/portfolio/hard_protection.py",
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 25
+      }
+    ]
+  },
+  "portfolio_pnl_history": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 1,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "portfolio_positions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 1,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "portfolio_state": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/portfolio/hard_protection.py",
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "writeFiles": [
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/portfolio/hard_protection.py",
+      "src/components/portfolio/AdvancedPortfolioManager.tsx",
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "portfolios": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 10,
+    "readCount": 5,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/api/portfolio_routes.py",
+      "src/app/api/portfolio/master/route.ts",
+      "src/app/api/portfolio/smart-monitor/signals/route.ts",
+      "src/app/api/portfolio/holdings/route.ts",
+      "src/app/api/portfolio/accounts/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/api/portfolio_routes.py",
+      "src/app/api/portfolio/accounts/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/components/portfolio/MultiPortfolioSelector.tsx",
+      "src/components/portfolio/EnhancedPortfolioView.tsx",
+      "src/components/portfolio/MasterPortfolioSummary.tsx",
+      "vps-service/api/portfolio_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 4
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 3
+      }
+    ]
+  },
+  "prediction_lessons": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 6,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/ai/decision_engine.py",
+      "src/app/api/predictions/honest-tracking/route.ts",
+      "src/lib/honest-tracking/maestro.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/predictions/honest-tracking/learn-from-errors/route.ts",
+      "src/lib/honest-tracking/maestro.ts"
+    ],
+    "refFiles": [
+      "vps-service/engine/crypto_full_system.py",
+      "vps-service/ai/decision_engine.py",
+      "src/app/api/admin/generate-historical-predictions/route.ts",
+      "src/app/api/predictions/honest-tracking/route.ts",
+      "src/app/api/predictions/honest-tracking/learn-from-errors/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 4
+      }
+    ]
+  },
+  "prediction_outcomes": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/feedback_loop.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/feedback_loop.py"
+    ],
+    "refFiles": [
+      "vps-service/core/migrator.py",
+      "vps-service/tests/test_phase_b_integrity.py",
+      "vps-service/analyzers/feedback_loop.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "prediction_outcomes_old": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/analyzers/feedback_loop.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "predictions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 333,
+    "readCount": 107,
+    "writeCount": 21,
+    "readFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/telegram/telegram_interactive_bot.py",
+      "vps-service/telegram/telegram_intraday_alerts.py",
+      "vps-service/telegram/telegram_chart_generator.py",
+      "vps-service/telegram/telegram_notifier.py",
+      "vps-service/telegram/telegram_morning_bell.py",
+      "vps-service/telegram/telegram_target_hit_tracker.py",
+      "vps-service/telegram/telegram_closing_scorecard.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/daily_gainer_scan.py"
+    ],
+    "writeFiles": [
+      "vps-service/telegram/telegram_target_hit_tracker.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/core/db_manager.py",
+      "vps-service/api/historical_predictions_v2_routes.py",
+      "vps-service/api/admin_routes.py",
+      "vps-service/api/ai_predictions_routes.py",
+      "vps-service/api/misc_routes.py",
+      "vps-service/analyzers/prediction_tracker.py",
+      "vps-service/scripts/backfill_to_predictions.py",
+      "vps-service/scripts/optimization_loop.py"
+    ],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/cleanup_corrupted_symbols.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/engines/historical_prediction_generator.py",
+      "src/middleware.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 1359
+      }
+    ]
+  },
+  "price_history": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 196,
+    "readCount": 122,
+    "writeCount": 17,
+    "readFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/engines/market_regime.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/telegram/telegram_chart_generator.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/price_history_safetynet.py",
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/intraday_aggregator.py"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/price_history_safetynet.py",
+      "vps-service/jobs/intraday_aggregator.py",
+      "vps-service/tools/migrate_price_history.py",
+      "vps-service/align_production_symbols.py",
+      "vps-service/data/eodhd_fetcher.py",
+      "vps-service/data/gap_filler.py",
+      "vps-service/data/egksco_scraper.py",
+      "vps-service/scripts/diagnose_safetynet.py",
+      "vps-service/scripts/update_egx_indices.py",
+      "vps-service/scripts/daily_price_updater.py"
+    ],
+    "refFiles": [
+      "vps-service/lightweight_server.py",
+      "data_engine/intraday_storage.py",
+      "vps-service/cleanup_corrupted_symbols.py",
+      "vps-service/engines/market_regime.py",
+      "vps-service/engines/smart_confluence_engine.py"
+    ],
+    "locations": [
+      {
+        "db": "db/price_history.db",
+        "rows": 1206795
+      }
+    ]
+  },
+  "quant_cache": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 4,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/quant_cache.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/quant_cache.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/nightly_quant_job.py",
+      "vps-service/analyzers/quant_cache.py",
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 525
+      }
+    ]
+  },
+  "radar_signal_tracking": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 4,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "src/lib/radar-signal-tracker.ts",
+      "src/app/api/maker-radar/signal-tracker/route.ts",
+      "src/app/api/maker-radar/signal-tracker/verify/route.ts"
+    ],
+    "writeFiles": [
+      "src/lib/radar-signal-tracker.ts",
+      "src/app/api/maker-radar/signal-tracker/route.ts"
+    ],
+    "refFiles": [
+      "src/lib/radar-signal-tracker.ts",
+      "src/lib/schedulers/radar-alerts.ts",
+      "src/app/api/maker-radar/signal-tracker/route.ts",
+      "src/app/api/maker-radar/signal-tracker/verify/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 96
+      }
+    ]
+  },
+  "real_evaluated_predictions": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 4035
+      }
+    ]
+  },
+  "regime_indicator_weights": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 10,
+    "readCount": 5,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/engine/historical_backfill_engine.py",
+      "vps-service/api/learning_routes.py",
+      "vps-service/api/admin_routes.py",
+      "vps-service/analyzers/confluence_engine_v3.py",
+      "src/lib/analysis-engine.ts"
+    ],
+    "writeFiles": [
+      "vps-service/engine/historical_backfill_engine.py"
+    ],
+    "refFiles": [
+      "vps-service/engine/historical_backfill_engine.py",
+      "vps-service/core/migrator.py",
+      "vps-service/api/learning_routes.py",
+      "vps-service/api/admin_routes.py",
+      "vps-service/analyzers/confluence_engine_v3.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "reports": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 44,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/reports_engine.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/reports_engine.py"
+    ],
+    "refFiles": [
+      "data_engine/scrapers/egksco_scraper.py",
+      "src/types/index.ts",
+      "src/middleware.ts",
+      "vps-service/telegram/telegram_target_hit_tracker.py",
+      "vps-service/telegram/telegram_closing_scorecard.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "scraping_status": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/telegram/database.py"
+    ],
+    "writeFiles": [
+      "vps-service/telegram/database.py"
+    ],
+    "refFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/telegram_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "screener_lists": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 4,
+    "writeCount": 1,
+    "readFiles": [
+      "data_engine/scrapers/tradingview_screener_lists.py",
+      "vps-service/telegram/screener_blast.py",
+      "vps-service/analyzers/screener_integration.py",
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/tradingview_screener_lists.py"
+    ],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_screener_lists.py",
+      "vps-service/telegram/screener_blast.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/screener_integration.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 1505
+      }
+    ]
+  },
+  "screener_presets": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 4,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/stocks.py"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/market_scheduler.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/stocks.py",
+      "src/components/stocks/StocksView.tsx"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 1710
+      }
+    ]
+  },
+  "screener_results": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/api/screener_routes.py",
+      "vps-service/analyzers/screener.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/screener.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/screener_routes.py",
+      "vps-service/analyzers/screener.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 173
+      }
+    ]
+  },
+  "session_event_sent_log": {
+    "status": "ORPHAN",
+    "refCount": 0,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "session_events": {
+    "status": "ORPHAN",
+    "refCount": 0,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "silver_prices": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 13,
+    "readCount": 6,
+    "writeCount": 1,
+    "readFiles": [
+      "data_engine/sync.py",
+      "data_engine/intraday_storage.py",
+      "src/lib/data-engine-db-sqljs.ts",
+      "src/lib/data-engine-db.ts",
+      "src/app/api/data-engine/status/route.ts",
+      "src/app/api/data-engine/control/route.ts"
+    ],
+    "writeFiles": [
+      "data_engine/scrapers/metals_forex_fetcher.py"
+    ],
+    "refFiles": [
+      "data_engine/simple_server.py",
+      "data_engine/sync.py",
+      "data_engine/engine_server.py",
+      "data_engine/scrapers/metals_forex_fetcher.py",
+      "data_engine/intraday_storage.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 86038
+      }
+    ]
+  },
+  "sniper_performance": {
+    "status": "WRITE_ONLY",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 1,
+    "readFiles": [],
+    "writeFiles": [
+      "vps-service/jobs/learning_engine.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/learning_engine.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 26
+      }
+    ]
+  },
+  "stock_adaptive_profiles": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 10,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/analyzers/stock_dna_analyzer.py",
+      "vps-service/analyzers/master_analyzer.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/stock_dna_analyzer.py",
+      "vps-service/scripts/build_stock_profiles.py"
+    ],
+    "refFiles": [
+      "vps-service/core/migrator.py",
+      "vps-service/core/opportunity_quality.py",
+      "vps-service/api/admin_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/stock_dna_analyzer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 67
+      }
+    ]
+  },
+  "stock_daily_prices": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 66,
+    "readCount": 42,
+    "writeCount": 5,
+    "readFiles": [
+      "vps-service/lightweight_server.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/engines/master_backfill_adapter.py",
+      "vps-service/import_egx30_production.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/scrappers/egx_investors_scraper.py",
+      "vps-service/align_production_symbols.py",
+      "vps-service/engine/explosive_scanner.py",
+      "vps-service/engine/flow_system.py"
+    ],
+    "writeFiles": [
+      "data_engine/sync.py",
+      "vps-service/lightweight_server.py",
+      "vps-service/align_production_symbols.py",
+      "vps-service/data/eodhd_fetcher.py",
+      "vps-service/scripts/daily_price_updater.py"
+    ],
+    "refFiles": [
+      "data_engine/sync.py",
+      "vps-service/lightweight_server.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "data_engine/main.py",
+      "vps-service/engines/master_backfill_adapter.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 17930
+      }
+    ]
+  },
+  "stock_intraday": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 28,
+    "readCount": 24,
+    "writeCount": 2,
+    "readFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/jobs/v40_2_intraday_scanner.py",
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/intraday_aggregator.py",
+      "vps-service/jobs/hot_candidate_detector.py",
+      "vps-service/utils/live_price.py",
+      "src/components/predictions/MakerRadarTab.tsx",
+      "vps-service/api/stored_analysis_routes.py",
+      "vps-service/api/misc_routes.py"
+    ],
+    "writeFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/scripts/backfill_intraday.py"
+    ],
+    "refFiles": [
+      "data_engine/intraday_storage.py",
+      "vps-service/jobs/v40_2_intraday_scanner.py",
+      "vps-service/jobs/daily_closer.py",
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/intraday_aggregator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/intraday.db",
+        "rows": 215632
+      }
+    ]
+  },
+  "stock_phase": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 1133
+      }
+    ]
+  },
+  "stock_prices": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 4,
+    "readCount": 2,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/telegram/telegram_interactive_bot.py",
+      "vps-service/analyzers/enhanced_prediction_tracker.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/telegram/telegram_interactive_bot.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/misc_routes.py",
+      "vps-service/analyzers/enhanced_prediction_tracker.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 692
+      }
+    ]
+  },
+  "stock_stories": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 8,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/ai/story_generator.py",
+      "vps-service/ai/historical_trade_generator.py",
+      "vps-service/ai/decision_engine.py"
+    ],
+    "writeFiles": [
+      "vps-service/ai/story_generator.py",
+      "vps-service/ai/historical_trade_generator.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/api/ai_routes.py",
+      "vps-service/ai/nightly_analysis.py",
+      "vps-service/ai/story_generator.py",
+      "vps-service/ai/historical_trade_generator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 899
+      }
+    ]
+  },
+  "stocks": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 637,
+    "readCount": 288,
+    "writeCount": 23,
+    "readFiles": [
+      "data_engine/simple_server.py",
+      "data_engine/sync.py",
+      "data_engine/engine_server.py",
+      "data_engine/scrapers/fallback_chain.py",
+      "data_engine/scrapers/historical_fetcher_5years.py",
+      "data_engine/scrapers/yahoo_scraper.py",
+      "vps-service/lightweight_server.py",
+      "data_engine/main.py",
+      "vps-service/cleanup_corrupted_symbols.py",
+      "data_engine/intraday_storage.py"
+    ],
+    "writeFiles": [
+      "data_engine/sync.py",
+      "data_engine/scrapers/yahoo_scraper.py",
+      "data_engine/scrapers/tradingview_rest.py",
+      "data_engine/scrapers/egxpilot_scraper.py",
+      "data_engine/scrapers/egksco_scraper.py",
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/align_production_symbols.py",
+      "vps-service/tests/test_phase_b_integrity.py",
+      "vps-service/tests/test_db_manager.py"
+    ],
+    "refFiles": [
+      "data_engine/simple_server.py",
+      "data_engine/sync.py",
+      "data_engine/realtime_sync.py",
+      "data_engine/engine_server.py",
+      "vps-service/lightweight_server.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 296
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 976
+      }
+    ]
+  },
+  "stocks_backup": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 335
+      }
+    ]
+  },
+  "stored_analyses": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 48,
+    "readCount": 28,
+    "writeCount": 10,
+    "readFiles": [
+      "vps-service/telegram/auto_poster.py",
+      "vps-service/telegram/patch_auto_poster.py",
+      "vps-service/jobs/market_scheduler.py",
+      "src/components/reports/ReportsView.tsx",
+      "vps-service/api/v2_routes.py",
+      "vps-service/api/picks_management_routes.py",
+      "vps-service/api/ai_routes.py",
+      "vps-service/api/stored_analysis_routes.py",
+      "vps-service/api/misc_routes.py",
+      "vps-service/ai/nightly_analysis.py"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/v40_2_intraday_scanner.py",
+      "vps-service/core/persona_db.py",
+      "vps-service/api/ai_routes.py",
+      "vps-service/ai/nightly_analysis.py",
+      "vps-service/analyzers/background_analyzer.py",
+      "vps-service/data/analyses.py",
+      "vps-service/scripts/publish_today_picks.py",
+      "vps-service/scripts/rebuild_predictions.py",
+      "src/app/api/admin/purge-cache/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/telegram/auto_poster.py",
+      "vps-service/telegram/patch_auto_poster.py",
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/jobs/v40_2_intraday_scanner.py",
+      "vps-service/jobs/market_scheduler.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "system_settings": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 5,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/analyzers/engine_settings.py"
+    ],
+    "writeFiles": [
+      "vps-service/analyzers/engine_settings.py"
+    ],
+    "refFiles": [
+      "src/components/admin/EngineSettingsTab.tsx",
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/admin_engine_settings_routes.py",
+      "vps-service/analyzers/engine_settings.py",
+      "src/app/api/admin/engine-settings/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 1
+      }
+    ]
+  },
+  "tab_balance_sheet": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 17,
+    "readCount": 6,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "vps-service/analyzers/fundamental_quality_gate.py",
+      "vps-service/analyzers/persona_screener.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/core/migrator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 866
+      }
+    ]
+  },
+  "tab_cash_flow": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 12,
+    "readCount": 3,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/analyzers/fundamental_quality_gate.py",
+      "vps-service/analyzers/persona_screener.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/api/misc_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 866
+      }
+    ]
+  },
+  "tab_dividends": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 22,
+    "readCount": 13,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/jobs/fetch_corporate_actions.py",
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/engine/flow_system.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/analyzers/screener.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "vps-service/analyzers/event_impact_tracker.py",
+      "vps-service/analyzers/fundamental_quality_gate.py",
+      "vps-service/analyzers/persona_screener.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/jobs/fetch_corporate_actions.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 858
+      }
+    ]
+  },
+  "tab_income_statement": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 16,
+    "readCount": 5,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/analyzers/screener.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "vps-service/analyzers/fundamental_quality_gate.py",
+      "vps-service/analyzers/persona_screener.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/api/misc_routes.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 866
+      }
+    ]
+  },
+  "tab_performance": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 19,
+    "readCount": 11,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/analyzers/screener.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/reports_engine.py",
+      "vps-service/analyzers/confluence_engine_v3.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "vps-service/analyzers/fundamental_quality_gate.py",
+      "vps-service/analyzers/persona_screener.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/engine/stock_fundamentals.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 858
+      }
+    ]
+  },
+  "tab_profitability": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 27,
+    "readCount": 15,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/engine/flow_system.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/api/misc_routes.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "vps-service/analyzers/fundamental_quality_gate.py",
+      "vps-service/analyzers/screener_integration.py",
+      "vps-service/analyzers/persona_screener.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/jobs/v40_2_daily_generator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 858
+      }
+    ]
+  },
+  "tab_technical_analysis": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 18,
+    "readCount": 9,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/analyzers/screener.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/reports_engine.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "src/app/api/finance/screener/route.ts",
+      "src/app/api/data-engine/new-db-stats/route.ts"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 863
+      }
+    ]
+  },
+  "tab_valuation": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 29,
+    "readCount": 18,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/jobs/v40_2_daily_generator.py",
+      "vps-service/engine/live_prediction_engine.py",
+      "vps-service/engine/stock_fundamentals.py",
+      "vps-service/engine/flow_system.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/analyzers/screener.py",
+      "vps-service/analyzers/maestro_orchestrator.py",
+      "vps-service/analyzers/persona_investor.py",
+      "vps-service/analyzers/fundamental_data_provider.py",
+      "vps-service/analyzers/fundamental_quality_gate.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "data_engine/scrapers/tradingview_scraper.py",
+      "data_engine/main.py",
+      "vps-service/engines/smart_confluence_engine.py",
+      "vps-service/engines/v38_backtest_engine.py",
+      "vps-service/jobs/v40_2_daily_generator.py"
+    ],
+    "locations": [
+      {
+        "db": "db/data_engine.db",
+        "rows": 858
+      }
+    ]
+  },
+  "task_runs": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "src/lib/scheduler/index.ts"
+    ],
+    "writeFiles": [
+      "src/lib/scheduler/index.ts"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "src/lib/scheduler/index.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 75
+      }
+    ]
+  },
+  "telegram_images": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/telegram/database.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "telegram_messages": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/telegram/telegram_client.py"
+    ],
+    "writeFiles": [
+      "vps-service/telegram/database.py"
+    ],
+    "refFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/telegram/telegram_client.py",
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "telegram_news": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "writeFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/api/telegram_routes.py"
+    ],
+    "refFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/api/chart_routes.py",
+      "vps-service/api/telegram_routes.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      },
+      {
+        "db": "db/stocks.db",
+        "rows": 6
+      }
+    ]
+  },
+  "telegram_recommendations": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 2,
+    "writeCount": 2,
+    "readFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "writeFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "refFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/utils/db_paths.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "telegram_signals": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 2,
+    "readCount": 2,
+    "writeCount": 0,
+    "readFiles": [
+      "vps-service/api/ai_routes.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/api/ai_routes.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "tracked_channels": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/telegram/database.py"
+    ],
+    "writeFiles": [
+      "vps-service/telegram/database.py"
+    ],
+    "refFiles": [
+      "vps-service/telegram/database.py",
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "trade_journal_entries": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 1,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/portfolio/trade_journal.py"
+    ],
+    "writeFiles": [
+      "vps-service/portfolio/trade_journal.py"
+    ],
+    "refFiles": [
+      "vps-service/portfolio/trade_journal.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "trade_journal_reflections": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 1,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/portfolio/trade_journal.py"
+    ],
+    "writeFiles": [
+      "vps-service/portfolio/trade_journal.py"
+    ],
+    "refFiles": [
+      "vps-service/portfolio/trade_journal.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "trade_outcomes": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/ai/trade_recorder.py"
+    ],
+    "writeFiles": [
+      "vps-service/ai/trade_recorder.py"
+    ],
+    "refFiles": [
+      "vps-service/ai/trade_recorder.py",
+      "vps-service/ai/historical_trade_generator.py",
+      "vps-service/ai/telegram_signal_importer.py"
+    ],
+    "locations": [
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "tuned_predictions_summary": {
+    "status": "REFERENCED_NO_SQL",
+    "refCount": 1,
+    "readCount": 0,
+    "writeCount": 0,
+    "readFiles": [],
+    "writeFiles": [],
+    "refFiles": [
+      "vps-service/utils/db_paths.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 1
+      }
+    ]
+  },
+  "user_financial_settings": {
+    "status": "ACTIVE_READ_ONLY",
+    "refCount": 2,
+    "readCount": 2,
+    "writeCount": 0,
+    "readFiles": [
+      "src/app/api/finance/projection/route.ts",
+      "src/app/api/finance/calculate-values/route.ts"
+    ],
+    "writeFiles": [],
+    "refFiles": [
+      "src/app/api/finance/projection/route.ts",
+      "src/app/api/finance/calculate-values/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "user_notifications": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 7,
+    "readCount": 6,
+    "writeCount": 3,
+    "readFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "src/app/api/alerts/route.ts",
+      "src/app/api/alerts/scheduler/route.ts",
+      "src/app/api/alerts/[id]/route.ts",
+      "src/lib/schedulers/alert-engine.ts",
+      "src/app/api/notifications/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "src/app/api/alerts/[id]/route.ts",
+      "src/lib/schedulers/alert-engine.ts"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "src/app/api/alerts/route.ts",
+      "src/app/api/alerts/scheduler/route.ts",
+      "src/app/api/alerts/[id]/route.ts",
+      "src/lib/schedulers/alert-engine.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 96
+      }
+    ]
+  },
+  "user_sessions": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 2,
+    "readCount": 1,
+    "writeCount": 2,
+    "readFiles": [
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/api/analytics.py",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/api/analytics.py",
+      "src/app/api/admin/users/cleanup-expired/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 0
+      }
+    ]
+  },
+  "user_stock_watchlists": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 21,
+    "readCount": 18,
+    "writeCount": 6,
+    "readFiles": [
+      "vps-service/analyzers/smart_portfolio_monitor.py",
+      "src/app/api/watchlist/route.ts",
+      "src/app/api/watchlist/[id]/route.ts",
+      "src/app/api/alerts/route.ts",
+      "src/app/api/alerts/[id]/route.ts",
+      "src/app/api/alerts/create/route.ts",
+      "src/app/api/admin/db-health/route.ts",
+      "src/app/api/admin/users/cleanup-expired/route.ts",
+      "src/app/api/admin/stats/route.ts",
+      "src/app/api/watchlist-enhanced/route.ts"
+    ],
+    "writeFiles": [
+      "src/app/api/watchlist/route.ts",
+      "src/app/api/watchlist/[id]/route.ts",
+      "src/app/api/alerts/create/route.ts",
+      "src/app/api/admin/users/cleanup-expired/route.ts",
+      "src/app/api/mobile/watchlist/route.ts",
+      "src/app/api/mobile/watchlist-enhanced/route.ts"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/analyzers/smart_portfolio_monitor.py",
+      "src/app/api/watchlist/route.ts",
+      "src/app/api/watchlist/[id]/route.ts",
+      "src/app/api/alerts/route.ts"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 67
+      }
+    ]
+  },
+  "user_trades": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 3,
+    "readCount": 1,
+    "writeCount": 1,
+    "readFiles": [
+      "vps-service/ai/trade_recorder.py"
+    ],
+    "writeFiles": [
+      "vps-service/ai/trade_recorder.py"
+    ],
+    "refFiles": [
+      "vps-service/utils/db_paths.py",
+      "vps-service/core/migrator.py",
+      "vps-service/ai/trade_recorder.py"
+    ],
+    "locations": [
+      {
+        "db": "db/auth.db",
+        "rows": 0
+      },
+      {
+        "db": "db/predictions.db",
+        "rows": 0
+      }
+    ]
+  },
+  "wealth_tracking": {
+    "status": "ACTIVE_READ_WRITE",
+    "refCount": 6,
+    "readCount": 3,
+    "writeCount": 2,
+    "readFiles": [
+      "src/components/portfolio/WealthCharts.tsx",
+      "vps-service/scripts/wealth_tracker.py",
+      "src/app/api/portfolio/equity-curve/route.ts"
+    ],
+    "writeFiles": [
+      "vps-service/jobs/daily_portfolio_yield.py",
+      "vps-service/scripts/wealth_tracker.py"
+    ],
+    "refFiles": [
+      "vps-service/jobs/market_scheduler.py",
+      "vps-service/jobs/daily_portfolio_yield.py",
+      "src/components/admin/WealthCharts.tsx",
+      "src/components/portfolio/WealthCharts.tsx",
+      "vps-service/scripts/wealth_tracker.py"
+    ],
+    "locations": [
+      {
+        "db": "db/stocks.db",
+        "rows": 36
+      }
+    ]
+  }
+}
