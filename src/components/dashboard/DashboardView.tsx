@@ -17,6 +17,12 @@ import { MaestroWidget } from '@/components/dashboard/MaestroWidget';
 import { LiveStockTicker } from '@/components/dashboard/LiveStockTicker';
 import { MarketPulseWidget } from '@/components/dashboard/MarketPulseWidget';
 import { InvestorsFlowPanel } from '@/components/dashboard/InvestorsFlowPanel';
+// P1-GEMS-WIRING: surface 2 hidden dashboard widgets — LiquidityFlowPanel (439 LOC)
+// reads /api/market/liquidity-flow, IntradayPressurePanel (361 LOC) reads
+// /api/market/intraday-pressure. Both are read-only clients with no admin auth
+// needed — perfect for the public dashboard.
+import { LiquidityFlowPanel } from '@/components/dashboard/LiquidityFlowPanel';
+import { IntradayPressurePanel } from '@/components/dashboard/IntradayPressurePanel';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -419,6 +425,23 @@ export function DashboardView() {
               >
                 <SafeWidget name="حركة المستثمرين">
                   <InvestorsFlowPanel />
+                </SafeWidget>
+              </section>
+            )}
+
+            {/* P1-GEMS-WIRING §3.6 — حركة السيولة + ضغط الجلسة (Liquidity + Intraday Pressure) */}
+            {/* قبل كده كان في المكوّنات بس مش مربوطين. دلوقتي بيتعرضوا جنب بعض */}
+            {/* للأسواق التقليدية بس (intraday.db و liquidity-flow بيانات EGX/TADAWUL/KSE/QSE). */}
+            {showMarketFlowPanels && (
+              <section
+                aria-label="حركة السيولة وضغط الجلسة"
+                className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              >
+                <SafeWidget name="حركة السيولة القطاعية">
+                  <LiquidityFlowPanel />
+                </SafeWidget>
+                <SafeWidget name="ضغط الشراء والبيع داخل الجلسة">
+                  <IntradayPressurePanel initialTicker={selectedTicker || 'COMI'} />
                 </SafeWidget>
               </section>
             )}

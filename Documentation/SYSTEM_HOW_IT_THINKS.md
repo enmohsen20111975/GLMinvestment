@@ -1,6 +1,8 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-27 (DOC-REORG-2)
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-09-27 (DOC-UPDATE-P0-WAVE)
+> (DOC-UPDATE-P0-WAVE pass: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅). تحديث Production Snapshot — Win Rate 67.4% (recorded status) → ~50–55% (actual بعد HELI-CLEANUP-2 كشف 31.66% mismatch rate). إضافة قسم جديد "§16 — HELI False-Target Forensics (2026-09-27)" يوثّق root cause + fix + data cleanup لـ 308 false TARGET_HITs. إضافة قسم جديد "§17 — Observability Stack (2026-09-27)" يوثّق Sentry + structured logger + /api/health deep-check + x-request-id. تحديث §15 — radar signal-tracker بـ auto-record على كل warmup. كل الأرقام مُتحقَّق منها ضد `predictions.db` الفعلي بعد HELI-CLEANUP-2.)
+> **آخر تحديث سابق:** 2026-09-27 (DOC-REORG-2)
 > (DOC-REORG-2 pass: دمج كامل لمحتوى `RADAR_LIQUIDITY_UPGRADE.md` (كان 84KB مستقل) داخل هذا الملف كقسم جديد §15 — «رادار السيولة: 6 ميزات الترقية (2026-09-27)». الـ 6 ميزات (5 endpoints + 1 pipeline موصول) + DB schema + flows + architecture + integration points + testing checklist + maintenance notes كلها موجودة الآن في §15.0 → §15.14.)
 > **آخر تحديث سابق:** 2026-09-26 (DOC-UPDATE-FINAL)
 > (DOC-UPDATE-FINAL pass: تحديث جدول Production Snapshot ليشمل Phases A/B/C/D (multi-market `market_code`، Liquidity primary gate، 20+ thresholds → `get_setting()`، A/B backtest harness) + تحديث الـ KPIs الحالية: WR=67.4% على 1,229 resolved prediction، PF=12.84، Avg Return=25.74%، Max Loss Streak=7، baseline محفوظ في `ab_backtest_baseline_*.json`.)
@@ -17,37 +19,49 @@
 > **المنهجية:** كل رقم/صيغة/مسار/سلوك مُتحقَّق منه ضد الكود الفعلي + الأرشيف الإنتاجي
 > (`data/all.zip` بعد WAVE-1+2+3 cleanup).
 >
-> **النتيجة على الإنتاج الحالي (2026-09-26 — DOC-UPDATE-FINAL):** V40.2 هو العقل الوحيد + Phases A/B/C/D مُنفَّذة.
-> - **Closed-Loop مفعّل بالكامل:** كل توقع في `predictions.db` بيمر بـ 5 حالات (`PENDING → TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED`) — راجع `00-CONSTITUTION.md` §7.
+> **النتيجة على الإنتاج الحالي (2026-09-27 — DOC-UPDATE-P0-WAVE):** V40.2 هو العقل الوحيد + Phases A/B/C/D مُنفَّذة + **P0 Disaster Resolution Wave مكتملة (16/16 items ✅)**.
+> - **Closed-Loop مفعّل بالكامل:** كل توقع في `predictions.db` بيمر بـ 5 حالات (`PENDING → TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED`) — راجع `00-CONSTITUTION.md` §7. ✅ HELI bug fixed (308 false TARGET_HITs cleaned — راجع §16).
 > - **3 personas فاعلة:** `conservative` + `balanced` (الـ **baseline الموحّد للإنتاج** — 81.8% من predictions) + `gambler`. شخصية `expert` معطّلة (Rule 23 — PERSONA-UNIFY-A). كل الـ personas بتشتق من نفس V40.2 score (بدل reclassify).
 > - **Phase A — Multi-Market:** V40.2 يدعم `market_code` parameter (EGX/KSA/KSE/QSE/CRYPTO).
 > - **Phase B — Liquidity Primary Gate:** فلتر السيولة يشتغل قبل `analyze_single_day_v393()` (أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً).
 > - **Phase C — Dynamic Thresholds:** 20+ hardcoded thresholds أصبحت `get_setting()` (قابلة للتعديل من Admin UI).
 > - **Phase D — A/B Backtest Harness:** baseline محفوظ في `ab_backtest_baseline_*.json` — أي تغيير لازم يقاس ضد الـ baseline.
-> - **KPIs الحالية (1,229 resolved من 1,359 prediction):** WR=**67.4%** · Avg Return=**25.74%** · PF=**12.84** · Max Loss Streak=**7**.
+> - **Observability Stack (NEW 2026-09-27):** Sentry + structured logger + `/api/health` deep-check (262 LOC) + x-request-id middleware — راجع §17.
+> - **KPIs الحالية (1,229 resolved من 1,359 prediction):** WR=**~50–55%** (was **67.4%** قبل HELI-CLEANUP-2 — راجع §16) · Avg Return=**25.74%** (recorded) · PF=**12.84** (recorded) · Max Loss Streak=**7** · Reconciliation mismatch rate=**31.66%** (was 41.96% — راجع §16).
 > - **`predictions.db.predictions` = 1,359 صف** (333 TARGET_HIT + 193 closed_stop + 77 ACTIVE + باقي الحالات) · `aiPrediction` = 2,459 · `persona_predictions` = 946 · `historical_trades` = 550 · `outcome_logs` = 8,544.
+> - **Tests (NEW 2026-09-27):** 9 test files / 121 tests / 1,796 LOC — 121/121 passing.
 
 ---
 
-## ⚡ الحالة الإنتاجية الحالية (Production Snapshot — 2026-09-26 — DOC-UPDATE-FINAL)
+## ⚡ الحالة الإنتاجية الحالية (Production Snapshot — 2026-09-27 — DOC-UPDATE-P0-WAVE)
 
 | المكوّن | الحالة | المصدر |
 |---|---|---|
 | **V40.2 daily generator** | ✅ الإنتاج — **Phase A: multi-market `market_code` (EGX/KSA/KSE/QSE/CRYPTO)** | `vps-service/jobs/v40_2_daily_generator.py` يكتب في `predictions.db` — tracker مفعّل. `market_code` يُمرَّر في `analyze_single_day_v393()`. |
 | **Liquidity Filter (Phase B — primary gate)** | ✅ الإنتاج — **يشتغل قبل `analyze_single_day_v393()`** | `vps-service/analyzers/liquidity_filter.py` — البوابة الرئيسية؛ أي سهم لا يجتاز السيولة لا يدخل التحليل أصلاً (توفير compute + تحسين جودة الـ predictions). |
 | **Dynamic Thresholds (Phase C)** | ✅ الإنتاج — **20+ hardcoded thresholds → `get_setting()`** | `vps-service/core/engine_settings.py` — كل threshold أصبح قابلاً للتعديل من Admin UI بدون redeploy. القائمة الكاملة في §3 (Thresholds). |
-| **A/B Backtest Harness (Phase D)** | ✅ الإنتاج — **baseline محفوظ `ab_backtest_baseline_*.json`** | `vps-service/backtest_results/` — diff runs قبل/بعد أي phase. WR baseline = 67.4% / PF = 12.84 / Max Loss Streak = 7. |
+| **A/B Backtest Harness (Phase D)** | ✅ الإنتاج — **baseline محفوظ `ab_backtest_baseline_*.json`** | `vps-service/backtest_results/` — diff runs قبل/بعد أي phase. WR baseline = 67.4% (recorded) / ~50–55% (actual بعد HELI-CLEANUP-2) / PF = 12.84 / Max Loss Streak = 7. |
+| **daily_closer.py (HELI bug fixed — 2026-09-27)** | ✅ الإنتاج — **4 sites fixed + write-time assertion** | `vps-service/jobs/daily_closer.py` lines 2087/2140/2175/2199 — `status='TARGET_HIT' if actual_return>0` استُبدلت بـ `if highest_price_reached >= target_price`. Assertion في `_mark_closed()` (lines 2979-3008) — راجع §16. |
 | **Maestro orchestrator** | 🚫 معطّل (KILL-MAESTRO 2026-08-31) | `maestro_orchestrator.py` signal_id = None |
 | **Closed-Loop (5-state)** | ✅ مفعّل | `00-CONSTITUTION.md` §6 + §7 (Closed-Loop) |
 | **Personas في الإنتاج** | `balanced` فقط (baseline) | `compute_persona_fit()` يشتق conservative + gambler من نفس V40.2 score (Rule 23) |
-| **Daily picks (Top 5)** | ✅ الإنتاج | `predictions/daily-picks` من V40.2 |
+| **Daily picks (Top 5)** | ✅ الإنتاج + **`hunter_pick_tracking` populated (P0 fix #2)** | `predictions/daily-picks` من V40.2 + `scripts/sync_hunter_pick_tracking.py` (NEW) |
 | **Active management** | ✅ الإنتاج | `predictions/active-management` — مفتوح لكل الصفقات في `predictions.db` |
-| **Honest-tracking** | ✅ الإنتاج | 7 endpoints تحت `/api/predictions/honest-tracking/*` (2,545 LOC) |
+| **Honest-tracking** | ✅ الإنتاج + **7 SQLi sites fixed (P0-12-SQLI)** | 7 endpoints تحت `/api/predictions/honest-tracking/*` (2,545 LOC). 3 SQLi sites في `/live-tracking/route.ts` تم fix (`${market.toUpperCase()}` → bound `?` params + whitelist). |
 | **Backtest engine** | ✅ V38 (sandbox + production-wiring للـ position sizing + A/B harness) | `v38_backtest_engine.py` (1,817 LOC) |
 | **Decision Logger** | ✅ الإنتاج (default ON — غير gated) | `decision_logger.py::log_decision()` يكتب في `decision_log.db` |
 | **10 Feature Flags V40.2** | كلها OFF افتراضياً | تُفعَّل بـ `engine_settings.py` بعد walk-forward |
 | **5-Market UI Mirror** | ✅ الإنتاج (Rule 53) | `MarketSelector` يبدّل `currentMarket` بين EGX/TADAWUL/KSE/QSE/CRYPTO |
-| **Live KPIs (1,229 resolved من 1,359 prediction)** | WR=**67.4%** · Avg Return=**25.74%** · PF=**12.84** · Max Loss Streak=**7** | محسوبة من `predictions.db` على resolved set (TARGET_HIT + closed_stop). Baseline محفوظ في `ab_backtest_baseline_*.json`. |
+| **Live KPIs (1,229 resolved من 1,359 prediction)** | WR=**~50–55%** (was **67.4%** قبل HELI-CLEANUP-2 — recorded status كان مُضخَّم بسبب false TARGET_HITs) · Avg Return=**25.74%** (recorded) · PF=**12.84** (recorded) · Max Loss Streak=**7** · **Reconciliation mismatch rate=31.66%** (was 41.96%) | محسوبة من `predictions.db` على resolved set (TARGET_HIT + closed_stop). الـ actual WR بعد HELI-CLEANUP-2 حوالي ~50–55%. راجع §16 لتفاصيل الـ forensics. Baseline محفوظ في `ab_backtest_baseline_*.json`. |
+| **Auth guards (P0-11-AUTH — NEW)** | ✅ 30 routes secured (4 admin + 26 non-admin) عبر 44 HTTP method handlers | `src/lib/admin-guard.ts` (74 LOC) — thin re-export + new `requireAuthAsync(req)` لـ user-scoped. راجع `00-CONSTITUTION.md` Rule 55. |
+| **SQLi protection (P0-12-SQLI — NEW)** | ✅ 7 sites fixed (5 files) — 3 canonical patterns | `predictions/honest-tracking/live-tracking/route.ts` (3 sites) + `finance/screener/route.ts` + `tab-data/route.ts` + `admin/clear-junk-data/route.ts` (4 sites) + `admin/db-explorer/route.ts` (3 sites). راجع `00-CONSTITUTION.md` Rule 56. |
+| **Async I/O (P0-14-ASYNC — NEW)** | ✅ 24 API routes refactored (~70+ sync sites) | All `readFileSync`/`writeFileSync`/`existsSync`/`execSync` in API routes converted لـ `fs/promises` + `promisify(execFile)`. راجع `00-CONSTITUTION.md` Rule 57. |
+| **Observability stack (P0-7-15-INFRA — NEW)** | ✅ Sentry + logger + /api/health + x-request-id | `@sentry/nextjs@11.0.0` + `src/lib/logger.ts` (90 LOC) + `/api/health` (262 LOC deep-check) + `src/middleware.ts`. راجع §17 + `00-CONSTITUTION.md` Rule 58. |
+| **Tests (P0-16-TESTS — NEW)** | ✅ 9 files / 121 tests / 1,796 LOC — 121/121 passing | Was 3/75/873. Categories: SQL injection + auth guards + import endpoint + predictions pipeline + DB integrity + health endpoint. راجع `00-CONSTITUTION.md` Rule 59. |
+| **DB unification (P0-8-DB-UNIFY — NEW)** | ✅ 9 duplicate tables dropped (333 rows preserved as JSON sidecars) + 4 DBs backed up (511.2 MB) | `stocks.gold_prices` + `predictions.cached_analysis` + `predictions.telegram_news` + `predictions.ExpertRecommendation` + `auth.ExpertRecommendation` + `stocks.learned_lessons` + `stocks.egksco_price_history` + `data_engine.egksco_stocks` + `data_engine.stocks` (all dropped). |
+| **PM2 services (7 — was 6 — NEW)** | ✅ news-agent added (7th service) | `ecosystem.config.js` — Telethon + feedparser + trafilatura + rich. Runs every 15min, writes to `db/news.db.market_news`. |
+| **stored_analyses populated (P0 fix #1)** | ✅ schema drift fix (added `prediction_date` column) + V40.2 generator run | Was 0 rows. دلوقتي فيه توقعات V40.2. |
+| **price_history freshness (P0 fix #3)** | ✅ yfinance installed + safetynet cron wired | `price_history.db.price_history` صار 1,206,981 صف (was 1,205,599). |
 
 ---
 
@@ -2459,6 +2473,7 @@ if signal not in ('STRONG_BUY', 'INSTITUTIONAL_BUY', 'BUY'):
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-27 | `SYSTEM_HOW_IT_THINKS.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. تحديث Production Snapshot (Win Rate 67.4% → ~50–55% بعد HELI-CLEANUP-2 — recorded status كان مُضخَّم بسبب false TARGET_HITs). تحديث §15.2 (radar signal-tracker auto-record على كل warmup). إضافة قسم جديد "§16 — HELI False-Target Forensics (2026-09-27)" (6 sub-sections: Root Cause + Fix + Data Cleanup + Reconciliation Results + Reconciliation Script + Recommendations). إضافة قسم جديد "§17 — Observability Stack (2026-09-27)" (6 sub-sections: Sentry + Structured Logger + /api/health Deep-Check + x-request-id Middleware + news-agent PM2 + .env Variables). |
 | 2026-09-01 | `SYSTEM_HOW_IT_THINKS.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook Context (المحور أ)، فلسفة الخروج الهيكلية (المحور ب — `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة + `is_within_typical_correction` + `is_breakdown_not_correction` + الأولوية distribution > early_drop > compound_breakdown > review_alert)، Disclosure Engine (الإثبات الثامن)، Strict Entry Filters (Don't Chase)، Distribution Exit، News Fetcher Analyzer، Decision Logger (المحور ج)، Unified Exit Engine، Crypto Modules (4 ملفات)، باك-تست B0/B1/B2/B3 (200 سهم × 6 شهور)، News Signals Reader. |
 # 🔬 ملف تفصيلي: منهجية التحليل والتوقعات — الحقيقة الكاملة
 
@@ -4249,6 +4264,8 @@ if (score >= 60) {
 
 ### §15.2 تتبع مصير الإشارات (Signal Tracker) 🏆
 
+> **تحديث P0-WAVE (2026-09-27):** signal-tracker دلوقتي بـ **auto-record على كل warmup** (was manual-trigger فقط). كل الـ `maker_radar.py` runs بـ يـ write لـ `radar_signal_tracking` table تلقائياً عبر shared lib `recordSignalsBatch` مع dedup على `(ticker, signal_date, signal_type)`. ده بيضمن إن في data مستمرة للـ win-rate analytics بدون human trigger. راجع `src/lib/radar-signal-tracker.ts` (190 LOC).
+
 **المسار:** `GET /api/maker-radar/signal-tracker` · `POST /api/maker-radar/signal-tracker` · `POST /api/maker-radar/signal-tracker/verify`
 
 #### المشكلة التي تحلها
@@ -5583,4 +5600,220 @@ if (roc10 >= 4 && roc10 <= 18) { momScore = 22; momLabel = 'زخم مثالي'; 
 ---
 
 > 📝 **ملاحظة ختامية:** هذا الملف هو **المرجع الرسمي** لترقية رادار السيولة. أي تعديل مستقبلي على أي من الميزات الـ 6 يجب أن يُحدِّث هذا الملف + سجل التغييرات في `worklog.md`. الـ file map في §6 يجب أن يبقى متزامناً مع الـ codebase — لو أضفت endpoint جديد أو ملف lib جديد، أضفه للجدول.
+
+---
+
+## §16 — HELI False-Target Forensics (2026-09-27 — DOC-UPDATE-P0-WAVE)
+
+> **المرجع:** `worklog.md` entries `P0-17-RECONCILE` + `HELI-INVESTIGATION` + `HELI-CLEANUP-2`.
+> **الحالة:** ✅ **308 false TARGET_HITs cleaned** — الـ reconciliation mismatch rate انخفض من 41.96% → 31.66%.
+> **الحقيقة المُكتشَفة:** الـ Win Rate المُسجَّل في `predictions.db` (67.4%) كان **مُضخَّم** بسبب false TARGET_HITs. الـ actual WR حوالي **~50–55%** بعد الـ cleanup.
+
+### §16.1 الـ Root Cause (السبب الجذري)
+
+**الـ bug location:** `vps-service/jobs/daily_closer.py` — 4 sites استخدمت heuristic خاطئ:
+
+```python
+# ❌ BUGGY (was at lines 2087, 2140, 2175, 2199):
+status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'
+```
+
+**المشكلة:** الـ heuristic بـ يخلط بين "خرج بربح" و "ضرب الهدف". أي exit بربحه موجب (حتى لو مفيش target_price اتضرب) بـ يـ classifies كـ `TARGET_HIT`. ده بيعطي Win Rate مُضخَّم.
+
+**الـ external script (مُكتشَف):** script removed-from-VPS كان بـ يـ set `exit_type='maker_fuel_exhausted'` على 363 predictions باستخدام نفس الـ buggy heuristic. منهم:
+- **325** GOT false `TARGET_HIT` status (كان مفروض `EXPIRED` أو `closed_win` أو `STOPPED`)
+- **38** GOT `STOPPED` status
+
+### §16.2 الـ Fix (الإصلاح)
+
+**الـ 4 sites fix في `daily_closer.py`:**
+
+```python
+# ✅ FIXED (HELI-INVESTIGATION fix 2026-09-27):
+if target_price > 0 and highest_price_reached >= target_price:
+    status = 'TARGET_HIT'
+elif actual_return > 0:
+    status = 'closed_win'  # truthful "won but missed target" label
+else:
+    status = 'EXPIRED'
+```
+
+**Defense-in-depth (write-time assertion):** Added in `_mark_closed()` (lines 2979-3008):
+
+```python
+# ✅ Write-time assertion (defense-in-depth):
+if status == 'TARGET_HIT' and highest_price_reached + 1e-4 < target_price:
+    # Auto-downgrade false TARGET_HIT to closed_win or EXPIRED
+    status = 'closed_win' if actual_return > 0 else 'EXPIRED'
+    logger.warning(f"False TARGET_HIT auto-downgraded: id={prediction_id} target={target_price} highest={highest_price_reached}")
+```
+
+### §16.3 الـ Data Cleanup (تنظيف البيانات)
+
+| المرحلة | الـ Script | الـ rows المُعالَجة | النتيجة |
+|---|---|---|---|
+| Phase 1 (HELI only) | `scripts/fix_heli_false_targets.py` (325 LOC) | 20 HELI TARGET_HITs | 17 → `EXPIRED` (target never reached) + 3 kept `TARGET_HIT` (target actually hit) + 21 `highest_price_reached` corrected (8.20 → 8.77) |
+| Phase 2 (full cleanup) | `scripts/fix_all_false_targets.py` (397 LOC) | 308 false TARGET_HITs across 25 tickers (top: MASR 88, ABUK 68, AMOC 63, PHDC 51, CIEB 5) | 102 → `closed_win` (TP2 hit) + 13 → `EXPIRED` + 1 → `STOPPED` + 192 kept `TARGET_HIT` (true TP1 hits) |
+| Phase 3 (HELI supplementary) | `scripts/fix_heli_expired_to_closedwin.py` (245 LOC) | 17 HELI EXPIRED | 17 → `closed_win` (target_price_2 reached on the way up to max_high=8.77) |
+
+**الـ backups المُنشَأة:**
+- `db/predictions.db.bak-heli-fix` (235 MB)
+- `db/predictions.db.bak-full-cleanup` (235 MB)
+- `db/predictions.db.bak-heli-expired-fix` (235 MB)
+
+### §16.4 الـ Reconciliation Results
+
+| المقياس | قبل | بعد HELI-INVESTIGATION | بعد HELI-CLEANUP-2 |
+|---|---|---|---|
+| **Mismatch rate** | 41.96% (509/1213) | 40.56% (-1.40 pp) | **31.66%** (384/1213) — **-10.30 pp total** |
+| `TARGET_HIT_to_EXPIRED` mismatches | 124 | 107 (-17) | 4 (almost eliminated) |
+| HELI records in mismatch list | 18 | 1 (false-positive of reconcile script) | **0** (fully resolved) |
+| `maker_fuel_exhausted` records | 363 (325 TARGET_HIT + 38 STOPPED) | 363 (HELI part fixed) | **363 fixed** (192 TARGET_HIT + 119 closed_win + 39 STOPPED + 13 EXPIRED) |
+
+### §16.5 الـ Reconciliation Script (`scripts/reconcile_hit_targets.py`)
+
+**الـ updates على الـ script (P0-17-RECONCILE):**
+- `determine_actual_outcome()` دلوقتي بـ يعرف `target_price_2` (TP2 hits) — بيرجع `(actual_status, tp_hit_flag)` حيث `tp_hit_flag ∈ {'TP1', 'TP2', None}`
+- لو TP1 مش متضرب بس TP2 اتضرب → بيرجع `('TARGET_HIT', 'TP2')` — ده بيخلي recorded=`closed_win` (normalized TARGET_HIT) match actual=TARGET_HIT (TP2)
+
+**الـ 384 remaining mismatches:** كلها `exit_type=''` (فاضي — مش `maker_fuel_exhausted`). موزعة على:
+- `EXPIRED_to_TARGET_HIT`: 235
+- `EXPIRED_to_STOPPED`: 89
+- `STOPPED_to_TARGET_HIT`: 28
+- `STOPPED_to_EXPIRED`: 28
+- `TARGET_HIT_to_EXPIRED`: 4
+
+**Top tickers اللي لسه فيها mismatches:** BTFH 79, MASR 51, BLDG 36, PIOH 35, ABUK 33, CIEB 29. دي pre-existing data quality issues من closing processes تانية — recommend separate `fix_expired_mislabels.py` + `fix_stopped_mislabels.py` cleanup (P1).
+
+### §16.6 الـ Recommendation (توصيات لتفادي تكرار الـ bug)
+
+1. ✅ **تم:** Source code fix في `daily_closer.py` (4 sites + write-time assertion)
+2. ✅ **تم:** Data cleanup لـ 308 false TARGET_HITs + 17 HELI EXPIREDs
+3. ⏳ **مقترح (P1):** إضافة DB CHECK constraint مع TP2 awareness: `CHECK (status='TARGET_HIT' IMPLIES highest_price_reached >= target_price - 0.01)`
+4. ⏳ **مقترح (P1):** Nightly reconciliation cron (auto-detect false TARGET_HITs every night)
+5. ⏳ **مقترح (P1):** Unit tests لـ `daily_closer.py` (الحالي مفيهوش tests)
+6. ⏳ **مقترح (P1):** Find/disable the maker_fuel_exhausted script on VPS (already removed from codebase)
+
+---
+
+## §17 — Observability Stack (2026-09-27 — DOC-UPDATE-P0-WAVE)
+
+> **المرجع:** `worklog.md` entry `P0-7-15-INFRA` + `00-CONSTITUTION.md` Rule 58 (P0-WAVE-OBSERVABILITY).
+> **الحالة:** ✅ **Full observability stack deployed** — Sentry + structured logger + deep-check /api/health + x-request-id middleware.
+
+### §17.1 Sentry (`@sentry/nextjs@11.0.0`)
+
+**التثبيت:** `bun add @sentry/nextjs` (40 packages، 5.15s)
+
+**الـ config files:**
+- `sentry.client.config.ts` — reads `NEXT_PUBLIC_SENTRY_DSN` (falls back to `SENTRY_DSN`). مُفعَّل فقط في `NODE_ENV=production`. 10% transaction sampling في prod / 100% في dev / 100% errors. Session replay 10% prod / 0% dev / 100% on error. Filters out hydration mismatches, ResizeObserver loop, browser-extension noise, AbortError, etc.
+- `sentry.server.config.ts` — reads `SENTRY_DSN`. مُفعَّل فقط في prod. 10% transaction sample rate. Filters ECONNRESET/EPIPE/ETIMEDOUT/ECONNREFUSED, AbortError variants, ENOENT (static-file 404s).
+- `next.config.ts` — wrapped with `withSentryConfig` (`silent: true`، `hideSourceMaps: true`، `disableLogger: true`، `widenClientFileUpload: true`، `autoInstrumentServerFunctions: true`).
+- `.env` — added `SENTRY_DSN=` + `NEXT_PUBLIC_SENTRY_DSN=` placeholders (empty by default — opt-in design).
+
+**الـ opt-in design:** كل `Sentry.init()` gated behind `if (SENTRY_DSN)` — no-op when DSN empty. ده بيخلي الـ app يشتغل حتى لو مفيش SENTRY_DSN configured.
+
+### §17.2 Structured Logger (`src/lib/logger.ts` — 90 LOC)
+
+**الـ interface:**
+```typescript
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+interface LogContext { [key: string]: unknown; }
+
+function log(level: LogLevel, message: string, context?: LogContext): void
+```
+
+**الـ output:** Single JSON line per log:
+```json
+{"timestamp":"2026-09-27T14:31:18.000Z","level":"info","message":"health check completed","status":"ok","duration_ms":42}
+```
+
+**الـ design:**
+- `LOG_LEVELS` mapping (debug=10, info=20, warn=30, error=40)
+- `MIN_LEVEL` reads `process.env.LOG_LEVEL || 'info'`
+- 12-factor compliant: errors + warnings → stderr / info + debug → stdout
+- Exports both named `log` function + default `logger` object with `.debug/.info/.warn/.error` methods
+
+### §17.3 `/api/health` Deep-Check (60 → 262 LOC)
+
+**Before (was broken):** كان بـ يـ check file existence فقط عبر `existsSync()` — corrupted DB كان بـ يـ report "status: ok". 10s cache.
+
+**After (deep-check):**
+- **DB integrity:** Opens each DB read-only with `fileMustExist: true`، runs `SELECT 1`، closes immediately. Reports actual error message on failure.
+- **DB row counts:** `stocks.db.stocks` (976) + `predictions.db.predictions` (1307) + `price_history.db.price_history` (1,209,762 + latest_date) + `data_engine.db.stocks` (296) + `intraday.db` (no row count — multiple tables).
+- **DB size:** `statSync().size` in MB (1 decimal).
+- **Service reachability:** `ss -ltnp | grep :PORT` لـ python-backend (8010) + ws-service (3005) + telegram-events (3003)؛ `pgrep -f news-agent/main.py` لـ news-agent (no port — it's a loop). Extracts PID when available.
+- **Disk:** `df -BG --output=size,used,avail,pcent /home/z/my-project` → free_gb / total_gb / used_pct. Marks "down" if used_pct ≥ 95.
+- **All checks run via `Promise.all()`** — fully async، no blocking sync I/O (Rule 57 compliant).
+- **Aggregated status:** "down" لو critical DBs (stocks.db, predictions.db) fail أو disk ≥95%؛ "degraded" لو non-critical services (telegram-events, news-agent) down؛ "ok" only if all components healthy.
+- **HTTP status:** 200 ok/degraded، 503 down (upstream LB يقدر يـ fail-over).
+- **60s in-memory cache** (was 10s — deep checks are heavier).
+- **Structured log** via `logger.info('health check completed', {...})` after every check.
+
+**Response shape:**
+```json
+{
+  "status": "ok" | "degraded" | "down",
+  "components": {
+    "databases": { "stocks.db": {"status":"ok","size_mb":14.2,"rows":976}, ... },
+    "nextjs": {"reachable":true,"pid":12345},
+    "disk": {"total_gb":50,"used_gb":38,"used_pct":77}
+  }
+}
+```
+
+### §17.4 x-request-id Middleware (`src/middleware.ts`)
+
+**الـ behavior:**
+- At top of `middleware()`: reads inbound `x-request-id` header (if present — distributed trace propagation) OR generates UUIDv4.
+- Sets `response.headers.set('x-request-id', requestId)` so every response carries the ID.
+- Route handlers can read inbound `x-request-id` from `request.headers` (already supported).
+
+**الـ edge-runtime fix (P0-16-TESTS):** كان فيه regression استخدم Node.js `crypto.randomUUID` (مش متوفّر في Edge runtime). Fixed via Web Crypto API with fallback:
+```typescript
+async function generateRequestId(): Promise<string> {
+  try {
+    // 1. Try Web Crypto API (supported in Edge runtime + modern Node.js)
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  } catch {}
+  // 2. Fallback to time-based ID
+  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+```
+
+### §17.5 PM2 Service — news-agent (7th service)
+
+**الـ service block في `ecosystem.config.js`:**
+```javascript
+{
+  name: 'news-agent',
+  script: 'main.py',
+  interpreter: dynamic IIFE (prefers news-agent/.venv/bin/python → root .venv/bin/python → system python3),
+  cwd: path.resolve(__dirname, 'news-agent'),
+  autorestart: true,
+  max_memory_restart: '300M',
+  env: { NODE_ENV: 'production', PRODUCTION_SERVER_URL, OLLAMA_MODEL, COLLECTION_INTERVAL_MINUTES, ... },
+  error_file: './logs/news-agent-error.log',
+  out_file: './logs/news-agent-out.log',
+  time: true, max_restarts: 10, restart_delay: 5000, kill_timeout: 10000
+}
+```
+
+**الـ behavior:** يـ reads `COLLECTION_INTERVAL_MINUTES` (default 15min) + يـ POST كل batch لـ `PRODUCTION_SERVER_URL` (Next.js /api/news/receive-from-news-agent endpoint). Writes to `db/news.db.market_news`.
+
+### §17.6 الـ .env Variables (NEW — P0-7-15-INFRA + P0-11-AUTH)
+
+| Variable | الوصف | Default |
+|---|---|---|
+| `SENTRY_DSN` | Sentry server DSN (empty = no-op) | empty |
+| `NEXT_PUBLIC_SENTRY_DSN` | Sentry client DSN (empty = no-op) | empty |
+| `LOG_LEVEL` | Min log level (`debug`/`info`/`warn`/`error`) | `info` |
+| `ADMIN_EMAILS` | Comma-separated admin emails (empty = sandbox falls back to historical defaults) | empty |
+| `ADMIN_USERNAMES` | Same for usernames | empty |
+| `ADMIN_USERNAME` + `ADMIN_PASSWORD` | For X-Admin-Token base64 login | empty |
+| `ADMIN_SESSION_TOKEN` | Cookie value | empty |
+| `ALLOW_ADMIN_BYPASS` | Localhost bypass (should be `false` in prod) | empty |
+| `ALLOWED_ORIGINS` | CORS | empty |
+
+---
 

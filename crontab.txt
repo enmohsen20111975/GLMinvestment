@@ -73,6 +73,19 @@
 # يومياً 02:00 UTC (04:00 Cairo) — يتحقّق من الإشارات اللي عدّت 7+ أيام
 0 2 * * * cd /root/GLMinvestment && curl -s -X POST http://localhost:3000/api/maker-radar/signal-tracker/verify -H "Content-Type: application/json" -d '{"max_age_days": 45}' >> /tmp/radar_signal_verify.log 2>&1
 
+# ─── 15. Market Regime Engine — تحديث حالة السوق (يومياً قبل الـ generator) ──
+# يومياً 02:50 UTC (04:50 Cairo) — قبل V40.2 generator بـ 10 دقائق
+# بـ يقرأ 6 indicators (SMA20/50/200 + breadth + ATR + turnover + loss streak)
+# و يـ output regime = DEFENSIVE / NORMAL / AGGRESSIVE مع hysteresis 2-3 أيام.
+# النتيجة بـ تـ store في system_settings و market_regime_log.
+# V40.2 generator بـ يقرأها عند بداية كل run و يـ override الـ thresholds.
+50 2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.market_regime_engine import MarketRegimeEngine; MarketRegimeEngine('EGX').update_regime()" >> /tmp/regime_engine.log 2>&1
+
+# ─── 15b. Market Regime Engine (multi-market update — أسبوعياً يوم السبت) ──
+# السبت 02:55 UTC — تحديث لكل الأسواق مرة في الأسبوع (EGX/TADAWUL/KSE/QSE/CRYPTO/GOLD)
+# EGX بـ يتحدث يومياً بالـ cron اللي فوق. الـ markets التانية أسبوعياً.
+55 2 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/analyzers/market_regime_engine.py --all >> /tmp/regime_engine_weekly.log 2>&1
+
 # ============================================================================
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l

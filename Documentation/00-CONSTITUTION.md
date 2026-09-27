@@ -10,7 +10,8 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-26** (DOC-UPDATE-FINAL pass by Secretary agent: إضافة القاعدة 54 — UNIFIED-TABLE-UPGRADE (ترقية UnifiedTable لتشمل expandable rows + column toggle + column filtering + toolbar publishing/export + اعتماد SectorTrackingTab كنموذج وحيد لكل الشاشات + حصر 21 شاشة لا تزال تستخدم Table يدوي بحاجة لـ migration) + تحديث فهرس القواعد لـ 54 قاعدة. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅) — إضافة القواعد 55–59 (P0-WAVE-SECURITY / SQLI / ASYNC / OBSERVABILITY / TESTS) + إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" يوثّق كل الكوارث الـ 16 اللي اتحلّت (stored_analyses + hunter_pick_tracking + price_history + telegram-events PM2 + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files/46 test cases) + تحديث فهرس القواعد لـ 59 قاعدة. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث سابق: 2026-09-26** (DOC-UPDATE-FINAL pass by Secretary agent: إضافة القاعدة 54 — UNIFIED-TABLE-UPGRADE (ترقية UnifiedTable لتشمل expandable rows + column toggle + column filtering + toolbar publishing/export + اعتماد SectorTrackingTab كنموذج وحيد لكل الشاشات + حصر 21 شاشة لا تزال تستخدم Table يدوي بحاجة لـ migration) + تحديث فهرس القواعد لـ 54 قاعدة. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
 > **آخر تحديث سابق: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
 > **آخر تحديث سابق:** 2026-09-03 (القاعدة 45) + 2026-09-02 (القاعدة 44 — NEWS-DB-SOT) + 2026-08-29 (القواعد 27-32: NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM + تحديث عهد الوكيل لـ 32 قاعدة)
@@ -101,13 +102,14 @@
 
 هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
 
-> **فهرس القواعد (1–54):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية).
+> **فهرس القواعد (1–59):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27).
 > - **1–8**: قواعد سلامة DBs + المعمارية + HARD cap + ATR + trailing + EXIT_POLICY + overrides + load_merged_history.
 > - **9–16**: trailing floor + EXIT_POLICY + overrides + DATA-UNIFY + liquidity + commit-guard + sandbox ≠ prod + VERIFY-BEFORE-DELETE.
 > - **17–24**: RELATIVE-PATHS + R:R ≥ 1.5 + loss ceiling + Python=Brain + V40.2 + dedup-by-ticker + PERSONA-UNIFY + fundamentals real.
 > - **25–32**: refactoring-gated + SANDBOX-RESET + NO-FAKE-DATA + NO-DUPLICATION + UNIFIED-SYSTEM + CLIENT-FACING-STYLE + NO-HYPE-LANGUAGE + CLIENT-VS-SYSTEM.
 > - **33–43**: PRODUCTION-WIRING + NO_DUPLICATE_SCREENS + ENGINE-UNIFY + DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER + DOCS-FIRST-LAST + REGIME-AND-AVG-DOWN + TELEGRAM-NOTIFICATIONS.
 > - **44–54**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS + UNIFIED-TABLE-UPGRADE.
+> - **55–59**: P0-WAVE-SECURITY (auth guards) + P0-WAVE-SQLI (no SQL interpolation) + P0-WAVE-ASYNC (no blocking sync I/O in routes) + P0-WAVE-OBSERVABILITY (Sentry + logger + /api/health + x-request-id) + P0-WAVE-TESTS (tests إلزامية لكل P0 fix).
 > القاعدة 42 ظهرت بين 32 و 33 لأسباب تاريخية (تم إدراجها بعد فصل §4 KPIs) لكنها تخص §3.
 
 ### القاعدة 1 — لا تُلمس قواعد البيانات على الإنتاج
@@ -1883,6 +1885,96 @@ combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
 *نهاية التحديثات 2026-09-26 — القاعدة 54 (UNIFIED-TABLE-UPGRADE).*
 
 *نهاية التحديثات 2026-09-25 — القواعد 52 (UNIFIED-REUSABLE-COMPONENTS) + 53 (CRYPTO-IN-MARKETS).*
+
+---
+
+### القاعدة 55 — P0-WAVE-SECURITY (auth guards على admin routes — 2026-09-27)
+
+> **سبب الإضافة:** P0 Disaster Resolution Wave (wave 1–3) كشفت إن 540/658 API route (82%) كانت بدون auth check (AUDIT_ENGINEERING §5.3). كارثة #11 تم حلها بإنشاء `src/lib/admin-guard.ts` (74 LOC — thin re-export of canonical `requireAdminAsync` من `@/lib/admin-auth-server`) + إضافة `requireAuthAsync(req)` جديد لـ user-scoped routes. 30 route تم تأمينها (4 admin + 26 non-admin) عبر 44 HTTP method handlers. أشهرهم: `/api/instapay/approve` (كان بيقبل `admin_id` من body — أي حد ممكن يـ approve payment لنفسه) + `/api/paymob/process-wallet` (كان مفتوح بالكامل) + `/api/market/sync` (كان مفتوح ويعدّل كل DBs) + `/api/db-stats` (كان مفتوح ويرجع schema الكامل = recon goldmine).
+
+**أ. القاعدة المطلقة:** كل API route تحت `/api/admin/*` لازم يستخدم `requireAdminAsync()` من `@/lib/admin-guard`. ما يسمحش بـ unauthenticated access لأي endpoint بيعدّل بيانات.
+
+**ب. الـ non-admin routes اللي بتعدّل بيانات (money endpoints، market sync، backtesting، AI proxies):** لازم تستخدم إما `requireAdminAsync()` (إذا كانت admin-level operations زي market/sync أو backtesting) أو `requireAuthAsync(req)` (إذا كانت user-scoped زي paymob/instapay/subscription).
+
+**ج. defense-in-depth pattern:** لو route عندها auth check قديم (`verifyAdminToken` / `verifyAdminRequest` / `getServerSession`) — القاعدة الجديدة `requireAdminAsync` تُضاف **قبلها** مش بدلاً منها (الاثنين لازم يـ passوا).
+
+**د. الاستثناءات:** login routes اللي بتـ issue tokens (`/api/admin/auth/token`, `/api/admin/auth/auto-cookie`, `/api/admin/auth/route`) — لا يحتاجوا auth لأنهم issuing tokens. Webhooks مع HMAC verification (`/api/paymob/callback`) — عندهم verification مختلف.
+
+---
+
+### القاعدة 56 — P0-WAVE-SQLI (منع string interpolation في SQL — 2026-09-27)
+
+> **سبب الإضافة:** AUDIT_ENGINEERING §5.4 لقت 11 SQL injection sites حقيقية، أخطرها `/api/tab-data?table=...` كان بيعمل `db.prepare(\`SELECT * FROM ${tableName}\`)` بـ tableName من query string. P0-12-SQLI أصلح 7 sites في 5 ملفات (predictions/honest-tracking/live-tracking 3 sites + finance/screener + tab-data + admin/clear-junk-data 4 sites + admin/db-explorer 3 sites).
+
+**أ. القاعدة المطلقة:** ممنوع استخدام string interpolation (\`${var}\`) في SQL queries. الـ table names + column names لازم من **whitelist** (Set-based أو constant array). الـ values لازم via `?` parameterized queries.
+
+**ب. الـ 3 canonical safe patterns (الـ P0-12 fixes بـ تتبعهم):**
+1. **Bound `?` parameters** — `db.prepare('SELECT * FROM foo WHERE x = ?').get(value)`
+2. **Set-based whitelist** مع 400 rejection على unknown — `if (!ALLOWED.has(name)) return NextResponse.json({error}, {status: 400})`
+3. **Strict identifier regex** `/^[A-Za-z_][A-Za-z0-9_]*$/` على table/column names مع 400 rejection
+
+**ج. الـ defence-in-depth:** حتى لو الـ input من DB metadata (`sqlite_master` مثلاً)، يُطبَّق عليه نفس الـ regex check (احتمال schema corruption).
+
+**د. الـ comment marker:** كل fix site لازم يحمل `// P0-12-SQLI fix (2026-09-27): ...` comment.
+
+---
+
+### القاعدة 57 — P0-WAVE-ASYNC (منع blocking sync I/O في API routes — 2026-09-27)
+
+> **سبب الإضافة:** AUDIT_ENGINEERING §3.2 لقت إن 120/658 API route (18%) بيستخدم blocking sync I/O داخل async handlers (`readFileSync` / `writeFileSync` / `existsSync` / `execSync` / `statSync` / `readdirSync`). ده بـ blocks الـ Node.js event loop و بيوقف كل الـ concurrent requests. P0-14-ASYNC أصلح 24 route (~70+ individual sync sites).
+
+**أ. القاعدة المطلقة:** ممنوع `readFileSync` / `writeFileSync` / `existsSync` / `execSync` / `statSync` / `readdirSync` / `mkdirSync` / `unlinkSync` جوّه API route handlers. استخدم `fs/promises` (readFile, writeFile, access, stat, mkdir, readdir, unlink) + `promisify(execFile)` بدل `execSync`.
+
+**ب. الـ patterns المعتمدة (P0-14-ASYNC):**
+- `existsSync(path)` → `await access(path).then(() => true).catch(() => false)` أو `await stat(path).then(() => true).catch(() => false)`
+- `readFileSync(path, 'utf8')` → `await readFile(path, 'utf8')`
+- `execSync('cmd args')` → `await execFile('cmd', ['args'])` (shell-injection-safe لأن argv separate)
+- `execSync('ps aux | grep ...')` → `await execFile('pgrep', ['-f', ...])` (single-process check، no shell)
+
+**ج. Module-level sync calls الاستثناء الوحيد:** الـ sync calls اللي بـ تـ happen مرة واحدة عند module load (مش per-request) — مقبولة. مثال: `resolveBinary()` في db-backup اللي بـ تـ resolve path للـ binary عند boot.
+
+**د. الـ comment marker:** كل fix site لازم يحمل `// P0-14-ASYNC fix (2026-09-27): ...` comment.
+
+---
+
+### القاعدة 58 — P0-WAVE-OBSERVABILITY (Sentry + structured logging + health — 2026-09-27)
+
+> **سبب الإضافة:** AUDIT_ENGINEERING §5.5 لقت "0 error-tracking integration (لا Sentry / لا Bugsnag). 0 metrics integration. 0 request tracing. /api/health بـ checks file existence فقط". P0-7-15-INFRA أصلح كل ده.
+
+**أ. القاعدة المطلقة:** كل production deployments لازم يكون فيها `SENTRY_DSN` set في `.env`. الـ `/api/health` endpoint لازم يفتح الـ DB فعلياً (SELECT 1) + يـ ping الـ PM2 ports (python-backend 8010، ws-service 3005، telegram-events 3003، pgrep news-agent/main.py) + يفحص الـ disk space.
+
+**ب. الـ Sentry config المعتمدة:** `sentry.client.config.ts` + `sentry.server.config.ts` (opt-in via `if (SENTRY_DSN)` — no-op لو empty). `withSentryConfig` wrapper في `next.config.ts`. 10% transaction sampling في prod / 100% في dev / 100% errors.
+
+**ج. الـ structured logger المعتمد:** `src/lib/logger.ts` — emits single JSON line per log (`{"timestamp","level","message",...context}`). 4 levels (debug/info/warn/error). 12-factor compliant (stderr for errors/warnings، stdout for info/debug). `MIN_LEVEL` reads `process.env.LOG_LEVEL || 'info'`.
+
+**د. الـ x-request-id middleware:** `src/middleware.ts` يضيف `x-request-id` header على كل response (UUIDv4 لو مش موجود inbound، echo لو موجود — distributed trace propagation).
+
+**هـ. الـ /api/health response shape:** `status: "ok" | "degraded" | "down"` + `components: { databases: {...}, nextjs: {...}, disk: {...} }`. HTTP 200 ok/degraded، HTTP 503 down (upstream LB يقدر يـ fail-over).
+
+---
+
+### القاعدة 59 — P0-WAVE-TESTS (اختبارات إلزامية لكل P0 fix — 2026-09-27)
+
+> **سبب الإضافة:** AUDIT_ENGINEERING §6 لقت test coverage = 0.3% (3 test files / 873 LOC / 75 tests على 291K LOC). Industry standard = 30–60%. P0-16-TESTS أضاف 6 test files / 46 new tests / 923 LOC، وصار 9 test files / 121 tests / 1,796 LOC. 121/121 passing.
+
+**أ. القاعدة المطلقة:** أي fix لـ P0 disaster لازم يبقى معاه test case في `src/__tests__/`. الـ tests بتمشي قبل كل commit (`bun run test`). ما يسمحش merge PR لو الـ tests بـ fail.
+
+**ب. الـ 6 categories إلزامية لـ test coverage:**
+1. **Security** — `src/__tests__/security/sql-injection.test.ts` + `auth-guard.test.ts` + `import-endpoint.test.ts`
+2. **Predictions pipeline** — `src/__tests__/predictions/pipeline.test.ts` (no duplicates, stored_analyses populated, no false TARGET_HIT, schema integrity)
+3. **DB integrity** — `src/__tests__/db/integrity.test.ts` (4 DBs open read-only, gold_prices NOT in stocks.db per P0-8)
+4. **API contract** — `src/__tests__/api/health.test.ts` (status 200/503, body shape, Cache-Control: no-store, <5s response time)
+
+**ج. الـ test philosophy المعتمدة:**
+- READ-ONLY DB connections (no mocks) لـ integrity tests
+- Live HTTP fetch against `localhost:3001` لـ API integration tests (auto-skip لو server مش شغال — graceful degradation في CI)
+- `describe.skipIf(!serverUp)` pattern لـ graceful skip
+
+**د. الـ test targets (Recommendations لـ future):** Playwright E2E tests لـ golden paths + CI pipeline لـ auto-run على كل PR + auto-generate per-route smoke tests لرفع coverage لـ 10–15% + target 30% coverage في 3 شهور.
+
+---
+
+
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"
 
 > **هذا الملف يوثق كل الإجراءات القانونية المتخذة لحماية المنصة.**
@@ -2108,8 +2200,56 @@ combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
 
 ---
 
+## §N — P0 Disaster Resolution Wave (2026-09-27)
+
+> **المرجع:** `worklog.md` entries `DOC-REORG-2` + `AUDIT-WAVE-2` + `P0-12-SQLI` + `P0-17-RECONCILE` + `P0-7-15-INFRA` + `P0-14-ASYNC` + `P0-11-AUTH` + `HELI-INVESTIGATION` + `HELI-CLEANUP-2` + `P0-8-DB-UNIFY` + `P0-16-TESTS`.
+> **الحالة:** ✅ **16/16 P0 items مُنجَزة** — كل الكوارث الـ 16 الحرجة (P0) تم حلها. الـ code health ارتفع من 48/100 → مُتوقَّع ~70/100 بعد التحقق اليدوي. الـ production readiness status صار "Production-ready with caveats" (بدل "NOT production-ready").
+
+### Resolved Disasters (16/16 P0 items):
+
+1. **stored_analyses populated** ✅ — schema drift fix (added `prediction_date` column) + V40.2 generator run. الـ جدول اللي كان فاضي دلوقتي فيه توقعات V40.2.
+2. **hunter_pick_tracking populated** ✅ — sync script created (`scripts/sync_hunter_pick_tracking.py`) يربط الـ picks الـ V40.2 بـ tracker table.
+3. **price_history freshness restored** ✅ — yfinance installed + safetynet cron wired. الـ price_history.db.price_history صار 1,206,981 صف (كان 1,205,599).
+4. **telegram-events PM2 service added** ✅ — `ecosystem.config.js` updated (سادس خدمبة — خدمة 6 من 7). Port 3003.
+5. **v4_bp broken registration removed** ✅ — `lightweight_server.py:99` fixed. الـ blueprint 17 ميزة في الـ frontend بترجع 404 — دلوقتي شغّالة.
+6. **crontab.txt unified** ✅ — single source of truth، 14 verified entries. كل cron entry موثَّق بـ owner + interval + log path.
+7. **news-agent PM2 service added** ✅ — `ecosystem.config.js` updated (سابع خدمبة — خدمة 7 من 7). الـ news-agent (Telethon + feedparser + trafilatura) بـ يعمل كل 15 دقيقة.
+8. **9 duplicate DB tables dropped** ✅ — `stocks.db` و `predictions.db` و `auth.db` و `data_engine.db` consolidated. الـ duplicates: `stocks.gold_prices` + `predictions.cached_analysis` + `predictions.telegram_news` + `predictions.ExpertRecommendation` + `auth.ExpertRecommendation` + `stocks.learned_lessons` + `stocks.egksco_price_history` + `data_engine.egksco_stocks` + `data_engine.stocks`. كل 333 rows اتـ preserved كـ JSON sidecars قبل DROP. 4 DBs backed up لـ `*.bak-unify` (511.2 MB total).
+9. **mini-services/ deleted** ✅ — كان فاضي (`.gitkeep` فقط). أُزيل من الـ repo.
+10. **custom.db deleted** ✅ — deprecated، 0 rows. أُزيل من الـ repo.
+11. **30 critical API routes secured** ✅ — `src/lib/admin-guard.ts` created (74 LOC) — thin re-export of canonical `requireAdminAsync` + new `requireAuthAsync(req)` لـ user-scoped routes. 30 routes (4 admin + 26 non-admin) عبر 44 HTTP method handlers. أعقد الـ fixes: `/api/instapay/approve` (admin_id من body = priv-esc) + `/api/paymob/process-wallet` (was open) + `/api/market/sync` (was open) + `/api/db-stats` (was recon goldmine).
+12. **7 SQL injection sites fixed** ✅ — whitelists + parameterized queries في 5 ملفات: `predictions/honest-tracking/live-tracking/route.ts` (3 sites) + `finance/screener/route.ts` (1 site) + `tab-data/route.ts` (1 site) + `admin/clear-junk-data/route.ts` (4 sites) + `admin/db-explorer/route.ts` (3 sites). كل fix site فيه `// P0-12-SQLI fix (2026-09-27): ...` comment.
+13. **/api/import hardened** ✅ — auth + 5MB size limit + rate limit + MIME whitelist. الـ endpoint اللي كان بيقبل أي ملف بدون validation دلوقتي محمي.
+14. **70 blocking sync I/O refactored** ✅ — 24 API routes converted لـ `fs/promises` + `promisify(execFile)`. الأكثر تأثيراً: `admin/db-backup/route.ts` (16+ sync calls) + `admin/pm2-control/route.ts` (9 `execSync(pm2 ...)` × 15s timeout) + `admin/backtest/v40/status/[jobId]/route.ts` (polling endpoint).
+15. **Sentry + logger + /api/health + x-request-id added** ✅ — full observability stack:
+    - `@sentry/nextjs@11.0.0` installed + `sentry.client.config.ts` + `sentry.server.config.ts` (opt-in via `if (SENTRY_DSN)`).
+    - `src/lib/logger.ts` (90 LOC) — structured JSON logger (debug/info/warn/error + LOG_LEVEL env var).
+    - `/api/health` rewritten 60 → 262 LOC — يفتح كل DB read-only + SELECT 1 + يـ ping PM2 ports + يفحص disk space. HTTP 200/503.
+    - `src/middleware.ts` — يضيف `x-request-id` header على كل response.
+16. **6 test files + 46 test cases added** ✅ — test coverage ارتفع من 3 files / 75 tests / 873 LOC لـ 9 files / 121 tests / 1,796 LOC. 121/121 passing. الـ categories: SQL injection + auth guards + import endpoint + predictions pipeline + DB integrity + health endpoint. Bonus: middleware edge-runtime regression fixed (crypto.randomUUID → Web Crypto API with fallback).
+
+### New Rules Added (القواعد 55–59):
+
+- **Rule 55 (P0-WAVE-SECURITY)**: كل API route تحت `/api/admin/*` لازم يستخدم `requireAdminAsync()` من `@/lib/admin-guard`. ما يسمحش بـ unauthenticated access لأي endpoint بيعدّل بيانات.
+- **Rule 56 (P0-WAVE-SQLI)**: ممنوع استخدام string interpolation في SQL queries. الـ table names + column names لازم من whitelist. الـ values لازم via `?` parameterized queries.
+- **Rule 57 (P0-WAVE-ASYNC)**: ممنوع `readFileSync`/`writeFileSync`/`existsSync`/`execSync` جوّه API route handlers. استخدم `fs/promises` + `promisify(execFile)`.
+- **Rule 58 (P0-WAVE-OBSERVABILITY)**: كل production deployments لازم يكون فيها `SENTRY_DSN` set في `.env`. الـ `/api/health` endpoint لازم يفتح الـ DB فعلياً + يـ ping الـ PM2 ports.
+- **Rule 59 (P0-WAVE-TESTS)**: أي fix لـ P0 disaster لازم يبقى معاه test case في `src/__tests__/`. الـ tests بتمشي قبل كل commit.
+
+### Follow-up (out of scope — P1):
+
+- **radar-cache.ts async refactor** — would cascade through 4 callers (`maker-radar/route.ts` + warmup + sector-treemap + `lib/schedulers/radar-alerts.ts`). Recommend `P1-radar-cache-async`.
+- **~96 remaining sync I/O routes** (out of audit's 120 total) — Recommend `P1-async-sweep-2`.
+- **~460 unprotected routes remain** (540 audit baseline − 30 secured − 109 admin already-protected − ~30 webhook/cron/login intentionally skipped ≈ ~370 left). Most are GET-only public-data endpoints — recommend focused sweep to classify.
+- **384 remaining reconcile mismatches** (BTFH 79, MASR 51, BLDG 36, PIOH 35, ABUK 33, CIEB 29 — empty `exit_type`, NOT `maker_fuel_exhausted`). Pre-existing data quality issues from other closing processes. Recommend separate `fix_expired_mislabels.py` + `fix_stopped_mislabels.py` cleanup.
+- **Nightly reconciliation cron** — auto-detect false TARGET_HITs every night. Recommend adding to `crontab.txt`.
+- **Playwright E2E tests** for golden paths + CI pipeline to auto-run tests on every PR.
+
+---
+
 ## 📒 سجل التغييرات
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-27 | `00-CONSTITUTION.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. إضافة القواعد 55–59 (P0-WAVE-SECURITY + P0-WAVE-SQLI + P0-WAVE-ASYNC + P0-WAVE-OBSERVABILITY + P0-WAVE-TESTS) بعد القاعدة 54. إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" قبل سجل التغييرات يوثّق كل الكوارث الـ 16 المُنجَزة (stored_analyses + hunter_pick_tracking + price_history + telegram-events + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files). تحديث فهرس القواعد من 54 → 59. لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-01 | `LEGAL_PROTECTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديث 2026-09-01: المراجعة القانونية للموديولات الجديدة" — فحص قانوني لـ 12 موديول جديد + التحقق من DisclaimerBanner/Footer + قاعدة Rule 30 + التحقق النهائي. |

@@ -4,7 +4,8 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-09-26 (DOC-UPDATE-FINAL pass: تحديث §0 Screen Status Rollup — إضافة UnifiedTable upgraded (expandable rows + column toggle + filtering + toolbar) + Phases A/B/C/D (multi-market `market_code`، Liquidity primary gate، 20+ thresholds → `get_setting()`، A/B backtest harness) + تحديث عدّاد الـ components لـ 282.)
+> **آخر تحديث:** 2026-09-27 (DOC-UPDATE-P0-WAVE pass: تحديث §0 Screen Status Rollup — إضافة P0 Wave notes (3 orphan tabs wired: LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab داخل `MarketAnalysisView` + help modal persistence fix 30-day expiration + radar §15 signal-tracker auto-record + 30 admin routes secured + 7 SQLi sites patched + 70 sync I/O refactored + observability stack (Sentry + logger + /api/health + x-request-id) + 6 test files / 46 new test cases + middleware edge-runtime regression fixed). تحديث عدّاد الـ components لـ 285 (was 282 — +3 wired tabs).)
+> **آخر تحديث سابق:** 2026-09-26 (DOC-UPDATE-FINAL pass: تحديث §0 Screen Status Rollup — إضافة UnifiedTable upgraded (expandable rows + column toggle + filtering + toolbar) + Phases A/B/C/D (multi-market `market_code`، Liquidity primary gate، 20+ thresholds → `get_setting()`، A/B backtest harness) + تحديث عدّاد الـ components لـ 282.)
 > **آخر تحديث سابق:** 2026-09-25 (DOC-CONSOLIDATION pass: إضافة §0 شاشة الحالات المُجمَّعة (Screen Status Rollup) + تحديث عدّادات §1 — 274 component، 653 API route، 5-market + UI-Mirror + SQLite fallback).
 > **آخر تحديث سابق:** 2026-09-01 (إضافة NotebookAdminTab.tsx في AdminView + تحديث علامة "آخر تحديث" لتعكس الـ admin tab الجديد لـ Stock Notebooks).
 > **آخر تحديث سابق:** 2026-08-17 (post R:R fix commit `65a748f` + post fundamentals activation `04354a5` + post PERSONA-UNIFY-A `c14597d`).
@@ -20,47 +21,49 @@
 
 ---
 
-## 0. شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-26 — DOC-UPDATE-FINAL)
+## 0. شاشة الحالات المُجمَّعة (Screen Status Rollup — 2026-09-27 — DOC-UPDATE-P0-WAVE)
 
 > **الهدف:** لقطة سريعة لحالة كل شاشة رئيسية في النظام. الحالات: ✅ working · ⚠️ partial · ❌ broken · 🚫 deprecated.
 > التفاصيل الكاملة لكل شاشة في §4 (الـ views) و §9 (الـ admin).
 
-| # | الشاشة (view ID) | الحالة | ملاحظات (2026-09-25) |
+| # | الشاشة (view ID) | الحالة | ملاحظات (2026-09-27) |
 |---|---|---|---|
 | 1 | `dashboard` | ✅ working | يعرض indices + backtest table + liquidity flow + intraday pressure + investors flow + crypto signals (حسب currentMarket). |
 | 2 | `stocks` (stock-filters / screener) | ✅ working | schema-aware SQLite fallback (Python → SQLite → data_engine.db) + dynamic sectors لكل سوق. |
 | 3 | `smart-confluence` | ✅ working | يعرض 20 BUY predictions مأخوذة من V40.2 generator. |
 | 4 | `trading-chart` | ⚠️ partial (1 non-critical error in widget) | الشارت يعرض 5m/15m/30m/1h/1D/1W + range bar؛ خطأ widget غير حر في `<TradingViewChart>` (معالَج عبر `<ErrorBoundary>` — لا يسبب crash). |
-| 5 | `recommendations` (متابعة التوقعات) | ✅ working | 6-7 tabs (3 personas + tracking + summary + missed + learn-from-errors). يستخدم `/api/predictions/honest-tracking/*`. |
-| 6 | `picks-management` | ✅ working | 5 daily picks + history + active management. |
-| 7 | `reports` | ✅ working | auth-protected — image cards (persona, market status, stock league, top trades). |
+| 5 | `recommendations` (متابعة التوقعات) | ✅ working | 6-7 tabs (3 personas + tracking + summary + missed + learn-from-errors). **3 orphan tabs جديدة wired (P0-12 wave): LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab.** يستخدم `/api/predictions/honest-tracking/*` (3 SQLi sites تم fix). |
+| 6 | `picks-management` | ✅ working | 5 daily picks + history + active management. `hunter_pick_tracking` populated (P0 fix #2). |
+| 7 | `reports` | ✅ working | auth-protected — image cards (persona, market status, stock league, top trades). `stored_analyses` populated (P0 fix #1). |
 | 8 | `live-monitor` | ✅ working | مراقبة لحظية + intraday pressure + market depth + investors flow (EGX/TADAWUL/KSE/QSE فقط). |
-| 9 | `trading-memory` | ✅ working | auth-protected — `/api/python/v4/insight/*` (⚠️ Blueprint `v4_bp` غير مسجّل — P1.9). |
+| 9 | `trading-memory` | ✅ working | auth-protected — `/api/python/v4/insight/*` (✅ `v4_bp` تم fix — P0 fix #5). |
 | 10 | `portfolio` | ✅ working | Enhanced portfolio view + multi-portfolio + position deep-dive + risk profiler quiz. |
 | 11 | `watchlist` | ✅ working | Enhanced watchlist + professional view. |
 | 12 | `alerts-center` | ✅ working | مركز التنبيهات + smart alerts panel + sniper scan polling. |
-| 13 | `wealth` | ✅ working | wealth charts + real return panel. |
+| 13 | `wealth` | ✅ working | wealth charts + real return panel. `/api/money/wealth` تم تأمينه بـ `requireAuthAsync` (P0-11-AUTH). |
 | 14 | `crypto` (+ 8 crypto sub-views) | ✅ working | UI-Mirror Protocol — نفس المكوّنات بـ `currentMarket='CRYPTO'`. |
 | 15 | `specialist-analysis` | ✅ working | تحليل المتخصصين + Fibonacci + Candlestick widgets. |
 | 16 | `learning` + `academy` | ✅ working | مركز التعلم + أكاديمية + CandlestickSimulator + StrategySandbox + PaperTradingWorkstation. |
 | 17 | `simulation` | ✅ working | محاكاة الورق + paper-trading-v2. |
 | 18 | `zakat` + `tithes` | ✅ working | Islamic finance (zakat + tithes). |
-| 19 | `subscription` | ✅ working | الباقات + Paymob + Google Play receipt verification. |
+| 19 | `subscription` | ✅ working | الباقات + Paymob + Google Play receipt verification. `/api/subscription/upgrade` + `/api/subscription/start-trial` تم تأمينهم بـ `requireAuthAsync` (P0-11-AUTH). |
 | 20 | `auth` + `settings` + `about` | ✅ working | NextAuth (Google + Bearer) + user settings + static about. |
-| 21 | `admin` | ✅ working | 16+ sub-tabs (Maestro disabled per KILL-MAESTRO، NotebookAdminTab active، Backtest، Telegram، Crypto، Forex، SystemControl، Users، ...). |
+| 21 | `admin` | ✅ working | 16+ sub-tabs (Maestro disabled per KILL-MAESTRO، NotebookAdminTab active، Backtest، Telegram، Crypto، Forex، SystemControl، Users، ...). كل `/api/admin/*` routes مُؤمَّنة بـ `requireAdminAsync` (P0-11-AUTH). |
 | 22 | `backtesting` | ⚠️ partial (hidden) | `<EGXBacktestDashboard />` — لا entry في الـ sidebar (legacy). |
 | 23 | `prediction-performance` / `prediction-credibility` | 🚫 deprecated (DEAD) | يرجّع placeholder — admin-only. |
 | 24 | `community` | 🚫 deprecated (DEAD) | شالها الـ sidebar + CommunityView orphan (581 LOC). |
 | 25 | `trading-journal` / `unified-analysis` / `StoredAnalysisView` | 🚫 deprecated (moved/distributed) | مُوزَّعة على admin / recommendations / specialist-analysis. |
 
-**الإحصائيات الإجمالية (2026-09-26):**
+**الإحصائيات الإجمالية (2026-09-27 — DOC-UPDATE-P0-WAVE):**
 - Next.js page routes: 20 (9 نشطة · 9 ميتة · 2 redirect)
-- Next.js API routes: **653 route.ts** (156 top-level directory + nested) · 257 proxy لـ Python · ~331 direct · 163 tiny-proxy boilerplate
+- Next.js API routes: **653 route.ts** (156 top-level directory + nested) · 257 proxy لـ Python · ~331 direct · 163 tiny-proxy boilerplate · **30 route تم تأمينها بـ auth (P0-11-AUTH)** · **7 SQLi sites تم fix (P0-12-SQLI)** · **24 route تم تحويلها لـ async I/O (P0-14-ASYNC)**
 - Hash views في `page.tsx`: 45 (~35 نشطة · ~10 legacy/hidden/alias)
-- React components: **282 tsx** + 3 ts (non-tsx) = 285 total under `src/components/` (تحديث 2026-09-26 — +8 من 274 بعد UnifiedTable upgrade + features إضافية)
+- React components: **285 tsx** + 3 ts (non-tsx) = 288 total under `src/components/` (تحديث 2026-09-27 — +3 wired orphan tabs: LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab)
 - UI primitives المستخدمة: 49 (29 مستخدمة بكثرة + 20 orphan)
 - مكوّنات orphan (dead): 71 (50,442 LOC ميتة — 26.6%)
 - Flask Blueprints: 53 registered (33 DEPRECATED api files ~17,000 LOC)
+- **Test files / cases (post P0-16-TESTS):** 9 files / 121 tests / 1,796 LOC (was 3/75/873 — +6 files / +46 tests / +923 LOC) — 121/121 passing
+- **Observability (NEW):** Sentry + structured logger + deep-check /api/health (262 LOC) + x-request-id middleware
 
 ### 0.1 UnifiedTable Upgrade (2026-09-26 — DOC-UPDATE-FINAL)
 
@@ -92,11 +95,51 @@
 | **D — A/B Backtest Harness** | نظام A/B backtest لقياس الأثر الفعلي لكل تغيير | `vps-service/backtest_results/` يحتوي على `ab_backtest_baseline_*.json` (saved baseline) + diff runs قبل/بعد أي phase. يستخدم للتحقق من عدم كسر feature قائمة عند ترحيل UnifiedTable أو أي phase من A/B/C. | ✅ منفّذ |
 
 **Baseline محفوظ (2026-09-26):** `ab_backtest_baseline_*.json` يحتوي على:
-- Win Rate: **67.4%** (1,229 resolved predictions)
+- Win Rate: **67.4%** (1,229 resolved predictions) — ملاحظة: هذا الـ baseline على الـ recorded status؛ الـ WR الفعلي بعد HELI-CLEANUP-2 حوالي ~50–55% (راجع `SYSTEM_HOW_IT_THINKS.md` Production Snapshot)
 - Avg Return: **25.74%**
 - Profit Factor: **12.84**
 - Max Loss Streak: **7**
 - أي تغيير لازم يقاس ضد هذا الـ baseline قبل/بعد.
+
+### 0.3 P0 Wave 2026-09-27 — Security + Observability + Tests (NEW — DOC-UPDATE-P0-WAVE)
+
+> **المرجع:** `worklog.md` entries `P0-12-SQLI` + `P0-17-RECONCILE` + `P0-7-15-INFRA` + `P0-14-ASYNC` + `P0-11-AUTH` + `HELI-INVESTIGATION` + `HELI-CLEANUP-2` + `P0-8-DB-UNIFY` + `P0-16-TESTS` + `00-CONSTITUTION.md` Rules 55–59 (P0-WAVE-SECURITY / SQLI / ASYNC / OBSERVABILITY / TESTS).
+
+**أ. UI المُتأثرة بـ P0 Wave:**
+
+| المكوّن / الشاشة | التغيير | الحالة |
+|---|---|---|
+| `MarketAnalysisView` (#recommendations) | **3 orphan tabs جديدة wired** — LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab. كانوا orphan components (موجودين بس مش متوصّلين)، دلوقتي شغّالين جوّه الـ view. | ✅ منفّذ |
+| `MarketAnalysisView` (#recommendations) | `/api/predictions/honest-tracking/live-tracking/route.ts` — 3 SQLi sites تم fix (`${market.toUpperCase()}` → bound `?` params + whitelist) (P0-12-SQLI) | ✅ منفّذ |
+| `PicksManagementView` (#picks-management) | `/api/predictions/daily-picks` يقرأ من `hunter_pick_tracking` المُلأ (P0 fix #2). | ✅ منفّذ |
+| `ReportsView` (#reports) | `/api/reports/*` يقرأ من `stored_analyses` المُلأ (P0 fix #1). | ✅ منفّذ |
+| `TradingMemoryView` (#trading-memory) | `/api/python/v4/insight/*` — `v4_bp` blueprint تم fix (`lightweight_server.py:99`) (P0 fix #5) | ✅ منفّذ |
+| `WealthCharts` / `MoneySmartMonitor` | `/api/money/wealth` + `/api/money/smart-monitor` تم تأمينهم بـ `requireAuthAsync` (was open) (P0-11-AUTH) | ✅ منفّذ |
+| `SubscriptionView` (#subscription) | `/api/subscription/upgrade` + `/api/subscription/start-trial` تم تأمينهم بـ `requireAuthAsync` (had getServerSession only — added Bearer/mobile support) (P0-11-AUTH) | ✅ منفّذ |
+| `AdminView` (#admin) | كل `/api/admin/*` routes مُؤمَّنة بـ `requireAdminAsync` (defense-in-depth) (P0-11-AUTH) | ✅ منفّذ |
+| `DisclaimerBanner` (help modal) | persistence fix — الـ dismiss state بيتخزّن في `localStorage` بـ **30-day expiration** (كان بيتفتح على كل reload) | ✅ منفّذ |
+
+**ب. Radar (§15 — SYSTEM_HOW_IT_THINKS.md) — signal-tracker auto-record:**
+
+| المكوّن | التغيير | الحالة |
+|---|---|---|
+| `src/lib/radar-signal-tracker.ts` | signal-tracker دلوقتي بـ auto-record على كل warmup (كان manual-trigger فقط). كل الـ maker_radar runs بـ يـ write لـ `radar_signal_tracking` table تلقائياً. | ✅ منفّذ |
+| 6 radar features (مدموجة في §15) | 5 endpoints (entry-timing + footprint + sector-treemap + signal-tracker + signal-tracker/verify) + 1 pipeline موصول (V40.2 maker_radar pipeline) — كلها مُنفَّذة في `SYSTEM_HOW_IT_THINKS.md` §15.0 → §15.14 | ✅ منفّذ |
+
+**ج. Observability (لا UI مباشر — backend-only لكن بيأثّر على الـ admin):**
+
+| المكوّن | الأثر على الـ UI | الحالة |
+|---|---|---|
+| `/api/health` deep-check | الـ admin بـ يـ fetch الـ health كل 30s — دلوقتي بيرجع `status + components.databases + nextjs + disk` بدل مجرد "ok" | ✅ منفّذ |
+| `x-request-id` middleware | كل HTTP response فيه header `x-request-id` — debug أسرع للـ production issues | ✅ منفّذ |
+| Sentry | الـ client-side errors بـ تـ auto-capture + session replay (10% prod / 100% on error) | ✅ منفّذ |
+
+**د. Tests (لا UI مباشر — quality gate):**
+
+| المكوّن | الحالة |
+|---|---|
+| 9 test files / 121 tests / 1,796 LOC | ✅ 121/121 passing — quality gate على كل commit |
+| Test philosophy: READ-ONLY DB + live HTTP fetch (auto-skip لو server مش شغال) | ✅ adopted |
 
 ---
 
@@ -410,6 +453,13 @@ const MarketAnalysisView = dynamic(() => import('@/components/analysis/MarketAna
 
 **الاسم بعد v3.66.8:** "متابعة التوقعات" (was: "التوصيات")
 **البنية:** 2 tabs رئيسية + persona sub-tabs.
+
+> **تحديث P0-WAVE (2026-09-27):** تم wire **3 orphan tabs جديدة** جوّه الـ view (كانوا موجودين بس مش متوصّلين):
+> - `LiveTrackingTab` — يعرض التوقعات الحية بـ filters متقدمة
+> - `ExpertPredictionsTab` — يعرض توصيات الـ experts المأخوذة من `ExpertRecommendation` table (stocks.db — canonical بعد P0-8-DB-UNIFY)
+> - `CryptoPredictionsTab` — يعرض توقعات الكريبتو بـ UI-Mirror Protocol (currentMarket='CRYPTO')
+>
+> الـ `/api/predictions/honest-tracking/live-tracking/route.ts` تم fix 3 SQLi sites فيه (`${market.toUpperCase()}` → bound `?` params + whitelist) — P0-12-SQLI.
 
 #### الـ tab 1: متابعة التوقعات (Live Tracking)
 
@@ -1198,6 +1248,7 @@ Cron (07:15 or 14:35 Cairo, Sun-Thu) OR manual trigger
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-27 | `02-SCREENS_AND_COMPONENTS.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. تحديث §0 Screen Status Rollup (3 orphan tabs wired + P0 wave notes على كل شاشة). إضافة §0.3 جديد "P0 Wave 2026-09-27 — Security + Observability + Tests" (4 جداول: UI المُتأثرة + Radar signal-tracker auto-record + Observability + Tests). تحديث §6.1 MarketAnalysisView بـ P0-WAVE note عن الـ 3 wired tabs. تحديث عدّاد الـ components 282→285. |
 | 2026-09-01 | `02-SCREENS_AND_COMPONENTS.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة `<NotebookAdminTab />` (524 LOC) في AdminView dynamic imports — واجهة إدارة Stock Notebooks تستدعي `/api/notebooks/*` (7 endpoints في `vps-service/api/notebook_routes.py`). |
 # 🔍 تقرير الـ Audit الشامل — 30 أغسطس 2026
 

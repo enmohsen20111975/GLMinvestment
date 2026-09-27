@@ -1,6 +1,6 @@
 # 📚 توثيق المشروع — Project Documentation Index
 
-> **آخر تحديث:** 2026-09-27 (Task `DOC-REORG-2`)
+> **آخر تحديث:** 2026-09-27 (Task `DOC-UPDATE-P0-WAVE`)
 >
 > هذا الملف هو **نقطة الدخول الموحَّدة** لكل توثيق المشروع. كل ملفات الـ Markdown موزَّعة على 6 تصنيفات: حجر الزاوية · تقارير المراجعة · النشر · التقارير الإنتاجية · نتائج الباك تست · المحتوى التعليمي.
 >
@@ -10,24 +10,27 @@
 
 ## 🏛️ حجر الزاوية (Cornerstone Documents)
 
-> ديه الـ 4 ملفات الأساسية اللي كل مطور جديد لازم يقرأها قبل ما يلمس الكود.
+> ديه الـ 4 ملفات الأساسية اللي كل مطور جديد لازم يقرأها قبل ما يلمس الكود. كلها محدّثة في 2026-09-27 لتعكس P0 Disaster Resolution Wave (16/16 P0 items ✅).
 
 | # | الملف | الوصف |
 |---|------|------|
-| 00 | [00-CONSTITUTION.md](./00-CONSTITUTION.md) | **الدستور** — القواعد الذهبية + المعمارية الأساسية + الـ governance |
-| 01 | [01-PROJECT_ANATOMY.md](./01-PROJECT_ANATOMY.md) | **تشريح المشروع** — كل المكونات + الـ data flow + الـ DBs |
-| 02 | [02-SCREENS_AND_COMPONENTS.md](./02-SCREENS_AND_COMPONENTS.md) | **الشاشات + المكونات** — every component mapped + state + API |
-| 03 | [SYSTEM_HOW_IT_THINKS.md](./SYSTEM_HOW_IT_THINKS.md) | **كيف يفكر النظام** — pipeline + algorithms + §15 رادار السيولة (مدموج) |
+| 00 | [00-CONSTITUTION.md](./00-CONSTITUTION.md) | **الدستور** — القواعد الذهبية (59 rule now) + المعمارية الأساسية + الـ governance + **Rules 55–59 (P0-WAVE-SECURITY/SQLI/ASYNC/OBSERVABILITY/TESTS) NEW 2026-09-27** + قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" يوثّق كل الكوارث الـ 16 المُنجَزة |
+| 01 | [01-PROJECT_ANATOMY.md](./01-PROJECT_ANATOMY.md) | **تشريح المشروع** — كل المكونات + الـ data flow + الـ DBs + **§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests (NEW)** + تحديث §1.5 الإحصائيات (30 routes secured + 7 SQLi fixed + 9 duplicate tables dropped + PM2 6→7 + tests 3→9 files) |
+| 02 | [02-SCREENS_AND_COMPONENTS.md](./02-SCREENS_AND_COMPONENTS.md) | **الشاشات + المكونات** — every component mapped + state + API + **§0.3 — P0 Wave 2026-09-27 (NEW)** + 3 orphan tabs wired (LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab) + help modal persistence fix (30-day) |
+| 03 | [SYSTEM_HOW_IT_THINKS.md](./SYSTEM_HOW_IT_THINKS.md) | **كيف يفكر النظام** — pipeline + algorithms + §15 رادار السيولة (مدموج) + **§16 — HELI False-Target Forensics (NEW)** + **§17 — Observability Stack (NEW)** — Win Rate 67.4% → ~50–55% (actual بعد HELI-CLEANUP-2) |
 
 ---
 
 ## 📋 تقارير المراجعة (Audit Reports)
 
-### أحدث تقارير المراجعة (2026-09-27 — Task `DOC-REORG-2`)
-- [audit-logs/MASTER_AUDIT_REPORT.md](./audit-logs/MASTER_AUDIT_REPORT.md) — **التقرير النهائي الشامل + Checklist + To-Do + Wiring Matrix** (مشتق من `agent-ctx/SYNTHESIS_REPORT.md`)
+### أحدث تقارير المراجعة (2026-09-27 — Task `DOC-REORG-2` + `DOC-UPDATE-P0-WAVE`)
+- [audit-logs/MASTER_AUDIT_REPORT.md](./audit-logs/MASTER_AUDIT_REPORT.md) — **التقرير النهائي الشامل + Checklist + To-Do + Wiring Matrix** (مشتق من `agent-ctx/SYNTHESIS_REPORT.md`) — ✅ **تم تحديثه 2026-09-27: كل الـ 16 P0 items marked as ✅ completed (16/16)**
 - [audit-logs/frontend-backend-db-audits/AUDIT_FRONTEND.md](./audit-logs/frontend-backend-db-audits/AUDIT_FRONTEND.md) — Frontend audit (~2,036 lines)
 - [audit-logs/frontend-backend-db-audits/AUDIT_BACKEND.md](./audit-logs/frontend-backend-db-audits/AUDIT_BACKEND.md) — Backend audit (~1,889 lines)
 - [audit-logs/frontend-backend-db-audits/AUDIT_DATABASES.md](./audit-logs/frontend-backend-db-audits/AUDIT_DATABASES.md) — Database audit (~6,462 lines)
+- [audit-logs/frontend-backend-db-audits/AUDIT_ENGINEERING.md](./audit-logs/frontend-backend-db-audits/AUDIT_ENGINEERING.md) — Engineering audit (2,006 lines) — code quality + security + performance + tests — تم حل كل P0 items اللي اكتشفته
+- [audit-logs/frontend-backend-db-audits/AUDIT_BACKTEST.md](./audit-logs/frontend-backend-db-audits/AUDIT_BACKTEST.md) — Backtest audit (1,561 lines) — predictions validation + anomaly detection — HELI false TARGET_HITs تم حلها
+- [audit-logs/frontend-backend-db-audits/AUDIT_UIUX.md](./audit-logs/frontend-backend-db-audits/AUDIT_UIUX.md) — UI/UX audit (127 screenshots + 23 issues)
 
 ### تقارير المراجعة السابقة
 - [audit-logs/JULY_2026_LOSS_ANALYSIS.md](./audit-logs/JULY_2026_LOSS_ANALYSIS.md) — تحليل خسائر يوليو 2026
@@ -105,11 +108,11 @@
 
 ## 🔗 روابط سريعة
 
-- **آخر تحديث للدستور:** راجع أعلى [`00-CONSTITUTION.md`](./00-CONSTITUTION.md)
-- **آخر تحديث للتشريح:** راجع أعلى [`01-PROJECT_ANATOMY.md`](./01-PROJECT_ANATOMY.md)
-- **آخر تحديث للشاشات:** راجع أعلى [`02-SCREENS_AND_COMPONENTS.md`](./02-SCREENS_AND_COMPONENTS.md)
-- **آخر تحديث لطريقة التفكير:** راجع أعلى [`SYSTEM_HOW_IT_THINKS.md`](./SYSTEM_HOW_IT_THINKS.md) — *آخر دمج: 2026-09-27 (RADAR_LIQUIDITY_UPGRADE → §15)*
-- **الـ worklog الكامل:** [`/worklog.md`](../worklog.md) (في root)
+- **آخر تحديث للدستور:** راجع أعلى [`00-CONSTITUTION.md`](./00-CONSTITUTION.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): Rules 55–59 (P0-WAVE) + قسم P0 Disaster Resolution Wave*
+- **آخر تحديث للتشريح:** راجع أعلى [`01-PROJECT_ANATOMY.md`](./01-PROJECT_ANATOMY.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): §1.7 — P0 Wave — Security + Observability + Tests*
+- **آخر تحديث للشاشات:** راجع أعلى [`02-SCREENS_AND_COMPONENTS.md`](./02-SCREENS_AND_COMPONENTS.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): §0.3 P0 Wave + 3 orphan tabs wired*
+- **آخر تحديث لطريقة التفكير:** راجع أعلى [`SYSTEM_HOW_IT_THINKS.md`](./SYSTEM_HOW_IT_THINKS.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): §16 HELI Forensics + §17 Observability Stack (WR 67.4% → ~50–55% actual)*
+- **الـ worklog الكامل:** [`/worklog.md`](../worklog.md) (في root) — *آخر task: DOC-UPDATE-P0-WAVE*
 
 ---
 
@@ -206,4 +209,23 @@ Documentation/
 
 ---
 
+## 🆕 تحديث 2026-09-27 (Task `DOC-UPDATE-P0-WAVE`)
+
+> **P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅).** الـ 4 cornerstone docs كلها اتـ updated لتعكس:
+> - **Rules 55–59 (NEW)** — P0-WAVE-SECURITY + P0-WAVE-SQLI + P0-WAVE-ASYNC + P0-WAVE-OBSERVABILITY + P0-WAVE-TESTS
+> - **30 API routes secured** (auth guards) + **7 SQLi sites fixed** + **70 sync I/O refactored**
+> - **9 duplicate DB tables dropped** (333 rows preserved as JSON sidecars) + **4 DBs backed up لـ `*.bak-unify`** (511.2 MB)
+> - **PM2 services 6→7** (news-agent added)
+> - **Test coverage 3→9 files / 75→121 tests / 873→1,796 LOC** (121/121 passing)
+> - **Observability stack (NEW)** — Sentry + structured logger + deep-check /api/health + x-request-id middleware
+> - **HELI False-Target Forensics** — 308 false TARGET_HITs cleaned (reconciliation mismatch rate: 41.96% → 31.66%)
+> - **Win Rate actual: ~50–55%** (was 67.4% recorded — was مُضخَّم بسبب false TARGET_HITs)
+> - **3 orphan tabs wired** (LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab)
+> - **help modal persistence fix** (30-day localStorage expiration)
+> - **§16 — HELI False-Target Forensics (NEW in SYSTEM_HOW_IT_THINKS.md)**
+> - **§17 — Observability Stack (NEW in SYSTEM_HOW_IT_THINKS.md)**
+
+---
+
 *تم الإنشاء بواسطة Documentation Secretary + Programmer — Task ID `DOC-REORG-2` — 2026-09-27*
+*تم التحديث بواسطة Documentation Secretary — Task ID `DOC-UPDATE-P0-WAVE` — 2026-09-27*

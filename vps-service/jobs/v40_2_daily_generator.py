@@ -515,6 +515,75 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
     set_strict_kill_filters(True)
     from analyzers.engine_settings import get_setting
 
+    # ════════════════════════════════════════════════════════════════════════
+    # REGIME-ENGINE (2026-09-27): Dynamic market regime → override thresholds
+    # ════════════════════════════════════════════════════════════════════════
+    # At the start of every run, call MarketRegimeEngine(market).update_regime()
+    # — it computes 6 indicators (SMA20/50/200, breadth, ATR, turnover, loss streak)
+    # — applies 2-3 day hysteresis
+    # — persists regime to system_settings + market_regime_log
+    # — returns the effective regime + per-regime thresholds
+    #
+    # The thresholds OVERRIDE the defaults (max_picks, MIN_RR, MIN_SCORE, ...)
+    # for this run only. Constitution §Phase-C: regime-aware thresholds are the
+    # natural extension of get_setting() — they apply a market-condition scaling
+    # on top of admin-configurable base values.
+    #
+    # Safe-by-design: if the regime engine fails for any reason, we proceed
+    # with the DEFAULT thresholds (NORMAL regime) — never block V40.2.
+    _regime_cfg = None
+    _regime_name = "NORMAL"
+    _regime_market = market_code if market_code in ('EGX', 'KSA', 'KSE', 'QSE') else 'EGX'
+    # Map V40.2 market_code → MarketRegimeEngine market key
+    _regime_market_map = {
+        'EGX': 'EGX', 'KSA': 'TADAWUL', 'KSE': 'KSE', 'QSE': 'QSE',
+    }
+    _regime_market_key = _regime_market_map.get(_regime_market, 'EGX')
+    try:
+        from analyzers.market_regime_engine import MarketRegimeEngine, REGIME_CONFIG, Regime
+        _regime_engine = MarketRegimeEngine(market=_regime_market_key)
+        _regime_result = _regime_engine.update_regime()
+        _regime_cfg = _regime_result.thresholds
+        _regime_name = _regime_result.regime.value
+        _regime_ind = _regime_result.indicators
+        # OVERRIDE the function-level max_picks argument with the regime's value
+        # (unless the user explicitly passed --max-picks — we still let regime lower it
+        # because DEFENSIVE must cap picks regardless of CLI override)
+        _cli_max_picks = max_picks
+        max_picks = min(max_picks, int(_regime_cfg["max_picks_per_day"]))
+        # Override DNA_MAX_OPEN_POSITIONS (was hardcoded 5)
+        global DNA_MAX_OPEN_POSITIONS
+        DNA_MAX_OPEN_POSITIONS = int(_regime_cfg.get("max_open_positions", DNA_MAX_OPEN_POSITIONS))
+        print(f"🌐 [REGIME] market={_regime_market_key} regime={_regime_name} "
+              f"(raw={_regime_result.raw_regime.value}, candidate="
+              f"{_regime_result.candidate_regime.value}/{_regime_result.candidate_days}d)", flush=True)
+        print(f"   Indicators: index={_regime_ind.index_current or 0:.2f} "
+              f"change={_regime_ind.index_daily_change_pct:+.2f}% "
+              f"breadth={_regime_ind.breadth_pct*100:.1f}% "
+              f"ATR_ratio={_regime_ind.atr_ratio:.2f} "
+              f"turnover_ratio={_regime_ind.turnover_ratio:.2f} "
+              f"loss_streak={_regime_ind.loss_streak_days}d "
+              f"drawdown={_regime_ind.short_term_drawdown_pct*100:.1f}%", flush=True)
+        print(f"   Thresholds: max_picks={max_picks} (CLI={_cli_max_picks}, "
+              f"regime_cap={int(_regime_cfg['max_picks_per_day'])}) | "
+              f"min_rr={_regime_cfg['min_rr']} | min_score={_regime_cfg['min_score']} | "
+              f"pos_mult={_regime_cfg['position_size_multiplier']} | "
+              f"atr_stop_mult={_regime_cfg['atr_stop_multiplier']} | "
+              f"falling_knife={_regime_cfg['falling_knife_threshold']} | "
+              f"min_turnover_mult={_regime_cfg['min_turnover_multiplier']} | "
+              f"max_open_positions={_regime_cfg['max_open_positions']}", flush=True)
+        if _regime_result.reasons:
+            for _r in _regime_result.reasons[:6]:
+                print(f"   {_r}", flush=True)
+    except Exception as _regime_err:
+        # Safe fallback: NORMAL regime with default thresholds
+        print(f"⚠️  [REGIME] engine failed ({_regime_err}) — using NORMAL defaults", flush=True)
+        try:
+            from analyzers.market_regime_engine import REGIME_CONFIG, Regime
+            _regime_cfg = REGIME_CONFIG[Regime.NORMAL]
+        except Exception:
+            _regime_cfg = None
+
     if not dry_run and not keep_old:
         delete_old_v40_predictions(start_date, end_date)
     elif keep_old:
@@ -1671,6 +1740,18 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # V75-7: 2R minimum R:R (stricter than regime default)
             if False:  # V75 killed
                 _min_rr = max(_min_rr, 2.0)
+            # REGIME-ENGINE (2026-09-27): market-level regime overrides per-ticker regime.
+            # If MarketRegimeEngine says DEFENSIVE → require min_rr=2.0 regardless of ticker regime.
+            # We take the MAX so the stricter of (per-ticker regime, market regime) wins.
+            if _regime_cfg is not None:
+                _market_min_rr = float(_regime_cfg.get("min_rr", 1.5))
+                if _market_min_rr > _min_rr:
+                    if r_mult < _market_min_rr:
+                        print(f"[REGIME-RR-SKIP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: "
+                              f"R:R={r_mult:.2f} < {_market_min_rr} ({_regime_name} market regime "
+                              f"> ticker {_regime} regime {_min_rr})", flush=True)
+                        continue
+                    _min_rr = _market_min_rr  # for the message below
             if r_mult < _min_rr:
                 print(f"[RR-SKIP] {ticker} on {dates[day_idx] if day_idx < len(dates) else '?'}: R:R={r_mult:.2f} < {_min_rr} ({_regime}) entry={entry:.2f} stop={stop:.2f} target={target:.2f}", flush=True)
                 continue
@@ -2375,6 +2456,17 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
         # Sort: evidence DESC → R-multiple DESC → tech_score DESC
         day_signals.sort(key=lambda x: (-x['evidence'], -x['r_multiple'], -x['tech_score']))
         picks = day_signals[:max_picks]
+
+        # REGIME-ENGINE (2026-09-27): apply regime-aware min_score filter
+        # DEFENSIVE → min_score=75 (was 60). AGGRESSIVE → min_score=70.
+        # This skips low-quality picks that would otherwise be stored.
+        if _regime_cfg is not None:
+            _regime_min_score = float(_regime_cfg.get("min_score", 60))
+            _picks_before = len(picks)
+            picks = [s for s in picks if float(s.get('tech_score', 0) or 0) >= _regime_min_score]
+            if _picks_before != len(picks):
+                print(f"🌐 [REGIME] {scan_date}: dropped {_picks_before - len(picks)} picks "
+                      f"(score < {_regime_min_score} for {_regime_name} regime)", flush=True)
 
         for rank, sig in enumerate(picks):
             # ── UNIFIED-BALANCED-ONLY (2026-08-30): تعطيل morning_bell ──

@@ -210,6 +210,17 @@ const SystemControlPanel = withErrorBoundary(
   'لوحة تحكم النظام',
 );
 
+// P1-GEMS-WIRING: SystemTopologyGraph (851 LOC) was rendered nowhere.
+// Wrapped in a fetcher + auto-poll in SystemTopologyTab; surfaced as a new
+// admin tab "طوبولوجيا النظام" inside the health hub.
+const SystemTopologyTab = withErrorBoundary(
+  dynamic(
+    () => import('./SystemTopologyTab').then(m => ({ default: m.SystemTopologyTab })),
+    { ssr: false, loading: () => <LazyTabLoader label="طوبولوجيا النظام" /> }
+  ),
+  'طوبولوجيا النظام',
+);
+
 const NewsManagementTab = withErrorBoundary(
   NewsManagementTabComponent,
   'إدارة الأخبار',
@@ -394,7 +405,7 @@ interface DataStatus {
 //   - MaestroCommandCenter    → disabled (legacy monolith — replaced by EnginesStatusTab)
 //   - MaestroDashboard        → disabled (same as above — alias)
 // ============================================================================
-type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'user-management' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'db-backup' | 'system-control' | 'system-monitor' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control';
+type AdminTab = 'dashboard' | 'problems' | 'general' | 'data-engine' | 'engine-settings' | 'learning' | 'historical-predictions' | 'backtest' | 'crypto' | 'users' | 'user-management' | 'behavior' | 'expert-recs' | 'telegram' | 'reports' | 'educational-cards' | 'egx' | 'gold-silver' | 'multi-market' | 'forex' | 'sectors' | 'databases' | 'db-backup' | 'system-control' | 'system-monitor' | 'system-topology' | 'feedback' | 'promo-codes' | 'platform-performance' | 'notebooks' | 'news-control';
 
 // Stream C: 6 Core Admin Hubs — consolidates the 26 flat tabs into 6 logical sectors.
 type HubId = 'health' | 'maestro' | 'learning' | 'data' | 'users' | 'telegram';
@@ -980,6 +991,7 @@ export function AdminView() {
       tabs: [
         { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" /> },
         { id: 'system-monitor', label: 'مراقبة الموارد', icon: <Monitor className="w-3.5 h-3.5" /> },
+        { id: 'system-topology', label: 'طوبولوجيا النظام', icon: <Network className="w-3.5 h-3.5" /> },
         { id: 'problems', label: 'مشاكل النظام', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
       ],
     },
@@ -1915,6 +1927,14 @@ export function AdminView() {
       {/* Data Engine, News Agent, WebSocket, Telegram, DBs). Auto-refresh 5s. */}
       {activeTab === 'system-monitor' && (
         <SystemMonitorPanel />
+      )}
+
+      {/* ==================== SYSTEM TOPOLOGY TAB (P1-GEMS-WIRING) ==================== */}
+      {/* Renders the 851-LOC SystemTopologyGraph with a 15s auto-poll fetcher. */}
+      {/* Surfaces the 7-layer system architecture (scrapers → data_engine.db → */}
+      {/* satellite DBs → analysis → engines → API → frontend) live in the UI. */}
+      {activeTab === 'system-topology' && (
+        <SystemTopologyTab />
       )}
 
       {/* ==================== SYSTEM CONTROL TAB ==================== */}

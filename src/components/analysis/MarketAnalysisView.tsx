@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, Layers, Radar, Target } from 'lucide-react';
+import { Activity, Layers, Radar, Target, Brain, History, AlertTriangle } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { OFFICIAL_LINKS } from '@/lib/official-links';
@@ -21,6 +21,24 @@ import type { MarketAnalysisViewProps } from '@/components/analysis/market-analy
 import { LiveTrackingTab } from '@/components/analysis/market-analysis/LiveTrackingTab';
 import { ExpertPredictionsTab } from '@/components/analysis/market-analysis/ExpertPredictionsTab';
 import { CryptoPredictionsTab } from '@/components/analysis/market-analysis/CryptoPredictionsTab';
+
+// P1-GEMS-WIRING: 3 new hidden-gem tabs — wired on 2026-09-28.
+// LearnedLessonsDashboard reads 19,464 AI lessons from predictions.db.learned_lessons.
+// HistoricalTradesTable reads 13,117 backtest trades from predictions.db.historical_trades.
+// DevilsAdvocatePanel combines 4 devil's-advocate lib-backed components (DevilsCard +
+// MarketMood + DevilsCalendar + ScenarioMatrix) that previously had no render site.
+const LearnedLessonsDashboard = dynamic(
+  () => import('@/components/analysis/LearnedLessonsDashboard').then(m => ({ default: m.LearnedLessonsDashboard })),
+  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+);
+const HistoricalTradesTable = dynamic(
+  () => import('@/components/analysis/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })),
+  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+);
+const DevilsAdvocatePanel = dynamic(
+  () => import('@/components/devil/DevilsAdvocatePanel').then(m => ({ default: m.DevilsAdvocatePanel })),
+  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
+);
 
 // PHASE3-BUNDLE-OPT: tab contents extracted to market-analysis/ submodules and
 // lazy-loaded with next/dynamic so each tab is split into its own chunk.
@@ -225,6 +243,19 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <span className="text-base">₿</span>
             <span className="hidden sm:inline">توقعات كريبتو</span>
           </TabsTrigger>
+          {/* P1-GEMS-WIRING: 3 new hidden-gem tabs */}
+          <TabsTrigger value="learned-lessons" className="flex items-center gap-1">
+            <Brain className="h-4 w-4 text-violet-600" />
+            <span className="hidden sm:inline">دروس AI</span>
+          </TabsTrigger>
+          <TabsTrigger value="historical-trades" className="flex items-center gap-1">
+            <History className="h-4 w-4 text-blue-600" />
+            <span className="hidden sm:inline">صفقات تاريخية</span>
+          </TabsTrigger>
+          <TabsTrigger value="devils-advocate" className="flex items-center gap-1">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="hidden sm:inline">وجهة نظر المضاد</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* تبويب متابعة التوقعات — PredictionTrackingDashboard (كل التوقعات + من جاب الهدف + وقف الخسارة) */}
@@ -268,6 +299,21 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         {/* P1 #19: توقعات الكريبتو */}
         <TabsContent value="crypto-predictions" className="mt-4">
           <CryptoPredictionsTab />
+        </TabsContent>
+
+        {/* P1-GEMS-WIRING: دروس الذكاء الاصطناعي (19,464 صف) */}
+        <TabsContent value="learned-lessons" className="mt-4">
+          <LearnedLessonsDashboard market={currentMarket} />
+        </TabsContent>
+
+        {/* P1-GEMS-WIRING: الصفقات التاريخية (13,117 صف) */}
+        <TabsContent value="historical-trades" className="mt-4">
+          <HistoricalTradesTable market={currentMarket} />
+        </TabsContent>
+
+        {/* P1-GEMS-WIRING: وجهة نظر المضاد (4 components) */}
+        <TabsContent value="devils-advocate" className="mt-4">
+          <DevilsAdvocatePanel market={currentMarket} />
         </TabsContent>
       </Tabs>
 

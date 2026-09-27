@@ -5,7 +5,8 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-09-26** (DOC-UPDATE-FINAL pass: تحديث §1.5 الإحصائيات (components 282، EGX 380 سهم، EGX30=27/EGX70=20، 1,359 prediction، WR=67.4%/Avg=25.74%/PF=12.84، 5 DBs sizes) + تحديث §6 Data Flow (EGX30=53,776.69 / EGX70=19,834.95 من CSV حقيقي، TradingView scanner 296 سهم، egksco_scraper 255 سهم + 186 price_history، price_history.db=1,206,981 صف/1,336 ticker) + تحديث §17 Historical Archive (ملاحظة دمج 17 ملف تاريخي في الملفات الأربعة الكنسية). لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅). تحديث §1.5 الإحصائيات (نحو 30 route تم تأمينها بـ auth + 7 SQLi sites تم fix + 70 sync I/O refactored + 9 duplicate tables dropped من 12 المُكتشفة + 4 DBs backed up لـ `*.bak-unify` = 511.2 MB + PM2 services 6→7 بإضافة news-agent + test coverage 3→9 files / 75→121 tests). إضافة قسم جديد "§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests" يلخّص كل الموجة. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث سابق: 2026-09-26** (DOC-UPDATE-FINAL pass: تحديث §1.5 الإحصائيات (components 282، EGX 380 سهم، EGX30=27/EGX70=20، 1,359 prediction، WR=67.4%/Avg=25.74%/PF=12.84، 5 DBs sizes) + تحديث §6 Data Flow (EGX30=53,776.69 / EGX70=19,834.95 من CSV حقيقي، TradingView scanner 296 سهم، egksco_scraper 255 سهم + 186 price_history، price_history.db=1,206,981 صف/1,336 ticker) + تحديث §17 Historical Archive (ملاحظة دمج 17 ملف تاريخي في الملفات الأربعة الكنسية). لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass: تحديث العدّادات الإجمالية + إضافة §17 Historical Documentation Archive (كل ملفات `Documentation/*.md` غير الأساسية مُؤرشفة كمرجع تاريخي، لم تُحذف) + إضافة §1.6 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern + تحديث §3.1 DB Map بالأرقام الحالية.)
 > **آخر تحديث سابق:** 2026-09-01 (Stock Notebook System + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags + تحديث العدّادات: blueprints=40، api files=38، notebooks/EGX=259 ملف JSON).
 > **آخر تحديث سابق:** 2026-08-31 (KILL-MAESTRO + V40.2 هو العقل الوحيد + V62 logic + AI News Agent).
@@ -408,27 +409,27 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 
 **القاعدة الذهبية:** كل الـ routes الباقية تستخدم **relative-path-only** عبر `EGXPY_SERVICE_URL` (default `http://localhost:8010`). لا استدعاء مباشر لـ `localhost:8010` من الـ frontend؛ لازم يمر عبر `Next.js /api/proxy/[...path]`.
 
-### 1.5 الإحصائيات الكلية (2026-09-26 — DOC-UPDATE-FINAL refresh)
+### 1.5 الإحصائيات الكلية (2026-09-27 — DOC-UPDATE-P0-WAVE refresh)
 
 | المؤشر | القيمة |
 |---|---|
 | Backend .py files | ~395 |
 | Backend LOC | ~229,490 |
-| Frontend `.tsx` files (components) | **282** (+ 3 `.ts` non-tsx = 285 total under `src/components/`) |
+| Frontend `.tsx` files (components) | **285** (+3 wired orphan tabs after P0 wave: LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab) (+ 3 `.ts` non-tsx = 288 total under `src/components/`) |
 | Frontend LOC | ~343,000 |
 | Flask Blueprints (registered) | 53 |
 | Python `@bp.route` decorators | ~599 |
-| Next.js `route.ts` files | **653** (تحت `src/app/api/` — 156 مجلد top-level + nested) |
+| Next.js `route.ts` files | **653** (تحت `src/app/api/` — 156 مجلد top-level + nested) · منهم **30 route تم تأمينها بـ auth guard** (P0-11-AUTH) · **7 SQL injection sites تم fix** (P0-12-SQLI) · **24 route تم تحويلها لـ async I/O** (P0-14-ASYNC، ~70+ sync I/O sites) |
 | محرك قرار مؤسسي | V39/V40.2 (institutional_decision_engine.py, ~520 LOC) |
 | محرك backtest | V38 (v38_backtest_engine.py, 1,817 LOC) |
 | Personas (نموذج التوقع) | **3 فاعلة في الإنتاج**: `conservative` + `balanced` (الـ baseline 81.8%) + `gambler` — `expert` معطّلة (Rule 23 — PERSONA-UNIFY-A) |
-| **DBs على الإنتاج (5 قواعد — أحجام)** | stocks.db=**15 MB** · data_engine.db=**273 MB** · predictions.db=**225 MB** · intraday.db=**428 MB** · price_history.db=**293 MB** |
+| **DBs على الإنتاج (5 قواعد — أحجام)** | stocks.db=**15 MB** · data_engine.db=**273 MB** · predictions.db=**225 MB** · intraday.db=**428 MB** · price_history.db=**293 MB** · + `auth.db` (0.2 MB) · **4 DBs backed up لـ `*.bak-unify`** (511.2 MB total) — P0-8-DB-UNIFY |
 | **عدد أسهم EGX** | **380 سهم** (stocks.db — EGX) |
 | **مكونات EGX30** | **27 سهم** (EGX30 index members) |
 | **مكونات EGX70** | **20 سهم** (EGX70 index members — subset tracked) |
 | عدد الأسهم في `stocks.db` (كل الأسواق) | ~976 سهم (EGX=380 · TADAWUL=413 · KSE=128 · QSE=55) — لا يشمل CRYPTO (بياناتها في `data_engine.db.crypto_prices` + `crypto.db`) |
-| الأسهم في `data_engine.db.stocks` | **1,585 سهم** (EGX + تداول + الكويت + قطر + أوامر) |
-| **التوقعات الكلية في `predictions.db.predictions`** | **1,359 prediction** (333 `TARGET_HIT` + 193 `closed_stop` + 77 `ACTIVE` + باقي الحالات المُغلقة/المُؤرشفة) |
+| الأسهم في `data_engine.db.stocks` | **1,585 سهم** (EGX + تداول + الكويت + قطر + أوامر) — كان فيه duplicate في `data_engine.db.stocks` (296 rows) تم حذفه (P0-8-DB-UNIFY) |
+| **التوقعات الكلية في `predictions.db.predictions`** | **1,359 prediction** (333 `TARGET_HIT` + 193 `closed_stop` + 77 `ACTIVE` + باقي الحالات المُغلقة/المُؤرشفة) — بعد HELI-CLEANUP-2: 308 false TARGET_HITs تم تنظيفها (102 → `closed_win` (TP2 hit) + 13 → `EXPIRED` + 1 → `STOPPED` + 17 HELI EXPIRED → `closed_win`) |
 | سجل التوقعات `aiPrediction` | 2,459 صف |
 | `persona_predictions` (per-persona tracks) | 946 صف |
 | `historical_trades` | 550 صفقة تاريخية |
@@ -437,12 +438,16 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 | `price_history.db.price_history` | **1,206,981 صف** (1,336 ticker، 2000→2026 — سجل الأسعار الموحّد EGX) |
 | `data_engine.db.historical_data` | 99,076 صف OHLC تاريخي |
 | `data_engine.db.screener_lists` | 1,505 إدخال في 5 فئات (most_active / unusual_volume / gainers / losers / volume) |
-| **Live Win Rate (1,229 resolved predictions)** | **67.4%** (resolved من إجمالي 1,359 prediction) |
-| **Avg Return per resolved prediction** | **25.74%** (متوسط العائد لكل صفقة مُغلَقة) |
-| **Live Profit Factor (PF)** | **12.84** (gross profit ÷ gross loss على الـ resolved set) |
+| **Live Win Rate (1,229 resolved predictions)** | **~50-55%** (تنقيح حقيقي بعد HELI-CLEANUP-2 — كان مُسجَّل 67.4% قبل الكشف عن 31.66% mismatch rate في reconcile_hit_targets.py) — راجع `SYSTEM_HOW_IT_THINKS.md` Production Snapshot |
+| **Avg Return per resolved prediction** | **25.74%** (متوسط العائد لكل صفقة مُغلَقة — مأخوذ من الـ recorded status، قد يحتاج إعادة حساب بعد الـ reconciliation الكامل) |
+| **Live Profit Factor (PF)** | **12.84** (gross profit ÷ gross loss على الـ resolved set — على الـ recorded status) |
+| **Reconciliation mismatch rate** | **31.66%** (384 mismatches من 1,213 closed predictions — بعد HELI-CLEANUP-2 ؛ كان 41.96% قبل) |
 | **Max Loss Streak** | **7 صفقات خاسرة متتالية** (observed worst-case — تم قياسها في الـ A/B backtest) |
 | Fair re-sim PF (post-R:R fix) | 1.453 (148 trades، +0.189%/trade عن القاعدة العادلة) |
 | R:R الحالي | dynamic 1.5 (normal) / 2.0 (outperform) — engine_settings |
+| **PM2 services (7 — كان 6)** | python-backend (8010) + data-engine (8011) + nextjs (3001) + ws-service (3005) + telegram-poster + telegram-events (3003) + **news-agent** (NEW 2026-09-27 — P0-7-15-INFRA) |
+| **Test files / cases (post P0-16-TESTS)** | **9 files / 121 tests / 1,796 LOC** (was 3/75/873 — +6 files / +46 tests / +923 LOC) — 121/121 passing |
+| **Observability stack (NEW 2026-09-27)** | Sentry (@sentry/nextjs@11.0.0) + structured logger (`src/lib/logger.ts`) + `/api/health` deep-check (262 LOC) + x-request-id middleware |
 
 ### 1.6 الـ 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern (2026-09-25)
 
@@ -471,6 +476,65 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
   2. **لو Python رفض/تأخر → اقرأ من SQLite** عبر الـ unified readers.
   3. **لو SQLite فاضي → اقرأ من `data_engine.db`** (tier-3 fallback).
 - الأمثلة: `/api/stocks?market=EGX` (Python → SQLite)، `/api/predictions/daily-picks` (Python → SQLite)، `/api/chart/[ticker]` (Python intraday → SQLite `intraday.db` → `price_history.db`).
+
+---
+
+### 1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests (NEW — DOC-UPDATE-P0-WAVE)
+
+> **المرجع:** `worklog.md` entries `P0-12-SQLI` + `P0-17-RECONCILE` + `P0-7-15-INFRA` + `P0-14-ASYNC` + `P0-11-AUTH` + `HELI-INVESTIGATION` + `HELI-CLEANUP-2` + `P0-8-DB-UNIFY` + `P0-16-TESTS`.
+> **الحالة:** ✅ **16/16 P0 items مُنجَزة**. الـ code health ارتفع من 48/100 → مُتوقَّع ~70/100.
+
+**أ. Security Stack (P0-11-AUTH + P0-12-SQLI + /api/import hardening):**
+| المكوّن | الحالة | التفاصيل |
+|---|---|---|
+| `src/lib/admin-guard.ts` | ✅ NEW 2026-09-27 (74 LOC) | Thin re-export of `requireAdminAsync` من `@/lib/admin-auth-server` + new `requireAuthAsync(req)` لـ user-scoped routes |
+| 30 API routes secured | ✅ | 4 admin + 26 non-admin عبر 44 HTTP method handlers. أعقد الـ fixes: `/api/instapay/approve` (admin_id من body = priv-esc) + `/api/paymob/process-wallet` (was open) + `/api/market/sync` (was open) + `/api/db-stats` (was recon goldmine) |
+| 7 SQL injection sites fixed | ✅ | 5 ملفات: `predictions/honest-tracking/live-tracking/route.ts` (3 sites) + `finance/screener/route.ts` + `tab-data/route.ts` + `admin/clear-junk-data/route.ts` (4 sites) + `admin/db-explorer/route.ts` (3 sites). 3 canonical patterns: bound `?` params + Set whitelist + strict identifier regex |
+| `/api/import` hardening | ✅ | auth + 5MB size limit + rate limit + MIME whitelist (كان بيقبل أي ملف بدون validation) |
+
+**ب. Observability Stack (P0-7-15-INFRA):**
+| المكوّن | الحالة | التفاصيل |
+|---|---|---|
+| `@sentry/nextjs@11.0.0` | ✅ NEW | Installed via `bun add`. `sentry.client.config.ts` + `sentry.server.config.ts` (opt-in via `if (SENTRY_DSN)`). `withSentryConfig` wrapper في `next.config.ts`. 10% tx sampling prod / 100% dev / 100% errors |
+| `src/lib/logger.ts` | ✅ NEW (90 LOC) | Structured JSON logger (`{"timestamp","level","message",...context}`). 4 levels (debug/info/warn/error). 12-factor compliant (stderr for errors، stdout for info). `MIN_LEVEL` via `process.env.LOG_LEVEL \|\| 'info'` |
+| `/api/health` | ✅ rewritten (60→262 LOC) | يفتح كل DB read-only + SELECT 1 + يـ ping PM2 ports (python-backend 8010 + ws-service 3005 + telegram-events 3003 + pgrep news-agent) + يفحص disk space. HTTP 200 ok/degraded / HTTP 503 down |
+| `src/middleware.ts` | ✅ updated | يضيف `x-request-id` header على كل response (UUIDv4 via Web Crypto API + fallback لو unavailable — distributed trace propagation) |
+| `ecosystem.config.js` | ✅ updated (6→7 services) | تم إضافة `news-agent` كـ service سابع. سيكتب في `db/news.db.market_news` كل 15 دقيقة |
+
+**ج. Async I/O Refactor (P0-14-ASYNC):**
+| المكوّن | الحالة | التفاصيل |
+|---|---|---|
+| 24 API routes refactored | ✅ | ~70+ individual sync sites converted من `readFileSync`/`writeFileSync`/`existsSync`/`execSync`/`statSync`/`readdirSync` لـ `fs/promises` + `promisify(execFile)`. الأكثر تأثيراً: `admin/db-backup/route.ts` (16+ sync calls) + `admin/pm2-control/route.ts` (9 execSync) + `admin/backtest/v40/status/[jobId]/route.ts` (polling endpoint) |
+
+**د. Database Unification (P0-8-DB-UNIFY):**
+| المكوّن | الحالة | التفاصيل |
+|---|---|---|
+| 9 duplicate tables dropped | ✅ | من 12 المُكتشفة في AUDIT_DATABASES. التفاصيل: `stocks.gold_prices` (3 rows) + `predictions.cached_analysis` (0) + `predictions.telegram_news` (0) + `predictions.ExpertRecommendation` (17) + `auth.ExpertRecommendation` (17) + `stocks.learned_lessons` (0) + `stocks.egksco_price_history` (0) + `data_engine.egksco_stocks` (0) + `data_engine.stocks` (296). كل 333 rows اتـ preserved كـ JSON sidecars قبل DROP |
+| 4 DBs backed up لـ `*.bak-unify` | ✅ | stocks.db.bak-unify (14.2 MB) + predictions.db.bak-unify (224.3 MB) + auth.db.bak-unify (0.2 MB) + data_engine.db.bak-unify (272.5 MB) — 511.2 MB total |
+| Code updates | ✅ | `src/lib/cache/precomputed-cache.ts` (+78/-57 LOC — أصلح latent bug في `precomputeGoldData()` كان بـ يـ abort الـ `updateAllCache()` بـ "no such column: change" من شهور) + `vps-service/utils/db_paths.py` (+85/-52 LOC — refresh الـ routing table) |
+
+**هـ. HELI False-Target Forensics (HELI-INVESTIGATION + HELI-CLEANUP-2):**
+| المكوّن | الحالة | التفاصيل |
+|---|---|---|
+| Root cause | ✅ identified | `daily_closer.py` استخدم heuristic خاطئ: `status='TARGET_HIT' if actual_return > 0 else 'EXPIRED'` في 4 sites (lines 2087/2140/2175/2199). External script set `exit_type='maker_fuel_exhausted'` على 363 predictions using نفس الـ buggy heuristic |
+| Source fix | ✅ applied | استبدال الـ heuristic بـ `if target_price > 0 and highest_price_reached >= target_price: status='TARGET_HIT'` + write-time assertion في `_mark_closed()` (defense-in-depth) |
+| Data cleanup | ✅ applied | 308 false TARGET_HITs تم تنظيفها عبر `scripts/fix_all_false_targets.py`: 102 → `closed_win` (TP2 hit) + 13 → `EXPIRED` + 1 → `STOPPED`. 17 HELI EXPIRED → `closed_win` عبر `scripts/fix_heli_expired_to_closedwin.py`. كل 333 rows اتـ backed up لـ `db/predictions.db.bak-heli-fix` (235 MB) + `db/predictions.db.bak-full-cleanup` (235 MB) + `db/predictions.db.bak-heli-expired-fix` (235 MB) |
+| Reconcile script | ✅ updated | `scripts/reconcile_hit_targets.py` دلوقتي بـ يعرف `target_price_2` (TP2 hits) — false mismatches قلّت من 41.96% → 31.66% |
+
+**و. Tests (P0-16-TESTS):**
+| المكوّن | الحالة | التفاصيل |
+|---|---|---|
+| 6 new test files | ✅ NEW | `src/__tests__/security/sql-injection.test.ts` (111 LOC, 6 tests) + `auth-guard.test.ts` (198 LOC, 9 tests) + `import-endpoint.test.ts` (189 LOC, 7 tests) + `src/__tests__/predictions/pipeline.test.ts` (167 LOC, 8 tests) + `src/__tests__/db/integrity.test.ts` (165 LOC, 11 tests) + `src/__tests__/api/health.test.ts` (93 LOC, 5 tests) |
+| Test coverage | ✅ | 3→9 files / 75→121 tests / 873→1,796 LOC — **121/121 passing** |
+| Middleware fix | ✅ BONUS | `src/middleware.ts` كان فيه regression (crypto.randomUUID في Edge runtime = HTTP 500). Fixed via Web Crypto API + fallback |
+| Test philosophy | ✅ adopted | READ-ONLY DB connections لـ integrity tests (no mocks) + live HTTP fetch against `localhost:3001` لـ API integration tests (auto-skip لو server مش شغال) |
+
+**ز. Follow-up (P1 — out of scope):**
+- radar-cache.ts async refactor — would cascade through 4 callers
+- ~96 remaining sync I/O routes (out of audit's 120 total)
+- ~460 unprotected routes remain (most GET-only public-data)
+- 384 remaining reconcile mismatches (empty `exit_type` — pre-existing data quality issues)
+- Playwright E2E tests + CI pipeline for auto-run
 
 ---
 
@@ -1645,6 +1709,7 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-27 | `01-PROJECT_ANATOMY.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. تحديث §1.5 الإحصائيات (نحو 30 route تم تأمينها بـ auth + 7 SQLi sites تم fix + 70 sync I/O refactored + 9 duplicate tables dropped + 4 DBs backed up لـ `*.bak-unify` = 511.2 MB + PM2 services 6→7 بـ news-agent + test coverage 3→9 files / 75→121 tests + observability stack جديد). إضافة قسم جديد "§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests" (6 جداول: Security Stack + Observability Stack + Async I/O Refactor + Database Unification + HELI False-Target Forensics + Tests) + قائمة Follow-up لـ P1. |
 | 2026-09-01 | `01-PROJECT_ANATOMY.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook System (1,065 LOC + 259 JSON + 7 API endpoints + NotebookAdminTab.tsx)، Unified Exit Engine (518 LOC + MARKET_PROFILES)، Decision Logger (338 LOC + decision_log.db)، News Impact Scorer (432 LOC + 14 event types)، EGX Disclosure Engine (875 LOC + 12 disclosure types)، Crypto Modules (4 ملفات: crypto_strict_filters + crypto_short_holding_exit + crypto_news_fetcher + crypto_disclosure_engine)، Feature Flags V40.2 (10 flags)، News Fetcher Analyzer + news_signals_reader + /api/news/ingest. |
 | 2026-09-25 | `01-PROJECT_ANATOMY.md` | DOC-CONSOLIDATION: تحديث §1.5 الإحصائيات (956 stocks، 1,585 data_engine، 306 predictions، 7,894 news، 1,205,599 price_history، 653 API route، 274 component). إضافة §1.6 (5-Market + UI-Mirror + SQLite Fallback). تحديث §3.1 DB Map بالأرقام الحالية. إضافة §17 Historical Documentation Archive. |
 | 2026-09-26 | `01-PROJECT_ANATOMY.md` | DOC-UPDATE-FINAL: تحديث §1.5 الإحصائيات (components=282، EGX=380 سهم، EGX30=27/EGX70=20، predictions=1,359، price_history=1,206,981، WR=67.4%، Avg Return=25.74%، PF=12.84، Max Loss Streak=7، 5 DBs sizes). تحديث §1.6 (EGX=380). تحديث §6.3 (price_history rows/tickers). إضافة §6.5 (EGX30/EGX70 real CSV + TradingView 296 + egksco 255 + price_history 1,206,981). تحديث §17.1 (القواعد 54) + إضافة §17.5 (تأكيد دمج 17 ملف historical في الـ 4 canonical). |
