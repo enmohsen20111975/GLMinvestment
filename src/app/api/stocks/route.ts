@@ -108,7 +108,7 @@ function readStocksFromLightDb(req: NextRequest): {
   const rows = db
     .prepare(
       `SELECT
-         id, ticker, name, name_ar, sector, industry, market,
+         id, ticker, name, name_ar, sector, industry, market, logo_url,
          current_price, previous_close, open_price, high_price, low_price,
          change_percent, volume, market_cap, pe_ratio, pb_ratio, ps_ratio,
          eps, roe, roa, debt_to_equity, current_ratio, book_value_per_share,

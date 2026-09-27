@@ -190,12 +190,13 @@ export async function GET(request: NextRequest) {
       if (fs.existsSync(stocksDbPath)) {
         const stocksDb = new Database(stocksDbPath, { readonly: true });
         const stockRows = stocksDb
-          .prepare(`SELECT ticker, sector, name_ar FROM stocks`)
+          .prepare(`SELECT ticker, sector, name_ar, logo_url FROM stocks`)
           .all() as Array<Record<string, unknown>>;
         for (const r of stockRows) {
           stocksLookup.set(String(r.ticker), {
             sector: String(r.sector || ''),
             name_ar: String(r.name_ar || r.ticker || ''),
+            logo_url: r.logo_url ? String(r.logo_url) : null,
           });
         }
         stocksDb.close();
@@ -209,6 +210,7 @@ export async function GET(request: NextRequest) {
         market: String(r.market || market),
         sector: r.sector ?? lookup?.sector ?? null,
         name_ar: r.name_ar ?? lookup?.name_ar ?? String(r.ticker || ''),
+        logo_url: lookup?.logo_url ?? (r.logo_url ? String(r.logo_url) : null),
         recommendation:
           r.recommendation ?? (r.signal ? String(r.signal).toLowerCase() : null),
         recommendation_ar: r.recommendation_ar ?? r.signal_ar ?? null,

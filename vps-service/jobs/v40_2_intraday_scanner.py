@@ -144,22 +144,24 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
         score += 20
         reasons.append("إعادة اختبار ذهبية للدعم (V76 Golden Retest)")
 
-    # تدفق الميكرز
+    # تدفق الميكرز (حساب ديناميكي متدرج حسب نسبة الثقة)
     if maker.get('flow') == 'buying':
         m_conf = maker.get('confidence', 0)
-        if m_conf >= 60:
-            score += 20
-            reasons.append(f"دخول سيولة مؤسسية حقيقية (ثقة {m_conf}%)")
-        else:
-            score += 10
+        conf_boost = int(12 + max(0, m_conf - 50) * 0.4)
+        score += conf_boost
+        reasons.append(f"دخول سيولة مؤسسية حقيقية (ثقة {m_conf}%)")
     elif maker.get('flow') == 'selling':
         score -= 25
         reasons.append("خروج سيولة مؤسسية / تصريف")
 
-    # الاختراق اللحظي
+    # الاختراق اللحظي بحجم التداول
     if breakout.get('is_breakout'):
-        score += 15
-        reasons.append(f"اختراق قمة آخر ساعتين بحجم {breakout['volume_ratio']}x")
+        vr = breakout.get('volume_ratio', 1.0)
+        vol_boost = min(22, int(10 + max(0, vr - 1.0) * 4))
+        score += vol_boost
+        reasons.append(f"اختراق قمة آخر ساعتين بحجم {vr}x")
+
+
 
     # أداء القطاع
     if sector_perf.get('heat') == 'hot':
@@ -205,6 +207,14 @@ def analyze_intraday_opportunity(ticker_info: Dict[str, Any]) -> Optional[Dict[s
     # الهدف الثاني (الانفجاري): 5x ATR
     target_2 = round(curr_price + (est_atr * 5.0), 2)
     rr = round((target_1 - curr_price) / risk, 2)
+
+    # تقييم العائد إلى المخاطرة لحظياً وتعديل السكور ديناميكياً
+    if rr >= 3.0:
+        score += 6
+    elif rr >= 2.2:
+        score += 3
+    elif rr < 1.5:
+        score -= 8
 
     return {
         'ticker': ticker,
@@ -278,11 +288,38 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
             try:
                 conn_sa = sqlite3.connect(str(PREDICTIONS_DB), timeout=30.0)
                 cur_sa = conn_sa.cursor()
+                # ضمان وجود جميع الأعمدة اللازمة في سيرفر الإنتاج بدون أخطاء schema
+                for col_name, col_type in [
+                    ("prediction_date", "TEXT"),
+                    ("is_gambler_opportunity", "INTEGER DEFAULT 1"),
+                    ("is_investor_opportunity", "INTEGER DEFAULT 1"),
+                    ("analysis_json", "TEXT"),
+                    ("logo_url", "TEXT")
+                ]:
+                    try:
+                        cur_sa.execute(f"ALTER TABLE stored_analyses ADD COLUMN {col_name} {col_type}")
+                    except Exception:
+                        pass
                 now_iso = datetime.now().isoformat()
                 today_str = datetime.now().strftime('%Y-%m-%d')
                 for p in top_picks:
+                    # جلب اللوجو والاسم العربي من stocks.db
+                    logo_url = ''
+                    name_ar = p['ticker']
+                    try:
+                        conn_s = sqlite3.connect(str(STOCKS_DB), timeout=5.0)
+                        s_r = conn_s.execute("SELECT logo_url, name_ar FROM stocks WHERE ticker = ?", (p['ticker'],)).fetchone()
+                        conn_s.close()
+                        if s_r:
+                            logo_url = s_r[0] or ''
+                            name_ar = s_r[1] or p['ticker']
+                    except Exception:
+                        pass
+
                     analysis_dict = {
                         'ticker': p['ticker'],
+                        'name_ar': name_ar,
+                        'logo_url': logo_url,
                         'signal': p['signal'],
                         'entry_price': p['entry_price'],
                         'target_price': p['target_price'],
@@ -299,8 +336,8 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                         INSERT INTO stored_analyses (
                             id, ticker, market, maestro_score, recommendation, recommendation_ar,
                             confidence, entry_price, target_price, stop_loss, risk_reward,
-                            prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity
-                        ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+                            prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity, logo_url
+                        ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)
                         ON CONFLICT(ticker, market) DO UPDATE SET
                             maestro_score = excluded.maestro_score,
                             recommendation = excluded.recommendation,
@@ -314,11 +351,13 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                             updated_at = excluded.updated_at,
                             analysis_json = excluded.analysis_json,
                             is_gambler_opportunity = 1,
-                            is_investor_opportunity = 1
+                            is_investor_opportunity = 1,
+                            logo_url = excluded.logo_url
                     ''', (
                         sa_id, p['ticker'], p['score'], p['signal'], 'شراء قوي' if 'STRONG' in p['signal'] else 'شراء',
                         p.get('maker_confidence', 80), p['entry_price'], p['target_price'], p['stop_loss'],
-                        p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False)
+                        p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False),
+                        logo_url
                     ))
                 conn_sa.commit()
                 conn_sa.close()
