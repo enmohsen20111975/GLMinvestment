@@ -1,14 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionUserId } from '@/lib/auth-helper';
 export const dynamic = "force-dynamic";
-
 
 // ---------------------------------------------------------------------------
 // POST /api/import
 // Handles multipart/form-data file uploads for data import
+// P0 #13 fix (2026-09-27): Added auth + size limit + rate limit (security)
 // ---------------------------------------------------------------------------
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
+const ALLOWED_EXTENSIONS = ['.csv', '.json'];
+const ALLOWED_MIME_TYPES = [
+  'text/csv',
+  'application/csv',
+  'application/json',
+  'text/plain',
+  'application/vnd.ms-excel',
+];
+
+// Simple in-memory rate limit (per-IP): 5 uploads per minute
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) return false;
+  entry.count++;
+  return true;
+}
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  const real = req.headers.get('x-real-ip');
+  if (real) return real;
+  return 'unknown';
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // ─── 1. Auth check ────────────────────────────────────────────────
+    const { userId } = await getSessionUserId();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'يجب تسجيل الدخول أولاً' },
+        { status: 401 }
+      );
+    }
+
+    // ─── 2. Rate limit ────────────────────────────────────────────────
+    const clientIp = getClientIp(request);
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        { success: false, error: 'تم تجاوز الحد المسموح من الطلبات. حاول بعد دقيقة.' },
+        { status: 429 }
+      );
+    }
+
+    // ─── 3. Parse form data ──────────────────────────────────────────
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const type = formData.get('type') as string | null;
@@ -20,6 +75,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ─── 4. Size limit ────────────────────────────────────────────────
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { success: false, error: `حجم الملف كبير جداً. الحد الأقصى: ${MAX_FILE_SIZE / 1024 / 1024}MB` },
+        { status: 413 }
+      );
+    }
+
     if (!type || !['stocks', 'watchlist'].includes(type)) {
       return NextResponse.json(
         { success: false, error: 'نوع الاستيراد غير صالح. الأنواع المدعومة: stocks, watchlist' },
@@ -27,21 +90,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ─── 5. File extension validation ────────────────────────────────
     const fileName = file.name.toLowerCase();
     const isCSV = fileName.endsWith('.csv');
     const isJSON = fileName.endsWith('.json');
 
     if (!isCSV && !isJSON) {
       return NextResponse.json(
-        { success: false, error: 'صيغة الملف غير مدعومة. الصيغ المدعومة: CSV, JSON' },
+        { success: false, error: `صيغة الملف غير مدعومة. الصيغ المدعومة: ${ALLOWED_EXTENSIONS.join(', ')}` },
         { status: 400 }
       );
     }
 
-    // Read file content
+    // ─── 6. MIME type validation (defense in depth) ──────────────────
+    if (file.type && !ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, error: `نوع المحتوى غير مدعوم: ${file.type}` },
+        { status: 400 }
+      );
+    }
+
+    // ─── 7. Sanitize filename (prevent path traversal) ──────────────
+    const safeFileName = fileName.replace(/[^a-z0-9._-]/g, '_').slice(0, 255);
+
+    // ─── 8. Read file content ────────────────────────────────────────
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const content = buffer.toString('utf-8');
+
+    // ─── 9. Content size sanity check ────────────────────────────────
+    if (content.length > 5_000_000) {
+      return NextResponse.json(
+        { success: false, error: 'محتوى الملف كبير جداً' },
+        { status: 413 }
+      );
+    }
 
     // Remove BOM if present
     const cleanContent = content.replace(/^\uFEFF/, '');
@@ -57,9 +140,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       type,
-      file_name: file.name,
+      file_name: safeFileName,
       file_size: file.size,
       format: isCSV ? 'csv' : 'json',
+      imported_by: userId,
       ...result,
     });
   } catch (error) {

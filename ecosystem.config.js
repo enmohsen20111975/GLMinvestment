@@ -27,6 +27,11 @@
  *     └── polling للـ Python backend كل 30s + push للواجهة
  *     └── المسار: ./vps-service/ws-service/ (moved from mini-services/)
  *
+ *  5. telegram-events (Bun/TypeScript | port 3003) — TELEGRAM LIVE EVENTS
+ *     └── خدمة socket.io relay لأحداث تيليجرام اللحظية
+ *     └── admin TelegramTab.tsx بيتصل بـ /?XTransformPort=3003
+ *     └── المسار: ./telegram-events/
+ *
  * Usage:
  *   pm2 start ecosystem.config.js
  *   pm2 status
@@ -212,6 +217,35 @@ module.exports = {
       },
       error_file: './logs/telegram-poster-error.log',
       out_file: './logs/telegram-poster-out.log',
+      time: true,
+      max_restarts: 10,
+      restart_delay: 5000,
+      kill_timeout: 10000
+    },
+
+    // ==============================================
+    // 6. telegram-events (Bun/TypeScript) - Port 3003
+    //    Socket.io relay service for live Telegram events.
+    //    Polled by admin TelegramTab.tsx via /?XTransformPort=3003
+    //    P0 #4 fix (2026-09-27): service was missing from PM2 → admin tab was failing silently
+    // ==============================================
+    {
+      name: 'telegram-events',
+      script: 'index.ts',
+      interpreter: getBunInterpreter(),
+      exec_mode: 'fork',
+      cwd: './telegram-events',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '150M',
+      env: {
+        NODE_ENV: 'production',
+        PORT: '3003',
+        PYTHON_BACKEND_URL: 'http://127.0.0.1:8010'
+      },
+      error_file: './logs/telegram-events-error.log',
+      out_file: './logs/telegram-events-out.log',
       time: true,
       max_restarts: 10,
       restart_delay: 5000,

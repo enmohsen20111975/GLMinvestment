@@ -76,12 +76,35 @@ export async function GET(req: NextRequest) {
         ).all() as { name: string }[];
 
         const tableInfo = tables.map((t: { name: string }) => {
-            const count = db.prepare(`SELECT COUNT(*) as count FROM "${t.name}"`).get() as { count: number };
+            // P0-12-SQLI fix (2026-09-27): the value `t.name` comes from
+            // sqlite_master (DB metadata, not user input) and is wrapped in
+            // double quotes. We additionally validate it matches the strict
+            // SQLite identifier pattern so a corrupted sqlite_master row
+            // can't break out of the quoting.
+            const safeName = /^[A-Za-z_][A-Za-z0-9_]*$/.test(t.name) ? t.name : '';
+            if (!safeName) {
+                return { name: t.name, rows: 0 };
+            }
+            const count = db.prepare(`SELECT COUNT(*) as count FROM "${safeName}"`).get() as { count: number };
             return { name: t.name, rows: count.count };
         });
 
         // If a specific table is requested, return its data
         if (tableName) {
+            // P0-12-SQLI fix (2026-09-27): enforce a strict SQLite identifier
+            // pattern before interpolating tableName into any SQL. Although
+            // `tableInfo.find(t => t.name === tableName)` below would reject
+            // unknown tables, an attacker could still attempt to break out of
+            // the double-quoted interpolation (e.g. tableName = 'foo"; --').
+            // The regex limits identifiers to [A-Za-z_][A-Za-z0-9_]* which
+            // covers every legitimate table name in our schema.
+            if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
+                db.close();
+                return NextResponse.json(
+                    { success: false, error: `Invalid table name '${tableName}'. Only alphanumeric + underscore identifiers are allowed.` },
+                    { status: 400 }
+                );
+            }
             const table = tableInfo.find(t => t.name === tableName);
             if (!table) {
                 db.close();

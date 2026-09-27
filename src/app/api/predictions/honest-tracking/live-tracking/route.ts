@@ -41,6 +41,15 @@ export async function GET(request: NextRequest) {
   const days = parseInt(searchParams.get('days') || '0'); // 0 = all, 999 = YTD
   const minScore = parseInt(searchParams.get('minScore') || '0');
 
+  // P0-12-SQLI fix (2026-09-27): parameterize market filter to prevent SQL injection.
+  // Previously `${market.toUpperCase()}` was interpolated directly into SQL strings,
+  // allowing injection via e.g. ?market=EGX'; DROP TABLE predictions; --
+  // Now we use `?` placeholders and pass marketUpper as a bound parameter.
+  const marketUpper = market !== 'all' ? market.toUpperCase() : null;
+  const marketWhereClause = marketUpper ? 'WHERE market = ?' : '';
+  const marketAndClause = marketUpper ? 'AND market = ?' : '';
+  const marketParams: string[] = marketUpper ? [marketUpper] : [];
+
   const db = openDb();
 
   try {
@@ -59,7 +68,7 @@ export async function GET(request: NextRequest) {
             OR exit_type IS NOT NULL) AS is_closed,
           COALESCE(actual_return, pnl_pct) AS eff_return
         FROM predictions
-        ${market !== 'all' ? `WHERE market = '${market.toUpperCase()}'` : ''}
+        ${marketWhereClause}
       )
       SELECT
         COUNT(*) as total,
@@ -73,7 +82,7 @@ export async function GET(request: NextRequest) {
         SUM(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return > 0 AND ABS(eff_return) <= 50 THEN 1 ELSE 0 END) as win_count,
         SUM(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return < 0 AND ABS(eff_return) <= 50 THEN 1 ELSE 0 END) as loss_count
       FROM pred
-    `).get() as any;
+    `).get(...marketParams) as any;
 
     const closedCount = Number(statsRow.closed || 0);
     const wins = Number(statsRow.wins || 0);
@@ -131,12 +140,12 @@ export async function GET(request: NextRequest) {
         highest_price_reached, lowest_price_reached${v40Sel}
       FROM predictions
       WHERE 1=1 ${dayFilter} ${scoreFilter} ${protSql}
-      ${market !== 'all' ? `AND market = '${market.toUpperCase()}'` : ''}
+      ${marketAndClause}
       ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) DESC, prediction_date DESC, master_score DESC, outcome_date DESC, closed_at DESC
       LIMIT ${limit * 3}
     `;
 
-    const rows = db.prepare(predictionsQuery).all() as any[];
+    const rows = db.prepare(predictionsQuery).all(...marketParams) as any[];
 
     // Group by persona and limit
     const buckets: Record<string, any[]> = { gambler: [], balanced: [], conservative: [] };
@@ -216,7 +225,7 @@ export async function GET(request: NextRequest) {
             COALESCE(actual_return, pnl_pct) AS eff_return
           FROM predictions
           WHERE (persona = ? OR notes LIKE ?)
-          ${market !== 'all' ? `AND market = '${market.toUpperCase()}'` : ''}
+          ${marketAndClause}
         )
         SELECT
           COUNT(*) as total,
@@ -229,7 +238,7 @@ export async function GET(request: NextRequest) {
           SUM(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return > 0 AND ABS(eff_return) <= 50 THEN 1 ELSE 0 END) as win_count,
           SUM(CASE WHEN is_closed AND eff_return IS NOT NULL AND eff_return < 0 AND ABS(eff_return) <= 50 THEN 1 ELSE 0 END) as loss_count
         FROM pred
-      `).get(p, `%persona=${p}%`) as any;
+      `).get(p, `%persona=${p}%`, ...marketParams) as any;
 
       const pWins = Number(pStats.wins || 0);
       const pLosses = Number(pStats.losses || 0);

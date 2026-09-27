@@ -90,13 +90,15 @@ BLUEPRINTS = [
     # (كانت كلها 404 لأن الـ blueprint مش مسجّل). يشمل /api/ai/premium/predictions
     # اللي بيحسب confluence_score = maestro×0.6 + ai×0.4 — أول مكان AI يؤثر فعلياً.
     ('api.ai_routes', 'ai_bp'),
-    # P1.9 (REFACTORING_REPORT §12): تسجيل v4_bp لتفعيل /api/v4/* endpoints
-    # (كانت كلها 404 لأن الـ blueprint مش مسجّل). يشمل 9 routes:
-    # /insight/<ticker>, /similar, /record-trade, /update-outcome/<id>,
-    # /stats, /alerts, /history/<ticker>, /patterns, /unbiased-stats, /auto-close.
-    # المستهلكون: src/components/memory/ExpertMemoryPanel.tsx +
-    # src/components/memory/TradingMemoryView.tsx (بيستدعوا /api/python/v4/*).
-    ('api.expert_memory_v4_routes', 'v4_bp'),
+    # P0-FIX (2026-09-27): v4_bp REMOVED — expert_memory_v4_routes.py was never created.
+    # The registration pointed to a non-existent module, causing a warning on every boot.
+    # The frontend already has a SQLite fallback at src/app/api/v4/stats/route.ts that
+    # computes the same stats from the predictions table (no Python needed).
+    # The expert_memory_v4.py analyzer (37KB) is still in vps-service/analyzers/ but
+    # is orphaned — its logic was superseded by the V40.2 predictions pipeline.
+    # If the v4 endpoints are needed in the future, create the route file OR rely on the
+    # existing SQLite fallback (which is what's happening now in production).
+    # ('api.expert_memory_v4_routes', 'v4_bp'),  # REMOVED — see P0 #5 fix
     # DYNAMIC-ADMIN-UI: Engine Settings (إعدادات المحرك الديناميكي) — admin tab
     # that lets the admin control all engine thresholds without touching code.
     ('api.admin_engine_settings_routes', 'admin_engine_settings_bp'),

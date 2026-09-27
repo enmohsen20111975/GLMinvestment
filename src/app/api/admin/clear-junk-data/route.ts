@@ -4,6 +4,19 @@ export const dynamic = "force-dynamic";
 import { ensureInitialized, getWritableStocksDb, clearDbCache } from '@/lib/egx-db';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
+// P0-12-SQLI fix (2026-09-27): whitelist tables that are safe to clear.
+// Previously `body.tables` was passed straight into `DELETE FROM ${table}` —
+// an admin user could inject e.g. tables:['stocks'] and wipe the stocks table,
+// or tables:['stocks; DROP TABLE predictions; --'] for arbitrary SQL.
+// Now any table name not in this Set is rejected with 400 (per-table error).
+const ALLOWED_CLEAR_TABLES = new Set([
+  'prediction_logs',
+  'signal_logs',
+  'outcome_logs',
+  'ExpertRecommendation',
+  'cached_analysis',
+]);
+
 /**
  * API لمسح البيانات الليفة من قاعدة البيانات
  * - prediction_logs: سجلات التجارب والتعلم التكراري (538K record was cleared)
@@ -23,9 +36,30 @@ export async function POST(request: NextRequest) {
     egxDb = getWritableStocksDb();
     
     const body = await request.json().catch(() => ({}));
-    const { tables = ['prediction_logs', 'signal_logs', 'outcome_logs'] } = body;
+    const requestedTables: unknown = body.tables;
+    const defaultTables = ['prediction_logs', 'signal_logs', 'outcome_logs'];
+    // P0-12-SQLI fix (2026-09-27): validate every requested table against the
+    // ALLOWED_CLEAR_TABLES whitelist before using it in any SQL.
+    const tables: string[] = Array.isArray(requestedTables) && requestedTables.length > 0
+      ? requestedTables.filter((t): t is string => typeof t === 'string' && ALLOWED_CLEAR_TABLES.has(t))
+      : defaultTables;
+    const rejectedTables = Array.isArray(requestedTables)
+      ? requestedTables.filter((t) => typeof t !== 'string' || !ALLOWED_CLEAR_TABLES.has(t as string))
+      : [];
     
-    const results: Record<string, { before: number; after: number; deleted: number }> = {};
+    const results: Record<string, { before: number; after: number; deleted: number; error?: string }> = {};
+    // P0-12-SQLI fix (2026-09-27): surface rejected tables in the response so
+    // admins can see if their request was partially blocked for safety.
+    if (rejectedTables.length > 0) {
+      for (const rejected of rejectedTables) {
+        results[String(rejected)] = {
+          before: 0,
+          after: 0,
+          deleted: 0,
+          error: `Table '${String(rejected)}' is not in the safe-to-clear whitelist`,
+        };
+      }
+    }
     
     for (const table of tables) {
       try {
@@ -101,9 +135,12 @@ export async function GET(request: NextRequest) {
     egxDb = getWritableStocksDb();
     
     const tables = ['prediction_logs', 'signal_logs', 'outcome_logs', 'ExpertRecommendation', 'cached_analysis'];
-    const stats: Record<string, { count: number; exists: boolean }> = {};
+    // P0-12-SQLI fix (2026-09-27): the GET path uses a hardcoded list (already
+    // safe), but we filter against ALLOWED_CLEAR_TABLES for defence-in-depth.
+    const safeTables = tables.filter((t) => ALLOWED_CLEAR_TABLES.has(t));
+    const stats: Record<string, { count: number; exists: boolean; error?: string }> = {};
     
-    for (const table of tables) {
+    for (const table of safeTables) {
       try {
         const tableCheck = egxDb.prepare(
           `SELECT name FROM sqlite_master WHERE type='table' AND name=?`

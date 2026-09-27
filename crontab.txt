@@ -1,57 +1,79 @@
-# crontab.txt — جدول المهام الإنتاجي الشامل
+# crontab.txt — جدول المهام الإنتاجي الموحّد
 # ============================================================================
 # PHASE-5 (2026-08-31): V40.2 هو العقل الوحيد — Maestro مات
 # ============================================================================
+# ✅ هذا الملف هو المصدر الوحيد للحقيقة (single source of truth)
+# ✅ vps-service/crontab.txt تم إلغاؤه (معطّل V40.2 كان خطأ)
+# ✅ كل المسارات تم التحقق منها في 2026-09-27 (P0 #6 fix)
+# ============================================================================
 # المسارات: عدّل /root/GLMinvestment حسب مسار المشروع على سيرفرك
 # البيئة: استخدم الـ venv المناسب (.venv أو venv)
+# Timezone: VPS = UTC (Cairo = UTC + 2)
+# أيام التداول: الأحد-الخميس (cron: 0-4)
 # ============================================================================
 
-# ─── مولّد التوقعات الأساسي (V40.2) ───
-# يومياً الساعة 3:00 فجراً (قبل فتح السوق) — يولّد توقعات اليوم
+# ─── 1. مولّد التوقعات الأساسي (V40.2 — العقل الوحيد) ───────────────────
+# يومياً 03:00 UTC (05:00 Cairo — قبل فتح السوق) — يولّد توقعات اليوم
 0 3 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --today-only --max-picks 5 >> /tmp/v40_2_morning.log 2>&1
 
-# يومياً الساعة 3:30 عصراً (بعد إغلاق السوق) — يولّد توقعات الغد
-30 15 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
+# يومياً 13:30 UTC (15:30 Cairo — بعد إغلاق السوق) — يولّد توقعات الغد
+30 13 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_daily_generator.py --yesterday-only --max-picks 5 >> /tmp/v40_2_evening.log 2>&1
 
-# ─── محرك التوقعات اللحظي (كل 5 دقائق أثناء جلسة التداول) ───
-# يفحص بيانات الـ 5 دقائق الحية من intraday.db ويكتشف الاختراقات وتدفق السيولة المؤسسية بأفضل سعر
-*/5 10-14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_intraday_scanner.py --limit 5 >> /tmp/v40_2_intraday.log 2>&1
+# ─── 2. محرك التوقعات اللحظي (V40.2 Intraday Scanner) ─────────────────────
+# كل 5 دقائق أثناء جلسة التداول (08:00-12:00 UTC = 10:00-14:00 Cairo)
+# يفحص بيانات الـ 5 دقائق الحية من intraday.db ويكتشف الاختراقات وتدفق السيولة
+*/5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/v40_2_intraday_scanner.py --limit 5 >> /tmp/v40_2_intraday.log 2>&1
 
-# ─── إغلاق الصفقات (daily_closer) ───
-# يومياً الساعة 4:00 عصراً (بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
-0 16 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1
+# ─── 3. إغلاق الصفقات (daily_closer) ────────────────────────────────────
+# يومياً 14:00 UTC (16:00 Cairo — بعد الإغلاق) — يقفل الصفقات اللي وصلت للهدف/الوقف
+0 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_closer.py >> /tmp/daily_closer.log 2>&1
 
-# ─── محرك التعلم (learning_engine) ───
-# يومياً الساعة 5:00 عصراً — يتعلم من نتائج اليوم
-0 17 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/learning_engine.py >> /tmp/learning_engine.log 2>&1
+# ─── 4. محرك التعلم (learning_engine) ──────────────────────────────────
+# يومياً 15:00 UTC (17:00 Cairo) — يتعلم من نتائج اليوم
+0 15 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/learning_engine.py >> /tmp/learning_engine.log 2>&1
 
-# ─── Corporate Actions (توزيعات + اكتتاب + جمعيات) ───
-# يومياً الساعة 6:00 صباحاً — يجمع توزيعات الأرباح + أخبار الاكتتاب + الجمعيات
-0 6 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/fetch_corporate_actions.py >> /tmp/corporate_actions.log 2>&1
+# ─── 5. Corporate Actions (توزيعات + اكتتاب + جمعيات) ───────────────────
+# يومياً 04:00 UTC (06:00 Cairo) — يجمع توزيعات الأرباح + أخبار الاكتتاب
+0 4 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/fetch_corporate_actions.py >> /tmp/corporate_actions.log 2>&1
 
-# ─── تحديث الأسعار اليومية ───
-# يومياً الساعة 7:00 صباحاً و 1:00 ظهراً
-0 7,13 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_price_updater.py >> /tmp/price_updater.log 2>&1
+# ─── 6. تحديث الأسعار اليومية (EGX OHLC → price_history.db) ─────────────
+# 2x يومياً: 07:00 UTC (09:00 Cairo — قبل فتح السوق) + 13:00 UTC (15:00 Cairo — بعد الإغلاق)
+0 7 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_morning.log 2>&1
+0 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_price_updater.py >> /tmp/price_updater_evening.log 2>&1
 
-# ─── سكرابر TradingView (خلال ساعات السوق) ───
-*/5 8-12 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/tradingview_scraper.py >> /tmp/tradingview.log 2>&1
+# ─── 7. سكرابر TradingView (المسار الصحيح: data_engine/scrapers/) ──────
+# كل 5 دقائق أثناء جلسة السوق (08:00-12:00 UTC = 10:00-14:00 Cairo)
+*/5 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/tradingview_scraper.py >> /tmp/tradingview.log 2>&1
 
-# ─── فحص صحة قواعد البيانات ───
-0 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/daily_db_health_check.py >> /tmp/db_health.log 2>&1
+# ─── 8. SafetyNet لتحديث الأسعار (Yahoo Finance fallback) ───────────────
+# يومياً 06:00 UTC (08:00 Cairo) — يسد أي فجوات في price_history.db
+0 6 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/price_history_safetynet.py >> /tmp/price_safetynet.log 2>&1
 
-# ─── نسخة احتياطية يومية ───
+# ─── 9. فحص صحة قواعد البيانات (المسار الصحيح: data_heartbeat_checker) ─
+# يومياً 01:00 UTC (03:00 Cairo)
+0 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/data_heartbeat_checker.py >> /tmp/heartbeat.log 2>&1
+
+# ─── 10. نسخة احتياطية يومية (smart_db_backup) ─────────────────────────
+# يومياً 01:30 UTC (03:30 Cairo)
 30 1 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/smart_db_backup.py >> /tmp/backup.log 2>&1
 
-# ─── فحص دقات القلب (heartbeat) ───
-0 * * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/scripts/data_heartbeat_checker.py >> /tmp/heartbeat.log 2>&1
-
-# ─── جلب الأساسيات (أسبوعياً يوم السبت) ───
+# ─── 11. جلب الأساسيات (أسبوعياً يوم السبت) ─────────────────────────────
+# السبت 14:00 UTC (16:00 Cairo)
 0 14 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egx_fundamental_fetcher.py >> /tmp/fundamentals.log 2>&1
+
+# ─── 12. EGX Disclosures fetch ───────────────────────────────────────────
+# كل ساعتين أثناء جلسة السوق (08:00-12:00 UTC = 10:00-14:00 Cairo)
+0 8-12/2 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures; print(fetch_and_store_disclosures(50))" >> /tmp/disclosures.log 2>&1
+
+# ─── 13. Signal Tracker — مزامنة توقعات V40.2 إلى hunter_pick_tracking ──
+# يومياً 13:35 UTC (15:35 Cairo) — بعد V40.2 generator بشوية
+35 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/sync_hunter_pick_tracking.py >> /tmp/sync_hunter_pick.log 2>&1
+
+# ─── 14. Radar Signal Tracker — تحقّق من مصير الإشارات (7/14/30 يوم) ──
+# يومياً 02:00 UTC (04:00 Cairo) — يتحقّق من الإشارات اللي عدّت 7+ أيام
+0 2 * * * cd /root/GLMinvestment && curl -s -X POST http://localhost:3000/api/maker-radar/signal-tracker/verify -H "Content-Type: application/json" -d '{"max_age_days": 45}' >> /tmp/radar_signal_verify.log 2>&1
 
 # ============================================================================
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l
 # ============================================================================
-
-# EGX Disclosures fetch — كل ساعتين أثناء جلسة السوق (10:00-14:00)
-0 10-14/2 * * 0-4 cd /home/z/my-project && /root/.venv/bin/python3 -c "from analyzers.egx_disclosure_engine import fetch_and_store_disclosures; print(fetch_and_store_disclosures(50))" >> logs/disclosures.log 2>&1

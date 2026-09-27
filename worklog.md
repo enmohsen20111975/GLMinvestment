@@ -41825,3 +41825,83 @@ Stage Summary:
 - P3 (10): معمارية (3 شهور)
 
 الهدف: رفع code health من 48 → 80+ في 6 شهور.
+
+---
+Task ID: P0-12-SQLI
+Agent: Security Engineer (SQL injection fix)
+Task: Fix top 5 SQL injection vulnerabilities flagged by AUDIT_ENGINEERING report.
+
+Work Log:
+- Read tail of worklog.md (~400 lines) for context — confirmed AUDIT_ENGINEERING report found 11 SQL injection risks across src/app/api/, worst being /api/tab-data with `db.prepare(\`SELECT * FROM ${tableName}\`)` and tableName from query string.
+- Phase 1 (find): Grepped src/app/api/ for `db.prepare(\`...\${...}...\`)` and `.prepare(\`...\${...}...\`)` patterns — 22+ candidate sites. Also checked `SELECT.*FROM \${`, `ORDER BY \${`, `LIMIT \${`, and `\${var.toUpperCase()}` patterns to catch non-`prepare` interpolations. Discovered two additional REAL injection sites the audit missed: `/api/predictions/honest-tracking/live-tracking/route.ts` (3 sites using `${market.toUpperCase()}`) and `/api/finance/screener/route.ts:56` (`ta.market = '${marketMap[market] || market}'`).
+- Phase 2 (triage): Read each candidate file in full to classify every hit as either:
+  * REAL injection (user input → SQL string): 5 files / 7 sites
+  * FALSE positive (hardcoded array, DB-metadata name, parseInt-clamped int, WHERE clause built from `?` placeholders): 18+ sites
+  Picked top 5 critical based on: (1) user input reaches SQL, (2) no auth check, (3) publicly accessible.
+- Phase 3 (fix #1 — predictions/honest-tracking/live-tracking/route.ts, CRITICAL, 3 sites): Added marketUpper/marketWhereClause/marketAndClause/marketParams helpers at top of GET(). Replaced `${market !== 'all' ? \`WHERE market = '${market.toUpperCase()}'\` : ''}` with `${marketWhereClause}` (and `AND` variant). Updated .get()/.all() to spread `...marketParams` as bound `?` parameters. 3rd query (per-persona loop) extended with `, ...marketParams` after `(p, \`%persona=${p}%\`)`.
+- Phase 3 (fix #2 — finance/screener/route.ts, CRITICAL, 1 site): Replaced `${marketMap[market] || market}` interpolation with strict `marketMap[market]` lookup that returns 400 on unknown market values. Added `whereParams` array, used `?` placeholder for market in WHERE clause, spread `...whereParams` before `limit, offset` in both `.all()` and `.get()` executors.
+- Phase 3 (fix #3 — tab-data/route.ts, CRITICAL per audit): Replaced `validTabs` array with module-level `ALLOWED_TABS` Set. Switched to `ALLOWED_TABS.has(tab)` check. Clamped limit (1..1000) and offset (≥0). Replaced `LIMIT ${limit} OFFSET ${offset}` with `LIMIT ? OFFSET ?` and pushed both as bound params. Re-typed params from `any[]` to `(string|number)[]` and split countParams out as `string[]`. Used `Array.from()` instead of spread-on-Set to satisfy tsc.
+- Phase 3 (fix #4 — admin/clear-junk-data/route.ts, HIGH, 4 sites): Added `ALLOWED_CLEAR_TABLES` Set whitelist (5 legitimate junk tables). Replaced `const { tables = [...] } = body` destructure with explicit validation that filters `body.tables` through the whitelist. Surfaced rejected tables in the response with an `error` field so admins can see what was blocked. Loosened result type to `Record<..., { ...; error?: string }>` to fix a pre-existing TS error and support the new error field. Added the same whitelist filter to the GET path's hardcoded list (defence-in-depth).
+- Phase 3 (fix #5 — admin/db-explorer/route.ts, MEDIUM, 3 sites): Added strict SQLite-identifier regex `/^[A-Za-z_][A-Za-z0-9_]*$/` check on `tableName` before any SQL interpolation — rejects anything that's not alphanumeric+underscore. Returns 400 with a clear error message on mismatch. Applied the same regex to `t.name` from `sqlite_master` (DB metadata, not user input — defence-in-depth against corrupted schema rows).
+- Phase 4 (verify): Ran `bun run lint` → ✅ exit 0. Ran `npx tsc --noEmit --skipLibCheck` on the 5 modified files → only pre-existing module-resolution errors remain (e.g. "Cannot find module '@/lib/egx-db'" — these exist on main and are a project-config issue, not introduced by these edits). Verified via hex byte dump that the actual file contents are correct (terminal was hiding `[m` ANSI escape sequences in display output — `[marketUpper]` was being rendered as `arketUpper]` in shell output but the bytes `0x5b 0x6d` (= `[` `m`) are correctly present in the file).
+- Phase 5 (report): Wrote detailed per-file fix report to `/home/z/my-project/agent-ctx/P0-12-SQLI-FIXES.md` covering all 5 files, the vulnerabilities, the fixes applied, lines changed, verification status, and the false-positive sites that were intentionally NOT modified (to preserve scope).
+
+Stage Summary:
+- **Files fixed:** 5 (predictions/honest-tracking/live-tracking/route.ts, finance/screener/route.ts, tab-data/route.ts, admin/clear-junk-data/route.ts, admin/db-explorer/route.ts)
+- **Vulnerabilities patched:** 7 distinct SQL injection sites across the 5 files (some files had multiple sites).
+- **Most critical fix:** `/api/predictions/honest-tracking/live-tracking/route.ts` — the audit MISSED this one. The `market` query parameter was interpolated directly into SQL via `${market.toUpperCase()}` in 3 separate queries, on a PUBLIC endpoint with NO auth check. A payload like `?market=EGX'; DROP TABLE predictions; --` would have been upper-cased and concatenated verbatim into the SQL string. Fixed by introducing `marketWhereClause`/`marketAndClause` static clause strings + `marketParams` bound-parameter array.
+- **Lint status:** ✅ `bun run lint` exits 0 with no errors.
+- **TypeScript status:** ✅ No new errors introduced. Pre-existing module-resolution errors (e.g. `Cannot find module '@/lib/...'`) remain unchanged. Fixed one pre-existing TS error in clear-junk-data/route.ts by loosening the result type to allow an optional `error?: string` field.
+- **Defence-in-depth applied:** All 5 fixes use one of three canonical safe patterns: (a) bound `?` parameters, (b) Set-based whitelist with explicit 400 rejection, or (c) strict identifier regex with explicit 400 rejection. Every fix has a `// P0-12-SQLI fix (2026-09-27): ...` comment explaining the original vulnerability.
+- **Scope notes:** The audit's "11 vulnerabilities" count included ~6 false positives (hardcoded arrays, DB-metadata names, parseInt-clamped integers, WHERE clauses built from `?` placeholders). These were intentionally NOT modified to avoid breaking unrelated code paths and to keep the diff focused on the top 5 most critical fixes per the task scope.
+- **Report saved at:** `/home/z/my-project/agent-ctx/P0-12-SQLI-FIXES.md`
+
+---
+Task ID: P0-17-RECONCILE
+Agent: Data Engineer (hit_target reconciliation)
+Task: Wrote read-only reconciliation script that cross-checks recorded prediction statuses in predictions.db against actual price history in price_history.db; produces JSON report + commented-out SQL fix file (no DB writes).
+
+Work Log:
+- Read tail of worklog.md for context + AUDIT_BACKTEST findings (~17% false hit_target rate).
+- Inspected db/predictions.db.predictions schema: 67 columns; key fields are id, ticker, prediction_date, entry_price, target_price, stop_loss, status, outcome_date (=exit_date semantically), closed_at, actual_return. No literal `exit_date` column → used outcome_date with closed_at fallback.
+- Inspected db/price_history.db.price_history: columns id, ticker, date, open_price, high_price, low_price, close_price, volume, source, created_at, adjusted, market. Date range 2000-11-27 → 2026-09-27; 1336 distinct tickers.
+- Confirmed audit's example mismatch case (ABUK id=50339 TARGET_HIT +93.96%): live price_history shows max_high=178.026 in window (above target 136.80) — likely a stale/wrong price_history entry was the source of the audit's flag. Algorithm per spec still classifies it as MATCH.
+- Wrote /home/z/my-project/scripts/reconcile_hit_targets.py:
+  * Python stdlib only (sqlite3, json, datetime, pathlib, typing).
+  * Both DBs opened read-only via URI `?mode=ro` — zero writes guaranteed.
+  * Batched price_history queries: 1 SELECT per distinct ticker (80 tickers), cached in dict, sliced per-prediction by date window in Python.
+  * Status normalization: closed_win→TARGET_HIT, closed_stop→STOPPED, expired/EXPIRED→EXPIRED.
+  * Actual-outcome algorithm: max_high≥target → TARGET_HIT; else min_low≤stop → STOPPED; else if window end < today → EXPIRED; else → PENDING (flagged as mismatch).
+  * Skips missing entry/target/stop and missing price_history rows → counted as INSUFFICIENT_DATA.
+  * Writes JSON report (top 50 + all 509 mismatches + all 37 insufficient + anomalies + summary) and SQL fixes (every UPDATE commented out, sets actual_return=NULL to force reviewer recomputation).
+  * Prints summary stats + top-10 mismatches to stdout.
+- Ran script (run timestamp 20260927T143118Z):
+  * 1213 closed predictions checked
+  * 667 MATCH (54.99%)
+  * 509 MISMATCH (41.96%) — higher than audit's 17% because audit was a 30-row manual sample; applying the strict algorithm to all 1213 closed predictions reveals the larger scope
+  * 37 INSUFFICIENT_DATA (3.05%)
+  * Zero outcome_date<prediction_date anomalies
+- Output artifacts:
+  * scripts/reconcile_hit_targets.py
+  * scripts/output/hit_target_reconciliation_20260927T143118Z.json (~348 KB)
+  * scripts/output/hit_target_fixes_20260927T143118Z.sql (~159 KB, 509 commented-out UPDATEs)
+- Wrote agent-ctx/P0-17-RECONCILE-REPORT.md with summary, top-10 table, methodology, recommended actions, and root-cause callouts (HELI false-positive cluster; stop-loss detector missing real hits).
+
+Stage Summary:
+- Script: scripts/reconcile_hit_targets.py — READ-ONLY, Python stdlib only.
+- Total closed predictions checked: 1213
+- Match rate: 54.99% (667/1213)
+- Mismatch rate: 41.96% (509/1213) — substantially higher than audit's 17% sample-based estimate
+- Insufficient data: 3.05% (37/1213)
+- Top mismatch types:
+    EXPIRED_to_STOPPED     : 183  (recorded expired but stop was actually hit)
+    TARGET_HIT_to_EXPIRED  : 124  (recorded target hit but never reached — audit's original concern)
+    EXPIRED_to_TARGET_HIT  :  90  (recorded expired but target was actually hit)
+    TARGET_HIT_to_STOPPED :  61  (recorded target hit but stop was hit first)
+    STOPPED_to_EXPIRED     :  28
+    STOPPED_to_TARGET_HIT  :  23
+- Top mismatch pattern: HELI ticker (10 predictions) recorded as TARGET_HIT with +150–161% returns but actual high 8.77 < target 9.40 — single-ticker systemic false-positive bug in prediction generator.
+- SQL file: scripts/output/hit_target_fixes_20260927T143118Z.sql (509 commented-out UPDATEs for manual review).
+- JSON report: scripts/output/hit_target_reconciliation_20260927T143118Z.json.
+- No DB writes — strictly read-only. SQL must be uncommented one-by-one and reviewed before applying.
+- Report: agent-ctx/P0-17-RECONCILE-REPORT.md

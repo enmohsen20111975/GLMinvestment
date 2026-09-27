@@ -43,6 +43,10 @@ export async function GET(request: NextRequest) {
 
     // Build query with filters
     let whereConditions: string[] = [];
+    // P0-12-SQLI fix (2026-09-27): use bound `?` parameters for ALL user-supplied
+    // values. Previously `marketMap[market] || market` was interpolated directly,
+    // allowing injection via e.g. ?market=EGX'; DROP TABLE tab_technical_analysis; --
+    const whereParams: (string | number)[] = [];
     whereConditions.push(`ta.symbol NOT IN ('السعودية', 'مصر', 'الكويت', 'قطر', 'بيع', 'بيع قوي', 'حيادية', 'شراء', 'شراء قوي')`);
 
     // Market filter
@@ -53,7 +57,17 @@ export async function GET(request: NextRequest) {
         'kw': 'الكويت',
         'qa': 'قطر'
       };
-      whereConditions.push(`ta.market = '${marketMap[market] || market}'`);
+      // Only allow pre-defined market aliases; reject any unknown market value
+      // (prevents injection when `marketMap[market]` falls back to the raw `market`).
+      const resolvedMarket = marketMap[market];
+      if (!resolvedMarket) {
+        return NextResponse.json(
+          { success: false, error: `Invalid market filter: '${market}'. Allowed: eg, sa, kw, qa, all` },
+          { status: 400 }
+        );
+      }
+      whereConditions.push('ta.market = ?');
+      whereParams.push(resolvedMarket);
     }
 
     // Technical rating filter
@@ -104,7 +118,7 @@ export async function GET(request: NextRequest) {
       LIMIT ? OFFSET ?
     `;
 
-    let stocks = db.prepare(query).all(limit, offset);
+    let stocks = db.prepare(query).all(...whereParams, limit, offset);
 
     // Apply numeric filters in JavaScript (since data is stored as strings)
     stocks = stocks.filter((stock: any) => {
@@ -163,7 +177,7 @@ export async function GET(request: NextRequest) {
       FROM tab_technical_analysis ta
       WHERE ${whereClause}
     `;
-    const totalCount = db.prepare(countQuery).get() as { total: number };
+    const totalCount = db.prepare(countQuery).get(...whereParams) as { total: number };
 
     db.close();
 
