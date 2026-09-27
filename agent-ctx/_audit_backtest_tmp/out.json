@@ -1,0 +1,2004 @@
+{
+  "phases": {
+    "phase1": {
+      "predictions": {
+        "total": 1359,
+        "latest_date": "2026-09-24",
+        "status_dist": [
+          {
+            "status": "expired",
+            "c": 455
+          },
+          {
+            "status": "TARGET_HIT",
+            "c": 333
+          },
+          {
+            "status": "closed_stop",
+            "c": 193
+          },
+          {
+            "status": "closed_win",
+            "c": 151
+          },
+          {
+            "status": "ACTIVE",
+            "c": 77
+          },
+          {
+            "status": "active",
+            "c": 52
+          },
+          {
+            "status": "STOPPED",
+            "c": 45
+          },
+          {
+            "status": "EXPIRED",
+            "c": 36
+          },
+          {
+            "status": "CLOSED",
+            "c": 17
+          }
+        ],
+        "persona_dist": [
+          {
+            "persona": "balanced",
+            "c": 1212
+          },
+          {
+            "persona": "conservative",
+            "c": 78
+          },
+          {
+            "persona": "gambler",
+            "c": 69
+          }
+        ],
+        "persona_winrate": [
+          {
+            "persona": "gambler",
+            "total": 67,
+            "wins": 39,
+            "win_rate_pct": 58.2,
+            "avg_return": 29.55
+          },
+          {
+            "persona": "balanced",
+            "total": 1162,
+            "wins": 419,
+            "win_rate_pct": 36.1,
+            "avg_return": 25.08
+          },
+          {
+            "persona": "conservative",
+            "total": 78,
+            "wins": 26,
+            "win_rate_pct": 33.3,
+            "avg_return": 31.71
+          }
+        ],
+        "signal_type_dist": [
+          {
+            "signal_type": "BUY",
+            "c": 1234
+          },
+          {
+            "signal_type": "LIQUIDITY_BREAKOUT",
+            "c": 77
+          },
+          {
+            "signal_type": "HOLD",
+            "c": 35
+          },
+          {
+            "signal_type": "SELL",
+            "c": 12
+          },
+          {
+            "signal_type": "INTRADAY_RADAR",
+            "c": 1
+          }
+        ]
+      },
+      "stored_analyses": {
+        "c": 0
+      },
+      "stored_analyses_latest": {
+        "d": null
+      },
+      "hunter_pick_tracking": {
+        "total": 0,
+        "pending": 0,
+        "by_status": []
+      },
+      "persona_predictions": {
+        "total": 1669,
+        "status_dist": [
+          {
+            "status": "PENDING",
+            "c": 1390
+          },
+          {
+            "status": "STOP_HIT",
+            "c": 111
+          },
+          {
+            "status": "TARGET_HIT",
+            "c": 94
+          },
+          {
+            "status": "CLOSED",
+            "c": 74
+          }
+        ],
+        "persona_dist": [
+          {
+            "persona": "balanced",
+            "c": 1669
+          }
+        ],
+        "winrate_by_persona": [
+          {
+            "persona": "balanced",
+            "total": 279,
+            "wins": 94,
+            "win_rate_pct": 33.7,
+            "avg_return": 3.14
+          }
+        ]
+      },
+      "learned_lessons": {
+        "total": 19464,
+        "lesson_types": [
+          {
+            "lesson_type": "prediction_outcome",
+            "c": 9721
+          },
+          {
+            "lesson_type": "ticker_outcome",
+            "c": 9721
+          },
+          {
+            "lesson_type": "pattern_failure",
+            "c": 7
+          },
+          {
+            "lesson_type": "filter_rule",
+            "c": 4
+          },
+          {
+            "lesson_type": "pattern_success",
+            "c": 3
+          },
+          {
+            "lesson_type": "pattern_rsi_overbought",
+            "c": 1
+          },
+          {
+            "lesson_type": "pattern_rsi_oversold",
+            "c": 1
+          },
+          {
+            "lesson_type": "pattern_sector_up",
+            "c": 1
+          },
+          {
+            "lesson_type": "regime_bear",
+            "c": 1
+          },
+          {
+            "lesson_type": "regime_bull",
+            "c": 1
+          },
+          {
+            "lesson_type": "regime_range",
+            "c": 1
+          },
+          {
+            "lesson_type": "weight_adjustment",
+            "c": 1
+          },
+          {
+            "lesson_type": "weight_recommendations",
+            "c": 1
+          }
+        ],
+        "distinct_conditions": 6841,
+        "top5_by_occ": [
+          {
+            "lesson_type": "filter_rule",
+            "condition": "market = EGX",
+            "outcome": "failure",
+            "occurrences": 1229,
+            "avg_ret": 25.74,
+            "failure_rate": 72.9
+          },
+          {
+            "lesson_type": "pattern_failure",
+            "condition": "signal = BUY",
+            "outcome": "failure",
+            "occurrences": 1227,
+            "avg_ret": 25.8,
+            "failure_rate": 72.9
+          },
+          {
+            "lesson_type": "regime_bear",
+            "condition": "market_regime=bear",
+            "outcome": "failure",
+            "occurrences": 804,
+            "avg_ret": 11.58,
+            "failure_rate": 89.2
+          },
+          {
+            "lesson_type": "pattern_success",
+            "condition": "signal = HOLD",
+            "outcome": "success",
+            "occurrences": 417,
+            "avg_ret": 0.85,
+            "failure_rate": 19.2
+          },
+          {
+            "lesson_type": "pattern_success",
+            "condition": "signal = HOLD",
+            "outcome": "success",
+            "occurrences": 319,
+            "avg_ret": 1.31,
+            "failure_rate": 7.8
+          }
+        ]
+      },
+      "exit_notifications": {
+        "total": 3932,
+        "by_type": [
+          {
+            "t": "HOLD_RECOVER",
+            "c": 1445
+          },
+          {
+            "t": "EXIT_STOP",
+            "c": 792
+          },
+          {
+            "t": "BREAKEVEN_LOCK",
+            "c": 706
+          },
+          {
+            "t": "T1_HIT_T2_RAISE",
+            "c": 409
+          },
+          {
+            "t": "EXIT_T2_HIT",
+            "c": 156
+          },
+          {
+            "t": "EXIT_TREND_BREAK",
+            "c": 144
+          },
+          {
+            "t": "EXIT_PROFIT_LOCK",
+            "c": 107
+          },
+          {
+            "t": "EXIT_MOMENTUM_DEAD",
+            "c": 69
+          },
+          {
+            "t": "HOLD_EXTEND",
+            "c": 58
+          },
+          {
+            "t": "EXIT_TARGET_100PCT",
+            "c": 46
+          }
+        ]
+      },
+      "historical_trades": {
+        "total": 13117,
+        "winrate": {
+          "total": 13117,
+          "wins": 4909,
+          "win_rate_pct": 37.4,
+          "avg_return": 0.24
+        },
+        "by_outcome": [
+          {
+            "outcome": "LOSS",
+            "c": 7239,
+            "avg_ret": -3.3
+          },
+          {
+            "outcome": "WIN",
+            "c": 4214,
+            "avg_ret": 6.19
+          },
+          {
+            "outcome": "BREAKEVEN",
+            "c": 1664,
+            "avg_ret": 0.61
+          }
+        ],
+        "by_strategy": [
+          {
+            "strategy": "pullback_buy",
+            "c": 6037,
+            "avg_ret": 0.26,
+            "win_rate_pct": 36.5
+          },
+          {
+            "strategy": "support_bounce",
+            "c": 3037,
+            "avg_ret": 0.07,
+            "win_rate_pct": 36.9
+          },
+          {
+            "strategy": "value_dip",
+            "c": 2036,
+            "avg_ret": 0.32,
+            "win_rate_pct": 39.4
+          },
+          {
+            "strategy": "breakout_play",
+            "c": 1573,
+            "avg_ret": 0.39,
+            "win_rate_pct": 38
+          },
+          {
+            "strategy": "momentum_ride",
+            "c": 434,
+            "avg_ret": 0.43,
+            "win_rate_pct": 42.6
+          }
+        ]
+      }
+    },
+    "phase2": {
+      "closed_filter": "WHERE COALESCE(status,'') != 'active' AND outcome_date IS NOT NULL AND actual_return IS NOT NULL",
+      "overall": {
+        "total": 1229,
+        "wins": 484,
+        "stops": 241,
+        "win_rate_pct": 39.4,
+        "avg_return": 25.74,
+        "min_return": -48.12,
+        "max_return": 315.51,
+        "avg_holding_days": 130.4
+      },
+      "closed_broad": {
+        "total": 1307,
+        "wins": 484,
+        "stops": 241,
+        "win_rate_pct": 37,
+        "avg_return": 25.74
+      },
+      "by_persona": [
+        {
+          "persona": "gambler",
+          "total": 67,
+          "wins": 39,
+          "stops": 17,
+          "win_rate_pct": 58.2,
+          "avg_return": 29.55,
+          "avg_hold": 140.4
+        },
+        {
+          "persona": "balanced",
+          "total": 1084,
+          "wins": 419,
+          "stops": 216,
+          "win_rate_pct": 38.7,
+          "avg_return": 25.08,
+          "avg_hold": 128.9
+        },
+        {
+          "persona": "conservative",
+          "total": 78,
+          "wins": 26,
+          "stops": 8,
+          "win_rate_pct": 33.3,
+          "avg_return": 31.71,
+          "avg_hold": 141.9
+        }
+      ],
+      "by_signal_type": [
+        {
+          "signal_type": "BUY",
+          "total": 1226,
+          "wins": 484,
+          "win_rate_pct": 39.5,
+          "avg_return": 25.82
+        },
+        {
+          "signal_type": "INTRADAY_RADAR",
+          "total": 1,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -5.14
+        },
+        {
+          "signal_type": "HOLD",
+          "total": 2,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -6.92
+        }
+      ],
+      "by_holding_bucket": [
+        {
+          "bucket": "0-3d",
+          "total": 25,
+          "wins": 3,
+          "win_rate_pct": 12,
+          "avg_return": 21.44
+        },
+        {
+          "bucket": "15-30d",
+          "total": 48,
+          "wins": 5,
+          "win_rate_pct": 10.4,
+          "avg_return": -2.34
+        },
+        {
+          "bucket": "31-60d",
+          "total": 376,
+          "wins": 330,
+          "win_rate_pct": 87.8,
+          "avg_return": 69.96
+        },
+        {
+          "bucket": "4-7d",
+          "total": 37,
+          "wins": 5,
+          "win_rate_pct": 13.5,
+          "avg_return": 0.13
+        },
+        {
+          "bucket": "60d+",
+          "total": 732,
+          "wins": 141,
+          "win_rate_pct": 19.3,
+          "avg_return": 6.77
+        },
+        {
+          "bucket": "8-14d",
+          "total": 11,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -4.63
+        }
+      ],
+      "worst_5_trades": [
+        {
+          "id": 51267,
+          "ticker": "REAC",
+          "persona": "balanced",
+          "prediction_date": "2026-07-26 12:00:00",
+          "entry_price": 18.08,
+          "target_price": 163.44,
+          "stop_loss": 17.01,
+          "exit_price": 9.38,
+          "actual_return": -48.12,
+          "hit_target": 0,
+          "hit_stop": 1,
+          "holding_days": 58,
+          "exit_reason": null
+        },
+        {
+          "id": 51296,
+          "ticker": "UEGC",
+          "persona": "gambler",
+          "prediction_date": "2026-08-04 12:00:00",
+          "entry_price": 2.69,
+          "target_price": 2.84,
+          "stop_loss": 2.51,
+          "exit_price": 1.69,
+          "actual_return": -37.17,
+          "hit_target": 0,
+          "hit_stop": 1,
+          "holding_days": 49,
+          "exit_reason": null
+        },
+        {
+          "id": 50602,
+          "ticker": "ORTE",
+          "persona": "balanced",
+          "prediction_date": "2026-01-07 12:00:00",
+          "entry_price": 62.98,
+          "target_price": 70.92,
+          "stop_loss": 59.23,
+          "exit_price": 45.45,
+          "actual_return": -27.83,
+          "hit_target": 0,
+          "hit_stop": 1,
+          "holding_days": 258,
+          "exit_reason": null
+        },
+        {
+          "id": 50718,
+          "ticker": "ORTE",
+          "persona": "balanced",
+          "prediction_date": "2026-02-09 12:00:00",
+          "entry_price": 59.33,
+          "target_price": 64.89,
+          "stop_loss": 55.8,
+          "exit_price": 45.45,
+          "actual_return": -23.39,
+          "hit_target": 0,
+          "hit_stop": 1,
+          "holding_days": 225,
+          "exit_reason": null
+        },
+        {
+          "id": 50713,
+          "ticker": "ORTE",
+          "persona": "balanced",
+          "prediction_date": "2026-02-08 12:00:00",
+          "entry_price": 59.3,
+          "target_price": 64.88,
+          "stop_loss": 55.77,
+          "exit_price": 45.45,
+          "actual_return": -23.36,
+          "hit_target": 0,
+          "hit_stop": 1,
+          "holding_days": 226,
+          "exit_reason": null
+        }
+      ],
+      "best_5_trades": [
+        {
+          "id": 50361,
+          "ticker": "AMIA",
+          "persona": "gambler",
+          "prediction_date": "2025-11-02 12:00:00",
+          "entry_price": 4.45,
+          "target_price": 4.7,
+          "stop_loss": 4.15,
+          "exit_price": null,
+          "actual_return": 315.51,
+          "hit_target": 1,
+          "hit_stop": 0,
+          "holding_days": 50,
+          "exit_reason": null
+        },
+        {
+          "id": 50519,
+          "ticker": "MBEG",
+          "persona": "gambler",
+          "prediction_date": "2025-12-16 12:00:00",
+          "entry_price": 2.69,
+          "target_price": 2.84,
+          "stop_loss": 2.51,
+          "exit_price": null,
+          "actual_return": 161.34,
+          "hit_target": 1,
+          "hit_stop": 0,
+          "holding_days": 50,
+          "exit_reason": null
+        },
+        {
+          "id": 50285,
+          "ticker": "HELI",
+          "persona": "balanced",
+          "prediction_date": "2025-10-12 12:00:00",
+          "entry_price": 3.14,
+          "target_price": 9.4,
+          "stop_loss": 2.95,
+          "exit_price": null,
+          "actual_return": 161.15,
+          "hit_target": 1,
+          "hit_stop": 0,
+          "holding_days": 50,
+          "exit_reason": null
+        },
+        {
+          "id": 50291,
+          "ticker": "HELI",
+          "persona": "balanced",
+          "prediction_date": "2025-10-13 12:00:00",
+          "entry_price": 3.19,
+          "target_price": 9.41,
+          "stop_loss": 3,
+          "exit_price": null,
+          "actual_return": 157.05,
+          "hit_target": 1,
+          "hit_stop": 0,
+          "holding_days": 50,
+          "exit_reason": null
+        },
+        {
+          "id": 50271,
+          "ticker": "HELI",
+          "persona": "balanced",
+          "prediction_date": "2025-10-07 12:00:00",
+          "entry_price": 3.2,
+          "target_price": 8.62,
+          "stop_loss": 3.01,
+          "exit_price": null,
+          "actual_return": 156.25,
+          "hit_target": 1,
+          "hit_stop": 0,
+          "holding_days": 50,
+          "exit_reason": null
+        }
+      ],
+      "histogram": [
+        {
+          "bucket": "b_-50%_-25%",
+          "c": 3,
+          "avg_ret": -37.71
+        },
+        {
+          "bucket": "c_-25%_0%",
+          "c": 378,
+          "avg_ret": -6.77
+        },
+        {
+          "bucket": "d_0%_25%",
+          "c": 395,
+          "avg_ret": 6.42
+        },
+        {
+          "bucket": "e_25%_50%",
+          "c": 142,
+          "avg_ret": 36.79
+        },
+        {
+          "bucket": "f_50%_100%",
+          "c": 263,
+          "avg_ret": 77.14
+        },
+        {
+          "bucket": "g_>=100%",
+          "c": 48,
+          "avg_ret": 130.47
+        }
+      ]
+    },
+    "phase3": {
+      "sample": [
+        {
+          "id": 51231,
+          "ticker": "AMOC",
+          "persona": "balanced",
+          "prediction_date": "2026-07-08",
+          "entry_price": 8.13,
+          "target_price": 12.39,
+          "stop_loss": 7.64,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 66.05,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 43,
+          "actual_high": 14.04,
+          "actual_low": 7.6,
+          "actual_close_on_last_day": 13.54,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2026-07-19",
+          "target_reached": true,
+          "stop_hit": true,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50801,
+          "ticker": "BTFH",
+          "persona": "conservative",
+          "prediction_date": "2026-03-04",
+          "entry_price": 2.94,
+          "target_price": 4.37,
+          "stop_loss": 2.76,
+          "outcome_date": "2026-09-22",
+          "exit_price": 2.92,
+          "actual_return": -0.68,
+          "recorded_outcome": "loss_close",
+          "holding_days": 202,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 132,
+          "actual_high": 3.319999933242798,
+          "actual_low": 2.809999942779541,
+          "actual_close_on_last_day": 3.04,
+          "actual_high_date": "2026-05-17",
+          "actual_low_date": "2026-03-30",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "OK_no_target_no_stop",
+          "error": null
+        },
+        {
+          "id": 50588,
+          "ticker": "PIOH",
+          "persona": "balanced",
+          "prediction_date": "2026-01-04",
+          "entry_price": 18.77,
+          "target_price": 23.7,
+          "stop_loss": 17.65,
+          "outcome_date": "2026-09-22",
+          "exit_price": 16.24,
+          "actual_return": -13.48,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 261,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 114,
+          "actual_high": 20.0318,
+          "actual_low": 14.7225,
+          "actual_close_on_last_day": 16.24,
+          "actual_high_date": "2026-02-12",
+          "actual_low_date": "2026-04-09",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "OK_stop_verified",
+          "error": null
+        },
+        {
+          "id": 51360,
+          "ticker": "MASR",
+          "persona": "balanced",
+          "prediction_date": "2026-08-24",
+          "entry_price": 7.62,
+          "target_price": 55.5,
+          "stop_loss": 7.17,
+          "outcome_date": "2026-09-23",
+          "exit_price": null,
+          "actual_return": -0.39,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 27,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-23",
+          "price_rows_in_window": 10,
+          "actual_high": 8.79,
+          "actual_low": 7.49,
+          "actual_close_on_last_day": 8.7,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2026-08-25",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "MISMATCH_stop_claimed_but_low_above_stop",
+          "error": null
+        },
+        {
+          "id": 51118,
+          "ticker": "CAPE",
+          "persona": "balanced",
+          "prediction_date": "2026-06-01",
+          "entry_price": 30.49,
+          "target_price": 100.28,
+          "stop_loss": 28.68,
+          "outcome_date": "2026-09-22",
+          "exit_price": 31.542,
+          "actual_return": 3.45,
+          "recorded_outcome": "profit_close",
+          "holding_days": 113,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 8,
+          "actual_high": 31.8236,
+          "actual_low": 30.1276,
+          "actual_close_on_last_day": 31.542,
+          "actual_high_date": "2026-06-03",
+          "actual_low_date": "2026-06-02",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "OK_no_target_no_stop",
+          "error": null
+        },
+        {
+          "id": 50701,
+          "ticker": "BTFH",
+          "persona": "balanced",
+          "prediction_date": "2026-02-04",
+          "entry_price": 3.22,
+          "target_price": 4.84,
+          "stop_loss": 3.03,
+          "outcome_date": "2026-09-22",
+          "exit_price": 2.92,
+          "actual_return": -9.32,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 230,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 152,
+          "actual_high": 3.369999885559082,
+          "actual_low": 2.809999942779541,
+          "actual_close_on_last_day": 3.04,
+          "actual_high_date": "2026-02-19",
+          "actual_low_date": "2026-03-30",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "OK_stop_verified",
+          "error": null
+        },
+        {
+          "id": 51225,
+          "ticker": "MASR",
+          "persona": "balanced",
+          "prediction_date": "2026-07-07",
+          "entry_price": 7.79,
+          "target_price": 50.63,
+          "stop_loss": 7.33,
+          "outcome_date": "2026-09-22",
+          "exit_price": 7.68,
+          "actual_return": -1.41,
+          "recorded_outcome": "loss_close",
+          "holding_days": 77,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 45,
+          "actual_high": 62.14419107928881,
+          "actual_low": 7.01,
+          "actual_close_on_last_day": 8.7,
+          "actual_high_date": "2026-07-24",
+          "actual_low_date": "2026-07-19",
+          "target_reached": true,
+          "stop_hit": true,
+          "match": "POSSIBLE_MISS_target_was_reached_but_not_marked",
+          "error": null
+        },
+        {
+          "id": 50546,
+          "ticker": "MTEZ",
+          "persona": "balanced",
+          "prediction_date": "2025-12-23",
+          "entry_price": 84.81,
+          "target_price": 96.75,
+          "stop_loss": 79.76,
+          "outcome_date": "2026-09-22",
+          "exit_price": 85.38,
+          "actual_return": 0.67,
+          "recorded_outcome": "profit_close",
+          "holding_days": 273,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 119,
+          "actual_high": 122.2008,
+          "actual_low": 82.7941,
+          "actual_close_on_last_day": 85.38,
+          "actual_high_date": "2026-03-29",
+          "actual_low_date": "2025-12-24",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "POSSIBLE_MISS_target_was_reached_but_not_marked",
+          "error": null
+        },
+        {
+          "id": 50339,
+          "ticker": "ABUK",
+          "persona": "balanced",
+          "prediction_date": "2025-10-27",
+          "entry_price": 48.31,
+          "target_price": 136.8,
+          "stop_loss": 45.43,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 93.96,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 224,
+          "actual_high": 124.629,
+          "actual_low": 45.18000030517578,
+          "actual_close_on_last_day": 88.01,
+          "actual_high_date": "2026-04-12",
+          "actual_low_date": "2025-12-03",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "MISMATCH_target_claimed_but_high_below_target",
+          "error": null
+        },
+        {
+          "id": 51192,
+          "ticker": "CIEB",
+          "persona": "balanced",
+          "prediction_date": "2026-06-25",
+          "entry_price": 23.93,
+          "target_price": 36.64,
+          "stop_loss": 22.5,
+          "outcome_date": "2026-09-22",
+          "exit_price": 24.79,
+          "actual_return": 3.59,
+          "recorded_outcome": "profit_close",
+          "holding_days": 89,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 51,
+          "actual_high": 26.27,
+          "actual_low": 23.299999237060547,
+          "actual_close_on_last_day": 26,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2026-06-29",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "OK_no_target_no_stop",
+          "error": null
+        },
+        {
+          "id": 51368,
+          "ticker": "ORTE",
+          "persona": "balanced",
+          "prediction_date": "2026-08-26",
+          "entry_price": 45.45,
+          "target_price": 67.42,
+          "stop_loss": 42.75,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 0,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 16,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 1,
+          "actual_high": 45.768066019699056,
+          "actual_low": 45.10239141081227,
+          "actual_close_on_last_day": 45.45,
+          "actual_high_date": "2026-09-03",
+          "actual_low_date": "2026-09-03",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "MISMATCH_stop_claimed_but_low_above_stop",
+          "error": null
+        },
+        {
+          "id": 50634,
+          "ticker": "MASR",
+          "persona": "balanced",
+          "prediction_date": "2026-01-18",
+          "entry_price": 4.32,
+          "target_price": 49.94,
+          "stop_loss": 4.06,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 77.78,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 166,
+          "actual_high": 62.14419107928881,
+          "actual_low": 4.28000020980835,
+          "actual_close_on_last_day": 8.7,
+          "actual_high_date": "2026-07-24",
+          "actual_low_date": "2026-01-18",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50217,
+          "ticker": "BTFH",
+          "persona": "conservative",
+          "prediction_date": "2025-09-22",
+          "entry_price": 3.1,
+          "target_price": 4.4,
+          "stop_loss": 2.91,
+          "outcome_date": "2026-09-22",
+          "exit_price": 2.92,
+          "actual_return": -5.81,
+          "recorded_outcome": "loss_close",
+          "holding_days": 365,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 249,
+          "actual_high": 3.6600000858306885,
+          "actual_low": 2.3106,
+          "actual_close_on_last_day": 3.04,
+          "actual_high_date": "2025-12-18",
+          "actual_low_date": "2025-10-09",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "POSSIBLE_MISS_stop_was_hit_but_not_marked",
+          "error": null
+        },
+        {
+          "id": 50832,
+          "ticker": "PIOH",
+          "persona": "balanced",
+          "prediction_date": "2026-03-12",
+          "entry_price": 17.84,
+          "target_price": 23.51,
+          "stop_loss": 16.77,
+          "outcome_date": "2026-09-22",
+          "exit_price": 16.24,
+          "actual_return": -8.97,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 194,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 65,
+          "actual_high": 18.8327,
+          "actual_low": 14.7225,
+          "actual_close_on_last_day": 16.24,
+          "actual_high_date": "2026-03-18",
+          "actual_low_date": "2026-04-09",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "OK_stop_verified",
+          "error": null
+        },
+        {
+          "id": 50912,
+          "ticker": "ORTE",
+          "persona": "balanced",
+          "prediction_date": "2026-04-05",
+          "entry_price": 55.12,
+          "target_price": 64.05,
+          "stop_loss": 51.84,
+          "outcome_date": "2026-09-22",
+          "exit_price": 45.45,
+          "actual_return": -17.54,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 170,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 46,
+          "actual_high": 63.828,
+          "actual_low": 44.812,
+          "actual_close_on_last_day": 45.45,
+          "actual_high_date": "2026-04-14",
+          "actual_low_date": "2026-06-03",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "OK_stop_verified",
+          "error": null
+        },
+        {
+          "id": 51126,
+          "ticker": "CIEB",
+          "persona": "balanced",
+          "prediction_date": "2026-06-03",
+          "entry_price": 23.83,
+          "target_price": 36.62,
+          "stop_loss": 22.41,
+          "outcome_date": "2026-09-22",
+          "exit_price": 24.79,
+          "actual_return": 4.03,
+          "recorded_outcome": "profit_close",
+          "holding_days": 111,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 67,
+          "actual_high": 26.27,
+          "actual_low": 23.270000457763672,
+          "actual_close_on_last_day": 26,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2026-06-11",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "OK_no_target_no_stop",
+          "error": null
+        },
+        {
+          "id": 50272,
+          "ticker": "PIOH",
+          "persona": "balanced",
+          "prediction_date": "2025-10-07",
+          "entry_price": 15.15,
+          "target_price": 22.97,
+          "stop_loss": 14.25,
+          "outcome_date": "2026-09-22",
+          "exit_price": 16.24,
+          "actual_return": 7.19,
+          "recorded_outcome": "profit_close",
+          "holding_days": 350,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 177,
+          "actual_high": 20.0318,
+          "actual_low": 14.5255,
+          "actual_close_on_last_day": 16.24,
+          "actual_high_date": "2026-02-12",
+          "actual_low_date": "2025-10-23",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "OK_no_target_no_stop",
+          "error": null
+        },
+        {
+          "id": 51356,
+          "ticker": "BTFH",
+          "persona": "balanced",
+          "prediction_date": "2026-08-23",
+          "entry_price": 3.01,
+          "target_price": 5.23,
+          "stop_loss": 2.83,
+          "outcome_date": "2026-09-24",
+          "exit_price": 2.83,
+          "actual_return": -5.98,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 32,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-24",
+          "price_rows_in_window": 11,
+          "actual_high": 3.07,
+          "actual_low": 2.94,
+          "actual_close_on_last_day": 3.04,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2026-09-03",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "MISMATCH_stop_claimed_but_low_above_stop",
+          "error": null
+        },
+        {
+          "id": 51218,
+          "ticker": "AMOC",
+          "persona": "balanced",
+          "prediction_date": "2026-07-05",
+          "entry_price": 7.85,
+          "target_price": 13.4,
+          "stop_loss": 7.39,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 71.97,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 46,
+          "actual_high": 14.04,
+          "actual_low": 7.6,
+          "actual_close_on_last_day": 13.54,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2026-07-19",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50353,
+          "ticker": "PIOH",
+          "persona": "balanced",
+          "prediction_date": "2025-10-29",
+          "entry_price": 15.21,
+          "target_price": 24.99,
+          "stop_loss": 14.31,
+          "outcome_date": "2026-09-22",
+          "exit_price": 16.24,
+          "actual_return": 6.77,
+          "recorded_outcome": "profit_close",
+          "holding_days": 328,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 161,
+          "actual_high": 20.0318,
+          "actual_low": 14.7225,
+          "actual_close_on_last_day": 16.24,
+          "actual_high_date": "2026-02-12",
+          "actual_low_date": "2026-04-09",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "OK_no_target_no_stop",
+          "error": null
+        },
+        {
+          "id": 50452,
+          "ticker": "AMOC",
+          "persona": "balanced",
+          "prediction_date": "2025-11-26",
+          "entry_price": 6.77,
+          "target_price": 13.19,
+          "stop_loss": 6.37,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 99.41,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 202,
+          "actual_high": 14.04,
+          "actual_low": 6.659999847412109,
+          "actual_close_on_last_day": 13.54,
+          "actual_high_date": "2026-09-06",
+          "actual_low_date": "2025-12-03",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50902,
+          "ticker": "PHDC",
+          "persona": "balanced",
+          "prediction_date": "2026-04-01",
+          "entry_price": 8.35,
+          "target_price": 17.88,
+          "stop_loss": 7.85,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 60.96,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 112,
+          "actual_high": 16.43000030517578,
+          "actual_low": 8.210000038146973,
+          "actual_close_on_last_day": 15,
+          "actual_high_date": "2026-06-21",
+          "actual_low_date": "2026-04-07",
+          "target_reached": false,
+          "stop_hit": false,
+          "match": "MISMATCH_target_claimed_but_high_below_target",
+          "error": null
+        },
+        {
+          "id": 50244,
+          "ticker": "MASR",
+          "persona": "balanced",
+          "prediction_date": "2025-09-30",
+          "entry_price": 4.14,
+          "target_price": 54.8,
+          "stop_loss": 3.89,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 85.51,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 244,
+          "actual_high": 62.14419107928881,
+          "actual_low": 4.099999904632568,
+          "actual_close_on_last_day": 8.7,
+          "actual_high_date": "2026-07-24",
+          "actual_low_date": "2025-10-01",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50976,
+          "ticker": "TELE",
+          "persona": "balanced",
+          "prediction_date": "2026-04-22",
+          "entry_price": 55.56,
+          "target_price": 73.18,
+          "stop_loss": 52.25,
+          "outcome_date": "2026-09-22",
+          "exit_price": 55.24,
+          "actual_return": -0.58,
+          "recorded_outcome": "loss_close",
+          "holding_days": 153,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 36,
+          "actual_high": 58.1959,
+          "actual_low": 51.526,
+          "actual_close_on_last_day": 55.24,
+          "actual_high_date": "2026-04-26",
+          "actual_low_date": "2026-05-17",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "POSSIBLE_MISS_stop_was_hit_but_not_marked",
+          "error": null
+        },
+        {
+          "id": 51240,
+          "ticker": "MASR",
+          "persona": "balanced",
+          "prediction_date": "2026-07-12",
+          "entry_price": 7.95,
+          "target_price": 55.57,
+          "stop_loss": 7.47,
+          "outcome_date": "2026-09-22",
+          "exit_price": 7.68,
+          "actual_return": -3.4,
+          "recorded_outcome": "loss_close",
+          "holding_days": 72,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 42,
+          "actual_high": 62.14419107928881,
+          "actual_low": 7.01,
+          "actual_close_on_last_day": 8.7,
+          "actual_high_date": "2026-07-24",
+          "actual_low_date": "2026-07-19",
+          "target_reached": true,
+          "stop_hit": true,
+          "match": "POSSIBLE_MISS_target_was_reached_but_not_marked",
+          "error": null
+        },
+        {
+          "id": 51037,
+          "ticker": "GMCI",
+          "persona": "gambler",
+          "prediction_date": "2026-05-10",
+          "entry_price": 1.69,
+          "target_price": 1.79,
+          "stop_loss": 1.58,
+          "outcome_date": "2026-09-22",
+          "exit_price": 1.73,
+          "actual_return": 2.37,
+          "recorded_outcome": "profit_close",
+          "holding_days": 135,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 85,
+          "actual_high": 2.259999990463257,
+          "actual_low": 1.6307,
+          "actual_close_on_last_day": 1.86,
+          "actual_high_date": "2026-07-09",
+          "actual_low_date": "2026-05-31",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "POSSIBLE_MISS_target_was_reached_but_not_marked",
+          "error": null
+        },
+        {
+          "id": 51133,
+          "ticker": "BTFH",
+          "persona": "balanced",
+          "prediction_date": "2026-06-04",
+          "entry_price": 3.11,
+          "target_price": 5.25,
+          "stop_loss": 2.92,
+          "outcome_date": "2026-09-22",
+          "exit_price": 2.92,
+          "actual_return": -6.11,
+          "recorded_outcome": "stop_hit",
+          "holding_days": 110,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 66,
+          "actual_high": 3.25,
+          "actual_low": 2.9100000858306885,
+          "actual_close_on_last_day": 3.04,
+          "actual_high_date": "2026-08-06",
+          "actual_low_date": "2026-07-01",
+          "target_reached": false,
+          "stop_hit": true,
+          "match": "OK_stop_verified",
+          "error": null
+        },
+        {
+          "id": 50526,
+          "ticker": "MBEG",
+          "persona": "gambler",
+          "prediction_date": "2025-12-17",
+          "entry_price": 2.84,
+          "target_price": 3,
+          "stop_loss": 2.65,
+          "outcome_date": "2026-09-22",
+          "exit_price": null,
+          "actual_return": 147.54,
+          "recorded_outcome": "target_hit",
+          "holding_days": 50,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 178,
+          "actual_high": 7.38,
+          "actual_low": 2.6500000953674316,
+          "actual_close_on_last_day": 7,
+          "actual_high_date": "2026-08-26",
+          "actual_low_date": "2025-12-17",
+          "target_reached": true,
+          "stop_hit": false,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50708,
+          "ticker": "ELKA",
+          "persona": "balanced",
+          "prediction_date": "2026-02-05",
+          "entry_price": 1.23,
+          "target_price": 1.41,
+          "stop_loss": 1.16,
+          "outcome_date": "2026-09-22",
+          "exit_price": 1.67,
+          "actual_return": 35.77,
+          "recorded_outcome": "target_hit",
+          "holding_days": 229,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-22",
+          "price_rows_in_window": 151,
+          "actual_high": 2.12,
+          "actual_low": 0.9599999785423279,
+          "actual_close_on_last_day": 1.88,
+          "actual_high_date": "2026-07-21",
+          "actual_low_date": "2026-03-01",
+          "target_reached": true,
+          "stop_hit": true,
+          "match": "OK_target_verified",
+          "error": null
+        },
+        {
+          "id": 50878,
+          "ticker": "ELKA",
+          "persona": "balanced",
+          "prediction_date": "2026-03-25",
+          "entry_price": 1.09,
+          "target_price": 1.25,
+          "stop_loss": 1.03,
+          "outcome_date": "2026-09-24",
+          "exit_price": 1.63,
+          "actual_return": 49.54,
+          "recorded_outcome": "target_hit",
+          "holding_days": 183,
+          "exit_reason": null,
+          "exit_window_end": "2026-09-24",
+          "price_rows_in_window": 117,
+          "actual_high": 2.12,
+          "actual_low": 1.0199999809265137,
+          "actual_close_on_last_day": 1.88,
+          "actual_high_date": "2026-07-21",
+          "actual_low_date": "2026-03-30",
+          "target_reached": true,
+          "stop_hit": true,
+          "match": "OK_target_verified",
+          "error": null
+        }
+      ],
+      "summary": {
+        "total": 30,
+        "ok": 19,
+        "mismatch": 5,
+        "possible_miss": 6,
+        "no_price_data": 0
+      }
+    },
+    "phase4": {
+      "by_persona": [
+        {
+          "persona": "balanced",
+          "total": 279,
+          "wins": 94,
+          "stops": 111,
+          "win_rate_pct": 33.7,
+          "avg_return": 3.14,
+          "avg_gain": 12.39,
+          "avg_loss": -7.22
+        }
+      ],
+      "loss_streaks": [
+        {
+          "persona": "balanced",
+          "error": "Too many parameter values were provided"
+        }
+      ]
+    },
+    "phase5": {
+      "monthly": [
+        {
+          "month": "2025-09",
+          "total": 35,
+          "wins": 18,
+          "win_rate_pct": 51.4,
+          "avg_return": 42.76
+        },
+        {
+          "month": "2025-10",
+          "total": 110,
+          "wins": 70,
+          "win_rate_pct": 63.6,
+          "avg_return": 56.55
+        },
+        {
+          "month": "2025-11",
+          "total": 105,
+          "wins": 80,
+          "win_rate_pct": 76.2,
+          "avg_return": 72.27
+        },
+        {
+          "month": "2025-12",
+          "total": 115,
+          "wins": 60,
+          "win_rate_pct": 52.2,
+          "avg_return": 41.65
+        },
+        {
+          "month": "2026-01",
+          "total": 105,
+          "wins": 48,
+          "win_rate_pct": 45.7,
+          "avg_return": 30.32
+        },
+        {
+          "month": "2026-02",
+          "total": 100,
+          "wins": 39,
+          "win_rate_pct": 39,
+          "avg_return": 22.3
+        },
+        {
+          "month": "2026-03",
+          "total": 114,
+          "wins": 42,
+          "win_rate_pct": 36.8,
+          "avg_return": 22.04
+        },
+        {
+          "month": "2026-04",
+          "total": 110,
+          "wins": 32,
+          "win_rate_pct": 29.1,
+          "avg_return": 12.24
+        },
+        {
+          "month": "2026-05",
+          "total": 105,
+          "wins": 10,
+          "win_rate_pct": 9.5,
+          "avg_return": 3.74
+        },
+        {
+          "month": "2026-06",
+          "total": 95,
+          "wins": 29,
+          "win_rate_pct": 30.5,
+          "avg_return": 13.17
+        },
+        {
+          "month": "2026-07",
+          "total": 74,
+          "wins": 24,
+          "win_rate_pct": 32.4,
+          "avg_return": 9.67
+        },
+        {
+          "month": "2026-08",
+          "total": 101,
+          "wins": 24,
+          "win_rate_pct": 23.8,
+          "avg_return": -0.15
+        },
+        {
+          "month": "2026-09",
+          "total": 60,
+          "wins": 8,
+          "win_rate_pct": 13.3,
+          "avg_return": -1.25
+        }
+      ],
+      "day_of_week": [
+        {
+          "dow": "Tue",
+          "total": 256,
+          "wins": 107,
+          "win_rate_pct": 41.8,
+          "avg_return": 26.93
+        },
+        {
+          "dow": "Wed",
+          "total": 248,
+          "wins": 102,
+          "win_rate_pct": 41.1,
+          "avg_return": 26.06
+        },
+        {
+          "dow": "Sun",
+          "total": 248,
+          "wins": 99,
+          "win_rate_pct": 39.9,
+          "avg_return": 27.14
+        },
+        {
+          "dow": "Mon",
+          "total": 240,
+          "wins": 92,
+          "win_rate_pct": 38.3,
+          "avg_return": 26.1
+        },
+        {
+          "dow": "Thu",
+          "total": 237,
+          "wins": 84,
+          "win_rate_pct": 35.4,
+          "avg_return": 22.3
+        }
+      ],
+      "regime_dist": [
+        {
+          "regime": "unknown",
+          "c": 16,
+          "first_date": "2026-07-01",
+          "last_date": "2026-07-29"
+        },
+        {
+          "regime": "ranging",
+          "c": 12,
+          "first_date": "2026-08-07",
+          "last_date": "2026-08-28"
+        },
+        {
+          "regime": "bull_trend",
+          "c": 6,
+          "first_date": "2026-06-21",
+          "last_date": "2026-06-26"
+        }
+      ],
+      "regime_dates": [
+        {
+          "date": "2026-06-21",
+          "regime": "bull_trend"
+        },
+        {
+          "date": "2026-06-22",
+          "regime": "bull_trend"
+        },
+        {
+          "date": "2026-06-23",
+          "regime": "bull_trend"
+        },
+        {
+          "date": "2026-06-24",
+          "regime": "bull_trend"
+        },
+        {
+          "date": "2026-06-25",
+          "regime": "bull_trend"
+        },
+        {
+          "date": "2026-06-26",
+          "regime": "bull_trend"
+        },
+        {
+          "date": "2026-07-01",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-02",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-03",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-04",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-05",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-06",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-07",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-08",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-09",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-10",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-20",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-21",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-22",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-23",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-28",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-07-29",
+          "regime": "unknown"
+        },
+        {
+          "date": "2026-08-07",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-18",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-19",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-20",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-21",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-22",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-23",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-24",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-25",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-26",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-27",
+          "regime": "ranging"
+        },
+        {
+          "date": "2026-08-28",
+          "regime": "ranging"
+        }
+      ],
+      "by_regime": [
+        {
+          "regime": "bull_trend",
+          "total": 35,
+          "wins": 16,
+          "win_rate_pct": 45.7,
+          "avg_return": 19.41
+        },
+        {
+          "regime": "unknown",
+          "total": 99,
+          "wins": 32,
+          "win_rate_pct": 32.3,
+          "avg_return": 7.26
+        },
+        {
+          "regime": "ranging",
+          "total": 136,
+          "wins": 24,
+          "win_rate_pct": 17.6,
+          "avg_return": -0.68
+        }
+      ],
+      "unmatched_regime_count": 959,
+      "recent_30d": {
+        "__error": "Too many parameter values were provided"
+      },
+      "prev_30d": {
+        "__error": "Too many parameter values were provided"
+      }
+    },
+    "phase6": {
+      "top_tickers": [
+        {
+          "ticker": "AMOC",
+          "total": 64,
+          "wins": 64,
+          "win_rate_pct": 100,
+          "avg_return": 85.23
+        },
+        {
+          "ticker": "HELI",
+          "total": 21,
+          "wins": 21,
+          "win_rate_pct": 100,
+          "avg_return": 144.4
+        },
+        {
+          "ticker": "ALCN",
+          "total": 6,
+          "wins": 6,
+          "win_rate_pct": 100,
+          "avg_return": 49.31
+        },
+        {
+          "ticker": "SWDY",
+          "total": 6,
+          "wins": 6,
+          "win_rate_pct": 100,
+          "avg_return": 55.44
+        },
+        {
+          "ticker": "PHYG",
+          "total": 5,
+          "wins": 5,
+          "win_rate_pct": 100,
+          "avg_return": 26.54
+        },
+        {
+          "ticker": "ELKA",
+          "total": 22,
+          "wins": 21,
+          "win_rate_pct": 95.5,
+          "avg_return": 38.02
+        },
+        {
+          "ticker": "MCRO",
+          "total": 7,
+          "wins": 6,
+          "win_rate_pct": 85.7,
+          "avg_return": 33.68
+        },
+        {
+          "ticker": "CERA",
+          "total": 5,
+          "wins": 4,
+          "win_rate_pct": 80,
+          "avg_return": 13.46
+        },
+        {
+          "ticker": "ABUK",
+          "total": 129,
+          "wins": 94,
+          "win_rate_pct": 72.9,
+          "avg_return": 55.5
+        },
+        {
+          "ticker": "MASR",
+          "total": 190,
+          "wins": 123,
+          "win_rate_pct": 64.7,
+          "avg_return": 42.22
+        }
+      ],
+      "bottom_tickers": [
+        {
+          "ticker": "PIOH",
+          "total": 69,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": 1.09
+        },
+        {
+          "ticker": "BLDG",
+          "total": 49,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -1.56
+        },
+        {
+          "ticker": "ORTE",
+          "total": 48,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -7.96
+        },
+        {
+          "ticker": "MTEZ",
+          "total": 37,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -2.57
+        },
+        {
+          "ticker": "DMNH",
+          "total": 19,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": 5.13
+        },
+        {
+          "ticker": "CAPE",
+          "total": 17,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": 1.88
+        },
+        {
+          "ticker": "ESRS",
+          "total": 16,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": 31.52
+        },
+        {
+          "ticker": "MNHD",
+          "total": 10,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": -0.52
+        },
+        {
+          "ticker": "APRI",
+          "total": 5,
+          "wins": 0,
+          "win_rate_pct": 0,
+          "avg_return": 2.93
+        },
+        {
+          "ticker": "BTFH",
+          "total": 189,
+          "wins": 4,
+          "win_rate_pct": 2.1,
+          "avg_return": -4.26
+        }
+      ],
+      "by_sector": {
+        "__error": "no such table: predictions"
+      },
+      "time_to_target": {
+        "n": 484,
+        "avg_days": 86.7,
+        "min_days": 1,
+        "max_days": 348
+      },
+      "time_to_stop": {
+        "n": 241,
+        "avg_days": 130.7,
+        "min_days": 1,
+        "max_days": 364
+      },
+      "risk_adjusted": {
+        "n_returns": 1229,
+        "mean_return_pct": 25.74,
+        "stdev_returns": 39.75,
+        "downside_dev": 8.86,
+        "sharpe_per_trade": 0.648,
+        "sortino_per_trade": 2.906,
+        "calmar_per_trade": 0.535,
+        "worst_return": -48.12,
+        "best_return": 315.51
+      },
+      "by_marketcap": {
+        "__error": "no such table: predictions"
+      }
+    },
+    "phase7": {
+      "impossible_prices": [],
+      "future_dates": {
+        "__error": "Too many parameter values were provided"
+      },
+      "exit_before_entry": [],
+      "huge_returns": [],
+      "huge_losses": [],
+      "dup_diff_outcome": [
+        {
+          "ticker": "1150",
+          "prediction_date": "2026-09-24",
+          "c": 2,
+          "distinct_target": 1,
+          "distinct_ret": 2
+        },
+        {
+          "ticker": "7020",
+          "prediction_date": "2026-09-24",
+          "c": 2,
+          "distinct_target": 1,
+          "distinct_ret": 2
+        }
+      ],
+      "persona_anomalies": {
+        "impossible_prices": [],
+        "future_dates": {
+          "__error": "Too many parameter values were provided"
+        }
+      },
+      "hist_anomalies": {
+        "impossible_prices": [],
+        "huge_pnl": [],
+        "exit_before_entry": []
+      }
+    }
+  },
+  "extra": {
+    "__error": "no such column: date"
+  }
+}

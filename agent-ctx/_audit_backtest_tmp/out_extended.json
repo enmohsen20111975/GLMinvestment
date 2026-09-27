@@ -1,0 +1,2442 @@
+{
+  "top30_tickers_by_volume": [
+    {
+      "ticker": "MASR",
+      "total": 190,
+      "wins": 123,
+      "win_rate_pct": 64.7,
+      "avg_return": 42.22,
+      "min_ret": -11.72,
+      "max_ret": 89.63,
+      "avg_hold": 89,
+      "first_pred": "2025-09-22 12:00:00",
+      "last_pred": "2026-09-16 12:00:00"
+    },
+    {
+      "ticker": "BTFH",
+      "total": 189,
+      "wins": 4,
+      "win_rate_pct": 2.1,
+      "avg_return": -4.26,
+      "min_ret": -18.89,
+      "max_ret": 21.67,
+      "avg_hold": 195,
+      "first_pred": "2025-09-22 12:00:00",
+      "last_pred": "2026-09-16 12:00:00"
+    },
+    {
+      "ticker": "ABUK",
+      "total": 129,
+      "wins": 94,
+      "win_rate_pct": 72.9,
+      "avg_return": 55.5,
+      "min_ret": 3.52,
+      "max_ret": 106.52,
+      "avg_hold": 80,
+      "first_pred": "2025-09-22 12:00:00",
+      "last_pred": "2026-09-14 12:00:00"
+    },
+    {
+      "ticker": "PHDC",
+      "total": 100,
+      "wins": 61,
+      "win_rate_pct": 61,
+      "avg_return": 37.19,
+      "min_ret": -14.45,
+      "max_ret": 119.61,
+      "avg_hold": 72,
+      "first_pred": "2025-09-22 12:00:00",
+      "last_pred": "2026-09-16 12:00:00"
+    },
+    {
+      "ticker": "CIEB",
+      "total": 71,
+      "wins": 6,
+      "win_rate_pct": 8.5,
+      "avg_return": 4.66,
+      "min_ret": -10.54,
+      "max_ret": 15.95,
+      "avg_hold": 152,
+      "first_pred": "2025-12-11 12:00:00",
+      "last_pred": "2026-09-16 12:00:00"
+    },
+    {
+      "ticker": "PIOH",
+      "total": 69,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 1.09,
+      "min_ret": -13.62,
+      "max_ret": 12.23,
+      "avg_hold": 237,
+      "first_pred": "2025-09-22 12:00:00",
+      "last_pred": "2026-05-20 12:00:00"
+    },
+    {
+      "ticker": "AMOC",
+      "total": 64,
+      "wins": 64,
+      "win_rate_pct": 100,
+      "avg_return": 85.23,
+      "min_ret": 43.92,
+      "max_ret": 101.79,
+      "avg_hold": 52,
+      "first_pred": "2025-10-14 12:00:00",
+      "last_pred": "2026-07-30 12:00:00"
+    },
+    {
+      "ticker": "BLDG",
+      "total": 49,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -1.56,
+      "min_ret": -15.09,
+      "max_ret": 7.14,
+      "avg_hold": 236,
+      "first_pred": "2025-09-23 12:00:00",
+      "last_pred": "2026-05-28 12:00:00"
+    },
+    {
+      "ticker": "ORTE",
+      "total": 48,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -7.96,
+      "min_ret": -27.83,
+      "max_ret": 0,
+      "avg_hold": 86,
+      "first_pred": "2026-01-07 12:00:00",
+      "last_pred": "2026-09-16 12:00:00"
+    },
+    {
+      "ticker": "MTEZ",
+      "total": 37,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -2.57,
+      "min_ret": -12.09,
+      "max_ret": 5.86,
+      "avg_hold": 180,
+      "first_pred": "2025-11-30 12:00:00",
+      "last_pred": "2026-09-15 12:00:00"
+    },
+    {
+      "ticker": "REAC",
+      "total": 23,
+      "wins": 3,
+      "win_rate_pct": 13,
+      "avg_return": 1.14,
+      "min_ret": -48.12,
+      "max_ret": 33.05,
+      "avg_hold": 47,
+      "first_pred": "2025-11-18 12:00:00",
+      "last_pred": "2026-09-15 12:00:00"
+    },
+    {
+      "ticker": "ELKA",
+      "total": 22,
+      "wins": 21,
+      "win_rate_pct": 95.5,
+      "avg_return": 38.02,
+      "min_ret": 1.83,
+      "max_ret": 56.07,
+      "avg_hold": 208,
+      "first_pred": "2025-10-09 12:00:00",
+      "last_pred": "2026-06-03 12:00:00"
+    },
+    {
+      "ticker": "HELI",
+      "total": 21,
+      "wins": 21,
+      "win_rate_pct": 100,
+      "avg_return": 144.4,
+      "min_ret": 28.12,
+      "max_ret": 161.15,
+      "avg_hold": 52,
+      "first_pred": "2025-10-07 12:00:00",
+      "last_pred": "2026-06-23 12:00:00"
+    },
+    {
+      "ticker": "DMNH",
+      "total": 19,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 5.13,
+      "min_ret": -3.49,
+      "max_ret": 12.27,
+      "avg_hold": 216,
+      "first_pred": "2026-01-13 12:00:00",
+      "last_pred": "2026-04-23 12:00:00"
+    },
+    {
+      "ticker": "CAPE",
+      "total": 17,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 1.88,
+      "min_ret": -4.59,
+      "max_ret": 7.03,
+      "avg_hold": 142,
+      "first_pred": "2026-01-04 12:00:00",
+      "last_pred": "2026-06-01 12:00:00"
+    },
+    {
+      "ticker": "ESRS",
+      "total": 16,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 31.52,
+      "min_ret": 9.46,
+      "max_ret": 51.56,
+      "avg_hold": 19,
+      "first_pred": "2025-12-14 12:00:00",
+      "last_pred": "2026-03-30 12:00:00"
+    },
+    {
+      "ticker": "HRHO",
+      "total": 15,
+      "wins": 2,
+      "win_rate_pct": 13.3,
+      "avg_return": 3.47,
+      "min_ret": -7.2,
+      "max_ret": 21.66,
+      "avg_hold": 236,
+      "first_pred": "2025-12-15 12:00:00",
+      "last_pred": "2026-06-11 12:00:00"
+    },
+    {
+      "ticker": "MNHD",
+      "total": 10,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -0.52,
+      "min_ret": -9.83,
+      "max_ret": 9.49,
+      "avg_hold": 194,
+      "first_pred": "2025-12-25 12:00:00",
+      "last_pred": "2026-05-20 12:00:00"
+    },
+    {
+      "ticker": "SAIB",
+      "total": 8,
+      "wins": 5,
+      "win_rate_pct": 62.5,
+      "avg_return": 24.11,
+      "min_ret": 10,
+      "max_ret": 40.56,
+      "avg_hold": 210,
+      "first_pred": "2025-10-09 12:00:00",
+      "last_pred": "2026-05-31 12:00:00"
+    },
+    {
+      "ticker": "MCRO",
+      "total": 7,
+      "wins": 6,
+      "win_rate_pct": 85.7,
+      "avg_return": 33.68,
+      "min_ret": -0.59,
+      "max_ret": 61.54,
+      "avg_hold": 151,
+      "first_pred": "2025-11-20 12:00:00",
+      "last_pred": "2026-09-06 12:00:00"
+    },
+    {
+      "ticker": "ALCN",
+      "total": 6,
+      "wins": 6,
+      "win_rate_pct": 100,
+      "avg_return": 49.31,
+      "min_ret": 21.63,
+      "max_ret": 64.43,
+      "avg_hold": 126,
+      "first_pred": "2025-11-19 12:00:00",
+      "last_pred": "2026-06-25 12:00:00"
+    },
+    {
+      "ticker": "SWDY",
+      "total": 6,
+      "wins": 6,
+      "win_rate_pct": 100,
+      "avg_return": 55.44,
+      "min_ret": 42.36,
+      "max_ret": 62.05,
+      "avg_hold": 66,
+      "first_pred": "2026-02-01 12:00:00",
+      "last_pred": "2026-06-23 12:00:00"
+    },
+    {
+      "ticker": "ACAMD",
+      "total": 5,
+      "wins": 1,
+      "win_rate_pct": 20,
+      "avg_return": 7.22,
+      "min_ret": -14.16,
+      "max_ret": 65.29,
+      "avg_hold": 66,
+      "first_pred": "2025-11-18 12:00:00",
+      "last_pred": "2026-08-30 12:00:00"
+    },
+    {
+      "ticker": "APRI",
+      "total": 5,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 2.93,
+      "min_ret": -1.56,
+      "max_ret": 7.55,
+      "avg_hold": 122,
+      "first_pred": "2026-05-17 12:00:00",
+      "last_pred": "2026-05-28 12:00:00"
+    },
+    {
+      "ticker": "CERA",
+      "total": 5,
+      "wins": 4,
+      "win_rate_pct": 80,
+      "avg_return": 13.46,
+      "min_ret": 5.3,
+      "max_ret": 26.36,
+      "avg_hold": 265,
+      "first_pred": "2025-10-15 12:00:00",
+      "last_pred": "2026-06-16 12:00:00"
+    },
+    {
+      "ticker": "PHYG",
+      "total": 5,
+      "wins": 5,
+      "win_rate_pct": 100,
+      "avg_return": 26.54,
+      "min_ret": 24.9,
+      "max_ret": 28.92,
+      "avg_hold": 251,
+      "first_pred": "2026-01-07 12:00:00",
+      "last_pred": "2026-02-01 12:00:00"
+    },
+    {
+      "ticker": "AREH",
+      "total": 4,
+      "wins": 4,
+      "win_rate_pct": 100,
+      "avg_return": 15.73,
+      "min_ret": 12.9,
+      "max_ret": 17.65,
+      "avg_hold": 246,
+      "first_pred": "2025-10-27 12:00:00",
+      "last_pred": "2026-04-16 12:00:00"
+    },
+    {
+      "ticker": "EDBM",
+      "total": 4,
+      "wins": 2,
+      "win_rate_pct": 50,
+      "avg_return": 1.36,
+      "min_ret": -0.11,
+      "max_ret": 4.05,
+      "avg_hold": 33,
+      "first_pred": "2026-07-21 12:00:00",
+      "last_pred": "2026-09-02 12:00:00"
+    },
+    {
+      "ticker": "FTNS",
+      "total": 4,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -0.15,
+      "min_ret": -2.34,
+      "max_ret": 2.46,
+      "avg_hold": 182,
+      "first_pred": "2025-12-02 12:00:00",
+      "last_pred": "2026-07-14 12:00:00"
+    },
+    {
+      "ticker": "PRMH",
+      "total": 4,
+      "wins": 3,
+      "win_rate_pct": 75,
+      "avg_return": 28.78,
+      "min_ret": -8.8,
+      "max_ret": 96.21,
+      "avg_hold": 135,
+      "first_pred": "2025-10-21 12:00:00",
+      "last_pred": "2026-06-04 12:00:00"
+    }
+  ],
+  "by_exit_reason": [
+    {
+      "exit_reason": "(null)",
+      "c": 1229,
+      "win_rate_pct": 39.4,
+      "avg_return": 25.74
+    }
+  ],
+  "closed_by_status": [
+    {
+      "status": "expired",
+      "c": 454,
+      "win_rate_pct": 0,
+      "avg_return": 3.84,
+      "avg_hold": 192.9
+    },
+    {
+      "status": "TARGET_HIT",
+      "c": 333,
+      "win_rate_pct": 100,
+      "avg_return": 79.77,
+      "avg_hold": 48.1
+    },
+    {
+      "status": "closed_stop",
+      "c": 193,
+      "win_rate_pct": 0,
+      "avg_return": -10.67,
+      "avg_hold": 152.4
+    },
+    {
+      "status": "closed_win",
+      "c": 151,
+      "win_rate_pct": 100,
+      "avg_return": 32.92,
+      "avg_hold": 171.8
+    },
+    {
+      "status": "STOPPED",
+      "c": 45,
+      "win_rate_pct": 0,
+      "avg_return": -2.39,
+      "avg_hold": 23.4
+    },
+    {
+      "status": "EXPIRED",
+      "c": 36,
+      "win_rate_pct": 0,
+      "avg_return": 0.12,
+      "avg_hold": 5.8
+    },
+    {
+      "status": "CLOSED",
+      "c": 17,
+      "win_rate_pct": 0,
+      "avg_return": 30.87,
+      "avg_hold": 1
+    }
+  ],
+  "hist_by_pattern": [
+    {
+      "pattern_type": "pullback",
+      "c": 5696,
+      "avg_ret": 0.22,
+      "win_rate_pct": 36
+    },
+    {
+      "pattern_type": "reversal",
+      "c": 2887,
+      "avg_ret": 0.14,
+      "win_rate_pct": 38
+    },
+    {
+      "pattern_type": "accumulation",
+      "c": 2052,
+      "avg_ret": 0.15,
+      "win_rate_pct": 37.2
+    },
+    {
+      "pattern_type": "breakout",
+      "c": 1483,
+      "avg_ret": 0.39,
+      "win_rate_pct": 37.9
+    },
+    {
+      "pattern_type": "volume_spike",
+      "c": 820,
+      "avg_ret": 0.9,
+      "win_rate_pct": 44.8
+    },
+    {
+      "pattern_type": "momentum",
+      "c": 179,
+      "avg_ret": -0.2,
+      "win_rate_pct": 38.5
+    }
+  ],
+  "hist_by_market": [
+    {
+      "market_condition": "sideways",
+      "c": 4981,
+      "avg_ret": 0.25,
+      "win_rate_pct": 35.4
+    },
+    {
+      "market_condition": "bull",
+      "c": 4359,
+      "avg_ret": 0.48,
+      "win_rate_pct": 41.3
+    },
+    {
+      "market_condition": "bear",
+      "c": 3777,
+      "avg_ret": -0.04,
+      "win_rate_pct": 35.6
+    }
+  ],
+  "monthly_persona": [
+    {
+      "month": "2025-09",
+      "persona": "balanced",
+      "total": 30,
+      "wins": 15,
+      "win_rate_pct": 50,
+      "avg_return": 41.13
+    },
+    {
+      "month": "2025-09",
+      "persona": "conservative",
+      "total": 5,
+      "wins": 3,
+      "win_rate_pct": 60,
+      "avg_return": 52.54
+    },
+    {
+      "month": "2025-10",
+      "persona": "balanced",
+      "total": 103,
+      "wins": 66,
+      "win_rate_pct": 64.1,
+      "avg_return": 58.83
+    },
+    {
+      "month": "2025-10",
+      "persona": "gambler",
+      "total": 7,
+      "wins": 4,
+      "win_rate_pct": 57.1,
+      "avg_return": 22.98
+    },
+    {
+      "month": "2025-11",
+      "persona": "balanced",
+      "total": 92,
+      "wins": 69,
+      "win_rate_pct": 75,
+      "avg_return": 71.17
+    },
+    {
+      "month": "2025-11",
+      "persona": "conservative",
+      "total": 6,
+      "wins": 4,
+      "win_rate_pct": 66.7,
+      "avg_return": 69.62
+    },
+    {
+      "month": "2025-11",
+      "persona": "gambler",
+      "total": 7,
+      "wins": 7,
+      "win_rate_pct": 100,
+      "avg_return": 89.04
+    },
+    {
+      "month": "2025-12",
+      "persona": "balanced",
+      "total": 99,
+      "wins": 50,
+      "win_rate_pct": 50.5,
+      "avg_return": 39.48
+    },
+    {
+      "month": "2025-12",
+      "persona": "conservative",
+      "total": 7,
+      "wins": 5,
+      "win_rate_pct": 71.4,
+      "avg_return": 56.3
+    },
+    {
+      "month": "2025-12",
+      "persona": "gambler",
+      "total": 9,
+      "wins": 5,
+      "win_rate_pct": 55.6,
+      "avg_return": 54.03
+    },
+    {
+      "month": "2026-01",
+      "persona": "balanced",
+      "total": 96,
+      "wins": 44,
+      "win_rate_pct": 45.8,
+      "avg_return": 30.65
+    },
+    {
+      "month": "2026-01",
+      "persona": "conservative",
+      "total": 5,
+      "wins": 1,
+      "win_rate_pct": 20,
+      "avg_return": 23.54
+    },
+    {
+      "month": "2026-01",
+      "persona": "gambler",
+      "total": 4,
+      "wins": 3,
+      "win_rate_pct": 75,
+      "avg_return": 31.09
+    },
+    {
+      "month": "2026-02",
+      "persona": "balanced",
+      "total": 88,
+      "wins": 37,
+      "win_rate_pct": 42,
+      "avg_return": 20.99
+    },
+    {
+      "month": "2026-02",
+      "persona": "conservative",
+      "total": 10,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 26.17
+    },
+    {
+      "month": "2026-02",
+      "persona": "gambler",
+      "total": 2,
+      "wins": 2,
+      "win_rate_pct": 100,
+      "avg_return": 60.59
+    },
+    {
+      "month": "2026-03",
+      "persona": "balanced",
+      "total": 81,
+      "wins": 33,
+      "win_rate_pct": 40.7,
+      "avg_return": 18.74
+    },
+    {
+      "month": "2026-03",
+      "persona": "conservative",
+      "total": 30,
+      "wins": 6,
+      "win_rate_pct": 20,
+      "avg_return": 28.26
+    },
+    {
+      "month": "2026-03",
+      "persona": "gambler",
+      "total": 3,
+      "wins": 3,
+      "win_rate_pct": 100,
+      "avg_return": 48.84
+    },
+    {
+      "month": "2026-04",
+      "persona": "balanced",
+      "total": 101,
+      "wins": 26,
+      "win_rate_pct": 25.7,
+      "avg_return": 11.39
+    },
+    {
+      "month": "2026-04",
+      "persona": "conservative",
+      "total": 2,
+      "wins": 1,
+      "win_rate_pct": 50,
+      "avg_return": 14.31
+    },
+    {
+      "month": "2026-04",
+      "persona": "gambler",
+      "total": 7,
+      "wins": 5,
+      "win_rate_pct": 71.4,
+      "avg_return": 23.89
+    },
+    {
+      "month": "2026-05",
+      "persona": "balanced",
+      "total": 100,
+      "wins": 7,
+      "win_rate_pct": 7,
+      "avg_return": 3.19
+    },
+    {
+      "month": "2026-05",
+      "persona": "gambler",
+      "total": 5,
+      "wins": 3,
+      "win_rate_pct": 60,
+      "avg_return": 14.75
+    },
+    {
+      "month": "2026-06",
+      "persona": "balanced",
+      "total": 87,
+      "wins": 24,
+      "win_rate_pct": 27.6,
+      "avg_return": 13.27
+    },
+    {
+      "month": "2026-06",
+      "persona": "conservative",
+      "total": 3,
+      "wins": 2,
+      "win_rate_pct": 66.7,
+      "avg_return": 16.05
+    },
+    {
+      "month": "2026-06",
+      "persona": "gambler",
+      "total": 5,
+      "wins": 3,
+      "win_rate_pct": 60,
+      "avg_return": 9.78
+    },
+    {
+      "month": "2026-07",
+      "persona": "balanced",
+      "total": 64,
+      "wins": 21,
+      "win_rate_pct": 32.8,
+      "avg_return": 9.86
+    },
+    {
+      "month": "2026-07",
+      "persona": "conservative",
+      "total": 6,
+      "wins": 2,
+      "win_rate_pct": 33.3,
+      "avg_return": 13.63
+    },
+    {
+      "month": "2026-07",
+      "persona": "gambler",
+      "total": 4,
+      "wins": 1,
+      "win_rate_pct": 25,
+      "avg_return": 0.66
+    },
+    {
+      "month": "2026-08",
+      "persona": "balanced",
+      "total": 88,
+      "wins": 19,
+      "win_rate_pct": 21.6,
+      "avg_return": -1.05
+    },
+    {
+      "month": "2026-08",
+      "persona": "conservative",
+      "total": 3,
+      "wins": 2,
+      "win_rate_pct": 66.7,
+      "avg_return": 8.43
+    },
+    {
+      "month": "2026-08",
+      "persona": "gambler",
+      "total": 10,
+      "wins": 3,
+      "win_rate_pct": 30,
+      "avg_return": 5.22
+    },
+    {
+      "month": "2026-09",
+      "persona": "balanced",
+      "total": 55,
+      "wins": 8,
+      "win_rate_pct": 14.5,
+      "avg_return": -0.65
+    },
+    {
+      "month": "2026-09",
+      "persona": "conservative",
+      "total": 1,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -11.72
+    },
+    {
+      "month": "2026-09",
+      "persona": "gambler",
+      "total": 4,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -6.78
+    }
+  ],
+  "weekday_persona": [
+    {
+      "dow": "Mon",
+      "persona": "balanced",
+      "total": 203,
+      "win_rate_pct": 36
+    },
+    {
+      "dow": "Mon",
+      "persona": "conservative",
+      "total": 27,
+      "win_rate_pct": 48.1
+    },
+    {
+      "dow": "Mon",
+      "persona": "gambler",
+      "total": 10,
+      "win_rate_pct": 60
+    },
+    {
+      "dow": "Sun",
+      "persona": "balanced",
+      "total": 214,
+      "win_rate_pct": 39.7
+    },
+    {
+      "dow": "Sun",
+      "persona": "conservative",
+      "total": 17,
+      "win_rate_pct": 17.6
+    },
+    {
+      "dow": "Sun",
+      "persona": "gambler",
+      "total": 17,
+      "win_rate_pct": 64.7
+    },
+    {
+      "dow": "Thu",
+      "persona": "balanced",
+      "total": 219,
+      "win_rate_pct": 34.2
+    },
+    {
+      "dow": "Thu",
+      "persona": "conservative",
+      "total": 8,
+      "win_rate_pct": 25
+    },
+    {
+      "dow": "Thu",
+      "persona": "gambler",
+      "total": 10,
+      "win_rate_pct": 70
+    },
+    {
+      "dow": "Tue",
+      "persona": "balanced",
+      "total": 229,
+      "win_rate_pct": 41.5
+    },
+    {
+      "dow": "Tue",
+      "persona": "conservative",
+      "total": 8,
+      "win_rate_pct": 37.5
+    },
+    {
+      "dow": "Tue",
+      "persona": "gambler",
+      "total": 19,
+      "win_rate_pct": 47.4
+    },
+    {
+      "dow": "Wed",
+      "persona": "balanced",
+      "total": 219,
+      "win_rate_pct": 41.6
+    },
+    {
+      "dow": "Wed",
+      "persona": "conservative",
+      "total": 18,
+      "win_rate_pct": 27.8
+    },
+    {
+      "dow": "Wed",
+      "persona": "gambler",
+      "total": 11,
+      "win_rate_pct": 54.5
+    }
+  ],
+  "exit_by_gain_bucket": [
+    {
+      "bucket": "a_<-10%",
+      "c": 8
+    },
+    {
+      "bucket": "b_-10%_0%",
+      "c": 1827
+    },
+    {
+      "bucket": "c_0%_10%",
+      "c": 946
+    },
+    {
+      "bucket": "d_10%_25%",
+      "c": 978
+    },
+    {
+      "bucket": "e_25%_50%",
+      "c": 49
+    },
+    {
+      "bucket": "f_>=50%",
+      "c": 124
+    }
+  ],
+  "exit_by_day": [
+    {
+      "day_bucket": "1-3d",
+      "c": 1970
+    },
+    {
+      "day_bucket": "15-30d",
+      "c": 477
+    },
+    {
+      "day_bucket": "31-60d",
+      "c": 208
+    },
+    {
+      "day_bucket": "4-7d",
+      "c": 689
+    },
+    {
+      "day_bucket": "60d+",
+      "c": 2
+    },
+    {
+      "day_bucket": "8-14d",
+      "c": 586
+    }
+  ],
+  "persona_pred_monthly": [
+    {
+      "month": "2025-12",
+      "total": 38,
+      "wins": 17,
+      "stops": 13,
+      "avg_return": 4.82
+    },
+    {
+      "month": "2026-01",
+      "total": 32,
+      "wins": 8,
+      "stops": 11,
+      "avg_return": 2.13
+    },
+    {
+      "month": "2026-02",
+      "total": 35,
+      "wins": 6,
+      "stops": 24,
+      "avg_return": -2.44
+    },
+    {
+      "month": "2026-03",
+      "total": 33,
+      "wins": 12,
+      "stops": 15,
+      "avg_return": 3.08
+    },
+    {
+      "month": "2026-04",
+      "total": 42,
+      "wins": 16,
+      "stops": 13,
+      "avg_return": 5.13
+    },
+    {
+      "month": "2026-05",
+      "total": 38,
+      "wins": 16,
+      "stops": 13,
+      "avg_return": 4.37
+    },
+    {
+      "month": "2026-06",
+      "total": 22,
+      "wins": 6,
+      "stops": 9,
+      "avg_return": 2.19
+    },
+    {
+      "month": "2026-07",
+      "total": 30,
+      "wins": 10,
+      "stops": 10,
+      "avg_return": 4.51
+    },
+    {
+      "month": "2026-08",
+      "total": 9,
+      "wins": 3,
+      "stops": 3,
+      "avg_return": 4.82
+    }
+  ],
+  "learned_by_type": [
+    {
+      "lesson_type": "prediction_outcome",
+      "n": 9721,
+      "avg_ret": -704.46,
+      "avg_failure": 0.43,
+      "total_occ": 9721
+    },
+    {
+      "lesson_type": "ticker_outcome",
+      "n": 9721,
+      "avg_ret": -704.46,
+      "avg_failure": 0.43,
+      "total_occ": 9721
+    },
+    {
+      "lesson_type": "pattern_failure",
+      "n": 7,
+      "avg_ret": 10.1,
+      "avg_failure": 85.89,
+      "total_occ": 1379
+    },
+    {
+      "lesson_type": "filter_rule",
+      "n": 4,
+      "avg_ret": 4.68,
+      "avg_failure": 80.72,
+      "total_occ": 1297
+    },
+    {
+      "lesson_type": "pattern_success",
+      "n": 3,
+      "avg_ret": 0.86,
+      "avg_failure": 9,
+      "total_occ": 740
+    },
+    {
+      "lesson_type": "pattern_rsi_overbought",
+      "n": 1,
+      "avg_ret": 5.75,
+      "avg_failure": 92.9,
+      "total_occ": 28
+    },
+    {
+      "lesson_type": "pattern_rsi_oversold",
+      "n": 1,
+      "avg_ret": 8.56,
+      "avg_failure": 93.7,
+      "total_occ": 111
+    },
+    {
+      "lesson_type": "pattern_sector_up",
+      "n": 1,
+      "avg_ret": 0.47,
+      "avg_failure": 16.7,
+      "total_occ": 6
+    },
+    {
+      "lesson_type": "regime_bear",
+      "n": 1,
+      "avg_ret": 11.58,
+      "avg_failure": 89.2,
+      "total_occ": 804
+    },
+    {
+      "lesson_type": "regime_bull",
+      "n": 1,
+      "avg_ret": 58.61,
+      "avg_failure": 37.5,
+      "total_occ": 315
+    },
+    {
+      "lesson_type": "regime_range",
+      "n": 1,
+      "avg_ret": 35.14,
+      "avg_failure": 55.5,
+      "total_occ": 110
+    },
+    {
+      "lesson_type": "weight_adjustment",
+      "n": 1,
+      "avg_ret": 10.63,
+      "avg_failure": 91.2,
+      "total_occ": 34
+    },
+    {
+      "lesson_type": "weight_recommendations",
+      "n": 1,
+      "avg_ret": 0,
+      "avg_failure": 0,
+      "total_occ": 0
+    }
+  ],
+  "worst_lessons": [
+    {
+      "lesson_type": "pattern_rsi_oversold",
+      "condition": "RSI < 30 (تشبع بيعي)",
+      "outcome": "failure",
+      "occurrences": 111,
+      "avg_ret": 8.56,
+      "failure_rate": 93.7
+    },
+    {
+      "lesson_type": "regime_bear",
+      "condition": "market_regime=bear",
+      "outcome": "failure",
+      "occurrences": 804,
+      "avg_ret": 11.58,
+      "failure_rate": 89.2
+    },
+    {
+      "lesson_type": "pattern_failure",
+      "condition": "signal = BUY",
+      "outcome": "failure",
+      "occurrences": 1227,
+      "avg_ret": 25.8,
+      "failure_rate": 72.9
+    },
+    {
+      "lesson_type": "filter_rule",
+      "condition": "market = EGX",
+      "outcome": "failure",
+      "occurrences": 1229,
+      "avg_ret": 25.74,
+      "failure_rate": 72.9
+    },
+    {
+      "lesson_type": "regime_range",
+      "condition": "market_regime=range",
+      "outcome": "failure",
+      "occurrences": 110,
+      "avg_ret": 35.14,
+      "failure_rate": 55.5
+    },
+    {
+      "lesson_type": "regime_bull",
+      "condition": "market_regime=bull",
+      "outcome": "success",
+      "occurrences": 315,
+      "avg_ret": 58.61,
+      "failure_rate": 37.5
+    },
+    {
+      "lesson_type": "pattern_success",
+      "condition": "signal = HOLD",
+      "outcome": "success",
+      "occurrences": 417,
+      "avg_ret": 0.85,
+      "failure_rate": 19.2
+    },
+    {
+      "lesson_type": "pattern_success",
+      "condition": "signal = HOLD",
+      "outcome": "success",
+      "occurrences": 319,
+      "avg_ret": 1.31,
+      "failure_rate": 7.8
+    }
+  ],
+  "best_lessons": [
+    {
+      "lesson_type": "pattern_success",
+      "condition": "signal = HOLD",
+      "outcome": "success",
+      "occurrences": 319,
+      "avg_ret": 1.31,
+      "failure_rate": 7.8
+    },
+    {
+      "lesson_type": "pattern_success",
+      "condition": "signal = HOLD",
+      "outcome": "success",
+      "occurrences": 417,
+      "avg_ret": 0.85,
+      "failure_rate": 19.2
+    },
+    {
+      "lesson_type": "regime_bull",
+      "condition": "market_regime=bull",
+      "outcome": "success",
+      "occurrences": 315,
+      "avg_ret": 58.61,
+      "failure_rate": 37.5
+    },
+    {
+      "lesson_type": "regime_range",
+      "condition": "market_regime=range",
+      "outcome": "failure",
+      "occurrences": 110,
+      "avg_ret": 35.14,
+      "failure_rate": 55.5
+    },
+    {
+      "lesson_type": "pattern_failure",
+      "condition": "signal = BUY",
+      "outcome": "failure",
+      "occurrences": 1227,
+      "avg_ret": 25.8,
+      "failure_rate": 72.9
+    },
+    {
+      "lesson_type": "filter_rule",
+      "condition": "market = EGX",
+      "outcome": "failure",
+      "occurrences": 1229,
+      "avg_ret": 25.74,
+      "failure_rate": 72.9
+    },
+    {
+      "lesson_type": "regime_bear",
+      "condition": "market_regime=bear",
+      "outcome": "failure",
+      "occurrences": 804,
+      "avg_ret": 11.58,
+      "failure_rate": 89.2
+    },
+    {
+      "lesson_type": "pattern_rsi_oversold",
+      "condition": "RSI < 30 (تشبع بيعي)",
+      "outcome": "failure",
+      "occurrences": 111,
+      "avg_ret": 8.56,
+      "failure_rate": 93.7
+    }
+  ],
+  "long_hold_predictions": [
+    {
+      "id": 50215,
+      "ticker": "PIOH",
+      "persona": "conservative",
+      "prediction_date": "2025-09-22 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 365,
+      "actual_return": 9.21,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50217,
+      "ticker": "BTFH",
+      "persona": "conservative",
+      "prediction_date": "2025-09-22 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 365,
+      "actual_return": -5.81,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50219,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-23 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 364,
+      "actual_return": 12.23,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50221,
+      "ticker": "BLDG",
+      "persona": "balanced",
+      "prediction_date": "2025-09-23 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 364,
+      "actual_return": -8.36,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50223,
+      "ticker": "BTFH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-23 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 364,
+      "actual_return": -5.81,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50225,
+      "ticker": "BLDG",
+      "persona": "balanced",
+      "prediction_date": "2025-09-24 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 363,
+      "actual_return": -8.86,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50226,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-24 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 363,
+      "actual_return": 10.63,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50230,
+      "ticker": "BLDG",
+      "persona": "balanced",
+      "prediction_date": "2025-09-25 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 362,
+      "actual_return": -8.89,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50231,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-25 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 362,
+      "actual_return": 8.77,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50233,
+      "ticker": "BTFH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-25 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 362,
+      "actual_return": -7.89,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50235,
+      "ticker": "BLDG",
+      "persona": "balanced",
+      "prediction_date": "2025-09-28 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 359,
+      "actual_return": -6.01,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50236,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-28 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 359,
+      "actual_return": 5.59,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50240,
+      "ticker": "BLDG",
+      "persona": "balanced",
+      "prediction_date": "2025-09-29 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 358,
+      "actual_return": -9.97,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50241,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-29 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 358,
+      "actual_return": 4.77,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50243,
+      "ticker": "BTFH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-29 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 358,
+      "actual_return": -6.71,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50245,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-09-30 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 357,
+      "actual_return": 6.56,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50246,
+      "ticker": "BLDG",
+      "persona": "balanced",
+      "prediction_date": "2025-09-30 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 357,
+      "actual_return": -11.76,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50250,
+      "ticker": "PIOH",
+      "persona": "balanced",
+      "prediction_date": "2025-10-01 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 356,
+      "actual_return": 4.64,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    },
+    {
+      "id": 50253,
+      "ticker": "BTFH",
+      "persona": "balanced",
+      "prediction_date": "2025-10-01 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 356,
+      "actual_return": -6.71,
+      "hit_target": 0,
+      "hit_stop": 1,
+      "exit_reason": null
+    },
+    {
+      "id": 50255,
+      "ticker": "BTFH",
+      "persona": "balanced",
+      "prediction_date": "2025-10-02 12:00:00",
+      "outcome_date": "2026-09-22",
+      "holding_days": 355,
+      "actual_return": -5.5,
+      "hit_target": 0,
+      "hit_stop": 0,
+      "exit_reason": null
+    }
+  ],
+  "persona_summary": {
+    "predictions_table": [
+      {
+        "persona": "balanced",
+        "c": 1212
+      },
+      {
+        "persona": "conservative",
+        "c": 78
+      },
+      {
+        "persona": "gambler",
+        "c": 69
+      }
+    ],
+    "persona_predictions_table": [
+      {
+        "persona": "balanced",
+        "c": 1669
+      }
+    ]
+  },
+  "dup_scan_broad": [
+    {
+      "ticker": "EGCH",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 5,
+      "statuses": "active,active,active,ACTIVE,ACTIVE",
+      "returns": "NULL,NULL,NULL,NULL,NULL"
+    },
+    {
+      "ticker": "AJWA",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 3,
+      "statuses": "active,active,active",
+      "returns": "NULL,NULL,NULL"
+    },
+    {
+      "ticker": "EGBE",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 3,
+      "statuses": "active,active,active",
+      "returns": "NULL,NULL,NULL"
+    },
+    {
+      "ticker": "EXPA",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 3,
+      "statuses": "active,active,active",
+      "returns": "NULL,NULL,NULL"
+    },
+    {
+      "ticker": "1120",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "active,active",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "1150",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "STOPPED,active",
+      "returns": "-6.85,NULL"
+    },
+    {
+      "ticker": "1820",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "2200",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "2222",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "active,active",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "4110",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "4280",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "6050",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "active,active",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "7020",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "STOPPED,active",
+      "returns": "-7.0,NULL"
+    },
+    {
+      "ticker": "7030",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "7205",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ACTF",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ADPC",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ADRI",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "AHCS",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ALIMTI",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ALOLA",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ALSAFA",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ALTIJA",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "AMT",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ARGAN",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "ARZAN",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "active,active",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "CLEANI",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "DBIS",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "DHBK",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    },
+    {
+      "ticker": "DUBK",
+      "prediction_date": "2026-09-24",
+      "persona": "balanced",
+      "c": 2,
+      "statuses": "ACTIVE,ACTIVE",
+      "returns": "NULL,NULL"
+    }
+  ],
+  "real_evaluated_predictions": [
+    {
+      "c": 4035,
+      "avg_ret": -2.9,
+      "win_rate_pct": 63.3,
+      "avg_hold": 0.1
+    }
+  ],
+  "real_eval_by_ticker": [
+    {
+      "ticker": "VLMR",
+      "c": 65,
+      "win_rate_pct": 100,
+      "avg_ret": -10.29
+    },
+    {
+      "ticker": "FAIT",
+      "c": 52,
+      "win_rate_pct": 100,
+      "avg_ret": -10.05
+    },
+    {
+      "ticker": "PHDC",
+      "c": 39,
+      "win_rate_pct": 100,
+      "avg_ret": -10
+    },
+    {
+      "ticker": "ETEL",
+      "c": 39,
+      "win_rate_pct": 100,
+      "avg_ret": -10
+    },
+    {
+      "ticker": "ESRS",
+      "c": 39,
+      "win_rate_pct": 0,
+      "avg_ret": 10
+    },
+    {
+      "ticker": "AMER",
+      "c": 39,
+      "win_rate_pct": 0,
+      "avg_ret": 10.07
+    },
+    {
+      "ticker": "UASG",
+      "c": 35,
+      "win_rate_pct": 100,
+      "avg_ret": -9.3
+    },
+    {
+      "ticker": "FWRY",
+      "c": 35,
+      "win_rate_pct": 100,
+      "avg_ret": -10.01
+    },
+    {
+      "ticker": "EMFD",
+      "c": 35,
+      "win_rate_pct": 100,
+      "avg_ret": -10
+    },
+    {
+      "ticker": "EFIH",
+      "c": 35,
+      "win_rate_pct": 100,
+      "avg_ret": -10.01
+    },
+    {
+      "ticker": "DCRC",
+      "c": 35,
+      "win_rate_pct": 100,
+      "avg_ret": -10
+    },
+    {
+      "ticker": "BTFH",
+      "c": 35,
+      "win_rate_pct": 100,
+      "avg_ret": -10.13
+    },
+    {
+      "ticker": "ALCN",
+      "c": 30,
+      "win_rate_pct": 86.7,
+      "avg_ret": -8.29
+    },
+    {
+      "ticker": "TWSA",
+      "c": 27,
+      "win_rate_pct": 100,
+      "avg_ret": -10.06
+    },
+    {
+      "ticker": "TRTO",
+      "c": 27,
+      "win_rate_pct": 100,
+      "avg_ret": -17.65
+    },
+    {
+      "ticker": "SPMD",
+      "c": 27,
+      "win_rate_pct": 100,
+      "avg_ret": -9.79
+    },
+    {
+      "ticker": "PHGC",
+      "c": 27,
+      "win_rate_pct": 100,
+      "avg_ret": -7.53
+    },
+    {
+      "ticker": "PETR",
+      "c": 27,
+      "win_rate_pct": 100,
+      "avg_ret": -10
+    },
+    {
+      "ticker": "ORTE",
+      "c": 27,
+      "win_rate_pct": 100,
+      "avg_ret": -10.01
+    },
+    {
+      "ticker": "OFH",
+      "c": 27,
+      "win_rate_pct": 0,
+      "avg_ret": 9.69
+    }
+  ],
+  "radar_signal_tracking": [
+    {
+      "signal_type": "pre_surge",
+      "c": 57,
+      "verified_pct": 0,
+      "avg_7d": null,
+      "avg_14d": null,
+      "avg_30d": null
+    },
+    {
+      "signal_type": "quiet_accumulation_strong",
+      "c": 28,
+      "verified_pct": 0,
+      "avg_7d": null,
+      "avg_14d": null,
+      "avg_30d": null
+    },
+    {
+      "signal_type": "explosive_surge",
+      "c": 10,
+      "verified_pct": 0,
+      "avg_7d": null,
+      "avg_14d": null,
+      "avg_30d": null
+    },
+    {
+      "signal_type": "early_break",
+      "c": 1,
+      "verified_pct": 0,
+      "avg_7d": null,
+      "avg_14d": null,
+      "avg_30d": null
+    }
+  ],
+  "regime_log": [
+    {
+      "date": "2026-06-21",
+      "regime": "bull_trend",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-06-22",
+      "regime": "bull_trend",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-06-23",
+      "regime": "bull_trend",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-06-24",
+      "regime": "bull_trend",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-06-25",
+      "regime": "bull_trend",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-06-26",
+      "regime": "bull_trend",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-01",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-02",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-03",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-04",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-05",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-06",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-07",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-08",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-09",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-10",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-20",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-21",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-22",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-23",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-28",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-07-29",
+      "regime": "unknown",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-07",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-18",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-19",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-20",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-21",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-22",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-23",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-24",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-25",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-26",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-27",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    },
+    {
+      "date": "2026-08-28",
+      "regime": "ranging",
+      "egx30_close": null,
+      "egx30_change_pct": null,
+      "volume_ratio": null,
+      "adx": null,
+      "rsi": null
+    }
+  ],
+  "analytics_top": [
+    {
+      "type": "page_view",
+      "view": "admin:dashboard",
+      "c": 66
+    },
+    {
+      "type": "page_view",
+      "view": "recommendations",
+      "c": 58
+    },
+    {
+      "type": "page_view",
+      "view": "dashboard",
+      "c": 50
+    },
+    {
+      "type": "page_view",
+      "view": "auth",
+      "c": 25
+    },
+    {
+      "type": "page_view",
+      "view": "stocks",
+      "c": 25
+    },
+    {
+      "type": "page_view",
+      "view": "advanced-analysis",
+      "c": 21
+    },
+    {
+      "type": "page_view",
+      "view": "prediction-performance",
+      "c": 20
+    },
+    {
+      "type": "page_view",
+      "view": "admin:data-engine",
+      "c": 14
+    },
+    {
+      "type": "page_view",
+      "view": "watchlist",
+      "c": 13
+    },
+    {
+      "type": "page_view",
+      "view": "admin",
+      "c": 12
+    },
+    {
+      "type": "page_view",
+      "view": "portfolio",
+      "c": 12
+    },
+    {
+      "type": "page_view",
+      "view": "admin:maestro",
+      "c": 11
+    },
+    {
+      "type": "page_view",
+      "view": "prediction-credibility",
+      "c": 11
+    },
+    {
+      "type": "page_view",
+      "view": "admin:users",
+      "c": 10
+    },
+    {
+      "type": "page_view",
+      "view": "admin:general",
+      "c": 9
+    }
+  ],
+  "daily_closed": [
+    {
+      "day": "2026-09-24",
+      "total": 119,
+      "closed": 2,
+      "active": 117
+    },
+    {
+      "day": "2026-09-23",
+      "total": 1,
+      "closed": 1,
+      "active": 0
+    },
+    {
+      "day": "2026-09-21",
+      "total": 5,
+      "closed": 0,
+      "active": 5
+    },
+    {
+      "day": "2026-09-16",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-15",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-14",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-13",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-10",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-09",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-08",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-07",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-06",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-09-03",
+      "total": 5,
+      "closed": 3,
+      "active": 2
+    },
+    {
+      "day": "2026-09-02",
+      "total": 5,
+      "closed": 4,
+      "active": 1
+    },
+    {
+      "day": "2026-09-01",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-31",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-30",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-27",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-26",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-25",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-24",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-23",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-20",
+      "total": 5,
+      "closed": 3,
+      "active": 2
+    },
+    {
+      "day": "2026-08-19",
+      "total": 5,
+      "closed": 3,
+      "active": 2
+    },
+    {
+      "day": "2026-08-18",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-17",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-16",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-13",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-12",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    },
+    {
+      "day": "2026-08-11",
+      "total": 5,
+      "closed": 5,
+      "active": 0
+    }
+  ]
+}

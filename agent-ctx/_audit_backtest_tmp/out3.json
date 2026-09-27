@@ -1,0 +1,197 @@
+{
+  "by_sector": [
+    {
+      "sector": "Communications",
+      "total": 4,
+      "wins": 4,
+      "win_rate_pct": 100,
+      "avg_return": 60.33
+    },
+    {
+      "sector": "Consumer Durables",
+      "total": 25,
+      "wins": 25,
+      "win_rate_pct": 100,
+      "avg_return": 127.17
+    },
+    {
+      "sector": "Energy Minerals",
+      "total": 64,
+      "wins": 64,
+      "win_rate_pct": 100,
+      "avg_return": 85.23
+    },
+    {
+      "sector": "Transportation",
+      "total": 6,
+      "wins": 6,
+      "win_rate_pct": 100,
+      "avg_return": 49.31
+    },
+    {
+      "sector": "Health Technology",
+      "total": 9,
+      "wins": 8,
+      "win_rate_pct": 88.9,
+      "avg_return": 37.22
+    },
+    {
+      "sector": "Producer Manufacturing",
+      "total": 12,
+      "wins": 10,
+      "win_rate_pct": 83.3,
+      "avg_return": 33.33
+    },
+    {
+      "sector": "Process Industries",
+      "total": 142,
+      "wins": 104,
+      "win_rate_pct": 73.2,
+      "avg_return": 53.12
+    },
+    {
+      "sector": "Distribution Services",
+      "total": 3,
+      "wins": 2,
+      "win_rate_pct": 66.7,
+      "avg_return": 103.75
+    },
+    {
+      "sector": "Industrial Services",
+      "total": 13,
+      "wins": 7,
+      "win_rate_pct": 53.8,
+      "avg_return": 13.75
+    },
+    {
+      "sector": "Consumer Services",
+      "total": 2,
+      "wins": 1,
+      "win_rate_pct": 50,
+      "avg_return": 17.8
+    },
+    {
+      "sector": "Utilities",
+      "total": 4,
+      "wins": 2,
+      "win_rate_pct": 50,
+      "avg_return": 14.33
+    },
+    {
+      "sector": "Finance",
+      "total": 628,
+      "wins": 241,
+      "win_rate_pct": 38.4,
+      "avg_return": 21.26
+    },
+    {
+      "sector": "Diversified",
+      "total": 275,
+      "wins": 8,
+      "win_rate_pct": 2.9,
+      "avg_return": -0.62
+    },
+    {
+      "sector": "Consumer Non-Durables",
+      "total": 1,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -18.26
+    },
+    {
+      "sector": "Electronic Technology",
+      "total": 1,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -21.05
+    },
+    {
+      "sector": "Health Services",
+      "total": 2,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": -13.28
+    },
+    {
+      "sector": "Technology Services",
+      "total": 6,
+      "wins": 0,
+      "win_rate_pct": 0,
+      "avg_return": 0.1
+    }
+  ],
+  "by_marketcap": [
+    {
+      "cap_bucket": "large_cap (>50B EGP)",
+      "total": 146,
+      "wins": 110,
+      "win_rate_pct": 75.3,
+      "avg_return": 54.28
+    },
+    {
+      "cap_bucket": "small_cap (1-10B)",
+      "total": 79,
+      "wins": 57,
+      "win_rate_pct": 72.2,
+      "avg_return": 34.37
+    },
+    {
+      "cap_bucket": "mid_cap (10-50B)",
+      "total": 659,
+      "wins": 288,
+      "win_rate_pct": 43.7,
+      "avg_return": 30.43
+    },
+    {
+      "cap_bucket": "micro_cap (<1B)",
+      "total": 60,
+      "wins": 21,
+      "win_rate_pct": 35,
+      "avg_return": 18.65
+    },
+    {
+      "cap_bucket": "unknown",
+      "total": 275,
+      "wins": 8,
+      "win_rate_pct": 2.9,
+      "avg_return": -0.62
+    }
+  ],
+  "unmatched_tickers": [
+    {
+      "ticker": "AMD"
+    },
+    {
+      "ticker": "AMT"
+    },
+    {
+      "ticker": "IFAHR"
+    },
+    {
+      "ticker": "LTC"
+    },
+    {
+      "ticker": "MCROM"
+    },
+    {
+      "ticker": "META"
+    },
+    {
+      "ticker": "MNHD"
+    },
+    {
+      "ticker": "MU"
+    },
+    {
+      "ticker": "QQQ"
+    },
+    {
+      "ticker": "SPY"
+    },
+    {
+      "ticker": "WBD"
+    }
+  ],
+  "stocks_count": 976,
+  "sectors_count": 25
+}

@@ -1,0 +1,1236 @@
+{
+  "by_quarter": [
+    {
+      "quarter": "2025-Q3",
+      "total": 35,
+      "wins": 18,
+      "win_rate_pct": 51.4,
+      "avg_return": 42.76,
+      "avg_hold": 201.1
+    },
+    {
+      "quarter": "2025-Q4",
+      "total": 330,
+      "wins": 210,
+      "win_rate_pct": 63.6,
+      "avg_return": 56.36,
+      "avg_hold": 150.5
+    },
+    {
+      "quarter": "2026-Q1",
+      "total": 319,
+      "wins": 129,
+      "win_rate_pct": 40.4,
+      "avg_return": 24.85,
+      "avg_hold": 175.9
+    },
+    {
+      "quarter": "2026-Q2",
+      "total": 310,
+      "wins": 71,
+      "win_rate_pct": 22.9,
+      "avg_return": 9.65,
+      "avg_hold": 125.1
+    },
+    {
+      "quarter": "2026-Q3",
+      "total": 235,
+      "wins": 56,
+      "win_rate_pct": 23.8,
+      "avg_return": 2.66,
+      "avg_hold": 36.8
+    }
+  ],
+  "top20_avg_return": [
+    {
+      "ticker": "HELI",
+      "total": 21,
+      "avg_return": 144.4,
+      "best_return": 161.15,
+      "win_rate_pct": 100
+    },
+    {
+      "ticker": "AMOC",
+      "total": 64,
+      "avg_return": 85.23,
+      "best_return": 101.79,
+      "win_rate_pct": 100
+    },
+    {
+      "ticker": "ABUK",
+      "total": 129,
+      "avg_return": 55.5,
+      "best_return": 106.52,
+      "win_rate_pct": 72.9
+    },
+    {
+      "ticker": "SWDY",
+      "total": 6,
+      "avg_return": 55.44,
+      "best_return": 62.05,
+      "win_rate_pct": 100
+    },
+    {
+      "ticker": "ALCN",
+      "total": 6,
+      "avg_return": 49.31,
+      "best_return": 64.43,
+      "win_rate_pct": 100
+    },
+    {
+      "ticker": "MASR",
+      "total": 190,
+      "avg_return": 42.22,
+      "best_return": 89.63,
+      "win_rate_pct": 64.7
+    },
+    {
+      "ticker": "ELKA",
+      "total": 22,
+      "avg_return": 38.02,
+      "best_return": 56.07,
+      "win_rate_pct": 95.5
+    },
+    {
+      "ticker": "PHDC",
+      "total": 100,
+      "avg_return": 37.19,
+      "best_return": 119.61,
+      "win_rate_pct": 61
+    },
+    {
+      "ticker": "MCRO",
+      "total": 7,
+      "avg_return": 33.68,
+      "best_return": 61.54,
+      "win_rate_pct": 85.7
+    },
+    {
+      "ticker": "ESRS",
+      "total": 16,
+      "avg_return": 31.52,
+      "best_return": 51.56,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "PHYG",
+      "total": 5,
+      "avg_return": 26.54,
+      "best_return": 28.92,
+      "win_rate_pct": 100
+    },
+    {
+      "ticker": "SAIB",
+      "total": 8,
+      "avg_return": 24.11,
+      "best_return": 40.56,
+      "win_rate_pct": 62.5
+    },
+    {
+      "ticker": "CERA",
+      "total": 5,
+      "avg_return": 13.46,
+      "best_return": 26.36,
+      "win_rate_pct": 80
+    },
+    {
+      "ticker": "ACAMD",
+      "total": 5,
+      "avg_return": 7.22,
+      "best_return": 65.29,
+      "win_rate_pct": 20
+    },
+    {
+      "ticker": "DMNH",
+      "total": 19,
+      "avg_return": 5.13,
+      "best_return": 12.27,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "CIEB",
+      "total": 71,
+      "avg_return": 4.66,
+      "best_return": 15.95,
+      "win_rate_pct": 8.5
+    },
+    {
+      "ticker": "HRHO",
+      "total": 15,
+      "avg_return": 3.47,
+      "best_return": 21.66,
+      "win_rate_pct": 13.3
+    },
+    {
+      "ticker": "APRI",
+      "total": 5,
+      "avg_return": 2.93,
+      "best_return": 7.55,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "CAPE",
+      "total": 17,
+      "avg_return": 1.88,
+      "best_return": 7.03,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "REAC",
+      "total": 23,
+      "avg_return": 1.14,
+      "best_return": 33.05,
+      "win_rate_pct": 13
+    }
+  ],
+  "bottom20_avg_return": [
+    {
+      "ticker": "ORTE",
+      "total": 48,
+      "avg_return": -7.96,
+      "worst_return": -27.83,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "BTFH",
+      "total": 189,
+      "avg_return": -4.26,
+      "worst_return": -18.89,
+      "win_rate_pct": 2.1
+    },
+    {
+      "ticker": "MTEZ",
+      "total": 37,
+      "avg_return": -2.57,
+      "worst_return": -12.09,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "BLDG",
+      "total": 49,
+      "avg_return": -1.56,
+      "worst_return": -15.09,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "MNHD",
+      "total": 10,
+      "avg_return": -0.52,
+      "worst_return": -9.83,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "PIOH",
+      "total": 69,
+      "avg_return": 1.09,
+      "worst_return": -13.62,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "REAC",
+      "total": 23,
+      "avg_return": 1.14,
+      "worst_return": -48.12,
+      "win_rate_pct": 13
+    },
+    {
+      "ticker": "CAPE",
+      "total": 17,
+      "avg_return": 1.88,
+      "worst_return": -4.59,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "APRI",
+      "total": 5,
+      "avg_return": 2.93,
+      "worst_return": -1.56,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "HRHO",
+      "total": 15,
+      "avg_return": 3.47,
+      "worst_return": -7.2,
+      "win_rate_pct": 13.3
+    },
+    {
+      "ticker": "CIEB",
+      "total": 71,
+      "avg_return": 4.66,
+      "worst_return": -10.54,
+      "win_rate_pct": 8.5
+    },
+    {
+      "ticker": "DMNH",
+      "total": 19,
+      "avg_return": 5.13,
+      "worst_return": -3.49,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "ACAMD",
+      "total": 5,
+      "avg_return": 7.22,
+      "worst_return": -14.16,
+      "win_rate_pct": 20
+    },
+    {
+      "ticker": "CERA",
+      "total": 5,
+      "avg_return": 13.46,
+      "worst_return": 5.3,
+      "win_rate_pct": 80
+    },
+    {
+      "ticker": "SAIB",
+      "total": 8,
+      "avg_return": 24.11,
+      "worst_return": 10,
+      "win_rate_pct": 62.5
+    },
+    {
+      "ticker": "PHYG",
+      "total": 5,
+      "avg_return": 26.54,
+      "worst_return": 24.9,
+      "win_rate_pct": 100
+    },
+    {
+      "ticker": "ESRS",
+      "total": 16,
+      "avg_return": 31.52,
+      "worst_return": 9.46,
+      "win_rate_pct": 0
+    },
+    {
+      "ticker": "MCRO",
+      "total": 7,
+      "avg_return": 33.68,
+      "worst_return": -0.59,
+      "win_rate_pct": 85.7
+    },
+    {
+      "ticker": "PHDC",
+      "total": 100,
+      "avg_return": 37.19,
+      "worst_return": -14.45,
+      "win_rate_pct": 61
+    },
+    {
+      "ticker": "ELKA",
+      "total": 22,
+      "avg_return": 38.02,
+      "worst_return": 1.83,
+      "win_rate_pct": 95.5
+    }
+  ],
+  "risk_reward_dist": [
+    {
+      "bucket": "a_<1.0",
+      "c": 67,
+      "win_rate_pct": 58.2,
+      "avg_return": 29.55
+    },
+    {
+      "bucket": "b_1.0-2.0",
+      "c": 10,
+      "win_rate_pct": 10,
+      "avg_return": -11.19
+    },
+    {
+      "bucket": "c_2.0-3.0",
+      "c": 91,
+      "win_rate_pct": 49.5,
+      "avg_return": 17.39
+    },
+    {
+      "bucket": "d_3.0-5.0",
+      "c": 55,
+      "win_rate_pct": 3.6,
+      "avg_return": 1.87
+    },
+    {
+      "bucket": "e_>=5.0",
+      "c": 1004,
+      "win_rate_pct": 39.5,
+      "avg_return": 27.99
+    },
+    {
+      "bucket": "null",
+      "c": 2,
+      "win_rate_pct": 0,
+      "avg_return": -6.92
+    }
+  ],
+  "score_dist": [
+    {
+      "bucket": "a_<50",
+      "c": 37,
+      "win_rate_pct": 40.5,
+      "avg_return": 9.25
+    },
+    {
+      "bucket": "b_50-60",
+      "c": 107,
+      "win_rate_pct": 40.2,
+      "avg_return": 14.73
+    },
+    {
+      "bucket": "c_60-70",
+      "c": 429,
+      "win_rate_pct": 38.5,
+      "avg_return": 25.88
+    },
+    {
+      "bucket": "d_70-80",
+      "c": 407,
+      "win_rate_pct": 38.1,
+      "avg_return": 26.88
+    },
+    {
+      "bucket": "e_80-90",
+      "c": 195,
+      "win_rate_pct": 43.6,
+      "avg_return": 32.81
+    },
+    {
+      "bucket": "f_>=90",
+      "c": 54,
+      "win_rate_pct": 38.9,
+      "avg_return": 23.7
+    }
+  ],
+  "confidence_dist": [
+    {
+      "bucket": "a_<50",
+      "c": 34,
+      "win_rate_pct": 44.1,
+      "avg_return": 10.63
+    },
+    {
+      "bucket": "b_50-60",
+      "c": 107,
+      "win_rate_pct": 40.2,
+      "avg_return": 14.73
+    },
+    {
+      "bucket": "c_60-70",
+      "c": 429,
+      "win_rate_pct": 38.5,
+      "avg_return": 25.88
+    },
+    {
+      "bucket": "d_70-80",
+      "c": 407,
+      "win_rate_pct": 38.1,
+      "avg_return": 26.88
+    },
+    {
+      "bucket": "e_80-90",
+      "c": 196,
+      "win_rate_pct": 43.4,
+      "avg_return": 32.62
+    },
+    {
+      "bucket": "f_>=90",
+      "c": 54,
+      "win_rate_pct": 38.9,
+      "avg_return": 23.7
+    },
+    {
+      "bucket": "null",
+      "c": 2,
+      "win_rate_pct": 0,
+      "avg_return": -6.92
+    }
+  ],
+  "suspicious_null_exit": [
+    {
+      "id": 50214,
+      "ticker": "MASR",
+      "persona": "conservative",
+      "prediction_date": "2025-09-22 12:00:00",
+      "entry_price": 4.05,
+      "target_price": 44.97,
+      "actual_return": 89.63,
+      "holding_days": 50
+    },
+    {
+      "id": 50216,
+      "ticker": "PHDC",
+      "persona": "conservative",
+      "prediction_date": "2025-09-22 12:00:00",
+      "entry_price": 7.16,
+      "target_price": 16.02,
+      "actual_return": 87.71,
+      "holding_days": 50
+    },
+    {
+      "id": 50218,
+      "ticker": "ABUK",
+      "persona": "conservative",
+      "prediction_date": "2025-09-22 12:00:00",
+      "entry_price": 51.5,
+      "target_price": 114.32,
+      "actual_return": 81.94,
+      "holding_days": 50
+    },
+    {
+      "id": 50220,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-09-23 12:00:00",
+      "entry_price": 4.05,
+      "target_price": 54.79,
+      "actual_return": 89.63,
+      "holding_days": 50
+    },
+    {
+      "id": 50222,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-09-23 12:00:00",
+      "entry_price": 7.08,
+      "target_price": 19.24,
+      "actual_return": 89.83,
+      "holding_days": 50
+    },
+    {
+      "id": 50224,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-09-24 12:00:00",
+      "entry_price": 4.11,
+      "target_price": 54.8,
+      "actual_return": 86.86,
+      "holding_days": 50
+    },
+    {
+      "id": 50227,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-09-24 12:00:00",
+      "entry_price": 7.3,
+      "target_price": 19.28,
+      "actual_return": 84.11,
+      "holding_days": 50
+    },
+    {
+      "id": 50228,
+      "ticker": "ABUK",
+      "persona": "balanced",
+      "prediction_date": "2025-09-24 12:00:00",
+      "entry_price": 51.48,
+      "target_price": 137.43,
+      "actual_return": 82.01,
+      "holding_days": 50
+    },
+    {
+      "id": 50229,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-09-25 12:00:00",
+      "entry_price": 4.1,
+      "target_price": 54.8,
+      "actual_return": 87.32,
+      "holding_days": 50
+    },
+    {
+      "id": 50232,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-09-25 12:00:00",
+      "entry_price": 7.3,
+      "target_price": 19.28,
+      "actual_return": 84.11,
+      "holding_days": 50
+    },
+    {
+      "id": 50234,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-09-28 12:00:00",
+      "entry_price": 4.15,
+      "target_price": 54.81,
+      "actual_return": 85.06,
+      "holding_days": 50
+    },
+    {
+      "id": 50237,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-09-28 12:00:00",
+      "entry_price": 7.29,
+      "target_price": 19.28,
+      "actual_return": 84.36,
+      "holding_days": 50
+    },
+    {
+      "id": 50238,
+      "ticker": "ABUK",
+      "persona": "balanced",
+      "prediction_date": "2025-09-28 12:00:00",
+      "entry_price": 53.14,
+      "target_price": 137.76,
+      "actual_return": 76.33,
+      "holding_days": 50
+    },
+    {
+      "id": 50239,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-09-29 12:00:00",
+      "entry_price": 4.14,
+      "target_price": 54.8,
+      "actual_return": 85.51,
+      "holding_days": 50
+    },
+    {
+      "id": 50242,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-09-29 12:00:00",
+      "entry_price": 7.42,
+      "target_price": 19.31,
+      "actual_return": 81.13,
+      "holding_days": 50
+    },
+    {
+      "id": 50244,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-09-30 12:00:00",
+      "entry_price": 4.14,
+      "target_price": 54.8,
+      "actual_return": 85.51,
+      "holding_days": 50
+    },
+    {
+      "id": 50247,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-09-30 12:00:00",
+      "entry_price": 7.38,
+      "target_price": 19.3,
+      "actual_return": 82.11,
+      "holding_days": 50
+    },
+    {
+      "id": 50248,
+      "ticker": "ABUK",
+      "persona": "balanced",
+      "prediction_date": "2025-09-30 12:00:00",
+      "entry_price": 53.3,
+      "target_price": 137.8,
+      "actual_return": 75.8,
+      "holding_days": 50
+    },
+    {
+      "id": 50249,
+      "ticker": "MASR",
+      "persona": "balanced",
+      "prediction_date": "2025-10-01 12:00:00",
+      "entry_price": 4.12,
+      "target_price": 54.8,
+      "actual_return": 86.41,
+      "holding_days": 50
+    },
+    {
+      "id": 50251,
+      "ticker": "PHDC",
+      "persona": "balanced",
+      "prediction_date": "2025-10-01 12:00:00",
+      "entry_price": 7.36,
+      "target_price": 19.3,
+      "actual_return": 82.61,
+      "holding_days": 50
+    }
+  ],
+  "mismatched_exit_price": [],
+  "hist_monthly": [
+    {
+      "month": "2013-09",
+      "total": 1,
+      "win_rate_pct": 0,
+      "avg_return": -0.88
+    },
+    {
+      "month": "2013-10",
+      "total": 3,
+      "win_rate_pct": 100,
+      "avg_return": 6.33
+    },
+    {
+      "month": "2013-12",
+      "total": 1,
+      "win_rate_pct": 100,
+      "avg_return": 6
+    },
+    {
+      "month": "2014-01",
+      "total": 1,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2014-02",
+      "total": 2,
+      "win_rate_pct": 0,
+      "avg_return": -3.5
+    },
+    {
+      "month": "2014-03",
+      "total": 1,
+      "win_rate_pct": 0,
+      "avg_return": -3
+    },
+    {
+      "month": "2014-04",
+      "total": 1,
+      "win_rate_pct": 0,
+      "avg_return": -3
+    },
+    {
+      "month": "2014-05",
+      "total": 1,
+      "win_rate_pct": 0,
+      "avg_return": -3
+    },
+    {
+      "month": "2014-06",
+      "total": 2,
+      "win_rate_pct": 50,
+      "avg_return": 3
+    },
+    {
+      "month": "2022-04",
+      "total": 3,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-05",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-06",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-08",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-09",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-10",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-11",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2022-12",
+      "total": 3,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2023-01",
+      "total": 3,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2023-02",
+      "total": 6,
+      "win_rate_pct": 16.7,
+      "avg_return": 1
+    },
+    {
+      "month": "2023-11",
+      "total": 3,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2023-12",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": 0
+    },
+    {
+      "month": "2024-01",
+      "total": 7,
+      "win_rate_pct": 0,
+      "avg_return": -0.57
+    },
+    {
+      "month": "2024-02",
+      "total": 12,
+      "win_rate_pct": 0,
+      "avg_return": -1.67
+    },
+    {
+      "month": "2024-03",
+      "total": 12,
+      "win_rate_pct": 0,
+      "avg_return": -0.92
+    },
+    {
+      "month": "2024-04",
+      "total": 8,
+      "win_rate_pct": 0,
+      "avg_return": -2.13
+    },
+    {
+      "month": "2024-05",
+      "total": 13,
+      "win_rate_pct": 0,
+      "avg_return": -1.08
+    },
+    {
+      "month": "2024-06",
+      "total": 6,
+      "win_rate_pct": 0,
+      "avg_return": -1.67
+    },
+    {
+      "month": "2024-07",
+      "total": 16,
+      "win_rate_pct": 25,
+      "avg_return": 0.63
+    },
+    {
+      "month": "2024-08",
+      "total": 12,
+      "win_rate_pct": 50,
+      "avg_return": 2.67
+    },
+    {
+      "month": "2024-09",
+      "total": 5,
+      "win_rate_pct": 0,
+      "avg_return": -3.6
+    },
+    {
+      "month": "2024-10",
+      "total": 8,
+      "win_rate_pct": 37.5,
+      "avg_return": 0
+    },
+    {
+      "month": "2024-11",
+      "total": 2,
+      "win_rate_pct": 0,
+      "avg_return": -3
+    },
+    {
+      "month": "2024-12",
+      "total": 2,
+      "win_rate_pct": 100,
+      "avg_return": 5.5
+    },
+    {
+      "month": "2025-01",
+      "total": 4,
+      "win_rate_pct": 75,
+      "avg_return": 1.72
+    },
+    {
+      "month": "2025-02",
+      "total": 3,
+      "win_rate_pct": 66.7,
+      "avg_return": 0.5
+    },
+    {
+      "month": "2025-03",
+      "total": 2,
+      "win_rate_pct": 100,
+      "avg_return": 5.5
+    },
+    {
+      "month": "2025-09",
+      "total": 378,
+      "win_rate_pct": 28.6,
+      "avg_return": -0.6
+    },
+    {
+      "month": "2025-10",
+      "total": 737,
+      "win_rate_pct": 35.8,
+      "avg_return": 0.02
+    },
+    {
+      "month": "2025-11",
+      "total": 1216,
+      "win_rate_pct": 32.3,
+      "avg_return": -0.24
+    },
+    {
+      "month": "2025-12",
+      "total": 1647,
+      "win_rate_pct": 36.6,
+      "avg_return": 0.11
+    },
+    {
+      "month": "2026-01",
+      "total": 1541,
+      "win_rate_pct": 34.7,
+      "avg_return": 0
+    },
+    {
+      "month": "2026-02",
+      "total": 1451,
+      "win_rate_pct": 22.7,
+      "avg_return": -1.12
+    },
+    {
+      "month": "2026-03",
+      "total": 1440,
+      "win_rate_pct": 36.9,
+      "avg_return": 0.16
+    },
+    {
+      "month": "2026-04",
+      "total": 1650,
+      "win_rate_pct": 47.6,
+      "avg_return": 1.18
+    },
+    {
+      "month": "2026-05",
+      "total": 1078,
+      "win_rate_pct": 40.6,
+      "avg_return": 0.6
+    },
+    {
+      "month": "2026-06",
+      "total": 1030,
+      "win_rate_pct": 49.7,
+      "avg_return": 1.49
+    },
+    {
+      "month": "2026-07",
+      "total": 361,
+      "win_rate_pct": 52.4,
+      "avg_return": 1.12
+    },
+    {
+      "month": "2026-08",
+      "total": 403,
+      "win_rate_pct": 47.9,
+      "avg_return": 1.02
+    }
+  ],
+  "top20_marketcap": [
+    {
+      "ticker": "VODE",
+      "name": "Vodafone Egypt Telecommunications Co SAE",
+      "sector": null,
+      "market_cap": "",
+      "current_price": 119.09
+    },
+    {
+      "ticker": "COMI",
+      "name": "Commercial International Bank - Egypt (CIB) S.A.E.",
+      "sector": "Finance",
+      "market_cap": 476923679875,
+      "current_price": 138.55
+    },
+    {
+      "ticker": "SWDY",
+      "name": "El Sewedy Electric Company",
+      "sector": "Producer Manufacturing",
+      "market_cap": 293048936411,
+      "current_price": 134.55
+    },
+    {
+      "ticker": "OCIC",
+      "name": "Orascom Construction Industries",
+      "sector": "Real Estate",
+      "market_cap": 273015491468.21848,
+      "current_price": 2814.588
+    },
+    {
+      "ticker": "ETEL",
+      "name": "Telecom Egypt",
+      "sector": "Communications",
+      "market_cap": 206214261167,
+      "current_price": 120.12
+    },
+    {
+      "ticker": "TMGH",
+      "name": "Talaat Moustafa Group Holding",
+      "sector": "Finance",
+      "market_cap": 205035053955,
+      "current_price": 98.02
+    },
+    {
+      "ticker": "EGAL",
+      "name": "Egypt Aluminum",
+      "sector": "Non-Energy Minerals",
+      "market_cap": 152625000000,
+      "current_price": 374.99
+    },
+    {
+      "ticker": "MFPC",
+      "name": "Misr Fertilizers Production Company MOPCO",
+      "sector": "Process Industries",
+      "market_cap": 136207979907,
+      "current_price": 47
+    },
+    {
+      "ticker": "QNBE",
+      "name": "Qatar National Bank",
+      "sector": "Finance",
+      "market_cap": 132823288284.00002,
+      "current_price": 60.16
+    },
+    {
+      "ticker": "HDBK",
+      "name": "Housing & Development Bank",
+      "sector": "Finance",
+      "market_cap": 113783207331,
+      "current_price": 114.95
+    },
+    {
+      "ticker": "ABUK",
+      "name": "Abou Kir Fertilizers & Chemical Industries Co.",
+      "sector": "Process Industries",
+      "market_cap": 113568815918,
+      "current_price": 92
+    },
+    {
+      "ticker": "EAST",
+      "name": "Eastern Company",
+      "sector": "Consumer Non-Durables",
+      "market_cap": 108299995422,
+      "current_price": 35.35
+    },
+    {
+      "ticker": "ORAS",
+      "name": "Orascom Construction Plc",
+      "sector": "Industrial Services",
+      "market_cap": 101217232711.82431,
+      "current_price": 855.85
+    },
+    {
+      "ticker": "ALCN",
+      "name": "Alexandria Containers & Goods",
+      "sector": "Transportation",
+      "market_cap": 95374008817,
+      "current_price": 32
+    },
+    {
+      "ticker": "EFIH",
+      "name": "e-finance for Digital and Financial Investments S.A.E.",
+      "sector": "Technology Services",
+      "market_cap": 83200001953,
+      "current_price": 23.8
+    },
+    {
+      "ticker": "EMFD",
+      "name": "Emaar Misr for Development SAE",
+      "sector": "Finance",
+      "market_cap": 80069865367,
+      "current_price": 14.77
+    },
+    {
+      "ticker": "ADIB",
+      "name": "Abu Dhabi Islamic Bank-Egypt",
+      "sector": "Finance",
+      "market_cap": 78735002518,
+      "current_price": 51.75
+    },
+    {
+      "ticker": "FWRY",
+      "name": "Fawry For Banking Technology And Electronic Payment",
+      "sector": "Technology Services",
+      "market_cap": 66972245462.00001,
+      "current_price": 19.34
+    },
+    {
+      "ticker": "SCTS",
+      "name": "Sues Canal Co. for Technology Settling",
+      "sector": "Commercial Services",
+      "market_cap": 56485263167,
+      "current_price": 617
+    },
+    {
+      "ticker": "ORHD",
+      "name": "Orascom Development Egypt (S.A.E)",
+      "sector": "Consumer Durables",
+      "market_cap": 48610360962,
+      "current_price": 42.26
+    }
+  ],
+  "stocks_by_sector": [
+    {
+      "sector": "",
+      "c": 620
+    },
+    {
+      "sector": "Finance",
+      "c": 91
+    },
+    {
+      "sector": "Process Industries",
+      "c": 45
+    },
+    {
+      "sector": "Diversified",
+      "c": 44
+    },
+    {
+      "sector": "Consumer Services",
+      "c": 17
+    },
+    {
+      "sector": "Miscellaneous",
+      "c": 17
+    },
+    {
+      "sector": "Non-Energy Minerals",
+      "c": 16
+    },
+    {
+      "sector": "Consumer Non-Durables",
+      "c": 14
+    },
+    {
+      "sector": "Industrial Services",
+      "c": 14
+    },
+    {
+      "sector": "Distribution Services",
+      "c": 12
+    },
+    {
+      "sector": "Producer Manufacturing",
+      "c": 12
+    },
+    {
+      "sector": "Health Technology",
+      "c": 11
+    },
+    {
+      "sector": "Consumer Durables",
+      "c": 8
+    },
+    {
+      "sector": "Commercial Services",
+      "c": 7
+    },
+    {
+      "sector": "Health Services",
+      "c": 7
+    },
+    {
+      "sector": "Technology Services",
+      "c": 7
+    },
+    {
+      "sector": "Retail Trade",
+      "c": 6
+    },
+    {
+      "sector": "Transportation",
+      "c": 6
+    },
+    {
+      "sector": "Utilities",
+      "c": 4
+    },
+    {
+      "sector": "Communications",
+      "c": 3
+    },
+    {
+      "sector": "Electronic Technology",
+      "c": 1
+    },
+    {
+      "sector": "Energy Minerals",
+      "c": 1
+    },
+    {
+      "sector": "Real Estate",
+      "c": 1
+    },
+    {
+      "sector": "خدمات المستهلك",
+      "c": 1
+    },
+    {
+      "sector": "—",
+      "c": 1
+    }
+  ],
+  "cached_analysis": [
+    {
+      "signal": "STRONG_SELL",
+      "c": 37,
+      "avg_score": 0
+    },
+    {
+      "signal": "REDUCE",
+      "c": 31,
+      "avg_score": 0
+    },
+    {
+      "signal": "SELL",
+      "c": 25,
+      "avg_score": 0
+    },
+    {
+      "signal": "HOLD",
+      "c": 24,
+      "avg_score": 0
+    },
+    {
+      "signal": "EXCLUDED",
+      "c": 16,
+      "avg_score": 0
+    },
+    {
+      "signal": "REJECTED_LIQUIDITY",
+      "c": 8,
+      "avg_score": 0
+    },
+    {
+      "signal": "REJECTED_FUNDAMENTALS",
+      "c": 2,
+      "avg_score": 0
+    }
+  ],
+  "by_year": [
+    {
+      "year": "2025",
+      "total": 365,
+      "win_rate_pct": 62.5,
+      "avg_return": 55.05
+    },
+    {
+      "year": "2026",
+      "total": 864,
+      "win_rate_pct": 29.6,
+      "avg_return": 13.36
+    }
+  ]
+}

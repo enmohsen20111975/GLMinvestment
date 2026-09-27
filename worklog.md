@@ -41685,3 +41685,143 @@ Stage Summary:
 18. SystemTopologyGraph.tsx (850 LOC orphan)
 
 التوصية الكبرى: ابدأ بـ المرحلة 1 (الكوارث) لأنها بتأثر على المستخدم دلوقتي، بعدها المرحلة 2 (الكنوز السريعة) لأنها قيمة فورية بـ 1-line fixes.
+
+---
+Task ID: DOC-REORG-2
+Agent: Documentation Secretary + Programmer (تنظيم ودمج التوثيق)
+Task: Reorganize the project's documentation into a clean, structured `Documentation/` folder — merge `RADAR_LIQUIDITY_UPGRADE.md` into `SYSTEM_HOW_IT_THINKS.md` as §15, move 91 scattered docs into 6 new subfolders (audit-logs/frontend-backend-db-audits/, deployment/, reports/, backtest-results/{archived,radar,vps-service}/, education/), create 3 new index/checklist files (`Documentation/README.md` master index, `Documentation/audit-logs/MASTER_AUDIT_REPORT.md` reformatted from `agent-ctx/SYNTHESIS_REPORT.md` as checklist + To-Do, `Documentation/backtest-results/README.md` index), and update TOC + "آخر تحديث" header in `SYSTEM_HOW_IT_THINKS.md`.
+
+Work Log:
+- Read worklog.md (last 500 lines) for context — confirmed `RADAR-A` + `RADAR-B` + `RADAR-C` + `RADAR-MAIN` tasks already documented + `DOC-SECRETARY-1` previously created `RADAR_LIQUIDITY_UPGRADE.md` as standalone.
+- Verified Documentation/ existing structure: 4 cornerstone files + RADAR_LIQUIDITY_UPGRADE.md (84KB) + audit-logs/ (2 files) + المؤشرات/ (CSVs — untouched).
+- Verified 2847 git-tracked files. Verified 0 untracked. Confirmed `git mv` is the right tool to preserve history.
+- Phase 1 (MERGE): Read SYSTEM_HOW_IT_THINKS.md structure (4097 lines, 14 numbered sections in TOC at L325-343). Read RADAR_LIQUIDITY_UPGRADE.md (1488 lines, 9 H2 sections + 6 H3 feature subsections under §2). Wrote Python transformation script that: (a) removes the standalone H1 + TOC, (b) maps `## N. <title>` → `### §15.<n> <title>` per task instructions, (c) maps `### 2.1`-`### 2.6` → `### §15.1`-`### §15.6` (the 6 features), (d) maps `### 3.1`-`### 9.1` → `#### §15.7.1`-`### §15.13.x` (sub-sub-sections), (e) maps `## آخر تحديث` → `### §15.14 آخر تحديث`. Appended transformed content as `## §15 — رادار السيولة: 6 ميزات الترقية (2026-09-27)` after L4097 of SYSTEM_HOW_IT_THINKS.md (1488 lines added → file now 5586 lines). Updated TOC at L325-347 with new §15 entry + 3 sub-rows listing §15.0 through §15.14. Updated "آخر تحديث" header at L1-6 from 2026-09-26 to 2026-09-27 (DOC-REORG-2) with merge summary. `git rm`'d the original RADAR_LIQUIDITY_UPGRADE.md.
+- Phase 2 (MOVE): Created 14 new subdirectories via `mkdir -p` (deployment/, reports/, backtest-results/{archived,radar,vps-service/{proof_20260817,v40_2_flag_ablation,v40_2_full_pipeline,v40_2_treasures,v40_4_multi_market}}/, education/, audit-logs/frontend-backend-db-audits/). Used `git mv` (not plain `mv`) for all 91 file moves to preserve git history:
+  • Root files (8): DEPLOYMENT_GUIDE.md → deployment/, EFFICIENCY_PROOF_REPORT.md + SYSTEM_STATE.md + Grok-Report-V40.2-Detailed-Analysis.md + AGENTS.md + CHANGELOG.md → reports/, "Agent messages (from news).md" → reports/Agent-messages-from-news.md (renamed), Agent messages + final_audit_certificate.md (from scripts/) + implementation_plan.md (from vps-service/) → reports/.
+  • vps-service deployment files (3): VPS_DEPLOY_README.md (scripts/), DEPLOYMENT.md, PRODUCTION_TOOLS_README.md (tools/) → deployment/.
+  • Agent-ctx audit reports (3): AUDIT_FRONTEND.md + AUDIT_BACKEND.md + AUDIT_DATABASES.md → audit-logs/frontend-backend-db-audits/.
+  • scripts/_archived/ (8 .md files): audit_master_dissection_report + audit_phase0/1/2_gate_report + audit_final_report + morning_bell_backtest/corrections_report + backtest_full_report → backtest-results/archived/.
+  • scripts/output/ (6 .md files): ab_liquidity_v2_* + explosive_rejections_* + maker_radar_20260905 → backtest-results/radar/.
+  • vps-service/backtest_results/ (~50 files including subfolders): moved top-level .md/.txt/.csv files + all 5 subfolders (proof_20260817/, v40_2_flag_ablation/, v40_2_full_pipeline/, v40_2_treasures/, v40_4_multi_market/) preserving subfolder structure → backtest-results/vps-service/.
+  • content/education/ (9 files): README + 01-08 → education/.
+  Removed 8 empty source directories via `rmdir` (vps-service/backtest_results/*, content/education, content, vps-service/backtest_results).
+- Phase 3 (CREATE README): Created `Documentation/README.md` (209 lines) as the master index — includes cornerstone table, audit reports (with MASTER_AUDIT_REPORT.md linked), deployment files table with source mapping, reports table, backtest-results sections, education links, full folder tree diagram, editing rules (7 rules), and full migration map (2026-09-27 DOC-REORG-2) listing every file's old path → new path with summary stats (91 moved, 1 merged, 3 created, 1 deleted).
+- Phase 3b (CREATE backtest-results/README.md): Created `Documentation/backtest-results/README.md` (86 lines) indexing all 8 archived/ + 6 radar/ + 18 vps-service top-level + 5 subfolders (with file lists for each subfolder) — total ~64 files counted.
+- Phase 4 (MASTER_AUDIT_REPORT.md): Read `agent-ctx/SYNTHESIS_REPORT.md` (608 lines) completely in 3 chunks. Wrote `Documentation/audit-logs/MASTER_AUDIT_REPORT.md` (1136 lines, 53KB) — transformed prose-only SYNTHESIS_REPORT into actionable checklist + To-Do format. Structure: Big Picture summary table → 10 Disasters (each with description + solution + checklist of `- [ ]` items + Status/Owner/Due Date/Priority fields) → 18 Hidden Gems (same structure) → Duplicates (Frontend + Backend + DB) with merge/delete checklists → Tech Debt (Frontend/Backend/DB) with cleanup checklists → Wiring Matrix (38-row table with Status column) → Master To-Do List categorized P0 (10 items), P1 (18 items), P2 (16 items), P3 (9 items) — total 53 numbered To-Dos. Closing summary + usage notes.
+- Verified: `bun run lint` ran cleanly (eslint . exited 0) — no breakage since only .md files touched. `git status --short` shows 96 changes: 91 R (renamed via git mv) + 3 A (new files: README.md, MASTER_AUDIT_REPORT.md, backtest-results/README.md) + 1 D (RADAR_LIQUIDITY_UPGRADE.md removed via git rm) + 1 M (SYSTEM_HOW_IT_THINKS.md modified, +1490/-1 lines per `git diff --stat`). Verified no untracked/deleted-beyond-intentional files. Verified `find Documentation -type f` = 104 files total (70 .md + 32 data + 2 README). Verified `# §15` sub-section count: 15 H3 (§15.0-§15.14) + 34 H4 sub-sub-sections under §15.7-§15.13. Verified Documentation/ structure matches task spec exactly: 4 cornerstones + README.md + audit-logs/{JULY,LAST_30,MASTER_AUDIT,frontend-backend-db-audits/{AUDIT_FE,BE,DB}} + deployment/{4 files} + reports/{8 files} + backtest-results/{README,archived/8,radar/6,vps-service/18+5subfolders} + education/{9 files} + المؤشرات/{4 CSVs untouched}.
+
+Stage Summary:
+- ✅ MERGED: RADAR_LIQUIDITY_UPGRADE.md (84KB, 1488 lines) → SYSTEM_HOW_IT_THINKS.md as §15 with 15 sub-sections (§15.0 intro through §15.14 آخر تحديث) + 6 feature subsections §15.1-§15.6 matching the task's expected structure.
+- ✅ MOVED: 91 files via `git mv` preserving history — 8 root files + 3 vps-service deployment + 3 agent-ctx audits + 8 scripts/_archived + 6 scripts/output + ~50 vps-service/backtest_results (top-level + 5 subfolders preserving structure) + 9 content/education.
+- ✅ CREATED: 3 new files — `Documentation/README.md` (master index, 209 lines), `Documentation/audit-logs/MASTER_AUDIT_REPORT.md` (1136 lines, 53KB, checklist + To-Do format with 53 numbered P0-P3 action items, derived from SYNTHESIS_REPORT.md), `Documentation/backtest-results/README.md` (86 lines, index of all backtest reports).
+- ✅ DELETED: 1 file — `Documentation/RADAR_LIQUIDITY_UPGRADE.md` (after merge — content preserved in SYSTEM_HOW_IT_THINKS.md §15).
+- ✅ UPDATED: `Documentation/SYSTEM_HOW_IT_THINKS.md` — added §15 (1490 lines, +1 modified line in TOC header area) + updated TOC table at L325-347 with new §15 entry + 3 sub-rows + updated "آخر تحديث" header from 2026-09-26 → 2026-09-27 (DOC-REORG-2) with merge summary.
+- ✅ VERIFIED: `bun run lint` passed cleanly. `git status` shows 96 tracked changes (91 R + 3 A + 1 D + 1 M). 0 untracked, 0 unexpected deletes. Root README.md (GitHub landing page) preserved untouched. `worklog.md` untouched (only appended here). `00-CONSTITUTION.md`, `01-PROJECT_ANATOMY.md`, `02-SCREENS_AND_COMPONENTS.md`, `audit-logs/` existing files, `المؤشرات/` — all untouched per task rules.
+- 📁 FINAL Documentation/ STRUCTURE: 4 cornerstones + README.md + audit-logs/{3 existing + MASTER_AUDIT + frontend-backend-db-audits/{3 audits}} + deployment/{4 files} + reports/{8 files} + backtest-results/{README + archived/8 + radar/6 + vps-service/{18 top-level + 5 subfolders with 25+ files}} + education/{9 files} + المؤشرات/{4 CSVs}. Total: 104 files across 15 directories.
+
+
+---
+Task ID: AUDIT-BACKTEST
+Agent: Backtest & Predictions Validation Team (فريق المحللين)
+Task: Validate the V40.2 prediction system by querying production SQLite databases (read-only) and backtesting predictions against actual EGX price history. Phases covered: (1) database state verification, (2) prediction accuracy on closed trades, (3) backtest of 30 random closed predictions vs price_history.db, (4) persona comparison, (5) time-based analysis (monthly/dow/regime), (6) hidden insights (top/bottom tickers, sectors, time-to-target, risk-adjusted ratios), (7) anomaly detection (impossible prices, future dates, duplicates).
+
+Work Log:
+- Read worklog.md tail (~500 lines) for context on prior work (V40.2 daily generator, radar signal-tracker, persona wiring, etc.).
+- Inspected `agent-ctx/_audit_schemas.txt` to recover schema for all tables in predictions.db, price_history.db, stocks.db, data_engine.db.
+- Wrote `/home/z/my-project/agent-ctx/_audit_backtest_tmp/audit_backtest.cjs` — main READ-ONLY analysis script using better-sqlite3 v13.0.3 with `{ readonly: true, fileMustExist: true }`. Covered Phases 1-7 with single JSON output.
+- Discovered two bugs during execution:
+  (a) `?1` placeholder syntax not recognized by better-sqlite3 → reissued with `?` positional placeholder.
+  (b) `stocks.db.stocks` table uses `ticker` column (not `symbol` as prior audit schema claimed) — verified directly with PRAGMA table_info. The audit's 296-row count was stale; actual is 976 rows.
+- Used `ATTACH DATABASE` on the stocksDb connection to JOIN `stocks.ticker = pred.predictions.ticker` across DB files (read-only) for sector & market_cap analysis.
+- Wrote `audit_backtest_fix2.cjs` (placeholder fix + egksco schema discovery — date column is `price_date`) and `audit_backtest_fix3.cjs` (correct column name + cross-db JOIN).
+- Wrote `inspect_dup.cjs` to investigate the 2 suspicious duplicate-row cases (tickers "1150" and "7020" on 2026-09-24, both with one STOPPED + one active row).
+- Wrote `inspect_orig.cjs` to compare `predictions.db.original` (4.9 MB backup) vs live `predictions.db` (224 MB) — confirmed the audit's "651 closed" figure was actually the row count in the stale backup.
+- Wrote `run_extended.cjs` and `run_extended2.cjs` for additional queries (top 30 tickers by volume, exit_reason breakdown, monthly persona matrix, weekday × persona matrix, exit_notification gain buckets, learned_lessons aggregated by type, worst/best lessons, predictions with holding_days > 200, real_evaluated_predictions stats, radar_signal_tracking breakdown, market_regime_log full timeline, analytics_events top, daily closed vs active, quarterly/yearly performance, top/bottom 20 by avg_return, risk_reward distribution, maestro_score distribution, confidence distribution, suspicious null-exit-price predictions, mismatched exit_price vs actual_return, top 20 by market_cap, stocks distribution by sector, cached_analysis signal distribution).
+- Wrote `build_report2.cjs` and `build_report3.cjs` + `build_report4.cjs` to assemble the markdown report. Initial conversion attempt mangled template literals — rewrote using backtick template literals with `${var}` interpolation throughout.
+- Final report saved at `/home/z/my-project/agent-ctx/AUDIT_BACKTEST.md` (1,561 lines, 11 sections, 87 subsections).
+
+Stage Summary:
+- **Total predictions analyzed:** 1,359 (1,230 closed with `actual_return` populated + 129 active).
+- **Overall win rate (closed, strict filter):** 39.4% (484 wins / 1,229 closed).
+- **Overall avg return:** +25.74% per trade.
+- **Worst trade:** -48.12% (REAC id=51267). **Best trade:** +315.51% (AMIA id=50361).
+- **Avg holding days:** 130.4 (way too long; 60d+ bucket drops to 19.3% WR).
+- **Best persona:** gambler (58.2% WR, 67 trades, +29.55% avg). **Worst persona:** conservative (33.3% WR, 78 trades, +31.71% avg). Balanced: 38.7% WR, 1,084 trades, +25.08% avg.
+- **Audit findings CONFIRMED:** `stored_analyses` (0 rows), `hunter_pick_tracking` (0 rows), `learned_lessons` (19,464 rows, 6,841 distinct conditions), `exit_notifications` (3,932 rows), `historical_trades` (13,117 rows, 37.4% WR, +0.24% avg).
+- **Audit finding CORRECTED:** `persona_predictions` has 1,669 rows confirmed BUT 1,390 (83%) are stuck in PENDING status — only 279 are resolved. Also, this table ONLY contains the `balanced` persona (gambler and conservative are NOT mirrored here despite existing in main `predictions` table).
+- **Audit finding REFUTED:** "stocks table has 296 rows" — actual is 976 rows (audit was stale). Schema uses `ticker` column not `symbol`.
+- **Backtest sample (30 random closed predictions):** 19 OK (63%), 5 MISMATCH (17% — claimed target_hit but price never reached target), 6 POSSIBLE_MISS (20% — price hit target/stop but prediction recorded different outcome), 0 no_price_data. Combined accuracy issue rate: 37%.
+- **Anomalies found:** 2 confirmed duplicates (tickers "1150" and "7020" on 2026-09-24, each with one STOPPED + one active row — same-day duplicate write bug). 0 impossible prices, 0 future-dated predictions, 0 exit-before-entry, 0 returns >500%, 0 returns <-90%. historical_trades table is clean. persona_predictions: 0 impossible prices, 0 future dates.
+- **Market regime correlation:** bull_trend 45.7% WR (+19.41% avg) vs ranging 17.6% WR (-0.68% avg). 959 of 1,229 closed predictions have no regime classification (regime log only covers Jun-Aug 2026).
+- **Recent 30-day vs prev 30-day:** WR dropped from 26.7% to 14.3%; avg return went from +1.12% to -0.80%. Performance is degrading.
+- **Best sectors:** Communications (100% WR, n=4), Consumer Durables (100% WR, n=25, +127% return), Energy Minerals (100% WR, n=64, +85% return). **Worst sector:** Diversified (2.9% WR, n=275 — the catch-all bucket).
+- **Best tickers:** AMOC (64 trades, 100% WR, +85% return), HELI (21 trades, 100% WR, +144% return). **Worst tickers:** PIOH (69 trades, 0% WR, +1.09% return — targets never hit but slight gain on avg), BTFH (189 trades, 2.1% WR, -4.26% return — needs perma-blacklist).
+- **Top 3 actionable recommendations:** (1) Fix duplicate-write bug for same-day predictions — add UNIQUE(ticker, prediction_date, persona) constraint; (2) Re-verify hit_target/hit_stop against price_history — 17% mismatch rate is unacceptable; (3) Add hard 60-day exit (current avg hold 130d, 60d+ bucket WR drops to 19.3%).
+- **All queries executed in READ-ONLY mode.** No production data was modified. Cross-DB JOINs were done via ATTACH on a read-only stocksDb connection (predictions.db attached as `pred` schema, then DETACHed at end).
+- Report at `/home/z/my-project/agent-ctx/AUDIT_BACKTEST.md` (1,561 lines, 11 sections). Supporting JSON outputs and query scripts in `/home/z/my-project/agent-ctx/_audit_backtest_tmp/`.
+
+---
+Task ID: AUDIT-ENGINEERING
+Agent: Engineering Architecture Review Team (فريق المبرمجين)
+Task: Deep code-quality & architecture review across the full TS/TSX codebase under src/ (1,090 files, 291K LOC). READ-ONLY audit. Produces /home/z/my-project/agent-ctx/AUDIT_ENGINEERING.md (2,006 lines).
+
+Work Log:
+- Read tail of worklog.md for context (existing AUDIT_FRONTEND/BACKEND/DATABASES reports).
+- Inspected agent-ctx/ for existing audit reports — found none for engineering.
+- Phase 1 (Code Quality): Ran `bun run lint` (exit 0). Ran `npx tsc --noEmit` (1,492 errors across ~200 files). Counted: 350 console.log / 594 :any / 180 as any / 0 @ts-ignore / 7 eslint-disable / 16 TODO-FIXME. Identified top-10 files with most `any` types.
+- Phase 2 (Module Coupling): Built a 1,090-node / 2,499-edge dependency graph via custom Node.js script. Detected 7 import cycles (2 cross-module, 5 self-imports). Identified top-25 god modules (`@/lib/utils` imported by 200 files, `@/lib/admin-auth-server` by 115, `@/lib/store` by 79, `@/lib/egx-db` by 48). Identified top-15 highly-coupled consumers (`AdminView` imports 31 modules, `EnhancedPortfolioView` 30). Identified bridge modules (`auth-helper` connects 52 API routes to next-auth/db).
+- Phase 3 (Performance): Found 7 N+1 query sites (sparkline, smart-confluence tabs, db-stats, live-tracking, scanner, cleanup-expired, import-snapshot). 120 of 658 API routes (18%) call blocking sync fs APIs. 42 routes spawn child_process. 53 `SELECT * FROM` occurrences, 20 unbounded. All 27 setInterval sites have proper cleanup (no leaks).
+- Phase 4 (Security): Found hardcoded MOHSENY_HASH bcrypt + DEFAULT_ADMIN_EMAILS array shipped to browser bundle. 49 SQL template-literal interpolations — 11 are genuine injection risks (worst: `/api/tab-data?table=...` → `SELECT * FROM ${tableName}` with no auth). 540 of 658 API routes (82%) have no auth check; 8 of 9 /api/cron/* endpoints accept unauthenticated GET (can drain Telegram quota, force-run scrapers). No rate limiting on /api/auth/login, /api/admin/auth. No CSRF protection. /api/import accepts file uploads with no auth, no size limit, no content validation.
+- Phase 5 (Observability): 0 error-tracking integration (no Sentry/Bugsnag). 0 metrics integration. 0 request tracing. /api/health exists but only checks file existence (not DB round-trip). Logging is ad-hoc console.* calls.
+- Phase 6 (Tests): 3 test files, 873 LOC, 0.3% test-to-source ratio. No tests for: auth flow, Paymob callback end-to-end, admin auth, SQL injection regression, predictions, portfolio CRUD. No integration tests at all.
+- Phase 7 (File Size): 31 files >1,000 LOC. Top 5 god files: DatabaseManagerFull.tsx (3,284 LOC / 39 funcs), EnhancedPortfolioView.tsx (3,153 / 49), analysis-engine.ts (3,126 / 66 / 326 branches!), SuperLearningSystem.tsx (2,480), MakerRadarTab.tsx (2,295).
+- Phase 8 (API Contract): Sampled 20 routes. 25% have inconsistent response shapes (no `success` field). 0 of 20 consistently set Cache-Control headers (only 22 of 658 routes = 3.3% do). All use NextResponse.json consistently. All have try/catch where applicable.
+- Compiled report to /home/z/my-project/agent-ctx/AUDIT_ENGINEERING.md (2,006 lines, 22 sections + appendices A-J). Did NOT modify any source code (READ-ONLY audit per task rules).
+
+Stage Summary:
+- Total findings: 51 (P0: 6, P1: 14, P2: 22, P3: 9).
+- Code health score: 48/100 (NOT production-ready).
+- Top 5 critical issues: (1) 540 unauth API routes incl. 8 /api/cron/* endpoints; (2) 11 SQL injection risks (worst: /api/tab-data); (3) /api/import unauthenticated file upload; (4) 120 API routes with blocking sync I/O; (5) zero error tracking / metrics / request tracing.
+- Top 5 god files needing splitting: DatabaseManagerFull.tsx, EnhancedPortfolioView.tsx, analysis-engine.ts, SuperLearningSystem.tsx, MakerRadarTab.tsx.
+- Test coverage: 3 tests for 291K LOC = 0.3% (industry standard 30-60%). Zero integration tests. Zero tests for auth/payment/admin paths.
+- Production-readiness: NOT production-ready. Functional for low-traffic internal use with manual monitoring, but a single incident (brute-force /api/admin/auth, SQLi via /api/tab-data, or unbounded cron call) could compromise the platform.
+- Cross-referenced with AUDIT_FRONTEND, AUDIT_BACKEND, AUDIT_DATABASES — net new findings unique to this report: 1,492 TS errors, 7 import cycles, 11 SQL injection sites, 540 unauth routes, 8 unprotected cron endpoints, 0 error-tracking integration, 31 god files >1,000 LOC.
+
+---
+Task ID: AUDIT-WAVE-2
+Agent: Main Agent (Z.ai Code) — الموجة الثانية من الفحص
+Task: إطلاق 3 فرق متوازية (engineering + backtest + UIUX) + دمج النتائج
+
+Work Log:
+- إطلاق 3 فرق متوازية:
+  * AUDIT-ENGINEERING (2,006 سطر) — code quality + security + performance + tests
+  * AUDIT-BACKTEST (1,561 سطر) — predictions validation + backtest + anomaly detection
+  * AUDIT-UIUX (127 screenshot) — visual + UX review من منظور non-programmer
+- نقل كل التقارير الجديدة لـ Documentation/audit-logs/frontend-backend-db-audits/
+- كتابة تقرير UI/UX بنفسي بناءً على الـ 127 screenshot (الأصلي timeout)
+- إضافة 21 كارثة جديدة للـ MASTER_AUDIT_REPORT.md (إجمالاً 16 P0 + 9 P1 + 15 P2 + 10 P3 = 50 todo items)
+
+Stage Summary:
+- ✅ 3 تقارير جديدة (engineering + backtest + UIUX) في Documentation/audit-logs/
+- ✅ 127 screenshot محفوظة في agent-ctx/screenshots/
+- ✅ MASTER_AUDIT_REPORT.md حدّث (1,534 سطر) بـ 21 كارثة جديدة + 53 todo items
+
+أهم الاكتشافات الجديدة:
+1. **Code health = 48/100 — NOT production-ready**
+2. **540/658 API routes بدون auth check (82%)** — security disaster
+3. **11 SQL injection vulnerabilities حقيقية** — incl. `/api/tab-data/route.ts` بيـ dump أي table
+4. **17% من hit_target assertions كاذبة** — الـ win rate المعلن مش دقيق
+5. **duplicate-write bug** في predictions (نفس اليوم، نفس الـ ticker، row مكرر)
+6. **8 views للـ predictions + 12 للـ analysis + 8 chart components** — UX clutter
+7. **Test coverage = 0.3%** (industry standard 30-60%)
+8. **Zero observability** (لا Sentry، لا metrics، لا request ID)
+9. **120 API route بيستخدم blocking sync I/O** — بيـ block الـ event loop
+10. **/api/import** بدون auth ولا size limit — DoS سهل
+
+الـ 50 To-Do items مقسّمة:
+- P0 (16): كوارث حرجة (هذا الأسبوع)
+- P1 (9): كنوز سريعة (أسبوعين)
+- P2 (15): تنظيف + UI/UX (شهر)
+- P3 (10): معمارية (3 شهور)
+
+الهدف: رفع code health من 48 → 80+ في 6 شهور.

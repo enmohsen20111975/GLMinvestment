@@ -1,0 +1,55 @@
+{
+  "phases": {},
+  "phase4_loss_streaks": [
+    {
+      "persona": "balanced",
+      "max_loss_streak": 7,
+      "total_rows": 279
+    }
+  ],
+  "phase5_recent_30d": {
+    "total": 70,
+    "wins": 10,
+    "win_rate_pct": 14.3,
+    "avg_return": -0.8
+  },
+  "phase5_prev_30d": {
+    "total": 101,
+    "wins": 27,
+    "win_rate_pct": 26.7,
+    "avg_return": 1.12
+  },
+  "phase7_future_dates": [],
+  "phase7_persona_future_dates": [],
+  "phase6_by_sector": {
+    "__error": "no such column: s.symbol"
+  },
+  "phase6_by_marketcap": {
+    "__error": "no such column: s.symbol"
+  },
+  "phase6_unmatched_tickers": {
+    "__error": "no such column: s.symbol"
+  },
+  "egksco_cols": [
+    "id",
+    "symbol",
+    "price_date",
+    "open_price",
+    "high_price",
+    "low_price",
+    "close_price",
+    "volume",
+    "turnover",
+    "source",
+    "created_at",
+    "buy_volume",
+    "sell_volume",
+    "delta_volume",
+    "delta_pct",
+    "pressure",
+    "market"
+  ],
+  "egksco_count": 13246,
+  "egksco_latest": "2026-09-08",
+  "egksco_date_col": "price_date"
+}
