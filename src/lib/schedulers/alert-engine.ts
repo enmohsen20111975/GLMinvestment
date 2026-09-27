@@ -26,6 +26,7 @@ import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { getLiveEgyptGoldPrices } from '@/lib/data-engine-db';
 import type { SqliteDatabase } from '@/lib/sqlite-wrapper';
+import { runRadarAlertsCheck } from './radar-alerts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,7 @@ export interface AlertEngineResult {
   stock_alerts: number;
   gold_alerts: number;
   pnl_alerts: number;
+  radar_alerts: number;
   total: number;
   duration_ms: number;
   errors: string[];
@@ -233,7 +235,7 @@ function ensureStocksTable(db: SqliteDatabase): void {
  *
  * Returns: true لو أُدرج row جديد، false لو مكرر (skipped).
  */
-function insertNotification(db: SqliteDatabase, p: InsertNotificationParams): boolean {
+export function insertNotification(db: SqliteDatabase, p: InsertNotificationParams): boolean {
   try {
     // dedup: نفس user_id + type + ticker + message في آخر 24 ساعة؟
     const dedupSql = `
@@ -576,6 +578,7 @@ export async function runAllAlerts(userId?: string): Promise<AlertEngineResult> 
   let stockAlerts = 0;
   let goldAlerts = 0;
   let pnlAlerts = 0;
+  let radarAlerts = 0;
 
   // 1) Stock alerts
   try {
@@ -598,11 +601,19 @@ export async function runAllAlerts(userId?: string): Promise<AlertEngineResult> 
     errors.push(`pnl: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  // 4) Smart Radar alerts (radar-wide, fired to 'system' user when userId is undefined)
+  try {
+    radarAlerts = await runRadarAlertsCheck(userId);
+  } catch (err) {
+    errors.push(`radar: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   return {
     stock_alerts: stockAlerts,
     gold_alerts: goldAlerts,
     pnl_alerts: pnlAlerts,
-    total: stockAlerts + goldAlerts + pnlAlerts,
+    radar_alerts: radarAlerts,
+    total: stockAlerts + goldAlerts + pnlAlerts + radarAlerts,
     duration_ms: Date.now() - start,
     errors,
   };
@@ -624,6 +635,7 @@ export async function runAllAlertsForCurrentUser(): Promise<AlertEngineResult & 
         stock_alerts: 0,
         gold_alerts: 0,
         pnl_alerts: 0,
+        radar_alerts: 0,
         total: 0,
         duration_ms: 0,
         errors: ['no_session'],
@@ -637,6 +649,7 @@ export async function runAllAlertsForCurrentUser(): Promise<AlertEngineResult & 
       stock_alerts: 0,
       gold_alerts: 0,
       pnl_alerts: 0,
+      radar_alerts: 0,
       total: 0,
       duration_ms: 0,
       errors: [`session_error: ${err instanceof Error ? err.message : String(err)}`],

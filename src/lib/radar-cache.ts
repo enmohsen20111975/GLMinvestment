@@ -268,6 +268,12 @@ export function triggerBackgroundWarmup(market = 'EGX'): boolean {
         under_microscope_count: cache?.data?.under_microscope_count ?? null,
         db_source: cache?.data?.db_source ?? extractDbSource(stdout) ?? null,
       });
+
+      // Fire-and-forget: trigger smart radar alerts after a successful warmup
+      import('@/lib/schedulers/radar-alerts')
+        .then((mod) => mod.runRadarAlertsCheck())
+        .catch(() => {/* silent — alerts are best-effort */})
+        .finally(() => {/* no-op */});
     } else {
       // Failed — but keep the old cache file intact (don't delete it)
       const errMsg = stderr.trim().slice(0, 1000) || `exit code ${code}`;
@@ -380,6 +386,13 @@ export async function runWarmupSync(market = 'EGX', timeoutMs = 90_000): Promise
           db_source: cache?.data?.db_source ?? extractDbSource(stdout) ?? null,
         };
         writeStatus(status);
+
+        // Fire-and-forget: trigger smart radar alerts after a successful warmup
+        import('@/lib/schedulers/radar-alerts')
+          .then((mod) => mod.runRadarAlertsCheck())
+          .catch(() => {/* silent — alerts are best-effort */})
+          .finally(() => {/* no-op */});
+
         resolve(status);
       } else {
         const errMsg = stderr.trim().slice(0, 1000) || `exit code ${code}`;

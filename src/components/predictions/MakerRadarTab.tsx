@@ -43,6 +43,12 @@ import {
 } from '@/components/ui/dialog';
 import { SafeWidget } from '@/components/dashboard/SafeWidget';
 import { MarketDepthLiquidityWidget } from '@/components/analysis/MarketDepthLiquidityWidget';
+import {
+  RadarSignalStatsCard,
+  SectorTreemapCard,
+  EntryTimingCard,
+  LiquidityFootprintCard,
+} from '@/components/predictions/radar/RadarStatsCards';
 
 // ============================================================================
 // Types — Maker Radar API contract
@@ -826,6 +832,12 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
       {/* ===== SECTOR HEAT STRIP ===== */}
       <SectorHeatStrip sectors={sectors} loading={!stockMap} />
+
+      {/* ===== SECTOR LIQUIDITY TREEMAP — خريطة سيولة القطاعات ===== */}
+      <SectorTreemapCard />
+
+      {/* ===== SIGNAL TRACKER STATS — مصير إشارات الرادار ===== */}
+      <RadarSignalStatsCard />
 
       {/* ===== FILTER BAR ===== */}
       <Card className="p-3">
@@ -1884,6 +1896,12 @@ function StockDetailDrawer({
 
             {/* === Trading Plan (real numbers + dynamic analysis from price history) === */}
             <TradingPlanSection detail={detail} />
+
+            {/* === Entry Timing Signal — توقيت الدخول الذكي (0-100) === */}
+            <EntryTimingCard ticker={ticker} />
+
+            {/* === Liquidity Footprint — بصمة السيولة (Volume Profile) === */}
+            <LiquidityFootprintCard ticker={ticker} />
 
             {/* === Market Depth / DOM (Liquidity Depth Widget) ===
                  Reconstructed from stock_intraday tick volume — see API route. */}

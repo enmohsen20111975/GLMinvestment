@@ -41193,3 +41193,192 @@ File: src/components/predictions/MakerRadarTab.tsx
 2. حساب buy/sell من OHLC التاريخي (last 20 sessions) بدلاً من الـ MarketDepthLiquidityWidget data (عشان الـ widget ليه fetch مستقل من intraday ticks).
 3. entry/stop/target بالاعتماد على المستويات الحقيقية مع fallback للنسب الثابتة لو ضيقة.
 4. حذف فلتر "tracked" (التتبّع نفسه لسه شغّال عبر زر ⭐ + زر الـ drawer).
+
+---
+Task ID: RADAR-A
+Agent: Backend Engineer (Entry Timing + Signal Tracker)
+Task: Build two new Maker Radar endpoints — (1) Entry-Timing Signal GET that scores a ticker 0-100 from 4 components, and (2) Signal Tracker CRUD + verify (3 files) that records radar signals and back-fills their 7d/14d/30d outcomes.
+
+Work Log:
+- Read worklog.md (41195 lines) to absorb prior Liquidity Radar work, especially RADAR-PORTABLE-PATHS, MAKER-RADAR-INTEGRATION-1, and LIQUIDITY-RADAR-UPGRADE. Confirmed the radar-db resolver prefers `db/data_engine.db.egksco_price_history` (13246 rows, schema: symbol/price_date/open_price/high_price/low_price/close_price/volume/turnover).
+- Inspected DBs: data_engine.db has egksco_price_history (price_date column, populated) + historical_data (non-EGX fallback); stocks.db has egksco_price_history (date column, EMPTY) + stock_daily_prices + many other tables. Designed price-source resolver to try both schemas.
+- Created `src/app/api/maker-radar/entry-timing/route.ts` — GET endpoint using `getRadarDb()` + `getRadarDbConfig()` + `parseVolume()` + `computeTurnover()` from `@/lib/radar-db`. Pulls last 30 OHLCV rows for the ticker and computes 4 score components:
+    1. Accumulation Strength (0-30): buy days in last 10 sessions using prev-day close (so max = 10). 8-10→30, 6-7→22, 5→15, 3-4→8, 0-2→0.
+    2. Volume Confirmation (0-25): vol_ratio = avg_vol_10d / avg_vol_20d. >=1.5→25, 1.2-1.5→18, 1.0-1.2→10, <1.0→0.
+    3. Price Near Support (0-25): distance_from_min20 = (current - min20)/min20*100. <=2%→25, 2-5%→18, 5-10%→10, >10%→0.
+    4. Momentum ROC10 (0-20): 5-15%→20, 0-5%→12, 15-25%→14, -5..0%→6, else→0.
+  Returns score + Arabic label (ممتاز/جيد/مقبول/ضعيف) + emerald/amber/yellow/rose color + breakdown + recommendation + raw metrics. Returns success:false if <15 data points.
+- Created `src/app/api/maker-radar/signal-tracker/route.ts` — GET + POST:
+    * GET ?days=30&signal_type=X — returns total_signals/pending/verified/win_rate_pct + avg_outcome_{7,14,30}d (AVG across all rows with non-NULL outcomes, since SQLite AVG ignores NULLs naturally) + by_signal_type breakdown (with Arabic labels) + recent_signals (last 5 verified).
+    * POST body{ticker, signal_type, entry_price, path?, reason?} — validates signal_type against the 5 allowed types, dedups on (ticker, today, signal_type) returning `dedup:true` if exists, otherwise inserts and returns the new row id.
+  DB: prefers `db/stocks.db`, falls back to `db/data_engine.db`, creates `radar_signal_tracking` table + 4 indexes (ticker/status/type/date) on first call. Uses `import Database from 'better-sqlite3'` directly (NOT @/lib/db).
+- Created `src/app/api/maker-radar/signal-tracker/verify/route.ts` — POST body{max_age_days?:45}:
+    * Selects all pending signals WHERE signal_date BETWEEN (today - max_age_days) AND (today - 7 days).
+    * For each, fetches up to 30 trading-day prices AFTER the signal_date via PRICE_SOURCES resolver (4 candidates: data_engine.egksco_price_history[price_date], stocks.egksco_price_history[date], stocks.stock_daily_prices[price_date], data_engine.historical_data[date]) — same DB resolution pattern as radar-db.
+    * Computes outcome_7d/14d/30d as % return ((close_Nd - entry_price)/entry_price*100). Tracks max_price_after (max of highs) and min_price_after (min of lows).
+    * Sets status='verified_win' if outcome_30d > 0.5%, 'verified_loss' if < -0.5%, 'verified_neutral' if abs <= 0.5%. If outcome_30d is NULL (not enough trading days yet), keeps status='pending' but records partial outcomes + excursions.
+    * Returns summary {verified_count, win_count, loss_count, neutral_count, pending_partial_count, scanned_count, errors[]}.
+- Verified all 3 files with `bun run lint` (exit 0), `npx tsc --noEmit` (no errors related to new files), and live HTTP smoke tests against the running Next.js dev server on port 3001:
+    * GET /api/maker-radar/entry-timing?ticker=COMI → score 49, label "توقيت مقبول", breakdown matches manual calc (acc=8, vol=10, sup=25, mom=6).
+    * POST /api/maker-radar/signal-tracker (new signal) → returns id, success:true, dedup:false.
+    * POST same signal again → success:true, dedup:true, existing_id returned.
+    * GET /api/maker-radar/signal-tracker?days=120 → returns proper stats with by_signal_type breakdown.
+    * POST /api/maker-radar/signal-tracker/verify (seeded old pending signal for COMI on 2026-07-28) → scanned_count:1, pending_partial_count:1, outcome_7d=-0.79%, outcome_14d=-1.70%, outcome_30d=null (only 29 trading days of price data available — data ends 2026-09-08).
+    * Edge cases: missing ticker → 400, non-existent ticker → success:false with Arabic error, invalid signal_type → 400 with allowed list, missing entry_price → 400, signal_type filter in GET works, malformed JSON body to verify → 200 with safe default {} (no crash).
+- Cleaned up test data (deleted all rows from radar_signal_tracking) to leave the DB in a pristine state.
+
+Stage Summary:
+- 3 new files created (1 entry-timing route + 1 signal-tracker route + 1 signal-tracker/verify route). No existing files modified.
+- All endpoints follow Next.js 16 conventions: `export const dynamic = 'force-dynamic'` + `export const revalidate = 0`.
+- All endpoints have robust try/catch + final db.close() in catch path; never crash.
+- All Arabic labels embedded in JSON responses. Signal-type labels: explosive_surge→"انفجار حجمي", quiet_accumulation_strong→"تجميع قوي هادي", pre_surge→"ما قبل الانفجار", early_break→"اختراق مبكر", quiet_accumulation_weak→"تجميع ضعيف هادي".
+- `bun run lint` exit 0. TypeScript strict-mode compile clean.
+- Schema migration is idempotent (CREATE TABLE IF NOT EXISTS + 4 CREATE INDEX IF NOT EXISTS) — safe to call on every request.
+- Dedup logic uses (ticker, signal_date, signal_type) tuple — prevents duplicate radar cache warmup inserts.
+- Verify endpoint supports partial verification: records 7d/14d outcomes even when 30d not yet available, so the dashboard can show "in progress" stats.
+- All timestamps in ISO 8601 (UTC).
+
+---
+Task ID: RADAR-B
+Agent: Backend Engineer (Liquidity Footprint + Sector Treemap)
+Task: Build two new Maker Radar API endpoints — (1) Liquidity Footprint (volume profile / market profile by price level with POC/VAH/VAL + buy/sell delta), and (2) Sector Liquidity Treemap (per-sector aggregates for treemap visualization).
+
+Work Log:
+- Read worklog.md tail to absorb prior context (RADAR-A entry-timing + signal-tracker, LIQUIDITY-RADAR-UPGRADE, UNIFIED-TABLE-FINAL-MIGRATION). Confirmed `src/lib/radar-db.ts` exposes `getRadarDb/getRadarDbConfig/parseVolume/computeTurnover` and prefers `db/data_engine.db.egksco_price_history` (schema: symbol/price_date/open_price/high_price/low_price/close_price/volume/turnover).
+- Verified `db/stocks.db.stocks` table schema (ticker, name_ar, sector, current_price, previous_close, change_percent, volume, market_cap, ...) — matches the spec.
+- Verified `db/radar_cache_status.json` reports 303 under-microscope stocks but cache JSON file (`scripts/output/maker_radar_20260926.json`) is currently absent in this sandbox — designed sector-treemap to gracefully handle both "cache missing" and "cache present but no tickers" by returning the Arabic warming-up message.
+- Created `src/app/api/maker-radar/footprint/route.ts` — GET endpoint implementing volume profile:
+    * Reuses `getRadarDb/getRadarDbConfig/parseVolume/computeTurnover` from `@/lib/radar-db`.
+    * Fetches last N (default 30, max 365) OHLCV bars for the ticker (DESC LIMIT N then reverse to chronological).
+    * Builds ~15-20 evenly spaced bins between [min_low, max_high] (default 18, clamped to [15,20]).
+    * For each bar: classifies direction (bullish if close>open, bearish if close<open, flat otherwise), then distributes volume across the bins it overlaps using proportional split (overlap / bar_range). If bar_range is 0 (high==low) → attribute all volume to the close-price bin.
+    * Buy/sell split: 70/30 for bullish bars, 30/70 for bearish, 50/50 for flat. Each bin accumulates volume + buy_volume + sell_volume independently.
+    * POC = bin with the highest total volume. VAH/VAL computed by expanding outward from POC, each step picking the side with the higher adjacent volume (standard market-profile technique), until 70% of total volume is enclosed.
+    * Levels returned sorted DESCENDING by price (highest at top) so UI can render as horizontal bars top-to-bottom. Each level has price_low/price_high/price_mid + volume/buy_volume/sell_volume/delta + volume_pct + is_poc + is_value_area flags.
+    * Top-level aggregate fields: poc_price/poc_volume, vah_price/val_price, value_area_volume_pct, total_volume, buy_volume, sell_volume, delta_volume, buy_sell_ratio.
+    * Edge cases handled: <5 data points → success:false with Arabic error "بيانات غير كافية..." (no 5xx — 200 with success:false); zero-range price series → single-bin degenerate case returned; missing ticker → 400; missing DB → 503 Arabic; bar_range==0 per-bar fallback to close-price bin.
+    * Rounding: prices to 2 decimals, percentages to 1 decimal, all volumes to integers.
+- Created `src/app/api/maker-radar/sector-treemap/route.ts` — GET endpoint:
+    * Uses `import { readRadarCache } from '@/lib/radar-cache'` and `import Database from 'better-sqlite3'` directly (opens `db/stocks.db` readonly).
+    * Collects every ticker from the 4 radar lists (`quiet_list`, `pre_surge_list`, `explosive_list`, `early_break_list`), deduped by uppercase ticker.
+    * Single `SELECT ticker, sector, name_ar, current_price, previous_close FROM stocks WHERE ticker IN (?,...)` query — no per-ticker round-trips.
+    * For each sector computes: stocks_count, total_turnover (sum avg_turnover_20d), total_volume (sum avg_volume_20d), avg_change_pct (mean of (current_price - previous_close) / previous_close * 100 — skip nulls), avg_roc_10d (mean — skip nulls), direction (inflow if >+0.5%, outflow if <-0.5%, neutral otherwise), color (emerald/rose/amber), top_tickers (top 3 by avg_turnover_20d with name_ar + avg_turnover_20d + change_pct + roc_10d).
+    * Sectors sorted descending by total_turnover. Total turnover aggregated across all sectors.
+    * Edge cases: missing cache file → 503 Arabic warming-up message; cache present but no tickers → same; missing stocks.db → 503 Arabic; stocks table query failure → caught + empty map returned (tickers without sector info grouped under "غير مُصنّف").
+- Verified with `bun run lint` (exit 0) and `npx tsc --noEmit` (no errors related to either new file — only pre-existing errors in `examples/websocket/server.ts`, `prisma/seed-subscriptions.ts`, `scripts/analyze-stocks*.ts`, `.next/types/.../auth/[...nextauth]/route.ts` which are unrelated).
+- Both routes exported with `export const dynamic = 'force-dynamic'` + `export const revalidate = 0` as required by the Next.js 16 conventions used across the rest of `/api/maker-radar/*`. All Arabic labels in JSON responses. Robust try/catch with `db.close()` in catch path — never crashes the process.
+
+Stage Summary:
+- 2 new files created (footprint route + sector-treemap route). No existing files modified, no test code written.
+- File sizes: footprint=12.9KB / 360 lines, sector-treemap=11.3KB / 300 lines.
+- Both endpoints follow the same Next.js 16 + better-sqlite3 + radar-db pattern as the RADAR-A endpoints (entry-timing + signal-tracker + signal-tracker/verify) — consistent error shape, same DB resolver pattern, same Arabic-error convention.
+- Footprint implements the full market-profile spec: POC + VAH + VAL + buy/sell delta per level + value-area flagging, with proper handling of degenerate bars (high==low) and degenerate series (priceMin==priceMax).
+- Sector-treemap aggregates all 4 radar lists (deduped) into a single treemap payload ready for a treemap visualization (sector / size = total_turnover / color = direction / tooltip = top tickers).
+- `bun run lint` exit 0 ✅. TypeScript strict-mode clean for both new files ✅.
+
+---
+Task ID: RADAR-C
+Agent: Backend Engineer (Smart Radar Alerts)
+Task: Add Smart Radar Alerts to the alert engine — fire notifications on radar state transitions (new explosive, new opportunity, accumulation→distribution flip, volume flare > 1.30×) after each successful radar cache warmup, then save a snapshot for diffing on the next run.
+
+Work Log:
+- Read worklog.md tail (~600 lines) to absorb prior RADAR-A (entry-timing + signal-tracker) and RADAR-B (footprint + sector-treemap) work. Confirmed the radar JSON schema (`quiet_list`, `pre_surge_list`, `explosive_list`, `early_break_list`) and the `accumulation` strings used by `scripts/maker_radar.py` ("تجميع قوي" / "تصريف قوي" / "تجميع خفيف" / "تصريف خفيف").
+- Read `src/lib/schedulers/alert-engine.ts` (647 lines) to understand the existing alert-engine architecture: `runAllAlerts(userId?)` orchestrates 3 engines (`runStockAlertsCheck`, `runGoldAlertsCheck`, `runPortfolioPnLCheck`), each returns a count of new alerts and has its own try/catch. `insertNotification(db, p)` is private with 24h dedup. `AlertEngineResult` interface + `runAllAlertsForCurrentUser()` convenience wrapper.
+- Read `src/lib/radar-cache.ts` (426 lines) — confirmed `readRadarCache()` returns `{ data, filePath } | null`, `triggerBackgroundWarmup(market)` is fire-and-forget spawn with success branch inside `child.on('exit', (code) => { if (code === 0) { writeStatus({...}); } })`, and `runWarmupSync(market, timeoutMs)` is the blocking variant with the same success branch that ends in `writeStatus(status); resolve(status);`.
+- Read `src/lib/auth-helper.ts` to confirm `getSessionUserId()` returns `{ userId: string | null; isAdmin: boolean }` and never throws (wrapped in try/catch).
+- Read `src/lib/finance-db.ts` to confirm `getFinanceDb()` returns a `SqliteDatabase` (stocks.db via the egx-db wrapper) — same pattern used by alert-engine.ts.
+- Read `src/app/api/maker-radar/track/route.ts` to learn the tracking file schema (`db/maker_radar_tracking.json` is a `Record<string, TrackedStock>` keyed by ticker).
+- Created `src/lib/schedulers/radar-alerts.ts` (316 lines):
+  * Exports `runRadarAlertsCheck(userId?: string): Promise<number>` and `runRadarAlertsForCurrentUser()`.
+  * Loads `db/radar_alerts_state.json` snapshot (missing → treated as empty), `db/maker_radar_tracking.json` directly (for the tracked-tickers set), and the latest radar cache via `readRadarCache()` (null → return 0 silently).
+  * Computes current state: `currentExplosiveTickers` = `explosive_list` tickers; `currentQuietTickers` = union of `quiet_list` + `pre_surge_list` tickers; builds a `Map<ticker, RadarItem>` from all 4 lists for O(1) lookup of `accumulation` / `volume_ratio_10d_vs_20d` / `current_price` / `path`.
+  * Fires 4 alert types via `insertNotification(db, p)` from `@/lib/schedulers/alert-engine` (now exported):
+      1. **radar_explosive** (`💥 انفجار حجمي جديد`) — ticker in current_explosive but NOT in prev.explosive_tickers. severity=warning.
+      2. **radar_opportunity** (`🎯 فرصة تجميع جديدة`) — ticker in current_quiet but NOT in prev.quiet_tickers. severity=info.
+      3. **radar_distribution** (`⚠️ تحول للتوزيع`) — tracked ticker whose prev snapshot's `prev_accumulation` contained "تجميع" and whose current radar `accumulation` contains "تصريف". severity=warning.
+      4. **radar_flare** (`🔥 اشتعال حجمي`) — tracked ticker with `volume_ratio_10d_vs_20d > 1.30`. Message includes the actual ratio (e.g. "1.4×"). severity=info. (Tracked-tickers-only to avoid spamming all 303 radar stocks.)
+  * All alerts fired with `user_id = userId || 'system'` — global radar alerts land under the `system` user, which NotificationCenter already surfaces to all logged-in users.
+  * Each alert writes a `payload` JSON blob with ticker + current_price + source/path + relevant metrics so the UI can deep-link to the radar tab.
+  * Saves the new snapshot (last_snapshot_at + 3 sets/transition-map) before returning — overwrite-write.
+  * Maintains `tracked_transitions[ticker].since` across runs so the "first time we saw this accumulation" date is preserved as long as the accumulation string doesn't change. When accumulation changes, `since` resets to today.
+  * Robust try/catch — never throws. Any error → log to console.error + return 0.
+- Modified `src/lib/schedulers/alert-engine.ts` with 4 surgical edits:
+  1. Added `import { runRadarAlertsCheck } from './radar-alerts';` at top.
+  2. Added `radar_alerts: number;` field to `AlertEngineResult` interface.
+  3. Added `export` keyword to `insertNotification(db, p)` (was private — now exported for radar-alerts.ts to use).
+  4. Replaced the body of `runAllAlerts(userId?)` with the new 4-engine version: declares `let radarAlerts = 0;`, calls `try { radarAlerts = await runRadarAlertsCheck(userId); } catch (err) { errors.push('radar: ...'); }`, returns `radar_alerts: radarAlerts` + updated `total: stockAlerts + goldAlerts + pnlAlerts + radarAlerts`.
+  5. Also added `radar_alerts: 0` to both early-return paths in `runAllAlertsForCurrentUser()` (no-session + session-error paths) so the type stays consistent.
+- Modified `src/lib/radar-cache.ts` with 2 surgical edits (one per warmup function):
+  * In `triggerBackgroundWarmup`'s `child.on('exit', (code) => { ... if (code === 0) { ... writeStatus({...}); /* NEW */ } })` block, after the `writeStatus({...})` call closes, inserted a fire-and-forget dynamic `import('@/lib/schedulers/radar-alerts').then((mod) => mod.runRadarAlertsCheck()).catch(() => {}).finally(() => {})`.
+  * In `runWarmupSync`'s `if (code === 0) { ... writeStatus(status); /* NEW */ resolve(status); }` block, inserted the same fire-and-forget call between `writeStatus(status)` and `resolve(status)` — explicitly NOT awaited so the warmup resolves immediately and the alerts run async in the background.
+  * All existing logic preserved verbatim — no other lines changed.
+- Verified with `bun run lint` (exit 0, no errors). Verified `npx tsc --noEmit` — no new errors introduced; the only 6 errors in `alert-engine.ts` are PRE-EXISTING (`as WatchlistRow[]` / `as GoldAlertRow[]` / `as PortfolioAssetRow[]` cast complaints at lines that already existed before this task — confirmed by `git stash && npx tsc --noEmit && git stash pop`). No errors in `radar-alerts.ts` or `radar-cache.ts`.
+- Smoke tested the modules with `bun -e`:
+  * `import('./src/lib/schedulers/radar-alerts.ts')` → exports `[runRadarAlertsCheck, runRadarAlertsForCurrentUser]` ✓
+  * `await runRadarAlertsCheck()` → returns 0 silently when radar cache is absent (no maker_radar_*.json file present in this sandbox) ✓
+  * `import('./src/lib/schedulers/alert-engine.ts')` → confirms `insertNotification` is now exported ✓
+  * `import('./src/lib/radar-cache.ts')` → confirms all 7 existing exports still present (findLatestRadarFile, getLiveStatus, isCacheStale, isWarmupRunning, readRadarCache, readStatus, runWarmupSync, triggerBackgroundWarmup) ✓
+
+Stage Summary:
+- 1 new file created: `src/lib/schedulers/radar-alerts.ts` (316 lines) — smart radar alerts engine.
+- 2 files modified surgically (no rewrites):
+  * `src/lib/schedulers/alert-engine.ts` — `insertNotification` exported, `radar_alerts` added to `AlertEngineResult`, 4th engine block added to `runAllAlerts`, return-value + total updated, `radar_alerts: 0` added to both `runAllAlertsForCurrentUser()` early-return paths. Net: +17 lines.
+  * `src/lib/radar-cache.ts` — fire-and-forget `import('@/lib/schedulers/radar-alerts')` added inside both success branches of `triggerBackgroundWarmup` (after `writeStatus`) and `runWarmupSync` (between `writeStatus(status)` and `resolve(status)`). Net: +13 lines.
+- Snapshot file location: `db/radar_alerts_state.json` (auto-created on first successful run, format exactly matches the spec: `last_snapshot_at`, `explosive_tickers[]`, `quiet_tickers[]`, `tracked_transitions{}`).
+- Alert types registered: `radar_explosive`, `radar_opportunity`, `radar_distribution`, `radar_flare` — all land in `user_notifications` with `user_id='system'` (or the specific userId if invoked from a session context). 24h dedup is enforced by `insertNotification`'s existing `(user_id, type, ticker, message)` dedup key.
+- `bun run lint` exit 0 ✅. No new TypeScript errors introduced. All 4 alert types follow the project's Arabic-string + JSON-payload convention used by the rest of the alert engine.
+- Behavior in production: every successful radar cache warmup (whether triggered by the API's `triggerBackgroundWarmup` fire-and-forget spawn, or by the synchronous `/api/maker-radar/warmup` cron endpoint) will now trigger an async, non-blocking `runRadarAlertsCheck()` call. The first run creates the snapshot. Subsequent runs diff against it and fire 0..N alerts. Alerting never blocks the warmup path — if radar-alerts throws, the dynamic-import `.catch(() => {})` swallows it silently.
+
+---
+Task ID: RADAR-MAIN
+Agent: Main Agent (Z.ai Code) — Liquidity Radar 6-Proposals Upgrade
+Task: تنفيذ الـ 6 مقترحات لترقية رادار السيولة — مع ملاحظة الأجزاء الموجودة فعلاً
+
+Work Log:
+- Audit شامل للـ 6 مقترحات ضد الكود الموجود
+- اكتشاف أن Radar → V40.2 Pipeline موجود فعلاً (lines 2205-2246 في v40_2_daily_generator.py)
+- إطلاق 3 subagents parallel للـ backend:
+  * RADAR-A: entry-timing endpoint + signal-tracker endpoint + verify endpoint
+  * RADAR-B: footprint endpoint + sector-treemap endpoint
+  * RADAR-C: smart radar alerts (runRadarAlertsCheck) + wiring radar-cache.ts warmup
+- إنشاء shared lib `src/lib/radar-signal-tracker.ts` (عشان نتجنب HTTP fetch من الـ backend للـ API endpoint)
+- تعديل `src/lib/schedulers/radar-alerts.ts` لإستدعاء `recordRadarSignals()` بعد كل warmup (auto-recording)
+- إنشاء 4 مكونات UI جديدة في `src/components/predictions/radar/RadarStatsCards.tsx`:
+  * RadarSignalStatsCard — إحصائيات مصير الإشارات + زر تحقّق
+  * SectorTreemapCard — خريطة سيولة القطاعات (flex-wrap treemap بدون D3)
+  * EntryTimingCard — درجة توقيت الدخول 0-100 + breakdown لـ 4 عوامل
+  * LiquidityFootprintCard — بصمة السيولة (POC/VAH/VAL + horizontal bar chart)
+- تعديلات surgical على MakerRadarTab.tsx:
+  * إضافة import للـ 4 مكونات الجديدة (line 45-50)
+  * إضافة SectorTreemapCard + RadarSignalStatsCard بعد SectorHeatStrip (line 835-839)
+  * إضافة EntryTimingCard + LiquidityFootprintCard داخل StockDetailDrawer (line 1884-1888)
+- لا تعديلات على أي API endpoint قائم — كل التغييرات إضافة فقط
+
+Stage Summary:
+- ✅ 5 endpoints جديدة:
+  * GET /api/maker-radar/entry-timing?ticker=X
+  * GET/POST /api/maker-radar/signal-tracker
+  * POST /api/maker-radar/signal-tracker/verify
+  * GET /api/maker-radar/footprint?ticker=X&days=30
+  * GET /api/maker-radar/sector-treemap?days=30
+- ✅ 1 lib جديدة: src/lib/radar-signal-tracker.ts (shared DB layer)
+- ✅ 1 lib جديدة: src/lib/schedulers/radar-alerts.ts (smart alerts + signal recording)
+- ✅ 1 components جديدة: src/components/predictions/radar/RadarStatsCards.tsx (4 components)
+- ✅ 2 ملفات معدّلة surgical:
+  * src/lib/schedulers/alert-engine.ts (إضافة radar_alerts لـ runAllAlerts + export insertNotification)
+  * src/lib/radar-cache.ts (fire-and-forget runRadarAlertsCheck بعد كل warmup ناجح)
+  * src/components/predictions/MakerRadarTab.tsx (import + 4 insertions)
+- ✅ ميزة #4 (Radar → V40.2 Pipeline) كانت موجودة فعلاً ومتوصلة وشغّالة
+- ✅ 96 إشارة رادار اتسجّلت تلقائياً في أول warmup بعد التركيب (pre_surge=57, quiet_strong=28, explosive=10, early_break=1)
+- ✅ 10+ تنبيهات radar_explosive اتطلقت في user_notifications تلقائياً
+- ✅ dedup شغّال: warmup ثاني ما زاد أي سجلات جديدة
+- ✅ bun run lint نظيف بدون أي أخطاء
+- ✅ Verified via Agent Browser: كل المكونات بترندر بشكل صحيح في UI
+  - Sector Treemap: 12 قطاع مع السيولة والاتجاه
+  - Signal Tracker: 96 إشارة pending + breakdown by type
+  - Entry Timing: درجة 49 لـ ADIB مع 4 breakdown factors
+  - Liquidity Footprint: POC=52.41, VAH=54.26, VAL=52.10 + 18 مستوى سعر مع الحجم
+
+Files created: 7 new
+Files modified: 3 (surgical edits only)
+Total new code: ~2000 lines
