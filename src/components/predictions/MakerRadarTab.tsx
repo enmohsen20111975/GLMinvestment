@@ -13,7 +13,7 @@
 // tab is visible (useVisibilityAwarePolling). All UI is RTL Arabic, shadcn-based.
 // ============================================================================
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   Radar, RefreshCw, Eye, Flame, TrendingUp, TrendingDown,
   Activity, AlertTriangle, Star, StarOff, X, ChevronLeft,
@@ -879,6 +879,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {/* Pre-Surge (purple) */}
       {(filter === 'all' || filter === 'pre_surge' || filter === 'tracked') && filteredPreSurge.length > 0 && (
         <RadarSection
+          key="radar-pre-surge"
           title="🚀 Pre-Surge — متوقعة الانفجار"
           subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
           icon={<Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
@@ -895,6 +896,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {/* Explosive (rose) */}
       {(filter === 'all' || filter === 'explosive' || filter === 'tracked') && filteredExplosive.length > 0 && (
         <RadarSection
+          key="radar-explosive"
           title="🔥 الأسهم المنفجرة الآن"
           subtitle="حجم فجائي + حركة قوية — تنبيه فوري"
           icon={<Flame className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
@@ -911,6 +913,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {/* Quiet accumulation (amber) */}
       {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredQuiet.length > 0 && (
         <RadarSection
+          key="radar-quiet"
           title="🎯 تحت الميكروسكوب"
           subtitle="تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
           icon={<Eye className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
@@ -927,6 +930,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {/* Early break (emerald) */}
       {(filter === 'all' || filter === 'early_break' || filter === 'tracked') && filteredEarlyBreak.length > 0 && (
         <RadarSection
+          key="radar-early-break"
           title="⚡ اختراق مبكر"
           subtitle="خروج من نطاق ضيق بحجم — أول إشارة اختراق"
           icon={<Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
@@ -1234,7 +1238,7 @@ interface RadarSectionProps {
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
-function RadarSection({
+const RadarSection = memo(function RadarSection({
   title, subtitle, icon, accent, stocks,
   sectorForTicker, changePercentForTicker, stockInfoForTicker, onSelect, onTrackToggle,
 }: RadarSectionProps) {
@@ -1278,7 +1282,7 @@ function RadarSection({
       </div>
     </Card>
   );
-}
+});
 
 // ============================================================================
 // Stock Table (professional table layout — replaces card grid)
@@ -1295,13 +1299,13 @@ interface StockTableProps {
 
 type RadarStockRow = RadarStock & { _idx: number };
 
-function StockTable({
+const StockTable = memo(function StockTable({
   stocks, accent, sectorForTicker, changePercentForTicker, stockInfoForTicker, onSelect, onTrackToggle,
 }: StockTableProps) {
   const a = accentClasses[accent];
 
   // إعداد الـ columns للجدول الموحّد
-  const columns: Column<RadarStockRow>[] = [
+  const columns: Column<RadarStockRow>[] = useMemo(() => [
     {
       key: '_idx',
       header: '#',
@@ -1573,7 +1577,7 @@ function StockTable({
         <MiniSparkline ticker={stock.ticker} height={28} width={100} showArea={true} />
       ),
     },
-  ];
+  ], [a.badge, a.highlight, changePercentForTicker, onSelect, onTrackToggle, sectorForTicker, stockInfoForTicker]);
 
   // إضافة index لكل صف
   const data: RadarStockRow[] = useMemo(
@@ -1594,7 +1598,7 @@ function StockTable({
       className={`-mx-1 ${a.border}`}
     />
   );
-}
+});
 
 // ============================================================================
 // Stock Detail Drawer

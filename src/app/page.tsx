@@ -176,6 +176,13 @@ const TradingChartView = withErrorBoundary(
   'الشارت التفاعلي',
   { height: 'h-[600px]' },
 );
+const LiquidityRadarView = withErrorBoundary(
+  dynamicImport(() => import('@/components/predictions/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), {
+    ssr: false,
+    loading: () => <LazyTabLoader label="رادار السيولة" />,
+  }),
+  'رادار السيولة',
+);
 const AboutView = dynamicImport(() => import('@/components/about/AboutView').then(m => ({ default: m.AboutView })), { ssr: false });
 // SniperView removed — merged into MarketAnalysisView persona tabs
 
@@ -480,10 +487,8 @@ function AppShell() {
       // === رادار السيولة (Liquidity Radar) — شاشة منفصلة ===
       // N8: كان تبويب جوّه MarketAnalysisView باسم "رادار الميكرز". دلوقتي شاشة مستقلة
       // قابلة للوصول مباشرة من القائمة. أهم خدمة للمستثمرين (80% من الأرباح).
-      case 'liquidity-radar': {
-        const MakerRadar = dynamicImport(() => import('@/components/predictions/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), { ssr: false, loading: () => <LazyTabLoader label="رادار السيولة" /> });
-        return <MakerRadar market={useAppStore.getState().currentMarket === 'CRYPTO' ? 'EGX' : useAppStore.getState().currentMarket} />;
-      }
+      case 'liquidity-radar':
+        return <LiquidityRadarView market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />;
       
       // === الذكاء الاصطناعي (Intelligence) ===
       case 'alerts-center':
