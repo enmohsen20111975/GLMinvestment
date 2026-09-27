@@ -220,37 +220,55 @@ class MarketDailyReport:
                 SELECT ticker, signal, entry_price,
                        target_price, stop_loss, target_price_2,
                        master_score, confidence, prediction_date,
-                       persona, evidence_count
+                       persona, evidence_count, notes
                 FROM predictions
                 WHERE market = ?
-                  AND signal IN ('BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL', 'STRONG BUY')
+                  AND signal IN ('BUY', 'STRONG_BUY', 'STRONG BUY')
                   AND status = 'active'
                   AND outcome_date IS NULL
                   AND entry_price > 0
                   AND target_price > 0
                   AND stop_loss > 0
-                ORDER BY master_score DESC, evidence_count DESC
+                ORDER BY prediction_date DESC, master_score DESC, evidence_count DESC
                 LIMIT ?
-            ''', (market, limit))
+            ''', (market, limit * 4))
 
             rows = cursor.fetchall()
 
+            # Helper for arabic names
+            try:
+                from egx_arabic_lookup import get_arabic_stock_name
+            except Exception:
+                def get_arabic_stock_name(t, fb=None): return fb or t
+
+            seen_tickers = set()
             recommendations = []
             for row in rows:
+                tk = row[0]
+                if tk in seen_tickers:
+                    continue
+                seen_tickers.add(tk)
+
+                name_ar = get_arabic_stock_name(tk, tk)
                 recommendations.append({
-                    'symbol': row[0],
-                    'name': row[0],  # V40.2 ما بيكتبش name — نستخدم ticker
+                    'symbol': tk,
+                    'ticker': tk,
+                    'name': name_ar,
+                    'name_ar': name_ar,
                     'signal': row[1],
-                    'entry_price': row[2],
-                    'target_price': row[3],
-                    'stop_loss': row[4],
-                    'target_price_2': row[5],
-                    'score': row[6],
-                    'confidence': row[7] or 0,
+                    'entry_price': float(row[2] or 0),
+                    'target_price': float(row[3] or 0),
+                    'stop_loss': float(row[4] or 0),
+                    'target_price_2': float(row[5] or 0) if row[5] else float(row[3] or 0) * 1.05,
+                    'score': float(row[6] or 0),
+                    'confidence': float(row[7] or row[6] or 80),
                     'date': row[8],
-                    'persona': row[9],
-                    'evidence_count': row[10],
+                    'persona': row[9] or 'balanced',
+                    'evidence_count': row[10] or 3,
+                    'notes': row[11] or '',
                 })
+                if len(recommendations) >= limit:
+                    break
 
             return recommendations
 
