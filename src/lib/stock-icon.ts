@@ -44,7 +44,8 @@ const KNOWN_ICONS = new Set([
  * @param ticker - Stock ticker symbol (e.g., "CIBC", "COMI", "ABUK")
  * @returns URL string if icon likely exists, null otherwise
  */
-export function getStockIconUrl(ticker: string): string | null {
+export function getStockIconUrl(ticker: string, logoUrl?: string | null): string | null {
+  if (logoUrl && logoUrl.trim()) return logoUrl.trim();
   if (!ticker) return null;
   
   const normalizedTicker = ticker.toUpperCase().trim();
@@ -113,6 +114,7 @@ export interface StockIconProps {
   ticker: string;
   name?: string;
   sector?: string | null;
+  logoUrl?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }

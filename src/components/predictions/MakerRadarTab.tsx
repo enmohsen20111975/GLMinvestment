@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { StockIconMini } from '@/components/stocks/StockIcon';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Collapsible,
@@ -1291,14 +1292,29 @@ function StockTable({
       sortable: true,
       filterable: true,
       hideable: true,
-      render: (stock) => (
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold text-sm">{stock.ticker}</span>
-          {stock.isTracked && (
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="متابَع" />
-          )}
-        </div>
-      ),
+      render: (stock) => {
+        const sInfo = stockMap.get(stock.ticker.toUpperCase());
+        return (
+          <div className="flex items-center gap-2">
+            <StockIconMini
+              ticker={stock.ticker}
+              name={sInfo?.name_ar || sInfo?.name}
+              sector={stock.sector || sInfo?.sector}
+              logoUrl={sInfo?.logo_url}
+              className="w-6 h-6"
+            />
+            <div className="flex flex-col">
+              <span className="font-bold text-sm leading-tight">{stock.ticker}</span>
+              {sInfo?.name_ar && (
+                <span className="text-[10px] text-muted-foreground truncate max-w-[110px]">{sInfo.name_ar}</span>
+              )}
+            </div>
+            {stock.isTracked && (
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="متابَع" />
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'current_price',

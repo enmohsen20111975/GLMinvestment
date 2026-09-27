@@ -1,42 +1,40 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { getStockIconUrl, getSectorIcon, STOCK_ICON_SIZES, type StockIconProps } from '@/lib/stock-icon';
 
 /**
  * StockIcon Component
  * 
- * Displays a stock icon from /stock-icons/{ticker}.svg
- * Falls back to a sector-based emoji if icon doesn't exist
+ * Displays a stock icon from logoUrl (database TradingView URL) or /stock-icons/{ticker}.svg
+ * Falls back to an elegant 2-letter avatar badge with sector indicator
  */
 export function StockIcon({ 
   ticker, 
   name, 
   sector, 
+  logoUrl,
   size = 'md', 
   className 
 }: StockIconProps) {
   const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  
-  const iconUrl = getStockIconUrl(ticker);
+  const iconUrl = (!imageError && (logoUrl || getStockIconUrl(ticker))) || null;
   const sizeClass = STOCK_ICON_SIZES[size];
   const fallbackEmoji = getSectorIcon(sector);
+  const cleanTicker = (ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
   
-  // If no icon URL or image failed to load, show fallback
-  if (!iconUrl || imageError) {
+  if (!iconUrl) {
     return (
       <div 
         className={cn(
-          'flex items-center justify-center rounded-lg bg-muted/50 font-medium text-muted-foreground',
+          'flex items-center justify-center rounded-lg bg-muted/60 font-bold text-foreground border border-border/40 flex-shrink-0 text-xs',
           sizeClass,
           className
         )}
-        title={name || ticker}
+        title={name ? `${cleanTicker} - ${name}` : cleanTicker}
       >
-        <span className="text-lg">{fallbackEmoji}</span>
+        <span>{cleanTicker.slice(0, 2) || fallbackEmoji}</span>
       </div>
     );
   }
@@ -44,58 +42,47 @@ export function StockIcon({
   return (
     <div 
       className={cn(
-        'relative flex items-center justify-center rounded-lg bg-muted/30 overflow-hidden',
+        'relative flex items-center justify-center rounded-lg bg-white dark:bg-muted/20 border border-border/30 overflow-hidden flex-shrink-0',
         sizeClass,
         className
       )}
-      title={name || ticker}
-      style={{ position: "relative" as const }}
+      title={name ? `${cleanTicker} - ${name}` : cleanTicker}
     >
-      {!imageLoaded && (
-        <span className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground animate-pulse">
-          {ticker.slice(0, 2)}
-        </span>
-      )}
-      <Image
+      <img
         src={iconUrl}
         alt={name || ticker}
-        fill
-        className={cn(
-          'object-contain p-1 transition-opacity duration-200',
-          imageLoaded ? 'opacity-100' : 'opacity-0'
-        )}
-        sizes={`${size === 'sm' ? 24 : size === 'md' ? 32 : 48}px`}
+        className="w-full h-full object-contain p-0.5 rounded-lg"
         onError={() => setImageError(true)}
-        onLoad={() => setImageLoaded(true)}
-        unoptimized // Skip Next.js image optimization for SVGs
       />
     </div>
   );
 }
 
 /**
- * StockIconMini - A smaller version for table rows
+ * StockIconMini - A smaller version for table rows and list items
  */
 export function StockIconMini({ 
   ticker, 
   name, 
   sector,
+  logoUrl,
   className 
 }: Omit<StockIconProps, 'size'>) {
   const [imageError, setImageError] = useState(false);
-  const iconUrl = getStockIconUrl(ticker);
+  const iconUrl = (!imageError && (logoUrl || getStockIconUrl(ticker))) || null;
   const fallbackEmoji = getSectorIcon(sector);
+  const cleanTicker = (ticker || '').replace(/\.(CA|SR|KW|AE|BH|QA)$/, '').toUpperCase();
   
-  if (!iconUrl || imageError) {
+  if (!iconUrl) {
     return (
       <div 
         className={cn(
-          'w-8 h-8 flex items-center justify-center rounded-lg bg-muted/30',
+          'w-6 h-6 rounded-full flex items-center justify-center bg-teal-500/10 text-teal-700 dark:text-teal-300 text-[10px] font-bold border border-teal-500/20 flex-shrink-0',
           className
         )}
-        title={name || ticker}
+        title={name ? `${cleanTicker} - ${name}` : cleanTicker}
       >
-        <span className="text-base">{fallbackEmoji}</span>
+        <span>{cleanTicker.slice(0, 2) || fallbackEmoji}</span>
       </div>
     );
   }
@@ -103,20 +90,16 @@ export function StockIconMini({
   return (
     <div 
       className={cn(
-        'relative w-8 h-8 flex items-center justify-center rounded-lg bg-muted/20 overflow-hidden',
+        'relative w-6 h-6 rounded-full flex items-center justify-center bg-white dark:bg-muted/30 overflow-hidden border border-border/40 flex-shrink-0 p-0.5',
         className
       )}
-      title={name || ticker}
-      style={{ position: "relative" as const }}
+      title={name ? `${cleanTicker} - ${name}` : cleanTicker}
     >
-      <Image
+      <img
         src={iconUrl}
         alt={name || ticker}
-        fill
-        className="object-contain p-1"
-        sizes="32px"
+        className="w-full h-full object-contain rounded-full"
         onError={() => setImageError(true)}
-        unoptimized
       />
     </div>
   );

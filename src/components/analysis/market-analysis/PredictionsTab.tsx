@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { StockIconMini } from '@/components/stocks/StockIcon';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import {
   TrendingUp, TrendingDown, Clock, Calendar,
@@ -260,13 +261,13 @@ function ProofPredictionsTableView({
                 <td className="p-3 text-center font-mono text-xs text-muted-foreground">{i + 1}</td>
                 <td className="p-3">
                   <div className="flex items-center gap-2">
-                    {stock.logo_url ? (
-                      <img src={stock.logo_url} alt={stock.ticker} className="w-7 h-7 rounded-full object-contain bg-white p-0.5 border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 flex items-center justify-center font-bold text-xs">
-                        {stock.ticker.slice(0, 2)}
-                      </div>
-                    )}
+                    <StockIconMini
+                      ticker={cleanTicker}
+                      name={stock.name_ar || stock.name}
+                      sector={stock.sector || liveStock?.sector}
+                      logoUrl={stock.logo_url || liveStock?.logo_url}
+                      className="w-7 h-7"
+                    />
                     <div>
                       <p className="font-bold text-foreground leading-none">{stock.name_ar || stock.name}</p>
                       <span className="font-mono text-xs text-muted-foreground">{stock.ticker}</span>

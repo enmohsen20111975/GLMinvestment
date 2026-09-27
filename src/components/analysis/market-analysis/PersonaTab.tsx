@@ -43,6 +43,7 @@ import { ExpertRecommendationsPanel } from '@/components/analysis/ExpertRecommen
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
 import { DailyPicksPoster } from '@/components/daily-picks/DailyPicksPoster';
 import { PreviousPredictionsArchive } from './PredictionsTab';
+import { StockIconMini } from '@/components/stocks/StockIcon';
 
 import type {
   StockData,
@@ -805,14 +806,13 @@ function PersonaTableView({ items, persona, market, onSelectItem }: { items: Sto
                 <td className="p-2 text-center font-mono text-xs">{idx + 1}</td>
                 <td className="p-2 font-bold text-xs">
                   <div className="flex items-center gap-1.5">
-                    {it.logoUrl ? (
-                      <img
-                        src={it.logoUrl}
-                        alt={cleanTicker}
-                        className="w-5 h-5 rounded-full object-contain flex-shrink-0"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    ) : null}
+                    <StockIconMini
+                      ticker={cleanTicker}
+                      name={it.nameAr || it.name}
+                      sector={it.sector}
+                      logoUrl={it.logoUrl}
+                      className="w-6 h-6"
+                    />
                     <span>{cleanTicker}</span>
                     {(isStale || isMismatch) && (
                       <span
