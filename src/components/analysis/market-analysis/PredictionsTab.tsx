@@ -473,7 +473,7 @@ export function PreviousPredictionsArchive({
 }
 
 
-function PredictionsTab({ market }: { market: MarketType }) {
+export function PredictionsTab({ market }: { market: MarketType }) {
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [closedStocks, setClosedStocks] = useState<StockData[]>([]);
   // ROBO-ADVISOR-P1: أرشيف التوقعات السابقة بحالاتها (✅/❌/⏳)

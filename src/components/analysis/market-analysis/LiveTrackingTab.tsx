@@ -104,7 +104,7 @@ import {
 } from './helpers';
 
 
-function LiveTrackingTab({ market }: { market: MarketType }) {
+export function LiveTrackingTab({ market }: { market: MarketType }) {
   const [activeStatus, setActiveStatus] = useState<Array<Record<string, unknown>>>([]);
   const [watchlist, setWatchlist] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);

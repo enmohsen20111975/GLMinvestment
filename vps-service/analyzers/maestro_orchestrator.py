@@ -36,6 +36,10 @@ except ImportError:
 # P24-ADAPTIVE-MAESTRO: ربط أوزان تكييفية بحالة السوق
 try:
     from analyzers.adaptive_weights import get_adaptive_weights
+    ADAPTIVE_WEIGHTS_AVAILABLE = True
+except ImportError:
+    ADAPTIVE_WEIGHTS_AVAILABLE = False
+    get_adaptive_weights = None
 
 # V82 integration — The Ultimate EGX Engine
 try:
@@ -45,9 +49,6 @@ except ImportError:
     V82_AVAILABLE = False
     V82Analyzer = None
     V82Signal = None
-    ADAPTIVE_WEIGHTS_AVAILABLE = True
-except ImportError:
-    ADAPTIVE_WEIGHTS_AVAILABLE = False
 
 try:
     from analyzers.expert_memory import ExpertMemoryEngineV3, check_signal_memory_v3

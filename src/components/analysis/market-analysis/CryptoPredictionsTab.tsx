@@ -338,7 +338,7 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
 // للأسهم مع clickable row → #stock-detail.
 // ============================================================================
 
-function CryptoPredictionsTab() {
+export function CryptoPredictionsTab() {
   const [data, setData] = useState<CryptoPredictionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

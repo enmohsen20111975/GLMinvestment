@@ -442,13 +442,21 @@ export function usePlatformGuide() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Check if user has seen the guide before
+    // Check if user has seen the guide before (within last 30 days)
     const seen = localStorage.getItem(STORAGE_KEY);
-    if (!seen) {
-      // Auto-open after 3s delay (let the page load first)
-      const timer = setTimeout(() => setOpen(true), 3000);
-      return () => clearTimeout(timer);
+    if (seen) {
+      // Check if the seen timestamp is still valid (30 days)
+      const seenDate = new Date(seen);
+      const daysSinceSeen = (Date.now() - seenDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceSeen < 30) {
+        // Recently seen — don't auto-open
+        return;
+      }
+      // Otherwise: re-show after 30 days (long-time-no-see → remind user)
     }
+    // Auto-open after 3s delay (let the page load first)
+    const timer = setTimeout(() => setOpen(true), 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   return { open, setOpen };

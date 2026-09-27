@@ -140,7 +140,7 @@ function ExpertPredictionsTableView({ stocks }: { stocks: StockData[] }) {
 }
 
 
-function ExpertPredictionsTab({ market }: { market: MarketType }) {
+export function ExpertPredictionsTab({ market }: { market: MarketType }) {
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
