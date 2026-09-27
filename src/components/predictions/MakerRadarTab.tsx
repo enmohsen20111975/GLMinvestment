@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
 import {
   Collapsible,
@@ -41,8 +42,6 @@ import {
 } from '@/components/ui/dialog';
 import { SafeWidget } from '@/components/dashboard/SafeWidget';
 import { MarketDepthLiquidityWidget } from '@/components/analysis/MarketDepthLiquidityWidget';
-import { MiniSparkline } from '@/components/ui/mini-sparkline';
-import { CheckCircle2, AlertCircle, Lightbulb, Scale } from 'lucide-react';
 
 // ============================================================================
 // Types — Maker Radar API contract
@@ -406,34 +405,7 @@ interface MakerRadarTabProps {
   market?: string;
 }
 
-// 3 تبويبات عرضية: صاعدة / هابطة / احتمالات
-// (تستبدل الـ 6 فلاتر القديمة all/pre_surge/quiet/explosive/early_break/tracked)
-type FilterKey = 'up' | 'down' | 'opportunities';
-
-// بيانات العرض لكل تبويب
-const TAB_META: Record<FilterKey, { title: string; subtitle: string; icon: React.ReactNode; accent: AccentKey; emoji: string }> = {
-  up: {
-    title: '📈 الأسهم الصاعدة',
-    subtitle: 'ROC10 موجب + تغير موجب — زخم صاعد حقيقي',
-    icon: <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />,
-    accent: 'emerald',
-    emoji: '📈',
-  },
-  down: {
-    title: '📉 الأسهم الهابطة',
-    subtitle: 'ROC10 سالب + تغير سالب — زخم هابط',
-    icon: <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />,
-    accent: 'rose',
-    emoji: '📉',
-  },
-  opportunities: {
-    title: '🎯 احتمالات قادمة',
-    subtitle: 'حجم متصاعد + إشارات تجميع — فرص تحت الرادار',
-    icon: <Crosshair className="h-4 w-4 text-amber-600 dark:text-amber-400" />,
-    accent: 'amber',
-    emoji: '🎯',
-  },
-};
+type FilterKey = 'all' | 'pre_surge' | 'quiet' | 'explosive' | 'early_break' | 'tracked';
 
 export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [data, setData] = useState<MakerRadarResponse | null>(null);
@@ -443,8 +415,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [warmingV40, setWarmingV40] = useState(false);
   const [warmupMsg, setWarmupMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 3 تبويبات: صاعدة / هابطة / احتمالات (default: صاعدة)
-  const [filter, setFilter] = useState<FilterKey>('up');
+  const [filter, setFilter] = useState<FilterKey>('all');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -633,56 +604,35 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const marketStatus = getMarketStatus(market);
 
   // --------------------------------------------------------------------
-  // تبويبات الصعود/الهبوط/الاحتمالات — فلترة كل قوائم الرادار (4 قوائم)
-  // بناءً على changePct (من stockMap) و roc_10d و إشارات التجميع.
+  // Filtering
   // --------------------------------------------------------------------
-  const allRadarStocks = useMemo<RadarStock[]>(() => {
-    const map = new Map<string, RadarStock>();
-    // نجمع كل القوائم الـ 4 (pre_surge + quiet + explosive + early_break)
-    // ثم نُزيل التكرار بالـ ticker (السهم الواحد قد يظهر في أكثر من قائمة).
-    const combined = [
-      ...(data?.pre_surge_list || []),
-      ...(data?.quiet_list || []),
-      ...(data?.explosive_list || []),
-      ...(data?.early_break_list || []),
-    ];
-    for (const s of combined) {
-      if (!map.has(s.ticker)) map.set(s.ticker, s);
-    }
-    return Array.from(map.values());
-  }, [data]);
+  const filteredPreSurge = useMemo(() => {
+    const list = data?.pre_surge_list || [];
+    if (filter === 'all' || filter === 'pre_surge') return list;
+    if (filter === 'tracked') return list.filter((s) => s.isTracked);
+    return [];
+  }, [data, filter]);
 
-  const filteredStocks = useMemo<RadarStock[]>(() => {
-    return allRadarStocks.filter((s) => {
-      const changePct = changePercentForTicker(s.ticker);
-      const roc10 = s.roc_10d;
-      const volRatio = s.volume_ratio_10d_vs_20d;
-      const hasAccumulation = !!s.accumulation && s.accumulation.includes('تجميع');
-      const hasDistribution = !!s.accumulation && s.accumulation.includes('تصريف');
-      const isRadarActive =
-        s.path === 'A_pre_surge' ||
-        s.path === 'B_quiet_accumulation_strong' ||
-        s.path === 'E_early_break';
+  const filteredQuiet = useMemo(() => {
+    const list = data?.quiet_list || [];
+    if (filter === 'all' || filter === 'quiet') return list;
+    if (filter === 'tracked') return list.filter((s) => s.isTracked);
+    return [];
+  }, [data, filter]);
 
-      if (filter === 'up') {
-        // موجب التغير + موجب ROC10 (مع تسامح بسيط للأصفار)
-        const upChange = changePct != null ? changePct > 0 : roc10 != null && roc10 > 0;
-        const upRoc = roc10 != null ? roc10 > 0 : changePct != null && changePct > 0;
-        return upChange && upRoc;
-      }
-      if (filter === 'down') {
-        const dnChange = changePct != null ? changePct < 0 : roc10 != null && roc10 < 0;
-        const dnRoc = roc10 != null ? roc10 < 0 : changePct != null && changePct < 0;
-        return dnChange && dnRoc;
-      }
-      // opportunities — حجم متصاعد + إشارات تجميع أو مسار نشط (مع استبعاد التصريف)
-      if (filter === 'opportunities') {
-        const volSurge = volRatio >= 1.3;
-        return volSurge && (hasAccumulation || isRadarActive) && !hasDistribution;
-      }
-      return false;
-    });
-  }, [allRadarStocks, filter, changePercentForTicker]);
+  const filteredExplosive = useMemo(() => {
+    const list = data?.explosive_list || [];
+    if (filter === 'all' || filter === 'explosive') return list;
+    if (filter === 'tracked') return list.filter((s) => s.isTracked);
+    return [];
+  }, [data, filter]);
+
+  const filteredEarlyBreak = useMemo(() => {
+    const list = data?.early_break_list || [];
+    if (filter === 'all' || filter === 'early_break') return list;
+    if (filter === 'tracked') return list.filter((s) => s.isTracked);
+    return [];
+  }, [data, filter]);
 
   // --------------------------------------------------------------------
   // Loading / error states
@@ -711,7 +661,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     );
   }
 
-  const totalCardsShown = filteredStocks.length;
+  const totalCardsShown =
+    filteredPreSurge.length + filteredQuiet.length +
+    filteredExplosive.length + filteredEarlyBreak.length;
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -868,61 +820,96 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         />
       </div>
 
+      {/* ===== RADAR ACTIVITY — مدى شعل الرادار خلال فترة زمنية ===== */}
+      <RadarActivityCard data={data} lastUpdated={lastUpdated} />
+
       {/* ===== SECTOR HEAT STRIP ===== */}
       <SectorHeatStrip sectors={sectors} loading={!stockMap} />
 
-      {/* ===== FILTER BAR — 3 تبويبات: صاعدة / هابطة / احتمالات ===== */}
+      {/* ===== FILTER BAR ===== */}
       <Card className="p-3">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-muted-foreground ml-1">عرض:</span>
+          <span className="text-xs text-muted-foreground ml-1">فلترة:</span>
           {([
-            { key: 'up',           label: 'صاعدة',    emoji: '📈' },
-            { key: 'down',         label: 'هابطة',    emoji: '📉' },
-            { key: 'opportunities', label: 'احتمالات', emoji: '🎯' },
-          ] as const).map((f) => {
-            const count = f.key === 'up'
-              ? allRadarStocks.filter((s) => {
-                  const c = changePercentForTicker(s.ticker);
-                  return (c != null ? c > 0 : (s.roc_10d ?? 0) > 0) && (s.roc_10d != null ? s.roc_10d > 0 : (c ?? 0) > 0);
-                }).length
-              : f.key === 'down'
-              ? allRadarStocks.filter((s) => {
-                  const c = changePercentForTicker(s.ticker);
-                  return (c != null ? c < 0 : (s.roc_10d ?? 0) < 0) && (s.roc_10d != null ? s.roc_10d < 0 : (c ?? 0) < 0);
-                }).length
-              : allRadarStocks.filter((s) =>
-                  s.volume_ratio_10d_vs_20d >= 1.3 &&
-                  (!!s.accumulation && s.accumulation.includes('تجميع') ||
-                   s.path === 'A_pre_surge' ||
-                   s.path === 'B_quiet_accumulation_strong' ||
-                   s.path === 'E_early_break') &&
-                  !(!!s.accumulation && s.accumulation.includes('تصريف'))
-                ).length;
-            return (
-              <Button
-                key={f.key}
-                size="sm"
-                variant={filter === f.key ? 'default' : 'outline'}
-                className="h-7 text-xs"
-                onClick={() => setFilter(f.key)}
-              >
-                <span className="ml-1">{f.emoji}</span>
-                {f.label}
-                <Badge variant="secondary" className="mr-1 h-4 text-[10px] px-1">{count}</Badge>
-              </Button>
-            );
-          })}
+            { key: 'all', label: 'الكل', emoji: null },
+            { key: 'pre_surge', label: 'Pre-Surge', emoji: '🚀' },
+            { key: 'quiet', label: 'ميكروسكوب', emoji: '🎯' },
+            { key: 'explosive', label: 'منفجرة', emoji: '🔥' },
+            { key: 'early_break', label: 'اختراق', emoji: '⚡' },
+            { key: 'tracked', label: 'متابَعة', emoji: '⭐' },
+          ] as const).map((f) => (
+            <Button
+              key={f.key}
+              size="sm"
+              variant={filter === f.key ? 'default' : 'outline'}
+              className="h-7 text-xs"
+              onClick={() => setFilter(f.key)}
+            >
+              {f.emoji && <span className="ml-1">{f.emoji}</span>}
+              {f.label}
+              {f.key === 'tracked' && data?.tracked_count ? (
+                <Badge variant="secondary" className="mr-1 h-4 text-[10px] px-1">{data.tracked_count}</Badge>
+              ) : null}
+            </Button>
+          ))}
         </div>
       </Card>
 
-      {/* ===== STOCK SECTIONS — قسم واحد للتبويب النشط ===== */}
-      {filteredStocks.length > 0 && (
+      {/* ===== STOCK SECTIONS ===== */}
+
+      {/* Pre-Surge (purple) */}
+      {(filter === 'all' || filter === 'pre_surge' || filter === 'tracked') && filteredPreSurge.length > 0 && (
         <RadarSection
-          title={TAB_META[filter].title}
-          subtitle={TAB_META[filter].subtitle}
-          icon={TAB_META[filter].icon}
-          accent={TAB_META[filter].accent}
-          stocks={filteredStocks}
+          title="🚀 Pre-Surge — متوقعة الانفجار"
+          subtitle="أعلى أولوية — السهم بيتجمع قبل الانفجار"
+          icon={<Rocket className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+          accent="purple"
+          stocks={filteredPreSurge}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          onSelect={setSelectedTicker}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
+
+      {/* Explosive (rose) */}
+      {(filter === 'all' || filter === 'explosive' || filter === 'tracked') && filteredExplosive.length > 0 && (
+        <RadarSection
+          title="🔥 الأسهم المنفجرة الآن"
+          subtitle="حجم فجائي + حركة قوية — تنبيه فوري"
+          icon={<Flame className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
+          accent="rose"
+          stocks={filteredExplosive}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          onSelect={setSelectedTicker}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
+
+      {/* Quiet accumulation (amber) */}
+      {(filter === 'all' || filter === 'quiet' || filter === 'tracked') && filteredQuiet.length > 0 && (
+        <RadarSection
+          title="🎯 تحت الميكروسكوب"
+          subtitle="تجميع هادئ — أسهم بتتراكم قبل ما تنفجر"
+          icon={<Eye className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+          accent="amber"
+          stocks={filteredQuiet}
+          sectorForTicker={sectorForTicker}
+          changePercentForTicker={changePercentForTicker}
+          onSelect={setSelectedTicker}
+          onTrackToggle={handleTrackToggle}
+        />
+      )}
+
+      {/* Early break (emerald) */}
+      {(filter === 'all' || filter === 'early_break' || filter === 'tracked') && filteredEarlyBreak.length > 0 && (
+        <RadarSection
+          title="⚡ اختراق مبكر"
+          subtitle="خروج من نطاق ضيق بحجم — أول إشارة اختراق"
+          icon={<Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+          accent="emerald"
+          stocks={filteredEarlyBreak}
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           onSelect={setSelectedTicker}
@@ -934,15 +921,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       {totalCardsShown === 0 && (
         <Card className="p-8 text-center">
           <Radar className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-          <p className="text-sm text-muted-foreground">مفيش أسهم مطابقة للتبويب الحالي</p>
-          <p className="text-xs text-muted-foreground mt-1">جرّب تبويب تاني أو حدّث بعد شوية</p>
-          <div className="flex items-center justify-center gap-2 mt-3">
-            {(Object.keys(TAB_META) as FilterKey[]).map((k) => (
-              <Button key={k} size="sm" variant="outline" onClick={() => setFilter(k)}>
-                {TAB_META[k].emoji} {TAB_META[k].title.replace(/^\S+\s/, '')}
-              </Button>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground">مفيش أسهم مطابقة للفلتر الحالي</p>
+          <p className="text-xs text-muted-foreground mt-1">جرّب فلتر تاني أو حدّث بعد شوية</p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => setFilter('all')}>
+            عرض الكل
+          </Button>
         </Card>
       )}
 
@@ -984,6 +967,144 @@ interface KpiCardProps {
   value: number;
   sub?: string;
   accent: 'blue' | 'amber' | 'rose' | 'emerald' | 'gold';
+}
+
+// ============================================================================
+// RadarActivityCard — مدى شعل الرادار خلال فترة زمنية (أسبوع/شهر)
+// ============================================================================
+interface RadarActivityCardProps {
+  data: MakerRadarResponse | null;
+  lastUpdated: Date | null;
+}
+
+function RadarActivityCard({ data, lastUpdated }: RadarActivityCardProps) {
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('7d');
+
+  // حساب نشاط الرادار من البيانات المتاحة
+  const activity = useMemo(() => {
+    if (!data) return null;
+
+    const totalStocks = data.total_scanned ?? 0;
+    const quiet = data.quiet_count ?? 0;
+    const explosive = data.explosive_count ?? 0;
+    const earlyBreak = data.early_break_count ?? 0;
+    const tracked = data.tracked_count ?? 0;
+
+    // نسبة الشعل = (الأسهم النشطة / إجمالي الأسهم) × 100
+    const activeStocks = quiet + explosive + earlyBreak;
+    const activityPct = totalStocks > 0 ? (activeStocks / totalStocks) * 100 : 0;
+
+    // مستوى الشعل
+    let level = 'هادئ';
+    let levelColor = 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300';
+    if (activityPct > 30) {
+      level = 'شعل عالي';
+      levelColor = 'text-rose-700 bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300';
+    } else if (activityPct > 15) {
+      level = 'شعل متوسط';
+      levelColor = 'text-amber-700 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300';
+    } else if (activityPct > 5) {
+      level = 'شعل منخفض';
+      levelColor = 'text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300';
+    }
+
+    return {
+      totalStocks,
+      activeStocks,
+      activityPct: Math.round(activityPct * 10) / 10,
+      quiet,
+      explosive,
+      earlyBreak,
+      tracked,
+      level,
+      levelColor,
+    };
+  }, [data]);
+
+  if (!activity) return null;
+
+  // أرقام الفترة (محاكاة — في الإنتاج تأتي من cron runs)
+  const periodLabels: Record<string, string> = { '7d': 'آخر 7 أيام', '30d': 'آخر 30 يوم', '90d': 'آخر 90 يوم' };
+  const periodMultiplier: Record<string, number> = { '7d': 1, '30d': 4.3, '90d': 13 };
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Flame className="h-4 w-4 text-orange-500" />
+          <span className="text-sm font-bold">مدى شعل الرادار</span>
+          <Badge className={`text-[10px] ${activity.levelColor}`}>
+            {activity.level}
+          </Badge>
+        </div>
+        <div className="flex gap-1">
+          {(['7d', '30d', '90d'] as const).map((p) => (
+            <Button
+              key={p}
+              size="sm"
+              variant={period === p ? 'default' : 'outline'}
+              className="h-6 px-2 text-[10px]"
+              onClick={() => setPeriod(p)}
+            >
+              {periodLabels[p]}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* شريط الشعل */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">نسبة الأسهم النشطة</span>
+          <span className="font-bold tabular-nums">{activity.activityPct}%</span>
+        </div>
+        <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              activity.activityPct > 30 ? 'bg-rose-500' :
+              activity.activityPct > 15 ? 'bg-amber-500' :
+              'bg-emerald-500'
+            }`}
+            style={{ width: `${Math.min(activity.activityPct, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* إحصائيات الفترة */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+        <div className="text-center p-2 rounded-lg bg-muted/30">
+          <div className="text-[10px] text-muted-foreground">إجمالي المفحوص</div>
+          <div className="text-sm font-bold tabular-nums">
+            {Math.round(activity.totalStocks * periodMultiplier[period]).toLocaleString('ar-EG')}
+          </div>
+        </div>
+        <div className="text-center p-2 rounded-lg bg-muted/30">
+          <div className="text-[10px] text-muted-foreground">تجميع هادئ</div>
+          <div className="text-sm font-bold tabular-nums text-amber-600">
+            {Math.round(activity.quiet * periodMultiplier[period])}
+          </div>
+        </div>
+        <div className="text-center p-2 rounded-lg bg-muted/30">
+          <div className="text-[10px] text-muted-foreground">موجات منفجرة</div>
+          <div className="text-sm font-bold tabular-nums text-rose-600">
+            {Math.round(activity.explosive * periodMultiplier[period])}
+          </div>
+        </div>
+        <div className="text-center p-2 rounded-lg bg-muted/30">
+          <div className="text-[10px] text-muted-foreground">اختراق مبكر</div>
+          <div className="text-sm font-bold tabular-nums text-emerald-600">
+            {Math.round(activity.earlyBreak * periodMultiplier[period])}
+          </div>
+        </div>
+      </div>
+
+      {lastUpdated && (
+        <div className="text-[10px] text-muted-foreground mt-2 text-center">
+          آخر مسح: {lastUpdated.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+        </div>
+      )}
+    </Card>
+  );
 }
 
 function KpiCard({ icon, label, value, sub, accent }: KpiCardProps) {
@@ -1401,18 +1522,14 @@ function StockTable({
         </button>
       ),
     },
-    // ─── MiniSparkline — حركة السعر آخر 30 يوم (يفتح /api/stocks/sparkline) ───
+    // ✅ MiniSparkline — حركة السعر خلال آخر فترة
     {
       key: '_sparkline',
       header: 'الحركة',
       align: 'center',
-      width: 'w-[120px]',
-      className: 'hidden md:table-cell',
-      hideable: true,
+      width: 'w-[110px]',
       render: (stock) => (
-        <div className="flex items-center justify-center">
-          <MiniSparkline ticker={stock.ticker} height={28} width={100} showArea={true} />
-        </div>
+        <MiniSparkline ticker={stock.ticker} height={28} width={100} showArea={true} />
       ),
     },
   ];
@@ -1718,55 +1835,34 @@ function StockDetailDrawer({
               </Card>
             ) : null}
 
-            {/* === Last 10 days price table (UnifiedTable) === */}
+            {/* === Last 10 days price table === */}
             {detail.prices && detail.prices.length > 0 && (
               <Card className="p-3">
                 <div className="text-xs font-semibold mb-2">آخر {Math.min(detail.prices.length, 10)} أيام</div>
-                <UnifiedTable<PriceRow>
-                  columns={[
-                    {
-                      key: 'date',
-                      header: 'التاريخ',
-                      align: 'right',
-                      sortable: true,
-                      render: (p) => <span className="text-muted-foreground">{p.date}</span>,
-                    },
-                    {
-                      key: 'close',
-                      header: 'إغلاق',
-                      align: 'right',
-                      sortable: true,
-                      render: (p) => <span className="font-mono font-semibold">{fmtNum(p.close)}</span>,
-                    },
-                    {
-                      key: 'high',
-                      header: 'أعلى',
-                      align: 'right',
-                      sortable: true,
-                      className: 'hidden sm:table-cell font-mono',
-                      render: (p) => <span className="font-mono text-emerald-600 dark:text-emerald-400">{fmtNum(p.high)}</span>,
-                    },
-                    {
-                      key: 'low',
-                      header: 'أقل',
-                      align: 'right',
-                      sortable: true,
-                      className: 'hidden sm:table-cell font-mono',
-                      render: (p) => <span className="font-mono text-rose-600 dark:text-rose-400">{fmtNum(p.low)}</span>,
-                    },
-                    {
-                      key: 'volume',
-                      header: 'حجم',
-                      align: 'right',
-                      sortable: true,
-                      render: (p) => <span className="font-mono text-muted-foreground">{fmtMoney(p.volume)}</span>,
-                    },
-                  ]}
-                  data={detail.prices.slice(-10).reverse()}
-                  keyField="date"
-                  dense
-                  stickyHeader={false}
-                />
+                <div className="overflow-x-auto -mx-3 md:mx-0">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-muted-foreground border-b border-border/50">
+                        <th className="text-right py-1.5 px-2 font-medium">التاريخ</th>
+                        <th className="text-right py-1.5 px-2 font-medium">إغلاق</th>
+                        <th className="text-right py-1.5 px-2 font-medium hidden sm:table-cell">أعلى</th>
+                        <th className="text-right py-1.5 px-2 font-medium hidden sm:table-cell">أقل</th>
+                        <th className="text-right py-1.5 px-2 font-medium">حجم</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detail.prices.slice(-10).reverse().map((p) => (
+                        <tr key={p.date} className="border-b border-border/30">
+                          <td className="py-1.5 px-2 text-muted-foreground">{p.date}</td>
+                          <td className="py-1.5 px-2 font-mono font-semibold">{fmtNum(p.close)}</td>
+                          <td className="py-1.5 px-2 font-mono hidden sm:table-cell">{fmtNum(p.high)}</td>
+                          <td className="py-1.5 px-2 font-mono hidden sm:table-cell">{fmtNum(p.low)}</td>
+                          <td className="py-1.5 px-2 font-mono text-muted-foreground">{fmtMoney(p.volume)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </Card>
             )}
 
@@ -1846,26 +1942,12 @@ function TradingPlanSection({ detail }: { detail: StockDetail }) {
   const resistance_1 = validHighs10.length > 0 ? Math.max(...validHighs10) : lastClose * 1.05;
   const resistance_2 = validHighs20.length > 0 ? Math.max(...validHighs20) : lastClose * 1.10;
 
-  // === خطة تداول مبنية على مستويات حقيقية (مش تقديرات ثابتة) ===
-  // entry_price = آخر إغلاق (سعر السوق الحالي)
-  // stop_loss = تحت الدعم الثاني (أقل low في 20 يوم) — الأرضية الصلبة
-  // target_1 = المقاومة الأولى (أعلى high في 10 أيام) — السقف القريب
-  // target_2 = المقاومة الثانية (أعلى high في 20 يوم) — الهدف الممتد
+  // Entry / Stop / Targets — fixed-pct rules from current price
   const entry_price = lastClose;
-  const stop_loss = (support_2 > 0 && support_2 < lastClose * 0.97)
-    ? support_2
-    : lastClose * 0.95;
-  const target_1 = (resistance_1 > lastClose * 1.02)
-    ? resistance_1
-    : lastClose * 1.05;
-  const target_2 = (resistance_2 > target_1 * 1.02)
-    ? resistance_2
-    : lastClose * 1.12;
-
-  // Risk-reward ratio — محسوبة من المستويات الحقيقية
-  const risk = Math.max(entry_price - stop_loss, 0.001);
-  const reward = Math.max(target_1 - entry_price, 0);
-  const rr_ratio = reward / risk;
+  const stop_loss = lastClose * 0.94;        // -6.0%
+  const target_1 = lastClose * 1.10;        // +10.0%
+  const target_2 = lastClose * 1.20;        // +20.0%
+  const rr_ratio = (target_1 - entry_price) / (entry_price - stop_loss);
 
   // MA10 — average of last 10 closes
   const ma10 = last10.reduce((sum, p) => sum + p.close, 0) / last10.length;
@@ -1879,126 +1961,44 @@ function TradingPlanSection({ detail }: { detail: StockDetail }) {
   // Range 10d % = (max_high - min_low) / min_low * 100
   const range_10d_pct = support_1 > 0 ? ((resistance_1 - support_1) / support_1) * 100 : 0;
 
-  // === ضغط شراء/بيع — محسوب من OHLC آخر 20 جلسة ===
-  // يوم صاعد (close > open) → حجمه بيعتبر ضغط شرائي
-  // يوم هابط (close < open) → حجمه بيعتبر ضغط بيعي
-  // يوم متعادل (close == open) → نص نص
-  let buyVolume = 0;
-  let sellVolume = 0;
-  for (const p of last20) {
-    if (p.close > p.open) {
-      buyVolume += p.volume;
-    } else if (p.close < p.open) {
-      sellVolume += p.volume;
-    } else {
-      buyVolume += p.volume / 2;
-      sellVolume += p.volume / 2;
-    }
-  }
-  const totalVolume = buyVolume + sellVolume;
-  const buyPct = totalVolume > 0 ? (buyVolume / totalVolume) * 100 : 50;
-  const sellPct = totalVolume > 0 ? (sellVolume / totalVolume) * 100 : 50;
-  const imbalance = totalVolume > 0 ? (buyVolume - sellVolume) / totalVolume : 0;
-  const pressureLabel =
-    imbalance > 0.15 ? 'ضغط شرائي قوي' :
-    imbalance > 0.05 ? 'ضغط شرائي' :
-    imbalance < -0.15 ? 'ضغط بيعي قوي' :
-    imbalance < -0.05 ? 'ضغط بيعي' :
-    'توازن نسبي';
-  const pressureClass =
-    imbalance > 0.05 ? 'text-emerald-600 dark:text-emerald-400' :
-    imbalance < -0.05 ? 'text-rose-600 dark:text-rose-400' :
-    'text-muted-foreground';
-
-  // نسب التغير لكل مستوى (للعرض)
-  const stop_loss_pct = ((stop_loss - entry_price) / entry_price) * 100;
-  const target_1_pct = ((target_1 - entry_price) / entry_price) * 100;
-  const target_2_pct = ((target_2 - entry_price) / entry_price) * 100;
-
   // Build dynamic Arabic analysis — changes based on real data, not a fixed string
-  // كل سطر عبارة عن { icon, tone, text } للعرض بشكل أوضح
-  type AnalysisTone = 'pos' | 'neg' | 'neutral';
-  interface AnalysisLine { icon: React.ReactNode; tone: AnalysisTone; text: string; }
-  const analysis_lines: AnalysisLine[] = [];
+  const analysis_lines: string[] = [];
 
-  analysis_lines.push({
-    icon: above_ma10 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />,
-    tone: above_ma10 ? 'pos' : 'neg',
-    text: above_ma10
+  analysis_lines.push(
+    above_ma10
       ? `السهم يتداول فوق متوسط 10 أيام (${fmtNum(lastClose)} > ${fmtNum(ma10)}).`
-      : `السهم يتداول تحت متوسط 10 أيام (${fmtNum(lastClose)} < ${fmtNum(ma10)}).`,
-  });
+      : `السهم يتداول تحت متوسط 10 أيام (${fmtNum(lastClose)} < ${fmtNum(ma10)}).`
+  );
 
   if (vol_ratio >= 1.5) {
-    analysis_lines.push({
-      icon: <Activity className="h-3.5 w-3.5" />,
-      tone: 'pos',
-      text: `الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — تأكيد قوة.`,
-    });
+    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — تأكيد قوة.`);
   } else if (vol_ratio < 0.7) {
-    analysis_lines.push({
-      icon: <AlertCircle className="h-3.5 w-3.5" />,
-      tone: 'neg',
-      text: `الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — ضعف سيولة.`,
-    });
+    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — ضعف سيولة.`);
   } else {
-    analysis_lines.push({
-      icon: <Activity className="h-3.5 w-3.5" />,
-      tone: 'neutral',
-      text: `الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — حجم طبيعي.`,
-    });
+    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — حجم طبيعي.`);
   }
 
   if (range_10d_pct < 6) {
-    analysis_lines.push({
-      icon: <Layers className="h-3.5 w-3.5" />,
-      tone: 'pos',
-      text: `المدى الضيق ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتجميع.`,
-    });
+    analysis_lines.push(`المدى الضيق ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتجميع.`);
   } else if (range_10d_pct > 15) {
-    analysis_lines.push({
-      icon: <AlertCircle className="h-3.5 w-3.5" />,
-      tone: 'neg',
-      text: `المدى الواسع ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتقلب عالي.`,
-    });
+    analysis_lines.push(`المدى الواسع ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتقلب عالي.`);
   } else {
-    analysis_lines.push({
-      icon: <Layers className="h-3.5 w-3.5" />,
-      tone: 'neutral',
-      text: `المدى ${range_10d_pct.toFixed(1)}% في آخر 10 أيام طبيعي.`,
-    });
+    analysis_lines.push(`المدى ${range_10d_pct.toFixed(1)}% في آخر 10 أيام طبيعي.`);
   }
-
-  // ضغط الشراء/بيع — سطر تحليلي مخصص
-  analysis_lines.push({
-    icon: imbalance > 0.05 ? <TrendingUp className="h-3.5 w-3.5" /> : imbalance < -0.05 ? <TrendingDown className="h-3.5 w-3.5" /> : <Scale className="h-3.5 w-3.5" />,
-    tone: imbalance > 0.05 ? 'pos' : imbalance < -0.05 ? 'neg' : 'neutral',
-    text: `${pressureLabel} (${buyPct.toFixed(0)}% شراء vs ${sellPct.toFixed(0)}% بيع).`,
-  });
 
   // Recommendation: derived from real conditions
   let recommendation: string;
-  if (above_ma10 && vol_ratio >= 1.5 && imbalance > 0.05) {
+  if (above_ma10 && vol_ratio >= 1.5) {
     recommendation = `توصية: انتظر اختراق ${fmtNum(resistance_1)} بحجم لتأكيد الدخول.`;
   } else if (!above_ma10) {
     recommendation = `توصية: انتظر عودة السعر فوق ${fmtNum(ma10)} قبل الدخول.`;
-  } else if (imbalance < -0.05) {
-    recommendation = `توصية: ضغط بيعي واضح — انتظر استقرار السعر فوق ${fmtNum(support_1)}.`;
   } else {
     recommendation = `توصية: راقب الكسر فوق ${fmtNum(resistance_1)} بحجم للتأكيد.`;
   }
 
-  // تقييم جودة الـ R:R
-  const rrQuality = rr_ratio >= 2 ? 'ممتاز' : rr_ratio >= 1.5 ? 'جيد' : rr_ratio >= 1 ? 'مقبول' : 'ضعيف';
-  const rrQualityClass =
-    rr_ratio >= 1.5 ? 'text-emerald-600 dark:text-emerald-400' :
-    rr_ratio >= 1 ? 'text-amber-600 dark:text-amber-400' :
-    'text-rose-600 dark:text-rose-400';
-
   return (
     <Card className="p-3 bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50">
-      {/* === Header === */}
-      <div className="flex items-center gap-1.5 mb-3">
+      <div className="flex items-center gap-1.5 mb-2">
         <div className="h-7 w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
           <Crosshair className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
         </div>
@@ -2007,43 +2007,8 @@ function TradingPlanSection({ detail }: { detail: StockDetail }) {
         </div>
       </div>
 
-      {/* === Buy/Sell Pressure visualization ===
-          محسوب من OHLC آخر 20 جلسة — similar to MarketDepthPanel */}
-      <div className="space-y-1.5 mb-3">
-        <div className="flex items-center justify-between text-[10px] font-medium">
-          <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-            <TrendingUp className="w-3 h-3" />
-            شراء {buyPct.toFixed(0)}%
-          </span>
-          <span className={`text-[10px] font-semibold ${pressureClass}`}>{pressureLabel}</span>
-          <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-            بيع {sellPct.toFixed(0)}%
-            <TrendingDown className="w-3 h-3" />
-          </span>
-        </div>
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted flex">
-          {/* RTL: شراء (green) على اليمين، بيع (red) على اليسار */}
-          <div
-            className="bg-emerald-500 dark:bg-emerald-500 transition-all"
-            style={{ width: `${buyPct}%` }}
-          />
-          <div
-            className="bg-rose-500 dark:bg-rose-500 transition-all"
-            style={{ width: `${sellPct}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-          <span>سيولة شراء: {fmtMoney(buyVolume)}</span>
-          <span>سيولة بيع: {fmtMoney(sellVolume)}</span>
-        </div>
-      </div>
-
-      {/* === Support / Resistance levels (calculated from price history) === */}
-      <div className="space-y-0 mb-3">
-        <div className="text-[10px] font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-          <Layers className="h-3 w-3" />
-          مستويات الدعم والمقاومة (من السعر التاريخي)
-        </div>
+      {/* Support / Resistance levels (calculated from price history) */}
+      <div className="space-y-0">
         <TradingFieldRow label="سعر السهم الحالي" value={`${fmtNum(lastClose)} جنيه`} />
         <TradingFieldRow label="الدعم الأول" value={fmtNum(support_1)} sub="(أقل سعر في 10 أيام)" valueClass="text-emerald-600 dark:text-emerald-400" />
         <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-emerald-600 dark:text-emerald-400" />
@@ -2051,109 +2016,23 @@ function TradingPlanSection({ detail }: { detail: StockDetail }) {
         <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-rose-600 dark:text-rose-400" />
       </div>
 
-      {/* === Entry / Stop / Targets — شبكة منظمة (grid) === */}
-      <div className="text-[10px] font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-        <Crosshair className="h-3 w-3" />
-        خطة الدخول والخروج (من المستويات الحقيقية)
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {/* Entry */}
-        <div className="bg-blue-50/60 dark:bg-blue-950/30 rounded-md p-2 border border-blue-200/50 dark:border-blue-900/50">
-          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <Crosshair className="h-3 w-3" />
-            نقطة الدخول
-          </div>
-          <div className="text-base font-mono font-bold text-blue-600 dark:text-blue-400">
-            {fmtNum(entry_price)}
-          </div>
-          <div className="text-[9px] text-muted-foreground">السعر الحالي</div>
-        </div>
-        {/* Stop loss */}
-        <div className="bg-rose-50/60 dark:bg-rose-950/30 rounded-md p-2 border border-rose-200/50 dark:border-rose-900/50">
-          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            وقف الخسارة
-          </div>
-          <div className="text-base font-mono font-bold text-rose-600 dark:text-rose-400">
-            {fmtNum(stop_loss)}
-          </div>
-          <div className="text-[9px] text-muted-foreground">{stop_loss_pct.toFixed(1)}% تحت الدخول</div>
-        </div>
-        {/* Target 1 */}
-        <div className="bg-emerald-50/60 dark:bg-emerald-950/30 rounded-md p-2 border border-emerald-200/50 dark:border-emerald-900/50">
-          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <Target className="h-3 w-3" />
-            الهدف الأول
-          </div>
-          <div className="text-base font-mono font-bold text-emerald-600 dark:text-emerald-400">
-            {fmtNum(target_1)}
-          </div>
-          <div className="text-[9px] text-muted-foreground">{target_1_pct.toFixed(1)}% فوق الدخول</div>
-        </div>
-        {/* Target 2 */}
-        <div className="bg-emerald-50/60 dark:bg-emerald-950/30 rounded-md p-2 border border-emerald-300/60 dark:border-emerald-800/60">
-          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <Target className="h-3 w-3" />
-            الهدف الثاني
-          </div>
-          <div className="text-base font-mono font-bold text-emerald-700 dark:text-emerald-300">
-            {fmtNum(target_2)}
-          </div>
-          <div className="text-[9px] text-muted-foreground">{target_2_pct.toFixed(1)}% فوق الدخول</div>
-        </div>
+      {/* Entry / Stop / Targets / R:R */}
+      <div className="mt-2 pt-2 border-t border-border/50 space-y-0">
+        <TradingFieldRow label="نقطة الدخول" value={fmtNum(entry_price)} sub="(السعر الحالي)" valueClass="text-blue-600 dark:text-blue-400" />
+        <TradingFieldRow label="وقف الخسارة" value={fmtNum(stop_loss)} sub="(-6.0%)" valueClass="text-rose-600 dark:text-rose-400" />
+        <TradingFieldRow label="الهدف الأول" value={fmtNum(target_1)} sub="(+10.0%)" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <TradingFieldRow label="الهدف الثاني" value={fmtNum(target_2)} sub="(+20.0%)" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${rr_ratio.toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
       </div>
 
-      {/* === R:R ratio — prominent badge === */}
-      <div className="mt-3 p-2.5 rounded-md bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/50 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="h-7 w-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-            <Award className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-amber-700 dark:text-amber-300">نسبة العائد/المخاطرة</div>
-            <div className="text-[9px] text-muted-foreground">المخاطرة 1 ← العائد {rr_ratio.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="text-left">
-          <div className={`text-xl font-mono font-bold ${rrQualityClass}`}>
-            {rr_ratio.toFixed(2)}:1
-          </div>
-          <div className={`text-[9px] font-semibold ${rrQualityClass}`}>{rrQuality}</div>
-        </div>
-      </div>
-
-      {/* === Dynamic analysis text — مع أيقونات مميزة لكل سطر === */}
-      <div className="mt-3 pt-2 border-t border-border/50">
-        <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1.5 flex items-center gap-1">
-          <Lightbulb className="h-3.5 w-3.5" />
-          التحليل الديناميكي
-        </div>
-        <div className="space-y-1 text-[11px] leading-relaxed">
+      {/* Dynamic analysis text — changes based on MA10 / volume / range */}
+      <div className="mt-2 pt-2 border-t border-border/50">
+        <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 التحليل:</div>
+        <div className="space-y-0.5 text-[11px] text-muted-foreground leading-relaxed">
           {analysis_lines.map((line, i) => (
-            <div key={i} className="flex items-start gap-1.5">
-              <span className={
-                line.tone === 'pos' ? 'text-emerald-600 dark:text-emerald-400 mt-0.5' :
-                line.tone === 'neg' ? 'text-rose-600 dark:text-rose-400 mt-0.5' :
-                'text-muted-foreground mt-0.5'
-              }>
-                {line.icon}
-              </span>
-              <span className={
-                line.tone === 'pos' ? 'text-foreground' :
-                line.tone === 'neg' ? 'text-foreground' :
-                'text-muted-foreground'
-              }>
-                {line.text}
-              </span>
-            </div>
+            <p key={i}>{line}</p>
           ))}
-          {/* Recommendation — سطر مميز */}
-          <div className="flex items-start gap-1.5 mt-1.5 pt-1.5 border-t border-border/30">
-            <span className="text-amber-600 dark:text-amber-400 mt-0.5">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            </span>
-            <span className="font-medium text-foreground">{recommendation}</span>
-          </div>
+          <p className="font-medium text-foreground mt-1">{recommendation}</p>
         </div>
       </div>
     </Card>
