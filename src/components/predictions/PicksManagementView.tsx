@@ -17,7 +17,7 @@ import { StatCard } from '@/components/ui/stat-card';
  * Author: GLMinvestment v3.4.43
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   Target, Trophy, RefreshCw, Activity, TrendingUp, TrendingDown,
   Shield, AlertTriangle, Clock, CheckCircle2, XCircle, Flame,
@@ -172,7 +172,10 @@ function formatPrice(v: number | undefined | null): string {
 // ============================================================
 // Sub-Components
 // ============================================================
-function DailyPickCard({ pick, rank }: { pick: DailyPick; rank: number }) {
+// UI-STABILITY fix (2026-09-28): wrap DailyPickCard + ManagementRow in
+// React.memo so background data refreshes don't needlessly re-render every
+// card/row that hasn't changed.
+const DailyPickCard = memo(function DailyPickCard({ pick, rank }: { pick: DailyPick; rank: number }) {
   const tier = pick.tier || 'WATCH';
   const style = TIER_STYLES[tier] || TIER_STYLES.WATCH;
   const isBuy = pick.signal_type === 'BUY' || pick.signal === 'BUY' || pick.signal === 'STRONG_BUY' || pick.signal === 'ACCUMULATE';
@@ -284,9 +287,9 @@ function DailyPickCard({ pick, rank }: { pick: DailyPick; rank: number }) {
       </CardContent>
     </Card>
   );
-}
+});
 
-function ManagementRow({ advice }: { advice: ManagementAdvice }) {
+const ManagementRow = memo(function ManagementRow({ advice }: { advice: ManagementAdvice }) {
   const actionStyle = ACTION_STYLES[advice.action] || ACTION_STYLES.HOLD;
   const isProfit = (advice.current_return_pct || 0) > 0;
   const urgencyClass = URGENCY_STYLES[advice.urgency] || URGENCY_STYLES.low;
@@ -398,7 +401,7 @@ function ManagementRow({ advice }: { advice: ManagementAdvice }) {
       </div>
     </div>
   );
-}
+});
 
 // ============================================================
 // Main Component
@@ -421,9 +424,16 @@ export function PicksManagementView() {
   const [refreshing, setRefreshing] = useState(false);
 
   // ---- Fetch Daily Picks ----
-  const fetchPicks = useCallback(async () => {
-    setLoadingPicks(true);
-    setPicksError(null);
+  // UI-STABILITY fix (2026-09-28): silent=true → setRefreshingPicks(true) instead
+  // of setLoadingPicks(true). Skeleton only shows on very first load when picks
+  // is still empty. Background refresh keeps existing cards visible.
+  const fetchPicks = useCallback(async (silent = false) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoadingPicks(true);
+      setPicksError(null);
+    }
     try {
       const params = new URLSearchParams({
         date: picksDate,
@@ -447,17 +457,26 @@ export function PicksManagementView() {
       }
     } catch (e) {
       console.error('fetch picks error:', e);
-      setPicks([]);
-      setPicksError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      if (!silent) {
+        setPicks([]);
+        setPicksError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      }
     } finally {
       setLoadingPicks(false);
+      setRefreshing(false);
     }
   }, [picksDate, persona, market]);
 
   // ---- Fetch Active Management ----
-  const fetchManagement = useCallback(async () => {
-    setLoadingMgmt(true);
-    setMgmtError(null);
+  // UI-STABILITY fix (2026-09-28): silent=true → setRefreshing(true) instead
+  // of setLoadingMgmt(true). Skeleton only shows on very first load.
+  const fetchManagement = useCallback(async (silent = false) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoadingMgmt(true);
+      setMgmtError(null);
+    }
     try {
       const params = new URLSearchParams({ limit: '100', market: market });
       if (persona !== 'all') params.set('persona', persona);
@@ -476,10 +495,13 @@ export function PicksManagementView() {
       }
     } catch (e) {
       console.error('fetch management error:', e);
-      setManagement([]);
-      setMgmtError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      if (!silent) {
+        setManagement([]);
+        setMgmtError('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      }
     } finally {
       setLoadingMgmt(false);
+      setRefreshing(false);
     }
   }, [persona, market]);
 
@@ -493,7 +515,8 @@ export function PicksManagementView() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchPicks(), fetchManagement()]);
+    // UI-STABILITY fix (2026-09-28): pass silent=true to keep cards/rows visible
+    await Promise.all([fetchPicks(true), fetchManagement(true)]);
     setRefreshing(false);
     toast.success('تم تحديث التوقعات والإدارة');
   };
@@ -562,8 +585,10 @@ export function PicksManagementView() {
       </div>
 
       {/* Management Summary Cards */}
-      {!loadingMgmt && mgmtSummary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* UI-STABILITY fix (2026-09-28): show summary whenever available — don't
+          hide on silent refresh. Stable key prevents unmount/remount. */}
+      {mgmtSummary && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" key="picks-mgmt-summary-cards">
           <StatCard
             title="مراكز مفتوحة"
             value={mgmtSummary.total}
@@ -598,7 +623,9 @@ export function PicksManagementView() {
       )}
 
       {/* Section 1: Daily Picks (Top 5) */}
-      <Card>
+      {/* UI-STABILITY fix (2026-09-28): stable key on the picks section card so
+          React doesn't unmount/remount it during silent refreshes. */}
+      <Card key="picks-section-daily-picks">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -621,7 +648,8 @@ export function PicksManagementView() {
           </div>
         </CardHeader>
         <CardContent>
-          {loadingPicks ? (
+          {/* UI-STABILITY fix (2026-09-28): skeleton only on very first load (no picks yet). */}
+          {(loadingPicks && picks.length === 0) ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-64 w-full rounded-xl" />
@@ -635,7 +663,7 @@ export function PicksManagementView() {
                 variant="outline"
                 size="sm"
                 className="mt-3"
-                onClick={() => fetchPicks()}
+                onClick={() => fetchPicks(true)}
               >
                 <RefreshCw className="h-4 w-4 ml-2" />
                 إعادة المحاولة
@@ -676,7 +704,9 @@ export function PicksManagementView() {
       </Card>
 
       {/* Section 2: Active Positions Management */}
-      <Card>
+      {/* UI-STABILITY fix (2026-09-28): stable key on the mgmt section card so
+          React doesn't unmount/remount it during silent refreshes. */}
+      <Card key="picks-section-active-management">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -705,7 +735,8 @@ export function PicksManagementView() {
           </div>
         </CardHeader>
         <CardContent>
-          {loadingMgmt ? (
+          {/* UI-STABILITY fix (2026-09-28): skeleton only on very first load (no data yet). */}
+          {(loadingMgmt && management.length === 0) ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full" />
@@ -719,7 +750,7 @@ export function PicksManagementView() {
                 variant="outline"
                 size="sm"
                 className="mt-3"
-                onClick={() => fetchManagement()}
+                onClick={() => fetchManagement(true)}
               >
                 <RefreshCw className="h-4 w-4 ml-2" />
                 إعادة المحاولة
@@ -746,7 +777,7 @@ export function PicksManagementView() {
       </Card>
 
       {/* Educational note */}
-      <Card className="bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+      <Card className="bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800" key="picks-educational-note">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <Award className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />

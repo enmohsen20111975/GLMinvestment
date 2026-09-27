@@ -17,10 +17,7 @@ import { ExecutiveReportView } from '@/components/reports/ExecutiveReportView';
 import { HorizontalSectorsBar } from '@/components/analysis/market-analysis/MorningBellSection';
 import { MARKET_CODES, _isEgxIntradayNow } from '@/components/analysis/market-analysis/helpers';
 import type { MarketAnalysisViewProps } from '@/components/analysis/market-analysis/types';
-// P1 #19: ربط الـ orphan tabs الجاهزة
-import { LiveTrackingTab } from '@/components/analysis/market-analysis/LiveTrackingTab';
-import { ExpertPredictionsTab } from '@/components/analysis/market-analysis/ExpertPredictionsTab';
-import { CryptoPredictionsTab } from '@/components/analysis/market-analysis/CryptoPredictionsTab';
+// P1 #19 tabs (LiveTracking/ExpertPredictions/CryptoPredictions) REMOVED on 2026-09-28 per user request — caused UX clutter
 
 // P1-GEMS-WIRING: 3 new hidden-gem tabs — wired on 2026-09-28.
 // LearnedLessonsDashboard reads 19,464 AI lessons from predictions.db.learned_lessons.
@@ -230,19 +227,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Radar className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">رادار الميكرز</span>
           </TabsTrigger>
-          {/* P1 #19: ربط الـ orphan tabs الجاهزة — 3 tabs جديدة */}
-          <TabsTrigger value="live-tracking" className="flex items-center gap-1">
-            <Activity className="h-4 w-4 text-blue-600" />
-            <span className="hidden sm:inline">تتبع لحظي</span>
-          </TabsTrigger>
-          <TabsTrigger value="expert-predictions" className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-purple-600" />
-            <span className="hidden sm:inline">توقعات الخبراء</span>
-          </TabsTrigger>
-          <TabsTrigger value="crypto-predictions" className="flex items-center gap-1">
-            <span className="text-base">₿</span>
-            <span className="hidden sm:inline">توقعات كريبتو</span>
-          </TabsTrigger>
           {/* P1-GEMS-WIRING: 3 new hidden-gem tabs */}
           <TabsTrigger value="learned-lessons" className="flex items-center gap-1">
             <Brain className="h-4 w-4 text-violet-600" />
@@ -284,21 +268,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
         {/* PHASE-2: رادار الميكرز */}
         <TabsContent value="maker-radar" className="mt-4">
           <MakerRadarTab market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />
-        </TabsContent>
-
-        {/* P1 #19: تتبع لحظي */}
-        <TabsContent value="live-tracking" className="mt-4">
-          <LiveTrackingTab market={currentMarket} />
-        </TabsContent>
-
-        {/* P1 #19: توقعات الخبراء */}
-        <TabsContent value="expert-predictions" className="mt-4">
-          <ExpertPredictionsTab market={currentMarket} />
-        </TabsContent>
-
-        {/* P1 #19: توقعات الكريبتو */}
-        <TabsContent value="crypto-predictions" className="mt-4">
-          <CryptoPredictionsTab />
         </TabsContent>
 
         {/* P1-GEMS-WIRING: دروس الذكاء الاصطناعي (19,464 صف) */}

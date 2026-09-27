@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
   Eye,
   EyeOff,
@@ -571,14 +571,17 @@ function EditStockDialog({
 
 // ==================== MOBILE CARD COMPONENT ====================
 
-function WatchlistMobileCard({ 
-  item, 
-  hasGainLoss, 
-  onEdit, 
-  onDelete, 
-  onAnalyze 
-}: { 
-  item: EnhancedWatchlistItem; 
+// UI-STABILITY fix (2026-09-28): wrap WatchlistMobileCard in React.memo so
+// background price refreshes don't re-render every mobile card that hasn't
+// changed (only rows whose `item` reference changed will re-render).
+const WatchlistMobileCard = memo(function WatchlistMobileCard({
+  item,
+  hasGainLoss,
+  onEdit,
+  onDelete,
+  onAnalyze
+}: {
+  item: EnhancedWatchlistItem;
   hasGainLoss: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -726,7 +729,7 @@ function WatchlistMobileCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 // ==================== MAIN VIEW ====================
 
@@ -825,8 +828,15 @@ export function EnhancedWatchlistView() {
 
   const hasGainLoss = items.some((i) => i.purchase_price && i.quantity);
 
-  // ─── UnifiedTable columns (built once per render — depends on handlers/state) ─
-  const watchlistColumns: Column<EnhancedWatchlistItem>[] = [
+  // UI-STABILITY fix (2026-09-28): wrap watchlistColumns in useMemo so the
+  // columns array reference is stable across renders. Without this, every
+  // background price refresh created a NEW columns array → UnifiedTable threw
+  // away its sort/filter state and recomputed everything.
+  // Depends on: hasGainLoss (column visibility), and the action handlers
+  // (setDealAdvisorPrefill / setCurrentView / handleEdit / setDeleteId) which
+  // are stable references from useState/useCallback/setter — including them
+  // in deps is safe and won't cause unnecessary re-creation.
+  const watchlistColumns: Column<EnhancedWatchlistItem>[] = useMemo(() => [
     {
       key: 'ticker',
       header: 'السهم',
@@ -1023,7 +1033,14 @@ export function EnhancedWatchlistView() {
         </div>
       ),
     },
-  ];
+  ], [
+    // UI-STABILITY fix (2026-09-28): columns array dependencies.
+    // - hasGainLoss: toggles visibility of gain/loss, purchase_price, quantity, etc.
+    // - setDealAdvisorPrefill / setCurrentView / handleEdit / setDeleteId: stable
+    //   references from useState setters / useCallback — they don't change identity
+    //   between renders, but listing them satisfies the exhaustive-deps rule.
+    hasGainLoss, setDealAdvisorPrefill, setCurrentView, handleEdit, setDeleteId,
+  ]);
 
   return (
     <div dir="rtl" className="min-h-screen bg-background">
@@ -1087,8 +1104,9 @@ export function EnhancedWatchlistView() {
         </div>
 
         {/* Summary Cards */}
+        {/* UI-STABILITY fix (2026-09-28): stable key prevents unmount/remount on silent refresh */}
         {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4" key="watchlist-summary-cards">
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <BarChart3 className="w-4 h-4" />
@@ -1140,13 +1158,15 @@ export function EnhancedWatchlistView() {
         )}
 
         {/* Intelligence Section */}
+        {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
         {showIntelligence && (
-          <WatchlistIntelligenceSection />
+          <WatchlistIntelligenceSection key="watchlist-intelligence-section" />
         )}
 
         {/* Empty State */}
+        {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
         {!showIntelligence && items.length === 0 && (
-          <Card className="border-dashed">
+          <Card className="border-dashed" key="watchlist-empty-state">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <EyeOff className="w-8 h-8 text-muted-foreground" />
@@ -1167,8 +1187,9 @@ export function EnhancedWatchlistView() {
         )}
 
         {/* Watchlist - Mobile Cards View */}
+        {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
         {!showIntelligence && items.length > 0 && (
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-3" key="watchlist-mobile-cards">
             {items.map((item) => (
               <WatchlistMobileCard
                 key={item.id}
@@ -1191,8 +1212,9 @@ export function EnhancedWatchlistView() {
         )}
 
         {/* Watchlist - Desktop Table View */}
+        {/* UI-STABILITY fix (2026-09-28): stable key + silent refresh */}
         {!showIntelligence && items.length > 0 && (
-          <Card className="hidden md:block">
+          <Card className="hidden md:block" key="watchlist-desktop-table">
             <CardContent className="p-0">
               <UnifiedTable<EnhancedWatchlistItem>
                 columns={watchlistColumns}

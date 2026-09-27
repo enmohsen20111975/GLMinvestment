@@ -503,8 +503,8 @@ export function SpecialistAnalysisView() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [candleData, setCandleData] = useState<Array<{ open: number; high: number; low: number; close: number }>>([]);
-  // ⭐ Top-level tab: 3 أقسام للمتخصصين (تحليل سهم / ذكاء خبير / مقارنة شخصيات)
-  const [topTab, setTopTab] = useState<'single' | 'expert' | 'comparison'>('single');
+  // ⭐ Top-level tab: تحليل سهم فقط (ذكاء الخبير + مقارنة الشخصيات تم حذفهما في 2026-09-28 حسب طلب المستخدم)
+  const [topTab, setTopTab] = useState<'single'>('single');
   const marketCode = currentMarket === 'KSA' ? 'TADAWUL' : currentMarket;
 
   useEffect(() => {
@@ -588,25 +588,17 @@ export function SpecialistAnalysisView() {
             <span>شاشة التحليل المتقدم للمتخصصين</span>
           </h1>
           <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-            تحليل فني شامل + ذكاء الخبير + مقارنة الشخصيات — لمتخصصي الأسواق المالية
+            تحليل فني شامل — لمتخصصي الأسواق المالية
           </p>
         </div>
       </div>
 
       {/* ⭐ Top-level Tabs: 3 أقسام للمتخصصين */}
-      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'single' | 'expert' | 'comparison')}>
-        <TabsList className="grid w-full grid-cols-3 h-auto gap-1">
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'single')}>
+        <TabsList className="grid w-full grid-cols-1 h-auto gap-1">
           <TabsTrigger value="single" className="flex items-center gap-1 text-xs sm:text-sm py-2">
             <BarChart3 className="h-4 w-4 flex-shrink-0" />
             <span className="hidden xs:inline sm:inline">تحليل سهم</span>
-          </TabsTrigger>
-          <TabsTrigger value="expert" className="flex items-center gap-1 text-xs sm:text-sm py-2">
-            <Crosshair className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden xs:inline sm:inline">ذكاء الخبير</span>
-          </TabsTrigger>
-          <TabsTrigger value="comparison" className="flex items-center gap-1 text-xs sm:text-sm py-2">
-            <Trophy className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden xs:inline sm:inline">مقارنة الشخصيات</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1044,15 +1036,7 @@ export function SpecialistAnalysisView() {
       )}
         </TabsContent>
 
-        {/* ════ Tab 2: ذكاء الخبير الموحّد ════ */}
-        <TabsContent value="expert" className="mt-4">
-          <ExpertIntelligencePanel marketCode={marketCode} />
-        </TabsContent>
-
-        {/* ════ Tab 3: مقارنة الشخصيات ════ */}
-        <TabsContent value="comparison" className="mt-4">
-          <PredictionTrackingDashboard market={currentMarket} />
-        </TabsContent>
+        {/* ════ Tab 2 + Tab 3 REMOVED 2026-09-28 per user request (ذكاء الخبير + مقارنة الشخصيات) ════ */}
       </Tabs>
     </div>
   );

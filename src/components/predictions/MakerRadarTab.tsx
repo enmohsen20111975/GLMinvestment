@@ -49,6 +49,8 @@ import {
   EntryTimingCard,
   LiquidityFootprintCard,
 } from '@/components/predictions/radar/RadarStatsCards';
+// RADAR-QUICK-WINS (Priority 2): Signal Strength Meter
+import { SignalStrengthMeter, signalsToStars, signalHintAr } from '@/components/predictions/radar/SignalStrengthMeter';
 
 // ============================================================================
 // Types — Maker Radar API contract
@@ -391,6 +393,79 @@ const shortSignal = (s: string): string => {
 };
 
 // ============================================================================
+// RADAR-QUICK-WINS (Priority 1): Smart Entry Card — Path descriptions
+// Each radar path is given a short, plain-Arabic explanation + emoji so the
+// user instantly understands what the path means without reading a manual.
+// ============================================================================
+interface PathDescription {
+  emoji: string;
+  shortAr: string;
+  longAr: string;
+  /** Recommended position-size tier (display-only — actual size from API). */
+  tier: 'top' | 'high' | 'mid' | 'monitor';
+}
+
+const PATH_DESC: Record<RadarPath, PathDescription> = {
+  A_pre_surge: {
+    emoji: '🚀',
+    shortAr: 'تراكم مبكر جداً',
+    longAr: 'السهم بيتجمّع قبل الانفجار — أعلى أولوية',
+    tier: 'top',
+  },
+  B_quiet_accumulation_strong: {
+    emoji: '🎯',
+    shortAr: 'تراكم صامت قوي',
+    longAr: 'مال كبير بيدخل بهدوء — فرصة دخول متدرّج',
+    tier: 'high',
+  },
+  C_quiet_accumulation_weak: {
+    emoji: '🔍',
+    shortAr: 'تراكم صامت ضعيف',
+    longAr: 'إشارات مبكرة — للمتابعة والمراقبة',
+    tier: 'monitor',
+  },
+  D_explosive_surge: {
+    emoji: '🔥',
+    shortAr: 'انفجار حجمي',
+    longAr: 'تأكيد، الدخول للمتابعة مش للصيد',
+    tier: 'mid',
+  },
+  E_early_break: {
+    emoji: '⚡',
+    shortAr: 'كسر مبكر محتمل',
+    longAr: 'فرصة قبل التشكّل — اختراق نطاق ضيق',
+    tier: 'high',
+  },
+};
+
+/**
+ * Resolve a RadarStock's signal_count from whichever details block is populated.
+ * Returns null when neither quiet_details nor pre_surge_details are present
+ * (e.g. for explosive / early_break paths where signal_count isn't tracked).
+ */
+function resolveSignalCount(stock?: RadarStock | null): number | null {
+  if (!stock) return null;
+  if (stock.pre_surge_details?.signal_count != null) {
+    return stock.pre_surge_details.signal_count;
+  }
+  if (stock.quiet_details?.signal_count != null) {
+    return stock.quiet_details.signal_count;
+  }
+  return null;
+}
+
+/**
+ * Resolve the maximum signal count for a given path (pre_surge uses 4 signals,
+ * quiet_accumulation uses 6, others have no fixed maximum).
+ */
+function resolveMaxSignals(path?: RadarPath | null): number | null {
+  if (!path) return null;
+  if (path === 'A_pre_surge') return 4;
+  if (path === 'B_quiet_accumulation_strong' || path === 'C_quiet_accumulation_weak') return 6;
+  return null;
+}
+
+// ============================================================================
 // Backtest / proof constants (from scripts/output/retroactive_radar_test_*.json)
 // These are static-shown metrics. Live values would require a separate API.
 // ============================================================================
@@ -425,6 +500,10 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('all');
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  // RADAR-QUICK-WINS (Priority 1): keep the parent RadarStock alongside the
+  // selected ticker so the drawer + Smart Entry Card can render path /
+  // position_size / signal_count without re-fetching.
+  const [selectedStock, setSelectedStock] = useState<RadarStock | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Stock universe (ticker → sector / fundamentals) — fetched once per market
@@ -506,6 +585,15 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       console.error('track toggle error:', e);
     }
   }, [fetchData]);
+
+  // RADAR-QUICK-WINS (Priority 1): capture the parent RadarStock when the user
+  // clicks a row so the drawer can render the Smart Entry Card without an
+  // extra API round-trip. If the same ticker is clicked again we keep the
+  // existing stock reference (still fresh enough for path/signal_count).
+  const handleSelectStock = useCallback((ticker: string, stock?: RadarStock | null) => {
+    setSelectedTicker(ticker);
+    if (stock) setSelectedStock(stock);
+  }, []);
 
   // ─── Synchronous radar warmup (calls /api/maker-radar/warmup) ─────────
   // Forces a fresh Python run. Blocks until done (typically <2s on indexed DB).
@@ -888,7 +976,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
-          onSelect={setSelectedTicker}
+          onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
       )}
@@ -905,7 +993,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
-          onSelect={setSelectedTicker}
+          onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
       )}
@@ -922,7 +1010,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
-          onSelect={setSelectedTicker}
+          onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
       )}
@@ -939,7 +1027,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
-          onSelect={setSelectedTicker}
+          onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
       )}
@@ -960,7 +1048,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
       <ProofSection />
 
       {/* ===== Stock Detail Drawer (Dialog) ===== */}
-      <Dialog open={!!selectedTicker} onOpenChange={(open) => { if (!open) setSelectedTicker(null); }}>
+      <Dialog open={!!selectedTicker} onOpenChange={(open) => { if (!open) { setSelectedTicker(null); setSelectedStock(null); } }}>
         <DialogContent
           className="max-w-[95vw] w-full h-[92vh] p-0 gap-0 flex flex-col overflow-hidden rounded-lg sm:max-w-3xl"
           showCloseButton={false}
@@ -968,6 +1056,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           {selectedTicker && (
             <StockDetailDrawer
               ticker={selectedTicker}
+              radarStock={selectedStock}
               sectorForTicker={sectorForTicker}
               sectorChangeForTicker={(t) => {
                 const sec = sectorForTicker(t);
@@ -975,7 +1064,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
                 const agg = sectors.find((s) => s.sector === sec);
                 return agg?.avgChange ?? null;
               }}
-              onClose={() => setSelectedTicker(null)}
+              onClose={() => { setSelectedTicker(null); setSelectedStock(null); }}
               onTrackToggle={handleTrackToggle}
             />
           )}
@@ -1234,7 +1323,7 @@ interface RadarSectionProps {
   sectorForTicker: (ticker: string) => string | null;
   changePercentForTicker: (ticker: string) => number | null;
   stockInfoForTicker: (ticker: string) => StockListItem | null;
-  onSelect: (ticker: string) => void;
+  onSelect: (ticker: string, stock?: RadarStock | null) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
@@ -1293,7 +1382,7 @@ interface StockTableProps {
   sectorForTicker: (ticker: string) => string | null;
   changePercentForTicker: (ticker: string) => number | null;
   stockInfoForTicker: (ticker: string) => StockListItem | null;
-  onSelect: (ticker: string) => void;
+  onSelect: (ticker: string, stock?: RadarStock | null) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
@@ -1417,11 +1506,23 @@ const StockTable = memo(function StockTable({
           stock.pre_surge_details?.signal_count ??
           stock.quiet_details?.signal_count ?? null;
         const signalMax = stock.pre_surge_details ? 4 : stock.quiet_details ? 6 : null;
-        return signalCount != null && signalMax != null ? (
-          <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${a.badge}`}>
-            {signalCount}/{signalMax}
-          </Badge>
-        ) : '—';
+        if (signalCount == null || signalMax == null) return '—';
+        // RADAR-QUICK-WINS (Priority 2): inline signal-strength meter in the
+        // table — the bar + the numeric ratio fit a single cell width.
+        return (
+          <div className="flex flex-col items-center gap-0.5" title={signalHintAr(signalsToStars(signalCount, signalMax))}>
+            <SignalStrengthMeter
+              signalCount={signalCount}
+              maxSignals={signalMax}
+              size="sm"
+              showStars={false}
+              className="min-w-[80px]"
+            />
+            <Badge variant="outline" className={`text-[9px] h-4 px-1 ${a.badge}`}>
+              {signalCount}/{signalMax}
+            </Badge>
+          </div>
+        );
       },
     },
     {
@@ -1593,7 +1694,7 @@ const StockTable = memo(function StockTable({
       dense
       columnToggle
       filterable
-      onRowClick={(row) => onSelect(row.ticker)}
+      onRowClick={(row) => onSelect(row.ticker, row)}
       rowClassName={(_row, idx) => (idx % 2 === 1 ? 'bg-muted/20' : undefined)}
       className={`-mx-1 ${a.border}`}
     />
@@ -1605,6 +1706,10 @@ const StockTable = memo(function StockTable({
 // ============================================================================
 interface StockDetailDrawerProps {
   ticker: string;
+  /** Parent radar stock — supplies path, position_size, signal_count for the
+   *  Smart Entry Card header. Optional because the drawer can also be opened
+   *  from outside the radar table (e.g. deep-link). */
+  radarStock?: RadarStock | null;
   sectorForTicker: (ticker: string) => string | null;
   sectorChangeForTicker: (ticker: string) => number | null;
   onClose: () => void;
@@ -1612,7 +1717,7 @@ interface StockDetailDrawerProps {
 }
 
 function StockDetailDrawer({
-  ticker, sectorForTicker, sectorChangeForTicker, onClose, onTrackToggle,
+  ticker, radarStock, sectorForTicker, sectorChangeForTicker, onClose, onTrackToggle,
 }: StockDetailDrawerProps) {
   const [detail, setDetail] = useState<StockDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1693,6 +1798,23 @@ function StockDetailDrawer({
               القطاع {fmtPct(sectorChange)}
             </Badge>
           )}
+          {/* RADAR-QUICK-WINS (Priority 1): Path badge + inline signal meter */}
+          {radarStock?.path && (
+            <Badge variant="outline" className={`text-xs ${accentClasses[pathMeta[radarStock.path].accent].badge}`} title={PATH_DESC[radarStock.path].longAr}>
+              <span className="ml-0.5">{PATH_DESC[radarStock.path].emoji}</span>
+              {PATH_DESC[radarStock.path].shortAr}
+            </Badge>
+          )}
+          {(() => {
+            const sc = resolveSignalCount(radarStock);
+            const mx = resolveMaxSignals(radarStock?.path ?? null);
+            if (sc == null || mx == null) return null;
+            return (
+              <div className="hidden sm:flex" title={signalHintAr(signalsToStars(sc, mx))}>
+                <SignalStrengthMeter signalCount={sc} maxSignals={mx} size="sm" showBar={false} />
+              </div>
+            );
+          })()}
         </div>
         <div className="flex items-center gap-1">
           {detail && (
@@ -1911,8 +2033,11 @@ function StockDetailDrawer({
               </Card>
             )}
 
-            {/* === Trading Plan (real numbers + dynamic analysis from price history) === */}
-            <TradingPlanSection detail={detail} />
+            {/* === Trading Plan (real numbers + dynamic analysis from price history) ===
+                RADAR-QUICK-WINS (Priority 1): now enhanced into a Smart Entry
+                Card — path description, entry zone, target_1/target_2/stop_loss
+                grid, position-size badge, and the SignalStrengthMeter. */}
+            <TradingPlanSection detail={detail} radarStock={radarStock} />
 
             {/* === Entry Timing Signal — توقيت الدخول الذكي (0-100) === */}
             <EntryTimingCard ticker={ticker} />
@@ -1962,7 +2087,7 @@ function TradingFieldRow({ label, value, sub, valueClass }: TradingFieldRowProps
   );
 }
 
-function TradingPlanSection({ detail }: { detail: StockDetail }) {
+function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radarStock?: RadarStock | null }) {
   const prices = detail.prices;
 
   if (!prices || prices.length === 0) {
@@ -2012,6 +2137,27 @@ function TradingPlanSection({ detail }: { detail: StockDetail }) {
   // Range 10d % = (max_high - min_low) / min_low * 100
   const range_10d_pct = support_1 > 0 ? ((resistance_1 - support_1) / support_1) * 100 : 0;
 
+  // ─── RADAR-QUICK-WINS (Priority 1): Smart Entry Card inputs ───────────────
+  // Path description (emoji + plain Arabic) — falls back to "تحت الميكروسكوب"
+  // if the drawer was opened from outside the radar table.
+  const path: RadarPath | null = radarStock?.path ?? null;
+  const pathDesc = path ? PATH_DESC[path] : null;
+  const pathAccent = path ? accentClasses[pathMeta[path].accent] : accentClasses.amber;
+
+  // Position size from API (0..1) — display as a percentage badge.
+  const positionSizePct = radarStock?.position_size != null
+    ? Math.round(radarStock.position_size * 1000) / 10
+    : null;
+
+  // Signal strength meter inputs.
+  const signalCount = resolveSignalCount(radarStock);
+  const maxSignals = resolveMaxSignals(path);
+
+  // Entry zone: low end = support_2 (20-day low), high end = current price.
+  // This is the "ideal accumulation zone" — buy between recent support and now.
+  const entryZoneLow = Math.min(support_2, lastClose);
+  const entryZoneHigh = lastClose;
+
   // Build dynamic Arabic analysis — changes based on real data, not a fixed string
   const analysis_lines: string[] = [];
 
@@ -2047,37 +2193,126 @@ function TradingPlanSection({ detail }: { detail: StockDetail }) {
     recommendation = `توصية: راقب الكسر فوق ${fmtNum(resistance_1)} بحجم للتأكيد.`;
   }
 
+  // Gain / loss percentages for targets + stop
+  const t1Gain = ((target_1 - entry_price) / entry_price) * 100;
+  const t2Gain = ((target_2 - entry_price) / entry_price) * 100;
+  const slLoss = ((stop_loss - entry_price) / entry_price) * 100;
+
   return (
-    <Card className="p-3 bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50">
-      <div className="flex items-center gap-1.5 mb-2">
-        <div className="h-7 w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-          <Crosshair className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+    <Card className={`p-3 ${pathAccent.softBg} ${pathAccent.card}`}>
+      {/* ─── Header — path emoji + ticker + short Arabic meaning ─────── */}
+      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className={`h-7 w-7 rounded-full ${pathAccent.headerBg} flex items-center justify-center shrink-0`}>
+            <Crosshair className={`h-3.5 w-3.5 ${pathAccent.iconColor}`} />
+          </div>
+          <div className="min-w-0">
+            <div className={`text-xs font-semibold ${pathAccent.iconColor} truncate`}>
+              📡 بطاقة الدخول الذكية
+            </div>
+            {pathDesc && (
+              <div className="text-[11px] text-muted-foreground truncate">
+                {pathDesc.emoji} {pathDesc.shortAr} — {pathDesc.longAr}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-          📋 خطة التداول
+        {positionSizePct != null && (
+          <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${pathAccent.badge}`} title="حجم المركز المقترح من المحفظة">
+            <Crosshair className="h-3 w-3 ml-1" />
+            حجم المركز: {positionSizePct.toFixed(1)}%
+          </Badge>
+        )}
+      </div>
+
+      {/* ─── Entry Zone (support_2 → current_price) ────────────────────── */}
+      <div className="bg-background/60 rounded-md p-2 border border-border/40 mb-2">
+        <div className="flex items-baseline justify-between flex-wrap gap-1">
+          <span className="text-[11px] text-muted-foreground">💰 الدخول</span>
+          <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400" dir="ltr">
+            {fmtNum(entryZoneLow)} → {fmtNum(entryZoneHigh)}
+          </span>
+        </div>
+        <div className="text-[10px] text-muted-foreground mt-0.5">
+          المنطقة المثالية (الدعم 20 يوم → السعر الحالي)
         </div>
       </div>
 
-      {/* Support / Resistance levels (calculated from price history) */}
-      <div className="space-y-0">
-        <TradingFieldRow label="سعر السهم الحالي" value={`${fmtNum(lastClose)} جنيه`} />
-        <TradingFieldRow label="الدعم الأول" value={fmtNum(support_1)} sub="(أقل سعر في 10 أيام)" valueClass="text-emerald-600 dark:text-emerald-400" />
-        <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-emerald-600 dark:text-emerald-400" />
-        <TradingFieldRow label="المقاومة الأولى" value={fmtNum(resistance_1)} sub="(أعلى سعر في 10 أيام)" valueClass="text-rose-600 dark:text-rose-400" />
-        <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-rose-600 dark:text-rose-400" />
+      {/* ─── Targets + Stop grid (prominent, 3 cells) ───────────────────── */}
+      <div className="grid grid-cols-3 gap-1.5 mb-2">
+        <div className="bg-background/60 rounded-md p-2 border border-emerald-200/60 dark:border-emerald-900/40">
+          <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+            <Target className="h-3 w-3" /> هدف 1
+          </div>
+          <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400" dir="ltr">
+            {fmtNum(target_1)}
+          </div>
+          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+            (+{t1Gain.toFixed(1)}%)
+          </div>
+        </div>
+        <div className="bg-background/60 rounded-md p-2 border border-emerald-200/60 dark:border-emerald-900/40">
+          <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+            <Award className="h-3 w-3" /> هدف 2
+          </div>
+          <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400" dir="ltr">
+            {fmtNum(target_2)}
+          </div>
+          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+            (+{t2Gain.toFixed(1)}%)
+          </div>
+        </div>
+        <div className="bg-background/60 rounded-md p-2 border border-rose-200/60 dark:border-rose-900/40">
+          <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+            <ShieldCheck className="h-3 w-3" /> وقف
+          </div>
+          <div className="text-sm font-mono font-bold text-rose-600 dark:text-rose-400" dir="ltr">
+            {fmtNum(stop_loss)}
+          </div>
+          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-mono">
+            ({slLoss.toFixed(1)}%)
+          </div>
+        </div>
       </div>
 
-      {/* Entry / Stop / Targets / R:R */}
-      <div className="mt-2 pt-2 border-t border-border/50 space-y-0">
-        <TradingFieldRow label="نقطة الدخول" value={fmtNum(entry_price)} sub="(السعر الحالي)" valueClass="text-blue-600 dark:text-blue-400" />
-        <TradingFieldRow label="وقف الخسارة" value={fmtNum(stop_loss)} sub="(-6.0%)" valueClass="text-rose-600 dark:text-rose-400" />
-        <TradingFieldRow label="الهدف الأول" value={fmtNum(target_1)} sub="(+10.0%)" valueClass="text-emerald-600 dark:text-emerald-400" />
-        <TradingFieldRow label="الهدف الثاني" value={fmtNum(target_2)} sub="(+20.0%)" valueClass="text-emerald-600 dark:text-emerald-400" />
-        <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${rr_ratio.toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
-      </div>
+      {/* ─── Signal Strength Meter (Priority 2) ────────────────────────── */}
+      {signalCount != null && maxSignals != null ? (
+        <div className="bg-background/60 rounded-md p-2 border border-border/40 mb-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Gauge className="h-3 w-3" /> قوة الإشارة
+            </span>
+            <span className="text-[10px] text-muted-foreground">{signalHintAr(signalsToStars(signalCount, maxSignals))}</span>
+          </div>
+          <SignalStrengthMeter
+            signalCount={signalCount}
+            maxSignals={maxSignals}
+            size="md"
+          />
+        </div>
+      ) : (
+        <div className="bg-background/60 rounded-md p-2 border border-border/40 mb-2 text-[11px] text-muted-foreground">
+          ⚙️ قوة الإشارة غير متاحة لهذا المسار — يعتمد على التفاصيل الحجمية.
+        </div>
+      )}
 
-      {/* Dynamic analysis text — changes based on MA10 / volume / range */}
-      <div className="mt-2 pt-2 border-t border-border/50">
+      {/* ─── Support / Resistance levels (still useful for advanced users) ─── */}
+      <details className="mb-2">
+        <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground transition-colors select-none">
+          مستويات الدعم والمقاومة (تفاصيل)
+        </summary>
+        <div className="space-y-0 mt-1">
+          <TradingFieldRow label="سعر السهم الحالي" value={`${fmtNum(lastClose)} جنيه`} />
+          <TradingFieldRow label="الدعم الأول" value={fmtNum(support_1)} sub="(أقل سعر في 10 أيام)" valueClass="text-emerald-600 dark:text-emerald-400" />
+          <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-emerald-600 dark:text-emerald-400" />
+          <TradingFieldRow label="المقاومة الأولى" value={fmtNum(resistance_1)} sub="(أعلى سعر في 10 أيام)" valueClass="text-rose-600 dark:text-rose-400" />
+          <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-rose-600 dark:text-rose-400" />
+          <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${rr_ratio.toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
+        </div>
+      </details>
+
+      {/* ─── Dynamic analysis text — changes based on MA10 / volume / range ─── */}
+      <div className="pt-2 border-t border-border/50">
         <div className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 التحليل:</div>
         <div className="space-y-0.5 text-[11px] text-muted-foreground leading-relaxed">
           {analysis_lines.map((line, i) => (

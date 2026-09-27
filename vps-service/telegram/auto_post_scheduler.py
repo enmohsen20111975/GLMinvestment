@@ -1015,13 +1015,18 @@ def _format_daily_opportunities_post(result: Dict, market: str) -> str:
         stop_loss = opp.get('stop_loss', 0)
         target = opp.get('target', 0)
         entry_price = opp.get('entry_price', price)
-        
+        # RADAR-QUICK-WINS (Priority 4): add target_2 (derived as +10% above
+        # target_1 when not present in the source data) so each Telegram card
+        # shows entry + target_1 + target_2 + stop_loss with gain/loss %.
+        target_1 = float(opp.get('target_1', target) or 0)
+        target_2 = float(opp.get('target_2', 0) or (target_1 * 1.10 if target_1 else 0))
+
         emoji = "🏦" if hunter_score >= max(momentum_score, value_score) else "🚀" if momentum_score >= max(hunter_score, value_score) else "💰"
-        
+
         lines.append(f"{idx}️⃣ {emoji} <b>{ticker}</b> — {name}")
         lines.append(f"💰 السعر: {price:.2f} ج | 🎯 درجة المايسترو: {maestro_score:.1f}")
         lines.append(f"📊 التوصية: {recommendation_ar} | 🔒 الثقة: {confidence:.0f}%")
-        
+
         # Personas
         if hunter_score >= 70:
             lines.append(f"   🎯 الصياد: {hunter_score:.0f}/100 {hunter_verdict}")
@@ -1029,14 +1034,24 @@ def _format_daily_opportunities_post(result: Dict, market: str) -> str:
             lines.append(f"   🚀 الزخم: {momentum_score:.0f}/100 {momentum_verdict}")
         if value_score >= 70:
             lines.append(f"   💰 القيمة: {value_score:.0f}/100 {value_verdict}")
-        
+
         # Narrative (snippet)
         if narrative_line1:
             lines.append(f"   📖 {narrative_line1[:80]}...")
-        
-        # Levels
-        if entry_price and stop_loss and target:
-            lines.append(f"   📍 دخول: {entry_price:.2f} | 🛑 وقف: {stop_loss:.2f} | 🎯 هدف: {target:.2f}")
+
+        # Levels — RADAR-QUICK-WINS (Priority 4): multi-line format with
+        # target_1, target_2, stop_loss + gain/loss percentages.
+        if entry_price:
+            t1_gain = ((target_1 - entry_price) / entry_price * 100) if (entry_price > 0 and target_1 > 0) else 0
+            t2_gain = ((target_2 - entry_price) / entry_price * 100) if (entry_price > 0 and target_2 > 0) else 0
+            sl_loss = ((stop_loss - entry_price) / entry_price * 100) if (entry_price > 0 and stop_loss > 0) else 0
+            lines.append(f"   💰 الدخول: {entry_price:.2f}")
+            if target_1 > 0:
+                lines.append(f"   🎯 الهدف 1: {target_1:.2f} (+{t1_gain:.1f}%)")
+            if target_2 > 0:
+                lines.append(f"   🎯 الهدف 2: {target_2:.2f} (+{t2_gain:.1f}%)")
+            if stop_loss > 0:
+                lines.append(f"   🛑 وقف الخسارة: {stop_loss:.2f} ({sl_loss:.1f}%)")
         
         lines.append("")
     
@@ -1149,15 +1164,31 @@ def _format_morning_bell_post(data: Dict) -> str:
         entry = s.get('entry', 0) or 0
         target = s.get('target', 0) or 0
         stop = s.get('stop', 0) or 0
+        # RADAR-QUICK-WINS (Priority 4): add target_1 / target_2 with gain %
+        # to the morning bell card (in addition to the existing single-line
+        # R/R + score line). target_2 derived as +10% above target_1 when
+        # not provided by the source data.
+        target_1 = float(s.get('target_1', target) or 0)
+        target_2 = float(s.get('target_2', 0) or (target_1 * 1.10 if target_1 else 0))
         rr = s.get('risk_reward', 0) or 0
         score = s.get('score', 0) or 0
         ath = bool(s.get('ath_breakout', False))
         delay = bool(s.get('delay_compensation_applied', False))
 
+        t1_gain = ((target_1 - entry) / entry * 100) if (entry > 0 and target_1 > 0) else 0
+        t2_gain = ((target_2 - entry) / entry * 100) if (entry > 0 and target_2 > 0) else 0
+        sl_loss = ((stop - entry) / entry * 100) if (entry > 0 and stop > 0) else 0
+
         rocket = ' 🚀' if ath else ''
         text += f"{i}. 🏦 **{name_ar}** ({ticker}){rocket}\n"
         text += f"   الإشارة: {signal_ar}\n"
-        text += f"   💰 الدخول: {entry:.2f} | 🎯 الهدف: {target:.2f} | 🛑 الوقف: {stop:.2f}\n"
+        text += f"   💰 الدخول: {entry:.2f}\n"
+        if target_1 > 0:
+            text += f"   🎯 الهدف 1: {target_1:.2f} (+{t1_gain:.1f}%)\n"
+        if target_2 > 0:
+            text += f"   🎯 الهدف 2: {target_2:.2f} (+{t2_gain:.1f}%)\n"
+        if stop > 0:
+            text += f"   🛑 وقف الخسارة: {stop:.2f} ({sl_loss:.1f}%)\n"
         extras = f"⚖️ R/R: {rr:.1f} | 📊 النقاط: {score:.0f}"
         if delay:
             extras += " | ⚠️ تعويض تأخير"

@@ -1,5 +1,5 @@
 {
-  "last_snapshot_at": "2026-09-27T13:58:35.277Z",
+  "last_snapshot_at": "2026-09-27T19:38:58.923Z",
   "explosive_tickers": [
     "RKAZ",
     "MMAT",
@@ -39,6 +39,7 @@
     "CSAG",
     "IFAP",
     "EGAL",
+    "MKIT",
     "SUGR",
     "ACGC",
     "ADIB",
@@ -69,6 +70,7 @@
     "ETEL",
     "ETRS",
     "EXPA",
+    "FERC",
     "HELI",
     "IBCT",
     "IDRE",
@@ -99,5 +101,6 @@
     "SWDY",
     "TMGH"
   ],
-  "tracked_transitions": {}
+  "tracked_transitions": {},
+  "tracked_paths": {}
 }

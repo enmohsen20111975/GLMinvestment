@@ -1,13 +1,13 @@
 {
-  "last_warmup_started_at": "2026-09-27T13:58:34.085Z",
-  "last_warmup_finished_at": "2026-09-27T13:58:35.209Z",
-  "last_warmup_duration_ms": 1087,
+  "last_warmup_started_at": "2026-09-27T19:38:58.549Z",
+  "last_warmup_finished_at": "2026-09-27T19:38:58.854Z",
+  "last_warmup_duration_ms": 275,
   "last_warmup_status": "success",
   "last_error": null,
   "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260927.json",
-  "cache_generated_at": "2026-09-27T13:58:35.010851",
+  "cache_generated_at": "2026-09-27T19:38:58.826066",
   "cache_age_seconds": 0,
-  "total_scanned": 185,
-  "under_microscope_count": 96,
+  "total_scanned": 191,
+  "under_microscope_count": 98,
   "db_source": "data_engine.db::egksco_price_history"
 }

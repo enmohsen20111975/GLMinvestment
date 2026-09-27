@@ -42525,3 +42525,54 @@ Stage Summary:
 - ✅ All endpoints return HTTP 200 (or expected 503 for topology when Python backend is down).
 - ✅ Agent Browser verified all 3 new MarketAnalysisView tabs + dashboard widgets render with real data.
 - Report saved to /home/z/my-project/agent-ctx/P1-GEMS-WIRING-REPORT.md.
+
+---
+Task ID: RADAR-QUICK-WINS
+Agent: Full-stack Engineer (radar quick wins)
+Task: Implement Level 1 quick wins from the Liquidity Radar strategic vision — (1) Smart Entry Card, (2) Signal Strength Meter, (3) Path Upgrade Alert, (4) Target + Stop in Telegram Alerts. Delivered 4/4 priorities, 1 new component, 37 new tests, ~968 LOC across 7 files (4 modified + 3 new).
+
+Work Log:
+- Read worklog.md tail (~500 lines) for context on prior radar work (P1-GEMS-WIRING, regime-engine, async-fixes, auth-guard). Confirmed radar infrastructure exists at src/components/predictions/MakerRadarTab.tsx (2,299 LOC) + src/lib/schedulers/radar-alerts.ts (447 LOC) + vps-service/telegram/auto_post_scheduler.py (1,493 LOC) + vps-service/telegram/radar_card_publisher.py (420 LOC).
+- Inspected /api/maker-radar response: confirmed 29 quiet_list + 58 pre_surge_list + 10 explosive_list + 1 early_break_list stocks. Confirmed the API does NOT return target_price / stop_loss / target_1 / target_2 fields (only path, position_size, signal_count via quiet_details/pre_surge_details). Plan: derive entry/stop/targets from current_price using the same fixed-pct rules the existing TradingPlanSection uses (-6% stop, +10%/+20% targets).
+- Phase 2 (SignalStrengthMeter — built first because Phase 1 depends on it):
+  * Created src/components/predictions/radar/SignalStrengthMeter.tsx (194 LOC): props { signalCount, maxSignals=6, showStars=true, showBar=true, size='sm'|'md'|'lg', className }. Uses ceiling math: stars = ceil((count/max)*5). Color accent tiers: 5★ emerald, 4★ teal, 3★ amber, 2★ orange, 0–1★ rose. Exports 3 helpers: signalsToStars, signalAccent, signalHintAr. Accessibility: role=meter + aria-valuenow/min/max + Arabic aria-label + title tooltip.
+  * Created src/__tests__/radar/SignalStrengthMeter.test.tsx (180 LOC, 24 tests): signalsToStars (10 cases incl. clamping + pre_surge max=4), signalAccent (4 cases), signalHintAr (2 cases), component render (8 cases incl. showStars/showBar toggles + aria attrs + size presets).
+- Phase 1 (Smart Entry Card — TradingPlanSection enhancement in MakerRadarTab.tsx):
+  * Added PATH_DESC map for the 5 radar paths — each gets { emoji, shortAr, longAr, tier } matching the task spec (🚀 Pre-Surge / 🎯 تراكم صامت قوي / 🔍 تراكم صامت ضعيف / 🔥 انفجار حجمي / ⚡ كسر مبكر محتمل).
+  * Added resolveSignalCount(stock) + resolveMaxSignals(path) helpers — pull signal_count from quiet_details/pre_surge_details; maxSignals=4 for pre_surge, 6 for quiet, null otherwise.
+  * Added selectedStock state + handleSelectStock callback at the parent MakerRadarTab level so the drawer can access the parent RadarStock (path/position_size/signal_count) without an extra API call. Updated onSelect signatures in RadarSectionProps + StockTableProps from (ticker)=>void to (ticker, stock?)=>void. Updated all 4 RadarSection call sites + UnifiedTable onRowClick.
+  * Added radarStock?: RadarStock | null prop to StockDetailDrawer. Rendered a path badge + inline stars-only SignalStrengthMeter in the drawer sticky header.
+  * Rewrote TradingPlanSection: now accepts { detail, radarStock? }. New layout: header (📡 بطاقة الدخول الذكية + path emoji + shortAr + longAr + position-size badge), entry zone box (💰 الدخول support_2 → current_price + "المنطقة المثالية"), 3-cell targets grid (هدف 1 +10% / هدف 2 +20% / وقف -6% with colored borders), signal-strength meter box (bar + stars + numeric + Arabic hint), collapsible support/resistance details (kept the existing TradingFieldRow list under <details>), existing dynamic Arabic analysis + recommendation preserved at the bottom.
+- Phase 3 (Path Upgrade Alert — radar-alerts.ts):
+  * Added PATH_RANK map: C_weak=1, B_strong=2, E_early_break=3, A_pre_surge=4, D_explosive=5. Added PATH_SHORT_AR for Arabic labels.
+  * Exported isPathUpgrade(prev, current) → returns "prev_ar → current_ar" string when current rank > prev rank, null otherwise (downgrades don't fire). Unknown paths treated as rank 0.
+  * Exported pathShortAr(path) → Arabic label with raw-string fallback.
+  * Extended RadarSnapshot interface with optional tracked_paths?: Record<string, string> (ticker → previous path). Backward-compatible with older snapshots (field is optional, loadSnapshot reads it defensively).
+  * Added alert (5) inside the tracked-tickers loop in runRadarAlertsCheck: when prevPath !== currentPath and isPathUpgrade returns truthy, fire { type: 'radar_path_upgrade', title: '🚀 ترقية مسار السهم', message: 'X ترقى من "Y" إلى "Z" — راجع الرادار', severity: 'success' } with JSON payload { ticker, prev_path, current_path, current_price, upgrade_kind }. 24h dedup handled by existing insertNotification.
+  * Updated the snapshot-save block to persist tracked_paths for every tracked ticker that has a current path.
+  * Created src/__tests__/radar/radar-alerts-path-upgrade.test.ts (93 LOC, 13 tests): weak→strong, weak→pre_surge, pre_surge→explosive, early_break→pre_surge (all upgrade), pre_surge→weak (downgrade → null), unchanged (null), empty inputs (null), unknown prev (upgrade), unknown both-equal (null), explosive→quiet (downgrade → null). Plus pathShortAr for all 5 paths + unknown + empty.
+- Phase 4 (Target + Stop in Telegram Alerts — Python):
+  * radar_card_publisher.py::build_caption: rewrote per-stock block from single-line "{i}. {ticker} — {conf}% | دخول X | هدف Y | وقف Z" to 5-line card: "{i}. {emoji} {ticker} — {shortAr}" / "   💰 الدخول: X" / "   🎯 الهدف 1: Y (+Z.Z%)" / "   🎯 الهدف 2: W (+V.V%)" / "   🛑 وقف الخسارة: S (-U.U%)" / "   📊 قوة الإشارة: N/M ⭐⭐⭐☆☆" / "   🧭 {direction}". Added 3 helpers: _path_emoji_short(path), _signal_stars(count, total) (Unicode ⭐+☆ with ceiling math matching the React component), _resolve_signal_count(stock). target_2 derived as target_1 * 1.10 when not in source (matches Smart Entry Card).
+  * auto_post_scheduler.py::_format_daily_opportunities_post: replaced single-line "📍 دخول: X | 🛑 وقف: Y | 🎯 هدف: Z" with 4-line card (entry / target_1+gain / target_2+gain / stop_loss+loss). target_2 derived same way.
+  * auto_post_scheduler.py::_format_morning_bell_post: same 4-line replacement.
+  * Verified both Python files parse cleanly: python3 -c "import ast; ast.parse(open(f).read())" → OK.
+- Phase 5 (Verify):
+  * bun run lint → exit 0, no errors/warnings.
+  * bun run test → 14 test files, 186 tests passed (+1 skipped pre-existing), 0 failed. Was 149 tests baseline → now 186 (+37 new tests, target was 5).
+  * curl http://localhost:3001/ → HTTP 200 ✅
+  * curl /api/maker-radar?market=EGX → HTTP 200, returns 29 quiet + 58 pre_surge + 10 explosive + 1 early_break ✅
+  * Agent Browser (headless Chromium): navigated to http://localhost:3001/#liquidity-radar. Closed the help-center dialog, clicked "رادار الميكرز" tab. Verified the radar tab renders the 4 sections (Pre-Surge / Explosive / Quiet / Early Break) + the "الإشارات" column shows the inline SignalStrengthMeter (bar + numeric ratio per row). Clicked the ADIB row → drawer opened → verified Smart Entry Card renders: "📡 بطاقة الدخول الذكية" header, "🚀 تراكم مبكر جداً — السهم بيتجمّع قبل الانفجار" path description, "حجم المركز: 1.5%" badge, "💰 الدخول 51.7 → 51.75" entry zone, "هدف 1: 56.93 (+10.0%)" / "هدف 2: 62.1 (+20.0%)" / "وقف: 48.64 (-6.0%)" targets grid, "قوة الإشارة: 3/4 ثقة عالية" meter with stars + bar. Drawer header also shows "🚀 تراكم مبكر جداً" path badge + "3/4" inline meter. Screenshot saved to agent-ctx/radar-smart-entry-card.png.
+- Saved report to /home/z/my-project/agent-ctx/RADAR-QUICK-WINS-REPORT.md.
+
+Stage Summary:
+- ✅ 4 / 4 Level 1 quick wins implemented (Smart Entry Card, Signal Strength Meter, Path Upgrade Alert, Telegram target+stop).
+- ✅ 1 new component created (SignalStrengthMeter.tsx, 194 LOC) — used in 3 locations (TradingPlanSection, drawer header, stock table column).
+- ✅ 1 new alert type added (radar_path_upgrade) — fires when a tracked stock's path rank increases (e.g. C_weak → A_pre_surge). Backward-compatible snapshot extension (tracked_paths is optional).
+- ✅ 3 Telegram card formatters enhanced (radar_card_publisher.build_caption, _format_daily_opportunities_post, _format_morning_bell_post) — each now shows entry / target_1+gain / target_2+gain / stop_loss+loss on separate lines instead of a single dense line.
+- ✅ 37 new tests added (target was 5; delivered 37). Test suite: 186 passed / 1 skipped / 0 failed (was 149 baseline → +37 new).
+- ✅ Lint clean: bun run lint → exit 0.
+- ✅ Dev server healthy: HTTP 200 on /.
+- ✅ Agent Browser verified Smart Entry Card renders correctly with all 6 card elements (path emoji + shortAr + longAr, position-size badge, entry zone, 3-cell targets grid, signal-strength meter, collapsible support/resistance).
+- ✅ Constitution compliance: §1 (Python brain, Next.js display-only) · §6 (radar_path_upgrade logged with prev_path/current_path JSON payload) · don't-break-existing (4 existing alert types preserved, snapshot field optional) · surgical edits only (no file rewrites) · RTL Arabic · shadcn/ui · accessibility (role=meter + aria-* + title).
+- Total LOC: ~968 (501 in modified files + 467 in new files).
+- Report: /home/z/my-project/agent-ctx/RADAR-QUICK-WINS-REPORT.md.

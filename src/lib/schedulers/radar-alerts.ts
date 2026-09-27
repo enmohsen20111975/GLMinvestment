@@ -7,13 +7,15 @@
  *   2. NEW OPPORTUNITY     — سهم ظهر في تجميع قوي هادي/pre-surge (radar_opportunity)
  *   3. DISTRIBUTION FLIP    — تحول سهم متابع من "تجميع" لـ "تصريف" (radar_distribution)
  *   4. FLARE > 30%         — اشتعال حجمي > 1.30× (للأسهم المتابَعة فقط) (radar_flare)
+ *   5. PATH UPGRADE        — ترقية مسار سهم متابَع (radar_path_upgrade) — RADAR-QUICK-WINS P3
  *
  * Snapshot file: db/radar_alerts_state.json
  *   {
  *     "last_snapshot_at": "...",
  *     "explosive_tickers": ["COMI", "HRHO"],
  *     "quiet_tickers": ["EFIN", "SWDY"],
- *     "tracked_transitions": { "COMI": { "prev_accumulation": "تجميع خفيف", "since": "..." } }
+ *     "tracked_transitions": { "COMI": { "prev_accumulation": "تجميع خفيف", "since": "..." } },
+ *     "tracked_paths": { "COMI": "B_quiet_accumulation_strong" }
  *   }
  *
  * قواعد:
@@ -38,6 +40,60 @@ const SNAPSHOT_FILE = path.join(PROJECT_ROOT, 'db', 'radar_alerts_state.json');
 const TRACKING_FILE = path.join(PROJECT_ROOT, 'db', 'maker_radar_tracking.json');
 
 const SYSTEM_USER_ID = 'system';
+
+// ---------------------------------------------------------------------------
+// RADAR-QUICK-WINS (Priority 3): Path upgrade detection
+// ---------------------------------------------------------------------------
+// The 5 radar paths ordered by confidence / opportunity strength. A higher
+// index = a stronger setup. `isPathUpgrade` compares ranks to decide whether
+// a transition is worth firing a `radar_path_upgrade` notification.
+//
+//   C_quiet_accumulation_weak        (rank 1) — early, weak signals
+//   B_quiet_accumulation_strong      (rank 2) — confirmed quiet accumulation
+//   E_early_break                    (rank 3) — early breakout forming
+//   A_pre_surge                      (rank 4) — pre-surge, highest priority
+//   D_explosive_surge                 (rank 5) — explosive confirmation
+//
+// Note: D_explosive_surge is treated as the "strongest" because it's the
+// confirmation signal the radar is built to catch — but the upgrade message
+// still calls it "انفجار حجمي" so the user knows to act with caution.
+const PATH_RANK: Record<string, number> = {
+  C_quiet_accumulation_weak: 1,
+  B_quiet_accumulation_strong: 2,
+  E_early_break: 3,
+  A_pre_surge: 4,
+  D_explosive_surge: 5,
+};
+
+const PATH_SHORT_AR: Record<string, string> = {
+  A_pre_surge: 'Pre-Surge',
+  B_quiet_accumulation_strong: 'تجميع قوي',
+  C_quiet_accumulation_weak: 'تجميع ضعيف',
+  D_explosive_surge: 'انفجار حجمي',
+  E_early_break: 'اختراق مبكر',
+};
+
+/**
+ * Returns the kind of upgrade (e.g. "weak→strong", "quiet→pre-surge") if
+ * the transition `prev → current` is an upgrade, or `null` if it is a
+ * downgrade or unchanged. Unknown paths are treated as rank 0 so any
+ * transition into a known path is considered an upgrade.
+ */
+export function isPathUpgrade(prev: string, current: string): string | null {
+  if (!prev || !current || prev === current) return null;
+  const prevRank = PATH_RANK[prev] ?? 0;
+  const curRank = PATH_RANK[current] ?? 0;
+  if (curRank <= prevRank) return null;
+  return `${PATH_SHORT_AR[prev] || prev} → ${PATH_SHORT_AR[current] || current}`;
+}
+
+/**
+ * Short Arabic label for a radar path. Falls back to the raw string when
+ * the path is unknown (defensive — keeps the notification readable).
+ */
+export function pathShortAr(p: string): string {
+  return PATH_SHORT_AR[p] || p;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,6 +125,10 @@ interface RadarSnapshot {
     string,
     { prev_accumulation: string; since: string }
   >;
+  // RADAR-QUICK-WINS (Priority 3): per-ticker previous radar path so we can
+  // detect path upgrades (e.g. C_quiet_accumulation_weak → A_pre_surge).
+  // Only tracked tickers are persisted here to keep the snapshot small.
+  tracked_paths?: Record<string, string>;
 }
 
 interface EmptySnapshot {
@@ -76,6 +136,7 @@ interface EmptySnapshot {
   explosive_tickers: never[];
   quiet_tickers: never[];
   tracked_transitions: Record<string, never>;
+  tracked_paths: Record<string, never>;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +149,7 @@ function loadSnapshot(): RadarSnapshot | EmptySnapshot {
     explosive_tickers: [],
     quiet_tickers: [],
     tracked_transitions: {},
+    tracked_paths: {},
   };
   try {
     if (!existsSync(SNAPSHOT_FILE)) return empty;
@@ -104,6 +166,12 @@ function loadSnapshot(): RadarSnapshot | EmptySnapshot {
       tracked_transitions:
         parsed.tracked_transitions && typeof parsed.tracked_transitions === 'object'
           ? parsed.tracked_transitions
+          : {},
+      // RADAR-QUICK-WINS (Priority 3): optional for backward-compat with
+      // older snapshots that pre-date this field.
+      tracked_paths:
+        parsed.tracked_paths && typeof parsed.tracked_paths === 'object'
+          ? parsed.tracked_paths
           : {},
     };
   } catch {
@@ -252,13 +320,17 @@ export async function runRadarAlertsCheck(userId?: string): Promise<number> {
       if (ok) fired++;
     }
 
-    // (3) + (4) نمر على الأسهم المتابَعة فقط
+    // (3) + (4) + (5) نمر على الأسهم المتابَعة فقط
     const newTrackedTransitions: RadarSnapshot['tracked_transitions'] = {};
+    // RADAR-QUICK-WINS (Priority 3): per-ticker current path snapshot — only
+    // for tracked tickers (kept lean to avoid bloating the JSON file).
+    const newTrackedPaths: Record<string, string> = {};
     const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     for (const ticker of trackedTickers) {
       const item = allRadarItems.get(ticker);
       const currentAccumulation = (item?.accumulation || '').trim();
+      const currentPath = (item?.path || '').trim();
 
       const prevEntry = prev.tracked_transitions?.[ticker];
 
@@ -320,6 +392,41 @@ export async function runRadarAlertsCheck(userId?: string): Promise<number> {
         });
         if (ok) fired++;
       }
+
+      // (5) PATH UPGRADE — RADAR-QUICK-WINS (Priority 3)
+      // Fires when a tracked ticker's radar path moves to a "stronger" tier
+      // (e.g. C_quiet_accumulation_weak → A_pre_surge). Downgrades are NOT
+      // alerted (only the opportunity-side upgrade is interesting). The path
+      // rank ordering matches the radar's confidence ladder.
+      const prevPath = (prev.tracked_paths?.[ticker] || '').trim();
+      if (currentPath && prevPath && prevPath !== currentPath) {
+        const upgrade = isPathUpgrade(prevPath, currentPath);
+        if (upgrade) {
+          const ok = insertNotification(db, {
+            user_id: targetUserId,
+            type: 'radar_path_upgrade',
+            title: '🚀 ترقية مسار السهم',
+            message: `${ticker} ترقى من "${pathShortAr(prevPath)}" إلى "${pathShortAr(currentPath)}" — راجع الرادار`,
+            severity: 'success',
+            ticker,
+            payload: JSON.stringify({
+              ticker,
+              prev_path: prevPath,
+              current_path: currentPath,
+              current_price: item?.current_price ?? null,
+              upgrade_kind: upgrade,
+            }),
+          });
+          if (ok) fired++;
+        }
+      }
+
+      // Persist the current path (even if no upgrade fired) so the next
+      // cycle has an accurate baseline. Skip when the radar dropped the
+      // ticker entirely (item not found in current snapshot).
+      if (currentPath) {
+        newTrackedPaths[ticker] = currentPath;
+      }
     }
 
     // 5. احفظ الـ snapshot الجديد
@@ -328,6 +435,7 @@ export async function runRadarAlertsCheck(userId?: string): Promise<number> {
       explosive_tickers: Array.from(currentExplosiveTickers),
       quiet_tickers: Array.from(currentQuietTickers),
       tracked_transitions: newTrackedTransitions,
+      tracked_paths: newTrackedPaths,
     };
     saveSnapshot(newSnapshot);
 

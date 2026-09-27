@@ -14,6 +14,8 @@ import { StatCard } from '@/components/ui/stat-card';
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// UI-STABILITY fix (2026-09-28): silent polling + stable keys per DIRECTIVE_UI_STABILITY_AND_IN_PLACE_UPDATES
+import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
 import {
   Card,
   CardContent,
@@ -329,12 +331,16 @@ export function PredictionTrackingView() {
   const [statusFilter, setStatusFilter] = useState<'all' | PickStatus>('all');
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingList, setLoadingList] = useState(true);
+  // UI-STABILITY fix (2026-09-28): refreshing flag for silent background polls
+  const [refreshingStats, setRefreshingStats] = useState(false);
+  const [refreshingList, setRefreshingList] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [generatingV40, setGeneratingV40] = useState(false);
 
-  // fetch stats
-  const fetchStats = useCallback(async (market: MarketType) => {
-    setLoadingStats(true);
+  // fetch stats — silent=true avoids wiping the screen on background refreshes
+  const fetchStats = useCallback(async (market: MarketType, silent = false) => {
+    // UI-STABILITY fix (2026-09-28): silent polling — only first load sets loadingStats(true)
+    if (silent) setRefreshingStats(true); else setLoadingStats(true);
     try {
       const res = await fetch(
         `/api/predictions/tracking/stats?market=${market}&days=30`,
@@ -347,15 +353,16 @@ export function PredictionTrackingView() {
         setStats(null);
       }
     } catch {
-      setStats(null);
+      if (!silent) setStats(null);
     } finally {
-      setLoadingStats(false);
+      if (silent) setRefreshingStats(false); else setLoadingStats(false);
     }
   }, []);
 
-  // fetch list
-  const fetchList = useCallback(async (market: MarketType, status: 'all' | PickStatus) => {
-    setLoadingList(true);
+  // fetch list — silent=true avoids wiping the screen on background refreshes
+  const fetchList = useCallback(async (market: MarketType, status: 'all' | PickStatus, silent = false) => {
+    // UI-STABILITY fix (2026-09-28): silent polling — only first load sets loadingList(true)
+    if (silent) setRefreshingList(true); else setLoadingList(true);
     try {
       const params = new URLSearchParams({ market, limit: '200' });
       if (status !== 'all') params.set('status', status);
@@ -369,9 +376,9 @@ export function PredictionTrackingView() {
         setPicks([]);
       }
     } catch {
-      setPicks([]);
+      if (!silent) setPicks([]);
     } finally {
-      setLoadingList(false);
+      if (silent) setRefreshingList(false); else setLoadingList(false);
     }
   }, []);
 
@@ -382,6 +389,17 @@ export function PredictionTrackingView() {
   useEffect(() => {
     fetchList(currentMarket, statusFilter);
   }, [currentMarket, statusFilter, fetchList]);
+
+  // UI-STABILITY fix (2026-09-28): silent background poll every 60s while visible
+  useVisibilityAwarePolling(
+    () => {
+      fetchStats(currentMarket, true);
+      fetchList(currentMarket, statusFilter, true);
+    },
+    60_000,
+    [fetchStats, fetchList, currentMarket, statusFilter],
+    { allowOffMarket: true },
+  );
 
   // verify handler
   const handleVerify = async () => {
@@ -398,8 +416,11 @@ export function PredictionTrackingView() {
         toast.success(
           `تم التحقق: ${d.target_hit || 0} وصلت للهدف، ${d.stop_hit || 0} ضربت الوقف، ${d.expired || 0} منتهية`
         );
-        // refresh
-        await Promise.all([fetchStats(currentMarket), fetchList(currentMarket, statusFilter)]);
+        // UI-STABILITY fix (2026-09-28): silent refresh after verify — don't wipe the table
+        await Promise.all([
+          fetchStats(currentMarket, true),
+          fetchList(currentMarket, statusFilter, true),
+        ]);
       } else {
         toast.error(json.error || 'فشل التحقق من التوقعات');
       }
@@ -433,9 +454,11 @@ export function PredictionTrackingView() {
     }
   };
 
+  // UI-STABILITY fix (2026-09-28): manual refresh button uses silent=true to
+  // avoid wiping the user's sort/filter/scroll state.
   const refreshAll = () => {
-    fetchStats(currentMarket);
-    fetchList(currentMarket, statusFilter);
+    fetchStats(currentMarket, true);
+    fetchList(currentMarket, statusFilter, true);
   };
 
   // derived display values
@@ -502,8 +525,10 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatN
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {loadingStats ? (
+      {/* UI-STABILITY fix (2026-09-28): only show skeleton on very first load
+          (loadingStats AND no stats yet). Silent refresh keeps cards visible. */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" key="prediction-stats-cards">
+        {(loadingStats && !stats) ? (
           <>
             <Skeleton className="h-28 w-full rounded-xl" />
             <Skeleton className="h-28 w-full rounded-xl" />
@@ -548,8 +573,10 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatN
       </div>
 
       {/* Summary strip */}
-      {!loadingStats && stats && (
-        <Card className="bg-muted/40">
+      {/* UI-STABILITY fix (2026-09-28): stable key + show whenever stats exist
+          (silent refresh keeps this visible). */}
+      {stats && (
+        <Card className="bg-muted/40" key="prediction-summary-strip">
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -592,7 +619,10 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatN
       )}
 
       {/* Filter + Table */}
-      <Card>
+      {/* UI-STABILITY fix (2026-09-28): stable key + pass loading=loadingList&&picks.length===0
+          so the table skeleton only shows on the very first load. Silent refresh
+          keeps the existing rows visible (UnifiedTable handles background updates). */}
+      <Card key="prediction-tracking-table-card">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -621,6 +651,10 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatN
                   <SelectItem value="expired">منتهية</SelectItem>
                 </SelectContent>
               </Select>
+              {/* UI-STABILITY fix (2026-09-28): refreshing indicator (spinner only) */}
+              {(refreshingStats || refreshingList) && (
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground animate-spin" />
+              )}
             </div>
           </div>
         </CardHeader>
@@ -628,7 +662,7 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatN
           <UnifiedTable<TrackedPick>
             columns={predictionColumns}
             data={picks}
-            loading={loadingList}
+            loading={loadingList && picks.length === 0}
             loadingRows={8}
             emptyTextAr="لا توجد توقعات متتبعة بعد — ستظهر التوقعات هنا تلقائياً عند توليدها."
             keyField="id"
@@ -642,7 +676,7 @@ ${picks.slice(0, 10).map((p, i) => `${i + 1}. ${p.ticker} — دخول ${formatN
       </Card>
 
       {/* Info note */}
-      <Card className="bg-muted/30">
+      <Card className="bg-muted/30" key="prediction-info-note">
         <CardContent className="p-3 text-xs text-muted-foreground text-center">
           <p>
             💡 يتم حفظ كل توقع تلقائياً عند توليدها،

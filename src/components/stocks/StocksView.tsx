@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import type { Stock } from '@/types';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { Header } from '@/components/layout/Header';
@@ -290,8 +290,9 @@ function SummarySkeleton() {
 }
 
 // ─── Overview Summary Bar ─────────────────────────────────────────────────────
-
-function OverviewSummary({
+// UI-STABILITY fix (2026-09-28): wrap OverviewSummary in React.memo so it
+// doesn't re-render when parent state changes that don't affect its props.
+const OverviewSummary = memo(function OverviewSummary({
   total,
   gainers,
   losers,
@@ -343,11 +344,12 @@ function OverviewSummary({
       </div>
     </div>
   );
-}
+});
 
 // ─── Stock Card Component ─────────────────────────────────────────────────────
-
-function StockCard({
+// UI-STABILITY fix (2026-09-28): wrap StockCard in React.memo so background
+// price refreshes don't re-render cards whose `stock` prop hasn't changed.
+const StockCard = memo(function StockCard({
   stock,
   onClick,
 }: {
@@ -502,11 +504,12 @@ function StockCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 // ─── Mobile Row Component ─────────────────────────────────────────────────────
-
-function MobileStockRow({
+// UI-STABILITY fix (2026-09-28): wrap MobileStockRow in React.memo so it
+// doesn't re-render when parent state that doesn't affect its props changes.
+const MobileStockRow = memo(function MobileStockRow({
   stock,
   onClick,
 }: {
@@ -596,11 +599,12 @@ function MobileStockRow({
       </div>
     </div>
   );
-}
+});
 
 // ─── Preset Buttons Row ───────────────────────────────────────────────────────
-
-function PresetButtonsRow({
+// UI-STABILITY fix (2026-09-28): wrap PresetButtonsRow in React.memo so it
+// doesn't re-render on every parent state change (search, page, sort, etc.).
+const PresetButtonsRow = memo(function PresetButtonsRow({
   activePreset,
   onSelect,
 }: {
@@ -655,11 +659,12 @@ function PresetButtonsRow({
       </CardContent>
     </Card>
   );
-}
+});
 
 // ─── Advanced Filters Component ───────────────────────────────────────────────
-
-function AdvancedFilters({
+// UI-STABILITY fix (2026-09-28): wrap AdvancedFilters in React.memo so it
+// doesn't re-render on every parent state change unrelated to its props.
+const AdvancedFilters = memo(function AdvancedFilters({
   selectedSectors,
   onToggleSector,
   priceMin,
@@ -787,7 +792,7 @@ function AdvancedFilters({
       )}
     </div>
   );
-}
+});
 
 // ─── Main StocksView Component ────────────────────────────────────────────────
 
@@ -1619,11 +1624,13 @@ export function StocksView() {
         </div>
 
         {/* ── Bonds View ── */}
-        {stockTab === 'bonds' && <TreasuryBondsView />}
+        {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
+        {stockTab === 'bonds' && <TreasuryBondsView key="stocks-bonds-view" />}
 
         {/* ── Stocks View ── */}
+        {/* UI-STABILITY fix (2026-09-28): stable key on conditional fragment wrapper */}
         {stockTab === 'stocks' && (
-          <>
+          <React.Fragment key="stocks-stocks-view">
         {/* ── Preset Buttons Row (STOCKS-SCREEN-020) — EGX only; /api/stocks/presets doesn't serve crypto ── */}
         {!isCrypto && (
           <PresetButtonsRow
@@ -2130,7 +2137,7 @@ export function StocksView() {
             </>
           </Card>
         )}
-          </>
+          </React.Fragment>
         )}
       </main>
     </div>

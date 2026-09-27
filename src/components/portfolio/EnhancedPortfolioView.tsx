@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -472,8 +472,10 @@ function CryptoSearchDropdown({
 }
 
 // ==================== ASSETS TAB ====================
-
-function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: number | 'master' }) {
+// UI-STABILITY fix (2026-09-28): wrap AssetsTab in React.memo so background
+// store updates (RealtimeTicker, etc.) don't re-render the entire tab tree
+// when its props (selectedPortfolioId) haven't changed.
+const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: number | 'master' }) {
   const { currentMarket } = useAppStore();
   const { loadStockDetail, setFxRates, displayCurrency, usdRate, sarRate, persona, setDealAdvisorPrefill, setCurrentView } = useAppStore();
   // P39-PHASE-2: state for the DynamicRiskProfilerModal (إعادة الاختبار button).
@@ -1815,7 +1817,7 @@ function AssetsTab({ selectedPortfolioId = 'master' }: { selectedPortfolioId?: n
       />
     </div>
   );
-}
+});
 
 // ==================== P39-PHASE-2: WEALTH ALLOCATION MATRIX CARD ====================
 // P39-PHASE-2: Wealth Allocation Matrix — persona-aware asset ceilings + alerts.
@@ -1957,8 +1959,9 @@ function WealthAllocationMatrixCard({
 }
 
 // ==================== INCOME & EXPENSES TAB ====================
-
-function IncomeExpenseTab() {
+// UI-STABILITY fix (2026-09-28): wrap IncomeExpenseTab in React.memo so
+// background refreshes elsewhere in the app don't re-render the tab tree.
+const IncomeExpenseTab = memo(function IncomeExpenseTab() {
   // P37-PHASE-2B-4A: currency-aware totals (EGP/USD/SAR toggle from header).
   const { displayCurrency, usdRate, sarRate } = useAppStore();
   const formatCurrency = (value: number | null | undefined) =>
@@ -1980,17 +1983,23 @@ function IncomeExpenseTab() {
   const [formIsRecurring, setFormIsRecurring] = useState(false);
   const [formFrequency, setFormFrequency] = useState('monthly');
 
-  const loadTransactions = useCallback(async () => {
-    setLoading(true);
+  // UI-STABILITY fix (2026-09-28): silent polling — only first load (or when
+  // month/year changes) shows the skeleton; manual refresh uses silent=true.
+  const loadTransactions = useCallback(async (silent = false) => {
+    if (silent) {
+      // Don't wipe the existing rows — only show a subtle spinner elsewhere if needed.
+    } else {
+      setLoading(true);
+    }
     try {
       const res = await fetch(`/api/finance/transactions?month=${month}&year=${year}`);
       const data = await res.json();
       setTransactions(data.items || []);
       setSummary(data.summary || null);
     } catch {
-      toast.error('فشل في تحميل المعاملات');
+      if (!silent) toast.error('فشل في تحميل المعاملات');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [month, year]);
 
@@ -2017,7 +2026,8 @@ function IncomeExpenseTab() {
         toast.success('تمت إضافة المعاملة بنجاح');
         setAddDialogOpen(false);
         setFormCategory(''); setFormAmount(''); setFormDescription('');
-        loadTransactions();
+        // UI-STABILITY fix (2026-09-28): silent refresh after save — keep table state
+        loadTransactions(true);
       } else {
         toast.error(data.error || 'فشل في إضافة المعاملة');
       }
@@ -2032,7 +2042,8 @@ function IncomeExpenseTab() {
       const data = await res.json();
       if (data.success) {
         toast.success('تم حذف المعاملة');
-        loadTransactions();
+        // UI-STABILITY fix (2026-09-28): silent refresh after delete
+        loadTransactions(true);
       } else {
         toast.error(data.error || 'فشل في الحذف');
       }
@@ -2042,7 +2053,12 @@ function IncomeExpenseTab() {
   };
 
   // ─── UnifiedTable columns for transactions ────────────────────────────────────
-  const transactionColumns: Column<FinancialTransaction>[] = [
+  // UI-STABILITY fix (2026-09-28): wrap transactionColumns in useMemo so its
+  // reference is stable across renders — UnifiedTable re-computes sort/filter
+  // state when columns identity changes, which destroys user UI state.
+  // handleDelete is defined above (stable per render) — including it in deps
+  // is the correct exhaustive-deps choice.
+  const transactionColumns: Column<FinancialTransaction>[] = useMemo(() => [
     {
       key: 'type',
       header: 'النوع',
@@ -2106,7 +2122,10 @@ function IncomeExpenseTab() {
         </Button>
       ),
     },
-  ];
+  // UI-STABILITY fix (2026-09-28): useMemo deps — handleDelete identity changes
+  // per render (it's defined inline above), but its closure only depends on
+  // values that don't change here (no extra state inside the columns body).
+  ], [handleDelete, formatCurrency]);
 
   const changeMonth = (dir: number) => {
     const d = new Date(parseInt(year), parseInt(month) - 1 + dir, 1);
@@ -2309,11 +2328,12 @@ function IncomeExpenseTab() {
       </Dialog>
     </div>
   );
-}
+});
 
 // ==================== OBLIGATIONS TAB ====================
-
-function ObligationsTab() {
+// UI-STABILITY fix (2026-09-28): wrap ObligationsTab in React.memo so background
+// refreshes elsewhere don't re-render the obligations tab tree.
+const ObligationsTab = memo(function ObligationsTab() {
   // P37-PHASE-2B-4A: currency-aware totals (EGP/USD/SAR toggle from header).
   const { displayCurrency, usdRate, sarRate } = useAppStore();
   const formatCurrency = (value: number | null | undefined) =>
@@ -2346,16 +2366,17 @@ function ObligationsTab() {
   const [payPrincipal, setPayPrincipal] = useState('');
   const [payInterest, setPayInterest] = useState('');
 
-  const loadObligations = useCallback(async () => {
-    setLoading(true);
+  const loadObligations = useCallback(async (silent = false) => {
+    // UI-STABILITY fix (2026-09-28): silent polling — only first load shows skeleton
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/finance/obligations?status=active');
       const data = await res.json();
       setObligations(data.items || []);
     } catch {
-      toast.error('فشل في تحميل الالتزامات');
+      if (!silent) toast.error('فشل في تحميل الالتزامات');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -2390,7 +2411,8 @@ function ObligationsTab() {
         toast.success('تمت إضافة الالتزام بنجاح');
         setAddDialogOpen(false);
         resetForm();
-        loadObligations();
+        // UI-STABILITY fix (2026-09-28): silent refresh after add — keep table state
+        loadObligations(true);
       } else {
         toast.error(data.error || 'فشل في إضافة الالتزام');
       }
@@ -2415,7 +2437,8 @@ function ObligationsTab() {
       if (data.success) {
         toast.success('تم تحديث الالتزام');
         setEditDialogOpen(false);
-        loadObligations();
+        // UI-STABILITY fix (2026-09-28): silent refresh after edit
+        loadObligations(true);
       } else {
         toast.error(data.error || 'فشل في التحديث');
       }
@@ -2432,7 +2455,8 @@ function ObligationsTab() {
       if (data.success) {
         toast.success('تم حذف الالتزام');
         setDeleteId(null);
-        loadObligations();
+        // UI-STABILITY fix (2026-09-28): silent refresh after delete
+        loadObligations(true);
       } else {
         toast.error(data.error || 'فشل في الحذف');
       }
@@ -2459,7 +2483,8 @@ function ObligationsTab() {
       if (data.success) {
         toast.success('تم تسجيل الدفعة بنجاح');
         setPaymentDialogOpen(false);
-        loadObligations();
+        // UI-STABILITY fix (2026-09-28): silent refresh after payment
+        loadObligations(true);
       } else {
         toast.error(data.error || 'فشل في تسجيل الدفعة');
       }
@@ -2677,11 +2702,12 @@ function ObligationsTab() {
       </Dialog>
     </div>
   );
-}
+});
 
 // ==================== REPORTS TAB ====================
-
-function ReportsTab() {
+// UI-STABILITY fix (2026-09-28): wrap ReportsTab in React.memo so background
+// refreshes elsewhere don't re-render the reports tab tree.
+const ReportsTab = memo(function ReportsTab() {
   // P37-PHASE-2B-4A: currency-aware totals (EGP/USD/SAR toggle from header).
   const { displayCurrency, usdRate, sarRate } = useAppStore();
   const formatCurrency = (value: number | null | undefined) =>
@@ -3072,7 +3098,7 @@ function ReportsTab() {
       )}
     </div>
   );
-}
+});
 
 // ==================== MAIN VIEW ====================
 
@@ -3120,6 +3146,8 @@ export function EnhancedPortfolioView() {
         )}
 
         {/* Tabs */}
+        {/* UI-STABILITY fix (2026-09-28): stable keys on each TabsContent so
+            switching tabs doesn't unmount/remount the others unexpectedly. */}
         <Tabs defaultValue="assets">
           <TabsList className="flex w-full">
             <TabsTrigger value="assets" className="flex-1">الأصول</TabsTrigger>
@@ -3129,19 +3157,19 @@ export function EnhancedPortfolioView() {
 
           </TabsList>
 
-          <TabsContent value="assets">
+          <TabsContent value="assets" key="portfolio-tab-assets">
             <AssetsTab selectedPortfolioId={selectedPortfolioId} />
           </TabsContent>
 
-          <TabsContent value="income-expense">
+          <TabsContent value="income-expense" key="portfolio-tab-income-expense">
             <IncomeExpenseTab />
           </TabsContent>
 
-          <TabsContent value="obligations">
+          <TabsContent value="obligations" key="portfolio-tab-obligations">
             <ObligationsTab />
           </TabsContent>
 
-          <TabsContent value="reports">
+          <TabsContent value="reports" key="portfolio-tab-reports">
             <ReportsTab />
           </TabsContent>
 

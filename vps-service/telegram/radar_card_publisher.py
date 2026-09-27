@@ -122,8 +122,49 @@ def should_publish_today(state: Dict) -> bool:
         return False
 
 
+def _path_emoji_short(path: Optional[str]) -> str:
+    """RADAR-QUICK-WINS (Priority 4): emoji + short Arabic label per radar path."""
+    table = {
+        'A_pre_surge': '🚀 تراكم مبكر جداً',
+        'B_quiet_accumulation_strong': '🎯 تراكم صامت قوي',
+        'C_quiet_accumulation_weak': '🔍 تراكم صامت ضعيف',
+        'D_explosive_surge': '🔥 انفجار حجمي',
+        'E_early_break': '⚡ كسر مبكر محتمل',
+    }
+    if not path:
+        return '📡 رادار'
+    return table.get(path, f'📡 {path}')
+
+
+def _signal_stars(count: Optional[int], total: int = 6) -> str:
+    """RADAR-QUICK-WINS (Priority 2): render signal_count as a 5-star meter
+    using unicode chars (for Telegram caption). Returns an empty string if
+    `count` is None (path doesn't track signal_count)."""
+    if count is None or total <= 0:
+        return ''
+    clamped = max(0, min(int(count), total))
+    stars = max(1, (clamped * 5 + total - 1) // total)  # ceil division → 1..5
+    return '⭐' * stars + '☆' * (5 - stars)
+
+
+def _resolve_signal_count(stock: Dict) -> Optional[int]:
+    """Pull signal_count from whichever details block is populated."""
+    qd = stock.get('quiet_details') or {}
+    if qd and qd.get('signal_count') is not None:
+        return int(qd.get('signal_count') or 0)
+    pd = stock.get('pre_surge_details') or {}
+    if pd and pd.get('signal_count') is not None:
+        return int(pd.get('signal_count') or 0)
+    return None
+
+
 def build_caption(radar: Dict, picks: list, watchlist: list) -> str:
-    """يبني caption عربي قصير للبطاقة."""
+    """يبني caption عربي قصير للبطاقة.
+
+    RADAR-QUICK-WINS (Priority 4): كل سهم بيتعرض في 5 سطور منفصلة عشان
+    المستخدم يقدر يقراها بسرعة على تليجرام — دخول، هدف 1، هدف 2، وقف
+    الخسارة، وقوة الإشارة بنجوم.
+    """
     date_str = datetime.now().strftime('%Y-%m-%d')
     lines = []
     lines.append(f'🎯 <b>رادار الميكرز — {date_str}</b>')
@@ -136,11 +177,41 @@ def build_caption(radar: Dict, picks: list, watchlist: list) -> str:
         levels = compute_levels(s)
         confidence = s.get('confidence_score', 0) or 0
         direction = s.get('expected_dir', '') or ''
+        path = s.get('path')
+        path_label = _path_emoji_short(path)
+
+        entry = float(levels.get('entry', 0) or 0)
+        # RADAR-QUICK-WINS (Priority 4): target_1 = levels['target']; target_2
+        # is derived as +10% above target_1 (matches the Smart Entry Card
+        # calculation in TradingPlanSection.tsx). stop_loss comes from
+        # levels['stop'] when present, otherwise -6% of entry.
+        target_1 = float(levels.get('target', 0) or 0)
+        target_2 = float(levels.get('target_2', 0) or (target_1 * 1.10 if target_1 else 0))
+        stop_loss = float(levels.get('stop', 0) or (entry * 0.94 if entry else 0))
+
+        # Gain / loss percentages (graceful when entry is 0/missing)
+        t1_gain = ((target_1 - entry) / entry * 100) if (entry > 0 and target_1 > 0) else 0
+        t2_gain = ((target_2 - entry) / entry * 100) if (entry > 0 and target_2 > 0) else 0
+        sl_loss = ((stop_loss - entry) / entry * 100) if (entry > 0 and stop_loss > 0) else 0
+
+        sig_count = _resolve_signal_count(s)
+        sig_max = 6 if (path in (None, 'B_quiet_accumulation_strong', 'C_quiet_accumulation_weak')) else (4 if path == 'A_pre_surge' else 0)
+        sig_stars = _signal_stars(sig_count, sig_max) if sig_max else ''
+
         lines.append(
-            f'{i}. <b>{ticker}</b> — {confidence:.0f}% | '
-            f'دخول {levels["entry"]:.2f} | هدف {levels["target"]:.2f} | وقف {levels["stop"]:.2f}'
+            f'{i}. {path_label.split(" ", 1)[0]} <b>{ticker}</b> — {path_label.split(" ", 1)[1] if " " in path_label else path_label}'
         )
-        lines.append(f'   {direction}')
+        lines.append(f'   💰 الدخول: {entry:.2f}')
+        if target_1 > 0:
+            lines.append(f'   🎯 الهدف 1: {target_1:.2f} (+{t1_gain:.1f}%)')
+        if target_2 > 0:
+            lines.append(f'   🎯 الهدف 2: {target_2:.2f} (+{t2_gain:.1f}%)')
+        if stop_loss > 0:
+            lines.append(f'   🛑 وقف الخسارة: {stop_loss:.2f} ({sl_loss:.1f}%)')
+        if sig_count is not None and sig_max:
+            lines.append(f'   📊 قوة الإشارة: {sig_count}/{sig_max} {sig_stars}')
+        if direction:
+            lines.append(f'   🧭 {direction}')
     if watchlist:
         lines.append('')
         watch_str = ' • '.join(s.get('ticker', '???') for s in watchlist)
