@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 /**
  * Market Pulse API - Proxy to Python Backend
  * نبض السوق اللحظي
@@ -45,7 +46,8 @@ export async function GET() {
 
     const response = await fetch(`${PYTHON_BACKEND}/api/market-pulse`, {
       signal: controller.signal,
-      headers: { 'Accept': 'application/json' },
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json', 'Cache-Control': 'no-store' },
     });
     clearTimeout(timeout);
 
@@ -71,6 +73,16 @@ export async function GET() {
         const unchanged = total - advancing - declining;
         const breadth = total > 0 ? ((advancing - declining) / total * 100) : 0;
         db.close();
+        let egx30Data: any = null;
+        let egx70Data: any = null;
+        try {
+          const idxRows = db.prepare("SELECT symbol, current_value, previous_close, change_percent FROM market_indices WHERE symbol IN ('EGX30','EGX70')").all() as any[];
+          const r30 = idxRows.find((r: any) => r.symbol === 'EGX30');
+          const r70 = idxRows.find((r: any) => r.symbol === 'EGX70');
+          if (r30) egx30Data = { value: Number(r30.current_value), previous_close: Number(r30.previous_close), change_percent: Number(r30.change_percent) };
+          if (r70) egx70Data = { value: Number(r70.current_value), previous_close: Number(r70.previous_close), change_percent: Number(r70.change_percent) };
+        } catch {}
+
         return NextResponse.json({
           success: true,
           source: 'sqlite_fallback',
@@ -78,6 +90,8 @@ export async function GET() {
             cairo_time: new Date().toISOString(),
             is_trading_hours: false,
             market_status: 'CLOSED',
+            egx30: egx30Data,
+            egx70: egx70Data,
             breadth: Math.round(breadth * 10) / 10,
             advancing,
             declining,
@@ -86,6 +100,8 @@ export async function GET() {
             pulse_value: Math.max(-5, Math.min(5, Math.round(breadth / 10))),
             sentiment: breadth > 10 ? 'GREED' : breadth < -10 ? 'FEAR' : 'NEUTRAL',
           }
+        }, {
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' }
         });
       }
     } catch (e) {
@@ -121,6 +137,16 @@ export async function GET() {
         const unchanged = total - advancing - declining;
         const breadth = total > 0 ? ((advancing - declining) / total * 100) : 0;
         db.close();
+        let egx30Data: any = null;
+        let egx70Data: any = null;
+        try {
+          const idxRows = db.prepare("SELECT symbol, current_value, previous_close, change_percent FROM market_indices WHERE symbol IN ('EGX30','EGX70')").all() as any[];
+          const r30 = idxRows.find((r: any) => r.symbol === 'EGX30');
+          const r70 = idxRows.find((r: any) => r.symbol === 'EGX70');
+          if (r30) egx30Data = { value: Number(r30.current_value), previous_close: Number(r30.previous_close), change_percent: Number(r30.change_percent) };
+          if (r70) egx70Data = { value: Number(r70.current_value), previous_close: Number(r70.previous_close), change_percent: Number(r70.change_percent) };
+        } catch {}
+
         return NextResponse.json({
           success: true,
           source: 'sqlite_fallback',
@@ -128,6 +154,8 @@ export async function GET() {
             cairo_time: new Date().toISOString(),
             is_trading_hours: false,
             market_status: 'CLOSED',
+            egx30: egx30Data,
+            egx70: egx70Data,
             breadth: Math.round(breadth * 10) / 10,
             advancing,
             declining,
@@ -136,6 +164,8 @@ export async function GET() {
             pulse_value: Math.max(-5, Math.min(5, Math.round(breadth / 10))),
             sentiment: breadth > 10 ? 'GREED' : breadth < -10 ? 'FEAR' : 'NEUTRAL',
           }
+        }, {
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' }
         });
       }
     } catch (e) {

@@ -231,6 +231,7 @@ interface StockListItem {
   high_52w?: number | null;
   low_52w?: number | null;
   current_price?: number | null;
+  logo_url?: string | null;
 }
 
 interface StocksListResponse {
@@ -608,6 +609,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     return typeof chg === 'number' ? chg : null;
   }, [stockMap]);
 
+  const stockInfoForTicker = useCallback((ticker: string): StockListItem | null => {
+    if (!stockMap) return null;
+    return stockMap.get(ticker.toUpperCase()) || null;
+  }, [stockMap]);
+
   const marketStatus = getMarketStatus(market);
 
   // --------------------------------------------------------------------
@@ -880,6 +886,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           stocks={filteredPreSurge}
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -895,6 +902,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           stocks={filteredExplosive}
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -910,6 +918,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           stocks={filteredQuiet}
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -925,6 +934,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           stocks={filteredEarlyBreak}
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
           onSelect={setSelectedTicker}
           onTrackToggle={handleTrackToggle}
         />
@@ -1219,13 +1229,14 @@ interface RadarSectionProps {
   stocks: RadarStock[];
   sectorForTicker: (ticker: string) => string | null;
   changePercentForTicker: (ticker: string) => number | null;
+  stockInfoForTicker: (ticker: string) => StockListItem | null;
   onSelect: (ticker: string) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
 function RadarSection({
   title, subtitle, icon, accent, stocks,
-  sectorForTicker, changePercentForTicker, onSelect, onTrackToggle,
+  sectorForTicker, changePercentForTicker, stockInfoForTicker, onSelect, onTrackToggle,
 }: RadarSectionProps) {
   const a = accentClasses[accent];
   return (
@@ -1260,6 +1271,7 @@ function RadarSection({
           accent={accent}
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
+          stockInfoForTicker={stockInfoForTicker}
           onSelect={onSelect}
           onTrackToggle={onTrackToggle}
         />
@@ -1276,6 +1288,7 @@ interface StockTableProps {
   accent: AccentKey;
   sectorForTicker: (ticker: string) => string | null;
   changePercentForTicker: (ticker: string) => number | null;
+  stockInfoForTicker: (ticker: string) => StockListItem | null;
   onSelect: (ticker: string) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
@@ -1283,7 +1296,7 @@ interface StockTableProps {
 type RadarStockRow = RadarStock & { _idx: number };
 
 function StockTable({
-  stocks, accent, sectorForTicker, changePercentForTicker, onSelect, onTrackToggle,
+  stocks, accent, sectorForTicker, changePercentForTicker, stockInfoForTicker, onSelect, onTrackToggle,
 }: StockTableProps) {
   const a = accentClasses[accent];
 
@@ -1305,7 +1318,7 @@ function StockTable({
       filterable: true,
       hideable: true,
       render: (stock) => {
-        const sInfo = stockMap.get(stock.ticker.toUpperCase());
+        const sInfo = stockInfoForTicker(stock.ticker);
         return (
           <div className="flex items-center gap-2">
             <StockIconMini

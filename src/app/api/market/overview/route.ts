@@ -10,6 +10,7 @@ import { getMarketIndices } from '@/lib/egx-db';
 import type Database from 'better-sqlite3';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export const runtime = 'nodejs';
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
@@ -22,7 +23,11 @@ export async function GET(req: NextRequest) {
   try {
     const qs = url.searchParams.toString();
     const targetUrl = `${PY}/api/market/overview${qs ? `?${qs}` : ''}`;
-    const res = await fetch(targetUrl, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(targetUrl, {
+      signal: AbortSignal.timeout(5000),
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-store' },
+    });
     if (res.ok) {
       const data = await res.json();
       return NextResponse.json(data);
