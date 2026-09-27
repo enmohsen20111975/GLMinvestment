@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { cn, safeToFixed } from '@/lib/utils';
+import type { Stock, DeepAnalysis as DeepAnalysisType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ import { SmartTip } from '@/components/smart-tips/SmartTip';
 import { AIAnalysisWidget } from '@/components/ai/AIAnalysisWidget';
 import { StockAdvancedAnalysisView } from './StockAdvancedAnalysisView';
 import { QuickPublishButton } from '@/components/publishing/QuickPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import { ComprehensiveStockAnalysis } from './ComprehensiveStockAnalysis';
 import { DeltaVolumeBar } from './DeltaVolumeBar';
 import GateAnalysisView from './GateAnalysisView';
@@ -84,6 +86,86 @@ function formatVolume(vol: number): string {
   if (vol >= 1_000_000) return safeToFixed(vol / 1_000_000) + 'M';
   if (vol >= 1_000) return safeToFixed(vol / 1_000, 1) + 'K';
   return vol.toLocaleString();
+}
+
+// ============================================================================
+// Build StockPublishData from the local stock + deepAnalysis objects.
+// (Used by StockPublisher — no extra network call needed.)
+// ============================================================================
+function buildStockPublishDataFromStock(
+  stock: Stock,
+  deepAnalysis: DeepAnalysisType | null
+): StockPublishData {
+  const entryPrice = stock.current_price;
+  const targetPrice1 =
+    deepAnalysis?.price_targets?.upside_target ?? stock.resistance_level * 1.02;
+  const targetPrice2 = targetPrice1 ? targetPrice1 * 1.1 : undefined;
+  const stopLoss =
+    stock.support_level != null
+      ? stock.support_level * 0.97
+      : entryPrice * 0.94;
+  const riskReward =
+    targetPrice1 && entryPrice && stopLoss && entryPrice - stopLoss !== 0
+      ? (targetPrice1 - entryPrice) / (entryPrice - stopLoss)
+      : undefined;
+
+  // Map DeepAnalysis.action ('BUY'/'SELL'/'HOLD'/...) to StockPublishData.recommendation
+  const actionUpper = (deepAnalysis?.action || '').toUpperCase();
+  let recommendation: StockPublishData['recommendation'];
+  if (actionUpper.includes('STRONG') && actionUpper.includes('BUY'))
+    recommendation = 'STRONG_BUY';
+  else if (actionUpper.includes('INST') && actionUpper.includes('BUY'))
+    recommendation = 'INSTITUTIONAL_BUY';
+  else if (actionUpper.includes('BUY') || actionUpper.includes('ACCUMULATE'))
+    recommendation = 'BUY';
+  else if (
+    actionUpper.includes('SELL') ||
+    actionUpper.includes('REDUCE') ||
+    actionUpper.includes('AVOID')
+  )
+    recommendation = 'SELL';
+  else if (
+    actionUpper.includes('HOLD') ||
+    actionUpper.includes('WAIT') ||
+    actionUpper.includes('NEUTRAL')
+  )
+    recommendation = 'HOLD';
+
+  return {
+    ticker: stock.ticker,
+    nameAr: stock.name_ar,
+    nameEn: stock.name,
+    sector: stock.sector,
+    currentPrice: stock.current_price,
+    previousClose: stock.previous_close,
+    changePct: stock.price_change ?? undefined,
+    recommendation,
+    recommendationAr: deepAnalysis?.action_ar,
+    confidence:
+      deepAnalysis?.overall_score != null
+        ? Math.min(100, deepAnalysis.overall_score)
+        : undefined,
+    reason:
+      deepAnalysis?.strengths && deepAnalysis.strengths.length > 0
+        ? deepAnalysis.strengths.slice(0, 3).join(' · ')
+        : undefined,
+    entryPrice,
+    entryZoneLow: entryPrice ? entryPrice * 0.99 : undefined,
+    entryZoneHigh: entryPrice ? entryPrice * 1.01 : undefined,
+    targetPrice1,
+    targetPrice2,
+    stopLoss,
+    riskReward: riskReward != null ? Math.round(riskReward * 100) / 100 : undefined,
+    positionSize: 8, // default 8% — conservative
+    rsi: stock.rsi || undefined,
+    sma50: stock.ma_50 || undefined,
+    sma200: stock.ma_200 || undefined,
+    peRatio: stock.pe_ratio || undefined,
+    pbRatio: stock.pb_ratio || undefined,
+    roe: stock.roe || undefined,
+    marketCap: stock.market_cap || undefined,
+    market: (stock.market as 'EGX' | 'TADAWUL' | 'KSE' | 'QSE' | 'CRYPTO' | 'GOLD') || 'EGX',
+  } as StockPublishData;
 }
 
 interface PriceInfoCardProps {
@@ -983,6 +1065,11 @@ export function StockDetail() {
             stopLoss: stock.support_level ? stock.support_level * 0.97 : undefined,
             reasons: deepAnalysis?.reasons,
           }}
+        />
+        <StockPublisher
+          data={buildStockPublishDataFromStock(stock, deepAnalysis)}
+          variant="button"
+          size="sm"
         />
       </div>
 

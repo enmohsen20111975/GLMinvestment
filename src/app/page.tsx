@@ -145,10 +145,7 @@ const PredictionTrackingView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
   'تتبّع التوقعات',
 );
-const PicksManagementView = withErrorBoundary(
-  dynamicImport(() => import('@/components/predictions/PicksManagementView').then(m => ({ default: m.PicksManagementView })), { ssr: false, loading: () => <LazyTabLoader label="إدارة التوقعات" /> }),
-  'إدارة التوقعات',
-);
+// PicksManagementView REMOVED per user request 2026-09-28 — features merged into PredictionTrackingView
 const DualTrackPredictionsView = withErrorBoundary(
   dynamicImport(() => import('@/components/predictions/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
   'التوقعات المزدوجة',
@@ -458,8 +455,9 @@ function AppShell() {
         );
       case 'prediction-tracking':
         return <PredictionTrackingView />;
+      // picks-management REMOVED 2026-09-28 — redirects to prediction-tracking
       case 'picks-management':
-        return <PicksManagementView />;
+        return <PredictionTrackingView />;
       case 'dual-track':
         return <DualTrackPredictionsView />;
       case 'v82':

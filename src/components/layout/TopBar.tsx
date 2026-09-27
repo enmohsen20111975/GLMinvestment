@@ -107,7 +107,7 @@ const navSections: NavSection[] = [
     icon: Target,
     items: [
       { id: 'recommendations', label: 'متابعة التوقعات', icon: Target },
-      { id: 'picks-management', label: 'إدارة التوقعات', icon: Crown },
+      // picks-management REMOVED 2026-09-28 — merged into recommendations
       { id: 'specialist-analysis', label: 'تحليل المتخصصين', icon: Sparkles },
       { id: 'reports', label: 'التقارير', icon: FileBarChart },
     ],

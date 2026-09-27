@@ -259,16 +259,16 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
         </Card>
       )}
 
-      {/* Quick Stats Row */}
-      <QuickStatsRow price={price} tech={tech} metrics={metrics} maestro={maestro} />
+      {/* Quick Stats Row (3 cards — Maestro card removed per user request 2026-09-28) */}
+      <QuickStatsRow price={price} tech={tech} metrics={metrics} />
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto">
+        <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-auto">
           <TabsTrigger value="overview" className="text-xs">نظرة عامة</TabsTrigger>
           <TabsTrigger value="technical" className="text-xs">فني</TabsTrigger>
           <TabsTrigger value="fundamental" className="text-xs">أساسي</TabsTrigger>
-          <TabsTrigger value="maestro" className="text-xs">مايسترو</TabsTrigger>
+          {/* Maestro tab REMOVED per user request 2026-09-28 */}
           <TabsTrigger value="chart" className="text-xs">رسوم</TabsTrigger>
           <TabsTrigger value="news" className="text-xs">أخبار</TabsTrigger>
           <TabsTrigger value="predictions" className="text-xs">توقعات</TabsTrigger>
@@ -290,10 +290,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
           <FundamentalTab metrics={metrics} basic={basic} />
         </TabsContent>
 
-        {/* Maestro Tab */}
-        <TabsContent value="maestro" className="mt-4">
-          <MaestroTab maestro={data.maestro} hunter={data.hunter} board={data.board} />
-        </TabsContent>
+        {/* Maestro Tab REMOVED per user request 2026-09-28 — V40.2 is the sole engine */}
 
         {/* Charts Tab */}
         <TabsContent value="chart" className="mt-4">
@@ -383,10 +380,10 @@ function StockHeaderBar({
 }
 
 // ============================================================================
-// Quick Stats Row (4 cards)
+// Quick Stats Row (3 cards — Maestro card removed per user request 2026-09-28)
 // ============================================================================
 
-function QuickStatsRow({ price, tech, metrics, maestro }: { price: Record<string, unknown> | null | undefined; tech: Record<string, unknown> | null | undefined; metrics: Record<string, unknown> | null | undefined; maestro: Record<string, unknown> | null | undefined }) {
+function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown> | null | undefined; tech: Record<string, unknown> | null | undefined; metrics: Record<string, unknown> | null | undefined }) {
   const stats = [
     {
       label: 'السعر',
@@ -409,17 +406,10 @@ function QuickStatsRow({ price, tech, metrics, maestro }: { price: Record<string
       icon: BarChart3,
       color: 'text-purple-600 dark:text-purple-400',
     },
-    {
-      label: 'مايسترو',
-      value: maestro.maestroScore ? `${Math.round(maestro.maestroScore)}` : '—',
-      sub: maestro.recommendationAr || maestro.recommendation || '—',
-      icon: Brain,
-      color: scoreColor(maestro.maestroScore || 0),
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {stats.map((s, i) => (
         <Card key={i} className="overflow-hidden">
           <CardContent className="p-3">

@@ -1,13 +1,13 @@
 {
-  "last_warmup_started_at": "2026-09-27T19:38:58.549Z",
-  "last_warmup_finished_at": "2026-09-27T19:38:58.854Z",
-  "last_warmup_duration_ms": 275,
-  "last_warmup_status": "success",
-  "last_error": null,
-  "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260927.json",
-  "cache_generated_at": "2026-09-27T19:38:58.826066",
+  "last_warmup_started_at": "2026-09-27T20:44:53.569Z",
+  "last_warmup_finished_at": "2026-09-27T20:44:53.647Z",
+  "last_warmup_duration_ms": 56,
+  "last_warmup_status": "failed",
+  "last_error": "exit code 1",
+  "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260926.json",
+  "cache_generated_at": "2026-09-26T11:16:21.090279",
   "cache_age_seconds": 0,
-  "total_scanned": 191,
-  "under_microscope_count": 98,
-  "db_source": "data_engine.db::egksco_price_history"
+  "total_scanned": 815,
+  "under_microscope_count": 303,
+  "db_source": "stocks.db::stock_daily_prices"
 }
