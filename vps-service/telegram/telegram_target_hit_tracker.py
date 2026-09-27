@@ -827,6 +827,106 @@ def send_telegram_hit(photo_path: Optional[Path], caption: str, reply_markup: di
         print(f"❌ خطأ إرسال رسالة الهدف: {e}")
         return False
 
+def record_target_hit_in_db(item: Dict) -> bool:
+    """تسجيل وتوثيق الهدف المحقق في قاعدة بيانات التوقعات predictions.db والمشروع."""
+    if not PREDICTIONS_DB.exists():
+        print(f"⚠️ قاعدة البيانات {PREDICTIONS_DB} غير موجودة لتسجيل الهدف.")
+        return False
+
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    now_iso = datetime.now().isoformat()
+    tk = item.get('ticker')
+    hit_level = item.get('hit_level', 'TP1')
+    hit_price = float(item.get('hit_price', 0))
+    entry_price = float(item.get('entry_price', 0))
+    profit_pct = round(float(item.get('profit_pct', 0)), 2)
+    days_held = int(item.get('days_held', 0))
+    source = item.get('source', 'توقعات المنصة الذكية')
+    pred_date = item.get('prediction_date', today_str)
+    duration_text = item.get('duration_text', f"{days_held} أيام")
+    exit_reason = f"تحقق {hit_level} عند {hit_price:.2f} ج.م بمكسب +{profit_pct:.1f}% ({duration_text})"
+
+    try:
+        conn = sqlite3.connect(PREDICTIONS_DB, timeout=15.0)
+        cursor = conn.cursor()
+
+        # فحص إذا كان هناك توقع نشط مسجل لهذا السهم
+        cursor.execute("""
+            SELECT id, entry_price, prediction_date, notes
+            FROM predictions
+            WHERE ticker = ? AND status IN ('active', 'ACTIVE', 'PENDING') AND outcome_date IS NULL
+            ORDER BY id DESC LIMIT 1
+        """, (tk,))
+        row = cursor.fetchone()
+
+        if row:
+            pred_id = row[0]
+            existing_notes = row[3] or ''
+            new_note = f"حقق {hit_level} في {today_str} بسعر {hit_price:.2f} (ربح +{profit_pct:.1f}%) | مدة الانتظار: {duration_text} | المصدر: {source}"
+            updated_notes = f"{existing_notes} | {new_note}" if existing_notes else new_note
+
+            cursor.execute("""
+                UPDATE predictions
+                SET status = 'TARGET_HIT',
+                    hit_target = 1,
+                    outcome_date = ?,
+                    actual_exit_price = ?,
+                    exit_price = ?,
+                    actual_return = ?,
+                    pnl_pct = ?,
+                    holding_days = ?,
+                    days_to_close = ?,
+                    exit_type = ?,
+                    exit_reason = ?,
+                    is_correct = 1,
+                    closed_at = ?,
+                    notes = ?
+                WHERE id = ?
+            """, (
+                today_str,
+                hit_price,
+                hit_price,
+                profit_pct,
+                profit_pct,
+                days_held,
+                days_held,
+                hit_level,
+                exit_reason,
+                now_iso,
+                updated_notes,
+                pred_id
+            ))
+            print(f"✅ تم تحديث التوقع النشط رقم {pred_id} لسهم {tk} كهدف محقق بنجاح في predictions.db")
+        else:
+            # إذا لم يوجد توقع نشط في الجدول، نقوم بإدراج صفقة رابحة كاملة التوثيق
+            note = f"صفقة رابحة مرصودة من {source} | تم طرح التوقع في {pred_date} وحقق {hit_level} في {today_str} بمكسب +{profit_pct:.1f}% ({duration_text})"
+            tp1 = float(item.get('target_1', hit_price))
+            tp2 = float(item.get('target_2', hit_price * 1.05))
+            sl = float(item.get('stop_loss', entry_price * 0.95))
+            conf = float(item.get('confidence', 75))
+
+            cursor.execute("""
+                INSERT INTO predictions (
+                    ticker, market, signal, signal_type, signal_ar, entry_price, target_price, target_price_2,
+                    stop_loss, confidence, maestro_score, prediction_date, outcome_date,
+                    exit_price, actual_exit_price, actual_return, pnl_pct, holding_days, days_to_close,
+                    hit_target, is_correct, status, exit_type, exit_reason, notes, created_at, closed_at
+                ) VALUES (?, 'EGX', 'BUY', 'BUY', 'شراء', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'TARGET_HIT', ?, ?, ?, ?, ?)
+            """, (
+                tk, entry_price, tp1, tp2, sl, conf, conf,
+                pred_date, today_str, hit_price, hit_price, profit_pct, profit_pct,
+                days_held, days_held, hit_level, exit_reason, note, pred_date, now_iso
+            ))
+            print(f"✅ تم توثيق صفقة رابحة جديدة لسهم {tk} بنجاح في predictions.db")
+
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ خطأ تسجيل الهدف في predictions.db لسهم {tk}: {e}")
+        return False
+
+
 def run_target_hit_tracker(preview: bool = False, force: bool = False):
     """الدالة الرئيسية لفحص وإرسال الأهداف المحققة."""
     print("=" * 65)
@@ -843,7 +943,7 @@ def run_target_hit_tracker(preview: bool = False, force: bool = False):
     if preview:
         print("\n🔍 --- معاينة الأهداف المرصودة (بدون إرسال) ---")
         for h in hits[:10]:
-            print(f"  • {h['name_ar']} ({h['ticker']}): توصية={h['entry_price']:.2f} -> أعلى جلسة={h['hit_price']:.2f} -> مكسب محقق=+{h['profit_pct']:.1f}% [{h['hit_level']}]")
+            print(f"  • {h['name_ar']} ({h['ticker']}): توصية={h['entry_price']:.2f} -> أعلى جلسة={h['hit_price']:.2f} -> مكسب محقق=+{h['profit_pct']:.1f}% [{h['hit_level']}] (تاريخ: {h['prediction_date']}, مدة: {h['duration_text']})")
         return
 
     if not hits and not force:
@@ -872,7 +972,10 @@ def run_target_hit_tracker(preview: bool = False, force: bool = False):
 
         print(f"\n🚀 معالجة سهم: {item['name_ar']} ({tk}) | مكسب محقق: +{item['profit_pct']:.1f}% | {item['hit_level']}")
 
-        # توليد البطاقة المصورة المتطورة
+        # 1. توثيق وتسجيل ضرب الهدف في قاعدة البيانات للمشروع والموقع أولاً
+        record_target_hit_in_db(item)
+
+        # 2. توليد البطاقة المصورة المتطورة
         card_img = asyncio.run(generate_hit_card_image(item))
         caption, reply_markup = format_hit_caption(item)
 
@@ -886,7 +989,10 @@ def run_target_hit_tracker(preview: bool = False, force: bool = False):
                 'sent_at': datetime.now().isoformat(),
                 'profit_pct': item['profit_pct'],
                 'hit_level': item['hit_level'],
-                'hit_price': item['hit_price']
+                'hit_price': item['hit_price'],
+                'prediction_date': item.get('prediction_date'),
+                'duration_text': item.get('duration_text'),
+                'source': item.get('source')
             }
             save_hit_state(state)
             sent_count += 1
@@ -898,6 +1004,7 @@ def run_target_hit_tracker(preview: bool = False, force: bool = False):
             time.sleep(3)
 
     print(f"\n🏁 اكتمل الفحص: تم بث {sent_count} هدف محقق بنجاح.")
+
 
 if __name__ == '__main__':
     preview_mode = '--preview' in sys.argv

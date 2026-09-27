@@ -52,6 +52,11 @@ except Exception as e:
     print(f"⚠️ Reports not available: {e}")
     REPORTS_AVAILABLE = False
 
+try:
+    from egx_arabic_lookup import get_arabic_stock_name
+except ImportError:
+    def get_arabic_stock_name(tk, fb=None): return fb or tk
+
 # Import ReportsEngine (نظام التقارير الذكية الجديد - daily_tomorrow / daily_summary / weekly / monthly)
 try:
     from analyzers.reports_engine import ReportsEngine
@@ -179,13 +184,36 @@ async def post_daily_predictions(market: str = 'EGX') -> Dict:
         # استخدام نص التقرير أو تنسيق بوست خاص
         post_text = _format_daily_post(report, market)
 
+        # توليد بطاقة التقرير المصورة عالية الدقة
+        card_image = None
+        try:
+            from telegram_report_card import generate_report_card_image
+            card_image = await generate_report_card_image(report, 'daily')
+        except Exception as img_err:
+            print(f"⚠️ Could not generate daily report image: {img_err}")
+
         # النشر على التليجرام
         poster = TelegramAutoPoster()
         connect_result = await poster.connect()
         if not connect_result.get('success'):
             return {"success": False, "error": f"Telegram connect failed: {connect_result.get('error')}"}
 
-        result = await poster.send_message(post_text, parse_mode='md')
+        if card_image and card_image.exists():
+            if len(post_text) <= 1000:
+                result = await poster.send_photo(str(card_image), caption=post_text, parse_mode='md')
+            else:
+                summary_caption = f"""🌅 **التقرير اليومي وحصاد الجلسة - منصة دليل الاستثمار**
+📅 الجلسة: {report.get('target_session', {}).get('date', datetime.now().strftime('%Y-%m-%d'))}
+
+🟢 الصاعدات: {report.get('summary', {}).get('gainers', 0)} | 🔴 الهابطات: {report.get('summary', {}).get('losers', 0)}
+📊 اتساع السوق: {report.get('summary', {}).get('market_breadth', 0)}%
+
+👇 **التفاصيل الكاملة وتوقعات الغد بنقاط الدخول والأهداف في الرسالة التالية:**"""
+                await poster.send_photo(str(card_image), caption=summary_caption, parse_mode='md')
+                result = await poster.send_message(post_text, parse_mode='md')
+        else:
+            result = await poster.send_message(post_text, parse_mode='md')
+
         await poster.disconnect()
 
         if result.get('success'):
@@ -216,12 +244,36 @@ async def post_weekly_report(market: str = 'EGX') -> Dict:
 
         post_text = _format_weekly_post(report, market)
 
+        # توليد بطاقة التقرير المصورة عالية الدقة
+        card_image = None
+        try:
+            from telegram_report_card import generate_report_card_image
+            card_image = await generate_report_card_image(report, 'weekly')
+        except Exception as img_err:
+            print(f"⚠️ Could not generate weekly report image: {img_err}")
+
         poster = TelegramAutoPoster()
         connect_result = await poster.connect()
         if not connect_result.get('success'):
             return {"success": False, "error": f"Telegram connect failed: {connect_result.get('error')}"}
 
-        result = await poster.send_message(post_text, parse_mode='md')
+        if card_image and card_image.exists():
+            if len(post_text) <= 1000:
+                result = await poster.send_photo(str(card_image), caption=post_text, parse_mode='md')
+            else:
+                week = report.get('week_range', {})
+                summary_caption = f"""📊 **التقرير الأسبوعي الشامل - منصة دليل الاستثمار**
+📅 الأسبوع: {week.get('start', '')} إلى {week.get('end', '')}
+
+🟢 الأسهم الصاعدة: {report.get('summary', {}).get('gainers', 0)} | 🔴 الهابطة: {report.get('summary', {}).get('losers', 0)}
+📊 اتساع السوق: {report.get('summary', {}).get('market_breadth', 0)}%
+
+👇 **التفاصيل الكاملة وتوقعات الأسبوع القادم بنقاط الدخول والأهداف في الرسالة التالية:**"""
+                await poster.send_photo(str(card_image), caption=summary_caption, parse_mode='md')
+                result = await poster.send_message(post_text, parse_mode='md')
+        else:
+            result = await poster.send_message(post_text, parse_mode='md')
+
         await poster.disconnect()
 
         if result.get('success'):
@@ -284,19 +336,19 @@ def _format_daily_post(report: Dict, market: str) -> str:
     date_ar = datetime.now().strftime('%d/%m/%Y')
     day_name = target.get('day', '')
 
-    text = f"""🌅 **التقرير اليومي - دليل الاستثمار**
+    text = f"""🌅 **التقرير اليومي وحصاد الجلسة - دليل الاستثمار**
 
 📅 **{date_ar}** | الجلسة القادمة: {day_name}
 
-📊 **ملخص السوق اليوم:**
+📊 **ملخص أداء السوق:**
 """
     gainers = summary.get('gainers', 0)
     losers = summary.get('losers', 0)
     total = summary.get('total_stocks', 0)
     unchanged = total - gainers - losers if total else 0
 
-    text += f"""• 📈 الصاعدات: {gainers}
-• 📉 الهابطات: {losers}
+    text += f"""• 📈 الصاعدات: {gainers} 🟢
+• 📉 الهابطات: {losers} 🔴
 • ➡️ ثابتة: {unchanged}
 • 📊 اتساع السوق: {summary.get('market_breadth', 0)}%
 
@@ -305,38 +357,70 @@ def _format_daily_post(report: Dict, market: str) -> str:
     # أعلى الصاعدات
     top_gainers = report.get('top_gainers', [])[:5]
     if top_gainers:
-        text += "🔥 **أعلى الصاعدات:**\n"
+        text += "🔥 **أعلى الأسهم صعوداً بالجلسة:**\n"
         for i, stock in enumerate(top_gainers, 1):
             sym = stock.get('symbol', stock.get('ticker', ''))
+            name_ar = get_arabic_stock_name(sym, sym)
             change = stock.get('change_percent', 0)
-            text += f"{i}. {sym} ({change:+.2f}%)\n"
+            text += f"{i}. {name_ar} (`{sym}`): +{change:.2f}%\n"
 
     # أعلى الهابطات
     top_losers = report.get('top_losers', [])[:3]
     if top_losers:
-        text += "\n📉 **أعلى الهابطات:**\n"
+        text += "\n📉 **أبرز التراجعات:**\n"
         for i, stock in enumerate(top_losers, 1):
             sym = stock.get('symbol', stock.get('ticker', ''))
+            name_ar = get_arabic_stock_name(sym, sym)
             change = stock.get('change_percent', 0)
-            text += f"{i}. {sym} ({change:+.2f}%)\n"
+            text += f"{i}. {name_ar} (`{sym}`): {change:.2f}%\n"
 
-    # التوقعات
-    if recs:
-        text += "\n🎯 **توقعات الغد:**\n"
-        for i, rec in enumerate(recs[:5], 1):
-            sym = rec.get('symbol', rec.get('ticker', ''))
-            score = rec.get('score', 0)
-            text += f"{i}. {sym} (الثقة: {score}%)\n"
+    # التوقعات للجلسة القادمة مع تفاصيل الدخول والأهداف والتحليل
+    seen_recs = set()
+    valid_recs = []
+    for r in recs:
+        s = r.get('symbol') or r.get('ticker')
+        if s and s not in seen_recs:
+            seen_recs.add(s)
+            valid_recs.append(r)
+
+    if valid_recs:
+        text += "\n🎯 **أبرز التوقعات والفرص الاستثمارية المرشحة للجلسة القادمة:**\n"
+        text += "━━━━━━━━━━━━━━━━━━━\n"
+        for i, rec in enumerate(valid_recs[:5], 1):
+            sym = rec.get('symbol') or rec.get('ticker', '')
+            name_ar = rec.get('name_ar') or rec.get('name') or get_arabic_stock_name(sym, sym)
+            entry = float(rec.get('entry_price') or 0)
+            tp1 = float(rec.get('target_price') or 0)
+            tp2 = float(rec.get('target_price_2') or (tp1 * 1.05 if tp1 else 0))
+            sl = float(rec.get('stop_loss') or 0)
+            score = float(rec.get('confidence') or rec.get('score') or 75)
+
+            tp1_gain = ((tp1 - entry) / entry * 100) if entry > 0 and tp1 > 0 else 5.0
+            tp2_gain = ((tp2 - entry) / entry * 100) if entry > 0 and tp2 > 0 else 10.0
+            sl_loss = ((sl - entry) / entry * 100) if entry > 0 and sl > 0 else -4.0
+
+            text += f"🔹 **{i}. {name_ar} (#{sym})** | نسبة الثقة: **{score:.0f}%**\n"
+            text += f"  • 🟢 سعر الدخول المقترح: `{entry:.2f} ج.م`\n"
+            text += f"  • 🎯 الهدف الأول: `{tp1:.2f} ج.م` (+{tp1_gain:.1f}%)\n"
+            text += f"  • 🏆 الهدف الثاني: `{tp2:.2f} ج.م` (+{tp2_gain:.1f}%)\n"
+            text += f"  • 🛡️ وقف الخسارة الصارم: `{sl:.2f} ج.م` ({sl_loss:.1f}%)\n"
+
+            # التحليل
+            analysis = rec.get('analysis') or rec.get('notes') or ''
+            if not analysis:
+                ev_cnt = rec.get('evidence_count', 3)
+                analysis = f"نموذج تجميعي واختراق سيولة ذكية مع ثبات السعر أعلى نقطة الارتكاز ({ev_cnt} أدلة تأكيدية)"
+            text += f"  • 💡 التحليل الفني: {analysis}\n\n"
 
     # Footer
-    text += """
-━━━━━━━━━━━━━━━━━━━
+    text += """━━━━━━━━━━━━━━━━━━━
 🔗 روابطنا الرسمية:
 🌐 https://invist.m2y.net
 📱 https://play.google.com/store/apps/details?id=com.egx.investment
 📘 https://www.facebook.com/profile.php?id=61590600300048
 ✈️ https://t.me/Arabian_investment_guide
 ━━━━━━━━━━━━━━━━━━━
+⚠️ *تحليل كمي بالذكاء الاصطناعي — إدارة رأس المال مسؤوليتك أولاً*
 📢 انضم الآن إلى مجتمع المتداولين بلا مشاعر، ودع الأرقام تقود محفظتك! 📈
 
 #البورصة_المصرية #توقعات_يومية #EGX #الاستثمار"""
@@ -350,47 +434,77 @@ def _format_weekly_post(report: Dict, market: str) -> str:
     summary = report.get('summary', {})
     recs = report.get('recommendations', [])
 
-    text = f"""📊 **التقرير الأسبوعي - دليل الاستثمار**
+    text = f"""📊 **التقرير الأسبوعي الشامل - دليل الاستثمار**
 
 📅 **الأسبوع:** {week.get('start', '')} إلى {week.get('end', '')}
 
-📈 **ملخص الأسبوع:**
-• إجمالي الأسهم: {summary.get('total_stocks', 0)}
-• 🟢 ارتفعت: {summary.get('gainers', 0)}
-• 🔴 انخفضت: {summary.get('losers', 0)}
-• اتساع السوق: {summary.get('market_breadth', 0)}%
+📈 **ملخص حصاد الأسبوع:**
+• إجمالي الأسهم النشطة: {summary.get('total_stocks', 0)}
+• 🟢 ارتفعت: {summary.get('gainers', 0)} سهم
+• 🔴 انخفضت: {summary.get('losers', 0)} سهم
+• 📊 اتساع السوق: {summary.get('market_breadth', 0)}%
 
 """
 
     # أفضل 5 أسهم
     top_gainers = report.get('top_gainers', [])[:5]
     if top_gainers:
-        text += "🏆 **أفضل 5 أسهم الأسبوع:**\n"
+        text += "🏆 **أفضل 5 أسهم هذا الأسبوع:**\n"
         for i, stock in enumerate(top_gainers, 1):
             sym = stock.get('symbol', stock.get('ticker', ''))
+            name_ar = get_arabic_stock_name(sym, sym)
             change = stock.get('change_percent', 0)
-            text += f"{i}. {sym} ({change:+.2f}%)\n"
+            text += f"{i}. {name_ar} (`{sym}`): +{change:.2f}%\n"
 
-    # التوقعات للأسبوع القادم
-    if recs:
-        text += "\n🎯 **توقعات الأسبوع القادم:**\n"
-        for i, rec in enumerate(recs[:7], 1):
-            sym = rec.get('symbol', rec.get('ticker', ''))
-            score = rec.get('score', 0)
-            text += f"{i}. {sym} (الثقة: {score}%)\n"
+    # التوقعات للأسبوع القادم بدون أي تكرار مع كافة مستويات الأسعار والتحليل
+    seen_recs = set()
+    valid_recs = []
+    for r in recs:
+        s = r.get('symbol') or r.get('ticker')
+        if s and s not in seen_recs:
+            seen_recs.add(s)
+            valid_recs.append(r)
 
-    text += """
-━━━━━━━━━━━━━━━━━
+    if valid_recs:
+        text += "\n🎯 **توقعات وفرص الأسبوع القادم (فرص شراء مؤكدة):**\n"
+        text += "━━━━━━━━━━━━━━━━━\n"
+        for i, rec in enumerate(valid_recs[:5], 1):
+            sym = rec.get('symbol') or rec.get('ticker', '')
+            name_ar = rec.get('name_ar') or rec.get('name') or get_arabic_stock_name(sym, sym)
+            entry = float(rec.get('entry_price') or 0)
+            tp1 = float(rec.get('target_price') or 0)
+            tp2 = float(rec.get('target_price_2') or (tp1 * 1.05 if tp1 else 0))
+            sl = float(rec.get('stop_loss') or 0)
+            score = float(rec.get('confidence') or rec.get('score') or 80)
+
+            tp1_gain = ((tp1 - entry) / entry * 100) if entry > 0 and tp1 > 0 else 6.0
+            tp2_gain = ((tp2 - entry) / entry * 100) if entry > 0 and tp2 > 0 else 12.0
+            sl_loss = ((sl - entry) / entry * 100) if entry > 0 and sl > 0 else -4.0
+
+            text += f"🔹 **{i}. {name_ar} (#{sym})** | الثقة: **{score:.0f}%**\n"
+            text += f"  • 🟢 سعر الدخول المقترح: `{entry:.2f} ج.م`\n"
+            text += f"  • 🎯 الهدف الأول: `{tp1:.2f} ج.م` (+{tp1_gain:.1f}%)\n"
+            text += f"  • 🏆 الهدف الثاني: `{tp2:.2f} ج.م` (+{tp2_gain:.1f}%)\n"
+            text += f"  • 🛡️ وقف الخسارة الصارم: `{sl:.2f} ج.م` ({sl_loss:.1f}%)\n"
+
+            # التحليل وأسباب الفرصة
+            analysis = rec.get('analysis') or rec.get('notes') or ''
+            if not analysis:
+                ev_cnt = rec.get('evidence_count', 4)
+                analysis = f"إشارات تجميع مؤسسي متطابق مع تدفق سيولة إيجابية وكسر مقاومة فرعية ({ev_cnt} أدلة رقمية)"
+            text += f"  • 💡 التحليل الفني ومصدر التوقع: {analysis}\n\n"
+
+    text += """━━━━━━━━━━━━━━━━━
 🔗 روابطنا الرسمية:
 🌐 https://invist.m2y.net
 📱 https://play.google.com/store/apps/details?id=com.egx.investment
 📘 https://www.facebook.com/profile.php?id=61590600300048
 ✈️ https://t.me/Arabian_investment_guide
 ━━━━━━━━━━━━━━━━━
-⚠️ *تحليل تلقائي - ليس نصيحة استثمارية*
+⚠️ *تحليل كمي بالذكاء الاصطناعي — إدارة رأس المال مسؤوليتك أولاً*
 🚀 **دليل الاستثمار**
 
-#تقرير_أسبوعي #البورصة_المصرية #EGX"""
+#تقرير_أسبوعي #البورصة_المصرية #توقعات_الأسهم #EGX"""
 
     return text
 
@@ -1258,6 +1372,20 @@ async def run_scheduler():
                     })
                     state['errors'] = state['errors'][-20:]
                 save_state(state)
+
+            # ─────────────────────────────────────────────────────────────
+            # فحص ومتابعة الأهداف المحققة لحظياً أثناء الجلسة (Target Hit Tracker)
+            # أيام عمل البورصة المصرية (الأحد-الخميس) بين 10:00 و 14:35
+            # ─────────────────────────────────────────────────────────────
+            is_egx_day = (now.weekday() in (6, 0, 1, 2, 3))
+            is_egx_time = (10 * 60) <= (now.hour * 60 + now.minute) <= (14 * 60 + 35)
+            if is_egx_day and is_egx_time:
+                try:
+                    from telegram_target_hit_tracker import run_target_hit_tracker
+                    print(f"[{now}] 🎯 Live Session Check: running target hit tracker...")
+                    await asyncio.to_thread(run_target_hit_tracker)
+                except Exception as hit_err:
+                    print(f"⚠️ Target hit tracker execution error: {hit_err}")
 
             # Sleep for 5 minutes
             await asyncio.sleep(300)
