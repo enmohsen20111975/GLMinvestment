@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-09-27T21:24:27.558280",
+  "market": "EGX",
+  "min_price": 1.0,
+  "db_source": null,
+  "db_file": null,
+  "db_table": null,
+  "total_scanned": 0,
+  "exit_count": 0,
+  "x1_distribution_strong_count": 0,
+  "x2_volume_divergence_count": 0,
+  "x3_resistance_rejection_count": 0,
+  "x4_exhaustion_gap_count": 0,
+  "x5_kill_switch_triggered_count": 0,
+  "exit_list": [],
+  "x1_distribution_strong": [],
+  "x2_volume_divergence": [],
+  "x3_resistance_rejection": [],
+  "x4_exhaustion_gap": [],
+  "x5_kill_switch_triggered": [],
+  "warning": "No DB available — exit radar produced no signals. Run on production VPS to populate."
+}

@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-09-27T22:08:29.545694",
+  "market": "EGX",
+  "week_number": 40,
+  "year": 2026,
+  "week_start": "2026-10-04",
+  "week_end": "2026-10-10",
+  "week_start_ar": "4 أكتوبر 2026",
+  "week_end_ar": "10 أكتوبر 2026",
+  "market_regime": {
+    "regime": "NORMAL",
+    "regime_ar": "عادي",
+    "last_update": null,
+    "reasons": [],
+    "source": "fallback",
+    "error": "no such table: system_settings"
+  },
+  "stock_of_week": null,
+  "top_5": [],
+  "last_week_performance": {
+    "stocks": [],
+    "avg_return_pct": 0,
+    "win_count": 0,
+    "total_count": 0,
+    "win_rate_pct": 0
+  },
+  "sector_heatmap": [],
+  "db_source": null,
+  "radar_cache_found": false,
+  "tracking_count": 0,
+  "official_links": {
+    "website": "https://invist.m2y.net",
+    "android": "https://play.google.com/store/apps/details?id=com.egx.investment",
+    "facebook": "https://www.facebook.com/profile.php?id=61590600300048",
+    "telegram": "https://t.me/Arabian_investment_guide",
+    "whatsapp": "https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc"
+  }
+}

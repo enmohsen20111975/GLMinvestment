@@ -288,6 +288,110 @@ async def post_weekly_report(market: str = 'EGX') -> Dict:
         return {"success": False, "error": str(e)}
 
 
+async def post_weekly_radar_report(market: str = 'EGX') -> Dict:
+    """
+    L2-WEEKLY-RADAR-REPORT: نشر تقرير الرادار الأسبوعي
+    ===================================================
+    مشابه لـ post_weekly_report لكنه بـ يستخدم scripts/weekly_radar_report.py
+    بدلاً من analyzers/market_daily_report.py. الفرق:
+      - التقرير ده بيركّز على أفضل 5 أسهم + سهم الأسبوع من رادار الميكرز
+      - بيشمل أداء أسهم الأسبوع اللي فات (من maker_radar_tracking.json)
+      - بيشمل حالة السوق (regime) + خريطة القطاعات
+      - بيولّد PDF + PNG + JSON في scripts/output/
+
+    بيشتغل كل يوم أحد 08:00 Cairo time (06:00 UTC) — نفس توقيت post_weekly_report
+    الأصلي لكنه لو فشل بيرجّع للقديم.
+
+    Returns: { success, image_sent, text_sent, files, errors }
+    """
+    print(f"[{datetime.now()}] 📊 Generating weekly RADAR report...")
+
+    # Step 1: Run the report generator (PDF + PNG + JSON)
+    import subprocess
+    project_root = Path(__file__).resolve().parent.parent
+    script_path = project_root / 'scripts' / 'weekly_radar_report.py'
+
+    if not script_path.exists():
+        return {"success": False, "error": f"Script not found: {script_path}"}
+
+    # Resolve python binary (same portable chain as radar-cache.ts)
+    python_bin = os.environ.get('PYTHON', '')
+    if not python_bin or not Path(python_bin).exists():
+        venv = os.environ.get('VIRTUAL_ENV', '')
+        if venv:
+            for candidate in ['python3', 'python']:
+                p = Path(venv) / 'bin' / candidate
+                if p.exists():
+                    python_bin = str(p)
+                    break
+        if not python_bin:
+            for candidate in [
+                project_root / '.venv' / 'bin' / 'python3',
+                project_root / '.venv' / 'bin' / 'python',
+                Path('/root/GLMinvestment/.venv/bin/python3'),
+            ]:
+                if candidate.exists():
+                    python_bin = str(candidate)
+                    break
+        if not python_bin:
+            python_bin = 'python3'
+
+    try:
+        result_proc = subprocess.run(
+            [python_bin, str(script_path), '--market', market, '--send-telegram'],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=180,
+            env={**os.environ, 'PYTHONUNBUFFERED': '1'},
+        )
+        if result_proc.returncode != 0:
+            print(f"[{datetime.now()}] ⚠️ weekly_radar_report.py exit={result_proc.returncode}")
+            print(f"  stderr: {result_proc.stderr[:500]}")
+            return {
+                "success": False,
+                "error": f"weekly_radar_report.py exited with code {result_proc.returncode}",
+                "stderr": result_proc.stderr[:1000],
+            }
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "weekly_radar_report.py timed out (180s)"}
+    except Exception as e:
+        return {"success": False, "error": f"subprocess failed: {e}"}
+
+    # Step 2: Verify outputs
+    today_str = datetime.now().strftime("%Y%m%d")
+    output_dir = project_root / 'scripts' / 'output'
+    pdf_path = output_dir / f'weekly_radar_report_{today_str}.pdf'
+    png_path = output_dir / f'weekly_radar_report_{today_str}.png'
+    json_path = output_dir / f'weekly_radar_report_{today_str}.json'
+
+    files = {
+        'pdf': str(pdf_path) if pdf_path.exists() else None,
+        'png': str(png_path) if png_path.exists() else None,
+        'json': str(json_path) if json_path.exists() else None,
+    }
+
+    # Step 3: If --send-telegram was used inside the script, the Telegram
+    # message has already been sent. Return success.
+    if files.get('json'):
+        print(f"[{datetime.now()}] ✅ Weekly RADAR report generated")
+        print(f"  PDF: {files['pdf']}")
+        print(f"  PNG: {files['png']}")
+        print(f"  JSON: {files['json']}")
+        return {
+            "success": True,
+            "image_sent": True,  # the script handles Telegram send
+            "text_sent": True,
+            "files": files,
+        }
+
+    return {
+        "success": False,
+        "error": "No JSON output produced — weekly_radar_report.py may have failed silently",
+        "files": files,
+    }
+
+
 async def post_monthly_report(market: str = 'EGX') -> Dict:
     """نشر التقرير الشهري"""
     print(f"[{datetime.now()}] 📈 Generating monthly report post...")
@@ -1285,7 +1389,13 @@ async def run_scheduler():
             # Check weekly
             if should_run_weekly(state):
                 print(f"\n[{now}] �📊 Running weekly post...")
-                result = await post_weekly_report()
+                # L2-WEEKLY-RADAR-REPORT: try the new radar-based report first.
+                # Falls back to the legacy MarketDailyReport-based weekly post
+                # if the radar report fails (e.g., script missing, no DB).
+                result = await post_weekly_radar_report()
+                if not result.get('success'):
+                    print(f"[{now}] ⚠️ weekly radar report failed — falling back to legacy weekly post")
+                    result = await post_weekly_report()
                 if result.get('success'):
                     state['last_weekly'] = now.isoformat()
                     state['posts_count'] = state.get('posts_count', 0) + 1

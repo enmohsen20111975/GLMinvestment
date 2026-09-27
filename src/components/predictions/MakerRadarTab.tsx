@@ -51,6 +51,8 @@ import {
 } from '@/components/predictions/radar/RadarStatsCards';
 // RADAR-QUICK-WINS (Priority 2): Signal Strength Meter
 import { SignalStrengthMeter, signalsToStars, signalHintAr } from '@/components/predictions/radar/SignalStrengthMeter';
+// L2-SIGNAL-TIMELINE: Signal Tracking Timeline (visual journey for tracked stocks)
+import { SignalTrackingTimeline } from '@/components/predictions/radar/SignalTrackingTimeline';
 
 // ============================================================================
 // Types — Maker Radar API contract
@@ -2041,6 +2043,13 @@ function StockDetailDrawer({
 
             {/* === Entry Timing Signal — توقيت الدخول الذكي (0-100) === */}
             <EntryTimingCard ticker={ticker} />
+
+            {/* === Signal Tracking Timeline — رحلة الإشارة (L2) ===
+                 Visual timeline of the tracked stock's journey from entry until now.
+                 Only renders for tracked stocks (has tracking?.isTracked). */}
+            {detail.tracking?.isTracked && (
+              <SignalTrackingTimeline ticker={ticker} />
+            )}
 
             {/* === Liquidity Footprint — بصمة السيولة (Volume Profile) === */}
             <LiquidityFootprintCard ticker={ticker} />

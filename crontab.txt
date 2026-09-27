@@ -86,6 +86,15 @@
 # EGX بـ يتحدث يومياً بالـ cron اللي فوق. الـ markets التانية أسبوعياً.
 55 2 * * 6 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/analyzers/market_regime_engine.py --all >> /tmp/regime_engine_weekly.log 2>&1
 
+# ─── 16. Weekly Radar Report — تقرير أسبوعي كل يوم أحد صباحاً ────────────
+# يومياً 06:00 UTC (08:00 Cairo) — يولّد التقرير الأسبوعي + يبعت Telegram
+# 1. يقرأ أحدث رادار كاش (scripts/output/maker_radar_<date>.json)
+# 2. يحسب أداء أسهم الأسبوع اللي فات من db/maker_radar_tracking.json
+# 3. يختار سهم الأسبوع + أفضل 5 أسهم + خريطة القطاعات + حالة السوق
+# 4. يولّد PDF + PNG + JSON في scripts/output/weekly_radar_report_<date>.*
+# 5. يبعت PNG + ملخص نصي لقناة التليجرام (لو TELEGRAM_BOT_TOKEN موجود)
+0 6 * * 0 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/weekly_radar_report.py --market EGX --send-telegram >> /tmp/weekly_report.log 2>&1
+
 # ============================================================================
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l

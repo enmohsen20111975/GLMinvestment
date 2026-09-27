@@ -61,6 +61,42 @@ export function findLatestRadarFile(): string | null {
   }
 }
 
+/**
+ * L2-ALERTS-EXIT-RADAR: find the most recent exit_radar_*.json file.
+ * Used by the exit-radar API endpoint + the radar-alerts scheduler
+ * (to fire `radar_exit_signal` alerts when a tracked stock enters an
+ * exit path). Returns null if no exit_radar file exists yet — the
+ * scheduler silently skips exit-signal detection in that case.
+ */
+export function findLatestExitRadarFile(): string | null {
+  try {
+    if (!existsSync(OUTPUT_DIR)) return null;
+    const files = readdirSync(OUTPUT_DIR)
+      .filter((f) => f.startsWith('exit_radar_') && f.endsWith('.json'))
+      .sort()
+      .reverse();
+    return files.length > 0 ? path.join(OUTPUT_DIR, files[0]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * L2-ALERTS-EXIT-RADAR: read the cached exit radar JSON.
+ * Instant (<50ms). Returns null if no cache file exists yet.
+ */
+export function readExitRadarCache(): { data: any; filePath: string } | null {
+  const fp = findLatestExitRadarFile();
+  if (!fp || !existsSync(fp)) return null;
+  try {
+    const raw = readFileSync(fp, 'utf-8');
+    const data = JSON.parse(raw);
+    return { data, filePath: fp };
+  } catch {
+    return null;
+  }
+}
+
 /** Read the status file (or return default idle status). */
 export function readStatus(): RadarCacheStatus {
   const def: RadarCacheStatus = {
