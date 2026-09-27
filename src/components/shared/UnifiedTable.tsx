@@ -32,7 +32,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Inbox } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Inbox, Filter, X, Plus } from 'lucide-react';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table';
@@ -185,54 +185,96 @@ export function UnifiedTable<T extends Record<string, unknown>>({
   exportButton,
   toolbarActions,
 }: UnifiedTableProps<T>) {
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<SortDirection>(null);
+  // ─── Multi-sort: قائمة من {key, dir} بدلاً من عمود واحد ─────────────
+  const [sortStack, setSortStack] = useState<Array<{ key: string; dir: 'asc' | 'desc' }>>([]);
   const [expandedKey, setExpandedKey] = useState<string | null>(defaultExpandedKey || null);
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  // ─── Custom conditions: شروط مخصصة (مثلاً: التغير > 5 AND السيولة < 1M) ───
+  const [customFilters, setCustomFilters] = useState<Array<{ key: string; op: '>' | '<' | '>=' | '<=' | '=' | '!='; value: string }>>([]);
+  const [showCustomFilter, setShowCustomFilter] = useState(false);
 
   const handleSort = useCallback((col: Column<T>) => {
     if (!col.sortable) return;
     const colKey = String(col.key);
-    if (sortKey !== colKey) {
-      setSortKey(colKey);
-      setSortDir('asc');
-    } else if (sortDir === 'asc') {
-      setSortDir('desc');
-    } else if (sortDir === 'desc') {
-      // إعادة للوضع الافتراضي
-      setSortKey(null);
-      setSortDir(null);
-    } else {
-      setSortDir('asc');
-    }
-  }, [sortKey, sortDir]);
+    setSortStack(prev => {
+      const existing = prev.find(s => s.key === colKey);
+      if (!existing) {
+        // عمود جديد — أضفه للقمة
+        return [...prev, { key: colKey, dir: 'asc' }];
+      }
+      if (existing.dir === 'asc') {
+        // تحويل لـ desc
+        return prev.map(s => s.key === colKey ? { ...s, dir: 'desc' } : s);
+      } else {
+        // إزالة من القائمة (رجوع للوضع الافتراضي)
+        return prev.filter(s => s.key !== colKey);
+      }
+    });
+  }, []);
+
+  // أرقام الترتيب (1st, 2nd, 3rd) لعرضها بجوار اسم العمود
+  const sortRank = useCallback((colKey: string): number | null => {
+    const idx = sortStack.findIndex(s => s.key === colKey);
+    return idx >= 0 ? idx + 1 : null;
+  }, []);
 
   const sortedData = useMemo(() => {
-    if (!sortKey || !sortDir) return data;
+    if (sortStack.length === 0) return data;
     const arr = [...data];
     arr.sort((a, b) => {
-      const av = getCellValue(a, sortKey);
-      const bv = getCellValue(b, sortKey);
-      const cmp = compareValues(av, bv);
-      return sortDir === 'asc' ? cmp : -cmp;
+      for (const { key, dir } of sortStack) {
+        const av = getCellValue(a, key);
+        const bv = getCellValue(b, key);
+        const cmp = compareValues(av, bv);
+        if (cmp !== 0) return dir === 'asc' ? cmp : -cmp;
+      }
+      return 0;
     });
     return arr;
-  }, [data, sortKey, sortDir]);
+  }, [data, sortStack]);
 
-  // فلترة البيانات حسب الـ filter values
+  // فلترة البيانات حسب الـ text filters + custom conditions
   const filteredData = useMemo(() => {
-    if (!filterable || Object.keys(filterValues).length === 0) return sortedData;
-    return sortedData.filter(row => {
-      for (const [colKey, filterVal] of Object.entries(filterValues)) {
-        if (!filterVal) continue;
-        const val = getCellValue(row, colKey);
-        if (val == null) continue;
-        if (!String(val).toLowerCase().includes(filterVal.toLowerCase())) return false;
-      }
-      return true;
-    });
-  }, [sortedData, filterValues, filterable]);
+    let result = sortedData;
+
+    // 1) Text filters (بحث نصي)
+    if (filterable && Object.keys(filterValues).length > 0) {
+      result = result.filter(row => {
+        for (const [colKey, filterVal] of Object.entries(filterValues)) {
+          if (!filterVal) continue;
+          const val = getCellValue(row, colKey);
+          if (val == null) continue;
+          if (!String(val).toLowerCase().includes(filterVal.toLowerCase())) return false;
+        }
+        return true;
+      });
+    }
+
+    // 2) Custom conditions (شروط رقمية: > 5, < 1000000, etc.)
+    if (customFilters.length > 0) {
+      result = result.filter(row => {
+        for (const cf of customFilters) {
+          const val = getCellValue(row, cf.key);
+          if (val == null) return false;
+          const numVal = Number(val);
+          const filterNum = Number(cf.value);
+          if (!Number.isFinite(numVal) || !Number.isFinite(filterNum)) continue;
+          switch (cf.op) {
+            case '>':  if (!(numVal > filterNum)) return false; break;
+            case '<':  if (!(numVal < filterNum)) return false; break;
+            case '>=': if (!(numVal >= filterNum)) return false; break;
+            case '<=': if (!(numVal <= filterNum)) return false; break;
+            case '=':  if (!(numVal === filterNum)) return false; break;
+            case '!=': if (!(numVal !== filterNum)) return false; break;
+          }
+        }
+        return true;
+      });
+    }
+
+    return result;
+  }, [sortedData, filterValues, filterable, customFilters]);
 
   // الأعمدة المرئية (بعد إخفاء المختارة)
   const visibleColumns = useMemo(() => {
@@ -349,14 +391,39 @@ export function UnifiedTable<T extends Record<string, unknown>>({
   // ─── Normal render ──────────────────────────────────────────────────────
   return (
     <div className="space-y-2" dir={dir}>
-      {/* Toolbar: publish + export + column toggle + title */}
-      {(title || publishButton || exportButton || toolbarActions || columnToggle) && (
+      {/* Toolbar: publish + export + column toggle + custom filter + title */}
+      {(title || publishButton || exportButton || toolbarActions || columnToggle || filterable) && (
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             {title && <span className="text-sm font-bold">{title}</span>}
             {toolbarActions}
+            {/* عدد الصفوف بعد الفلترة */}
+            <span className="text-[10px] text-muted-foreground">
+              {filteredData.length} / {data.length} صف
+            </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* زر الفلترة المخصصة (شروط رقمية) */}
+            {filterable && (
+              <button
+                onClick={() => setShowCustomFilter(!showCustomFilter)}
+                className={cn(
+                  'text-xs px-2 py-1 rounded border transition-colors flex items-center gap-1',
+                  showCustomFilter || customFilters.length > 0
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:bg-muted'
+                )}
+                title="شروط مخصصة (مثلاً: التغير > 5%)"
+              >
+                <Filter className="w-3 h-3" />
+                فلترة
+                {customFilters.length > 0 && (
+                  <span className="bg-primary text-primary-foreground rounded-full text-[9px] w-4 h-4 flex items-center justify-center">
+                    {customFilters.length}
+                  </span>
+                )}
+              </button>
+            )}
             {columnToggle && (
               <details className="relative">
                 <summary className="cursor-pointer text-xs px-2 py-1 rounded border border-border hover:bg-muted transition-colors list-none">
@@ -387,13 +454,86 @@ export function UnifiedTable<T extends Record<string, unknown>>({
         </div>
       )}
 
+      {/* لوحة الفلترة المخصصة (شروط رقمية) */}
+      {showCustomFilter && filterable && (
+        <div className="border border-border rounded-lg p-3 bg-muted/20 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold">شروط مخصصة</span>
+            <button onClick={() => setShowCustomFilter(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {customFilters.map((cf, idx) => (
+            <div key={idx} className="flex items-center gap-2 flex-wrap">
+              <select
+                value={cf.key}
+                onChange={(e) => {
+                  setCustomFilters(prev => prev.map((f, i) => i === idx ? { ...f, key: e.target.value } : f));
+                }}
+                className="text-xs h-7 rounded border border-border bg-background px-1"
+              >
+                {columns.map(col => (
+                  <option key={String(col.key)} value={String(col.key)}>{col.headerAr || col.header}</option>
+                ))}
+              </select>
+              <select
+                value={cf.op}
+                onChange={(e) => {
+                  setCustomFilters(prev => prev.map((f, i) => i === idx ? { ...f, op: e.target.value as typeof cf.op } : f));
+                }}
+                className="text-xs h-7 rounded border border-border bg-background px-1 w-12"
+              >
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+                <option value=">=">≥</option>
+                <option value="<=">≤</option>
+                <option value="=">=</option>
+                <option value="!=">≠</option>
+              </select>
+              <input
+                type="number"
+                value={cf.value}
+                onChange={(e) => {
+                  setCustomFilters(prev => prev.map((f, i) => i === idx ? { ...f, value: e.target.value } : f));
+                }}
+                placeholder="قيمة"
+                className="text-xs h-7 w-24 rounded border border-border bg-background px-2"
+              />
+              <button
+                onClick={() => setCustomFilters(prev => prev.filter((_, i) => i !== idx))}
+                className="text-rose-500 hover:text-rose-700 text-xs"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={() => setCustomFilters(prev => [...prev, { key: String(columns[0]?.key || ''), op: '>', value: '' }])}
+            className="text-xs flex items-center gap-1 text-primary hover:underline"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            إضافة شرط
+          </button>
+          {customFilters.length > 0 && (
+            <button
+              onClick={() => setCustomFilters([])}
+              className="text-xs text-muted-foreground hover:text-foreground ml-2"
+            >
+              مسح الكل
+            </button>
+          )}
+        </div>
+      )}
+
       <div className={wrapperCls}>
         <Table className="text-xs">
           <TableHeader className={headerCls}>
             <TableRow className="bg-muted/40 hover:bg-transparent">
               {visibleColumns.map((col, i) => {
                 const colKey = String(col.key);
-                const isActiveSort = sortKey === colKey && sortDir != null;
+                const isActiveSort = sortStack.some(s => s.key === colKey);
+                const currentDir = sortStack.find(s => s.key === colKey)?.dir;
+                const rank = sortRank(colKey);
                 return (
                   <TableHead
                     key={`h-${colKey}-${i}`}
@@ -406,16 +546,21 @@ export function UnifiedTable<T extends Record<string, unknown>>({
                       col.headerClassName,
                     )}
                     onClick={col.sortable ? () => handleSort(col) : undefined}
-                    aria-sort={isActiveSort ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                    aria-sort={isActiveSort ? (currentDir === 'asc' ? 'ascending' : 'descending') : undefined}
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.headerAr || col.header}
                       {col.sortable && (
-                        <span className="inline-flex shrink-0">
+                        <span className="inline-flex items-center gap-0.5">
                           {isActiveSort ? (
-                            sortDir === 'asc'
-                              ? <ChevronUp className="w-3 h-3 text-foreground" />
-                              : <ChevronDown className="w-3 h-3 text-foreground" />
+                            <>
+                              {currentDir === 'asc'
+                                ? <ChevronUp className="w-3 h-3 text-foreground" />
+                                : <ChevronDown className="w-3 h-3 text-foreground" />}
+                              {rank && rank > 1 && (
+                                <span className="text-[9px] text-primary font-bold">{rank}</span>
+                              )}
+                            </>
                           ) : (
                             <ChevronsUpDown className="w-3 h-3 opacity-40" />
                           )}
