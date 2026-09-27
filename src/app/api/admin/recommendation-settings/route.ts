@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+// P0-11-AUTH fix (2026-09-27): added admin auth guard (canonical multi-method
+// check via requireAdminAsync). Pre-existing verifyAdminToken kept as defense-in-depth.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { generateAdminToken, verifyAdminToken } from '@/lib/admin-auth-server';
 
 interface DailyRecommendationSettings {
@@ -28,6 +31,9 @@ const DEFAULT_SETTINGS: DailyRecommendationSettings = {
  * Get daily recommendation settings
  */
 export async function GET(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     // Verify admin token
     const authHeader = request.headers.get('x-admin-token');
@@ -72,6 +78,9 @@ export async function GET(request: NextRequest) {
  * Save daily recommendation settings
  */
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     // Verify admin token
     const authHeader = request.headers.get('x-admin-token');
@@ -114,18 +123,22 @@ export async function POST(request: NextRequest) {
     } catch (dbError) {
       // Table might not exist, save to file system as fallback
       console.log('[recommendation-settings] Database not available, using file storage');
-      
-      const fs = await import('fs');
+
+      // P0-14-ASYNC fix (2026-09-27): replaced dynamic await import('fs') +
+      // sync existsSync/mkdirSync/writeFileSync with async fs/promises equivalents.
       const path = await import('path');
+      const { access, mkdir, writeFile } = await import('fs/promises');
       const settingsPath = path.join(process.cwd(), 'db', 'recommendation-settings.json');
-      
+
       // Ensure db directory exists
       const dbDir = path.dirname(settingsPath);
-      if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
+      try {
+        await access(dbDir);
+      } catch {
+        await mkdir(dbDir, { recursive: true });
       }
-      
-      fs.writeFileSync(settingsPath, JSON.stringify(validSettings, null, 2));
+
+      await writeFile(settingsPath, JSON.stringify(validSettings, null, 2));
     }
 
     return NextResponse.json({

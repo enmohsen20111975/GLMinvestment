@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
-import * as fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.existsSync/fs.statSync/
+// fs.readFileSync with async fs/promises equivalents so the GET handler never
+// blocks the event loop while streaming the export ZIP.
+import { access, stat, readFile } from 'fs/promises';
 import * as path from 'path';
 import { exportAllDbs } from '@/lib/admin-db-manager';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+// P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
+async function pathExists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
+}
 
 /**
  * POST /api/admin/db-manager/export-all
@@ -45,19 +53,19 @@ export async function GET(request: Request) {
     }
 
     const filePath = path.join(process.cwd(), 'db', fileName);
-    if (!fs.existsSync(filePath)) {
+    if (!(await pathExists(filePath))) {
       return NextResponse.json({ success: false, error: 'File not found' }, { status: 404 });
     }
 
-    const stat = fs.statSync(filePath);
-    const content = fs.readFileSync(filePath);
+    const st = await stat(filePath);
+    const content = await readFile(filePath);
 
     return new NextResponse(content, {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': String(stat.size),
+        'Content-Length': String(st.size),
       },
     });
   } catch (error) {

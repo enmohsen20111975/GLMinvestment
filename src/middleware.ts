@@ -2,7 +2,38 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
+ * Generate a request ID that works in the Next.js Edge runtime.
+ *
+ * The Edge runtime does NOT support `import { randomUUID } from 'crypto'`
+ * (Node.js built-in module). It DOES support the Web Crypto API
+ * (`globalThis.crypto.randomUUID()`) on modern runtimes, but we still wrap
+ * it in try/catch + a fallback for older runtimes / sandboxed environments.
+ *
+ * P0-16-TESTS fix (2026-09-28): the previous implementation used
+ * `import { randomUUID } from 'crypto'` which crashed the middleware in
+ * edge runtime with HTTP 500 on every request. See worklog.md.
+ */
+function generateRequestId(): string {
+  try {
+    // Try the Web Crypto API (works in Edge runtime + modern Node.js)
+    const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+    if (c && typeof c.randomUUID === 'function') {
+      return c.randomUUID();
+    }
+  } catch {
+    // ignore — fall through to time-based fallback
+  }
+  // Fallback: time-based ID (works in any runtime, including edge)
+  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
  * Auth Middleware — categorizes routes and lets client-side handle auth UI.
+ *
+ * Also adds `x-request-id` to every response (P0 #15 fix — 2026-09-27).
+ * The ID is propagated from an inbound `x-request-id` header if present
+ * (so distributed traces survive across services), otherwise generated
+ * as a UUIDv4. Server code can read it from `request.headers.get('x-request-id')`.
  *
  * Public routes (no auth required):
  *   - /api/auth/*          — NextAuth login/register callbacks
@@ -39,7 +70,21 @@ import type { NextRequest } from 'next/server';
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── P0 #15 (2026-09-27): request ID tracing ─────────────────────────
+  // Use incoming x-request-id if provided (distributed trace propagation),
+  // otherwise mint a fresh UUIDv4. We set it on the OUTGOING response so
+  // clients can correlate requests with logs/network traces.
+  //
+  // Server route handlers can already read the inbound `x-request-id` header
+  // from `request.headers` (when set by the client). For requests with no
+  // inbound header, we use a fresh UUIDv4 here ONLY on the response —
+  // route handlers that need to log a request-id should mint their own via
+  // `crypto.randomUUID()` and use the structured logger (see src/lib/logger.ts).
+  const requestId = request.headers.get('x-request-id') || generateRequestId();
+
   const response = NextResponse.next();
+  response.headers.set('x-request-id', requestId);
 
   // DEV: Allow everything when running on localhost
   const isLocalhost =

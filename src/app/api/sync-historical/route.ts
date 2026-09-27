@@ -1,14 +1,17 @@
 export const dynamic = 'force-dynamic';
 /**
  * Historical Data Sync Endpoint
- * 
+ *
  * Syncs historical price data from the VPS to the local price_history.db
  */
-import { NextResponse } from 'next/server';
-import { 
-  ensureInitialized, 
-  getWritablePriceHistoryDb, 
-  getWritableStocksDb, 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — historical sync
+// pulls from VPS and modifies price_history DB. Was open to anyone.
+import { NextResponse, NextRequest } from 'next/server';
+import { requireAdminAsync } from '@/lib/admin-guard';
+import {
+  ensureInitialized,
+  getWritablePriceHistoryDb,
+  getWritableStocksDb,
   resetAllDbStates,
   resetWritablePriceHistoryDbState
 } from '@/lib/egx-db';
@@ -16,7 +19,10 @@ import {
 const VPS_URL = process.env.EGX_VPS_API_URL || process.env.PYTHON_API_URL || 'http://127.0.0.1:8010';
 export const maxDuration = 60; // 1 minute max
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   const startTime = Date.now();
   console.log('[sync-historical] Starting historical sync...');
 
@@ -132,7 +138,10 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard (consistency with POST)
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   // GET returns status info instead of syncing
   try {
     await ensureInitialized();

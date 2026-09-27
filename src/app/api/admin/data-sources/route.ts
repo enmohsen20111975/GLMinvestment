@@ -4,7 +4,10 @@ export const dynamic = "force-dynamic";
 import { getVpsServiceUrl } from '@/lib/vps-adapter';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
 import { verifyAdminRequest } from '@/lib/admin-auth-server';
-import fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.existsSync/fs.statSync with
+// async fs/promises equivalents so the data-sources GET handler never blocks
+// the event loop on DB file checks.
+import { access, stat } from 'fs/promises';
 import path from 'path';
 
 // ---------------------------------------------------------------------------
@@ -174,12 +177,16 @@ export async function GET(request: NextRequest) {
     // Check local Python availability
     const dbPath = process.cwd();
     const egxpyBridgePath = path.join(dbPath, 'vps-service', 'main.py');
-    dataSources.local_python.available = fs.existsSync(egxpyBridgePath);
+    // P0-14-ASYNC fix (2026-09-27): existsSync → access.
+    let egxpyBridgeExists = false;
+    try { await access(egxpyBridgePath); egxpyBridgeExists = true; } catch { egxpyBridgeExists = false; }
+    dataSources.local_python.available = egxpyBridgeExists;
 
     // Stocks DB (formerly light_db/custom.db)
     const stocksDbPath = path.join(dbPath, 'db', 'stocks.db');
-    if (fs.existsSync(stocksDbPath)) {
-      const stats = fs.statSync(stocksDbPath);
+    try {
+      await access(stocksDbPath);
+      const stats = await stat(stocksDbPath);
       dataSources.database.stocks_db.exists = true;
       dataSources.database.stocks_db.size_bytes = stats.size;
       dataSources.database.stocks_db.size_human = formatBytes(stats.size);
@@ -195,24 +202,32 @@ export async function GET(request: NextRequest) {
       } catch {
         // Ignore DB errors
       }
+    } catch {
+      // stocks.db not present — leave defaults
     }
 
     // Predictions DB
     const predictionsDbPath = path.join(dbPath, 'db', 'predictions.db');
-    if (fs.existsSync(predictionsDbPath)) {
-      const stats = fs.statSync(predictionsDbPath);
+    try {
+      await access(predictionsDbPath);
+      const stats = await stat(predictionsDbPath);
       dataSources.database.predictions_db.exists = true;
       dataSources.database.predictions_db.size_bytes = stats.size;
       dataSources.database.predictions_db.size_human = formatBytes(stats.size);
+    } catch {
+      // predictions.db not present — leave defaults
     }
 
     // Auth DB
     const authDbPath = path.join(dbPath, 'db', 'auth.db');
-    if (fs.existsSync(authDbPath)) {
-      const stats = fs.statSync(authDbPath);
+    try {
+      await access(authDbPath);
+      const stats = await stat(authDbPath);
       dataSources.database.auth_db.exists = true;
       dataSources.database.auth_db.size_bytes = stats.size;
       dataSources.database.auth_db.size_human = formatBytes(stats.size);
+    } catch {
+      // auth.db not present — leave defaults
     }
 
     return NextResponse.json({

@@ -1,0 +1,102 @@
+{
+  "timestamp": "20260927T164538Z",
+  "dry_run": false,
+  "backups": {
+    "stocks.db": "/home/z/my-project/db/stocks.db.bak-unify",
+    "predictions.db": "/home/z/my-project/db/predictions.db.bak-unify",
+    "auth.db": "/home/z/my-project/db/auth.db.bak-unify",
+    "data_engine.db": "/home/z/my-project/db/data_engine.db.bak-unify"
+  },
+  "results": [
+    {
+      "db": "stocks.db",
+      "table": "gold_prices",
+      "canonical_db": "data_engine.db",
+      "reason": "3 stale default rows (source='default', 2026-06-03) \u2014 data_engine.db has 187K live rows written by metals_forex_fetcher.py every 5 min. precomputeGoldData() in precomputed-cache.ts was already failing on the missing 'change' column \u2014 code now reads from data_engine.db.",
+      "rows_before": 3,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": "/home/z/my-project/scripts/output/db_unify_dropped_stocks_db_gold_prices_20260927T164538Z.json"
+    },
+    {
+      "db": "stocks.db",
+      "table": "learned_lessons",
+      "canonical_db": "predictions.db",
+      "reason": "Empty table with different schema (8 cols vs predictions.db's 10 cols). predictions.db.learned_lessons has 19,464 rows \u2014 canonical.",
+      "rows_before": 0,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": null
+    },
+    {
+      "db": "stocks.db",
+      "table": "egksco_price_history",
+      "canonical_db": "data_engine.db",
+      "reason": "Empty table \u2014 data_engine.db.egksco_price_history has 13,246 rows (canonical, read by v38_backtest_engine, daily_closer, etc.).",
+      "rows_before": 0,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": null
+    },
+    {
+      "db": "predictions.db",
+      "table": "cached_analysis",
+      "canonical_db": "stocks.db",
+      "reason": "Empty fallback-cache table with different schema (18 cols vs stocks.db's 39 cols). stocks.db.cached_analysis has 143 fresh rows. Migrator recreates this table on schema-build if needed.",
+      "rows_before": 0,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": null
+    },
+    {
+      "db": "predictions.db",
+      "table": "telegram_news",
+      "canonical_db": "stocks.db",
+      "reason": "Empty table with different schema (8 cols vs stocks.db's 10 cols). stocks.db.telegram_news has 6 fresh rows. TelegramSignalImporter._ensure_schema() recreates the table on init.",
+      "rows_before": 0,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": null
+    },
+    {
+      "db": "predictions.db",
+      "table": "ExpertRecommendation",
+      "canonical_db": "stocks.db",
+      "reason": "17 stale seed rows (exp001-exp017, max date 2026-06-03). 16/17 are direct duplicates of rows in stocks.db by (symbol, recommendation_date). 1 unique (FWRY @ 2026-06-03) preserved to JSON sidecar. stocks.db has 127 fresh rows (latest 2026-09-07). unified_learning_engine.py:1224 uses 'in tables' existence check \u2014 gracefully skips when missing.",
+      "rows_before": 17,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": "/home/z/my-project/scripts/output/db_unify_dropped_predictions_db_ExpertRecommendation_20260927T164538Z.json"
+    },
+    {
+      "db": "auth.db",
+      "table": "ExpertRecommendation",
+      "canonical_db": "stocks.db",
+      "reason": "17 stale seed rows identical to predictions.db.ExpertRecommendation (17/17 overlap by id+symbol+date). No code references auth.db version of ExpertRecommendation \u2014 stocks.db is the canonical source read by expert-recommendations/route.ts, expert_memory_bridge.py, etc.",
+      "rows_before": 17,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": "/home/z/my-project/scripts/output/db_unify_dropped_auth_db_ExpertRecommendation_20260927T164538Z.json"
+    },
+    {
+      "db": "data_engine.db",
+      "table": "egksco_stocks",
+      "canonical_db": "stocks.db",
+      "reason": "Empty table. stocks.db.egksco_stocks has 250 rows. live_price.py:_price_from_data_engine() catches sqlite3.OperationalError and falls back to _price_from_stocks_egksco() \u2014 safe to drop.",
+      "rows_before": 0,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": null
+    },
+    {
+      "db": "data_engine.db",
+      "table": "stocks",
+      "canonical_db": "stocks.db",
+      "reason": "296 rows, ALL stale (>7 days old, last_update 2026-09-08). Verified ALL 296 symbols exist in stocks.db.stocks (which has 976 rows, fresher 2026-09-26, 58 cols vs data_engine's 16 cols). smart_confluence_engine.py:96-116 has a fallback path that reads stocks.db.stocks when data_engine.db.stocks is unavailable \u2014 switching to that path.",
+      "rows_before": 296,
+      "rows_after": 0,
+      "action": "DROPPED",
+      "json_sidecar": "/home/z/my-project/scripts/output/db_unify_dropped_data_engine_db_stocks_20260927T164538Z.json"
+    }
+  ]
+}

@@ -32,6 +32,15 @@
  *     └── admin TelegramTab.tsx بيتصل بـ /?XTransformPort=3003
  *     └── المسار: ./telegram-events/
  *
+ *  6. news-agent (Python) — NEWS INTELLIGENCE
+ *     └── وكيل أخبار مالي محلي متخصص في بورصة مصر (EGX)
+ *     └── يجمع الأخبار من Telegram + Web + RSS + Egyptian sources
+ *     └── يحللها بنموذج Ollama محلي ويرسلها للسيرفر الإنتاجي
+ *     └── POSTs analyzed news to /api/news/receive-from-news-agent
+ *     └── المسار: ./news-agent/main.py
+ *     └── P0 #7 fix (2026-09-27): agent was running standalone (run.sh),
+ *         never started by PM2/cron → endpoint never received data.
+ *
  * Usage:
  *   pm2 start ecosystem.config.js
  *   pm2 status
@@ -246,6 +255,61 @@ module.exports = {
       },
       error_file: './logs/telegram-events-error.log',
       out_file: './logs/telegram-events-out.log',
+      time: true,
+      max_restarts: 10,
+      restart_delay: 5000,
+      kill_timeout: 10000
+    },
+
+    // ==============================================
+    // 7. news-agent (Python) — NEWS INTELLIGENCE
+    //    Standalone news scraping/analysis agent for EGX.
+    //    Collects from Telegram + Web + RSS + Egyptian sources,
+    //    analyzes via local Ollama, POSTs results to
+    //    /api/news/receive-from-news-agent on the Next.js backend.
+    //    P0 #7 fix (2026-09-27): agent was only runnable via run.sh
+    //    (standalone, manual) — never started by PM2 nor cron, so
+    //    /api/news/receive-from-news-agent never received any data.
+    //    Now wired into PM2 so it auto-starts on boot and auto-restarts
+    //    on crash. Uses news-agent/.venv if present (created by run.sh),
+    //    otherwise falls back to system python3.
+    // ==============================================
+    {
+      name: 'news-agent',
+      script: 'main.py',
+      // Prefer news-agent's own .venv (created by run.sh via `python3 -m venv .venv`),
+      // fall back to project-root .venv (used by python-backend + data-engine),
+      // finally fall back to system python3.
+      interpreter: (() => {
+        const newsVenv = path.resolve(__dirname, 'news-agent', '.venv', 'bin', 'python');
+        if (fs.existsSync(newsVenv)) return newsVenv;
+        const rootVenv = path.resolve(__dirname, '.venv', 'bin', 'python');
+        if (fs.existsSync(rootVenv)) return rootVenv;
+        return 'python3';
+      })(),
+      cwd: path.resolve(__dirname, 'news-agent'),
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '300M',
+      env: {
+        NODE_ENV: 'production',
+        // Agent reads these from .env via python-dotenv (load_dotenv() in main.py).
+        // We pass them through explicitly so PM2 starts work even before .env is edited.
+        PRODUCTION_SERVER_URL: process.env.PRODUCTION_SERVER_URL || 'http://127.0.0.1:3000',
+        OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'qwen2.5-coder:7b',
+        COLLECTION_INTERVAL_MINUTES: process.env.COLLECTION_INTERVAL_MINUTES || '15',
+        MIN_IMPORTANCE_SCORE: process.env.MIN_IMPORTANCE_SCORE || '55',
+        MAX_NEWS_PER_BATCH: process.env.MAX_NEWS_PER_BATCH || '20',
+        ENABLE_EGYPTIAN_SOURCES: process.env.ENABLE_EGYPTIAN_SOURCES || '0',
+        // Forward Telegram credentials (used by TelegramCollector when present).
+        TELEGRAM_API_ID: process.env.TELEGRAM_API_ID || '',
+        TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH || '',
+        TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
+        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || ''
+      },
+      error_file: './logs/news-agent-error.log',
+      out_file: './logs/news-agent-out.log',
       time: true,
       max_restarts: 10,
       restart_delay: 5000,

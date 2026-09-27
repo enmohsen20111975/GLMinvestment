@@ -8,9 +8,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+// P0-11-AUTH fix (2026-09-27): added admin auth guard (canonical multi-method
+// check via requireAdminAsync — accepts X-Admin-Token, admin_session cookie,
+// NextAuth session, or localhost bypass in dev). Pre-existing verifyAdminToken
+// kept as defense-in-depth for callers that only send X-Admin-Token.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { verifyAdminToken } from '@/lib/admin-auth-server';
 import path from 'path';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync/readFileSync/writeFileSync/
+// mkdirSync with async fs/promises equivalents in readConfig / writeConfig so the
+// GET/PUT handlers never block the event loop on the config JSON file.
+import { access, readFile, writeFile, mkdir } from 'fs/promises';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,35 +46,47 @@ const DEFAULT_CONFIG = {
   updated_at: null as string | null,
 };
 
-function readConfig(): Record<string, unknown> {
+// P0-14-ASYNC fix (2026-09-27): readConfig is now async.
+async function readConfig(): Promise<Record<string, unknown>> {
   try {
-    if (existsSync(CONFIG_PATH)) {
-      const raw = readFileSync(CONFIG_PATH, 'utf-8');
-      return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+    try {
+      await access(CONFIG_PATH);
+    } catch {
+      return { ...DEFAULT_CONFIG };
     }
+    const raw = await readFile(CONFIG_PATH, 'utf-8');
+    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
   } catch {
     /* fall through to default */
   }
   return { ...DEFAULT_CONFIG };
 }
 
-function writeConfig(config: Record<string, unknown>): void {
+// P0-14-ASYNC fix (2026-09-27): writeConfig is now async.
+async function writeConfig(config: Record<string, unknown>): Promise<void> {
   const dir = path.dirname(CONFIG_PATH);
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+  try {
+    await access(dir);
+  } catch {
+    await mkdir(dir, { recursive: true });
+  }
+  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
 }
 
 /**
  * GET: Retrieve current configuration
  */
 export async function GET(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     const authHeader = request.headers.get('X-Admin-Token');
     if (!verifyAdminToken(authHeader || '')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const config = readConfig();
+    const config = await readConfig();
     return NextResponse.json({ success: true, config });
   } catch (error) {
     return NextResponse.json(
@@ -80,6 +100,9 @@ export async function GET(request: NextRequest) {
  * PUT: Update configuration
  */
 export async function PUT(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     const authHeader = request.headers.get('X-Admin-Token');
     if (!verifyAdminToken(authHeader || '')) {
@@ -87,7 +110,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const current = readConfig();
+    const current = await readConfig();
 
     // Merge allowed fields
     const allowedKeys = Object.keys(DEFAULT_CONFIG);
@@ -98,7 +121,7 @@ export async function PUT(request: NextRequest) {
     }
     current.updated_at = new Date().toISOString();
 
-    writeConfig(current);
+    await writeConfig(current);
 
     return NextResponse.json({
       success: true,

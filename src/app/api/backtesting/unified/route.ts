@@ -7,11 +7,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — backtesting is a
+// compute-heavy operation that proxies to Python backend. Was open to anyone
+// (DoS / resource abuse vector).
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   let body: Record<string, unknown> = {};
   try {
     body = await req.json();

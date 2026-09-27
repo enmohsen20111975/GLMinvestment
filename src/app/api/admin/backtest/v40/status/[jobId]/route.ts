@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import { existsSync, readFileSync, statSync } from 'fs';
-import { execSync } from 'child_process';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync/readFileSync/statSync/execSync
+// with async fs/promises equivalents and promisified execFile so the event loop
+// is not blocked while reading job logs or running `ps`.
+import { access, readFile, stat } from 'fs/promises';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 
 export const dynamic = 'force-dynamic';
+
+const execFileAsync = promisify(execFile);
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
   const authError = await requireAdminAsync(req);
@@ -13,26 +19,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     const { jobId } = await params;
     const logFile = `/tmp/v40_backtest_${jobId}.log`;
 
-    if (!existsSync(logFile)) {
+    // P0-14-ASYNC fix (2026-09-27): existsSync → access (async).
+    try {
+      await access(logFile);
+    } catch {
       return NextResponse.json({
         success: true,
         data: { status: 'unknown', message: 'Job not found', log_tail: [] },
       });
     }
 
-    // Read log file
-    const content = readFileSync(logFile, 'utf-8');
+    // Read log file (async)
+    const content = await readFile(logFile, 'utf-8');
     const lines = content.split('\n');
     const logTail = lines.slice(-25).filter(l => l.trim());
 
-    // Check if process is still running
+    // Check if process is still running (async execFile instead of execSync)
     let running = false;
     try {
-      const psOutput = execSync(`ps aux | grep "v40_2_daily_generator" | grep -v grep`, {
-        encoding: 'utf-8',
-        timeout: 3000,
-      });
-      running = psOutput.length > 0;
+      // pgrep returns exit code 1 when no matches; execFile throws on non-zero exit.
+      const { stdout } = await execFileAsync('pgrep', ['-f', 'v40_2_daily_generator'], { timeout: 3000 });
+      running = stdout.trim().length > 0;
     } catch {
       running = false;
     }
@@ -41,8 +48,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     const completed = content.includes('GENERATION COMPLETE') ||
                       content.includes('Total predictions:');
 
-    // Get log file modification time
-    const stats = statSync(logFile);
+    // Get log file modification time (async)
+    const stats = await stat(logFile);
     const lastModified = stats.mtime.toISOString();
     const ageSeconds = (Date.now() - stats.mtimeMs) / 1000;
 

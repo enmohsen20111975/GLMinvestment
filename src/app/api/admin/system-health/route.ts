@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { existsSync, statSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync/statSync with async
+// fs/promises equivalents in dbFileMeta so the system-health GET handler never
+// blocks the event loop per DB file check.
+import { access, stat } from 'fs/promises';
 import { join } from 'path';
 import net from 'net';
 
@@ -66,11 +69,16 @@ async function findProcess(pattern: string): Promise<{ found: boolean; pids: num
   }
 }
 
-function dbFileMeta(name: string): { exists: boolean; sizeMb: string | null; modified: string | null } {
+// P0-14-ASYNC fix (2026-09-27): dbFileMeta is now async — uses access() + stat().
+async function dbFileMeta(name: string): Promise<{ exists: boolean; sizeMb: string | null; modified: string | null }> {
   const path = join(process.cwd(), 'db', name);
-  if (!existsSync(path)) return { exists: false, sizeMb: null, modified: null };
   try {
-    const st = statSync(path);
+    await access(path);
+  } catch {
+    return { exists: false, sizeMb: null, modified: null };
+  }
+  try {
+    const st = await stat(path);
     return {
       exists: true,
       sizeMb: (st.size / 1024 / 1024).toFixed(2),
@@ -184,7 +192,7 @@ export async function GET(req: NextRequest) {
     // 7) Critical DB files
     const criticalDbs = ['auth.db', 'stocks.db', 'predictions.db', 'data_engine.db', 'news.db'];
     for (const dbName of criticalDbs) {
-      const meta = dbFileMeta(dbName);
+      const meta = await dbFileMeta(dbName);
       services.push({
         id: `db_${dbName}`,
         name_ar: `قاعدة البيانات: ${dbName}`,

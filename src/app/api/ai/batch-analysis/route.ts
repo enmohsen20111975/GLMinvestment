@@ -12,6 +12,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — batch AI analysis
+// triggers expensive Python AI calls per ticker. Was open to anyone
+// (cost / DoS vector).
+import { requireAuthAsync } from '@/lib/admin-guard';
 
 export const revalidate = 30;
 
@@ -28,6 +32,9 @@ interface BatchAnalysisBody {
 }
 
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = (await request.json().catch(() => ({}))) as BatchAnalysisBody;
     const tickers = Array.isArray(body?.tickers) ? body.tickers.filter(Boolean) : [];

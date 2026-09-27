@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — refresh-data pulls
+// from external sources and modifies stock prices. Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { ensureInitialized, getStocks } from '@/lib/egx-db';
 import { batchRefreshStocks, generateDataHealthReport } from '@/lib/egx-data-sources';
 import { validateStockData, detectFakeData, isDataFresh } from '@/lib/data-validator';
@@ -14,6 +17,9 @@ export const maxDuration = 60;
  * Returns a health report of the current data quality.
  */
 export async function GET(_request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard (consistency with POST)
+  const authError = await requireAdminAsync(_request);
+  if (authError) return authError;
   try {
     await ensureInitialized();
     const { stocks } = getStocks({ page: 1, page_size: 500 });
@@ -51,6 +57,9 @@ export async function GET(_request: NextRequest) {
  * Body: { tickers?: string[], maxStocks?: number }
  */
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     await ensureInitialized();
 

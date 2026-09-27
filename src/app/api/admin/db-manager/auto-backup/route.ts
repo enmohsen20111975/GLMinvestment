@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.* calls with async fs/promises
+// equivalents so the auto-backup POST handler never blocks the event loop on
+// backup-file moves / copies / stat / mkdir operations.
+import {
+  mkdir,
+  access,
+  rename,
+  copyFile,
+  stat as statAsync,
+} from 'fs/promises';
 import * as path from 'path';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { backupDatabase, listDatabases, humanSize } from '@/lib/admin-db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+// P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
+async function pathExists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
+}
 
 /**
  * POST /api/admin/db-manager/auto-backup
@@ -32,7 +46,7 @@ export async function POST(request: NextRequest) {
     const p = (n: number) => String(n).padStart(2, '0');
     const folderName = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}_${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`;
     const backupDir = path.join(autoBackupRoot, folderName);
-    fs.mkdirSync(backupDir, { recursive: true });
+    await mkdir(backupDir, { recursive: true });
 
     const results: Array<{
       source: string;
@@ -56,15 +70,15 @@ export async function POST(request: NextRequest) {
         const srcPath = path.join(dbDir, 'backups', backupResult.fileName);
         const destPath = path.join(backupDir, backupResult.fileName);
 
-        if (fs.existsSync(srcPath)) {
-          fs.renameSync(srcPath, destPath);
+        if (await pathExists(srcPath)) {
+          await rename(srcPath, destPath);
 
           // Also move -wal/-shm if present
           for (const ext of ['-wal', '-shm']) {
             const walSrc = `${srcPath}${ext}`;
             const walDest = `${destPath}${ext}`;
-            if (fs.existsSync(walSrc)) {
-              fs.renameSync(walSrc, walDest);
+            if (await pathExists(walSrc)) {
+              await rename(walSrc, walDest);
             }
           }
 
@@ -104,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     let authDbPath: string | null = null;
     for (const p of possibleAuthPaths) {
-      if (fs.existsSync(p)) {
+      if (await pathExists(p)) {
         authDbPath = p;
         break;
       }
@@ -125,18 +139,18 @@ export async function POST(request: NextRequest) {
         // Copy auth.db (+ wal/shm) to the backup directory
         const authBaseName = path.basename(authDbPath);
         const destPath = path.join(backupDir, authBaseName);
-        fs.copyFileSync(authDbPath, destPath);
+        await copyFile(authDbPath, destPath);
 
         // Copy WAL/SHM if present
         for (const ext of ['-wal', '-shm']) {
           const src = `${authDbPath}${ext}`;
           const dest = `${destPath}${ext}`;
-          if (fs.existsSync(src)) {
-            fs.copyFileSync(src, dest);
+          if (await pathExists(src)) {
+            await copyFile(src, dest);
           }
         }
 
-        const stat = fs.statSync(destPath);
+        const stat = await statAsync(destPath);
         results.push({
           source: authBaseName,
           fileName: authBaseName,

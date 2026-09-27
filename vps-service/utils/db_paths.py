@@ -86,6 +86,12 @@ class DBPaths:
     #   - intraday.db: stock_intraday + crypto_intraday + commodity_intraday
     #
     # ملاحظة: market.db_alias = market.db (هدف نهائي)، بس دلوقتي الفاضي.
+    #
+    # P0-8-DB-UNIFY (2026-09-27): 9 duplicate tables dropped across the 4 DBs.
+    # See agent-ctx/P0-8-DB-UNIFY-REPORT.md for the full per-table decisions.
+    # Backups at db/<dbname>.db.bak-unify; dropped rows dumped to
+    # scripts/output/db_unify_dropped_*.json. The canonical DB for each
+    # consolidated table is encoded in get_db_for_table() below.
 
     # Canonical price history (1.24M rows, 25 سنة)
     PRICE_HISTORY_DB: str = _resolve("PRICE_HISTORY_DB", "price_history.db")
@@ -105,13 +111,13 @@ class DBPaths:
     # market.db: هدف نهائي (PHASE-4-DB-REORG) — لسه فاضي على الإنتاج
     MARKET_DB: str = _resolve("MARKET_DB", "market.db")
 
-    # Aliases for legacy code (توجّه للـ canonical source)
-    GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices + gold_prices_clean
+    # Aliases for legacy code (توجّه للـ canonical source — updated P0-8-DB-UNIFY 2026-09-27)
+    GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices — canonical: data_engine.db (187K rows). Dropped: stocks.db (3 stale rows).
     HISTORICAL_DB: str = DATA_ENGINE_DB   # historical_data (ticker format رقمي)
-    TELEGRAM_DATA_DB: str = CONTENT_DB    # was telegram_data.db → content.db
-    NEWS_DB: str = CONTENT_DB             # was stocks.db → content.db
+    TELEGRAM_DATA_DB: str = STOCKS_DB     # telegram_news — canonical: stocks.db (6 rows). Dropped: predictions.db (0 rows, different schema).
+    NEWS_DB: str = STOCKS_DB              # was stocks.db → content.db (target architecture); news still in stocks.db for now.
     COMMUNITY_DB: str = CONTENT_DB        # was community.db → content.db
-    ANALYTICS_DB: str = STOCKS_DB          # was stocks.db → cached_analysis
+    ANALYTICS_DB: str = STOCKS_DB          # cached_analysis — canonical: stocks.db (143 rows). Dropped: predictions.db (0 rows, fallback-cache recreated by migrator).
     AI_SEARCH_CACHE_DB: str = STOCKS_DB   # was ai_search_cache.db
     CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # was crypto_learning.db → predictions.db
 
@@ -135,59 +141,90 @@ class DBPaths:
         """
         حدد أي DB يحتوي على جدول معين (للاستعلام الديناميكي).
 
+        P0-8-DB-UNIFY (2026-09-27): refreshed to point at the *canonical* DB
+        for every consolidated table. Previously, several entries pointed at the
+        target 4-DB architecture (MARKET_DB = market.db, which is still empty
+        in production); now they point at the live DB that actually holds the
+        data (data_engine.db / stocks.db / predictions.db / auth.db).
+
         Returns: مسار الـ DB المناسب
         """
-        # market.db tables
-        market_tables = {
-            'egksco_price_history', 'stock_daily_prices', 'stock_intraday',
-            'crypto_intraday', 'commodity_intraday', 'intraday_meta',
-            'stocks', 'stock_phase', 'stocks_backup', 'stock_prices',
-            'egksco_stocks', 'egksco_sync_status', 'egksco_price_history',
-            'screener_presets', 'screener_results', 'screener_lists',
-            'market_indices', 'market_regime_log', 'macro_indicators',
-            'macro_prices', 'macro_fetch_log',
+        # ───────────────────────────────────────────────────────────────
+        # Canonical DB routing — current state (after P0-8-DB-UNIFY 2026-09-27)
+        # ───────────────────────────────────────────────────────────────
+        # Tables previously duplicated across DBs now resolve to the single
+        # canonical source. See agent-ctx/P0-8-DB-UNIFY-REPORT.md for the
+        # per-table decisions and JSON sidecars of any dropped rows.
+        # ───────────────────────────────────────────────────────────────
+
+        # data_engine.db tables (canonical — live data written by metals_forex_fetcher.py, scrapers)
+        data_engine_tables = {
+            'egksco_price_history',  # canonical: 13K rows (was also in stocks.db — 0 rows, dropped)
+            'gold_prices', 'gold_prices_clean', 'silver_prices',  # canonical: 187K live rows (was 3 stale rows in stocks.db — dropped)
             'tab_balance_sheet', 'tab_cash_flow', 'tab_dividends',
             'tab_income_statement', 'tab_performance', 'tab_profitability',
             'tab_technical_analysis', 'tab_valuation',
             'crypto_prices', 'crypto_price_history', 'cryptos', 'crypto_metrics',
-            'crypto_fetch_log', 'sync_status',
-            'gold_prices', 'gold_prices_clean', 'silver_prices',
-            'exchange_rates', 'btc_local_prices',
-            'cached_analysis', 'system_settings', 'tuned_predictions_summary',
-            'real_evaluated_predictions', 'analytics_events',
+            'crypto_fetch_log', 'sync_status', 'exchange_rates', 'btc_local_prices',
+            'macro_indicators', 'macro_prices', 'macro_fetch_log',
+            'historical_data', 'screener_presets', 'screener_results', 'screener_lists',
         }
-        # predictions.db tables
+
+        # stocks.db tables (canonical — stocks metadata + analysis cache + recommendations)
+        stocks_tables = {
+            'stocks',  # canonical: 976 rows, 58 cols (was 296 stale rows in data_engine.db — dropped)
+            'egksco_stocks',  # canonical: 250 rows (was 0 rows in data_engine.db — dropped)
+            'cached_analysis',  # canonical: 143 fresh rows (was 0 rows in predictions.db — dropped)
+            'ExpertRecommendation',  # canonical: 127 rows (was 17 stale rows in auth.db + predictions.db — dropped)
+            'telegram_news',  # canonical: 6 rows (was 0 rows in predictions.db — dropped)
+            'portfolios',  # only in stocks.db (3 rows) — auth.db never had this table
+            'stock_daily_prices', 'stock_phase', 'stocks_backup', 'stock_prices',
+            'stock_intraday', 'crypto_intraday', 'commodity_intraday', 'intraday_meta',
+            'egksco_sync_status', 'market_indices', 'market_regime_log',
+            'system_settings', 'tuned_predictions_summary',
+            'real_evaluated_predictions', 'analytics_events',
+            'gold_price_history', 'currency_rates', 'news', 'news_items',
+        }
+
+        # predictions.db tables (canonical — predictions + learning + outcome logs)
         predictions_tables = {
             'predictions', 'persona_predictions', 'prediction_logs',
-            'outcome_logs', 'learned_lessons', 'conjunction_patterns',
-            'indicator_trust_scores', 'quant_cache', 'stored_analyses',
-            'morning_bell_signals', 'exit_notifications', 'backtest_results',
-            'optimizer_params_history', 'ExpertRecommendation',
+            'outcome_logs', 'learned_lessons',  # canonical: 19K rows (was 0 rows in stocks.db — dropped)
+            'conjunction_patterns', 'indicator_trust_scores', 'quant_cache',
+            'stored_analyses', 'morning_bell_signals', 'exit_notifications',
+            'backtest_results', 'optimizer_params_history',
             'crypto_predictions_log', 'aiPredictionStats',
+            'user_trades',  # only in predictions.db (0 rows) — stocks.db never had this table
+            'telegram_recommendations', 'telegram_signals',
         }
-        # auth.db tables
+
+        # auth.db tables (canonical — users + subscriptions)
         auth_tables = {
-            'User', 'PromoCode', 'SubscriptionPlan', 'api_tokens',
-            'task_runs', 'user_trades', 'portfolios', 'portfolio_assets',
-            'user_stock_watchlists',
+            'User',  # canonical: 101 rows (stocks.db never had this table)
+            'PromoCode', 'SubscriptionPlan', 'api_tokens',
+            'task_runs', 'user_stock_watchlists', 'portfolio_assets',
+            'session', 'account', 'verification_token',
         }
-        # content.db tables
+
+        # content.db tables (target architecture — not yet on production)
         content_tables = {
-            'news_articles', 'telegram_messages', 'telegram_news',
-            'telegram_recommendations', 'scraping_status', 'tracked_channels',
+            'news_articles', 'telegram_messages', 'scraping_status',
+            'tracked_channels',
         }
 
         t = table_name.lower()
-        if t in {x.lower() for x in market_tables}:
-            return cls.MARKET_DB
+        if t in {x.lower() for x in data_engine_tables}:
+            return cls.DATA_ENGINE_DB
+        if t in {x.lower() for x in stocks_tables}:
+            return cls.STOCKS_DB
         if t in {x.lower() for x in predictions_tables}:
             return cls.PREDICTIONS_DB
         if t in {x.lower() for x in auth_tables}:
             return cls.AUTH_DB
         if t in {x.lower() for x in content_tables}:
             return cls.CONTENT_DB
-        # Default: market.db (most tables are there)
-        return cls.MARKET_DB
+        # Default: stocks.db (most metadata tables live here post-P0-8-DB-UNIFY)
+        return cls.STOCKS_DB
 
 
 def get_db_path(name: str) -> str:

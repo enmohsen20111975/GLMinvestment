@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync readFileSync/existsSync with async
+// fs/promises equivalents in loadTracking so the maker-radar GET handler never
+// blocks the event loop on the tracking JSON file.
+import { readFile, access } from 'fs/promises';
 import path from 'path';
 import {
   readRadarCache,
@@ -25,12 +28,16 @@ interface TrackedStock {
   notes?: string;
 }
 
-function loadTracking(): Record<string, TrackedStock> {
+// P0-14-ASYNC fix (2026-09-27): loadTracking is now async — uses fs/promises.
+async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
-    if (existsSync(TRACKING_FILE)) {
-      const data = readFileSync(TRACKING_FILE, 'utf-8');
-      return JSON.parse(data);
+    try {
+      await access(TRACKING_FILE);
+    } catch {
+      return {};
     }
+    const data = await readFile(TRACKING_FILE, 'utf-8');
+    return JSON.parse(data);
   } catch (e) {
     console.error('[maker-radar] loadTracking error:', e);
   }
@@ -74,7 +81,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ─── Cache hit — enrich + return instantly ───────────────────────────
-  const tracking = loadTracking();
+  const tracking = await loadTracking();
 
   const enrichStock = (stock: any) => {
     const tracked = tracking[stock.ticker];

@@ -22,7 +22,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
-import fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.* calls with async fs/promises
+// equivalents in loadSettings / saveSettings so the GET/POST handlers never
+// block the event loop on the config JSON file.
+import { access, readFile, writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
 export const revalidate = 30; // Cache for 30s
@@ -83,23 +86,31 @@ const PRESETS: Record<string, AnalysisEngineSettings['engines']> = {
   },
 };
 
-function loadSettings(): AnalysisEngineSettings {
+// P0-14-ASYNC fix (2026-09-27): loadSettings is now async.
+async function loadSettings(): Promise<AnalysisEngineSettings> {
   try {
-    if (fs.existsSync(CONFIG_PATH)) {
-      const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-      return { ...DEFAULT_SETTINGS, ...data };
+    try {
+      await access(CONFIG_PATH);
+    } catch {
+      return { ...DEFAULT_SETTINGS };
     }
+    const raw = await readFile(CONFIG_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    return { ...DEFAULT_SETTINGS, ...data };
   } catch { /* use defaults */ }
   return { ...DEFAULT_SETTINGS };
 }
 
-function saveSettings(settings: AnalysisEngineSettings): void {
+// P0-14-ASYNC fix (2026-09-27): saveSettings is now async.
+async function saveSettings(settings: AnalysisEngineSettings): Promise<void> {
   try {
     const dbDir = path.dirname(CONFIG_PATH);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    try {
+      await access(dbDir);
+    } catch {
+      await mkdir(dbDir, { recursive: true });
     }
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(settings, null, 2));
+    await writeFile(CONFIG_PATH, JSON.stringify(settings, null, 2));
   } catch (e) {
     console.error('[Analysis Engine] Failed to save config:', e);
   }
@@ -109,7 +120,7 @@ function saveSettings(settings: AnalysisEngineSettings): void {
  * GET: Return current engine configuration
  */
 export async function GET() {
-  const settings = loadSettings();
+  const settings = await loadSettings();
 
   return NextResponse.json({
     success: true,
@@ -137,7 +148,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, engine, enabled, weight, preset } = body;
 
-    const settings = loadSettings();
+    const settings = await loadSettings();
 
     switch (action) {
       case 'toggle': {
@@ -195,7 +206,7 @@ export async function POST(request: NextRequest) {
     }
 
     settings.lastUpdated = new Date().toISOString();
-    saveSettings(settings);
+    await saveSettings(settings);
 
     // Also forward to Python backend if available
     try {

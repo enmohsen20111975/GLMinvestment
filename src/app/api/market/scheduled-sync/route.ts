@@ -21,6 +21,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — scheduled-sync pulls
+// historical data and modifies price_history / stocks DBs. Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { ensureInitialized, getStocks, getWritableDb, isWritableDbAvailable } from '@/lib/egx-db';
 import {
   upsertPriceHistory,
@@ -299,6 +302,9 @@ async function processStockForSync(
 // ---------------------------------------------------------------------------
 
 export async function POST(_request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(_request);
+  if (authError) return authError;
   const startedAt = new Date().toISOString();
   const startTime = Date.now();
 
@@ -476,7 +482,10 @@ export async function POST(_request: NextRequest) {
 // GET handler — حالة آخر مزامنة
 // ---------------------------------------------------------------------------
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard (consistency with POST)
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   const now = getCairoTime();
   const tradingHours = isTradingHours();
 

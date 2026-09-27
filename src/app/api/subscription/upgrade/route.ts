@@ -8,6 +8,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — was using
+// getServerSession directly (web-only, no mobile Bearer support). Now
+// also requires requireAuthAsync (NextAuth OR Bearer). Pre-existing
+// getServerSession kept for subscription-tier / payment-token fields.
+import { requireAuthAsync } from '@/lib/admin-guard';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
@@ -16,6 +21,9 @@ import { generatePaymentToken } from '@/lib/payment';
 const MAIN_DOMAIN = process.env.M2Y_API_URL || process.env.MAIN_DOMAIN || 'https://m2y.net';
 
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (payment endpoint)
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

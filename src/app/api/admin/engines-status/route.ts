@@ -16,7 +16,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
-import fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.existsSync/fs.readFileSync with
+// async fs/promises equivalents in loadJsonFile so the engines-status handlers
+// never block the event loop on JSON status file reads.
+import { access, readFile } from 'fs/promises';
 import path from 'path';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
@@ -75,13 +78,17 @@ function safeDbQueryAll<T>(dbPath: string, query: string, params: any[] = []): T
     }
 }
 
-function loadJsonFile(filePath: string): any | null {
+// P0-14-ASYNC fix (2026-09-27): loadJsonFile is now async.
+async function loadJsonFile(filePath: string): Promise<any | null> {
     try {
-        if (fs.existsSync(filePath)) {
-            return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        try {
+            await access(filePath);
+        } catch {
+            return null;
         }
-    } catch { }
-    return null;
+        const raw = await readFile(filePath, 'utf-8');
+        return JSON.parse(raw);
+    } catch { return null; }
 }
 
 // ============== Engine Checkers ==============
@@ -114,7 +121,7 @@ async function checkDataEngine() {
 
     // Fallback: load from status file
     if (!lastUpdate) {
-        const saved = loadJsonFile(ENGINE_STATUS_FILE);
+        const saved = await loadJsonFile(ENGINE_STATUS_FILE);
         if (saved) {
             lastUpdate = saved.last_stocks_update || saved.last_crypto_update || saved.last_metals_update || saved.last_sync || null;
             errorsCount = saved.errors?.length || 0;
@@ -126,7 +133,7 @@ async function checkDataEngine() {
         }
 
         // Also try auto_refresh_status.json
-        const autoRefresh = loadJsonFile(AUTO_REFRESH_STATUS_FILE);
+        const autoRefresh = await loadJsonFile(AUTO_REFRESH_STATUS_FILE);
         if (autoRefresh) {
             if (!schedulerActive) schedulerActive = autoRefresh.running || false;
             if (autoRefresh.last_run && (!lastUpdate || new Date(autoRefresh.last_run) > new Date(lastUpdate))) {

@@ -1,10 +1,16 @@
 export const dynamic = 'force-dynamic';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+// P0-11-AUTH fix (2026-09-27): added user auth guard — returns pending
+// trading predictions (signal/entry/target/stop). Was open to anyone.
+import { requireAuthAsync } from '@/lib/admin-guard';
 import { openDb, safeQuery } from '@/lib/shared-db';
 
 export const revalidate = 30; // Cache for 30s
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (trading signals)
+  const auth = await requireAuthAsync(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const predDb = openDb('predictions.db');
 

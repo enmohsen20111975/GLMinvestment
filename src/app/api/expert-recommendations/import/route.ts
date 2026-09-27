@@ -9,6 +9,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — bulk import of
+// expert recommendations writes to stocks.db (shared DB). Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { randomUUID } from 'crypto';
 import { ensureInitialized, getWritableStocksDb, ensureExpertRecommendationSchema } from '@/lib/egx-db';
 
@@ -47,6 +50,9 @@ interface ImportRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   let egxDb: ReturnType<typeof getWritableStocksDb> | null = null;
   
   try {

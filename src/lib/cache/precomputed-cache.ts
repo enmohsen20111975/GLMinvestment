@@ -716,18 +716,40 @@ async function precomputeMarketData(): Promise<void> {
 async function precomputeGoldData(): Promise<void> {
   console.log('[PrecomputedCache] Computing gold data...');
 
+  // P0-8-DB-UNIFY (2026-09-27): canonical source for gold_prices is now
+  // data_engine.db (187K live rows written by metals_forex_fetcher.py every
+  // 5 min). The old stocks.db.gold_prices (3 stale default rows from
+  // 2026-06-03) is being DROPPED. This function used to query the stocks.db
+  // version with a non-existent 'change' column — the query was already
+  // throwing, which broke the entire updateAllCache() flow. We now load
+  // live gold prices from data_engine.db via getLiveEgyptGoldPrices() and
+  // skip the missing-table fallback gracefully.
+  let goldPrices: Array<{ karat: string; price_per_gram: number; change: number }> = [];
+  try {
+    const { getLiveEgyptGoldPrices } = await import('@/lib/data-engine-db');
+    const live = getLiveEgyptGoldPrices();
+    if (live) {
+      goldPrices = [
+        { karat: '24', price_per_gram: live['24k'], change: 0 },
+        { karat: '21', price_per_gram: live['21k'], change: 0 },
+        { karat: '18', price_per_gram: live['18k'], change: 0 },
+      ];
+    }
+  } catch (goldErr) {
+    console.warn('[PrecomputedCache] Failed to load live gold prices from data_engine.db:', goldErr);
+  }
+
+  if (goldPrices.length === 0) {
+    console.log('[PrecomputedCache] No live gold prices available — skipping gold cache');
+    return;
+  }
+
   const lightDb = getLightDb();
 
   try {
-    const goldPrices = lightDb.prepare(`
-      SELECT karat, price_per_gram, change
-      FROM gold_prices
-      WHERE karat NOT LIKE 'silver%'
-    `).all() as Array<{ karat: string; price_per_gram: number; change: number }>;
-
-    const heavyDb = getReadDb();
-    try {
-      for (const gold of goldPrices) {
+    for (const gold of goldPrices) {
+      const heavyDb = getReadDb();
+      try {
         const history = heavyDb.prepare(`
           SELECT recorded_at, price_per_gram
           FROM gold_price_history
@@ -762,9 +784,9 @@ async function precomputeGoldData(): Promise<void> {
         };
 
         setCachedData(`gold:${gold.karat}`, 'gold', goldData, 30);
+      } finally {
+        heavyDb.close();
       }
-    } finally {
-      heavyDb.close();
     }
   } finally {
     lightDb.close();

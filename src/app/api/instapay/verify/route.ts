@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user+admin auth guards.
+// POST (user submits transfer receipt): requireAuthAsync.
+// GET  (admin lists pending payments): requireAdminAsync.
+// Previously POST trusted a client-supplied user_id; GET trusted a
+// client-supplied admin_id in query string — both were spoofable.
+import { requireAuthAsync, requireAdminAsync } from '@/lib/admin-guard';
 import { db } from '@/lib/db';
 
 // POST - إرسال بيانات التحويل للتحقق
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await request.json();
     const { payment_id, user_id, sender_name, sender_phone, instapay_ref, notes } = body;
@@ -114,6 +123,9 @@ export async function POST(request: NextRequest) {
 
 // GET - جلب المدفوعات المعلقة للأدمن
 export async function GET(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);
     const admin_id = searchParams.get('admin_id');

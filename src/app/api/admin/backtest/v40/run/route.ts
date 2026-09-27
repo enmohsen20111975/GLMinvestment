@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { spawn } from 'child_process';
-import { createWriteStream, existsSync, readFileSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync with async access from
+// fs/promises so the POST handler never blocks the event loop on file checks.
+import { access } from 'fs/promises';
+import { createWriteStream } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import Database from 'better-sqlite3';
@@ -14,6 +17,11 @@ interface RunBody {
   end_date?: string;
   max_picks?: number;
   clear_existing?: boolean;
+}
+
+// P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
+async function pathExists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
 }
 
 export async function POST(req: NextRequest) {
@@ -31,7 +39,7 @@ export async function POST(req: NextRequest) {
     const predsDbPath = join(projectRoot, 'db', 'predictions.db');
 
     // Clear predictions if requested
-    if (clearExisting && existsSync(predsDbPath)) {
+    if (clearExisting && await pathExists(predsDbPath)) {
       try {
         const db = new Database(predsDbPath);
         db.prepare('DELETE FROM predictions').run();
@@ -46,7 +54,7 @@ export async function POST(req: NextRequest) {
     const logFile = `/tmp/v40_backtest_${jobId}.log`;
     const generatorPath = join(projectRoot, 'vps-service', 'jobs', 'v40_2_daily_generator.py');
 
-    if (!existsSync(generatorPath)) {
+    if (!(await pathExists(generatorPath))) {
       return NextResponse.json({
         success: false,
         error: 'V40.2 generator not found',

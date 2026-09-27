@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — live market sync
+// pulls external data and modifies the live-stocks DB. Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { getTodayCairo } from '@/lib/data-sync';
 import {
   isEgxpyAvailable,
@@ -327,6 +330,9 @@ function getKnownTickersFromDb(): string[] {
 // ---------------------------------------------------------------------------
 
 export async function POST(_request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(_request);
+  if (authError) return authError;
   try {
     // Check if force-refresh was requested
     const forceRefresh = _request.headers.get('x-force-refresh') === 'true';

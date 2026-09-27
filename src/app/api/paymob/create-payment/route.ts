@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — was using
+// getServerSession directly (web-only, no mobile Bearer support). Now
+// uses requireAuthAsync (which checks both NextAuth session AND Bearer
+// token via getSessionUserId). Pre-existing getServerSession kept for
+// the subscription-tier lookup that depends on session.user fields.
+import { requireAuthAsync } from '@/lib/admin-guard';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
@@ -149,7 +156,11 @@ async function getPaymentKey(
  * POST /api/paymob/create-payment
  * Create a Paymob payment session for card OR wallet payments.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (money endpoint)
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id && !session?.user?.email) {

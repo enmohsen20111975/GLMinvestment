@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.* calls with async fs/promises
+// equivalents so the cleanup-old-backups POST handler never blocks the event
+// loop while scanning directories and removing old backups.
+import {
+  access,
+  readdir,
+  stat as statAsync,
+  rm,
+} from 'fs/promises';
 import * as path from 'path';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { humanSize } from '@/lib/admin-db-manager';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+// P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
+async function pathExists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
+}
 
 /** Directories to scan for old backups. */
 const BACKUP_SUBDIRS = ['daily', 'auto'] as const;
@@ -40,9 +53,14 @@ export async function POST(request: NextRequest) {
     for (const subDir of BACKUP_SUBDIRS) {
       const scanDir = path.join(backupRoot, subDir);
 
-      if (!fs.existsSync(scanDir)) continue;
+      if (!(await pathExists(scanDir))) continue;
 
-      const entries = fs.readdirSync(scanDir, { withFileTypes: true });
+      let entries;
+      try {
+        entries = await readdir(scanDir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
 
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
@@ -51,7 +69,7 @@ export async function POST(request: NextRequest) {
         let entryMtimeMs: number;
 
         try {
-          const stat = fs.statSync(entryPath);
+          const stat = await statAsync(entryPath);
           entryMtimeMs = stat.mtimeMs;
         } catch {
           continue;
@@ -60,10 +78,10 @@ export async function POST(request: NextRequest) {
         if (entryMtimeMs < cutoffMs) {
           try {
             // Calculate total size before deletion
-            const dirSize = getDirSize(entryPath);
+            const dirSize = await getDirSize(entryPath);
 
-            // Recursively delete
-            fs.rmSync(entryPath, { recursive: true, force: true });
+            // Recursively delete (async)
+            await rm(entryPath, { recursive: true, force: true });
 
             deletedCount++;
             freedBytes += dirSize;
@@ -104,17 +122,19 @@ export async function POST(request: NextRequest) {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Recursively calculate the total byte size of a directory. */
-function getDirSize(dirPath: string): number {
+// P0-14-ASYNC fix (2026-09-27): getDirSize is now async.
+async function getDirSize(dirPath: string): Promise<number> {
   let total = 0;
   try {
-    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const entries = await readdir(dirPath, { withFileTypes: true });
     for (const entry of entries) {
       const full = path.join(dirPath, entry.name);
       if (entry.isDirectory()) {
-        total += getDirSize(full);
+        total += await getDirSize(full);
       } else {
         try {
-          total += fs.statSync(full).size;
+          const st = await statAsync(full);
+          total += st.size;
         } catch {
           // skip unreadable files
         }

@@ -41905,3 +41905,361 @@ Stage Summary:
 - JSON report: scripts/output/hit_target_reconciliation_20260927T143118Z.json.
 - No DB writes — strictly read-only. SQL must be uncommented one-by-one and reviewed before applying.
 - Report: agent-ctx/P0-17-RECONCILE-REPORT.md
+
+---
+Task ID: P0-7-15-INFRA
+Agent: DevOps Engineer (news-agent + observability)
+Task: Wire news-agent to PM2 (P0 #7) + add Sentry SDK, structured logging, improved /api/health, and x-request-id middleware (P0 #15).
+
+Work Log:
+- Read tail of worklog.md (~400 lines) for context — confirmed prior worklog references (AUDIT_ENGINEERING finding: "zero error-tracking integration", "zero metrics integration", "zero request tracing", "/api/health exists but only checks file existence (not DB round-trip)"). This task closes P0 #7 (news-agent not in PM2) and P0 #15 (no observability).
+- Phase 1 (news-agent discovery):
+  * Read `/home/z/my-project/news-agent/run.sh` — confirmed it's a manual launcher: creates `.venv`, `pip install -r requirements.txt`, runs `python3 main.py "$@"` in foreground. Never invoked by PM2 nor cron.
+  * Read `/home/z/my-project/news-agent/main.py` (12,604 bytes / 322 lines) — confirmed entry point is `main.py`, async `run_forever()` loop with `COLLECTION_INTERVAL_MINUTES` (default 15min) between cycles. Reads env via `python-dotenv.load_dotenv()`. POSTs results to `PRODUCTION_SERVER_URL` (Next.js /api/news/receive-from-news-agent endpoint).
+  * Read `/home/z/my-project/news-agent/requirements.txt` (15 lines) — telethon, feedparser, requests, trafilatura, beautifulsoup4, httpx, schedule, fastapi, uvicorn, python-dotenv, aiohttp, duckduckgo-search, rich, sqlalchemy, cryptg.
+  * Read `/home/z/my-project/news-agent/README.md` — confirmed integration date 2026-09-03, agent writes to `db/news.db.market_news` table (via production_sender.py), agents uses local Ollama for analysis.
+- Phase 2 (validate Python syntax):
+  * Ran `python3 -c "import ast; ast.parse(open('news-agent/main.py').read())"` → returned OK. Did NOT run the agent.
+- Phase 3 (add 7th PM2 service):
+  * Read existing `/home/z/my-project/ecosystem.config.js` (256 lines) — confirmed 6 existing apps: python-backend, data-engine, nextjs, ws-service, telegram-poster, telegram-events.
+  * Edited top comment block (L30-L43) to document service #6 (news-agent) with full description, port/destination, and P0 #7 fix note.
+  * Added new app block (L264-L317) for `news-agent`:
+    - script: `main.py`
+    - interpreter: dynamic IIFE that prefers `news-agent/.venv/bin/python` (created by run.sh) → root `.venv/bin/python` (shared with python-backend) → system `python3`
+    - cwd: `path.resolve(__dirname, 'news-agent')`
+    - autorestart: true, max_memory_restart: '300M'
+    - env: NODE_ENV=production + PRODUCTION_SERVER_URL + OLLAMA_MODEL + COLLECTION_INTERVAL_MINUTES + MIN_IMPORTANCE_SCORE + MAX_NEWS_PER_BATCH + ENABLE_EGYPTIAN_SOURCES + TELEGRAM_API_ID/HASH/BOT_TOKEN/CHANNEL_ID (forwarded from .env)
+    - error_file: `./logs/news-agent-error.log`
+    - out_file: `./logs/news-agent-out.log`
+    - time: true, max_restarts: 10, restart_delay: 5000, kill_timeout: 10000
+  * Validated: `node -e "const cfg=require('./ecosystem.config.js'); console.log(cfg.apps.length)"` → 7 apps confirmed.
+- Phase 4 (install Sentry SDK):
+  * Ran `cd /home/z/my-project && bun add @sentry/nextjs` → succeeded: installed @sentry/nextjs@11.0.0 (40 packages, 5.15s). Prisma client regenerated via postinstall hook.
+- Phase 5 (Sentry config files):
+  * Created `/home/z/my-project/sentry.client.config.ts` — reads `NEXT_PUBLIC_SENTRY_DSN` (falls back to `SENTRY_DSN`), enables only in `NODE_ENV=production`, samples 10% transactions in prod / 100% in dev, captures 100% errors, session replay 10% prod / 0% dev / 100% on error. Filters out hydration mismatches, ResizeObserver loop, browser-extension noise, AbortError, Network request failed, etc. Drops events without stacktrace. Denies URLs from /extensions/, chrome://, moz-extension://, googletagmanager.com, google-analytics.com.
+  * Created `/home/z/my-project/sentry.server.config.ts` — reads `SENTRY_DSN`, enables only in prod, 10% transaction sample rate, filters ECONNRESET/EPIPE/ETIMEDOUT/ECONNREFUSED, AbortError variants, ENOENT (static-file 404s). Drops noisy /_next/static/ stack frames.
+  * Both files gate `Sentry.init()` behind `if (SENTRY_DSN)` so the app runs fine even with empty DSN (safe no-op — opt-in design).
+  * Updated `/home/z/my-project/next.config.ts` to wrap config with `withSentryConfig` from @sentry/nextjs. Settings: `silent: true` (don't fail build on missing SENTRY_AUTH_TOKEN), `hideSourceMaps: true`, `disableLogger: true`, `widenClientFileUpload: true`, `autoInstrumentServerFunctions: true`.
+  * Updated `/home/z/my-project/.env` to add `SENTRY_DSN=` and `NEXT_PUBLIC_SENTRY_DSN=` placeholders (empty by default — user fills in real DSN).
+- Phase 6 (structured logger):
+  * Created `/home/z/my-project/src/lib/logger.ts` (90 lines):
+    - `type LogLevel = 'debug' | 'info' | 'warn' | 'error'`
+    - `interface LogContext { [key: string]: unknown }`
+    - `LOG_LEVELS` mapping (debug=10, info=20, warn=30, error=40)
+    - `MIN_LEVEL` reads `process.env.LOG_LEVEL || 'info'`
+    - `log(level, message, context?)` — emits single JSON line: `{"timestamp":"...","level":"...","message":"...",...context}`
+    - Routes errors to stderr, warnings to stderr, info/debug to stdout (12-factor compliant)
+    - Exports both named `log` function and default `logger` object with `.debug/.info/.warn/.error` methods
+- Phase 7 (rewrite /api/health):
+  * Read existing `/home/z/my-project/src/app/api/health/route.ts` (60 lines) — confirmed audit finding: only ran `existsSync()` on DB files, so a corrupted DB reported "status: ok". 10s cache.
+  * Rewrote to 262 lines with deep checks:
+    - DB integrity: opens each DB read-only with `fileMustExist: true`, runs `SELECT 1`, closes immediately. Reports actual error message on failure.
+    - DB row counts: `stocks.db.stocks` (976 rows), `predictions.db.predictions` (1307 rows), `price_history.db.price_history` (1,209,762 rows + latest_date), `data_engine.db.stocks` (296 rows), `intraday.db` (no row count — multiple tables).
+    - DB size: statSync().size in MB (1 decimal).
+    - Service reachability: `ss -ltnp | grep :PORT` for python-backend (8010), ws-service (3005), telegram-events (3003); `pgrep -f news-agent/main.py` for news-agent (no port — it's a loop). Extracts PID when available.
+    - Disk: `df -BG --output=size,used,avail,pcent /home/z/my-project` → free_gb / total_gb / used_pct. Marks "down" if used_pct ≥ 95.
+    - All checks run via `Promise.all()` — fully async, no blocking sync I/O.
+    - Aggregated status: "down" if critical DBs (stocks.db, predictions.db) fail OR disk ≥95%; "degraded" if non-critical services (telegram-events, news-agent) down; "ok" only if all components healthy.
+    - HTTP status: 200 ok/degraded, 503 down (so upstream LB can fail-over).
+    - 60s in-memory cache (was 10s — deep checks are heavier).
+    - Structured log via `logger.info('health check completed', {...})` after every check.
+  * Simulated the logic in Node.js against the real DBs in /home/z/my-project/db/ → all 5 DBs passed SELECT 1, row counts match audit's verified numbers, news-agent found (pid 19358 — pre-existing run.sh instance), PM2 services report reachable:false (accurate — PM2 not running in sandbox), disk 77% used.
+- Phase 8 (x-request-id middleware — bonus):
+  * Modified `/home/z/my-project/src/middleware.ts`:
+    - Added `import { randomUUID } from 'crypto'`
+    - At top of `middleware()`: read inbound `x-request-id` header (if present — distributed trace propagation) OR generate UUIDv4.
+    - Set `response.headers.set('x-request-id', requestId)` so every response carries the ID.
+    - Route handlers can read inbound `x-request-id` from `request.headers` (already supported); for requests with no inbound header, they can mint their own via `crypto.randomUUID()` and pair with the structured logger.
+  * Kept the rest of the existing middleware logic intact (localhost bypass, cache-control headers for HTML, public API prefixes, destructive endpoint protection).
+- Phase 9 (verify + report):
+  * Ran `bun run lint` → exit 0, no errors/warnings.
+  * Ran `python3 -c "import ast; ast.parse(open('news-agent/main.py').read())"` → OK parses (re-verified after ecosystem.config.js edit).
+  * Wrote detailed report at `/home/z/my-project/agent-ctx/P0-7-15-INFRA-REPORT.md` (12-row summary table, code snippets, sample /api/health response, next-action steps for user).
+  * This worklog entry.
+
+Stage Summary:
+- ✅ news-agent PM2 service added as 7th app in ecosystem.config.js (L264-L317). Total apps: 7 (python-backend, data-engine, nextjs, ws-service, telegram-poster, telegram-events, news-agent). Python syntax validated.
+- ✅ @sentry/nextjs@11.0.0 installed via `bun add`. Created sentry.client.config.ts + sentry.server.config.ts (both opt-in via `if (SENTRY_DSN)` — no-op when DSN empty). Wrapped next.config.ts with `withSentryConfig`. Added SENTRY_DSN + NEXT_PUBLIC_SENTRY_DSN placeholders to .env.
+- ✅ /api/health rewritten from 60 → 262 lines. Now opens each DB read-only and runs SELECT 1 (was just `existsSync` — a corrupted DB falsely reported "ok"). Also checks PM2 services (3 ports + 1 process pattern) and disk space. Returns per-component JSON with status / size_mb / rows / latest_date / pid / reachable. All async (Promise.all + child_process.execAsync).
+- ✅ src/lib/logger.ts created (90 lines) — structured JSON logger with LOG_LEVEL env var support, debug/info/warn/error levels, 12-factor stderr/stdout routing.
+- ✅ Bonus: src/middleware.ts updated to add `x-request-id` response header (UUIDv4 if no inbound, echo if inbound — distributed trace propagation).
+- ✅ `bun run lint` exits 0 cleanly with all changes.
+- ✅ Detailed report at /home/z/my-project/agent-ctx/P0-7-15-INFRA-REPORT.md.
+- Files modified: ecosystem.config.js, .env, next.config.ts, src/middleware.ts, src/app/api/health/route.ts
+- Files created: sentry.client.config.ts, sentry.server.config.ts, src/lib/logger.ts, agent-ctx/P0-7-15-INFRA-REPORT.md
+- Package added: @sentry/nextjs@11.0.0
+
+---
+Task ID: P0-14-ASYNC
+Agent: Node.js Engineer (async I/O refactor)
+Task: Refactor top 20+ blocking sync I/O sites in API routes to async equivalents (fs/promises + child_process promisify).
+
+Work Log:
+- Read tail of worklog.md (~400 lines) for context — confirmed AUDIT_ENGINEERING flagged 120/658 API routes (18%) using blocking sync I/O inside async handlers, blocking the Node.js event loop.
+- Phase 1 (find): Grepped src/app/api/ for `readFileSync|writeFileSync|existsSync|execSync|statSync|readdirSync|mkdirSync|unlinkSync|copyFileSync|renameSync|appendFileSync` → 300+ matches across ~120 files. Triaged by impact (auth/stocks/predictions/radar + heavy DB backup/PM2/system routes).
+- Phase 2 (priority list — 20 sites, ended up doing 24):
+  1. admin/system-resources/route.ts (audit-flagged) — `readFileSync('/proc/stat')` in `readProcStat()` + unused `statSync` import. Made `readProcStat` + `computeCpuPercent` async.
+  2. admin/pm2-control/route.ts — `execSync(cmd)` × 9 in `runCommand`. Replaced with `promisify(execFile)` + argv-based invocation (`runCommandAsync`). Bonus: argv is shell-injection-safe.
+  3. admin/backtest/v40/status/[jobId]/route.ts — `existsSync`+`readFileSync`+`execSync(ps aux | grep...)`+`statSync` × 4. Replaced with `access`+`readFile`+`stat`+`execFileAsync('pgrep', ['-f', ...])` (no shell, no full `ps` listing).
+  4. admin/backtest/v40/run/route.ts — `existsSync` × 2. Removed unused `readFileSync` import.
+  5-7. maker-radar/route.ts, maker-radar/track/route.ts, maker-radar/stock/route.ts — `loadTracking`/`saveTracking` local helpers using `existsSync`+`readFileSync`+`writeFileSync`+`mkdirSync`. All made async; all callers (POST/GET/DELETE) updated.
+  8-9. maker-radar/signal-tracker/route.ts + verify/route.ts — `pickTrackerDbPath`+`openTrackerDb`+`fetchPricesAfter` (loop with `existsSync` per candidate DB). All async.
+  10. analysis-engine/route.ts — `loadSettings`/`saveSettings`. Both async; GET+POST updated.
+  11. admin/advanced-analysis/config/route.ts — `readConfig`/`writeConfig`. Both async; GET+PUT updated.
+  12. admin/recommendation-settings/route.ts — replaced dynamic `await import('fs')` sync fallback with `await import('fs/promises')`.
+  13. predictions/refresh-v40/route.ts — `resolvePython`+`readStatus`+`writeStatus`+`isV40Running` (all sync, called from both GET/POST handlers and spawn callbacks). All async; spawn callbacks wrapped in async IIFEs.
+  14. admin/data-sources/route.ts — `existsSync`+`statSync` × 8 (3 DBs + egxpy bridge). All async via `access`+`stat`.
+  15. admin/system-health/route.ts — `dbFileMeta` helper using `existsSync`+`statSync`. Async; GET loop updated.
+  16. admin/engines-status/route.ts — `loadJsonFile` using `existsSync`+`readFileSync`. Async; caller updated.
+  17. run-all/route.ts — `updateStatus`+`runScript`+GET loop using `existsSync`+`mkdirSync`+`readFileSync`+`writeFileSync`. All async.
+  18. stock-notebook/route.ts — `existsSync`+`readFileSync`+`writeFileSync` across GET/POST/DELETE. All async.
+  19. admin/db-backup/route.ts — BIGGEST refactor: `listDbFiles`+`listArchives`+`compressToZip`+POST+DELETE handlers using 16+ sync calls (`existsSync`/`mkdirSync`/`readdirSync`/`statSync`/`unlinkSync`). All async. `resolveBinary` kept sync (module-init only).
+  20. admin/db-manager/auto-backup/route.ts — `mkdirSync`+`existsSync` × 4+`renameSync` × 2+`copyFileSync` × 2+`statSync`. All async.
+  21. admin/db-manager/cleanup-old-backups/route.ts — `existsSync`+`readdirSync`+`statSync`+`rmSync` including recursive `getDirSize` helper. All async.
+  22. admin/db-manager/export-all/route.ts — `existsSync`+`statSync`+`readFileSync`. All async; GET ZIP streaming updated.
+  23. admin/db-manager/import-all/route.ts — `writeFileSync`. Async.
+  24. admin/db-manager/repair/route.ts — `existsSync` × 2. Async. Removed unused `unlinkSync`/`renameSync`/`copyFileSync` imports.
+- Phase 3 (verify): Ran `bun run lint` after every 5-file batch (5 checkpoints). Final exit code: 0, no errors/warnings.
+- Phase 4 (report): Wrote detailed per-file fix report to `/home/z/my-project/agent-ctx/P0-14-ASYNC-REPORT.md` covering all 24 files, the 3 most impactful refactors, the patterns applied, the 2 module-init sync calls intentionally kept, and the known follow-up (radar-cache.ts + ~96 remaining routes).
+
+Stage Summary:
+- **Files refactored:** 24 (target was top 20 — exceeded by 4)
+- **Sync I/O calls replaced:** ~70+ individual sites (db-backup alone had 16+)
+- **Most critical fix #1:** `admin/db-backup/route.ts` — 16+ sync calls (`readdirSync`/`statSync`/`unlinkSync`/`mkdirSync`) iterating over all 8 DBs and ~archive dir per request, blocking the event loop for hundreds of ms × 30-180s handler duration. All converted to `fs/promises`.
+- **Most critical fix #2:** `admin/pm2-control/route.ts` — 9 `execSync(pm2 ...)` sites with 15s timeout would freeze all concurrent requests for up to 15s each. Replaced with `promisify(execFile)` + argv-based invocation (also closes a shell-injection vector — `process_name` is now a separate argv element).
+- **Most critical fix #3:** `admin/backtest/v40/status/[jobId]/route.ts` — polling endpoint called every few seconds by UI; each call did `execSync('ps aux | grep ...')` (full process listing) + 3 other sync calls. Replaced with `pgrep -f` (single-process check, no shell).
+- **Lint status:** ✅ `bun run lint` exits 0 with no errors/warnings. Verified after every 5-file batch.
+- **Behavior preserved:** All response shapes, function signatures (apart from sync→async helpers), and error handling preserved. Module-level `existsSync` calls kept sync (run once at boot, not per request).
+- **Comments:** `// P0-14-ASYNC fix (2026-09-27): ...` added at every fix site.
+- **Known follow-up (out of scope):** `src/lib/radar-cache.ts` NOT refactored — would cascade through 4 callers (maker-radar/route.ts, warmup, sector-treemap, lib/schedulers/radar-alerts.ts). Recommend `P1-radar-cache-async` follow-up. Remaining ~96 routes (out of audit's 120 total) also not refactored — recommend `P1-async-sweep-2`.
+- **Report saved at:** `/home/z/my-project/agent-ctx/P0-14-ASYNC-REPORT.md` (24-row table + top-3 impact write-ups + patterns + verification matrix + next actions).
+
+---
+Task ID: P0-11-AUTH
+Agent: Security Engineer (auth guard on admin routes)
+Task: Add auth guards to the top 30 most critical API routes that previously had NO auth check (or only weak single-method auth). Audit baseline: 540 of 658 routes (82%) with no auth.
+
+Work Log:
+- Read tail of worklog.md (~400 lines) for context — confirmed P0-14-ASYNC just refactored 24 routes' sync I/O. AUDIT_ENGINEERING had flagged 540/658 routes with NO auth check.
+- Phase 1 (find admin routes): `find src/app/api/admin -name "route.ts"` → 113 admin routes. Cross-checked with `rg -l "requireAdminAsync|getSessionUserId|verifyAdminRequest|requireAdminRequest"` → 106 of 113 admin routes already had SOME auth reference (mostly `requireAdminAsync` from `@/lib/admin-auth-server`). Only 7 admin routes had NO auth reference (and 3 of those were login routes — `admin/auth/token`, `admin/auth/auto-cookie`, `admin/auth/route` — which issue tokens and can't require auth themselves).
+- Phase 2 (existing auth patterns): Read `src/lib/auth-helper.ts` (199 LOC — provides `getSessionUserId()` returning `{userId, isAdmin}` with NextAuth session + Bearer token support). Read `src/lib/admin-identities.ts` (151 LOC — central registry of admin emails/usernames via env vars + historical defaults). Read `src/lib/admin-auth-server.ts` (202 LOC — `requireAdminAsync(req)` returns `null|NextResponse` with 3 auth methods: X-Admin-Token/admin_session cookie, NextAuth session + DB subscription_tier, localhost bypass).
+- Phase 3 (design decision): Task template requested creating a new `src/lib/admin-guard.ts` with its own `requireAdminAsync`. But the existing `admin-auth-server.ts` is battle-tested (3-method multi-auth) and used by 50+ existing routes. Duplicating it would create security drift. So `admin-guard.ts` was created as a THIN RE-EXPORT module: re-exports `requireAdminAsync`, `verifyAdminRequest`, `verifyAdminCredentials`, `verifyAdminToken` from `admin-auth-server` (canonical entry point for new code) + adds new `requireAuthAsync(req)` for user-scoped routes (returns `{userId} | NextResponse`, internally calls `getSessionUserId()`). The `req` parameter is unused at runtime (`getSessionUserId` reads `headers()` internally) but accepted for API symmetry — typed as `NextRequest | Request` so callers using either standard don't have to convert.
+- Phase 4 (apply guards): Triaged candidates by criticality (modify data > run commands > access sensitive info > compute heavy). Discovered that the audit's "540 routes with NO auth" was largely true for NON-admin routes — the admin side was already 94% covered (mostly via P0.1 SEC-01 work). Decided to: (a) upgrade the 4 admin routes that used weak single-method auth (`verifyAdminToken` / `verifyAdminRequest`) to canonical `requireAdminAsync` (defense-in-depth: existing check kept); (b) secure 26 critical NON-admin routes that had NO auth at all (money endpoints, market sync, AI proxies, backtesting, db-stats, sniper signals, subscription).
+- Phase 5 (batch 1 — 4 admin routes): `admin/advanced-analysis/config` (GET+PUT), `admin/advanced-analysis/run` (POST+GET), `admin/recommendation-settings` (GET+POST), `admin/import-data` (POST). Each got `import { requireAdminAsync } from '@/lib/admin-guard'` + `const authError = await requireAdminAsync(request); if (authError) return authError;` at the top of each handler, BEFORE the pre-existing `verifyAdminToken`/`verifyAdminRequest` check (defense-in-depth). Comment marker `P0-11-AUTH fix (2026-09-27): added admin auth guard` at every site. Files with CRLF/LF mixed line endings (`advanced-analysis/run`, `import-data`) normalized to LF via `sed -i 's/\r$//'` before editing (Edit tool requires exact byte match). Lint checkpoint 1: exit 0 ✅.
+- Phase 6 (batch 2 — 7 money routes): `paymob/process-wallet` (POST — was completely open!), `paymob/create-payment` (POST — was using `getServerSession` only, no Bearer/mobile), `instapay` (GET+POST — was completely open), `instapay/approve` (POST — CRITICAL VULN: accepted client-supplied `admin_id` in body, anyone could send an admin's user_id and approve their own payment to credit themselves unlimited points), `instapay/verify` (POST+GET — POST was open, GET had weak admin_id query-param check), `money/wealth` (GET — was open), `money/smart-monitor` (GET — was open). For `paymob/process-wallet` which used `Request` (Web API standard, not NextRequest), converted handler signature to `NextRequest` and added guard. Same for `paymob/create-payment`. CRLF normalization on `instapay/route`, `instapay/approve`, `market/refresh-data`, `mubasher/sync`, `ai-analysis`. Lint checkpoint 2: exit 0 ✅.
+- Phase 7 (batch 3 — 8 market sync / data-mutation routes): `market/sync` (POST+GET — was open, modifies all SQLite DBs), `market/sync-live` (POST — was open, modifies live-stocks DB), `market/refresh-data` (GET+POST — was open, refreshes stock prices), `market/bulk-update` (POST — was open, proxies to Python eodhd/bulk-update), `market/scheduled-sync` (POST+GET — was open, scheduled historical sync), `market/incremental-sync` (GET+POST via shared `handle()` — was open, proxies to Python), `market/test-sources` (GET+POST — was open, triggers external API calls burning quota), `sync-historical` (POST+GET — was open, pulls from VPS). All use `requireAdminAsync` (these are admin-level operations even though not under `/api/admin/`). For routes with `GET()` taking no parameter (`market/sync`, `market/scheduled-sync`, `sync-historical`), changed signature to `GET(req: NextRequest)` so guard can be called. For `market/incremental-sync` which has shared `handle(req)` called by both GET and POST, added guard inside `handle()` once. Lint checkpoint 3: exit 0 ✅.
+- Phase 8 (batch 4 — 11 routes): `expert-recommendations/import` (POST — was open, bulk imports to stocks.db), `expert-recommendations/batch` (GET — was open, proxies to Python flow/top), `backtesting/unified` (POST — was open, compute-heavy backtest runner / DoS vector), `backtesting/apply-params` (GET — was open, mutates backtest params via Python), `ai-proxy` (GET — was open, AI calls / cost + DoS vector), `ai-analysis` (GET+POST — was open, triggers Python AI calls), `ai/batch-analysis` (POST — was open, per-ticker AI calls), `sniper/closer/pending` (GET — was open, returns trading signals entry/target/stop), `db-stats` (GET — was open, returns DB schema + row counts + file size = recon goldmine), `subscription/upgrade` (POST — had `getServerSession` only, no Bearer/mobile), `subscription/start-trial` (POST — had `getServerSession` only). All non-admin routes use `requireAuthAsync` (user-scoped) EXCEPT `db-stats`, `expert-recommendations/import`, `expert-recommendations/batch`, `backtesting/unified`, `backtesting/apply-params` which use `requireAdminAsync` (admin-level: shared data mutation or recon vector). For `subscription/upgrade` and `subscription/start-trial`, added `requireAuthAsync` BEFORE the existing `getServerSession` check (defense-in-depth + adds Bearer/mobile support). CRLF normalization on `subscription/upgrade`, `subscription/start-trial`. Final lint checkpoint 4: exit 0 ✅.
+- Phase 9 (.env update): Added 6 admin-auth env var placeholders to `/home/z/my-project/.env` (was 11 lines, now 53): `ADMIN_EMAILS=` (comma-separated admin emails, empty = sandbox falls back to historical defaults), `ADMIN_USERNAMES=` (same for usernames), `ADMIN_USERNAME=` + `ADMIN_PASSWORD=` (for X-Admin-Token base64 login), `ADMIN_SESSION_TOKEN=` (cookie value), `ALLOW_ADMIN_BYPASS=` (localhost bypass — should be `false` in prod), `ALLOWED_ORIGINS=` (CORS). Each with explanatory comments. Empty by default — sandbox keeps working via `admin-identities.ts` historical defaults; production must fill in.
+- Phase 10 (report + worklog): Wrote detailed report to `/home/z/my-project/agent-ctx/P0-11-AUTH-REPORT.md` (30-row table of routes secured, top-5 critical write-ups, design decision rationale, special-handling notes, files-modified list, verification, next actions). Appending this worklog entry.
+
+Stage Summary:
+- **Routes secured:** 30 (target was 30 — exact hit). 4 admin + 26 non-admin. 44 HTTP method handlers covered (some routes had GET+POST+PUT).
+- **Files created:** 1 — `src/lib/admin-guard.ts` (74 LOC). Thin re-export of canonical `requireAdminAsync`/`verifyAdminRequest`/`verifyAdminCredentials`/`verifyAdminToken` from `@/lib/admin-auth-server` (so existing routes can keep importing from either path) + new `requireAuthAsync(req)` for user-scoped routes (calls `getSessionUserId()` → returns `{userId} | NextResponse(401)`).
+- **Files modified:** 30 route files + 1 `.env`. All 30 route files contain the marker comment `P0-11-AUTH fix (2026-09-27): ...` and import from `@/lib/admin-guard`.
+- **Top 5 most critical routes secured:**
+  1. `/api/instapay/approve` — Was the worst vuln: accepted `admin_id` in POST body, anyone could send a valid admin's user_id and approve their OWN pending payment to credit themselves unlimited points. Now `requireAdminAsync` (cookie/token/NextAuth/localhost-bypass).
+  2. `/api/paymob/process-wallet` — Was completely open. Anonymous users could trigger Paymob wallet payment processing (uses server-side Paymob credentials). Now `requireAuthAsync`.
+  3. `/api/market/sync` — Was completely open. Anonymous users could trigger bulk data sync that modifies all SQLite DBs (stocks.db, price_history.db, etc.) — DoS / data-corruption vector. Now `requireAdminAsync`.
+  4. `/api/db-stats` — Was completely open. Returned full DB schema (all table names + row counts + file size) — reconnaissance gold for an attacker planning SQL injection. Now `requireAdminAsync`.
+  5. `/api/admin/import-data` — Used weak single-method `verifyAdminRequest` (X-Admin-Token only). Upgraded to canonical `requireAdminAsync` (all 3 methods) as defense-in-depth. Could overwrite stock data.
+- **Lint status:** ✅ `bun run lint` exits 0 cleanly. Verified after each batch of ~10 routes (4 checkpoints).
+- **Behavior preserved:** All successful-request response shapes and status codes unchanged. Pre-existing auth checks kept as defense-in-depth (e.g. `verifyAdminToken` still runs AFTER the new `requireAdminAsync` — both must pass). Routes that used `Request` upgraded to `NextRequest` (Next.js-recommended pattern for handlers needing cookie/header access). Routes with `GET()` no-param signatures upgraded to `GET(req: NextRequest)` to call the guard.
+- **Special handling:** No SSE endpoints found in the top 30. No webhooks modified (paymob/callback left intact — has its own HMAC verification per SEC-03). 9 files with mixed CRLF/LF line endings normalized to LF via `sed -i 's/\r$//'` to allow clean Edit-tool patches (semantically identical). Defense-in-depth pattern followed: where existing auth existed (verifyAdminToken / verifyAdminRequest / getServerSession), the new `requireAdminAsync`/`requireAuthAsync` was added BEFORE the existing check, not replacing it — so callers that previously passed still pass, but now also NextAuth-session/cookie/localhost-bypass/Bearer paths work.
+- **Routes intentionally skipped:** `paymob/callback` (webhook with HMAC), `payments/result` (Paymob return URL — query-param-based), `admin/auth/token`+`admin/auth/auto-cookie`+`admin/auth/route` (login routes that issue tokens), `admin/fix-dates` (already has Bearer+DB admin check; replacing would break mobile), `mubasher/sync` (service-to-service API-key auth — adding requireAdminAsync would break Mubasher integration), `market/seed-historical` (already has getServerSession+isAdmin on POST, GET returns disabled-info, endpoint is disabled returning 410), and the 109 admin routes that already call `requireAdminAsync`.
+- **Report saved at:** `/home/z/my-project/agent-ctx/P0-11-AUTH-REPORT.md` (30-row table + top-5 impact write-ups + design rationale + special-handling notes + files-modified list + verification matrix + 5 next-action items).
+- **Known follow-up (out of scope):** ~460 unprotected routes remain (540 audit baseline − 30 secured − 109 already-protected admin routes − ~30 webhook/cron/login routes intentionally skipped ≈ ~370 left). Most are GET-only public-data endpoints (stock prices, market overview) that probably don't need auth. Recommend a focused sweep to classify each. Also recommend: Bearer support for `/api/admin/fix-dates`, simplifying redundant double-auth in `subscription/start-trial`, automated test coverage for 401/403 paths, and tightening `ALLOW_ADMIN_BYPASS` to `false` in production.
+
+---
+Task ID: HELI-INVESTIGATION
+Agent: Data Forensics (HELI cluster analysis)
+Task: Investigate root cause of HELI false TARGET_HIT cluster (10 predictions with target 9.40-9.42 EGP but actual price high 8.77 EGP), fix the source-code bug, clean up false data in predictions.db, and verify with reconciliation.
+
+Work Log:
+- Read worklog.md (last ~400 lines via tail) for context — confirmed P0-17-RECONCILE previously found 509 mismatches (41.96%) across 1213 closed predictions, with HELI accounting for 10 of the top-10 mismatches by |actual_return|.
+- Phase 1 (Pull HELI data): Queried predictions.db read-only via better-sqlite3. Found 21 HELI predictions: 20 status='TARGET_HIT' + 1 status='closed_win'. All 20 TARGET_HITs share outcome_date='2026-09-22', exit_type='maker_fuel_exhausted', fuel_pct=NULL, fuel_exhausted=0, highest_price_reached=8.20 (placeholder), actual_return 139-161%. No HELI records in stored_analyses or hunter_pick_tracking (0 rows each).
+- Phase 2 (Pull price history): Queried price_history.db read-only. HELI max_high in [2025-10-01, 2026-09-25] window = 8.77 EGP (on 2026-09-20). Min low = 3.10 EGP. Close on 2026-09-22 = 8.20 EGP. Verified per-prediction: 3 of 20 TARGET_HITs had target_price ≤ 8.77 (true hits: id=50271 target=8.62, id=50368 target=7.83, id=50628 target=8.64); 17 had target_price 9.40-9.45 EGP (FALSE TARGET_HITs — target never reached, stop never hit, window expired).
+- Phase 3 (Inspect closer code): Grepped vps-service/jobs/daily_closer.py for TARGET_HIT/target_price/hit_target patterns. Found the systemic bug at 4 sites:
+    * Line 2087: hardcoded `'TARGET_HIT'` for partial_trailing exits (regardless of whether target was hit)
+    * Line 2140: `status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'` for partial_choch exits
+    * Line 2175: same buggy heuristic for partial_stuck exits
+    * Line 2199: same buggy heuristic for partial_expired exits
+  The pattern conflates "profitable exit" with "target was hit" — any positive-return exit got mislabeled TARGET_HIT. Also discovered that the literal string `maker_fuel_exhausted` (exit_type on all 20 HELI TARGET_HITs) does NOT appear anywhere in current source code (.py/.js/.ts/.cjs/.mjs) nor in git history — it was written by a now-removed script that ran on 2026-09-22 (354 records) and 2026-09-23 (9 records) using the same buggy heuristic. The bug is systemic: 363 predictions total across 22 tickers have exit_type='maker_fuel_exhausted' (325 TARGET_HIT + 38 STOPPED), but only HELI is in scope for this task.
+- Phase 4 (Root cause): The bug is in daily_closer.py — status is assigned based on actual_return sign instead of whether the price actually reached target_price. The HELI cluster is the noisiest manifestation (10 of top-10 reconciliation mismatches) because HELI's actual_return was the largest (+150% to +161%) due to the stock rising from ~3.2 to ~8.2 EGP.
+- Phase 5 (Fix source code): Applied surgical fix at all 4 sites in vps-service/jobs/daily_closer.py:
+    * Replaced `status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'` with the truthful criterion:
+      `if target_price > 0 and highest_price_reached >= target_price: status = 'TARGET_HIT'`
+      `elif actual_return > 0: status = 'closed_win'` (truthful "won but missed target" label)
+      `else: status = 'EXPIRED'`
+    * For the partial_trailing site (line 2087), replaced hardcoded `'TARGET_HIT'` with the same 3-way branch using a local `_trailing_status` variable.
+    * Each fix site carries the marker comment `# HELI-INVESTIGATION fix (2026-09-27): ...`.
+    * Added a write-time assertion in _mark_closed() at line 2979-3008: if status='TARGET_HIT' but highest_price_reached + 1e-4 < target_price, auto-downgrade to 'closed_win' (if return>0) or 'EXPIRED' and log a warning. This catches the bug pattern regardless of where the status was assigned (defense-in-depth).
+    * Verified Python syntax with `python3 -c "import ast; ast.parse(open('vps-service/jobs/daily_closer.py').read())"` → OK.
+- Phase 6 (Data cleanup): Created scripts/fix_heli_false_targets.py — a HELI-scoped Python script that:
+    * Backs up db/predictions.db → db/predictions.db.bak-heli-fix (235,220,992 bytes).
+    * For each HELI TARGET_HIT prediction: fetches actual price_history between prediction_date and outcome_date, determines actual outcome (TARGET_HIT if max_high≥target, STOPPED if min_low≤stop, else EXPIRED), recomputes actual_return = (outcome_close-entry)/entry*100, and UPDATEs status/actual_return/highest_price_reached/lowest_price_reached in a single atomic transaction.
+    * Logs BEFORE/AFTER for every row to stdout and to scripts/output/heli_fix_log_<ts>.txt.
+    * Supports --dry-run mode.
+  Ran dry-run first: confirmed 17 rows will flip to EXPIRED, 3 rows will keep TARGET_HIT (target was actually hit), all 20 will get highest_price_reached corrected from 8.20 → 8.77.
+  Ran the actual fix: 17 UPDATEs applied in a single transaction + 3 highest_price_reached corrections on the true TARGET_HITs. Then manually updated id=51181's highest_price_reached from 8.20 → 8.77 (it's a closed_win/TP2 exit, separate from the false TARGET_HIT cluster but had the same wrong placeholder).
+- Phase 7 (Verify): Re-ran scripts/reconcile_hit_targets.py:
+    * Mismatch rate: 41.96% → 40.56% (-1.40 pp)
+    * TARGET_HIT_to_EXPIRED mismatches: 124 → 107 (-17, exactly matches our fix count)
+    * HELI records in mismatch list: 18 → 1 (the remaining 1 is id=51181, a legitimate TP2 closed_win that the reconcile script doesn't recognize because it only checks target_price T1, not target_price_2 T2 — false-positive of the reconcile script itself, not a data bug).
+    * Top-10 mismatches now show PHDC and ABUK (same systemic maker_fuel_exhausted bug pattern; out of scope for this task).
+- Phase 8 (Report): Wrote detailed forensic report at /home/z/my-project/agent-ctx/HELI-INVESTIGATION-REPORT.md (Executive Summary + 6 phases + Recommendations + 2 appendices).
+
+Stage Summary:
+- **HELI TARGET_HIT predictions found:** 21 (20 TARGET_HIT + 1 closed_win)
+- **False TARGET_HITs identified:** 17 (target_price 9.40-9.45 EGP, actual max_high 8.77 EGP — target never reached)
+- **True TARGET_HITs preserved:** 3 (id=50271 target=8.62, id=50368 target=7.83, id=50628 target=8.64 — all ≤ 8.77)
+- **Root cause (1 sentence):** `daily_closer.py` used the heuristic `status='TARGET_HIT' if actual_return>0 else 'EXPIRED'` at 4 sites (lines 2087, 2140, 2175, 2199), conflating "profitable exit" with "target was hit" — a now-removed script applied the same buggy pattern to set `exit_type='maker_fuel_exhausted'` on 363 predictions on 2026-09-22/23 (325 of which got false TARGET_HIT status, 17 of those being HELI).
+- **Fix location (file:line):** `vps-service/jobs/daily_closer.py` — 4 sites at lines 2085-2106, 2157-2169, 2204-2212, 2236-2249 + write-time assertion at lines 2979-3008. Each site carries the marker `# HELI-INVESTIGATION fix (2026-09-27):`.
+- **Predictions corrected:** 17 status (TARGET_HIT → EXPIRED) + 21 highest_price_reached (8.20 → 8.77). No rows deleted. Atomic transaction. Backup at db/predictions.db.bak-heli-fix.
+- **New reconciliation mismatch rate:** 40.56% (was 41.96%; drop of 1.40 pp). The HELI cluster is fully resolved — only 1 "mismatch" remains (id=51181, a legitimate TP2 closed_win that the reconcile script flags as a false positive because it doesn't know about target_price_2).
+- **Files modified:** vps-service/jobs/daily_closer.py (4 fix sites + 1 assertion; +94/-4 LOC)
+- **Files created:** scripts/fix_heli_false_targets.py (325 LOC), agent-ctx/HELI-INVESTIGATION-REPORT.md (~9 KB), db/predictions.db.bak-heli-fix (235 MB backup), scripts/output/heli_fix_log_20260927T161035Z.txt
+- **Systemic follow-up (out of scope but flagged):** 308 more false TARGET_HITs with exit_type='maker_fuel_exhausted' exist across 21 other tickers (ABUK 63, PHDC 22, MASR ~95, AMOC ~50, etc.). Recommend generalizing fix_heli_false_targets.py to all affected tickers. Also recommend extending reconcile_hit_targets.py to check target_price_2 when exit_type IN ('TP2', 'target_2_hit') so legitimate TP2 exits don't show as false mismatches.
+
+---
+Task ID: HELI-CLEANUP-2
+Agent: Data Forensics (cleanup all false TARGET_HITs)
+Task: Generalize the HELI-INVESTIGATION cleanup to ALL 308 false TARGET_HIT predictions across 25 tickers (exit_type='maker_fuel_exhausted' + status='TARGET_HIT'); run the full cleanup; update reconcile_hit_targets.py to recognize target_price_2 (TP2) hits; verify reconciliation; write forensic report.
+
+Work Log:
+- Read worklog.md (HELI-INVESTIGATION entry at line 42073) for context — confirmed: 363 predictions have exit_type='maker_fuel_exhausted' (325 TARGET_HIT + 38 STOPPED), of which 17 HELI TARGET_HITs were already cleaned (→ EXPIRED) in HELI-INVESTIGATION. Remaining: 308 false TARGET_HITs across 25 non-HELI-heavy tickers + 3 HELI true-positive TARGET_HITs.
+- Phase 1 (Read-only query): Used Node.js + better-sqlite3 (readonly mode) to enumerate all 363 maker_fuel_exhausted records. Confirmed 308 are status='TARGET_HIT' (the false positives to clean), 38 are STOPPED, 17 are EXPIRED (HELI-INVESTIGATION output). Top affected tickers: MASR (88), ABUK (68), AMOC (63), PHDC (51), CIEB (5).
+- Phase 2 (Generalize cleanup script): Read scripts/fix_heli_false_targets.py (325 LOC) for the pattern. Created scripts/fix_all_false_targets.py (397 LOC) — generalizes the HELI script with 5-branch outcome determination: TP1 hit → keep TARGET_HIT; TP2 hit (target_price_2 reached) → closed_win; stop hit → STOPPED; window expired → EXPIRED; else → active. Pre-fetches price_history per-ticker (batched, like reconcile script) instead of 1-query-per-prediction. Supports --dry-run, atomic transaction, BEFORE/AFTER logging.
+- Phase 3 (Backup): cp db/predictions.db db/predictions.db.bak-full-cleanup (235,220,992 bytes).
+- Phase 4a (Dry-run): python3 scripts/fix_all_false_targets.py --dry-run → 308 examined, 116 status changes planned (102 closed_win + 13 EXPIRED + 1 STOPPED), 192 kept TARGET_HIT (true TP1 hits).
+- Phase 4b (Apply): python3 scripts/fix_all_false_targets.py → transaction committed: 116 status changes, 300 highest_price_reached corrections, 305 lowest_price_reached corrections. Log at scripts/output/fix_all_false_targets_log_20260927T162038Z.txt.
+- Phase 5a (Re-run reconcile): python3 scripts/reconcile_hit_targets.py → mismatch rate 40.56% → 39.41% (drop of only 1.15 pp). Reason: reconcile didn't know about target_price_2, so my 102 closed_win records (which normalize to TARGET_HIT) were compared against actual=EXPIRED → still mismatches. Target was <25%.
+- Phase 6 (Update reconcile script): Modified scripts/reconcile_hit_targets.py — determine_actual_outcome() now accepts target_price_2 and returns (actual_status, tp_hit_flag) where tp_hit_flag is 'TP1', 'TP2', or None. If TP1 not hit but TP2 was reached, returns ('TARGET_HIT', 'TP2'). Also updated fetch_closed_predictions() to SELECT target_price_2. This makes recorded=closed_win (normalized TARGET_HIT) match actual=TARGET_HIT (TP2) — eliminating the false mismatches.
+- Phase 5b (Re-run reconcile after Phase 6): mismatch rate dropped to 33.06% (from 39.41%). But top mismatches now show 17 HELI EXPIRED records where actual=TARGET_HIT (TP2 was hit, but HELI-INVESTIGATION had marked them EXPIRED because it only checked TP1, not TP2).
+- Supplementary fix: Created scripts/fix_heli_expired_to_closedwin.py (245 LOC) — fixes the 17 HELI EXPIRED records: their target_price_2 ≈ 3.77-3.90 EGP (a +20% partial TP2) was hit on the way up to max_high=8.77 EGP. They should be closed_win (profitable TP2 exit), not EXPIRED. Backed up to db/predictions.db.bak-heli-expired-fix. Ran --dry-run (17 will change), then applied: 17 EXPIRED → closed_win in single atomic transaction. Log at scripts/output/fix_heli_expired_log_20260927T162624Z.txt.
+- Phase 5c (Final reconcile): mismatch rate = 31.66% (384 mismatches out of 1213 closed). HELI cluster: 0 mismatches (fully resolved). All 384 remaining mismatches have exit_type='' (empty) — NONE have exit_type='maker_fuel_exhausted'. They are pre-existing data quality issues from other closing processes (BTFH 79, MASR 51, BLDG 36, PIOH 35, ABUK 33, CIEB 29 etc.) and are out of scope for this task.
+- Phase 7 (Forensic report): Wrote /home/z/my-project/agent-ctx/HELI-CLEANUP-2-REPORT.md (~10 KB) with executive summary, by-ticker breakdown (308 primary + 17 supplementary), cleanup script details, reconcile script update details, backups table, reconciliation-over-time table, final state verification, remaining-mismatches analysis, and 6 recommendations (find/disable the maker_fuel_exhausted script on VPS, add DB CHECK constraint with TP2 awareness, add unit tests for daily_closer.py, follow-up cleanup for the other 384 mismatches, add nightly reconciliation cron).
+
+Stage Summary:
+- **Total false TARGET_HITs across all tickers (before):** 308 (across 25 tickers — top: MASR 88, ABUK 68, AMOC 63, PHDC 51)
+- **Total cleaned up:** 133 (116 in primary fix + 17 HELI supplementary)
+  - 102 TARGET_HIT → closed_win (TP2 hit but not TP1)
+  - 13 TARGET_HIT → EXPIRED (no TP1/TP2/stop hit, window expired)
+  - 1 TARGET_HIT → STOPPED (TAQA — stop was actually hit, return was actually negative)
+  - 17 EXPIRED → closed_win (HELI supplementary — HELI-INVESTIGATION had missed TP2)
+- **True TARGET_HITs preserved:** 192 (all verified: highest_price_reached >= target_price)
+- **Top 5 affected tickers:** MASR (88), ABUK (68), AMOC (63), PHDC (51), CIEB (5)
+- **New reconciliation mismatch rate:** 31.66% (was 40.56% after HELI-INVESTIGATION; drop of 8.90 pp)
+  - Note: target was <25%; not reached because 384 remaining mismatches are from OTHER root causes (empty exit_type, not maker_fuel_exhausted). Top remaining tickers: BTFH 79, MASR 51, BLDG 36, PIOH 35, ABUK 33.
+- **Remaining mismatches:** 384 — NONE have exit_type='maker_fuel_exhausted'. Breakdown: EXPIRED_to_TARGET_HIT 235, EXPIRED_to_STOPPED 89, STOPPED_to_TARGET_HIT 28, STOPPED_to_EXPIRED 28, TARGET_HIT_to_EXPIRED 4.
+- **HELI cluster:** 0 mismatches (fully resolved — was 18 in P0-17 baseline).
+- **Root cause confirmed:** Same as HELI — now-removed VPS script set exit_type='maker_fuel_exhausted' on 363 predictions using the buggy heuristic `status='TARGET_HIT' if actual_return > 0 else 'STOPPED'`, regardless of whether target_price was actually reached.
+- **Files modified:** scripts/reconcile_hit_targets.py (+44/-9 LOC, added target_price_2 to determine_actual_outcome and fetch_closed_predictions).
+- **Files created:** scripts/fix_all_false_targets.py (397 LOC), scripts/fix_heli_expired_to_closedwin.py (245 LOC), agent-ctx/HELI-CLEANUP-2-REPORT.md (~10 KB), db/predictions.db.bak-full-cleanup (235 MB), db/predictions.db.bak-heli-expired-fix (235 MB), 6 log/output files in scripts/output/.
+- **Final state of all 363 maker_fuel_exhausted records:** TARGET_HIT 192 (all true TP1 hits) + closed_win 119 + STOPPED 39 + EXPIRED 13 = 363 ✓
+- **Systemic follow-up (out of scope but flagged):** 384 remaining reconcile mismatches have empty exit_type (NOT maker_fuel_exhausted) — pre-existing data quality issues from other closing processes. Recommend a separate "fix_expired_mislabels.py" + "fix_stopped_mislabels.py" cleanup following the same pattern (would target BTFH/MASR/BLDG/PIOH/ABUK/CIEB). Estimated impact: another 5-8 pp drop in mismatch rate.
+
+---
+Task ID: P0-8-DB-UNIFY
+Agent: Database Architect (unify duplicate tables)
+Task: Consolidate the 12 duplicate tables identified by AUDIT_DATABASES across the 4 SQLite DBs (stocks.db, predictions.db, auth.db, data_engine.db). Phase-4 market.db consolidation was never completed — this task picks up by safely dropping the duplicates from non-canonical DBs after verifying canonical sources have all the data, updating code references, and updating the DB routing table.
+
+Work Log:
+- Read worklog.md (last ~500 lines via tail) for context. Confirmed prior PHASE-1/2/3-DB-UNIFY tasks established db_paths.py 4-DB target architecture but never completed the consolidation. Confirmed P0-11-AUTH-REPORT introduced a middleware.ts bug (crypto.randomUUID in edge runtime) that pre-exists and is unrelated to this task.
+- Phase 1 (Inventory — read-only): Wrote scripts/db_unify_inventory.js using Node + better-sqlite3 (readonly:true). Queried row counts, latest date column, and column counts for all 12 duplicate tables across the 4 DBs. Key findings:
+  * stocks.gold_prices: 3 rows (default seed, 2026-06-03) vs data_engine.gold_prices: 187,153 rows (live, 2026-09-26) — different schemas
+  * stocks.cached_analysis: 143 rows (39 cols) vs predictions.cached_analysis: 0 rows (18 cols) — different schemas, intentional fallback cache
+  * stocks.learned_lessons: 0 rows (8 cols) vs predictions.learned_lessons: 19,464 rows (10 cols) — different schemas
+  * stocks.ExpertRecommendation: 127 rows (38 cols, UUID ids, 2026-09-07) vs auth.ExpertRecommendation: 17 rows (24 cols, exp001-017 ids, 2026-06-03) vs predictions.ExpertRecommendation: 17 rows (24 cols, identical to auth)
+  * stocks.egksco_price_history: 0 rows vs data_engine.egksco_price_history: 13,246 rows (2026-09-08)
+  * data_engine.egksco_stocks: 0 rows vs stocks.egksco_stocks: 250 rows (2026-07-23) — REVERSED from expected mapping
+  * stocks.portfolios: 3 rows (auth.db doesn't have this table) — NOT a duplicate anymore
+  * auth.User: 101 rows (stocks.db doesn't have this table) — NOT a duplicate anymore
+  * stocks.Post: doesn't exist (custom.db already removed) — NOT a duplicate anymore
+  * stocks.telegram_news: 6 rows (10 cols) vs predictions.telegram_news: 0 rows (8 cols) — different schemas
+  * predictions.user_trades: 0 rows (stocks.db doesn't have this table) — NOT a duplicate anymore
+  * stocks.stocks: 976 rows (58 cols, 2026-09-26) vs data_engine.stocks: 296 rows (16 cols, 2026-09-08) — different schemas
+- Phase 2 (Canonical determination): Wrote 3 verification scripts (db_unify_verify_expert.js, db_unify_verify_expert2.js, db_unify_verify_gold.js, db_unify_verify_stocks.js) to confirm:
+  * All 16/17 auth.ExpertRecommendation rows are direct duplicates by (symbol, recommendation_date) of stocks.db rows. 1 unique (FWRY @ 2026-06-03) is 4 months stale.
+  * predictions.ExpertRecommendation is identical to auth.ExpertRecommendation (17/17 overlap by id+symbol+date).
+  * stocks.db.gold_prices 3 rows are source='default' placeholder values (3200/2800/2400 EGP for 24k/21k/18k) — not real scraped prices.
+  * All 296 symbols in data_engine.db.stocks exist in stocks.db.stocks; all 296 rows are stale (>7 days old, last_update=2026-09-08).
+- Phase 3 (Code reference check): Grep'd src/ and vps-service/ for each table name. Findings:
+  * stocks.db.gold_prices — only 1 reference: precomputeGoldData() in src/lib/cache/precomputed-cache.ts:722-724. The query `SELECT karat, price_per_gram, change FROM gold_prices` was ALREADY BROKEN — stocks.db.gold_prices schema has no `change` column. Verified by running it: `Error: no such column: change`. The thrown error propagated up and aborted the entire updateAllCache() flow.
+  * predictions.db.cached_analysis — referenced by ai_predictions_routes.py:426 (try/except protected) + :611 (try/except protected). Migrator recreates table on schema-build.
+  * predictions.db.telegram_news — TelegramSignalImporter._ensure_schema() recreates table on init.
+  * predictions.db.ExpertRecommendation — unified_learning_engine.py:1224 uses `'ExpertRecommendation' in tables` existence check — gracefully skipped when missing.
+  * auth.ExpertRecommendation — no code references auth.db version.
+  * data_engine.db.egksco_stocks — live_price.py:_price_from_data_engine() catches OperationalError, falls back to _price_from_stocks_egksco().
+  * data_engine.db.stocks — smart_confluence_engine.py:96-116 has explicit fallback to stocks.db.stocks. cleanup_corrupted_symbols.py:25 will fail (acceptable — one-off script).
+  * All gold_prices readers in src/lib/data-engine-db.ts, gold-history-helper.ts, etc. already use data_engine.db.
+- Phase 4 (Backup + Drop): Wrote scripts/unify_duplicate_tables.py (296 LOC) with: (1) backup every DB to *.bak-unify, (2) dump non-empty tables to JSON sidecars before DROP, (3) row-count sanity check (refuses to drop if live count != expected — guards against concurrent writes), (4) DROP TABLE, (5) verify drop, (6) write JSON results. Ran dry-run first (all 9 entries planned), then live run.
+  * Backups created: stocks.db.bak-unify (14.2 MB), predictions.db.bak-unify (224.3 MB), auth.db.bak-unify (0.2 MB), data_engine.db.bak-unify (272.5 MB) — 511.2 MB total.
+  * JSON sidecars created for 4 non-empty drops: gold_prices (3 rows), predictions.ExpertRecommendation (17 rows), auth.ExpertRecommendation (17 rows), data_engine.stocks (296 rows). 333 rows total preserved.
+  * All 9 drops succeeded. 0 skipped. 0 errored.
+- Phase 5 (Code updates):
+  * Rewrote precomputeGoldData() in src/lib/cache/precomputed-cache.ts (lines 716-794, +78/-57 LOC) to use getLiveEgyptGoldPrices() from data-engine-db.ts (the canonical source). Wrapped in try/catch so missing gold data doesn't abort the whole updateAllCache() flow. Added 8-line comment block documenting P0-8-DB-UNIFY context. This also fixes a latent bug: updateAllCache() has been silently failing for months because of the broken query.
+  * Refreshed get_db_for_table() in vps-service/utils/db_paths.py (lines 76-227, +85/-52 LOC). Each consolidated table now routes to its actual canonical DB in current production state (data_engine.db / stocks.db / predictions.db / auth.db) instead of the future-state 4-DB architecture (market.db / content.db — both still empty on production). Updated 4 aliases (GOLD_PRICES_DB, TELEGRAM_DATA_DB, NEWS_DB, ANALYTICS_DB) with refreshed comments. Default fallback changed from MARKET_DB (empty) to STOCKS_DB. 14/14 routing verification tests pass.
+- Phase 6 (db_paths.py): Done as part of Phase 5 (see above).
+- Phase 7 (Verify):
+  * Wrote scripts/db_unify_verify_drops.js (20 checks). All 20 pass: 9 dropped tables absent, 11 canonical tables present with expected row counts (gold_prices 187,153, learned_lessons 19,464, egksco_price_history 13,246, cached_analysis 143, telegram_news 6, ExpertRecommendation 127, egksco_stocks 250, stocks 976, portfolios 3, User 101, user_trades 0).
+  * bun run lint → exit 0 (no errors, no warnings).
+  * App health: curl localhost:3001/ returns HTTP 500 — confirmed PRE-EXISTING middleware.ts edge-runtime crypto bug (introduced by P0-11-AUTH-REPORT, unrelated to this task). All 3 tested endpoints (/, /api/health, /api/expert-recommendations) return the SAME middleware error. None of the dropped tables are referenced by these endpoints. Bug is independent of DB consolidation.
+  * Post-drop DB state: stocks.db 50 tables (was 53), predictions.db 43 (was 46), data_engine.db 21 (was 23), auth.db 13 (was 14). Total dropped: 9 tables.
+- Phase 8 (Report): Wrote /home/z/my-project/agent-ctx/P0-8-DB-UNIFY-REPORT.md (~9 KB) with executive summary, 13-row per-table decisions table, code updates detail, verification matrix, files-modified list, files-created list, follow-up items, and recommendations.
+
+Stage Summary:
+- **Duplicate tables in original AUDIT_DATABASES list:** 12
+- **Tables actually DROPPED:** 9 (gold_prices from stocks.db; cached_analysis, telegram_news, ExpertRecommendation from predictions.db; ExpertRecommendation from auth.db; learned_lessons, egksco_price_history from stocks.db; egksco_stocks, stocks from data_engine.db)
+- **Tables needing NO drop:** 4 (portfolios, User, Post, user_trades — only existed in one DB; audit report counted them as duplicates but they were already consolidated)
+- **Total rows dropped:** 333 (3 + 0 + 0 + 0 + 0 + 17 + 17 + 0 + 296)
+- **Total rows preserved as JSON sidecars:** 333 (every dropped row with data was dumped before DROP)
+- **DBs backed up:** 4 (stocks.db 14.2 MB, predictions.db 224.3 MB, auth.db 0.2 MB, data_engine.db 272.5 MB — 511.2 MB total)
+- **Files modified:** 2 (src/lib/cache/precomputed-cache.ts +78/-57 LOC; vps-service/utils/db_paths.py +85/-52 LOC)
+- **Files created:** 11 (7 scripts in scripts/, 1 report in agent-ctx/, 3 JSON outputs in scripts/output/ + 4 dropped-row sidecars)
+- **Lint status:** ✅ bun run lint exit 0
+- **App health:** ⚠️ HTTP 500 — pre-existing middleware.ts edge-runtime crypto bug (NOT caused by this task). DB consolidation itself verified by 20/20 drop verification checks.
+- **Latent bug fixed:** precomputeGoldData() in precomputed-cache.ts was throwing "no such column: change" on every cache update, silently aborting updateAllCache() — now uses data_engine.db canonical source and wraps in try/catch.
+- **Routing correctness:** db_paths.get_db_for_table() now returns canonical DB paths (e.g. gold_prices → data_engine.db instead of empty market.db). 14/14 tests pass.
+- **Recommendations:** (1) Deploy middleware.ts crypto fix to restore app health; (2) Run updateAllCache() after deploy to populate the gold cache with real data for the first time in months; (3) Update AUDIT_DATABASES report to reflect 9 drops; (4) Add CI guard running db_unify_verify_drops.js after every DB migration; (5) Keep .bak-unify files through 2026-10-04, then delete.
+
+---
+Task ID: P0-16-TESTS
+Agent: Test Engineer (critical tests + middleware fix)
+Task: Fix middleware edge-runtime regression (HTTP 500 on every request) introduced by P0-11-AUTH, then write critical security + correctness tests covering auth, SQL injection, predictions pipeline, DB integrity, and health endpoint.
+
+Work Log:
+- Read worklog.md tail (~500 lines) for context on prior P0-11/P0-12/P0-15/P0-17/P0-18/HELI/P0-8 work.
+- Read src/middleware.ts and confirmed the regression: line 2 imported `randomUUID` from Node.js built-in `crypto` module, which is NOT available in the Next.js Edge runtime. Every request to localhost:3001/ returned HTTP 500.
+- Replaced the Node.js `crypto` import with a runtime-portable `generateRequestId()` helper that:
+    1. Tries the Web Crypto API (`globalThis.crypto.randomUUID()`) — supported in Edge runtime + modern Node.js.
+    2. Falls back to a time-based ID (`req-${Date.now()}-${Math.random().toString(36).slice(2,10)}`) if Web Crypto is unavailable.
+    3. Wraps both paths in try/catch so any failure → safe fallback (never 500).
+- Verified: curl localhost:3001/ returns HTTP 200, /api/health returns HTTP 200, SQLi probe returns HTTP 400 (whitelist still rejects).
+- Inspected existing vitest config (jsdom environment, `@/` alias, setup.ts with polyfills) and the 3 existing test files (75 tests, 873 LOC).
+- Read P0-12-SQLI-FIXES.md to find the 5 fixed files (tab-data, live-tracking, screener, clear-junk-data, db-explorer) and aligned tests to the actual contract.
+- Created 6 new test files (923 LOC, 46 new tests):
+    * src/__tests__/security/sql-injection.test.ts (111 LOC, 6 tests) — verifies tab-data whitelist rejects DROP/DELETE/UNION/INSERT payloads with 400; verifies live-tracking market param doesn't crash on SQLi.
+    * src/__tests__/security/auth-guard.test.ts (198 LOC, 9 tests) — requires `requireAuthAsync` returns 401 on no session; `requireAdminAsync` returns 403 on no token (with localhost bypass disabled) and null on valid X-Admin-Token / admin_session cookie.
+    * src/__tests__/security/import-endpoint.test.ts (189 LOC, 7 tests) — verifies POST /api/import enforces auth (401), file size (413), file extension (400), type field validation (400), no 500 on malformed multipart.
+    * src/__tests__/predictions/pipeline.test.ts (167 LOC, 8 tests) — verifies no duplicate predictions (P0-18 UNIQUE index), stored_analyses populated (P0-1), hunter_pick_tracking populated (P0-2), no false TARGET_HIT from maker_fuel_exhausted (HELI), schema integrity, no future-dated predictions, all TARGET_HIT have valid target_price.
+    * src/__tests__/db/integrity.test.ts (165 LOC, 11 tests) — verifies all 4 critical DBs open read-only + respond to SELECT 1; gold_prices NOT in stocks.db (P0-8 moved it) and IS in data_engine.db (canonical); stocks table has >=100 rows.
+    * src/__tests__/api/health.test.ts (93 LOC, 5 tests) — verifies /api/health returns 200/503, body shape (status + components.databases + nextjs + disk), Cache-Control: no-store header, response time <5s.
+- Tests use REAL read-only DB connections (no mocks) for integrity tests, and live HTTP fetch against localhost:3001 for API integration tests. The HTTP-based tests auto-skip if the dev server is not running (graceful degradation in CI).
+- Resolved 5 test-debugging issues during development:
+    1. Web `Request` lacks `.cookies` (a `NextRequest` extension) → built a duck-typed stand-in object.
+    2. `vi.stubEnv` didn't affect module-load-time constants in admin-auth-server → used `vi.resetModules()` + dynamic `await import()` to re-evaluate.
+    3. Unescaped apostrophe in test name broke esbuild transform → renamed.
+    4. `describe.skipIf(!serverUp)` was evaluated before `beforeAll` set the flag → moved probe to top-level `await`.
+    5. vitest's jsdom `fetch` rejects Node's `AbortSignal.timeout()` as "not an instance of AbortSignal" → replaced with manual `Promise.race` timeout pattern.
+- Ran final verification:
+    * `bun run test` → 9 test files passed (121 tests, 0 failures, 0 skipped since dev server was up).
+    * `bun run lint` → exit 0, zero errors.
+    * `curl localhost:3001/` → HTTP 200 (middleware fix confirmed).
+
+Stage Summary:
+- Middleware regression FIXED: replaced Node.js `crypto` import with Web-Crypto-API-with-fallback that works in Edge runtime. App health restored (200).
+- Test coverage IMPROVED: 9 test files (was 3), 121 test cases (was 75), 1,796 LOC (was 873). +46 new tests covering the 6 critical paths: SQLi protection, auth guards, import endpoint security, predictions pipeline correctness, DB integrity (P0-8 unification), health endpoint contract.
+- All tests PASS: 121/121, 0 failures, 0 skipped.
+- Lint status: clean (exit 0).
+- Report saved to: agent-ctx/P0-16-TESTS-REPORT.md.
+- Recommendations: add Playwright E2E tests for golden paths, add CI pipeline to run tests on every PR, auto-generate per-route smoke tests to push coverage to 10-15%, target 30% coverage in 3 months.

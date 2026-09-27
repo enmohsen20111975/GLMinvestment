@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync readFileSync/writeFileSync/
+// existsSync/mkdirSync with async fs/promises equivalents so POST/GET/DELETE
+// handlers never block the event loop on the tracking JSON file.
+import { readFile, writeFile, access, mkdir } from 'fs/promises';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
@@ -15,24 +18,31 @@ interface TrackedStock {
   notes?: string;
 }
 
-function loadTracking(): Record<string, TrackedStock> {
+// P0-14-ASYNC fix (2026-09-27): loadTracking is now async.
+async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
-    if (existsSync(TRACKING_FILE)) {
-      const data = readFileSync(TRACKING_FILE, 'utf-8');
-      return JSON.parse(data);
+    try {
+      await access(TRACKING_FILE);
+    } catch {
+      return {};
     }
+    const data = await readFile(TRACKING_FILE, 'utf-8');
+    return JSON.parse(data);
   } catch (e) {
     console.error('[maker-radar/track] load error:', e);
   }
   return {};
 }
 
-function saveTracking(tracking: Record<string, TrackedStock>) {
+// P0-14-ASYNC fix (2026-09-27): saveTracking is now async.
+async function saveTracking(tracking: Record<string, TrackedStock>): Promise<void> {
   const dir = path.dirname(TRACKING_FILE);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  try {
+    await access(dir);
+  } catch {
+    await mkdir(dir, { recursive: true });
   }
-  writeFileSync(TRACKING_FILE, JSON.stringify(tracking, null, 2));
+  await writeFile(TRACKING_FILE, JSON.stringify(tracking, null, 2));
 }
 
 // POST /api/maker-radar/track
@@ -49,12 +59,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const tracking = loadTracking();
+    const tracking = await loadTracking();
     const upperTicker = ticker.toUpperCase();
 
     if (action === 'remove') {
       delete tracking[upperTicker];
-      saveTracking(tracking);
+      await saveTracking(tracking);
       return NextResponse.json({
         success: true,
         action: 'removed',
@@ -79,7 +89,7 @@ export async function POST(req: NextRequest) {
       addedAt: new Date().toISOString(),
       notes,
     };
-    saveTracking(tracking);
+    await saveTracking(tracking);
 
     return NextResponse.json({
       success: true,
@@ -100,7 +110,7 @@ export async function POST(req: NextRequest) {
 // GET /api/maker-radar/track — رجّع كل الأسهم المتابَعة
 export async function GET() {
   try {
-    const tracking = loadTracking();
+    const tracking = await loadTracking();
     return NextResponse.json({
       success: true,
       tracked: Object.values(tracking),
@@ -127,10 +137,10 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const tracking = loadTracking();
+    const tracking = await loadTracking();
     const upperTicker = ticker.toUpperCase();
     delete tracking[upperTicker];
-    saveTracking(tracking);
+    await saveTracking(tracking);
 
     return NextResponse.json({
       success: true,

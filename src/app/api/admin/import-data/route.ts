@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
+// P0-11-AUTH fix (2026-09-27): added admin auth guard (canonical multi-method
+// check via requireAdminAsync — supersedes the weaker single-method
+// verifyAdminRequest that only checks X-Admin-Token / admin_session cookie).
+// verifyAdminRequest kept as defense-in-depth below.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { verifyAdminRequest } from '@/lib/admin-auth-server';
 
 /**
@@ -75,8 +80,11 @@ const IMPORTABLE_COLUMNS = [
 ];
 
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard (canonical multi-method).
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
-    // Verify admin token using the unified auth method
+    // Verify admin token using the unified auth method (defense-in-depth)
     if (!verifyAdminRequest(request)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

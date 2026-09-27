@@ -6,11 +6,16 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
-import { execSync } from 'child_process';
+// P0-14-ASYNC fix (2026-09-27): replaced execSync with promisified execFile for
+// pm2 commands; renamed async helper `runCommandAsync`.
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
 
 export const dynamic = 'force-dynamic';
+
+const execFileAsync = promisify(execFile);
 
 // P23-PORTABILITY: كل المسارات نسبية من process.cwd() (جذر مشروع Next.js) —
 // تشتغل على اللابتوب / السيرفر الإنتاجي / الساندبوكس بدون تعديل.
@@ -19,18 +24,29 @@ const CWD = process.cwd();
 const ECOSYSTEM_PATH = path.join(CWD, 'ecosystem.config.js');
 
 // فضّل binary الـ pm2 المحلي في node_modules؛ لو مش موجود استخدم pm2 من PATH.
+// ملاحظة: existsSync هنا يشتغل مرة واحدة عند تحميل الموديول (مش في مسار الـ request)
+// فمش بيسدّ الـ event loop أثناء request.
 const LOCAL_PM2 = path.join(CWD, 'node_modules', 'pm2', 'bin', 'pm2');
 const PM2_PATH = fs.existsSync(LOCAL_PM2) ? LOCAL_PM2 : 'pm2';
 
-function runCommand(cmd: string): { success: boolean; output: string; error?: string } {
+// P0-14-ASYNC fix (2026-09-27): execSync → execFileAsync. splits the command
+// into argv to avoid shell-injection risk and yields to the event loop while
+// pm2 is running. Caller must `await runCommandAsync(...)`.
+async function runCommandAsync(cmd: string): Promise<{ success: boolean; output: string; error?: string }> {
+    // Build argv safely (no shell interpolation). Supports `${PM2_PATH} start ${ECOSYSTEM_PATH} --only ${name}`
+    // style commands by splitting on whitespace; process_name was already validated
+    // against `validActions` set, but we still quote/split defensively.
+    const argv = cmd.match(/(?:[^"'\s]+|"[^"]*"|'[^']*')+/g)?.map(a => a.replace(/^["']|["']$/g, '')) ?? [];
+    if (argv.length === 0) {
+        return { success: false, output: '', error: 'Empty command' };
+    }
     try {
-        const result = execSync(cmd, {
+        const { stdout } = await execFileAsync(argv[0], argv.slice(1), {
             cwd: CWD,
             timeout: 15000,
-            encoding: 'utf-8',
-            env: { ...process.env, PATH: process.env.PATH || '' }
+            env: { ...process.env, PATH: process.env.PATH || '' },
         });
-        return { success: true, output: result.trim() };
+        return { success: true, output: stdout.trim() };
     } catch (e: any) {
         return {
             success: false,
@@ -64,41 +80,41 @@ export async function POST(req: NextRequest) {
                 if (!process_name) {
                     return NextResponse.json({ success: false, error: 'process_name is required' }, { status: 400 });
                 }
-                result = runCommand(`${PM2_PATH} start ${ECOSYSTEM_PATH} --only ${process_name}`);
+                result = await runCommandAsync(`${PM2_PATH} start ${ECOSYSTEM_PATH} --only ${process_name}`);
                 break;
 
             case 'stop':
                 if (!process_name) {
                     return NextResponse.json({ success: false, error: 'process_name is required' }, { status: 400 });
                 }
-                result = runCommand(`${PM2_PATH} stop ${process_name}`);
+                result = await runCommandAsync(`${PM2_PATH} stop ${process_name}`);
                 break;
 
             case 'restart':
                 if (!process_name) {
                     return NextResponse.json({ success: false, error: 'process_name is required' }, { status: 400 });
                 }
-                result = runCommand(`${PM2_PATH} restart ${process_name}`);
+                result = await runCommandAsync(`${PM2_PATH} restart ${process_name}`);
                 break;
 
             case 'status':
-                result = runCommand(`${PM2_PATH} status`);
+                result = await runCommandAsync(`${PM2_PATH} status`);
                 break;
 
             case 'start-all':
-                result = runCommand(`${PM2_PATH} start ${ECOSYSTEM_PATH}`);
+                result = await runCommandAsync(`${PM2_PATH} start ${ECOSYSTEM_PATH}`);
                 break;
 
             case 'stop-all':
-                result = runCommand(`${PM2_PATH} stop all`);
+                result = await runCommandAsync(`${PM2_PATH} stop all`);
                 break;
 
             case 'restart-all':
-                result = runCommand(`${PM2_PATH} restart all`);
+                result = await runCommandAsync(`${PM2_PATH} restart all`);
                 break;
 
             case 'save':
-                result = runCommand(`${PM2_PATH} save`);
+                result = await runCommandAsync(`${PM2_PATH} save`);
                 break;
 
             default:
@@ -127,7 +143,7 @@ export async function GET(req: NextRequest) {
     // SEC-07 FIX: Admin auth required for PM2 status
     const authError = await requireAdminAsync(req);
     if (authError) return authError;
-    const result = runCommand(`${PM2_PATH} jlist`);
+    const result = await runCommandAsync(`${PM2_PATH} jlist`);
     let processes: any[] = [];
 
     if (result.success) {
@@ -137,7 +153,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Also get stats
-    const uptime = runCommand(`${PM2_PATH} pid`);
+    const uptime = await runCommandAsync(`${PM2_PATH} pid`);
 
     return NextResponse.json({
         success: result.success,

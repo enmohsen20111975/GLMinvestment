@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — money endpoint,
+// was previously callable by anonymous users. Now requires authenticated
+// session (NextAuth cookie OR Bearer token).
+import { requireAuthAsync } from '@/lib/admin-guard';
+import { NextRequest } from 'next/server';
+
 
 /**
  * POST /api/paymob/process-wallet
@@ -8,7 +14,11 @@ export const dynamic = "force-dynamic";
  * 
  * Body: { wallet_number: string, payment_key: string }
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (money endpoint)
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = await request.json();
     const { wallet_number, payment_key } = body;

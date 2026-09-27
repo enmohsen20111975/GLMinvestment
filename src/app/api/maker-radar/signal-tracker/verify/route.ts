@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { existsSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync with async access
+// from fs/promises in fetchPricesAfter / openTrackerDb so the verify POST
+// handler never blocks the event loop per price-source candidate.
+import { access } from 'fs/promises';
 import path from 'path';
 import Database from 'better-sqlite3';
 
@@ -88,13 +91,19 @@ interface PricePoint {
 }
 
 /** Fetch up to `limit` trading-day prices strictly AFTER signalDate for ticker. */
-function fetchPricesAfter(
+// P0-14-ASYNC fix (2026-09-27): now async — uses access() instead of existsSync
+// per candidate DB so the event loop is not blocked.
+async function fetchPricesAfter(
   ticker: string,
   signalDate: string,
   limit: number
-): { prices: PricePoint[]; source: string | null } {
+): Promise<{ prices: PricePoint[]; source: string | null }> {
   for (const src of PRICE_SOURCES) {
-    if (!existsSync(src.dbPath)) continue;
+    try {
+      await access(src.dbPath);
+    } catch {
+      continue;
+    }
     let db: Database.Database | null = null;
     try {
       db = new Database(src.dbPath, { readonly: true, fileMustExist: true });
@@ -153,17 +162,19 @@ const TRACKER_DB_CANDIDATES = [
   path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
 ];
 
-function openTrackerDb(): Database.Database | null {
-  const dbPath = TRACKER_DB_CANDIDATES.find((p) => existsSync(p));
-  if (!dbPath) return null;
-  try {
-    const db = new Database(dbPath);
-    ensureSchema(db);
-    return db;
-  } catch (e) {
-    console.error('[signal-tracker/verify] open db error:', e);
-    return null;
+// P0-14-ASYNC fix (2026-09-27): openTrackerDb is now async — uses access().
+async function openTrackerDb(): Promise<Database.Database | null> {
+  for (const p of TRACKER_DB_CANDIDATES) {
+    try {
+      await access(p);
+      const db = new Database(p);
+      ensureSchema(db);
+      return db;
+    } catch {
+      // try next candidate
+    }
   }
+  return null;
 }
 
 function ensureSchema(db: Database.Database) {
@@ -206,7 +217,7 @@ export async function POST(req: NextRequest) {
     }
     const maxAgeDays = Math.max(7, Math.min(180, Number(body?.max_age_days ?? 45)));
 
-    const db = openTrackerDb();
+    const db = await openTrackerDb();
     if (!db) {
       return NextResponse.json(
         {
@@ -281,7 +292,7 @@ export async function POST(req: NextRequest) {
 
         try {
           // Fetch up to 30 trading days after signal_date.
-          const { prices } = fetchPricesAfter(ticker, signalDate, 30);
+          const { prices } = await fetchPricesAfter(ticker, signalDate, 30);
           if (prices.length === 0) {
             // No price data available yet — leave as pending.
             continue;

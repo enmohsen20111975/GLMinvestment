@@ -1,12 +1,19 @@
 export const dynamic = 'force-dynamic';
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — db-stats exposes
+// all DB table names + row counts + file size. Was open to anyone
+// (information disclosure / reconnaissance vector).
+import { requireAdminAsync } from '@/lib/admin-guard';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
 const DATA_ENGINE_VERSION = '2.1.0';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard (DB schema disclosure)
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   try {
     // Use db/data_engine.db (the correct path after cleanup)
     const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');

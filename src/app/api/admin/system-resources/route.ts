@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { statSync } from 'fs';
+import { readFile } from 'fs/promises';
 import os from 'os';
 
 export const dynamic = 'force-dynamic';
@@ -17,13 +17,14 @@ interface CpuTimes {
   irq: number;
 }
 
-function readProcStat(): CpuTimes | null {
+// P0-14-ASYNC fix (2026-09-27): replaced blocking readFileSync('/proc/stat') with
+// async readFile from fs/promises so the event loop is not blocked per request.
+async function readProcStat(): Promise<CpuTimes | null> {
   try {
     // Node.js does not expose per-CPU times in a portable way; rely on
     // /proc/stat on Linux (sandbox runs Linux).
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
-    const line = fs.readFileSync('/proc/stat', 'utf8').split('\n')[0];
+    const content = await readFile('/proc/stat', 'utf8');
+    const line = content.split('\n')[0];
     const parts = line.trim().split(/\s+/);
     // parts[0] = 'cpu'
     return {
@@ -41,9 +42,10 @@ function readProcStat(): CpuTimes | null {
 let _prevCpu: CpuTimes | null = null;
 let _prevCpuTime = 0;
 
-function computeCpuPercent(): number {
+// P0-14-ASYNC fix (2026-09-27): computeCpuPercent now async because it awaits readProcStat.
+async function computeCpuPercent(): Promise<number> {
   const now = Date.now();
-  const cur = readProcStat();
+  const cur = await readProcStat();
   if (!cur) return -1;
   if (!_prevCpu || _prevCpuTime === 0) {
     _prevCpu = cur;
@@ -144,7 +146,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // CPU
-    const cpuPercent = computeCpuPercent();
+    const cpuPercent = await computeCpuPercent();
     const cpuCount = os.cpus().length;
     const cpuModel = os.cpus()[0]?.model || 'unknown';
     const loadAvg = os.loadavg();

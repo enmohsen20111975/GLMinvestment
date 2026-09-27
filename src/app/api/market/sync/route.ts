@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — bulk data sync that
+// pulls from external sources and modifies all SQLite DBs. Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { ensureInitialized, getSharedCustomDb, resetLightDbState, resetHeavyDbState } from '@/lib/egx-db';
 import {
   fetchGoldPrices,
@@ -151,6 +154,9 @@ async function syncLightDatabase(): Promise<SyncResult> {
  *   - sync_light: boolean (default: true when type is 'stocks' or 'all')
  */
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     await ensureInitialized();
     const body = await request.json().catch(() => ({}));
@@ -260,7 +266,10 @@ export async function POST(request: NextRequest) {
  * GET /api/market/sync
  * Get sync status and source health.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard (consistency with POST)
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   return NextResponse.json({
     success: true,
     timestamp: new Date().toISOString(),

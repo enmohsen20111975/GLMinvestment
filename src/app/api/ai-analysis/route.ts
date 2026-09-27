@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — AI analysis
+// triggers expensive Python AI calls (run-hourly, etc.). Was open to
+// anyone (cost / DoS vector).
+import { requireAuthAsync } from '@/lib/admin-guard';
+
 
 /**
  * AI Analysis API
@@ -15,6 +20,9 @@ const PYTHON_URL = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010';
 // Check AI system health
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');
   const ticker = searchParams.get('ticker');
@@ -108,6 +116,9 @@ export async function GET(request: NextRequest) {
 // Run AI analysis
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await request.json();
     const { action, tickers } = body;

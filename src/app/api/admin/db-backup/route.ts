@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync/mkdirSync/readdirSync/
+// statSync/unlinkSync with async fs/promises equivalents so the GET/POST/DELETE
+// handlers never block the event loop on DB / archive enumeration, prune, or
+// delete operations.
+import { access, mkdir, readdir, stat, unlink } from 'fs/promises';
 import { join, basename } from 'path';
 
 export const dynamic = 'force-dynamic';
@@ -21,9 +25,18 @@ const EXEC_ENV = {
   PATH: `${SYSTEM_PATH}:${process.env.PATH || ''}`,
 };
 
+// P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
+async function pathExists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
+}
+
 function resolveBinary(name: string, candidates: string[]): string {
+  // Module-load time check — OK to be sync (runs once, not per request).
+  // Using existsSync keeps startup fast; path is only consulted at boot.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('fs');
   for (const c of candidates) {
-    if (existsSync(c)) return c;
+    if (fs.existsSync(c)) return c;
   }
   return name;
 }
@@ -66,17 +79,24 @@ interface BackupArchive {
  * Walk the DB directory and collect every *.db file (ignoring -shm / -wal /
  * -journal sidecars).
  */
-function listDbFiles(): DbInfo[] {
-  if (!existsSync(DB_DIR)) return [];
+// P0-14-ASYNC fix (2026-09-27): listDbFiles is now async.
+async function listDbFiles(): Promise<DbInfo[]> {
+  if (!(await pathExists(DB_DIR))) return [];
   const out: DbInfo[] = [];
-  for (const entry of readdirSync(DB_DIR)) {
+  let entries: string[];
+  try {
+    entries = await readdir(DB_DIR);
+  } catch {
+    return [];
+  }
+  for (const entry of entries) {
     if (!entry.endsWith('.db')) continue;
     if (entry.endsWith('.db-shm') || entry.endsWith('.db-wal') ||
         entry.endsWith('.db-journal') || entry.endsWith('.db.bak') ||
         entry.endsWith('.db.original')) continue;
     const full = join(DB_DIR, entry);
     try {
-      const st = statSync(full);
+      const st = await stat(full);
       if (!st.isFile()) continue;
       out.push({
         name: entry,
@@ -93,14 +113,21 @@ function listDbFiles(): DbInfo[] {
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function listArchives(): BackupArchive[] {
-  if (!existsSync(DATA_DIR)) return [];
+// P0-14-ASYNC fix (2026-09-27): listArchives is now async.
+async function listArchives(): Promise<BackupArchive[]> {
+  if (!(await pathExists(DATA_DIR))) return [];
   const out: BackupArchive[] = [];
-  for (const entry of readdirSync(DATA_DIR)) {
+  let entries: string[];
+  try {
+    entries = await readdir(DATA_DIR);
+  } catch {
+    return [];
+  }
+  for (const entry of entries) {
     if (!entry.endsWith('.zip') && !entry.includes('.zip.part')) continue;
     const full = join(DATA_DIR, entry);
     try {
-      const st = statSync(full);
+      const st = await stat(full);
       if (!st.isFile()) continue;
       out.push({
         name: entry,
@@ -149,7 +176,7 @@ async function compressToZip(archivePath: string, filePaths: string[]): Promise<
       maxBuffer: 50 * 1024 * 1024,
       timeout: 180_000,
     });
-    if (existsSync(archivePath)) return;
+    if (await pathExists(archivePath)) return;
   } catch (err) {
     // If system zip failed or ENOENT, try Python fallback
     const pyCode = `
@@ -166,7 +193,7 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
       maxBuffer: 50 * 1024 * 1024,
       timeout: 180_000,
     });
-    if (!existsSync(archivePath)) {
+    if (!(await pathExists(archivePath))) {
       throw err;
     }
   }
@@ -185,8 +212,8 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   try {
-    const dbs = listDbFiles();
-    const archives = listArchives();
+    const dbs = await listDbFiles();
+    const archives = await listArchives();
     const totalBytes = dbs.reduce((s, d) => s + d.size_bytes, 0);
 
     return NextResponse.json({
@@ -243,9 +270,9 @@ export async function POST(req: NextRequest) {
     const maxZipBytes = maxPartSizeMb * 1024 * 1024;
 
     // Ensure data dir exists
-    if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+    if (!(await pathExists(DATA_DIR))) await mkdir(DATA_DIR, { recursive: true });
 
-    let dbs = listDbFiles();
+    let dbs = await listDbFiles();
     if (dbs.length === 0) {
       return NextResponse.json({
         success: false,
@@ -269,10 +296,11 @@ export async function POST(req: NextRequest) {
     let prunedCount = 0;
     if (pruneOlderThanDays > 0) {
       const cutoff = Date.now() - pruneOlderThanDays * 24 * 60 * 60 * 1000;
-      for (const arc of listArchives()) {
+      const archives = await listArchives();
+      for (const arc of archives) {
         if (!arc.created) continue;
         if (new Date(arc.created).getTime() < cutoff) {
-          try { unlinkSync(arc.path); prunedCount++; } catch { /* ignore */ }
+          try { await unlink(arc.path); prunedCount++; } catch { /* ignore */ }
         }
       }
     }
@@ -299,7 +327,7 @@ export async function POST(req: NextRequest) {
       }
 
       let st;
-      try { st = statSync(archivePath); } catch {
+      try { st = await stat(archivePath); } catch {
         errors.push(`الملف ${archiveName} لم يُنشأ`);
         continue;
       }
@@ -318,17 +346,18 @@ export async function POST(req: NextRequest) {
           ], { env: EXEC_ENV, timeout: 120_000 });
 
           // Remove the oversized parent zip
-          unlinkSync(archivePath);
+          await unlink(archivePath);
 
           // Find generated part files
           const prefixBase = basename(chunkPrefix);
-          const partFiles = readdirSync(DATA_DIR)
+          const allEntries = await readdir(DATA_DIR);
+          const partFiles = allEntries
             .filter(f => f.startsWith(prefixBase) && f.endsWith('.zip.part'))
             .sort();
 
           for (const pFile of partFiles) {
             const pPath = join(DATA_DIR, pFile);
-            const pSt = statSync(pPath);
+            const pSt = await stat(pPath);
             createdArchives.push({
               archive_name: pFile,
               archive_path: pPath,
@@ -446,20 +475,20 @@ export async function DELETE(req: NextRequest) {
       }
 
       const filePath = join(baseDir, fileName);
-      if (!existsSync(filePath)) {
+      if (!(await pathExists(filePath))) {
         errors.push(`الملف غير موجود: ${fileName}`);
         continue;
       }
 
       try {
-        const st = statSync(filePath);
+        const st = await stat(filePath);
         if (!st.isFile()) {
           errors.push(`المسار ليس ملفاً عادياً: ${fileName}`);
           continue;
         }
 
         freedBytes += st.size;
-        unlinkSync(filePath);
+        await unlink(filePath);
         deletedFiles.push(fileName);
 
         // If deleting a SQLite database, also remove sidecar files (-shm, -wal, -journal)
@@ -467,11 +496,11 @@ export async function DELETE(req: NextRequest) {
           const sidecars = [`${fileName}-shm`, `${fileName}-wal`, `${fileName}-journal`];
           for (const sc of sidecars) {
             const scPath = join(baseDir, sc);
-            if (existsSync(scPath)) {
+            if (await pathExists(scPath)) {
               try {
-                const scSt = statSync(scPath);
+                const scSt = await stat(scPath);
                 freedBytes += scSt.size;
-                unlinkSync(scPath);
+                await unlink(scPath);
               } catch {
                 // ignore sidecar cleanup errors
               }

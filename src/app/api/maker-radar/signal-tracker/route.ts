@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { existsSync, mkdirSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync/mkdirSync with async
+// fs/promises equivalents in pickTrackerDbPath / openTrackerDb so the
+// signal-tracker GET+POST handlers never block the event loop on DB
+// candidate checks.
+import { access, mkdir } from 'fs/promises';
 import path from 'path';
 import Database from 'better-sqlite3';
 
@@ -22,21 +26,32 @@ const DB_CANDIDATES = [
   path.join(PROJECT_ROOT, 'db', 'data_engine.db'),
 ];
 
-function pickTrackerDbPath(): string | null {
+// P0-14-ASYNC fix (2026-09-27): pickTrackerDbPath is now async — uses access().
+async function pickTrackerDbPath(): Promise<string | null> {
   for (const p of DB_CANDIDATES) {
-    if (existsSync(p)) return p;
+    try {
+      await access(p);
+      return p;
+    } catch {
+      // not present — try next
+    }
   }
   return null;
 }
 
-function openTrackerDb(): Database.Database | null {
-  const dbPath = pickTrackerDbPath();
+// P0-14-ASYNC fix (2026-09-27): openTrackerDb is now async.
+async function openTrackerDb(): Promise<Database.Database | null> {
+  const dbPath = await pickTrackerDbPath();
   if (!dbPath) {
     // Create the parent dir + a fresh stocks.db so the table can be created.
     const targetPath = DB_CANDIDATES[0];
     try {
       const dir = path.dirname(targetPath);
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      try {
+        await access(dir);
+      } catch {
+        await mkdir(dir, { recursive: true });
+      }
       const db = new Database(targetPath);
       ensureSchema(db);
       return db;
@@ -116,7 +131,7 @@ export async function GET(req: NextRequest) {
   const days = Math.max(1, parseInt(url.searchParams.get('days') || '30', 10));
   const signalTypeFilter = url.searchParams.get('signal_type') || null;
 
-  const db = openTrackerDb();
+  const db = await openTrackerDb();
   if (!db) {
     return NextResponse.json(
       {
@@ -303,7 +318,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = openTrackerDb();
+    const db = await openTrackerDb();
     if (!db) {
       return NextResponse.json(
         { success: false, error: 'Cannot open tracker DB' },

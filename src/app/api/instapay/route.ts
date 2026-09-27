@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — money endpoint
+// (creates InstaPay payment requests). Previously any anonymous user could
+// create a payment record by sending user_id in the body.
+import { requireAuthAsync } from '@/lib/admin-guard';
 import { db } from '@/lib/db';
 
 // InstaPay Configuration
@@ -12,6 +16,9 @@ const INSTAPAY_CONFIG = {
 
 // GET - جلب إعدادات InstaPay
 export async function GET(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (money endpoint)
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const { searchParams } = new URL(request.url);
     const user_id = searchParams.get('user_id');
@@ -64,6 +71,9 @@ export async function GET(request: NextRequest) {
 
 // POST - إنشاء طلب دفع جديد
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (money endpoint)
+  const auth = await requireAuthAsync(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await request.json();
     const { user_id, package_id, custom_amount } = body;

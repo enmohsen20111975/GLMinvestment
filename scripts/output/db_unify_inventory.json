@@ -1,0 +1,194 @@
+[
+  {
+    "table": "gold_prices",
+    "db": "data_engine",
+    "rows": 187153,
+    "latest": "2026-09-26 19:34:52",
+    "cols": 7,
+    "colNames": "id,timestamp,country,currency,karat,price_per_gram,price_per_ounce"
+  },
+  {
+    "table": "gold_prices",
+    "db": "stocks",
+    "rows": 3,
+    "latest": "2026-06-03T16:52:36.506Z",
+    "cols": 6,
+    "colNames": "id,karat,price_per_gram,currency,source,last_update"
+  },
+  {
+    "table": "cached_analysis",
+    "db": "stocks",
+    "rows": 143,
+    "latest": "2026-09-26T14:25:17.057448",
+    "cols": 39,
+    "colNames": "id,ticker,sector,current_price,recommendation,composite_score,target_price,stop_loss,signal,confidence,analysis_json,master_score,risk_level,technical_score,fundamental_score,sentiment_score,risk_score,momentum_score,trend,liquidity_level,volatility,upside_potential,is_tradeable,volume_trend,price_strength,created_at,updated_at,analysis_date,price_change_1d,price_change_1w,price_change_1m,confluence_score,volume_seasonal_score,timing_score,pattern_score,market_regime_score,risk_reward,entry_price,market"
+  },
+  {
+    "table": "cached_analysis",
+    "db": "predictions",
+    "rows": 0,
+    "latest": "NULL",
+    "cols": 18,
+    "colNames": "id,ticker,market,analysis_date,analysis_json,signal,confidence,master_score,entry_price,target_price,stop_loss,risk_reward,indicators,regime,regime_score,liquidity_level,is_tradeable,created_at"
+  },
+  {
+    "table": "learned_lessons",
+    "db": "predictions",
+    "rows": 19464,
+    "latest": "2026-09-24T13:30:05.521594",
+    "cols": 10,
+    "colNames": "id,lesson_type,condition,outcome,failure_rate,occurrences,avg_return,recommendation,created_at,updated_at"
+  },
+  {
+    "table": "learned_lessons",
+    "db": "stocks",
+    "rows": 0,
+    "latest": "NULL",
+    "cols": 8,
+    "colNames": "id,lesson_type,lesson_text,context_json,confidence,source,created_at,updated_at"
+  },
+  {
+    "table": "ExpertRecommendation",
+    "db": "stocks",
+    "rows": 127,
+    "latest": "2026-09-07 08:13:04",
+    "cols": 38,
+    "colNames": "id,stock_symbol,stock_name_ar,expert_name,action,recommendation_type,entry_price,entry_price_from,entry_price_to,target_price,target_price_2,investment_target,stop_loss,support_level,resistance_level,session_date,status,final_price,profit_loss_percent,hit_target,hit_stop_loss,notes,recommendation_date,closed_at,created_at,updated_at,expert_source,entry_condition,stop_loss_condition,expected_profit_min,expected_profit_max,expected_profit_investment,technical_analysis,fundamental_analysis,recommendation_reason,session_type,expected_duration,expected_duration_days"
+  },
+  {
+    "table": "ExpertRecommendation",
+    "db": "auth",
+    "rows": 17,
+    "latest": "2026-06-03 23:27:03",
+    "cols": 24,
+    "colNames": "id,stock_symbol,stock_name_ar,expert_name,action,recommendation_type,entry_price,entry_price_from,entry_price_to,target_price,target_price_2,investment_target,stop_loss,session_date,status,final_price,profit_loss_percent,hit_target,hit_stop_loss,notes,recommendation_date,closed_at,created_at,updated_at"
+  },
+  {
+    "table": "ExpertRecommendation",
+    "db": "predictions",
+    "rows": 17,
+    "latest": "2026-06-03 23:27:03",
+    "cols": 24,
+    "colNames": "id,stock_symbol,stock_name_ar,expert_name,action,recommendation_type,entry_price,entry_price_from,entry_price_to,target_price,target_price_2,investment_target,stop_loss,session_date,status,final_price,profit_loss_percent,hit_target,hit_stop_loss,notes,recommendation_date,closed_at,created_at,updated_at"
+  },
+  {
+    "table": "egksco_price_history",
+    "db": "data_engine",
+    "rows": 13246,
+    "latest": "2026-09-08",
+    "cols": 17,
+    "colNames": "id,symbol,price_date,open_price,high_price,low_price,close_price,volume,turnover,source,created_at,buy_volume,sell_volume,delta_volume,delta_pct,pressure,market"
+  },
+  {
+    "table": "egksco_price_history",
+    "db": "stocks",
+    "rows": 0,
+    "latest": "NULL",
+    "cols": 10,
+    "colNames": "id,symbol,date,open_price,high_price,low_price,close_price,volume,value,source"
+  },
+  {
+    "table": "egksco_stocks",
+    "db": "data_engine",
+    "rows": 0,
+    "latest": "NULL",
+    "cols": 11,
+    "colNames": "id,symbol,name,market,sector,last_price,change,change_percent,volume,turnover,last_updated"
+  },
+  {
+    "table": "egksco_stocks",
+    "db": "stocks",
+    "rows": 250,
+    "latest": "2026-07-23T13:41:57.648276",
+    "cols": 17,
+    "colNames": "id,symbol,name,name_ar,last_price,open_price,high_price,low_price,prev_close,change_pct,volume,value,trades_count,last_update,source,created_at,updated_at"
+  },
+  {
+    "table": "portfolios",
+    "db": "stocks",
+    "rows": 3,
+    "latest": "2026-07-22 15:17:16",
+    "cols": 11,
+    "colNames": "id,user_id,name,broker,market,currency,color,is_master,initial_capital,created_at,updated_at"
+  },
+  {
+    "table": "portfolios",
+    "db": "auth",
+    "rows": -1,
+    "latest": "NOT_FOUND",
+    "cols": 0,
+    "colNames": ""
+  },
+  {
+    "table": "User",
+    "db": "stocks",
+    "rows": -1,
+    "latest": "NOT_FOUND",
+    "cols": 0,
+    "colNames": ""
+  },
+  {
+    "table": "User",
+    "db": "auth",
+    "rows": 101,
+    "latest": "2026-07-30 09:23:58",
+    "cols": 16,
+    "colNames": "id,email,name,username,password_hash,image,is_active,subscription_tier,default_risk_tolerance,last_login,email_verified,created_at,updated_at,trial_ends_at,trial_warning_sent_at,trial_deletion_scheduled_at"
+  },
+  {
+    "table": "Post",
+    "db": "stocks",
+    "rows": -1,
+    "latest": "NOT_FOUND",
+    "cols": 0,
+    "colNames": ""
+  },
+  {
+    "table": "telegram_news",
+    "db": "stocks",
+    "rows": 6,
+    "latest": "2026-06-18",
+    "cols": 10,
+    "colNames": "id,title,summary,sentiment,symbols,raw_text,channel_name,market,date,created_at"
+  },
+  {
+    "table": "telegram_news",
+    "db": "predictions",
+    "rows": 0,
+    "latest": "NULL",
+    "cols": 8,
+    "colNames": "id,ticker,message_text,sentiment,confidence,source_group,message_date,created_at"
+  },
+  {
+    "table": "user_trades",
+    "db": "stocks",
+    "rows": -1,
+    "latest": "NOT_FOUND",
+    "cols": 0,
+    "colNames": ""
+  },
+  {
+    "table": "user_trades",
+    "db": "predictions",
+    "rows": 0,
+    "latest": "NULL",
+    "cols": 9,
+    "colNames": "id,user_id,ticker,trade_type,price,quantity,trade_date,notes,created_at"
+  },
+  {
+    "table": "stocks",
+    "db": "stocks",
+    "rows": 976,
+    "latest": "2026-09-26T19:32:41.178892",
+    "cols": 58,
+    "colNames": "id,ticker,name,name_ar,market,sector,industry,current_price,previous_close,open_price,high_price,low_price,change_percent,volume,market_cap,pe_ratio,pb_ratio,ps_ratio,eps,roe,roa,debt_to_equity,current_ratio,book_value_per_share,ma_50,ma_200,rsi,support,resistance,signal,trend,dividend_yield,profit_margin,avg_volume,beta,high_52w,low_52w,close,change_value,is_active,is_egx30,is_egx70,is_egx100,last_update,created_at,updated_at,dps_ttm,free_float_percentage,free_float_shares,change,last_updated,currency,exchange,is_suspended,is_egx,turnover_egp,value_traded,logo_url"
+  },
+  {
+    "table": "stocks",
+    "db": "data_engine",
+    "rows": 296,
+    "latest": "2026-09-08 07:13:25",
+    "cols": 16,
+    "colNames": "id,symbol,name,price,change_percent,volume,market_cap,market,created_at,tabs_data,sector,analyst_rating,logo_url,last_update,is_active,name_ar"
+  }
+]

@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added ADMIN auth guard — this endpoint
+// approves/rejects payments and adds points to users. Previously it
+// trusted a client-supplied `admin_id` in the body (anyone could send
+// any admin_id and approve their own payment). Now requires
+// requireAdminAsync (cookie/token/NextAuth/localhost-bypass).
+// The body admin_id field is preserved for backward-compat logging.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { db } from '@/lib/db';
 
 // POST - الموافقة على دفع (للأدمن)
 export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     const body = await request.json();
     const { payment_id, admin_id, approve, notes } = body;

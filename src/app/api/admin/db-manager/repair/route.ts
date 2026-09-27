@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import path from 'path';
-import { existsSync } from 'fs';
-import { unlinkSync, renameSync, copyFileSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync existsSync with async access
+// from fs/promises so the repair POST handler never blocks the event loop
+// on database file existence checks. (unlinkSync/renameSync/copyFileSync
+// imports were unused — removed.)
+import { access } from 'fs/promises';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const DB_DIR = path.join(process.cwd(), 'db');
+
+// P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
+async function pathExists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
+}
 
 interface RepairStep {
   step: string;
@@ -74,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     const dbPath = path.join(DB_DIR, safeName);
-    if (!existsSync(dbPath)) {
+    if (!(await pathExists(dbPath))) {
       return NextResponse.json({ success: false, error: `Database file not found: ${safeName}` }, { status: 404 });
     }
 
@@ -463,7 +471,7 @@ export async function POST(request: NextRequest) {
     if (steps.includes('sync_analysis') && safeName === 'stocks.db') {
       const stocksDb = openSafely(dbPath, 'write');
       const predPath = path.join(DB_DIR, 'predictions.db');
-      const predDb = existsSync(predPath) ? openSafely(predPath, 'readonly') : null;
+      const predDb = (await pathExists(predPath)) ? openSafely(predPath, 'readonly') : null;
 
       if (stocksDb && predDb) {
         try {

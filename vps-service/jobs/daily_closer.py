@@ -2082,9 +2082,26 @@ class DailyCloser:
                     final_return = ((close - entry_price) / entry_price * 100)
                     actual_return = (partial_fraction * partial_return_pct
                                      + (1 - partial_fraction) * final_return)
+                    # HELI-INVESTIGATION fix (2026-09-27): The old code hardcoded
+                    # status='TARGET_HIT' for ANY partial-trailing exit (positive
+                    # return) even when target_price was never actually reached.
+                    # This produced false TARGET_HIT assertions on profitable
+                    # trades that exited via trailing stop before hitting target.
+                    # Now: TARGET_HIT only if highest_price_reached >= target_price;
+                    # otherwise 'closed_win' if return > 0 (truthful "won but missed
+                    # target" label), else 'EXPIRED' (capital preserved).
+                    # See agent-ctx/HELI-INVESTIGATION-REPORT.md for forensics.
+                    if target_price > 0 and highest_price_reached >= target_price:
+                        _trailing_status = 'TARGET_HIT'
+                    elif actual_return > 0:
+                        _trailing_status = 'closed_win'
+                    else:
+                        _trailing_status = 'EXPIRED'
                     logger.info(f"[DailyCloser] #{pred_id} {ticker}: TRAILING EXIT close={close} "
-                                f"< trail={trailing_stop:.2f} → blended={actual_return:.2f}%")
-                    return self._mark_closed_partial(pred_id, ticker, 'TARGET_HIT', actual_return,
+                                f"< trail={trailing_stop:.2f} → blended={actual_return:.2f}% "
+                                f"status={_trailing_status} (highest={highest_price_reached:.2f} "
+                                f"target={target_price:.2f})")
+                    return self._mark_closed_partial(pred_id, ticker, _trailing_status, actual_return,
                                                       highest_price_reached, lowest_price_reached,
                                                       days_elapsed, day_date, exit_type='partial_trailing',
                                                       exit_close_price=close,
@@ -2137,7 +2154,19 @@ class DailyCloser:
                                 actual_return = (partial_fraction * partial_return_pct
                                                  + (1 - partial_fraction) * final_return)
                                 exit_type = 'partial_choch'
-                                status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'
+                                # HELI-INVESTIGATION fix (2026-09-27): TARGET_HIT must
+                                # require highest_price_reached >= target_price (NOT
+                                # just actual_return > 0). Otherwise profitable
+                                # trades that exited before reaching target get
+                                # falsely labeled as TARGET_HIT, polluting hit-rate
+                                # analytics. Falls back to 'closed_win' (truthful
+                                # profitable-exit label) when target wasn't hit.
+                                if target_price > 0 and highest_price_reached >= target_price:
+                                    status = 'TARGET_HIT'
+                                elif actual_return > 0:
+                                    status = 'closed_win'
+                                else:
+                                    status = 'EXPIRED'
                             else:
                                 actual_return = final_return
                                 exit_type = 'choch_distribution'
@@ -2172,7 +2201,15 @@ class DailyCloser:
                         actual_return = (partial_fraction * partial_return_pct
                                          + (1 - partial_fraction) * final_return)
                         exit_type = 'partial_stuck'
-                        status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'
+                        # HELI-INVESTIGATION fix (2026-09-27): TARGET_HIT must
+                        # require highest_price_reached >= target_price, not just
+                        # actual_return > 0. See agent-ctx/HELI-INVESTIGATION-REPORT.md.
+                        if target_price > 0 and highest_price_reached >= target_price:
+                            status = 'TARGET_HIT'
+                        elif actual_return > 0:
+                            status = 'closed_win'
+                        else:
+                            status = 'EXPIRED'
                     else:
                         actual_return = final_return
                         exit_type = 'stuck_no_movement'
@@ -2196,7 +2233,20 @@ class DailyCloser:
                     actual_return = (partial_fraction * partial_return_pct
                                      + (1 - partial_fraction) * final_return)
                     exit_type = 'partial_expired'
-                    status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'
+                    # HELI-INVESTIGATION fix (2026-09-27): The old heuristic
+                    # `status = 'TARGET_HIT' if actual_return > 0 else 'EXPIRED'`
+                    # conflated "profitable exit" with "target was hit". This is
+                    # the systemic root cause of the HELI false-positive cluster
+                    # (17 TARGET_HITs with target_price=9.40 but max_high=8.77).
+                    # Now: TARGET_HIT requires highest_price_reached >= target_price;
+                    # falls back to 'closed_win' for profitable exits that missed
+                    # target, and 'EXPIRED' for non-profitable ones.
+                    if target_price > 0 and highest_price_reached >= target_price:
+                        status = 'TARGET_HIT'
+                    elif actual_return > 0:
+                        status = 'closed_win'
+                    else:
+                        status = 'EXPIRED'
                 else:
                     actual_return = final_return
                     exit_type = 'expired'
@@ -2925,6 +2975,37 @@ class DailyCloser:
             if _exit_price_value <= 0:
                 # لو مفيش سعر متاح خالص → NULL (مش نكتب نسبة في حقل سعر)
                 _exit_price_value = None
+
+            # ──────────────────────────────────────────────────────────────────
+            # HELI-INVESTIGATION fix (2026-09-27): Truthful-status assertion.
+            # Catch the systemic bug pattern `status='TARGET_HIT' if actual_return>0`
+            # at write-time. If status is being written as TARGET_HIT but the
+            # recorded highest_price_reached is BELOW target_price (with a 1-tick
+            # tolerance), this is a false TARGET_HIT. Auto-downgrade to
+            # 'closed_win' (if actual_return > 0) or 'EXPIRED' so analytics stay
+            # honest. Logs the override so the bug surface stays visible.
+            try:
+                _target_db_val = None
+                _tp_cur = conn.cursor()
+                _tp_cur.execute("SELECT target_price FROM predictions WHERE id = ?", (pred_id,))
+                _tp_row = _tp_cur.fetchone()
+                if _tp_row and _tp_row[0]:
+                    _target_db_val = float(_tp_row[0])
+            except Exception:
+                _target_db_val = None
+
+            if (status == 'TARGET_HIT'
+                    and _target_db_val and _target_db_val > 0
+                    and highest_price_reached > 0
+                    and highest_price_reached + 1e-4 < _target_db_val):
+                _downgrade = 'closed_win' if actual_return > 0 else 'EXPIRED'
+                logger.warning(
+                    f"[HELI-INVESTIGATION-GUARD] #{pred_id} {ticker}: status=TARGET_HIT "
+                    f"but highest={highest_price_reached:.4f} < target={_target_db_val:.4f} "
+                    f"→ auto-downgrading to '{_downgrade}' (actual_return={actual_return:.2f}%). "
+                    f"This indicates a profitable-exit being mislabeled as target hit."
+                )
+                status = _downgrade
 
             cursor.execute("""
                 UPDATE predictions

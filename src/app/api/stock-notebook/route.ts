@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.* calls with async fs/promises
+// equivalents so GET/POST/DELETE handlers never block the event loop on the
+// notebook JSON file.
+import { access, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
@@ -18,14 +21,16 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const ticker = searchParams.get('ticker')?.toUpperCase();
 
-    if (!fs.existsSync(NOTEBOOK_PATH)) {
+    try {
+      await access(NOTEBOOK_PATH);
+    } catch {
       return NextResponse.json(
         { success: false, error: 'Notebook not found' },
         { status: 404 }
       );
     }
 
-    const raw = fs.readFileSync(NOTEBOOK_PATH, 'utf-8');
+    const raw = await readFile(NOTEBOOK_PATH, 'utf-8');
     const notebook = JSON.parse(raw);
 
     if (ticker) {
@@ -84,8 +89,12 @@ export async function POST(req: NextRequest) {
 
     // اقرأ النوت بوك الحالي
     let notebook: any = { stocks: {}, sector_notes: {}, lessons_learned: [] };
-    if (fs.existsSync(NOTEBOOK_PATH)) {
-      notebook = JSON.parse(fs.readFileSync(NOTEBOOK_PATH, 'utf-8'));
+    try {
+      await access(NOTEBOOK_PATH);
+      const raw = await readFile(NOTEBOOK_PATH, 'utf-8');
+      notebook = JSON.parse(raw);
+    } catch {
+      // notebook not present yet — use defaults
     }
 
     // تأكد إن stocks موجود
@@ -128,7 +137,7 @@ export async function POST(req: NextRequest) {
     notebook._meta.last_updated = new Date().toISOString().slice(0, 10);
 
     // احفظ
-    fs.writeFileSync(NOTEBOOK_PATH, JSON.stringify(notebook, null, 2), 'utf-8');
+    await writeFile(NOTEBOOK_PATH, JSON.stringify(notebook, null, 2), 'utf-8');
 
     return NextResponse.json({
       success: true,
@@ -162,14 +171,17 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    if (!fs.existsSync(NOTEBOOK_PATH)) {
+    try {
+      await access(NOTEBOOK_PATH);
+    } catch {
       return NextResponse.json(
         { success: false, error: 'Notebook not found' },
         { status: 404 }
       );
     }
 
-    const notebook = JSON.parse(fs.readFileSync(NOTEBOOK_PATH, 'utf-8'));
+    const raw = await readFile(NOTEBOOK_PATH, 'utf-8');
+    const notebook = JSON.parse(raw);
 
     if (!notebook.stocks?.[ticker]) {
       return NextResponse.json(
@@ -180,7 +192,7 @@ export async function DELETE(req: NextRequest) {
 
     if (obsIdx >= 0 && notebook.stocks[ticker].observations[obsIdx]) {
       notebook.stocks[ticker].observations.splice(obsIdx, 1);
-      fs.writeFileSync(NOTEBOOK_PATH, JSON.stringify(notebook, null, 2), 'utf-8');
+      await writeFile(NOTEBOOK_PATH, JSON.stringify(notebook, null, 2), 'utf-8');
       return NextResponse.json({
         success: true,
         message: `Observation ${obsIdx} deleted from ${ticker}`,

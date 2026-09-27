@@ -135,8 +135,8 @@ def fetch_closed_predictions(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
     """Fetch all closed predictions with the columns we need."""
     sql = """
         SELECT id, ticker, prediction_date, entry_price, target_price,
-               stop_loss, status, outcome_date, closed_at, actual_return,
-               exit_type
+               target_price_2, stop_loss, status, outcome_date, closed_at,
+               actual_return, exit_type
         FROM predictions
         WHERE status IN (?, ?, ?, ?, ?, ?)
     """
@@ -211,15 +211,38 @@ def determine_actual_outcome(
     target_price: float,
     stop_loss: float,
     window_expired: bool,
-) -> str:
-    """Apply the algorithm in the task spec."""
+    target_price_2: Optional[float] = None,
+) -> Tuple[str, Optional[str]]:
+    """Apply the algorithm in the task spec.
+
+    Returns (actual_status, tp_hit_flag) where tp_hit_flag is 'TP1', 'TP2',
+    or None — used by the caller to annotate the record.
+
+    HELI-CLEANUP-2 extension: if TP1 was not hit but target_price_2 is set
+    and was reached, we still return 'TARGET_HIT' (legitimate TP2 exit).
+    This is consistent with how closed_win / TARGET_HIT are normalized — a
+    profitable exit at TP2 is a target-style hit, not an EXPIRED.
+
+    IMPORTANT: This function determines the *actual* outcome based on price
+    action. It treats a TP2 hit as 'TARGET_HIT' so that recorded=closed_win
+    (normalized → TARGET_HIT) records match. Records where status was set to
+    EXPIRED/STOPPED (no claim of a target hit) are compared against this
+    actual and will only match if their recorded status matches.
+    """
     if max_high != float("-inf") and max_high + PRICE_EPS >= target_price:
-        return "TARGET_HIT"
+        return "TARGET_HIT", "TP1"
+    if (target_price_2 is not None and target_price_2 > 0
+            and max_high != float("-inf")
+            and max_high + PRICE_EPS >= target_price_2):
+        # HELI-CLEANUP-2: TP2 was reached. The trade may have exited at TP2
+        # (a profitable closed_win), so treat as TARGET_HIT for comparison
+        # purposes against recorded=TARGET_HIT / closed_win.
+        return "TARGET_HIT", "TP2"
     if min_low != float("inf") and min_low - PRICE_EPS <= stop_loss:
-        return "STOPPED"
+        return "STOPPED", None
     if window_expired:
-        return "EXPIRED"
-    return "PENDING"  # still active — shouldn't appear in closed set
+        return "EXPIRED", None
+    return "PENDING", None  # still active — shouldn't appear in closed set
 
 
 def build_suggested_update(
@@ -301,6 +324,7 @@ def main() -> int:
 
         entry = safe_float(p["entry_price"])
         target = safe_float(p["target_price"])
+        target2 = safe_float(p.get("target_price_2"))  # HELI-CLEANUP-2
         stop = safe_float(p["stop_loss"])
         recorded_status = p["status"] or ""
         actual_return = safe_float(p["actual_return"])
@@ -378,12 +402,12 @@ def main() -> int:
         # ----- actual outcome -----
         # Window is "expired" if end_dt is in the past (i.e., before today)
         window_expired = end_dt.date() < now.date()
-        actual = determine_actual_outcome(
-            max_high, min_low, target, stop, window_expired
+        actual_norm, tp_hit = determine_actual_outcome(
+            max_high, min_low, target, stop, window_expired, target2
         )
 
         recorded_norm = NORMALIZE_STATUS.get(recorded_status, recorded_status)
-        actual_norm = actual  # already canonical
+        actual = actual_norm  # already canonical
 
         # ----- compare -----
         record = {
@@ -394,10 +418,12 @@ def main() -> int:
             "window_end": window_end_str,
             "entry_price": entry,
             "target_price": target,
+            "target_price_2": target2,
             "stop_loss": stop,
             "recorded_status": recorded_status,
             "recorded_status_norm": recorded_norm,
-            "actual_status": actual_norm,
+            "actual_status": actual,
+            "target_hit_via": tp_hit,  # 'TP1', 'TP2', or None
             "actual_return_recorded": actual_return,
             "max_high_in_window": max_high,
             "min_low_in_window": min_low,

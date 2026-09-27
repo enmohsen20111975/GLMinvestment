@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "karat": "24",
+    "price_per_gram": 3200.0,
+    "currency": "EGP",
+    "source": "default",
+    "last_update": "2026-06-03T16:52:36.506Z"
+  },
+  {
+    "id": 2,
+    "karat": "21",
+    "price_per_gram": 2800.0,
+    "currency": "EGP",
+    "source": "default",
+    "last_update": "2026-06-03T16:52:36.506Z"
+  },
+  {
+    "id": 3,
+    "karat": "18",
+    "price_per_gram": 2400.0,
+    "currency": "EGP",
+    "source": "default",
+    "last_update": "2026-06-03T16:52:36.506Z"
+  }
+]

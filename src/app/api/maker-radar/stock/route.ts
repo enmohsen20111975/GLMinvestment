@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync readFileSync/existsSync with
+// async fs/promises equivalents in loadTracking so the maker-radar stock GET
+// handler never blocks the event loop.
+import { readFile, access } from 'fs/promises';
 import path from 'path';
 import { getRadarDb, getRadarDbConfig, parseVolume, computeTurnover } from '@/lib/radar-db';
 
@@ -16,12 +19,16 @@ interface TrackedStock {
   notes?: string;
 }
 
-function loadTracking(): Record<string, TrackedStock> {
+// P0-14-ASYNC fix (2026-09-27): loadTracking is now async.
+async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
-    if (existsSync(TRACKING_FILE)) {
-      const data = readFileSync(TRACKING_FILE, 'utf-8');
-      return JSON.parse(data);
+    try {
+      await access(TRACKING_FILE);
+    } catch {
+      return {};
     }
+    const data = await readFile(TRACKING_FILE, 'utf-8');
+    return JSON.parse(data);
   } catch (e) {
     console.error('[maker-radar/stock] load tracking error:', e);
   }
@@ -110,7 +117,7 @@ export async function GET(req: NextRequest) {
     const range20Pct = min20 > 0 ? ((max20 - min20) / min20) * 100 : 0;
 
     // 4. tracking info
-    const tracking = loadTracking();
+    const tracking = await loadTracking();
     const tracked = tracking[ticker];
     let trackingInfo = null;
     if (tracked) {

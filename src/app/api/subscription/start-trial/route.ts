@@ -1,6 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 export const dynamic = "force-dynamic";
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — was using
+// getServerSession directly (web-only, no mobile Bearer support). Now
+// also requires requireAuthAsync. Pre-existing getServerSession kept for
+// subscription-tier / payment-token fields.
+import { requireAuthAsync } from '@/lib/admin-guard';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
@@ -9,7 +14,10 @@ import { db } from '@/lib/db';
  * POST /api/subscription/start-trial
  * Start free trial for logged-in user (requires auth)
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard
+  const auth = await requireAuthAsync(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

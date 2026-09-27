@@ -8,6 +8,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+// P0-11-AUTH fix (2026-09-27): added admin auth guard (canonical multi-method
+// check via requireAdminAsync — accepts X-Admin-Token, admin_session cookie,
+// NextAuth session, or localhost bypass in dev). Pre-existing verifyAdminToken
+// kept as defense-in-depth.
+import { requireAdminAsync } from '@/lib/admin-guard';
 import { verifyAdminToken } from '@/lib/admin-auth-server';
 import { ensureInitialized, getLightDb, getHeavyDb } from '@/lib/egx-db';
 
@@ -380,6 +385,10 @@ function calculateFibonacci(high: number, low: number, current: number): { golde
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
+  
   try {
     // Verify admin
     const authHeader = request.headers.get('X-Admin-Token');
@@ -730,6 +739,9 @@ export async function POST(request: NextRequest) {
  * GET: الحصول على حالة آخر فحص
  */
 export async function GET(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     // Verify admin
     const authHeader = request.headers.get('X-Admin-Token');

@@ -2,59 +2,68 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 import path from 'path'
-import fs from 'fs'
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.* calls with async fs/promises
+// equivalents in updateStatus / runScript / GET handler so the event loop is
+// never blocked on status JSON reads/writes.
+import { access, mkdir, readFile, writeFile } from 'fs/promises'
 
 const DATA_DIR = path.join(process.cwd(), 'data')
 const SCRIPTS_DIR = path.join(process.cwd(), 'data-engine', 'scrapers')
 
-function updateStatus(filename: string, data: any) {
+// P0-14-ASYNC fix (2026-09-27): updateStatus is now async.
+async function updateStatus(filename: string, data: any): Promise<void> {
   const filePath = path.join(DATA_DIR, filename)
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
+    try {
+      await access(DATA_DIR);
+    } catch {
+      await mkdir(DATA_DIR, { recursive: true });
     }
-    
+
     let current = {}
-    if (fs.existsSync(filePath)) {
-      try {
-        current = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
-      } catch {}
-    }
-    
+    try {
+      await access(filePath);
+      const raw = await readFile(filePath, 'utf-8');
+      current = JSON.parse(raw);
+    } catch {}
+
     const updated = { ...current, ...data, lastUpdate: new Date().toISOString() }
-    fs.writeFileSync(filePath, JSON.stringify(updated, null, 2))
+    await writeFile(filePath, JSON.stringify(updated, null, 2))
   } catch (error) {
     console.error(`Error updating ${filename}:`, error)
   }
 }
 
-function runScript(scriptName: string, statusFile: string) {
+// P0-14-ASYNC fix (2026-09-27): runScript is now async (calls updateStatus).
+async function runScript(scriptName: string, statusFile: string): Promise<any> {
   const scriptPath = path.join(SCRIPTS_DIR, scriptName)
-  
-  if (!fs.existsSync(scriptPath)) {
-    updateStatus(statusFile, { running: false, error: 'Script not found' })
+
+  try {
+    await access(scriptPath);
+  } catch {
+    await updateStatus(statusFile, { running: false, error: 'Script not found' })
     return null
   }
-  
+
   const proc = spawn('python3', [scriptPath], {
     cwd: process.cwd(),
     detached: true,
     stdio: ['ignore', 'pipe', 'pipe']
   })
-  
+
   proc.stdout?.on('data', (data) => {
     const output = data.toString()
     console.log(`[${scriptName}]`, output)
   })
-  
+
   proc.stderr?.on('data', (data) => {
     console.error(`[${scriptName} ERROR]`, data.toString())
   })
-  
+
   proc.on('close', (code) => {
     console.log(`[${scriptName}] Exited with code ${code}`)
   })
-  
+
   proc.unref()
   return proc
 }
@@ -62,29 +71,29 @@ function runScript(scriptName: string, statusFile: string) {
 export async function POST() {
   try {
     // Initialize all statuses
-    updateStatus('metals_forex_status.json', {
+    await updateStatus('metals_forex_status.json', {
       running: true,
       progress: { current: 0, total: 3 },
       logs: [' بدء سحب الذهب والعملات...']
     })
-    
-    updateStatus('crypto_status.json', {
+
+    await updateStatus('crypto_status.json', {
       running: true,
       progress: { current: 0, total: 60 },
       logs: [' بدء سحب العملات الرقمية...']
     })
-    
-    updateStatus('scraper_status.json', {
+
+    await updateStatus('scraper_status.json', {
       running: true,
       currentMarket: '',
       progress: {},
       logs: [' بدء سحب الأسهم...']
     })
-    
+
     // Run all scripts in parallel
-    runScript('metals_forex_fetcher.py', 'metals_forex_status.json')
-    runScript('crypto_fetcher.py', 'crypto_status.json')
-    runScript('tradingview_scraper.py', 'scraper_status.json')
+    await runScript('metals_forex_fetcher.py', 'metals_forex_status.json')
+    await runScript('crypto_fetcher.py', 'crypto_status.json')
+    await runScript('tradingview_scraper.py', 'scraper_status.json')
     
     return NextResponse.json({
       success: true,
@@ -118,14 +127,16 @@ export async function GET() {
     
     for (const { name, file } of files) {
       const filePath = path.join(DATA_DIR, file)
-      if (fs.existsSync(filePath)) {
+      try {
+        await access(filePath);
         try {
-          statuses[name] = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+          const raw = await readFile(filePath, 'utf-8');
+          statuses[name] = JSON.parse(raw);
         } catch {
-          statuses[name] = { running: false }
+          statuses[name] = { running: false };
         }
-      } else {
-        statuses[name] = { running: false }
+      } catch {
+        statuses[name] = { running: false };
       }
     }
     

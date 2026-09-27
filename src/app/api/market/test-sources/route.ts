@@ -1,5 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 export const dynamic = "force-dynamic";
+
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — test-sources
+// triggers external API calls (EODHD/FCSAPI/MARKETSTACK/VPS) which can
+// burn API quota. Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
 
 
 /**
@@ -9,7 +14,10 @@ export const dynamic = "force-dynamic";
  */
 export const revalidate = 30; // Cache for 30s
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   try {
     const apiKeys = {
       EODHD: !!process.env.EODHD_API_KEY,
@@ -38,7 +46,10 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(request);
+  if (authError) return authError;
   try {
     const body = await request.json().catch(() => ({}));
     const action = body.action || 'status';

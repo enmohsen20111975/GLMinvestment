@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// P0-11-AUTH fix (2026-09-27): added user auth guard — financial data
+// (portfolio wealth/PnL) was previously callable by anonymous users.
+import { requireAuthAsync } from '@/lib/admin-guard';
+
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): user auth guard (financial data)
+  const auth = await requireAuthAsync(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const url = new URL(req.url);
     const qs = url.searchParams.toString();

@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// P0-11-AUTH fix (2026-09-27): added admin auth guard — bulk-update proxies
+// to Python backend's eodhd/bulk-update which mass-modifies stock data.
+// Was open to anyone.
+import { requireAdminAsync } from '@/lib/admin-guard';
+
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // P0-11-AUTH fix (2026-09-27): admin auth guard
+  const authError = await requireAdminAsync(req);
+  if (authError) return authError;
   try {
     const url = new URL(req.url);
     const qs = url.searchParams.toString();

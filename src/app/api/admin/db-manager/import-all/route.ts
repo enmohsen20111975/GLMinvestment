@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as fs from 'fs';
+// P0-14-ASYNC fix (2026-09-27): replaced sync fs.writeFileSync with async
+// fs/promises writeFile so the import-all POST handler never blocks the
+// event loop while saving the uploaded ZIP file.
+import { writeFile } from 'fs/promises';
 import * as path from 'path';
 import { importAllDbs } from '@/lib/admin-db-manager';
 import { requireAdminAsync } from '@/lib/admin-auth-server';
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Save uploaded file
     const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(destPath, buffer);
+    await writeFile(destPath, buffer);
 
     // Import
     const result = importAllDbs(destFileName);
