@@ -186,3 +186,148 @@ const StockTable = memo(function StockTable({
 1. **تجربة مستخدم فائقة السرعة والسلاسة:** لا توجد شاشات تحميل تومض فجأة أمام عين المستخدم.
 2. **الاحتفاظ الكامل بالبيانات المدخلة:** الترتيب (Sorting)، الفلاتر (Filters)، البحث، والصفوف الموسعة تظل كما تركها المستخدم تماماً، بينما تتغير الأرقام والأسعار داخل الخلايا بهدوء وسلاسة.
 3. **توفير استهلاك الذاكرة والـ CPU:** التخلص من الهدم والبناء العشوائي لشجرة الـ DOM، مما يقلل الحمل على متصفح العميل والسيرفر.
+
+---
+
+## ✅ نتائج مراجعة فعلية للشاشات (Live Audit Results — 2026-09-27)
+
+تم مراجعة الشاشات برمجياً وتسجيل حالتها الفعلية:
+
+| # | الشاشة | الملف | الحالة | الملاحظات |
+|---|--------|-------|--------|-----------|
+| 1 | **رادار السيولة** | MakerRadarTab.tsx + page.tsx | ✅ **مكتمل** | النموذج المرجعي — module-scope import، React.memo، stable keys |
+| 2 | **الأسهم (Screener)** | StocksView.tsx | ✅ **مكتمل** | يستخدم efreshLivePrices (in-place) بدون setLoading على polling |
+| 3 | **قائمة المتابعة** | EnhancedWatchlistView.tsx | ✅ **مكتمل** | silent=true pattern مطبق بالكامل مع setRefreshing فقط |
+| 4 | **المحفظة** | EnhancedPortfolioView.tsx | ✅ **مكتمل** | loadAssets(silent=true) بدون setLoading عند الـ polling |
+| 5 | **إدارة التوصيات** | PicksManagementView.tsx | ✅ **مكتمل** | setRefreshing فقط عند التحديث اليدوي، initial load منفصل |
+| 6 | **تتبع التوقعات** | PredictionTrackingView.tsx | ⚠️ **يحتاج مراجعة** | setLoading(true) بدون silent-guard — يظهر skeleton عند كل refresh |
+| 7 | **التقارير** | ReportsView.tsx | ⚠️ **يحتاج مراجعة** | setLoading(true) بدون silent-guard — يُخفي البيانات عند كل refresh |
+| 8 | **تحليل السوق** | MarketAnalysisView.tsx | ✅ **مكتمل** | dynamic imports خارج الـ render، لا polling داخلي |
+
+### 🔧 الشاشات المطلوب تحديثها (Action Items for Team 2)
+
+#### ① PredictionTrackingView.tsx
+
+
+#### ② ReportsView.tsx
+
+
+---
+
+## 🔗 المرجع الكامل للنمط (Canonical Implementation)
+
+المرجع الأكمل والأحدث هو شاشة MakerRadarTab.tsx. قبل تعديل أي شاشة، اقرأ الملفين التاليين:
+
+1. src/components/predictions/MakerRadarTab.tsx — تطبيق الأركان 2، 3، 4
+2. src/app/page.tsx — تطبيق الركن 1 (module-scope imports)
+
+**الأولوية:** ابدأ بـ PredictionTrackingView.tsx ثم ReportsView.tsx.
+
+
+---
+
+## ✅ نتائج مراجعة فعلية للشاشات (Live Audit Results — 2026-09-27)
+
+تم مراجعة جميع شاشات التطبيق برمجياً وتسجيل حالتها الفعلية:
+
+| # | الشاشة | الملف | الحالة | الملاحظات |
+|---|--------|-------|--------|-----------|
+| 1 | **رادار السيولة** | `MakerRadarTab.tsx` + `page.tsx` | ✅ **مكتمل** | النموذج المرجعي — module-scope import، React.memo، stable keys |
+| 2 | **الأسهم (Screener)** | `StocksView.tsx` | ✅ **مكتمل** | يستخدم `refreshLivePrices` (in-place) بدون setLoading على polling |
+| 3 | **قائمة المتابعة** | `EnhancedWatchlistView.tsx` | ✅ **مكتمل** | `silent=true` pattern مطبق بالكامل مع `setRefreshing` فقط |
+| 4 | **المحفظة** | `EnhancedPortfolioView.tsx` | ✅ **مكتمل** | `loadAssets(silent=true)` بدون setLoading عند الـ polling |
+| 5 | **إدارة التوصيات** | `PicksManagementView.tsx` | ✅ **مكتمل** | `setRefreshing` فقط عند التحديث اليدوي، initial load منفصل |
+| 6 | **تتبع التوقعات** | `PredictionTrackingView.tsx` | ⚠️ **يحتاج مراجعة** | `setLoading(true)` بدون silent-guard — يظهر skeleton عند كل refresh |
+| 7 | **التقارير** | `ReportsView.tsx` | ⚠️ **يحتاج مراجعة** | `setLoading(true)` بدون silent-guard — يُخفي البيانات عند كل refresh |
+| 8 | **تحليل السوق** | `MarketAnalysisView.tsx` | ✅ **مكتمل** | dynamic imports خارج الـ render، لا polling داخلي |
+
+---
+
+### 🔧 الشاشات المطلوب تحديثها (Action Items for Team 2)
+
+**الأولوية:** ابدأ بـ `PredictionTrackingView.tsx` ثم `ReportsView.tsx`.
+
+#### ① إصلاح `PredictionTrackingView.tsx`
+
+**المشكلة:** دوال `fetchStats` و `fetchList` تستدعي `setLoadingStats(true)` و `setLoadingList(true)` بدون تمييز بين التحميل الأولي والتحديث الدوري. النتيجة: skeleton يظهر فجأة أمام المستخدم كل دقيقة.
+
+**الإصلاح المطلوب:**
+
+```tsx
+// ❌ الحالي:
+const fetchStats = async () => {
+  setLoadingStats(true);
+  // ...
+  setLoadingStats(false);
+};
+
+// ✅ المطلوب — silent refresh بدون skeleton:
+const [refreshing, setRefreshing] = useState(false);
+
+const fetchStats = async (silent = false) => {
+  if (!silent) setLoadingStats(true);
+  else setRefreshing(true);
+  try {
+    // ...fetch...
+  } finally {
+    if (!silent) setLoadingStats(false);
+    else setRefreshing(false);
+  }
+};
+
+// عند الـ polling الدوري:
+useEffect(() => {
+  const id = setInterval(() => fetchStats(true), 60_000); // silent=true
+  return () => clearInterval(id);
+}, [market]);
+
+// وفي واجهة المستخدم — إظهار spinner خفيف بدل skeleton:
+{refreshing && (
+  <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+)}
+// الـ skeleton يظهر فقط إذا لم تكن هناك بيانات:
+{loadingStats && !stats ? <StatsSkeleton /> : <StatsPanel data={stats} />}
+```
+
+#### ② إصلاح `ReportsView.tsx`
+
+**المشكلة:** `setLoading(true)` في كل تحديث يُخفي الكروت والشارتات ويُظهر skeleton، مما يسبب وميضاً مزعجاً.
+
+**الإصلاح المطلوب:**
+
+```tsx
+// ❌ الحالي:
+const loadReport = async () => {
+  setLoading(true); // يخفي كل شيء!
+  // ...
+  setLoading(false);
+};
+
+// ✅ المطلوب:
+const [refreshing, setRefreshing] = useState(false);
+
+const loadReport = async (silent = false) => {
+  if (!silent) setLoading(true);
+  else setRefreshing(true);
+  try {
+    // ...fetch...
+    setData(result); // تحديث البيانات في نفس المكان
+  } finally {
+    if (!silent) setLoading(false);
+    else setRefreshing(false);
+  }
+};
+
+// الـ skeleton فقط للزيارة الأولى:
+if (loading && !data) return <ReportsSkeleton />;
+```
+
+---
+
+## 🔗 المرجع الكامل للنمط (Canonical Implementation)
+
+قبل تعديل أي شاشة، اقرأ الملفين التاليين كمرجع:
+
+1. `src/components/predictions/MakerRadarTab.tsx` — تطبيق الأركان 2، 3، 4
+2. `src/app/page.tsx` — تطبيق الركن 1 (module-scope imports)
+3. `src/components/watchlist/EnhancedWatchlistView.tsx` — نموذج مثالي للـ silent refresh pattern
