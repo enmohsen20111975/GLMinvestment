@@ -41122,3 +41122,74 @@ Date: 2026-09-26
 - لا شيء — المهمة كاملة.
 - لو المالك رغب: ترحيل persona benchmark matrix في SuperLearningSystem (يحتاج تصميم خاص للـ sticky columns + special header formatting).
 - لو المالك رغب: ترحيل جداول EXPLAIN plan + query results في DatabaseManagerFull SQL Console (dynamic columns لكن simpler structure).
+
+---
+Task ID: LIQUIDITY-RADAR-UPGRADE
+Agent: مهندس تنفيذ
+Date: 2026-09-27
+File: src/components/predictions/MakerRadarTab.tsx
+
+## ملخص الترقيات (5 ترقيات على رادار السيولة):
+
+### 1. MiniSparkline في جدول الأسهم ✅
+- إضافة `import { MiniSparkline } from '@/components/ui/mini-sparkline';`
+- إضافة عمود `_sparkline` في نهاية StockTable (height=28, width=100, showArea=true, hidden md+).
+- كل صف بيجيب حركة السعر آخر 30 يوم من `/api/stocks/sparkline` (اللي بيقرأ من price_history.db — 1.2M صف EGX حقيقي).
+
+### 2. تحسين TradingPlanSection ✅
+أعيد كتابة القسم بالكامل ليضم:
+- **Buy/Sell pressure bar** (green/red, RTL-aware) محسوب من OHLC آخر 20 جلسة.
+- **Grid 2×2** لـ entry/stop/target_1/target_2 (ملوّن blue/rose/emerald/emerald).
+- **R:R prominent badge** (amber) بحجم كبير + تقييم جودة (ممتاز/جيد/مقبول/ضعيف).
+- **Analysis lines مع أيقونات** لكل سطر (tone: pos/neg/neutral).
+- أيقونات جديدة مستوردة: `CheckCircle2, AlertCircle, Lightbulb, Scale`.
+
+### 3. بيانات تاريخية حقيقية (مش تقديرات) ✅
+- verified `/api/stocks/sparkline` بيقرأ من `price_history.db` (1.2M صف).
+- verified `/api/maker-radar/stock` بيقرأ من DB تاريخي حقيقي.
+- entry_price/stop_loss/target_1/target_2 صاروا يحسبوا من **المستويات الحقيقية** (support_2/resistance_1/resistance_2) بدلاً من نسب ثابتة (-6% / +10% / +20%).
+- fallback للنسب الثابتة بس في حالة المستويات الحقيقية ضيقة.
+
+### 4. 3 تبويبات (صاعدة / هابطة / احتمالات) ✅
+- `FilterKey` تغيّر من 6 قيم → 3 قيم (`'up' | 'down' | 'opportunities'`).
+- default: `'up'` (كان `'all'`).
+- `TAB_META` record فيه title/subtitle/icon/accent/emoji لكل تبويب.
+- دمج كل القوائم الـ 4 (pre_surge + quiet + explosive + early_break) في `allRadarStocks` مع إزالة التكرار بالـ ticker.
+- منطق الفلترة:
+  - up: changePct > 0 AND roc_10d > 0
+  - down: changePct < 0 AND roc_10d < 0
+  - opportunities: volume_ratio >= 1.3 AND (accumulation includes 'تجميع' OR path في [pre_surge, quiet_strong, early_break]) AND NOT distribution
+- استبدال الـ filter bar (6 أزرار) بـ 3 أزرار فيها badge بعدد المطابقات.
+- استبدال الـ 4 RadarSection blocks بـ RadarSection واحد يستخدم TAB_META[filter].
+- tracking لسه شغّال عبر زر ⭐ + زر المتابعة في الـ drawer.
+
+### 5. UnifiedTable لجدول "آخر 10 أيام" ✅
+- استبدال الـ `<table>` اليدوي بـ `<UnifiedTable<PriceRow>>` (5 أعمدة: date/close/high/low/volume).
+- كل الأعمدة sortable، high/low = `hidden sm:table-cell` (responsive).
+- ألوان: high=emerald, low=rose, volume=muted.
+
+## التحقق:
+- `bun run lint` → exit 0 ✅ (لا أخطاء)
+- HTTP 200 على `/` (الصفحة بتفتح)
+- لا references متبقية لـ filteredPreSurge/filteredQuiet/filteredExplosive/filteredEarlyBreak/'all'
+
+## الأرقام:
+- حجم الملف: 2097 → 2369 سطر (+272 سطر صافي)
+- ملفات جديدة: 0
+- ملفات معدّلة: 1 (MakerRadarTab.tsx فقط)
+- MultiEdit operations: 9 تعديلات atomic
+
+## الالتزام بالقواعد الذهبية:
+- ✅ Rule #1: قرأت الـ 2097 سطر كامل قبل التعديل.
+- ✅ Rule #2: ما كسرتش أي وظيفة قائمة (tracking + polling + warmup + V40 generator كلها لسه شغّالة).
+- ✅ Rule #3: استخدمت MiniSparkline + UnifiedTable + MarketDepthLiquidityWidget (موجود بالفعل في الـ drawer).
+- ✅ Rule #4: ما عدّلتش أي API endpoint — `/api/maker-radar/stock?ticker=X&days=30` زي ما هو.
+- ✅ Rule #5: `bun run lint` مرّ بنجاح.
+- ✅ Rule #6: كل النصوص بالعربي + RTL.
+- ✅ Rule #7: ما أنشأتش أي ملف جديد — كل التعديلات في MakerRadarTab.tsx بس.
+
+## القرارات التصميمية:
+1. دمج الـ 4 قوائم (مش بس quiet + explosive) عشان ما أخسرش أي سهم.
+2. حساب buy/sell من OHLC التاريخي (last 20 sessions) بدلاً من الـ MarketDepthLiquidityWidget data (عشان الـ widget ليه fetch مستقل من intraday ticks).
+3. entry/stop/target بالاعتماد على المستويات الحقيقية مع fallback للنسب الثابتة لو ضيقة.
+4. حذف فلتر "tracked" (التتبّع نفسه لسه شغّال عبر زر ⭐ + زر الـ drawer).
