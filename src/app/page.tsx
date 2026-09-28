@@ -10,9 +10,9 @@ import { useAppStore } from '@/lib/store';
 import { VALID_VIEWS, VALID_VIEWS_SET, resolveCryptoRedirect, isCryptoView } from '@/lib/valid-views';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { TopBar } from '@/components/layout/TopBar';
-import { DashboardView } from '@/components/dashboard/DashboardView';
+import { DashboardView } from '@/modules/dashboard/components/DashboardView';
 import { AuthGate } from '@/components/auth/AuthGate';
-import { RealtimeTicker } from '@/components/dashboard/RealtimeTicker';
+import { RealtimeTicker } from '@/modules/dashboard/components/RealtimeTicker';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { RoboNotifierToggle } from '@/components/notifications/RoboNotifierToggle';
 import { CentralAlertMonitor } from '@/components/notifications/CentralAlertMonitor';
@@ -33,9 +33,9 @@ import { withErrorBoundary } from '@/components/shared/ErrorBoundary';
 // shows a friendly "حدث خطأ" message + Retry button instead of a White Screen
 // of Death. Each view has its own isolated boundary — the rest of the app
 // keeps working.
-const StocksView = dynamicImport(() => import('@/components/stocks/StocksView').then(m => ({ default: m.StocksView })), { ssr: false, loading: () => <LazyTabLoader label="الأسهم" /> });
+const StocksView = dynamicImport(() => import('@/modules/stock-analysis/components/StocksView').then(m => ({ default: m.StocksView })), { ssr: false, loading: () => <LazyTabLoader label="الأسهم" /> });
 const EnhancedPortfolioView = withErrorBoundary(
-  dynamicImport(() => import('@/components/portfolio/EnhancedPortfolioView').then(m => ({ default: m.EnhancedPortfolioView })), { ssr: false, loading: () => <LazyTabLoader label="المحفظة" /> }),
+  dynamicImport(() => import('@/modules/portfolio/components/EnhancedPortfolioView').then(m => ({ default: m.EnhancedPortfolioView })), { ssr: false, loading: () => <LazyTabLoader label="المحفظة" /> }),
   'المحفظة',
 );
 const EnhancedWatchlistView = withErrorBoundary(
@@ -43,32 +43,32 @@ const EnhancedWatchlistView = withErrorBoundary(
   'قائمة المتابعة',
 );
 const MarketAnalysisView = withErrorBoundary(
-  dynamicImport(() => import('@/components/analysis/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
+  dynamicImport(() => import('@/modules/market-analysis/components/MarketAnalysisView').then(m => ({ default: m.MarketAnalysisView })), { ssr: false, loading: () => <LazyTabLoader label="التحليل" /> }),
   'التحليل',
 );
 // فلاتر الأسهم — شاشة موحّدة (فلاتر متقدمة + أعلى الأرباح/الخسائر) — Python screener via proxy
 const StockScreenerAdvancedView = withErrorBoundary(
-  dynamicImport(() => import('@/components/screener/StockScreenerAdvanced').then(m => ({ default: m.StockScreenerAdvanced })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
+  dynamicImport(() => import('@/modules/screener/components/StockScreenerAdvanced').then(m => ({ default: m.StockScreenerAdvanced })), { ssr: false, loading: () => <LazyTabLoader label="فلاتر الأسهم" /> }),
   'فلاتر الأسهم',
 );
 const ReportsView = withErrorBoundary(
-  dynamicImport(() => import('@/components/reports/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
+  dynamicImport(() => import('@/modules/reports/components/ReportsView').then(m => ({ default: m.ReportsView })), { ssr: false, loading: () => <LazyTabLoader label="التقارير" /> }),
   'التقارير',
 );
 const NewsFeedView = withErrorBoundary(
-  dynamicImport(() => import('@/components/news/NewsFeedView').then(m => ({ default: m.NewsFeedView })), { ssr: false, loading: () => <LazyTabLoader label="الأخبار" /> }),
+  dynamicImport(() => import('@/modules/news/components/NewsFeedView').then(m => ({ default: m.NewsFeedView })), { ssr: false, loading: () => <LazyTabLoader label="الأخبار" /> }),
   'الأخبار',
 );
 const LearningView = withErrorBoundary(
-  dynamicImport(() => import('@/components/learning/LearningView').then(m => ({ default: m.LearningView })), { ssr: false, loading: () => <LazyTabLoader label="التعلّم" /> }),
+  dynamicImport(() => import('@/modules/education/components/LearningView').then(m => ({ default: m.LearningView })), { ssr: false, loading: () => <LazyTabLoader label="التعلّم" /> }),
   'التعلّم',
 );
 const SimulationView = withErrorBoundary(
-  dynamicImport(() => import('@/components/simulation/SimulationView').then(m => ({ default: m.SimulationView })), { ssr: false, loading: () => <LazyTabLoader label="المحاكاة" /> }),
+  dynamicImport(() => import('@/modules/simulation/components/SimulationView').then(m => ({ default: m.SimulationView })), { ssr: false, loading: () => <LazyTabLoader label="المحاكاة" /> }),
   'المحاكاة',
 );
 const AcademyView = withErrorBoundary(
-  dynamicImport(() => import('@/components/academy/AcademyView').then(m => ({ default: m.AcademyView })), { ssr: false, loading: () => <LazyTabLoader label="أكاديمية M2y" /> }),
+  dynamicImport(() => import('@/modules/education/components/AcademyView').then(m => ({ default: m.AcademyView })), { ssr: false, loading: () => <LazyTabLoader label="أكاديمية M2y" /> }),
   'أكاديمية M2y',
 );
 const SettingsView = withErrorBoundary(
@@ -76,7 +76,7 @@ const SettingsView = withErrorBoundary(
   'الإعدادات',
 );
 const AdminView = withErrorBoundary(
-  dynamicImport(() => import('@/components/admin/AdminView').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <LazyTabLoader label="لوحة الأدمن" /> }),
+  dynamicImport(() => import('@/modules/admin/components/AdminView').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <LazyTabLoader label="لوحة الأدمن" /> }),
   'لوحة الأدمن',
 );
 const AuthView = dynamicImport(() => import('@/components/auth/AuthView').then(m => ({ default: m.AuthView })), { ssr: false });
@@ -90,7 +90,7 @@ const SubscriptionView = dynamicImport(() => import('@/components/subscription/S
 // The Sidebar sets currentMarket='CRYPTO' on crypto nav clicks, which makes
 // these stock components load crypto data automatically.
 const CryptoPortfolioView = withErrorBoundary(
-  dynamicImport(() => import('@/components/crypto/CryptoPortfolioView').then(m => ({ default: m.CryptoPortfolioView })), { ssr: false }),
+  dynamicImport(() => import('@/modules/crypto/components/CryptoPortfolioView').then(m => ({ default: m.CryptoPortfolioView })), { ssr: false }),
   'محفظة الكريبتو',
 );
 const ZakatView = withErrorBoundary(
@@ -110,7 +110,7 @@ const SpecialistAnalysisView = withErrorBoundary(
 );
 // PredictionPerformanceView + PredictionCredibilityTable معطّلين (admin-only)
 const AdvancedPortfolioManager = withErrorBoundary(
-  dynamicImport(() => import('@/components/portfolio/AdvancedPortfolioManager').then(m => ({ default: m.AdvancedPortfolioManager })), { ssr: false }),
+  dynamicImport(() => import('@/modules/portfolio/components/AdvancedPortfolioManager').then(m => ({ default: m.AdvancedPortfolioManager })), { ssr: false }),
   'المحفظة المتقدمة',
 );
 const SeasonalityDashboard = withErrorBoundary(
@@ -134,7 +134,7 @@ const TradingJournalView = withErrorBoundary(
   'يوميات التداول',
 );
 const UnifiedAnalysisView = withErrorBoundary(
-  dynamicImport(() => import('@/components/analysis/UnifiedAnalysisView'), { ssr: false }),
+  dynamicImport(() => import('@/modules/market-analysis/components/UnifiedAnalysisView'), { ssr: false }),
   'التحليل الموحّد',
 );
 const SmartConfluenceView = withErrorBoundary(
@@ -142,12 +142,12 @@ const SmartConfluenceView = withErrorBoundary(
   'المساعد الذكي',
 );
 const PredictionTrackingView = withErrorBoundary(
-  dynamicImport(() => import('@/components/predictions/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
+  dynamicImport(() => import('@/modules/predictions/components/PredictionTrackingView').then(m => ({ default: m.PredictionTrackingView })), { ssr: false }),
   'تتبّع التوقعات',
 );
 // PicksManagementView REMOVED per user request 2026-09-28 — features merged into PredictionTrackingView
 const DualTrackPredictionsView = withErrorBoundary(
-  dynamicImport(() => import('@/components/predictions/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
+  dynamicImport(() => import('@/modules/predictions/components/DualTrackPredictionsView').then(m => ({ default: m.DualTrackPredictionsView })), { ssr: false, loading: () => <LazyTabLoader label="التوقعات المزدوجة" /> }),
   'التوقعات المزدوجة',
 );
 const V82DecisionPanel = withErrorBoundary(
@@ -155,11 +155,11 @@ const V82DecisionPanel = withErrorBoundary(
   'محرك V82',
 );
 const LiveMonitor = withErrorBoundary(
-  dynamicImport(() => import('@/components/dashboard/LiveMonitor'), { ssr: false }),
+  dynamicImport(() => import('@/modules/dashboard/components/LiveMonitor'), { ssr: false }),
   'المراقبة الحية',
 );
 const WealthCharts = withErrorBoundary(
-  dynamicImport(() => import('@/components/admin/WealthCharts').then(m => ({ default: m.WealthCharts })), { ssr: false }),
+  dynamicImport(() => import('@/modules/admin/components/WealthCharts').then(m => ({ default: m.WealthCharts })), { ssr: false }),
   'رسوم الثروة',
 );
 // IterativeLearningView + SimpleRecommendationsView معطّلين (مش مستخدمين في switch)
@@ -169,12 +169,12 @@ const EGXBacktestDashboard = withErrorBoundary(
 );
 
 const TradingChartView = withErrorBoundary(
-  dynamicImport(() => import('@/components/analysis/TradingChartView').then(m => ({ default: m.TradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="الشارت التفاعلي" height="h-[600px]" /> }),
+  dynamicImport(() => import('@/modules/market-analysis/components/TradingChartView').then(m => ({ default: m.TradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="الشارت التفاعلي" height="h-[600px]" /> }),
   'الشارت التفاعلي',
   { height: 'h-[600px]' },
 );
 const LiquidityRadarView = withErrorBoundary(
-  dynamicImport(() => import('@/components/predictions/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), {
+  dynamicImport(() => import('@/modules/predictions/components/MakerRadarTab').then(m => ({ default: m.MakerRadarTab })), {
     ssr: false,
     loading: () => <LazyTabLoader label="رادار السيولة" />,
   }),
@@ -191,27 +191,27 @@ let CryptoLearningView: React.ComponentType | null = null;
 let CryptoSimulationView: React.ComponentType | null = null;
 
 // Lazy load crypto views
-const cryptoViewsPromise = import('@/components/crypto/CryptoAdditionalViews').then(m => {
+const cryptoViewsPromise = import('@/modules/crypto/components/CryptoAdditionalViews').then(m => {
   CryptoLearningView = m.CryptoLearningView;
   CryptoSimulationView = m.CryptoSimulationView;
 });
 
 // ─── مكونات الكريبتو المستقلة (بيانات crypto_prices حقيقية) ────────────────────────
 const CryptoScreenerView = withErrorBoundary(
-  dynamicImport(() => import('@/components/crypto/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
+  dynamicImport(() => import('@/modules/crypto/components/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
   'فلتر العملات الرقمية',
 );
 const CryptoPredictionTrackingView = withErrorBoundary(
-  dynamicImport(() => import('@/components/crypto/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
+  dynamicImport(() => import('@/modules/crypto/components/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
   'تتبّع توقعات الكريبتو',
 );
 const CryptoTradingChartView = withErrorBoundary(
-  dynamicImport(() => import('@/components/crypto/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
+  dynamicImport(() => import('@/modules/crypto/components/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
   'شارت العملات',
   { height: 'h-[600px]' },
 );
 const CryptoAdvancedAnalysisView = withErrorBoundary(
-  dynamicImport(() => import('@/components/crypto/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
+  dynamicImport(() => import('@/modules/crypto/components/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
   'التحليل المتقدم للعملات',
 );
 

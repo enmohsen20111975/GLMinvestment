@@ -21,7 +21,7 @@ import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
 import { StockPublisher } from '@/modules/publishing/components/StockPublisher';
-import { PredictionTrackingDashboard } from '@/components/predictions/PredictionTrackingDashboard';
+import { PredictionTrackingDashboard } from '@/modules/predictions/components/PredictionTrackingDashboard';
 
 // ============================================================================
 // Types

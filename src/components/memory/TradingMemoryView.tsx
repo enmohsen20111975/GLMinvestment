@@ -17,8 +17,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { ExpertMemoryPanel } from './ExpertMemoryPanel';
-import { PortfolioIntelligencePanel } from '@/components/portfolio/PortfolioIntelligencePanel';
-import { SmartAssistantPanel } from '@/components/portfolio/SmartAssistantPanel';
+import { PortfolioIntelligencePanel } from '@/modules/portfolio/components/PortfolioIntelligencePanel';
+import { SmartAssistantPanel } from '@/modules/portfolio/components/SmartAssistantPanel';
 import { SmartAlertsPanel } from '@/components/alerts/SmartAlertsPanel';
 import { ProfessionalWatchlistView } from '@/components/watchlist/ProfessionalWatchlistView';
 import { cn } from '@/lib/utils';

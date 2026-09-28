@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { DataManager } from '@/components/reports/DataManager';
+import { DataManager } from '@/modules/reports/components/DataManager';
 import { SubscriptionView } from '@/components/subscription/SubscriptionView';
 import { PersonaSelector, usePersona, PERSONAS } from '@/components/persona/PersonaSelector';
 

@@ -31,7 +31,7 @@ import { useNotificationStore } from '@/lib/notification-store';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { StockSelector } from '@/components/stocks/StockSelector';
+import { StockSelector } from '@/modules/stock-analysis/components/StockSelector';
 import type { AppView } from '@/types';
 
 /* Extra items shown inside the "More" menu */
