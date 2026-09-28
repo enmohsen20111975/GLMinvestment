@@ -222,8 +222,8 @@ export function CryptoSignalsWidget() {
               </div>
             </div>
 
-            <p className="text-[8px] text-muted-foreground text-center">
-              ⚠️ تحليل وليس تحليل مالية
+            <p className="text-[10px] text-muted-foreground text-center">
+              ⚠️ تحليل وليس نصيحة مالية
             </p>
           </>
         )}

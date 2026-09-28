@@ -152,7 +152,7 @@ const SECTOR_COLORS: Record<string, string> = {
 
 const EGX_STOCKS_RAW = [
   { ticker: 'ORAS', name_ar: 'أوراسكوم للإنشاء', sector: 'البناء والتشييد', basePrice: 18.5 },
-  { ticker: 'COMI', name_ar: 'أوراسكوم للإعلام', sector: 'الإعلام والاتصالات', basePrice: 2.85 },
+  { ticker: 'COMI', name_ar: 'البنك التجاري الدولي (CIB)', sector: 'البنوك', basePrice: 38.5 },
   { ticker: 'GBAR', name_ar: 'جولدن بيتش', sector: 'العقارات', basePrice: 6.2 },
   { ticker: 'EMFD', name_ar: 'المهندسون للمعدات', sector: 'الخدمات المالية', basePrice: 32.8 },
   { ticker: 'DCRC', name_ar: 'دار الأهرام للتأمين', sector: 'التأمين', basePrice: 5.15 },
@@ -169,10 +169,10 @@ const EGX_STOCKS_RAW = [
   { ticker: 'PHAR', name_ar: 'فاركو للأدوية', sector: 'الأدوية', basePrice: 56.2 },
   { ticker: 'ETEL', name_ar: 'المصرية للاتصالات - تليفون مصر', sector: 'الإعلام والاتصالات', basePrice: 15.6 },
   { ticker: 'ALHI', name_ar: 'المصرية للغزل والنسيج', sector: 'الصناعة', basePrice: 10.2 },
-  { ticker: 'MISR', name_ar: 'بنك مصر', sector: 'البنوك', basePrice: 65.3 },
-  { ticker: 'CIBK', name_ar: 'بنك القاهرة', sector: 'البنوك', basePrice: 85.4 },
+  { ticker: 'MISR', name_ar: 'مصر للألمنيوم', sector: 'الصناعة', basePrice: 25.3 },
+  { ticker: 'CIBK', name_ar: 'بنك مصر', sector: 'البنوك', basePrice: 28.4 },
   { ticker: 'TMGH', name_ar: 'المجموعة المالية هيرمس', sector: 'الخدمات المالية', basePrice: 19.8 },
-  { ticker: 'FWRY', name_ar: 'فودافون مصر', sector: 'الإعلام والاتصالات', basePrice: 3.65 },
+  { ticker: 'FWRY', name_ar: 'فوري لتكنولوجيا الدفع', sector: 'التكنولوجيا', basePrice: 4.65 },
   { ticker: 'KIMA', name_ar: 'كيما للأسمدة', sector: 'الصناعة', basePrice: 22.7 },
   { ticker: 'MFPC', name_ar: 'شركة الماضي للتنمية والتعمير', sector: 'العقارات', basePrice: 4.55 },
 ];

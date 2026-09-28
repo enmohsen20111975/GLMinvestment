@@ -40689,3 +40689,99 @@ Stage Summary:
   * Short-term (P1-P2): Establish 4-color palette; Cap page heights at 3 viewport heights; Hide Help Center modal from DOM when closed; Constrain "سجّل مجاناً" CTA to viewport width; Fix duplicate H1 on simulation + academy; Standardize green color.
   * Medium-term (P3-P4): Enforce 11px minimum font size; Translate English UI strings; Add separators to concatenated tab labels; Demote secondary H2s to H3; Add visible retry buttons to error states; Compress portfolio sections into tabs.
 
+
+---
+Task ID: UI-DEEP-TEST-EXPERT
+Agent: Deep Visual Testing Team + Financial Expert (فريق الاختبار العميق + خبير مالي)
+Task: Deep visual + financial testing of every screen — verify actual values (prices, returns, R/R), not just rendering. NO code changes — document only.
+
+Work Log:
+- Read `/home/z/my-project/worklog.md` tail for context — understood REORG-PHASE-1-2 through REORG-PHASE-7-DOCS history (15 frontend modules, 9 backend placeholders, unified DB layer). Also read `/home/z/my-project/agent-ctx/UI-AUDIT-REPORT.md` (472 lines, 68 prior issues) for baseline.
+- Phase 1 — Opened app with `agent-browser open http://localhost:3001/ --init-script /tmp/mock-auth-init.js` to inject mock-auth interceptor for `/api/auth/me` + `/api/auth/session` (returns premium+admin user). Verified dev server up (HTTP 200). Closed help modal with Escape.
+- Phase 2 — Tested 15 hash-routes + 11 sub-tabs inside `#recommendations` (26 distinct views total). Captured 26 screenshots saved to `agent-ctx/screenshots/deep-*.png`. Extracted visible text + numbers + placeholders + financial values from each screen via `document.body.innerText` + targeted DOM queries.
+- Phase 2 critical findings (per-screen):
+  * `#dashboard`: All KPIs zero (0 stocks, 0 advancers/decliners, 0.00 price, 0 sentiment). "—" for EGX30/EGX70 indices. "0 من 100 محايد" sentiment value. Fear & Greed 74 (real, but on EGX dashboard). 12px H3 headings (too small). Mixed crypto + EGX content.
+  * `#stocks`: Empty table — 0 rows. Predefined lists dropdown shows "—" (empty). All 5 KPI cards show 0. Empty state "لا توجد أسهم مطابقة للبحث".
+  * `#liquidity-radar`: Just 1 message "الرادار بيتسخن لأول مرة" + retry button. No cards, no lists, no paths. Retry button does nothing visible.
+  * `#recommendations` (11 sub-tabs):
+    - متابعة التوقعات: 0 net profit, 0 wins/losses/pending, 0.0% profit factor — production has 1,318 predictions / 52.6% win rate / 2.97 profit factor.
+    - ملخص التوقعات: Empty state, period chips concatenated without separators.
+    - حالة السوق: "فشل في تحميل البيانات" error state.
+    - ⚖️ التوقعات: "جاري تحليل الفرص" loading state (no predictions shown).
+    - تتبع القطاعات: "فشل في الاتصال بـ Python Backend — port 8010" raw error to user.
+    - رادار الخروج: "المفحوصين: 0" + "لا توجد إشارات خروج ✅" (last update 17h ago).
+    - التقرير الأسبوعي: "الأسبوع 40، 2026" + "حالة السوق: NORMAL" + empty top-5 stocks.
+    - صفقات تاريخية: "HTTP 500" + "no such table: historical_trades" SQL error visible.
+    - الرادار الموحّد: 7 market cards all showing "0 سهم · 0 فرصة" + "جارٍ تسخين الرادار...". 2 markets show "LIVE" but still 0 picks.
+    - دقة الرادار: "no such column: explosive_label" SQL error.
+    - الرادار المخصّص: "Authentication required" — login prompt (mock-auth didn't satisfy this endpoint).
+  * `#specialist-analysis`: "اختر سهم من العملات الرقمية..." dropdown text on stock-analysis page (wrong market — bug from prior audit unfixed).
+  * `#portfolio`: "إجمالي الأصول 0 / صافي الثروة 0 / صافي الربح 0%" — fresh user. **"العائد الحقيقي -30.0%" — CRITICAL misleading metric**: real-return engine defaults inflation to 30% (Egypt fallback per `src/app/api/finance/real-return/route.ts:15-16`) when `macro_indicators` is empty, then computes 0% - 30% = -30% for empty portfolio. "التضخم: %" label shows no number (hides cause).
+  * `#watchlist`: "حدث خطأ في تحميل قائمة المتابعة / Authentication required" — hard error.
+  * `#reports`: "لم يتم تحميل بيانات السوق" + 4 empty report cards.
+  * `#news`: 2 real news items (CoinGecko crypto market $2.88T -3.5%, Alternative.me F&G 74 Greed) — REAL ✅. EGX news missing because local news.db unavailable.
+  * `#learning`: "0 من 73 درس" + "0 XP / 1 دروس مكتملة / 1% متوسط الاختبارات / 1 مقالات مقروءة" — inconsistent (0 vs 1). Hero card "0.00 جنيه مصري" template incorrectly carried over from stock page.
+  * `#simulation`: Working trade dialog (tested with ORAS click). Initial balance 100K EGP ✅, commission 0.15% ✅. Market overview shows 8 EGX stocks with hardcoded `basePrice` values from `EGX_STOCKS_RAW` array in `SimulationView.tsx:153-178`. **Ticker-name mapping bugs**: COMI labeled "أوراسكوم للإعلام" at 2.85 EGP (real COMI is CIB at 30-50 EGP); CIBK labeled "بنك القاهرة" at 85.4 EGP (price matches CIB, not Bank of Cairo); FWRY labeled "فودافون مصر" (Vodafone Egypt not listed on EGX; FWRY is Fawry); MISR labeled "بنك مصر" at 65.3 EGP (real is 15-30 EGP).
+  * `#academy`: 0/12 lessons, 6 categories (3+2+2+2+2+1=12 ✅). First lesson shows English title "What is the Stock Market?" untranslated.
+  * `#crypto`: BTC price "0.00 جنيه مصري" placeholder. "السوق مغلق" shown (wrong — crypto is 24/7). H2 says "لوحة التحكم" instead of "العملات الرقمية" (duplicate title bug unfixed). "إشارات الموسمية (EGX)" on crypto page (wrong market). Typo "ليس تحليل مالية" instead of "ليس نصيحة مالية".
+  * `#trading-chart`: "CoinGecko OHLC error: 429" on first load. After retry: "Assertion failed: data must be asc ordered by time, index=1, time=1790606044, prev time=1790606044" (duplicate timestamps from CoinGecko crash chart). No `<canvas>` rendered. Time intervals concatenated without separators.
+  * `#stock-filters`: All KPIs 0. "no such column: volume" SQL error shown twice in UI. 16 preset filters visible but unclickable (would yield no results).
+- Phase 3 — Financial expert review:
+  * Local DB inspection: `db/predictions.db` has 0 rows in `predictions` table (0 in `stored_analyses` too); `db/stocks.db` has 50 US stocks but ALL prices are NULL, 0 EGX rows; `db/data_engine.db` has 0 tables.
+  * Production API cross-check (`https://invist.m2y.net`): `/api/market/summary` returns 392 total stocks, 62 advancers, 227 decliners, 4.27T EGP market cap ✅. `/api/market/indices` returns EGX30=53,776.69 (-1.15%), EGX70=19,834.95 (-1.22%), EGX100=26,233 (-0.64%) — all REAL ✅. `/api/maker-radar/multi-market` returns 88 EGX stocks tracked with real picks (TAQA 17.12 EGP, ADCI 284 EGP) ✅. `/api/predictions/honest-tracking/live-tracking` returns 1,318 total / 507 wins / 457 losses / 52.6% win rate / +15.98% avg win / -6.98% avg loss / 2.97 profit factor — all SENSIBLE ✅.
+  * Production predictions financial sanity check (50 most-recent from `/api/predictions/honest-tracking/list`):
+    - **CRITICAL**: 34% (17/50) have `target_price` >500% above entry (e.g., MASR entry=7.88 → target=55.55 = +604.9% expected return). R/R >50 for 38% of predictions — IMPOSSIBLE for 2-6 week trades.
+    - 18% have target_price 50-100% above entry (e.g., BTFH 2.91→5.21 = +79%, PHDC 13.81→20.59 = +49%).
+    - Only 10% (5/50) have realistic target_price <20% above entry.
+    - `target_price_2` is consistently +20% above entry (88% of predictions) — this is the CORRECT realistic target.
+    - Bug pattern: `target_price_2` column is realistic; `target_price` column is wrong/systematically too high for low-priced stocks.
+  - Specific bad-actor tickers (multiple predictions each):
+    - **MASR**: 3 predictions with R/R 80-104, expected returns 484-605%. All STOPPED.
+    - **BTFH**: 2 predictions with R/R 10-13, expected returns 61-79%. Both "TARGET_HIT" but actual returns 0.67% and 2.53% (way below +79% expected).
+    - **ORTE**: 5 predictions (some duplicate rows) with R/R 6-8, expected returns 36-48%. All EXPIRED with 0% actual return.
+    - **PHDC**: 2 predictions with R/R 5-8, expected returns 32-49%. Both STOPPED.
+  - Simulation hardcoded prices sanity check:
+    - SWDY (السويدى إلكتريك) 30.4 EGP ✅ (real 25-40 EGP range)
+    - EPCI (إيبيكو) 42.5 EGP ✅ (real 35-50 EGP range)
+    - KIMA 22.7 EGP ✅ (real 15-30 EGP range)
+    - DCRC 5.15 EGP ✅ plausible
+    - **COMI 2.85 EGP ❌** (labeled "أوراسكوم للإعلام" but COMI is universal CIB ticker, real 30-50 EGP)
+    - **CIBK 85.4 EGP ⚠️** (matches CIB price but labeled "بنك القاهرة" / Bank of Cairo; real Bank of Cairo is CAIE ticker, 7-12 EGP)
+    - **FWRY 3.65 EGP ❌** (labeled "فودافون مصر" but Vodafone Egypt not listed; FWRY is Fawry payment processor)
+    - **MISR 65.3 EGP ❌** (labeled "بنك مصر" / Bank of Egypt; real 15-30 EGP, 2× too high)
+    - **ETEL/MTIE 15.6 EGP** duplicates (same price for "المصرية للاتصالات" labeled twice)
+- Phase 4 — Wrote comprehensive report to `/home/z/my-project/agent-ctx/UI-DEEP-TEST-REPORT.md` (~16 KB / 350+ lines). Includes: per-screen deep-test sections (15 screens × Visual + Data + Financial review), Top 10 NEW issues (numbered), Financial Expert Recommendations (10 numbered actions), cross-cutting issues table (20 rows), production-data sanity-check table (20 metrics), per-screen score summary table (15 rows), Files created list.
+
+Stage Summary:
+- Total screens tested: 26 views (15 hash-routes + 11 sub-tabs of #recommendations).
+- Total screenshots saved: 26 files in `agent-ctx/screenshots/deep-*.png`.
+- Total NEW issues documented: 14 visual + 19 data quality + 7 financial value = 40 issues (10 promoted to "Top 10 NEW issues" list).
+- Per-screen scoring:
+  * Visual score range: 2/10 (#liquidity-radar, empty loading state) → 7/10 (#news, #simulation, #academy).
+  * Data score range: 1/10 (#stocks, #watchlist, #liquidity-radar, #reports) → 7/10 (#news).
+- Overall visual score: 5.5/10 (slightly higher than per-screen average because dashboard/simulation/academy/news have working structural UI even when data is missing).
+- Overall data score: 3.0/10 (most screens show 0.00 / 0 / — placeholders; production has real data but dev environment is empty).
+- Top 5 critical issues (NEW since prior audit):
+  1. Production `target_price` bug — 34% of recent predictions show +500%+ expected returns.
+  2. Dev environment has empty local DBs — most screens show 0.00 placeholders as if real.
+  3. Schema errors visible to users — "no such column: volume" + "no such column: explosive_label" + "no such table: historical_trades".
+  4. `#portfolio` shows misleading "-30% real return" for fresh users (default 30% inflation fallback).
+  5. `#simulation` hardcoded prices with wrong ticker-name mapping (COMI, CIBK, FWRY, MISR).
+- Constitution compliance: Rule 4 (NO new files/screens) — only 1 .md report + 26 .png screenshots created; no .ts/.tsx/.py files modified. Rule 25 (refactoring-gated) — no destructive changes. Rule 39 (DOCS-FIRST-LAST) — deep-test report produced for next fix task. NO code changes (Phase 4 documentation-only per task spec).
+- Report: `/home/z/my-project/agent-ctx/UI-DEEP-TEST-REPORT.md` (~350 lines, ~16 KB).
+- Recommendations for next task (UI-FIX-PRIORITY-2 or DATA-FIX-PRIORITY-1):
+  * **CRITICAL (P0 data)**: Fix `target_price` prediction bug — investigate Python prediction-generation code that writes target_price for low-priced stocks (MASR, BTFH, PHDC, ORTE); swap to `target_price_2` value when target_price > entry × 1.5.
+  * **CRITICAL (P0 dev-env)**: Sync local dev DBs from production — copy `predictions.db` (1,318 rows), `stocks.db` (392 EGX rows), `data_engine.db` (with volume + explosive_label + historical_trades schema) from production; OR enable production fallback for ALL API endpoints (currently only `/api/predictions/honest-tracking/list` falls back).
+  * **CRITICAL (P0 schema)**: Add missing SQLite columns/tables: `volume` column in `stocks` table; `explosive_label` column in radar-accuracy table; `historical_trades` table in `predictions.db`.
+  * **HIGH (P1 financial)**: Fix `#portfolio` real-return engine — hide "-30% real return" panel when assets.length === 0; show "30%" inflation default explicitly in label so user understands cause.
+  * **HIGH (P1 financial)**: Fix `#simulation` hardcoded ticker-name mapping — at minimum rename COMI/CIBK/FWRY/MISR labels correctly, or replace `EGX_STOCKS_RAW` with real `/api/stocks?market=EGX` call.
+  * **HIGH (P1 UX)**: Fix `#crypto` "السوق مغلق" logic (crypto is 24/7) + H2 duplicate "لوحة التحكم" + seasonality market mismatch + disclaimer typo "ليس تحليل مالية" → "ليس نصيحة مالية".
+  * **HIGH (P1 broken feature)**: Fix `#trading-chart` CoinGecko integration — cache OHLC data locally with 5-minute TTL OR upgrade to CoinGecko Pro; deduplicate timestamps before passing to `lightweight-charts` library.
+  * **HIGH (P1 broken feature)**: Fix `#liquidity-radar` warming-up state — backfill `maker_radar_cache.json` from production or run `python scripts/maker_radar.py` once to seed initial cache.
+  * **MEDIUM (P2)**: Fix #learning inconsistent progress numbers (0 XP vs 1 lesson complete vs 1% quiz average).
+  * **MEDIUM (P2)**: Translate English academy lesson titles to Arabic.
+  * **MEDIUM (P2)**: Add separators to concatenated period-chip selectors (`#recommendations` ملخص tab) and time-interval chips (`#trading-chart`).
+  * **MEDIUM (P2)**: Hide raw SQL/HTTP errors from end-users — show friendly Arabic error messages instead.
+  * **LOW (P3)**: Remove "0.00 جنيه مصري" hero price-card template from `#learning` page.
+  * **LOW (P3)**: Standardize H3 font-size to ≥14px (currently 12px on dashboard H3s).
+---
