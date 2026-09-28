@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * GET /api/stocks/[ticker]/publish-data
  * ==================================================
@@ -511,4 +512,52 @@ export async function GET(
     data,
     errors,
   });
+=======
+import { NextRequest, NextResponse } from 'next/server';
+import Database from 'better-sqlite3';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest, { params }: { params: { ticker: string } }) {
+  const ticker = (params.ticker || '').toUpperCase();
+  if (!ticker) return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
+  
+  try {
+    const dbPath = require('path').join(process.cwd(), 'db', 'predictions.db');
+    const db = new Database(dbPath, { readonly: true });
+    
+    // Get latest prediction
+    const pred = db.prepare("SELECT * FROM predictions WHERE ticker = ? ORDER BY id DESC LIMIT 1").get(ticker) as any;
+    db.close();
+    
+    if (!pred) {
+      return NextResponse.json({
+        success: false,
+        error: 'no_prediction',
+        ticker,
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        ticker: pred.ticker,
+        currentPrice: pred.entry_price || 0,
+        recommendation: pred.signal || pred.status,
+        confidence: pred.confidence || 50,
+        entryPrice: pred.entry_price,
+        targetPrice1: pred.target_price,
+        targetPrice2: pred.target_price_2,
+        stopLoss: pred.stop_loss,
+        riskReward: pred.risk_reward || 0,
+        positionSize: pred.position_size || 0,
+        signalCount: 0,
+        market: pred.market || 'EGX',
+        marketRegime: 'NORMAL',
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
 }

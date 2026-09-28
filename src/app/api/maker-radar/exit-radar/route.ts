@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+<<<<<<< HEAD
 import {
   readExitRadarCache,
   getLiveStatus,
@@ -6,10 +7,14 @@ import {
 } from '@/modules/radar/lib/radar-cache';
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
+=======
+import { readFileSync, existsSync, readdirSync } from 'fs';
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+<<<<<<< HEAD
 export const maxDuration = 60; // generous — cache reads are <50ms
 
 const PROJECT_ROOT = process.cwd();
@@ -293,4 +298,35 @@ export async function POST(req: NextRequest) {
       }
     });
   });
+=======
+
+const OUTPUT_DIR = path.join(process.cwd(), 'scripts', 'output');
+
+function findLatestExitRadarFile(): string | null {
+  try {
+    if (!existsSync(OUTPUT_DIR)) return null;
+    const files = readdirSync(OUTPUT_DIR)
+      .filter(f => f.startsWith('exit_radar_') && f.endsWith('.json'))
+      .sort().reverse();
+    return files.length > 0 ? path.join(OUTPUT_DIR, files[0]) : null;
+  } catch { return null; }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const fp = findLatestExitRadarFile();
+    if (!fp || !existsSync(fp)) {
+      return NextResponse.json({
+        success: false,
+        warming_up: true,
+        error: 'رادار الخروج بيتسخن — حاول تاني خلال دقيقة',
+      }, { status: 503 });
+    }
+    const raw = readFileSync(fp, 'utf-8');
+    const data = JSON.parse(raw);
+    return NextResponse.json({ success: true, ...data, cached: true });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
 }

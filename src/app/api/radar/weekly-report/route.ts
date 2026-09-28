@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+<<<<<<< HEAD
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -298,4 +299,27 @@ export async function POST(req: NextRequest) {
       }
     });
   });
+=======
+import { readFileSync, existsSync, readdirSync } from 'fs';
+import path from 'path';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    const outputDir = path.join(process.cwd(), 'scripts', 'output');
+    if (!existsSync(outputDir)) {
+      return NextResponse.json({ success: false, error: 'no_reports_yet', warming_up: true }, { status: 503 });
+    }
+    const files = readdirSync(outputDir).filter(f => f.startsWith('weekly_radar_report_') && f.endsWith('.json')).sort().reverse();
+    if (files.length === 0) {
+      return NextResponse.json({ success: false, error: 'no_reports_yet', warming_up: true }, { status: 503 });
+    }
+    const raw = readFileSync(path.join(outputDir, files[0]), 'utf-8');
+    const data = JSON.parse(raw);
+    return NextResponse.json({ success: true, ...data, cached: true });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
 }

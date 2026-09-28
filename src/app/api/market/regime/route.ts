@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * GET /api/market/regime
  * ========================
@@ -293,6 +294,53 @@ export async function GET(req: NextRequest) {
         market: marketRaw,
       },
       { status: 500 },
+=======
+import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// GET /api/market/regime?market=EGX
+// Returns current market regime (DEFENSIVE/NORMAL/AGGRESSIVE)
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const market = url.searchParams.get('market') || 'EGX';
+  
+  try {
+    // Try to read regime from engine_settings table
+    const Database = require('better-sqlite3');
+    const dbPath = require('path').join(process.cwd(), 'db', 'predictions.db');
+    
+    let regime = 'NORMAL';
+    let confidence = 0.5;
+    let reasons: string[] = [];
+    
+    try {
+      const db = new Database(dbPath, { readonly: true });
+      const row = db.prepare("SELECT value FROM engine_settings WHERE key = 'current_regime'").get() as { value: string } | undefined;
+      if (row?.value) {
+        const data = JSON.parse(row.value);
+        regime = data.regime || 'NORMAL';
+        confidence = data.confidence || 0.5;
+        reasons = data.reasons || [];
+      }
+      db.close();
+    } catch {
+      // Fallback — return NORMAL if DB not available
+    }
+    
+    return NextResponse.json({
+      success: true,
+      market,
+      regime,
+      confidence,
+      reasons,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
     );
   }
 }

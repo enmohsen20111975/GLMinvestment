@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * GET /api/radar/accuracy?market=EGX&days=90
  * ===========================================
@@ -690,4 +691,65 @@ function buildFromRadarTrackingTable(
     monthly_trend: monthlyTrend,
     served_at: new Date().toISOString(),
   };
+=======
+import { NextRequest, NextResponse } from 'next/server';
+import Database from 'better-sqlite3';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const market = url.searchParams.get('market') || 'EGX';
+  
+  try {
+    const dbPath = require('path').join(process.cwd(), 'db', 'predictions.db');
+    const db = new Database(dbPath, { readonly: true });
+    
+    // Check if radar_signal_tracking exists
+    const hasTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='radar_signal_tracking'").get();
+    
+    if (hasTable) {
+      const total = db.prepare('SELECT COUNT(*) as c FROM radar_signal_tracking').get() as any;
+      const verified = db.prepare("SELECT COUNT(*) as c FROM radar_signal_tracking WHERE status != 'pending'").get() as any;
+      const wins = db.prepare("SELECT COUNT(*) as c FROM radar_signal_tracking WHERE status = 'verified_win'").get() as any;
+      const byType = db.prepare("SELECT signal_type, COUNT(*) as total, SUM(CASE WHEN status='verified_win' THEN 1 ELSE 0 END) as wins FROM radar_signal_tracking GROUP BY signal_type").all() as any[];
+      
+      db.close();
+      return NextResponse.json({
+        success: true,
+        market,
+        total_signals: total?.c || 0,
+        verified: verified?.c || 0,
+        pending: (total?.c || 0) - (verified?.c || 0),
+        win_rate_pct: verified?.c > 0 ? ((wins?.c || 0) / verified.c * 100) : 0,
+        by_signal_type: byType.map(t => ({
+          signal_type: t.signal_type,
+          total: t.total,
+          verified: t.total,
+          wins: t.wins,
+          win_rate_pct: t.total > 0 ? (t.wins / t.total * 100) : 0,
+        })),
+      });
+    }
+    
+    // Fallback to predictions table
+    const total = db.prepare('SELECT COUNT(*) as c FROM predictions').get() as any;
+    const wins = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status IN ('TARGET_HIT','closed_win')").get() as any;
+    const closed = db.prepare("SELECT COUNT(*) as c FROM predictions WHERE status NOT IN ('active','ACTIVE')").get() as any;
+    
+    db.close();
+    return NextResponse.json({
+      success: true,
+      market,
+      source: 'predictions_fallback',
+      total_signals: total?.c || 0,
+      verified: closed?.c || 0,
+      pending: (total?.c || 0) - (closed?.c || 0),
+      win_rate_pct: closed?.c > 0 ? ((wins?.c || 0) / closed.c * 100) : 0,
+      by_signal_type: [],
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+<<<<<<< HEAD
 import { readFile, access } from 'fs/promises';
 import path from 'path';
 import Database from 'better-sqlite3';
@@ -555,5 +556,46 @@ export async function GET(req: NextRequest) {
       { success: false, error: error?.message || 'Internal error', ticker },
       { status: 500 }
     );
+=======
+import { readFileSync, existsSync } from 'fs';
+import path from 'path';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const ticker = (url.searchParams.get('ticker') || '').toUpperCase();
+  const days = parseInt(url.searchParams.get('days') || '30', 10);
+  
+  if (!ticker) return NextResponse.json({ success: false, error: 'ticker required' }, { status: 400 });
+  
+  try {
+    const trackingFile = path.join(process.cwd(), 'db', 'maker_radar_tracking.json');
+    if (!existsSync(trackingFile)) {
+      return NextResponse.json({ success: false, error: 'not_tracked', ticker });
+    }
+    const tracking = JSON.parse(readFileSync(trackingFile, 'utf-8'));
+    const tracked = tracking[ticker];
+    if (!tracked) {
+      return NextResponse.json({ success: false, error: 'not_tracked', ticker });
+    }
+    
+    return NextResponse.json({
+      success: true,
+      ticker,
+      entry: { date: tracked.entryDate, price: tracked.entryPrice },
+      current: { date: new Date().toISOString().slice(0,10), price: 0, change_pct: 0, days_tracked: 0 },
+      target_1: { price: 0, pct: 0, status: 'pending', progress_pct: 0 },
+      target_2: { price: 0, pct: 0, status: 'pending', progress_pct: 0 },
+      stop_loss: { price: 0, pct: 0, status: 'safe', progress_pct: 0 },
+      timeline: [{ date: tracked.entryDate, price: tracked.entryPrice, event: 'signal', label: 'دخل الرادار', note: null }],
+      milestones: [],
+      signal_events_count: 1,
+      price_points: 1,
+      computed_at: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
   }
 }

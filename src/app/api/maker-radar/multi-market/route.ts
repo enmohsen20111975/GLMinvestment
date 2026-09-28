@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * GET /api/maker-radar/multi-market?markets=EGX,US,CRYPTO
  * ===============================================
@@ -223,11 +224,32 @@ function buildUnifiedTop5(sections: MarketSection[]): RadarPick[] {
   }
   all.sort((a, b) => (Number(b.position_size) || 0) - (Number(a.position_size) || 0));
   return all.slice(0, 5);
+=======
+import { NextRequest, NextResponse } from 'next/server';
+import { readFileSync, existsSync, readdirSync } from 'fs';
+import path from 'path';
+
+export const dynamic = 'force-dynamic';
+
+const OUTPUT_DIR = path.join(process.cwd(), 'scripts', 'output');
+
+function readRadarCache(market: string): any | null {
+  try {
+    if (!existsSync(OUTPUT_DIR)) return null;
+    const files = readdirSync(OUTPUT_DIR)
+      .filter(f => f.startsWith('maker_radar_') && f.endsWith('.json'))
+      .sort().reverse();
+    if (files.length === 0) return null;
+    const raw = readFileSync(path.join(OUTPUT_DIR, files[0]), 'utf-8');
+    return JSON.parse(raw);
+  } catch { return null; }
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
 }
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const marketsParam = url.searchParams.get('markets') || 'EGX,US,CRYPTO';
+<<<<<<< HEAD
   const requested = marketsParam
     .split(',')
     .map((m) => m.trim().toUpperCase())
@@ -278,5 +300,52 @@ export async function GET(req: NextRequest) {
     served_at: new Date().toISOString(),
     invalid_markets: invalid,
     supported_markets: Array.from(SUPPORTED_MARKETS).sort(),
+=======
+  const markets = marketsParam.split(',').map(m => m.trim().toUpperCase());
+  
+  const result: Record<string, any> = {};
+  const allPicks: any[] = [];
+  
+  for (const market of markets) {
+    const cache = readRadarCache(market);
+    if (cache) {
+      const picks = [
+        ...(cache.quiet_list || []),
+        ...(cache.pre_surge_list || []),
+        ...(cache.explosive_list || []),
+        ...(cache.early_break_list || []),
+      ].slice(0, 5);
+      result[market] = {
+        count: picks.length,
+        regime: 'NORMAL',
+        top_picks: picks.map((p: any) => ({
+          ticker: p.ticker,
+          path: p.path,
+          current_price: p.current_price,
+          signal_count: p.quiet_details?.signal_count || 0,
+        })),
+      };
+      allPicks.push(...picks.map((p: any) => ({ ...p, market })));
+    } else {
+      result[market] = { count: 0, regime: 'NORMAL', top_picks: [], warming_up: true };
+    }
+  }
+  
+  const unified_top_5 = allPicks
+    .sort((a: any, b: any) => (b.quiet_details?.signal_count || 0) - (a.quiet_details?.signal_count || 0))
+    .slice(0, 5);
+  
+  return NextResponse.json({
+    success: true,
+    markets: result,
+    unified_top_5: unified_top_5.map((p: any) => ({
+      ticker: p.ticker,
+      market: p.market,
+      path: p.path,
+      current_price: p.current_price,
+      signal_count: p.quiet_details?.signal_count || 0,
+    })),
+    supported_markets: ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO', 'GOLD'],
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
   });
 }

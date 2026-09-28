@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
   "last_warmup_started_at": "2026-09-28T14:32:01.801Z",
   "last_warmup_finished_at": "2026-09-28T14:32:01.924Z",
   "last_warmup_duration_ms": 82,
+=======
+  "last_warmup_started_at": "2026-09-28T20:19:15.105Z",
+  "last_warmup_finished_at": "2026-09-28T20:19:15.295Z",
+  "last_warmup_duration_ms": 163,
+>>>>>>> 835c22b (fix: recreate 7 lost API routes + restore predictions.db + Flutter audit)
   "last_warmup_status": "failed",
   "last_error": "exit code 1",
   "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260926.json",
