@@ -44,6 +44,7 @@ import { StockSelector } from './StockSelector';
 import { StockIconMini } from './StockIcon';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -428,6 +429,27 @@ const StockCard = memo(function StockCard({
                 sector: stock.sector,
               }}
             />
+            <StockPublisher
+              data={{
+                ticker: stock.ticker,
+                nameAr: stock.name_ar,
+                nameEn: stock.name,
+                sector: stock.sector,
+                currentPrice: Number(stock.current_price ?? 0),
+                changePct: Number(stock.price_change ?? 0),
+                peRatio: Number(stock.pe_ratio ?? 0) || undefined,
+                pbRatio: Number(stock.pb_ratio ?? 0) || undefined,
+                roe: Number(stock.roe ?? 0) || undefined,
+                marketCap: Number(stock.market_cap ?? 0) || undefined,
+                rsi: Number(stock.rsi ?? 0) || undefined,
+                sma20: Number(stock.ma_50 ?? 0) || undefined,
+                sma50: Number(stock.ma_50 ?? 0) || undefined,
+                sma200: Number(stock.ma_200 ?? 0) || undefined,
+                market: (stock.market as StockPublishData['market']) || 'EGX',
+              }}
+              variant="icon"
+              size="sm"
+            />
           </div>
         </div>
 
@@ -594,6 +616,24 @@ const MobileStockRow = memo(function MobileStockRow({
               change: stock.price_change ?? undefined,
               sector: stock.sector,
             }}
+          />
+          <StockPublisher
+            data={{
+              ticker: stock.ticker,
+              nameAr: stock.name_ar,
+              nameEn: stock.name,
+              sector: stock.sector,
+              currentPrice: Number(stock.current_price ?? 0),
+              changePct: Number(stock.price_change ?? 0),
+              peRatio: Number(stock.pe_ratio ?? 0) || undefined,
+              pbRatio: Number(stock.pb_ratio ?? 0) || undefined,
+              roe: Number(stock.roe ?? 0) || undefined,
+              marketCap: Number(stock.market_cap ?? 0) || undefined,
+              rsi: Number(stock.rsi ?? 0) || undefined,
+              market: (stock.market as StockPublishData['market']) || 'EGX',
+            }}
+            variant="icon"
+            size="sm"
           />
         </div>
       </div>
@@ -1188,6 +1228,7 @@ export function StocksView() {
         header: 'الرمز',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <div className="flex items-center gap-1">
             <span className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
@@ -1210,6 +1251,8 @@ export function StocksView() {
         key: 'name_ar',
         header: 'الاسم',
         align: 'right',
+        sortable: true,
+        filterable: true,
         render: (row) => (
           <div className="max-w-[160px] truncate text-sm" dir="rtl">
             {String(row.name_ar ?? '')}
@@ -1224,6 +1267,7 @@ export function StocksView() {
         header: 'القطاع',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span
             className={cn(
@@ -1244,6 +1288,7 @@ export function StocksView() {
         header: `السعر ${currencyLabel}`,
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="font-semibold text-sm tabular-nums">
             {safeNum(row.current_price as number).toFixed(2)}
@@ -1255,6 +1300,7 @@ export function StocksView() {
         header: 'يوم %',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => {
           const change = row.change_1d != null ? row.change_1d : (row.price_change ?? 0);
           const isPositive = Number(change) > 0;
@@ -1304,6 +1350,7 @@ export function StocksView() {
         header: 'أسبوع %',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => {
           const change1w = row.change_1w ?? null;
           return (
@@ -1321,6 +1368,7 @@ export function StocksView() {
         header: 'شهر %',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => {
           const change1m = row.change_1m ?? null;
           return (
@@ -1337,6 +1385,7 @@ export function StocksView() {
       header: 'حجم اليوم',
       align: 'left',
       sortable: true,
+      filterable: true,
       render: (row) => {
         const volToday = row.volume_int ?? (row.volume ?? 0);
         return (
@@ -1354,6 +1403,7 @@ export function StocksView() {
           header: 'حجم الأسبوع',
           align: 'left',
           sortable: true,
+          filterable: true,
           render: (row) => {
             const volWeek = row.volume_week ?? null;
             return (
@@ -1368,6 +1418,7 @@ export function StocksView() {
           header: 'القيمة العادلة',
           align: 'left',
           sortable: true,
+          filterable: true,
           render: (row) => {
             const fairValue = row.fair_value ?? null;
             const currentPrice = Number(row.current_price ?? 0);
@@ -1392,6 +1443,7 @@ export function StocksView() {
           header: 'الفرصة %',
           align: 'left',
           sortable: true,
+          filterable: true,
           render: (row) => {
             const upside = row.upside_percent ?? null;
             return (
@@ -1413,6 +1465,7 @@ export function StocksView() {
           header: 'مكرر الربحية',
           align: 'left',
           sortable: true,
+          filterable: true,
           render: (row) => {
             const peRatio = row.pe_ratio ?? null;
             return (
@@ -1431,6 +1484,7 @@ export function StocksView() {
         header: 'القيمة السوقية',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="text-xs text-muted-foreground tabular-nums">
             {formatMarketCap(safeNum(row.market_cap as number))}
@@ -1961,6 +2015,8 @@ export function StocksView() {
                   dense={false}
                   maxHeight="max-h-[70vh]"
                   emptyTextAr="لا توجد أسهم مطابقة للبحث"
+                  filterable
+                  columnToggle
                 />
               </div>
 

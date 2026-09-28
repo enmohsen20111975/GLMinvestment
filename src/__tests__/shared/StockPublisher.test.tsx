@@ -50,6 +50,37 @@ vi.mock('@/lib/official-links', () => ({
     telegram: 'https://t.me/Arabian_investment_guide',
     whatsapp: 'https://chat.whatsapp.com/L9hjEpJloAZAUvwMzB10Tc',
   },
+  OFFICIAL_LINKS_BLOCK: '\n🔗 روابطنا الرسمية:\n🌐 https://invist.m2y.net',
+  OFFICIAL_LINKS_SHORT: '🔗 https://invist.m2y.net',
+  COMMUNITY_PROMPT: 'انضم الآن إلى مجتمع المتداولين',
+}));
+
+// next-auth/react — useSession must be a no-op (the new admin-only Telegram
+// bot button in StockPublisher calls useSession; tests don't need a real
+// SessionProvider wrapper).
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null, status: 'unauthenticated' }),
+}));
+
+// @/lib/store — useAppStore returns null user (so the admin-only Telegram bot
+// button stays hidden in tests — which is the correct non-admin default).
+vi.mock('@/lib/store', () => ({
+  useAppStore: () => null,
+  MARKET_NAMES_AR: {},
+}));
+
+// @/lib/admin-auth — isAdmin returns false (non-admin by default), adminFetch
+// is a noop. Individual tests that need admin behavior can override these.
+vi.mock('@/lib/admin-auth', () => ({
+  isAdmin: () => false,
+  adminFetch: vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ success: false, error: 'mocked' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  ),
+  requireAdmin: () => ({ authorized: false, error: 'mocked' }),
+  getAdminToken: () => Promise.resolve(null),
 }));
 
 // ─── Helpers ───────────────────────────────────────────────────────────────

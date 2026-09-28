@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs';
@@ -574,6 +575,24 @@ function PredictionRow({ pred }: { pred: Prediction }) {
         </span>
         <span className="font-bold">{pred.ticker}</span>
         <span className="text-muted-foreground truncate hidden sm:inline">{pred.signal_type}</span>
+        <StockPublisher
+          data={{
+            ticker: pred.ticker,
+            currentPrice: Number(pred.entry_price ?? 0),
+            entryPrice: Number(pred.entry_price ?? 0) || undefined,
+            targetPrice1: Number(pred.target_price ?? 0) || undefined,
+            targetPrice2: Number(pred.target_price_2 ?? 0) || undefined,
+            stopLoss: Number(pred.stop_loss ?? 0) || undefined,
+            riskReward: Number(pred.risk_reward ?? 0) || undefined,
+            confidence: Number(pred.confidence ?? 0) || undefined,
+            market: (pred.market as StockPublishData['market']) || 'EGX',
+            recommendation:
+              pred.signal === 'BUY' ? 'BUY' :
+              pred.signal === 'SELL' ? 'SELL' : 'HOLD',
+          }}
+          variant="icon"
+          size="sm"
+        />
       </div>
 
       <div className="flex items-center gap-2 shrink-0">

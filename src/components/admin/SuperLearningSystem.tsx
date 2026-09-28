@@ -986,6 +986,7 @@ export function SuperLearningSystem() {
       header: 'التوقعات',
       align: 'center',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'text-xs text-center font-mono',
     },
@@ -994,6 +995,7 @@ export function SuperLearningSystem() {
       header: 'نسبة النجاح',
       align: 'center',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (r) => (
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 font-mono text-[11px]">
@@ -1006,6 +1008,7 @@ export function SuperLearningSystem() {
       header: 'العائد',
       align: 'left',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'text-xs text-left font-mono font-semibold text-emerald-600',
       render: (r) => `+${r.returnPct}%`,
@@ -1025,6 +1028,7 @@ export function SuperLearningSystem() {
       header: 'التوقعات',
       align: 'center',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'text-xs text-center font-mono',
     },
@@ -1033,6 +1037,7 @@ export function SuperLearningSystem() {
       header: 'نسبة النجاح',
       align: 'center',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (r) => (
         <Badge variant="outline" className="bg-purple-500/10 text-purple-600 font-mono text-[11px]">
@@ -1055,6 +1060,7 @@ export function SuperLearningSystem() {
       key: 'entry_date',
       header: 'التاريخ',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (t) => t?.entry_date || '-',
     },
@@ -1063,6 +1069,7 @@ export function SuperLearningSystem() {
       header: 'الدخول',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       render: (t) => safeToFixed(t?.entry_price, 2),
     },
@@ -1071,6 +1078,7 @@ export function SuperLearningSystem() {
       header: 'الخروج',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       render: (t) => safeToFixed(t?.exit_price, 2),
     },
@@ -1079,6 +1087,7 @@ export function SuperLearningSystem() {
       header: 'العائد',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (t) => (
         <span className={safeNumber(t?.actual_return) >= 0 ? "text-green-600" : "text-red-600"}>

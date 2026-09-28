@@ -62,81 +62,31 @@ import {
   Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { withOfficialLinks, OFFICIAL_LINKS } from '@/lib/official-links';
+import { OFFICIAL_LINKS } from '@/lib/official-links';
 import { toast } from 'sonner';
+// Server-safe text generation + types re-exported from the shared module so the
+// /api/telegram/publish-stock route can reuse generatePublishText server-side.
+import {
+  MARKET_REGIME_AR,
+  generatePublishText,
+  generatePublishPayload,
+} from '@/lib/stock-publish-text';
+import { useSession } from 'next-auth/react';
+import { useAppStore } from '@/lib/store';
+import { isAdmin, adminFetch } from '@/lib/admin-auth';
 
 // ============================================================================
-// Types
+// Types — re-exported from the shared module (backward compat)
 // ============================================================================
 
-export type Recommendation =
-  | 'BUY'
-  | 'STRONG_BUY'
-  | 'SELL'
-  | 'HOLD'
-  | 'INSTITUTIONAL_BUY';
+export type Recommendation = import('@/lib/stock-publish-text').Recommendation;
+export type MarketRegime = import('@/lib/stock-publish-text').MarketRegime;
+export type StockPublishData = import('@/lib/stock-publish-text').StockPublishData;
 
-export type MarketRegime = 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE';
-
-export interface StockPublishData {
-  // Basic info
-  ticker: string;
-  nameAr?: string;
-  nameEn?: string;
-  sector?: string;
-  currentPrice: number;
-  previousClose?: number;
-  changePct?: number;
-
-  // Recommendation
-  recommendation?: Recommendation;
-  recommendationAr?: string;
-  confidence?: number; // 0-100
-  reason?: string;
-
-  // Trading plan
-  entryPrice?: number;
-  entryZoneLow?: number;
-  entryZoneHigh?: number;
-  targetPrice1?: number;
-  targetPrice2?: number;
-  stopLoss?: number;
-  riskReward?: number;
-  positionSize?: number; // percentage of portfolio
-
-  // Signal strength
-  signalCount?: number;
-  maxSignals?: number;
-  path?: string;
-
-  // Liquidity
-  buyPressure?: number; // 0-100
-  sellPressure?: number; // 0-100
-  netFlow?: number; // EGP
-  volumeRatio?: number; // 10d vs 20d
-  turnover?: number;
-
-  // Technical
-  rsi?: number;
-  sma20?: number;
-  sma50?: number;
-  sma200?: number;
-  atr?: number;
-
-  // Fundamentals (optional)
-  peRatio?: number;
-  pbRatio?: number;
-  roe?: number;
-  marketCap?: number;
-
-  // Analysis text
-  analysisSummary?: string;
-  newsImpact?: string;
-
-  // Market context
-  market?: 'EGX' | 'TADAWUL' | 'KSE' | 'QSE' | 'CRYPTO' | 'GOLD';
-  marketRegime?: MarketRegime;
-}
+export {
+  generatePublishText,
+  generatePublishPayload,
+} from '@/lib/stock-publish-text';
 
 export interface StockPublisherProps {
   data: StockPublishData;
@@ -191,11 +141,7 @@ const RECOMMENDATION_META: Record<
   },
 };
 
-const MARKET_REGIME_AR: Record<MarketRegime, string> = {
-  DEFENSIVE: '🛡️ دفاعي',
-  NORMAL: '⚖️ عادي',
-  AGGRESSIVE: '🚀 هجومي',
-};
+// (MARKET_REGIME_AR is imported from @/lib/stock-publish-text above)
 
 // ============================================================================
 // Component — StockPublisher (main entry)
@@ -215,7 +161,27 @@ export function StockPublisher({
   const [copied, setCopied] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [capturingImage, setCapturingImage] = useState(false);
+  const [sendingToTelegramBot, setSendingToTelegramBot] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Admin check — the "نشر على تيليجرام" (channel bot) button is admin-only.
+  // Regular users still get Telegram/WhatsApp/Facebook share-URL buttons.
+  const { data: session } = useSession();
+  const storeUser = useAppStore((s) => s.user);
+  const userEmail = storeUser?.email || session?.user?.email || '';
+  const username =
+    (storeUser as { username?: string; name?: string } | null)?.username ||
+    (storeUser as { username?: string; name?: string } | null)?.name ||
+    (session?.user as { username?: string; name?: string } | null)?.username ||
+    (session?.user as { username?: string; name?: string } | null)?.name ||
+    '';
+  const isAdminUser =
+    (storeUser as { is_admin?: boolean } | null)?.is_admin === true ||
+    (storeUser as { subscription_tier?: string } | null)?.subscription_tier === 'admin' ||
+    (session?.user as { is_admin?: boolean } | null)?.is_admin === true ||
+    (session?.user as { subscription_tier?: string } | null)?.subscription_tier === 'admin' ||
+    isAdmin(userEmail, username) ||
+    isAdmin(username, userEmail);
 
   // Generate the rich text card (Arabic, formatted for Telegram/WhatsApp)
   const publishText = useMemo(() => generatePublishText(data), [data]);
@@ -292,6 +258,42 @@ export function StockPublisher({
 
   const sizeButtonClasses =
     size === 'sm' ? 'h-8 px-3 text-xs gap-1.5' : size === 'lg' ? 'h-11 px-6 text-base gap-2' : 'h-9 px-4 text-sm gap-2';
+
+  // ─── Publish directly to the Telegram bot (channel post) ───
+  // Admin-only. Sends the rich Arabic text to the configured Telegram channel
+  // via the backend /api/telegram/publish-stock route (which calls the bot API).
+  const handlePublishToTelegramBot = useCallback(async () => {
+    setSendingToTelegramBot(true);
+    try {
+      const res = await adminFetch('/api/telegram/publish-stock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticker: data.ticker,
+          market: data.market || 'EGX',
+        }),
+      });
+      const json = await res.json().catch(() => ({} as Record<string, unknown>));
+      if (!res.ok || !json?.success) {
+        const errMsg =
+          (json?.error as string | undefined) ||
+          `فشل النشر على تيليجرام (HTTP ${res.status})`;
+        toast.error(errMsg);
+        return;
+      }
+      const msgId = json?.message_id;
+      toast.success(
+        msgId
+          ? `تم نشر ${data.ticker} على قناة تيليجرام ✅ (message_id: ${msgId})`
+          : `تم نشر ${data.ticker} على قناة تيليجرام ✅`
+      );
+    } catch (e) {
+      console.error('[StockPublisher] telegram bot publish failed:', e);
+      toast.error('فشل الاتصال بالبوت — حاول مرة تانية');
+    } finally {
+      setSendingToTelegramBot(false);
+    }
+  }, [data.ticker, data.market]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -444,6 +446,25 @@ export function StockPublisher({
             )}
             فيسبوك
           </Button>
+
+          {/* Admin-only: publish directly to the Telegram channel via the bot */}
+          {isAdminUser && (
+            <Button
+              onClick={handlePublishToTelegramBot}
+              variant="default"
+              size="sm"
+              disabled={sendingToTelegramBot}
+              className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+              title="ينشر التحليل مباشرة على قناة تيليجرام عبر البوت"
+            >
+              {sendingToTelegramBot ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              نشر على تيليجرام
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -940,181 +961,11 @@ function IndicatorRow({
 }
 
 // ============================================================================
-// generatePublishText — format the data as Arabic text for Telegram/WhatsApp
+// Helpers (used by StockPublishCard visual rendering — fmtNum + fmtMoney)
 // ============================================================================
-
-export function generatePublishText(data: StockPublishData): string {
-  const lines: string[] = [];
-
-  // Header
-  lines.push(
-    `📊 تحليل سهم: ${data.ticker}${data.nameAr ? ` — ${data.nameAr}` : ''}`
-  );
-  if (data.nameEn) {
-    lines.push(`📊 Stock Analysis: ${data.ticker} — ${data.nameEn}`);
-  }
-  if (data.sector) {
-    lines.push(`🏷️ القطاع: ${data.sector}`);
-  }
-  lines.push('');
-
-  // Recommendation
-  if (data.recommendation) {
-    const meta = RECOMMENDATION_META[data.recommendation];
-    const recLabel = `${meta.emoji} ${meta.ar}`;
-    const confidenceLabel =
-      data.confidence != null && data.confidence > 0
-        ? ` (ثقة ${data.confidence.toFixed(0)}%)`
-        : '';
-    lines.push(`🎯 التوصية: ${recLabel}${confidenceLabel}`);
-    if (data.recommendationAr) {
-      lines.push(`   ${data.recommendationAr}`);
-    }
-    if (data.reason) {
-      lines.push(`📝 السبب: ${data.reason}`);
-    }
-    lines.push('');
-  }
-
-  // Price
-  const changeLabel =
-    data.changePct != null
-      ? ` (${data.changePct >= 0 ? '+' : ''}${data.changePct.toFixed(2)}%)`
-      : '';
-  lines.push(`💰 السعر الحالي: ${fmtNum(data.currentPrice)} EGP${changeLabel}`);
-
-  // Trading plan
-  if (data.entryPrice != null) {
-    const zone =
-      data.entryZoneLow != null && data.entryZoneHigh != null
-        ? `${fmtNum(data.entryZoneLow)} → ${fmtNum(data.entryZoneHigh)}`
-        : `${fmtNum(data.entryPrice)}`;
-    lines.push(`🎯 منطقة الدخول: ${zone}`);
-  }
-  if (data.targetPrice1 != null) {
-    const pct = data.currentPrice
-      ? ` (+${((data.targetPrice1 - data.currentPrice) / data.currentPrice * 100).toFixed(1)}%)`
-      : '';
-    lines.push(`🎯 الهدف الأول: ${fmtNum(data.targetPrice1)}${pct}`);
-  }
-  if (data.targetPrice2 != null) {
-    const pct = data.currentPrice
-      ? ` (+${((data.targetPrice2 - data.currentPrice) / data.currentPrice * 100).toFixed(1)}%)`
-      : '';
-    lines.push(`🎯 الهدف الثاني: ${fmtNum(data.targetPrice2)}${pct}`);
-  }
-  if (data.stopLoss != null) {
-    const pct = data.currentPrice
-      ? ` (${((data.stopLoss - data.currentPrice) / data.currentPrice * 100).toFixed(1)}%)`
-      : '';
-    lines.push(`🛑 وقف الخسارة: ${fmtNum(data.stopLoss)}${pct}`);
-  }
-  if (data.riskReward != null) {
-    lines.push(`⚖️ العائد/المخاطرة: ${data.riskReward.toFixed(1)}:1`);
-  }
-  if (data.positionSize != null) {
-    lines.push(`📊 حجم المركز: ${data.positionSize.toFixed(0)}% من المحفظة`);
-  }
-
-  // Signal strength
-  if (data.signalCount != null) {
-    const max = data.maxSignals ?? 6;
-    const stars = '⭐'.repeat(
-      Math.max(1, Math.ceil((data.signalCount / max) * 5))
-    );
-    lines.push(`📈 قوة الإشارة: ${data.signalCount}/${max} ${stars}`);
-    if (data.path) {
-      lines.push(`   المسار: ${data.path}`);
-    }
-  }
-
-  // Liquidity
-  if (
-    data.buyPressure != null ||
-    data.sellPressure != null ||
-    data.netFlow != null ||
-    data.volumeRatio != null
-  ) {
-    lines.push('');
-    lines.push('💧 حركة السيولة:');
-    if (data.buyPressure != null) lines.push(`  🟢 ضغط شراء: ${data.buyPressure.toFixed(0)}%`);
-    if (data.sellPressure != null) lines.push(`  🔴 ضغط بيع: ${data.sellPressure.toFixed(0)}%`);
-    if (data.netFlow != null) {
-      const sign = data.netFlow >= 0 ? '+' : '-';
-      lines.push(
-        `  💵 صافي التدفق: ${sign}${Math.abs(data.netFlow / 1e6).toFixed(1)}M EGP`
-      );
-    }
-    if (data.volumeRatio != null) {
-      lines.push(`  📊 نسبة الحجم (10d/20d): ${data.volumeRatio.toFixed(2)}×`);
-    }
-  }
-
-  // Technical
-  if (
-    data.rsi != null ||
-    data.sma20 != null ||
-    data.sma50 != null ||
-    data.sma200 != null ||
-    data.atr != null
-  ) {
-    lines.push('');
-    lines.push('📈 المؤشرات الفنية:');
-    if (data.rsi != null) {
-      const state =
-        data.rsi > 70
-          ? ' ⚠️ تشبع شرائي'
-          : data.rsi < 30
-            ? ' ⚠️ تشبع بيعي'
-            : ' ✅ محايد';
-      lines.push(`  RSI(14): ${data.rsi.toFixed(1)}${state}`);
-    }
-    if (data.sma20 != null) lines.push(`  SMA20: ${data.sma20.toFixed(2)}`);
-    if (data.sma50 != null) lines.push(`  SMA50: ${data.sma50.toFixed(2)}`);
-    if (data.sma200 != null) lines.push(`  SMA200: ${data.sma200.toFixed(2)}`);
-    if (data.atr != null) lines.push(`  ATR: ${data.atr.toFixed(2)}`);
-  }
-
-  // Fundamentals
-  if (
-    data.peRatio != null ||
-    data.pbRatio != null ||
-    data.roe != null ||
-    data.marketCap != null
-  ) {
-    lines.push('');
-    lines.push('📋 الأساسيات:');
-    if (data.peRatio != null) lines.push(`  P/E: ${data.peRatio.toFixed(1)}`);
-    if (data.pbRatio != null) lines.push(`  P/B: ${data.pbRatio.toFixed(1)}`);
-    if (data.roe != null) lines.push(`  ROE: ${data.roe.toFixed(1)}%`);
-    if (data.marketCap != null) {
-      lines.push(`  القيمة السوقية: ${fmtMoney(data.marketCap)} EGP`);
-    }
-  }
-
-  // Analysis summary
-  if (data.analysisSummary) {
-    lines.push('');
-    lines.push(`🧠 ملخص التحليل: ${data.analysisSummary}`);
-  }
-
-  // Market regime
-  if (data.marketRegime) {
-    lines.push('');
-    lines.push(`🏛️ حالة السوق: ${MARKET_REGIME_AR[data.marketRegime]}`);
-  }
-
-  // Footer
-  lines.push('');
-  lines.push('━'.repeat(20));
-  lines.push('📍 منصة دليل الاستثمار — invist.m2y.net');
-  lines.push('⚠️ تحليل تلقائي — ليس نصيحة استثمارية');
-
-  return withOfficialLinks(lines.join('\n'));
-}
-
-// ============================================================================
-// Helpers
+// generatePublishText + generatePublishPayload now live in the server-safe
+// @/lib/stock-publish-text module (re-exported above) so the Telegram bot
+// API route can reuse them without importing a 'use client' file.
 // ============================================================================
 
 function fmtNum(n: number | null | undefined, digits = 2): string {
@@ -1133,62 +984,6 @@ function fmtMoney(n: number | null | undefined): string {
   if (Math.abs(num) >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (Math.abs(num) >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
   return num.toFixed(0);
-}
-
-// ============================================================================
-// generatePublishPayload — JSON payload for API publishing (Telegram bot, etc.)
-// ============================================================================
-
-export function generatePublishPayload(data: StockPublishData) {
-  return {
-    ticker: data.ticker,
-    market: data.market || 'EGX',
-    name_ar: data.nameAr,
-    name_en: data.nameEn,
-    sector: data.sector,
-    current_price: data.currentPrice,
-    change_pct: data.changePct,
-    recommendation: data.recommendation,
-    recommendation_ar: data.recommendationAr,
-    confidence: data.confidence,
-    reason: data.reason,
-    entry_price: data.entryPrice,
-    entry_zone: data.entryZoneLow != null && data.entryZoneHigh != null
-      ? { low: data.entryZoneLow, high: data.entryZoneHigh }
-      : undefined,
-    target_price_1: data.targetPrice1,
-    target_price_2: data.targetPrice2,
-    stop_loss: data.stopLoss,
-    risk_reward: data.riskReward,
-    position_size: data.positionSize,
-    signal_count: data.signalCount,
-    max_signals: data.maxSignals,
-    path: data.path,
-    liquidity: {
-      buy_pressure: data.buyPressure,
-      sell_pressure: data.sellPressure,
-      net_flow: data.netFlow,
-      volume_ratio: data.volumeRatio,
-      turnover: data.turnover,
-    },
-    technical: {
-      rsi: data.rsi,
-      sma20: data.sma20,
-      sma50: data.sma50,
-      sma200: data.sma200,
-      atr: data.atr,
-    },
-    fundamentals: {
-      pe_ratio: data.peRatio,
-      pb_ratio: data.pbRatio,
-      roe: data.roe,
-      market_cap: data.marketCap,
-    },
-    analysis_summary: data.analysisSummary,
-    market_regime: data.marketRegime,
-    generated_at: new Date().toISOString(),
-    source: 'stock-publisher',
-  };
 }
 
 export default StockPublisher;

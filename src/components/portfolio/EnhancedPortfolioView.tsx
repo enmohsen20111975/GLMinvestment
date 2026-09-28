@@ -69,6 +69,7 @@ import {
 } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // PortfolioIntelligenceSection removed - feature disabled
 import { MultiPortfolioSelector, getPortfolioColorClass } from '@/components/portfolio/MultiPortfolioSelector';
@@ -1353,6 +1354,26 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   مستشار
                                 </Button>
                               )}
+                              {isStock && asset.stock_ticker && (
+                                <span
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                  }}
+                                  className="inline-flex"
+                                >
+                                  <StockPublisher
+                                    data={{
+                                      ticker: String(asset.stock_ticker),
+                                      currentPrice: Number(currentPrice || asset.current_value || 0),
+                                      entryPrice: avgBuy > 0 ? avgBuy : undefined,
+                                      changePct: Number(priceChange) || undefined,
+                                    }}
+                                    variant="icon"
+                                    size="sm"
+                                  />
+                                </span>
+                              )}
                               <Button variant="outline" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(asset); }} title="تعديل"><Pencil className="w-3.5 h-3.5" /></Button>
                               <Button variant="outline" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/30" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setDeleteId(asset.id!); }} title="حذف"><Trash2 className="w-3.5 h-3.5" /></Button>
                             </div>
@@ -2082,6 +2103,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       header: 'المبلغ',
       align: 'center',
       sortable: true,
+      filterable: true,
       render: (t) => (
         <span className={cn('font-semibold text-sm', t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
           {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}

@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import {
   Tooltip,
   TooltipContent,
@@ -167,11 +168,29 @@ const predictionColumns: Column<TrackedPick>[] = [
     filterable: true,
     className: 'font-bold',
     render: (p) => (
-      <div className="flex flex-col">
-        <span className="text-sm">{p.ticker}</span>
-        <span className="text-[10px] text-muted-foreground">
-          {p.market}
-        </span>
+      <div className="flex items-center gap-1">
+        <div className="flex flex-col">
+          <span className="text-sm">{p.ticker}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {p.market}
+          </span>
+        </div>
+        <StockPublisher
+          data={{
+            ticker: p.ticker,
+            currentPrice: Number(p.current_price ?? p.entry_price ?? 0),
+            entryPrice: Number(p.entry_price ?? 0) || undefined,
+            targetPrice1: Number(p.target_price ?? 0) || undefined,
+            stopLoss: Number(p.stop_loss ?? 0) || undefined,
+            riskReward: Number(p.risk_reward ?? 0) || undefined,
+            market: (p.market as StockPublishData['market']) || 'EGX',
+            recommendation:
+              p.status === 'target_hit' ? 'BUY' :
+              p.status === 'stop_hit' ? 'SELL' : 'HOLD',
+          }}
+          variant="icon"
+          size="sm"
+        />
       </div>
     ),
   },
@@ -179,6 +198,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     key: 'pick_date',
     header: 'تاريخ التوقع',
     sortable: true,
+    filterable: true,
     className: 'text-xs text-muted-foreground',
     render: (p) => shortDate(p.pick_date),
   },
@@ -187,6 +207,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'الدخول',
     align: 'right',
     sortable: true,
+    filterable: true,
     className: 'font-mono text-xs',
     render: (p) => formatNumber(p.entry_price),
   },
@@ -195,6 +216,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'الوقف',
     align: 'right',
     sortable: true,
+    filterable: true,
     className: 'font-mono text-xs text-rose-600 dark:text-rose-400',
     render: (p) => formatNumber(p.stop_loss),
   },
@@ -203,6 +225,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'الهدف',
     align: 'right',
     sortable: true,
+    filterable: true,
     className: 'font-mono text-xs text-emerald-600 dark:text-emerald-400',
     render: (p) => formatNumber(p.target_price),
   },
@@ -211,6 +234,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'R/R',
     align: 'right',
     sortable: true,
+    filterable: true,
     render: (p) => (
       <Badge
         variant="outline"
@@ -225,6 +249,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'السعر الحالي',
     align: 'right',
     sortable: true,
+    filterable: true,
     className: 'font-mono text-xs',
     render: (p) => (p.current_price !== null ? formatNumber(p.current_price) : '—'),
   },
@@ -233,6 +258,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'الفرق',
     align: 'right',
     sortable: true,
+    filterable: true,
     render: (p) => {
       if (p.current_price === null) return '—';
       const diff = p.current_price - p.entry_price;
@@ -257,6 +283,7 @@ const predictionColumns: Column<TrackedPick>[] = [
     header: 'العائد %',
     align: 'right',
     sortable: true,
+    filterable: true,
     render: (p) => {
       const pnl = p.profit_loss_pct;
       const pnlColor =

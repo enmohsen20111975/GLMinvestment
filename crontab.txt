@@ -95,6 +95,18 @@
 # 5. يبعت PNG + ملخص نصي لقناة التليجرام (لو TELEGRAM_BOT_TOKEN موجود)
 0 6 * * 0 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/weekly_radar_report.py --market EGX --send-telegram >> /tmp/weekly_report.log 2>&1
 
+# ─── 17. US Stock Scraper — جلب أسعار الأسهم الأمريكية ──────────────────
+# يومياً 22:00 UTC (00:00 Cairo — بعد إغلاق السوق الأمريكي بساعة)
+# يجيب OHLCV لـ 50 سهم أمريكي (AAPL, MSFT, GOOGL, ...) من Yahoo Finance
+# ويكتبهم في price_history.db مع source='yahoo_us' + market='US' + adjusted=0
+0 22 * * 1-5 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/us_stock_scraper.py >> /tmp/us_scraper.log 2>&1
+
+# ─── 18. Multi-Market Scraper — تشغيل كل السكرابرز ────────────────────
+# كل ساعة خلال ساعات السوق العالمية (09:00-22:00 UTC = 11:00 Cairo-00:00 Cairo)
+# يشغّل: EGX (tradingview + yahoo fallback) + US (yahoo) + Crypto + Metals
+# لو سوق واحد فشل، السوق التاني بيفضل يشتغل (graceful degradation)
+0 9-22 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/multi_market_scraper.py >> /tmp/multi_scraper.log 2>&1
+
 # ============================================================================
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l

@@ -27,6 +27,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -257,14 +258,35 @@ const storedRecColumns: Column<StoredRec>[] = [
     sortable: true,
     filterable: true,
     render: (r) => (
-      <div className="flex flex-col">
-        <span className="font-mono font-bold text-emerald-700">
-          {r.stock_symbol}
-        </span>
-        {r.stock_name_ar && (
-          <span className="text-[10px] text-muted-foreground">
-            {r.stock_name_ar}
+      <div className="flex items-center gap-1">
+        <div className="flex flex-col">
+          <span className="font-mono font-bold text-emerald-700">
+            {r.stock_symbol}
           </span>
+          {r.stock_name_ar && (
+            <span className="text-[10px] text-muted-foreground">
+              {r.stock_name_ar}
+            </span>
+          )}
+        </div>
+        {r.stock_symbol && (
+          <StockPublisher
+            data={{
+              ticker: r.stock_symbol,
+              nameAr: r.stock_name_ar || undefined,
+              currentPrice: Number(r.entry_price ?? 0) || 0,
+              entryPrice: Number(r.entry_price ?? 0) || undefined,
+              targetPrice1: Number(r.target_price ?? 0) || undefined,
+              targetPrice2: Number(r.target_price_2 ?? 0) || undefined,
+              stopLoss: Number(r.stop_loss ?? 0) || undefined,
+              recommendation:
+                r.action === 'BUY' ? 'BUY' :
+                r.action === 'SELL' ? 'SELL' :
+                r.action === 'HOLD' ? 'HOLD' : undefined,
+            }}
+            variant="icon"
+            size="sm"
+          />
         )}
       </div>
     ),

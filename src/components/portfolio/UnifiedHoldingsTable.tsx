@@ -97,6 +97,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'السهم',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-100 group-hover:text-purple-400 transition-colors">
@@ -116,6 +117,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'المحفظة الفرعية',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium border border-slate-700/50 text-[11px]">
             {String(row.sub_portfolio ?? '') || 'محفظة رئيسية'}
@@ -127,6 +129,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'سعر الشراء',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="text-slate-300">{Number(row.buy_price ?? 0).toFixed(2)} ج.م</span>
         ),
@@ -136,6 +139,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'السعر الحالي',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="text-slate-100 font-bold">{Number(row.current_price ?? 0).toFixed(2)} ج.م</span>
         ),
@@ -145,6 +149,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'الربح/الخسارة (EGP & %)',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => {
           const pnlPercent = Number(row.pnl_percent ?? 0);
           const pnlAmount = row.pnl_amount as number | string | undefined;
@@ -171,6 +176,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'Score السهم',
         align: 'center',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400">
             {Number(row.current_score ?? 80)}
@@ -222,6 +228,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'السهم',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-100 group-hover:text-purple-400 transition-colors">
@@ -241,6 +248,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'السعر الحالي',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="text-slate-100 font-bold">{Number(row.current_price ?? 0).toFixed(2)} ج.م</span>
         ),
@@ -250,6 +258,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'التغير اليومي',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (row) => {
           const changePct = Number(row.change_pct ?? 0);
           const isPos = changePct >= 0;
@@ -265,6 +274,7 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
         header: 'Score السهم',
         align: 'center',
         sortable: true,
+        filterable: true,
         render: (row) => (
           <span className="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400">
             {Number(row.current_score ?? 75)}
@@ -360,6 +370,8 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
           keyField="ticker"
           onRowClick={(row) => onSelectPosition(String(row.ticker ?? ''))}
           emptyTextAr="لا توجد أسهم مملوكة"
+          filterable
+          columnToggle
           rowClassName={(row) =>
             Number(row.pnl_percent ?? 0) >= 0 ? 'bg-emerald-500/5' : 'bg-red-500/5'
           }
@@ -371,6 +383,8 @@ export const UnifiedHoldingsTable: React.FC<UnifiedHoldingsTableProps> = ({ onSe
           keyField="ticker"
           onRowClick={(row) => onSelectPosition(String(row.ticker ?? ''))}
           emptyTextAr="لا توجد أسهم في قائمة المتابعة"
+          filterable
+          columnToggle
           rowClassName={(row) =>
             Number(row.change_pct ?? 0) >= 0 ? 'bg-emerald-500/5' : 'bg-red-500/5'
           }

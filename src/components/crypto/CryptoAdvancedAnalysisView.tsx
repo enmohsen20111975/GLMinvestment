@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import {
   Bitcoin,
   TrendingUp,
@@ -543,6 +544,26 @@ const analysisColumns: Column<CryptoAnalysis & { _idx: number }>[] = [
           <div className="font-semibold text-sm">{a.symbol}</div>
           <div className="text-xs text-muted-foreground">{a.name}</div>
         </div>
+        <StockPublisher
+          data={{
+            ticker: a.symbol,
+            nameEn: a.name,
+            currentPrice: Number(a.price ?? 0),
+            changePct: Number(a.change_24h ?? 0) || undefined,
+            rsi: Number(a.rsi ?? 0) || undefined,
+            sma20: Number(a.ma_50 ?? 0) || undefined,
+            sma50: Number(a.ma_50 ?? 0) || undefined,
+            sma200: Number(a.ma_200 ?? 0) || undefined,
+            marketCap: Number(a.market_cap ?? 0) || undefined,
+            turnover: Number(a.volume ?? 0) || undefined,
+            market: 'CRYPTO' as StockPublishData['market'],
+            recommendation:
+              a.signal === 'BUY' ? 'BUY' :
+              a.signal === 'SELL' ? 'SELL' : 'HOLD',
+          }}
+          variant="icon"
+          size="sm"
+        />
       </div>
     ),
   },

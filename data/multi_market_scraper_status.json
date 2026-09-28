@@ -1,0 +1,56 @@
+{
+  "running": false,
+  "logs": [
+    "[08:45:17] ============================================================",
+    "[08:45:17] 🌐 Multi-Market Scraper — markets: EGX, US, CRYPTO, METALS",
+    "[08:45:17]    dry_run=True | total scrapers=4",
+    "[08:45:17] ============================================================",
+    "[08:45:17] ▶️ [EGX] EGX (Egypt) → running tradingview_scraper.py",
+    "[08:45:17] ▶️ [US] US Stocks (NYSE/NASDAQ) → running us_stock_scraper.py",
+    "[08:45:17] ▶️ [CRYPTO] Crypto (top 50) → running crypto_fetcher.py",
+    "[08:45:17] ▶️ [METALS] Gold / Forex / Arab currencies → running metals_forex_fetcher.py",
+    "[08:45:17] 📊 DONE | 4/4 markets succeeded | runtime=0.0s",
+    "[08:45:23] ============================================================",
+    "[08:45:23] 🌐 Multi-Market Scraper — markets: US",
+    "[08:45:23]    dry_run=True | total scrapers=1",
+    "[08:45:23] ============================================================",
+    "[08:45:23] ▶️ [US] US Stocks (NYSE/NASDAQ) → running us_stock_scraper.py",
+    "[08:45:23] 📊 DONE | 1/1 markets succeeded | runtime=0.0s",
+    "[08:45:26] ============================================================",
+    "[08:45:26] 🌐 Multi-Market Scraper — markets: US",
+    "[08:45:26]    dry_run=False | total scrapers=1",
+    "[08:45:26] ============================================================",
+    "[08:45:26] ▶️ [US] US Stocks (NYSE/NASDAQ) → running us_stock_scraper.py",
+    "[08:45:35] ✅ [US] primary succeeded (8.93s)",
+    "[08:45:35] 📊 DONE | 1/1 markets succeeded | runtime=8.93s"
+  ],
+  "markets": [
+    "US"
+  ],
+  "last_run_started_at": "2026-09-28T08:45:26.685062Z",
+  "last_run_finished_at": "2026-09-28T08:45:35.619551Z",
+  "last_run_summary": {
+    "total_markets": 1,
+    "successes": 1,
+    "failures": 0
+  },
+  "markets_results": {
+    "US": {
+      "market": "US",
+      "name": "US Stocks (NYSE/NASDAQ)",
+      "primary": "us_stock_scraper.py",
+      "fallback": null,
+      "primary_result": {
+        "success": true,
+        "returncode": 0,
+        "runtime_sec": 8.93,
+        "stdout_tail": "_failed\": 1,\n  \"tickers_skipped\": 0,\n  \"rows_inserted\": 1470,\n  \"sample_failures\": [\n    {\n      \"ticker\": \"BRK.B\",\n      \"reason\": \"no rows returned from yfinance\"\n    }\n  ],\n  \"sample_updated\": [\n    {\n      \"ticker\": \"AAPL\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 341.07000732421875\n    },\n    {\n      \"ticker\": \"ABBV\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 264.3399963378906\n    },\n    {\n      \"ticker\": \"ACN\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 176.11000061035156\n    },\n    {\n      \"ticker\": \"ADBE\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 235.47000122070312\n    },\n    {\n      \"ticker\": \"AMD\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 630.6300048828125\n    },\n    {\n      \"ticker\": \"AMZN\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 249.6699981689453\n    },\n    {\n      \"ticker\": \"AVGO\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 352.80999755859375\n    },\n    {\n      \"ticker\": \"BA\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 198.07000732421875\n    },\n    {\n      \"ticker\": \"BAC\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 56.70000076293945\n    },\n    {\n      \"ticker\": \"CAT\",\n      \"rows\": 30,\n      \"first_date\": \"2026-08-14\",\n      \"last_date\": \"2026-09-25\",\n      \"last_close\": 821.5800170898438\n    }\n  ],\n  \"dry_run\": false,\n  \"market\": \"US\",\n  \"source\": \"yahoo_us\",\n  \"started_at\": \"2026-09-28T08:45:28.497440Z\",\n  \"period_days\": 30,\n  \"batch_size\": 10,\n  \"finished_at\": \"2026-09-28T08:45:35.471913Z\"\n}\n",
+        "stderr_tail": "ct/data_engine/scrapers/us_stock_scraper.py:145: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n  ts = datetime.utcnow().strftime('%H:%M:%S')\n[08:45:31] [INFO] [US-Scraper]   ▶️ Batch 3/5: ['HON', 'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MA', 'MCD', 'META', 'MRK']\n/home/z/my-project/data_engine/scrapers/us_stock_scraper.py:145: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n  ts = datetime.utcnow().strftime('%H:%M:%S')\n[08:45:32] [INFO] [US-Scraper]   ▶️ Batch 4/5: ['MS', 'MSFT', 'NEE', 'NFLX', 'NVDA', 'ORCL', 'PEP', 'PFE', 'PG', 'PM']\n/home/z/my-project/data_engine/scrapers/us_stock_scraper.py:145: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n  ts = datetime.utcnow().strftime('%H:%M:%S')\n[08:45:34] [INFO] [US-Scraper]   ▶️ Batch 5/5: ['QCOM', 'RTX', 'TMO', 'TSLA', 'TXN', 'UNH', 'UPS', 'V', 'WFC', 'WMT']\n/home/z/my-project/data_engine/scrapers/us_stock_scraper.py:112: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n  return datetime.utcnow().isoformat() + 'Z'\n/home/z/my-project/data_engine/scrapers/us_stock_scraper.py:145: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).\n  ts = datetime.utcnow().strftime('%H:%M:%S')\n[08:45:35] [INFO] [US-Scraper] ✅ DONE | processed=50 updated=49 failed=1 rows_inserted=1470\n"
+      },
+      "fallback_result": null,
+      "success": true,
+      "started_at": "2026-09-28T08:45:26.687089Z",
+      "finished_at": "2026-09-28T08:45:35.619534Z"
+    }
+  }
+}

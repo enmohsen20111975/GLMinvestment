@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/dialog';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -626,6 +627,19 @@ const WatchlistMobileCard = memo(function WatchlistMobileCard({
                 )}
               </div>
             )}
+            <StockPublisher
+              data={{
+                ticker: item.ticker,
+                nameAr: item.name_ar,
+                nameEn: item.name,
+                sector: item.sector,
+                currentPrice: Number(item.current_price ?? 0),
+                changePct: Number(item.price_change_percent ?? 0),
+                entryPrice: Number(item.purchase_price ?? 0) || undefined,
+              }}
+              variant="icon"
+              size="sm"
+            />
           </div>
         </div>
 
@@ -843,7 +857,7 @@ export function EnhancedWatchlistView() {
       sortable: true,
       filterable: true,
       render: (item) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
             <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
               {(item.ticker || '').slice(0, 2)}
@@ -853,6 +867,19 @@ export function EnhancedWatchlistView() {
             <p className="font-bold text-sm">{item.ticker}</p>
             <p className="text-xs text-muted-foreground truncate max-w-[120px]">{item.name_ar}</p>
           </div>
+          <StockPublisher
+            data={{
+              ticker: item.ticker,
+              nameAr: item.name_ar,
+              nameEn: item.name,
+              sector: item.sector,
+              currentPrice: Number(item.current_price ?? 0),
+              changePct: Number(item.price_change_percent ?? 0),
+              entryPrice: Number(item.purchase_price ?? 0) || undefined,
+            }}
+            variant="icon"
+            size="sm"
+          />
         </div>
       ),
     },
@@ -861,6 +888,7 @@ export function EnhancedWatchlistView() {
       header: 'السعر الحالي',
       align: 'center',
       sortable: true,
+      filterable: true,
       render: (item) => <p className="font-semibold text-sm">{formatCurrency(item.current_price)}</p>,
     },
     {
@@ -879,6 +907,7 @@ export function EnhancedWatchlistView() {
       header: 'سعر الشراء',
       align: 'center',
       sortable: true,
+      filterable: true,
       hideable: true,
       render: (item) => (
         <p className="text-sm text-muted-foreground">
@@ -891,6 +920,7 @@ export function EnhancedWatchlistView() {
       header: 'الكمية',
       align: 'center',
       sortable: true,
+      filterable: true,
       hideable: true,
       render: (item) => (
         <p className="text-sm">
@@ -903,6 +933,7 @@ export function EnhancedWatchlistView() {
       header: 'المستثمر',
       align: 'center',
       sortable: true,
+      filterable: true,
       hideable: true,
       render: (item) => <p className="text-sm font-medium">{formatCurrency(item.total_invested)}</p>,
     },
@@ -911,6 +942,7 @@ export function EnhancedWatchlistView() {
       header: 'القيمة الحالية',
       align: 'center',
       sortable: true,
+      filterable: true,
       hideable: true,
       render: (item) => <p className="text-sm font-medium">{formatCurrency(item.current_value)}</p>,
     },
@@ -919,6 +951,7 @@ export function EnhancedWatchlistView() {
       header: 'الربح/الخسارة',
       align: 'center',
       sortable: true,
+      filterable: true,
       hideable: true,
       render: (item) => {
         const isProfitable = item.gain_loss >= 0;
@@ -947,6 +980,7 @@ export function EnhancedWatchlistView() {
       header: 'التغير',
       align: 'center',
       sortable: true,
+      filterable: true,
       render: (item) => (
         <div className="flex items-center justify-center gap-1">
           {item.price_change >= 0 ? (

@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
+import { StockPublisher } from '@/components/shared/StockPublisher';
 import { PredictionTrackingDashboard } from '@/components/predictions/PredictionTrackingDashboard';
 
 // ============================================================================
@@ -680,6 +681,32 @@ export function SpecialistAnalysisView() {
                       <Badge className="text-lg px-4 py-1">
                         {analysisData.analysis.recommendation.action_ar}
                       </Badge>
+                      <StockPublisher
+                        data={{
+                          ticker: analysisData.ticker,
+                          nameAr: analysisData.stock.name_ar,
+                          nameEn: analysisData.stock.name,
+                          sector: analysisData.stock.sector,
+                          currentPrice: Number(analysisData.stock.current_price ?? 0),
+                          entryPrice: Number(analysisData.analysis.recommendation.entry_price ?? 0) || undefined,
+                          targetPrice1: Number(analysisData.analysis.recommendation.target_price ?? 0) || undefined,
+                          stopLoss: Number(analysisData.analysis.recommendation.stop_loss ?? 0) || undefined,
+                          riskReward: Number(analysisData.analysis.recommendation.risk_reward_ratio ?? 0) || undefined,
+                          confidence: Number(analysisData.analysis.recommendation.confidence ?? 0) || undefined,
+                          rsi: analysisData.analysis.indicators?.rsi?.value,
+                          sma20: analysisData.analysis.indicators?.sma_20,
+                          sma50: analysisData.analysis.indicators?.sma_50,
+                          atr: analysisData.analysis.indicators?.atr,
+                          recommendation:
+                            (analysisData.analysis.recommendation.action?.includes('STRONG') && analysisData.analysis.recommendation.action?.includes('BUY'))
+                              ? 'STRONG_BUY'
+                              : analysisData.analysis.recommendation.action?.includes('SELL') ? 'SELL'
+                              : analysisData.analysis.recommendation.action?.includes('HOLD') ? 'HOLD'
+                              : analysisData.analysis.recommendation.action?.includes('BUY') ? 'BUY' : undefined,
+                        }}
+                        variant="icon"
+                        size="sm"
+                      />
                     </div>
                     <p className="text-muted-foreground">{analysisData.stock.name_ar || analysisData.stock.name}</p>
                     <p className="text-sm text-muted-foreground mt-1">

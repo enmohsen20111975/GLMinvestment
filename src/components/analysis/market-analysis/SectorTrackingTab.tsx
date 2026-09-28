@@ -278,6 +278,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'متوسط التغير %',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       render: (s) => (
         <span className={cn('font-mono font-bold', avgChangeHeatClass(s.avg_change),
@@ -291,6 +292,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'إجمالي السيولة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-36',
       className: 'font-mono text-xs',
       render: (s) => (
@@ -307,6 +309,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'رابحة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-20',
       className: 'font-mono text-emerald-600 font-bold',
     },
@@ -315,6 +318,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'خاسرة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-20',
       className: 'font-mono text-rose-600 font-bold',
     },
@@ -323,6 +327,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'سهم القائد',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-40',
       render: (s) => s.leader_ticker ? (
         <button
@@ -343,6 +348,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'القيمة السوقية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       className: 'font-mono text-xs',
       render: (s) => s.total_market_cap > 0 ? formatEGPShort(s.total_market_cap) : '—',
@@ -385,6 +391,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'السعر',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono text-xs',
       render: (st) => formatNumber(st.current_price),
@@ -394,6 +401,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'التغير %',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (st) => (
         <span className={cn('font-mono text-xs font-bold', stockChangeHeatClass(st.change_percent),
@@ -407,6 +415,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'الحجم',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono text-xs text-muted-foreground',
       render: (st) => formatVolumeShort(st.volume),
@@ -416,6 +425,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'السيولة (ج.م)',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       className: 'font-mono text-xs',
       render: (st) => st.turnover_egp > 0 ? formatEGPShort(st.turnover_egp) : '—',
@@ -425,6 +435,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'القيمة السوقية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       className: 'font-mono text-xs',
       render: (st) => st.market_cap > 0 ? formatEGPShort(st.market_cap) : '—',
@@ -434,6 +445,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'فوق/تحت MA50',
       align: 'right',
       width: 'w-24',
+      sortable: true,
       filterable: true,
       render: (st) => st.above_ma50 == null ? (
         <span className="text-muted-foreground text-xs">—</span>
@@ -452,6 +464,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'RSI',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-20',
       className: 'font-mono text-xs',
       render: (st) => st.rsi != null ? (
@@ -467,6 +480,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
       header: 'من قمة 52أ',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono text-xs',
       render: (st) => st.distance_from_52w_high != null ? (

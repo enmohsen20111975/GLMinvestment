@@ -2142,6 +2142,7 @@ function TablesPanel(props: TablesPanelProps) {
       header: 'الصفوف',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'text-xs',
       render: (t) => t.rowCount.toLocaleString('en-US'),
@@ -2151,6 +2152,7 @@ function TablesPanel(props: TablesPanelProps) {
       header: 'الأعمدة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'text-xs',
     },
@@ -2159,6 +2161,7 @@ function TablesPanel(props: TablesPanelProps) {
       header: 'حجم تقديري',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'text-xs',
     },
@@ -2398,6 +2401,8 @@ function TablesPanel(props: TablesPanelProps) {
                     dense
                     maxHeight="max-h-96"
                     emptyTextAr="لا توجد صفوف في هذا الجدول"
+                    filterable
+                    columnToggle
                   />
                 </div>
               </>
@@ -2436,14 +2441,16 @@ function TablesPanel(props: TablesPanelProps) {
                         <UnifiedTable
                           columns={[
                             { key: 'name', header: 'الاسم', sortable: true, filterable: true, className: 'font-mono text-xs' },
-                            { key: 'type', header: 'النوع', align: 'right', sortable: true, width: 'w-24', className: 'text-xs', render: (c) => c.type || 'any' },
+                            { key: 'type', header: 'النوع', align: 'right', sortable: true, filterable: true, width: 'w-24', className: 'text-xs', render: (c) => c.type || 'any' },
                             { key: 'notNull', header: 'NOT NULL', align: 'right', width: 'w-24', className: 'text-xs', render: (c) => c.notNull ? '✅' : '—' },
                             { key: 'pk', header: 'PK', align: 'right', width: 'w-20', className: 'text-xs', render: (c) => c.pk ? '✅' : '—' },
-                            { key: 'dfltValue', header: 'افتراضي', align: 'right', className: 'font-mono text-[11px]', render: (c) => c.dfltValue ?? '—' },
+                            { key: 'dfltValue', header: 'افتراضي', align: 'right', sortable: true, filterable: true, className: 'font-mono text-[11px]', render: (c) => c.dfltValue ?? '—' },
                           ]}
                           data={props.schema.columns}
                           keyField="name"
                           dense
+                          filterable
+                          columnToggle
                         />
                       </div>
                     </div>

@@ -1634,6 +1634,7 @@ const StockTable = memo(function StockTable({
       header: 'السعر',
       align: 'right',
       sortable: true,
+      filterable: true,
       className: 'font-mono font-semibold',
       render: (stock) => fmtNum(stock.current_price),
     },
@@ -1657,6 +1658,7 @@ const StockTable = memo(function StockTable({
       header: 'ROC10',
       align: 'right',
       sortable: true,
+      filterable: true,
       className: 'hidden sm:table-cell font-mono',
       render: (stock) => (
         <span className={`font-mono ${pnlColorClass(stock.roc_10d)}`}>
@@ -1669,6 +1671,7 @@ const StockTable = memo(function StockTable({
       header: 'ROC30',
       align: 'right',
       sortable: true,
+      filterable: true,
       className: 'hidden lg:table-cell font-mono',
       render: (stock) => (
         <span className={`font-mono ${pnlColorClass(stock.roc_30d ?? undefined)}`}>
@@ -1681,6 +1684,7 @@ const StockTable = memo(function StockTable({
       header: 'حجم نسبي',
       align: 'right',
       sortable: true,
+      filterable: true,
       className: 'hidden sm:table-cell font-mono',
       render: (stock) => {
         const volRatio = stock.volume_ratio_10d_vs_20d;
@@ -1696,6 +1700,7 @@ const StockTable = memo(function StockTable({
       key: 'signalCount',
       header: 'الإشارات',
       align: 'center',
+      sortable: true,
       render: (stock) => {
         const signalCount =
           stock.pre_surge_details?.signal_count ??
@@ -1744,6 +1749,7 @@ const StockTable = memo(function StockTable({
       header: 'شراء%',
       align: 'center',
       sortable: true,
+      filterable: true,
       className: 'hidden lg:table-cell font-mono text-xs',
       render: (stock) => (
         <span className={
@@ -1760,6 +1766,7 @@ const StockTable = memo(function StockTable({
       header: 'Net Flow',
       align: 'center',
       sortable: true,
+      filterable: true,
       className: 'hidden lg:table-cell font-mono text-xs',
       render: (stock) => (
         <span className={pnlColorClass(stock.net_flow_egp ?? undefined)}>
@@ -1774,6 +1781,7 @@ const StockTable = memo(function StockTable({
       header: 'دورة الحياة',
       align: 'center',
       className: 'hidden xl:table-cell text-xs',
+      sortable: true,
       filterable: true,
       render: (stock) => {
         if (stock.kill_switch) {
@@ -1800,6 +1808,7 @@ const StockTable = memo(function StockTable({
       header: 'تجميع/تصريف',
       align: 'center',
       className: 'hidden md:table-cell',
+      sortable: true,
       filterable: true,
       render: (stock) => (
         <span className={
@@ -1819,6 +1828,7 @@ const StockTable = memo(function StockTable({
       key: 'expected',
       header: 'المتوقع',
       className: 'hidden xl:table-cell text-xs text-muted-foreground',
+      sortable: true,
       filterable: true,
       render: (stock) => stock.expected || '-',
     },
@@ -1828,6 +1838,7 @@ const StockTable = memo(function StockTable({
       header: 'التوقع',
       align: 'center',
       sortable: true,
+      filterable: true,
       hideable: true,
       render: (stock) => {
         const pred = predictionForTicker(stock.ticker);
@@ -1868,6 +1879,7 @@ const StockTable = memo(function StockTable({
       key: 'sector',
       header: 'القطاع',
       className: 'hidden md:table-cell text-muted-foreground text-xs',
+      sortable: true,
       filterable: true,
       render: (stock) => sectorForTicker(stock.ticker) || '—',
     },
@@ -1876,6 +1888,7 @@ const StockTable = memo(function StockTable({
       header: 'الحجم',
       align: 'right',
       sortable: true,
+      filterable: true,
       render: (stock) => {
         const psPct = (stock.position_size * 100).toFixed(1);
         return (

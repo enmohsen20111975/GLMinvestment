@@ -647,6 +647,7 @@ export function CryptoSimulationView() {
       header: 'السعر',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono font-bold',
       render: (c) => formatCurrency(c.current_price),
@@ -656,6 +657,7 @@ export function CryptoSimulationView() {
       header: 'التغير 24h',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (c) => (
         <Badge
@@ -674,6 +676,7 @@ export function CryptoSimulationView() {
       header: 'القيمة السوقية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       className: 'font-mono text-muted-foreground',
       render: (c) => formatCurrency(c.market_cap),
@@ -732,6 +735,7 @@ export function CryptoSimulationView() {
       header: 'الكمية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono text-xs',
       render: (p) => formatCryptoAmount(p.amount, p.symbol),
@@ -741,6 +745,7 @@ export function CryptoSimulationView() {
       header: 'متوسط التكلفة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono',
       render: (p) => formatCurrency(p.avgCost),
@@ -750,6 +755,7 @@ export function CryptoSimulationView() {
       header: 'السعر الحالي',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono',
       render: (p) => formatCurrency(p._coin?.current_price ?? 0),
@@ -759,6 +765,7 @@ export function CryptoSimulationView() {
       header: 'القيمة الحالية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       className: 'font-mono font-bold',
       render: (p) => formatCurrency(p._currentValue ?? 0),
@@ -768,6 +775,7 @@ export function CryptoSimulationView() {
       header: 'الربح/الخسارة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-36',
       render: (p) => (
         <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
@@ -803,6 +811,7 @@ export function CryptoSimulationView() {
       key: 'date',
       header: 'التاريخ',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       render: (t) => (
         <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -844,6 +853,7 @@ export function CryptoSimulationView() {
       header: 'الكمية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono text-xs',
       render: (t) => formatCryptoAmount(t.amount, t.symbol),
@@ -853,6 +863,7 @@ export function CryptoSimulationView() {
       header: 'السعر',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono',
       render: (t) => formatCurrency(t.price),
@@ -862,6 +873,7 @@ export function CryptoSimulationView() {
       header: 'العمولة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono text-muted-foreground text-xs',
       render: (t) => formatCurrency(t.commission),
@@ -871,6 +883,7 @@ export function CryptoSimulationView() {
       header: 'الإجمالي',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono font-bold',
       render: (t) => formatCurrency(t.total),
@@ -880,6 +893,7 @@ export function CryptoSimulationView() {
       header: 'الربح/الخسارة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (t) => (
         t.pnl !== undefined ? (

@@ -73,6 +73,7 @@ import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -972,13 +973,38 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'السهم',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (s) => (
-          <div>
-            <div className="font-mono font-bold text-sm">{s.ticker}</div>
-            <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-              {s.name_ar || s.name}
+          <div className="flex items-center gap-1">
+            <div>
+              <div className="font-mono font-bold text-sm">{s.ticker}</div>
+              <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                {s.name_ar || s.name}
+              </div>
+              <div className="text-xs text-muted-foreground">{s.sector}</div>
             </div>
-            <div className="text-xs text-muted-foreground">{s.sector}</div>
+            <StockPublisher
+              data={{
+                ticker: s.ticker,
+                nameAr: s.name_ar,
+                nameEn: s.name,
+                sector: s.sector,
+                currentPrice: Number(s.current_price ?? 0),
+                changePct: Number(s.change_percent ?? 0),
+                peRatio: Number(s.pe_ratio ?? 0) || undefined,
+                pbRatio: Number(s.pb_ratio ?? 0) || undefined,
+                roe: Number(s.roe ?? 0) || undefined,
+                marketCap: Number(s.market_cap ?? 0) || undefined,
+                rsi: Number(s.rsi ?? 0) || undefined,
+                sma20: Number(s.ma_50 ?? 0) || undefined,
+                sma50: Number(s.ma_50 ?? 0) || undefined,
+                sma200: Number(s.ma_200 ?? 0) || undefined,
+                turnover: Number(s.turnover_egp ?? s.value_traded ?? 0) || undefined,
+                market: (s.market as StockPublishData['market']) || 'EGX',
+              }}
+              variant="icon"
+              size="sm"
+            />
           </div>
         ),
       },
@@ -987,6 +1013,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'السعر',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-sm">{formatNumber(s.current_price)}</span>
         ),
@@ -996,6 +1023,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'التغير %',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
             {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
@@ -1015,6 +1043,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'الحجم',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">
             {formatVolume(s.volume)}
@@ -1027,6 +1056,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'السيولة (ج.م)',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">
             {formatEGP(s.turnover_egp)}
@@ -1038,6 +1068,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'مكرر الربحية',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs">
             {s.pe_ratio !== null ? formatNumber(s.pe_ratio, 1) : '—'}
@@ -1049,6 +1080,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'ROE %',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs">
             {s.roe !== null ? formatNumber(s.roe, 1) : '—'}
@@ -1060,6 +1092,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'RSI',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs">
             {s.rsi !== null ? formatNumber(s.rsi, 0) : '—'}
@@ -1071,6 +1104,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'حالة السهم',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (s) => <StateBadge state={s.stock_state} reason={s.stock_state_reason} />,
       },
       {
@@ -1078,6 +1112,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'فوق MA50',
         align: 'center',
         sortable: true,
+        filterable: true,
         render: (s) =>
           s.above_ma_50 ? (
             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs px-2 py-0.5">
@@ -1547,6 +1582,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
             dense
             maxHeight="max-h-[600px]"
             emptyTextAr="لا توجد نتائج مطابقة للفلاتر الحالية"
+            filterable
+            columnToggle
           />
         )}
       </CollapsibleSection>
@@ -1627,6 +1664,7 @@ function TopPerformersTab() {
         header: 'السهم',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <div>
             <div className="font-mono font-bold text-sm">{s.ticker}</div>
@@ -1641,6 +1679,7 @@ function TopPerformersTab() {
         header: 'القطاع',
         align: 'right',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="text-xs text-muted-foreground">{s.sector || '—'}</span>
         ),
@@ -1650,6 +1689,7 @@ function TopPerformersTab() {
         header: 'سعر البداية',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => <span className="font-mono text-sm">{formatNumber(s.start_price)}</span>,
       },
       {
@@ -1657,6 +1697,7 @@ function TopPerformersTab() {
         header: 'سعر النهاية',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => <span className="font-mono text-sm">{formatNumber(s.end_price)}</span>,
       },
       {
@@ -1664,6 +1705,7 @@ function TopPerformersTab() {
         header: 'التغير %',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span
             className={cn(
@@ -1680,6 +1722,7 @@ function TopPerformersTab() {
         header: 'عدد الأيام',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">{s.period_days} يوم</span>
         ),
@@ -1689,6 +1732,7 @@ function TopPerformersTab() {
         header: 'الحجم (نهاية)',
         align: 'left',
         sortable: true,
+        filterable: true,
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">
             {formatVolume(s.end_volume)}
@@ -1909,6 +1953,8 @@ function TopPerformersTab() {
             dense
             maxHeight="max-h-[600px]"
             emptyTextAr="لا توجد نتائج للفلاتر الحالية"
+            filterable
+            columnToggle
           />
         )}
       </CollapsibleSection>

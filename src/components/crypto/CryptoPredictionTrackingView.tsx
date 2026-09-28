@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
 import {
   Tabs,
   TabsContent,
@@ -125,6 +126,22 @@ const predictionColumns: Column<CryptoPrediction>[] = [
           {p.ticker.slice(0, 3)}
         </div>
         <span className="font-semibold text-sm">{p.ticker}</span>
+        <StockPublisher
+          data={{
+            ticker: p.ticker,
+            currentPrice: Number(p.entry_price ?? 0),
+            entryPrice: Number(p.entry_price ?? 0) || undefined,
+            targetPrice1: Number(p.target_price ?? 0) || undefined,
+            stopLoss: Number(p.stop_loss ?? 0) || undefined,
+            confidence: Number(p.confidence ?? 0) || undefined,
+            market: 'CRYPTO' as StockPublishData['market'],
+            recommendation:
+              p.signal === 'BUY' ? 'BUY' :
+              p.signal === 'SELL' ? 'SELL' : 'HOLD',
+          }}
+          variant="icon"
+          size="sm"
+        />
       </div>
     ),
   },

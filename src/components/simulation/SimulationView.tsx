@@ -610,6 +610,7 @@ export function SimulationView() {
       header: 'السعر',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono font-bold',
       render: (s) => formatNumber(s.price),
@@ -619,6 +620,7 @@ export function SimulationView() {
       header: 'التغير',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (s) => (
         <span className={cn('font-mono inline-flex items-center gap-1', s.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
@@ -632,6 +634,7 @@ export function SimulationView() {
       header: 'النسبة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       render: (s) => (
         <Badge
@@ -681,6 +684,7 @@ export function SimulationView() {
       header: 'العدد',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono',
     },
@@ -689,6 +693,7 @@ export function SimulationView() {
       header: 'متوسط التكلفة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono',
       render: (p) => formatNumber(p.avgCost),
@@ -698,6 +703,7 @@ export function SimulationView() {
       header: 'السعر الحالي',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono',
       render: (p) => formatNumber(p._stock?.price ?? 0),
@@ -707,6 +713,7 @@ export function SimulationView() {
       header: 'القيمة الحالية',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       className: 'font-mono font-bold',
       render: (p) => formatCurrency(p._currentValue ?? 0),
@@ -716,6 +723,7 @@ export function SimulationView() {
       header: 'الربح/الخسارة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-36',
       render: (p) => (
         <div className={cn('font-mono font-medium', (p._pnl ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
@@ -751,6 +759,7 @@ export function SimulationView() {
       key: 'date',
       header: 'التاريخ',
       sortable: true,
+      filterable: true,
       width: 'w-32',
       render: (t) => (
         <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -792,6 +801,7 @@ export function SimulationView() {
       header: 'العدد',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-20',
       className: 'font-mono',
     },
@@ -800,6 +810,7 @@ export function SimulationView() {
       header: 'السعر',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono',
       render: (t) => formatNumber(t.price),
@@ -809,6 +820,7 @@ export function SimulationView() {
       header: 'العمولة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-24',
       className: 'font-mono text-muted-foreground text-xs',
       render: (t) => formatNumber(t.commission),
@@ -818,6 +830,7 @@ export function SimulationView() {
       header: 'الإجمالي',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       className: 'font-mono font-bold',
       render: (t) => formatCurrency(t.total),
@@ -827,6 +840,7 @@ export function SimulationView() {
       header: 'الربح/الخسارة',
       align: 'right',
       sortable: true,
+      filterable: true,
       width: 'w-28',
       render: (t) => (
         t.pnl !== undefined ? (
