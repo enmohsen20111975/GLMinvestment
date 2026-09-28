@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-09-28T06:53:57.062385",
+  "markets": [
+    "US"
+  ],
+  "sections": [
+    {
+      "market": "US",
+      "name_ar": "البورصة الأمريكية",
+      "currency": "USD",
+      "is_open": false,
+      "regime": {
+        "regime": "sideways",
+        "regime_ar": "عرضي",
+        "market_score": 50,
+        "currency": "USD",
+        "reason": "لا توجد بيانات كافية لمؤشر SPY"
+      },
+      "market_open_utc": "14:30",
+      "market_close_utc": "21:00",
+      "total_scanned": 0,
+      "under_microscope_count": 0,
+      "exit_signal_count": 0,
+      "top_picks": [],
+      "exit_signals": [],
+      "maker_radar_status": "error: maker_radar exit 1: ",
+      "exit_radar_status": "error: exit_radar exit 1: "
+    }
+  ],
+  "unified_top_5": []
+}

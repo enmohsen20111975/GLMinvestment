@@ -12,12 +12,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-// Market icons/flags - Only markets with data (CRYPTO added for unified UI mirror)
+// Market icons/flags - Only markets with data (CRYPTO added for unified UI mirror, US added for NYSE/NASDAQ)
 const MARKET_ICONS: Record<MarketType, string> = {
   EGX: '🇪🇬',
   TADAWUL: '🇸🇦',
   KSE: '🇰🇼',
   QSE: '🇶🇦',
+  US: '🇺🇸',
   CRYPTO: '🪙',
 };
 
@@ -29,8 +30,8 @@ interface ExchangeSelectorProps {
 export function ExchangeSelector({ compact = false, className }: ExchangeSelectorProps) {
   const { currentMarket, setCurrentMarket } = useAppStore();
 
-  // Only show markets with actual data (CRYPTO added for unified UI mirror)
-  const markets: MarketType[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'CRYPTO'];
+  // Only show markets with actual data (CRYPTO + US added for unified UI mirror)
+  const markets: MarketType[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO'];
 
   return (
     <DropdownMenu>

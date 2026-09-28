@@ -42,6 +42,7 @@ const MARKET_FLAGS: Record<MarketType, string> = {
   TADAWUL: '🇸🇦',
   KSE: '🇰🇼',
   QSE: '🇶🇦',
+  US: '🇺🇸',
   CRYPTO: '🪙',
 };
 
@@ -50,6 +51,7 @@ const MARKET_CURRENCY: Record<MarketType, string> = {
   TADAWUL: 'ريال',
   KSE: 'د.ك',
   QSE: 'ر.ق',
+  US: '$',
   CRYPTO: '$',
 };
 

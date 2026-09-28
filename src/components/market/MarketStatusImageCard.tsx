@@ -37,6 +37,7 @@ const MARKET_FLAGS: Record<MarketType, string> = {
   TADAWUL: '🇸🇦',
   KSE: '🇰🇼',
   QSE: '🇶🇦',
+  US: '🇺🇸',
   CRYPTO: '🪙',
 };
 
@@ -45,6 +46,7 @@ const MARKET_CURRENCY: Record<MarketType, string> = {
   TADAWUL: 'ريال',
   KSE: 'د.ك',
   QSE: 'ر.ق',
+  US: '$',
   CRYPTO: '$',
 };
 
@@ -53,6 +55,7 @@ const MARKET_INDEX_LABEL: Record<MarketType, string> = {
   TADAWUL: 'مؤشر تاسي',
   KSE: 'مؤشر السوق الكويتي',
   QSE: 'مؤشر بورصة قطر',
+  US: 'مؤشر S&P 500 (SPY)',
   CRYPTO: 'العملات الرقمية',
 };
 

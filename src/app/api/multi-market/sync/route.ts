@@ -17,7 +17,7 @@ import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
  * - CRYPTO
  */
 export async function POST(request: NextRequest) {
-  const markets = ['EGX', 'TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE', 'CRYPTO'];
+  const markets = ['EGX', 'TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE', 'US', 'CRYPTO'];
   const summary: Record<string, { synced: number; error?: string }> = {};
 
   // Try Python backend first
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
  * Get sync status for all markets.
  */
 export async function GET(request: NextRequest) {
-  const markets = ['EGX', 'TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE', 'CRYPTO'];
+  const markets = ['EGX', 'TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE', 'US', 'CRYPTO'];
   const status: Record<string, { available: boolean; count: number; last_update?: string }> = {};
 
   try {

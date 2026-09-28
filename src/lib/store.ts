@@ -532,7 +532,7 @@ function getEmptyAiInsights(): AiInsights {
 // ==================== STORE ====================
 
 // Market/Exchange type - Only markets with actual data
-export type MarketType = 'EGX' | 'TADAWUL' | 'KSE' | 'QSE' | 'CRYPTO';
+export type MarketType = 'EGX' | 'TADAWUL' | 'KSE' | 'QSE' | 'US' | 'CRYPTO';
 
 // Market display names in Arabic
 export const MARKET_NAMES_AR: Record<MarketType, string> = {
@@ -540,6 +540,7 @@ export const MARKET_NAMES_AR: Record<MarketType, string> = {
   TADAWUL: 'السوق السعودي',
   KSE: 'بورصة الكويت',
   QSE: 'بورصة قطر',
+  US: 'البورصة الأمريكية',
   CRYPTO: 'العملات الرقمية',
 };
 
@@ -549,6 +550,7 @@ export const MARKET_CODES: Record<MarketType, string> = {
   TADAWUL: 'KSA',
   KSE: 'KSE',
   QSE: 'QSE',
+  US: 'US',
   CRYPTO: 'CRYPTO',
 };
 
@@ -558,6 +560,7 @@ export const MARKET_CURRENCY_LABEL: Record<MarketType, string> = {
   TADAWUL: 'ريال',
   KSE: 'د.ك',
   QSE: 'ر.ق',
+  US: '$',
   CRYPTO: '$',
 };
 

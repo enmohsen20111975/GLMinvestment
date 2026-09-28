@@ -185,6 +185,7 @@ export const MARKET_CODES: Record<MarketType, string> = {
   'TADAWUL': 'KSA',  // Frontend uses KSA for TADAWUL
   'KSE': 'KSE',
   'QSE': 'QSE',
+  'US': 'US',
   'CRYPTO': 'CRYPTO'
 };
 

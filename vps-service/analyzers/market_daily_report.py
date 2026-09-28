@@ -54,7 +54,28 @@ MARKET_CONFIG = {
         'timezone': 'Asia/Qatar',
         'open_hour': 9,
         'close_hour': 13,
-    }
+    },
+    'US': {
+        'name_ar': 'البورصة الأمريكية',
+        'working_days': [0, 1, 2, 3, 4],  # الإثنين للجمعة (Mon-Fri ET)
+        'timezone': 'America/New_York',
+        'open_hour': 9,   # 9:30 AM ET → 14:30 UTC
+        'close_hour': 16, # 4:00 PM ET → 21:00 UTC
+    },
+    'CRYPTO': {
+        'name_ar': 'سوق العملات الرقمية',
+        'working_days': [0, 1, 2, 3, 4, 5, 6],  # 24/7
+        'timezone': 'UTC',
+        'open_hour': 0,
+        'close_hour': 23,
+    },
+    'GOLD': {
+        'name_ar': 'سوق الذهب',
+        'working_days': [0, 1, 2, 3, 4, 5, 6],  # 24/7
+        'timezone': 'UTC',
+        'open_hour': 0,
+        'close_hour': 23,
+    },
 }
 
 DAY_NAMES_AR = {

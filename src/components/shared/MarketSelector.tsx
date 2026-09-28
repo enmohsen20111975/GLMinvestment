@@ -12,7 +12,8 @@ import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
 import { Globe } from 'lucide-react';
 
 // CRYPTO added for the unified crypto analysis view — mirrors ExchangeSelector.
-const MARKETS: MarketType[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'CRYPTO'];
+// US added for the NYSE/NASDAQ market (SPY/QQQ ETF proxies for regime).
+const MARKETS: MarketType[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO'];
 
 interface MarketSelectorProps {
   /** حجم الزرار. default = 'default' */

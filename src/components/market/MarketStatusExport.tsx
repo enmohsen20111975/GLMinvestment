@@ -23,6 +23,7 @@ const MARKET_CODES: Record<MarketType, string> = {
   TADAWUL: 'KSA',
   KSE: 'KSE',
   QSE: 'QSE',
+  US: 'US',
   CRYPTO: 'CRYPTO',
 };
 

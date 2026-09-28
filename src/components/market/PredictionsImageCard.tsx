@@ -36,6 +36,7 @@ const MARKET_FLAGS: Record<MarketType, string> = {
   TADAWUL: '🇸🇦',
   KSE: '🇰🇼',
   QSE: '🇶🇦',
+  US: '🇺🇸',
   CRYPTO: '🪙',
 };
 

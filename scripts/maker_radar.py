@@ -387,9 +387,14 @@ def scan_ticker(rows, ticker):
 def main():
     parser = argparse.ArgumentParser(description='رادار الميكرز اليومي')
     parser.add_argument('--limit', type=int, default=0, help='0 = كل الأسهم')
-    parser.add_argument('--market', type=str, default='EGX', help='فلتر السوق (EGX, TADAWUL, KSE, QSE, ALL)')
-    parser.add_argument('--min-quiet-signals', type=int, default=5, help='حد أدنى للإشارات في Quiet Accumulation (default 5/6)')
-    parser.add_argument('--min-price', type=float, default=1.0, help='استبعاد الأسهم تحت ده السعر (default 1.0)')
+    parser.add_argument('--market', type=str, default='EGX',
+                        help='فلتر السوق (EGX, TADAWUL, KSE, QSE, US, CRYPTO, GOLD, ALL)')
+    parser.add_argument('--tickers', type=str, default='',
+                        help='قائمة tickers مفصولة بفواصل (مفيد للأسواق الكبيرة مثل US: AAPL,MSFT,NVDA)')
+    parser.add_argument('--min-quiet-signals', type=int, default=5,
+                        help='حد أدنى للإشارات في Quiet Accumulation (default 5/6)')
+    parser.add_argument('--min-price', type=float, default=1.0,
+                        help='استبعاد الأسهم تحت ده السعر (default 1.0)')
     parser.add_argument('--json-only', action='store_true')
     args = parser.parse_args()
 
@@ -397,7 +402,7 @@ def main():
     log(f"  DB: {PROD_DB}")
     log(f"  Market filter: {args.market}")
     log(f"  Min Quiet signals: {args.min_quiet_signals}/6")
-    log(f"  Min price: {args.min_price} EGP")
+    log(f"  Min price: {args.min_price}")
 
     if not PROD_DB or not PROD_DB.exists():
         log("❌ مفيش DB متاح. جرّب:")
@@ -425,7 +430,12 @@ def main():
         "SELECT name FROM sqlite_master WHERE type='table' AND name='stocks'"
     ).fetchone())
 
-    if args.market.upper() == 'ALL' or not has_stocks_table:
+    # ─── دعم --tickers: قائمة صريحة من tickers (مفيد للأسواق الكبيرة مثل US)
+    if args.tickers:
+        explicit_tickers = [t.strip().upper() for t in args.tickers.split(',') if t.strip()]
+        log(f"  استخدام قائمة tickers صريحة: {len(explicit_tickers)} ticker")
+        tickers = explicit_tickers
+    elif args.market.upper() == 'ALL' or not has_stocks_table:
         tickers = [r[0] for r in conn.execute(f"""
             SELECT DISTINCT {TICKER_COL} FROM {PROD_TABLE}
         """).fetchall()]
@@ -436,9 +446,12 @@ def main():
         # فعشان كده بنعمل mapping للقيمتين
         market_variants = {
             'EGX': ['EGX', 'مصر'],
-            'TADAWUL': ['TADAWUL', 'السعودية'],
+            'TADAWUL': ['TADAWUL', 'السعودية', 'KSA'],
             'KSE': ['KSE', 'الكويت'],
             'QSE': ['QSE', 'قطر'],
+            'US': ['US', 'أمريكا', 'الولايات المتحدة'],
+            'CRYPTO': ['CRYPTO', 'كريبتو'],
+            'GOLD': ['GOLD', 'ذهب'],
         }
         market_values = market_variants.get(args.market.upper(), [args.market.upper()])
         placeholders = ','.join(['?' for _ in market_values])
@@ -469,7 +482,12 @@ def main():
 
     # ─── تصنيف + تنظيف النتايج ────────────────────────────────────────
     # 1. فلتر: السعر >= args.min_price (استبعاد penny stocks)
-    results = [r for r in results if r['current_price'] >= args.min_price]
+    #    US market: نطبّق حد أعلى من $5 لو ما حددش المستخدم قيمة غير الـ default (1.0)
+    if args.market.upper() == 'US' and args.min_price <= 1.0:
+        # US default — skip penny stocks < $5 (higher USD liquidity floor)
+        results = [r for r in results if r['current_price'] >= 5.0]
+    else:
+        results = [r for r in results if r['current_price'] >= args.min_price]
 
     # 2. فلتر حسب المسار (مع Pre-Surge كمسار منفصل)
     under_microscope_raw = [r for r in results if r['under_microscope']]

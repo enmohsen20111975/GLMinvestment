@@ -172,6 +172,17 @@ MARKET_CONFIG = {
         'yf_suffix': '.QA',  # Yahoo Finance suffix — for API calls ONLY, NEVER stored
         'sources': ['tradingview', 'yfinance'],
     },
+    'US': {
+        'name': 'US Stock Market (NYSE/NASDAQ)',
+        'name_ar': 'البورصة الأمريكية',
+        'currency': 'USD',
+        'timezone': 'America/New_York',
+        'trading_hours': {'start': '09:30', 'end': '16:00'},  # ET = 14:30-21:00 UTC
+        'tv_screener': 'america',
+        'tv_exchange': 'NASDAQ',
+        'yf_suffix': '',  # US tickers have no suffix on Yahoo Finance
+        'sources': ['yfinance', 'tradingview'],
+    },
     'CRYPTO': {
         'name': 'Cryptocurrency Market',
         'name_ar': 'سوق العملات الرقمية',
@@ -397,6 +408,69 @@ POPULAR_STOCKS = {
         'QAMCO',    # Qatar Aluminum
         'QIM',      # Qatar Industrial Manufacturing
         'DLC',      # Doha Logistics
+    ],
+
+    # الولايات المتحدة - US (NYSE/NASDAQ — top 50 by market cap)
+    'US': [
+        # Technology
+        'AAPL',  # Apple
+        'MSFT',  # Microsoft
+        'GOOGL', # Alphabet (A)
+        'GOOG',  # Alphabet (C)
+        'AMZN',  # Amazon
+        'NVDA',  # NVIDIA
+        'META',  # Meta Platforms
+        'TSLA',  # Tesla
+        'AVGO',  # Broadcom
+        'AMD',   # Advanced Micro Devices
+        'CRM',   # Salesforce
+        'ADBE',  # Adobe
+        'ACN',   # Accenture
+        'ORCL',  # Oracle
+        'IBM',   # IBM
+        'INTC',  # Intel
+        'QCOM',  # Qualcomm
+        'TXN',   # Texas Instruments
+        'NFLX',  # Netflix
+        # Financials
+        'JPM',   # JPMorgan Chase
+        'V',     # Visa
+        'MA',    # Mastercard
+        'BAC',   # Bank of America
+        'WFC',   # Wells Fargo
+        'MS',    # Morgan Stanley
+        # Healthcare
+        'JNJ',   # Johnson & Johnson
+        'UNH',   # UnitedHealth Group
+        'PFE',   # Pfizer
+        'ABBV',  # AbbVie
+        'MRK',   # Merck
+        'TMO',   # Thermo Fisher
+        'DHR',   # Danaher
+        # Consumer
+        'WMT',   # Walmart
+        'COST',  # Costco
+        'HD',    # Home Depot
+        'MCD',   # McDonald's
+        'KO',    # Coca-Cola
+        'PEP',   # Pepsico
+        # Energy / Industrials
+        'CVX',   # Chevron
+        'CAT',   # Caterpillar
+        'BA',    # Boeing
+        'GE',    # General Electric
+        'HON',   # Honeywell
+        'UPS',   # United Parcel Service
+        'RTX',   # Raytheon Technologies
+        'GM',    # General Motors
+        # ETFs (proxy indices)
+        'SPY',   # S&P 500 ETF
+        'QQQ',   # NASDAQ 100 ETF
+        # Others
+        'PM',    # Philip Morris
+        'CMCSA', # Comcast
+        'NEE',   # NextEra Energy
+        'BRK.B', # Berkshire Hathaway (B shares)
     ],
 }
 

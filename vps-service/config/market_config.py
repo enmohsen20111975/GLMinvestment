@@ -265,6 +265,47 @@ MARKET_CONFIGS: Dict[str, MarketConfig] = {
     ),
     
     # ═══════════════════════════════════════════════════════════════════════
+    # US - NYSE/NASDAQ (American Stock Market)
+    # ═══════════════════════════════════════════════════════════════════════
+    "US": MarketConfig(
+        code="US",
+        name="US Stock Market (NYSE/NASDAQ)",
+        name_ar="البورصة الأمريكية",
+        market_type=MarketType.STOCK,
+
+        # 9:30 AM ET = 14:30 UTC, 4:00 PM ET = 21:00 UTC
+        # Stored as the market-local convention (10:00 - 15:30 placeholder,
+        # actual UTC conversion handled by analyzers/market_regime_engine.py).
+        trading_start="09:30",
+        trading_end="16:00",
+        timezone="America/New_York",
+        trading_days=[0, 1, 2, 3, 4],  # Mon-Fri
+
+        timeframes=["daily", "weekly", "monthly"],
+
+        default_stop_loss=5.0,
+        default_target=12.0,
+        max_position_size=8.0,
+        min_risk_reward=1.5,
+
+        # US markets are highly liquid — higher minimums in USD
+        min_volume=1_000_000,
+        min_value_traded=5_000_000,
+
+        currency="USD",
+        currency_symbol="$",
+
+        tv_screener="america",
+        tv_exchange="NASDAQ",
+
+        allow_short=True,
+        has_futures=True,
+        has_options=True,
+
+        notes="NYSE/NASDAQ — uses SPY/QQQ ETF proxies for regime detection. Higher liquidity thresholds in USD."
+    ),
+
+    # ═══════════════════════════════════════════════════════════════════════
     # CRYPTO - العملات الرقمية
     # ═══════════════════════════════════════════════════════════════════════
     "CRYPTO": MarketConfig(
@@ -495,7 +536,21 @@ def detect_market_from_ticker(ticker: str) -> str:
         EURUSD → FOREX
     """
     ticker = ticker.upper()
-    
+
+    # US stock patterns — NYSE/NASDAQ tickers (all-caps 1-5 letters, no suffix)
+    # Use a curated allow-list to avoid false positives with EGX tickers like "V"
+    US_TICKER_HINTS = {
+        "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "NVDA", "META", "TSLA",
+        "BRK.B", "BRK.B", "JPM", "V", "JNJ", "WMT", "MA", "PG", "UNH",
+        "HD", "CVX", "MRK", "ABBV", "PFE", "KO", "PEP", "BAC", "TMO",
+        "COST", "AVGO", "MCD", "CRM", "AMD", "NFLX", "ACN", "ADBE",
+        "DHR", "ORCL", "CMCSA", "NEE", "TXN", "WFC", "PM", "IBM", "MS",
+        "QCOM", "RTX", "HON", "UPS", "INTC", "CAT", "BA", "GE", "GM",
+        "SPY", "QQQ", "DIA", "IWM",
+    }
+    if ticker in US_TICKER_HINTS:
+        return "US"
+
     # Crypto patterns
     if any(x in ticker for x in ["USDT", "USDC", "BTC", "ETH", "BNB", "XRP"]):
         return "CRYPTO"

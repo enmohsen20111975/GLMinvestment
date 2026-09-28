@@ -60,6 +60,7 @@ const MARKET_OPTIONS: MarketOption[] = [
   { value: 'TADAWUL',  label: 'السعودية',   flag: '🇸🇦', currency: 'SAR' },
   { value: 'KSE',      label: 'الكويت',     flag: '🇰🇼', currency: 'KWD' },
   { value: 'QSE',      label: 'قطر',        flag: '🇶🇦', currency: 'QAR' },
+  { value: 'US',       label: 'أمريكا',     flag: '🇺🇸', currency: 'USD' },
   { value: 'CRYPTO',   label: 'كريبتو',     flag: '🪙', currency: 'USD' },
 ];
 
