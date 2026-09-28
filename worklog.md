@@ -40340,3 +40340,37 @@ Stage Summary:
 - Removed UI bloat: Maestro card, AI tab, Devil's Advocate tab, AI Lessons tab, Maker Radar tab.
 - Build: npm run build passed with exit code 0.
 - Git: Pushed to origin/main.
+
+---
+Task ID: RADAR-REGIME-ADAPTIVE-RULES
+Agent: Quantitative Engineer + Full Stack Architect
+Task: Wire existing MarketRegimeEngine into Maker Radar, implement regime-adaptive liquidity rules for DEFENSIVE market conditions, resolve static 3/4 signal lock, fix prediction display/ingestion, and merge with Level 3 GitHub updates.
+
+Work Log:
+- Market Regime Engine Integration:
+  - Leveraged existing `vps-service/analyzers/market_regime_engine.py` (senses EGX breadth, turnover ratio, index trend, and drawdown).
+  - Detected active EGX market state: `DEFENSIVE` (due to low breadth and down turnover ratio).
+  - Fixed `_append_log` in `market_regime_engine.py` using `INSERT OR REPLACE` to safely handle multiple runs on the same date.
+- Adaptive Liquidity Rules (`vps-service/utils/shared_liquidity.py`):
+  - Made `detect_pre_surge` and `detect_quiet_accumulation` regime-aware by accepting `regime: str = 'NORMAL'`.
+  - In `DEFENSIVE` regime:
+    * Adapted `buy_days_min` in `detect_pre_surge` from 4 to 2 (out of 7) — recognizing that in a bleeding market, holding support with 2+ green days is a strong indicator of smart money defense.
+    * Adjusted `min_roc_cutoff` to -8% to avoid rejecting accumulating stocks during index sell-offs.
+    * Adapted volume recurring days and buy pressure days in `detect_quiet_accumulation`.
+    * Solved the 3/4 signal lock: strong accumulating stocks now achieve full 4/4 score, with others showing 3/4 or 2/4.
+- Maker Radar Script (`scripts/maker_radar.py`):
+  - Wired `MarketRegimeEngine` into `main()` to dynamically sense market regime and pass it to `scan_ticker`.
+  - Exported `market_regime` details into `maker_radar_{date}.json`.
+  - Merged seamlessly with Level 3 multi-market and `--tickers` flags.
+- UI & Prediction Improvements (`src/components/predictions/MakerRadarTab.tsx`):
+  - Added Market Regime Banner atop the radar explaining current market condition (e.g. 🛡️ DEFENSIVE) and active rule adaptations.
+  - Ingested both `status: 'active'` and `status: 'pending'` / `'open'` predictions from `/api/unified/predictions`.
+  - Supported `STRONG_BUY` and `BUY` signals: rendering `🟢 شراء قوي` and `🟢 شراء` badges with target/stop tooltips and confidence progress bars instead of falling back to neutral.
+  - Added confidence-based sort toggle and prediction counts.
+
+Stage Summary:
+- Modified files: 4 (`vps-service/analyzers/market_regime_engine.py`, `vps-service/utils/shared_liquidity.py`, `scripts/maker_radar.py`, `src/components/predictions/MakerRadarTab.tsx`).
+- Integration: Merged with origin/main Level 3 commits (`5a52fd470`).
+- Verification: Clean TypeScript check (0 errors in MakerRadarTab), Python execution verified across 297 EGX stocks, 33 quiet accumulation picks found (including 6/6 and 5/6), 88 pre-surge picks with dynamic 4/4 and 3/4 distribution.
+- Git: Pushed to origin/main.
+
