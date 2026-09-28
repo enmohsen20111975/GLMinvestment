@@ -818,28 +818,7 @@ export function EnhancedWatchlistView() {
     setEditDialogOpen(true);
   };
 
-  // ==================== LOADING STATE ====================
-  if (loading) {
-    return (
-      <div dir="rtl" className="min-h-screen bg-background">
-        <div className="p-4 md:p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-9 w-32" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i}><CardContent className="p-4"><Skeleton className="h-4 w-20 mb-2" /><Skeleton className="h-7 w-28" /></CardContent></Card>
-            ))}
-          </div>
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}><CardContent className="p-4"><Skeleton className="h-5 w-full" /></CardContent></Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+  // hooks must be called unconditionally before any early return (Rules of Hooks).
   const hasGainLoss = items.some((i) => i.purchase_price && i.quantity);
 
   // UI-STABILITY fix (2026-09-28): wrap watchlistColumns in useMemo so the
@@ -1076,6 +1055,29 @@ export function EnhancedWatchlistView() {
     hasGainLoss, setDealAdvisorPrefill, setCurrentView, handleEdit, setDeleteId,
   ]);
 
+  // ==================== LOADING STATE ====================
+  // NOTE: must be AFTER all hook calls (useMemo above) to satisfy Rules of Hooks.
+  if (loading) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-background">
+        <div className="p-4 md:p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}><CardContent className="p-4"><Skeleton className="h-4 w-20 mb-2" /><Skeleton className="h-7 w-28" /></CardContent></Card>
+            ))}
+          </div>
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}><CardContent className="p-4"><Skeleton className="h-5 w-full" /></CardContent></Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div dir="rtl" className="min-h-screen bg-background">
       <div className="p-4 md:p-6 space-y-6">
@@ -1112,7 +1114,7 @@ export function EnhancedWatchlistView() {
               size="sm"
               className="h-8"
               title="قائمة المراقبة"
-              content={`قائمة المراقبة — ${watchlist.length} سهم${lastUpdate ? `\nآخر تحديث: ${lastUpdate.toLocaleString('ar-EG')}` : ''}\n\n${watchlist.slice(0, 15).map((w, i) => `${i + 1}. ${w.ticker} — ${w.name_ar || w.name || ''}${w.last_price ? ` — ${w.last_price}` : ''}${w.change_percent != null ? ` (${w.change_percent >= 0 ? '+' : ''}${w.change_percent.toFixed(2)}%)` : ''}`).join('\n')}`}
+              content={`قائمة المراقبة — ${items.length} سهم${lastUpdate ? `\nآخر تحديث: ${lastUpdate.toLocaleString('ar-EG')}` : ''}\n\n${items.slice(0, 15).map((w, i) => `${i + 1}. ${w.ticker} — ${w.name_ar || w.name || ''}${w.current_price ? ` — ${w.current_price}` : ''}${w.price_change_percent != null ? ` (${w.price_change_percent >= 0 ? '+' : ''}${w.price_change_percent.toFixed(2)}%)` : ''}`).join('\n')}`}
               filename={`watchlist-${Date.now()}`}
               hashtags={['مراقبة', 'أسهم', 'بورصة']}
               triggerLabel="نشر"

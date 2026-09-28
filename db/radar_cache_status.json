@@ -1,7 +1,7 @@
 {
-  "last_warmup_started_at": "2026-09-28T11:32:13.788Z",
-  "last_warmup_finished_at": "2026-09-28T11:32:13.984Z",
-  "last_warmup_duration_ms": 165,
+  "last_warmup_started_at": "2026-09-28T12:55:53.450Z",
+  "last_warmup_finished_at": "2026-09-28T12:55:53.581Z",
+  "last_warmup_duration_ms": 101,
   "last_warmup_status": "failed",
   "last_error": "exit code 1",
   "cache_file": "/home/z/my-project/scripts/output/maker_radar_20260926.json",

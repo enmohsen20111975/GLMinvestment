@@ -428,7 +428,7 @@ export function LearningView() {
      RENDER
      ============================================================ */
   return (
-    <div dir="rtl" className="min-h-screen bg-background">
+    <div dir="rtl" className="min-h-screen bg-background max-w-full overflow-x-hidden">
       {/* ── HEADER ──────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">

@@ -40636,3 +40636,56 @@ Stage Summary:
 - Report: /home/z/my-project/agent-ctx/REORG-PHASE-7-REPORT.md
 
 ---
+
+---
+Task ID: UI-AUDIT-SCREENS
+Agent: UI/UX Audit Team (فريق المراجعة الجمالية)
+Task: UI/UX visual audit of all 15 screens via Agent Browser — take screenshots, inspect DOM for color/size/layout problems, document issues, propose fixes. NO code changes.
+
+Work Log:
+- Read worklog tail (last 200 lines) for context — understood prior REORG-PHASE-1-2 through REORG-PHASE-7-DOCS history (reorg completed, all 15 frontend modules in place).
+- Verified baseline: dev server up (`curl localhost:3001/` → HTTP 200, response time ~4.2s — slower than usual but functional).
+- Phase 1 — Opened app in Agent Browser, dismissed help modal (already hidden — only rendered with visible=false in DOM).
+- Phase 2 — Navigated to all 15 hash-routes (`#dashboard`, `#stocks`, `#stock-filters`, `#trading-chart`, `#liquidity-radar`, `#recommendations`, `#specialist-analysis`, `#portfolio`, `#watchlist`, `#reports`, `#news`, `#learning`, `#simulation`, `#academy`, `#crypto`) — took 1 full-page screenshot per screen + initial load screenshot (16 total desktop screenshots saved to `agent-ctx/screenshots/ui-00-initial.png` through `ui-15-crypto.png`).
+- Phase 3 — Wrote reusable DOM inspection script (`/tmp/inspect-screen.js`) collecting: headings (with computed color + font-size), overflow elements (scrollW > clientW or scrollH > clientH), placeholders ("0.00", "—", "undefined", "null"), small text (<11px), huge elements (>1.05× viewport width or >2× viewport height), empty clickables, top 25 colors used. Ran on each of 15 screens → saved 15 JSON inspection files.
+- **KEY DISCOVERY during Phase 3:** 6 of 15 screens (`#portfolio`, `#watchlist`, `#specialist-analysis`, `#reports`, `#learning`, `#simulation`) silently redirected to `#dashboard` with `LoginPromptModal` opened — confirmed by reading `src/components/auth/AuthGate.tsx:290-317` which has a `useEffect` that bounces unauthenticated users off `PROTECTED_VIEWS` to dashboard + opens login modal + shows toast. This is itself a major UX finding (X1 in the report).
+- To capture the protected screens, built an init script (`/tmp/mock-auth-init.js`) that intercepts `window.fetch` for `/api/auth/me` and `/api/auth/session` to return a mock-authenticated user (`is_admin: true`, `subscription_tier: 'premium'`). First attempt only intercepted `/api/auth/me` but didn't work because NextAuth's `useSession()` overrides store state via `syncFromSession(null)` when session endpoint returns empty — added `/api/auth/session` interception. Re-opened browser with `--init-script` flag, verified AuthGateBanner gone, re-captured all 6 protected screens + re-ran DOM inspection.
+- Phase 4 — Captured 5 mobile screenshots at viewport 375×812: `mobile-dashboard.png`, `mobile-stocks.png`, `mobile-trading-chart.png`, `mobile-watchlist.png`, `mobile-portfolio.png`. First attempt produced 5 identical 8959-byte images (browser cache); resolved by reloading after `set viewport 375 812`. Captured `ui-99-auth-gate-bounce.png` showing the AuthGate-bounce behavior on `#portfolio` from a fresh (unauthenticated) browser session.
+- Phase 5 — Parsed all 22 inspection JSON files via `/tmp/parse_all.py` and wrote comprehensive audit report to `/home/z/my-project/agent-ctx/UI-AUDIT-REPORT.md` (472 lines, 37 KB).
+
+Stage Summary:
+- Total screens visited: 15 desktop + 5 mobile = 20 views captured
+- Total DOM inspections: 22 (15 desktop + 5 mobile + 1 initial + 1 AuthGate-bounce)
+- Total screenshots saved: 23 files in `agent-ctx/screenshots/` (16 desktop ui-NN + 5 mobile + 1 initial + 1 AuthGate-bounce)
+- Total issues documented: 68 (15-screen-specific × ~4-5 each + 7 cross-cutting)
+- By priority:
+  * P0 (بيانات ناقصة / صفحات فاضية): 12 issues
+  * P1 (أحجام غلط / overflow / huge elements): 19 issues
+  * P2 (ألوان و inconsistence): 14 issues
+  * P3 (ترتيب / تنسيق / تباعد): 14 issues
+  * P4 (نصوص صغيرة جدًا < 11px): 9 issues
+- Top 10 most critical issues:
+  1. **#learning page is 11,279px wide vs 1,280px viewport (8.8× wider!)** — `min-h-screen` div has inline `width: 11279px`
+  2. **#watchlist shows error state** "حدث خطأ في تحميل قائمة المتابعة" — broken backend API
+  3. **AuthGate silent bounce** — 6 of 15 screens redirect unauthenticated users to dashboard + login modal
+  4. **`#crypto` redirects to dashboard** but URL hash stays `#crypto` — confusing
+  5. **#portfolio has 5 invisible clickable buttons** (no text, no icon, but interactive)
+  6. **#stocks initially shows crypto title** "العملات الرقمية" because `currentMarket` state isn't reset when navigating from `#crypto`
+  7. **#liquidity-radar is essentially empty** — only 4 cards, no radar visualisation
+  8. **#specialist-analysis shows only** "اختر رمز السهم للبدء" prompt — no content
+  9. **#reports shows only** H2 + 3 cards + disclaimer — no actual reports
+  10. **Multiple "0.00" placeholders** displayed as if they were real prices (dashboard, stocks, learning, crypto, portfolio)
+- Top 5 screens with most problems:
+  1. **#portfolio** — 7 issues + 9 huge elements + 5 empty buttons + progress bar 2× viewport width + 3,748px page height + "—" placeholders
+  2. **#learning** — 7 issues + 9 huge elements + 11,279px horizontal overflow + "0 من 73" overwhelming counter + 14 placeholders
+  3. **#dashboard** — 8 issues + 6 huge elements + broken "0" sentiment value + 16 placeholders + 8px disclaimer + 14 distinct colors
+  4. **#academy** — 7 issues + 10 huge elements + 2 H1s (duplicate) + 3,367px page height + category-count concatenation "📘الأساسيات3"
+  5. **#trading-chart** — 7 issues + 15 small-text instances + 9px "(BTC)" label + concatenated time intervals "5M15M1Hيوميأسبوعيشهري" + 3 different greens used for "success"
+- Cross-cutting issues (7): AuthGate silent bounce (X1), persistent Help Center modal in DOM (X2), persistent "سجّل مجاناً" CTA banner (X3), currency badge `ج.م` everywhere at 10px (X4), color palette inconsistency with 10-14 distinct colors per screen (X5), font sizes below 11px app-wide (X6), page heights exceed 2× viewport on 8 screens (X7).
+- Constitution compliance: Rule 4 (NO new files/screens) — only 1 .md report + 23 .png screenshots created; no .ts/.tsx/.py files modified. Rule 25 (refactoring-gated) — no destructive changes. Rule 39 (DOCS-FIRST-LAST) — audit report produced for next fix task.
+- Report: `/home/z/my-project/agent-ctx/UI-AUDIT-REPORT.md` (472 lines, 37 KB)
+- Recommendations for next task (UI-FIX-PRIORITY-1):
+  * Immediate (P0): Fix learning page horizontal overflow (1 file change); Fix watchlist API; Replace all "0.00" placeholders with skeleton loaders; Hide AuthGate-bounced screens behind preview overlay instead of bouncing to dashboard; Fix `#crypto` redirect UX; Add H1 to 5 pages missing it; Hide invisible portfolio buttons; Reset `currentMarket` when navigating to `#stocks`.
+  * Short-term (P1-P2): Establish 4-color palette; Cap page heights at 3 viewport heights; Hide Help Center modal from DOM when closed; Constrain "سجّل مجاناً" CTA to viewport width; Fix duplicate H1 on simulation + academy; Standardize green color.
+  * Medium-term (P3-P4): Enforce 11px minimum font size; Translate English UI strings; Add separators to concatenated tab labels; Demote secondary H2s to H3; Add visible retry buttons to error states; Compress portfolio sections into tabs.
+

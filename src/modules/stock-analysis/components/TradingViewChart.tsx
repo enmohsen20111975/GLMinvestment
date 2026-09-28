@@ -1661,8 +1661,8 @@ export function TradingViewChart({
 
           <div className="h-4 w-px bg-border hidden sm:block" />
 
-          {/* Resolutions (Candle Intervals) */}
-          <div className="flex items-center bg-muted/70 p-0.5 rounded-md border border-border/60">
+          {/* Resolutions (Candle Intervals) — UI-FIX: added gap-1 for spacing */}
+          <div className="flex items-center gap-1 bg-muted/70 p-0.5 rounded-md border border-border/60">
             <span className="text-[10px] text-muted-foreground px-1 font-semibold hidden md:inline">الفريم:</span>
             {RESOLUTIONS.map((res) => {
               const active = timeframe === res.key;

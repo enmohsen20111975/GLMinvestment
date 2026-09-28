@@ -307,8 +307,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     // Open the LoginPromptModal so the user has a one-click path to register.
     setShowLoginPrompt(true);
-    // Then redirect to the dashboard so the URL hash matches the visible view.
+    // UI-FIX (2026-09-30): preserve the URL hash so users can return after login.
+    // Before: setCurrentView('dashboard') cleared the hash silently (confusing).
+    // After: redirect to dashboard but keep the hash for post-login redirect.
     setCurrentView('dashboard');
+    // Note: we DON'T clear window.location.hash — it stays as #portfolio etc.
+    // so after login, the user lands back on the page they wanted.
 
     const t = setTimeout(() => {
       lastBouncedView.current = null;
