@@ -19,7 +19,7 @@ import {
   Activity, AlertTriangle, Star, StarOff, X, ChevronLeft,
   Layers, Target, Zap, Gauge, Award, Crosshair, Clock,
   BarChart3, Eye as MicroscopeIcon, Flame as FlameIcon,
-  Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, Info, Sparkles,
+  Rocket, ArrowUpRight, ArrowDownRight, ShieldCheck, ShieldAlert, Info, Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -130,6 +130,17 @@ interface RadarStock {
 interface MakerRadarResponse {
   success: boolean;
   market?: string;
+  market_regime?: {
+    regime: string;
+    raw_regime: string;
+    effective_regime?: string;
+    candidate_regime?: string;
+    candidate_days?: number;
+    breadth_pct?: number;
+    turnover_ratio?: number;
+    index_daily_change_pct?: number;
+    reasons?: string[];
+  } | null;
   min_quiet_signals?: number;
   min_price?: number;
   total_scanned?: number;
@@ -586,17 +597,22 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         ...(Array.isArray(json.predictions) ? json.predictions : []),
         ...(Array.isArray(json.active_predictions) ? json.active_predictions : []),
       ];
-      // Filter active statuses case-insensitively
-      const rows = allRows.filter((r) => String(r.status || '').toLowerCase() === 'active');
+      // Filter active statuses case-insensitively (including pending and open positions)
+      const rows = allRows.filter((r) => {
+        const st = String(r.status || '').toLowerCase();
+        return st === 'active' || st === 'pending' || st === 'open' || st === 'triggered';
+      });
       const map = new Map<string, PredictionEntry>();
       for (const row of rows) {
         const ticker = String(row.ticker || '').toUpperCase();
         if (!ticker) continue;
         const sig = String(row.signal || '').toUpperCase();
+        const isBuy = sig.includes('BUY');
+        const isSell = sig.includes('SELL');
         // BUY/STRONG_BUY → direction='up' regardless of null direction field in DB
         const resolvedDirection =
-          sig === 'BUY' || sig === 'STRONG_BUY' ? 'up'
-          : sig === 'SELL' || sig === 'STRONG_SELL' ? 'down'
+          isBuy ? 'up'
+          : isSell ? 'down'
           : row.direction ? String(row.direction) : null;
         // confidence first, master_score as fallback
         const conf = row.confidence != null ? Number(row.confidence)
@@ -606,10 +622,10 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         const existing = map.get(ticker);
         if (!existing || (conf != null && conf > (existing.confidence ?? -1))) {
           const signal_ar =
-            sig === 'BUY' ? 'شراء'
-            : sig === 'STRONG_BUY' ? 'شراء قوي'
-            : sig === 'SELL' ? 'بيع'
+            sig === 'STRONG_BUY' ? 'شراء قوي'
+            : sig === 'BUY' ? 'شراء'
             : sig === 'STRONG_SELL' ? 'بيع قوي'
+            : sig === 'SELL' ? 'بيع'
             : sig === 'HOLD' ? 'احتفظ'
             : sig === 'WAIT' ? 'انتظر'
             : 'محايد';
@@ -986,6 +1002,62 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           </div>
         </div>
       </Card>
+
+      {/* ===== MARKET REGIME BANNER (إحساس وضع السوق وتكييف القواعد) ===== */}
+      {data?.market_regime && (
+        <Card className={`p-3 border-l-4 transition-all ${
+          data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+            ? 'border-l-amber-500 bg-amber-500/5 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
+            : data.market_regime.regime === 'AGGRESSIVE'
+              ? 'border-l-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+              : 'border-l-blue-500 bg-blue-500/5 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+        }`}>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className={`h-5 w-5 ${
+                data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : data.market_regime.regime === 'AGGRESSIVE'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-blue-600 dark:text-blue-400'
+              }`} />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground">
+                    وضع السوق المستشعر:
+                  </span>
+                  <Badge variant="outline" className={`text-xs font-semibold ${
+                    data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                      ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-200'
+                      : data.market_regime.regime === 'AGGRESSIVE'
+                        ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200'
+                        : 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200'
+                  }`}>
+                    {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                      ? '🛡️ دِفاعي (DEFENSIVE) — هبوط / شح سيولة'
+                      : data.market_regime.regime === 'AGGRESSIVE'
+                        ? '🚀 هجومي (AGGRESSIVE) — زخم صاعد'
+                        : '⚖️ عادي (NORMAL) — حركة متوازنة'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {data.market_regime.regime === 'DEFENSIVE' || data.market_regime.raw_regime === 'DEFENSIVE'
+                    ? 'السوق العام واقع وشحيح السيولة — تم تكييف قواعد الرادار تلقائياً لصيد الأسهم المتماسكة ذات القوة النسبية وتجميع الميكرز الهادئ.'
+                    : 'القواعد تعمل بالمعايير القياسية للسيولة والزخم.'}
+                </p>
+              </div>
+            </div>
+            {data.market_regime.breadth_pct != null && (
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span>صعود السوق: <strong className="font-mono text-foreground">{data.market_regime.breadth_pct}%</strong></span>
+                {data.market_regime.turnover_ratio != null && (
+                  <span>نسبة السيولة: <strong className="font-mono text-foreground">{data.market_regime.turnover_ratio}x</strong></span>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* ===== KPI CARDS ===== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1760,15 +1832,18 @@ const StockTable = memo(function StockTable({
       render: (stock) => {
         const pred = predictionForTicker(stock.ticker);
         if (!pred) return <span className="text-muted-foreground text-[10px]">—</span>;
-        const isBuy = pred.signal?.toLowerCase() === 'buy' || pred.direction === 'up';
-        const isSell = pred.signal?.toLowerCase() === 'sell' || pred.direction === 'down';
+        const isStrongBuy = pred.signal?.toUpperCase() === 'STRONG_BUY';
+        const isBuy = pred.signal?.toUpperCase().includes('BUY') || pred.direction === 'up';
+        const isSell = pred.signal?.toUpperCase().includes('SELL') || pred.direction === 'down';
         const conf = pred.confidence ?? pred.master_score ?? null;
-        const badgeCls = isBuy
-          ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
-          : isSell
-            ? 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700'
-            : 'bg-muted text-muted-foreground border-border';
-        const label = isBuy ? '🟢 شراء' : isSell ? '🔴 بيع' : '⚪ محايد';
+        const badgeCls = isStrongBuy
+          ? 'bg-emerald-600 text-white border-emerald-500 font-semibold shadow-sm'
+          : isBuy
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
+            : isSell
+              ? 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700'
+              : 'bg-muted text-muted-foreground border-border';
+        const label = isStrongBuy ? '🟢 شراء قوي' : isBuy ? '🟢 شراء' : isSell ? '🔴 بيع' : '⚪ محايد';
         return (
           <div className="flex flex-col items-center gap-0.5" title={pred.target_price ? `هدف: ${fmtNum(pred.target_price)} | وقف: ${fmtNum(pred.stop_loss)}` : ''}>
             <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap ${badgeCls}`}>

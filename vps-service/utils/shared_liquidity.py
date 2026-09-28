@@ -418,26 +418,30 @@ def detect_quiet_accumulation(
     volumes: List[float],
     highs: List[float] = None,
     lows: List[float] = None,
+    regime: str = 'NORMAL',
 ) -> Tuple[bool, str, dict]:
     """PHASE-2: كشف مرحلة التجميع الهادئ (Quiet Accumulation).
 
     الميكرز بيجمع بهدوء أيام قبل ما يولع السهم. الإشارات:
-      1. حجم أعلى من المتوسط بشكل متكرر (≥ 4 من 10 أيام volume > 1.2× avg_20d)
-      2. ضغط شراء متكرر (close ≥ 80% من range في ≥ 5 من 10 أيام)
+      1. حجم أعلى من المتوسط بشكل متكرر
+      2. ضغط شراء متكرر (close قريب من high)
       3. انضغاط سعري (range 10d < 12%)
       4. الحجم مش واطي (avg_10d ≥ 80% من avg_20d)
       5. مش انفجار (ROC 10d < 10%)
-      6. مفيش توزيع (≤ 2 يوم distribution في آخر 10)
+      6. مفيش توزيع (توزيع منخفض)
 
-    لو 4 من 6 إشارات متحققة → quiet_accumulation=True.
+    ملاحظة: تتكيف القواعد ديناميكياً مع وضع السوق (Market Regime):
+      - في وضع DEFENSIVE (شح سيولة وهبوط السوق): تتكيف عتبات ضغط الشراء والحجم.
 
     Returns:
         (is_quiet_accumulation, reason, details)
     """
+    is_defensive = str(regime).upper() == 'DEFENSIVE'
     details = {
         'signal_count': 0,
         'signals_met': [],
         'signals_failed': [],
+        'regime': regime,
     }
 
     # lookback = 18 يوم (توازن بين البدري والدقة)
@@ -457,8 +461,9 @@ def detect_quiet_accumulation(
             return False, 'pump مشبوه', details
     if len(closes) >= 11 and closes[-11] > 0:
         roc_qa = (closes[-1] - closes[-11]) / closes[-11] * 100
-        if roc_qa < -5:
-            return False, f'ضعف نسبي (ROC10={roc_qa:.1f}%)', details
+        min_roc_cutoff = -8.0 if is_defensive else -5.0
+        if roc_qa < min_roc_cutoff:
+            return False, f'ضعف نسبي (ROC10={roc_qa:.1f}% < {min_roc_cutoff}%)', details
 
     last_10_closes = closes[-10:]
     last_10_volumes = volumes[-10:]
@@ -470,23 +475,22 @@ def detect_quiet_accumulation(
     avg_10_vol = sum(last_10_volumes) / 10
 
     # 1. حجم أعلى من المتوسط بشكل متكرر
+    vol_days_high_req = 2 if is_defensive else QUIET_ACCUM_VOLUME_DAYS_HIGH
     if avg_20_vol > 0:
         days_high_vol = sum(1 for v in last_10_volumes if v >= avg_20_vol * QUIET_ACCUM_VOLUME_RATIO_MIN)
-        signal1 = days_high_vol >= QUIET_ACCUM_VOLUME_DAYS_HIGH
+        signal1 = days_high_vol >= vol_days_high_req
         details['days_high_volume'] = days_high_vol
         details['avg_20_vol'] = round(avg_20_vol, 0)
         if signal1:
-            details['signals_met'].append(f'1.volume_high_recurring({days_high_vol}/{QUIET_ACCUM_VOLUME_DAYS_HIGH})')
+            details['signals_met'].append(f'1.volume_high_recurring({days_high_vol}/{vol_days_high_req})')
         else:
-            details['signals_failed'].append(f'1.volume_high_recurring({days_high_vol}/{QUIET_ACCUM_VOLUME_DAYS_HIGH})')
+            details['signals_failed'].append(f'1.volume_high_recurring({days_high_vol}/{vol_days_high_req})')
 
     # 2. ضغط شراء متكرر: close قريب من high
-    # لو مفيش highs/lows، نحسبها من closes (proxy: high = max(close, prev_close))
     if highs and lows and len(highs) >= 10 and len(lows) >= 10:
         last_10_highs = highs[-10:]
         last_10_lows = lows[-10:]
     else:
-        # proxy: استخدم close كـ high و close[-1] كـ low للشمعة (أقل دقة)
         last_10_highs = [max(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
         last_10_lows = [min(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
 
@@ -497,12 +501,13 @@ def detect_quiet_accumulation(
             close_pct = (c - l) / (h - l) * 100
             if close_pct >= QUIET_ACCUM_CLOSE_TO_HIGH_PCT:
                 buy_pressure_days += 1
-    signal2 = buy_pressure_days >= QUIET_ACCUM_BUY_PRESSURE_DAYS
+    buy_pressure_req = 2 if is_defensive else QUIET_ACCUM_BUY_PRESSURE_DAYS
+    signal2 = buy_pressure_days >= buy_pressure_req
     details['buy_pressure_days'] = buy_pressure_days
     if signal2:
-        details['signals_met'].append(f'2.buy_pressure({buy_pressure_days}/{QUIET_ACCUM_BUY_PRESSURE_DAYS})')
+        details['signals_met'].append(f'2.buy_pressure({buy_pressure_days}/{buy_pressure_req})')
     else:
-        details['signals_failed'].append(f'2.buy_pressure({buy_pressure_days}/{QUIET_ACCUM_BUY_PRESSURE_DAYS})')
+        details['signals_failed'].append(f'2.buy_pressure({buy_pressure_days}/{buy_pressure_req})')
 
     # 3. انضغاط سعري (range 10d < 12%)
     min_10 = min(last_10_closes)
@@ -538,8 +543,8 @@ def detect_quiet_accumulation(
         else:
             details['signals_failed'].append(f'5.not_explosive({roc_10d:+.1f}%≥{QUIET_ACCUM_ROC_10D_MAX}%)')
 
-    # 6. مفيش توزيع واضح (≤ 2 يوم distribution)
-    # distribution day = day where close < (high + low) / 2 AND volume > avg_20d
+    # 6. مفيش توزيع واضح
+    dist_days_max = 3 if is_defensive else QUIET_ACCUM_DIST_DAYS_MAX
     dist_days = 0
     for i in range(10):
         h, l, c, v = last_10_highs[i], last_10_lows[i], last_10_closes[i], last_10_volumes[i]
@@ -547,12 +552,12 @@ def detect_quiet_accumulation(
             mid = (h + l) / 2
             if c < mid and v > avg_20_vol:
                 dist_days += 1
-    signal6 = dist_days <= QUIET_ACCUM_DIST_DAYS_MAX
+    signal6 = dist_days <= dist_days_max
     details['distribution_days'] = dist_days
     if signal6:
-        details['signals_met'].append(f'6.no_distribution({dist_days}≤{QUIET_ACCUM_DIST_DAYS_MAX})')
+        details['signals_met'].append(f'6.no_distribution({dist_days}≤{dist_days_max})')
     else:
-        details['signals_failed'].append(f'6.no_distribution({dist_days}>{QUIET_ACCUM_DIST_DAYS_MAX})')
+        details['signals_failed'].append(f'6.no_distribution({dist_days}>{dist_days_max})')
 
     # احسب النتيجة النهائية
     details['signal_count'] = len(details['signals_met'])
@@ -578,6 +583,7 @@ def detect_pre_surge(
     volumes: List[float],
     highs: List[float] = None,
     lows: List[float] = None,
+    regime: str = 'NORMAL',
 ) -> Tuple[bool, str, dict]:
     """PHASE-3: كشف مرحلة ما قبل الانفجار (Pre-Surge).
 
@@ -586,16 +592,23 @@ def detect_pre_surge(
     الشروط (محتاجين 3 من 4):
       1. الحجم بيزيد تدريج على 5-10 أيام (volume gradient ≥ 15%)
       2. الـ range اليومي صغير (range 10d < 10% — محبوس)
-      3. عدد أيام الشراء > أيام البيع في آخر 7 أيام
+      3. عدد أيام الشراء المتماسكة في آخر 7 أيام (تتكيّف ديناميكياً مع وضع السوق)
       4. السعر فوق أو قريب جداً من MA10/MA20 (within 3%)
+
+    تكييف وضع السوق (REGIME-ADAPTIVE):
+      - في وضع DEFENSIVE (شح سيولة وهبوط المؤشر):
+        الميكر يجمع بهدوء على هبوط، لذا شرط أيام الشراء يصبح 2 من 7 بدلاً من 4.
+        السهم الذي يحقق تماسكاً وتدرج حجم في السوق الهابط هو أقوى إشارة تجميع حقيقية.
 
     Returns:
         (is_pre_surge, reason, details)
     """
+    is_defensive = str(regime).upper() == 'DEFENSIVE'
     details = {
         'signal_count': 0,
         'signals_met': [],
         'signals_failed': [],
+        'regime': regime,
     }
 
     # lookback = 18 يوم (توازن)
@@ -614,16 +627,14 @@ def detect_pre_surge(
     if len(closes) >= 2 and closes[-2] > 0:
         last_move = (closes[-1] - closes[-2]) / closes[-2] * 100
         last_vol = volumes[-1] if volumes else 0
-        # لو حركة +50% والحجم أقل من نص المتوسط → pump
         if last_move > 50 and last_vol < avg_20_vol_check * 0.3:
             return False, f'pump مشبوه (move +{last_move:.0f}% + volume واطي)', details
-    # فلتر قوة نسبية: لازم RS ≥ -5% (مش أضعف من السوق بكتير)
-    # (محتاجين stock_roc + benchmark_change، بس هنا بـ proxy: ROC 10d)
+    # فلتر قوة نسبية: في DEFENSIVE يسمح بهبوط طفيف حتى -8% تماشياً مع هبوط السوق
     if len(closes) >= 11 and closes[-11] > 0:
         roc_10d_rs = (closes[-1] - closes[-11]) / closes[-11] * 100
-        # لو السهم نزل أكتر من 5% في آخر 10 أيام → ضعيف جداً
-        if roc_10d_rs < -5:
-            return False, f'ضعف نسبي واضح (ROC10={roc_10d_rs:.1f}% < -5%)', details
+        min_rs_cutoff = -8.0 if is_defensive else -5.0
+        if roc_10d_rs < min_rs_cutoff:
+            return False, f'ضعف نسبي واضح (ROC10={roc_10d_rs:.1f}% < {min_rs_cutoff}%)', details
 
     last_10_closes = closes[-10:]
     last_10_volumes = volumes[-10:]
@@ -639,7 +650,6 @@ def detect_pre_surge(
         last_10_lows = [min(closes[i], closes[i-1]) if i > 0 else closes[i] for i in range(-10, 0)]
 
     # 1. الحجم بيزيد تدريج (volume gradient)
-    # مقارنة متوسط آخر 5 أيام بأول 5 أيام في نافذة الـ 10
     early_5_vol = sum(last_10_volumes[:5]) / 5
     late_5_vol = sum(last_10_volumes[5:]) / 5
     if early_5_vol > 0:
@@ -667,8 +677,7 @@ def detect_pre_surge(
     else:
         details['signals_failed'].append(f'2.range_compressed({range_pct:.1f}%≥{PRE_SURGE_RANGE_MAX_PCT}%)')
 
-    # 3. أيام الشراء > أيام البيع في آخر 7 أيام
-    # يوم شراء = close > open (proxy) أو close > prev_close
+    # 3. أيام الشراء في آخر 7 أيام (متكيفة مع الريجيم)
     buy_days = 0
     for i in range(-7, 0):
         if i == -7:
@@ -676,12 +685,13 @@ def detect_pre_surge(
         prev_c = closes[i-1] if i-1 >= -len(closes) else closes[i]
         if closes[i] > prev_c:
             buy_days += 1
-    signal3 = buy_days >= PRE_SURGE_BUY_DAYS_MIN
+    buy_days_min = 2 if is_defensive else PRE_SURGE_BUY_DAYS_MIN
+    signal3 = buy_days >= buy_days_min
     details['buy_days_7'] = buy_days
     if signal3:
-        details['signals_met'].append(f'3.buy_days({buy_days}/7≥{PRE_SURGE_BUY_DAYS_MIN})')
+        details['signals_met'].append(f'3.buy_days({buy_days}/7≥{buy_days_min})')
     else:
-        details['signals_failed'].append(f'3.buy_days({buy_days}/7<{PRE_SURGE_BUY_DAYS_MIN})')
+        details['signals_failed'].append(f'3.buy_days({buy_days}/7<{buy_days_min})')
 
     # 4. السعر فوق أو قريب جداً من MA10/MA20
     ma10 = sum(closes[-10:]) / 10
@@ -703,12 +713,12 @@ def detect_pre_surge(
 
     if is_pre_surge:
         reason = (
-            f'🚀 PRE_SURGE — {details["signal_count"]}/4 إشارات. '
+            f'🚀 PRE_SURGE — {details["signal_count"]}/4 إشارات (regime:{regime}). '
             f'متجمعة: {", ".join(details["signals_met"])}. '
-            f'⚠️ position size 1.5% (PRE_SURGE_POSITION_SIZE) — أعلى مخاطرة'
+            f'⚠️ position size 1.5% (PRE_SURGE_POSITION_SIZE)'
         )
     else:
-        reason = f'مش pre-surge — {details["signal_count"]}/4 إشارات فقط'
+        reason = f'مش pre-surge — {details["signal_count"]}/4 إشارات فقط (regime:{regime})'
 
     return is_pre_surge, reason, details
 

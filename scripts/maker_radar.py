@@ -208,8 +208,8 @@ def is_early_break(closes, volumes, highs=None):
     return True, f'break: close {last_close:.2f} > max_20 {max_20:.2f}, vol {vol_ratio:.2f}×, range {range_pct:.1f}%'
 
 
-def scan_ticker(rows, ticker):
-    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى)."""
+def scan_ticker(rows, ticker, regime='NORMAL'):
+    """يفحص سهم واحد على الـ 4 مسارات (مع Pre-Surge كأولوية أولى) مع تكييف وضع السوق."""
     # تخفيف الـ lookback من 25 لـ 15 يوم (قرار المالك 2026-09-05)
     if len(rows) < 15:
         return None
@@ -236,11 +236,11 @@ def scan_ticker(rows, ticker):
     range_10d_pct = ((max_10 - min_10) / min_10 * 100) if min_10 > 0 else 0
     price_stability = max(0.0, 1.0 - (range_10d_pct / 20.0))  # 0..1
 
-    # PHASE-3: Pre-Surge (الأولوية الأولى — تجميع مبكر جداً)
-    pre_surge, pre_surge_reason, pre_surge_details = detect_pre_surge(closes, volumes, highs, lows)
+    # PHASE-3: Pre-Surge (الأولوية الأولى — تجميع مبكر جداً) — متكيف مع الريجيم
+    pre_surge, pre_surge_reason, pre_surge_details = detect_pre_surge(closes, volumes, highs, lows, regime=regime)
 
-    # مسار أ: Quiet Accumulation
-    quiet, quiet_reason, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows)
+    # مسار أ: Quiet Accumulation — متكيف مع الريجيم
+    quiet, quiet_reason, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows, regime=regime)
 
     # مسار ب: Explosive Surge
     explosive, explosive_reason, explosive_details = is_explosive_surge(volumes, closes)
@@ -470,10 +470,38 @@ def main():
         tickers = tickers[: args.limit]
     log(f"  فحص {len(tickers)} سهم (market={args.market})...")
 
+    # ─── إحساس وضع السوق عبر MarketRegimeEngine الموجود ─────────────────
+    regime_name = "NORMAL"
+    regime_details = {}
+    try:
+        from analyzers.market_regime_engine import MarketRegimeEngine
+        m_key = 'EGX' if args.market.upper() in ('EGX', 'ALL') else args.market.upper()
+        engine = MarketRegimeEngine(market=m_key)
+        reg_res = engine.update_regime()
+        effective_regime = reg_res.raw_regime.value if reg_res.raw_regime.value == 'DEFENSIVE' else reg_res.regime.value
+        regime_name = effective_regime
+        regime_details = {
+            'regime': reg_res.regime.value,
+            'raw_regime': reg_res.raw_regime.value,
+            'effective_regime': effective_regime,
+            'candidate_regime': reg_res.candidate_regime.value,
+            'candidate_days': reg_res.candidate_days,
+            'breadth_pct': round((reg_res.indicators.breadth_pct or 0) * 100, 1) if reg_res.indicators else 0,
+            'turnover_ratio': round(reg_res.indicators.turnover_ratio or 0, 2) if reg_res.indicators else 0,
+            'index_daily_change_pct': round(reg_res.indicators.index_daily_change_pct or 0, 2) if reg_res.indicators else 0,
+            'reasons': reg_res.reasons,
+        }
+        log(f"  🌐 وضع السوق المستشعر: {regime_name} (raw={reg_res.raw_regime.value}, candidate={reg_res.candidate_regime.value}/{reg_res.candidate_days}d)")
+        if reg_res.reasons:
+            for r in reg_res.reasons[:3]:
+                log(f"     • {r}")
+    except Exception as e:
+        log(f"  ⚠️ تعذر استشعار وضع السوق ({e}) — افتراضي NORMAL")
+
     results = []
     for i, ticker in enumerate(tickers, 1):
         rows = fetch_ticker_series(conn, ticker, days=40)
-        result = scan_ticker(rows, ticker)
+        result = scan_ticker(rows, ticker, regime=regime_name)
         if result:
             results.append(result)
         if i % 100 == 0:
@@ -576,6 +604,7 @@ def main():
         json.dump({
             'generated_at': datetime.now().isoformat(),
             'market': args.market,
+            'market_regime': regime_details or {'regime': regime_name, 'raw_regime': regime_name},
             'min_quiet_signals': args.min_quiet_signals,
             'min_price': args.min_price,
             'db_source': DB_SOURCE_ID,

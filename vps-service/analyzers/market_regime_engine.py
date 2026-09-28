@@ -1117,7 +1117,7 @@ class MarketRegimeEngine:
             ind = result.indicators
             cur = conn.cursor()
             cur.execute("""
-                INSERT INTO market_regime_log (
+                INSERT OR REPLACE INTO market_regime_log (
                     date, market, regime, raw_regime, candidate_regime, candidate_days,
                     confidence, reasons, indicators, index_ticker, index_source,
                     index_current, index_daily_change_pct, breadth_pct, atr_ratio,
