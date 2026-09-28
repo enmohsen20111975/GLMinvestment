@@ -40307,3 +40307,36 @@ Stage Summary:
 - Total LOC delta: ~3,257 new + ~128 modified.
 
 Report: /home/z/my-project/agent-ctx/L2-WEEKLY-RADAR-REPORT.md
+
+
+---
+Task ID: UI-CLEANUP-MAESTRO-AI-TABS
+Agent: Full Stack Engineer
+Task: Remove Maestro rating card and AI tab from stock details; Remove Devil's Advocate, AI Lessons, and Maker Radar tabs from MarketAnalysisView.
+
+Work Log:
+- Inspected user request and screenshots:
+  - Screenshot 1: MarketAnalysisView with tabs (وجهة نظر المضاد, دروس AI, صفقات تاريخية, رادار الخروج, رادار الميكرز, التقرير الأسبوعي, ...).
+  - Screenshot 2: ComprehensiveStockAnalysis under /#stocks with tabs (نظرة عامة, فني, أساسي, رسوم, أخبار, توقعات, AI) and Overview cards (تقييم المايسترو - مايسترو مش متاح, مجلس المحللين, تقييم الصياد).
+- In src/components/stocks/ComprehensiveStockAnalysis.tsx:
+  - Removed Maestro evaluation card ('تقييم المايسترو') from OverviewTab.
+  - Re-balanced OverviewTab layout to 2 columns (grid grid-cols-1 md:grid-cols-2 gap-4) for Board of Analysts and Hunter cards.
+  - Removed 'AI' TabTrigger and TabContent (<TabsContent value='ai'>).
+  - Adjusted TabsList responsive grid from 4/7 columns to 3/6 columns for the 6 remaining tabs (Overview, Technical, Fundamental, Charts, News, Predictions).
+- In src/components/analysis/MarketAnalysisView.tsx:
+  - Removed 3 requested tabs from TabsList:
+    * 'وجهة نظر المضاد' (devils-advocate)
+    * 'دروس AI' (learned-lessons)
+    * 'رادار الميكرز' (maker-radar)
+  - Removed corresponding <TabsContent> blocks (MakerRadarTab, LearnedLessonsDashboard, DevilsAdvocatePanel).
+  - Removed unused imports: MakerRadarTab, LearnedLessonsDashboard, DevilsAdvocatePanel, and unused Lucide icons (Radar, Brain, AlertTriangle).
+  - Adjusted TabsList grid from 3/6 columns to 4/8 columns to fit the remaining 8 tabs seamlessly.
+- Verification:
+  - Ran npm run build -> exit code 0, all routes compiled cleanly with 0 TypeScript/build errors.
+  - Committed and pushed to GitHub main branch (commit 5241c5a34).
+
+Stage Summary:
+- Modified files: 2 (src/components/stocks/ComprehensiveStockAnalysis.tsx, src/components/analysis/MarketAnalysisView.tsx).
+- Removed UI bloat: Maestro card, AI tab, Devil's Advocate tab, AI Lessons tab, Maker Radar tab.
+- Build: npm run build passed with exit code 0.
+- Git: Pushed to origin/main.
