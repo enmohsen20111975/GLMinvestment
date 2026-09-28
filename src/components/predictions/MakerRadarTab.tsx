@@ -492,6 +492,17 @@ interface MakerRadarTabProps {
 
 type FilterKey = 'all' | 'pre_surge' | 'quiet' | 'explosive' | 'early_break' | 'tracked';
 
+/** Lightweight prediction entry stitched from predictions.db active rows */
+interface PredictionEntry {
+  signal: string;          // e.g. 'BUY', 'SELL', 'NEUTRAL'
+  signal_ar: string;       // e.g. 'شراء', 'بيع', 'محايد'
+  direction: string | null; // 'up' | 'down' | null
+  confidence: number | null; // 0–100
+  master_score: number | null;
+  target_price: number | null;
+  stop_loss: number | null;
+}
+
 export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   const [data, setData] = useState<MakerRadarResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -507,6 +518,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   // position_size / signal_count without re-fetching.
   const [selectedStock, setSelectedStock] = useState<RadarStock | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Predictions map: ticker.toUpperCase() → latest active prediction
+  const [predMap, setPredMap] = useState<Map<string, PredictionEntry>>(new Map());
+  // Sort by upward prediction confidence (desc)
+  const [sortByPrediction, setSortByPrediction] = useState(false);
 
   // Stock universe (ticker → sector / fundamentals) — fetched once per market
   const [stockMap, setStockMap] = useState<Map<string, StockListItem> | null>(null);
@@ -557,8 +573,45 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
     }
   }, [market]);
 
+  // ─── Fetch predictions from predictions.db ─────────────────────────
+  const fetchPredictions = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/unified/predictions?market=${market}&limit=500&status=active`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const json = await res.json();
+      const rows: Record<string, unknown>[] = Array.isArray(json.predictions)
+        ? json.predictions
+        : Array.isArray(json.active_predictions)
+          ? json.active_predictions
+          : [];
+      const map = new Map<string, PredictionEntry>();
+      for (const row of rows) {
+        const ticker = String(row.ticker || '').toUpperCase();
+        if (!ticker) continue;
+        // Keep the highest-confidence entry per ticker
+        const existing = map.get(ticker);
+        const conf = row.confidence != null ? Number(row.confidence) : null;
+        if (!existing || (conf != null && (existing.confidence == null || conf > existing.confidence))) {
+          map.set(ticker, {
+            signal: String(row.signal || 'NEUTRAL'),
+            signal_ar: String(row.signal_ar || (String(row.signal || '').toLowerCase() === 'buy' ? 'شراء' : String(row.signal || '').toLowerCase() === 'sell' ? 'بيع' : 'محايد')),
+            direction: row.direction ? String(row.direction) : null,
+            confidence: conf,
+            master_score: row.master_score != null ? Number(row.master_score) : null,
+            target_price: row.target_price != null ? Number(row.target_price) : null,
+            stop_loss: row.stop_loss != null ? Number(row.stop_loss) : null,
+          });
+        }
+      }
+      setPredMap(map);
+    } catch {
+      // silent — prediction column stays empty
+    }
+  }, [market]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchStockMap(); }, [fetchStockMap]);
+  useEffect(() => { fetchPredictions(); }, [fetchPredictions]);
 
   useVisibilityAwarePolling(
     () => fetchData(true),
@@ -706,36 +759,58 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
   const marketStatus = getMarketStatus(market);
 
+  // helper: score for upward prediction sort (buy & high confidence → high)
+  const predScore = useCallback((ticker: string): number => {
+    const p = predMap.get(ticker.toUpperCase());
+    if (!p) return -1;
+    const isBuy = p.signal?.toLowerCase() === 'buy' || p.direction === 'up';
+    if (!isBuy) return -1;
+    return p.confidence ?? p.master_score ?? 0;
+  }, [predMap]);
+
+  const sortFn = useCallback((a: RadarStock, b: RadarStock): number =>
+    sortByPrediction ? predScore(b.ticker) - predScore(a.ticker) : 0,
+  [sortByPrediction, predScore]);
+
+  // helper: look up prediction for a ticker
+  const predictionForTicker = useCallback((ticker: string): PredictionEntry | null =>
+    predMap.get(ticker.toUpperCase()) || null,
+  [predMap]);
+
   // --------------------------------------------------------------------
-  // Filtering
+  // Filtering + optional prediction sort
   // --------------------------------------------------------------------
   const filteredPreSurge = useMemo(() => {
-    const list = data?.pre_surge_list || [];
-    if (filter === 'all' || filter === 'pre_surge') return list;
-    if (filter === 'tracked') return list.filter((s) => s.isTracked);
-    return [];
-  }, [data, filter]);
+    let list = data?.pre_surge_list || [];
+    if (filter !== 'all' && filter !== 'pre_surge') {
+      list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
+    }
+    return sortByPrediction ? [...list].sort(sortFn) : list;
+  }, [data, filter, sortByPrediction, sortFn]);
 
   const filteredQuiet = useMemo(() => {
-    const list = data?.quiet_list || [];
-    if (filter === 'all' || filter === 'quiet') return list;
-    if (filter === 'tracked') return list.filter((s) => s.isTracked);
-    return [];
-  }, [data, filter]);
+    let list = data?.quiet_list || [];
+    if (filter !== 'all' && filter !== 'quiet') {
+      list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
+    }
+    return sortByPrediction ? [...list].sort(sortFn) : list;
+  }, [data, filter, sortByPrediction, sortFn]);
 
   const filteredExplosive = useMemo(() => {
-    const list = data?.explosive_list || [];
-    if (filter === 'all' || filter === 'explosive') return list;
-    if (filter === 'tracked') return list.filter((s) => s.isTracked);
-    return [];
-  }, [data, filter]);
+    let list = data?.explosive_list || [];
+    if (filter !== 'all' && filter !== 'explosive') {
+      list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
+    }
+    return sortByPrediction ? [...list].sort(sortFn) : list;
+  }, [data, filter, sortByPrediction, sortFn]);
 
   const filteredEarlyBreak = useMemo(() => {
-    const list = data?.early_break_list || [];
-    if (filter === 'all' || filter === 'early_break') return list;
-    if (filter === 'tracked') return list.filter((s) => s.isTracked);
-    return [];
-  }, [data, filter]);
+    let list = data?.early_break_list || [];
+    if (filter !== 'all' && filter !== 'early_break') {
+      list = filter === 'tracked' ? list.filter((s) => s.isTracked) : [];
+    }
+    return sortByPrediction ? [...list].sort(sortFn) : list;
+  }, [data, filter, sortByPrediction, sortFn]);
 
   // --------------------------------------------------------------------
   // Loading / error states
@@ -961,6 +1036,24 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
               ) : null}
             </Button>
           ))}
+          {/* ─── Sort by prediction toggle ─── */}
+          <div className="mr-auto flex items-center gap-1.5">
+            {predMap.size > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                {predMap.size} توقع محمّل
+              </span>
+            )}
+            <Button
+              size="sm"
+              variant={sortByPrediction ? 'default' : 'outline'}
+              className={`h-7 text-xs gap-1 ${sortByPrediction ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' : ''}`}
+              onClick={() => setSortByPrediction((v) => !v)}
+              title="ترتيب الأسهم من الأعلى توقع للصعود للأدنى"
+            >
+              <TrendingUp className="h-3.5 w-3.5" />
+              {sortByPrediction ? 'مرتّب بالتوقع ✓' : 'ترتيب حسب التوقع'}
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -978,6 +1071,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
           onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
@@ -995,6 +1089,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
           onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
@@ -1012,6 +1107,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
           onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
@@ -1029,6 +1125,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
           onSelect={handleSelectStock}
           onTrackToggle={handleTrackToggle}
         />
@@ -1282,7 +1379,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
           <Layers className="h-4 w-4" />
           <span className="hidden sm:inline">خريطة القطاعات</span>
         </div>
-        <ScrollArea className="flex-1 w-full" orientation="horizontal">
+        <ScrollArea className="flex-1 w-full overflow-x-auto">
           <div className="flex items-center gap-1.5 px-1 pb-1 min-w-max">
             {sectors.map((s) => {
               const chg = s.avgChange;
@@ -1325,13 +1422,14 @@ interface RadarSectionProps {
   sectorForTicker: (ticker: string) => string | null;
   changePercentForTicker: (ticker: string) => number | null;
   stockInfoForTicker: (ticker: string) => StockListItem | null;
+  predictionForTicker: (ticker: string) => PredictionEntry | null;
   onSelect: (ticker: string, stock?: RadarStock | null) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
 const RadarSection = memo(function RadarSection({
   title, subtitle, icon, accent, stocks,
-  sectorForTicker, changePercentForTicker, stockInfoForTicker, onSelect, onTrackToggle,
+  sectorForTicker, changePercentForTicker, stockInfoForTicker, predictionForTicker, onSelect, onTrackToggle,
 }: RadarSectionProps) {
   const a = accentClasses[accent];
   return (
@@ -1367,6 +1465,7 @@ const RadarSection = memo(function RadarSection({
           sectorForTicker={sectorForTicker}
           changePercentForTicker={changePercentForTicker}
           stockInfoForTicker={stockInfoForTicker}
+          predictionForTicker={predictionForTicker}
           onSelect={onSelect}
           onTrackToggle={onTrackToggle}
         />
@@ -1384,14 +1483,15 @@ interface StockTableProps {
   sectorForTicker: (ticker: string) => string | null;
   changePercentForTicker: (ticker: string) => number | null;
   stockInfoForTicker: (ticker: string) => StockListItem | null;
+  predictionForTicker: (ticker: string) => PredictionEntry | null;
   onSelect: (ticker: string, stock?: RadarStock | null) => void;
   onTrackToggle: (ticker: string, price: number, isTracked: boolean) => void;
 }
 
-type RadarStockRow = RadarStock & { _idx: number };
+type RadarStockRow = RadarStock & { _idx: number; [key: string]: unknown };
 
 const StockTable = memo(function StockTable({
-  stocks, accent, sectorForTicker, changePercentForTicker, stockInfoForTicker, onSelect, onTrackToggle,
+  stocks, accent, sectorForTicker, changePercentForTicker, stockInfoForTicker, predictionForTicker, onSelect, onTrackToggle,
 }: StockTableProps) {
   const a = accentClasses[accent];
 
@@ -1419,7 +1519,7 @@ const StockTable = memo(function StockTable({
             <StockIconMini
               ticker={stock.ticker}
               name={sInfo?.name_ar || sInfo?.name}
-              sector={stock.sector || sInfo?.sector}
+              sector={sectorForTicker(stock.ticker) || sInfo?.sector}
               logoUrl={sInfo?.logo_url}
               className="w-6 h-6"
             />
@@ -1629,6 +1729,45 @@ const StockTable = memo(function StockTable({
       filterable: true,
       render: (stock) => stock.expected || '-',
     },
+    // ─── Prediction column: signal from predictions.db ───────────────────
+    {
+      key: '_prediction',
+      header: 'التوقع',
+      align: 'center',
+      sortable: true,
+      hideable: true,
+      render: (stock) => {
+        const pred = predictionForTicker(stock.ticker);
+        if (!pred) return <span className="text-muted-foreground text-[10px]">—</span>;
+        const isBuy = pred.signal?.toLowerCase() === 'buy' || pred.direction === 'up';
+        const isSell = pred.signal?.toLowerCase() === 'sell' || pred.direction === 'down';
+        const conf = pred.confidence ?? pred.master_score ?? null;
+        const badgeCls = isBuy
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700'
+          : isSell
+            ? 'bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700'
+            : 'bg-muted text-muted-foreground border-border';
+        const label = isBuy ? '🟢 شراء' : isSell ? '🔴 بيع' : '⚪ محايد';
+        return (
+          <div className="flex flex-col items-center gap-0.5" title={pred.target_price ? `هدف: ${fmtNum(pred.target_price)} | وقف: ${fmtNum(pred.stop_loss)}` : ''}>
+            <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap ${badgeCls}`}>
+              {label}
+            </Badge>
+            {conf != null && (
+              <div className="flex items-center gap-1 w-full px-1">
+                <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isBuy ? 'bg-emerald-500' : isSell ? 'bg-rose-500' : 'bg-muted-foreground'}`}
+                    style={{ width: `${Math.min(100, conf)}%` }}
+                  />
+                </div>
+                <span className="text-[9px] text-muted-foreground font-mono tabular-nums">{Math.round(conf)}%</span>
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
     {
       key: 'sector',
       header: 'القطاع',
@@ -1680,7 +1819,7 @@ const StockTable = memo(function StockTable({
         <MiniSparkline ticker={stock.ticker} height={28} width={100} showArea={true} />
       ),
     },
-  ], [a.badge, a.highlight, changePercentForTicker, onSelect, onTrackToggle, sectorForTicker, stockInfoForTicker]);
+  ], [a.badge, changePercentForTicker, onSelect, onTrackToggle, predictionForTicker, sectorForTicker, stockInfoForTicker]);
 
   // إضافة index لكل صف
   const data: RadarStockRow[] = useMemo(
