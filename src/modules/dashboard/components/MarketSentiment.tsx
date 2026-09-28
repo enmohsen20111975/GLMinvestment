@@ -28,9 +28,9 @@ function SentimentGauge({ score, sentiment }: { score: number; sentiment: string
       gradientStart: '#10b981',
       gradientEnd: '#34d399',
       bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      text: 'text-emerald-600 dark:text-emerald-400',
+      text: 'text-emerald-500 dark:text-emerald-400',
       label: 'صعودي',
-      labelBg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+      labelBg: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/50 dark:text-emerald-300',
     },
     neutral: {
       stroke: '#f59e0b',
@@ -134,7 +134,7 @@ export function MarketSentiment() {
   return (
     <Card className="border-0 shadow-sm h-full">
       <CardHeader className="pb-0.5 px-3 pt-2.5">
-        <CardTitle className="text-xs font-bold flex items-center gap-1.5" dir="rtl">
+        <CardTitle className="text-sm font-bold flex items-center gap-1.5" dir="rtl">
           <Activity className="w-3.5 h-3.5 text-emerald-500" />
           مؤشر المشاعر
         </CardTitle>
@@ -173,7 +173,7 @@ export function MarketSentiment() {
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] font-medium text-muted-foreground">صعود / هبوط</span>
             <div className="flex items-center gap-1 text-[10px]">
-              <span className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span className="flex items-center gap-0.5 text-emerald-500 dark:text-emerald-400 font-semibold">
                 <ArrowUpRight className="w-2.5 h-2.5" />
                 {gainers}
               </span>

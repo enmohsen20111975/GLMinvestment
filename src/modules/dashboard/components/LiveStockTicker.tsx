@@ -83,7 +83,7 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
           'group inline-flex shrink-0 items-center gap-1.5 px-3 py-1 text-xs font-medium tabular-nums transition-colors',
           'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 rounded',
           up
-            ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'
+            ? 'text-emerald-500 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40'
             : 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40',
         )}
         dir="ltr"
@@ -95,7 +95,7 @@ function TickerItem({ stock, showSeparator = true }: TickerItemProps) {
           className={cn(
             'inline-flex items-center gap-0.5 font-mono font-semibold',
             up
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-emerald-500 dark:text-emerald-400'
               : 'text-rose-600 dark:text-rose-400',
           )}
         >
@@ -247,7 +247,7 @@ export function LiveStockTicker() {
               )}
             />
           </span>
-          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-500 dark:text-emerald-400">
             <Zap className="h-3 w-3" />
             {isOpen ? 'مباشر' : 'مغلق'}
           </span>

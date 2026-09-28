@@ -65,7 +65,7 @@ interface RescueResult {
 const REC_COLORS: Record<string, string> = {
   CUT_LOSS: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-400',
   AVERAGE_DOWN: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-400',
-  HOLD: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-400',
+  HOLD: 'bg-green-100 text-emerald-500 dark:bg-green-900/40 dark:text-green-300 border-green-400',
 };
 
 const URGENCY_LABEL: Record<string, string> = {
@@ -380,14 +380,14 @@ export function BagHolderRescuePanel({
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">الخسارة/الربح</div>
-                  <div className={cn('font-bold flex items-center gap-1', result.loss_pct < 0 ? 'text-red-600' : 'text-green-600')}>
+                  <div className={cn('font-bold flex items-center gap-1', result.loss_pct < 0 ? 'text-red-600' : 'text-emerald-500')}>
                     {result.loss_pct < 0 ? <TrendingDown className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
                     {result.loss_pct >= 0 ? '+' : ''}{result.loss_pct.toFixed(1)}%
                   </div>
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">الخسارة (ج.م)</div>
-                  <div className={cn('font-bold', result.loss_egp < 0 ? 'text-red-600' : 'text-green-600')}>
+                  <div className={cn('font-bold', result.loss_egp < 0 ? 'text-red-600' : 'text-emerald-500')}>
                     {result.loss_egp >= 0 ? '+' : ''}{AR_NUM.format(Math.round(result.loss_egp))}
                   </div>
                 </div>
@@ -415,7 +415,7 @@ export function BagHolderRescuePanel({
                 <div className="flex items-center gap-2 text-sm">
                   <Activity className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">الشركة:</span>
-                  <Badge variant="outline" className={result.is_profitable ? 'border-green-300 text-green-700' : 'border-red-300 text-red-700'}>
+                  <Badge variant="outline" className={result.is_profitable ? 'border-green-300 text-emerald-500' : 'border-red-300 text-red-700'}>
                     {result.is_profitable ? '✅ ربحانية' : '❌ خاسرة'}
                   </Badge>
                   {result.fundamentals_note && (
@@ -464,7 +464,7 @@ export function BagHolderRescuePanel({
                       ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
                       : personaAdvice.recommendation === 'AVERAGE_DOWN'
                         ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
-                        : 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+                        : 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-emerald-500 dark:text-green-300'
                   )}>
                     <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                     <p>{personaAdvice.noteAr}</p>
@@ -540,9 +540,9 @@ export function BagHolderRescuePanel({
       <Card className="border-emerald-300/50">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-emerald-600" />
+            <Wallet className="h-5 w-5 text-emerald-500" />
             <h3 className="font-bold text-base">ديناميكية سداد الديون</h3>
-            <Badge variant="outline" className="border-emerald-300 text-emerald-700 dark:text-emerald-300 ml-auto">
+            <Badge variant="outline" className="border-emerald-300 text-emerald-500 dark:text-emerald-300 ml-auto">
               {personaLabelAr(persona)}
             </Badge>
           </div>
@@ -567,7 +567,7 @@ export function BagHolderRescuePanel({
 
           {profitEGP && Number(profitEGP) > 0 && (
             <div className="space-y-2 animate-in fade-in duration-300">
-              <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm leading-relaxed flex items-start gap-2">
+              <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-500 dark:text-emerald-300 text-sm leading-relaxed flex items-start gap-2">
                 <Wallet className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <p>{debtAdvice.noteAr}</p>
               </div>

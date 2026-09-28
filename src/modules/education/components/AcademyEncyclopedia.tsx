@@ -1662,9 +1662,9 @@ export function AcademyEncyclopedia() {
                       <span>·</span>
                       <span>{activeLesson.titleEn}</span>
                     </div>
-                    <h1 className="text-xl font-bold leading-tight sm:text-2xl">
+                    <h2 className="text-xl font-bold leading-tight sm:text-2xl">
                       {activeLesson.title}
-                    </h1>
+                    </h2>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                       <Badge variant={LEVEL_BADGE_VARIANT[activeLesson.level]}>
                         {LEVEL_LABELS[activeLesson.level]}

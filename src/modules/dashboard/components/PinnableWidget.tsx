@@ -41,7 +41,7 @@ export function PinnableWidget({ id, title, children, className }: PinnableWidge
       )}
     >
       <div className="flex items-center justify-between mb-2" dir="rtl">
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
           {title}
         </h3>
         <button
@@ -50,7 +50,7 @@ export function PinnableWidget({ id, title, children, className }: PinnableWidge
           className={cn(
             'inline-flex items-center justify-center h-7 w-7 rounded-md transition-colors min-w-[44px] min-h-[44px] sm:min-h-[28px] sm:min-w-[28px]',
             isPinned
-              ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+              ? 'text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           )}
           aria-pressed={isPinned}

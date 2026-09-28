@@ -18,7 +18,7 @@ interface MaestroOverview {
 }
 
 const REGIME_CONFIG = {
-  bull: { color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30', icon: TrendingUp, label: 'صاعد' },
+  bull: { color: 'text-emerald-500', bg: 'bg-green-100 dark:bg-green-900/30', icon: TrendingUp, label: 'صاعد' },
   bear: { color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/30', icon: TrendingDown, label: 'هابط' },
   range: { color: 'text-yellow-600', bg: 'bg-yellow-100 dark:bg-yellow-900/30', icon: Minus, label: 'متراوح' }
 };
@@ -133,7 +133,7 @@ export function MaestroWidget() {
           <div className="rounded-lg border p-3 text-center">
             <div className={cn(
               'text-2xl font-bold',
-              overview.avgScore >= 70 ? 'text-green-600' :
+              overview.avgScore >= 70 ? 'text-emerald-500' :
               overview.avgScore >= 50 ? 'text-yellow-600' : 'text-red-600'
             )}>
               {Math.round(overview.avgScore || 0)}%

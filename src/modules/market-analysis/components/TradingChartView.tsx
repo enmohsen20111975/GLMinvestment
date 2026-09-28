@@ -156,9 +156,9 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
         <div className="border-b border-border bg-gradient-to-r from-emerald-50 via-background to-sky-50 dark:from-emerald-950/20 dark:via-card dark:to-sky-950/20 px-4 py-4 md:px-5 md:py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-emerald-600">
+              <div className="flex items-center gap-2 text-emerald-500">
                 <LayoutGrid className="w-5 h-5" />
-                <span className="text-[10px] font-bold tracking-[0.22em] uppercase">Trading Desk</span>
+                <span className="text-xs font-bold tracking-[0.22em] uppercase">غرفة التداول</span>
               </div>
               <h1 className="text-xl md:text-2xl font-black text-foreground">
                 الشارت التفاعلي والتحليل المتقدم

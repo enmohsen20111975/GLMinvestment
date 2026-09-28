@@ -172,14 +172,14 @@ export function LoginPromptModal() {
               </div>
             </motion.div>
 
-            <motion.h2
+            <motion.p
               initial={{ y: 8, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.05 }}
               className="relative text-xl font-extrabold tracking-tight"
             >
               سجّل مجاناً للوصول الكامل
-            </motion.h2>
+            </motion.p>
 
             <motion.p
               initial={{ y: 8, opacity: 0 }}

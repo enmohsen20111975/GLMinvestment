@@ -146,7 +146,7 @@ export function SeasonalitySignalsWidget() {
             {summary && (
               <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-muted/30">
                 <div className="text-center">
-                  <span className="block text-sm font-bold text-emerald-600">{summary.buy_signals}</span>
+                  <span className="block text-sm font-bold text-emerald-500">{summary.buy_signals}</span>
                   <span className="text-[9px] text-muted-foreground">شراء</span>
                 </div>
                 <div className="text-center">

@@ -84,7 +84,7 @@ const PERIOD_LABEL: Record<PeriodKey, string> = {
 function FlowDirectionBadge({ direction }: { direction: SectorFlow['flow_direction'] }) {
   if (direction === 'inflow') {
     return (
-      <Badge className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
+      <Badge className="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
         <ArrowDownToLine className="w-3 h-3 ml-1" />
         داخلة
       </Badge>
@@ -124,7 +124,7 @@ function StockFlowRow({ stock }: { stock: StockFlowItem }) {
           className={cn(
             'text-[11px] font-bold',
             stock.latest_change_pct > 0
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-emerald-500 dark:text-emerald-400'
               : stock.latest_change_pct < 0
               ? 'text-red-600 dark:text-red-400'
               : 'text-muted-foreground'
@@ -235,7 +235,7 @@ export function LiquidityFlowPanel() {
               {marketNameAr}
             </Badge>
             {summary.net_flow_direction === 'inflow' && (
-              <Badge className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+              <Badge className="text-[10px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30">
                 <TrendingUp className="w-3 h-3 ml-1" />
                 صافي تدفّق داخلي
               </Badge>
@@ -279,7 +279,7 @@ export function LiquidityFlowPanel() {
               </div>
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">قطاعات صاعدة</div>
-                <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{summary.advancing_sectors}</div>
+                <div className="text-sm font-bold text-emerald-500 dark:text-emerald-400">{summary.advancing_sectors}</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
                 <div className="text-[10px] text-muted-foreground">قطاعات هابطة</div>
@@ -325,7 +325,7 @@ export function LiquidityFlowPanel() {
                           className={cn(
                             'text-center p-1.5 font-semibold whitespace-nowrap',
                             s.avg_change_pct > 0
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-emerald-500 dark:text-emerald-400'
                               : s.avg_change_pct < 0
                               ? 'text-red-600 dark:text-red-400'
                               : 'text-muted-foreground'
@@ -348,8 +348,8 @@ export function LiquidityFlowPanel() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowDownToLine className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">سيولة داخلة</span>
+                  <ArrowDownToLine className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                  <span className="text-xs font-semibold text-emerald-500 dark:text-emerald-400">سيولة داخلة</span>
                 </div>
                 {top_inflow_stocks.length === 0 ? (
                   <div className="text-[11px] text-muted-foreground py-2">لا توجد سيولة داخلة في النافذة الحالية</div>

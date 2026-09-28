@@ -154,7 +154,7 @@ export function CryptoSignalsWidget() {
             {fearGreed && (
               <div className="p-2 rounded-lg bg-muted/50 border border-border/50">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-medium text-muted-foreground">Fear & Greed Index</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">مؤشر الخوف والطمع</span>
                   <Badge className={cn('text-[9px] text-white', fearGreedColor(fearGreed.value))}>
                     {fearGreed.value} - {fearGreedLabel(fearGreed.value)}
                   </Badge>
@@ -200,7 +200,7 @@ export function CryptoSignalsWidget() {
                       ) : (
                         <TrendingDown className="w-3 h-3 text-red-500" />
                       )}
-                      <span className={crypto.price_change_percentage_24h >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                      <span className={crypto.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-red-600'}>
                         {crypto.price_change_percentage_24h >= 0 ? '+' : ''}{crypto.price_change_percentage_24h?.toFixed(2)}%
                       </span>
                     </div>
@@ -216,8 +216,8 @@ export function CryptoSignalsWidget() {
                 <span className="text-[10px] font-medium">أداء المؤشرات المُختبرة</span>
               </div>
               <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
-                <div><span className="block font-bold text-emerald-600">63.6%</span><span className="text-muted-foreground">VWAP</span></div>
-                <div><span className="block font-bold text-emerald-600">55.2%</span><span className="text-muted-foreground">Stoch</span></div>
+                <div><span className="block font-bold text-emerald-500">63.6%</span><span className="text-muted-foreground">VWAP</span></div>
+                <div><span className="block font-bold text-emerald-500">55.2%</span><span className="text-muted-foreground">Stoch</span></div>
                 <div><span className="block font-bold text-amber-600">53%</span><span className="text-muted-foreground">EMA</span></div>
               </div>
             </div>

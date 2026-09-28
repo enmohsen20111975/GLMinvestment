@@ -107,7 +107,7 @@ export function StockSearchDropdown({
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">{(stock.current_price ?? 0) > 0 ? (stock.current_price ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                   {(stock.price_change ?? 0) >= 0 ? '+' : ''}{(stock.price_change ?? 0).toFixed(2)}%
                 </div>
               </div>

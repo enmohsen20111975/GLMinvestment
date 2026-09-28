@@ -521,7 +521,7 @@ export function SingleStockAnalysisView({
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
-            <div className="flex bg-muted border border-border rounded-xl p-0.5 text-[10px] font-semibold">
+            <div className="flex bg-muted border border-border rounded-xl p-0.5 text-[10px] font-semibold gap-1">
               {[
                 { label: '5M', key: '5M' },
                 { label: '15M', key: '15M' },

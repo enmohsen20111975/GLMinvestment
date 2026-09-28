@@ -51,7 +51,7 @@ function TickerCard({ item }: { item: TickerItem }) {
       <span
         className={cn(
           'tabular-nums font-semibold',
-          isPositive ? 'text-emerald-600 dark:text-emerald-400' : isNegative ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+          isPositive ? 'text-emerald-500 dark:text-emerald-400' : isNegative ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
         )}
       >
         {isPositive ? '+' : ''}
@@ -161,7 +161,7 @@ export function RealtimeTicker() {
             {isConnected ? (
               <>
                 <Wifi className="w-3 h-3 text-emerald-500" />
-                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hidden xs:inline">مباشر</span>
+                <span className="text-[10px] font-medium text-emerald-500 dark:text-emerald-400 hidden xs:inline">مباشر</span>
               </>
             ) : (
               <>

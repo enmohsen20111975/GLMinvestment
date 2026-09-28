@@ -513,21 +513,38 @@ function NewsCard({ item }: { item: NewsItem }) {
                 </div>
               </div>
 
-              {/* Title */}
-              <h2 className="text-base md:text-xl font-bold text-foreground leading-snug tracking-tight mb-3">
-                {item.url ? (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary transition-colors inline-flex items-center gap-1"
-                  >
-                    {item.title}
-                  </a>
-                ) : (
-                  item.title
-                )}
-              </h2>
+              {/* Title — UI-FIX-P2-P3 issue 2.12: market-data items (sentiment/market) are H3 inside the news list, news items stay H2 */}
+              {item.category === 'sentiment' || item.category === 'market' ? (
+                <h3 className="text-base md:text-lg font-semibold text-foreground leading-snug tracking-tight mb-3">
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    item.title
+                  )}
+                </h3>
+              ) : (
+                <h2 className="text-base md:text-xl font-bold text-foreground leading-snug tracking-tight mb-3">
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                    >
+                      {item.title}
+                    </a>
+                  ) : (
+                    item.title
+                  )}
+                </h2>
+              )}
 
               {/* Featured Image from Source */}
               <SourceImageViewer images={item.image_paths} title={item.title} source={item.source} />
@@ -588,6 +605,8 @@ export function NewsFeedView() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [marketFilter, setMarketFilter] = useState<'all' | 'EGX' | 'global'>('all');
+  // UI-FIX-P2-P3 issue 2.11: paginate news feed — 12 per page (was rendering all at once, felt sparse when only ~7 came back from API)
+  const [visibleCount, setVisibleCount] = useState(12);
 
   const fetchNews = useCallback(async () => {
     try {
@@ -646,6 +665,14 @@ export function NewsFeedView() {
 
     return list;
   }, [data?.news, marketFilter, searchQuery]);
+
+  // UI-FIX-P2-P3 issue 2.11: reset visible count when filters/search change
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [marketFilter, searchQuery, data?.news]);
+
+  const visibleNews = useMemo(() => filteredNews.slice(0, visibleCount), [filteredNews, visibleCount]);
+  const hasMore = filteredNews.length > visibleNews.length;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6" dir="rtl">
@@ -792,10 +819,24 @@ export function NewsFeedView() {
 
       {/* News Feed List */}
       <div className="space-y-4">
-        {filteredNews.map((item) => (
+        {visibleNews.map((item) => (
           <NewsCard key={item.id} item={item} />
         ))}
       </div>
+
+      {/* Load More — UI-FIX-P2-P3 issue 2.11: paginate (12 per page) instead of dumping all */}
+      {hasMore && (
+        <div className="flex justify-center pt-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setVisibleCount((c) => c + 12)}
+            className="min-h-[44px]"
+          >
+            عرض المزيد من الأخبار ({filteredNews.length - visibleNews.length} متبقي)
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

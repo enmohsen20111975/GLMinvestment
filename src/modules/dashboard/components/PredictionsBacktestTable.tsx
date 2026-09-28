@@ -100,7 +100,7 @@ function StatusBadge({ status }: { status: string }) {
   const s = status || 'unknown';
   if (WIN_STATUSES.has(s)) {
     return (
-      <Badge className="text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
+      <Badge className="text-[9px] bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
         <CheckCircle2 className="w-2.5 h-2.5 ml-0.5" />نجح
       </Badge>
     );
@@ -130,10 +130,10 @@ function StatusBadge({ status }: { status: string }) {
 function SignalBadge({ signal }: { signal: string }) {
   const s = (signal || '').toUpperCase();
   if (s.includes('BUY') && !s.includes('STRONG')) {
-    return <Badge className="text-[9px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">شراء</Badge>;
+    return <Badge className="text-[9px] bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border-emerald-500/30">شراء</Badge>;
   }
   if (s.includes('STRONG_BUY')) {
-    return <Badge className="text-[9px] bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/40 font-semibold">شراء قوي</Badge>;
+    return <Badge className="text-[9px] bg-emerald-600/20 text-emerald-500 dark:text-emerald-400 border-emerald-500/40 font-semibold">شراء قوي</Badge>;
   }
   if (s.includes('SELL')) {
     return <Badge className="text-[9px] bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30">بيع</Badge>;
@@ -191,7 +191,7 @@ const backtestColumns: Column<BacktestRow>[] = [
     header: 'الهدف',
     align: 'left',
     sortable: true,
-    className: 'font-mono text-emerald-700 dark:text-emerald-400',
+    className: 'font-mono text-emerald-500 dark:text-emerald-400',
     render: (r) => fmtNum(r.target_price),
   },
   {
@@ -219,7 +219,7 @@ const backtestColumns: Column<BacktestRow>[] = [
       const ret = r.actual_return;
       if (ret == null) return <span className="text-muted-foreground">—</span>;
       const cls = ret > 0
-        ? 'text-emerald-600 dark:text-emerald-400'
+        ? 'text-emerald-500 dark:text-emerald-400'
         : ret < 0
         ? 'text-red-600 dark:text-red-400'
         : 'text-muted-foreground';
@@ -457,7 +457,7 @@ export function PredictionsBacktestTable() {
                     <span className="text-muted-foreground">{b.total} توقّع</span>
                     <span className={cn(
                       'font-semibold',
-                      b.win_rate >= 50 ? 'text-emerald-600 dark:text-emerald-400' :
+                      b.win_rate >= 50 ? 'text-emerald-500 dark:text-emerald-400' :
                       b.win_rate > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
                     )}>
                       {b.win_rate.toFixed(0)}%
@@ -512,7 +512,7 @@ function KpiCard({
         <div
           className={cn(
             'text-base sm:text-lg font-bold',
-            tone === 'pos' ? 'text-emerald-600 dark:text-emerald-400' :
+            tone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
             tone === 'neg' ? 'text-red-600 dark:text-red-400' : ''
           )}
         >
@@ -522,7 +522,7 @@ function KpiCard({
       {icon && (
         <div className={cn(
           'opacity-70',
-          tone === 'pos' ? 'text-emerald-600 dark:text-emerald-400' :
+          tone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
           tone === 'neg' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
         )}>
           {icon}

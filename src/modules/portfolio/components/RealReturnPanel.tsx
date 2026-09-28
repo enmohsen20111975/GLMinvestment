@@ -158,11 +158,11 @@ export function RealReturnPanel() {
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">العائد المرجح</div>
-            <div className="font-bold text-green-600">{data.summary.weighted_yield.toFixed(1)}%</div>
+            <div className="font-bold text-emerald-500">{data.summary.weighted_yield.toFixed(1)}%</div>
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">العائد الحقيقي</div>
-            <div className={cn('font-bold', data.summary.weighted_real_return < 0 ? 'text-red-600' : 'text-green-600')}>
+            <div className={cn('font-bold', data.summary.weighted_real_return < 0 ? 'text-red-600' : 'text-emerald-500')}>
               {data.summary.weighted_real_return.toFixed(1)}%
             </div>
           </div>
@@ -214,7 +214,7 @@ export function RealReturnPanel() {
                       ) : (
                         <TrendingUp className="h-4 w-4 text-green-500" />
                       )}
-                      <span className={cn('font-bold', a.real_return < 0 ? 'text-red-600' : 'text-green-600')}>
+                      <span className={cn('font-bold', a.real_return < 0 ? 'text-red-600' : 'text-emerald-500')}>
                         {a.real_return >= 0 ? '+' : ''}{a.real_return.toFixed(1)}%
                       </span>
                     </div>

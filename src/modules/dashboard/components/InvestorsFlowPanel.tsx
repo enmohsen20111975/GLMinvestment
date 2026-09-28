@@ -146,7 +146,7 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
     className: 'tabular-nums font-semibold',
     render: (s) => {
       const cls = s.avg_change_pct > 0
-        ? 'text-emerald-600 dark:text-emerald-400'
+        ? 'text-emerald-500 dark:text-emerald-400'
         : s.avg_change_pct < 0
         ? 'text-red-600 dark:text-red-400'
         : 'text-muted-foreground';
@@ -164,7 +164,7 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
         <Badge
           className={cn(
             'text-[9px] px-1 py-0',
-            isInflow && 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300',
+            isInflow && 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 dark:text-emerald-300',
             isOutflow && 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-300',
             !isInflow && !isOutflow && 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-300'
           )}
@@ -348,7 +348,7 @@ export function InvestorsFlowPanel() {
         <div className="grid grid-cols-2 gap-2">
           {/* Inflow */}
           <div className="space-y-1">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-500 dark:text-emerald-400">
               <TrendingUp className="w-3 h-3" />
               سيولة داخلة
             </div>
@@ -359,7 +359,7 @@ export function InvestorsFlowPanel() {
                     <span className="font-bold">{s.ticker}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-emerald-600 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
+                    <span className="text-emerald-500 font-semibold tabular-nums">{fmtPct(s.latest_change_pct)}</span>
                     <span className="text-muted-foreground tabular-nums">{fmtNum(s.total_turnover)}</span>
                   </div>
                 </div>
@@ -406,7 +406,7 @@ export function InvestorsFlowPanel() {
             إجمالي السيولة: <span className="font-bold text-foreground">{fmtNum(data.summary.total_turnover)}</span>
           </span>
           <span>
-            قطاعات صاعدة: <span className="font-bold text-emerald-600">{data.summary.advancing_sectors}</span>
+            قطاعات صاعدة: <span className="font-bold text-emerald-500">{data.summary.advancing_sectors}</span>
             {' / '}
             <span className="font-bold text-red-600">{data.summary.declining_sectors}</span> هابطة
           </span>
@@ -441,7 +441,7 @@ function InvestorsTable({
     const sign = n >= 0 ? '+' : '';
     return {
       text: `${sign}${fmtNum(n)}`,
-      cls: n > 0 ? 'text-emerald-600 dark:text-emerald-400' : n < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground',
+      cls: n > 0 ? 'text-emerald-500 dark:text-emerald-400' : n < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground',
     };
   };
 
@@ -458,7 +458,7 @@ function InvestorsTable({
             'text-[9px] px-1 py-0',
             autoSeeded
               ? 'text-amber-600 dark:text-amber-400 border-amber-500/30'
-              : 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+              : 'text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
           )}
           title={source}
         >

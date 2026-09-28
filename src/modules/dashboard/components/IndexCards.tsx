@@ -25,7 +25,7 @@ function IndexCard({ index }: { index: MarketIndex }) {
 
   // Color coding per index
   const colorMap: Record<string, { accent: string; ring: string; text: string }> = {
-    EGX30: { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
+    EGX30: { accent: 'bg-emerald-500', ring: 'ring-emerald-500/20', text: 'text-emerald-500 dark:text-emerald-400' },
     EGX70: { accent: 'bg-amber-500', ring: 'ring-amber-500/20', text: 'text-amber-600 dark:text-amber-400' },
     EGX100: { accent: 'bg-teal-500', ring: 'ring-teal-500/20', text: 'text-teal-600 dark:text-teal-400' },
     EGX33: { accent: 'bg-rose-500', ring: 'ring-rose-500/20', text: 'text-rose-600 dark:text-rose-400' },
@@ -42,7 +42,7 @@ function IndexCard({ index }: { index: MarketIndex }) {
             'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide',
             colors.ring,
             isPositive
-              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+              ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300'
               : 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300'
           )}>
             {index.symbol}
@@ -72,7 +72,7 @@ function IndexCard({ index }: { index: MarketIndex }) {
           <span className={cn(
             'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-semibold tabular-nums',
             isPositive
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+              ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/50 dark:text-emerald-300'
               : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
           )}>
             {isPositive ? '+' : ''}
@@ -81,7 +81,7 @@ function IndexCard({ index }: { index: MarketIndex }) {
           <span className={cn(
             'text-[11px] font-medium tabular-nums',
             isPositive
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-emerald-500 dark:text-emerald-400'
               : 'text-red-600 dark:text-red-400'
           )}>
             {isPositive ? '+' : ''}

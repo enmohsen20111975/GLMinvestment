@@ -180,7 +180,7 @@ const ASSET_TYPE_LABELS: Record<AssetType, string> = {
 };
 
 const ASSET_TYPE_COLORS: Record<AssetType, string> = {
-  stock: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  stock: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400',
   gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   bank: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   certificate: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -242,7 +242,7 @@ const OBLIGATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const OBLIGATION_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  active: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400',
   paid: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
@@ -341,7 +341,7 @@ function StockSearchDropdown({
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">{(stock.current_price ?? 0) > 0 ? (stock.current_price ?? 0).toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                <div className={cn('text-xs font-medium', (stock.price_change ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                   {(stock.price_change ?? 0) >= 0 ? '+' : ''}{(stock.price_change ?? 0).toFixed(2)}%
                 </div>
               </div>
@@ -455,7 +455,7 @@ function CryptoSearchDropdown({
               </div>
               <div className="text-left flex-shrink-0">
                 <div className="text-sm font-semibold" dir="ltr">${coin.price_usd > 0 ? coin.price_usd.toFixed(2) : '—'}</div>
-                <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                   {coin.change_24h >= 0 ? '+' : ''}{coin.change_24h.toFixed(2)}%
                 </div>
               </div>
@@ -1047,14 +1047,14 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           other side — opens DynamicRiskProfilerModal to recompute the persona. */}
       <div className="flex items-center justify-between gap-2 flex-wrap" dir="rtl">
         <div className="flex items-center gap-2">
-          <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
+          <Badge className="text-[10px] gap-1 bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
             <Shield className="w-3 h-3" />
             شخصية: {personaLabelAr(persona)}
           </Badge>
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-emerald-600"
+            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-emerald-500"
             onClick={() => setProfilerOpen(true)}
           >
             <RefreshCw className="w-3 h-3 ml-1" />
@@ -1092,7 +1092,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             <Wallet className="w-4 h-4 text-emerald-500" />
             <span className="text-xs font-medium">صافي الثروة</span>
           </div>
-          <p className={cn('text-lg md:text-xl font-bold', (netWorthData?.net ?? netWealth) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+          <p className={cn('text-lg md:text-xl font-bold', (netWorthData?.net ?? netWealth) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
             {formatCurrency(netWorthData?.net ?? netWealth)}
           </p>
         </Card>
@@ -1101,7 +1101,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
             <Coins className="w-4 h-4 text-emerald-500" />
             <span className="text-xs font-medium">العائد الشهري</span>
           </div>
-          <p className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">
+          <p className="text-lg md:text-xl font-bold text-emerald-500 dark:text-emerald-400">
             {formatCurrency(netWorthData?.monthlyYield ?? 0)}
           </p>
           {netWorthData && netWorthData.annualYield > 0 && (
@@ -1186,12 +1186,12 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                       <span className="text-muted-foreground">القيمة: </span>
                       <span className="font-semibold">{formatCurrency(groupCurrentValue)}</span>
                     </div>
-                    <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                    <div className={cn('text-left font-semibold', groupProfitLoss >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                       {formatPercent(groupProfitLossPercent)}
                     </div>
                     {/* Show interest for bank/certificate/fund */}
                     {['bank', 'certificate', 'fund'].includes(groupType) && groupYearlyInterest > 0 && (
-                      <div className="text-left text-emerald-600 dark:text-emerald-400">
+                      <div className="text-left text-emerald-500 dark:text-emerald-400">
                         <span className="text-xs">عائد سنوي: </span>
                         <span className="font-semibold">{formatCurrency(groupYearlyInterest)}</span>
                       </div>
@@ -1401,7 +1401,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Profit/Loss */}
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">الربح/الخسارة</span>
-                              <span className={cn('font-semibold', gl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                              <span className={cn('font-semibold', gl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                                 {gl >= 0 ? '+' : ''}{formatCurrency(gl)} ({formatPercent(glPct)})
                               </span>
                             </div>
@@ -1410,7 +1410,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">تغيير اليوم</span>
-                                <span className={cn('font-medium', priceChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+                                <span className={cn('font-medium', priceChange >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                                   {formatPercent(priceChange)}
                                 </span>
                               </div>
@@ -1419,7 +1419,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {/* Interest-bearing assets: Show interest breakdown */}
                             {isInterestBearing && (rate > 0 || yearlyInterest > 0) && (
                               <>
-                                <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 pt-1 border-t border-dashed">
+                                <div className="flex justify-between text-sm text-emerald-500 dark:text-emerald-400 pt-1 border-t border-dashed">
                                   <span className="text-muted-foreground">العائد السنوي المتوقع</span>
                                   <span className="font-semibold">{formatCurrency(yearlyInterest)}</span>
                                 </div>
@@ -1435,7 +1435,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-xs">
                                     <div className="flex justify-between">
                                       <span className="text-muted-foreground">الفائدة المكتسبة</span>
-                                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                      <span className="font-semibold text-emerald-500 dark:text-emerald-400">
                                         {formatCurrency(accruedInterest)}
                                       </span>
                                     </div>
@@ -1458,7 +1458,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
                               {weightGrams ? `${weightGrams.toLocaleString('ar-EG')} جرام` : ''} {karat ? `عيار ${karat}` : ''}
                               {livePricePerGram > 0 && (
-                                <span className="block mt-1 text-emerald-600 dark:text-emerald-400">
+                                <span className="block mt-1 text-emerald-500 dark:text-emerald-400">
                                   سعر الجرام الحالي: {livePricePerGram.toFixed(2)} ج.م
                                 </span>
                               )}
@@ -1541,7 +1541,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
                     <span className="text-muted-foreground">إجمالي التكلفة: </span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(parseFloat(formTotalInvested))}</span>
+                    <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(parseFloat(formTotalInvested))}</span>
                   </div>
                 )}
               </>
@@ -1608,7 +1608,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formWeight && formCurrentValue && parseFloat(formCurrentValue) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm flex justify-between">
                     <span className="text-muted-foreground">القيمة الحالية:</span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(parseFloat(formCurrentValue))}</span>
+                    <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(parseFloat(formCurrentValue))}</span>
                   </div>
                 )}
               </>
@@ -1664,11 +1664,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formFundType === 'fixed_income' && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
                     <div className="space-y-2">
-                      <Label className="text-emerald-700 dark:text-emerald-400">العائد السنوي %</Label>
+                      <Label className="text-emerald-500 dark:text-emerald-400">العائد السنوي %</Label>
                       <Input type="number" step="0.01" value={formAnnualReturn} onChange={(e) => setFormAnnualReturn(e.target.value)} placeholder="مثال: 15.5" dir="ltr" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-emerald-700 dark:text-emerald-400">نوع العائد</Label>
+                      <Label className="text-emerald-500 dark:text-emerald-400">نوع العائد</Label>
                       <Select value={formReturnType} onValueChange={(v) => setFormReturnType(v as 'annual' | 'monthly' | 'daily')}>
                         <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -1679,7 +1679,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-emerald-700 dark:text-emerald-400">تاريخ الشراء</Label>
+                      <Label className="text-emerald-500 dark:text-emerald-400">تاريخ الشراء</Label>
                       <Input type="date" value={formPurchaseDate} onChange={(e) => setFormPurchaseDate(e.target.value)} dir="ltr" />
                     </div>
                     <p className="text-[11px] text-muted-foreground sm:col-span-3">
@@ -1744,7 +1744,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formQuantity && formAvgBuyPrice && parseFloat(formTotalInvested) > 0 && (
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md px-3 py-2 text-sm">
                     <span className="text-muted-foreground">إجمالي التكلفة (USD): </span>
-                    <span className="font-bold text-emerald-700 dark:text-emerald-400">${parseFloat(formTotalInvested).toFixed(2)}</span>
+                    <span className="font-bold text-emerald-500 dark:text-emerald-400">${parseFloat(formTotalInvested).toFixed(2)}</span>
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
@@ -1867,7 +1867,7 @@ function WealthAllocationMatrixCard({
     critical: 'border-red-400 dark:border-red-700/70',
   };
   const severityText: Record<WealthAllocationAlert['severity'], string> = {
-    ok: 'text-emerald-600 dark:text-emerald-400',
+    ok: 'text-emerald-500 dark:text-emerald-400',
     warning: 'text-amber-600 dark:text-amber-400',
     critical: 'text-red-600 dark:text-red-400',
   };
@@ -1968,7 +1968,7 @@ function WealthAllocationMatrixCard({
             إعادة التوازن التلقائي
           </Button>
           {visibleAlerts.length === 0 && (
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <span className="text-[11px] text-emerald-500 dark:text-emerald-400 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               المحفظة متوازنة وفقاً لشخصيتك الاستثمارية
             </span>
@@ -2086,7 +2086,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (t) => (
-        <Badge className={t.type === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
+        <Badge className={t.type === 'income' ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}>
           {t.type === 'income' ? 'دخل' : 'مصروف'}
         </Badge>
       ),
@@ -2105,7 +2105,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       sortable: true,
       filterable: true,
       render: (t) => (
-        <span className={cn('font-semibold text-sm', t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+        <span className={cn('font-semibold text-sm', t.type === 'income' ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
           {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
         </span>
       ),
@@ -2198,7 +2198,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
               <ArrowUpRight className="w-4 h-4 text-emerald-500" />
               <span className="text-xs font-medium">إجمالي الدخل</span>
             </div>
-            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(summary.total_income)}</p>
+            <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(summary.total_income)}</p>
           </Card>
           <Card className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -2782,7 +2782,7 @@ const ReportsTab = memo(function ReportsTab() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <Wallet className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
             نظرة عامة على الحالة المالية
           </CardTitle>
         </CardHeader>
@@ -2790,7 +2790,7 @@ const ReportsTab = memo(function ReportsTab() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
               <p className="text-xs text-muted-foreground mb-1">إجمالي الأصول</p>
-              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalAssets)}</p>
+              <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(totalAssets)}</p>
               <p className="text-[10px] text-muted-foreground mt-1">أسهم + ذهب + بنك + شهادات + صناديق</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
@@ -2821,7 +2821,7 @@ const ReportsTab = memo(function ReportsTab() {
         <Card className="border-emerald-200 dark:border-emerald-800">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
               عوائد الاستثمارات الشهرية
             </CardTitle>
           </CardHeader>
@@ -2847,12 +2847,12 @@ const ReportsTab = memo(function ReportsTab() {
               )}
               <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
                 <p className="text-xs text-muted-foreground mb-1">إجمالي العائد الشهري</p>
-                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(investmentReturns.total_monthly)}</p>
+                <p className="text-base font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(investmentReturns.total_monthly)}</p>
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
               <span className="text-sm text-muted-foreground">العائد السنوي المتوقع</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(investmentReturns.total_yearly)}</span>
+              <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatCurrency(investmentReturns.total_yearly)}</span>
             </div>
           </CardContent>
         </Card>
@@ -2863,7 +2863,7 @@ const ReportsTab = memo(function ReportsTab() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
               الدخل مقابل المصروفات (الشهر الحالي)
             </CardTitle>
           </CardHeader>
@@ -2872,7 +2872,7 @@ const ReportsTab = memo(function ReportsTab() {
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">إجمالي الدخل</span>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(reports.monthly_income)}</span>
+                  <span className="font-medium text-emerald-500 dark:text-emerald-400">{formatCurrency(reports.monthly_income)}</span>
                 </div>
                 <div className="h-3 rounded-full bg-muted overflow-hidden">
                   <div className="h-full rounded-full bg-emerald-400" style={{ width: '100%' }} />
@@ -2902,7 +2902,7 @@ const ReportsTab = memo(function ReportsTab() {
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
               <span className="text-sm text-muted-foreground">صافي الادخار الشهري</span>
-              <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
+              <span className={cn('font-bold', (reports.monthly_savings ?? 0) >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(reports.monthly_savings)}
               </span>
             </div>
@@ -2947,7 +2947,7 @@ const ReportsTab = memo(function ReportsTab() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Coins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Coins className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
               توزيع الأصول
             </CardTitle>
           </CardHeader>
@@ -2991,7 +2991,7 @@ const ReportsTab = memo(function ReportsTab() {
             <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-sm">تقييم صحة المحفظة</span>
-                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
                   {Math.min(100, Math.round(
                     (netWorth > 0 ? 25 : 0) +
                     ((investmentReturns?.total_yearly || 0) > 0 ? 25 : 0) +
@@ -3063,7 +3063,7 @@ const ReportsTab = memo(function ReportsTab() {
                       <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                         <PiggyBank className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">صندوق الطوارئ</p>
+                          <p className="text-sm font-medium text-emerald-500 dark:text-emerald-200">صندوق الطوارئ</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             ادخار 3-6 أشهر من المصروفات ({formatCurrency((reports?.monthly_expenses || 0) * 3)} - {formatCurrency((reports?.monthly_expenses || 0) * 6)}) في حساب منفصل للطوارئ.
                           </p>
@@ -3083,7 +3083,7 @@ const ReportsTab = memo(function ReportsTab() {
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                 <div className="text-center p-2 rounded bg-white/50 dark:bg-black/20">
-                  <p className="font-bold text-emerald-600">50%</p>
+                  <p className="font-bold text-emerald-500">50%</p>
                   <p className="text-muted-foreground">احتياجات أساسية</p>
                   <p className="font-medium">{formatCurrency((reports?.monthly_income || 0) * 0.5)}</p>
                 </div>
@@ -3137,7 +3137,7 @@ export function EnhancedPortfolioView() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Wallet className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div>
               <h1 className="text-xl font-bold">المحفظة المالية</h1>

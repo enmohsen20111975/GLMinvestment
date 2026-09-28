@@ -263,7 +263,7 @@ function getMarketStatusConfig(status: MarketData['market_status']): StatusConfi
     case 'OPEN':
       return {
         label: 'السوق مفتوح',
-        color: 'text-emerald-600 dark:text-emerald-400',
+        color: 'text-emerald-500 dark:text-emerald-400',
         chipBg:
           'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/50 dark:border-emerald-800',
         icon: Activity,
@@ -364,7 +364,7 @@ function MarketStatusBanner({
                   className={cn(
                     "gap-1 text-[11px] px-2 py-0.5 font-medium mr-2",
                     egxStatus.isOpen
-                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 dark:text-emerald-400"
                       : "bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400"
                   )}
                 >
@@ -411,7 +411,7 @@ function MarketStatusBanner({
               className={cn(
                 'flex items-center gap-1 text-sm font-bold tabular-nums transition-colors',
                 egxUp
-                  ? 'text-emerald-600 dark:text-emerald-400'
+                  ? 'text-emerald-500 dark:text-emerald-400'
                   : 'text-rose-600 dark:text-rose-400',
               )}
               dir="ltr"
@@ -474,7 +474,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
     {
       title: 'الأسعار المحدثة',
       icon: Zap,
-      accentClass: 'text-emerald-600 dark:text-emerald-400',
+      accentClass: 'text-emerald-500 dark:text-emerald-400',
       main: (
         <div className="flex items-baseline gap-1.5">
           <span className="text-2xl font-bold tabular-nums text-slate-900 dark:text-white">
@@ -489,7 +489,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
       title: 'حالة المجدول',
       icon: Server,
       accentClass: scheduler.market_open
-        ? 'text-emerald-600 dark:text-emerald-400'
+        ? 'text-emerald-500 dark:text-emerald-400'
         : 'text-slate-500 dark:text-slate-400',
       main: (
         <div className="flex items-center gap-2">
@@ -497,7 +497,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
             className={cn(
               'text-2xl font-bold transition-colors',
               scheduler.market_open
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-emerald-500 dark:text-emerald-400'
                 : 'text-slate-500 dark:text-slate-400',
             )}
           >
@@ -530,7 +530,7 @@ function SystemHealthCards({ data }: { data: MarketData }) {
       title: 'مرحلة السوق',
       icon: Activity,
       accentClass: regime?.trading_allowed
-        ? 'text-emerald-600 dark:text-emerald-400'
+        ? 'text-emerald-500 dark:text-emerald-400'
         : 'text-rose-600 dark:text-rose-400',
       main: (
         <div className="flex items-baseline gap-1.5">
@@ -592,7 +592,7 @@ const TYPE_BADGE: Record<
   },
   bank: {
     label: 'بنك',
-    cls: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900',
+    cls: 'bg-emerald-100 text-emerald-500 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900',
   },
   cash: {
     label: 'نقد',
@@ -625,7 +625,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
   const { portfolio } = data;
   const isPositive = portfolio.total_gain_loss >= 0;
   const totalColor = isPositive
-    ? 'text-emerald-600 dark:text-emerald-400'
+    ? 'text-emerald-500 dark:text-emerald-400'
     : 'text-rose-600 dark:text-rose-400';
   const totalBorder = isPositive
     ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30'
@@ -692,7 +692,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
               <span
                 className={cn(
                   'font-medium transition-colors',
-                  recent && 'text-emerald-600 dark:text-emerald-400',
+                  recent && 'text-emerald-500 dark:text-emerald-400',
                 )}
               >
                 {formatNumber(item.live_price)}
@@ -726,7 +726,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
       render: (item) => {
         const positive = item.gain_loss >= 0;
         const gainColor = positive
-          ? 'text-emerald-600 dark:text-emerald-400'
+          ? 'text-emerald-500 dark:text-emerald-400'
           : 'text-rose-600 dark:text-rose-400';
         return (
           <span
@@ -750,7 +750,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
       render: (item) => {
         const positive = item.gain_loss >= 0;
         const gainColor = positive
-          ? 'text-emerald-600 dark:text-emerald-400'
+          ? 'text-emerald-500 dark:text-emerald-400'
           : 'text-rose-600 dark:text-rose-400';
         return (
           <span
@@ -773,7 +773,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/50">
-              <Wallet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <Wallet className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
             </div>
             <div>
               <CardTitle className="text-base">مراقبة المحفظة المباشرة</CardTitle>
@@ -784,7 +784,7 @@ function PortfolioMonitor({ data }: { data: MarketData }) {
           </div>
           <Badge
             variant="outline"
-            className="gap-1 border-emerald-200 text-xs text-emerald-700 dark:border-emerald-900 dark:text-emerald-300"
+            className="gap-1 border-emerald-200 text-xs text-emerald-500 dark:border-emerald-900 dark:text-emerald-300"
           >
             <Radio className="h-3 w-3 animate-pulse text-emerald-500" />
             مباشر
@@ -873,10 +873,10 @@ function MoverRow({
   const isGainer = type === 'gainer';
   const up = stock.change_percent >= 0;
   const accentColor = isGainer
-    ? 'text-emerald-600 dark:text-emerald-400'
+    ? 'text-emerald-500 dark:text-emerald-400'
     : 'text-rose-600 dark:text-rose-400';
   const numBg = isGainer
-    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+    ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950/50 dark:text-emerald-300'
     : 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300';
 
   return (
@@ -951,7 +951,7 @@ function MoversCard({
             )}
           >
             {isGainer ? (
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
             ) : (
               <TrendingDown className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
             )}
@@ -960,7 +960,7 @@ function MoversCard({
             className={cn(
               'text-sm',
               isGainer
-                ? 'text-emerald-700 dark:text-emerald-400'
+                ? 'text-emerald-500 dark:text-emerald-400'
                 : 'text-rose-700 dark:text-rose-400',
             )}
           >
@@ -1203,7 +1203,7 @@ export function LiveMonitor() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 dark:bg-slate-100">
-            <Activity className="h-5 w-5 text-emerald-400 dark:text-emerald-600" />
+            <Activity className="h-5 w-5 text-emerald-400 dark:text-emerald-500" />
             <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -1280,9 +1280,9 @@ function DataSourcesCard({ sources }: { sources: NonNullable<MarketData['data_so
       value: sources.intraday_primary,
       note: sources.intraday_note,
       icon: Zap,
-      color: 'text-emerald-600 dark:text-emerald-400',
+      color: 'text-emerald-500 dark:text-emerald-400',
       badge: 'أساسي',
-      badgeCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+      badgeCls: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/50 dark:text-emerald-300',
     },
     {
       label: 'قائمة الأسهم الكاملة',

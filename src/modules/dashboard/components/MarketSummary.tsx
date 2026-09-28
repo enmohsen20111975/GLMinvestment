@@ -25,14 +25,14 @@ export function MarketSummary() {
       label: 'إجمالي الأسهم',
       value: summary.total_stocks ?? 0,
       icon: BarChart3,
-      color: 'text-emerald-600 dark:text-emerald-400',
+      color: 'text-emerald-500 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-950/40',
     },
     {
       label: 'المرتفعة',
       value: summary.gainers ?? 0,
       icon: TrendingUp,
-      color: 'text-emerald-600 dark:text-emerald-400',
+      color: 'text-emerald-500 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-950/40',
     },
     {

@@ -48,7 +48,7 @@ interface HeatLevel {
 }
 
 const HEAT_STYLES: Record<string, HeatLevel> = {
-  safe: { level: 'آمن', color: 'text-emerald-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
+  safe: { level: 'آمن', color: 'text-emerald-500', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
   caution: { level: 'حذر', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
   danger: { level: 'خطر', color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
   critical: { level: 'حرج', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
@@ -403,11 +403,11 @@ export function AdvancedPortfolioManager() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
                   <p className="text-xs text-muted-foreground">الهدف 1</p>
-                  <p className="font-bold text-emerald-600">{strategyPlan.targets.target_1?.toFixed(2)}</p>
+                  <p className="font-bold text-emerald-500">{strategyPlan.targets.target_1?.toFixed(2)}</p>
                 </div>
                 <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
                   <p className="text-xs text-muted-foreground">الهدف 2</p>
-                  <p className="font-bold text-emerald-600">{strategyPlan.targets.target_2?.toFixed(2)}</p>
+                  <p className="font-bold text-emerald-500">{strategyPlan.targets.target_2?.toFixed(2)}</p>
                 </div>
                 <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded text-center">
                   <p className="text-xs text-muted-foreground">الستوب</p>
@@ -452,7 +452,7 @@ export function AdvancedPortfolioManager() {
               </div>
               <div className="p-2 bg-muted/50 rounded">
                 <p className="text-xs text-muted-foreground">الهدف</p>
-                <p className="font-semibold text-emerald-600">{pattern.target_pct}</p>
+                <p className="font-semibold text-emerald-500">{pattern.target_pct}</p>
               </div>
               <div className="p-2 bg-muted/50 rounded">
                 <p className="text-xs text-muted-foreground">الستوب</p>
@@ -466,7 +466,7 @@ export function AdvancedPortfolioManager() {
             
             <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
               <p className="text-xs text-muted-foreground">العائد السنوي المتوقع</p>
-              <p className="font-bold text-emerald-600">{pattern.expected_annual}</p>
+              <p className="font-bold text-emerald-500">{pattern.expected_annual}</p>
             </div>
           </CardContent>
         </Card>

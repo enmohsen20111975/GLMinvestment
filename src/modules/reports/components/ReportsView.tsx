@@ -1109,10 +1109,10 @@ export function ReportsView() {
       <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 mr-auto">
-            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
               <FileBarChart className="w-5 h-5 text-primary" />
               التقارير المهنية
-            </h2>
+            </h1>
             <p className="text-xs text-muted-foreground">تقارير شاملة لسوق الأوراق المالية المصرية</p>
             <p className="text-[10px] text-muted-foreground/70 italic mt-0.5">
               ⚠️ إخلاء مسؤولية: المنصة تقدم رأيًا شخصيًا آليًا لأغراض تعليمية وتحليلية فقط، وليست توصية استثمارية. القرار مسؤولية العميل.

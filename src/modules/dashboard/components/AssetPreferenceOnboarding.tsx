@@ -139,7 +139,7 @@ export function AssetPreferenceOnboarding() {
                 <span
                   className={cn(
                     'text-sm font-bold',
-                    isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-foreground'
+                    isActive ? 'text-emerald-500 dark:text-emerald-300' : 'text-foreground'
                   )}
                 >
                   {opt.title}

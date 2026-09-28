@@ -1823,7 +1823,7 @@ export function SimulationView() {
       {/* ─── Hidden Report Section for PDF Export ─────────────────── */}
       <div ref={setReportRef} className="hidden" dir="rtl" style={{ fontFamily: 'Arial, sans-serif', padding: '20px', color: '#333' }}>
         <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '3px solid #10b981', paddingBottom: '15px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981', margin: 0 }}>محاكاة التداول - بورصة مصر EGX</h1>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>محاكاة التداول - بورصة مصر EGX</h2>
           <p style={{ fontSize: '14px', color: '#666', margin: '5px 0 0' }}>تقرير الأداء - تم الإنشاء: {new Date().toLocaleDateString('ar-EG')}</p>
         </div>
 

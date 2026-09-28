@@ -208,7 +208,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 className={cn(
                   'text-[10px]',
                   interpretation.tone === 'buy'
-                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                    ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
                     : interpretation.tone === 'sell'
                     ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30'
                     : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
@@ -298,7 +298,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                         <div
                           className={cn(
                             'text-[10px] font-bold w-16 text-left whitespace-nowrap',
-                            netTone === 'pos' ? 'text-emerald-600 dark:text-emerald-400' :
+                            netTone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
                             netTone === 'neg' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
                           )}
                           title="الضغط الصافي (شراء - بيع)"
@@ -317,7 +317,7 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
             <div className="grid grid-cols-3 gap-2 text-[11px]">
               <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
                 <div className="text-[10px] text-muted-foreground">إجمالي شراء</div>
-                <div className="font-bold text-emerald-600 dark:text-emerald-400">{formatNumber(session!.total_buy_volume)}</div>
+                <div className="font-bold text-emerald-500 dark:text-emerald-400">{formatNumber(session!.total_buy_volume)}</div>
               </div>
               <div className="rounded-md bg-amber-500/5 border border-amber-500/20 p-2">
                 <div className="text-[10px] text-muted-foreground">محايد</div>
@@ -350,7 +350,7 @@ function SummaryCell({
       <div
         className={cn(
           'text-sm font-bold',
-          tone === 'pos' ? 'text-emerald-600 dark:text-emerald-400' :
+          tone === 'pos' ? 'text-emerald-500 dark:text-emerald-400' :
           tone === 'neg' ? 'text-red-600 dark:text-red-400' : ''
         )}
       >

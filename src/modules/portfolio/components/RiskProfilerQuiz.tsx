@@ -125,7 +125,7 @@ function evaluateProfile(totalScore: number): RiskProfile {
     type = 'conservative';
     typeAr = 'محافظ';
     Icon = Shield;
-    color = 'text-emerald-600';
+    color = 'text-emerald-500';
     description =
       'أنت مستثمر محافظ — بتفضل الأمان والحفاظ على رأس المال. مناسبتك شهادات الإيداع والصناديق ذات الدخل الثابت، مع نسبة صغيرة من الأسهم القيادية المستقرة.';
     idealAllocation = [
@@ -443,7 +443,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                         variant="outline"
                         className={s.action === 'sell'
                           ? 'border-red-400 text-red-700 dark:text-red-300'
-                          : 'border-green-400 text-green-700 dark:text-green-300'
+                          : 'border-green-400 text-emerald-500 dark:text-green-300'
                         }
                       >
                         {s.action === 'sell' ? '↓ بيع' : '↑ شراء'}

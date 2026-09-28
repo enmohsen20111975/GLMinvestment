@@ -247,9 +247,9 @@ function getSeverityStyle(sev: RebalanceAlert['severity']): SeverityStyle {
     default:
       return {
         container: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800',
-        title: 'text-emerald-800 dark:text-emerald-200',
-        message: 'text-emerald-700 dark:text-emerald-300',
-        action: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800',
+        title: 'text-emerald-500 dark:text-emerald-200',
+        message: 'text-emerald-500 dark:text-emerald-300',
+        action: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-500 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800',
         badge: 'bg-emerald-600 text-white',
         icon: <Info className="h-5 w-5 text-emerald-500" />,
       };
@@ -478,7 +478,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<Sparkles className="h-5 w-5" />}
-            tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
           />
           <div>
             <h2 className="text-base md:text-lg font-bold">المستشار الآلي (Robo-Advisor)</h2>
@@ -491,7 +491,7 @@ export function RoboAdvisorPanel({ assets, rebalanceAlerts }: RoboAdvisorPanelPr
           size="sm"
           variant="outline"
           onClick={() => setRefreshTick((t) => t + 1)}
-          className="text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-950/40"
+          className="text-emerald-500 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-950/40"
         >
           <RefreshCw className="h-3.5 w-3.5 ml-1.5" />
           تحديث
@@ -564,7 +564,7 @@ function ProjectionCard({
           <div className="flex items-center gap-2">
             <FeatureIcon
               icon={<CalendarClock className="h-5 w-5" />}
-              tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+              tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
             />
             <div>
               <CardTitle className="text-base">التوقع المستقبلي للثروة</CardTitle>
@@ -627,7 +627,7 @@ function ProjectionCard({
               <p className="text-xs text-muted-foreground mb-1">
                 ثروتك المتوقعة بعد {data.years} سنين هي
               </p>
-              <p className="text-2xl md:text-3xl font-extrabold text-emerald-700 dark:text-emerald-300 tracking-tight">
+              <p className="text-2xl md:text-3xl font-extrabold text-emerald-500 dark:text-emerald-300 tracking-tight">
                 {fmtEGP(data.final_value)}
               </p>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -710,7 +710,7 @@ function ProjectionCard({
             <div className="grid grid-cols-3 gap-2 text-xs">
               <div className="rounded-md bg-muted/40 px-2 py-1.5">
                 <div className="text-muted-foreground">العائد السنوي</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-300">
+                <div className="font-bold text-emerald-500 dark:text-emerald-300">
                   {fmtEGP(data.annual_yield_egp)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -728,7 +728,7 @@ function ProjectionCard({
               </div>
               <div className="rounded-md bg-muted/40 px-2 py-1.5">
                 <div className="text-muted-foreground">إجمالي العائد</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-300">
+                <div className="font-bold text-emerald-500 dark:text-emerald-300">
                   {fmtEGP(data.total_yield_egp)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -777,14 +777,14 @@ function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
           </div>
         ) : !alerts || alerts.length === 0 ? (
           <div className="rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 p-4 flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-500 dark:text-emerald-300">
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-bold text-emerald-800 dark:text-emerald-200">
+              <p className="font-bold text-emerald-500 dark:text-emerald-200">
                 محفظتك متزنة
               </p>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300">
+              <p className="text-sm text-emerald-500 dark:text-emerald-300">
                 لا توجد تنبيهات تزن في الوقت الحالي. استمر في المراقبة!
               </p>
             </div>
@@ -891,7 +891,7 @@ function EquityCurveCard({
           <div className="flex items-center gap-2">
             <FeatureIcon
               icon={<TrendingUp className="h-5 w-5" />}
-              tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+              tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
             />
             <div>
               <CardTitle className="text-base">حركة صافي الثروة</CardTitle>
@@ -946,7 +946,7 @@ function EquityCurveCard({
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs text-muted-foreground">آخر قيمة:</span>
-                <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                <span className="text-lg font-bold text-emerald-500 dark:text-emerald-300">
                   {fmtEGP(data.last_val)}
                 </span>
               </div>
@@ -1052,7 +1052,7 @@ function AllocationCard({ allocation, total }: AllocationCardProps) {
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<PieIcon className="h-5 w-5" />}
-            tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
           />
           <div>
             <CardTitle className="text-base">توزيع الأصول</CardTitle>
@@ -1128,7 +1128,7 @@ function AllocationCard({ allocation, total }: AllocationCardProps) {
               ))}
               <div className="flex items-center justify-between gap-2 text-sm pt-2 mt-1 border-t border-border">
                 <span className="font-bold">الإجمالي</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                <span className="font-bold text-emerald-500 dark:text-emerald-300">
                   {fmtEGP(total)}
                 </span>
               </div>
@@ -1218,7 +1218,7 @@ const transactionColumns: Column<TransactionRow>[] = [
       return (
         <span className={cn(
           'whitespace-nowrap font-bold',
-          isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+          isProfit ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
         )}>
           {isProfit ? '+' : ''}{fmtEGP(t.pnl)}
         </span>
@@ -1235,7 +1235,7 @@ const transactionColumns: Column<TransactionRow>[] = [
       return (
         <span className={cn(
           'whitespace-nowrap font-bold',
-          isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+          isProfit ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
         )}>
           {fmtPct(t.pnlPct)}
         </span>
@@ -1251,7 +1251,7 @@ function TransactionsCard({ transactions }: { transactions: TransactionRow[] }) 
         <div className="flex items-center gap-2">
           <FeatureIcon
             icon={<History className="h-5 w-5" />}
-            tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+            tone="bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300"
           />
           <div>
             <CardTitle className="text-base">سجل المعاملات</CardTitle>

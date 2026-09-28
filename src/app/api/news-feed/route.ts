@@ -210,7 +210,16 @@ async function getFearGreedIndex(): Promise<NewsItem | null> {
     const fng = data.data?.[0];
     if (!fng) return null;
     const value = parseInt(fng.value);
-    const classification = fng.value_classification;
+    // Translate alternative.me English classification to Arabic for client-friendly UI (Rule 30)
+    const classificationMap: Record<string, string> = {
+      'Extreme Fear': 'خوف مفرط',
+      'Fear': 'خوف',
+      'Neutral': 'محايد',
+      'Greed': 'طمع',
+      'Extreme Greed': 'طمع مفرط',
+    };
+    const rawClassification = fng.value_classification || '';
+    const classification = classificationMap[rawClassification] || rawClassification;
     let importance: 'high' | 'medium' | 'low' = 'medium';
     if (value <= 25 || value >= 75) importance = 'high';
     let summary = '';

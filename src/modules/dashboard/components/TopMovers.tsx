@@ -32,7 +32,7 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
         )}
       >
         {isGainer ? (
-          <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
         ) : (
           <ArrowDownRight className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
         )}
@@ -59,7 +59,7 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
           className={cn(
             'text-[10px] font-bold tabular-nums flex items-center gap-0.5 justify-end',
             isGainer
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-emerald-500 dark:text-emerald-400'
               : 'text-red-600 dark:text-red-400'
           )}
         >
@@ -115,7 +115,7 @@ export function TopMovers() {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader className="pb-1 px-3 pt-2.5">
-        <CardTitle className="text-xs font-bold" dir="rtl">
+        <CardTitle className="text-sm font-bold" dir="rtl">
           الأكثر تحركاً
         </CardTitle>
       </CardHeader>
@@ -124,7 +124,7 @@ export function TopMovers() {
           <TabsList className="w-full mb-1.5">
             <TabsTrigger
               value="gainers"
-              className="flex-1 gap-1.5 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 dark:data-[state=active]:bg-emerald-900/40 dark:data-[state=active]:text-emerald-300"
+              className="flex-1 gap-1.5 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-500 dark:data-[state=active]:bg-emerald-900/40 dark:data-[state=active]:text-emerald-300"
             >
               <TrendingUp className="w-3.5 h-3.5" />
               المرتفعة

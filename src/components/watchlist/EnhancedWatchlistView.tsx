@@ -758,6 +758,9 @@ export function EnhancedWatchlistView() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [showIntelligence, setShowIntelligence] = useState(false);
+  // UI-FIX-P2-P3 issue 2.10: track API failure separately from "empty watchlist"
+  // so we can show a retry button + support link instead of a misleading "empty" state.
+  const [loadError, setLoadError] = useState<boolean>(false);
   const { currentMarket } = useAppStore();
   const { setDealAdvisorPrefill, setCurrentView } = useAppStore();
 
@@ -769,13 +772,16 @@ export function EnhancedWatchlistView() {
     }
     try {
       const res = await fetch(`/api/watchlist-enhanced?market=${currentMarket}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: WatchlistResponse = await res.json();
       setItems(data.items || []);
       setSummary(data.summary || null);
       setLastUpdate(new Date());
+      setLoadError(false);
     } catch {
       if (!isRefresh) {
         toast.error('فشل في تحميل قائمة المراقبة');
+        setLoadError(true);
       }
     } finally {
       setLoading(false);
@@ -1201,7 +1207,8 @@ export function EnhancedWatchlistView() {
 
         {/* Empty State */}
         {/* UI-STABILITY fix (2026-09-28): stable key on conditional section */}
-        {!showIntelligence && items.length === 0 && (
+        {/* UI-FIX-P2-P3 issue 2.10: hide empty-state when API failed; show error card instead */}
+        {!showIntelligence && !loadError && items.length === 0 && (
           <Card className="border-dashed" key="watchlist-empty-state">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -1218,6 +1225,39 @@ export function EnhancedWatchlistView() {
                 <Plus className="w-4 h-4 ml-2" />
                 إضافة سهم
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State — UI-FIX-P2-P3 issue 2.10: actionable retry + support link */}
+        {!showIntelligence && loadError && (
+          <Card className="border-destructive/30 bg-destructive/5" key="watchlist-error-state">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">تعذّر تحميل قائمة المراقبة</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                حدث خطأ أثناء الاتصال بالخادم. تأكد من اتصالك بالإنترنت ثم حاول مرة أخرى.
+                إذا استمرت المشكلة، تواصل مع فريق الدعم.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="default"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => fetchData(false)}
+                  disabled={loading}
+                >
+                  <RefreshCw className={cn('w-4 h-4 ml-2', loading && 'animate-spin')} />
+                  حاول مرة أخرى
+                </Button>
+                <a
+                  href="mailto:support@invist.m2y.net"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
+                >
+                  تواصل مع الدعم
+                </a>
+              </div>
             </CardContent>
           </Card>
         )}

@@ -257,7 +257,7 @@ export function MultiMarketWidget() {
                       className={cn(
                         'text-xs font-semibold tabular-nums',
                         isPositive
-                          ? 'text-emerald-600 dark:text-emerald-400'
+                          ? 'text-emerald-500 dark:text-emerald-400'
                           : isNegative
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-muted-foreground'
@@ -449,7 +449,7 @@ export function MultiMarketWidget() {
                     className={cn(
                       'text-xs font-semibold tabular-nums',
                       isPositive
-                        ? 'text-emerald-600 dark:text-emerald-400'
+                        ? 'text-emerald-500 dark:text-emerald-400'
                         : isNegative
                         ? 'text-red-600 dark:text-red-400'
                         : 'text-muted-foreground'
@@ -490,7 +490,7 @@ export function MultiMarketWidget() {
     return (
       <div className="space-y-2.5">
         {/* Header summary */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-500 dark:text-emerald-400 font-medium">
           <span className="flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-emerald-500" />
             أسعار الصرف مقابل {marketInfo.currencyName}

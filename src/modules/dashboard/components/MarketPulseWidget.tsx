@@ -348,7 +348,7 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
     case 'HEALTHY_BULL':
       return {
         bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-        text: 'text-emerald-700 dark:text-emerald-300',
+        text: 'text-emerald-500 dark:text-emerald-300',
         border: 'border-emerald-200 dark:border-emerald-800',
         icon: ArrowUpRight,
       };
@@ -386,9 +386,9 @@ function divergenceStyle(regime: DivergenceInfo['regime']): {
 function pulseColorClasses(color: PulseInfo['color']): string {
   switch (color) {
     case 'emerald':
-      return 'text-emerald-600 dark:text-emerald-400';
+      return 'text-emerald-500 dark:text-emerald-400';
     case 'green':
-      return 'text-green-600 dark:text-green-400';
+      return 'text-emerald-500 dark:text-green-400';
     case 'amber':
       return 'text-amber-600 dark:text-amber-400';
     case 'orange':
@@ -424,7 +424,7 @@ function IndexMiniCard({
             className={cn(
               'inline-flex items-center gap-0.5 text-[11px] font-bold tabular-nums',
               up
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-emerald-500 dark:text-emerald-400'
                 : 'text-rose-600 dark:text-rose-400',
             )}
             dir="ltr"
@@ -472,7 +472,7 @@ function BreadthBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-[11px] font-medium">
-        <span className="text-emerald-600 dark:text-emerald-400">
+        <span className="text-emerald-500 dark:text-emerald-400">
           ▲ {gainers} صاعد
         </span>
         <span className="text-slate-400 dark:text-slate-500">
@@ -671,7 +671,7 @@ export function MarketPulseWidget() {
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-md',
                 isOpen
-                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
+                  ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-400'
                   : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-400',
               )}
             >
@@ -825,7 +825,7 @@ export function MarketPulseWidget() {
         {top && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-gradient-to-l from-emerald-50/60 to-transparent px-2.5 py-2 dark:border-slate-800 dark:from-emerald-950/30">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-400">
                 {top.avg_change >= 0 ? (
                   <Signal className="h-3.5 w-3.5" />
                 ) : (
@@ -842,14 +842,14 @@ export function MarketPulseWidget() {
               </div>
             </div>
             <div className="text-left" dir="ltr">
-              <div className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+              <div className="text-xs font-bold tabular-nums text-emerald-500 dark:text-emerald-400">
                 {fmtPct(top.turnover_pct)}
               </div>
               <div
                 className={cn(
                   'text-[10px] tabular-nums',
                   top.avg_change >= 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-500 dark:text-emerald-400'
                     : 'text-rose-600 dark:text-rose-400',
                 )}
               >

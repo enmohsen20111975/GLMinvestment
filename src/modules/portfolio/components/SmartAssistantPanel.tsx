@@ -172,7 +172,7 @@ export function SmartAssistantPanel() {
     switch (urgency) {
       case 'high': return 'text-red-600';
       case 'medium': return 'text-yellow-600';
-      default: return 'text-green-600';
+      default: return 'text-emerald-500';
     }
   };
 
@@ -246,14 +246,14 @@ export function SmartAssistantPanel() {
           <div className="flex items-center gap-2 mb-1">
             <BarChart3 className={cn(
               "h-4 w-4",
-              data.summary.totalProfitLoss >= 0 ? "text-green-600" : "text-red-600"
+              data.summary.totalProfitLoss >= 0 ? "text-emerald-500" : "text-red-600"
             )} />
             <span className="text-sm text-muted-foreground">الربح/الخسارة</span>
           </div>
           <div className={cn(
             "text-xl font-bold",
             data.summary.totalProfitLoss >= 0 
-              ? "text-green-700 dark:text-green-300"
+              ? "text-emerald-500 dark:text-green-300"
               : "text-red-700 dark:text-red-300"
           )}>
             {data.summary.totalProfitLoss >= 0 ? '+' : ''}
@@ -261,7 +261,7 @@ export function SmartAssistantPanel() {
           </div>
           <div className={cn(
             "text-xs",
-            data.summary.totalProfitLossPercent >= 0 ? "text-green-600" : "text-red-600"
+            data.summary.totalProfitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
           )}>
             ({data.summary.totalProfitLossPercent >= 0 ? '+' : ''}{data.summary.totalProfitLossPercent.toFixed(2)}%)
           </div>
@@ -342,14 +342,14 @@ export function SmartAssistantPanel() {
                         <div className="text-left">
                           <div className={cn(
                             "font-bold",
-                            stock.profitLoss >= 0 ? "text-green-600" : "text-red-600"
+                            stock.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
                           )}>
                             {stock.profitLoss >= 0 ? '+' : ''}
                             {stock.profitLoss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
                           </div>
                           <div className={cn(
                             "text-sm",
-                            stock.profitLossPercent >= 0 ? "text-green-600" : "text-red-600"
+                            stock.profitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
                           )}>
                             ({stock.profitLossPercent >= 0 ? '+' : ''}{stock.profitLossPercent.toFixed(1)}%)
                           </div>
@@ -395,7 +395,7 @@ export function SmartAssistantPanel() {
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">الدعم</div>
-                              <div className="font-medium text-green-600">{stock.stockInfo.support.toFixed(2)}</div>
+                              <div className="font-medium text-emerald-500">{stock.stockInfo.support.toFixed(2)}</div>
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">المقاومة</div>
@@ -409,7 +409,7 @@ export function SmartAssistantPanel() {
                           <div className="flex gap-4">
                             {stock.recommendation.targetPrice && (
                               <div className="flex items-center gap-2 text-sm">
-                                <Target className="h-4 w-4 text-green-600" />
+                                <Target className="h-4 w-4 text-emerald-500" />
                                 <span>الهدف: <strong>{stock.recommendation.targetPrice.toFixed(2)}</strong></span>
                               </div>
                             )}
@@ -425,7 +425,7 @@ export function SmartAssistantPanel() {
                         {/* Technical Signals */}
                         <div className="flex flex-wrap gap-2">
                           {stock.technicalSignals.nearSupport && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <Badge variant="outline" className="bg-green-50 text-emerald-500 border-green-300">
                               قريب من دعم
                             </Badge>
                           )}
@@ -479,11 +479,11 @@ export function SmartAssistantPanel() {
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">عائد شهرى</div>
-                      <div className="font-medium text-green-600">{bank.monthlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
+                      <div className="font-medium text-emerald-500">{bank.monthlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">عائد سنوى</div>
-                      <div className="font-medium text-green-600">{bank.yearlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
+                      <div className="font-medium text-emerald-500">{bank.yearlyReturn.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م</div>
                     </div>
                   </div>
                 </CardContent>
@@ -514,7 +514,7 @@ export function SmartAssistantPanel() {
                     <div className="text-left">
                       <div className={cn(
                         "font-bold",
-                        gold.profitLoss >= 0 ? "text-green-600" : "text-red-600"
+                        gold.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
                       )}>
                         {gold.profitLoss >= 0 ? '+' : ''}{gold.profitLossPercent.toFixed(1)}%
                       </div>

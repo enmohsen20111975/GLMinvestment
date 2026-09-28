@@ -104,7 +104,7 @@ function classifyRecommendation(pnlPct: number): {
     return {
       label: 'نجم صاعد',
       badgeColor:
-        'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-400',
+        'bg-emerald-100 text-emerald-500 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-400',
       icon: 'sparkles',
     };
   }
@@ -209,25 +209,25 @@ export function TopUpRecommendationsPanel() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
               <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
                 <div className="text-xs text-muted-foreground">عدد الفرص</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-400">
+                <div className="font-bold text-emerald-500 dark:text-emerald-400">
                   {AR_NUM.format(topUps.length)}
                 </div>
               </div>
               <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
                 <div className="text-xs text-muted-foreground">إجمالي الربح</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-400">
+                <div className="font-bold text-emerald-500 dark:text-emerald-400">
                   {formatEgp(totalProfit)}
                 </div>
               </div>
               <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
                 <div className="text-xs text-muted-foreground">متوسط الربح %</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-400">
+                <div className="font-bold text-emerald-500 dark:text-emerald-400">
                   {formatPct(avgPct)}
                 </div>
               </div>
               <div className="p-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
                 <div className="text-xs text-muted-foreground">الأفضل أداءً</div>
-                <div className="font-bold text-emerald-700 dark:text-emerald-400 truncate">
+                <div className="font-bold text-emerald-500 dark:text-emerald-400 truncate">
                   {bestPerformer ? bestPerformer.ticker : '—'}
                 </div>
               </div>
@@ -294,7 +294,7 @@ export function TopUpRecommendationsPanel() {
                       className="w-full flex items-center justify-between gap-2 text-right"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shrink-0">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 shrink-0">
                           <TrendingUp className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
@@ -316,7 +316,7 @@ export function TopUpRecommendationsPanel() {
                         </div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                        <div className="font-bold text-emerald-500 dark:text-emerald-400 text-sm">
                           {formatPct(h.pnl_percent)}
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -364,9 +364,9 @@ export function TopUpRecommendationsPanel() {
 
                         {/* Top-up suggestion */}
                         <div className="flex items-start gap-2 p-2 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900">
-                          <Plus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                          <Plus className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
                           <div className="text-xs">
-                            <div className="font-medium text-emerald-800 dark:text-emerald-300">
+                            <div className="font-medium text-emerald-500 dark:text-emerald-300">
                               توصية: زيادة المركز بـ {AR_NUM.format(suggestedTopUpQty)} سهم
                             </div>
                             <div className="text-muted-foreground mt-0.5">

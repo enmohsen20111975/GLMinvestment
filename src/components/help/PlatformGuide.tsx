@@ -49,7 +49,7 @@ const SECTIONS = [
     id: 'live-chart',
     icon: BarChart3,
     title: 'قراءة الشارت اللحظي',
-    titleEn: 'Live Chart',
+    titleEn: 'الشارت اللحظي',
     color: 'text-cyan-400',
     bg: 'bg-cyan-950/40',
     border: 'border-cyan-800',

@@ -398,7 +398,7 @@ export function UnifiedTable<T extends Record<string, unknown>>({
             {title && <span className="text-sm font-bold">{title}</span>}
             {toolbarActions}
             {/* عدد الصفوف بعد الفلترة */}
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {filteredData.length} / {data.length} صف
             </span>
           </div>
