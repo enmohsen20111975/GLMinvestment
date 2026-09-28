@@ -576,26 +576,47 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
   // ─── Fetch predictions from predictions.db ─────────────────────────
   const fetchPredictions = useCallback(async () => {
     try {
-      const res = await fetch(`/api/unified/predictions?market=${market}&limit=500&status=active`, { cache: 'no-store' });
+      // No status filter in URL — DB has mixed case ('active' / 'ACTIVE')
+      // We collect all rows then filter client-side
+      const res = await fetch(`/api/unified/predictions?market=${market}&limit=1000`, { cache: 'no-store' });
       if (!res.ok) return;
       const json = await res.json();
-      const rows: Record<string, unknown>[] = Array.isArray(json.predictions)
-        ? json.predictions
-        : Array.isArray(json.active_predictions)
-          ? json.active_predictions
-          : [];
+      // Collect from all possible keys
+      const allRows: Record<string, unknown>[] = [
+        ...(Array.isArray(json.predictions) ? json.predictions : []),
+        ...(Array.isArray(json.active_predictions) ? json.active_predictions : []),
+      ];
+      // Filter active statuses case-insensitively
+      const rows = allRows.filter((r) => String(r.status || '').toLowerCase() === 'active');
       const map = new Map<string, PredictionEntry>();
       for (const row of rows) {
         const ticker = String(row.ticker || '').toUpperCase();
         if (!ticker) continue;
-        // Keep the highest-confidence entry per ticker
+        const sig = String(row.signal || '').toUpperCase();
+        // BUY/STRONG_BUY → direction='up' regardless of null direction field in DB
+        const resolvedDirection =
+          sig === 'BUY' || sig === 'STRONG_BUY' ? 'up'
+          : sig === 'SELL' || sig === 'STRONG_SELL' ? 'down'
+          : row.direction ? String(row.direction) : null;
+        // confidence first, master_score as fallback
+        const conf = row.confidence != null ? Number(row.confidence)
+          : row.master_score != null ? Number(row.master_score)
+          : null;
+        // Keep highest-scoring entry per ticker
         const existing = map.get(ticker);
-        const conf = row.confidence != null ? Number(row.confidence) : null;
-        if (!existing || (conf != null && (existing.confidence == null || conf > existing.confidence))) {
+        if (!existing || (conf != null && conf > (existing.confidence ?? -1))) {
+          const signal_ar =
+            sig === 'BUY' ? 'شراء'
+            : sig === 'STRONG_BUY' ? 'شراء قوي'
+            : sig === 'SELL' ? 'بيع'
+            : sig === 'STRONG_SELL' ? 'بيع قوي'
+            : sig === 'HOLD' ? 'احتفظ'
+            : sig === 'WAIT' ? 'انتظر'
+            : 'محايد';
           map.set(ticker, {
-            signal: String(row.signal || 'NEUTRAL'),
-            signal_ar: String(row.signal_ar || (String(row.signal || '').toLowerCase() === 'buy' ? 'شراء' : String(row.signal || '').toLowerCase() === 'sell' ? 'بيع' : 'محايد')),
-            direction: row.direction ? String(row.direction) : null,
+            signal: sig,
+            signal_ar: String(row.signal_ar || signal_ar),
+            direction: resolvedDirection,
             confidence: conf,
             master_score: row.master_score != null ? Number(row.master_score) : null,
             target_price: row.target_price != null ? Number(row.target_price) : null,
@@ -759,11 +780,11 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
 
   const marketStatus = getMarketStatus(market);
 
-  // helper: score for upward prediction sort (buy & high confidence → high)
+  // helper: score for upward prediction sort (BUY/STRONG_BUY & high confidence → high)
   const predScore = useCallback((ticker: string): number => {
     const p = predMap.get(ticker.toUpperCase());
     if (!p) return -1;
-    const isBuy = p.signal?.toLowerCase() === 'buy' || p.direction === 'up';
+    const isBuy = p.direction === 'up' || p.signal === 'BUY' || p.signal === 'STRONG_BUY';
     if (!isBuy) return -1;
     return p.confidence ?? p.master_score ?? 0;
   }, [predMap]);
