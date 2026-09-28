@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Download, Send, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import {
   MarketStatusImageCard,
   MarketStatusStock,

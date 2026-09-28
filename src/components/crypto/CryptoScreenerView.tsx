@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import {
   Tabs,
   TabsContent,

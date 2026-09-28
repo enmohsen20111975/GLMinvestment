@@ -5,7 +5,7 @@ import {
   parseVolume,
   computeTurnover,
   type RadarDbConfig,
-} from '@/lib/radar-db';
+} from '@/modules/radar/lib/radar-db';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

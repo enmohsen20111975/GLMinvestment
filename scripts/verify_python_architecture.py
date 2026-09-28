@@ -114,14 +114,10 @@ def check_data_engine():
         print_check("Data Engine يعمل على المنفذ 5000", False, str(e))
     
     # فحص ملفات Data Engine
-    engine_server = os.path.exists('./data_engine/engineServer.py')
-    results['engine_server_exists'] = engine_server
-    print_check("ملف engineServer.py موجود", engine_server)
-    
-    simple_server = os.path.exists('./data_engine/simple_server.py')
-    results['simple_server_exists'] = simple_server
-    print_check("ملف simple_server.py موجود", simple_server)
-    
+    main_server = os.path.exists('./data_engine/main.py')
+    results['main_server_exists'] = main_server
+    print_check("ملف main.py (canonical entry) موجود", main_server)
+
     # فحص مجلد scrapers
     scrapers_exists = os.path.exists('./data_engine/scrapers')
     results['scrapers_exists'] = scrapers_exists
@@ -249,7 +245,7 @@ def check_analyzers():
         'fundamental.py',
         'sentiment_analyzer.py',
         'risk_manager.py',
-        'confluence_engine.py',
+        'confluence_engine_v3.py',
         'multi_timeframe_engine.py',
         'prediction_tracker.py',
         'crypto_analyzer.py',

@@ -29,7 +29,7 @@ vi.mock('@/hooks/useVisibilityAwarePolling', () => ({
 }));
 
 // Import AFTER mocks are in place.
-import { MultiMarketRadarTab } from '@/components/predictions/radar/MultiMarketRadarTab';
+import { MultiMarketRadarTab } from '@/modules/radar/components/MultiMarketRadarTab';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 function buildMultiMarketResponse(overrides: Record<string, unknown> = {}) {

@@ -52,7 +52,7 @@
  *   - لو سهم غادر الرادار → نعيد الـ stage لـ 1 (لتتبع جديد)
  */
 
-import { readRadarCache, readExitRadarCache } from '@/lib/radar-cache';
+import { readRadarCache, readExitRadarCache } from '@/modules/radar/lib/radar-cache';
 import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
 import {
@@ -929,7 +929,7 @@ interface RecordSignalsParams {
 async function recordRadarSignals(params: RecordSignalsParams): Promise<void> {
   try {
     // dynamic import عشان نتجنب circular deps لو في تحميل مسبق
-    const { recordSignalsBatch } = await import('@/lib/radar-signal-tracker');
+    const { recordSignalsBatch } = await import('@/modules/radar/lib/radar-signal-tracker');
     const signals = [
       // Explosive
       ...params.explosiveList

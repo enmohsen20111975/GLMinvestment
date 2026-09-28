@@ -29,7 +29,7 @@ vi.mock('@/hooks/useVisibilityAwarePolling', () => ({
 vi.mock('next/router', () => ({ useRouter: () => ({ push: vi.fn() }) }), { virtual: true });
 
 // Import AFTER mocks are in place.
-import { PersonalizedRadarTab } from '@/components/predictions/radar/PersonalizedRadarTab';
+import { PersonalizedRadarTab } from '@/modules/radar/components/PersonalizedRadarTab';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 

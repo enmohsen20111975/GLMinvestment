@@ -3,7 +3,7 @@
 import React, { forwardRef, useEffect, useState } from 'react';
 import { ImageCardExport } from '@/components/market/ImageCardExport';
 import { Trophy, Medal, Award, TrendingUp, Crown, ChevronUp } from 'lucide-react';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 
 /* ============================================================
    STOCK-LEAGUE-038: Premier Stock League Image Card

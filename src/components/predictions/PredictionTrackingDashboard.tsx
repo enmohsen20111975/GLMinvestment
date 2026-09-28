@@ -26,7 +26,7 @@ import {
 import { cn, fmtPrice } from '@/lib/utils';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { ExportDropdown } from '@/components/screener/StockScreenerAdvanced';
 import { BarChart, Bar, Cell as RechartsCell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
 

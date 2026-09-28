@@ -26,8 +26,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
-import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/modules/publishing/components/StockPublisher';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {

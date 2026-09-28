@@ -107,6 +107,32 @@
 # لو سوق واحد فشل، السوق التاني بيفضل يشتغل (graceful degradation)
 0 9-22 * * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 data_engine/scrapers/multi_market_scraper.py >> /tmp/multi_scraper.log 2>&1
 
+# ─── 19. Mine Learned Lessons — أسبوعياً (الأحد) ──────────────────────
+# الأحد 04:00 UTC (06:00 Cairo) — تعدين الدروس المستفادة من التوقعات المغلقة
+# يقرأ predictions.db + يطابق التوقعات المُنفّذة مع نتائجها الفعلية
+# ويستخرج أنماط ناجحة/فاشلة → يكتبها في learned_lessons.db
+# تستهلكها later: confluence_engine_v3 + smart_exit + learning_engine
+0 4 * * 0 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/mine_learned_lessons.py >> /tmp/learned_lessons.log 2>&1
+
+# ─── 20. Exit Policy Optimizer — شهرياً (أول كل شهر) ──────────────────
+# يوم 1 من كل شهر 05:00 UTC (07:00 Cairo) — يضبط سياسة الخروج (stop/target/trailing)
+# بناءً على أداء آخر 90 يوم من predictions.db + market_regime_log
+# يكتب الإعدادات المُحسّنة في exit_policy_optimizer_state.json
+0 5 1 * * cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/exit_policy_optimizer.py >> /tmp/exit_optimizer.log 2>&1
+
+# ─── 21. Post-Market Feedback — يومياً بعد الإغلاق ────────────────────
+# أيام السوق (الأحد-الخميس) 14:30 UTC (16:30 Cairo — بعد إغلاق EGX بنصف ساعة)
+# يفحص كل التوقعات النشطة: مين وصل تارجت؟ مين ضرب ستوب؟ مين لسه معلّق؟
+# يحدّث predictions.db بـ exit_type + exit_price + pnl_percent
+30 14 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 scripts/post_market_feedback.py >> /tmp/post_market_feedback.log 2>&1
+
+# ─── 22. Hot Candidate Detector — كل 15 دقيقة خلال السوق ─────────────
+# أيام السوق (الأحد-الخميس) 08:00-12:30 UTC (10:00-14:30 Cairo — خلال جلسة EGX)
+# يفحص تدفقات السيولة الحية ويكتشف أسهم تحت ضغط شراء قوي
+# يبعت تنبيه فوري لـ Telegram لو في candidate score > 0.85
+# يكتب نتائجه في hot_candidates_<date>.json للمتابعة اللحظية
+*/15 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/hot_candidate_detector.py >> /tmp/hot_candidate.log 2>&1
+
 # ============================================================================
 # للتثبيت: crontab crontab.txt
 # للتحقق: crontab -l

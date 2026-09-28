@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import {
   TrendingUp, TrendingDown, Clock, Calendar,
   BarChart3, Target, AlertTriangle, CheckCircle,
@@ -27,7 +27,7 @@ import { cn, getRRVerdict, getStockRiskAlert, safeToFixed, verdictStyle, compute
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { toast } from 'sonner';
-import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 import dynamic from 'next/dynamic';
 import { Dialog, DialogContent, DialogClose, DialogTitle } from '@/components/ui/dialog';
 

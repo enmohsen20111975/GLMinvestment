@@ -40374,3 +40374,165 @@ Stage Summary:
 - Verification: Clean TypeScript check (0 errors in MakerRadarTab), Python execution verified across 297 EGX stocks, 33 quiet accumulation picks found (including 6/6 and 5/6), 88 pre-surge picks with dynamic 4/4 and 3/4 distribution.
 - Git: Pushed to origin/main.
 
+
+---
+Task ID: AUDIT-FE-MODULES
+Agent: Frontend Architect (module audit)
+Task: READ-ONLY audit of the entire frontend (src/components + src/lib + src/app/api + src/app/page.tsx) to produce a module map for transforming the project from "scattered small projects" into "standard reusable modules".
+
+Work Log:
+- Read /home/z/my-project/worklog.md (last ~300 lines) for context — reviewed prior work: STOCK-PUBLISHER-COMPONENT, L2-ALERTS-EXIT-RADAR, L2-SIGNAL-TIMELINE, L2-WEEKLY-RADAR-REPORT, UI-CLEANUP-MAESTRO-AI-TABS, RADAR-REGIME-ADAPTIVE-RULES.
+- Mapped the SPA entry `src/app/page.tsx` (642 LOC): hash-based routing via `useAppStore().currentView` + 38 module-scope `dynamicImport()` calls + `withErrorBoundary` HOC wrappers + `<LazyTabLoader>` fallbacks. Enumerated all 45 hash routes from the `renderView()` switch.
+- Enumerated 47 component subdirectories (280 files / 141,583 LOC). Largest: admin/ (34 files / 26,379 LOC), analysis/ (24 files / 17,456 LOC), predictions/ (13 files / 12,053 LOC), stocks/ (15 files / 11,544 LOC), portfolio/ (16 files / 9,930 LOC).
+- Enumerated ~110 lib modules (45,769 LOC). Classified by role: DB Access (20 files / ~9,200 LOC — HIGHLY FRAGMENTED), Business Logic / Analysis Engines (12 files / ~7,500 LOC), Devil's Advocate Engine (10 files / ~2,000 LOC), Zustand Stores (8 files), Hooks (5 in lib/ + 7 in src/hooks/), API/Network (15 files), Auth+Admin (8 files), Markets/Trading Hours (2), Radar-specific (5), Schedulers (3), AI subsystem (3), Utilities/Formatters (~25).
+- Enumerated 670 API route handlers across 785 directories. Grouped into 18 domains: Stocks (~40 routes), Predictions (~40), Radar (~20), Portfolio+Finance (~50), Watchlist (~6), Screener (~8), Market Analysis (~30), News (~8), Notifications (~10), Publishing (~15), Auth (10), Admin (~90), Crypto (~30), Education (~12), Reports (~10), Dashboard/System (~30), Mobile (~30), Other (~30).
+- For each of the 9 shared components (UnifiedTable, StockPublisher, UnifiedPublishButton, ShareButton, StockSearchSelector, MarketSelector, ExpertIntelligencePanel, LazyTabLoader, ErrorBoundary) — verified usage via Grep: 43 / 12 / 20 / 9 / 10 / 2 / 9 / 2 / 3 importers respectively. Confirmed all 9 are truly reusable.
+- Identified 17 duplicate groups: duplicate stock-analysis views (StockDetail vs SingleStockAnalysisView vs UnifiedAnalysisView vs ComprehensiveStockAnalysis + DeepAnalysis + StockAdvancedAnalysisView + GateAnalysisView), duplicate prediction-tracking views (PredictionTrackingView vs PredictionTrackingDashboard vs DualTrackPredictionsView vs dead PicksManagementView), duplicate ShareButton (shared/ vs share/), duplicate WealthCharts (admin/ vs portfolio/), duplicate screener views (StockScreenerAdvanced vs dead StockScreener + UnifiedScreenerView), duplicate watchlist views (EnhancedWatchlistView vs dead ProfessionalWatchlistView), duplicate stock-search dropdown (shared/StockSearchSelector vs portfolio/StockSearchDropdown), duplicate market selector (shared/MarketSelector vs layout/ExchangeSelector), duplicate market depth panels, duplicate chart components (5!), duplicate publish buttons (5: UnifiedPublishButton + StockPublisher + QuickPublishButton + 2× ShareButton), duplicate user-management admin (UsersManagement vs UserManagementPanel), duplicate stock-movement classifiers (2 near-identical files both dead), duplicate technical-analysis (lib/technical-analysis.ts vs screener/chartIndicators.ts), duplicate DB access layer (20+ files), duplicate analysis engines (7 engines, 3 dead).
+- Identified 30+ wiring disconnects: lib modules with computed data but no UI (analysis-engine.ts 3126 LOC DEAD, dynamic-analysis-engine.ts 925 LOC almost dead, technical-analysis.ts 488 LOC DEAD, candlestick-patterns.ts 438 LOC DEAD, prediction-validator.ts 293 LOC, risk-reward.ts 66 LOC, expert/expert-filter.ts 233 LOC DEAD, persona-matrix.ts 196 LOC DEAD, data-validator.ts 516 LOC, cache/precomputed-cache.ts 1022 LOC DEAD, use-python-api.ts 451 LOC DEAD, plus 8 dead adapter files: data-adapter 1342 + multi-source-adapter 1057 + data-sync 892 + egx-data-sources 716 + vps-client 654 + ws-client 458 + egxpy-bridge 530 + external-data-fetcher 329), UI components that exist but aren't rendered (studio/* 9 files 1549 LOC, sniper/* 2 files 820 LOC, screener dead 1124 LOC, watchlist dead 472 LOC, stocks/DataCoverageBanner 209 LOC, analysis/AnalysisFlowDiagram 326 LOC, news-feed-widget 216 LOC, predictions/PicksManagementView 802 LOC, 3 unrendered radar tabs: AccuracyDashboard 638 + PersonalizedRadarTab 694 + MultiMarketRadarTab 675, devil components after UI cleanup), API endpoints that return data but no UI consumes (analysis-engine route is just config, devil API now unused from UI, 4 of 5 sniper routes unused, 8 maestro routes likely unused, 15 v2 routes mostly unused, v4/stats, walk-forward/*, kimi/backtest/run, hunter/*, mubasher/sync).
+- Wrote the comprehensive 3,820-line module map report to /home/z/my-project/agent-ctx/MODULE-MAP-FRONTEND.md covering: (1) As-Is structure with file counts + LOC, (2) Routing & entry-point analysis, (3) Functional Domains (16 domains with full file inventories), (4) Shared Components Inventory (9 components with props + usage counts + verdict), (5) shadcn/ui Primitives Inventory (51 files), (6) Lib Modules Classification (DB / Engines / Devil / Stores / Hooks / API / Auth / Markets / Radar / Schedulers / AI / Utilities), (7) API Routes Grouped by Domain (18 groups, 670 routes), (8) Duplicates & Overlaps (17 groups), (9) Wiring Disconnects (30+ items), (10) Module Architecture Proposal (10 functional modules + shared + admin + mobile + layout + ai + legal + misc + db), (11) 7-Phase Migration Plan with risk ratings + duration estimates, (12) Final statistics + Top 5 recommendations + 10 bonus recommendations.
+
+Stage Summary:
+- Files audited: ~1,060 (280 components + 110 lib + 670 API routes + 7 hooks + 21 tests)
+- Total LOC audited: ~190,000
+- Functional domains identified: 16 (Stock Analysis, Predictions, Radar, Portfolio, Watchlist, Screener, Market Analysis, News, Notifications, Publishing, Auth, Admin, Crypto, Education, Reports, Dashboard)
+- Shared components: 9 truly-reusable (UnifiedTable, StockPublisher, UnifiedPublishButton, ShareButton, StockSearchSelector, MarketSelector, ExpertIntelligencePanel, LazyTabLoader, ErrorBoundary) — combined 3,965 LOC, 110 importers
+- shadcn/ui primitives: 51 (48 stock + 3 project-specific: mini-sparkline, stat-card, help-tooltip)
+- Duplicates found: 17 duplicate groups (~7,200 LOC of duplication)
+- Wiring disconnects: 30+ (lib dead, UI orphaned, API unused)
+- Dead component LOC: ~3,500 (10 dead components)
+- Dead lib LOC: ~10,800 (12+ dead lib modules)
+- Total reclaimable LOC: ~21,500 (11% of total codebase)
+- Top 5 recommendations: (1) Establish src/modules/ as canonical module home, (2) Consolidate 20+ DB files into 4-5 canonical files + fix db-helpers.ts facade, (3) Delete ~21,500 LOC of dead code + duplicates in Phase 1, (4) Adopt 3-button publishing pattern (UnifiedPublishButton + StockPublisher + ShareButton), (5) Wire or delete the 3 almost-dead radar tabs (AccuracyDashboard, PersonalizedRadarTab, MultiMarketRadarTab — 2,007 LOC).
+- Bonus recommendations: (1) Fix analysis-engine naming confusion, (2) Adopt db-helpers.ts facade, (3) Split store.ts (1478 LOC, 85 importers) into auth/market/view stores, (4) Co-locate devil/ sub-module inside market-analysis module, (5) Verify MaestroWidget still rendered, (6) Audit /api/v2/* routes (15 routes mostly unused), (7) Fix LiquidityRadarView naming mismatch (alias for MakerRadarTab), (8) Verify /api/init-db endpoint exists, (9) Fix #wealth → admin/WealthCharts inconsistency, (10) Document UI-Mirror Protocol for crypto.
+- Migration plan: 7 phases over 9-12 days, with non-breaking TypeScript path aliases ensuring old imports continue working during transition.
+- Report: /home/z/my-project/agent-ctx/MODULE-MAP-FRONTEND.md (3,820 lines)
+- Constitution compliance: Rule 27 (no mock data — audit is pure read+grep), Rule 32 (Python is brain — Next.js reads DB via portable helpers, audit noted this pattern), Rule 1 (DB safety — no schema changes, read-only audit).
+
+---
+Task ID: ARCH-PLAN
+Agent: General Manager (architecture plan)
+Task: تصميم المعمارية الجديدة — module system
+
+Work Log:
+- قرأت تقريرين شاملين:
+  * MODULE-MAP-FRONTEND.md (3,820 سطر)
+  * MODULE-MAP-BACKEND-DATA.md (2,405 سطر)
+- استخرجت النتائج الرئيسية:
+  * Frontend: 1,060 ملف، 16 domain، 17 duplicate، 30+ disconnect، 21,500 LOC ميت
+  * Backend: 507 ملف، 148 analyzer (68 orphan)، 4 confluence engines، 7 fundamental modules، 41,500 LOC ميت
+- صمّمت المعمارية الجديدة:
+  * Frontend: 13 module في src/modules/
+  * Backend: 9 module في vps-service/modules/
+- وضعت خطة تنفيذ 7 مراحل
+- المبدأ: مفيش أكواد جديدة، ترتيب + ربط + حذف الميت فقط
+
+Stage Summary:
+- ✅ MASTER-ARCHITECTURE-PLAN.md (500+ سطر)
+- ✅ 13 frontend module + 9 backend module
+- ✅ خطة 7 مراحل (حذف ميت → دمج مكرر → نقل لموديولات → ربط كنوز → توحيد DB → واجهات → توثيق)
+- ✅ هدف: حذف 80K LOC ميت + 0 duplicate + 0 disconnect
+
+---
+Task ID: REORG-PHASE-1-2
+Agent: Senior Software Engineer (reorganization Phase 1+2)
+Task: Execute Phase 1 (Delete Dead Code) + Phase 2 (Merge Duplicates) from the Master Architecture Plan. NO new code — only delete + merge. Use `git rm` for deletions. Run lint after every 5 deletions. App must stay up.
+
+Work Log:
+- Read `agent-ctx/MASTER-ARCHITECTURE-PLAN.md` (302 lines) + worklog tail (last 300 lines) for context — understood prior audits (MODULE-MAP-FRONTEND 3,820 lines + MODULE-MAP-BACKEND-DATA 2,405 lines) + architecture approval + 7-phase plan.
+- Verified baseline: dev server up (HTTP 200), `bun run lint` exit 0, 3 untracked files (`MASTER-ARCHITECTURE-PLAN.md`, `MODULE-MAP-BACKEND-DATA.md`, `MODULE-MAP-FRONTEND.md`).
+- Phase 1 — Frontend lib deletions (7 files / 6,330 LOC):
+  * Verified each file with `Grep` for `from '@/lib/<name>'` importers — 0 found for all 7.
+  * `analysis-engine.ts` (3,126 LOC) — appeared in 4 grep hits but all were (a) self-references, (b) substring matches in `dynamic-analysis-engine`, or (c) HTTP fetch calls to Python backend (not TS imports). ✅ deleted.
+  * `precomputed-cache.ts` (1,022 LOC), `use-python-api.ts` (451), `seed-historical-data.ts` (622), `technical-analysis.ts` (488), `persona-matrix.ts` (196) — all 0 importers. ✅ deleted.
+  * `paymob.ts` (425 LOC) — 12 grep matches were all HTTP fetches to `accept.paymob.com` + locally-defined `getPaymobHmac()`/`createPaymobOrder()` helpers inside route files. 0 actual `@/lib/paymob` TS importers. ✅ deleted.
+  * `data-adapter.ts` (1,342 LOC) — KEPT: 1 real importer at `src/app/api/market/scheduled-sync/route.ts:39` (`from '@/lib/data-adapter'`). Marked as deferred to Phase 5.
+- Phase 1 — Frontend component deletions (12 files / 4,618 LOC):
+  * `studio/` directory (9 files, 1,549 LOC) — 0 importers anywhere. ✅ deleted via `git rm -r`.
+  * `recommendations/AiRecommendations.tsx` (2,209 LOC), `layout/Sidebar.tsx` (644), `news-feed-widget.tsx` (216) — all 0 `@/components/...` importers. ✅ deleted.
+- Phase 1 — Backend analyzer deletions (9 files / 3,321 LOC):
+  * Each file verified with Python `grep` for `from analyzers.<name> import` / `import <name>` — 0 callers found for all 9.
+  * `crypto_mr_signal.py` (432), `crypto_prediction_engine.py` (567), `crypto_risk.py` (515), `live_autonomous_monitor.py` (550), `macro_veto.py` (180), `mean_reversion_signal.py` (378), `prediction_sanity.py` (181), `trade_level_validator.py` (0 — empty file), `unified_exit_engine.py` (518). ✅ all deleted.
+- Phase 1 — Backend stale servers (3 files / 227 LOC deleted + 2 rewires):
+  * `data_engine/engine_server.py` (93 LOC) — verified NOT in PM2 (ecosystem.config.js uses `data_engine/main.py` as canonical entry). But discovered it IS launched at runtime by `vps-service/utils/data_engine_guard.py` as fallback restart script. **Rewired guard** to point at `data_engine/main.py` (canonical) — updated both `_ENGINE_SCRIPT` constant + `pkill -f` pattern. Then ✅ deleted `engine_server.py`.
+  * `data_engine/simple_server.py` (92 LOC) — only referenced in `scripts/verify_python_architecture.py` as an existence check. Updated verify script to check `main.py` instead. Then ✅ deleted `simple_server.py`.
+  * `scripts/test_smart_confluence.py` (42 LOC) — sole purpose was testing `smart_confluence_engine.py` (deleted below). ✅ deleted together.
+  * `vps-service/strategies_merge/` (7 files, 557 LOC) — KEPT: 1 live importer at `scripts/walk_forward_and_durations.py:31` (`from strategies_merge import common, correction_strategy, chase_strategy, merged_strategy, merged_strict_strategy`). Per rule "if ANY importer → DON'T delete".
+- Phase 2 — Frontend merges (10 files / 4,883 LOC deleted):
+  * WealthCharts: `portfolio/WealthCharts.tsx` (346 LOC, 0 importers) ✅ deleted. Kept `admin/WealthCharts.tsx` (465 LOC, 1 importer in `page.tsx:162`).
+  * StockScreener cluster: deleted 7 orphan files (3,882 LOC): `StockScreener.tsx` (590), `BottomPanel.tsx` (976), `ChartCard.tsx` (712), `ComparisonChartCard.tsx` (567), `WatchlistSidebar.tsx` (292), `chartIndicators.ts` (211), `UnifiedScreenerView.tsx` (534). Kept `StockScreenerAdvanced.tsx` (2,129 LOC, 1 importer — `PredictionTrackingDashboard.tsx` imports `ExportDropdown`).
+  * stock-movement duplicates: both `stock-movement-classification.ts` (365 LOC) + `stock-movement-classifier.ts` (290 LOC) — 0 importers. ✅ both deleted (655 LOC).
+  * ShareButton duplicate: KEPT BOTH (not true duplicates). `share/ShareButton.tsx` (583 LOC, 8 importers) takes `stockData` prop → renders rich Arabic stock card with `html-to-image`. `shared/ShareButton.tsx` (449 LOC, 2 importers) takes `targetRef` prop → captures any DOM element. Different APIs + different use cases. Merging would require new code (extending one component to accept both prop patterns) — violates "NO new code" rule.
+- Phase 2 — Backend merges (3 files / 1,928 LOC deleted + 1 test file):
+  * Confluence engines 4→1: deleted `confluence_engine.py` (459 LOC, only `verify_python_architecture.py` existence check, 0 real importers), `crypto_confluence_engine.py` (727 LOC, 0 importers), `engines/smart_confluence_engine.py` (742 LOC, only used by `test_smart_confluence.py` — orphan). Kept `confluence_engine_v3.py` (1,211 LOC, 2 importers: `confluence_routes.py` + `board_of_analysts.py`). Also deleted `scripts/test_smart_confluence.py` (42 LOC) since its subject was deleted.
+  * Updated `verify_python_architecture.py` expected-analyzers list: `confluence_engine.py` → `confluence_engine_v3.py`.
+  * market_regime engines: KEPT BOTH (different logic). `analyzers/market_regime_engine.py` (1,340 LOC) outputs 3-state Regime enum (DEFENSIVE/NORMAL/AGGRESSIVE), multi-market (EGX/TADAWUL/KSE/QSE/CRYPTO/GOLD), persists to `stocks.db.system_settings`. `engines/market_regime.py` (556 LOC, 4 real callers: `confluence_scorer.py`, `production_backtest_tf.py`, `market_scheduler.py`, `maestro_orchestrator.py`) outputs Minervini 1-4 stage `RegimeResult`, single-market (EGX only). Per task rule "If same logic → merge" — they are NOT same logic. KEEP BOTH.
+- Lint after every batch (8 batches total) — all returned exit 0 ✅.
+- Final verification:
+  * `bun run lint` → exit 0 ✅
+  * `bun run test` → 259 passed / 15 failed / 9 skipped (283 total). All 15 failures pre-existing — verified by `git stash && bun run test && git stash pop` on baseline: same 15 failures. Failures are all DB-integration tests requiring populated SQLite tables (`historical_trades`, `learned_lessons`, `market_regime_log`, `gold_prices`, `stored_analyses`, `hunter_pick_tracking`) + 2 radar WeeklyReportTab UI mock tests — none caused by Phase 1-2 deletions. ✅ 0 new failures.
+  * `curl localhost:3001/` → HTTP 200 ✅ throughout.
+  * Git diff stat: 47 files changed, 66 insertions, 21,321 deletions.
+- Staged all deletions + 2 caller rewires (`vps-service/utils/data_engine_guard.py` + `scripts/verify_python_architecture.py`) for atomic commit.
+
+Stage Summary:
+- Files deleted: 44 (7 frontend lib + 12 frontend components + 9 backend analyzers + 2 stale servers + 1 test script + 7 StockScreener cluster + 2 stock-movement + 3 confluence engines + 1 WealthCharts orphan)
+- LOC deleted: ~21,321 (verified by `git diff --stat`)
+- Duplicate groups merged: 4 (WealthCharts 2→1, StockScreener cluster 7→1 active, stock-movement 2→0, confluence engines 4→1)
+- Files KEPT (has importer): 2 (`src/lib/data-adapter.ts` 1 importer, `vps-service/strategies_merge/` 1 importer)
+- Duplicate groups KEPT (different APIs): 2 (ShareButton — stockData vs targetRef patterns; market_regime — 3-state vs Minervini 1-4 stages)
+- Caller rewires: 2 (`data_engine_guard.py` → main.py, `verify_python_architecture.py` cleanup)
+- Lint: `bun run lint` → exit 0 ✅
+- Tests: 259 passed / 15 pre-existing failures / 9 skipped — 0 new failures ✅
+- App health: `curl localhost:3001/` → HTTP 200 ✅
+- Constitution compliance: NO new code (only deletions + 2 necessary path-constant rewires to prevent runtime breakage); `git rm` for all deletions (history preserved); lint after every batch; app stayed up throughout.
+
+Report: /home/z/my-project/agent-ctx/REORG-PHASE-1-2-REPORT.md
+
+---
+Task ID: REORG-PHASE-3-4
+Agent: Senior Software Engineer (reorganization Phase 3+4)
+Task: Execute Phase 3 (Create Module Structure — Modules 1-3 only: radar + publishing + personalized) + Phase 4 (Wire Hidden Gems). NO new code — only `git mv` + import path updates + wiring of existing-but-unrendered components + cron jobs. App must stay up.
+
+Work Log:
+- Read `agent-ctx/MASTER-ARCHITECTURE-PLAN.md` (302 lines) + worklog tail (last 200 lines) for context — understood prior REORG-PHASE-1-2 deleted 21,321 LOC of dead code + merged 4 duplicate groups; 7-phase plan; module architecture (13 frontend + 9 backend modules planned).
+- Verified baseline: HTTP 200 from `curl localhost:3001/`; `bun run lint` exit 0; 17 staged Phase-1-2 changes (rewires + report) and ~28 unstaged deletions (Phase-1-2 dead-code removals) — left untouched.
+- Phase 3 — Module 1: radar/ created. `mkdir -p src/modules/radar/{components,lib}`. Used `git mv` to relocate 11 files (R100 history preserved): 8 components (AccuracyDashboard, ExitRadarTab, MultiMarketRadarTab, PersonalizedRadarTab, RadarStatsCards, SignalStrengthMeter, SignalTrackingTimeline, WeeklyReportTab) + 3 lib files (radar-cache, radar-db, radar-signal-tracker). Old `src/components/predictions/radar/` directory now empty — `rmdir`'d.
+- Updated 11 radar-component importers via Edit/MultiEdit: `MakerRadarTab.tsx` (3 imports), `MarketAnalysisView.tsx` (2 dynamic imports), 6 test files (WeeklyReportTab, MultiMarketRadarTab, PersonalizedRadarTab, SignalStrengthMeter, AccuracyDashboard, SignalTrackingTimeline tests).
+- Updated 12 radar-lib importers via `sed -i` bulk replace: `lib/schedulers/radar-alerts.ts` (radar-cache + radar-signal-tracker dynamic), `api/radar/personalized/route.ts`, `api/stocks/[ticker]/publish-data/route.ts`, `api/maker-radar/{route,footprint,entry-timing,warmup,timeline,sector-treemap,exit-radar,stock}/route.ts` (8 files). Verified 0 stale imports remain.
+- Created `src/modules/radar/index.ts` with public API (8 named exports — 4 stat cards + SignalStrengthMeter + ExitRadarTab + SignalTrackingTimeline + WeeklyReportTab + MultiMarketRadarTab + AccuracyDashboard + PersonalizedRadarTab). Internal lib files NOT re-exported (API routes import them directly via `@/modules/radar/lib/*`).
+- Ran `bun run lint` → exit 0 ✅. App responded HTTP 200 ✅.
+- Phase 3 — Module 2: publishing/ created. `mkdir -p src/modules/publishing/{components,lib}`. Used `git mv` to relocate 5 files (R100): 3 components (StockPublisher, UnifiedPublishButton, ShareButton) + 2 lib files (official-links, stock-publish-text).
+- Updated 33 publishing-component importers + 30 official-links importers + 3 stock-publish-text importers via single `sed -i` pass with 5 replacement patterns. Single-pass sed keeps the diff atomic and reproducible. Verified 0 stale imports remain.
+- Created `src/modules/publishing/index.ts` re-exporting 3 components + 5 lib helpers (`OFFICIAL_LINKS`, `OFFICIAL_LINKS_SHORT`, `OFFICIAL_LINKS_BLOCK`, `COMMUNITY_PROMPT`, `withOfficialLinks`, `RECOMMENDATION_TEXT`, `MARKET_REGIME_AR`, `generatePublishText`, `generatePublishPayload`, `escapeHtmlForTelegram`). First draft had invented export names (`formatStockForPublish`, `buildStockPublishText`) — corrected after grep on actual exports.
+- Ran `bun run lint` → exit 0 ✅. App responded HTTP 200 ✅.
+- Phase 3 — Module 3: personalized/lib created. `git mv src/lib/personalized-radar.ts src/modules/personalized/lib/`. Single importer (`api/radar/personalized/route.ts`) updated via sed. Verified 0 stale imports.
+- Ran `bun run lint` → exit 0 ✅. Initial curl returned HTTP 000 — Next dev server was recompiling (next-server at 99% CPU). Waited 30s, retried → HTTP 200 ✅.
+- Phase 3.2 — Backend modules: Created `vps-service/modules/` + 8 subdirectories (admin, ai, market_data, market_regime, portfolio, predictions, radar, telegram) + `__init__.py` in each (9 files total). Each `__init__.py` is a docstring placeholder noting the planned scope. No file moves (per task instructions — too risky without Python import-graph analysis).
+- Phase 4.1 — Wired 3 "almost-dead" radar tabs into `MarketAnalysisView.tsx`: added 3 dynamic-imported components (MultiMarketRadarTab, AccuracyDashboard, PersonalizedRadarTab — all from `@/modules/radar/components/`). Added 3 TabsTrigger entries (Arabic labels: الرادار الموحّد / دقة الرادار / الرادار المخصّص) with distinct lucide-react icons (Radar/Gauge/UserCircle) + 3 TabsContent blocks. Adjusted TabsList grid from `sm:grid-cols-4 lg:grid-cols-8` → `sm:grid-cols-6 lg:grid-cols-11` to fit the new 11-tab layout. Imported 3 new lucide icons (`Radar, Gauge, UserCircle`).
+- Phase 4.2 — Added 4 cron jobs to `crontab.txt` (entries 19-22, appended before the "للتثبيت" footer): (19) `mine_learned_lessons.py` weekly Sunday 04:00 UTC → `/tmp/learned_lessons.log`; (20) `exit_policy_optimizer.py` monthly 1st 05:00 UTC → `/tmp/exit_optimizer.log`; (21) `post_market_feedback.py` Sun-Thu 14:30 UTC → `/tmp/post_market_feedback.log`; (22) `hot_candidate_detector.py` every 15min during EGX session (08:00-12:30 UTC, Sun-Thu) → `/tmp/hot_candidate.log`. All 4 target scripts verified to exist on disk. Caught + fixed a cron-syntax bug (initial draft had 6 fields `0 30 14 * * 0-4` for job 21; corrected to standard 5 fields `30 14 * * 0-4`).
+- Phase 4.3 — Audit verification: `LiquidityFlowPanel` + `IntradayPressurePanel` ALREADY wired in `DashboardView.tsx` lines 432-447 by prior P1-GEMS-WIRING task (with comments). Imports at lines 24-25 already correct (these stay in `@/components/dashboard/` — they're dashboard widgets, not part of moved radar/publishing modules). No re-wiring needed.
+- Phase 4.4 — Audit verification: `SystemTopologyTab` (wraps `SystemTopologyGraph`) ALREADY wired in `AdminView.tsx` as a full admin tab: type 'system-topology' (line 408), registered in tab list with Network icon (line 994), lazy-loaded via `next/dynamic` + `withErrorBoundary` (lines 213-221), rendered at `{activeTab === 'system-topology' && (<SystemTopologyTab />)}` (lines 1936-1938). No re-wiring needed.
+- Final verification:
+  * `bun run lint` → exit 0 ✅
+  * `bun run test` → 259 passed / 15 failed / 9 skipped (283 total) — 0 NEW failures ✅ (15 failures identical to Phase-1-2 baseline: all DB-integration tests requiring populated SQLite tables + 2 pre-existing radar WeeklyReportTab UI mock failures)
+  * `curl http://localhost:3001/` → HTTP 200 ✅
+  * Stale import grep: 0 hits for `@/components/predictions/radar/`, `@/components/shared/{StockPublisher,UnifiedPublishButton,ShareButton}`, `@/lib/{radar-cache,radar-db,radar-signal-tracker,personalized-radar,official-links,stock-publish-text}` ✅
+  * New `src/modules/` tree: 19 files (3 index.ts + 16 moved files across radar + publishing + personalized) ✅
+  * New `vps-service/modules/` tree: 9 __init__.py files ✅
+  * MarketAnalysisView: 11 tabs total (8 existing + 3 new) ✅
+  * crontab.txt: 22 jobs total (1-18 existing + 19-22 new) ✅
+- Git history preservation: All 17 file moves done via `git mv`. `git diff --cached -M` reports `R100` for every rename (100% content similarity).
+
+Stage Summary:
+- Files moved via `git mv`: 17 (8 radar components + 3 radar libs + 3 publishing components + 2 publishing libs + 1 personalized lib) — all R100
+- Files modified: 62 (import path updates + 3-tab wiring in MarketAnalysisView + 4 cron jobs in crontab.txt)
+- New files created: 12 (2 frontend `index.ts` + 9 backend `__init__.py` + this report)
+- Frontend modules created: 3 (radar, publishing, personalized)
+- Backend module placeholders created: 8 (radar, predictions, market_regime, market_data, telegram, ai, portfolio, admin)
+- Hidden gems wired: 7 (3 frontend tabs + 4 backend cron jobs); 2 more (LiquidityFlowPanel/IntradayPressurePanel + SystemTopologyGraph) already done by prior P1-GEMS-WIRING task — audit verified only, no re-wiring
+- Import paths updated: ~120+ sites across 62 files (sed-bulk for radar-lib + publishing-lib + publishing-components + personalized-radar; Edit-per-file for radar-component direct imports in MakerRadarTab + MarketAnalysisView + 6 test files)
+- Lint: `bun run lint` → exit 0 ✅ (after every module move + final)
+- Tests: 259 passed / 15 pre-existing failures / 9 skipped — 0 NEW failures ✅ (matches Phase-1-2 baseline exactly)
+- App health: `curl localhost:3001/` → HTTP 200 ✅ throughout (one ~30s recompile pause observed after personalized-radar.ts move; recovered with no manual intervention)
+- Constitution compliance: NO new code (only `git mv` + sed-bulk import path updates + 3 dynamic-imports of pre-existing components + 4 cron entries for pre-existing scripts + 2 `index.ts` re-export shims + 9 backend `__init__.py` docstring placeholders); `git mv` for all 17 moves (history preserved via R100); lint after every module move; app stayed up throughout.
+- Report: /home/z/my-project/agent-ctx/REORG-PHASE-3-4-REPORT.md

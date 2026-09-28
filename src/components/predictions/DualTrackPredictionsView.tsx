@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
+import { StockPublisher, type StockPublishData } from '@/modules/publishing/components/StockPublisher';
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs';

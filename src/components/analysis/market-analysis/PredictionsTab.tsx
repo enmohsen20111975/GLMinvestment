@@ -28,7 +28,7 @@ import { cn, getRRVerdict, getStockRiskAlert, safeToFixed, verdictStyle, compute
 import { useAppStore, MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { toast } from 'sonner';
-import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 import dynamic from 'next/dynamic';
 import { Dialog, DialogContent, DialogClose, DialogTitle } from '@/components/ui/dialog';
 

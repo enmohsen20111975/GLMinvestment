@@ -35,7 +35,7 @@ import { SmartTip } from '@/components/smart-tips/SmartTip';
 import { AIAnalysisWidget } from '@/components/ai/AIAnalysisWidget';
 import { StockAdvancedAnalysisView } from './StockAdvancedAnalysisView';
 import { QuickPublishButton } from '@/components/publishing/QuickPublishButton';
-import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
+import { StockPublisher, type StockPublishData } from '@/modules/publishing/components/StockPublisher';
 import { ComprehensiveStockAnalysis } from './ComprehensiveStockAnalysis';
 import { DeltaVolumeBar } from './DeltaVolumeBar';
 import GateAnalysisView from './GateAnalysisView';

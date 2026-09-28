@@ -5,7 +5,7 @@
 
 import { detectIsSellSignal, isSellSignalLabel, isBuySignalLabel } from '@/lib/signal-utils';
 import { MARKET_NAMES_AR, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import type {
   StockData,
   LifecycleStatus,

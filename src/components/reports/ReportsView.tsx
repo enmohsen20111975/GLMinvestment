@@ -31,10 +31,10 @@ import { apiClient } from '@/lib/api-client';
 import type { AiInsights } from '@/types';
 import { toast } from 'sonner';
 import { adaptAiInsights } from '@/lib/store';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { DailyMarketReport } from './DailyMarketReport';
 import { StockAnalysisReport } from './StockAnalysisReport';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 
 /* ============================
    Stored-Analysis Types & Helpers (P15-TASK-4)

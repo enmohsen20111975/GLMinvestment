@@ -3,7 +3,7 @@
 import React from 'react';
 import { Globe, Shield, FileText, AlertTriangle, Facebook, MessageCircle, Send, Smartphone } from 'lucide-react';
 import Link from 'next/link';
-import { OFFICIAL_LINKS } from '@/lib/official-links';
+import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
 
 export function Footer() {
   return (

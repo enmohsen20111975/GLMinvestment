@@ -48,7 +48,7 @@ vi.mock('@/hooks/useVisibilityAwarePolling', () => ({
   useVisibilityAwarePolling: vi.fn(),
 }));
 
-import { AccuracyDashboard } from '@/components/predictions/radar/AccuracyDashboard';
+import { AccuracyDashboard } from '@/modules/radar/components/AccuracyDashboard';
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 function buildAccuracyResponse(overrides: Record<string, unknown> = {}) {

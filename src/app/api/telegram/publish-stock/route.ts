@@ -17,7 +17,7 @@
  *      price history + technicals). Falls back to a minimal payload if the
  *      internal call fails.
  *   4. Format the data via generatePublishText (same Arabic formatter used by
- *      the client StockPublisher component — extracted to @/lib/stock-publish-text).
+ *      the client StockPublisher component — extracted to @/modules/publishing/lib/stock-publish-text).
  *   5. Send to Telegram bot API: POST /bot{TOKEN}/sendMessage with parse_mode=HTML.
  *   6. Return { success, message_id, chat_id, source }
  *
@@ -39,7 +39,7 @@ import {
   generatePublishText,
   escapeHtmlForTelegram,
   type StockPublishData,
-} from '@/lib/stock-publish-text';
+} from '@/modules/publishing/lib/stock-publish-text';
 
 export const dynamic = 'force-dynamic';
 

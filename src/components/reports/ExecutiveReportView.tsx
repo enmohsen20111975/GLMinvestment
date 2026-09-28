@@ -34,7 +34,7 @@ import {
   BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   Legend,
 } from 'recharts';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 
 // RL-FIX-7: 999 = YTD (من أول السنة) — من 1 يناير للسنة الحالية
 export type ReportTimeframe = 1 | 2 | 7 | 14 | 30 | 60 | 90 | 180 | 365 | 999 | 0;

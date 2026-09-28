@@ -17,10 +17,10 @@ import {
   Crosshair, Layers, Trophy
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
 import { ExpertIntelligencePanel } from '@/components/shared/ExpertIntelligencePanel';
-import { StockPublisher } from '@/components/shared/StockPublisher';
+import { StockPublisher } from '@/modules/publishing/components/StockPublisher';
 import { PredictionTrackingDashboard } from '@/components/predictions/PredictionTrackingDashboard';
 
 // ============================================================================

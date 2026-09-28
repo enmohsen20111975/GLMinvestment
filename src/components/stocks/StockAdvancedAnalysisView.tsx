@@ -16,7 +16,7 @@ import {
   Zap,
   Globe,
 } from 'lucide-react';
-import { ShareButton } from '@/components/shared/ShareButton';
+import { ShareButton } from '@/modules/publishing/components/ShareButton';
 import { QuickPublishButton } from '@/components/publishing/QuickPublishButton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

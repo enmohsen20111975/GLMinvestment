@@ -18,7 +18,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
-import { WeeklyReportTab } from '@/components/predictions/radar/WeeklyReportTab';
+import { WeeklyReportTab } from '@/modules/radar/components/WeeklyReportTab';
 
 // ─── Mocks ─────────────────────────────────────────────────────────────────
 // Mock global.fetch so the component never makes a real network call.

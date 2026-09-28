@@ -24,7 +24,7 @@ import {
   signalsToStars,
   signalAccent,
   signalHintAr,
-} from '@/components/predictions/radar/SignalStrengthMeter';
+} from '@/modules/radar/components/SignalStrengthMeter';
 
 describe('signalsToStars', () => {
   it('returns 5 stars for 6/6 (full trust)', () => {

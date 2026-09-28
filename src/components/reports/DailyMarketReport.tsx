@@ -18,14 +18,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import type { MarketOverview, AiInsights, MarketIndex, StockMini } from '@/types';
 import { toast } from 'sonner';
 import { adaptMarketOverview, adaptAiInsights } from '@/lib/store';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 
 interface DailyMarketReportProps {
   printMode?: boolean;

@@ -29,7 +29,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { StockIconMini } from '@/components/stocks/StockIcon';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,11 +48,11 @@ import {
   SectorTreemapCard,
   EntryTimingCard,
   LiquidityFootprintCard,
-} from '@/components/predictions/radar/RadarStatsCards';
+} from '@/modules/radar/components/RadarStatsCards';
 // RADAR-QUICK-WINS (Priority 2): Signal Strength Meter
-import { SignalStrengthMeter, signalsToStars, signalHintAr } from '@/components/predictions/radar/SignalStrengthMeter';
+import { SignalStrengthMeter, signalsToStars, signalHintAr } from '@/modules/radar/components/SignalStrengthMeter';
 // L2-SIGNAL-TIMELINE: Signal Tracking Timeline (visual journey for tracked stocks)
-import { SignalTrackingTimeline } from '@/components/predictions/radar/SignalTrackingTimeline';
+import { SignalTrackingTimeline } from '@/modules/radar/components/SignalTrackingTimeline';
 
 // ============================================================================
 // Types — Maker Radar API contract

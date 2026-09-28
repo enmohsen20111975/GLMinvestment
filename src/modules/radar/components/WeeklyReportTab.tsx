@@ -1,0 +1,740 @@
+'use client';
+
+// ============================================================================
+// WeeklyReportTab — التقرير الأسبوعي للرادار
+// ============================================================================
+// L2-WEEKLY-RADAR-REPORT: A weekly PDF + image report for subscribers.
+// Sent every Sunday at 08:00 Cairo time via Telegram. Shows:
+//   1. Top 5 stocks for the upcoming week (from radar cache)
+//   2. Performance summary of last week's radar picks
+//   3. "Stock of the Week" — highest-conviction pick with full analysis
+//   4. Market regime (DEFENSIVE/NORMAL/AGGRESSIVE)
+//   5. Sector heatmap (top 5 sectors by avg change %)
+//
+// Data source:
+//   GET /api/radar/weekly-report?market=EGX  → JSON payload (instant <50ms)
+//   GET /api/radar/weekly-report/pdf?market=EGX → PDF download
+//
+// The component auto-refreshes every 5 minutes while visible (it doesn't
+// need to be more frequent — the report is weekly). All UI is RTL Arabic,
+// shadcn-based. Includes a "Download PDF" button + a subscribe CTA.
+// ============================================================================
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Calendar, Download, Star, TrendingUp, TrendingDown,
+  RefreshCw, FileText, Bell, Sparkles, BarChart3, Activity,
+  Target, Shield, ExternalLink,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { useVisibilityAwarePolling } from '@/hooks/useVisibilityAwarePolling';
+import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
+import type { MarketType } from '@/lib/store';
+
+// ============================================================================
+// Types — Weekly Report API contract
+// ============================================================================
+interface StockOfWeek {
+  ticker: string;
+  path?: string;
+  path_ar?: string;
+  current_price?: number;
+  target_1?: number;
+  target_2?: number;
+  stop_loss?: number;
+  target_1_pct?: number;
+  stop_loss_pct?: number;
+  signal_count?: number;
+  risk_reward?: number;
+  reason?: string;
+}
+
+interface Top5Stock {
+  ticker: string;
+  path?: string;
+  path_ar?: string;
+  current_price?: number;
+  signal_count?: number;
+  volume_ratio_10d_vs_20d?: number;
+  reason?: string;
+}
+
+interface LastWeekStock {
+  ticker: string;
+  entry_price: number;
+  entry_date?: string;
+  current_price: number | null;
+  return_pct: number | null;
+  status: 'win' | 'loss' | 'flat' | 'no_data';
+  status_emoji: string;
+}
+
+interface LastWeekPerformance {
+  stocks: LastWeekStock[];
+  avg_return_pct: number;
+  win_count: number;
+  total_count: number;
+  win_rate_pct: number;
+}
+
+interface SectorInfo {
+  sector: string;
+  stocks_count: number;
+  avg_change_pct: number;
+  direction: 'inflow' | 'outflow' | 'neutral';
+  color: string;
+  emoji: string;
+}
+
+interface MarketRegime {
+  regime: string;
+  regime_ar?: string;
+  last_update?: string | null;
+  confidence?: number | null;
+  reasons?: string[];
+  source?: string;
+}
+
+interface WeeklyReportData {
+  generated_at: string;
+  market: string;
+  week_number: number;
+  year: number;
+  week_start: string;
+  week_end: string;
+  week_start_ar?: string;
+  week_end_ar?: string;
+  market_regime: MarketRegime;
+  stock_of_week: StockOfWeek | null;
+  top_5: Top5Stock[];
+  last_week_performance: LastWeekPerformance;
+  sector_heatmap: SectorInfo[];
+  db_source?: string | null;
+  radar_cache_found?: boolean;
+  tracking_count?: number;
+  official_links?: Record<string, string>;
+}
+
+interface WeeklyReportResponse {
+  success: boolean;
+  cached?: boolean;
+  cache_age_seconds?: number | null;
+  cache_stale?: boolean;
+  warmup_running?: boolean;
+  cache_generated_at?: string | null;
+  market?: string;
+  report?: WeeklyReportData;
+  warming_up?: boolean;
+  error?: string;
+  warning?: string;
+}
+
+interface WeeklyReportTabProps {
+  market: MarketType | string;
+}
+
+// ============================================================================
+// Regime styling — colors + Arabic labels for DEFENSIVE/NORMAL/AGGRESSIVE
+// ============================================================================
+const REGIME_STYLES: Record<string, { color: string; bg: string; border: string; emoji: string }> = {
+  DEFENSIVE: {
+    color: 'text-rose-700 dark:text-rose-300',
+    bg: 'bg-rose-50 dark:bg-rose-950/40',
+    border: 'border-rose-200 dark:border-rose-900',
+    emoji: '🛡️',
+  },
+  NORMAL: {
+    color: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
+    border: 'border-amber-200 dark:border-amber-900',
+    emoji: '⚖️',
+  },
+  AGGRESSIVE: {
+    color: 'text-emerald-700 dark:text-emerald-300',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    border: 'border-emerald-200 dark:border-emerald-900',
+    emoji: '🚀',
+  },
+};
+
+// ============================================================================
+// Helpers
+// ============================================================================
+function fmtPrice(n?: number | null): string {
+  if (n == null || Number.isNaN(n)) return '—';
+  return n.toFixed(2);
+}
+
+function fmtPct(n?: number | null, withSign = true): string {
+  if (n == null || Number.isNaN(n)) return '—';
+  const sign = withSign && n > 0 ? '+' : '';
+  return `${sign}${n.toFixed(1)}%`;
+}
+
+function fmtPctPlain(n?: number | null): string {
+  if (n == null || Number.isNaN(n)) return '0.0';
+  return n.toFixed(1);
+}
+
+function regimeAr(regime: string): string {
+  const map: Record<string, string> = {
+    DEFENSIVE: 'دِفاعي (شد اللجام)',
+    NORMAL: 'عادي',
+    AGGRESSIVE: 'هجومي (دوّسة على الجاز)',
+  };
+  return map[regime] || regime;
+}
+
+// ============================================================================
+// WeeklyReportTab — main component
+// ============================================================================
+export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
+  const [data, setData] = useState<WeeklyReportResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [warmingUp, setWarmingUp] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+
+  // CRYPTO / GOLD fallback to EGX (no dedicated crypto/gold radar data)
+  const effectiveMarket =
+    market === 'CRYPTO' || market === 'GOLD' ? 'EGX' : String(market || 'EGX');
+
+  const fetchData = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/radar/weekly-report?market=${encodeURIComponent(effectiveMarket)}`,
+        { cache: 'no-store' },
+      );
+      const json: WeeklyReportResponse = await res.json();
+      if (json.success) {
+        setData(json);
+        setWarmingUp(false);
+      } else if (json.warming_up) {
+        setWarmingUp(true);
+        setData(null);
+        // Retry in 15s — the background warmup should finish quickly.
+        setTimeout(() => fetchData(false), 15_000);
+      } else {
+        setError(json.error || 'فشل تحميل التقرير الأسبوعي');
+        setData(null);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
+      setData(null);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [effectiveMarket]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Poll every 5 minutes when the tab is visible — the report is weekly,
+  // so we don't need to poll more frequently.
+  useVisibilityAwarePolling(() => fetchData(false), 5 * 60 * 1000);
+
+  const handleRefresh = async () => {
+    setRegenerating(true);
+    try {
+      // Trigger synchronous regeneration via POST
+      await fetch(
+        `/api/radar/weekly-report?market=${encodeURIComponent(effectiveMarket)}`,
+        { method: 'POST' },
+      );
+      await fetchData(false);
+    } catch {
+      // ignore — best-effort
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    // Open the PDF in a new tab — the browser handles the download.
+    const url = `/api/radar/weekly-report/pdf?market=${encodeURIComponent(effectiveMarket)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // ============================================================================
+  // Loading state
+  // ============================================================================
+  if (loading && !data) {
+    return (
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+            <h3 className="text-base font-semibold">التقرير الأسبوعي للرادار</h3>
+          </div>
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <Skeleton className="h-8 w-full mb-2" />
+        <Skeleton className="h-8 w-full mb-2" />
+        <Skeleton className="h-8 w-full mb-2" />
+        <Skeleton className="h-8 w-full" />
+      </Card>
+    );
+  }
+
+  // ============================================================================
+  // Warming-up state (first request — cache being populated)
+  // ============================================================================
+  if (warmingUp && !data) {
+    return (
+      <Card className="p-8 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
+            <FileText className="h-6 w-6 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold mb-1">التقرير الأسبوعي بيتولّد</h3>
+            <p className="text-sm text-muted-foreground">
+              أول تشغيل — بنولّد التقرير الأسبوعي. حاول تاني خلال دقيقة.
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // ============================================================================
+  // Error state
+  // ============================================================================
+  if (error && !data) {
+    return (
+      <Card className="p-4 border-dashed border-rose-200 dark:border-rose-900">
+        <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
+          <AlertTriangle className="h-4 w-4" />
+          <span>تعذّر تحميل التقرير الأسبوعي: {error}</span>
+        </div>
+        <Button variant="outline" size="sm" className="mt-3" onClick={() => fetchData()}>
+          <RefreshCw className="h-4 w-4 ml-2" />
+          إعادة المحاولة
+        </Button>
+      </Card>
+    );
+  }
+
+  // Re-import here because it's used only in the render path above.
+  function AlertTriangle({ className }: { className?: string }) {
+    return <span className={className}>⚠️</span>;
+  }
+
+  const report = data?.report;
+  if (!report) {
+    return (
+      <Card className="p-4">
+        <div className="text-sm text-muted-foreground">لا توجد بيانات تقرير متاحة.</div>
+      </Card>
+    );
+  }
+
+  const regimeStyle = REGIME_STYLES[report.market_regime?.regime || 'NORMAL'] || REGIME_STYLES.NORMAL;
+  const sow = report.stock_of_week;
+  const top5 = report.top_5 || [];
+  const perf = report.last_week_performance;
+  const sectors = report.sector_heatmap || [];
+
+  // ============================================================================
+  // Main render
+  // ============================================================================
+  return (
+    <div className="space-y-4">
+      {/* ─── Header ─────────────────────────────────────────────────── */}
+      <Card className="overflow-hidden">
+        <CardHeader className={`pb-3 ${regimeStyle.bg} ${regimeStyle.border} border-b`}>
+          <div className="flex items-start justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <span>التقرير الأسبوعي للرادار</span>
+              </CardTitle>
+              <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>الأسبوع {report.week_number}، {report.year}</span>
+                <span className="text-muted-foreground/50">|</span>
+                <span>{report.week_start_ar || report.week_start} — {report.week_end_ar || report.week_end}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={regenerating}
+              >
+                <RefreshCw className={`h-4 w-4 ml-1 ${regenerating ? 'animate-spin' : ''}`} />
+                {regenerating ? 'بيتجدد...' : 'تجديد'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDownloadPdf}
+              >
+                <Download className="h-4 w-4 ml-1" />
+                تحميل PDF
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-3">
+          {/* Regime badge */}
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${regimeStyle.bg} ${regimeStyle.color} ${regimeStyle.border} border`}>
+            <span className="text-base">{regimeStyle.emoji}</span>
+            <span className="text-sm font-semibold">حالة السوق: {report.market_regime?.regime || 'NORMAL'}</span>
+            <span className="text-xs opacity-80">({report.market_regime?.regime_ar || regimeAr(report.market_regime?.regime || 'NORMAL')})</span>
+          </div>
+          {report.market_regime?.reasons && report.market_regime.reasons.length > 0 && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              <Sparkles className="inline h-3 w-3 ml-1" />
+              {report.market_regime.reasons.slice(0, 2).join(' • ')}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Stock of the Week ─────────────────────────────────────── */}
+      <Card className="border-emerald-200 dark:border-emerald-900">
+        <CardHeader className="pb-3 bg-emerald-50/50 dark:bg-emerald-950/20">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Star className="h-5 w-5 text-amber-500 fill-amber-400" />
+            <span>سهم الأسبوع</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {sow ? (
+            <div className="space-y-4">
+              {/* Ticker + path */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                    {sow.ticker}
+                  </span>
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    {sow.path_ar || sow.path || '—'}
+                  </Badge>
+                </div>
+                <div className="text-left">
+                  <div className="text-xs text-muted-foreground">السعر الحالي</div>
+                  <div className="text-lg font-bold">{fmtPrice(sow.current_price)}</div>
+                </div>
+              </div>
+
+              {/* Targets + stop loss */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg border border-emerald-200 dark:border-emerald-900 p-2">
+                  <div className="text-xs text-muted-foreground">🎯 الهدف 1</div>
+                  <div className="text-base font-bold text-emerald-700 dark:text-emerald-300">
+                    {fmtPrice(sow.target_1)}
+                  </div>
+                  <div className="text-xs text-emerald-600">
+                    +{fmtPctPlain(sow.target_1_pct)}%
+                  </div>
+                </div>
+                <div className="rounded-lg border border-blue-200 dark:border-blue-900 p-2">
+                  <div className="text-xs text-muted-foreground">🎯 الهدف 2</div>
+                  <div className="text-base font-bold text-blue-700 dark:text-blue-300">
+                    {fmtPrice(sow.target_2)}
+                  </div>
+                  <div className="text-xs text-blue-600">
+                    {sow.target_2 && sow.current_price
+                      ? `+${((sow.target_2 / sow.current_price - 1) * 100).toFixed(1)}%`
+                      : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-rose-200 dark:border-rose-900 p-2">
+                  <div className="text-xs text-muted-foreground">🛑 وقف الخسارة</div>
+                  <div className="text-base font-bold text-rose-700 dark:text-rose-300">
+                    {fmtPrice(sow.stop_loss)}
+                  </div>
+                  <div className="text-xs text-rose-600">
+                    {fmtPct(sow.stop_loss_pct)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Signal strength + R/R */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm">قوة الإشارة:</span>
+                  <span className="text-sm font-bold">
+                    {sow.signal_count || 0}/6
+                  </span>
+                  <span className="text-amber-400">
+                    {'⭐'.repeat(Math.min(5, sow.signal_count || 0))}
+                  </span>
+                </div>
+                {sow.risk_reward != null && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">R/R: </span>
+                    <span className="font-bold text-blue-700 dark:text-blue-300">
+                      {sow.risk_reward.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Reason */}
+              {sow.reason && (
+                <div className="rounded-lg bg-muted/40 p-3 text-sm">
+                  <div className="font-semibold mb-1 flex items-center gap-1">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    السبب
+                  </div>
+                  <p className="text-muted-foreground">{sow.reason}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground py-4 text-center">
+              لا يوجد سهم مميز هذا الأسبوع — شغّل رادار الميكرز أولاً.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Top 5 stocks ───────────────────────────────────────────── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <span>أفضل 5 أسهم للأسبوع القادم</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-3">
+          {top5.length > 0 ? (
+            <div className="space-y-2">
+              {top5.map((s, i) => (
+                <div
+                  key={s.ticker}
+                  className="flex items-center justify-between p-2 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-bold text-muted-foreground w-6">
+                      {i + 1}.
+                    </span>
+                    <div>
+                      <div className="font-bold">{s.ticker}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {s.path_ar || s.path || '—'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    {s.signal_count != null && s.signal_count > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {s.signal_count}/6
+                      </Badge>
+                    )}
+                    <span className="font-mono">{fmtPrice(s.current_price)}</span>
+                    {s.volume_ratio_10d_vs_20d != null && (
+                      <span className="text-xs text-muted-foreground">
+                        {s.volume_ratio_10d_vs_20d.toFixed(2)}×
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground py-4 text-center">
+              لا توجد أسهم في الكاش — شغّل رادار الميكرز أولاً.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Last week performance ──────────────────────────────────── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <span>أداء أسهم الأسبوع الماضي</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-3">
+          {perf && perf.stocks && perf.stocks.length > 0 ? (
+            <div className="space-y-3">
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg border border-muted p-2">
+                  <div className="text-xs text-muted-foreground">📈 متوسط العائد</div>
+                  <div className={`text-base font-bold ${perf.avg_return_pct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {fmtPct(perf.avg_return_pct)}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-muted p-2">
+                  <div className="text-xs text-muted-foreground">🎯 نسبة النجاح</div>
+                  <div className="text-base font-bold text-blue-700 dark:text-blue-300">
+                    {perf.win_count}/{perf.total_count}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-muted p-2">
+                  <div className="text-xs text-muted-foreground">🏆 معدل النجاح</div>
+                  <div className="text-base font-bold text-emerald-700 dark:text-emerald-300">
+                    {perf.win_rate_pct.toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+              <Progress value={perf.win_rate_pct} className="h-2" />
+
+              {/* Stocks list */}
+              <div className="space-y-1.5 mt-3">
+                {perf.stocks.map((s, i) => (
+                  <div
+                    key={`${s.ticker}-${i}`}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{s.status_emoji}</span>
+                      <span className="font-bold">{s.ticker}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">
+                        دخل {fmtPrice(s.entry_price)}
+                      </span>
+                      <span className="text-muted-foreground/50">→</span>
+                      <span className="font-mono">{fmtPrice(s.current_price)}</span>
+                      {s.return_pct != null && (
+                        <Badge
+                          variant="outline"
+                          className={
+                            s.return_pct > 0
+                              ? 'text-emerald-700 dark:text-emerald-300'
+                              : s.return_pct < 0
+                              ? 'text-rose-700 dark:text-rose-300'
+                              : ''
+                          }
+                        >
+                          {fmtPct(s.return_pct)}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground py-4 text-center">
+              لا توجد أسهم متابَعة من الأسبوع الماضي.
+              <br />
+              <span className="text-xs">ابدأ بتتبع أسهم من رادار الميكرز ليظهروا هنا الأسبوع القادم.</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Sector heatmap ────────────────────────────────────────── */}
+      {sectors.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <span>خريطة القطاعات</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3">
+            <div className="space-y-1.5">
+              {sectors.map((sec, i) => (
+                <div
+                  key={`${sec.sector}-${i}`}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{sec.emoji}</span>
+                    <span className="font-medium">{sec.sector}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({sec.stocks_count} سهم)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={
+                        sec.avg_change_pct > 0
+                          ? 'text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
+                          : sec.avg_change_pct < 0
+                          ? 'text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900'
+                          : 'text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900'
+                      }
+                    >
+                      {sec.avg_change_pct > 0 ? (
+                        <TrendingUp className="h-3 w-3 ml-1" />
+                      ) : sec.avg_change_pct < 0 ? (
+                        <TrendingDown className="h-3 w-3 ml-1" />
+                      ) : null}
+                      {fmtPct(sec.avg_change_pct)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Subscribe CTA ─────────────────────────────────────────── */}
+      <Card className="border-2 border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10">
+        <CardContent className="p-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Bell className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="text-base font-semibold">التقرير الأسبوعي كل أحد</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-3">
+            اشترك عشان يوصلك التقرير الأسبوعي على تليجرام كل يوم أحد صباحاً — أفضل 5 أسهم + سهم الأسبوع + متابعة الأداء.
+          </p>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <a
+              href={OFFICIAL_LINKS.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              انضم لقناة التليجرام
+            </a>
+            <span className="text-muted-foreground">|</span>
+            <a
+              href={OFFICIAL_LINKS.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              الموقع
+            </a>
+            <span className="text-muted-foreground">|</span>
+            <a
+              href={OFFICIAL_LINKS.android}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              تطبيق أندرويد
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ─── Footer with disclaimer ────────────────────────────────── */}
+      <div className="text-center text-xs text-muted-foreground">
+        <Shield className="inline h-3 w-3 ml-1" />
+        تحليل تلقائي — ليس نصيحة استثمارية. اتخذ قراراتك بناءً على بحثك الخاص.
+        <br />
+        <span className="opacity-60">
+          آخر تحديث: {data?.cache_generated_at
+            ? new Date(data.cache_generated_at).toLocaleString('ar-EG')
+            : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default WeeklyReportTab;

@@ -8,7 +8,7 @@ import {
   type PieChartData,
   generatePieChartSVG
 } from '@/lib/chart-generator';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 
 /**
  * Telegram Share API

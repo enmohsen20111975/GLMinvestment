@@ -20,7 +20,7 @@ import React from 'react';
 import {
   SignalTrackingTimeline,
   type TimelineData,
-} from '@/components/predictions/radar/SignalTrackingTimeline';
+} from '@/modules/radar/components/SignalTrackingTimeline';
 
 // ─── Mocks ─────────────────────────────────────────────────────────────────
 // Mock global.fetch so the component never makes a real network call.

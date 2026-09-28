@@ -3,7 +3,7 @@ import {
   readExitRadarCache,
   getLiveStatus,
   isWarmupRunning,
-} from '@/lib/radar-cache';
+} from '@/modules/radar/lib/radar-cache';
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import path from 'path';

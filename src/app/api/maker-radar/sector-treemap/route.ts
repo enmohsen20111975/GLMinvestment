@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { existsSync } from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';
-import { readRadarCache } from '@/lib/radar-cache';
+import { readRadarCache } from '@/modules/radar/lib/radar-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

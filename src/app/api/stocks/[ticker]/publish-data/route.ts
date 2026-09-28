@@ -33,7 +33,7 @@ import {
   getRadarDbConfig,
   parseVolume,
   computeTurnover,
-} from '@/lib/radar-db';
+} from '@/modules/radar/lib/radar-db';
 import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import path from 'path';

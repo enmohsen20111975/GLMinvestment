@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShareButton } from '@/components/share/ShareButton';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 import { StockSelector } from '@/components/stocks/StockSelector';
 import { toast } from 'sonner';
 import { SafeWidget } from '@/components/dashboard/SafeWidget';

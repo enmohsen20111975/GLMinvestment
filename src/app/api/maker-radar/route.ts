@@ -10,7 +10,7 @@ import {
   getLiveStatus,
   isCacheStale,
   isWarmupRunning,
-} from '@/lib/radar-cache';
+} from '@/modules/radar/lib/radar-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

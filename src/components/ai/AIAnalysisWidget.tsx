@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { ShareButton } from '@/components/shared/ShareButton';
+import { ShareButton } from '@/modules/publishing/components/ShareButton';
 import {
   Sparkles,
   TrendingUp,

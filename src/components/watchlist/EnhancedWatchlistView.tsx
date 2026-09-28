@@ -42,8 +42,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { UnifiedTable, type Column } from '@/components/shared/UnifiedTable';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
-import { StockPublisher, type StockPublishData } from '@/components/shared/StockPublisher';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
+import { StockPublisher, type StockPublishData } from '@/modules/publishing/components/StockPublisher';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';

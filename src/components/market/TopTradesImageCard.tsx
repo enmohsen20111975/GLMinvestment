@@ -3,7 +3,7 @@
 import React, { forwardRef } from 'react';
 import { ImageCardExport } from '@/components/market/ImageCardExport';
 import { Trophy, TrendingUp, Calendar, Clock } from 'lucide-react';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 
 /* ============================================================
    TOP-TRADES-037: Top Monthly Trades Image Card

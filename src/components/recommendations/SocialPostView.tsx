@@ -12,7 +12,7 @@ import {
   Target, Shield, Sparkles, Send, FileText, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { OFFICIAL_LINKS_BLOCK } from '@/lib/official-links';
+import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 
 // Types
 interface StockAnalysis {

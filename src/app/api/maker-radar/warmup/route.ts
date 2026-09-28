@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runWarmupSync, getLiveStatus, readRadarCache } from '@/lib/radar-cache';
+import { runWarmupSync, getLiveStatus, readRadarCache } from '@/modules/radar/lib/radar-cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

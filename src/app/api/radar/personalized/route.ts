@@ -10,7 +10,7 @@
  *   1. Build user profile from trade history + portfolio + watchlist
  *      (src/lib/personalized-radar.ts → buildUserProfile).
  *   2. Fetch current radar picks from the cached maker_radar_*.json file
- *      (via @/lib/radar-cache readRadarCache — instant <50ms).
+ *      (via @/modules/radar/lib/radar-cache readRadarCache — instant <50ms).
  *   3. For each pick:
  *      - Exclude if the user already holds it (portfolio_items / portfolio_assets)
  *      - Exclude if outside the user's preferred price range
@@ -37,8 +37,8 @@
 
 import { NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
-import { readRadarCache } from '@/lib/radar-cache';
-import { buildUserProfile, type UserProfile } from '@/lib/personalized-radar';
+import { readRadarCache } from '@/modules/radar/lib/radar-cache';
+import { buildUserProfile, type UserProfile } from '@/modules/personalized/lib/personalized-radar';
 import { existsSync } from 'fs';
 import path from 'path';
 import Database from 'better-sqlite3';

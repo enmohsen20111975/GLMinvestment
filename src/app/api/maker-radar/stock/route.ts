@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // handler never blocks the event loop.
 import { readFile, access } from 'fs/promises';
 import path from 'path';
-import { getRadarDb, getRadarDbConfig, parseVolume, computeTurnover } from '@/lib/radar-db';
+import { getRadarDb, getRadarDbConfig, parseVolume, computeTurnover } from '@/modules/radar/lib/radar-db';
 
 export const dynamic = 'force-dynamic';
 

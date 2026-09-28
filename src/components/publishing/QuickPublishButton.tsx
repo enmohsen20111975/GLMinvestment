@@ -23,7 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { withOfficialLinks } from '@/lib/official-links';
+import { withOfficialLinks } from '@/modules/publishing/lib/official-links';
 
 interface QuickPublishButtonProps {
   ticker: string;

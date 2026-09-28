@@ -48,9 +48,10 @@ DATA_ENGINE_HOST = os.environ.get("DATA_ENGINE_HOST", "127.0.0.1")
 DATA_ENGINE_PORT = int(os.environ.get("DATA_ENGINE_PORT", "5000"))
 DATA_ENGINE_HEALTH_URL = f"http://{DATA_ENGINE_HOST}:{DATA_ENGINE_PORT}/health"
 
-# موقع سكريبت الـ engine (نبدأه منه لو مات)
+# موقع سكريبت الـ engine (نبدأه منه لو مات) — canonical: data_engine/main.py
+# (engine_server.py + simple_server.py حُذفا في Phase 1 — كانت stale)
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_ENGINE_SCRIPT = _PROJECT_ROOT / "data_engine" / "engine_server.py"
+_ENGINE_SCRIPT = _PROJECT_ROOT / "data_engine" / "main.py"
 _ENGINE_LOG = "/tmp/data_engine.log"
 _ENGINE_PID_FILE = "/tmp/data_engine.pid"
 
@@ -134,7 +135,7 @@ def _kill_existing_engine() -> None:
     # Fallback: pkill
     try:
         subprocess.run(
-            ["pkill", "-f", "engine_server.py"],
+            ["pkill", "-f", "data_engine/main.py"],
             capture_output=True, text=True, timeout=5,
         )
         time.sleep(1)

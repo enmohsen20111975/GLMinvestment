@@ -32,8 +32,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
-import { withOfficialLinks, OFFICIAL_LINKS_SHORT } from '@/lib/official-links';
-import { UnifiedPublishButton } from '@/components/shared/UnifiedPublishButton';
+import { withOfficialLinks, OFFICIAL_LINKS_SHORT } from '@/modules/publishing/lib/official-links';
+import { UnifiedPublishButton } from '@/modules/publishing/components/UnifiedPublishButton';
 
 // ==================== TYPES ====================
 

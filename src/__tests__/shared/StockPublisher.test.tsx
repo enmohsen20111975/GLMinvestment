@@ -22,7 +22,7 @@ import {
   StockPublisher,
   generatePublishText,
   type StockPublishData,
-} from '@/components/shared/StockPublisher';
+} from '@/modules/publishing/components/StockPublisher';
 
 // ─── Mocks ─────────────────────────────────────────────────────────────────
 
@@ -41,7 +41,7 @@ vi.mock('sonner', () => ({
 }));
 
 // official-links — keep simple, just append the official block
-vi.mock('@/lib/official-links', () => ({
+vi.mock('@/modules/publishing/lib/official-links', () => ({
   withOfficialLinks: (text: string) => `${text}\n\n🔗 روابطنا الرسمية:\n🌐 https://invist.m2y.net`,
   OFFICIAL_LINKS: {
     website: 'https://invist.m2y.net',
