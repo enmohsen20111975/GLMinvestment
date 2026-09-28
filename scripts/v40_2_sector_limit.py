@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-PROJECT_ROOT = Path('/home/z/my-project')
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / 'scripts'))
 
 import v40_2_flag_ablation as ablation

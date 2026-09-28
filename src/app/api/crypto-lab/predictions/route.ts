@@ -48,15 +48,14 @@ interface PredictionOut {
   created_at: string;
 }
 
-// Candidate DB paths — first one that exists wins. The scheduler writes to
-// /home/z/my-project/db/predictions.db, but production deployments and
-// alternate working directories need fallbacks.
+// Candidate DB paths — first one that exists wins. We prefer the current
+// working directory (Next.js process.cwd()), then fall back to the env-configured
+// PREDICTIONS_DB_PATH if set. Per Rule 17 + Rule 61, no hardcoded absolute paths.
 function resolveDbPath(): string | null {
   const candidates = [
     path.join(process.cwd(), 'db', 'predictions.db'),
-    '/home/z/my-project/db/predictions.db',
-    '/root/GLMinvestment/db/predictions.db',
-  ];
+    process.env.PREDICTIONS_DB_PATH ?? '',
+  ].filter(Boolean);
   for (const c of candidates) {
     try {
       if (fs.existsSync(c)) return c;

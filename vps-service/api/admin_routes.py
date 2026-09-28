@@ -1183,7 +1183,9 @@ def run_v40_backtest():
             '--max-picks', str(max_picks),
             '--force',
         ]
-        log_file = f'/tmp/v40_backtest_{job_id}.log'
+        import os as _os_mod
+        _log_dir = _os_mod.environ.get('LOG_DIR', '/tmp')
+        log_file = f'{_log_dir}/v40_backtest_{job_id}.log'
         proc = _subprocess.Popen(
             cmd, stdout=open(log_file, 'w'), stderr=_subprocess.STDOUT,
             cwd=project_root, start_new_session=True
@@ -1211,7 +1213,8 @@ def get_v40_backtest_status(job_id):
     """حالة V40.2 backtest job."""
     try:
         import os as _os
-        log_file = f'/tmp/v40_backtest_{job_id}.log'
+        _log_dir = _os.environ.get('LOG_DIR', '/tmp')
+        log_file = f'{_log_dir}/v40_backtest_{job_id}.log'
         if not _os.path.exists(log_file):
             return jsonify(admin_response(True, {'status': 'unknown', 'message': 'Job not found'}))
 

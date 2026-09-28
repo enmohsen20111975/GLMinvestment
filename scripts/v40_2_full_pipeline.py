@@ -21,7 +21,7 @@ from pathlib import Path
 from collections import defaultdict
 from copy import deepcopy
 
-PROJECT_ROOT = Path('/home/z/my-project')
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
 DATA_ENGINE_DB = str(PROJECT_ROOT / 'db' / 'data_engine.db')
 NOTEBOOKS_DIR = PROJECT_ROOT / 'notebooks' / 'EGX'

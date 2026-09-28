@@ -10,7 +10,9 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-30** (REORG-PHASE-7-DOCS pass by Documentation Secretary: المرحلة الأخيرة من إعادة التنظيم (Phase 7 من 7) — توثيق الـ module architecture الجديدة بعد 6 phases من الترتيب (Phase 1-2: حذف 21,321 LOC ميت + Phase 3-4: 3 frontend modules + 8 backend placeholders + 7 wiring + Phase 5: توحيد DB layer + 22K LOC dead + Phase 6: 12 frontend modules إضافية). إضافة القاعدة 60 — MODULE-SYSTEM (كل كود جديد لازم يكون جوّه موديول في `src/modules/<module>/` أو `vps-service/modules/<module>/` + كل موديول ليه `index.ts` كـ public interface + الـ internal files private + الـ imports بين الموديولات عبر الـ `index.ts` فقط). إضافة مرجع لملفين جداد: `MODULE_CATALOG.md` (كتالوج الـ 15 frontend modules + 9 backend placeholders) + `ARCHITECTURE_DIAGRAM.md` (المخطط المعماري الكامل). تحديث فهرس القواعد من 59 → 60. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث: 2026-09-30** (RELATIVE-PATHS-FIX pass by Senior DevOps + Full-stack Engineer: إصلاح شامل لكل المسارات المطلقة في الكود عشان المشروع يشتغل على sandbox (`/home/z/my-project`) + staging (`/opt/GLMinvestment`) + production (`/root/GLMinvestment`) بدون تعديل المسارات. إضافة القاعدة 61 — RELATIVE-PATHS-ONLY (تفصيلية: Python يستخدم `Path(__file__).resolve().parents[N]` + TypeScript يستخدم `process.cwd()` + Log files تستخدم `os.environ.get('LOG_DIR', '/tmp')` + Cron entries تستخدم `sed` one-liner + DB paths تستخدم `vps-service/utils/db_paths.py` + Shell scripts تستخدم `$(dirname "$0")/..`). إصلاح 13 ملف في `scripts/` + `vps-service/` + `src/app/api/` (Python + TypeScript + Bash). إضافة portability header إلى `crontab.txt` (sed one-liner). لم تُحذف أي ملفات أو محتويات.)
+>
+> **آخر تحديث سابق: 2026-09-30** (REORG-PHASE-7-DOCS pass by Documentation Secretary: المرحلة الأخيرة من إعادة التنظيم (Phase 7 من 7) — توثيق الـ module architecture الجديدة بعد 6 phases من الترتيب (Phase 1-2: حذف 21,321 LOC ميت + Phase 3-4: 3 frontend modules + 8 backend placeholders + 7 wiring + Phase 5: توحيد DB layer + 22K LOC dead + Phase 6: 12 frontend modules إضافية). إضافة القاعدة 60 — MODULE-SYSTEM (كل كود جديد لازم يكون جوّه موديول في `src/modules/<module>/` أو `vps-service/modules/<module>/` + كل موديول ليه `index.ts` كـ public interface + الـ internal files private + الـ imports بين الموديولات عبر الـ `index.ts` فقط). إضافة مرجع لملفين جداد: `MODULE_CATALOG.md` (كتالوج الـ 15 frontend modules + 9 backend placeholders) + `ARCHITECTURE_DIAGRAM.md` (المخطط المعماري الكامل). تحديث فهرس القواعد من 59 → 60. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅) — إضافة القواعد 55–59 (P0-WAVE-SECURITY / SQLI / ASYNC / OBSERVABILITY / TESTS) + إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" يوثّق كل الكوارث الـ 16 اللي اتحلّت (stored_analyses + hunter_pick_tracking + price_history + telegram-events PM2 + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files/46 test cases) + تحديث فهرس القواعد لـ 59 قاعدة. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-26** (DOC-UPDATE-FINAL pass by Secretary agent: إضافة القاعدة 54 — UNIFIED-TABLE-UPGRADE (ترقية UnifiedTable لتشمل expandable rows + column toggle + column filtering + toolbar publishing/export + اعتماد SectorTrackingTab كنموذج وحيد لكل الشاشات + حصر 21 شاشة لا تزال تستخدم Table يدوي بحاجة لـ migration) + تحديث فهرس القواعد لـ 54 قاعدة. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
@@ -103,7 +105,7 @@
 
 هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
 
-> **فهرس القواعد (1–60):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27) + 60 (MODULE-SYSTEM — 2026-09-30).
+> **فهرس القواعد (1–61):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27) + 60 (MODULE-SYSTEM — 2026-09-30) + 61 (RELATIVE-PATHS-ONLY — 2026-09-30).
 > - **1–8**: قواعد سلامة DBs + المعمارية + HARD cap + ATR + trailing + EXIT_POLICY + overrides + load_merged_history.
 > - **9–16**: trailing floor + EXIT_POLICY + overrides + DATA-UNIFY + liquidity + commit-guard + sandbox ≠ prod + VERIFY-BEFORE-DELETE.
 > - **17–24**: RELATIVE-PATHS + R:R ≥ 1.5 + loss ceiling + Python=Brain + V40.2 + dedup-by-ticker + PERSONA-UNIFY + fundamentals real.
@@ -112,6 +114,7 @@
 > - **44–54**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS + UNIFIED-TABLE-UPGRADE.
 > - **55–59**: P0-WAVE-SECURITY (auth guards) + P0-WAVE-SQLI (no SQL interpolation) + P0-WAVE-ASYNC (no blocking sync I/O in routes) + P0-WAVE-OBSERVABILITY (Sentry + logger + /api/health + x-request-id) + P0-WAVE-TESTS (tests إلزامية لكل P0 fix).
 > - **60**: MODULE-SYSTEM (كل كود جديد جوّه موديول في `src/modules/<module>/` أو `vps-service/modules/<module>/` + `index.ts` public interface + imports عبر الـ index فقط — 2026-09-30).
+> - **61**: RELATIVE-PATHS-ONLY (تفصيلية — Python `Path(__file__).resolve().parents[N]` + TypeScript `process.cwd()` + Log files `os.environ.get('LOG_DIR', '/tmp')` + Cron `sed` one-liner + DB `vps-service/utils/db_paths.py` + Shell `$(dirname "$0")/..` — 2026-09-30).
 > القاعدة 42 ظهرت بين 32 و 33 لأسباب تاريخية (تم إدراجها بعد فصل §4 KPIs) لكنها تخص §3.
 
 ### القاعدة 1 — لا تُلمس قواعد البيانات على الإنتاج
@@ -2030,6 +2033,45 @@ radar · predictions · market_regime · market_data · telegram · ai · portfo
 
 ---
 
+### القاعدة 61 — المسارات النسبية فقط (RELATIVE-PATHS-ONLY — 2026-09-30)
+
+> **سبب الإضافة:** المشروع لازم يشتغل على sandbox + staging + production بدون تعديل المسارات. الكوارث السابقة (cron entries كانت بتشير إلى `/home/meme/...` على VPS فشل السكربتات) لازم ما تتكررش. القاعدة 17 ذكرت المبدأ العام؛ هذه القاعدة تفصّل الآلية لكل لغة/سياق.
+
+- **Python:** استخدم `Path(__file__).resolve().parents[N]` لتحديد PROJECT_ROOT. ممنوع `/home/z/...` أو `/root/...` hardcoded.
+  ```python
+  from pathlib import Path
+  PROJECT_ROOT = Path(__file__).resolve().parents[1]  # scripts/X.py → project root
+  DB_PATH = str(PROJECT_ROOT / 'db' / 'data_engine.db')
+  ```
+- **TypeScript:** استخدم `process.cwd()` أو `path.join(process.cwd(), ...)`. ممنوع `/home/z/...` hardcoded.
+  ```typescript
+  import path from 'path';
+  const DB_PATH = path.join(process.cwd(), 'db', 'predictions.db');
+  ```
+- **Log files:** استخدم `os.environ.get('LOG_DIR', '/tmp')` بدلاً من `/tmp/` hardcoded.
+  ```python
+  _LOG_DIR = os.environ.get('LOG_DIR', '/tmp')
+  log_file = f'{_LOG_DIR}/v40_backtest_{job_id}.log'
+  ```
+- **Cron entries:** استخدم `sed` one-liner (موجود في رأس `crontab.txt`) لتعديل المسارات عند التثبيت.
+  ```bash
+  sed "s|/root/GLMinvestment|$(pwd)|g" crontab.txt > /tmp/crontab.txt && crontab /tmp/crontab.txt
+  ```
+- **DB paths:** استخدم `vps-service/utils/db_paths.py` (المصدر الوحيد لمسارات الـ DBs) — لا تكرّر hardcoded DB paths في أي ملف آخر.
+  ```python
+  from utils.db_paths import DBPaths
+  conn = sqlite3.connect(DBPaths.PREDICTIONS_DB)
+  ```
+- **Shell scripts:** استخدم `$(dirname "$0")/..` لتحديد PROJECT_ROOT.
+  ```bash
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+  ```
+
+**الاستثناء الوحيد:** cron entries اللي بتشتغل في production (المسار `/root/GLMinvestment` فيها متوقع) — لكن لازم يبقى فيه `sed` one-liner في رأس `crontab.txt` عشان يتعدّل بسهولة عند التثبيت على بيئة تانية.
+
+---
+
 
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"
 
@@ -2307,6 +2349,7 @@ radar · predictions · market_regime · market_data · telegram · ai · portfo
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-30 | `00-CONSTITUTION.md` | RELATIVE-PATHS-FIX: تحديث علامة "آخر تحديث" لـ 2026-09-30. إضافة القاعدة 61 — RELATIVE-PATHS-ONLY (تفصيلية لكل لغة/سياق: Python `Path(__file__).resolve().parents[N]` + TypeScript `process.cwd()` + Log files `os.environ.get('LOG_DIR', '/tmp')` + Cron `sed` one-liner + DB `vps-service/utils/db_paths.py` + Shell `$(dirname "$0")/..`). تحديث فهرس القواعد من 60 → 61. لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-30 | `00-CONSTITUTION.md` | REORG-PHASE-7-DOCS: تحديث علامة "آخر تحديث" لـ 2026-09-30. إضافة القاعدة 60 — MODULE-SYSTEM (كل كود جديد جوّه موديول قياسي في `src/modules/<module>/` أو `vps-service/modules/<module>/` + كل موديول ليه `index.ts` كـ public interface + الـ imports بين الموديولات عبر الـ `index.ts` فقط). تحديث فهرس القواعد من 59 → 60. إضافة مرجع لملفين جداد: `MODULE_CATALOG.md` (15 frontend modules + 9 backend placeholders) + `ARCHITECTURE_DIAGRAM.md` (المخطط المعماري). لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-27 | `00-CONSTITUTION.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. إضافة القواعد 55–59 (P0-WAVE-SECURITY + P0-WAVE-SQLI + P0-WAVE-ASYNC + P0-WAVE-OBSERVABILITY + P0-WAVE-TESTS) بعد القاعدة 54. إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" قبل سجل التغييرات يوثّق كل الكوارث الـ 16 المُنجَزة (stored_analyses + hunter_pick_tracking + price_history + telegram-events + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files). تحديث فهرس القواعد من 54 → 59. لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-01 | `LEGAL_PROTECTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديث 2026-09-01: المراجعة القانونية للموديولات الجديدة" — فحص قانوني لـ 12 موديول جديد + التحقق من DisclaimerBanner/Footer + قاعدة Rule 30 + التحقق النهائي. |

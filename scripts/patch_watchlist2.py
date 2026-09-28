@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Add onAnalyze handler to WatchlistMobileCard invocation + store import usage"""
 
-filepath = '/home/z/my-project/src/components/watchlist/EnhancedWatchlistView.tsx'
+from pathlib import Path
+
+# Resolve target file relative to project root (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+filepath = str(_PROJECT_ROOT / 'src' / 'components' / 'watchlist' / 'EnhancedWatchlistView.tsx')
 with open(filepath, 'rb') as f:
     content = f.read()
 

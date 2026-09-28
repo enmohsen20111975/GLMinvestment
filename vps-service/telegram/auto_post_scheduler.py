@@ -328,7 +328,6 @@ async def post_weekly_radar_report(market: str = 'EGX') -> Dict:
             for candidate in [
                 project_root / '.venv' / 'bin' / 'python3',
                 project_root / '.venv' / 'bin' / 'python',
-                Path('/root/GLMinvestment/.venv/bin/python3'),
             ]:
                 if candidate.exists():
                     python_bin = str(candidate)

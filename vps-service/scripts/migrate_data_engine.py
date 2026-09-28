@@ -21,7 +21,8 @@ import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 VPS_DB = os.path.join(PROJECT_ROOT, 'db', 'data_engine.db')
-ZIP_DB = '/tmp/data_engine.db'
+# ZIP_DB is an extracted archive — keep /tmp default but allow override via env (Rule 61)
+ZIP_DB = os.environ.get('MIGRATION_ZIP_DB', '/tmp/data_engine.db')
 
 # Tables to copy (tab_* tables + price tables that might be outdated)
 TABLES_TO_CHECK = [

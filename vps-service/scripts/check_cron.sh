@@ -5,7 +5,9 @@
 
 set -euo pipefail
 
-VPS_DIR="/root/GLMinvestment/vps-service"
+# Resolve VPS_DIR dynamically from script location (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VPS_DIR="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="${VPS_DIR}/logs"
 
 echo "========================================="

@@ -18,8 +18,10 @@ import os
 import time
 
 # Paths
-VPS_DB = os.path.join(os.path.dirname(__file__), '..', '..', 'db', 'stocks.db')
-ZIP_DB = '/tmp/stocks.db'  # Extracted from databases zip/stocks.db.zip
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+VPS_DB = os.path.join(PROJECT_ROOT, 'db', 'stocks.db')
+# ZIP_DB is an extracted archive — keep /tmp default but allow override via env (Rule 61)
+ZIP_DB = os.environ.get('MIGRATION_ZIP_DB', '/tmp/stocks.db')  # Extracted from databases zip/stocks.db.zip
 
 def main():
     vps_db_path = os.path.abspath(VPS_DB)

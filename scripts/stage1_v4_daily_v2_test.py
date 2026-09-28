@@ -19,13 +19,16 @@ import sqlite3
 import sys
 import os
 from collections import defaultdict
+from pathlib import Path
 
-sys.path.insert(0, '/home/z/my-project/vps-service')
-os.chdir('/home/z/my-project')
+# Resolve project root dynamically (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_PROJECT_ROOT / 'vps-service'))
+os.chdir(str(_PROJECT_ROOT))
 
-exec(open('scripts/v4_daily_detector.py').read().split('# 5) التقرير')[0])
+exec(open(str(_PROJECT_ROOT / 'scripts' / 'v4_daily_detector.py')).read().split('# 5) التقرير')[0])
 
-DB = '/tmp/dbs/data_engine.db'
+DB = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
 
 
 def test_recall_v2(conn, explosive_list, lookback=62, min_score=45, **kwargs):

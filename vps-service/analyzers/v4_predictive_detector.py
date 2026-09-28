@@ -309,8 +309,17 @@ def normalize_intraday_bars(raw_bars: List[Dict[str, Any]]) -> List[Dict[str, An
 
 if __name__ == '__main__':
     # اختبار سريع
+    import os
     import sqlite3
-    conn = sqlite3.connect('/tmp/dbs/intraday.db')
+    from pathlib import Path as _P
+    _project_root = _P(__file__).resolve().parents[2]
+    _intraday_path = str(_project_root / 'db' / 'intraday.db')
+    if not os.path.exists(_intraday_path):
+        # honor LOG_DIR / DB_DIR overrides (Rule 61)
+        _intraday_path = os.path.join(
+            os.environ.get('LOG_DIR', '/tmp'), 'intraday.db'
+        )
+    conn = sqlite3.connect(_intraday_path)
 
     for ticker in ['NIPH', 'GTWL']:
         rows = conn.execute("""

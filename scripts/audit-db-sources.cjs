@@ -2,7 +2,8 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-const DB_DIR = '/home/z/my-project/db';
+// Resolve DB dir relative to this script (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+const DB_DIR = path.resolve(__dirname, '..', 'db');
 
 async function main() {
   const SQL = await initSqlJs();

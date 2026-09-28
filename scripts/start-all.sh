@@ -4,9 +4,20 @@
 
 set -e
 
-PROJECT_ROOT="/home/z/my-project"
-PYTHON_BIN="/home/z/.venv/bin/python3"
-LOG_DIR="$PROJECT_ROOT/logs"
+# Resolve PROJECT_ROOT dynamically (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Resolve PYTHON_BIN: prefer project-local venv, fallback to system python3
+if [ -x "$PROJECT_ROOT/.venv/bin/python3" ]; then
+    PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python3"
+elif [ -n "$VIRTUAL_ENV" ] && [ -x "$VIRTUAL_ENV/bin/python3" ]; then
+    PYTHON_BIN="$VIRTUAL_ENV/bin/python3"
+else
+    PYTHON_BIN="python3"
+fi
+
+LOG_DIR="${LOG_DIR:-$PROJECT_ROOT/logs}"
 
 mkdir -p "$LOG_DIR"
 

@@ -9,12 +9,14 @@
 #   bash scripts/setup-backup-cron.sh
 #
 # The cron entry (runs in system timezone, so set TZ if needed):
-#   0 3 * * * cd /home/z/my-project && bash scripts/auto-backup.sh >> db/backups/cron.log 2>&1
+#   0 3 * * * cd <PROJECT_DIR> && bash scripts/auto-backup.sh >> db/backups/cron.log 2>&1
 #
 
 set -euo pipefail
 
-PROJECT_DIR="/home/z/my-project"
+# Resolve PROJECT_DIR dynamically (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 CRON_MARKER="GLMinvestment-auto-backup"
 CRON_ENTRY="0 3 * * * cd ${PROJECT_DIR} && bash scripts/auto-backup.sh >> db/backups/cron.log 2>&1"
 
@@ -47,7 +49,7 @@ echo "✓  Cron job installed successfully!"
 echo ""
 echo "  Entry added:"
 echo "  ─────────────────────────────────────────────────"
-echo "  0 3 * * * cd /home/z/my-project && bash scripts/auto-backup.sh >> db/backups/cron.log 2>&1"
+echo "  0 3 * * * cd ${PROJECT_DIR} && bash scripts/auto-backup.sh >> db/backups/cron.log 2>&1"
 echo "  ─────────────────────────────────────────────────"
 echo ""
 echo "  Schedule: Daily at 3:00 AM (system timezone)"

@@ -52,8 +52,10 @@ DATA_ENGINE_HEALTH_URL = f"http://{DATA_ENGINE_HOST}:{DATA_ENGINE_PORT}/health"
 # (engine_server.py + simple_server.py حُذفا في Phase 1 — كانت stale)
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _ENGINE_SCRIPT = _PROJECT_ROOT / "data_engine" / "main.py"
-_ENGINE_LOG = "/tmp/data_engine.log"
-_ENGINE_PID_FILE = "/tmp/data_engine.pid"
+# Log + pid files — honor LOG_DIR env override (Rule 61 — RELATIVE-PATHS-ONLY)
+_LOG_DIR = os.environ.get("LOG_DIR", "/tmp")
+_ENGINE_LOG = os.path.join(_LOG_DIR, "data_engine.log")
+_ENGINE_PID_FILE = os.path.join(_LOG_DIR, "data_engine.pid")
 
 # أقصى محاولات للإحياء
 _MAX_REVIVE_ATTEMPTS = 1

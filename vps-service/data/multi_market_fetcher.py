@@ -200,8 +200,10 @@ class MultiMarketFetcher:
             return {'error': 'TradingView TA not available'}
         
         # Use copy of database to avoid conflicts with running server
+        # honor LOG_DIR env override (Rule 61 — RELATIVE-PATHS-ONLY)
         import shutil
-        temp_db = '/tmp/custom_temp.db'
+        _temp_dir = os.environ.get('LOG_DIR', '/tmp')
+        temp_db = os.path.join(_temp_dir, 'custom_temp.db')
         shutil.copy(self.db_path, temp_db)
         
         conn = sqlite3.connect(temp_db, timeout=30)

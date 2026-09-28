@@ -5,12 +5,15 @@
 import sqlite3, sys, os, math
 from datetime import datetime, timedelta
 from collections import defaultdict
+from pathlib import Path
 
-sys.path.insert(0, 'vps-service')
-os.chdir('/home/z/my-project')
+# Resolve project root dynamically (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_PROJECT_ROOT / 'vps-service'))
+os.chdir(str(_PROJECT_ROOT))
 
-DB_PRICES = 'db/data_engine.db'
-DB_PREDS = 'db/predictions.db'
+DB_PRICES = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
+DB_PREDS = str(_PROJECT_ROOT / 'db' / 'predictions.db')
 
 # ─── Helper functions ───
 def sma(values, period):
@@ -135,7 +138,7 @@ def main():
     
     # Load toxic blocklist
     blocklist = set()
-    bl_path = 'vps-service/config/toxic_ticker_blocklist.json'
+    bl_path = str(_PROJECT_ROOT / 'vps-service' / 'config' / 'toxic_ticker_blocklist.json')
     if os.path.exists(bl_path):
         import json
         with open(bl_path) as f:

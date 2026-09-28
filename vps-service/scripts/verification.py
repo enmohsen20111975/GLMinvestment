@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
 import os
 import sys
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,14 +30,14 @@ def get_db_path() -> str:
     """Get database path"""
     local_path = os.path.join(os.path.dirname(__file__), '..', 'db', 'stocks.db')
     local_path = os.path.abspath(local_path)
-    
+
     if os.path.exists(local_path):
         return local_path
-    
+
     vps_path = str(Path(__file__).resolve().parent.parent.parent / 'db' / 'stocks.db')
     if os.path.exists(vps_path):
         return vps_path
-    
+
     raise FileNotFoundError(f"Database not found")
 
 
@@ -512,8 +513,9 @@ def run_full_verification():
         for issue in issues:
             print(f"   {issue}")
     
-    # Save results
-    output_path = '/tmp/verification_results.json'
+    # Save results — honor LOG_DIR env override (Rule 61)
+    _output_dir = os.environ.get('LOG_DIR', '/tmp')
+    output_path = os.path.join(_output_dir, 'verification_results.json')
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     

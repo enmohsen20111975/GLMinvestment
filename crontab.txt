@@ -1,4 +1,20 @@
-# crontab.txt — جدول المهام الإنتاجي الموحّد
+# crontab.txt — جدول المهام الإنتاجي الشامل
+# ============================================================================
+# IMPORTANT: Replace PROJECT_ROOT with your actual project path:
+#   - Production VPS: /root/GLMinvestment
+#   - Staging:        /opt/GLMinvestment
+#   - Sandbox:        /home/z/my-project
+# ============================================================================
+# For automated deployment, use this sed one-liner to adapt this file
+# to the current host before installing the crontab:
+#
+#   sed "s|/root/GLMinvestment|$(pwd)|g" crontab.txt > /tmp/crontab.txt && crontab /tmp/crontab.txt
+#
+# (Optional) override the Python binary path the same way:
+#
+#   sed -e "s|/root/GLMinvestment|$(pwd)|g" \
+#       -e "s|/root/GLMinvestment/.venv/bin/python3|$(pwd)/.venv/bin/python3|g" \
+#       crontab.txt > /tmp/crontab.txt && crontab /tmp/crontab.txt
 # ============================================================================
 # PHASE-5 (2026-08-31): V40.2 هو العقل الوحيد — Maestro مات
 # ============================================================================

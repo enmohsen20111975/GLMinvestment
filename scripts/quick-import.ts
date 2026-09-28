@@ -1,12 +1,16 @@
 // Quick import script
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
+const path = require('path');
+
+// Resolve data dir relative to project root (Rule 17 + Rule 61 — RELATIVE-PATHS-ONLY)
+const _DATA_DIR = path.resolve(process.cwd(), 'data', 'data-engine');
 
 const prisma = new PrismaClient();
 
 async function main() {
   // Import stocks
-  const stocksData = JSON.parse(fs.readFileSync('/tmp/data-engine/data-engine/data/stocks_data.json', 'utf-8'));
+  const stocksData = JSON.parse(fs.readFileSync(path.join(_DATA_DIR, 'stocks_data.json'), 'utf-8'));
   console.log(`Found ${stocksData.length} stocks`);
   
   const MARKET_MAP = {
@@ -43,7 +47,7 @@ async function main() {
   console.log(`Imported ${count} stocks`);
   
   // Import crypto
-  const cryptoData = JSON.parse(fs.readFileSync('/tmp/data-engine/data-engine/data/crypto_latest.json', 'utf-8'));
+  const cryptoData = JSON.parse(fs.readFileSync(path.join(_DATA_DIR, 'crypto_latest.json'), 'utf-8'));
   let cryptoCount = 0;
   for (const c of cryptoData.all_cryptos || []) {
     try {
@@ -67,7 +71,7 @@ async function main() {
   console.log(`Imported ${cryptoCount} cryptos`);
   
   // Import gold
-  const metalsData = JSON.parse(fs.readFileSync('/tmp/data-engine/data-engine/data/metals_forex_latest.json', 'utf-8'));
+  const metalsData = JSON.parse(fs.readFileSync(path.join(_DATA_DIR, 'metals_forex_latest.json'), 'utf-8'));
   let goldCount = 0;
   let silverCount = 0;
   

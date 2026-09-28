@@ -553,8 +553,9 @@ def main():
     # Print results
     print_results(result)
     
-    # Save to temp file (CMS requirement)
-    output_path = '/tmp/forward_test_result.json'
+    # Save to temp file (CMS requirement) — honor LOG_DIR env override (Rule 61)
+    _output_dir = os.environ.get('LOG_DIR', '/tmp')
+    output_path = os.path.join(_output_dir, 'forward_test_result.json')
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
     
