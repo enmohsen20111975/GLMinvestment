@@ -10,7 +10,8 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅) — إضافة القواعد 55–59 (P0-WAVE-SECURITY / SQLI / ASYNC / OBSERVABILITY / TESTS) + إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" يوثّق كل الكوارث الـ 16 اللي اتحلّت (stored_analyses + hunter_pick_tracking + price_history + telegram-events PM2 + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files/46 test cases) + تحديث فهرس القواعد لـ 59 قاعدة. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث: 2026-09-30** (REORG-PHASE-7-DOCS pass by Documentation Secretary: المرحلة الأخيرة من إعادة التنظيم (Phase 7 من 7) — توثيق الـ module architecture الجديدة بعد 6 phases من الترتيب (Phase 1-2: حذف 21,321 LOC ميت + Phase 3-4: 3 frontend modules + 8 backend placeholders + 7 wiring + Phase 5: توحيد DB layer + 22K LOC dead + Phase 6: 12 frontend modules إضافية). إضافة القاعدة 60 — MODULE-SYSTEM (كل كود جديد لازم يكون جوّه موديول في `src/modules/<module>/` أو `vps-service/modules/<module>/` + كل موديول ليه `index.ts` كـ public interface + الـ internal files private + الـ imports بين الموديولات عبر الـ `index.ts` فقط). إضافة مرجع لملفين جداد: `MODULE_CATALOG.md` (كتالوج الـ 15 frontend modules + 9 backend placeholders) + `ARCHITECTURE_DIAGRAM.md` (المخطط المعماري الكامل). تحديث فهرس القواعد من 59 → 60. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث سابق: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅) — إضافة القواعد 55–59 (P0-WAVE-SECURITY / SQLI / ASYNC / OBSERVABILITY / TESTS) + إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" يوثّق كل الكوارث الـ 16 اللي اتحلّت (stored_analyses + hunter_pick_tracking + price_history + telegram-events PM2 + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files/46 test cases) + تحديث فهرس القواعد لـ 59 قاعدة. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-26** (DOC-UPDATE-FINAL pass by Secretary agent: إضافة القاعدة 54 — UNIFIED-TABLE-UPGRADE (ترقية UnifiedTable لتشمل expandable rows + column toggle + column filtering + toolbar publishing/export + اعتماد SectorTrackingTab كنموذج وحيد لكل الشاشات + حصر 21 شاشة لا تزال تستخدم Table يدوي بحاجة لـ migration) + تحديث فهرس القواعد لـ 54 قاعدة. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
 > **آخر تحديث سابق: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
@@ -102,7 +103,7 @@
 
 هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
 
-> **فهرس القواعد (1–59):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27).
+> **فهرس القواعد (1–60):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27) + 60 (MODULE-SYSTEM — 2026-09-30).
 > - **1–8**: قواعد سلامة DBs + المعمارية + HARD cap + ATR + trailing + EXIT_POLICY + overrides + load_merged_history.
 > - **9–16**: trailing floor + EXIT_POLICY + overrides + DATA-UNIFY + liquidity + commit-guard + sandbox ≠ prod + VERIFY-BEFORE-DELETE.
 > - **17–24**: RELATIVE-PATHS + R:R ≥ 1.5 + loss ceiling + Python=Brain + V40.2 + dedup-by-ticker + PERSONA-UNIFY + fundamentals real.
@@ -110,6 +111,7 @@
 > - **33–43**: PRODUCTION-WIRING + NO_DUPLICATE_SCREENS + ENGINE-UNIFY + DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER + DOCS-FIRST-LAST + REGIME-AND-AVG-DOWN + TELEGRAM-NOTIFICATIONS.
 > - **44–54**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS + UNIFIED-TABLE-UPGRADE.
 > - **55–59**: P0-WAVE-SECURITY (auth guards) + P0-WAVE-SQLI (no SQL interpolation) + P0-WAVE-ASYNC (no blocking sync I/O in routes) + P0-WAVE-OBSERVABILITY (Sentry + logger + /api/health + x-request-id) + P0-WAVE-TESTS (tests إلزامية لكل P0 fix).
+> - **60**: MODULE-SYSTEM (كل كود جديد جوّه موديول في `src/modules/<module>/` أو `vps-service/modules/<module>/` + `index.ts` public interface + imports عبر الـ index فقط — 2026-09-30).
 > القاعدة 42 ظهرت بين 32 و 33 لأسباب تاريخية (تم إدراجها بعد فصل §4 KPIs) لكنها تخص §3.
 
 ### القاعدة 1 — لا تُلمس قواعد البيانات على الإنتاج
@@ -1974,6 +1976,60 @@ combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
 
 ---
 
+### القاعدة 60 — MODULE-SYSTEM (كل كود جديد جوّه موديول قياسي — 2026-09-30)
+
+> **سبب الإضافة:** إعادة تنظيم المشروع من مشاريع صغيرة متفرقة لـ **15 موديول قياسي** في `src/modules/` + **9 موديولات backend placeholders** في `vps-service/modules/` (المراحل 1-7 من MASTER-ARCHITECTURE-PLAN). لازم نضمن إن الكود الجديد يتبع نفس البنية عشان ما نرجعش للتشتت اللي كان قبل كده.
+>
+> **المرجع:** `agent-ctx/MASTER-ARCHITECTURE-PLAN.md` + `Documentation/MODULE_CATALOG.md` + `Documentation/ARCHITECTURE_DIAGRAM.md` + `worklog.md` entries `REORG-PHASE-1-2` + `REORG-PHASE-3-4` + `REORG-PHASE-5` + `REORG-PHASE-6` + `REORG-PHASE-7-DOCS`.
+
+**أ. القاعدة المطلقة:** كل كود جديد لازم يكون جوّه موديول في `src/modules/<module>/` (frontend) أو `vps-service/modules/<module>/` (backend). الـ components في `src/components/` legacy ويُفضّل ترحيلها تدريجياً (Rule 25 — refactoring-gated).
+
+**ب. الـ module structure المعتمدة:**
+
+Frontend:
+```
+src/modules/<module-name>/
+├── components/         (React components)
+├── lib/                 (module-specific helpers)
+└── index.ts             (PUBLIC INTERFACE — re-exports only)
+```
+
+Backend (placeholder حتى يتعمل Python migration):
+```
+vps-service/modules/<module-name>/
+└── __init__.py          (docstring placeholder — file moves deferred)
+```
+
+**ج. قواعد الـ imports:**
+1. كل موديول لازم يكون عنده `index.ts` كـ public interface.
+2. الـ internal files private — direct imports زي `@/modules/<x>/components/InternalFile` مكروهة (DISCOURAGED).
+3. الـ imports بين الموديولات عبر الـ `index.ts` فقط.
+4. transitional exception: API routes ممكن تـ import مباشرة من `@/modules/<x>/lib/*` (تسهيل الـ migration من الـ legacy code).
+5. ما فيش imports مباشرة من `src/components/<domain>/` للـ modules الجديدة — استخدم `@/modules/<x>` أو `@/components/shared/`.
+
+**د. الـ 15 frontend modules المعتمدة (Phase 1-6):**
+radar · publishing · personalized · stock-analysis · predictions · portfolio · screener · market-analysis · news · admin · crypto · education · reports · dashboard · simulation.
+
+**هـ. الـ 9 backend module placeholders (Phase 3.2):**
+radar · predictions · market_regime · market_data · telegram · ai · portfolio · admin · (root).
+
+**و. الـ DB layer (Rule 5 + Phase 5):** كل الـ DB access بيحصل عبر `src/lib/db/index.ts` (single entry point). الـ DB helpers اللي كانت متفرقة اتـ consolidatedت:
+- `db-auth.ts` (auth.db — Prisma)
+- `db-predictions.ts` (predictions.db)
+- `modules/radar/lib/radar-db.ts` (stocks.db radar tables)
+- `finance-db.ts` (stocks.db finance tables)
+- `new-db.ts` (user data)
+- `egxpy-bridge.ts` (Python backend bridge)
+- `egx-data-sources.ts` (data sources config)
+
+**ز. Follow-up (P1 — out of scope):**
+- إنشاء `src/shared/` layer للـ truly-reusable components (shadcn primitives + UnifiedTable + ErrorBoundary + ...).
+- ترحيل الـ Python files من `vps-service/analyzers/` + `vps-service/jobs/` لـ `vps-service/modules/<module>/` (محتاج import-graph analysis).
+- ترحيل الـ remaining `src/components/<domain>/` files لـ `src/modules/`.
+- Strict boundary enforcement (lint rule على direct imports).
+
+---
+
 
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"
 
@@ -2251,5 +2307,6 @@ combined_efficiency = (win_rate_A × 0.40) + (win_rate_B × 0.60)
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-30 | `00-CONSTITUTION.md` | REORG-PHASE-7-DOCS: تحديث علامة "آخر تحديث" لـ 2026-09-30. إضافة القاعدة 60 — MODULE-SYSTEM (كل كود جديد جوّه موديول قياسي في `src/modules/<module>/` أو `vps-service/modules/<module>/` + كل موديول ليه `index.ts` كـ public interface + الـ imports بين الموديولات عبر الـ `index.ts` فقط). تحديث فهرس القواعد من 59 → 60. إضافة مرجع لملفين جداد: `MODULE_CATALOG.md` (15 frontend modules + 9 backend placeholders) + `ARCHITECTURE_DIAGRAM.md` (المخطط المعماري). لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-27 | `00-CONSTITUTION.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. إضافة القواعد 55–59 (P0-WAVE-SECURITY + P0-WAVE-SQLI + P0-WAVE-ASYNC + P0-WAVE-OBSERVABILITY + P0-WAVE-TESTS) بعد القاعدة 54. إضافة قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" قبل سجل التغييرات يوثّق كل الكوارث الـ 16 المُنجَزة (stored_analyses + hunter_pick_tracking + price_history + telegram-events + v4_bp + crontab.txt + news-agent + 9 duplicate tables + mini-services/ + custom.db + 30 admin routes + 7 SQLi sites + /api/import hardening + 70 sync I/O refactored + Sentry/logger/health/x-request-id + 6 test files). تحديث فهرس القواعد من 54 → 59. لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-01 | `LEGAL_PROTECTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديث 2026-09-01: المراجعة القانونية للموديولات الجديدة" — فحص قانوني لـ 12 موديول جديد + التحقق من DisclaimerBanner/Footer + قاعدة Rule 30 + التحقق النهائي. |

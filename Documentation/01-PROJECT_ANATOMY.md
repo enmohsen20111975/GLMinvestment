@@ -5,7 +5,8 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅). تحديث §1.5 الإحصائيات (نحو 30 route تم تأمينها بـ auth + 7 SQLi sites تم fix + 70 sync I/O refactored + 9 duplicate tables dropped من 12 المُكتشفة + 4 DBs backed up لـ `*.bak-unify` = 511.2 MB + PM2 services 6→7 بإضافة news-agent + test coverage 3→9 files / 75→121 tests). إضافة قسم جديد "§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests" يلخّص كل الموجة. لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث: 2026-09-30** (REORG-PHASE-7-DOCS pass by Documentation Secretary: المرحلة الأخيرة من إعادة التنظيم (Phase 7 من 7) — توثيق الـ module architecture الجديدة. إضافة قسم جديد "§1.8 — Module System (Phase 1-7 Reorganization, 2026-09-30)" يوثّق الـ 15 frontend modules + 9 backend module placeholders + DB layer الموحّد + جدول Before/After لكامل الـ reorganization. مرجعية لـ `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md` (ملفين جداد). لم تُحذف أي ملفات أو محتويات.)
+> **آخر تحديث سابق: 2026-09-27** (DOC-UPDATE-P0-WAVE pass by Documentation Secretary: P0 Disaster Resolution Wave كاملة (16/16 P0 items ✅). تحديث §1.5 الإحصائيات (نحو 30 route تم تأمينها بـ auth + 7 SQLi sites تم fix + 70 sync I/O refactored + 9 duplicate tables dropped من 12 المُكتشفة + 4 DBs backed up لـ `*.bak-unify` = 511.2 MB + PM2 services 6→7 بإضافة news-agent + test coverage 3→9 files / 75→121 tests). إضافة قسم جديد "§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests" يلخّص كل الموجة. لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-26** (DOC-UPDATE-FINAL pass: تحديث §1.5 الإحصائيات (components 282، EGX 380 سهم، EGX30=27/EGX70=20، 1,359 prediction، WR=67.4%/Avg=25.74%/PF=12.84، 5 DBs sizes) + تحديث §6 Data Flow (EGX30=53,776.69 / EGX70=19,834.95 من CSV حقيقي، TradingView scanner 296 سهم، egksco_scraper 255 سهم + 186 price_history، price_history.db=1,206,981 صف/1,336 ticker) + تحديث §17 Historical Archive (ملاحظة دمج 17 ملف تاريخي في الملفات الأربعة الكنسية). لم تُحذف أي ملفات أو محتويات.)
 > **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass: تحديث العدّادات الإجمالية + إضافة §17 Historical Documentation Archive (كل ملفات `Documentation/*.md` غير الأساسية مُؤرشفة كمرجع تاريخي، لم تُحذف) + إضافة §1.6 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern + تحديث §3.1 DB Map بالأرقام الحالية.)
 > **آخر تحديث سابق:** 2026-09-01 (Stock Notebook System + Unified Exit Engine + Decision Logger + News Impact Scorer + EGX Disclosure Engine + Crypto Modules + 10 Feature Flags + تحديث العدّادات: blueprints=40، api files=38، notebooks/EGX=259 ملف JSON).
@@ -535,6 +536,148 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 - ~460 unprotected routes remain (most GET-only public-data)
 - 384 remaining reconcile mismatches (empty `exit_type` — pre-existing data quality issues)
 - Playwright E2E tests + CI pipeline for auto-run
+
+---
+
+### 1.8 — Module System (Phase 1-7 Reorganization, 2026-09-30 — NEW — REORG-PHASE-7-DOCS)
+
+> **المرجع الدستوري:** Rule 60 (MODULE-SYSTEM — 2026-09-30) في `00-CONSTITUTION.md` + `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md` + `agent-ctx/MASTER-ARCHITECTURE-PLAN.md`.
+>
+> **المراحل:** 7 phases اتعملت في الفترة من 2026-09-25 لـ 2026-09-30 — حذف + دمج + ترحيل + توحيد + توثيق.
+
+#### 1.8.1 Frontend Modules (15 — `src/modules/`)
+
+كل موديول ليه `index.ts` re-export shim كـ public interface. الـ imports بين الموديولات عبر الـ `index.ts` فقط.
+
+| # | Module | Purpose | Components | Lib | LOC (approx) |
+|---|---|---|---:|---:|---:|
+| 1 | `radar/` | رادار السيولة + Exit Radar + Multi-Market + Accuracy + Personalized + Weekly Report + Signal Tracking | 8 | 3 | ~6K |
+| 2 | `publishing/` | StockPublisher + UnifiedPublishButton + ShareButton + official links | 3 | 2 | ~3K |
+| 3 | `personalized/` | Personalized Radar logic | — | 1 | ~1K |
+| 4 | `stock-analysis/` | تحليل سهم فردي (StockDetail + ComprehensiveStockAnalysis + TreasuryBondsView + ...) | 15 | — | ~15K |
+| 5 | `predictions/` | تتبع التوقعات + PersonaTab + DualTrack + MakerRadarTab + PicksManagement | 5 | — | ~20K |
+| 6 | `portfolio/` | المحفظة + RoboAdvisor + BagHolderRescue + Risk Profiler Quiz + ... | 15 | — | ~12K |
+| 7 | `screener/` | فلترة الأسهم المتقدمة (StockScreenerAdvanced) | 1 | — | ~8K |
+| 8 | `market-analysis/` | تحليل السوق + SectorTracking + MarketAnalysisView + PersonaTab + PredictionsTab + ... | 24 | — | ~10K |
+| 9 | `news/` | الأخبار + التحليلات (NewsFeedView) | 1 | — | ~5K |
+| 10 | `admin/` | الأدمن (DB Manager + Topology + Users + Backtest + Notebook + Telegram + ... + live-chart/ + platform-performance/) | 34 | — | ~15K |
+| 11 | `crypto/` | الكريبتو (8 sub-views) | 8 | — | ~8K |
+| 12 | `education/` | الأكاديمية + التعلم (AcademyView + LearningView + CandlestickSimulator + ...) | 9 | — | ~5K |
+| 13 | `reports/` | التقارير (ReportsView + DataManager + StockAnalysisReport + DailyMarketReport + ExecutiveReportView) | 5 | — | ~5K |
+| 14 | `dashboard/` | الرئيسية + widgets (DashboardView + 21 widgets) | 21 | — | ~8K |
+| 15 | `simulation/` | المحاكاة (SimulationView) | 1 | — | ~3K |
+| **Total** | **15 modules** | | **150+** | **6** | **~120K** |
+
+#### 1.8.2 Backend Modules (9 placeholders — `vps-service/modules/`)
+
+Placeholders only — Python file moves deferred (needs import-graph analysis). كل موديول فيه `__init__.py` docstring placeholder يوضّح scope.
+
+| # | Module | Purpose | Status |
+|---|---|---|---|
+| 1 | `radar/` | maker_radar + exit_radar + signal_tracker | placeholder |
+| 2 | `predictions/` | V40.2 generator + daily_closer + learning engine | placeholder |
+| 3 | `market_regime/` | MarketRegimeEngine | placeholder |
+| 4 | `market_data/` | data_engine + scrapers (TradingView + Yahoo + crypto + metals + us_stock) | placeholder |
+| 5 | `telegram/` | auto_poster + card_publisher | placeholder |
+| 6 | `ai/` | glm_finance_agent + nightly_analysis | placeholder |
+| 7 | `portfolio/` | position_manager + stop_manager + smart_exit | placeholder |
+| 8 | `admin/` | admin tools (evaluate_predictions + diagnose + restore) | placeholder |
+| 9 | (root) | `vps-service/modules/__init__.py` | placeholder |
+
+> **Follow-up (P1):** تنفيذ Phase 3-backend الفعلي — ترحيل الـ Python files لـ `vps-service/modules/<module>/` + تحديث الـ imports. يستحسن يتعمل في task منفصل لأن الـ Python import graph أكثر تعقيداً من الـ TypeScript.
+
+#### 1.8.3 DB Layer (Phase 5 — موحّد عبر `src/lib/db/index.ts`)
+
+**Single entry point:** `src/lib/db/index.ts`
+
+| Source File | DB / Purpose | Importers |
+|---|---|---:|
+| `db-auth.ts` | `auth.db` — Prisma client (`db`, `authDb`) + User/Account/Session/SubscriptionPlan types | 5,031 |
+| `db-predictions.ts` | `predictions.db` — `predictionsDb` accessor | 9 |
+| `modules/radar/lib/radar-db.ts` | `stocks.db` radar tables — `getRadarDb`, `parseVolume`, `computeTurnover`, `getRadarDbConfig` | re-exported |
+| `finance-db.ts` | `stocks.db` finance tables — `getFinanceDb`, `isFinanceDbAvailable` | 47 |
+| `new-db.ts` | user data (Prisma) — `getDb`, `getReadOnlyDb` | 14 |
+| `egxpy-bridge.ts` | Python backend bridge — `callPython`, `callPythonAsync` | 13 |
+| `egx-data-sources.ts` | data sources config — `getDataSource`, `listDataSources` | 4 |
+
+> **Phase 5 deletions:** `db-helpers.ts` + `db-v2.ts` + `egx-trading-hours.ts` (0 importers — dead facades) + ~22K LOC dead DB helpers كاملة.
+
+#### 1.8.4 Reorganization Stats (Before/After)
+
+| Metric | Before | After | Delta |
+|---|---:|---:|---|
+| Frontend modules | 0 (scattered) | 15 | +15 |
+| Backend modules | 0 (scattered) | 9 placeholders + root | +9 |
+| Dead LOC | ~63,000 (estimated) | 0 in new module layer | -43,321 deleted (21,321 Phase 1-2 + 22,000 Phase 5) |
+| Duplicate groups | 17 | 4 merged (Phase 2) + remaining targeted in P1 | -4 |
+| Wiring disconnects | 30+ | 7 wired (Phase 4) + 2 already wired (audit verified) | -9 |
+| Total LOC | ~580K | ~540K | -40K LOC |
+| Tests passing | 187 | 259 passed / 15 pre-existing failures / 9 skipped (283 total) — 0 NEW failures | +72 passing |
+| Frontend components | 274 (scattered) | 285 in modules + legacy | +11 wired |
+| API routes | 653 | 653 (no new routes — Rule 4) | 0 |
+| DB access entry points | 20+ scattered helpers | 1 canonical `src/lib/db/index.ts` | consolidated |
+| Cron jobs | 18 | 22 (+4 wired in Phase 4.2) | +4 |
+| market-analysis tabs | 8 | 11 (+3 wired in Phase 4.1) | +3 |
+
+#### 1.8.5 Module Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                Next.js Frontend (port 3001 — dev)                │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  src/modules/ (15 modules — see MODULE_CATALOG.md)        │  │
+│  │  ├── radar/              (liquidity radar — 8 components)  │  │
+│  │  ├── publishing/         (3 components + 2 lib)           │  │
+│  │  ├── personalized/       (1 lib)                          │  │
+│  │  ├── stock-analysis/     (15 components — StockDetail)     │  │
+│  │  ├── predictions/        (5 components — V40.2 tracking)   │  │
+│  │  ├── portfolio/          (15 components — RoboAdvisor)      │  │
+│  │  ├── screener/           (1 component — Advanced)          │  │
+│  │  ├── market-analysis/    (24 components — SectorTracking)  │  │
+│  │  ├── news/               (1 component — NewsFeedView)     │  │
+│  │  ├── admin/              (34 components — DB Manager)      │  │
+│  │  ├── crypto/             (8 components)                    │  │
+│  │  ├── education/          (9 components — Academy+Learning)│  │
+│  │  ├── reports/            (5 components — Weekly Report)     │  │
+│  │  ├── dashboard/          (21 widgets — home dashboard)     │  │
+│  │  └── simulation/         (1 component)                     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                          ↕                                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  src/lib/db/index.ts (canonical DB access — Rule 5)       │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                          ↕                                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  src/app/api/ (653 routes — thin proxies to Python)       │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                           ↕ HTTP (localhost:8010)
+┌─────────────────────────────────────────────────────────────────┐
+│              Python Backend (port 8010 — Flask/FastAPI)         │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  vps-service/modules/ (9 placeholders — Phase 3.2)         │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                           ↕
+┌─────────────────────────────────────────────────────────────────┐
+│                       Data Layer (SQLite)                       │
+│  • stocks.db (14 MB) • predictions.db (235 MB)                  │
+│  • data_engine.db (285 MB) • auth.db (0.2 MB)                    │
+│  • price_history.db (307 MB) • intraday.db (448 MB)             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+> **التخطيط الكامل للمخطط المعماري:** راجع `Documentation/ARCHITECTURE_DIAGRAM.md` (ملف جديد — 2026-09-30).
+
+#### 1.8.6 Phase History (worklog.md entries)
+
+| Phase | Task ID | What was done |
+|---|---|---|
+| Phase 1-2 | `REORG-PHASE-1-2` | حذف 21,321 LOC ميت (frontend lib + components + backend analyzers) + دمج 4 duplicate groups |
+| Phase 3-4 | `REORG-PHASE-3-4` | إنشاء 3 frontend modules (radar + publishing + personalized) + 8 backend module placeholders + wiring 7 hidden gems (3 frontend tabs + 4 cron jobs) |
+| Phase 5 | `REORG-PHASE-5` | توحيد DB layer (إنشاء `src/lib/db/index.ts`) + حذف 22K LOC إضافية من الـ dead DB helpers |
+| Phase 6 | `REORG-PHASE-6` | إنشاء 12 frontend modules إضافية (screener + news + simulation + education + crypto + reports + predictions + portfolio + dashboard + stock-analysis + market-analysis + admin) — 139 files moved via `git mv` (R100 history preserved) |
+| Phase 7 | `REORG-PHASE-7-DOCS` | توثيق الـ module architecture الجديدة (هذا الملف + `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md` + تحديث الـ 4 cornerstone docs + Rule 60) |
 
 ---
 
@@ -1709,6 +1852,7 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-30 | `01-PROJECT_ANATOMY.md` | REORG-PHASE-7-DOCS: تحديث علامة "آخر تحديث" لـ 2026-09-30. إضافة قسم جديد "§1.8 — Module System (Phase 1-7 Reorganization, 2026-09-30)" (6 أقسام فرعية: §1.8.1 Frontend Modules (15) + §1.8.2 Backend Modules (9 placeholders) + §1.8.3 DB Layer + §1.8.4 Reorganization Stats (Before/After) + §1.8.5 Module Architecture Diagram + §1.8.6 Phase History) — يوثّق كل الـ 7 phases من إعادة التنظيم. مرجعية لـ `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md` (ملفين جداد). لم تُحذف أي ملفات أو محتويات. |
 | 2026-09-27 | `01-PROJECT_ANATOMY.md` | DOC-UPDATE-P0-WAVE: تحديث علامة "آخر تحديث" لـ 2026-09-27. تحديث §1.5 الإحصائيات (نحو 30 route تم تأمينها بـ auth + 7 SQLi sites تم fix + 70 sync I/O refactored + 9 duplicate tables dropped + 4 DBs backed up لـ `*.bak-unify` = 511.2 MB + PM2 services 6→7 بـ news-agent + test coverage 3→9 files / 75→121 tests + observability stack جديد). إضافة قسم جديد "§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests" (6 جداول: Security Stack + Observability Stack + Async I/O Refactor + Database Unification + HELI False-Target Forensics + Tests) + قائمة Follow-up لـ P1. |
 | 2026-09-01 | `01-PROJECT_ANATOMY.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تغييرات جوهرية (2026-09-01)" يحتوي على: Stock Notebook System (1,065 LOC + 259 JSON + 7 API endpoints + NotebookAdminTab.tsx)، Unified Exit Engine (518 LOC + MARKET_PROFILES)، Decision Logger (338 LOC + decision_log.db)، News Impact Scorer (432 LOC + 14 event types)، EGX Disclosure Engine (875 LOC + 12 disclosure types)، Crypto Modules (4 ملفات: crypto_strict_filters + crypto_short_holding_exit + crypto_news_fetcher + crypto_disclosure_engine)، Feature Flags V40.2 (10 flags)، News Fetcher Analyzer + news_signals_reader + /api/news/ingest. |
 | 2026-09-25 | `01-PROJECT_ANATOMY.md` | DOC-CONSOLIDATION: تحديث §1.5 الإحصائيات (956 stocks، 1,585 data_engine، 306 predictions، 7,894 news، 1,205,599 price_history، 653 API route، 274 component). إضافة §1.6 (5-Market + UI-Mirror + SQLite Fallback). تحديث §3.1 DB Map بالأرقام الحالية. إضافة §17 Historical Documentation Archive. |

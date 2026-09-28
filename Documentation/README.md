@@ -1,6 +1,6 @@
 # 📚 توثيق المشروع — Project Documentation Index
 
-> **آخر تحديث:** 2026-09-27 (Task `DOC-UPDATE-P0-WAVE`)
+> **آخر تحديث:** 2026-09-30 (Task `REORG-PHASE-7-DOCS`)
 >
 > هذا الملف هو **نقطة الدخول الموحَّدة** لكل توثيق المشروع. كل ملفات الـ Markdown موزَّعة على 6 تصنيفات: حجر الزاوية · تقارير المراجعة · النشر · التقارير الإنتاجية · نتائج الباك تست · المحتوى التعليمي.
 >
@@ -10,14 +10,25 @@
 
 ## 🏛️ حجر الزاوية (Cornerstone Documents)
 
-> ديه الـ 4 ملفات الأساسية اللي كل مطور جديد لازم يقرأها قبل ما يلمس الكود. كلها محدّثة في 2026-09-27 لتعكس P0 Disaster Resolution Wave (16/16 P0 items ✅).
+> ديه الـ 4 ملفات الأساسية اللي كل مطور جديد لازم يقرأها قبل ما يلمس الكود. كلها محدّثة في 2026-09-30 لتعكس Phase 7 من إعادة التنظيم (15 frontend modules + 9 backend placeholders + Rule 60 — MODULE-SYSTEM).
 
 | # | الملف | الوصف |
 |---|------|------|
-| 00 | [00-CONSTITUTION.md](./00-CONSTITUTION.md) | **الدستور** — القواعد الذهبية (59 rule now) + المعمارية الأساسية + الـ governance + **Rules 55–59 (P0-WAVE-SECURITY/SQLI/ASYNC/OBSERVABILITY/TESTS) NEW 2026-09-27** + قسم جديد "§N — P0 Disaster Resolution Wave (2026-09-27)" يوثّق كل الكوارث الـ 16 المُنجَزة |
-| 01 | [01-PROJECT_ANATOMY.md](./01-PROJECT_ANATOMY.md) | **تشريح المشروع** — كل المكونات + الـ data flow + الـ DBs + **§1.7 — P0 Wave 2026-09-27 — Security + Observability + Tests (NEW)** + تحديث §1.5 الإحصائيات (30 routes secured + 7 SQLi fixed + 9 duplicate tables dropped + PM2 6→7 + tests 3→9 files) |
-| 02 | [02-SCREENS_AND_COMPONENTS.md](./02-SCREENS_AND_COMPONENTS.md) | **الشاشات + المكونات** — every component mapped + state + API + **§0.3 — P0 Wave 2026-09-27 (NEW)** + 3 orphan tabs wired (LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab) + help modal persistence fix (30-day) |
-| 03 | [SYSTEM_HOW_IT_THINKS.md](./SYSTEM_HOW_IT_THINKS.md) | **كيف يفكر النظام** — pipeline + algorithms + §15 رادار السيولة (مدموج) + **§16 — HELI False-Target Forensics (NEW)** + **§17 — Observability Stack (NEW)** — Win Rate 67.4% → ~50–55% (actual بعد HELI-CLEANUP-2) |
+| 00 | [00-CONSTITUTION.md](./00-CONSTITUTION.md) | **الدستور** — القواعد الذهبية (60 rule now) + المعمارية الأساسية + الـ governance + **Rule 60 (MODULE-SYSTEM) NEW 2026-09-30** + Rules 55–59 (P0-WAVE) + قسم P0 Disaster Resolution Wave |
+| 01 | [01-PROJECT_ANATOMY.md](./01-PROJECT_ANATOMY.md) | **تشريح المشروع** — كل المكونات + الـ data flow + الـ DBs + **§1.8 — Module System (Phase 1-7 Reorganization, NEW 2026-09-30)** + §1.7 P0 Wave + §1.5 الإحصائيات |
+| 02 | [02-SCREENS_AND_COMPONENTS.md](./02-SCREENS_AND_COMPONENTS.md) | **الشاشات + المكونات** — every component mapped + state + API + **§0.4 — Module Mapping (NEW 2026-09-30)** + §0.3 P0 Wave + 3 orphan tabs wired |
+| 03 | [SYSTEM_HOW_IT_THINKS.md](./SYSTEM_HOW_IT_THINKS.md) | **كيف يفكر النظام** — pipeline + algorithms + §15 رادار السيولة + §16 HELI Forensics + §17 Observability + **§18 — Module Architecture (NEW 2026-09-30)** |
+
+---
+
+## 📚 Module System (NEW — 2026-09-30)
+
+> **المرجع:** `00-CONSTITUTION.md` Rule 60 (MODULE-SYSTEM) — كل كود جديد جوّه موديول قياسي.
+
+| الملف | الوصف |
+|---|---|
+| [MODULE_CATALOG.md](./MODULE_CATALOG.md) | **كتالوج الموديولات** — الـ 15 frontend modules + 9 backend placeholders + DB layer + Reorganization Stats (Before/After) |
+| [ARCHITECTURE_DIAGRAM.md](./ARCHITECTURE_DIAGRAM.md) | **المخطط المعماري** — High-Level Architecture + Module Dependencies + Data Flow (Stock Prices + Predictions + Radar + Auth + News) + Service Topology + Database Layout |
 
 ---
 
@@ -108,11 +119,11 @@
 
 ## 🔗 روابط سريعة
 
-- **آخر تحديث للدستور:** راجع أعلى [`00-CONSTITUTION.md`](./00-CONSTITUTION.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): Rules 55–59 (P0-WAVE) + قسم P0 Disaster Resolution Wave*
-- **آخر تحديث للتشريح:** راجع أعلى [`01-PROJECT_ANATOMY.md`](./01-PROJECT_ANATOMY.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): §1.7 — P0 Wave — Security + Observability + Tests*
-- **آخر تحديث للشاشات:** راجع أعلى [`02-SCREENS_AND_COMPONENTS.md`](./02-SCREENS_AND_COMPONENTS.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): §0.3 P0 Wave + 3 orphan tabs wired*
-- **آخر تحديث لطريقة التفكير:** راجع أعلى [`SYSTEM_HOW_IT_THINKS.md`](./SYSTEM_HOW_IT_THINKS.md) — *2026-09-27 (DOC-UPDATE-P0-WAVE): §16 HELI Forensics + §17 Observability Stack (WR 67.4% → ~50–55% actual)*
-- **الـ worklog الكامل:** [`/worklog.md`](../worklog.md) (في root) — *آخر task: DOC-UPDATE-P0-WAVE*
+- **آخر تحديث للدستور:** راجع أعلى [`00-CONSTITUTION.md`](./00-CONSTITUTION.md) — *2026-09-30 (REORG-PHASE-7-DOCS): Rule 60 (MODULE-SYSTEM)*
+- **آخر تحديث للتشريح:** راجع أعلى [`01-PROJECT_ANATOMY.md`](./01-PROJECT_ANATOMY.md) — *2026-09-30 (REORG-PHASE-7-DOCS): §1.8 — Module System (Phase 1-7 Reorganization)*
+- **آخر تحديث للشاشات:** راجع أعلى [`02-SCREENS_AND_COMPONENTS.md`](./02-SCREENS_AND_COMPONENTS.md) — *2026-09-30 (REORG-PHASE-7-DOCS): §0.4 — Module Mapping*
+- **آخر تحديث لطريقة التفكير:** راجع أعلى [`SYSTEM_HOW_IT_THINKS.md`](./SYSTEM_HOW_IT_THINKS.md) — *2026-09-30 (REORG-PHASE-7-DOCS): §18 — Module Architecture*
+- **الـ worklog الكامل:** [`/worklog.md`](../worklog.md) (في root) — *آخر task: REORG-PHASE-7-DOCS*
 
 ---
 
@@ -120,10 +131,12 @@
 
 ```
 Documentation/
-├── 00-CONSTITUTION.md                          ← cornerstone
-├── 01-PROJECT_ANATOMY.md                       ← cornerstone
-├── 02-SCREENS_AND_COMPONENTS.md                ← cornerstone
-├── SYSTEM_HOW_IT_THINKS.md                     ← cornerstone (§15 = radar merged 2026-09-27)
+├── 00-CONSTITUTION.md                          ← cornerstone (60 rule now — Rule 60 NEW 2026-09-30)
+├── 01-PROJECT_ANATOMY.md                       ← cornerstone (§1.8 Module System NEW 2026-09-30)
+├── 02-SCREENS_AND_COMPONENTS.md                ← cornerstone (§0.4 Module Mapping NEW 2026-09-30)
+├── SYSTEM_HOW_IT_THINKS.md                      ← cornerstone (§18 Module Architecture NEW 2026-09-30)
+├── MODULE_CATALOG.md                            ← NEW 2026-09-30 (15 frontend + 9 backend modules)
+├── ARCHITECTURE_DIAGRAM.md                      ← NEW 2026-09-30 (high-level + data flow)
 ├── README.md                                   ← هذا الملف (الفهرس)
 │
 ├── audit-logs/                                  ← تقارير المراجعة
@@ -227,5 +240,30 @@ Documentation/
 
 ---
 
+## 🆕 تحديث 2026-09-30 (Task `REORG-PHASE-7-DOCS`)
+
+> **Phase 7 من إعادة التنظيم (المرحلة الأخيرة من 7 phases) — توثيق الـ module architecture الجديدة.**
+> - **Rule 60 (NEW)** — MODULE-SYSTEM: كل كود جديد لازم يكون جوّه موديول في `src/modules/<module>/` (frontend) أو `vps-service/modules/<module>/` (backend) + كل موديول ليه `index.ts` كـ public interface + الـ imports بين الموديولات عبر الـ `index.ts` فقط.
+> - **ملفين جداد (NEW):**
+>   - `MODULE_CATALOG.md` — كتالوج الـ 15 frontend modules + 9 backend placeholders + DB layer + Reorganization Stats (Before/After: 0 → 15 modules، 63K LOC dead → 43K deleted، 187 → 259 tests passing).
+>   - `ARCHITECTURE_DIAGRAM.md` — المخطط المعماري الكامل (High-Level + Module Dependencies + Data Flow + Service Topology + Database Layout).
+> - **الـ 4 cornerstone docs كلها اتـ updated:**
+>   - `00-CONSTITUTION.md` — إضافة Rule 60 + تحديث فهرس القواعد من 59 → 60.
+>   - `01-PROJECT_ANATOMY.md` — إضافة §1.8 — Module System (Phase 1-7 Reorganization).
+>   - `02-SCREENS_AND_COMPONENTS.md` — إضافة §0.4 — Module Mapping (hash view → module mapping).
+>   - `SYSTEM_HOW_IT_THINKS.md` — إضافة §18 — Module Architecture.
+> - **الإحصائيات النهائية لـ reorganization (Phases 1-7):**
+>   - Frontend modules: 0 → 15
+>   - Backend modules: 0 → 9 placeholders
+>   - Dead LOC deleted: ~43,321 (21,321 Phase 1-2 + 22,000 Phase 5)
+>   - Total LOC: ~580K → ~540K
+>   - Tests: 187 → 259 passed (0 NEW failures)
+>   - DB access entry points: 20+ scattered → 1 canonical (`src/lib/db/index.ts`)
+>   - Cron jobs: 18 → 22 (+4 wired in Phase 4.2)
+>   - market-analysis tabs: 8 → 11 (+3 wired in Phase 4.1)
+
+---
+
 *تم الإنشاء بواسطة Documentation Secretary + Programmer — Task ID `DOC-REORG-2` — 2026-09-27*
 *تم التحديث بواسطة Documentation Secretary — Task ID `DOC-UPDATE-P0-WAVE` — 2026-09-27*
+*تم التحديث بواسطة Documentation Secretary — Task ID `REORG-PHASE-7-DOCS` — 2026-09-30*

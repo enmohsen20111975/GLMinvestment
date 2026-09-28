@@ -4,7 +4,8 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-09-27 (DOC-UPDATE-P0-WAVE pass: تحديث §0 Screen Status Rollup — إضافة P0 Wave notes (3 orphan tabs wired: LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab داخل `MarketAnalysisView` + help modal persistence fix 30-day expiration + radar §15 signal-tracker auto-record + 30 admin routes secured + 7 SQLi sites patched + 70 sync I/O refactored + observability stack (Sentry + logger + /api/health + x-request-id) + 6 test files / 46 new test cases + middleware edge-runtime regression fixed). تحديث عدّاد الـ components لـ 285 (was 282 — +3 wired tabs).)
+> **آخر تحديث:** 2026-09-30 (REORG-PHASE-7-DOCS pass: إضافة §0.4 جديد "Module Mapping (2026-09-30)" — خرائط كل hash view للموديول بتاعه في `src/modules/<module>/`. تحديث عدّاد الـ components 285 → 285 (no new components — Rule 4: NO new screens). مرجعية لـ `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md` + Rule 60 (MODULE-SYSTEM). لم تُحذف أي محتويات.)
+> **آخر تحديث سابق:** 2026-09-27 (DOC-UPDATE-P0-WAVE pass: تحديث §0 Screen Status Rollup — إضافة P0 Wave notes (3 orphan tabs wired: LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab داخل `MarketAnalysisView` + help modal persistence fix 30-day expiration + radar §15 signal-tracker auto-record + 30 admin routes secured + 7 SQLi sites patched + 70 sync I/O refactored + observability stack (Sentry + logger + /api/health + x-request-id) + 6 test files / 46 new test cases + middleware edge-runtime regression fixed). تحديث عدّاد الـ components لـ 285 (was 282 — +3 wired tabs).)
 > **آخر تحديث سابق:** 2026-09-26 (DOC-UPDATE-FINAL pass: تحديث §0 Screen Status Rollup — إضافة UnifiedTable upgraded (expandable rows + column toggle + filtering + toolbar) + Phases A/B/C/D (multi-market `market_code`، Liquidity primary gate، 20+ thresholds → `get_setting()`، A/B backtest harness) + تحديث عدّاد الـ components لـ 282.)
 > **آخر تحديث سابق:** 2026-09-25 (DOC-CONSOLIDATION pass: إضافة §0 شاشة الحالات المُجمَّعة (Screen Status Rollup) + تحديث عدّادات §1 — 274 component، 653 API route، 5-market + UI-Mirror + SQLite fallback).
 > **آخر تحديث سابق:** 2026-09-01 (إضافة NotebookAdminTab.tsx في AdminView + تحديث علامة "آخر تحديث" لتعكس الـ admin tab الجديد لـ Stock Notebooks).
@@ -140,6 +141,53 @@
 |---|---|
 | 9 test files / 121 tests / 1,796 LOC | ✅ 121/121 passing — quality gate على كل commit |
 | Test philosophy: READ-ONLY DB + live HTTP fetch (auto-skip لو server مش شغال) | ✅ adopted |
+
+---
+
+### 0.4 Module Mapping (2026-09-30 — NEW — REORG-PHASE-7-DOCS)
+
+> **المرجع الدستوري:** Rule 60 (MODULE-SYSTEM — 2026-09-30) في `00-CONSTITUTION.md` + `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md`.
+>
+> **القاعدة:** كل شاشة دلوقتي بت pertence لموديول في `src/modules/<module>/`. الـ components الـ legacy لسه في `src/components/<domain>/` (يُفضّل ترحيلها في P1).
+
+| Hash View | Module | Notes |
+|---|---|---|
+| `#stocks` | `modules/stock-analysis/` | StockDetail + ComprehensiveStockAnalysis + StocksView + StockSelector + ... |
+| `#recommendations` | `modules/market-analysis/` | MarketAnalysisView + PersonaTab + PredictionsTab + SectorTrackingTab + LiveTrackingTab + ExpertPredictionsTab + CryptoPredictionsTab + ... (11 tabs) |
+| `#liquidity-radar` | `modules/predictions/` (MakerRadarTab) + `modules/radar/` (ExitRadarTab + MultiMarketRadarTab + AccuracyDashboard + PersonalizedRadarTab) | Wired in Phase 4.1 — 3 radar tabs in MarketAnalysisView |
+| `#picks-management` | `modules/predictions/` | PicksManagementView — `hunter_pick_tracking` populated (P0 fix #2) |
+| `#portfolio` | `modules/portfolio/` | EnhancedPortfolioView + RoboAdvisorPanel + AdvancedPortfolioManager + BagHolderRescuePanel + RiskProfilerQuiz + ... (15 components) |
+| `#watchlist` | `modules/portfolio/` | Shares module with portfolio — multi-portfolio selector |
+| `#crypto` (8 sub-views) | `modules/crypto/` | CryptoTradingChartView + CryptoAdditionalViews + CryptoPredictionTrackingView + CryptoAdvancedAnalysisView + CryptoSimulationView + CryptoScreenerView + CryptoLearningView + CryptoPortfolioView |
+| `#reports` | `modules/reports/` | ReportsView + DataManager + StockAnalysisReport + DailyMarketReport + ExecutiveReportView |
+| `#simulation` | `modules/simulation/` | SimulationView |
+| `#learning` + `#academy` | `modules/education/` | LearningView + AcademyView + CandlestickSimulator + StrategySandbox + PaperTradingWorkstation + MathRenderer + ... (9 components — Phase 6 merge target of academy + learning) |
+| `#dashboard` | `modules/dashboard/` | DashboardView + 21 widgets (LiquidityFlowPanel + IntradayPressurePanel + InvestorsFlowPanel + LiveMonitor + TopMovers + MaestroWidget + ...) |
+| `#news` | `modules/news/` | NewsFeedView |
+| `#admin` | `modules/admin/` | AdminView + 34 components (DatabaseManagerFull + SystemTopologyTab + SystemTopologyGraph + WealthCharts + NotebookAdminTab + BacktestTab + ...) + live-chart/ + platform-performance/ subdirs |
+| `#specialist-analysis` | `modules/stock-analysis/` (StockAdvancedAnalysisView) + `modules/market-analysis/` (UnifiedAnalysisView) | Hybrid view |
+| `#screener` | `modules/screener/` | StockScreenerAdvanced |
+| `#trading-chart` | `modules/stock-analysis/` | TradingViewChart + MarketDepthPanel |
+| `#alerts-center` | `modules/dashboard/` (LiveMonitor widget) + `modules/market-analysis/` (AlertPanel) | Wired |
+| `#trading-memory` | `src/components/memory/` (TradingMemoryView — NOT yet moved) | Imports from `modules/portfolio/` (PortfolioIntelligencePanel + SmartAssistantPanel) |
+| `#wealth` | `modules/admin/` (WealthCharts) + `modules/portfolio/` (RealReturnPanel) | Wired |
+| `#live-monitor` | `modules/dashboard/` (LiveMonitor) | Dashboard widget |
+| `#subscription` + `#auth` + `#settings` + `#about` | `src/components/auth/` + `src/components/settings/` (NOT yet moved) | Cross-cutting — not part of a single module |
+| `#zakat` + `#tithes` | `src/components/zakat/` (NOT yet moved) | Islamic finance — niche module |
+| `#backtesting` | `src/components/admin/EGXBacktestDashboard` (legacy — hidden) | ⚠️ Partial — no sidebar entry |
+| `#prediction-performance` / `#prediction-credibility` | 🚫 deprecated (DEAD) | Admin-only — placeholder |
+| `#community` | 🚫 deprecated (DEAD) | Sidebar removed + CommunityView orphan |
+| `#trading-journal` / `#unified-analysis` / `#StoredAnalysisView` | 🚫 deprecated (moved/distributed) | Distributed on admin / recommendations / specialist-analysis |
+
+> **NOT yet moved (P1 follow-up):**
+> - `src/components/memory/TradingMemoryView.tsx` → مستهدف لـ `modules/portfolio/` (لأنه imports 2 portfolio components).
+> - `src/components/auth/` + `src/components/settings/` + `src/components/zakat/` + `src/components/layout/` (cross-cutting — مستهدف لـ `src/shared/`).
+> - `src/components/shared/` + `src/components/ui/` (51 shadcn primitives + UnifiedTable + ErrorBoundary + SafeWidget + ...) — مستهدف لـ `src/shared/`.
+
+> **Module count summary:**
+> - Frontend modules في `src/modules/`: **15** (radar + publishing + personalized + stock-analysis + predictions + portfolio + screener + market-analysis + news + admin + crypto + education + reports + dashboard + simulation).
+> - Backend module placeholders في `vps-service/modules/`: **9** (radar + predictions + market_regime + market_data + telegram + ai + portfolio + admin + root).
+> - الـ components الكلية (active): **285** (285 under `src/components/` + `src/modules/`).
 
 ---
 
@@ -2329,4 +2377,5 @@ git revert 77176d93..3124bee7
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-09-30 | `02-SCREENS_AND_COMPONENTS.md` | REORG-PHASE-7-DOCS: تحديث علامة "آخر تحديث" لـ 2026-09-30. إضافة §0.4 جديد "Module Mapping (2026-09-30)" — خرائط كل hash view للموديول بتاعه في `src/modules/<module>/` (25 hash view × module mapping table + P1 follow-up notes). مرجعية لـ `MODULE_CATALOG.md` + `ARCHITECTURE_DIAGRAM.md` + Rule 60 (MODULE-SYSTEM). لم تُحذف أي محتويات. |
 | 2026-09-01 | `FIXES_REPORT_2026-08-30.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إضافة قسم "تحديثات الجلسة (2026-09-01)" — جدول 15 موديول جديد + الـ 10 Feature Flags + باك-تست B0/B1/B2/B3 + القواعد الدستورية 36-40 + كيفية التراجع. |
