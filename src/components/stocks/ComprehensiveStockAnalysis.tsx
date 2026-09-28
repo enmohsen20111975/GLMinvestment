@@ -264,15 +264,13 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-auto">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
           <TabsTrigger value="overview" className="text-xs">نظرة عامة</TabsTrigger>
           <TabsTrigger value="technical" className="text-xs">فني</TabsTrigger>
           <TabsTrigger value="fundamental" className="text-xs">أساسي</TabsTrigger>
-          {/* Maestro tab REMOVED per user request 2026-09-28 */}
           <TabsTrigger value="chart" className="text-xs">رسوم</TabsTrigger>
           <TabsTrigger value="news" className="text-xs">أخبار</TabsTrigger>
           <TabsTrigger value="predictions" className="text-xs">توقعات</TabsTrigger>
-          <TabsTrigger value="ai" className="text-xs">AI</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -290,8 +288,6 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
           <FundamentalTab metrics={metrics} basic={basic} />
         </TabsContent>
 
-        {/* Maestro Tab REMOVED per user request 2026-09-28 — V40.2 is the sole engine */}
-
         {/* Charts Tab */}
         <TabsContent value="chart" className="mt-4">
           <ChartsTab priceHistory={data.priceHistory} tech={tech} />
@@ -305,11 +301,6 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
         {/* Predictions Tab */}
         <TabsContent value="predictions" className="mt-4">
           <PredictionsTab predictions={data.predictions} />
-        </TabsContent>
-
-        {/* AI Tab */}
-        <TabsContent value="ai" className="mt-4">
-          <AITab professional={data.professional} ticker={data.ticker} />
         </TabsContent>
       </Tabs>
     </div>
@@ -431,40 +422,13 @@ function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown
 // ============================================================================
 
 function OverviewTab({ data }: { data: ComprehensiveData }) {
-  const maestro = data.maestro?.maestroAnalysis || data.maestro || {};
   const board = data.board || {};
   const hunter = data.hunter || {};
   const price = data.price || {};
   const tech = data.technical || {};
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Maestro Score */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Brain className="w-4 h-4" />
-            تقييم المايسترو
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center pt-2">
-          {maestro.maestroScore !== undefined ? (
-            <>
-              <ScoreGauge score={maestro.maestroScore} label="الدرجة الكلية" size={130} />
-              <Badge className={cn('mt-2', signalBadge(maestro.recommendation || '').className)}>
-                {maestro.recommendationAr || signalBadge(maestro.recommendation || '').label}
-              </Badge>
-              {maestro.confidence !== undefined && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  الثقة: {Math.round(maestro.confidence)}%
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground py-8">مايسترو مش متاح</p>
-          )}
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
       {/* Board of Analysts */}
       <Card>

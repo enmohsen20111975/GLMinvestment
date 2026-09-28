@@ -5,14 +5,13 @@ import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Activity, Layers, Radar, Target, Brain, History, AlertTriangle, DoorOpen, FileText } from 'lucide-react';
+import { Activity, Layers, Target, History, DoorOpen, FileText } from 'lucide-react';
 import { useAppStore, MARKET_CURRENCY_LABEL, MarketType } from '@/lib/store';
 import { useAnalysisStore } from '@/lib/analysis-store';
 import { OFFICIAL_LINKS } from '@/lib/official-links';
 import { MarketSelector } from '@/components/shared/MarketSelector';
 import { RefreshAnalyticsButton } from '@/components/recommendations/RefreshAnalyticsButton';
 import { PredictionTrackingDashboard } from '@/components/predictions/PredictionTrackingDashboard';
-import { MakerRadarTab } from '@/components/predictions/MakerRadarTab';
 import { ExecutiveReportView } from '@/components/reports/ExecutiveReportView';
 import { HorizontalSectorsBar } from '@/components/analysis/market-analysis/MorningBellSection';
 import { MARKET_CODES, _isEgxIntradayNow } from '@/components/analysis/market-analysis/helpers';
@@ -34,21 +33,8 @@ const WeeklyReportTab = dynamic(
 );
 // P1 #19 tabs (LiveTracking/ExpertPredictions/CryptoPredictions) REMOVED on 2026-09-28 per user request — caused UX clutter
 
-// P1-GEMS-WIRING: 3 new hidden-gem tabs — wired on 2026-09-28.
-// LearnedLessonsDashboard reads 19,464 AI lessons from predictions.db.learned_lessons.
-// HistoricalTradesTable reads 13,117 backtest trades from predictions.db.historical_trades.
-// DevilsAdvocatePanel combines 4 devil's-advocate lib-backed components (DevilsCard +
-// MarketMood + DevilsCalendar + ScenarioMatrix) that previously had no render site.
-const LearnedLessonsDashboard = dynamic(
-  () => import('@/components/analysis/LearnedLessonsDashboard').then(m => ({ default: m.LearnedLessonsDashboard })),
-  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
-);
 const HistoricalTradesTable = dynamic(
   () => import('@/components/analysis/HistoricalTradesTable').then(m => ({ default: m.HistoricalTradesTable })),
-  { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
-);
-const DevilsAdvocatePanel = dynamic(
-  () => import('@/components/devil/DevilsAdvocatePanel').then(m => ({ default: m.DevilsAdvocatePanel })),
   { ssr: false, loading: () => <Skeleton className='h-[400px] w-full rounded-xl' /> },
 );
 
@@ -213,7 +199,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
       <HorizontalSectorsBar marketCode={marketCode} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-6 h-auto gap-1">
+        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-4 lg:grid-cols-8 h-auto gap-1">
           {/* التبويب الأول: متابعة التوقعات — كل تفاصيل التوقعات السابقة */}
           <TabsTrigger value="tracking" className="flex items-center gap-1">
             <Target className="h-4 w-4" />
@@ -237,12 +223,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <Layers className="h-4 w-4 text-teal-600" />
             <span className="hidden sm:inline">تتبع القطاعات</span>
           </TabsTrigger>
-          {/* PHASE-2: رادار الميكرز — قائمة أسهم تحت الميكروسكوب + موجة انفجارية + اختراق مبكر */}
-          <TabsTrigger value="maker-radar" className="flex items-center gap-1">
-            <Radar className="h-4 w-4 text-emerald-600" />
-            <span className="hidden sm:inline">رادار الميكرز</span>
-          </TabsTrigger>
-          {/* L2-ALERTS-EXIT-RADAR: رادار الخروج — إشارات توزيع/خروج (عكس رادار الميكرز) */}
+          {/* L2-ALERTS-EXIT-RADAR: رادار الخروج — إشارات توزيع/خروج */}
           <TabsTrigger value="exit-radar" className="flex items-center gap-1">
             <DoorOpen className="h-4 w-4 text-rose-600" />
             <span className="hidden sm:inline">رادار الخروج</span>
@@ -252,18 +233,9 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <FileText className="h-4 w-4 text-emerald-600" />
             <span className="hidden sm:inline">التقرير الأسبوعي</span>
           </TabsTrigger>
-          {/* P1-GEMS-WIRING: 3 new hidden-gem tabs */}
-          <TabsTrigger value="learned-lessons" className="flex items-center gap-1">
-            <Brain className="h-4 w-4 text-violet-600" />
-            <span className="hidden sm:inline">دروس AI</span>
-          </TabsTrigger>
           <TabsTrigger value="historical-trades" className="flex items-center gap-1">
             <History className="h-4 w-4 text-blue-600" />
             <span className="hidden sm:inline">صفقات تاريخية</span>
-          </TabsTrigger>
-          <TabsTrigger value="devils-advocate" className="flex items-center gap-1">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="hidden sm:inline">وجهة نظر المضاد</span>
           </TabsTrigger>
         </TabsList>
 
@@ -290,11 +262,6 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <SectorTrackingTab market={currentMarket} />
         </TabsContent>
 
-        {/* PHASE-2: رادار الميكرز */}
-        <TabsContent value="maker-radar" className="mt-4">
-          <MakerRadarTab market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />
-        </TabsContent>
-
         {/* L2-ALERTS-EXIT-RADAR: رادار الخروج */}
         <TabsContent value="exit-radar" className="mt-4">
           <ExitRadarTab market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />
@@ -305,19 +272,9 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
           <WeeklyReportTab market={currentMarket === 'CRYPTO' ? 'EGX' : currentMarket} />
         </TabsContent>
 
-        {/* P1-GEMS-WIRING: دروس الذكاء الاصطناعي (19,464 صف) */}
-        <TabsContent value="learned-lessons" className="mt-4">
-          <LearnedLessonsDashboard market={currentMarket} />
-        </TabsContent>
-
         {/* P1-GEMS-WIRING: الصفقات التاريخية (13,117 صف) */}
         <TabsContent value="historical-trades" className="mt-4">
           <HistoricalTradesTable market={currentMarket} />
-        </TabsContent>
-
-        {/* P1-GEMS-WIRING: وجهة نظر المضاد (4 components) */}
-        <TabsContent value="devils-advocate" className="mt-4">
-          <DevilsAdvocatePanel market={currentMarket} />
         </TabsContent>
       </Tabs>
 

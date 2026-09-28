@@ -905,7 +905,7 @@ function RecommendationsReport() {
           {copied ? 'تم النسخ' : 'نسخ التقرير'}
         </Button>
         <UnifiedPublishButton
-          content={insights ? generateRecommendationsShareText(insights, usingStoredAnalysis) : 'تقرير التحليلات'}
+          content={insights ? generateRecommendationsShareText(insights, usingStoredAnalysis ? { buys: storedBuys, sells: storedSells, total: storedTotal } : null) : 'تقرير التحليلات'}
           title="تقرير التحليلات اليومي"
           image={recReportRef}
           filename={`recommendations_report_${new Date().toISOString().split('T')[0]}`}
