@@ -45,7 +45,7 @@ import {
   Sparkles,
   Waves,
   Layers,
-  AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import type { UnifiedStockData } from '@/lib/unified-stock-data';
 
@@ -103,10 +103,25 @@ const MONEY_FLOW_STYLES: Record<string, string> = {
 
 export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Props) {
   const { canonical, prediction, technical, stock, radar } = data;
-  const signalStyle = SIGNAL_STYLES[canonical.signal] ?? SIGNAL_STYLES.HOLD;
+
+  // ⚠️ CRITICAL FIX (CONFLICT-AVOIDANCE, 2026-10-07):
+  // كان البانر يعرض canonical.signal + master_score، لكن هذه تأتي أحيانًا من
+  // fresh_technical_score (TS-side computation) وليس من V40.2 الحقيقي (Python).
+  // هذا سبب تضارب: البانر يقول "شراء 70/100" بينما InstitutionalDecisionPanel
+  // يقول "تجنب 35/100" (من Python /api/v2/chart/full-analysis).
+  //
+  // الحل: البانر لا يعرض signal/score إطلاقًا. يعرض فقط:
+  //   - who_is_buying (من predictions.db — فريد، لا يعرضه InstitutionalDecisionPanel)
+  //   - analysis_reason (من predictions.db — فريد)
+  //   - money_flow / accumulation / phase (من buy_pct — بيانات سيولة، ليست قرارًا)
+  //   - entry/target/stop (من predictions.db — لو متوفرة)
+  //
+  // القرار النهائي (BUY/HOLD/SELL) يُعرض في InstitutionalDecisionPanel بالأسفل
+  // (من Python V40.2 الكامل مع Kill Filters + 6 proofs).
+  const isFreshPrediction = canonical.master_score_source === 'prediction_db_fresh';
   const whoStyle = getWhoIsBuyingStyle(prediction?.who_is_buying ?? null);
 
-  // مستويات الدخول/الهدف/الوقف (من المحرك الموحّد)
+  // مستويات الدخول/الهدف/الوقف (من predictions.db فقط — لا fabrication)
   const entry = prediction?.entry_price ?? null;
   const tp1 = prediction?.target_price ?? null;
   const tp2 = prediction?.target_price_2 ?? null;
@@ -126,52 +141,53 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
   // current price (كنسي)
   const price = stock.current_price ?? null;
 
-  return (
-    <div className="mb-3 rounded-xl border-2 border-emerald-500/40 bg-gradient-to-l from-emerald-50 via-card to-sky-50 dark:from-emerald-950/20 dark:via-card dark:to-sky-950/20 overflow-hidden shadow-sm">
-      {/* ─── Header: العنوان + الإشارة الكنسية + master_score ─── */}
-      <div className="px-4 py-3 border-b border-emerald-500/20 bg-emerald-100/40 dark:bg-emerald-900/15 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-emerald-700 dark:text-emerald-300">
-            🏛️ محرك القرار المؤسسي V60.2
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            (مصدر موحّد · Rule 73)
+  // لو لا يوجد توقع طازج → اعرض بانر مبسّط (لا signal، لا levels — فقط تحذير)
+  if (!isFreshPrediction || !prediction) {
+    return (
+      <div className="mb-3 rounded-xl border-2 border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/10 p-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <span className="font-bold text-amber-700 dark:text-amber-300">
+            لا يوجد توقع طازج من V40.2 (≤ 48 ساعة)
           </span>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* الإشارة الكنسية */}
-          <Badge
-            className={cn(
-              'text-xs font-bold px-3 py-1 rounded-full border-2 flex items-center gap-1.5 shadow-sm',
-              signalStyle.bg,
-              signalStyle.text,
-              signalStyle.border
-            )}
-          >
-            {signalStyle.icon}
-            <span>{canonical.signal_ar || canonical.signal}</span>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          القرار النهائي يُحسب لحظيًا في لوحة &quot;محرك القرار المؤسسي&quot; بالأسفل (Python V40.2 + Kill Filters).
+          لا نعرض signal هنا لتجنب التضارب مع المحرك الحقيقي.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3 rounded-xl border-2 border-sky-500/40 bg-gradient-to-l from-sky-50 via-card to-emerald-50 dark:from-sky-950/20 dark:via-card dark:to-emerald-950/20 overflow-hidden shadow-sm">
+      {/* ─── Header: العنوان + إحالة للقرار النهائي ─── */}
+      <div className="px-4 py-3 border-b border-sky-500/20 bg-sky-100/40 dark:bg-sky-900/15 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-sky-700 dark:text-sky-300">
+            🏛️ من يشتري؟ (Who Is Buying)
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            (من predictions.db — V40.2 الكنسي)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-300">
+            <Sparkles className="w-3 h-3 ml-0.5" />
+            توقع طازج
           </Badge>
-          {/* master_score */}
-          <Badge
-            variant="outline"
-            className="text-xs font-mono font-bold px-2.5 py-1 bg-card border-border"
-            title={`مصدر: ${canonical.master_score_source === 'prediction_db_fresh' ? 'توقع طازج ≤ 48س' : 'حساب فني لحظي'}`}
-          >
-            <Gauge className="w-3 h-3 ml-0.5 text-emerald-600" />
-            {canonical.master_score.toFixed(0)}/100
-            {canonical.prediction_is_fresh && (
-              <Sparkles className="w-3 h-3 ml-0.5 text-amber-500" />
-            )}
-          </Badge>
+          <span className="text-[9px] text-muted-foreground">
+            ↩️ القرار النهائي في &quot;محرك القرار المؤسسي&quot; بالأسفل
+          </span>
         </div>
       </div>
 
-      {/* ─── WHO IS BUYING? (العنوان الرئيسي للمحرك — مطابق Pine L669-763) ─── */}
+      {/* ─── WHO IS BUYING? (العنوان الرئيسي — مطابق Pine L669-763) ─── */}
       <div className="px-4 py-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* WHO IS BUYING */}
-        <div className="lg:col-span-2 p-3 rounded-lg bg-card/60 dark:bg-card/40 border border-emerald-500/20">
+        <div className="lg:col-span-2 p-3 rounded-lg bg-card/60 dark:bg-card/40 border border-sky-500/20">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wider">
               👥 من يشتري؟
             </span>
             <span className="text-[9px] text-muted-foreground">(تقدير من حجم/استمرارية/امتصاص/VWAP/MFI)</span>
