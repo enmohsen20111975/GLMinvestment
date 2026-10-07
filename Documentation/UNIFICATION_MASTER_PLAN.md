@@ -48,11 +48,43 @@
 
 **النتيجة:** RSI موحد (Wilder's) + Maestro معطل بالكامل (API + Python + UI).
 
-### المرحلة 3 — ⏳ محجوزة (شهر)
+### المرحلة 3 — ✅ مكتملة (commit `51de11e`)
 
-- V40.2 يكتب في جدول حكم واحد (predictions.db.predictions)
-- كل الشاشات تقرأ منه حصراً
-- المحركات التانية تبقى "مؤشرات مساندة" بلا لغة قرار
+**تم تعطيل المحركات الفرعية + توحيد مصدر السعر + كاتب واحد (27 ملف بـ 3 sub-agents):**
+
+| الجزء | التغيير | ملفات |
+|-------|---------|-------|
+| 3.1 تعطيل sub-engines | 5 engines → SUB_ENGINE_DISABLED guard | 5 .py files |
+| 3.2 توحيد مصدر السعر | canonical price-source hierarchy | 8 .py + 1 .ts |
+| 3.3 كاتب واحد | 7 writers disabled → daily_predictor.py فقط | 7 .py + 3 .ts |
+
+**النتيجة:** محرك قرار واحد (master_analyzer.py) + مصدر سعر واحد (stocks.db.stocks.current_price) + كاتب واحد (daily_predictor.py).
+
+---
+
+## ✅ خلاصة الجلسة الكاملة — جميع المراحل مكتملة
+
+| المرحلة | Commits | ملفات | المدة |
+|---------|---------|-------|-------|
+| Phase 0 | 2 commits | 7 ملفات UI | إخفاء الشارات + تعطيل MaestroWidget |
+| Phase 1 | 3 commits | 3 ملفات + 1 جديد | توحيد العتبات + حداثة + اختبار آلي |
+| Phase 2 | 2 commits | 49 ملف | توحيد RSI + قتل Maestro نهائياً |
+| Phase 3 | 1 commit | 27 ملف | تعطيل sub-engines + مصدر سعر + كاتب واحد |
+| **الإجمالي** | **14 commits** | **~85 ملف** | **8 sub-agents بالتوازي** |
+
+### ما تم إنجازه:
+
+✅ **محرك قرار واحد:** master_analyzer.py + canonical_signal.py (thresholds 78/65/55/40/25)
+✅ **Maestro معطل نهائياً:** API (410 Gone) + Python (MAESTRO_DISABLED) + UI (return null)
+✅ **5 sub-engines معطلة:** board_of_analysts, confluence_v3, sniper, v82, professional
+✅ **RSI موحد:** Wilder's smoothing (مش SMA) — 31 ملف
+✅ **العتبات موحدة:** engine_settings.py (78/65/55/40/25) + institutional متطابقة
+✅ **مصدر سعر واحد:** stocks.db.stocks.current_price (LIVE) + stock_daily_prices (HISTORICAL)
+✅ **كاتب واحد:** daily_predictor.py (7 writers معطلين)
+✅ **اختبار آلي:** unification_test.py يضرب 5 endpoints + يكتشف التناقضات
+✅ **freshness gate:** PENDING predictions ≤ 48 ساعة
+✅ **سياسة الفراغ:** NULL → "— بيانات غير متاحة" (مش HOLD الكاذب)
+✅ **Source transparency:** unified=true + unified_source tag في كل response
 
 ---
 
@@ -128,9 +160,11 @@
 
 ---
 
-## 🎯 الترتيب التنفيذي (الحالة الحالية)
+## 🎯 الترتيب التنفيذي (الحالة النهائية)
 
 1. ✅ **المرحلة 0** — مكتملة (commit `2591485`)
 2. ✅ **المرحلة 1** — مكتملة (commits `514d1c2` + `ba5c61a` + `9eeb00a`)
 3. ✅ **المرحلة 2** — مكتملة (commit `3ddca1c` — 49 ملف، 4 sub-agents)
-4. ⏳ **المرحلة 3** — V40.2 canonical engine (محتاجة جلسة منفصلة)
+4. ✅ **المرحلة 3** — مكتملة (commit `51de11e` — 27 ملف، 3 sub-agents)
+
+**جميع المراحل مكتملة.** النظام دلوقتي عنده محرك قرار واحد + مصدر بيانات واحد + جدول حكم واحد + كاتب واحد.
