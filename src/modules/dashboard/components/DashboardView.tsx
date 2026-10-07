@@ -194,10 +194,12 @@ export function DashboardView() {
   // 10. شيل إشارات الموسمية
   const widgets: WidgetDescriptor[] = useMemo(() => [
     // 6. ملخص السوق + المؤشرات (مدموج — Owner directive)
+    // FIX (Task MARKET-SEPARATION): إخفاء مؤشرات EGX في الأسواق التانية
+    // EGX30/70/100 ملهاش معنى في السوق الأمريكي أو الكريبتو.
     {
       id: 'market-summary',
       title: 'ملخص السوق والمؤشرات',
-      visible: () => true,
+      visible: () => currentMarket === 'EGX',
       render: () => (
         <div className="space-y-3">
           <MarketSummary />
@@ -206,10 +208,12 @@ export function DashboardView() {
       ),
     },
     // 1. نبض السوق + مؤشر المشاعر (مدموج — Owner directive)
+    // FIX (Task MARKET-SEPARATION): MarketPulse + Sentiment للـ EGX فقط
+    // (بيجيبوا EGX30/70 data من /api/market-pulse).
     {
       id: 'market-pulse',
       title: 'نبض السوق والمشاعر',
-      visible: () => true,
+      visible: () => currentMarket === 'EGX',
       render: () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <MarketPulseWidget />
