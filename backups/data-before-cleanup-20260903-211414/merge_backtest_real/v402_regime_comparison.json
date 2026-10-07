@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "test": "V40.2 REGIME FILTER COMPARISON",
+    "window": "2026-02-01 → 2026-08-14",
+    "universe": "235 EGX tickers",
+    "goal": "هل Regime filter (mode A أو B) بيقلل MaxDD من -31% لـ -20%؟",
+    "owner_directive": "أقوى حل حاليًا: تفعيل فلتر الـ Regime كـ pre-filter"
+  },
+  "results": {
+    "baseline_no_regime": {
+      "label": "baseline_no_regime",
+      "trades": 23,
+      "wins": 16,
+      "losses": 7,
+      "win_rate_pct": 69.57,
+      "avg_return_pct": 3.508,
+      "avg_winner_pct": 7.87,
+      "avg_loser_pct": -6.45,
+      "total_return_pct": 95.89,
+      "max_drawdown_pct": -34.26,
+      "profit_factor": 2.79,
+      "avg_holding_days": 6.7,
+      "exit_types": {
+        "expired": 21,
+        "fast_stop": 2
+      },
+      "per_month": {
+        "2026-06": {
+          "trades": 2,
+          "wins": 2,
+          "return": 8.43440082503346
+        },
+        "2026-07": {
+          "trades": 5,
+          "wins": 4,
+          "return": 15.564358216767172
+        },
+        "2026-08": {
+          "trades": 16,
+          "wins": 10,
+          "return": 56.68938080855095
+        }
+      }
+    },
+    "regime_mode_A": {
+      "label": "regime_mode_A",
+      "trades": 23,
+      "wins": 16,
+      "losses": 7,
+      "win_rate_pct": 69.57,
+      "avg_return_pct": 3.508,
+      "avg_winner_pct": 7.87,
+      "avg_loser_pct": -6.45,
+      "total_return_pct": 95.89,
+      "max_drawdown_pct": -34.26,
+      "profit_factor": 2.79,
+      "avg_holding_days": 6.7,
+      "exit_types": {
+        "expired": 21,
+        "fast_stop": 2
+      },
+      "per_month": {
+        "2026-06": {
+          "trades": 2,
+          "wins": 2,
+          "return": 8.43440082503346
+        },
+        "2026-07": {
+          "trades": 5,
+          "wins": 4,
+          "return": 15.564358216767172
+        },
+        "2026-08": {
+          "trades": 16,
+          "wins": 10,
+          "return": 56.68938080855095
+        }
+      }
+    },
+    "regime_mode_B": {
+      "label": "regime_mode_B",
+      "trades": 21,
+      "wins": 14,
+      "losses": 7,
+      "win_rate_pct": 66.67,
+      "avg_return_pct": 3.643,
+      "avg_winner_pct": 8.45,
+      "avg_loser_pct": -5.97,
+      "total_return_pct": 88.32,
+      "max_drawdown_pct": -31.19,
+      "profit_factor": 2.83,
+      "avg_holding_days": 6.6,
+      "exit_types": {
+        "expired": 19,
+        "fast_stop": 2
+      },
+      "per_month": {
+        "2026-06": {
+          "trades": 1,
+          "wins": 1,
+          "return": 4.054054054054054
+        },
+        "2026-07": {
+          "trades": 5,
+          "wins": 3,
+          "return": 11.294315712973397
+        },
+        "2026-08": {
+          "trades": 15,
+          "wins": 10,
+          "return": 61.158652420451915
+        }
+      }
+    }
+  },
+  "timestamp": "2026-09-02T19:53:42.840943"
+}

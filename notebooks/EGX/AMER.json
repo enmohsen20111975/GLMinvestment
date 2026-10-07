@@ -1,0 +1,75 @@
+{
+  "symbol": "AMER",
+  "name_ar": "(مجموعة عامر القابضة (عامر جروب",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 4,
+  "identity": {
+    "is_index_related": false,
+    "related_index": null,
+    "liquidity_profile": "low",
+    "free_float_note": "",
+    "ownership_concentration": "high",
+    "is_story_stock": true,
+    "is_zombie_prone": false,
+    "notes": "عامر جروب — عقاري خفيف. ملعوب. ملكية مركزة."
+  },
+  "price_behavior": {
+    "typical_correction_pct": 12.7,
+    "typical_correction_range": [
+      6.8,
+      27.5
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": false,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "",
+    "notes": "بيتحرك بعنف. التصحيح عميق (20-30%). سهم مضاربي."
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 0,
+      "drop_range": [
+        0,
+        0
+      ],
+      "behavior_before_ex": "",
+      "notes": ""
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [
+    "concentrated_ownership",
+    "story_stock",
+    "low_float_volatile"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-04-05",
+      "type": "failure",
+      "summary": "دخل قرب القمة، نزل 22% بدون ارتداد",
+      "lesson": "ملكية مركزة — بيتحرك بعنف. ممنوع المطاردة"
+    }
+  ],
+  "machine_summary": {
+    "typical_correction_pct": 22,
+    "max_expected_correction_pct": 30,
+    "liquidity_profile": "low",
+    "danger_level": 4,
+    "preferred_entry_style": "grab_only",
+    "avoid_chase": true,
+    "distribution_sensitivity": "high"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "timestamp": "20260831_155712",
+  "db_path": "/home/z/my-project/db/data_engine.db",
+  "metrics": {
+    "n": 115,
+    "wr": 43.47826086956522,
+    "pf": 0.9302071523002358,
+    "total_ret": -8.905485729970053,
+    "avg_hold": 5.139130434782609,
+    "max_dd": 17.165019936200782,
+    "wins": 50,
+    "losses": 64
+  },
+  "comparison": {
+    "v40_2_strong": {
+      "n": 39,
+      "wr": 69.2,
+      "pf": 6.035,
+      "max_dd": 4.71,
+      "return": 51.62,
+      "hold": 5.0
+    },
+    "maestro_current": {
+      "n": 115,
+      "wr": 43.47826086956522,
+      "pf": 0.9302071523002358,
+      "total_ret": -8.905485729970053,
+      "avg_hold": 5.139130434782609,
+      "max_dd": 17.165019936200782,
+      "wins": 50,
+      "losses": 64
+    },
+    "delta_wr": -25.721739130434784,
+    "delta_pf": -5.104792847699764
+  },
+  "transferred_ok": [
+    "Regime filter (مفيش صفقات في bear)"
+  ],
+  "transferred_weak": [
+    "Entry Gate — WR نزل لـ 43.5% (V40.2 كان 69.2%)",
+    "Position Sizing/CB — Max DD = 17.17% (مرتفع)",
+    "R/R — PF = 0.93 (ضعيف)"
+  ],
+  "suggestions": [
+    "رفع min_evidence_count في Maestro (مش متأكدين إنه متفعل)",
+    "تخفيف Discovery Fallback — ممكن بيخلي إشارات ضعيفة تعدّي",
+    "تقوية Circuit Breaker (2 خسائر بدل 3، أو cooldown أطول)"
+  ],
+  "verdict": "❌ Maestro ضعيف — لازم نرجع الجودة قبل أي حاجة",
+  "trades_count": 115
+}

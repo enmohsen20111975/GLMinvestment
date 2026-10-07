@@ -1,0 +1,315 @@
+{
+  "monsters_analysis": [
+    {
+      "ticker": "AJWA",
+      "max_gain": 55067.13176929187,
+      "caught": false,
+      "last_signal": "WAIT",
+      "fail_reasons": [
+        "قريب من SMA50 (1.9%) بس مفيش تأكيد قوة"
+      ]
+    },
+    {
+      "ticker": "MIPH",
+      "max_gain": 31138.394964594812,
+      "caught": false,
+      "last_signal": "WAIT",
+      "fail_reasons": [
+        "signal=WAIT/score low"
+      ]
+    },
+    {
+      "ticker": "DTPP",
+      "max_gain": 30708.967456483002,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 22,
+      "entry": 226.08,
+      "target": 266.7744,
+      "stop": 205.7328
+    },
+    {
+      "ticker": "BIOC",
+      "max_gain": 20640.844337803544,
+      "caught": true,
+      "signal_date": "2026-07-26",
+      "days_before_peak": 18,
+      "entry": 119.0,
+      "target": 140.42000000000002,
+      "stop": 108.28999999999999
+    },
+    {
+      "ticker": "CEFM",
+      "max_gain": 18663.97553437985,
+      "caught": false,
+      "last_signal": "WAIT",
+      "fail_reasons": [
+        "signal=WAIT/score low"
+      ]
+    },
+    {
+      "ticker": "CPCI",
+      "max_gain": 16610.613701759525,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 21,
+      "entry": 471.11,
+      "target": 555.9098,
+      "stop": 428.7101
+    },
+    {
+      "ticker": "MFPC",
+      "max_gain": 12955.21472392638,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": -43,
+      "entry": 37.65,
+      "target": 44.427,
+      "stop": 34.2615
+    },
+    {
+      "ticker": "MCQE",
+      "max_gain": 11865.401249399329,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 26,
+      "entry": 190.02,
+      "target": 224.2236,
+      "stop": 172.9182
+    },
+    {
+      "ticker": "CAED",
+      "max_gain": 11599.860341701667,
+      "caught": true,
+      "signal_date": "2026-07-08",
+      "days_before_peak": 42,
+      "entry": 71.98,
+      "target": 84.9364,
+      "stop": 65.5018
+    },
+    {
+      "ticker": "EDFM",
+      "max_gain": 9041.045025446574,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 22,
+      "entry": 391.88,
+      "target": 462.4184,
+      "stop": 356.6108
+    },
+    {
+      "ticker": "EALR",
+      "max_gain": 7155.529192770484,
+      "caught": false,
+      "last_signal": "WAIT",
+      "fail_reasons": [
+        "signal=WAIT/score low"
+      ]
+    },
+    {
+      "ticker": "UEFM",
+      "max_gain": 6045.236292851736,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 26,
+      "entry": 540.25,
+      "target": 637.495,
+      "stop": 491.6275
+    },
+    {
+      "ticker": "GSSC",
+      "max_gain": 5298.249860361198,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 34,
+      "entry": 272.0,
+      "target": 320.96,
+      "stop": 247.52
+    },
+    {
+      "ticker": "SAUD",
+      "max_gain": 5191.57667386609,
+      "caught": true,
+      "signal_date": "2026-07-21",
+      "days_before_peak": 30,
+      "entry": 21.95,
+      "target": 25.901,
+      "stop": 19.9745
+    },
+    {
+      "ticker": "RAKT",
+      "max_gain": 5140.088105726872,
+      "caught": false,
+      "last_signal": "WAIT",
+      "fail_reasons": [
+        "قريب من SMA50 (1.6%) بس مفيش تأكيد قوة"
+      ]
+    }
+  ],
+  "corpses_analysis": [
+    {
+      "ticker": "CFGH",
+      "total_ret": -99.54363490792633,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "turnover=11315 EGP < 50000",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "GPPL",
+      "total_ret": -98.93435635123615,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=2/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 64.0%",
+        "turnover=2100 EGP < 50000"
+      ]
+    },
+    {
+      "ticker": "MASR",
+      "total_ret": -98.89517476725503,
+      "caught": false,
+      "fail_reasons": [
+        "تحت SMA50 بـ 66.3%",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "SAIB",
+      "total_ret": -98.8222856210014,
+      "caught": true,
+      "signal_date": "2026-05-24",
+      "entry": 307.638
+    },
+    {
+      "ticker": "ASPI",
+      "total_ret": -98.46069974024309,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "CRST",
+      "total_ret": -98.0480885703347,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 88.4%",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "DEIN",
+      "total_ret": -96.25714668007102,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=2/6 (مطلوب ≥ 3)",
+        "قريب من SMA50 (1.3%) بس مفيش تأكيد قوة",
+        "volume=0.0 < 1000 (zero/ضعيف)"
+      ]
+    },
+    {
+      "ticker": "COPR",
+      "total_ret": -94.38823406696568,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "ACAMD",
+      "total_ret": -94.3623426382047,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=2/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 9.8%",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "SPHT",
+      "total_ret": -93.81977026371138,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 28.5%",
+        "volume=0.0 < 1000 (zero/ضعيف)"
+      ]
+    },
+    {
+      "ticker": "BIDI",
+      "total_ret": -93.80587857184597,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "volume=0.0 < 1000 (zero/ضعيف)",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "CLHO",
+      "total_ret": -92.74476068074874,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=2/6 (مطلوب ≥ 3)",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "MTIE",
+      "total_ret": -91.00099401476217,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=2/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 19.2%",
+        "السوق هابط (bear)"
+      ]
+    },
+    {
+      "ticker": "MISR",
+      "total_ret": -90.77160131977826,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=1/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 22.8%",
+        "volume=0.0 < 1000 (zero/ضعيف)"
+      ]
+    },
+    {
+      "ticker": "MEGM",
+      "total_ret": -90.01719526175009,
+      "caught": false,
+      "fail_reasons": [
+        "evidence=2/6 (مطلوب ≥ 3)",
+        "تحت SMA50 بـ 16.3%",
+        "volume=0.0 < 1000 (zero/ضعيف)"
+      ]
+    }
+  ],
+  "monster_fail_reasons": {
+    "قريب من SMA50": 2,
+    "signal=WAIT/score low": 3
+  },
+  "corpse_save_reasons": {
+    "evidence=1/6": 7,
+    "turnover=11315 EGP < 50000": 1,
+    "السوق هابط": 9,
+    "evidence=2/6": 6,
+    "تحت SMA50 بـ 64.0%": 1,
+    "turnover=2100 EGP < 50000": 1,
+    "تحت SMA50 بـ 66.3%": 1,
+    "تحت SMA50 بـ 88.4%": 1,
+    "قريب من SMA50": 1,
+    "volume=0.0 < 1000": 5,
+    "تحت SMA50 بـ 9.8%": 1,
+    "تحت SMA50 بـ 28.5%": 1,
+    "تحت SMA50 بـ 19.2%": 1,
+    "تحت SMA50 بـ 22.8%": 1,
+    "تحت SMA50 بـ 16.3%": 1
+  }
+}

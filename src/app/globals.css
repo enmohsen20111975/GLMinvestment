@@ -1,0 +1,467 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Arabic + Latin fonts for StockInfographicCard (INFOGRAPHIC-CARD task) ===
+   Cairo (primary Arabic), Tajawal (fallback Arabic), Outfit (Latin headings),
+   JetBrains Mono (numeric tabular figures). Loaded async — non-blocking. */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* Light theme - HSL values for Tailwind compatibility
+   STYLE(professional): emerald/teal financial palette (was 0% grayscale).
+   No blue/indigo per Constitution Rule 30 (CLIENT-FACING-STYLE). */
+:root {
+  --radius: 0.75rem;
+  --background: 0 0% 100%;
+  --foreground: 160 5% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 160 5% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 160 5% 10%;
+  /* Primary = emerald-600 — professional financial color (gains, growth, money) */
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 160 10% 96%;
+  --secondary-foreground: 160 5% 15%;
+  --muted: 160 10% 96%;
+  --muted-foreground: 160 3% 45%;
+  /* Accent = subtle emerald tint (light, ~95% L) for hover states */
+  --accent: 160 50% 95%;
+  --accent-foreground: 160 84% 25%;
+  --destructive: 0 72% 51%;
+  --border: 160 10% 90%;
+  --input: 160 10% 90%;
+  --ring: 160 84% 39%;
+  /* Professional financial chart colors — emerald/teal/amber/orange/lime
+     (no blue/indigo per Constitution Rule 30) */
+  --chart-1: 160 84% 39%;
+  --chart-2: 173 80% 40%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 25 95% 53%;
+  --chart-5: 88 55% 45%;
+  /* Semantic financial colors — gains/warnings/losses */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 38 50% 12%;
+  --danger: 0 72% 51%;
+  --danger-foreground: 0 0% 100%;
+  --sidebar: 160 20% 98%;
+  --sidebar-foreground: 160 5% 10%;
+  --sidebar-primary: 160 84% 39%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 160 30% 95%;
+  --sidebar-accent-foreground: 160 84% 25%;
+  --sidebar-border: 160 10% 90%;
+  --sidebar-ring: 160 84% 39%;
+}
+
+/* Dark theme - HSL values for Tailwind compatibility
+   STYLE(professional): emerald-tinted dark surfaces (not pure black) — feels
+   like a Bloomberg terminal rather than a developer prototype. */
+.dark {
+  --background: 160 5% 6%;
+  --foreground: 160 5% 95%;
+  --card: 160 5% 9%;
+  --card-foreground: 160 5% 95%;
+  --popover: 160 5% 9%;
+  --popover-foreground: 160 5% 95%;
+  --primary: 160 84% 39%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 160 5% 15%;
+  --secondary-foreground: 160 5% 95%;
+  --muted: 160 5% 14%;
+  --muted-foreground: 160 5% 64%;
+  --accent: 160 30% 16%;
+  --accent-foreground: 160 84% 80%;
+  --destructive: 0 72% 60%;
+  --border: 160 5% 18%;
+  --input: 160 5% 18%;
+  --ring: 160 84% 45%;
+  /* Dark-mode chart colors — slightly brighter for contrast on dark surfaces */
+  --chart-1: 160 84% 50%;
+  --chart-2: 173 80% 50%;
+  --chart-3: 38 92% 55%;
+  --chart-4: 25 95% 58%;
+  --chart-5: 88 60% 55%;
+  --success: 142 70% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 55%;
+  --warning-foreground: 38 50% 12%;
+  --danger: 0 72% 60%;
+  --danger-foreground: 0 0% 100%;
+  --sidebar: 160 5% 8%;
+  --sidebar-foreground: 160 5% 95%;
+  --sidebar-primary: 160 84% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 160 5% 16%;
+  --sidebar-accent-foreground: 160 84% 85%;
+  --sidebar-border: 160 5% 18%;
+  --sidebar-ring: 160 84% 45%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Cairo = primary Arabic/Latin font (already @import'd above).
+       Tabular numbers enable proper column alignment for prices/P&L tables. */
+    font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: 'tnum' 1, 'cv01' 1, 'cv03' 1;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Subtle emerald-tinted radial gradient — adds depth without distracting
+       from financial data. Visible mostly on dark mode. */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.05), transparent);
+    background-attachment: fixed;
+  }
+  .dark body {
+    /* Dark mode: deeper emerald glow at the top — Bloomberg-terminal feel.
+       Never use neon — keep alpha ≤ 0.08 (Rule 29 NO-HYPE). */
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% -20%, hsl(var(--primary) / 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, hsl(var(--chart-3) / 0.04), transparent);
+    background-attachment: fixed;
+  }
+  /* Headings: tighter tracking reads as more professional / editorial */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+  }
+  /* Prevent horizontal overflow on mobile */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+}
+
+/* Custom animations */
+@layer utilities {
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+  /* Tabular figures — for price/P&L tables to keep columns aligned */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+/* === Card + Surface polish (Task 24 Step 3) ===
+   Professional financial cards: subtle elevation + optional hover lift.
+   - data-slot="card" matches the shadcn-ui Card component (no logic change).
+   - .card-hover is an opt-in lift effect for interactive cards. */
+[data-slot="card"] {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.dark [data-slot="card"] {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+}
+[data-slot="card"].card-hover:hover,
+.card-hover[data-slot="card"]:hover {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+  border-color: hsl(var(--ring) / 0.35);
+}
+.dark [data-slot="card"].card-hover:hover,
+.dark .card-hover[data-slot="card"]:hover {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Standalone hover-lift utility for non-Card surfaces (divs, links, buttons) */
+.card-hover {
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* === Button + Input polish (Task 24 Step 6) ===
+   - Uniform transition timing on all shadcn Buttons.
+   - Subtle emerald halo on Input focus (replaces default neutral ring).
+   - Active state: scale(0.98) — tactile press feedback (no logic change). */
+[data-slot="button"] {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}
+[data-slot="button"]:active {
+  transform: scale(0.98);
+}
+/* Secondary/outline buttons pick up a subtle emerald tint on hover — keeps
+   the design system coherent without breaking variant colors. */
+[data-slot="button"]:not([class*="bg-primary"]):not([class*="bg-destructive"]):hover {
+  border-color: hsl(var(--ring) / 0.4);
+}
+
+[data-slot="input"],
+[data-slot="textarea"],
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+[data-slot="input"]:focus,
+[data-slot="textarea"]:focus,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: hsl(var(--ring) / 0.6);
+  box-shadow:
+    0 0 0 2px hsl(var(--ring) / 0.15),
+    0 0 0 4px hsl(var(--ring) / 0.08);
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* RTL support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  /* Better scrolling */
+  .overflow-y-auto, .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Safe area padding for iOS */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Mobile table responsive wrapper */
+.mobile-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch-friendly button sizes - only for explicit touch targets */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* === Mobile UX Enhancements (July 2026) === */
+
+/* Minimum touch target for all buttons on mobile */
+@media (hover: none) and (pointer: coarse) {
+  button:not(.touch-exempt),
+  a[role="button"]:not(.touch-exempt) {
+    min-height: 40px;
+    min-width: 40px;
+  }
+  
+  /* Larger touch targets for nav items */
+  nav button,
+  [role="navigation"] button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text selection on UI elements (better UX) */
+button,
+.nav-item,
+.tab-trigger {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scrolling for mobile */
+* {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Better focus visibility for accessibility */
+@media (hover: none) and (pointer: coarse) {
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media (hover: none) and (pointer: coarse) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Better tap feedback */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  a:active {
+    transform: scale(0.97);
+    transition: transform 0.1s;
+  }
+}
+
+/* Hide scrollbars on mobile but keep functionality */
+@media (hover: none) and (pointer: coarse) {
+  .scrollbar-hide-mobile {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide-mobile::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Safe area for all fixed elements */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Better table scrolling on mobile */
+.table-mobile-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Loading skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.1) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ROBO-ADVISOR-P1: وميض الأسعار — وميض أخضر/أحمر عند تحديث السعر اللحظي */
+@keyframes flash-green {
+  0%   { background-color: hsl(142 76% 36% / 0.35); }
+  100% { background-color: transparent; }
+}
+@keyframes flash-red {
+  0%   { background-color: hsl(0 72% 51% / 0.35); }
+  100% { background-color: transparent; }
+}
+.price-flash-up {
+  animation: flash-green 0.9s ease-out;
+  border-radius: 6px;
+  padding: 0 4px;
+  transition: background-color 0.2s;
+}
+.price-flash-down {
+  animation: flash-red 0.9s ease-out;
+  border-radius: 6px;
+  padding: 0 4px;
+  transition: background-color 0.2s;
+}

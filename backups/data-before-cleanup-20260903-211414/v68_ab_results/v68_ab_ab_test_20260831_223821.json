@@ -1,0 +1,118 @@
+[
+  {
+    "label": "BASELINE (V68 OFF)",
+    "env": {
+      "V68_DIRTY_DIST_REJECT": "0",
+      "V68_NO_CHASE_2D_REJECT": "0",
+      "V68_PROOF_PROBABILITY": "0",
+      "V68_APLUS_BOOST": "0",
+      "V68_MAGNETIC_TARGET": "0"
+    },
+    "total_picks": 23,
+    "dates_with_picks": 6,
+    "dry_run_signals": 23,
+    "dry_run_dates": 6,
+    "v68_triggers": {},
+    "elapsed_sec": 11.5,
+    "stdout_tail": "dist=11.85%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-10: target 290.96→277.75 (R:R=0.77) target_2=416.62 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-23: entry=260.24 stop 241.76→242.68 (swing_low (swing_low=247.4490 (dist=4.92%)) + 0.5×ATR buffer)\n[DYN-TARGET] CLHO on 2026-03-23: target 297.20→279.30 (R:R=1.08) target_2=418.95 (ATR fallback (2×ATR))\n[ENTRY-GATE-REJECT] CLHO on 2026-04-21: score=7/8 | تحت SMA50 بـ 3.3%\n[ENTRY-GATE-REJECT] CLHO on 2026-04-29: score=7/8 | تحت SMA50 بـ 4.4%\n  ⏳ Processing 50/50 tickers...\n[DYN-STOP] COSG on 2026-07-07: entry=1.62 stop 1.47→1.47 (swing_low (swing_low=1.4700 (dist=9.26%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-07: target 1.91→2.49 (R:R=5.99) target_2=3.80 (swing_high R:R<1.8 → ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-07: type=smart_accumulation score=80 vol_ratio=3.16 pos_mult=1.0\n[DYN-STOP] COSG on 2026-07-14: entry=1.67 stop 1.52→1.52 (swing_low (swing_low=1.5000 (dist=10.18%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-14: target 1.97→2.39 (R:R=4.81) target_2=3.59 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-19: target 1.98→2.17 (R:R=3.27) target_2=3.26 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-22: target 2.04→2.10 (R:R=2.36) target_2=3.15 (ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-22: type=smart_accumulation score=80 vol_ratio=2.44 pos_mult=1.0\n[DYN-STOP] COSG on 2026-08-12: entry=1.72 stop 1.57→1.63 (swing_low (swing_low=1.6700 (dist=2.91%)) + 0.5×ATR buffer)\n[DYN-TARGET] COSG on 2026-08-12: target 2.03→1.90 (R:R=1.89) target_2=2.85 (ATR fallback (2×ATR))\n\n✅ Processed 50 tickers. Signals found on 6 dates.\n🔍 DRY-RUN: would have generated 23 signals across 6 dates.\n  📅 2026-07-01: 4 picks | MB=CIRA (ev=4)\n  📅 2026-07-07: 5 picks | MB=CAED (ev=4)\n  📅 2026-07-14: 5 picks | MB=COSG (ev=4)\n  📅 2026-07-19: 4 picks | MB=AXPH (ev=3)\n  📅 2026-07-22: 3 picks | MB=CCAP (ev=4)\n  📅 2026-08-03: 2 picks | MB=CIRA (ev=4)\n",
+    "exit_code": 0,
+    "stderr_tail": "2026-08-31 22:37:16,945 - WARNING - ✗ TradingView TA not available\n2026-08-31 22:37:17,445 - INFO - NumExpr defaulting to 2 threads.\n2026-08-31 22:37:20,125 - WARNING - ⚠️ Ollama مش شغال على http://127.0.0.1:11434: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download\n"
+  },
+  {
+    "label": "+V68_DIRTY_DIST_REJECT",
+    "env": {
+      "V68_DIRTY_DIST_REJECT": "1",
+      "V68_NO_CHASE_2D_REJECT": "0",
+      "V68_PROOF_PROBABILITY": "0",
+      "V68_APLUS_BOOST": "0",
+      "V68_MAGNETIC_TARGET": "0"
+    },
+    "total_picks": 21,
+    "dates_with_picks": 6,
+    "dry_run_signals": 21,
+    "dry_run_dates": 6,
+    "v68_triggers": {
+      "V68-DIRTY-DIST": 2
+    },
+    "elapsed_sec": 11.0,
+    "stdout_tail": ".8960 (dist=11.43%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-05: target 281.15→273.36 (R:R=0.69) target_2=410.04 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-10: entry=259.83 stop 244.27→236.45 (swing_low (swing_low=229.0320 (dist=11.85%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-10: target 290.96→277.75 (R:R=0.77) target_2=416.62 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-23: entry=260.24 stop 241.76→242.68 (swing_low (swing_low=247.4490 (dist=4.92%)) + 0.5×ATR buffer)\n[DYN-TARGET] CLHO on 2026-03-23: target 297.20→279.30 (R:R=1.08) target_2=418.95 (ATR fallback (2×ATR))\n[ENTRY-GATE-REJECT] CLHO on 2026-04-21: score=7/8 | تحت SMA50 بـ 3.3%\n[ENTRY-GATE-REJECT] CLHO on 2026-04-29: score=7/8 | تحت SMA50 بـ 4.4%\n  ⏳ Processing 50/50 tickers...\n[V68-DIRTY-DIST] COSG on 2026-07-07: توزيع قاتل (ظهر علوي + حجم انفجاري + delta سالب) → رفض\n[DYN-STOP] COSG on 2026-07-14: entry=1.67 stop 1.52→1.52 (swing_low (swing_low=1.5000 (dist=10.18%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-14: target 1.97→2.39 (R:R=4.81) target_2=3.59 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-19: target 1.98→2.17 (R:R=3.27) target_2=3.26 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-22: target 2.04→2.10 (R:R=2.36) target_2=3.15 (ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-22: type=smart_accumulation score=80 vol_ratio=2.44 pos_mult=1.0\n[DYN-STOP] COSG on 2026-08-12: entry=1.72 stop 1.57→1.63 (swing_low (swing_low=1.6700 (dist=2.91%)) + 0.5×ATR buffer)\n[DYN-TARGET] COSG on 2026-08-12: target 2.03→1.90 (R:R=1.89) target_2=2.85 (ATR fallback (2×ATR))\n\n✅ Processed 50 tickers. Signals found on 6 dates.\n🔍 DRY-RUN: would have generated 21 signals across 6 dates.\n  📅 2026-07-01: 4 picks | MB=CIRA (ev=4)\n  📅 2026-07-07: 4 picks | MB=CAED (ev=4)\n  📅 2026-07-14: 5 picks | MB=COSG (ev=4)\n  📅 2026-07-19: 4 picks | MB=AXPH (ev=3)\n  📅 2026-07-22: 2 picks | MB=COSG (ev=4)\n  📅 2026-08-03: 2 picks | MB=CIRA (ev=4)\n",
+    "exit_code": 0,
+    "stderr_tail": "2026-08-31 22:37:28,423 - WARNING - ✗ TradingView TA not available\n2026-08-31 22:37:28,800 - INFO - NumExpr defaulting to 2 threads.\n2026-08-31 22:37:31,210 - WARNING - ⚠️ Ollama مش شغال على http://127.0.0.1:11434: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download\n"
+  },
+  {
+    "label": "+V68_NO_CHASE_2D_REJECT",
+    "env": {
+      "V68_DIRTY_DIST_REJECT": "0",
+      "V68_NO_CHASE_2D_REJECT": "1",
+      "V68_PROOF_PROBABILITY": "0",
+      "V68_APLUS_BOOST": "0",
+      "V68_MAGNETIC_TARGET": "0"
+    },
+    "total_picks": 23,
+    "dates_with_picks": 6,
+    "dry_run_signals": 23,
+    "dry_run_dates": 6,
+    "v68_triggers": {},
+    "elapsed_sec": 10.7,
+    "stdout_tail": "dist=11.85%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-10: target 290.96→277.75 (R:R=0.77) target_2=416.62 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-23: entry=260.24 stop 241.76→242.68 (swing_low (swing_low=247.4490 (dist=4.92%)) + 0.5×ATR buffer)\n[DYN-TARGET] CLHO on 2026-03-23: target 297.20→279.30 (R:R=1.08) target_2=418.95 (ATR fallback (2×ATR))\n[ENTRY-GATE-REJECT] CLHO on 2026-04-21: score=7/8 | تحت SMA50 بـ 3.3%\n[ENTRY-GATE-REJECT] CLHO on 2026-04-29: score=7/8 | تحت SMA50 بـ 4.4%\n  ⏳ Processing 50/50 tickers...\n[DYN-STOP] COSG on 2026-07-07: entry=1.62 stop 1.47→1.47 (swing_low (swing_low=1.4700 (dist=9.26%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-07: target 1.91→2.49 (R:R=5.99) target_2=3.80 (swing_high R:R<1.8 → ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-07: type=smart_accumulation score=80 vol_ratio=3.16 pos_mult=1.0\n[DYN-STOP] COSG on 2026-07-14: entry=1.67 stop 1.52→1.52 (swing_low (swing_low=1.5000 (dist=10.18%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-14: target 1.97→2.39 (R:R=4.81) target_2=3.59 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-19: target 1.98→2.17 (R:R=3.27) target_2=3.26 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-22: target 2.04→2.10 (R:R=2.36) target_2=3.15 (ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-22: type=smart_accumulation score=80 vol_ratio=2.44 pos_mult=1.0\n[DYN-STOP] COSG on 2026-08-12: entry=1.72 stop 1.57→1.63 (swing_low (swing_low=1.6700 (dist=2.91%)) + 0.5×ATR buffer)\n[DYN-TARGET] COSG on 2026-08-12: target 2.03→1.90 (R:R=1.89) target_2=2.85 (ATR fallback (2×ATR))\n\n✅ Processed 50 tickers. Signals found on 6 dates.\n🔍 DRY-RUN: would have generated 23 signals across 6 dates.\n  📅 2026-07-01: 4 picks | MB=CIRA (ev=4)\n  📅 2026-07-07: 5 picks | MB=CAED (ev=4)\n  📅 2026-07-14: 5 picks | MB=COSG (ev=4)\n  📅 2026-07-19: 4 picks | MB=AXPH (ev=3)\n  📅 2026-07-22: 3 picks | MB=CCAP (ev=4)\n  📅 2026-08-03: 2 picks | MB=CIRA (ev=4)\n",
+    "exit_code": 0,
+    "stderr_tail": "2026-08-31 22:37:39,471 - WARNING - ✗ TradingView TA not available\n2026-08-31 22:37:39,853 - INFO - NumExpr defaulting to 2 threads.\n2026-08-31 22:37:42,107 - WARNING - ⚠️ Ollama مش شغال على http://127.0.0.1:11434: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download\n"
+  },
+  {
+    "label": "+V68_PROOF_PROBABILITY",
+    "env": {
+      "V68_DIRTY_DIST_REJECT": "0",
+      "V68_NO_CHASE_2D_REJECT": "0",
+      "V68_PROOF_PROBABILITY": "1",
+      "V68_APLUS_BOOST": "0",
+      "V68_MAGNETIC_TARGET": "0"
+    },
+    "total_picks": 23,
+    "dates_with_picks": 6,
+    "dry_run_signals": 23,
+    "dry_run_dates": 6,
+    "v68_triggers": {},
+    "elapsed_sec": 10.7,
+    "stdout_tail": "dist=11.85%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-10: target 290.96→277.75 (R:R=0.77) target_2=416.62 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-23: entry=260.24 stop 241.76→242.68 (swing_low (swing_low=247.4490 (dist=4.92%)) + 0.5×ATR buffer)\n[DYN-TARGET] CLHO on 2026-03-23: target 297.20→279.30 (R:R=1.08) target_2=418.95 (ATR fallback (2×ATR))\n[ENTRY-GATE-REJECT] CLHO on 2026-04-21: score=7/8 | تحت SMA50 بـ 3.3%\n[ENTRY-GATE-REJECT] CLHO on 2026-04-29: score=7/8 | تحت SMA50 بـ 4.4%\n  ⏳ Processing 50/50 tickers...\n[DYN-STOP] COSG on 2026-07-07: entry=1.62 stop 1.47→1.47 (swing_low (swing_low=1.4700 (dist=9.26%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-07: target 1.91→2.49 (R:R=5.99) target_2=3.80 (swing_high R:R<1.8 → ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-07: type=smart_accumulation score=80 vol_ratio=3.16 pos_mult=1.0\n[DYN-STOP] COSG on 2026-07-14: entry=1.67 stop 1.52→1.52 (swing_low (swing_low=1.5000 (dist=10.18%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-14: target 1.97→2.39 (R:R=4.81) target_2=3.59 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-19: target 1.98→2.17 (R:R=3.27) target_2=3.26 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-22: target 2.04→2.10 (R:R=2.36) target_2=3.15 (ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-22: type=smart_accumulation score=80 vol_ratio=2.44 pos_mult=1.0\n[DYN-STOP] COSG on 2026-08-12: entry=1.72 stop 1.57→1.63 (swing_low (swing_low=1.6700 (dist=2.91%)) + 0.5×ATR buffer)\n[DYN-TARGET] COSG on 2026-08-12: target 2.03→1.90 (R:R=1.89) target_2=2.85 (ATR fallback (2×ATR))\n\n✅ Processed 50 tickers. Signals found on 6 dates.\n🔍 DRY-RUN: would have generated 23 signals across 6 dates.\n  📅 2026-07-01: 4 picks | MB=CIRA (ev=4)\n  📅 2026-07-07: 5 picks | MB=CAED (ev=4)\n  📅 2026-07-14: 5 picks | MB=COSG (ev=4)\n  📅 2026-07-19: 4 picks | MB=AXPH (ev=3)\n  📅 2026-07-22: 3 picks | MB=CCAP (ev=4)\n  📅 2026-08-03: 2 picks | MB=CIRA (ev=4)\n",
+    "exit_code": 0,
+    "stderr_tail": "2026-08-31 22:37:50,185 - WARNING - ✗ TradingView TA not available\n2026-08-31 22:37:50,562 - INFO - NumExpr defaulting to 2 threads.\n2026-08-31 22:37:52,807 - WARNING - ⚠️ Ollama مش شغال على http://127.0.0.1:11434: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download\n"
+  },
+  {
+    "label": "+V68_APLUS_BOOST",
+    "env": {
+      "V68_DIRTY_DIST_REJECT": "0",
+      "V68_NO_CHASE_2D_REJECT": "0",
+      "V68_PROOF_PROBABILITY": "0",
+      "V68_APLUS_BOOST": "1",
+      "V68_MAGNETIC_TARGET": "0"
+    },
+    "total_picks": 23,
+    "dates_with_picks": 6,
+    "dry_run_signals": 23,
+    "dry_run_dates": 6,
+    "v68_triggers": {},
+    "elapsed_sec": 10.7,
+    "stdout_tail": "dist=11.85%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-10: target 290.96→277.75 (R:R=0.77) target_2=416.62 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-23: entry=260.24 stop 241.76→242.68 (swing_low (swing_low=247.4490 (dist=4.92%)) + 0.5×ATR buffer)\n[DYN-TARGET] CLHO on 2026-03-23: target 297.20→279.30 (R:R=1.08) target_2=418.95 (ATR fallback (2×ATR))\n[ENTRY-GATE-REJECT] CLHO on 2026-04-21: score=7/8 | تحت SMA50 بـ 3.3%\n[ENTRY-GATE-REJECT] CLHO on 2026-04-29: score=7/8 | تحت SMA50 بـ 4.4%\n  ⏳ Processing 50/50 tickers...\n[DYN-STOP] COSG on 2026-07-07: entry=1.62 stop 1.47→1.47 (swing_low (swing_low=1.4700 (dist=9.26%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-07: target 1.91→2.49 (R:R=5.99) target_2=3.80 (swing_high R:R<1.8 → ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-07: type=smart_accumulation score=80 vol_ratio=3.16 pos_mult=1.0\n[DYN-STOP] COSG on 2026-07-14: entry=1.67 stop 1.52→1.52 (swing_low (swing_low=1.5000 (dist=10.18%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-14: target 1.97→2.39 (R:R=4.81) target_2=3.59 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-19: target 1.98→2.17 (R:R=3.27) target_2=3.26 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-22: target 2.04→2.10 (R:R=2.36) target_2=3.15 (ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-22: type=smart_accumulation score=80 vol_ratio=2.44 pos_mult=1.0\n[DYN-STOP] COSG on 2026-08-12: entry=1.72 stop 1.57→1.63 (swing_low (swing_low=1.6700 (dist=2.91%)) + 0.5×ATR buffer)\n[DYN-TARGET] COSG on 2026-08-12: target 2.03→1.90 (R:R=1.89) target_2=2.85 (ATR fallback (2×ATR))\n\n✅ Processed 50 tickers. Signals found on 6 dates.\n🔍 DRY-RUN: would have generated 23 signals across 6 dates.\n  📅 2026-07-01: 4 picks | MB=CIRA (ev=4)\n  📅 2026-07-07: 5 picks | MB=CAED (ev=4)\n  📅 2026-07-14: 5 picks | MB=COSG (ev=4)\n  📅 2026-07-19: 4 picks | MB=AXPH (ev=3)\n  📅 2026-07-22: 3 picks | MB=CCAP (ev=4)\n  📅 2026-08-03: 2 picks | MB=CIRA (ev=4)\n",
+    "exit_code": 0,
+    "stderr_tail": "2026-08-31 22:38:00,885 - WARNING - ✗ TradingView TA not available\n2026-08-31 22:38:01,262 - INFO - NumExpr defaulting to 2 threads.\n2026-08-31 22:38:03,513 - WARNING - ⚠️ Ollama مش شغال على http://127.0.0.1:11434: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download\n"
+  },
+  {
+    "label": "+V68_MAGNETIC_TARGET",
+    "env": {
+      "V68_DIRTY_DIST_REJECT": "0",
+      "V68_NO_CHASE_2D_REJECT": "0",
+      "V68_PROOF_PROBABILITY": "0",
+      "V68_APLUS_BOOST": "0",
+      "V68_MAGNETIC_TARGET": "1"
+    },
+    "total_picks": 23,
+    "dates_with_picks": 6,
+    "dry_run_signals": 23,
+    "dry_run_dates": 6,
+    "v68_triggers": {},
+    "elapsed_sec": 10.8,
+    "stdout_tail": "dist=11.85%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] CLHO on 2026-03-10: target 290.96→277.75 (R:R=0.77) target_2=416.62 (ATR fallback (2×ATR))\n[DYN-STOP] CLHO on 2026-03-23: entry=260.24 stop 241.76→242.68 (swing_low (swing_low=247.4490 (dist=4.92%)) + 0.5×ATR buffer)\n[DYN-TARGET] CLHO on 2026-03-23: target 297.20→279.30 (R:R=1.08) target_2=418.95 (ATR fallback (2×ATR))\n[ENTRY-GATE-REJECT] CLHO on 2026-04-21: score=7/8 | تحت SMA50 بـ 3.3%\n[ENTRY-GATE-REJECT] CLHO on 2026-04-29: score=7/8 | تحت SMA50 بـ 4.4%\n  ⏳ Processing 50/50 tickers...\n[DYN-STOP] COSG on 2026-07-07: entry=1.62 stop 1.47→1.47 (swing_low (swing_low=1.4700 (dist=9.26%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-07: target 1.91→2.49 (R:R=5.99) target_2=3.80 (swing_high R:R<1.8 → ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-07: type=smart_accumulation score=80 vol_ratio=3.16 pos_mult=1.0\n[DYN-STOP] COSG on 2026-07-14: entry=1.67 stop 1.52→1.52 (swing_low (swing_low=1.5000 (dist=10.18%)) + 0.5×ATR buffer [CLAMPED to 9.0%])\n[DYN-TARGET] COSG on 2026-07-14: target 1.97→2.39 (R:R=4.81) target_2=3.59 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-19: target 1.98→2.17 (R:R=3.27) target_2=3.26 (ATR fallback (2×ATR))\n[DYN-TARGET] COSG on 2026-07-22: target 2.04→2.10 (R:R=2.36) target_2=3.15 (ATR fallback (2×ATR))\n[LIQUIDITY] COSG on 2026-07-22: type=smart_accumulation score=80 vol_ratio=2.44 pos_mult=1.0\n[DYN-STOP] COSG on 2026-08-12: entry=1.72 stop 1.57→1.63 (swing_low (swing_low=1.6700 (dist=2.91%)) + 0.5×ATR buffer)\n[DYN-TARGET] COSG on 2026-08-12: target 2.03→1.90 (R:R=1.89) target_2=2.85 (ATR fallback (2×ATR))\n\n✅ Processed 50 tickers. Signals found on 6 dates.\n🔍 DRY-RUN: would have generated 23 signals across 6 dates.\n  📅 2026-07-01: 4 picks | MB=CIRA (ev=4)\n  📅 2026-07-07: 5 picks | MB=CAED (ev=4)\n  📅 2026-07-14: 5 picks | MB=COSG (ev=4)\n  📅 2026-07-19: 4 picks | MB=AXPH (ev=3)\n  📅 2026-07-22: 3 picks | MB=CCAP (ev=4)\n  📅 2026-08-03: 2 picks | MB=CIRA (ev=4)\n",
+    "exit_code": 0,
+    "stderr_tail": "2026-08-31 22:38:11,563 - WARNING - ✗ TradingView TA not available\n2026-08-31 22:38:11,956 - INFO - NumExpr defaulting to 2 threads.\n2026-08-31 22:38:14,227 - WARNING - ⚠️ Ollama مش شغال على http://127.0.0.1:11434: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download\n"
+  }
+]
