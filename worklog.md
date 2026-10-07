@@ -63923,3 +63923,47 @@ Stage Summary (بالأرقام):
 - سحب التحديثات الجديدة من GitHub يحتاج توكن جديد (القديم revoked)
 - التحقق البصري الكامل يحتاج DBs EGX حقيقية (توجد على VPS فقط)
 - اقتراح: إضافة canonical-signal.ts thresholds لـ master_analyzer.py THRESHOLDS (P0 من Task 2a)
+
+---
+Task ID: SYNC-PUSH-V60.2 (المدير العام — مزامنة + رفع)
+Agent: المدير العام (Z.ai Code)
+Task: سحب آخر التحديثات من GitHub + رفع تعديلات Task TRADING-CHART-V60.2
+
+Work Log:
+- استخدمت التوكن الذي أرسله المالك (ephemeral — لم يُكتب في أي ملف)
+- fetch origin/main: اكتشفت 6 commits جديدة لم أحصل عليها سابقًا:
+  * b2a7dd0 fix(critical): استخراج computeRSI في canonical-rsi.ts (وكلاء آخرون فصلوا RSI مثلي!)
+  * a6b2df0 fix(critical): ReferenceError unifiedData is not defined في StockDetail
+  * 0a2defc fix(phase-3-final): إصلاح كل التناقضات المتبقية — deal-advisor + entry_gate + stock_state
+  * 92f1eca fix(logs): إصلاح 3 أخطاء حرجة من اللوج — last_active_at + sharia 404 + deal-advisor
+  * 07517af fix(critical): last_active_at Prisma bug — bypass Prisma + auto-repair on boot
+  * 191e502 fix(multi-market): unified-stock-data.ts بـ يدعم كل الأسواق (TADAWUL + KSE + QSE + US + CRYPTO)
+- stash تعديلاتي + fast-forward لـ origin/main + pop الـ stash (3 تعارضات)
+- حل التعارضات:
+  * CryptoAdvancedAnalysisView.tsx: تبنّيت نسخة origin (تستخدم canonical-rsi.ts)
+  * EntryTimingSimulator.tsx: تبنّيت نسخة origin (تستخدم canonical-rsi.ts)
+  * worklog.md: دمجت كلا المحتويين (مداخل وكلاء origin + مدخلي)
+- توحيد مع origin: حوّلت indicators/rsi.ts لـ re-export shim من canonical-rsi.ts
+  + أضفت classifyRSIState() لـ canonical-rsi.ts (مطابق Pine L171-184)
+- commit: 715a316 (6 ملفات، 1052 insertions)
+- push: 191e502..715a316 main -> main ✅ (نجح)
+- إعادة تعطيل pushurl (safety belt restored)
+- تنظيف التوكن من .git/config (verify: clean)
+
+Stage Summary:
+- المزامنة: محلية = origin = 715a316 (متزامن تمامًا)
+- التعديلات على GitHub: 6 ملفات
+  * CanonicalWhoIsBuyingBanner.tsx (380 LOC جديد)
+  * indicators/rsi.ts (re-export shim)
+  * canonical-rsi.ts (+classifyRSIState)
+  * SingleStockAnalysisView.tsx (+canonical fetch +banner)
+  * CHANGELOG.md (جديد)
+  * worklog.md (+مداخل)
+- فحوصات أمنية:
+  * .env غير مُرحَّل (مستثنى في .gitignore سطر 235) ✅
+  * db/*.db غير مُرحَّلة ✅
+  * لا توكن في أي commit ✅
+  * pushurl معطّل بعد الرفع ✅
+- الحمايات: لم تُلمس (لم أعدّل Python/الإنتاج)
+- القيود: كلها محترمة (لا force push، لا reset --hard، لا بيانات وهمية)
+- dev server: يعمل (GET / = HTTP 200، GET /api/stocks/[ticker]/unified = HTTP 404 صحيح)
