@@ -2,7 +2,7 @@
 """
 Backfill script: mark existing radar_signal_tracking entries with stale entry_prices.
 
-Task FIX-STALE-DTPP-2026-10-07 (Rule 71)
+Task FIX-STALE-DTPP-2026-10-07 (Rule 71 + Rule 17 — مسارات نسبية)
 
 Problem:
 - On Oct 4 (and earlier), the radar stored entry_price=326.01 for DTPP —
@@ -17,11 +17,17 @@ Fix:
 - Add data_date, data_quality, staleness_days, price_source based on what we
   can reconstruct from the historical table at the signal_date.
 """
+import os
 import sqlite3
 from pathlib import Path
 from datetime import date
 
-PROJECT_ROOT = Path('/home/z/my-project')
+# Rule 17 (ROOT-CAUSE-FIRST): اكتشاف PROJECT_ROOT نسبياً — يشتغل من أي مكان
+# 1) من env var PROJECT_ROOT (إن وُجد)
+# 2) من موقع السكريبت (scripts/../) — الحالة الطبيعية
+# 3) من cwd كـ fallback أخير
+_SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(os.environ.get('PROJECT_ROOT') or str(_SCRIPT_DIR.parent))
 STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
 DATA_ENGINE_DB = PROJECT_ROOT / 'db' / 'data_engine.db'
 

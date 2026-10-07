@@ -2,12 +2,16 @@
 """
 Verification script: show the final state of radar signals after the fix.
 
-Task FIX-STALE-DTPP-2026-10-07
+Task FIX-STALE-DTPP-2026-10-07 (Rule 71 + Rule 17 — مسارات نسبية)
 """
+import os
 import sqlite3
 from pathlib import Path
 
-STOCKS_DB = Path('/home/z/my-project/db/stocks.db')
+# Rule 17: اكتشاف PROJECT_ROOT نسبياً
+_SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(os.environ.get('PROJECT_ROOT') or str(_SCRIPT_DIR.parent))
+STOCKS_DB = PROJECT_ROOT / 'db' / 'stocks.db'
 
 
 def main():

@@ -4,17 +4,18 @@
 # ============================================================================
 # التاريخ: 2026-10-07
 # المرجع: DATA_AUDIT_REPORT.md + worklog.md (Tasks DATA-AUDIT-1/2/3 + CODE/API/SCRAPER-AUDIT-1)
+# القاعدة 17: كل المسارات نسبية — السكريبت يشتغل من أي مكان
 #
-# الاستخدام:
-#   cd /root/GLMinvestment  (أو المسار على السرفر)
-#   git pull origin main
+# الاستخدام (من جذر المشروع):
 #   bash download/SERVER_FIX_COMMANDS.sh
+#   PROJECT_ROOT=/custom/path bash download/SERVER_FIX_COMMANDS.sh   # override
 #
 # السكريبت بـ:
-#   1. يعمل backup كامل قبل أي تعديل
-#   2. يطبّق Phase 1: إصلاحات عاجلة (market tag + dedup + signal_date)
-#   3. يطبّق Phase 2: تحديث stock_phase + verification pipeline
-#   4. يطلع تقرير نهائي
+#   1. يكتشف PROJECT_ROOT نسبياً من موقع السكريبت (download/../)
+#   2. يعمل backup كامل قبل أي تعديل
+#   3. يطبّق Phase 1: إصلاحات عاجلة (market tag + dedup + signal_date)
+#   4. يطبّق Phase 2: تحديث stock_phase + verification pipeline
+#   5. يطلع تقرير نهائي
 #
 # ملاحظات:
 #   - السكريبت idempotent — ممكن تشغله أكتر من مرة بدون مشاكل
@@ -24,7 +25,19 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-/root/GLMinvestment}"
+# ─── Rule 17: اكتشاف PROJECT_ROOT نسبياً ───────────────────────────────
+# السكريبت في download/SERVER_FIX_COMMANDS.sh → PROJECT_ROOT = parent of download/
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+# Override with env var if provided
+if [[ -n "${PROJECT_ROOT:-}" ]]; then
+    PROJECT_ROOT="${PROJECT_ROOT:-}"
+fi
+# Re-derive if env var was empty
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
+
 cd "$PROJECT_ROOT"
 
 BACKUP_DIR="$PROJECT_ROOT/backups/pre-freshness-fix-$(date +%Y%m%d-%H%M%S)"
@@ -96,7 +109,7 @@ import sqlite3
 from pathlib import Path
 import os
 
-PROJECT_ROOT = Path(os.environ.get('PROJECT_ROOT', '/root/GLMinvestment'))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path.cwd())))
 if not PROJECT_ROOT.exists():
     print(f"❌ PROJECT_ROOT not found: {PROJECT_ROOT}")
     exit(1)
@@ -204,7 +217,7 @@ import sqlite3
 from pathlib import Path
 import os
 
-PROJECT_ROOT = Path(os.environ.get('PROJECT_ROOT', '/root/GLMinvestment'))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path.cwd())))
 if not PROJECT_ROOT.exists():
     print(f"❌ PROJECT_ROOT not found: {PROJECT_ROOT}")
     exit(1)
@@ -279,7 +292,7 @@ from pathlib import Path
 from datetime import datetime, date
 import os
 
-PROJECT_ROOT = Path(os.environ.get('PROJECT_ROOT', '/root/GLMinvestment'))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path.cwd())))
 if not PROJECT_ROOT.exists():
     print(f"❌ PROJECT_ROOT not found: {PROJECT_ROOT}")
     exit(1)
@@ -361,7 +374,7 @@ from pathlib import Path
 from datetime import datetime
 import os
 
-PROJECT_ROOT = Path(os.environ.get('PROJECT_ROOT', '/root/GLMinvestment'))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path.cwd())))
 if not PROJECT_ROOT.exists():
     print(f"❌ PROJECT_ROOT not found: {PROJECT_ROOT}")
     exit(1)

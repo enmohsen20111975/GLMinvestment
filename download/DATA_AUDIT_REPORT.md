@@ -136,43 +136,23 @@ APIs (Next.js :3000):
 
 ## 💻 أوامر السرفر — جاهزة للنسخ واللصق
 
-كل الأوامر موجودة في `/home/z/my-project/download/SERVER_FIX_COMMANDS.sh` — سكريبت bash executable.
+كل الأوامر موجودة في `download/SERVER_FIX_COMMANDS.sh` — سكريبت bash executable
+يستخدم مسارات نسبية (Rule 17) — يشتغل من أي مكان.
 
 ### تشغيل سريع على السرفر:
 ```bash
-cd /root/GLMinvestment
+# من جذر المشروع (محلياً أو على السرفر)
 git pull origin main
-chmod +x download/SERVER_FIX_COMMANDS.sh
 bash download/SERVER_FIX_COMMANDS.sh
+# أو تحديد مسار مخصص:
+# PROJECT_ROOT=/custom/path bash download/SERVER_FIX_COMMANDS.sh
 ```
 
 ### أوامر Git push:
 ```bash
-cd /root/GLMinvestment
+# من جذر المشروع (محلياً)
 git add scripts/maker_radar.py scripts/backfill_stale_radar_signals.py scripts/verify_radar_fix.py download/DATA_AUDIT_REPORT.md download/SERVER_FIX_COMMANDS.sh worklog.md
-git commit -m "fix(data): FRESHNESS GUARD + audit report — منع التوصيات بأسعار قديمة + تقرير كوارث خط سير البيانات
-
-السبب الجذري لشكوى العميل 'المشروع في وادٍ والسوق في وادٍ تانٍ':
-- 95%+ من أسهم EGX مُسَمّاة market='US' في 3 جداول سعرية
-- 6 جداول بتخزن نفس بيانات التوقع (تكرار + تعارض)
-- stock_phase قديم 43 يوم + scale خاطئ (DTPP last_close=12.36 vs 318)
-- 8 من 50 توقع أخير entry_price قديم >5% من السعر الفعلي
-- radar verification pipeline ما بيشتغلش أبداً (0 verified signals)
-
-الإصلاحات المطبقة:
-- FRESHNESS GUARD في maker_radar.py (3 طبقات: detection + freshest-source + schema upgrade)
-- backfill_stale_radar_signals.py — 332 إشارة معلّمة stale_data
-- verify_radar_fix.py — سكريبت تحقق من الإصلاح
-- DATA_AUDIT_REPORT.md — تقرير الكوارث الكامل (10 كوارث + خطة إصلاح)
-- SERVER_FIX_COMMANDS.sh — سكريبت أوامر السرفر الجاهز
-
-النتيجة:
-- HRHO entry=26.79 (live, fresh 1d) ✓
-- DTPP entry القديم (326.01) → status=stale_data + daily_price=295.36 ✓
-- 69 إشارة جديدة كلها marked fresh بـ price_source=live ✓
-
-التالي: تنفيذ Phase 1 (إصلاحات عاجلة) من SERVER_FIX_COMMANDS.sh على السرفر"
-
+git commit -m "fix(data): FRESHNESS GUARD + audit report"
 git push origin main
 ```
 
