@@ -98,7 +98,18 @@ export async function GET(req: NextRequest) {
     if (symbol) {
       const metric = db.prepare('SELECT * FROM sharia_metrics WHERE UPPER(symbol) = ?').get(symbol);
       if (!metric) {
-        return NextResponse.json({ success: false, error: 'symbol_not_found', symbol }, { status: 404 });
+        // FIX (Task FINAL-FIX): بدل ما نرجّع 404 (اللي بـ يسبب console spam)،
+        // نرجّع 200 بـ status='not_available' — الـ ShariaBadge بـ يتعامل معاه.
+        return NextResponse.json({
+          success: true,
+          symbol,
+          status: 'not_available',
+          metric: null,
+          sources: [],
+          purification_rates: [],
+          price: null,
+          generated_at: new Date().toISOString(),
+        });
       }
       const sources = db
         .prepare(
