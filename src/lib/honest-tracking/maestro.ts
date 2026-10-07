@@ -58,7 +58,7 @@ import path from 'path';
 
 // CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
 // TS canonical source for RSI is src/lib/unified-stock-data.ts::computeRSI.
-import { computeRSI } from '@/lib/unified-stock-data';
+import { computeRSI } from '@/lib/canonical-rsi';
 
 import {
   detectStockRegime, classifyVolatility, classifySectorSpeed,

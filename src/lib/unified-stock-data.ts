@@ -29,6 +29,8 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
+// CANONICAL-RSI: imported from canonical-rsi.ts (client-safe, no DB imports)
+import { computeRSI } from '@/lib/canonical-rsi';
 import {
   classifySignal,
   signalAr,
@@ -185,36 +187,16 @@ export type UnifiedStockData = {
 };
 
 // ----------------------------------------------------------------------------
-// Helper: Wilder's RSI (period=14) — مطابق Python canonical
-// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
-// This is the SINGLE SOURCE OF TRUTH for TS-side RSI. Other modules must
-// import from here instead of re-implementing inline.
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+// computeRSI moved to canonical-rsi.ts (client-safe, no DB imports).
+// This file (unified-stock-data.ts) imports better-sqlite3 — CANNOT be
+// imported from client components. canonical-rsi.ts is pure math, safe for
+// client-side use.
+//
+// API routes: import from here (unified-stock-data.ts)
+// Client components: import from canonical-rsi.ts
 // ----------------------------------------------------------------------------
-export function computeRSI(closes: number[], period = 14): number | null {
-  if (closes.length < period + 1) return null;
-  const gains: number[] = [0];
-  const losses: number[] = [0];
-  for (let i = 1; i < closes.length; i++) {
-    const change = closes[i] - closes[i - 1];
-    gains.push(change > 0 ? change : 0);
-    losses.push(change < 0 ? -change : 0);
-  }
-  let avgGain = 0;
-  let avgLoss = 0;
-  for (let i = 1; i <= period; i++) {
-    avgGain += gains[i];
-    avgLoss += losses[i];
-  }
-  avgGain /= period;
-  avgLoss /= period;
-  for (let i = period + 1; i < closes.length; i++) {
-    avgGain = (avgGain * (period - 1) + gains[i]) / period;
-    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-  }
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return 100 - 100 / (1 + rs);
-}
+export { computeRSI } from '@/lib/canonical-rsi';
 
 // ----------------------------------------------------------------------------
 // Helper: Simple Moving Average
@@ -423,7 +405,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
   // `lastClose` (from stocks.db.stock_daily_prices) is the HISTORICAL fallback.
   const currentPrice = Number(stock.current_price ?? lastClose ?? 0);
 
-  const freshRSI = computeRSI(closes);
+  const freshRSI = computeRSI(closes);  // from canonical-rsi.ts (re-exported above)
   const freshMA50 = computeSMA(closes, Math.min(50, closes.length));
   const freshMA200 = closes.length >= 200 ? computeSMA(closes, 200) : null;
   const freshBuyPct = computeBuyPctFromCandles(closes);

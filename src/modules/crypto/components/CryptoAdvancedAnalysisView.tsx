@@ -36,7 +36,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 // CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
 // TS canonical source: src/lib/unified-stock-data.ts::computeRSI.
-import { computeRSI } from '@/lib/unified-stock-data';
+import { computeRSI } from '@/lib/canonical-rsi';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -684,5 +684,5 @@ const analysisColumns: Column<CryptoAnalysis & { _idx: number }>[] = [
 // CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
 // Before: local `function computeRSI(closes, period)` with inline math (Wilder's,
 // mathematically correct but duplicated). Now: use canonical `computeRSI`
-// imported from '@/lib/unified-stock-data' (single source of truth for TS RSI).
+// imported from '@/lib/canonical-rsi' (single source of truth for TS RSI).
 // (No local wrapper — callers below use `computeRSI(...)` directly.)
