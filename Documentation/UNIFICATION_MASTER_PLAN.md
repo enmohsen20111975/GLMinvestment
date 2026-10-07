@@ -35,12 +35,18 @@
 
 **النتيجة:** كل engines بتستخدم نفس الـ thresholds + predictions القديمة مش بتعرض + اختبار آلي يكتشف التناقضات.
 
-### المرحلة 2 — ⏳ محجوزة (2-3 أسابيع)
+### المرحلة 2 — ✅ مكتملة (commit `3ddca1c`)
 
-- توحيد RSI على `analyzers/indicators/rsi.py` (Wilder's smoothing)
-- مصدر سعر واحد لكل المحركات (stocks.db.stocks.current_price)
-- كاتب واحد لصف التحليل (إلغاء 10 كاتبين على stored_analyses)
-- **قتل Maestro نهائياً** (118 ملف — مرحلة بحذر شديد)
+**تم توحيد RSI + قتل Maestro نهائياً (49 ملف معدّل بـ 4 sub-agents):**
+
+| الجزء | التغيير | ملفات |
+|-------|---------|-------|
+| 2.1 توحيد RSI | كل engines بتستخدم `indicators/rsi.py` (Wilder's) | 25 Python + 6 TS |
+| 2.2 Maestro API | 3 routes → 410 Gone + comprehensive fetch removed | 4 routes |
+| 2.3 Maestro Python | 4 files → MAESTRO_DISABLED guard | 4 .py files |
+| 2.4 Maestro UI | MaestroWidget → null + deprecation banners | 11 .tsx/.ts files |
+
+**النتيجة:** RSI موحد (Wilder's) + Maestro معطل بالكامل (API + Python + UI).
 
 ### المرحلة 3 — ⏳ محجوزة (شهر)
 
@@ -126,5 +132,5 @@
 
 1. ✅ **المرحلة 0** — مكتملة (commit `2591485`)
 2. ✅ **المرحلة 1** — مكتملة (commits `514d1c2` + `ba5c61a` + `9eeb00a`)
-3. ⏳ **المرحلة 2** — توحيد RSI + قتل Maestro نهائياً
-4. ⏳ **المرحلة 3** — V40.2 canonical engine
+3. ✅ **المرحلة 2** — مكتملة (commit `3ddca1c` — 49 ملف، 4 sub-agents)
+4. ⏳ **المرحلة 3** — V40.2 canonical engine (محتاجة جلسة منفصلة)
