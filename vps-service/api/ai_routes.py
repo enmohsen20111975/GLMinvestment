@@ -29,6 +29,9 @@ def get_agent():
 def _get_cached_analysis(ticker: str) -> Optional[dict]:
     ticker_upper = ticker.upper()
     try:
+        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
+        # TODO: Add `AND ai_updated_at >= datetime('now', '-2 days')` to filter stale
+        #       AI decisions — currently a decision from 2 weeks ago appears "alive".
         conn = sqlite3.connect(PREDICTIONS_DB)
         conn.row_factory = sqlite3.Row
         row = conn.execute("""
@@ -96,29 +99,35 @@ def _run_live_analysis(ticker: str) -> dict:
         dec_str = str(decision.get("decision") or "HOLD").upper()
 
         # حفظ — UPDATE لو موجود، INSERT لو جديد
-        try:
-            conn = sqlite3.connect(PREDICTIONS_DB)
-            cur = conn.cursor()
-            cur.execute("SELECT ticker FROM stored_analyses WHERE ticker = ?", (ticker,))
-            exists = cur.fetchone() is not None
-            if exists:
-                cur.execute("""
-                    UPDATE stored_analyses
-                    SET ai_decision = ?, ai_confidence = ?, ai_reason = ?,
-                        ai_narrative = ?, ai_updated_at = datetime('now')
-                    WHERE ticker = ?
-                """, (dec_str, conf_int, reason, narrative, ticker))
-            else:
-                cur.execute("""
-                    INSERT INTO stored_analyses
-                        (ticker, ai_decision, ai_confidence, ai_reason, ai_narrative, ai_updated_at)
-                    VALUES (?, ?, ?, ?, ?, datetime('now'))
-                """, (ticker, dec_str, conf_int, reason, narrative))
-            conn.commit()
-            conn.close()
-        except Exception as db_err:
-            logger.error(f"DB save failed for {ticker}: {db_err}")
-            # نكمّل برغم فشل الحفظ — المستخدم لسه يستاهل الـ decision
+        # SINGLE-WRITER (Task PHASE-3, Rule 73) — only daily_predictor.py should write to stored_analyses.
+        # This writer is disabled to prevent conflicting decisions (last-writer-wins problem).
+        SKIP_STORED_ANALYSES_WRITE = True
+        if not SKIP_STORED_ANALYSES_WRITE:
+            try:
+                conn = sqlite3.connect(PREDICTIONS_DB)
+                cur = conn.cursor()
+                cur.execute("SELECT ticker FROM stored_analyses WHERE ticker = ?", (ticker,))
+                exists = cur.fetchone() is not None
+                if exists:
+                    cur.execute("""
+                        UPDATE stored_analyses
+                        SET ai_decision = ?, ai_confidence = ?, ai_reason = ?,
+                            ai_narrative = ?, ai_updated_at = datetime('now')
+                        WHERE ticker = ?
+                    """, (dec_str, conf_int, reason, narrative, ticker))
+                else:
+                    cur.execute("""
+                        INSERT INTO stored_analyses
+                            (ticker, ai_decision, ai_confidence, ai_reason, ai_narrative, ai_updated_at)
+                        VALUES (?, ?, ?, ?, ?, datetime('now'))
+                    """, (ticker, dec_str, conf_int, reason, narrative))
+                conn.commit()
+                conn.close()
+            except Exception as db_err:
+                logger.error(f"DB save failed for {ticker}: {db_err}")
+                # نكمّل برغم فشل الحفظ — المستخدم لسه يستاهل الـ decision
+        else:
+            logger.info('[SINGLE-WRITER] Skipping stored_analyses write in _run_live_analysis — use daily_predictor.py')
 
         return {
             "ticker": ticker,

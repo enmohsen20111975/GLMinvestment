@@ -85,6 +85,15 @@ PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
 DATA_ENGINE_DB = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
 PREDICTIONS_DB = os.environ.get('PREDICTIONS_DB', str(_PROJECT_ROOT / 'db' / 'predictions.db'))
 
+# SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73: SINGLE-DISPLAY-SOURCE)
+# Sniper Engine uses thresholds (50-70) that differ from the canonical
+# thresholds (78/65) defined in canonical_signal.py. Producing a competing
+# `signal` field here violates Rule 67 (CALCULATION-CANONICAL).
+# Canonical signal comes from master_analyzer.py + canonical_signal.py.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# SniperEngine.analyze() now short-circuits and returns None.
+SUB_ENGINE_DISABLED = True
+
 
 # ============================================================================
 # SIGNAL TRANSLATION
@@ -1323,6 +1332,13 @@ class SniperEngine:
          10. Calculate entry/stop/target using DynamicTargetEngine if available
          11. Return SniperResult
         """
+        # SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73)
+        # Canonical signal is produced only by master_analyzer.py + canonical_signal.py
+        # (thresholds 78/65). Sniper thresholds (50-70) produce competing signals.
+        # Short-circuit and return None — callers must consume the canonical source.
+        if SUB_ENGINE_DISABLED:
+            return None
+
         warnings: List[str] = []
         warnings_ar: List[str] = []
         now = datetime.utcnow().isoformat() + 'Z'

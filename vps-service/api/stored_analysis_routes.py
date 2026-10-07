@@ -1039,6 +1039,9 @@ def get_status():
             FROM stored_analyses
             {_market_clause}
         ''', _market_args)
+        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
+        # TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses
+        #       from these stats (so old predictions don't inflate counts).
         stats_row = cursor.fetchone()
         
         cursor.execute(f'''
@@ -1048,6 +1051,8 @@ def get_status():
             ORDER BY updated_at DESC
             LIMIT 5
         ''', _market_args)
+        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
+        # TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses
         recent = [dict(r) for r in cursor.fetchall()]
         conn.close()
         
@@ -1095,6 +1100,9 @@ def get_results():
             FROM stored_analyses
             WHERE market = ?
         '''
+        # FRESHNESS-CHECK (Task PHASE-3, Rule 72)
+        # TODO: Append `AND updated_at >= datetime('now', '-2 days')` after the WHERE clause
+        #       so stale analyses are excluded from /stored-analysis/results.
         params = [market]
 
         if recommendation:

@@ -63319,3 +63319,158 @@ Known limitations / Out-of-scope:
   Out of scope for the verification regex (which targets vps-service/ only) —
   documented here for completeness; they're utility scripts, not runtime engines.
 - `archive/` directory intentionally untouched (Rule 4 + already-deprecated).
+
+---
+Task ID: PHASE-3-DISABLE-SUB-ENGINES
+Agent: Sub-agent (general-purpose)
+Task: Disable remaining sub-engines producing competing signals (canonical = master_analyzer.py + canonical_signal.py, thresholds 78/65)
+
+Work Log:
+- Inspected all 6 target files; identified the signal-producing entry points and their threshold drift.
+- Verified the canonical thresholds are 78/65/55/40/25 (from vps-service/utils/canonical_signal.py::SIGNAL_THRESHOLDS) — the same source master_analyzer.py uses.
+- Applied the SUB_ENGINE_DISABLED guard pattern (mirroring the existing MAESTRO_DISABLED pattern in maestro_orchestrator.py / unified_maestro.py / crypto_maestro.py / api/maestro_routes.py).
+
+Files changed (5 disabled, 1 inspected-but-skipped):
+
+1. vps-service/analyzers/board_of_analysts.py
+   - Added module-level constant `SUB_ENGINE_DISABLED = True` after the import block.
+   - In `BoardManager.generate_final_report()` (line ~545), added an early-return guard
+     that returns a dict with `signal=None, recommendation=None, signal_ar=None`,
+     `disabled=True`, `canonical_source='master_analyzer.py'`, plus a reason_ar
+     message pointing callers to canonical_signal.py.
+   - Board's own thresholds (78/68) no longer produce a competing signal.
+
+2. vps-service/analyzers/confluence_engine_v3.py
+   - Added module-level constant `SUB_ENGINE_DISABLED = True` after `_DEFAULT_STOCKS_DB`.
+   - In `ConfluenceEngine.analyze()` (line ~431), added `if SUB_ENGINE_DISABLED: return None`
+     right after the docstring (signature already returns `Optional[ConfluenceResultV3]`).
+   - Confluence thresholds (75/65) no longer produce a competing signal.
+
+3. vps-service/analyzers/sniper_engine.py
+   - Added module-level constant `SUB_ENGINE_DISABLED = True` after the PATH CONFIGURATION block.
+   - In `SniperEngine.analyze()` (line ~1313), added `if SUB_ENGINE_DISABLED: return None`
+     right after the docstring (signature already returns `Optional[SniperResult]`).
+   - Sniper thresholds (50-70) no longer produce a competing signal.
+
+4. vps-service/analyzers/v82_analyzer.py
+   - Added module-level constant `SUB_ENGINE_DISABLED = True` after the DB path constants.
+   - In `V82Analyzer.analyze()` (line ~151), added an early-return guard returning a
+     `V82Signal(action='DISABLED', signal_strength='disabled', diagnosis=...)`
+     with a pointer to canonical_signal.py. The dataclass default `action='WAIT'`
+     is overridden so callers can detect the disabled state and skip the result.
+   - V82's 9-condition gate no longer produces a competing `action`.
+
+5. vps-service/api/professional_analysis_routes.py
+   - Added module-level constant `PROFESSIONAL_ANALYSIS_DISABLED = True` after the
+     board-of-analysts import block.
+   - In the `professional_analysis(ticker)` route handler, added a guard at the very
+     top (before `try:`) that returns HTTP 410 Gone with JSON body:
+       {success:false, deprecated:true, error:'sub_engine_disabled',
+        error_ar:'تم إيقاف المحرك الاحترافي — استخدم /api/stocks/<ticker>/unified',
+        canonical_route:'/api/stocks/<ticker>/unified'}
+   - The route's thresholds (65/55/48) no longer produce a competing `recommendation.action`.
+
+6. vps-service/analyzers/v68_oracle.py — INSPECTED, NO CHANGE NEEDED
+   - `analyze_oracle()` returns a dict of supporting indicators only:
+     probability (0-100), future_slope, future_direction, quiet_accumulation (bool),
+     dirty_distribution (bool), no_chase_2d (bool), liquidity_grab (bool, described
+     as "A+ signal trigger" — a *condition* the canonical engine checks, not a final
+     BUY/SELL), trend_state, low_magnet/high_magnet, delta_vol, is_volume_surge.
+   - No `signal`, `recommendation`, or `action` field is produced. It is consumed
+     by master_analyzer as a supporting indicator (per its own docstring: "Usage in
+     V40.2: from analyzers.v68_oracle import analyze_oracle; oracle['probability'] → ...").
+   - Already compliant with Rule 67 + Rule 73 — no guard added.
+
+Verification:
+- Ran `python3 -c "import ast; ast.parse(open('file').read())"` on all 6 files — all return OK.
+- No files deleted (Rule 4: NO-DELETION) — guards are additive only.
+- Imports still work unchanged (constant is module-level, guard is at function top).
+- Backward-compatible return shapes preserved (dict for board, None for confluence/sniper,
+  V82Signal for v82, JSON 410 for the route).
+
+Stage Summary:
+- 5 sub-engines disabled (board_of_analysts, confluence_v3, sniper, v82, professional_analysis route).
+- 1 sub-engine (v68_oracle) confirmed already compliant — no change needed.
+- Canonical signal source is now master_analyzer.py + canonical_signal.py only (Rule 67).
+- All sub-engine signal fields return None / DISABLED / HTTP 410 (Rule 73).
+- Next action: audit any callers that still rely on these fields and migrate them to
+  consume the canonical `/api/stocks/<ticker>/unified` route.
+---
+Task ID: PHASE-3-UNIFY-PRICE-SOURCE
+Agent: General-Purpose Sub Agent
+Task: Unify ALL Python engines to read live price from ONE source: stocks.db.stocks.current_price
+
+Work Log:
+- Grep-surveyed vps-service/ for non-canonical price sources: FROM egksco_price_history,
+  FROM historical_data, price_history.db, FROM stock_prices. Found ~50 references across
+  api/, core/, engine/, jobs/, scripts/ — most are HISTORICAL closes (correct usage), only
+  a few derive "live price" from closes[-1].
+- vps-service/analyzers/engine_settings.py: appended the canonical price-source hierarchy
+  doc block (LIVE = stocks.db.stocks.current_price; HISTORICAL = stocks.db.stock_daily_prices;
+  FORBIDDEN: price_history.db / historical_data / stock_prices).
+- vps-service/analyzers/master_analyzer.py: tagged load_merged_history() docstring as the
+  canonical reference impl; tagged current_price=prices[-1] at lines ~2380 (limited-data
+  branch) and ~2498 (full validation branch with >10000 sanity fallback to stocks.current_price).
+- vps-service/core/database.py: extended get_price_history() docstring with the 4-tier
+  hierarchy (price_history.db → stock_daily_prices → DailyPrice → disabled historical_data).
+- vps-service/utils/live_price.py: documented that get_live_price() layers intraday/egksco
+  sources on top of the canonical stocks.current_price to avoid its known pollution (COMI).
+- vps-service/api/top_performers_routes.py, ai_predictions_routes.py, portfolio_routes.py,
+  engine/flow_system.py: added CANONICAL-PRICE comments clarifying whether each price_history
+  read is HISTORICAL-only or a LIVE fallback.
+- src/lib/unified-stock-data.ts: confirmed current_price is read from stocks.db.stocks
+  (line 313) as PRIMARY, with lastClose from stock_daily_prices as fallback (line 421);
+  added comment documenting the hierarchy.
+- No price-loading logic was rewritten (conservative per task brief — comments + docs only).
+- Verified Python syntax on all 8 modified .py files via `python3 -c "import ast; ast.parse(...)"`.
+- No new files created (Rule 4 NO-NEW-FILES observed).
+
+Stage Summary:
+- Canonical price-source hierarchy documented in engine_settings.py + master_analyzer.py
+  + database.py. All Python engines now have an explicit reference for where to read
+  LIVE vs HISTORICAL prices.
+- master_analyzer.py confirmed already compliant: load_merged_history() merges
+  stocks.db.stocks.current_price as the live "today" candle (lines ~1840-1879), and the
+  full-validation branch already falls back to stocks.current_price when closes[-1] > 10000.
+- unified-stock-data.ts confirmed already compliant: `currentPrice = stock.current_price ?? lastClose`.
+- No code-path changes → zero regression risk. Next phase (if pursued): wrap the
+  `current_price = closes[-1]` patterns at master_analyzer.py:2385 and similar engines
+  with a helper that consults stocks.db.stocks.current_price BEFORE falling back to
+  closes[-1] — but that requires careful migration per Rule 67.
+---
+Task ID: PHASE-3-SINGLE-WRITER
+Agent: Sub-agent (general-purpose)
+Task: Ensure only ONE writer writes to `stored_analyses` table (canonical: daily_predictor.py)
+
+Work Log:
+- Grep'd vps-service/ and src/ for INSERT/UPDATE stored_analyses + db.storedAnalysis + storedAnalysis.{upsert,create,update}. Found 10 write sites across 7 Python files (no TS/Prisma writers — all writes are raw SQL strings in Python).
+- Wrote-into inventory (writers):
+  1. vps-service/jobs/daily_predictor.py:3393  → CANONICAL (kept). Added CANONICAL-WRITER comment header.
+  2. vps-service/api/ai_routes.py:106/113       → DISABLED via SKIP_STORED_ANALYSES_WRITE guard wrapping the UPDATE/INSERT try block in `_run_live_analysis`.
+  3. vps-service/api/misc_routes.py:1381        → DISABLED via early-return jsonify({'skipped':True}) in `refresh_persona_flags`.
+  4. vps-service/api/misc_routes.py:3806        → DISABLED via early-return jsonify before thread.start() in `live_refresh_analyses`.
+  5. vps-service/core/persona_db.py:172          → DISABLED via SKIP guard returning True (pretend success) in `safe_store_analysis_json`.
+  6. vps-service/jobs/intraday_scanner.py:390   → DISABLED via SKIP guard wrapping the `cur_sa.execute(INSERT...)` call; cached_analysis (stocks.db) update still runs.
+  7. vps-service/jobs/market_scheduler.py:2487 → DISABLED via SKIP guard early-return + self._mark_run('trailing_stop_update') in `run_live_trailing_stop_update`.
+  8. vps-service/ai/nightly_analysis.py:243/263 → DISABLED via SKIP guard early-return in `save_ai_result`.
+  9. vps-service/data/analyses.py:715           → NO DB I/O (just builds a tuple). Added SINGLE-WRITER doc comment (no guard needed).
+- Each disabled writer now logs `[SINGLE-WRITER] Skipping stored_analyses write — use daily_predictor.py` for traceability. Each guard uses `SKIP_STORED_ANALYSES_WRITE = True` (flip to False to re-enable).
+- FRESHNESS-CHECK (Rule 72) TODO comments added to the 8 most user-facing read sites:
+  - src/app/api/ai/analyze-stock/route.ts:106 (fetchStoredAnalysis)
+  - src/app/api/predictions/route.ts:144 + :345 (per-ticker + batch stored_analyses lookups)
+  - src/app/api/stored-analysis/results/route.ts:145 (/stored-analysis/results display)
+  - vps-service/api/ai_routes.py:36 (_get_cached_analysis)
+  - vps-service/api/stored_analysis_routes.py:1039 + :1046 + :1095 (stats, recent, results endpoints)
+  Each TODO suggests: `AND updated_at >= datetime('now', '-2 days')` (or `ai_updated_at` for AI-decision reads).
+- Verified syntax: `python3 -c "import ast; ast.parse(open(f).read())"` → OK for all 9 modified .py files. TypeScript compiler API parse → OK for all 3 modified .ts files (comment-only edits; no behavior changes).
+- No new files created (Rule 4 NO-NEW-FILES observed). No deletions (Rule 16 VERIFY-BEFORE-DELETE observed — writers disabled via guards, not removed).
+- Conservative: only daily_predictor.py is allowed to write stored_analyses. All other writers preserved in-source with `SKIP_STORED_ANALYSES_WRITE = True` flip-switch for safe rollback.
+
+Stage Summary:
+- 7 non-canonical writers disabled (ai_routes, misc_routes×2, persona_db, intraday_scanner, market_scheduler, nightly_analysis).
+- 1 canonical writer confirmed (daily_predictor.py:3393) with CANONICAL-WRITER comment.
+- 1 helper (data/analyses.py) documented as no-DB-IO row builder.
+- 8 freshness-check TODOs placed on the highest-impact read sites.
+- Next: implement the WHERE updated_at >= datetime('now','-2 days') filters (Phase 4 task). For re-enabling any writer in an emergency, set `SKIP_STORED_ANALYSES_WRITE = False` at the write site.
+---
+

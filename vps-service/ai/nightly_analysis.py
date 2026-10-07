@@ -232,7 +232,19 @@ def fallback_narrative(stock: dict) -> dict:
 
 
 def save_ai_result(ticker: str, result: dict, raw: str = ""):
-    """حفظ نتيجة AI في stored_analyses"""
+    """حفظ نتيجة AI في stored_analyses.
+
+    # SINGLE-WRITER (Task PHASE-3, Rule 73) — DISABLED. daily_predictor.py is the
+    # canonical writer. This function now logs a skip and returns without touching
+    # stored_analyses. Set SKIP_STORED_ANALYSES_WRITE = False to re-enable.
+    """
+    # SINGLE-WRITER (Task PHASE-3, Rule 73)
+    # Only daily_predictor.py is allowed to write to stored_analyses.
+    # This writer is disabled to prevent conflicting decisions (last-writer-wins).
+    SKIP_STORED_ANALYSES_WRITE = True
+    if SKIP_STORED_ANALYSES_WRITE:
+        logger.info('[SINGLE-WRITER] Skipping stored_analyses write in nightly_analysis.save_ai_result — use daily_predictor.py')
+        return
     conn = sqlite3.connect(PREDICTIONS_DB)
     try:
         # Check if ticker exists

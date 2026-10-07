@@ -30,6 +30,15 @@ from pathlib import Path as _P
 _PROJECT_ROOT = _P(__file__).resolve().parent.parent.parent
 _DEFAULT_STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
 
+# SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73: SINGLE-DISPLAY-SOURCE)
+# Confluence Engine v3 uses thresholds (75/65) that differ from the canonical
+# thresholds (78/65) defined in canonical_signal.py. Producing a competing
+# `signal` field here violates Rule 67 (CALCULATION-CANONICAL).
+# Canonical signal comes from master_analyzer.py + canonical_signal.py.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# ConfluenceEngine.analyze() now short-circuits and returns None.
+SUB_ENGINE_DISABLED = True
+
 
 # ============================================================================
 # WEIGHTS v5 - WHALE MATRIX (BRIEF-044)
@@ -452,6 +461,13 @@ class ConfluenceEngineV3:
 
         Returns None if signal doesn't meet quality thresholds.
         """
+        # SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73)
+        # Canonical signal is produced only by master_analyzer.py + canonical_signal.py
+        # (thresholds 78/65). Confluence thresholds (75/65) produce competing signals.
+        # Short-circuit and return None — callers must consume the canonical source.
+        if SUB_ENGINE_DISABLED:
+            return None
+
         # Step 1: Calculate Technical Score
         technical_signals = [
             ('ma_cross', ma_cross_signal, self.technical_sub_weights['ma_cross']),

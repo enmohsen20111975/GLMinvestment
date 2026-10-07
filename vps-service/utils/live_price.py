@@ -324,6 +324,13 @@ def _price_from_stocks_patched(ticker: str) -> Tuple[float, str, Optional[str]]:
 def get_live_price(ticker: str, use_cache: bool = True) -> float:
     """ارجع آخر سعر حي لـ ticker — بنفس مسار الشارت.
 
+    CANONICAL-PRICE (Task PHASE-3, Rule 72):
+      Per Rule 67 (CALCULATION-CANONICAL) the canonical LIVE price source is
+      `stocks.db.stocks.current_price`. This function layers additional
+      intraday/egksco sources ON TOP to avoid the well-known pollution of
+      `stocks.current_price` for certain tickers (e.g. COMI). Final fallback
+      (#4 below) is the canonical column itself.
+
     Priority chain (موثّقة من PRAGMA table_info الفعلي):
       1. intraday.db.stock_intraday (آخر `price` ORDER BY `timestamp` DESC)
          ← نفس مصدر الشارت — "سعر اليوم".

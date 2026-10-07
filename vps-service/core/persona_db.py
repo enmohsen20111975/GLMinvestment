@@ -155,7 +155,21 @@ def safe_store_analysis_json(
     """
     تخزين نتيجة التحليل في stored_analyses مع analysis_json يحتوي personas (gambler + investor + narrative + context).
     آمن — try/except. لو فشل، بيرجع False.
+
+    # SINGLE-WRITER (Task PHASE-3, Rule 73) — DISABLED. daily_predictor.py is the
+    # canonical writer. This function now returns True (pretend success) without
+    # touching stored_analyses. Set SKIP_STORED_ANALYSES_WRITE = False to re-enable.
     """
+    # SINGLE-WRITER (Task PHASE-3, Rule 73)
+    # Only daily_predictor.py is allowed to write to stored_analyses.
+    # This writer is disabled to prevent conflicting decisions (last-writer-wins).
+    SKIP_STORED_ANALYSES_WRITE = True
+    if SKIP_STORED_ANALYSES_WRITE:
+        try:
+            print('[SINGLE-WRITER] Skipping stored_analyses write in persona_db.safe_store_analysis_json — use daily_predictor.py')
+        except Exception:
+            pass
+        return True  # pretend success — callers expect True/False, do not raise
     try:
         conn = _safe_connect(PREDICTIONS_DB)  # FIX: timeout=30 + busy_timeout
         cur = conn.cursor()

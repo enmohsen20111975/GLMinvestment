@@ -19,6 +19,14 @@ except ImportError:
     TechnicalAnalyzer = None
     FundamentalAnalyzer = None
 
+# SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73: SINGLE-DISPLAY-SOURCE)
+# Board of Analysts uses thresholds (78/68) that differ from the canonical
+# thresholds (78/65) defined in canonical_signal.py. Producing a competing
+# `signal` field here violates Rule 67 (CALCULATION-CANONICAL).
+# Canonical signal comes from master_analyzer.py + canonical_signal.py.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# generate_final_report() now short-circuits and returns no decision.
+SUB_ENGINE_DISABLED = True
 
 # ============================================================================
 # ROBUST PRICE HISTORY RETRIEVER
@@ -538,6 +546,27 @@ class BoardManager(ABC):
         """
         يقوم المدير بتشغيل المحللين النشطين، حساب النقاط المرجحة، وتحديد التوصية المناسبة.
         """
+        # SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73)
+        # Canonical signal is produced only by master_analyzer.py + canonical_signal.py
+        # (thresholds 78/65). Board thresholds (78/68) produce competing signals.
+        # Short-circuit and return no decision — callers must consume the canonical source.
+        if SUB_ENGINE_DISABLED:
+            return {
+                'ticker': ticker,
+                'market': getattr(self, 'market', None),
+                'success': True,
+                'disabled': True,
+                'signal': None,
+                'recommendation': None,
+                'signal_ar': None,
+                'confidence': 0.0,
+                'master_score': 0.0,
+                'opinions': {},
+                'reason_ar': 'تم إيقاف محرك مجلس المحللين — استخدم canonical_signal.py',
+                'canonical_source': 'master_analyzer.py',
+                'timestamp': datetime.now().isoformat(),
+            }
+
         active_analysts = [a for a in self.analysts.values() if a.active]
         if not active_analysts:
             return {

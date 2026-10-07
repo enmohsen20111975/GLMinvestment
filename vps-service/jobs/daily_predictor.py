@@ -3346,6 +3346,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         )
                     else:
                         # مزامنة التوقع المعتمد في stored_analyses لشاشة التوقعات المباشرة
+                        # CANONICAL-WRITER (Task PHASE-3, Rule 73)
+                        # This is the ONLY file allowed to write to stored_analyses.
+                        # All other writers have been disabled (see SINGLE-WRITER comments
+                        # in ai_routes.py, misc_routes.py, persona_db.py, intraday_scanner.py,
+                        # market_scheduler.py, nightly_analysis.py).
                         try:
                             conn_sa = sqlite3.connect(PREDICTIONS_DB, timeout=30.0)
                             cur_sa = conn_sa.cursor()

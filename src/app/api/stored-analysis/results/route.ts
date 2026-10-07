@@ -147,6 +147,9 @@ export async function GET(request: NextRequest) {
         ORDER BY prediction_date DESC, maestro_score DESC
         LIMIT ?
       `;
+      // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
+      // TODO: Append `AND updated_at >= datetime('now', '-2 days')` to where[]
+      //       so stale analyses (older than 2 days) are filtered out from results.
       sqlParams.push(limit);
       rows = db.prepare(sql).all(...sqlParams) as Array<Record<string, unknown>>;
     } else {

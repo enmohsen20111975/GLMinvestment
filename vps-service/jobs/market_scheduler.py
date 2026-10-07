@@ -2284,7 +2284,23 @@ class MarketScheduler:
 
         آمن: لو مفيش data، skip؛ لو error، skip (مش يكسر الـ scheduler).
         مفيش schema change — الـ trailing_stop بيتحفظ في analysis_json JSON field.
+
+        # SINGLE-WRITER (Task PHASE-3, Rule 73) — DISABLED. daily_predictor.py is the
+        # canonical writer. This method now returns immediately without updating
+        # analysis_json.trailing_stop in stored_analyses. Set
+        # SKIP_STORED_ANALYSES_WRITE = False to re-enable trailing-stop updates.
         """
+        # SINGLE-WRITER (Task PHASE-3, Rule 73)
+        # Only daily_predictor.py is allowed to write to stored_analyses.
+        # This writer is disabled to prevent conflicting decisions (last-writer-wins).
+        SKIP_STORED_ANALYSES_WRITE = True
+        if SKIP_STORED_ANALYSES_WRITE:
+            try:
+                logger.info('[SINGLE-WRITER] Skipping trailing_stop UPDATE in run_live_trailing_stop_update — use daily_predictor.py')
+            except Exception:
+                pass
+            self._mark_run('trailing_stop_update')
+            return
         if not self._should_run('trailing_stop_update', 15):
             return
         _ts_conn = None

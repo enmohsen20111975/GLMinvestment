@@ -102,6 +102,9 @@ function tryPythonProxy(ticker: string, market: string): Promise<any | null> {
 
 function fetchStoredAnalysis(db: any, ticker: string): StoredAnalysisRow | null {
   try {
+    // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
+    // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
+    //       Currently a row from 2 weeks ago appears "alive" — users see old predictions.
     const row = db.prepare(`
       SELECT * FROM stored_analyses WHERE ticker = ? COLLATE NOCASE LIMIT 1
     `).get(ticker) as StoredAnalysisRow | undefined;

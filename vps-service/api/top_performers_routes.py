@@ -103,6 +103,8 @@ def get_top_performers():
             direction = 'both'
 
         # === PHASE-2-DB-UNIFY: price_history.db first (1.24M rows), data_engine.db fallback ===
+        # CANONICAL-PRICE (Task PHASE-3, Rule 72) — HISTORICAL closes only (for % change calc).
+        # LIVE price for any ticker must come from stocks.db.stocks.current_price (NOT used here).
         rows = []
         latest_date = None
         ph_conn = None
