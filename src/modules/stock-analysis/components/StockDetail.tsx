@@ -21,6 +21,15 @@ import {
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { cn, safeToFixed } from '@/lib/utils';
+// ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
+// قبل كده: accumulation + signal + targets كانوا بـ يتحسبوا client-side بـ
+// thresholds مختلفة عن الـ backend → نفس السهم بـ يطلع 3 نتائج مختلفة.
+// الحل: استيراد canonical functions من src/lib/canonical-signal.ts
+import {
+  classifyAccumulation,
+  classifySignal,
+  signalAr,
+} from '@/lib/canonical-signal';
 import type { Stock, DeepAnalysis as DeepAnalysisType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -101,40 +110,41 @@ function buildStockPublishDataFromStock(
   stock: Stock,
   deepAnalysis: DeepAnalysisType | null
 ): StockPublishData {
+  // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
+  // قبل كده: target1/2/stopLoss كانوا بـ يـ fabricate بـ multipliers ثابتة
+  // (×1.02، ×1.1، ×0.97، ×0.94). ده مخالف للقاعدة 27 (no fake data).
+  // الحل: استخدم القيم الحقيقية من deepAnalysis أو resistance/support الفعلي.
   const entryPrice = stock.current_price;
   const targetPrice1 =
-    deepAnalysis?.price_targets?.upside_target ?? stock.resistance_level * 1.02;
-  const targetPrice2 = targetPrice1 ? targetPrice1 * 1.1 : undefined;
-  const stopLoss =
-    stock.support_level != null
-      ? stock.support_level * 0.97
-      : entryPrice * 0.94;
+    deepAnalysis?.price_targets?.upside_target ?? stock.resistance_level;
+  // targetPrice2: استخدم resistance_level_2 لو موجود، وإلا undefined (لا fabrication)
+  const targetPrice2 = (stock as any).resistance_level_2 || undefined;
+  // stopLoss: استخدم support_level الحقيقي (لو موجود)، وإلا undefined
+  const stopLoss = stock.support_level != null ? stock.support_level : undefined;
   const riskReward =
     targetPrice1 && entryPrice && stopLoss && entryPrice - stopLoss !== 0
       ? (targetPrice1 - entryPrice) / (entryPrice - stopLoss)
       : undefined;
 
-  // Map DeepAnalysis.action ('BUY'/'SELL'/'HOLD'/...) to StockPublishData.recommendation
+  // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────
+  // قبل كده: كان الـ recommendation بـ يتحسب بـ string parsing شامل 'INSTITUTIONAL_BUY'
+  // (label مش موجود في canonical taxonomy). الحل: نستخدم classifySignal من canonical.
+  // أي label غير معروف → HOLD (canonical default).
   const actionUpper = (deepAnalysis?.action || '').toUpperCase();
   let recommendation: StockPublishData['recommendation'];
-  if (actionUpper.includes('STRONG') && actionUpper.includes('BUY'))
+  // Map action string → master_score → canonical signal
+  let actionScore = 50; // default HOLD
+  if (actionUpper.includes('STRONG') && actionUpper.includes('BUY')) actionScore = 80;
+  else if (actionUpper.includes('BUY') || actionUpper.includes('ACCUMULATE')) actionScore = 65;
+  else if (actionUpper.includes('REDUCE') || actionUpper.includes('AVOID')) actionScore = 35;
+  else if (actionUpper.includes('SELL')) actionScore = 20;
+  else if (actionUpper.includes('HOLD') || actionUpper.includes('WAIT') || actionUpper.includes('NEUTRAL')) actionScore = 50;
+  // Use canonical classifier
+  recommendation = classifySignal(actionScore) as StockPublishData['recommendation'];
+  // 'INSTITUTIONAL_BUY' legacy label → map to canonical 'STRONG_BUY'
+  if (actionUpper.includes('INST') && actionUpper.includes('BUY')) {
     recommendation = 'STRONG_BUY';
-  else if (actionUpper.includes('INST') && actionUpper.includes('BUY'))
-    recommendation = 'INSTITUTIONAL_BUY';
-  else if (actionUpper.includes('BUY') || actionUpper.includes('ACCUMULATE'))
-    recommendation = 'BUY';
-  else if (
-    actionUpper.includes('SELL') ||
-    actionUpper.includes('REDUCE') ||
-    actionUpper.includes('AVOID')
-  )
-    recommendation = 'SELL';
-  else if (
-    actionUpper.includes('HOLD') ||
-    actionUpper.includes('WAIT') ||
-    actionUpper.includes('NEUTRAL')
-  )
-    recommendation = 'HOLD';
+  }
 
   return {
     ticker: stock.ticker,
@@ -283,8 +293,11 @@ function buildStockInfographicDataFromStock(
     : Math.min(low, current);
 
   // Scenarios — using real price targets and structural support/resistance
+  // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
+  // قبل كده: target2 كان بـ يـ fabricate = target1 * 1.05 لو NULL (مخالف للقاعدة 27).
+  // الحل: لو target2 NULL → نستخدم res2 (resistance الفعلي)، مش fabrication.
   const target1 = deepAnalysis?.price_targets?.upside_target || res1;
-  const target2 = (stock as any).target_price_2 || (target1 > 0 ? Number((target1 * 1.05).toFixed(2)) : res2);
+  const target2 = (stock as any).target_price_2 || res2;
   const stopLoss = (deepAnalysis?.price_targets as any)?.stop_loss || sup1;
 
   const bullishTarget = (target1 && target2 && target1 !== target2)
@@ -395,12 +408,15 @@ function buildStockInfographicDataFromStock(
           sell_volume: footprint.sell_volume,
           delta_volume: footprint.delta_volume,
           buy_sell_ratio: footprint.buy_sell_ratio,
-          accumulation_label:
-            footprint.buy_sell_ratio >= 1.2
-              ? 'تجميع قوي'
-              : footprint.buy_sell_ratio <= 0.8
-              ? 'تصريف محتمل'
-              : 'توازن سيولة',
+          // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────
+          // قبل كده: كان accumulation_label بـ يتحسب من buy_sell_ratio بـ thresholds
+          // 1.2/0.8 (مش متطابقة مع الرادار). الحل: نستخدم canonical function.
+          // buy_pct = buy_volume / (buy_volume + sell_volume) * 100
+          accumulation_label: classifyAccumulation(
+            footprint.buy_volume && footprint.sell_volume
+              ? (footprint.buy_volume / (footprint.buy_volume + footprint.sell_volume)) * 100
+              : null
+          ),
         }
       : undefined,
   };
@@ -1295,9 +1311,12 @@ export function StockDetail() {
               ? (stock.support_level + stock.resistance_level) / 2 
               : undefined,
             targetPrice: deepAnalysis?.price_targets?.upside_target,
-            buyPrice: stock.support_level ? stock.support_level * 1.02 : undefined, // سعر الشراء قريب من الدعم
-            sellPrice: deepAnalysis?.price_targets?.upside_target ? deepAnalysis.price_targets.upside_target * 0.98 : undefined,
-            stopLoss: stock.support_level ? stock.support_level * 0.97 : undefined, // وقف الخسارة تحت الدعم
+            // ─── CANONICAL-CALCULATIONS (Rule 27: NO-FAKE-DATA) ──────────────
+            // قبل كده: buyPrice/stopLoss كانوا بـ يـ fabricate بـ ×1.02 و×0.97.
+            // الحل: استخدم القيم الحقيقية من support_level / deepAnalysis.
+            buyPrice: stock.support_level || undefined, // سعر الشراء = الدعم الفعلي
+            sellPrice: deepAnalysis?.price_targets?.upside_target || undefined,
+            stopLoss: stock.support_level || undefined, // وقف الخسارة = الدعم الفعلي
             upsidePotential: deepAnalysis?.price_targets?.upside_target 
               ? ((deepAnalysis.price_targets.upside_target - stock.current_price) / stock.current_price) * 100 
               : undefined,
@@ -1313,7 +1332,7 @@ export function StockDetail() {
             score: deepAnalysis?.overall_score,
             confidence: deepAnalysis?.confidence,
             targetPrice: deepAnalysis?.price_targets?.upside_target,
-            stopLoss: stock.support_level ? stock.support_level * 0.97 : undefined,
+            stopLoss: stock.support_level || undefined,
             reasons: deepAnalysis?.reasons,
           }}
         />

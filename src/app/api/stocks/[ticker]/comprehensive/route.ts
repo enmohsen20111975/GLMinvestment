@@ -185,22 +185,19 @@ export async function GET(
   if (response.technical && response.price) {
     const cp = Number(response.price.current_price || response.price.close || 0);
     if (cp > 0) {
-      let sup = Number(response.technical.support || 0);
-      let res = Number(response.technical.resistance || 0);
+      // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
+      // قبل كده: sup/res كانوا بـ يـ fabricate بـ ×0.95 و×1.05 لو NULL.
+      // ده مخالف للقاعدة 27 — العميل بيشوف دعم/مقاومة غير حقيقي.
+      // الحل: لو NULL → نسيبها undefined (الـ frontend بـ يعرض "—").
+      const sup = Number(response.technical.support || 0);
+      const res = Number(response.technical.resistance || 0);
       // Rule 67 — never fabricate 52w values. Return null if missing; frontend shows "—".
       let h52: number | null = response.technical.high_52w != null ? Number(response.technical.high_52w) : null;
       let l52: number | null = response.technical.low_52w != null ? Number(response.technical.low_52w) : null;
 
-      if (sup <= 0 || sup >= cp) {
-        sup = Number((cp * 0.95).toFixed(2));
-      }
-      if (res <= cp) {
-        res = Number((cp * 1.05).toFixed(2));
-      }
-      if (sup >= res) {
-        sup = Number((cp * 0.95).toFixed(2));
-        res = Number((cp * 1.05).toFixed(2));
-      }
+      // NO fabrication — keep only real values from DB
+      response.technical.support = sup > 0 && sup < cp ? sup : null as any;
+      response.technical.resistance = res > cp ? res : null as any;
       // Real 52-week High/Low: Single source of truth from market database.
       // Rule 67 — null when missing is honest. cp * 1.15 was a fabricated lie (CRST 0.35 → 4.09 was rejected).
       if (h52 != null && !isNaN(h52) && h52 > 0) {
@@ -214,8 +211,6 @@ export async function GET(
         l52 = null;
       }
 
-      response.technical.support = sup;
-      response.technical.resistance = res;
       response.technical.high_52w = h52;
       response.technical.low_52w = l52;
     }

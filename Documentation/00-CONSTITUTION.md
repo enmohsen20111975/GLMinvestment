@@ -102,7 +102,7 @@
 
 هذه القواعد **صارمة ولا يمكن تجاوزها مهما كانت الأسباب** إلا بموافقة وتأكيد من المالك.
 
-> **فهرس القواعد (1–71):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27) + 60 (MODULE-SYSTEM — 2026-09-30) + 61 (RELATIVE-PATHS-ONLY — 2026-09-30) + 62 (GIT-PUSH-DISCIPLINE — 2026-10-01) + 63 (PUSH-AFTER-EVERY-COMMIT + NO-NEW-SCREENS-FILES — 2026-10-01) + 64 (SHARIA-COMPLIANCE — 2026-10-03) + 65 (DATA-VALIDATION-LAYER — 2026-10-03) + 66 (SOURCE-AUTHORITY — 2026-10-03) + 67 (CALCULATION-CANONICAL — 2026-10-05) + 68 (COMMUNICATION-EXECUTION-DISCIPLINE — 2026-10-06) + 69 (SUBAGENT-TEAM-ACTIVATION — 2026-10-06) + 70 (DOCUMENTATION-SECRETARY — 2026-10-06) + 71 (AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST — 2026-10-06).
+> **فهرس القواعد (1–72):** القواعد 1–32 (الأساسية) + 42 (Regime) → بعدها 33–41 (التطويرية) + 43–54 (التوسّعية) + 55–59 (P0 Disaster Resolution Wave — 2026-09-27) + 60 (MODULE-SYSTEM — 2026-09-30) + 61 (RELATIVE-PATHS-ONLY — 2026-09-30) + 62 (GIT-PUSH-DISCIPLINE — 2026-10-01) + 63 (PUSH-AFTER-EVERY-COMMIT + NO-NEW-SCREENS-FILES — 2026-10-01) + 64 (SHARIA-COMPLIANCE — 2026-10-03) + 65 (DATA-VALIDATION-LAYER — 2026-10-03) + 66 (SOURCE-AUTHORITY — 2026-10-03) + 67 (CALCULATION-CANONICAL — 2026-10-05) + 68 (COMMUNICATION-EXECUTION-DISCIPLINE — 2026-10-06) + 69 (SUBAGENT-TEAM-ACTIVATION — 2026-10-06) + 70 (DOCUMENTATION-SECRETARY — 2026-10-06) + 71 (AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST — 2026-10-06) + 72 (UNIFIED-DATA-CONTRACT — 2026-10-07).
 
 > - **1–8**: قواعد سلامة DBs + المعمارية + HARD cap + ATR + trailing + EXIT_POLICY + overrides + load_merged_history.
 > - **9–16**: trailing floor + EXIT_POLICY + overrides + DATA-UNIFY + liquidity + commit-guard + sandbox ≠ prod + VERIFY-BEFORE-DELETE.
@@ -111,7 +111,7 @@
 > - **33–43**: PRODUCTION-WIRING + NO_DUPLICATE_SCREENS + ENGINE-UNIFY + DISCLOSURE-ENGINE + STRICT-ENTRY + SHORT-HOLDING + DISTRIBUTION-EXIT + NEWS-FETCHER + DOCS-FIRST-LAST + REGIME-AND-AVG-DOWN + TELEGRAM-NOTIFICATIONS.
 > - **44–54**: NEWS-DB-SOT + SCREENER-FUNDAMENTALS-DEPTH + DB-CLEANUP-WAVE + NEWS-AGENT-INTEGRATION + FREE-LICENSED-APIs + DUAL-TRACK-PREDICTIONS + MONEY-AS-CUSTOMER-LIFE + MULTI-MARKET-DUAL-TRACK + UNIFIED-REUSABLE-COMPONENTS + CRYPTO-IN-MARKETS + UNIFIED-TABLE-UPGRADE.
 > - **55–59**: P0-WAVE-SECURITY (auth guards) + P0-WAVE-SQLI (no SQL interpolation) + P0-WAVE-ASYNC (no blocking sync I/O in routes) + P0-WAVE-OBSERVABILITY (Sentry + logger + /api/health + x-request-id) + P0-WAVE-TESTS (tests إلزامية لكل P0 fix).
-> - **60–71**: MODULE-SYSTEM + RELATIVE-PATHS-ONLY + GIT-PUSH-DISCIPLINE + PUSH-AFTER-EVERY-COMMIT + SHARIA-COMPLIANCE + DATA-VALIDATION-LAYER + SOURCE-AUTHORITY + CALCULATION-CANONICAL + COMMUNICATION-EXECUTION-DISCIPLINE + SUBAGENT-TEAM-ACTIVATION + DOCUMENTATION-SECRETARY + AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST.
+> - **60–72**: MODULE-SYSTEM + RELATIVE-PATHS-ONLY + GIT-PUSH-DISCIPLINE + PUSH-AFTER-EVERY-COMMIT + SHARIA-COMPLIANCE + DATA-VALIDATION-LAYER + SOURCE-AUTHORITY + CALCULATION-CANONICAL + COMMUNICATION-EXECUTION-DISCIPLINE + SUBAGENT-TEAM-ACTIVATION + DOCUMENTATION-SECRETARY + AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST + UNIFIED-DATA-CONTRACT.
 
 > القاعدة 42 ظهرت بين 32 و 33 لأسباب تاريخية (تم إدراجها بعد فصل §4 KPIs) لكنها تخص §3.
 
@@ -2737,6 +2737,71 @@ Stage Summary:
 ---
 
 *نهاية التحديثات 2026-10-06 — القاعدة 71 (AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST).*
+
+---
+
+### القاعدة 72 — UNIFIED-DATA-CONTRACT (عقد التوحيد للمصدر الموحد للبيانات — 2026-10-07)
+
+> **سبب الإضافة:** كارثة "نفس السهم = بيانات مختلفة على 7 شاشات + التليجرام". الـ audits الخمسة (UI-AUDIT-1 + API-AUDIT-2 + TELEGRAM-AUDIT-1 + CALC-AUDIT-1 + CALC-DUP-1) كشفت إن:
+> - **5 صيغ مختلفة** لـ accumulation label
+> - **5+ صيغ fallback** لـ support/resistance (×0.95، ×0.96، ×0.97، ×1.05، ×1.10)
+> - **3 صيغ RSI** (Wilder صح، SMA خاطئ، EMA بـ seed مختلف)
+> - **4 أنظمة thresholds** مختلفة لـ signal classification
+> - **4 taxonomies** مختلفة لـ phase كلها اسمها "phase"
+> - **3 routes** بـ fabricate `target_price_2 = target1 * 1.05` (Rule 27 violation)
+>
+> **المرجع التنفيذي:** `download/UNIFIED_DATA_CONTRACT.md`
+
+#### المبدأ: كل metric له canonical source واحد فقط
+
+كل شاشة/API/Telegram لازم يقرأ من المصدر الموحد. أي recomputation client-side أو fallback بـ hardcoded values = bug.
+
+#### Canonical Sources (16 metrics):
+
+| # | Metric | Canonical Source | ملف المرجع |
+|---|--------|-----------------|-----------|
+| 1-5 | signal, accumulation, money_flow, phase, volume_ratio | `vps-service/utils/canonical_signal.py` + `src/lib/canonical-signal.ts` | TS port مطابق Python 100% |
+| 6-12 | ATR, RSI, SMA/EMA/MACD, VWAP, OBV, support/resistance | Rule 67 canonical files | `vps-service/analyzers/indicators/` |
+| 13-14 | master_score, target_price/2/3, stop_loss | `predictions.db.predictions` (raw passthrough) | NO fabrication |
+| 15 | buy_pct/sell_pct | `vps-service/utils/shared_liquidity.py::compute_money_flow()` | |
+| 16 | price (live) | `stocks.db.stocks.current_price` + FRESHNESS GUARD | |
+
+#### Canonical module files:
+
+1. **Python port:** `vps-service/utils/canonical_signal.py` (309 LOC + self-test)
+2. **TS port:** `src/lib/canonical-signal.ts` (246 LOC + self-test) — مطابق Python 100%
+
+#### قواعد صارمة:
+
+1. **أي شاشة/API/Telegram** يعرض أي metric من القائمة الـ 16 لازم يستورد من canonical module.
+2. **ممنوع** fabrication: لو value NULL → undefined (لا fabricate بـ multipliers ثابتة).
+3. **ممنوع** recomputation client-side بـ thresholds مختلفة.
+4. **استخدام `signalAr()`** لكل label عربي — لا mapping محلي.
+
+#### التحقق:
+
+```bash
+# 1. تأكد إن canonical modules شغّالة
+python3 vps-service/utils/canonical_signal.py
+npx tsx src/lib/canonical-signal.ts
+
+# 2. تأكد إن مفيش fabrications في APIs
+grep -rn "0\.95\|0\.96\|0\.97\|1\.03\|1\.04\|1\.05\|1\.06" src/app/api/ --include="*.ts" | grep -E "support|resistance|stop|target"
+
+# 3. تأكد إن canonical_signal مستورد في كل ملف بيعرض accumulation
+grep -rn "canonical_signal\|canonical-signal" src/ vps-service/ --include="*.ts" --include="*.tsx" --include="*.py"
+```
+
+#### خطة الترحيل (4 Phases):
+
+- ✅ **Phase 1 (مكتملة):** canonical modules + self-test
+- ⚠️ **Phase 2 (قيد التنفيذ):** ترحيل UI components (StockDetail, UnifiedPublishButton, ComprehensiveStockAnalysis, TradingViewChart, InteractiveChart, StocksView, SpecialistAnalysisView)
+- ⚠️ **Phase 3 (محجوزة):** ترحيل Telegram (auto_poster, stock-publish-text, liquidity_alerts, telegram_interactive_bot, telegram_target_hit_tracker, telegram_chart_generator, reports_engine)
+- ⚠️ **Phase 4 (محجوزة):** حذف routes المكررة (4 routes deprecated)
+
+---
+
+*نهاية التحديثات 2026-10-07 — القاعدة 72 (UNIFIED-DATA-CONTRACT).*
 
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"
 

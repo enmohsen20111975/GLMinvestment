@@ -48,6 +48,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+// ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
+// قبل كده: accumulation + targets كانوا بـ يتحسبوا client-side بـ thresholds
+// مختلفة (1.25/0.8 + 0.96 multiplier) → نتائج متضاربة مع الرادار.
+// الحل: استيراد canonical functions.
+import { classifyAccumulation } from '@/lib/canonical-signal';
 import { withOfficialLinks } from '@/modules/publishing/lib/official-links';
 import { StockInfographicModal } from './StockInfographicModal';
 import { type StockInfographicCardProps } from './StockInfographicCard';
@@ -391,10 +396,13 @@ export function UnifiedPublishButton({
       const starsCount = gaugeScore >= 75 ? 5 : gaugeScore >= 60 ? 4 : gaugeScore >= 45 ? 3 : 2;
 
       // --- Real SSOT levels (from predictions.db / publish-data) ---
-      const res1 = pData.resistance1 || pData.targetPrice1 || stock.resistance_level || (current > 0 ? Number((current * 1.03).toFixed(2)) : 0);
-      const res2 = pData.resistance2 || pData.targetPrice2 || (res1 > 0 ? Number((res1 * 1.04).toFixed(2)) : 0);
-      const sup1 = pData.support1 || pData.stopLoss || stock.support_level || (current > 0 ? Number((current * 0.97).toFixed(2)) : 0);
-      const sup2 = pData.support2 || (sup1 > 0 ? Number((sup1 * 0.96).toFixed(2)) : 0);
+      // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
+      // قبل كده: res1/res2/sup1/sup2 كانوا بـ يـ fabricate بـ multipliers ×1.03/×1.04/×0.97/×0.96.
+      // الحل: لو القيم الحقيقية NULL → undefined (لا fabrication).
+      const res1 = pData.resistance1 || pData.targetPrice1 || stock.resistance_level || undefined;
+      const res2 = pData.resistance2 || pData.targetPrice2 || (stock as any).resistance_level_2 || undefined;
+      const sup1 = pData.support1 || pData.stopLoss || stock.support_level || undefined;
+      const sup2 = pData.support2 || (stock as any).support_level_2 || undefined;
 
       const bullishTargetStr = (pData.targetPrice1 && pData.targetPrice2)
         ? `${pData.targetPrice1} - ${pData.targetPrice2}`
@@ -478,6 +486,14 @@ export function UnifiedPublishButton({
       // Add liquidity footprint if available — clearly marked as 30-day cumulative
       if (footprintData?.success) {
         const ratio = Number(footprintData.buy_sell_ratio || 0);
+        // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ─────────────
+        // قبل كده: كان accumulation_label بـ يـ fabricate بـ thresholds 1.25/0.8
+        // + labels "تجميع شهري" غير موجودة في canonical → نتائج متضاربة.
+        // الحل: نحسب buy_pct ونستخدم canonical classifyAccumulation.
+        const buyVol = Number(footprintData.buy_volume || 0);
+        const sellVol = Number(footprintData.sell_volume || 0);
+        const buyPct = (buyVol + sellVol) > 0 ? (buyVol / (buyVol + sellVol)) * 100 : null;
+        const accumLabel = classifyAccumulation(buyPct);
         builtData.liquidity = {
           poc_price: footprintData.poc_price,
           vah_price: footprintData.vah_price,
@@ -486,7 +502,8 @@ export function UnifiedPublishButton({
           sell_volume: footprintData.sell_volume,
           delta_volume: footprintData.delta_volume,
           buy_sell_ratio: ratio,
-          accumulation_label: ratio >= 1.25 ? `تجميع شهري (${ratio.toFixed(2)}x)` : ratio <= 0.8 ? `تصريف شهري (${ratio.toFixed(2)}x)` : `توازن شهري (${ratio.toFixed(2)}x)`,
+          // canonical label — مطابق للرادار + تفاصيل السهم
+          accumulation_label: `${accumLabel} (${ratio.toFixed(2)}x)`,
         };
       }
 
