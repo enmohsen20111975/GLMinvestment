@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SingleStockAnalysisView } from './SingleStockAnalysisView';
+// P0-REDESIGN: استبدلنا SingleStockAnalysisView بـ ProfessionalTradingChart
+// (تقرير مالي احترافي وفق مواصفات المالك الصارمة — 8 أقسام منظمة)
+import { ProfessionalTradingChart } from './ProfessionalTradingChart';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -296,16 +298,9 @@ export function TradingChartView({ initialTicker }: TradingChartViewProps) {
         )}
       >
         {selectedTickers.map((tk) => (
-          <SingleStockAnalysisView
+          <ProfessionalTradingChart
             key={tk}
             initialTicker={tk}
-            canRemove={selectedTickers.length > 1}
-            onRemove={() => handleRemoveStock(tk)}
-            onTickerChange={(newTk) => {
-              setSelectedTickers((prev) =>
-                prev.map((t) => (t === tk ? newTk : t))
-              );
-            }}
           />
         ))}
       </div>
