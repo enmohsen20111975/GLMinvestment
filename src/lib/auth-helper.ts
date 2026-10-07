@@ -21,6 +21,15 @@ import { logger } from '@/lib/logger';
 // (ADMIN_EMAILS / ADMIN_USERNAMES) with historical defaults via
 // @/lib/admin-identities — no longer hardcoded in each consumer.
 
+// FIX (Task LAST-ACTIVE-FINAL): Prisma 5.22.0 has a known bug where writing
+// DateTime? to SQLite stores millisecond timestamps instead of ISO strings.
+// We bypass Prisma entirely and write directly via better-sqlite3.
+import { updateLastActiveRaw, repairLastActiveAt } from '@/lib/last-active-helper';
+
+// Run repair on module load (idempotent — safe to call multiple times).
+// This fixes any existing corrupted values in the DB.
+try { repairLastActiveAt(); } catch { /* non-fatal */ }
+
 // ANALYTICS-FIX (2026-10-01): throttle in-memory cache so we don't write
 // last_active_at to auth.db on every single API call — only once per user
 // per 5 minutes. Lives on globalThis to survive HMR in dev.
@@ -45,16 +54,10 @@ function updateLastActive(userId: string): void {
     if (now - last < FIVE_MINUTES_MS) return; // throttled
     cache[userId] = now;
     globalForActiveThrottle.__lastActiveUpdate = cache;
-    // Fire-and-forget — do NOT await.
-    // FIX: Prisma expects DateTime, not a timestamp string. Use a proper Date object.
-    // The previous code was storing Date.now() (a number like 1791397297877) as
-    // last_active_at, which Prisma couldn't convert to DateTime.
-    db.user.update({
-      where: { id: userId },
-      data: { last_active_at: new Date(now) },
-    }).catch(() => {
-      // Non-fatal — never let tracking break auth.
-    });
+    // FIX (Task LAST-ACTIVE-FINAL): Use better-sqlite3 directly instead of Prisma.
+    // Prisma 5.22.0 has a bug where it writes DateTime? as millisecond timestamps
+    // to SQLite, then fails to read them back (P2023 error).
+    updateLastActiveRaw(userId);
   } catch {
     // ignore
   }
