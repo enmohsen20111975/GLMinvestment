@@ -341,75 +341,34 @@ export function UnifiedPublishButton({
         ? [open, low > open * 0.98 ? low : open * 0.99, (high + low) / 2, high * 0.995, (high + current) / 2, current]
         : [open, high < open * 1.02 ? high : open * 1.01, (high + low) / 2, low * 1.005, (low + current) / 2, current];
 
-      // --- Calculate real, honest technical indicator signals (No mock data!) ---
-      let buyCount = 0;
-      let neutralCount = 0;
-      let sellCount = 0;
-
-      // 1. RSI Signal
-      if (pData.rsi != null) {
-        if (pData.rsi <= 35) buyCount += 2; // Oversold reversal
-        else if (pData.rsi >= 70) sellCount += 2; // Overbought risk
-        else if (pData.rsi >= 50) buyCount += 1;
-        else neutralCount += 1;
-      } else {
-        neutralCount += 1;
-      }
-
-      // 2. Trend vs SMA20
-      if (pData.sma20 != null && pData.sma20 > 0) {
-        if (current >= pData.sma20) buyCount += 1;
-        else sellCount += 1;
-      } else {
-        neutralCount += 1;
-      }
-
-      // 3. Trend vs SMA50
-      if (pData.sma50 != null && pData.sma50 > 0) {
-        if (current >= pData.sma50) buyCount += 1;
-        else sellCount += 1;
-      } else {
-        neutralCount += 1;
-      }
-
-      // 4. Volume confirmation
-      if (pData.volumeRatio != null) {
-        if (pData.volumeRatio >= 1.25) buyCount += 1;
-        else if (pData.volumeRatio <= 0.75) sellCount += 1;
-        else neutralCount += 1;
-      } else {
-        neutralCount += 1;
-      }
-
-      // 5. Prediction recommendation signal
-      const rec = String(pData.recommendation || '').toUpperCase();
-      if (rec.includes('BUY')) buyCount += 2;
-      else if (rec.includes('SELL')) sellCount += 2;
-      else neutralCount += 1;
-
-      // 6. Net flow / liquidity pressure
-      if (pData.buyPressure != null) {
-        if (pData.buyPressure >= 55) buyCount += 1;
-        else if (pData.buyPressure <= 45) sellCount += 1;
-        else neutralCount += 1;
-      }
-
-      const totalSignals = Math.max(1, buyCount + neutralCount + sellCount);
-      // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
-      // Prefer canonical.master_score from unified API for the gauge; fall back
-      // to publish-data masterScore, then to local buy/sell tally.
+      // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ─────────────────────
+      // ROOT CAUSE FIX: قبل كده كان في client-side signal computation بـ
+      // thresholds مختلفة (RSI 35/70, SMA 1.25x, buyPressure 55/45).
+      // النتيجة: العميل بيشوف "شراء قوي" من publish-data + "انتظار" من unified.
+      //
+      // الحل: شيل كل الـ client-side signal computation — استخدم canonical values فقط.
+      // لو unified API مش متاح → gaugeScore = null + sentimentLabel = '— بيانات غير متاحة'.
       const gaugeScore = unified?.canonical?.master_score != null
         ? Math.round(Number(unified.canonical.master_score))
-        : pData.masterScore != null
-          ? Math.round(pData.masterScore)
-          : Math.round((buyCount / totalSignals) * 100);
+        : (pData.masterScore != null ? Math.round(pData.masterScore) : null);
 
-      // UNIFIED-API — use canonical.signal_ar instead of local signal mapping (Rule 27)
-      // canonical.signal_ar is the canonical Arabic label (شراء قوي / شراء / تجميع / انتظار / تخفيض / بيع / بيع قوي).
+      // سياسة الفراغ: لو canonical NULL → '— بيانات غير متاحة' (مش HOLD الكاذب)
       const sentimentLabel = unified?.canonical?.signal_ar
-        ?? (gaugeScore >= 65 ? 'إيجابي' : gaugeScore <= 40 ? 'سلبي' : 'محايد');
-      const ratingLabel = gaugeScore >= 75 ? 'ممتاز' : gaugeScore >= 60 ? 'جيد جداً' : gaugeScore >= 45 ? 'متوسط' : 'ضعيف';
-      const starsCount = gaugeScore >= 75 ? 5 : gaugeScore >= 60 ? 4 : gaugeScore >= 45 ? 3 : 2;
+        ?? (gaugeScore != null
+            ? (gaugeScore >= 65 ? 'إيجابي' : gaugeScore <= 40 ? 'سلبي' : 'محايد')
+            : '— بيانات غير متاحة');
+      const ratingLabel = gaugeScore == null
+        ? '—'
+        : gaugeScore >= 75 ? 'ممتاز'
+        : gaugeScore >= 60 ? 'جيد جداً'
+        : gaugeScore >= 45 ? 'متوسط'
+        : 'ضعيف';
+      const starsCount = gaugeScore == null
+        ? 0
+        : gaugeScore >= 75 ? 5
+        : gaugeScore >= 60 ? 4
+        : gaugeScore >= 45 ? 3
+        : 2;
 
       // --- Real SSOT levels (from predictions.db / publish-data) ---
       // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
@@ -474,11 +433,14 @@ export function UnifiedPublishButton({
         ],
         technical_indicators: {
           timeframe: 'يومي',
-          buy_signals: buyCount,
-          neutral_signals: neutralCount,
-          sell_signals: sellCount,
+          // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ─────────────
+          // شيلنا client-side signal counts — استخدم canonical values فقط.
+          // لو unified NULL → 0 (لا fabrication).
+          buy_signals: unified?.canonical?.master_score != null && unified.canonical.master_score >= 60 ? 1 : 0,
+          neutral_signals: unified?.canonical?.master_score == null ? 1 : (unified.canonical.master_score >= 40 && unified.canonical.master_score < 60 ? 1 : 0),
+          sell_signals: unified?.canonical?.master_score != null && unified.canonical.master_score < 40 ? 1 : 0,
           sentiment_label: sentimentLabel,
-          gauge_score: gaugeScore,
+          gauge_score: gaugeScore ?? 0,
         },
         fundamentals: {
           market_cap: stock.market_cap ? `${(Number(stock.market_cap) / 1e9).toFixed(2)}B` : (pData.marketCap ? `${(Number(pData.marketCap) / 1e9).toFixed(2)}B` : '—'),
@@ -509,7 +471,7 @@ export function UnifiedPublishButton({
           'مراقبة أحجام التداول والسيولة المؤسسية قبل اتخاذ القرار',
         ],
         rating: {
-          score: gaugeScore,
+          score: gaugeScore ?? 0,
           label: ratingLabel,
           stars_count: starsCount,
         },

@@ -13,7 +13,10 @@ import { CryptoSignalsWidget } from '@/modules/dashboard/components/CryptoSignal
 import { SeasonalitySignalsWidget } from '@/modules/dashboard/components/SeasonalitySignalsWidget';
 import { EidPredictionsWidget } from '@/components/eid-predictions-widget';
 import { AutoAnalysisWidget } from '@/components/auto-analysis-widget';
-import { MaestroWidget } from '@/modules/dashboard/components/MaestroWidget';
+// ─── PHASE-0 (Task UNIFICATION-PHASE-0) ──────────────────────────────────
+// MaestroWidget import تم تعطيله (Rule 73: SINGLE-DISPLAY-SOURCE).
+// Maestro محرك قرار مختلف الـ thresholds — مش canonical.
+// import { MaestroWidget } from '@/modules/dashboard/components/MaestroWidget';
 import { LiveStockTicker } from '@/modules/dashboard/components/LiveStockTicker';
 import { MarketPulseWidget } from '@/modules/dashboard/components/MarketPulseWidget';
 // PORTFOLIO-INTEGRATION: ربط المحفظة بالدashboard — عمود من أعمدة المنصة

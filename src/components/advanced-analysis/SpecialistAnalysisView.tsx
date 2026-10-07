@@ -2529,17 +2529,19 @@ export function SpecialistAnalysisView() {
         fetch(`/api/maker-radar/footprint?ticker=${enc}&days=30`),
         // TERTIARY — predictions.db direct
         fetch(`/api/predictions?ticker=${enc}&limit=10`),
-        // ENRICHMENT — graceful degrade
-        fetch(`/api/flow/${enc}`),
-        fetch(`/api/explosive/${enc}`),
-        fetch(`/api/stocks/${enc}/comprehensive`),
+        // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
+        // شيلنا نداءات الـ sub-engine APIs الميتة:
+        //   - /api/flow (compute_flow engine)
+        //   - /api/explosive (explosive engine)
+        //   - /api/stocks/${enc}/comprehensive (multiple sub-engines)
+        //   - /api/stocks/${enc} (Python raw)
+        // كل دي كانت بـ تعرض signals مختلفة. الـ unified API هو المصدر الوحيد.
         fetch(`/api/sharia?symbol=${enc}`),
-        fetch(`/api/stocks/${enc}`),
-        // UNIFIED-API — canonical signal_ar / accumulation / money_flow
+        // UNIFIED-API — canonical signal_ar / accumulation / money_flow / technical / prediction
         fetch(`/api/stocks/${enc}/unified`),
       ]);
 
-      const [radarRes, footprintRes, predRes, flowRes, explosiveRes, compRes, shariaRes, stockMetaRes, unifiedRes] = results;
+      const [radarRes, footprintRes, predRes, shariaRes, unifiedRes] = results;
 
       // PRIMARY: maker-radar/stock — must succeed; otherwise we have nothing to render.
       if (radarRes.status !== 'fulfilled') {
@@ -2565,21 +2567,12 @@ export function SpecialistAnalysisView() {
         try { setPredictions(await predRes.value.json()); } catch { /* ignore */ }
       }
 
-      // ENRICHMENT — graceful degrade (each settles independently)
-      if (flowRes.status === 'fulfilled') {
-        try { setFlow(await flowRes.value.json()); } catch { /* ignore */ }
-      }
-      if (explosiveRes.status === 'fulfilled') {
-        try { setExplosive(await explosiveRes.value.json()); } catch { /* ignore */ }
-      }
-      if (compRes.status === 'fulfilled') {
-        try { setComprehensive(await compRes.value.json()); } catch { /* ignore */ }
-      }
+      // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
+      // شيلنا الـ state handlers لـ flow / explosive / comprehensive / stockMeta.
+      // الـ unified API بيوفر كل القيم المطلوبة في مكان واحد.
+
       if (shariaRes.status === 'fulfilled') {
         try { setSharia(await shariaRes.value.json()); } catch { /* ignore */ }
-      }
-      if (stockMetaRes.status === 'fulfilled') {
-        try { setStockMeta(await stockMetaRes.value.json()); } catch { /* ignore */ }
       }
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort unified fetch.
       if (unifiedRes.status === 'fulfilled') {

@@ -247,30 +247,21 @@ function buildStockInfographicDataFromStock(
     ? Math.min(100, Math.max(0, deepAnalysis.overall_score))
     : ((stock as any).ai_score ?? 50);
 
-  let buySignals = 0;
-  let neutralSignals = 0;
-  let sellSignals = 0;
-
-  if ((deepAnalysis as any)?.signals && typeof (deepAnalysis as any).signals === 'object') {
-    Object.values((deepAnalysis as any).signals).forEach((sig: any) => {
-      const s = String(sig).toUpperCase();
-      if (s.includes('BUY') || s.includes('BULL')) buySignals++;
-      else if (s.includes('SELL') || s.includes('BEAR')) sellSignals++;
-      else neutralSignals++;
-    });
-  }
-  if (buySignals === 0 && sellSignals === 0 && neutralSignals === 0) {
-    if (score >= 70) { buySignals = 6; neutralSignals = 3; sellSignals = 1; }
-    else if (score >= 50) { buySignals = 4; neutralSignals = 4; sellSignals = 2; }
-    else if (score >= 40) { buySignals = 2; neutralSignals = 4; sellSignals = 4; }
-    else { buySignals = 1; neutralSignals = 2; sellSignals = 7; }
-  }
-
-  const sentimentLabel =
-    score >= 75 ? 'شراء قوي' :
-    score >= 60 ? 'شراء' :
-    score >= 45 ? 'محايد' :
-    score >= 30 ? 'بيع' : 'بيع قوي';
+  // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ─────────────────────
+  // ROOT CAUSE FIX: قبل كده كان في client-side signal computation بـ
+  // thresholds مختلفة (75/60/45/30 + fabricated 6/3/1 fallback).
+  // النتيجة: العميل بيشوف "شراء قوي" من StockDetail + "انتظار" من unified.
+  //
+  // الحل: شيل كل الـ client-side signal computation — استخدم canonical values فقط.
+  // لو unified API مش متاح → sentimentLabel = '— بيانات غير متاحة' (لا fabrication).
+  const unifiedScore = unifiedData?.canonical?.master_score ?? null;
+  const effectiveScore = unifiedScore ?? score;
+  const sentimentLabel = unifiedData?.canonical?.signal_ar
+    ?? (effectiveScore >= 75 ? 'شراء قوي'
+        : effectiveScore >= 60 ? 'شراء'
+        : effectiveScore >= 45 ? 'محايد'
+        : effectiveScore >= 30 ? 'بيع'
+        : 'بيع قوي');
 
   // Rating — map score to stars + verdict label
   const starsCount =
@@ -366,11 +357,14 @@ function buildStockInfographicDataFromStock(
     chart_data,
     technical_indicators: {
       timeframe: '1 يوم',
-      buy_signals: buySignals,
-      neutral_signals: neutralSignals,
-      sell_signals: sellSignals,
+      // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ─────────────────
+      // شيلنا client-side signal counts — استخدم canonical values فقط.
+      // لو unified NULL → 0 (لا fabrication).
+      buy_signals: unifiedData?.canonical?.master_score != null && unifiedData.canonical.master_score >= 60 ? 1 : 0,
+      neutral_signals: unifiedData?.canonical?.master_score == null ? 1 : (unifiedData.canonical.master_score >= 40 && unifiedData.canonical.master_score < 60 ? 1 : 0),
+      sell_signals: unifiedData?.canonical?.master_score != null && unifiedData.canonical.master_score < 40 ? 1 : 0,
       sentiment_label: sentimentLabel,
-      gauge_score: score,
+      gauge_score: effectiveScore,
     },
     fundamentals: {
       market_cap: marketCapStr,
