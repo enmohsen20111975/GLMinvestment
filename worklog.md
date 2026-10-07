@@ -62523,3 +62523,305 @@ Stage Summary:
 - All 6 response sections present (stock, fundamentals, technical, canonical, prediction, radar) + cached_at timestamp.
 - Empty/missing ETEL data sources: prediction.analysis_json=NULL (analysis_reason, who_is_buying, hmm_regime, target_price_3, support_level, resistance_level all returned null), prediction.atr_at_entry=NULL → technical.atr=null, prediction.risk_reward=NULL, prediction.confidence=NULL, prediction.target_price_2=NULL. These are real DB nulls, NOT fabricated.
 - Recommended next step: migrate the 5 conflicting UI screens (predictions list, prediction detail, stock data, investment guide, smart analysis) to fetch from `/api/stocks/[ticker]/unified` and read all signal/RSI/entry/target/stop/accumulation/money_flow/phase values from the `canonical` + `prediction` + `radar` + `technical` sections.
+
+---
+
+## SESSION-SUMMARY-2026-10-07
+
+> Documentation Secretary's session wrap-up — summarizes the 4 sub-tasks that ran during this session (PHASE-3-TELEGRAM-MIGRATION + UNIFIED-STOCK-API-1 + USER-ANALYTICS-EMITTERS + PHASE-4-DEPRECATE-ROUTES) + the DOC-SECRETARY-ACTIVATION catch-up task.
+
+### Total commits made this session
+
+This session included **4 documented worklog tasks** (commit hashes embedded in the per-task entries above). The exact commit count is tracked in the `git log --since=2026-10-07` output but the 4 tasks span:
+
+1. `PHASE-3-TELEGRAM-MIGRATION` — 8 files migrated (7 Python + 1 TS), ~302 LOC changed across canonical_signal migration.
+2. `UNIFIED-STOCK-API-1` — 1 file created (`src/app/api/stocks/[ticker]/unified/route.ts`, 355 LOC) + verified end-to-end with `curl http://localhost:3000/api/stocks/ETEL/unified`.
+3. `USER-ANALYTICS-EMITTERS` — 1 file created + 3 files modified (surgical +9 +9 +5 LOC additions).
+4. `PHASE-4-DEPRECATE-ROUTES` — 4 routes modified (3 hard-deprecated with HTTP 410 + 1 mobile parity restored with ~30 fields added back + paywall gate).
+5. `DOC-SECRETARY-ACTIVATION` (this task) — 5 canonical doc files updated + worklog appended.
+
+### All files created/modified
+
+**Created (2 files):**
+- `src/lib/analytics.ts` (55 LOC) — client-side analytics emitters (Task `USER-ANALYTICS-EMITTERS`)
+- `src/app/api/stocks/[ticker]/unified/route.ts` (355 LOC) — unified stock API (Task `UNIFIED-STOCK-API-1`)
+
+**Modified — UI components (8 files — Rule 72 Phase 2):**
+- `src/modules/stock-analysis/components/StockDetail.tsx` — canonical imports
+- `src/modules/publishing/components/UnifiedPublishButton.tsx` — canonical accumulation
+- `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` — 7-level signal badge
+- `src/modules/stock-analysis/components/TradingViewChart.tsx` — Wilder's RSI
+- `src/modules/screener/components/StocksView.tsx` — removed client-side fallback
+- `src/modules/stock-analysis/components/StockAdvancedAnalysisView.tsx` — canonical labels
+- `src/modules/predictions/components/MakerRadarTab.tsx` — freshness badges
+- `src/modules/predictions/components/PredictionTrackingDashboard.tsx` — analysis_reason + target_3 display
+
+**Modified — Telegram/Python (8 files — Rule 72 Phase 3):**
+- `vps-service/telegram/auto_poster.py` (~17 LOC)
+- `vps-service/telegram/auto_post_scheduler.py` (~22 LOC)
+- `vps-service/telegram/telegram_interactive_bot.py` (~38 LOC)
+- `vps-service/telegram/telegram_target_hit_tracker.py` (~50 LOC)
+- `vps-service/telegram/liquidity_alerts.py` (~70 LOC)
+- `vps-service/telegram/telegram_chart_generator.py` (~50 LOC)
+- `vps-service/analyzers/reports_engine.py` (~30 LOC)
+- `src/modules/publishing/lib/stock-publish-text.ts` (~25 LOC)
+
+**Modified — API routes (4 files — Rule 72 Phase 4):**
+- `src/app/api/maestro/route.ts` — 410 Gone deprecation
+- `src/app/api/predictions/tracking/list/route.ts` — 410 Gone deprecation
+- `src/app/api/stocks/[ticker]/professional-analysis/route.ts` — 410 Gone deprecation
+- `src/app/api/mobile/stocks/[ticker]/route.ts` — mobile parity restored + paywall gate
+
+**Modified — client-side files (3 files — Task `USER-ANALYTICS-EMITTERS`):**
+- `src/lib/store.ts` (+1 import, +3 trackStockView/trackFeature calls)
+- `src/lib/api-client.ts` (+1 import, +2 trackApiError call sites with double-track guard)
+- `src/modules/portfolio/components/EnhancedPortfolioView.tsx` (+1 import, +2 trackFeature calls)
+
+**Modified — canonical documentation (5 files — Task `DOC-SECRETARY-ACTIVATION`):**
+- `Documentation/00-CONSTITUTION.md` — updated header + Rule 72 Canonical Sources table (added metrics #17 unified API + #18 analytics) + Canonical module files list (added 3 new entries)
+- `Documentation/01-PROJECT_ANATOMY.md` — updated header + §4.1 engines list (added 4 new entries: Canonical Signal Classifier Python + TS + Unified Stock API + Client-side Analytics Emitter) + §5.2.4 API Map (added `/api/stocks/[ticker]/unified` route)
+- `Documentation/02-SCREENS_AND_COMPONENTS.md` — updated header + added §0.8 NEW (Canonical Signal Migration — 8 modified screens)
+- `Documentation/05-CURRENT_STATE.md` — updated header + table of contents (added §18 entry) + added §18 NEW (5 subsections: Current Production State + Migration Phases Status + Files Created/Modified + Bugs Fixed + What's Still Pending)
+- `Documentation/SYSTEM_HOW_IT_THINKS.md` — updated header + added §22 NEW (Canonical Signal Workflow — how signals are computed) + §23 NEW (FRESHNESS GUARD — how stale data is filtered)
+
+### All bugs fixed
+
+**11 bugs fixed in this session:**
+
+1. "ETEL 5 شاشات = 5 إشارات مختلفة" — unified API + canonical-signal.ts (7-level taxonomy)
+2. Hardcoded `'signal': 'BUY'` in `auto_poster.py:713` (Rule 27 violation — comment was literally "متوافق مع الفورمات للتلجرام")
+3. `auto_post_scheduler.py` default `signal_ar = 'شراء'` (Rule 27 fabrication)
+4. `telegram_interactive_bot.py` fabricated defaults: `'signal': 'تجميع صاعد'`, `'confidence': 75`, `'vol_ratio': 1.2`, `'direction': 'تجميع صاعد مع صانع السوق'`, `'risk_reward': 2.0`
+5. `telegram_target_hit_tracker.py` fabricated `buy_pct=75`/`70`/`60.0` defaults + non-canonical 58+ threshold
+6. `liquidity_alerts.py` legacy non-canonical money_flow labels
+7. `telegram_chart_generator.py` price level fabrications: `tp1 = p * 1.055`, `tp2 = p * 1.115`, `sl = p * 0.955`
+8. `analyzers/reports_engine.py` `_rating_to_signal()` was 3-level (collapsed STRONG_BUY→BUY)
+9. `stock-publish-text.ts` non-canonical `'HOLD': 'احتفاظ'` (canonical uses 'انتظار')
+10. Mobile route `/api/mobile/stocks/[ticker]` — `fair_value` paywall bypass
+11. Mobile route `/api/mobile/stocks/[ticker]` — ~30 dropped fields (no `change_percent`, no `fair_value`, no technicals)
+
+### What's still pending
+
+| # | Item | Priority | Note |
+|---|---|---|---|
+| 1 | `src/lib/store.ts` pre-existing TS errors (lines 341, 873, 994, 1123, 1259, 1294-1297, 1429) | P1 | NOT introduced by this session — verified via `git diff`. Next.js build succeeds despite TS errors because type-checking is skipped in production `next build`. |
+| 2 | `auto_poster.py` references `COMMUNITY_PROMPT` in 5 f-strings (lines 451, 530, 578, 605, 641) but symbol never defined | P2 | Pre-existing — out of scope for canonical_signal migration. `format_recommendation_post()` raises `NameError`. |
+| 3 | Migrate the 5 conflicting UI screens to fetch from `/api/stocks/[ticker]/unified` (instead of using canonical-signal.ts directly) | P2 | Recommended next step per Task `UNIFIED-STOCK-API-1` Stage Summary. |
+| 4 | Wire client-side callers of the 3 deprecated routes (maestro + predictions/tracking/list + stocks/[ticker]/professional-analysis) to the canonical routes | P2 | Per Task `PHASE-4-DEPRECATE-ROUTES` Stage Summary. After 30-day grace period, bump 410 → 404. |
+| 5 | Monitor `stocks.db.analytics_events` over next 24-48h for `feature_use`/`stock_view`/`api_error` rows appearing alongside existing `page_view` rows | P3 | Per Task `USER-ANALYTICS-EMITTERS` Stage Summary. |
+| 6 | Extend mobile parity treatment to other `/api/mobile/*` routes if any exist with similar field-dropping patterns | P3 | Per Task `PHASE-4-DEPRECATE-ROUTES` Stage Summary. Audit recommended. |
+
+---
+
+## DOC-SECRETARY-ACTIVATION
+
+> **Task ID:** DOC-SECRETARY-ACTIVATION
+> **Agent:** Documentation Secretary (Rule 70 — DOCUMENTATION-SECRETARY)
+> **Date:** 2026-10-07
+> **Trigger:** Owner furious because Documentation Secretary had been "sleeping" — not updating the 5 canonical docs after the 7 commits made during this session (PHASE-3-TELEGRAM-MIGRATION + UNIFIED-STOCK-API-1 + USER-ANALYTICS-EMITTERS + PHASE-4-DEPRECATE-ROUTES + IMPROVEMENTS-SESSION-2026-10-06 + 2 others).
+
+### Phase 1 — Audit Findings (what was missing/stale in each canonical doc)
+
+| Canonical doc | Header date BEFORE | What was stale/missing |
+|---|---|---|
+| `00-CONSTITUTION.md` | 2026-10-06 (Rule 71 only) | Header did NOT mention Rule 72 (UNIFIED-DATA-CONTRACT — added 2026-10-07 in body §2743). Rule 72 body's Canonical Sources table (16 metrics) did NOT include the new unified API (#17) or analytics (#18). Rule 72 § "Canonical module files" listed only canonical_signal.py + canonical-signal.ts — did NOT list `analytics.ts` or `unified/route.ts`. |
+| `01-PROJECT_ANATOMY.md` | 2026-10-06 | §4.1 engines list (lines 1014-1049) had ZERO entries for canonical_signal.py / canonical-signal.ts / unified/route.ts / analytics.ts. §5.2.4 Stocks/Chart/Quote API list (line 1163) did NOT include `/api/stocks/[ticker]/unified`. §1.5 statistics block had no mention of FRESHNESS GUARD or UNIFIED-DATA-CONTRACT. |
+| `02-SCREENS_AND_COMPONENTS.md` | 2026-10-05 | Zero mentions of canonical_signal / canonical-signal / UNIFIED-DATA-CONTRACT / unified/route / analytics.ts. All 8 modified screens (StockDetail + UnifiedPublishButton + ComprehensiveStockAnalysis + TradingViewChart + StocksView + SpecialistAnalysisView + MakerRadarTab + PredictionTrackingDashboard) were undocumented. Last sub-section §0.7 was about Wave 8 Sharia Module + Visual Redesign (2026-10-04) — needed §0.8 to cover this session's canonical signal migration. |
+| `05-CURRENT_STATE.md` | 2026-10-04 | Zero mentions of FRESHNESS GUARD / canonical_signal / UNIFIED-DATA-CONTRACT / unified/route / analytics.ts. Last section §17 was about Wave 8 (2026-10-04) — needed §18 to cover this session's work. The "current state" header said "2026-10-04" which is stale by 3 days. |
+| `SYSTEM_HOW_IT_THINKS.md` | 2026-10-07 (DOC-FINAL-SESSION-2026-10-06) | Header was at 2026-10-07 but for the AUTONOMOUS-IMPROVEMENT work — NOT for the canonical_signal/FRESHNESS GUARD work. Zero sections explaining the canonical_signal.py workflow (how signals are computed) or the FRESHNESS GUARD (how stale data is filtered). |
+
+### Phase 2 — Updates Made
+
+**`00-CONSTITUTION.md`** (~22 LOC delta):
+- Header updated to 2026-10-07 mentioning Task `DOC-SECRETARY-ACTIVATION` + Rule 72 catch-up.
+- Rule 72 § Canonical Sources table: appended 2 rows (metric #17 unified API + metric #18 client-side analytics).
+- Rule 72 § "Canonical module files": appended 2 entries (Unified stock API + Client-side analytics emitter) with file paths + LOC + purpose.
+
+**`01-PROJECT_ANATOMY.md`** (~40 LOC delta):
+- Header updated to 2026-10-07 mentioning 4 new files added.
+- §4.1 engines list: appended 4 new rows (Canonical Signal Classifier Python + Canonical Signal Classifier TypeScript + Unified Stock API + Client-side Analytics Emitter) with LOC + status + importers list.
+- §5.2.4 Stocks/Chart/Quote API list: appended 1 entry for `GET /api/stocks/[ticker]/unified` with full response shape + verification details.
+
+**`02-SCREENS_AND_COMPONENTS.md`** (~30 LOC delta):
+- Header updated to 2026-10-07.
+- Added §0.8 NEW "Canonical Signal Migration — 8 Modified Screens (NEW — Rule 72 — 2026-10-07)" with full table of all 8 modified components + Rule 72 migration phases status (Phase 1-4 all marked complete).
+
+**`05-CURRENT_STATE.md`** (~115 LOC delta):
+- Header updated to 2026-10-07.
+- Table of contents: appended §18 entry.
+- Added §18 NEW with 5 sub-sections: 18.1 Current Production State (6 systems table) + 18.2 Rule 72 Migration Phases Status (4 phases table) + 18.3 Files Created/Modified (full list) + 18.4 Bugs Fixed (11 bugs table) + 18.5 What's Still Pending (6 items table).
+
+**`SYSTEM_HOW_IT_THINKS.md`** (~200 LOC delta):
+- Header updated to mention §22 + §23 NEW.
+- Added §22 NEW "Canonical Signal Workflow — كيف تُحسَب الإشارات" with 4 sub-sections: 22.1 الـ 5 classifiers الكنسية (5-row table) + 22.2 Workflow end-to-end ASCII diagram + 22.3 Verification self-test + 22.4 Why this matters (11-bug list).
+- Added §23 NEW "FRESHNESS GUARD — كيف تُفلتر البيانات القديمة" with 5 sub-sections: 23.1 Guard mechanism (TS code snippet) + 23.2 Behaviour matrix (3-row table) + 23.3 Where enforced (4 layers table) + 23.4 Why this matters (3 scenarios) + 23.5 Verification (bash commands).
+
+### Rule 72 — Was it added to Constitution?
+
+**YES** — but it was already added BEFORE this task started (in body §2743-2804). My job was to:
+1. ✅ Update the stale header (was 2026-10-06 / Rule 71 only → now 2026-10-07 mentioning Rule 72).
+2. ✅ Verify the canonical declarations table includes the new unified API — appended row #17 + #18.
+3. ✅ Add the new files (`canonical-signal.ts` already listed; `analytics.ts` + `unified/route.ts` added).
+
+So Rule 72 was NOT added by me (it was added 2026-10-07 by a prior task), but I:
+- Updated the header date.
+- Extended the Canonical Sources table from 16 → 18 metrics.
+- Extended the Canonical module files list from 2 → 4 entries.
+
+### Worklog summary section added
+
+**YES** — see "SESSION-SUMMARY-2026-10-07" section above (just before this DOC-SECRETARY-ACTIVATION section). It covers: total commits made this session + all files created/modified + all 11 bugs fixed + 6 pending items.
+
+### Issues encountered
+
+1. **Rule 72 already added** — When I checked the Constitution for "Rule 72" references (via `Grep` for `Rule 72|UNIFIED-DATA-CONTRACT`), I discovered Rule 72 was already in the body. The task description said "Add Rule 72 (UNIFIED-DATA-CONTRACT) to the rules index IF NOT ALREADY ADDED (check first)" — so I checked, found it was already there, and skipped adding it again. Instead, I updated the stale header (was 2026-10-06, needed 2026-10-07) and extended the Canonical Sources table + Canonical module files list with the new unified API + analytics.ts entries that were NOT yet in Rule 72.
+
+2. **Worklog file is 62,526 lines** — Reading the entire file would have been excessive. I read the first 30 lines (per the activation task description) + the last 220 lines (covering the 4 sub-tasks done this session) via the `offset=62306` Read call. This was sufficient to understand all the session work without consuming too much context.
+
+3. **05-CURRENT_STATE.md table of contents** needed a §18 entry added — discovered after the initial §18 body edit. Added via a second targeted Edit.
+
+4. **SYSTEM_HOW_IT_THINKS.md header was already at 2026-10-07** but for a different task (DOC-FINAL-SESSION-2026-10-06). I updated the header to mention BOTH tasks (the previous + the new DOC-SECRETARY-ACTIVATION work).
+
+### Compliance with rules
+
+- ✅ **Rule 4 (NO-NEW-FILES):** Did NOT create any new files. Only EDITED the 5 existing canonical docs + the worklog.
+- ✅ **Rule 17 (RELATIVE-PATHS-ONLY):** All paths in doc edits are relative (e.g. `src/lib/canonical-signal.ts`, NOT `/home/z/my-project/src/lib/canonical-signal.ts`).
+- ✅ **Rule 62 (GIT-PUSH-DISCIPLINE):** Changes will be committed + pushed by the main agent (per task description).
+- ✅ **Rule 70 (DOCUMENTATION-SECRETARY):** Every task in this session now has a corresponding doc update.
+- ✅ **Rule 72 (UNIFIED-DATA-CONTRACT):** Header date aligned + canonical declarations table extended + 3 new files listed.
+- ✅ **CONSERVATIVE:** Did NOT delete any content. All edits were additions/appends only.
+
+---
+
+*End of DOC-SECRETARY-ACTIVATION — 2026-10-07 — Documentation Secretary (Rule 70)*
+
+---
+Task ID: UI-UNIFIED-MIGRATION
+Agent: General-purpose sub agent
+Task: Migrate 4 UI components to consume /api/stocks/[ticker]/unified (Rule 72)
+
+Work Log:
+- Read /home/z/my-project/worklog.md (first 30 lines) + the unified route source
+  (`src/app/api/stocks/[ticker]/unified/route.ts`) to understand the response shape:
+  `{ success, ticker, stock, fundamentals, technical, canonical{signal, signal_ar,
+  accumulation, money_flow, phase, master_score}, prediction{entry_price, target_price,
+  target_price_2, stop_loss, risk_reward, confidence, ...}, radar{buy_pct, sell_pct,
+  net_flow_egp, ...} }`.
+- Confirmed canonical-signal.ts exports `classifySignal`, `signalAr`,
+  `classifyAccumulation`, `classifyMoneyFlow`, `classifyStockPhase` — used by the
+  unified route to derive canonical labels.
+- Migrated 4 existing UI components (Rule 4: NO-NEW-FILES). All edits preserve
+  backward compatibility (old fetches kept as fallback per task spec).
+- Every code change is marked with `// UNIFIED-API (Task UI-UNIFIED-MIGRATION,
+  Rule 72)` comment as required.
+
+### File 1 — `src/modules/stock-analysis/components/StockDetail.tsx` (+92 LOC)
+- Added `unifiedData` state + parallel fetch in the existing `useEffect`
+  (alongside the existing `/api/maker-radar/footprint` fetch). Old footprint fetch
+  kept as fallback.
+- Updated `QuickPublishButton.analysisData` to prefer:
+  - `canonical.signal` / `canonical.signal_ar` over `deepAnalysis.action` /
+    `deepAnalysis.action_ar` (with fallback).
+  - `canonical.master_score` over `deepAnalysis.overall_score`.
+  - `prediction.target_price` over `deepAnalysis.price_targets.upside_target`.
+  - `prediction.stop_loss` over `stock.support_level`.
+- Added a NEW "الإشارة الموحدة (Canonical)" Card displaying:
+  - `canonical.signal_ar` (signal label)
+  - `canonical.accumulation` (accumulation label)
+  - `canonical.money_flow` (money flow state)
+  - `canonical.master_score` (overall score)
+  - `prediction.entry_price` / `prediction.target_price` / `prediction.stop_loss`
+    (trade setup) — all with "—" fallback per Rule 27 (NO-FAKE-DATA).
+- Updated the Technical Indicators card `MetricRow`s for RSI, MA50, MA200 to use
+  `unifiedData?.technical?.rsi ?? stock.rsi` (and same pattern for ma_50, ma_200).
+
+### File 2 — `src/modules/publishing/components/UnifiedPublishButton.tsx` (+38 LOC)
+- Added 4th parallel fetch (`fetch(`/api/stocks/${resolvedTicker}/unified`)`) to the
+  existing `Promise.allSettled([...])` array. Old 3 fetches (stocks + publish-data +
+  footprint) kept as fallback.
+- Imported `safeToFixed` from `@/lib/utils`.
+- Updated `gaugeScore` derivation to prefer `canonical.master_score` → falls back to
+  `pData.masterScore` → falls back to local buy/sell tally.
+- Replaced local signal-mapping sentimentLabel with `canonical.signal_ar` (with
+  fallback to gauge-based إيجابي/سلبي/محايد).
+- Updated `res1`/`sup1` to prefer `prediction.target_price` / `prediction.stop_loss`
+  from unified API (no fabrication).
+- Updated `vision_bullet_points[0]` ("نطاق الدخول الآمن") to prefer
+  `prediction.entry_price`.
+- Updated `accumulation_label` to prefer `canonical.accumulation`, falling back to
+  `radar.buy_pct` (via `classifyAccumulation`), falling back to footprint-derived
+  buy_pct.
+
+### File 3 — `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` (+43 LOC)
+- Added `unifiedData` state + best-effort `useEffect` fetch (separate from the
+  existing `/api/stocks/[ticker]/comprehensive` fetch). Old fetch kept as fallback.
+- Updated the `tech` object construction to override `rsi`, `ma_50`, `ma_200`,
+  `support`, `resistance` with values from `unifiedData.technical` when present.
+- Extended `OverviewTab` to accept a new `unifiedData?: any` prop. Updated the
+  "مجلس المحللين" signal badge to prefer `canonical.signal_ar` over
+  `board.signal_ar` / `board.signal`. When canonical signal is available, badge
+  className is derived from `unifiedData.canonical.signal` (still via the local
+  `signalBadge()` helper for visual styling).
+
+### File 4 — `src/components/advanced-analysis/SpecialistAnalysisView.tsx` (+46 LOC)
+- Added `unified` state + 9th parallel fetch (`/api/stocks/${enc}/unified`) to the
+  existing `Promise.allSettled([...])` array. Old 8 fetches kept as fallback.
+- Added the unified fetch result handling (`setUnified(u)` when `u.success`).
+- Extended `LiquidityFootprintSection` to accept two new optional props:
+  - `canonicalAccumulation?: string | null`
+  - `canonicalMoneyFlow?: string | null`
+- Updated the "نسبة الشراء/البيع" ratio gauge label to prefer
+  `canonical.accumulation` (with ✓/⚠ prefix logic), falling back to local
+  `classifyAccumulation(buyPct)` calculation from footprint volumes.
+- Added a new line below the gauge showing `canonical.money_flow` (Rule 27: shows
+  nothing if missing — no fabrication).
+- Passed `unified.canonical.accumulation` and `unified.canonical.money_flow` down
+  to `LiquidityFootprintSection` from the main component.
+
+### Backward compatibility — old fetches preserved
+All 4 components keep their original fetches. The unified API fetch is ADDITIVE —
+if it fails or returns `success: false`, the UI falls back to the previous
+behavior. This means:
+- No regression risk if the unified route is unavailable.
+- Gradual rollout is safe.
+- Once verified in production, old fetches can be removed in a follow-up task.
+
+### Issues encountered
+1. **Mid-session git stash mishap** — I used `git stash` to measure baseline TS
+   error count, but `git stash pop` did not restore the changes cleanly. I
+   recovered by re-applying all 4 migrations via `MultiEdit` (atomic, single call
+   per file). Final state verified identical to the originally-intended edits.
+2. **Pre-existing TS errors** — `npx tsc --noEmit` reports 217 errors across the 4
+   migrated files. Verified by stashing my changes and re-running: these are all
+   pre-existing errors caused by `Record<string, unknown>` typed fields (e.g.
+   `tech.rsi.toFixed()` doesn't exist on `unknown`). My migration did not introduce
+   any new TS errors. All new code uses `as any` for the unified payload (matching
+   the existing pattern in SpecialistAnalysisView.tsx for radarData/footprint/etc.).
+3. **No `UnifiedStockResponse` TypeScript type** — The task pattern mentions
+   `useState<UnifiedStockResponse | null>(null)`, but no such type exists in the
+   codebase yet. Used `useState<any>(null)` (matching the existing pattern in
+   StockDetail.tsx where `footprintData` is also `useState<any>(null)`). A future
+   task could promote this to a proper type in `src/lib/canonical-signal.ts` or a
+   dedicated types module.
+
+### Rule compliance
+- ✅ **Rule 4 (NO-NEW-FILES):** No new TS/TSX files created. Only edited 4 existing
+  components.
+- ✅ **Rule 17 (RELATIVE-PATHS-ONLY):** All API paths are relative
+  (e.g. `/api/stocks/${ticker}/unified`) — no absolute file paths.
+- ✅ **Rule 27 (NO-FAKE-DATA):** Every unified-derived display uses `?? '—'`
+  fallback. No value is fabricated when the unified API returns null.
+- ✅ **Rule 72 (UNIFIED-DATA-CONTRACT):** All 4 components now read canonical
+  values from `/api/stocks/[ticker]/unified`. Every change has the
+  `// UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)` marker comment.
+- ✅ **Backward compatibility:** All old fetches preserved as fallback.
+
+Stage Summary:
+- 4 components migrated to consume the unified canonical API.
+- 219 LOC added across 4 files (StockDetail +92, UnifiedPublishButton +38,
+  ComprehensiveStockAnalysis +43, SpecialistAnalysisView +46).
+- Old fetches preserved (graceful degrade if unified API fails).
+- No new TS files. No fabrication. All canonical values now flow from
+  `/api/stocks/[ticker]/unified` → UI displays.
+---
+*End of UI-UNIFIED-MIGRATION — 2026-10-07 — General-purpose sub agent (Rule 72)*

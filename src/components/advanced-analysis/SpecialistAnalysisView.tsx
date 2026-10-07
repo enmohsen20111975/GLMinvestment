@@ -854,7 +854,18 @@ function CandlestickChart({
 // §4 — Liquidity Footprint (POC + VAH/VAL + Buy/Sell + 18-level profile)
 // ============================================================================
 
-function LiquidityFootprintSection({ data }: { data: FootprintData | null }) {
+function LiquidityFootprintSection({
+  data,
+  canonicalAccumulation = null,
+  canonicalMoneyFlow = null,
+}: {
+  data: FootprintData | null;
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+  // canonical.accumulation from /api/stocks/[ticker]/unified — single source of truth.
+  canonicalAccumulation?: string | null;
+  // canonical.money_flow from the unified API — used for the flow-state display.
+  canonicalMoneyFlow?: string | null;
+}) {
   if (!data || !data.success) return null;
 
   const poc = safeNum(data.poc_price);
@@ -946,18 +957,32 @@ function LiquidityFootprintSection({ data }: { data: FootprintData | null }) {
               {/* ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ─────────── */}
               {/* قبل كده: كان labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8 */}
               {/* الحل: نحسب buy_pct من buyVol/sellVol ونستخدم canonical classifyAccumulation */}
-              {ratio == null ? '—'
-                : (() => {
-                    const bV = Number(buyVol || 0);
-                    const sV = Number(sellVol || 0);
-                    const buyPct = (bV + sV) > 0 ? (bV / (bV + sV)) * 100 : null;
-                    const label = classifyAccumulation(buyPct);
-                    const isAccum = label.includes('تجميع');
-                    const isDist = label.includes('تصريف');
-                    return isAccum ? `✓ ${label}` : isDist ? `⚠ ${label}` : label;
-                  })()
+              {/* UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — canonical.accumulation
+                  from unified API takes precedence over locally-derived label. */}
+              {canonicalAccumulation
+                ? (canonicalAccumulation.includes('تجميع')
+                    ? `✓ ${canonicalAccumulation}`
+                    : canonicalAccumulation.includes('تصريف')
+                      ? `⚠ ${canonicalAccumulation}`
+                      : canonicalAccumulation)
+                : ratio == null ? '—'
+                  : (() => {
+                      const bV = Number(buyVol || 0);
+                      const sV = Number(sellVol || 0);
+                      const buyPct = (bV + sV) > 0 ? (bV / (bV + sV)) * 100 : null;
+                      const label = classifyAccumulation(buyPct);
+                      const isAccum = label.includes('تجميع');
+                      const isDist = label.includes('تصريف');
+                      return isAccum ? `✓ ${label}` : isDist ? `⚠ ${label}` : label;
+                    })()
               }
             </p>
+            {/* UNIFIED-API — money_flow state from unified API (Rule 27: show "—" if missing) */}
+            {canonicalMoneyFlow && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="font-semibold">{canonicalMoneyFlow}</span>
+              </p>
+            )}
           </div>
           <div className="mt-2">
             <MetricRow label="إجمالي السيولة" value={fmtCompact(totalVol)} valueClass="text-amber-600" />
@@ -2462,6 +2487,9 @@ export function SpecialistAnalysisView() {
   const [comprehensive, setComprehensive] = useState<ComprehensiveData | null>(null);
   const [sharia, setSharia] = useState<ShariaResponse | null>(null);
   const [stockMeta, setStockMeta] = useState<SingleStockData | null>(null);
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+  // Canonical source of truth for accumulation + money_flow labels.
+  const [unified, setUnified] = useState<any>(null);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -2474,6 +2502,8 @@ export function SpecialistAnalysisView() {
   // ─── fetchAnalysis — 8 parallel fetches (Rule 67 — Promise.allSettled) ───
   // PRIMARY = maker-radar/stock (must succeed; otherwise we have nothing)
   // OTHERS = independent (each settles individually)
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — added /api/stocks/X/unified
+  // as 9th parallel fetch (best-effort; falls back to local accumulation logic).
   const fetchAnalysis = useCallback(async (symbol: string) => {
     if (!symbol) return;
     setLoading(true);
@@ -2486,6 +2516,7 @@ export function SpecialistAnalysisView() {
     setComprehensive(null);
     setSharia(null);
     setStockMeta(null);
+    setUnified(null);
 
     try {
       const enc = encodeURIComponent(symbol);
@@ -2504,9 +2535,11 @@ export function SpecialistAnalysisView() {
         fetch(`/api/stocks/${enc}/comprehensive`),
         fetch(`/api/sharia?symbol=${enc}`),
         fetch(`/api/stocks/${enc}`),
+        // UNIFIED-API — canonical signal_ar / accumulation / money_flow
+        fetch(`/api/stocks/${enc}/unified`),
       ]);
 
-      const [radarRes, footprintRes, predRes, flowRes, explosiveRes, compRes, shariaRes, stockMetaRes] = results;
+      const [radarRes, footprintRes, predRes, flowRes, explosiveRes, compRes, shariaRes, stockMetaRes, unifiedRes] = results;
 
       // PRIMARY: maker-radar/stock — must succeed; otherwise we have nothing to render.
       if (radarRes.status !== 'fulfilled') {
@@ -2547,6 +2580,13 @@ export function SpecialistAnalysisView() {
       }
       if (stockMetaRes.status === 'fulfilled') {
         try { setStockMeta(await stockMetaRes.value.json()); } catch { /* ignore */ }
+      }
+      // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort unified fetch.
+      if (unifiedRes.status === 'fulfilled') {
+        try {
+          const u = await unifiedRes.value.json();
+          if (u?.success) setUnified(u);
+        } catch { /* ignore */ }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال بالخادم');
@@ -2756,7 +2796,13 @@ export function SpecialistAnalysisView() {
           />
 
           {/* ── §4. Liquidity Footprint ── */}
-          <LiquidityFootprintSection data={footprint} />
+          {/* UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — pass canonical
+              accumulation + money_flow labels down to the footprint section. */}
+          <LiquidityFootprintSection
+            data={footprint}
+            canonicalAccumulation={unified?.canonical?.accumulation ?? null}
+            canonicalMoneyFlow={unified?.canonical?.money_flow ?? null}
+          />
 
           {/* ── §5. Technical Indicators ── */}
           <TechnicalIndicatorsSection info={info} />

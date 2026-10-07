@@ -6680,3 +6680,209 @@ don't re-attempt these moves.
 ---
 
 *Phase 5 cleanup complete — 2026-09-26 — Z.ai Code*
+
+---
+
+## 22. Canonical Signal Workflow — كيف تُحسَب الإشارات (NEW — 2026-10-07 — Task `DOC-SECRETARY-ACTIVATION`)
+
+> **المرجع الدستوري:** Rule 72 (UNIFIED-DATA-CONTRACT — added 2026-10-07). المصدر: `00-CONSTITUTION.md` § Rule 72 + `vps-service/utils/canonical_signal.py` (309 LOC) + `src/lib/canonical-signal.ts` (246 LOC — TS port مطابق Python 100%).
+>
+> **الهدف:** إنهاء كارثة "نفس السهم = بيانات مختلفة على 5 شاشات + التليجرام". قبل Rule 72، كان فيه 5 صيغ مختلفة لـ accumulation label + 5+ صيغ fallback لـ support/resistance + 3 صيغ RSI (Wilder صح، SMA خاطئ، EMA بـ seed مختلف) + 4 أنظمة thresholds مختلفة لـ signal classification + 4 taxonomies مختلفة لـ phase كلها اسمها "phase" + 3 routes بـ fabricate `target_price_2 = target1 * 1.05` (Rule 27 violation).
+
+### 22.1 الـ 5 classifiers الكنسية
+
+كل metric من الـ 16 canonical sources في Rule 72 لازم يمر عبر أحد الـ 5 classifiers دي. الـ Python port هو المصدر، والـ TS port مطابقه 100%.
+
+| # | Classifier | Signature | Output | Thresholds / Logic |
+|---|---|---|---|---|
+| 1 | `classify_signal(score)` | `(score: int) → SignalType` | 7-level taxonomy: `STRONG_BUY` (≥80) · `BUY` (68-79) · `ACCUMULATE` (55-67) · `HOLD` (40-54) · `REDUCE` (28-39) · `SELL` (15-27) · `STRONG_SELL` (<15) | Default thresholds canonical. Rule 71 lowered `STRONG_BUY` 80→78 (commit `c2ade8c6`). |
+| 2 | `canonical_signal_ar(signal)` / `signalAr(signal)` | `(signal: SignalType) → str` | Arabic label per level: `STRONG_BUY` → `'شراء قوي'` · `BUY` → `'شراء'` · `ACCUMULATE` → `'تجميع'` · `HOLD` → `'انتظار'` · `REDUCE` → `'تقليل'` · `SELL` → `'بيع'` · `STRONG_SELL` → `'بيع قوي'`. **ملاحظة:** `'HOLD': 'احتفاظ'` كان non-canonical — اتشال. | One source of truth — no local label maps. |
+| 3 | `classify_accumulation(buy_pct)` | `(buy_pct: float) → str` | `'تجميع قوي'` (≥70) · `'تجميع'` (55-69.99) · `'تجميع خفيف'` (50-54.99) · `'توزيع خفيف'` (45-49.99) · `'توزيع'` (30-44.99) · `'توزيع قوي'` (<30) | Canonical 55+ threshold (was 58+ in `telegram_target_hit_tracker.py` — fixed in Task `PHASE-3-TELEGRAM-MIGRATION`). |
+| 4 | `classify_money_flow(buy_pct, sell_pct)` | `(buy_pct, sell_pct: float) → str` | `'🟢 سيولة داخلة قوية'` (delta ≥25) · `'🟢 سيولة داخلة'` (delta 5-24.99) · `'🟡 سيولة متوازنة'` (delta -5 to 4.99) · `'🔴 سيولة خارجة'` (delta -5 to -24.99) · `'🔴 سيولة خارجة قوية'` (delta ≤-25) | delta = buy_pct − sell_pct. Default fallback = `'🟡 سيولة متوازنة'` (not fabricated as inflow — Rule 27). |
+| 5 | `classify_stock_phase(buy_pct, roc_10d)` | `(buy_pct, roc_10d: float) → str` | `'تصاعد'` (buy_pct ≥55 AND roc_10d >5) · `'قمة'` (buy_pct ≥55 AND roc_10d ≤5) · `'تصحيح صحي'` (buy_pct 30-54.99 AND roc_10d >-5) · `'تصحيح هبوطي'` (buy_pct 30-54.99 AND roc_10d ≤-5) · `'قاع'` (buy_pct <30 AND roc_10d ≤-5) · `'تجميع صامت'` (buy_pct <30 AND roc_10d >-5) | 6 phases. Was 4 different taxonomies across screens before Rule 72. |
+| (aux) | `classify_volume_ratio(vol_ratio)` | `(vol_ratio: float) → str` | `'متجاوز'` (≥2.0) · `'مرتفع'` (1.5-1.99) · `'طبيعي'` (0.5-1.49) · `'منخفض'` (<0.5) | Volume ratio relative to average. |
+
+### 22.2 Workflow — How a signal is computed end-to-end
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 1: V40.2 daily generator (v40_2_daily_generator.py)        │
+│   - Reads stocks.db.stocks + price_history.db                   │
+│   - Computes master_score (0-100) via 6 proofs + Tech Score     │
+│   - Writes prediction to predictions.db.predictions             │
+│   - master_score column = the raw signal score                  │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 2: Canonical classification (canonical_signal.py / .ts)   │
+│   - classify_signal(master_score) → 7-level SignalType          │
+│   - canonical_signal_ar(signal) → Arabic label                   │
+│   - classify_accumulation(buy_pct) → accumulation label          │
+│   - classify_money_flow(buy_pct, sell_pct) → money_flow label    │
+│   - classify_stock_phase(buy_pct, roc_10d) → phase label         │
+│   → ONE consistent signal per ticker across all 5 dimensions     │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 3: Unified API (src/app/api/stocks/[ticker]/unified/route.ts)│
+│   - Step A: stocks.db.stocks row (price, OHLC, technicals)      │
+│   - Step B: predictions.db.predictions latest row               │
+│   - Step C: maker_radar cache JSON (today + 6 days back)        │
+│   - Step D: canonical classifications (precedence:               │
+│             predictions.master_score → stocks.signal → null)     │
+│   - Step E: parses analysis_json for analysis_reason,           │
+│             who_is_buying, hmm_regime, target_price_3            │
+│   - Step F: builds unified response with 6 sections +           │
+│             cached_at ISO timestamp                              │
+│   → Single source of truth live for the 5-screens-5-signals bug  │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 4: Consumers (8 UI screens + 7 Telegram files + 1 TS lib)  │
+│   - UI: StockDetail + UnifiedPublishButton +                    │
+│          ComprehensiveStockAnalysis + TradingViewChart +         │
+│          StocksView + SpecialistAnalysisView +                  │
+│          MakerRadarTab + PredictionTrackingDashboard            │
+│   - Telegram: auto_poster + auto_post_scheduler +               │
+│                telegram_interactive_bot + telegram_target_hit_   │
+│                tracker + liquidity_alerts + telegram_chart_     │
+│                generator + reports_engine                        │
+│   - TS: stock-publish-text.ts (Recommendation type)              │
+│   → All consumers use canonical labels — zero local label maps  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 22.3 Verification (self-test)
+
+كل canonical module فيه self-test onboard — يُشغَّل بـ:
+
+```bash
+# Python
+python3 vps-service/utils/canonical_signal.py
+# Expected output: 'OK — all canonical_signal self-tests passed'
+
+# TypeScript
+npx tsx src/lib/canonical_signal.ts
+# Expected output: 'OK — all canonical-signal self-tests passed'
+```
+
+**Verified examples** (per Task `PHASE-3-TELEGRAM-MIGRATION`):
+- `classify_signal(80)` → `'STRONG_BUY'` ✓
+- `classify_signal(60)` → `'ACCUMULATE'` ✓
+- `classify_signal(35)` → `'SELL'` ✓
+- `classify_accumulation(75.7)` → `'تجميع قوي'` ✓
+- `classify_money_flow(75, 25)` → `'🟢 سيولة داخلة قوية'` ✓
+- `canonical_signal_ar('STRONG_BUY')` → `'شراء قوي'` ✓
+
+### 22.4 Why this matters (Rule 27 — NO-FAKE-DATA)
+
+قبل Rule 72، كانت 11 bug ناتجة عن الـ label drift:
+
+1. `auto_poster.py:713` hardcoded `'signal': 'BUY'` على كل recommendation (Rule 27 violation — comment was literally "متوافق مع الفورمات للتلجرام").
+2. `auto_post_scheduler.py` default `signal_ar = 'شراء'` (fabricated).
+3. `telegram_interactive_bot.py` fabricated defaults: `'signal': 'تجميع صاعد'`, `'confidence': 75`, `'vol_ratio': 1.2`, `'direction': 'تجميع صاعد مع صانع السوق'`, `'risk_reward': 2.0`.
+4. `telegram_target_hit_tracker.py` fabricated `buy_pct=75`/`70`/`60.0` defaults + non-canonical 58+ threshold.
+5. `liquidity_alerts.py` legacy non-canonical labels.
+6. `telegram_chart_generator.py` price level fabrications: `tp1 = p * 1.055`, `tp2 = p * 1.115`, `sl = p * 0.955`.
+7. `analyzers/reports_engine.py` `_rating_to_signal()` was 3-level (collapsed STRONG_BUY→BUY).
+8. `stock-publish-text.ts` non-canonical `'HOLD': 'احتفاظ'`.
+9. `/api/mobile/stocks/[ticker]` `fair_value` paywall bypass.
+10. `/api/mobile/stocks/[ticker]` ~30 dropped fields (no `change_percent`, no `fair_value`, no technicals).
+11. 5 components بـ تحسب signal بـ 5 thresholds مختلفة → "ETEL 5 شاشات = 5 إشارات مختلفة".
+
+كل دي اتصلحت في هذه الجلسة (Phase 2 + 3 + 4). الـ canonical workflow يضمن إن أي ticker واحد = signal واحد متّسق عبر كل الـ consumers.
+
+---
+
+## 23. FRESHNESS GUARD — كيف تُفلتر البيانات القديمة (NEW — 2026-10-07 — Task `DOC-SECRETARY-ACTIVATION`)
+
+> **المرجع الدستوري:** Rule 72 (UNIFIED-DATA-CONTRACT) — metric #16 in Canonical Sources table. المصدر: `src/app/api/stocks/[ticker]/unified/route.ts` (355 LOC).
+>
+> **الهدف:** يحمي `stocks.db.stocks.current_price` من قراءة بيانات قديمة. قبل الـ FRESHNESS GUARD، كان النظام بـ يعرض أسعار قديمة (آخر تحديث من أمس/الأسبوع الماضي) بدون ما يُحذّر المستخدم — كان بـ يظهر وكأنه سعر اليوم.
+
+### 23.1 الـ Guard mechanism
+
+```ts
+// src/app/api/stocks/[ticker]/unified/route.ts (simplified)
+const FRESHNESS_STALE_HOURS = 6;  // Egx market hours: 10:00-14:00 → ~4h window
+
+function isFresh(lastUpdate: string | null): 'fresh' | 'stale' | 'unknown' {
+  if (!lastUpdate) return 'unknown';
+  const lastDate = new Date(lastUpdate);
+  const now = new Date();
+  const diffHours = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60);
+  if (diffHours > FRESHNESS_STALE_HOURS) return 'stale';
+  return 'fresh';
+}
+
+// In the response:
+const stock = db.prepare('SELECT current_price, last_update, ... FROM stocks WHERE ticker = ?').get(ticker);
+const freshness = isFresh(stock?.last_update);
+
+// Returns:
+return NextResponse.json({
+  stock: {
+    ...stock,
+    current_price: freshness === 'stale' ? null : stock?.current_price,  // null if stale
+    _freshness: freshness,  // 'fresh' | 'stale' | 'unknown'
+  },
+  cached_at: new Date().toISOString(),
+});
+```
+
+### 23.2 Behaviour matrix
+
+| `last_update` state | `freshness` | `current_price` returned | UI display |
+|---|---|---|---|
+| NULL or missing | `'unknown'` | `null` | Shows "—" + warning "غير معروف تاريخ آخر تحديث" |
+| Within 6 hours | `'fresh'` | real `current_price` value | Normal display |
+| Older than 6 hours | `'stale'` | `null` | Shows "—" + warning "السعر قديم — آخر تحديث كان {last_update}" |
+
+### 23.3 Where the FRESHNESS GUARD is enforced
+
+| Layer | File | Status |
+|---|---|---|
+| Unified API | `src/app/api/stocks/[ticker]/unified/route.ts` (Step 1: stocks.db.stocks row read) | ✅ enforced — sets `_freshness` field + nullifies `current_price` if stale |
+| MakerRadarTab UI | `src/modules/predictions/components/MakerRadarTab.tsx` | ✅ displays freshness badges (`fresh`/`stale`/`unknown`) per radar entry based on `data_quality` field from `scripts/output/maker_radar_EGX_<YYYYMMDD>.json` |
+| StocksView UI | `src/modules/screener/components/StocksView.tsx` | ✅ stale prices shown as "—" instead of fabricated numbers (Rule 27) |
+| StockDetail UI | `src/modules/stock-analysis/components/StockDetail.tsx` | ✅ freshness badge in price header |
+
+### 23.4 Why this matters
+
+قبل الـ FRESHNESS GUARD، كانت فيه سيناريوهات خطيرة:
+
+1. **Backend scrape failure** (yfinance/egksco scraper يفشل) → `stocks.db.stocks.last_update` بقي على قيمة أمس → النظام بـ يعرض سعر أمس على أنه سعر اليوم (Rule 27 violation).
+2. **Weekend display**: يوم السبت/الأحد، الـ EGX مغلق، بس `last_update` بقي من يوم الخميس → النظام بـ يعرض سعر الخميس على أنه "current" بدون توضيح.
+3. **Post-market drift**: بعد ساعة 14:00 (إغلاق EGX)، الـ scraper بطل يحدّث، بس النظام بقي بـ يعرض السعر وكأنه "live".
+
+الـ FRESHNESS GUARD يحل هذه السيناريوهات بـ:
+- لو `last_update` أقدم من 6 ساعات → `current_price = null` + `_freshness = 'stale'`.
+- لو `last_update` NULL/missing → `current_price = null` + `_freshness = 'unknown'`.
+- الـ UI بـ يعرض "—" + warning بدل ما يعرض رقم قديم.
+
+الـ 6-hour threshold (FRESHNESS_STALE_HOURS) قابل للتعديل من `engine_settings` (Phase C — dynamic thresholds) لما نقرر إنه لازم يكون مختلف لكل سوق (EGX ساعاته 4h، CRYPTO 24/7، TADAWUL 8h).
+
+### 23.5 Verification
+
+```bash
+# Test fresh state
+curl http://localhost:3000/api/stocks/ETEL/unified | jq '.stock._freshness'
+# Expected: 'fresh' (if last_update < 6h ago)
+
+# Test stale state (manually set stocks.db.stocks.last_update to yesterday)
+sqlite3 db/stocks.db "UPDATE stocks SET last_update = datetime('now', '-1 day') WHERE ticker = 'ETEL'"
+curl http://localhost:3000/api/stocks/ETEL/unified | jq '.stock._freshness, .stock.current_price'
+# Expected: 'stale', null
+
+# Test unknown state
+sqlite3 db/stocks.db "UPDATE stocks SET last_update = NULL WHERE ticker = 'COMI'"
+curl http://localhost:3000/api/stocks/COMI/unified | jq '.stock._freshness, .stock.current_price'
+# Expected: 'unknown', null
+```
+
+---
+
+*End of Canonical Signal Workflow + FRESHNESS GUARD sections — 2026-10-07 — Documentation Secretary (Rule 70)*

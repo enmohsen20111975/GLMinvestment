@@ -184,6 +184,12 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+  // Single source of truth — all screens read from /api/stocks/[ticker]/unified
+  // (canonical signal_ar + technical.rsi/ma_50/ma_200 + accumulation + money_flow).
+  // Old fetch (/api/stocks/[ticker]/comprehensive) is kept as fallback.
+  const [unifiedData, setUnifiedData] = useState<any>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -207,6 +213,18 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort fetch.
+  // If this fails, we fall back to comprehensive-only display.
+  useEffect(() => {
+    if (!ticker) return;
+    fetch(`/api/stocks/${encodeURIComponent(ticker)}/unified`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (d?.success) setUnifiedData(d);
+      })
+      .catch((err) => console.error('[unified] fetch failed:', err));
+  }, [ticker]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -235,6 +253,18 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
   const rawTech = data.technical || {};
   const currentPriceNum = Number(price.current_price || price.close || 0);
   const tech: Record<string, any> = { ...rawTech };
+
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+  // Override technical fields with canonical values from unified API when available.
+  // unified.technical is read directly from stocks.db (pre-computed RSI/MA),
+  // so it is the single source of truth for these indicators.
+  if (unifiedData?.technical) {
+    if (unifiedData.technical.rsi != null) tech.rsi = Number(unifiedData.technical.rsi);
+    if (unifiedData.technical.ma_50 != null) tech.ma_50 = Number(unifiedData.technical.ma_50);
+    if (unifiedData.technical.ma_200 != null) tech.ma_200 = Number(unifiedData.technical.ma_200);
+    if (unifiedData.technical.support != null) tech.support = Number(unifiedData.technical.support);
+    if (unifiedData.technical.resistance != null) tech.resistance = Number(unifiedData.technical.resistance);
+  }
 
   // Financial Sanity Gate: Ensure support < price < resistance under all circumstances
   if (currentPriceNum > 0) {
@@ -322,7 +352,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-4">
-          <OverviewTab data={data} />
+          <OverviewTab data={data} unifiedData={unifiedData} />
         </TabsContent>
 
         {/* Technical Tab */}
@@ -468,11 +498,24 @@ function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown
 // Overview Tab
 // ============================================================================
 
-function OverviewTab({ data }: { data: ComprehensiveData }) {
+function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedData?: any }) {
   const board = data.board || {};
   const hunter = data.hunter || {};
   const price = data.price || {};
   const tech = data.technical || {};
+
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+  // Prefer canonical.signal_ar from unified API (single source of truth);
+  // fall back to board.signal_ar / board.signal when unified not loaded.
+  // Also derive badge styling from canonical signal classification.
+  const canonicalSignalAr = unifiedData?.canonical?.signal_ar ?? null;
+  const displaySignal = canonicalSignalAr
+    ?? (board.signal_ar as string | undefined)
+    ?? (board.signal as string | undefined)
+    ?? '—';
+  const displaySignalBadge = canonicalSignalAr
+    ? signalBadge(unifiedData?.canonical?.signal ?? displaySignal)
+    : signalBadge((board.signal as string) || '');
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -490,8 +533,8 @@ function OverviewTab({ data }: { data: ComprehensiveData }) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">الإشارة</span>
-                <Badge className={signalBadge(board.signal || '').className}>
-                  {board.signal_ar || board.signal || '—'}
+                <Badge className={displaySignalBadge.className}>
+                  {displaySignal}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">

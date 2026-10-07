@@ -1063,6 +1063,12 @@ export function StockDetail() {
   const [footprintData, setFootprintData] = useState<any>(null);
   const watchlistCooldown = useRef(false);
 
+  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+  // Single source of truth — all screens read from /api/stocks/[ticker]/unified
+  // (canonical signal + accumulation + money_flow + technical + prediction + radar).
+  // Old fetches (footprint, etc.) are kept as fallback in case unified API fails.
+  const [unifiedData, setUnifiedData] = useState<any>(null);
+
   // Auto-load news and liquidity footprint when stock is selected
   useEffect(() => {
     if (selectedTicker && selectedStock) {
@@ -1074,6 +1080,15 @@ export function StockDetail() {
           if (data?.success) setFootprintData(data);
         })
         .catch(() => {});
+
+      // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+      // Fetch canonical unified response — best-effort, must not break UI on failure.
+      fetch(`/api/stocks/${selectedTicker}/unified`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.success) setUnifiedData(data);
+        })
+        .catch((err) => console.error('[unified] fetch failed:', err));
     }
   }, [selectedTicker, selectedStock, loadStockNews]);
 
@@ -1327,12 +1342,15 @@ export function StockDetail() {
           stockName={stock.name_ar}
           currentPrice={stock.current_price}
           analysisData={{
-            signal: deepAnalysis?.action,
-            signalAr: deepAnalysis?.action_ar,
-            score: deepAnalysis?.overall_score,
+            // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+            // Prefer canonical.signal_ar from unified API; fall back to deepAnalysis.
+            signal: unifiedData?.canonical?.signal ?? deepAnalysis?.action,
+            signalAr: unifiedData?.canonical?.signal_ar ?? deepAnalysis?.action_ar,
+            score: unifiedData?.canonical?.master_score ?? deepAnalysis?.overall_score,
             confidence: deepAnalysis?.confidence,
-            targetPrice: deepAnalysis?.price_targets?.upside_target,
-            stopLoss: stock.support_level || undefined,
+            // UNIFIED-API — use prediction.entry_price/target_price/stop_loss when available.
+            targetPrice: unifiedData?.prediction?.target_price ?? deepAnalysis?.price_targets?.upside_target,
+            stopLoss: unifiedData?.prediction?.stop_loss ?? stock.support_level ?? undefined,
             reasons: deepAnalysis?.reasons,
           }}
         />
@@ -1396,6 +1414,79 @@ export function StockDetail() {
       <ErrorBoundary title="الرسم البياني">
         <TradingViewChart ticker={stock.ticker} stockName={stock.name_ar} />
       </ErrorBoundary>
+
+      {/* UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+          Canonical signal card — single source of truth from /api/stocks/[ticker]/unified
+          Shows canonical.signal_ar / accumulation / money_flow + prediction trade setup.
+          Falls back to "—" per Rule 27 (NO-FAKE-DATA) when unified API has not loaded. */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-600" />
+            الإشارة الموحدة (Canonical)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0" dir="rtl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div>
+              <div className="text-[10px] text-muted-foreground">الإشارة</div>
+              <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                {unifiedData?.canonical?.signal_ar ?? '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">التجميع/التصريف</div>
+              <div className="font-bold">
+                {unifiedData?.canonical?.accumulation ?? '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">حالة السيولة</div>
+              <div className="font-bold">
+                {unifiedData?.canonical?.money_flow ?? '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">الدرجة الإجمالية</div>
+              <div className="font-bold tabular-nums">
+                {unifiedData?.canonical?.master_score != null
+                  ? Math.round(Number(unifiedData.canonical.master_score))
+                  : '—'}
+              </div>
+            </div>
+          </div>
+
+          {/* UNIFIED-API — prediction.entry_price/target_price/stop_loss (no fabrication, Rule 27) */}
+          {unifiedData?.prediction && (
+            <div className="grid grid-cols-3 gap-3 text-sm mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div>
+                <div className="text-[10px] text-muted-foreground">سعر الدخول</div>
+                <div className="font-bold tabular-nums">
+                  {unifiedData.prediction.entry_price != null
+                    ? safeToFixed(unifiedData.prediction.entry_price)
+                    : '—'}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground">السعر المستهدف</div>
+                <div className="font-bold tabular-nums text-emerald-600">
+                  {unifiedData.prediction.target_price != null
+                    ? safeToFixed(unifiedData.prediction.target_price)
+                    : '—'}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground">وقف الخسارة</div>
+                <div className="font-bold tabular-nums text-red-600">
+                  {unifiedData.prediction.stop_loss != null
+                    ? safeToFixed(unifiedData.prediction.stop_loss)
+                    : '—'}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Smart Investment Tip */}
       <SmartTip trigger="stock_detail" category={change < -3 ? 'psychology' : undefined} />
@@ -1483,13 +1574,14 @@ export function StockDetail() {
           <CardContent className="pt-0">
             <MetricRow
               label="RSI"
-              value={safeToFixed(stock.rsi, 1)}
-              highlight={stock.rsi < 35 || stock.rsi > 65}
+              // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — prefer unified.technical.rsi
+              value={safeToFixed(unifiedData?.technical?.rsi ?? stock.rsi, 1)}
+              highlight={(unifiedData?.technical?.rsi ?? stock.rsi) < 35 || (unifiedData?.technical?.rsi ?? stock.rsi) > 65}
             />
             <Separator />
-            <MetricRow label="المتوسط المتحرك (50)" value={safeToFixed(stock.ma_50)} />
+            <MetricRow label="المتوسط المتحرك (50)" value={safeToFixed(unifiedData?.technical?.ma_50 ?? stock.ma_50)} />
             <Separator />
-            <MetricRow label="المتوسط المتحرك (200)" value={safeToFixed(stock.ma_200)} />
+            <MetricRow label="المتوسط المتحرك (200)" value={safeToFixed(unifiedData?.technical?.ma_200 ?? stock.ma_200)} />
             <Separator />
             <MetricRow
               label="مستوى الدعم"

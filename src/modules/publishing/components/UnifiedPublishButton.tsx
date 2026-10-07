@@ -47,7 +47,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, safeToFixed } from '@/lib/utils';
 // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
 // قبل كده: accumulation + targets كانوا بـ يتحسبوا client-side بـ thresholds
 // مختلفة (1.25/0.8 + 0.96 multiplier) → نتائج متضاربة مع الرادار.
@@ -303,20 +303,28 @@ export function UnifiedPublishButton({
     setLoadingInfographic(true);
     try {
       // 1. Fetch real stock details + unified publish-data + 30-day footprint
-      const [stockRes, publishRes, footprintRes] = await Promise.allSettled([
+      // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+      // Also fetch /api/stocks/[ticker]/unified as the canonical source for
+      // signal_ar / accumulation / money_flow / prediction / radar.buy_pct.
+      // Old fetches kept as fallback (Rule: backward compatibility).
+      const [stockRes, publishRes, footprintRes, unifiedRes] = await Promise.allSettled([
         fetch(`/api/stocks/${resolvedTicker}`),
         fetch(`/api/stocks/${resolvedTicker}/publish-data`),
         fetch(`/api/maker-radar/footprint?ticker=${resolvedTicker}&days=30`),
+        fetch(`/api/stocks/${resolvedTicker}/unified`),
       ]);
 
       const stockData = stockRes.status === 'fulfilled' && stockRes.value.ok ? await stockRes.value.json() : null;
       const publishJson = publishRes.status === 'fulfilled' && publishRes.value.ok ? await publishRes.value.json() : null;
       const footprintData = footprintRes.status === 'fulfilled' && footprintRes.value.ok ? await footprintRes.value.json() : null;
+      // UNIFIED-API — best-effort; if it fails, fall back to publish-data.
+      const unifiedJson = unifiedRes.status === 'fulfilled' && unifiedRes.value.ok ? await unifiedRes.value.json() : null;
+      const unified = (unifiedJson?.success ? unifiedJson : null) as any;
 
       const pData = publishJson?.data || {};
       const stock = stockData?.stock || stockData?.data || stockData || {};
-      const current = Number(pData.currentPrice || stock.current_price || stock.close || stock.last_price || 0);
-      const prevClose = Number(pData.previousClose || stock.previous_close || stock.prev_close || current);
+      const current = Number(pData.currentPrice || stock.current_price || unified?.stock?.current_price || stock.close || stock.last_price || 0);
+      const prevClose = Number(pData.previousClose || stock.previous_close || unified?.stock?.previous_close || stock.prev_close || current);
       const changeVal = current - prevClose;
       const changePct = pData.changePct != null ? Number(pData.changePct) : (prevClose > 0 ? (changeVal / prevClose) * 100 : 0);
       const rawHigh = Number(stock.high_price || stock.high || current);
@@ -387,11 +395,19 @@ export function UnifiedPublishButton({
       }
 
       const totalSignals = Math.max(1, buyCount + neutralCount + sellCount);
-      const gaugeScore = pData.masterScore != null
-        ? Math.round(pData.masterScore)
-        : Math.round((buyCount / totalSignals) * 100);
+      // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+      // Prefer canonical.master_score from unified API for the gauge; fall back
+      // to publish-data masterScore, then to local buy/sell tally.
+      const gaugeScore = unified?.canonical?.master_score != null
+        ? Math.round(Number(unified.canonical.master_score))
+        : pData.masterScore != null
+          ? Math.round(pData.masterScore)
+          : Math.round((buyCount / totalSignals) * 100);
 
-      const sentimentLabel = gaugeScore >= 65 ? 'إيجابي' : gaugeScore <= 40 ? 'سلبي' : 'محايد';
+      // UNIFIED-API — use canonical.signal_ar instead of local signal mapping (Rule 27)
+      // canonical.signal_ar is the canonical Arabic label (شراء قوي / شراء / تجميع / انتظار / تخفيض / بيع / بيع قوي).
+      const sentimentLabel = unified?.canonical?.signal_ar
+        ?? (gaugeScore >= 65 ? 'إيجابي' : gaugeScore <= 40 ? 'سلبي' : 'محايد');
       const ratingLabel = gaugeScore >= 75 ? 'ممتاز' : gaugeScore >= 60 ? 'جيد جداً' : gaugeScore >= 45 ? 'متوسط' : 'ضعيف';
       const starsCount = gaugeScore >= 75 ? 5 : gaugeScore >= 60 ? 4 : gaugeScore >= 45 ? 3 : 2;
 
@@ -399,10 +415,25 @@ export function UnifiedPublishButton({
       // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 27: NO-FAKE-DATA) ─────
       // قبل كده: res1/res2/sup1/sup2 كانوا بـ يـ fabricate بـ multipliers ×1.03/×1.04/×0.97/×0.96.
       // الحل: لو القيم الحقيقية NULL → undefined (لا fabrication).
-      const res1 = pData.resistance1 || pData.targetPrice1 || stock.resistance_level || undefined;
-      const res2 = pData.resistance2 || pData.targetPrice2 || (stock as any).resistance_level_2 || undefined;
-      const sup1 = pData.support1 || pData.stopLoss || stock.support_level || undefined;
-      const sup2 = pData.support2 || (stock as any).support_level_2 || undefined;
+      // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — prediction.entry_price / target_price / stop_loss
+      // take precedence when present (canonical source — NO fabrication).
+      const res1 = unified?.prediction?.target_price
+        ?? pData.resistance1
+        ?? pData.targetPrice1
+        ?? stock.resistance_level
+        ?? undefined;
+      const res2 = pData.resistance2
+        ?? pData.targetPrice2
+        ?? (stock as any).resistance_level_2
+        ?? undefined;
+      const sup1 = unified?.prediction?.stop_loss
+        ?? pData.support1
+        ?? pData.stopLoss
+        ?? stock.support_level
+        ?? undefined;
+      const sup2 = pData.support2
+        ?? (stock as any).support_level_2
+        ?? undefined;
 
       const bullishTargetStr = (pData.targetPrice1 && pData.targetPrice2)
         ? `${pData.targetPrice1} - ${pData.targetPrice2}`
@@ -471,7 +502,8 @@ export function UnifiedPublishButton({
           bearish_text: pData.stopLoss ? `كسر وقف الخسارة عند ${pData.stopLoss} ج.م يلغي النظرة الإيجابية` : 'كسر الدعم يدعو لتفعيل وقف الخسارة وإعادة التمركز أدنى',
         },
         vision_bullet_points: [
-          `نطاق الدخول الآمن: ${pData.entryZoneLow && pData.entryZoneHigh ? `${pData.entryZoneLow} إلى ${pData.entryZoneHigh} ج.م` : 'قرب مستويات الدعم'}`,
+          // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — prefer prediction.entry_price
+          `نطاق الدخول الآمن: ${unified?.prediction?.entry_price != null ? `${safeToFixed(unified.prediction.entry_price)} ج.م` : (pData.entryZoneLow && pData.entryZoneHigh ? `${pData.entryZoneLow} إلى ${pData.entryZoneHigh} ج.م` : 'قرب مستويات الدعم')}`,
           pData.rsi ? `مؤشر القوة النسبية RSI عند ${pData.rsi} (${pData.rsi < 35 ? 'تشبع بيعي / فرصة ارتداد' : pData.rsi > 65 ? 'تشبع شرائي' : 'منطقة توازن'})` : 'مؤشر الزخم يتماشى مع حركة السيولة',
           pData.stopLoss ? `وقف الخسارة الهيكلي محدد بدقة عند ${pData.stopLoss} ج.م` : 'إدارة المخاطر والالتزام بوقف الخسارة أولوية',
           'مراقبة أحجام التداول والسيولة المؤسسية قبل اتخاذ القرار',
@@ -492,8 +524,14 @@ export function UnifiedPublishButton({
         // الحل: نحسب buy_pct ونستخدم canonical classifyAccumulation.
         const buyVol = Number(footprintData.buy_volume || 0);
         const sellVol = Number(footprintData.sell_volume || 0);
-        const buyPct = (buyVol + sellVol) > 0 ? (buyVol / (buyVol + sellVol)) * 100 : null;
-        const accumLabel = classifyAccumulation(buyPct);
+        const buyPctFootprint = (buyVol + sellVol) > 0 ? (buyVol / (buyVol + sellVol)) * 100 : null;
+        // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
+        // Prefer radar.buy_pct from unified API as canonical source for
+        // accumulation label; fall back to footprint-derived buy_pct.
+        const buyPct = unified?.radar?.buy_pct != null
+          ? Number(unified.radar.buy_pct)
+          : buyPctFootprint;
+        const accumLabel = unified?.canonical?.accumulation ?? classifyAccumulation(buyPct);
         builtData.liquidity = {
           poc_price: footprintData.poc_price,
           vah_price: footprintData.vah_price,
