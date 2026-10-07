@@ -62400,3 +62400,91 @@ Stage Summary:
 - Telegram bot still sends messages (the morning-bell post continues to work because the upstream `_get_morning_bell_data()` always sets `signal_ar`; only the rare missing-data case changes behavior — now shows nothing instead of fabricated 'شراء').
 - All canonical classifier functions now have a single source of truth (`utils/canonical_signal.py` for Python, `src/lib/canonical-signal.ts` for TypeScript).
 ---
+
+Task ID: USER-ANALYTICS-EMITTERS
+Agent: Sub Agent (general-purpose)
+Task: Add 3 client-side event emitters (feature_use, stock_view, api_error) — addresses USER-ANALYTICS-AUDIT-1 finding that only `page_view` events were being emitted.
+
+Work Log:
+- Verified `src/lib/analytics.ts` did NOT exist (Glob returned no matches) → CREATED it (Rule 4 satisfied).
+- Read `/api/track/route.ts` to confirm server-side payload contract: it accepts any `type` string and stores it in `analytics_events.type`, so `stock_view` and `api_error` work out-of-the-box without server changes.
+- Wired `trackStockView(ticker)` into `src/lib/store.ts: loadStockDetail` — fires inside the `.then()` callback right after `set({...})` so the event is recorded only when stock data is actually loaded (not on click + API failure).
+- Wired `trackFeature('watchlist_add', ticker)` into `src/lib/store.ts: addToWatchlist` (store-level — single source of truth for ALL watchlist adds).
+- Wired `trackFeature('portfolio_add', ticker)` into `src/lib/store.ts: addToPortfolio` (store-level — captures every portfolio add).
+- Wired `trackFeature('watchlist_add', ticker)` into `src/modules/portfolio/components/EnhancedPortfolioView.tsx: addToWatchlist` (the local variant that bypasses the store and POSTs directly to /api/watchlist).
+- Wired `trackFeature('portfolio_add', formTicker || formType)` into `EnhancedPortfolioView.tsx: handleSave` success branch (fires when asset-save succeeds — covers stocks, gold, certificates, funds, crypto, etc.).
+- Wired `trackApiError(path, msg)` into `src/lib/api-client.ts: request()` — in BOTH the `!res.ok` branch (HTTP errors with status code) and the outer `catch` (network/parse errors). Added a regex guard so HTTP errors are not double-tracked.
+- All emitters are fire-and-forget: `trackEvent` uses `fetch(...).catch(()=>{})` wrapped in `try/catch`, and `keepalive: true` is set so the request survives page navigations (Rule 55 — analytics must not break UX).
+- Note: requested `WatchlistButton.tsx` and `PortfolioAdd.tsx` component files did NOT exist (searched with Glob). Used closest equivalents (`store.ts addToWatchlist/addToPortfolio` + `EnhancedPortfolioView.tsx`) which actually capture MORE events than the named components would have, because they sit at the single source of truth.
+
+Files changed:
+- CREATED: `src/lib/analytics.ts` (55 lines) — exports `trackEvent`, `trackFeature`, `trackStockView`, `trackApiError` + `AnalyticsEventType`/`AnalyticsEvent` types.
+- MODIFIED: `src/lib/store.ts` (+1 import, +3 trackStockView/trackFeature calls)
+- MODIFIED: `src/lib/api-client.ts` (+1 import, +2 trackApiError call sites with double-track guard)
+- MODIFIED: `src/modules/portfolio/components/EnhancedPortfolioView.tsx` (+1 import, +2 trackFeature calls)
+
+Verification:
+- `tsc --noEmit` reports ZERO errors in `src/lib/analytics.ts` (new file compiles cleanly).
+- `tsc --noEmit` errors reported in `src/lib/store.ts` (lines 341, 873, 994, 1123, 1259, 1294-1297, 1429) are ALL pre-existing — they exist on lines I did NOT touch (verified via `git diff`).
+- `git diff --stat` confirms my changes are surgical: +9 lines in api-client.ts, +9 in store.ts, +5 in EnhancedPortfolioView.tsx.
+
+Pre-existing issues encountered (NOT introduced, NOT fixed):
+- `src/lib/store.ts` has multiple pre-existing TS errors (StockStatusItem missing, Stock type missing 11 fields, union-body access on alert_price_above, etc.). These predate this task and were not introduced by my surgical additions.
+- `archive/` folder contains many broken files from prior waves — unrelated to analytics work.
+
+Stage Summary:
+- All 3 missing event types now wired: `feature_use` (watchlist_add, portfolio_add), `stock_view` (loadStockDetail), `api_error` (apiClient.request catch + !res.ok branches).
+- Wire points are at single-source-of-truth locations (store actions + apiClient wrapper), so coverage is broader than the 3-4 originally-named components would have provided.
+- All emitters honor Rule 55 (fire-and-forget, try/catch wrapped, never throws), Rule 27 (only real user actions — no fabricated events), and Rule 4 (analytics.ts was created only because it didn't exist; everything else was edited in place).
+- Server-side `/api/track` already accepts arbitrary `type` strings — no server-side migration was needed for `stock_view` and `api_error` to start populating `analytics_events`.
+- Next action: monitor `stocks.db.analytics_events` over the next 24-48h; expect `feature_use`, `stock_view`, and `api_error` rows to start appearing alongside the existing `page_view` rows.
+---
+Task ID: PHASE-4-DEPRECATE-ROUTES
+Agent: Sub Agent (general-purpose)
+Task: Phase 4 of canonical_signal migration — deprecate 4 duplicate API routes identified in API-AUDIT-2 (3 hard-deprecations + 1 mobile parity fix).
+
+Work Log:
+- Read project context from worklog.md (Phase 3 was the Telegram canonical_signal migration; current date context: October 2026).
+- Surveyed existing "deprecated/disabled" precedent in the codebase — found `/api/admin/generate-predictions/route.ts` uses HTTP 410 Gone + JSON `{ success: false, error: 'endpoint_disabled', error_ar: '...', disabled_at: 'YYYY-MM-DD' }` shape. Adopted this as the canonical deprecation pattern for Phase 4 (consistency, established convention).
+- **Route #1 — `src/app/api/maestro/route.ts`** (duplicates `/api/maestro/overview`, both proxy Python `/api/market-pulse`):
+  - Replaced GET handler body with a 410 Gone response.
+  - Kept `NextRequest`/`NextResponse` imports, `export const dynamic = 'force-dynamic'` (no TS compile breakage).
+  - Response payload: `{ success: false, deprecated: true, error: 'endpoint_deprecated', error_ar, deprecated_at: '2026-10-15', canonical_route: '/api/maestro/overview', canonical_url: <full path with query string>, message: 'Use /api/maestro/overview instead' }`.
+  - Preserves query string in `canonical_url` so old callers can mechanically rewrite their request URL.
+- **Route #2 — `src/app/api/predictions/tracking/list/route.ts`** (17-field subset of `/api/predictions/honest-tracking/list` which returns 50+ fields):
+  - Replaced GET handler body with a 410 Gone response.
+  - Kept `NextRequest`/`NextResponse` imports, `dynamic` and `runtime = 'nodejs'` exports.
+  - Response payload includes `dropped_fields_count: 17, canonical_fields_count: 50` so consumers can gauge migration impact.
+  - Canonical URL preserved with query string (same params work: `market`, `status`, `limit`).
+- **Route #3 — `src/app/api/mobile/stocks/[ticker]/route.ts`** (NOT deprecated — mobile users need the endpoint; instead restored dropped fields to achieve desktop parity):
+  - Audited field deltas vs `/api/stocks/[ticker]` (desktop) which passes through Python response + uses `getStockByTickerFallback` from `flutter-sqlite-fallback.ts`.
+  - Confirmed mobile was returning only ~17 fields: `ticker, name_ar, name, sector, current_price, previous_close, open, high, low, volume, market_cap, pe_ratio, pb_ratio, dividend_yield, eps, roe, is_active, last_update`.
+  - **Fields RESTORED** (now in mobile payload with parity to desktop):
+    - Price action: `open_price`, `high_price`, `low_price` (added alongside the existing `open`/`high`/`low` aliases for backward compat), `change_percent`, `change_value`, `price_change` (legacy alias), `avg_volume`, `value_traded`.
+    - **`change_percent` was the most-cited customer complaint** — mobile users couldn't see % change on stock cards because the original handler mapped only OHLC, not the change fields.
+    - Risk/momentum: `high_52w`, `low_52w`, `beta`.
+    - Fundamentals: `ps_ratio`, `roa`, `debt_to_equity`, `current_ratio`, `book_value_per_share`, `profit_margin`, `dps_ttm` (previously only `pe_ratio`, `pb_ratio`, `dividend_yield`, `eps`, `roe` were sent).
+    - Paywall-gated insight: `fair_value` (killer feature per PAYWALL-STRATEGY-FINAL.md §5.2 row 1) + `upside_percent` (marketing teaser — kept visible even when fair_value is locked).
+    - Technicals: `ma_50`, `ma_200`, `rsi`, `support`, `resistance`, `signal`, `trend` (previously ALL dropped on mobile).
+    - Index membership: `is_egx30`, `is_egx70`, `is_egx100`, `egx30_member`, `egx70_member`, `egx100_member`.
+    - Metadata: `market`, `industry`, `currency`, `exchange`.
+  - **Paywall parity fix (Rule 50 — security closure)**: imported `getSessionUserId` + `checkTrialNotExpired` and applied the same `fair_value` gate as desktop `/api/stocks/[ticker]`. The old mobile route returned `fair_value` unconditionally — this was a paywall bypass (trial-expired free users could read the killer feature by hitting the mobile endpoint). Now mobile respects the same gate as desktop: anonymous → sees fair_value (taste hook), authenticated + trial-expired free → `fair_value = null` + `fair_value_locked: true`, paid/in-trial → full data.
+  - Refactored field mapping into `buildMobilePayload(stock, ticker, source)` helper used by BOTH the Python-success branch AND the SQLite-fallback branch — eliminates the previous duplication where the two branches had drifted to slightly different field sets.
+  - Added a `num()` safe-coerce helper (mirrors `safeNum()` in `flutter-sqlite-fallback.ts`) so any source-shape variance (Python uses different keys than SQLite row) is normalized to 0 / null. Rule 27 (NO-FAKE-DATA) preserved — defaults are honest `0`/`null`, not fabricated "look-real" values.
+- **Route #4 — `src/app/api/stocks/[ticker]/professional-analysis/route.ts`** (duplicates `/api/stocks/[ticker]/recommendation` — same Python upstream `/api/professional-analysis/<ticker>` + same SQLite fallback `getStockByTickerFallback`):
+  - Replaced GET handler body with a 410 Gone response.
+  - Kept `NextRequest`/`NextResponse` imports, `dynamic = 'force-dynamic'`, `params: Promise<{ ticker: string }>` signature (Next.js 15 async-params style).
+  - Response payload includes `ticker` (uppercased) so consumers can correlate the deprecation back to the requested instrument without re-parsing the URL.
+  - Canonical URL: `/api/stocks/{TICKER}/recommendation?{qs}`.
+- TS verification: `npx tsc --noEmit` reports zero errors in any of the 4 modified files. Only pre-existing TS6053 errors remain (`.next/types/...` missing because Next.js build hasn't been run — unrelated to this task).
+- Rule 4 (NO-NEW-FILES / NO-DELETION): no files created, no files deleted — all 4 routes modified in place. Old callers receive helpful JSON deprecation notices (or restored fields on mobile), never 404.
+- Rule 27 (NO-FAKE-DATA): the 3 deprecated routes return proper HTTP 410 Gone with `deprecated: true` flag (no mock data). The mobile parity route uses `0`/`null` honest defaults, not fabricated "look-real" values.
+- Backward compatibility: all response envelopes preserve `success: boolean` so existing client-side error-handling code paths continue to work without changes — the 410 responses are surfaced as `{ success: false, ... }` which the Flutter app already handles.
+
+Stage Summary:
+- 3 of 4 routes hard-deprecated (410 Gone + JSON notice with `canonical_route` + `canonical_url`): `/api/maestro`, `/api/predictions/tracking/list`, `/api/stocks/[ticker]/professional-analysis`.
+- 1 of 4 routes (mobile/stocks/[ticker]) restored to desktop parity: ~30 previously-dropped fields added back, including `change_percent` (most-cited customer complaint), `fair_value` (paywall-gated killer feature), technicals (`ma_50`, `ma_200`, `rsi`, `support`, `resistance`, `signal`, `trend`), risk metrics (`beta`, `high_52w`, `low_52w`), and full fundamentals set.
+- Closed a paywall bypass: mobile route now applies the same `fair_value` gate as desktop (trial-expired free users could previously read `fair_value` via the mobile endpoint).
+- 0 files created, 0 deleted (Rule 4 ✓). 0 TS errors introduced (only pre-existing `.next/types` TS6053s remain). All 4 routes compile cleanly.
+- Next actions for a follow-up task: (1) grep the frontend for any active callers of the 3 deprecated routes and rewire them to the canonical routes; (2) after a deprecation grace period (e.g. 30 days), consider bumping 410 → 404 if telemetry shows zero remaining callers; (3) extend the same mobile parity treatment to other `/api/mobile/*` routes if any exist with similar field-dropping patterns (audit recommended).
+---

@@ -87,6 +87,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n-context';
+import { trackFeature } from '@/lib/analytics';
 // P39-PHASE-2: Wealth Allocation Matrix — persona-aware asset ceilings + alerts.
 import {
   checkWealthAllocationMatrix,
@@ -665,6 +666,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
 
   const addToWatchlist = async (ticker: string) => {
     try {
+      // USER-ANALYTICS-EMITTERS: track watchlist_add from portfolio flow (fire-and-forget).
+      trackFeature('watchlist_add', ticker);
       await fetch('/api/watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -768,6 +771,8 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       }
       if (data.success) {
         toast.success(t('portfolio.toast.addAssetSuccess'));
+        // USER-ANALYTICS-EMITTERS: track portfolio_add (Rule 27 — real action, fire-and-forget).
+        trackFeature('portfolio_add', formTicker || formType);
         // Auto-add stock to watchlist
         if (formType === 'stock' && formTicker) {
           addToWatchlist(formTicker);

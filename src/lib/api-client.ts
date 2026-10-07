@@ -13,6 +13,7 @@ import type {
   User,
   AiInsights,
 } from '@/types';
+import { trackApiError } from '@/lib/analytics';
 
 // API client that talks to our own Next.js API routes (same-origin).
 // These routes read directly from the stocks.db SQLite database.
@@ -76,10 +77,18 @@ class ApiClient {
           window.dispatchEvent(new CustomEvent('auth:session-expired'));
         }
         const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        // USER-ANALYTICS-EMITTERS: track what problems each user encounters
+        // (Rule 55 — fire-and-forget, never throws).
+        trackApiError(path, `HTTP ${res.status}: ${errorData.detail || res.statusText}`);
         throw new Error(errorData.detail || `HTTP ${res.status}`);
       }
       return res.json();
     } catch (error) {
+      // USER-ANALYTICS-EMITTERS: track network/parse errors too (fire-and-forget).
+      // Guard against tracking the same error twice (HTTP errors are already tracked above).
+      if (!(error instanceof Error && /^HTTP \d+/.test(error.message))) {
+        trackApiError(path, error instanceof Error ? error.message : String(error));
+      }
       throw error;
     }
   }

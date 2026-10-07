@@ -16,6 +16,7 @@ import type {
 } from '@/types';
 import type { RecommendResponse, PersonaType } from '@/types/v2';
 import { apiClient } from '@/lib/api-client';
+import { trackStockView, trackFeature } from '@/lib/analytics';
 import type { Session } from 'next-auth';
 
 // ==================== DATA ADAPTERS ====================
@@ -1155,6 +1156,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
           isLoading: false,
           currentView: 'stock-detail',
         });
+
+        // USER-ANALYTICS-EMITTERS: track which stocks each user views.
+        // Fire-and-forget — never blocks the UI (Rule 55).
+        trackStockView(upperTicker);
       })
       .catch((err) => {
         console.error('[Store] Failed to load stock detail:', err);
@@ -1291,6 +1296,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         if (extras.alert_change_percent !== undefined) body.alert_change_percent = extras.alert_change_percent;
         if (extras.notes !== undefined) body.notes = extras.notes;
       }
+      // USER-ANALYTICS-EMITTERS: track feature usage (Rule 27 — real action, fire-and-forget).
+      trackFeature('watchlist_add', typeof stockIdOrTicker === 'string' ? stockIdOrTicker : String(stockIdOrTicker));
       const res = await fetch('/api/watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1341,6 +1348,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         shares: quantity,
         avg_cost: avgBuyPrice,
       };
+      // USER-ANALYTICS-EMITTERS: track feature usage (Rule 27 — real action, fire-and-forget).
+      trackFeature('portfolio_add', body.stock_symbol);
       const res = await fetch('/api/portfolio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

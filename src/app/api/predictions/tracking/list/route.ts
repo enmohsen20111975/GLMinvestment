@@ -1,86 +1,46 @@
 /**
- * GET /api/predictions/tracking/list
- * ==================================
- * Tries Python first, falls back to predictions.db (SQLite)
+ * DEPRECATED (Phase 4 — canonical_signal migration, API-AUDIT-2):
+ * ===============================================================
+ * This route was a 17-field subset of the canonical
+ *   /api/predictions/honest-tracking/list
+ * endpoint (which returns 50+ fields: exit_type, persona,
+ * target_price_2, target_price_3, master_score, etc.). Per
+ * API-AUDIT-2, the duplicate is being retired in favour of the
+ * canonical route so all consumers see the same rich schema.
  *
- * Query: market=EGX, status=pending, limit=50
+ * Rule 4 (NO-NEW-FILES / NO-DELETION): file intentionally kept so
+ * existing callers (Flutter app, old dashboards) don't 404.
+ * Rule 27 (NO-FAKE-DATA): returns a proper HTTP 410 Gone with a
+ * clear `deprecated: true` flag — no mock data, no silent pass-through.
+ *
+ * Migration: switch the request URL to
+ *   /api/predictions/honest-tracking/list
+ * (same query params: market, status, limit) — the canonical response
+ * shape is a strict superset of this deprecated route.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-export const dynamic = "force-dynamic";
+
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const PYTHON_BACKEND_URL = (process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010')
-  .replace('localhost', '127.0.0.1');
-
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const market = searchParams.get('market') || 'EGX';
-  const status = searchParams.get('status') || '';
-  const limit = Math.min(200, parseInt(searchParams.get('limit') || '50', 10) || 50);
-
-  // 1) Try Python first (5s timeout)
-  try {
-    const url = `${PYTHON_BACKEND_URL}/api/predictions/tracking/list?${searchParams.toString()}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data);
-    }
-  } catch {}
-
-  // 2) SQLite fallback — read from predictions.db
-  try {
-    const path = require('path');
-    const fs = require('fs');
-    const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
-    if (!fs.existsSync(dbPath)) {
-      return NextResponse.json({ success: true, data: [], source: 'sqlite_fallback', count: 0 });
-    }
-    const Database = require('better-sqlite3');
-    const db = new Database(dbPath, { readonly: true });
-
-    let where = ['market = ?'];
-    let params: unknown[] = [market];
-    if (status) {
-      where.push('UPPER(status) = UPPER(?)');
-      params.push(status);
-    }
-
-    const rows = db.prepare(
-      `SELECT id, ticker, signal, signal_type, status, market,
-              prediction_date, entry_price, target_price, stop_loss,
-              exit_price, actual_return, holding_days, risk_reward,
-              master_score, persona, confidence, outcome_date
-       FROM predictions
-       WHERE ${where.join(' AND ')}
-       ORDER BY prediction_date DESC
-       LIMIT ?`
-    ).all(...params, limit) as Array<Record<string, unknown>>;
-
-    db.close();
-
-    return NextResponse.json({
-      success: true,
-      data: rows,
-      count: rows.length,
-      source: 'sqlite_fallback',
-    });
-  } catch (e) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'تعذّر تحميل التوقعات',
-        details: e instanceof Error ? e.message : 'Unknown',
-        data: [],
-      },
-      { status: 500 }
-    );
-  }
+  const url = new URL(request.url);
+  const canonicalUrl = `/api/predictions/honest-tracking/list${url.search ? `?${url.searchParams.toString()}` : ''}`;
+  return NextResponse.json(
+    {
+      success: false,
+      deprecated: true,
+      error: 'endpoint_deprecated',
+      error_ar:
+        'تم إيقاف هذا الـ endpoint — استخدم /api/predictions/honest-tracking/list بدلاً منه (نفس البارامترات: market, status, limit).',
+      deprecated_at: '2026-10-15',
+      canonical_route: '/api/predictions/honest-tracking/list',
+      canonical_url: canonicalUrl,
+      message: 'Use /api/predictions/honest-tracking/list instead',
+      dropped_fields_count: 17,
+      canonical_fields_count: 50,
+    },
+    { status: 410 }
+  );
 }
