@@ -63967,3 +63967,92 @@ Stage Summary:
 - الحمايات: لم تُلمس (لم أعدّل Python/الإنتاج)
 - القيود: كلها محترمة (لا force push، لا reset --hard، لا بيانات وهمية)
 - dev server: يعمل (GET / = HTTP 200، GET /api/stocks/[ticker]/unified = HTTP 404 صحيح)
+
+---
+Task ID: DEEP-MARKET-SEPARATION-AUDIT
+Agent: general-purpose subagent
+Task: Find ALL places where market filtering is missing/broken (Saudi TADAWUL stocks appearing in US view, etc.)
+
+Scope: API routes, frontend components, Zustand store, DB-level checks.
+
+## DB-Level Findings (CRITICAL — root cause)
+
+### stocks.db (1240 rows, 5 markets)
+- EGX=461, TADAWUL=395, KSE=180, US=137, QSE=67
+- NO cross-market duplicate tickers (currently) — ticker→market is unique
+- BUT: uniqueness is NOT enforced by schema. Future duplicate tickers will silently cause cross-contamination in all queries that don't filter by market.
+
+### predictions.db (1514 rows) — SMOKING GUN
+- EGX=1437, US=76, CRYPTO=1
+- **15 cross-market duplicate tickers confirmed**: OIH, EGCH, EHDR, TAQA, OFH, TANM, MAAL, DHBK, ALIMTI, DBIS, EQUIPM, 1820, ALSAFA, MRC, NRE
+- All 15 have BOTH EGX and "US" labels — looks like a botched migration (the comment in `unified-stock-data.ts:333-338` admits: "many EGX tickers were mislabeled 'US' during the egx_investment_migration")
+- Examples:
+  - `OIH` → stocks.db market=EGX, but predictions exist with market='EGX' AND market='US' (same entry_price, same date)
+  - `1820` → stocks.db market=TADAWUL, but predictions exist with market='EGX' AND market='US'
+  - `ALSAFA` → stocks.db market=KSE, but predictions exist with market='EGX' AND market='US'
+
+**Impact**: A user on EGX view who clicks OIH sees a mixed list — EGX predictions + mislabeled US predictions side-by-side. THIS is the cross-contamination the owner is seeing.
+
+## Findings Table
+
+| # | File | Line | Issue | Fix needed |
+|---|------|------|-------|------------|
+| 1 | src/app/api/predictions/route.ts | 121-134 (ticker branch SQL) | `WHERE ticker = ?` — NO market filter. Returns predictions from ALL markets for ticker. ACTIVELY MIXING markets for 15 duplicate tickers. | Add `AND market = (SELECT market FROM stocks WHERE ticker = ? LIMIT 1)` OR pass `market` query param and add `AND market = ?` |
+| 2 | src/app/api/predictions/route.ts | 74, 258 | `market` is read from query and forwarded to Python, but in the local fallback (305-336) `market` is captured and NEVER used in the SQL WHERE clause | Add `WHERE market = ?` (or subquery against stocks.db) to the fallback query |
+| 3 | src/lib/unified-stock-data.ts | 333-348 | Explicitly REMOVED market filter on predictions lookup with comment "ticker alone is sufficient" — this assumption is FALSE given the 15 cross-market duplicate tickers in predictions.db. Returns latest prediction regardless of market | Restore market filter using `stocks.db.market` as source of truth: `WHERE ticker = ? AND market = (SELECT market FROM stocks WHERE ticker = ? LIMIT 1)` |
+| 4 | src/app/api/maker-radar/route.ts | 107 | `SELECT ticker, current_price, change_percent, volume, name_ar FROM stocks WHERE current_price > 0` — loads ALL stocks across ALL markets into liveMap. Cache contains the right market's stocks but liveMap mixes ALL markets → if a ticker exists in both EGX & TADAWUL stocks.db in the future, enrichment attaches the wrong-market price silently | Add `AND market = ?` filter using the `market` query param (already read at line 62) |
+| 5 | src/app/api/maker-radar/stock/route.ts | 41-44, 69, 159-168 | Does NOT accept `market` query param. `SELECT * FROM stocks WHERE ticker = ?` (no market). Predictions lookup `WHERE ticker = ?` (no market) — same cross-contamination as finding #3 | Accept `market` param; add market filter on stocks and predictions queries (use stocks.db.market as source of truth for predictions) |
+| 6 | src/app/api/deal-advisor/[ticker]/route.ts | 198-205 | `SELECT ... FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1` — no market filter | Accept `market` query param (currently doesn't); add `AND market = ?` filter |
+| 7 | src/app/api/stocks/[ticker]/route.ts | 73 | `getStockByTickerFallback(ticker)` calls flutter-sqlite-fallback.ts `WHERE ticker = ? COLLATE NOCASE LIMIT 1` — no market filter (currently safe because stocks.db has no duplicate tickers, but unsafe by design) | Pass `market` from query params through to the fallback and filter by it |
+| 8 | src/app/api/stocks/[ticker]/route.ts | 100-101 | `injectUnifiedData()` calls `getUnifiedStockData(ticker)` — does not pass market. Internally this does NOT filter predictions by market (see finding #3) | Pass market to `getUnifiedStockData(ticker, market)` once that function supports it |
+| 9 | src/app/api/stocks/[ticker]/unified/route.ts | 27-48 | Does NOT accept `market` query param. Just calls `getUnifiedStockData(ticker)` — internal predictions lookup is unfiltered (finding #3) | Accept `market` query param and pass to `getUnifiedStockData(ticker, market)` |
+| 10 | src/app/api/stocks/[ticker]/comprehensive/route.ts | 158-179 | Prisma `db.stocks.findFirst({ where: { ticker: tickerUpper } })` — no market filter. Returns first matching stock across all markets if duplicates ever appear | Add `market` to the `where` clause using the `market` query param (already read at line 73) |
+| 11 | src/app/api/predictions/honest-tracking/list/route.ts | 370-386 | SQL fetches ALL predictions up to `LIMIT 500` without market filter in WHERE; market filter is applied in JS at line 623-624 AFTER fetch. If first 500 rows are all EGX, a `market=TADAWUL` request returns empty | Move market filter from JS (line 623-624) into SQL WHERE clause: `WHERE market = ?` |
+| 12 | src/lib/flutter-sqlite-fallback.ts | 52-72 | `getStockByTickerFallback(ticker)` queries `WHERE ticker = ? COLLATE NOCASE LIMIT 1` — no market filter | Accept `market` param and add `AND market = ?` filter |
+| 13 | src/modules/predictions/components/PredictionTrackingDashboard.tsx | 561 | Calls `/api/predictions/honest-tracking/live-tracking?market=...` ✓ (this one is correct) | OK — no fix needed here |
+| 14 | src/components/advanced-analysis/SpecialistAnalysisView.tsx | 2527, 2531, 2541 | Calls `/api/maker-radar/stock?ticker=`, `/api/predictions?ticker=`, `/api/stocks/${enc}/unified` — NONE pass `market`. Uses `currentMarket` only for the dropdown placeholder (cosmetic), not for API calls | Append `&market=${encodeURIComponent(currentMarket)}` to all three fetches |
+| 15 | src/modules/stock-analysis/components/StockDetail.tsx | 1072, 1081 | Calls `/api/maker-radar/footprint?ticker=` and `/api/stocks/${ticker}/unified` — neither passes `market` | Append `?market=${encodeURIComponent(currentMarket)}` |
+| 16 | src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx | 198 | `/api/stocks/${ticker}/comprehensive?market=${market}` ✓ (correct) | OK |
+| 17 | src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx | 221 | `/api/stocks/${ticker}/unified` — NO market (the unified endpoint doesn't accept market either; see finding #9) | Add market once endpoint #9 is fixed |
+| 18 | src/modules/stock-analysis/components/StocksView.tsx | 879-985 | Uses `currentMarket` from store + `loadStocks()` (passes market ✓) + `/api/stocks/presets?market=${currentMarket}` ✓ | OK |
+| 19 | src/modules/predictions/components/MakerRadarTab.tsx | 635, 656, 675, 846 | All four API calls correctly pass `market` param | OK |
+| 20 | src/lib/store.ts | 942-989, 1052-1054 | `loadDashboard`, `loadStocks`, `refreshLivePrices` all correctly pass `currentMarket`. No `loadPredictions` exists in store (predictions loaded per-component) | OK |
+| 21 | Many other routes (find scope) — portfolio/unified-watch, portfolio/holdings, alerts/create, finance/*, chart/[ticker], mobile/*, watchlist/route | (various) | All query `FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1` — no market filter. Currently safe because stocks.db has no duplicates, but the pattern is unsafe | Add market filter where applicable; at minimum, document the assumption |
+
+## Cross-contamination scenarios
+
+1. **`/api/stocks` list** — Primary (Python) path forwards `?market=X` ✓; fallback (stocks.db) filters by market ✓. SAFE.
+2. **`/api/predictions` (no ticker)** — Primary (Python) forwards `?market=X` ✓; fallback (predictions.db) IGNORES market param — fetches latest N predictions across ALL markets. UNSAFE when Python is down.
+3. **`/api/predictions?ticker=X`** — Ticker branch queries `WHERE ticker = ?` only — returns ALL predictions for that ticker across ALL markets. ACTIVELY MIXING markets for 15 known cross-market tickers (OIH, ALSAFA, 1820, DHBK, etc.). This is the root cause.
+4. **`/api/predictions/honest-tracking/list`** — Filters market in JS after fetching up to 500 rows from DB. UNSAFE: TADAWUL/US predictions could be cut off by LIMIT 500 before reaching them. Production fallback (line 280) properly forwards market.
+5. **`/api/maker-radar`** — Correctly reads market-specific cache file (`maker_radar_{MARKET}_{date}.json`) ✓. BUT loads ALL stocks.db rows into liveMap (line 107) — currently safe because no duplicate tickers, but unsafe by design.
+6. **`/api/maker-radar/stock?ticker=X`** — Does NOT accept or use market param. Same cross-contamination risk as #3 (predictions lookup unfiltered).
+7. **`/api/stocks/[ticker]`** — Fallback (flutter-sqlite-fallback.ts) doesn't filter by market. Currently safe but unsafe by design.
+8. **`/api/deal-advisor/[ticker]`** — No market filter on stocks query.
+9. **`/api/stocks/[ticker]/unified`** — Doesn't accept market param. Internal `getUnifiedStockData()` queries predictions.db WITHOUT market filter (active cross-contamination bug).
+10. **`/api/stocks/[ticker]/comprehensive`** — Reads market from query ✓; passes to Python deep-analysis ✓; but Prisma fallback `db.stocks.findFirst({where:{ticker}})` is unfiltered.
+
+## Recommended priority order
+
+### P0 (root cause — fix immediately)
+- **Finding #3** (`unified-stock-data.ts:333-348`) — restore market filter using stocks.db.market as source of truth. This unblocks findings #1, #5, #8, #9.
+- **Finding #1** (`predictions/route.ts:121-134`) — add market filter in ticker branch.
+- **Finding #2** (`predictions/route.ts:305-336`) — add market filter in fallback query.
+
+### P1 (fix soon — currently hidden only because stocks.db has no duplicates)
+- **Finding #4** (`maker-radar/route.ts:107`) — scope liveMap to current market.
+- **Finding #5** (`maker-radar/stock/route.ts`) — accept market param, filter queries.
+- **Finding #6** (`deal-advisor/[ticker]/route.ts`) — accept market param, filter.
+- **Finding #11** (`honest-tracking/list/route.ts`) — move market filter from JS into SQL.
+
+### P2 (frontend cleanup)
+- **Finding #14** (`SpecialistAnalysisView.tsx`) — append `&market=` to all per-ticker fetches.
+- **Finding #15** (`StockDetail.tsx`) — append `?market=` to footprint + unified fetches.
+- **Finding #10** (`comprehensive/route.ts`) — add market to Prisma findFirst.
+
+### P3 (defense-in-depth — schema hardening)
+- Add a UNIQUE INDEX on `(ticker, market)` to stocks.db to prevent future duplicate-ticker contamination at the DB layer.
+- Run a one-time cleanup script on predictions.db to fix mislabeled 'US' market values for the 15 known cross-market tickers (OIH, EGCH, EHDR, TAQA, OFH, TANM, MAAL, DHBK, ALIMTI, DBIS, EQUIPM, 1820, ALSAFA, MRC, NRE) — set market to the value from stocks.db.market for each ticker.
+
+---
+
