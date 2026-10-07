@@ -63474,3 +63474,30 @@ Stage Summary:
 - Next: implement the WHERE updated_at >= datetime('now','-2 days') filters (Phase 4 task). For re-enabling any writer in an emergency, set `SKIP_STORED_ANALYSES_WRITE = False` at the write site.
 ---
 
+
+---
+Task ID: UNIFICATION-ALL-PHASES-COMPLETE
+Agent: main (with 8 sub-agents across 2 rounds)
+Task: إكمال جميع مراحل التوحيد الجذرية (0 + 1 + 2 + 3)
+
+Work Log:
+- المرحلة 0 (إخفاء الشارات): 7 ملفات UI + تعطيل MaestroWidget
+- المرحلة 1 (توحيد العتبات): engine_settings.py + freshness gate + اختبار آلي
+- المرحلة 2 (توحيد RSI + قتل Maestro): 49 ملف بـ 4 sub-agents
+- المرحلة 3 (تعطيل sub-engines + مصدر سعر + كاتب واحد): 27 ملف بـ 3 sub-agents
+
+Stage Summary:
+- 14 commits على GitHub
+- ~85 ملف معدّل
+- 8 sub-agents شغلوا بالتوازي
+- 0 syntax errors
+- Maestro معطل نهائياً (API + Python + UI)
+- 5 sub-engines معطلة (board + confluence + sniper + v82 + professional)
+- RSI موحد (Wilder's)
+- العتبات موحدة (78/65/55/40/25)
+- مصدر سعر واحد (stocks.db.stocks.current_price)
+- كاتب واحد (daily_predictor.py)
+- اختبار آلي (unification_test.py)
+
+النتيجة النهائية: محرك قرار واحد + مصدر بيانات واحد + جدول حكم واحد + كاتب واحد.
+
