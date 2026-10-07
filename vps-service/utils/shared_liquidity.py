@@ -61,7 +61,7 @@ DEAD_MARKET_CEILING = 700_000
 # ─── PHASE-1: EXPLOSIVE SURGE PATH (2026-09-04) ────────────────────────────
 # قرار المالك: مسار خاص لصيد الأسهم الانفجارية اللي بتطير من السيولة القليلة.
 # الشروط (كلها مع بعض):
-#   1. volume surge ≥ 2.5× (أقوى من الـ bypass العادي 1.5×)
+#   1. volume surge ≥ 2.0× (أقوى من الـ bypass العادي 1.5×)
 #   2. السعر فوق SMA20
 #   3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
 # النتيجة: سمح بالدخول حتى لو السيولة المطلقة قليلة (بس turnover > 0)
@@ -174,7 +174,7 @@ def is_explosive_surge(
 
     قرار المالك (2026-09-04): مسار خاص لصيد الأسهم اللي بتطير من السيولة القليلة.
     الشروط (كلها مع بعض):
-      1. volume surge ≥ 2.5× متوسط 20d (أقوى من الـ bypass العادي 1.5×)
+      1. volume surge ≥ 2.0× متوسط 20d (أقوى من الـ bypass العادي 1.5×)
       2. السعر فوق SMA20
       3. انضغاط سابق: range 20 يوم (قبل الـ surge) < 18%
 
@@ -198,7 +198,7 @@ def is_explosive_surge(
     if not volumes or len(volumes) < base_lookback + surge_lookback:
         return False, f'بيانات حجم غير كافية ({len(volumes) if volumes else 0} < {base_lookback + surge_lookback})', details
 
-    # 1. Volume surge ≥ 2.5×
+    # 1. Volume surge ≥ 2.0× (EXPLOSIVE_SURGE_VOLUME_RATIO)
     recent_vol = volumes[-surge_lookback:]
     recent_avg = sum(recent_vol) / len(recent_vol)
     # base = الـ 20 شمعة قبل الـ surge (مش شامله الـ surge نفسه)
@@ -214,7 +214,7 @@ def is_explosive_surge(
     details['vol_ratio'] = round(vol_ratio, 2)
 
     if vol_ratio < surge_ratio:
-        return False, f'vol_surge {vol_ratio:.2f} < {surge_ratio} (مطلوب ≥ 2.5×)', details
+        return False, f'vol_surge {vol_ratio:.2f} < {surge_ratio} (مطلوب ≥ 2.0×)', details
 
     # 2. السعر فوق SMA20
     if not closes or len(closes) < sma_period:
@@ -280,7 +280,7 @@ def should_reject_by_liquidity(
     أولوية الفحص:
       1. turnover=0 → ارفض (pump-and-dump guard)
       2. turnover ≥ dynamic threshold → اقبل عادي
-      3. EXPLOSIVE_SURGE (2.5× + SMA20 + range<18%) → اقبل بـ position size 2%
+      3. EXPLOSIVE_SURGE (2.0× + SMA20 + range<18%) → اقبل بـ position size 2%
          (حتى لو turnover < 50% threshold — ده أقوى من bypass العادي)
       4. VOLUME_SURGE_BYPASS (1.5× + MA20) + turnover ≥ 50% threshold → اقبل بـ 2.5%
       5. else → ارفض
@@ -335,7 +335,7 @@ def should_reject_by_liquidity(
                 False,
             )
         # حتى الـ bypass ما قدرش — turnover أقل من 50% من threshold
-        # بس لو فيه explosive_surge signals (vol ≥ 2.5× بس range مش منضغط أو price تحت SMA20)
+        # بس لو فيه explosive_surge signals (vol ≥ 2.0× بس range مش منضغط أو price تحت SMA20)
         # نرفض بأمان
         return (
             True,
@@ -767,8 +767,8 @@ def compute_money_flow(
     الطبقة 5: فلتر الموت السريري (لو حجم اليوم < 50% من المتوسط → مش شراء)
     الطبقة 6: توافق السعر (لو الإغلاق تحت SMA10 → مش شراء قوي)
 
-    المعادلة النهائية:
-      weighted_buy_pct = (CLV_5d_avg × 0.40) + (CMF × 0.30) + (vol_confirmation × 0.20) + (price_above_sma × 0.10)
+    المعادلة النهائية (P2-13 FIX — docstring كان غير متطابق مع الكود):
+      weighted_buy_pct = (CLV_5d_avg × 0.35) + (CMF × 0.30) + (vol_confirmation × 0.20) + (price_above_sma × 0.15)
 
     Returns:
         dict فيه: buy_pct, sell_pct, net_flow_egp, money_flow_state, + details
@@ -865,6 +865,17 @@ def compute_money_flow(
             price_above_sma = 0.0  # تحت SMA10 = هبوط
 
     # ── الحساب النهائي: weighted buy_pct ──
+    # P0-2 FIX (RADAR-AUDIT-PY B3): توحيد تدريجي آمن لصيغة Pine Script V60.2.
+    #
+    # الصيغة الحالية (legacy): CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15
+    # صيغة Pine (canonical):   CLV×0.65 + body×0.35  (مطابقة لـ master_analyzer.detect_who_is_buying L908)
+    #
+    # ⚠️ التحذير: التبديل المباشر سيغيّر كل قيم buy_pct التاريخية في الـ cache → يحتاج backtest مقارن.
+    # الحل التدريجي: flag بيئي RADAR_USE_PINE_FORMULA — لو true → استخدم صيغة Pine، غير ذلك → الصيغة الحالية.
+    # default = false (backward compat) حتى يُجرى backtest مقارن + موافقة المالك.
+    import os as _os
+    _USE_PINE_FORMULA = _os.environ.get('RADAR_USE_PINE_FORMULA', 'false').lower() == 'true'
+
     # CLV: -1..1 → 0..100
     clv_score = (clv_5d_weighted + 1) / 2 * 100  # 0..100
     # CMF: -1..1 → 0..100
@@ -874,13 +885,25 @@ def compute_money_flow(
     # price_above_sma: 0..1 → 0..100
     sma_score = price_above_sma * 100
 
-    # weighted average
-    raw_buy_pct = (
-        clv_score * 0.35 +    # CLV (35%)
-        cmf_score * 0.30 +    # CMF (30%)
-        vol_score * 0.20 +    # Volume (20%)
-        sma_score * 0.15      # SMA10 (15%)
-    )
+    if _USE_PINE_FORMULA:
+        # P0-2: صيغة Pine الكنسية (مطابقة لـ master_analyzer.detect_who_is_buying)
+        # pressure_score = CLV×0.65 + body×0.35
+        # body_pressure = |close-open|/(high-low) × sign(close>open ? 1 : -1)
+        _body_range = max(last_high - last_low, 0.0001)
+        _body_pressure = (abs(last_close - last_open) / _body_range) * (1.0 if last_close >= last_open else -1.0)
+        _body_score = ((_body_pressure + 1) / 2) * 100  # -1..1 → 0..100
+        raw_buy_pct = (
+            clv_score * 0.65 +      # CLV (65%) — مطابق Pine
+            _body_score * 0.35      # body (35%) — مطابق Pine
+        )
+    else:
+        # legacy formula (current behavior — backward compat قبل backtest)
+        raw_buy_pct = (
+            clv_score * 0.35 +    # CLV (35%)
+            cmf_score * 0.30 +    # CMF (30%)
+            vol_score * 0.20 +    # Volume (20%)
+            sma_score * 0.15      # SMA10 (15%)
+        )
 
     # تطبيق trend penalty
     buy_pct = max(0, min(100, raw_buy_pct + trend_penalty))
@@ -986,7 +1009,26 @@ def detect_life_cycle(
     last_vol = volumes[-1]
 
     # ATR proxy: متوسط المدى اليومي في آخر 14 يوم
-    if len(closes) >= 14:
+    # P1-11 FIX (RADAR-AUDIT-PY B4): atr_sma كان = atr (proxy تالف) → الشرط
+    # "atr < atr_sma * 0.6" كان دائمًا False → مرحلة "🟡 نعاس" unreachable.
+    # الإصلاح: atr_sma = متوسط مدى الـ 14 يوم السابقة (مستقل عن atr الحالي).
+    if len(closes) >= 28:  # نحتاج 14 للـ atr الحالي + 14 للـ atr_sma
+        today_ranges = []
+        sma_ranges = []
+        for i in range(-14, 0):
+            if i > -len(closes):
+                h = highs[i] if highs and len(highs) > abs(i) else max(closes[i], closes[i-1])
+                l = lows[i] if lows and len(lows) > abs(i) else min(closes[i], closes[i-1])
+                today_ranges.append(h - l)
+        for i in range(-28, -14):
+            if i > -len(closes):
+                h = highs[i] if highs and len(highs) > abs(i) else max(closes[i], closes[i-1])
+                l = lows[i] if lows and len(lows) > abs(i) else min(closes[i], closes[i-1])
+                sma_ranges.append(h - l)
+        atr = sum(today_ranges) / len(today_ranges) if today_ranges else 0
+        atr_sma = sum(sma_ranges) / len(sma_ranges) if sma_ranges else atr
+    elif len(closes) >= 14:
+        # بيانات كافية للـ atr فقط (fallback: atr_sma = atr — للتوافق الخلفي)
         ranges = []
         for i in range(-14, 0):
             if i > -len(closes):
@@ -994,7 +1036,7 @@ def detect_life_cycle(
                 l = lows[i] if lows and len(lows) > abs(i) else min(closes[i], closes[i-1])
                 ranges.append(h - l)
         atr = sum(ranges) / len(ranges) if ranges else 0
-        atr_sma = atr  # proxy
+        atr_sma = atr  # fallback (بيانات غير كافية لـ SMA منفصل)
     else:
         atr = max(last_high - last_low, 0.01)
         atr_sma = atr
