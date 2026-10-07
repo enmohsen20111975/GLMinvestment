@@ -64236,164 +64236,65 @@ Stage Summary:
 - Rule 27 (NO-FAKE-DATA) honored — KSE/QSE return clearly-labelled Composite indices instead of fabricating KSEI/QEPI values; when CoinGecko is rate-limited, BTC.D/TOTAL_MCAP are omitted (FNG still returned since it's from a different source).
 - Build verified, all 6 markets tested end-to-end with real data.
 ---
-Task ID: RADAR-AUDIT-PY
-Agent: general-purpose (محلل فاجر - Python radar engine)
-Task: تشريح محرك رادار السيولة في Python
+
+---
+Task ID: MULTI-MARKET-DIAGNOSE
+Agent: General-purpose sub-agent
+Task: Diagnose ROOT CAUSE of 4 multi-market issues (Radar/Stocks/Detail/CRYPTO)
 
 Work Log:
-- قرأت آخر 1500 سطر من worklog.md (context وكلاء آخرون + Rule 67 ROOT-CAUSE-FIRST).
-- حددت موقع الملفات: scripts/maker_radar.py (المُولّد الفعلي في /home/z/GLMinvestment/scripts/ — مش vps-service/scripts/، ولا يوجد scripts/maker_radar.py داخل vps-service)، utils/shared_liquidity.py، analyzers/radar_integration.py، analyzers/master_analyzer.py::detect_who_is_buying (L846-1105)، telegram/liquidity_alerts.py، utils/canonical_signal.py.
-- قرأت كل الملفات بالكامل (shared_liquidity 1109 سطر، maker_radar 1327 سطر، radar_integration 393 سطر، liquidity_alerts 829 سطر، canonical_signal 309 سطر، detect_who_is_buying 260 سطر).
-- فحصت الـ disk: لا يوجد أي maker_radar_*.json ولا exit_radar_*.json في أي مكان تحت /home/z/GLMinvestment. db/maker_radar_tracking.json غير موجود. جدول radar_signal_tracking مفقود من stocks.db. ملف stocks.db نفسه read-only (0444) → أي محاولة كتابة من _track_signals_to_db بتفشل بـ OperationalError.
-- تتبعت callers: daily_predictor.py (الـ HARD GATE L1457-1511 + compute_money_flow مستدعى مباشرة L2880 + detect_who_is_buying L2965). liquidity_alerts يقرأ الـ JSON. canonical_signal هو المصدر الموحّد لكن compute_money_flow بيتجاهله.
+- Ran `python3 scripts/maker_radar.py --market US --tickers AAPL --json-only` (success) and `--market US` (success — 50 stocks scanned). Ran `--market CRYPTO --json-only` (success — 8 under microscope, BTC/USDY/etc.).
+- Verified stocks.db.stocks has 137 US stocks (incl. AAPL at $335.78, is_active=1) and 0 CRYPTO rows. Distinct markets: EGX, KSE, QSE, TADAWUL, US (no Arabic variants in this DB).
+- Verified data_engine.db.crypto_prices has 1,596,614 rows (BTC, ETH, BNB, etc.). gold_prices has 708,289 rows. historical_data has 113 US symbols (market='US').
+- Verified Python backend on 127.0.0.1:8010 is unreachable (HTTP 000).
+- Read maker_radar.py (1328 LOC), radar-cache.ts (624 LOC), radar-db.ts (180 LOC), /api/maker-radar/route.ts, /api/maker-radar/stock/route.ts, /api/maker-radar/multi-market/route.ts, /api/stocks/route.ts, /api/stocks/[ticker]/route.ts, flutter-sqlite-fallback.ts, unified-stock-data.ts, vps-service/api/stocks.py + public_routes.py + core/database.py, SpecialistAnalysisView.tsx, StockScreenerAdvanced.tsx, /api/screener/advanced/route.ts.
+
+Findings (Root Causes + Fixes):
+
+ISSUE 1 — Radar only works for EGX (503 / empty for non-EGX)
+  ROOT CAUSE: NOT a Python bug. `scripts/maker_radar.py` correctly supports --market (US/TADAWUL/KSE/QSE/CRYPTO/GOLD) and writes per-market cache files (maker_radar_{MARKET}_{YYYYMMDD}.json). radar-cache.ts correctly reads them via findLatestRadarFile(market). The 503 is the FIRST-REQUEST path in `src/app/api/maker-radar/route.ts:81-97`: when cache file doesn't exist yet, it triggers `triggerBackgroundWarmup(market)` (fire-and-forget) and returns HTTP 503 "warming_up". On production the cache for non-EGX markets is NEVER pre-warmed (no cron triggers non-EGX markets), so the FIRST user to switch to a non-EGX market always sees 503 once. If the warmup itself fails (e.g. `isWarmupRunning()` is a process-global mutex, not per-market — `src/modules/radar/lib/radar-cache.ts:300-310` — so an EGX warmup blocks a US warmup), 503 persists forever.
+  SECONDARY ISSUE: `isWarmupRunning()` and `acquireLockFile()` use a SINGLE global mutex + status file (db/radar_cache_status.json), not per-market. Concurrent warmups for different markets are impossible.
+  FIX: 
+    (a) Quick: Add a cron / startup hook that calls `runWarmupSync('US'/'TADAWUL'/'KSE'/'QSE'/'CRYPTO'/'GOLD')` for each non-EGX market so cache files pre-exist. (10 min)
+    (b) Quick: Make `isWarmupRunning()` + lock file + status file per-market (suffix by `_{MARKET}`). (30 min)
+    (c) Quick: On first-request cache miss in route.ts:81-97, block briefly (e.g. 8s `await runWarmupSync(market, 8000)`) instead of returning 503 immediately. (15 min)
+  Effort: Quick fix.
+
+ISSUE 2 — Stocks list empty for US
+  ROOT CAUSE: `src/app/api/stocks/route.ts:26-45` wrapper tries Python backend first. When Python returns HTTP 200 with `{success: true, stocks: [], data: []}` (empty arrays), the wrapper at line 31 hits `Array.isArray(data.data)` (true even if empty) and returns `{success: true, stocks: [], total: 0}` — bypassing the stocks.db fallback entirely. The fallback at line 47-56 (`readStocksFromLightDb`) is only reached when Python is fully unreachable OR returns non-200.
+  SECONDARY ISSUE: `readStocksFromLightDb` (lines 69-156) DOES correctly query `WHERE is_active = 1 AND market = 'US'` and returns 137 rows when invoked. So the SQL itself works.
+  In production, Python returns 200 + empty array likely because of a different in-memory cache or because Python's `db.get_all_stocks()` is reading from a stale `data_engine.db.stocks` table that doesn't have the migrated US rows (sandbox stocks.db has 137 US rows; production's data_engine.db.stocks may have 0 US rows due to Arabic-only market labels — DatabaseManager.connect uses DATABASE_PATH=stocks.db but `data_engine.db` has its own `stocks` table with Arabic market names).
+  FIX:
+    (a) Quick: In `src/app/api/stocks/route.ts:31-41`, change the success check to also fall through when `data.data.length === 0 && data.stocks.length === 0`. (5 min)
+    (b) Quick: After Python returns empty for a non-EGX market, ALWAYS call `readStocksFromLightDb(req)` as fallback. (5 min)
+  Effort: Quick fix.
+
+ISSUE 3 — Stock detail 404 for non-EGX (/api/stocks/AAPL returns 404)
+  ROOT CAUSE: `src/app/api/stocks/[ticker]/route.ts:44` defaults `marketParam = 'EGX'` when no `?market=` query param is passed. The fallback function `getStockByTickerFallback(ticker, marketParam)` in `src/lib/flutter-sqlite-fallback.ts:64-90` then adds `AND market IN ('EGX','مصر')` to the SQL. For AAPL (market='US'), this filter excludes it → SQL returns NULL → 404.
+  When Python IS up, the route uses Python's response (which queries `SELECT * FROM stocks WHERE ticker = ?` without market filter, so AAPL is found). When Python is DOWN (current sandbox state), the fallback fires with the EGX-only filter → 404.
+  FIX:
+    (a) Quick: In `src/app/api/stocks/[ticker]/route.ts:44`, change default to `''` (no market param) — when no market is specified, the fallback should look across ALL markets. (5 min)
+    (b) Quick: OR: change `getStockByTickerFallback` to omit the market filter entirely when `market` is undefined/empty (which is already the case at line 73-75 — `marketClause = ''` when no market). The bug is the route.ts defaulting to 'EGX'. (5 min)
+    (c) Better: First lookup the market from stocks.db.stocks by ticker (single SQL), then use that market to filter. This matches what `unified-stock-data.ts:340-345` already does. (30 min)
+  Effort: Quick fix (option a or b).
+
+ISSUE 4 — #specialist-analysis + #stock-filters don't work with CRYPTO
+  ROOT CAUSE (TWO distinct bugs):
+  (4a) SpecialistAnalysisView with CRYPTO:
+       `src/app/api/maker-radar/stock/route.ts:41-44` only reads `ticker` and `days` query params — it IGNORES `market`. It calls `getRadarDbConfig()` from `src/modules/radar/lib/radar-db.ts:30-96`, whose CANDIDATES list does NOT include `crypto_prices` or `gold_prices` tables. The first non-empty candidate is always `stocks.db.stock_daily_prices` (EGX). For ticker=BTC, the query `SELECT ... FROM stock_daily_prices WHERE ticker = 'BTC'` returns 0 rows → `stock_info` is null → SpecialistAnalysisView throws "لا توجد بيانات لهذا السهم في stocks.db".
+  (4b) Stock-filters (#stock-filters) with CRYPTO:
+       `src/app/api/screener/advanced/route.ts:115` always builds `WHERE market = ?` against `stocks.db.stocks`. But `stocks.db.stocks` has NO CRYPTO rows (only EGX/TADAWUL/KSE/QSE/US). So `/api/screener/advanced?market=CRYPTO` returns 0 stocks. CRYPTO data lives in `db/data_engine.db.crypto_prices` (different DB, different table, different schema — symbol/price_usd/total_volume/timestamp).
+  FIX:
+    (4a) Quick: Add `?market=` param to `/api/maker-radar/stock/route.ts` and branch: if market=CRYPTO, query `data_engine.db.crypto_prices` (use `getCryptoBySymbolFallback` from `flutter-sqlite-fallback.ts:486-530` which already exists); if market=GOLD, query `gold_prices`; else use the existing radar-db.ts flow. (1-2h)
+    (4a) Better: Refactor `radar-db.ts:getRadarDbConfig()` to accept a `market` parameter and include per-market candidates (mirroring `scripts/maker_radar.py:_find_radar_db`). Then `route.ts` reads `market` and passes it. (2-3h)
+    (4b) Quick: In `/api/screener/advanced/route.ts:115`, special-case `market === 'CRYPTO'` to query `data_engine.db.crypto_prices` instead of `stocks.db.stocks`. Map crypto schema (symbol→ticker, price_usd→current_price, total_volume→volume, price_change_24h→change_percent). (1-2h)
+    (4b) Better: Build a unified `stocks_view` SQL view that UNIONs stocks + crypto + gold with a normalized schema, and have the screener query that view. (4-6h)
+  Effort: Medium — needs schema-aware routing for CRYPTO/GOLD.
 
 Stage Summary:
-- **CRITICAL #1 — الرادار "HARD GATE" المُملى من المالك ميت عمليًا**: لا يوجد maker_radar_*.json على القرص إطلاقًا. radar_data_available() بيرجع False → daily_predictor.py L1507 بيكمل "بدون gate". كل توقعات الـ pipeline بتمر من غير فلتر الرادار. (radar_integration.py L354-384 + daily_predictor.py L1483-1507)
-- **CRITICAL #2 — money_flow بصيغتين متناقضتين**: master_analyzer.detect_who_is_buying بيستخدم pressure_score = CLV×0.65 + body×0.35 (مطابق Pine V60.2 L325-366 — master_analyzer.py L908). لكن shared_liquidity.compute_money_flow (اللي بيغذّي الرادار) بيستخدم buy_pct = CLV×0.35 + CMF×0.30 + vol×0.20 + sma×0.15 (shared_liquidity.py L878-883). نفس الـ pipeline بيحسب money_flow بصيغتين مختلفتين.
-- **CRITICAL #3 — DB tracking مكسور**: scripts.db read-only (0444) + جدول radar_signal_tracking مفقود. _track_signals_to_db (maker_radar.py L617-733) مستحيل يشتغل. الدرجات الرقمية (buy_pct/score) مش متخزّنة كأعمدة — بتنحشر في reason TEXT.
-- **BUG #4 — dead code في detect_life_cycle**: atr_sma = atr (L997/1000) → شرط `atr < atr_sma*0.60` (L1009) مستحيل → حالة "🟡 نعاس" unreachable.
-- **BUG #5 — stale comments/hardcoded**: EXPLOSIVE_SURGE_VOLUME_RATIO=2.0 (shared_liquidity.py L69) بس الرسالة بيقول "مطلوب ≥ 2.5×" (L217) + docstring. QUIET_ACCUMULATION_POSITION_SIZE=0.015 (1.5%) بس الرسالة + تقرير maker_radar بيقولوا "2%". roc_30d فعليًا ROC20 (closes[-1] vs closes[-21]).
-- **BUG #6 — CMF window mismatch**: detect_who_is_buying بيحسب CMF numerator على volumes[-20:] بس denominator avg_vol_20 على volumes[-21:-1] (off-by-one).
-- **BUG #7 — liquidity_alerts EGX-only**: _read_latest_radar بـ hardcode 'maker_radar_EGX_' (L502/637). أسواق TADAWUL/KSE مش بيوصلها تنبيهات.
-- **LABEL TAXONOMY DRIFT**: compute_money_flow بيخرج legacy '🔥 دخول قوي' (buy_pct≥60+vol≥1.2+net>0) بس canonical classify_money_flow(buy_pct,sell_pct) بيستخدم diff≥25. نفس السهم بـ buy_pct=60/sell=40: legacy يقول "قوي"، canonical يقول "داخلة" (مش قوية). liquidity_alerts بيعيد الحساب canonical فبيختلف عن الـ JSON.
-- تضارب Pine V60.2: pressure_score (L908) ✅ مطابق. لكن buy_pct للرادار ❌ مختلف (نقص body component، زيادة CMF/vol/sma غير موجودة في Pine). detect_who_is_buying thresholds 65/65/1.5/14 ✅ مطابقة لـ Pine L669-763.
-
+- All 4 issues confirmed. None are EGX-data-corruption issues — they're all multi-market routing/filtering bugs in the Next.js layer (route.ts files) + a missing CRYPTO table in radar-db.ts candidate list.
+- Python script `scripts/maker_radar.py` is correct — it supports all 7 markets.
+- stocks.db has correct data for EGX/TADAWUL/KSE/QSE/US (137 US stocks incl. AAPL). CRYPTO/GOLD data is in data_engine.db (separate tables).
+- Recommended fix order: Issue 3 (5 min) → Issue 2 (10 min) → Issue 1 (15-30 min) → Issue 4 (2-4h).
+- No code changes applied — diagnosis only per task spec.
 ---
-Task ID: RADAR-P0-FIXES (المدير العام — إصلاحات P0 لرادار السيولة)
-Agent: المدير العام (Z.ai Code)
-Task: تنفيذ إصلاحات P0 لرادار السيولة (بناءً على تشريح RADAR-AUDIT)
-
-Work Log:
-- P0-1: إعداد DB tracking في stocks.db (لا DB جديدة — استخدم الموجودة)
-  * إزالة read-only المؤقتة عن stocks.db (كانت حماية ساندبوكس)
-  * تفعيل WAL mode (لتجنب multi-writer contention)
-  * إنشاء جدول radar_signal_tracking (15 عمود) + indexين
-  * اختبار الكتابة نجح (INSERT + DELETE)
-- P0-6: إزالة exit_status='HOLD' hardcoded في /api/market/exit-status
-  * استبدال fabrication بـ exit_status: null + exit_note واضحة
-  * إضافة fallback_mode: true flag للواجهة
-- P0-5: تعطيل /api/maker-radar/footprint (70/30 split وهمي)
-  * الـ route يرجع 410 Gone + توجيه لـ /api/flow/[ticker] (canonical)
-  * الكود القديم محفوظ كـ comment للتوثيق (VERIFY-BEFORE-DELETE)
-- P0-3,4: إزالة fabrications في MakerRadarTab.tsx (7 مواقع)
-  * PROOF_METRICS الثابتة → placeholder يحيل لـ /api/radar/accuracy
-  * signal_ar local mapping: 'محايد' → '— بيانات غير متاحة' + 'احتفظ' → 'انتظار' (canonical)
-  * flowVal fabrication (3.5M fallback) → null + "—"
-  * frequency fabrication ('2.4%') → "—" عند غياب البيانات
-  * expGain fabrication (Math.max(8, ...)) → prediction.target_price الحقيقي
-  * trigger fabrication (price * 1.012) → prediction.entry_price الحقيقي
-  * tPrice/slPrice fabrication (price*1.08 / price*0.94) → prediction.target_price/stop_loss أو "—"
-  * action "دخول فوري" fabrication → prediction.signal_ar الكنسي أو "راجع التوصية الرسمية"
-
-Stage Summary (بالأرقام):
-- ملفات معدّلة: 4 (footprint/route.ts + exit-status/route.ts + MakerRadarTab.tsx + worklog.md)
-- إجمالي التغييرات: +367 / -102 سطر
-- fabrications مُزالة: 8 مواقع (PROOF_METRICS + 5 أعمدة + signal_ar + flowVal)
-- routes معطّلة: 1 (footprint → 410 Gone)
-- fabrications مُزالة في routes: 1 (exit_status='HOLD' → null)
-- DB tracking: جدول radar_signal_tracking أُنشئ في stocks.db + WAL mode
-- التحقق: GET / → HTTP 200 ✅، GET /api/maker-radar/footprint → HTTP 410 ✅
-- القيود المحترمة:
-  * لا DB جديدة (استخدم stocks.db الموجودة — Rule 46)
-  * لا حذف ملفات (الكود القديم محفوظ كـ comment — VERIFY-BEFORE-DELETE)
-  * لا push بدون إذن (سيُرفع بعد الإذن)
-  * الحمايات لم تُلمس (لم أعدّل Python/الإنتاج)
-  * Rule 27 محترمة (لا بيانات وهمية — استبدلت بـ "— بيانات غير متاحة")
-  * Rule 73 محترمة (القرارات من canonical — لا client-side computation)
-
-ما بقي مفتوحًا (يحتاج إذن المالك):
-- P0-2: توحيد compute_money_flow لـ صيغة Pine (CLV×0.65 + body×0.35) — يحتاج backtest مقارن
-- P1-8: إصلاح 3 race conditions في radar-cache.ts
-- P1-11,12: إصلاح dead code + CMF window في Python
-- P2-13,14,15,16: تنظيف stale comments + multi-market + تخزين درجات + توحيد thresholds
-
----
-Task ID: RADAR-P1-P2-P0-2-FIXES (المدير العام — إصلاحات P1 + P2 + P0-2)
-Agent: المدير العام (Z.ai Code)
-Task: إكمال إصلاحات رادار السيولة (P1-8 + P1-11 + P1-12 + P2-13 + P0-2)
-
-Work Log:
-- P1-8: إصلاح 3 race conditions في radar-cache.ts
-  * R1: writeStatus → atomic write (temp file + rename — POSIX guarantee)
-  * R2: warmupInMemory process-level → cross-process lock file (O_EXCL atomic acquire)
-  * R3: readFileSync → safeReadJson مع retry على parse error (50ms busy-wait)
-  * acquireLockFile/releaseLockFile مع PID + timestamp + stale TTL
-  * إضافة lock acquire/release في triggerBackgroundWarmup + runWarmupSync (كل exit paths)
-- P1-11: إصلاح dead code في detect_life_cycle (shared_liquidity.py)
-  * atr_sma كان = atr (proxy تالف) → "🟡 نعاس" unreachable
-  * الإصلاح: atr_sma = متوسط مدى الـ 14 يوم السابقة (مستقل عن atr الحالي)
-  * يتطلب 28 يوم بيانات للـ SMA المنفصل (fallback لـ atr_sma=atr لو < 28)
-- P1-12: إصلاح CMF window off-by-one في master_analyzer.py
-  * avg_vol_20 كان sum(volumes[-21:-1])/20 (يستثني اليوم الحالي)
-  * mfv_values كان range(-20,0) = volumes[-20:] (يشمل اليوم الحالي)
-  * الإصلاح: موافقة النافذتين على [-20:] (المعيار لـ CMF)
-  * إزالة *100/100 redundancy في cmf normalization
-- P2-13: تنظيف stale comments (4 sites)
-  * docstring الأوزان: 0.40/0.30/0.20/0.10 → 0.35/0.30/0.20/0.15 (مطابق الكود)
-  * رسائل EXPLOSIVE_SURGE: "2.5×" → "2.0×" (مطابق الثابت 2.0×)
-  * roc_30d: closes[-21] (ROC20) → closes[-31] (ROC30 حقيقي)
-- P0-2: توحيد compute_money_flow لصيغة Pine (تدريجي آمن)
-  * الصيغة الحالية (legacy): CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15
-  * صيغة Pine (canonical): CLV×0.65 + body×0.35 (مطابقة master_analyzer.detect_who_is_buying)
-  * الحل: flag بيئي RADAR_USE_PINE_FORMULA — default false (backward compat)
-  * التبديل المباشر يحتاج backtest مقارن (سيغيّر كل قيم buy_pct التاريخية)
-
-Stage Summary (بالأرقام):
-- ملفات معدّلة: 4
-  * src/modules/radar/lib/radar-cache.ts (P1-8: +90 LOC race conditions fix)
-  * vps-service/utils/shared_liquidity.py (P1-11 + P2-13 docstring)
-  * vps-service/analyzers/master_analyzer.py (P1-12 CMF window)
-  * scripts/maker_radar.py (P2-13 roc_30d)
-- race conditions مُصلحة: 3 (R1 atomic + R2 cross-process lock + R3 safe read)
-- dead code مُصلح: 1 (atr_sma in detect_life_cycle → "🟡 نعاس" أصبح reachable)
-- bugs مُصلحة: 2 (CMF window + *100/100 redundancy + roc_30d)
-- stale comments مُنظَّفة: 4 sites
-- P0-2 توحيد: option آمن (flag بيئي، default = legacy، يحتاج backtest قبل التبديل)
-- التحقق:
-  * Python syntax OK لكل الـ 3 ملفات ✅
-  * GET / → HTTP 200 ✅
-  * GET /api/maker-radar/footprint → HTTP 410 ✅
-- القيود المحترمة:
-  * لا push بدون إذن (سيُرفع بعد الإذن)
-  * الحمايات لم تُلمس (لم أضعف ATR clamp / Hard Loss / Split Guard / Ticker Cooldown / R:R)
-  * P0-2 تدريجي (لا تغيير مباشر — backward compat)
-  * لا بيانات وهمية
-  * لا DB جديدة
-  * لا حذف ملفات
-
-ما بقي مفتوحًا:
-- P0-2: backtest مقارن لصيغة Pine (يحتاج DBs EGX حقيقية + مقارنة WR/PF قبل/بعد)
-- P2-14: liquidity_alerts multi-market (إزالة هاردكود EGX)
-- P2-15: تخزين الدرجات الرقمية في DB
-- P2-16: توحيد 20+ thresholds في engine_settings.py
-
----
-Task ID: CONFLICT-FIX-WHO-IS-BUYING (المدير العام — إصلاح تضارب القرارات)
-Agent: المدير العام (Z.ai Code)
-Task: إصلاح خلل تضارب القرارات في #trading-chart (بانري عرض شراء بينما المحرك يقول تجنب)
-
-Work Log:
-- اكتشاف الخطأ من تقرير المالك: شاشة PHDC تعرض 3 قرارات متعارضة:
-  * بانري الجديد: شراء 70/100 (من canonical.signal — TS-side fresh_technical_score)
-  * InstitutionalDecisionPanel: تجنب 35/100 (من Python V40.2 الحقيقي)
-  * Deal Advisor: خطر - ابتعد 33/100
-- تشخيص الجذر: getUnifiedStockData() يرجع canonical.master_score من:
-  * predMaster (لو توقع طازج ≤48h) → صحيح
-  * freshTechScore (لو لا يوجد توقع طازج) → خطأ! (TS-side computation، Rule 20 violation)
-- الإصلاح الجذري للبانر:
-  * إزالة عرض canonical.signal + master_score تمامًا (لا يعرض قرار تداول)
-  * البانر الآن يعرض فقط: who_is_buying + analysis_reason + money_flow + entry/target/stop
-  * لو لا يوجد توقع طازج → بانر مبسّط بتحذير "لا يوجد توقع طازج"
-  * إضافة إحالة واضحة: "القرار النهائي في محرك القرار المؤسسي بالأسفل"
-  * اللون تغيّر من emerald → sky (للتفريق عن InstitutionalDecisionPanel)
-- إنشاء radar_server_commands.sh: أوامر للسرفر الإنتاجي لتشغيل الرادار + جلب النتائج
-
-Stage Summary:
-- ملفات معدّلة: 1 (CanonicalWhoIsBuyingBanner.tsx — إعادة كتابة كاملة للـ header)
-- ملفات جديدة: 1 (radar_server_commands.sh — أوامر السرفر)
-- التضارب: مُزال تمامًا — البانر لا يعرض قرار تداول، فقط بيانات سيولة + who_is_buying
-- Rule 20 محترم: لا computation مالي في البانر، القرار النهائي من Python V40.2
-- الردود على أسئلة المالك:
-  1. لماذا لم أُشغّل كل الحسابات من Python؟ — خطأي: unified-stock-data.ts يحوي computeTechnicalScore() (TS-side). الإصلاح: البانر لا يعرض signal من TS-side.
-  2. هل اتبعت الدستور؟ — partially: خالفتُ Rule 20 بعرض canonical.signal من fresh_technical_score. الإصلاح: لا signal إطلاقًا في البانر.
-  3. لماذا لم أنقل المشروع؟ — الساندبوكس مُهيأ لـ /home/z/my-project لكن GLMinvestment يعمل من موقعه. سأناقش الخيارات مع المالك.

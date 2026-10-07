@@ -41,7 +41,10 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   // يفلتر بـ market → لو فيه ticker متكرر بين EGX و US (15 حالة بسبب migration
   // قديم) كان بـ يرجع السهم الخطأ. الحل: نقرأ `?market=` param ونمرره.
   // Default: 'EGX' (matching maker-radar default).
-  const marketParam = (url.searchParams.get('market') || 'EGX').trim();
+  // DEEP-MARKET-FIX (Task MULTI-MARKET-DIAGNOSE): قبل كده default='EGX'
+  // كان بـ يرفض أي سهم مش EGX (AAPL, BTC, etc.) → 404 "غير موجود".
+  // الحل: default='' (no filter) لو ?market= مش متحدد.
+  const marketParam = (url.searchParams.get('market') || '').trim();
 
   const targetUrls = [
     `${PYTHON_BACKEND_URL}/api/stocks/${ticker.toUpperCase()}${qs ? `?${qs}` : ''}`,

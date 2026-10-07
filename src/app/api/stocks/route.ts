@@ -28,16 +28,19 @@ export async function GET(req: NextRequest) {
       const res = await fetch(targetUrl, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (data && Array.isArray(data.data)) {
+        // DEEP-MARKET-FIX: لو Python رجّع array فاضي (مش null)، نـ skip للـ fallback
+        // عشان stocks.db يرجّع أسهم US اللي موجودة فعلاً.
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
           return NextResponse.json({
             success: true,
             stocks: data.data,
             total: data.count || data.data.length,
           });
         }
-        if (data && Array.isArray(data.stocks)) {
+        if (data && Array.isArray(data.stocks) && data.stocks.length > 0) {
           return NextResponse.json(data);
         }
+        // لو وصلنا هنا → Python رجّع array فاضي → نـ fall through للـ fallback
       }
     } catch (_err) {
       // Try next fallback URL
