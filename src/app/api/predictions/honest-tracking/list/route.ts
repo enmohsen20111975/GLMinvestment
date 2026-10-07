@@ -350,6 +350,22 @@ export async function GET(request: NextRequest) {
     // FIX (Aug 2026): ضيف LIMIT في الـ SQL بدل ما نـ fetch كل الصفوف ونعمل pagination في JS
     // عشان نمنع OOM على 5000+ توقع
     const maxRows = 500; // حد أقصى للصفوف اللي بترجع من DB
+    // ─── PHASE-1 (Task UNIFICATION-PHASE-1, Rule 72) ─────────────────────
+    // FRESHNESS GATE: لا نعرض predictions أقدم من 48 ساعة لـ PENDING (مش CLOSED).
+    // قبل كده: كان فيه توقع من مايو ظاهر كأنه حي — العميل بيشوف قرار قديم.
+    // الحل: نضيف شرط prediction_date >= datetime('now', '-2 days') للـ PENDING فقط.
+    // CLOSED predictions مفيهاش حداثة (تاريخها تاريخ الإغلاق، مش تاريخ القرار).
+    const freshnessGate = `(
+      -- CLOSED predictions: no freshness filter (historical)
+      (outcome_date IS NOT NULL OR UPPER(TRIM(COALESCE(status,''))) = 'CLOSED' OR exit_type IS NOT NULL)
+      OR
+      -- PENDING predictions: must be fresh (≤ 48 hours old)
+      prediction_date >= datetime('now', '-2 days')
+    )`;
+    // Inject freshness gate into WHERE clause
+    const whereWithFreshness = whereClause
+      ? `${whereClause} AND ${freshnessGate}`
+      : `WHERE ${freshnessGate}`;
     // Fetch predictions — CLOSED first (more interesting), then PENDING by date
     allRows = db.prepare(`
       SELECT
@@ -364,7 +380,7 @@ export async function GET(request: NextRequest) {
         persona${targetPrice2Sel}${v40Sel}
         ${hasV40Fields ? ', analysis_json' : ''}
       FROM predictions
-      ${whereClause}
+      ${whereWithFreshness}
       ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) DESC, prediction_date DESC, master_score DESC, outcome_date DESC, closed_at DESC, id DESC
       LIMIT ${maxRows}
     `).all() as any[];
