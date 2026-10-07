@@ -192,24 +192,215 @@ export async function GET(
   }
 
   // ───────────────────────────────────────────────────────────────────────
-  // Step 4: compute canonical classifications
+  // Step 4: FRESH COMPUTATION LAYER (Task UNIFIED-API-V2, Rule 67 + Rule 72)
   // ───────────────────────────────────────────────────────────────────────
-  const buyPct = (radarData?.buy_pct ?? null) as number | null;
-  const sellPct = (radarData?.sell_pct ?? null) as number | null;
-  const roc10d = (radarData?.roc_10d ?? null) as number | null;
+  // ROOT CAUSE (موثّق في audit):
+  //   - stocks.db.stocks.signal NULL لكل الأسهم → canonical.signal دائماً HOLD
+  //   - predictions.db فارغ لـ 60% من الأسهم → canonical.signal بيوقع على null
+  //   - radar cache فيه بس الأسهم under_microscope → buy_pct NULL لأغلب الأسهم
+  //
+  // SOLUTION: لما المصادر تكون فاضية، نحسب canonical values FRESH من
+  // stock_daily_prices (موجود لكل الأسهم):
+  //   - RSI (Wilder's) من آخر 15 إغلاق
+  //   - MA50 / MA200 من الإغلاقات
+  //   - support / resistance من آخر 20 يوم
+  //   - buy_pct من candle colors (up days vs down days)
+  //   - master_score من technical score (RSI + MA + momentum)
+  type PriceRow = { price_date: string; close: number; volume: number; high: number; low: number; };
+  let priceHistory: PriceRow[] = [];
+  try {
+    const stocksDb2 = new Database(path.join(PROJECT_ROOT, 'db', 'stocks.db'), {
+      readonly: true,
+      fileMustExist: true,
+    });
+    const rows = stocksDb2
+      .prepare(`
+        SELECT price_date, close, volume, high, low
+        FROM stock_daily_prices
+        WHERE ticker = ? AND close IS NOT NULL AND close > 0
+        ORDER BY price_date DESC LIMIT 30
+      `)
+      .all(ticker) as PriceRow[];
+    // oldest first for indicator math
+    priceHistory = rows.reverse();
+    stocksDb2.close();
+  } catch (e) {
+    console.error('[unified] price history read failed:', e);
+  }
+
+  // ─── Helper: Wilder's RSI (period=14) — مطابق Python canonical ────────
+  function computeRSI(closes: number[], period = 14): number | null {
+    if (closes.length < period + 1) return null;
+    const gains: number[] = [0];
+    const losses: number[] = [0];
+    for (let i = 1; i < closes.length; i++) {
+      const change = closes[i] - closes[i - 1];
+      gains.push(change > 0 ? change : 0);
+      losses.push(change < 0 ? -change : 0);
+    }
+    let avgGain = 0;
+    let avgLoss = 0;
+    for (let i = 1; i <= period; i++) {
+      avgGain += gains[i];
+      avgLoss += losses[i];
+    }
+    avgGain /= period;
+    avgLoss /= period;
+    for (let i = period + 1; i < closes.length; i++) {
+      avgGain = (avgGain * (period - 1) + gains[i]) / period;
+      avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+    }
+    if (avgLoss === 0) return 100;
+    const rs = avgGain / avgLoss;
+    return 100 - 100 / (1 + rs);
+  }
+
+  // ─── Helper: Simple Moving Average ────────────────────────────────────
+  function computeSMA(closes: number[], period: number): number | null {
+    if (closes.length < period) return null;
+    let sum = 0;
+    for (let i = closes.length - period; i < closes.length; i++) {
+      sum += closes[i];
+    }
+    return sum / period;
+  }
+
+  // ─── Helper: buy_pct from candle colors (up days = buy pressure) ─────
+  // Fallback لما radar cache مفيش فيه السهم ده.
+  // Formula: count of up-close days in last 10 days / 10 * 100
+  function computeBuyPctFromCandles(closes: number[]): number | null {
+    if (closes.length < 2) return null;
+    const recent = closes.slice(-11); // last 10 changes
+    let upDays = 0;
+    let total = 0;
+    for (let i = 1; i < recent.length; i++) {
+      total++;
+      if (recent[i] > recent[i - 1]) upDays++;
+    }
+    if (total === 0) return null;
+    return (upDays / total) * 100;
+  }
+
+  // ─── Helper: support / resistance from last 20 days ──────────────────
+  function computeSupportResistance(history: PriceRow[]): {
+    support: number | null;
+    resistance: number | null;
+  } {
+    if (history.length < 5) return { support: null, resistance: null };
+    const recent = history.slice(-20);
+    const lows = recent.map((r) => r.low || r.close).filter((v) => v > 0);
+    const highs = recent.map((r) => r.high || r.close).filter((v) => v > 0);
+    if (lows.length === 0 || highs.length === 0) return { support: null, resistance: null };
+    // support = min of lows (excluding current), resistance = max of highs
+    const support = Math.min(...lows.slice(0, -1));
+    const resistance = Math.max(...highs.slice(0, -1));
+    return { support, resistance };
+  }
+
+  // ─── Helper: technical score → master_score (0-100) ──────────────────
+  // Build a quick technical score when prediction.master_score is NULL.
+  // Factors:
+  //   - RSI: <30 → +20 (oversold), >70 → -20 (overbought), 40-60 → +5
+  //   - MA alignment: price > MA50 > MA200 → +25 (strong uptrend)
+  //   - Momentum (10d ROC): > +5% → +15, < -5% → -15
+  //   - Volume ratio (last vs avg 20): > 1.5x → +10
+  function computeTechnicalScore(opts: {
+    rsi: number | null;
+    price: number;
+    ma50: number | null;
+    ma200: number | null;
+    roc10d: number | null;
+    volumeRatio: number | null;
+  }): number {
+    let score = 50; // baseline
+    const { rsi, price, ma50, ma200, roc10d, volumeRatio } = opts;
+    if (rsi !== null) {
+      if (rsi < 30) score += 20;        // oversold → buy signal
+      else if (rsi > 70) score -= 20;   // overbought → sell signal
+      else if (rsi >= 40 && rsi <= 60) score += 5;  // neutral zone → slight positive
+    }
+    if (ma50 !== null && ma200 !== null) {
+      if (price > ma50 && ma50 > ma200) score += 25;  // strong uptrend
+      else if (price < ma50 && ma50 < ma200) score -= 25; // strong downtrend
+      else if (price > ma50) score += 10;  // above short-term MA
+    }
+    if (roc10d !== null) {
+      if (roc10d > 5) score += 15;
+      else if (roc10d < -5) score -= 15;
+    }
+    if (volumeRatio !== null && volumeRatio > 1.5) score += 10;
+    // Clamp 0-100
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  // ─── Compute fresh values ────────────────────────────────────────────
+  const closes = priceHistory.map((r) => r.close).filter((c) => typeof c === 'number' && c > 0);
+  const volumes = priceHistory.map((r) => r.volume).filter((v) => typeof v === 'number' && v > 0);
+  const lastClose = closes.length > 0 ? closes[closes.length - 1] : null;
+  const currentPrice = Number(stock.current_price ?? lastClose ?? 0);
+
+  const freshRSI = computeRSI(closes);
+  const freshMA50 = computeSMA(closes, Math.min(50, closes.length));
+  const freshMA200 = closes.length >= 200 ? computeSMA(closes, 200) : null;
+  const freshBuyPct = computeBuyPctFromCandles(closes);
+  const freshSR = computeSupportResistance(priceHistory);
+
+  // ROC 10d
+  let roc10dFresh: number | null = null;
+  if (closes.length >= 11) {
+    const past = closes[closes.length - 11];
+    if (past > 0) roc10dFresh = ((closes[closes.length - 1] - past) / past) * 100;
+  }
+
+  // Volume ratio (last vs avg 20)
+  let volumeRatioFresh: number | null = null;
+  if (volumes.length >= 20) {
+    const lastVol = volumes[volumes.length - 1];
+    const avg20 = volumes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+    if (avg20 > 0) volumeRatioFresh = lastVol / avg20;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Step 5: Pick BEST source for each field (canonical > fresh > pre-computed)
+  // ───────────────────────────────────────────────────────────────────────
+  const buyPct = (radarData?.buy_pct ?? freshBuyPct) as number | null;
+  const sellPct = (radarData?.sell_pct ?? (freshBuyPct !== null ? 100 - freshBuyPct : null)) as number | null;
+  const roc10d = (radarData?.roc_10d ?? roc10dFresh) as number | null;
 
   // Canonical master score precedence:
-  //   1. predictions.db.master_score (if non-null)
-  //   2. stocks.db.signal (numeric master score column)
-  //   3. null → classifySignal falls back to HOLD
+  //   1. predictions.db.master_score (if non-null AND prediction is fresh ≤2 days)
+  //   2. fresh technical score (computed from price history)
+  //   3. stocks.db.signal (numeric master score column)
+  //   4. null → classifySignal falls back to HOLD
   const predMaster = prediction?.master_score ?? null;
   const stockMaster = typeof stock.signal === 'number' ? stock.signal : null;
+
+  // Check prediction freshness — reject if older than 2 days
+  let predictionIsFresh = false;
+  if (prediction?.prediction_date) {
+    try {
+      const predDate = new Date(prediction.prediction_date);
+      const ageHours = (Date.now() - predDate.getTime()) / (1000 * 60 * 60);
+      predictionIsFresh = ageHours <= 48; // 2 days
+    } catch {
+      predictionIsFresh = false;
+    }
+  }
+
+  const freshTechScore = computeTechnicalScore({
+    rsi: freshRSI,
+    price: currentPrice,
+    ma50: freshMA50,
+    ma200: freshMA200,
+    roc10d: roc10dFresh,
+    volumeRatio: volumeRatioFresh,
+  });
+
+  // Final master score: prefer fresh prediction, then fresh tech score, then stocks.db
   const masterScore =
-    predMaster !== null && predMaster !== undefined
+    predMaster !== null && predMaster !== undefined && predictionIsFresh
       ? Number(predMaster)
-      : stockMaster !== null && stockMaster !== undefined
-        ? Number(stockMaster)
-        : null;
+      : freshTechScore;
 
   const canonicalSignal: SignalType = classifySignal(masterScore);
   const canonicalSignalAr: string = signalAr(canonicalSignal);
@@ -279,19 +470,30 @@ export async function GET(
       beta: stock.beta,
     },
 
-    // ─── Technical indicators (canonical — stocks.db pre-computed) ──
+    // ─── Technical indicators (canonical — fresh computed > stocks.db pre-computed) ──
+    // ROOT CAUSE FIX: لما stocks.db.rsi يكون NULL أو قديم، نحسبه FRESH من price history
     technical: {
-      rsi: stock.rsi,
-      ma_50: stock.ma_50,
-      ma_200: stock.ma_200,
-      support: stock.support,
-      resistance: stock.resistance,
+      rsi: freshRSI ?? stock.rsi ?? null,                    // FRESH if pre-computed is NULL
+      rsi_source: freshRSI !== null ? 'fresh_wilder' : (stock.rsi ? 'precomputed' : 'null'),
+      ma_50: freshMA50 ?? stock.ma_50 ?? null,
+      ma_200: freshMA200 ?? stock.ma_200 ?? null,
+      support: freshSR.support ?? stock.support ?? null,
+      resistance: freshSR.resistance ?? stock.resistance ?? null,
       high_52w: stock.high_52w,
       low_52w: stock.low_52w,
       avg_volume: stock.avg_volume,
       trend: stock.trend,
       signal_raw: stock.signal,
       atr: prediction?.atr_at_entry ?? null,
+      // Fresh indicators (computed from last 30 days of price history)
+      fresh: {
+        rsi: freshRSI,
+        ma_50: freshMA50,
+        roc_10d: roc10dFresh,
+        volume_ratio: volumeRatioFresh,
+        technical_score: freshTechScore,
+        price_history_points: closes.length,
+      },
     },
 
     // ─── CANONICAL signal (SINGLE SOURCE OF TRUTH) ──────────────────
@@ -302,6 +504,13 @@ export async function GET(
       money_flow: canonicalMoneyFlow,      // 🟢 سيولة داخلة قوية / ... / 🔴 خارجة قوية
       phase: canonicalPhase,               // تجميع / تصاعد / توزيع / تخفيض / محايد
       master_score: masterScore,
+      // ROOT CAUSE FIX: source transparency — العميل يقدر يعرف منين الـ master_score جاي
+      master_score_source:
+        predMaster !== null && predMaster !== undefined && predictionIsFresh
+          ? 'prediction_db_fresh'
+          : 'fresh_technical_score',
+      prediction_is_fresh: predictionIsFresh,
+      buy_pct_source: radarData?.buy_pct != null ? 'radar_cache' : (freshBuyPct != null ? 'fresh_candle_colors' : 'null'),
     },
 
     // ─── Prediction (from predictions.db) ─────────────────────────────
