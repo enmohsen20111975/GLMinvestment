@@ -18,13 +18,16 @@
  *   3. POST /api/maker-radar/warmup → synchronous warmup (for cron/manual)
  */
 import { spawn } from 'child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync, renameSync, unlinkSync, openSync, closeSync } from 'fs';
 import path from 'path';
 
 const PROJECT_ROOT = process.cwd();
 const OUTPUT_DIR = path.join(PROJECT_ROOT, 'scripts', 'output');
 const STATUS_FILE = path.join(PROJECT_ROOT, 'db', 'radar_cache_status.json');
 const SCRIPT_PATH = path.join(PROJECT_ROOT, 'scripts', 'maker_radar.py');
+// P1-8 FIX (RADAR-AUDIT-UI R2): cross-process lock file — يمنع تنفيذين متزامنين
+// لـ Python script على نفس JSON file في multi-worker Next.js production.
+const WARMUP_LOCK_FILE = path.join(PROJECT_ROOT, 'db', 'radar_warmup.lock');
 
 // Cache staleness threshold (15 min). If older → trigger background warmup.
 const STALE_THRESHOLD_MS = 15 * 60 * 1000;
@@ -46,6 +49,61 @@ export interface RadarCacheStatus {
 }
 
 let warmupInMemory = false; // process-level mutex (extra safety)
+
+/**
+ * P1-8 FIX (RADAR-AUDIT-UI R2): Cross-process lock file.
+ * يضمن أن عملية Python واحدة فقط تشتغل في نفس الوقت عبر كل workers Next.js.
+ * الـ lock file يحوي PID + timestamp — يُعتبر "stale" لو أقدم من WARMUP_MUTEX_TTL_MS.
+ */
+function acquireLockFile(): boolean {
+  try {
+    const dir = path.dirname(WARMUP_LOCK_FILE);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+    // تحقق من lock موجود + valid
+    if (existsSync(WARMUP_LOCK_FILE)) {
+      try {
+        const raw = readFileSync(WARMUP_LOCK_FILE, 'utf-8');
+        const lock = JSON.parse(raw);
+        const ageMs = Date.now() - new Date(lock.acquired_at).getTime();
+        if (ageMs < WARMUP_MUTEX_TTL_MS) {
+          return false; // lock صالح بواسطة process آخر
+        }
+        // lock stale — يمكن استبداله
+      } catch {
+        // lock file تالف — اعتبره stale
+      }
+    }
+
+    // atomic acquire: استخدم O_EXCL (exclusive create) لمنع race condition
+    // لو processين حاولا في نفس اللحظة، واحد فقط سينجح.
+    try {
+      const fd = openSync(WARMUP_LOCK_FILE, 'wx'); // 'wx' = O_CREAT|O_EXCL|O_WRONLY
+      const lockContent = JSON.stringify({
+        pid: process.pid,
+        acquired_at: new Date().toISOString(),
+      });
+      writeFileSync(fd, lockContent);
+      closeSync(fd);
+      return true;
+    } catch {
+      // O_EXCL failed = process آخر أكد قبلك
+      return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
+function releaseLockFile(): void {
+  try {
+    if (existsSync(WARMUP_LOCK_FILE)) {
+      unlinkSync(WARMUP_LOCK_FILE);
+    }
+  } catch {
+    // silent — best-effort
+  }
+}
 
 /**
  * Normalize a market code so cache file lookups are stable.
@@ -145,6 +203,29 @@ export function readExitRadarCache(): { data: any; filePath: string } | null {
   }
 }
 
+/**
+ * P1-8 FIX (RADAR-AUDIT-UI R3): Safe read مع retry على parse error.
+ * لو Python script في منتصف كتابة الـ cache file في اللحظة التي يقرأ فيها Node،
+ * JSON.parse يرمي SyntaxError. هذا الـ wrapper يعيد المحاولة مرة واحدة بعد 50ms.
+ */
+function safeReadJson(fp: string): any | null {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const raw = readFileSync(fp, 'utf-8');
+      return JSON.parse(raw);
+    } catch (e) {
+      if (attempt === 0) {
+        // انتظر 50ms (busy-wait قصير — يتجنب execSync overhead)
+        const end = Date.now() + 50;
+        while (Date.now() < end) { /* spin */ }
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
 /** Read the status file (or return default idle status). */
 export function readStatus(): RadarCacheStatus {
   const def: RadarCacheStatus = {
@@ -162,21 +243,28 @@ export function readStatus(): RadarCacheStatus {
   };
   try {
     if (!existsSync(STATUS_FILE)) return def;
-    const raw = readFileSync(STATUS_FILE, 'utf-8');
-    return { ...def, ...JSON.parse(raw) };
+    const parsed = safeReadJson(STATUS_FILE);
+    return parsed ? { ...def, ...parsed } : def;
   } catch {
     return def;
   }
 }
 
-/** Write the status file. */
+/**
+ * P1-8 FIX (RADAR-AUDIT-UI R1): Atomic write عبر temp file + rename.
+ * يمنع read-modify-write race condition في multi-worker Next.js.
+ * Pattern: اكتب temp file ثم atomic rename (POSIX guarantee).
+ */
 function writeStatus(s: Partial<RadarCacheStatus>): void {
   try {
     const dir = path.dirname(STATUS_FILE);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     const cur = readStatus();
     const next = { ...cur, ...s };
-    writeFileSync(STATUS_FILE, JSON.stringify(next, null, 2));
+    // Atomic write: temp file + rename (POSIX atomic guarantee)
+    const tempFile = `${STATUS_FILE}.${process.pid}.tmp`;
+    writeFileSync(tempFile, JSON.stringify(next, null, 2));
+    renameSync(tempFile, STATUS_FILE); // atomic on POSIX systems
   } catch {
     // silent — status file is best-effort
   }
@@ -193,13 +281,9 @@ function writeStatus(s: Partial<RadarCacheStatus>): void {
 export function readRadarCache(market?: string): { data: any; filePath: string } | null {
   const fp = findLatestRadarFile(market);
   if (!fp || !existsSync(fp)) return null;
-  try {
-    const raw = readFileSync(fp, 'utf-8');
-    const data = JSON.parse(raw);
-    return { data, filePath: fp };
-  } catch {
-    return null;
-  }
+  // P1-8 FIX (R3): استخدم safeReadJson بدل readFileSync مباشرة
+  const data = safeReadJson(fp);
+  return data ? { data, filePath: fp } : null;
 }
 
 /** Is the cache stale (older than threshold)? */
@@ -293,6 +377,9 @@ export function triggerBackgroundWarmup(market = 'EGX'): boolean {
   if (isWarmupRunning()) return false;
   if (!existsSync(SCRIPT_PATH)) return false;
 
+  // P1-8 FIX (R2): اكتسب cross-process lock قبل بدء Python
+  if (!acquireLockFile()) return false;
+
   const python = resolvePython();
   warmupInMemory = true;
   const startedAt = new Date().toISOString();
@@ -326,6 +413,7 @@ export function triggerBackgroundWarmup(market = 'EGX'): boolean {
 
   child.on('error', (err) => {
     warmupInMemory = false;
+    releaseLockFile(); // P1-8 FIX (R2): حرر الـ cross-process lock
     writeStatus({
       last_warmup_finished_at: new Date().toISOString(),
       last_warmup_duration_ms: Date.now() - startedMonotonic,
@@ -336,6 +424,7 @@ export function triggerBackgroundWarmup(market = 'EGX'): boolean {
 
   child.on('exit', (code) => {
     warmupInMemory = false;
+    releaseLockFile(); // P1-8 FIX (R2): حرر الـ cross-process lock
     const finishedAt = new Date().toISOString();
     const durationMs = Date.now() - startedMonotonic;
 
@@ -393,6 +482,11 @@ export async function runWarmupSync(market = 'EGX', timeoutMs = 90_000): Promise
     await new Promise((r) => setTimeout(r, 500));
   }
 
+  // P1-8 FIX (R2): اكتسب cross-process lock قبل بدء Python
+  if (!acquireLockFile()) {
+    throw new Error('Another warmup is running (cross-process lock held)');
+  }
+
   const python = resolvePython();
   warmupInMemory = true;
   const startedAt = new Date().toISOString();
@@ -425,6 +519,7 @@ export async function runWarmupSync(market = 'EGX', timeoutMs = 90_000): Promise
     const timer = setTimeout(() => {
       try { child.kill('SIGKILL'); } catch {}
       warmupInMemory = false;
+      releaseLockFile(); // P1-8 FIX (R2)
       const status: RadarCacheStatus = {
         ...readStatus(),
         last_warmup_finished_at: new Date().toISOString(),
@@ -439,6 +534,7 @@ export async function runWarmupSync(market = 'EGX', timeoutMs = 90_000): Promise
     child.on('error', (err) => {
       clearTimeout(timer);
       warmupInMemory = false;
+      releaseLockFile(); // P1-8 FIX (R2)
       const status: RadarCacheStatus = {
         ...readStatus(),
         last_warmup_finished_at: new Date().toISOString(),
@@ -453,6 +549,7 @@ export async function runWarmupSync(market = 'EGX', timeoutMs = 90_000): Promise
     child.on('exit', (code) => {
       clearTimeout(timer);
       warmupInMemory = false;
+      releaseLockFile(); // P1-8 FIX (R2): حرر الـ cross-process lock
       const finishedAt = new Date().toISOString();
       const durationMs = Date.now() - startedMonotonic;
       const cache = readRadarCache(market);

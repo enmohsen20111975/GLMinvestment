@@ -492,8 +492,8 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     # ─── بيانات الميكرز الإضافية (من التحليل الجنائي) ──────────────────
     # ROC10 (التغير القصير)
     roc_10d = round((closes[-1] - closes[-11]) / closes[-11] * 100, 2) if len(closes) >= 11 and closes[-11] > 0 else None
-    # ROC30 (التغير الشهري)
-    roc_30d = round((closes[-1] - closes[-21]) / closes[-21] * 100, 2) if len(closes) >= 21 and closes[-21] > 0 else None
+    # ROC30 (التغير الشهري) — P2-13 FIX: كان closes[-21] (ROC20) بدل closes[-31] (ROC30)
+    roc_30d = round((closes[-1] - closes[-31]) / closes[-31] * 100, 2) if len(closes) >= 31 and closes[-31] > 0 else None
 
     # نشاط الميكرز: حجم آخر يوم vs متوسط 20 يوم
     last_vol = volumes[-1] if volumes else 0

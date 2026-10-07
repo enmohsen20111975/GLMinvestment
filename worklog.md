@@ -64298,3 +64298,63 @@ Stage Summary (بالأرقام):
 - P1-8: إصلاح 3 race conditions في radar-cache.ts
 - P1-11,12: إصلاح dead code + CMF window في Python
 - P2-13,14,15,16: تنظيف stale comments + multi-market + تخزين درجات + توحيد thresholds
+
+---
+Task ID: RADAR-P1-P2-P0-2-FIXES (المدير العام — إصلاحات P1 + P2 + P0-2)
+Agent: المدير العام (Z.ai Code)
+Task: إكمال إصلاحات رادار السيولة (P1-8 + P1-11 + P1-12 + P2-13 + P0-2)
+
+Work Log:
+- P1-8: إصلاح 3 race conditions في radar-cache.ts
+  * R1: writeStatus → atomic write (temp file + rename — POSIX guarantee)
+  * R2: warmupInMemory process-level → cross-process lock file (O_EXCL atomic acquire)
+  * R3: readFileSync → safeReadJson مع retry على parse error (50ms busy-wait)
+  * acquireLockFile/releaseLockFile مع PID + timestamp + stale TTL
+  * إضافة lock acquire/release في triggerBackgroundWarmup + runWarmupSync (كل exit paths)
+- P1-11: إصلاح dead code في detect_life_cycle (shared_liquidity.py)
+  * atr_sma كان = atr (proxy تالف) → "🟡 نعاس" unreachable
+  * الإصلاح: atr_sma = متوسط مدى الـ 14 يوم السابقة (مستقل عن atr الحالي)
+  * يتطلب 28 يوم بيانات للـ SMA المنفصل (fallback لـ atr_sma=atr لو < 28)
+- P1-12: إصلاح CMF window off-by-one في master_analyzer.py
+  * avg_vol_20 كان sum(volumes[-21:-1])/20 (يستثني اليوم الحالي)
+  * mfv_values كان range(-20,0) = volumes[-20:] (يشمل اليوم الحالي)
+  * الإصلاح: موافقة النافذتين على [-20:] (المعيار لـ CMF)
+  * إزالة *100/100 redundancy في cmf normalization
+- P2-13: تنظيف stale comments (4 sites)
+  * docstring الأوزان: 0.40/0.30/0.20/0.10 → 0.35/0.30/0.20/0.15 (مطابق الكود)
+  * رسائل EXPLOSIVE_SURGE: "2.5×" → "2.0×" (مطابق الثابت 2.0×)
+  * roc_30d: closes[-21] (ROC20) → closes[-31] (ROC30 حقيقي)
+- P0-2: توحيد compute_money_flow لصيغة Pine (تدريجي آمن)
+  * الصيغة الحالية (legacy): CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15
+  * صيغة Pine (canonical): CLV×0.65 + body×0.35 (مطابقة master_analyzer.detect_who_is_buying)
+  * الحل: flag بيئي RADAR_USE_PINE_FORMULA — default false (backward compat)
+  * التبديل المباشر يحتاج backtest مقارن (سيغيّر كل قيم buy_pct التاريخية)
+
+Stage Summary (بالأرقام):
+- ملفات معدّلة: 4
+  * src/modules/radar/lib/radar-cache.ts (P1-8: +90 LOC race conditions fix)
+  * vps-service/utils/shared_liquidity.py (P1-11 + P2-13 docstring)
+  * vps-service/analyzers/master_analyzer.py (P1-12 CMF window)
+  * scripts/maker_radar.py (P2-13 roc_30d)
+- race conditions مُصلحة: 3 (R1 atomic + R2 cross-process lock + R3 safe read)
+- dead code مُصلح: 1 (atr_sma in detect_life_cycle → "🟡 نعاس" أصبح reachable)
+- bugs مُصلحة: 2 (CMF window + *100/100 redundancy + roc_30d)
+- stale comments مُنظَّفة: 4 sites
+- P0-2 توحيد: option آمن (flag بيئي، default = legacy، يحتاج backtest قبل التبديل)
+- التحقق:
+  * Python syntax OK لكل الـ 3 ملفات ✅
+  * GET / → HTTP 200 ✅
+  * GET /api/maker-radar/footprint → HTTP 410 ✅
+- القيود المحترمة:
+  * لا push بدون إذن (سيُرفع بعد الإذن)
+  * الحمايات لم تُلمس (لم أضعف ATR clamp / Hard Loss / Split Guard / Ticker Cooldown / R:R)
+  * P0-2 تدريجي (لا تغيير مباشر — backward compat)
+  * لا بيانات وهمية
+  * لا DB جديدة
+  * لا حذف ملفات
+
+ما بقي مفتوحًا:
+- P0-2: backtest مقارن لصيغة Pine (يحتاج DBs EGX حقيقية + مقارنة WR/PF قبل/بعد)
+- P2-14: liquidity_alerts multi-market (إزالة هاردكود EGX)
+- P2-15: تخزين الدرجات الرقمية في DB
+- P2-16: توحيد 20+ thresholds في engine_settings.py

@@ -892,7 +892,11 @@ def detect_who_is_buying(
         vwap = sum(c * v for c, v in zip(recent_closes, recent_vols)) / vol_sum if vol_sum > 0 else closes[-1]
 
         # 2) Volume ratio (current vs avg 20)
-        avg_vol_20 = sum(volumes[-21:-1]) / 20 if len(volumes) >= 21 else (sum(volumes) / len(volumes) if volumes else 1)
+        # P1-12 FIX (RADAR-AUDIT-PY B8): CMF window off-by-one.
+        # قبل الإصلاح: avg_vol_20 كان sum(volumes[-21:-1])/20 (يستثني اليوم الحالي)
+        # بينما mfv_values كان range(-20,0) = volumes[-20:] (يشمل اليوم الحالي).
+        # هذا mismatch في النوافذ → CMF منحرف. الإصلاح: موافقة النافذتين على [-20:].
+        avg_vol_20 = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else (sum(volumes) / len(volumes) if volumes else 1)
         volume_ratio = volumes[-1] / avg_vol_20 if avg_vol_20 > 0 else 0
 
         # 3) Pressure score (CLV + body pressure) — proxy for delta direction
@@ -967,9 +971,13 @@ def detect_who_is_buying(
                     mfv_values.append(mfv_i)
                 except Exception:
                     mfv_values.append(0)
-            cmf = sum(mfv_values) / max(1, len(mfv_values)) / max(avg_vol_20, 1) * 100
+            # P1-12 FIX (RADAR-AUDIT-PY B-normalize): أزلت *100/100 redundancy.
+            # كان: cmf = sum(mfv) / len(mfv) / avg_vol_20 * 100  ثم  cmf = cmf/100
+            # الـ *100 و /100 يُلغيان بعضهما → صافي = sum(mfv) / len(mfv) / avg_vol_20
+            # مع موافقة النافذتين على [-20:] (تم إصلاحها أعلاه).
+            cmf = sum(mfv_values) / max(1, len(mfv_values)) / max(avg_vol_20, 1)
             # normalize CMF to [-1, 1] range (typical CMF is -0.3 to 0.3)
-            cmf = max(-1.0, min(1.0, cmf / 100))
+            cmf = max(-1.0, min(1.0, cmf))
         else:
             cmf = 0
 
