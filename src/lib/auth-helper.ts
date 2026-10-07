@@ -46,9 +46,12 @@ function updateLastActive(userId: string): void {
     cache[userId] = now;
     globalForActiveThrottle.__lastActiveUpdate = cache;
     // Fire-and-forget — do NOT await.
+    // FIX: Prisma expects DateTime, not a timestamp string. Use a proper Date object.
+    // The previous code was storing Date.now() (a number like 1791397297877) as
+    // last_active_at, which Prisma couldn't convert to DateTime.
     db.user.update({
       where: { id: userId },
-      data: { last_active_at: new Date().toISOString() },
+      data: { last_active_at: new Date(now) },
     }).catch(() => {
       // Non-fatal — never let tracking break auth.
     });
