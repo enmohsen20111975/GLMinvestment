@@ -350,6 +350,10 @@ class PredictionTracker:
                 ("evidence_count",        "INTEGER DEFAULT 0"),  # V40: عدد الأدلة المتوافقة (0-6)
                 ("morning_bell",          "INTEGER DEFAULT 0"),  # V40.1: جرس الصباح = أعلى ثقة + ربحية (0/1)
                 ("kill_filter_result",    "TEXT DEFAULT ''"),    # V40: نتيجة Kill Filters
+                # P0 FIX (V402-DIAGNOSIS R5+R6, 2026-10-07): risk_reward + who_is_buying
+                # كانوا محسوبين في daily_predictor.py لكن غير مكتوبين في DB → None/—
+                ("risk_reward",           "REAL"),               # P0: R:R ratio (مطابقة V40.2)
+                ("who_is_buying",         "TEXT DEFAULT ''"),     # P0: "🏦 شراء مؤسساتي" / "👤 شراء أفراد" (mirror Pine L669-763)
             ]
             for col_name, col_def in migrations:
                 if col_name not in existing_cols:
@@ -383,6 +387,8 @@ class PredictionTracker:
         evidence_count: int = 0,
         morning_bell: int = 0,
         kill_filter_result: str = '',
+        risk_reward: Optional[float] = None,           # P0 FIX (V402-DIAGNOSIS R5)
+        who_is_buying_state: str = '',                 # P0 FIX (V402-DIAGNOSIS R6)
     ) -> int:
         """
         Record a new prediction.
@@ -610,8 +616,9 @@ class PredictionTracker:
                     technical_score, fundamental_score, ai_pattern_score, sentiment_score,
                     notes, persona, created_at, atr_at_entry,
                     target_price_2, explosive_score, explosive_label,
-                    evidence_count, morning_bell, kill_filter_result
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    evidence_count, morning_bell, kill_filter_result,
+                    risk_reward, who_is_buying
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 ticker, signal, signal_type,
                 _pred_date,
@@ -622,6 +629,7 @@ class PredictionTracker:
                 atr_at_entry,
                 _target_price_2, _explosive_score, _explosive_label,
                 _evidence_count, _morning_bell, _kill_filter_result,
+                risk_reward, who_is_buying_state,
             ))
         except Exception:
             # fallback: schema قديم مفيهوش atr_at_entry/T2 columns

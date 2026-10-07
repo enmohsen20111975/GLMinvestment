@@ -64632,3 +64632,49 @@ Stage Summary:
 - إكمال إعادة التصميم (8 أقسام جديدة — استخراج DecisionHeader + ChartHero + إلخ)
 - نقل المشروع إلى /home/z/my-project (بعد الموافقة على خطة النقل)
 - تشغيل radar_server_commands.sh على السرفر (يحتاج git pull)
+
+---
+Task ID: V402-DIAGNOSIS
+Agent: general-purpose (مهندس محرك Python)
+Task: تشخيص V40.2 predictor — لماذا HOLD/score=50/R:R=None/who_is_buying فارغ
+
+Work Log:
+- قرأت آخر 1500 سطر من worklog.md (خط 63134→64635) — وجدت 3 مدخلات سابقة عن نفس المشكلة (خط 57810: "44 picks ALL HOLD ALL master_score=50.0 ALL evidence_count=0" + خط 58043: "fallback emits 30+ HOLDs with score=50" + خط 61524: "master_score=50.0 placeholder — all sub-scores 50.0 indicating NO real computation ran").
+- قرأت daily_predictor.py كامل (3888 سطر) — تتبعت flow الإشارة من engine.analyze_single_day ← IMPROVEMENT-12 ← كل الـ gates (min evidence, entry_gate, radar hard gate, regime min_score filter) ← record_prediction + stored_analyses INSERT.
+- قرأت prediction_tracker.py (1276 سطر) — فحصت schema predictions + record_prediction INSERT columns + dedup UPDATE.
+- قرأت institutional_decision_engine.py (1507 سطر) — فحصت build_institutional_decision + _compute_tech_score + _compute_signal_final + exception fallback.
+- قرأت engine_settings.py (1483 سطر) — أكدت thresholds: tech_score_base=50, base_buy_threshold=75, v402_min_evidence_count=3, buy_evidence_count=3.
+- قرأت market_regime_engine.py — أكدت REGIME_CONFIG: DEFENSIVE min_score=65, NORMAL min_score=60, AGGRESSIVE min_score=70.
+- فحصت detect_who_is_buying في master_analyzer.py (L846-1095) — دالة تعمل من OHLCV، بترجع who_state + scores.
+- فحصت maestro.ts ALTER TABLE predictions — وجدت risk_reward + status + persona + target_price_2 أعمدة مضافة من TS لكن Python record_prediction مش بيكتب فيها.
+- فحصت crontab.txt (201 سطر) — predictor مجدول 03:00 + 13:30 UTC بـ --max-picks 5، لكن BYPASS_PRED_CAP=1 مفعّل في الكود (daily_predictor.py L96).
+
+Stage Summary:
+- ROOT CAUSE #1 (signal=HOLD + score=50): build_institutional_decision إما (أ) بيرمي exception فيرجع fallback {tech_score:50, signal_final:'🟡 انتظر', proofs:[]} (institutional_decision_engine.py L1481-1506) أو (ب) بيرجع WAIT طبيعي بـ score~50. IMPROVEMENT-12 (daily_predictor.py L1000-1025 — أضيف اليوم 2026-10-07) بيحوّل WAIT→HOLD وبيحاول يخزّن. المفروض min evidence gate (L1241: evidence<3→continue) و regime min_score filter (L3207: score<60→drop) يرفضوهم — لكن وجودهم في DB بيأكد إن either v402_min_evidence_count=0 في production DB (زي ما حصل قبل كده — worklog L57810: "ALL evidence_count=0") أو regime engine فشل فـ _regime_cfg=None.
+- ROOT CAUSE #2 (risk_reward=None): predictions table فيها عمود risk_reward (أضافه maestro.ts L458) لكن record_prediction (prediction_tracker.py L606-625) مش بيكتبه — العمود بيفضل NULL. stored_analyses INSERT (daily_predictor.py L3397-3426) بيكتب risk_reward=sig['r_multiple'] لكنه ملفوف في except:pass (L3429) فلو فشل بيسكت.
+- ROOT CAUSE #3 (who_is_buying=—): detect_who_is_buying بيتستدعى (L2965) ونتيجته بتتخزن في sig['who_is_buying_state'] (L3080) — بس record_prediction مش بيكتبها في predictions table (العمود مش موجود أصلاً) ولا في analysis_json (L3380-3395 مش بيضم who_is_buying_state). محسوبة بس مش متخزّنة = ضياع كامل.
+- MASR=81/REAC=78: نفس مسار WAIT→HOLD بس عدّوا radar hard gate (L1484-1493 — confirmed accumulation) فحصلوا على boost +4/+5 + maker_buying +5 + screener +X = 81/78. الإشارة فضلت HOLD لأن engine قرر WAIT (score<75 threshold) والـ boosts بتحصل AFTER قرار الإشارة. الـ 13 الباقيين إما رفضهم radar gate (continue) أو exception bypass (try/except:pass L1508) ففضلوا score=50 بلا boost.
+- الإصلاح المطلوب (بدون تعديل): (1) تمرير risk_reward و who_is_buying_state لـ record_prediction + إضافتهم لـ INSERT + ALTER TABLE. (2) إضافة who_is_buying_state لـ analysis_json في stored_analyses INSERT. (3) التحقق من v402_min_evidence_count في production DB — لو =0، ده السبب الجذري لـ score=50 HOLD في DB. (4) إصلاح build_institutional_decision exception (log + fix بدل fallback صامت). (5) إعادة تشغيل predictor بعد الإصلاح.
+
+---
+Task ID: V402-P0-DB-WRITE-FIX (المدير العام — إصلاح كتابة DB)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح risk_reward=None + who_is_buying=— في predictions.db
+
+Work Log:
+- تشخيص V402-DIAGNOSIS كشف: record_prediction لم يكتب risk_reward/who_is_buying
+- P0 FIX R5 (risk_reward): إضافة column + parameter + INSERT value
+- P0 FIX R6 (who_is_buying): إضافة column + parameter + INSERT value
+- daily_predictor.py: تمرير risk_reward=sig['r_multiple'] + who_is_buying_state لـ record_prediction
+- auto-migration: predictions table ستحصل على عمودين جديدين تلقائيًا عند أول تشغيل
+
+Stage Summary:
+- ملفات معدّلة: 2 (prediction_tracker.py + daily_predictor.py)
+- columns جديدة: 2 (risk_reward REAL + who_is_buying TEXT)
+- bugs مُصلحة: 2 (R5 risk_reward=None + R6 who_is_buying=—)
+- Python syntax OK ✅
+- القيود: لا حذف، لا push بدون إذن، الحمايات لم تُلمس
+
+ما يحتاج المالك التحقق منه على السرفر:
+- v402_min_evidence_count في system_settings (لو=0 → كل HOLD يدخل DB)
+- إعادة تشغيل daily_predictor.py بعد git pull
