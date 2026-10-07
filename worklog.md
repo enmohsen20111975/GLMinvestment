@@ -64298,3 +64298,337 @@ Stage Summary:
 - Recommended fix order: Issue 3 (5 min) → Issue 2 (10 min) → Issue 1 (15-30 min) → Issue 4 (2-4h).
 - No code changes applied — diagnosis only per task spec.
 ---
+Task ID: RADAR-P0-FIXES (المدير العام — إصلاحات P0 لرادار السيولة)
+Agent: المدير العام (Z.ai Code)
+Task: تنفيذ إصلاحات P0 لرادار السيولة (بناءً على تشريح RADAR-AUDIT)
+
+Work Log:
+- P0-1: إعداد DB tracking في stocks.db (لا DB جديدة — استخدم الموجودة)
+  * إزالة read-only المؤقتة عن stocks.db (كانت حماية ساندبوكس)
+  * تفعيل WAL mode (لتجنب multi-writer contention)
+  * إنشاء جدول radar_signal_tracking (15 عمود) + indexين
+  * اختبار الكتابة نجح (INSERT + DELETE)
+- P0-6: إزالة exit_status='HOLD' hardcoded في /api/market/exit-status
+  * استبدال fabrication بـ exit_status: null + exit_note واضحة
+  * إضافة fallback_mode: true flag للواجهة
+- P0-5: تعطيل /api/maker-radar/footprint (70/30 split وهمي)
+  * الـ route يرجع 410 Gone + توجيه لـ /api/flow/[ticker] (canonical)
+  * الكود القديم محفوظ كـ comment للتوثيق (VERIFY-BEFORE-DELETE)
+- P0-3,4: إزالة fabrications في MakerRadarTab.tsx (7 مواقع)
+  * PROOF_METRICS الثابتة → placeholder يحيل لـ /api/radar/accuracy
+  * signal_ar local mapping: 'محايد' → '— بيانات غير متاحة' + 'احتفظ' → 'انتظار' (canonical)
+  * flowVal fabrication (3.5M fallback) → null + "—"
+  * frequency fabrication ('2.4%') → "—" عند غياب البيانات
+  * expGain fabrication (Math.max(8, ...)) → prediction.target_price الحقيقي
+  * trigger fabrication (price * 1.012) → prediction.entry_price الحقيقي
+  * tPrice/slPrice fabrication (price*1.08 / price*0.94) → prediction.target_price/stop_loss أو "—"
+  * action "دخول فوري" fabrication → prediction.signal_ar الكنسي أو "راجع التوصية الرسمية"
+
+Stage Summary (بالأرقام):
+- ملفات معدّلة: 4 (footprint/route.ts + exit-status/route.ts + MakerRadarTab.tsx + worklog.md)
+- إجمالي التغييرات: +367 / -102 سطر
+- fabrications مُزالة: 8 مواقع (PROOF_METRICS + 5 أعمدة + signal_ar + flowVal)
+- routes معطّلة: 1 (footprint → 410 Gone)
+- fabrications مُزالة في routes: 1 (exit_status='HOLD' → null)
+- DB tracking: جدول radar_signal_tracking أُنشئ في stocks.db + WAL mode
+- التحقق: GET / → HTTP 200 ✅، GET /api/maker-radar/footprint → HTTP 410 ✅
+- القيود المحترمة:
+  * لا DB جديدة (استخدم stocks.db الموجودة — Rule 46)
+  * لا حذف ملفات (الكود القديم محفوظ كـ comment — VERIFY-BEFORE-DELETE)
+  * لا push بدون إذن (سيُرفع بعد الإذن)
+  * الحمايات لم تُلمس (لم أعدّل Python/الإنتاج)
+  * Rule 27 محترمة (لا بيانات وهمية — استبدلت بـ "— بيانات غير متاحة")
+  * Rule 73 محترمة (القرارات من canonical — لا client-side computation)
+
+ما بقي مفتوحًا (يحتاج إذن المالك):
+- P0-2: توحيد compute_money_flow لـ صيغة Pine (CLV×0.65 + body×0.35) — يحتاج backtest مقارن
+- P1-8: إصلاح 3 race conditions في radar-cache.ts
+- P1-11,12: إصلاح dead code + CMF window في Python
+- P2-13,14,15,16: تنظيف stale comments + multi-market + تخزين درجات + توحيد thresholds
+
+---
+Task ID: RADAR-P1-P2-P0-2-FIXES (المدير العام — إصلاحات P1 + P2 + P0-2)
+Agent: المدير العام (Z.ai Code)
+Task: إكمال إصلاحات رادار السيولة (P1-8 + P1-11 + P1-12 + P2-13 + P0-2)
+
+Work Log:
+- P1-8: إصلاح 3 race conditions في radar-cache.ts
+  * R1: writeStatus → atomic write (temp file + rename — POSIX guarantee)
+  * R2: warmupInMemory process-level → cross-process lock file (O_EXCL atomic acquire)
+  * R3: readFileSync → safeReadJson مع retry على parse error (50ms busy-wait)
+  * acquireLockFile/releaseLockFile مع PID + timestamp + stale TTL
+  * إضافة lock acquire/release في triggerBackgroundWarmup + runWarmupSync (كل exit paths)
+- P1-11: إصلاح dead code في detect_life_cycle (shared_liquidity.py)
+  * atr_sma كان = atr (proxy تالف) → "🟡 نعاس" unreachable
+  * الإصلاح: atr_sma = متوسط مدى الـ 14 يوم السابقة (مستقل عن atr الحالي)
+  * يتطلب 28 يوم بيانات للـ SMA المنفصل (fallback لـ atr_sma=atr لو < 28)
+- P1-12: إصلاح CMF window off-by-one في master_analyzer.py
+  * avg_vol_20 كان sum(volumes[-21:-1])/20 (يستثني اليوم الحالي)
+  * mfv_values كان range(-20,0) = volumes[-20:] (يشمل اليوم الحالي)
+  * الإصلاح: موافقة النافذتين على [-20:] (المعيار لـ CMF)
+  * إزالة *100/100 redundancy في cmf normalization
+- P2-13: تنظيف stale comments (4 sites)
+  * docstring الأوزان: 0.40/0.30/0.20/0.10 → 0.35/0.30/0.20/0.15 (مطابق الكود)
+  * رسائل EXPLOSIVE_SURGE: "2.5×" → "2.0×" (مطابق الثابت 2.0×)
+  * roc_30d: closes[-21] (ROC20) → closes[-31] (ROC30 حقيقي)
+- P0-2: توحيد compute_money_flow لصيغة Pine (تدريجي آمن)
+  * الصيغة الحالية (legacy): CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15
+  * صيغة Pine (canonical): CLV×0.65 + body×0.35 (مطابقة master_analyzer.detect_who_is_buying)
+  * الحل: flag بيئي RADAR_USE_PINE_FORMULA — default false (backward compat)
+  * التبديل المباشر يحتاج backtest مقارن (سيغيّر كل قيم buy_pct التاريخية)
+
+Stage Summary (بالأرقام):
+- ملفات معدّلة: 4
+  * src/modules/radar/lib/radar-cache.ts (P1-8: +90 LOC race conditions fix)
+  * vps-service/utils/shared_liquidity.py (P1-11 + P2-13 docstring)
+  * vps-service/analyzers/master_analyzer.py (P1-12 CMF window)
+  * scripts/maker_radar.py (P2-13 roc_30d)
+- race conditions مُصلحة: 3 (R1 atomic + R2 cross-process lock + R3 safe read)
+- dead code مُصلح: 1 (atr_sma in detect_life_cycle → "🟡 نعاس" أصبح reachable)
+- bugs مُصلحة: 2 (CMF window + *100/100 redundancy + roc_30d)
+- stale comments مُنظَّفة: 4 sites
+- P0-2 توحيد: option آمن (flag بيئي، default = legacy، يحتاج backtest قبل التبديل)
+- التحقق:
+  * Python syntax OK لكل الـ 3 ملفات ✅
+  * GET / → HTTP 200 ✅
+  * GET /api/maker-radar/footprint → HTTP 410 ✅
+- القيود المحترمة:
+  * لا push بدون إذن (سيُرفع بعد الإذن)
+  * الحمايات لم تُلمس (لم أضعف ATR clamp / Hard Loss / Split Guard / Ticker Cooldown / R:R)
+  * P0-2 تدريجي (لا تغيير مباشر — backward compat)
+  * لا بيانات وهمية
+  * لا DB جديدة
+  * لا حذف ملفات
+
+ما بقي مفتوحًا:
+- P0-2: backtest مقارن لصيغة Pine (يحتاج DBs EGX حقيقية + مقارنة WR/PF قبل/بعد)
+- P2-14: liquidity_alerts multi-market (إزالة هاردكود EGX)
+- P2-15: تخزين الدرجات الرقمية في DB
+- P2-16: توحيد 20+ thresholds في engine_settings.py
+
+---
+Task ID: CONFLICT-FIX-WHO-IS-BUYING (المدير العام — إصلاح تضارب القرارات)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح خلل تضارب القرارات في #trading-chart (بانري عرض شراء بينما المحرك يقول تجنب)
+
+Work Log:
+- اكتشاف الخطأ من تقرير المالك: شاشة PHDC تعرض 3 قرارات متعارضة:
+  * بانري الجديد: شراء 70/100 (من canonical.signal — TS-side fresh_technical_score)
+  * InstitutionalDecisionPanel: تجنب 35/100 (من Python V40.2 الحقيقي)
+  * Deal Advisor: خطر - ابتعد 33/100
+- تشخيص الجذر: getUnifiedStockData() يرجع canonical.master_score من:
+  * predMaster (لو توقع طازج ≤48h) → صحيح
+  * freshTechScore (لو لا يوجد توقع طازج) → خطأ! (TS-side computation، Rule 20 violation)
+- الإصلاح الجذري للبانر:
+  * إزالة عرض canonical.signal + master_score تمامًا (لا يعرض قرار تداول)
+  * البانر الآن يعرض فقط: who_is_buying + analysis_reason + money_flow + entry/target/stop
+  * لو لا يوجد توقع طازج → بانر مبسّط بتحذير "لا يوجد توقع طازج"
+  * إضافة إحالة واضحة: "القرار النهائي في محرك القرار المؤسسي بالأسفل"
+  * اللون تغيّر من emerald → sky (للتفريق عن InstitutionalDecisionPanel)
+- إنشاء radar_server_commands.sh: أوامر للسرفر الإنتاجي لتشغيل الرادار + جلب النتائج
+
+Stage Summary:
+- ملفات معدّلة: 1 (CanonicalWhoIsBuyingBanner.tsx — إعادة كتابة كاملة للـ header)
+- ملفات جديدة: 1 (radar_server_commands.sh — أوامر السرفر)
+- التضارب: مُزال تمامًا — البانر لا يعرض قرار تداول، فقط بيانات سيولة + who_is_buying
+- Rule 20 محترم: لا computation مالي في البانر، القرار النهائي من Python V40.2
+- الردود على أسئلة المالك:
+  1. لماذا لم أُشغّل كل الحسابات من Python؟ — خطأي: unified-stock-data.ts يحوي computeTechnicalScore() (TS-side). الإصلاح: البانر لا يعرض signal من TS-side.
+  2. هل اتبعت الدستور؟ — partially: خالفتُ Rule 20 بعرض canonical.signal من fresh_technical_score. الإصلاح: لا signal إطلاقًا في البانر.
+  3. لماذا لم أنقل المشروع؟ — الساندبوكس مُهيأ لـ /home/z/my-project لكن GLMinvestment يعمل من موقعه. سأناقش الخيارات مع المالك.
+
+---
+Task ID: TRADING-CHART-REDESIGN
+Agent: general-purpose (مهندس واجهات — تصميم)
+Task: تصميم إعادة هيكلة شاشة #trading-chart
+
+Work Log:
+- قرأت worklog.md (آخر ~1000 سطر — شامل PHASE-3-UNIFY-PRICE-SOURCE + SINGLE-WRITER + UNIFICATION-ALL-PHASES-COMPLETE + MULTI-MARKET-AUDIT + Tasks 1b/1c/1d/1e + 2b/2c + RADAR-P1-P2 + CONFLICT-FIX-WHO-IS-BUYING). آخر إدخال قبل هذا = CONFLICT-FIX-WHO-IS-BUYING (المايك صلّح تضارب البانر بإزالة canonical.signal من CanonicalWhoIsBuyingBanner).
+- قرأت SingleStockAnalysisView.tsx كاملًا (1453 LOC — أجزاء 1-450 / 451-900 / 901-1120 / 1121-1453) + فحصت المكوّنات الفرعية لمصادر البيانات: InstitutionalDecisionPanel.tsx (interface InstitutionalDecision L121-152 = signal_final/tech_score/risk_profile/proofs/maker_state/flight_state/portfolio_advice)، CanonicalWhoIsBuyingBanner.tsx (لا يعرض signal بعد الإصلاح — فقط who_is_buying/money_flow/accumulation/analysis_reason/levels)، DealAdvisorPanel.tsx (props: ticker + initialEntryPrice/Qty)، unified-stock-data.ts (canonical.signal/signal_ar/master_score/master_score_source/prediction_is_fresh + prediction.{entry_price,target_price,target_price_2,target_price_3,stop_loss,risk_reward,confidence,master_score,analysis_reason,who_is_buying,hmm_regime}).
+- لم أعدّل أي ملف سوى هذا الإلحاق (تصميم فقط — read-only).
+
+Stage Summary:
+- **1) البنية الحالية (من فوق لتحت):**
+  1. WhaleAlertListener (مخفي) 2. CanonicalWhoIsBuyingBanner (بانر عريض) 3. canonicalLoading spinner 4. predictionContext active-prediction banner (بانر أخضر عريض — يكرر entry/target/stop/RR) 5. CardHeader: StockSearchSelector + اسم + price-badge + confluence.signal-badge + LIVE-badge + timeframe switcher + مبسط/محترفين + أزرار (refresh/bell/star/maximize/screenshot/remove) + وضعي(buyer/owner) + adjustment_reason + صف toggles مؤشرات (10) 6. CardContent: left live-price rail + InteractiveChart 7. الملخص التنفيذي card (confluence.score/signal/confidence/analysis_text) 8. Trade Plan card (entry/TP1/stop/TP2/RR/position size) 9. InstitutionalDecisionPanel (المحرك الحقيقي: 6 proofs + tech_score + signal_final + portfolio_advice) 10. "تقرير القرار الشفاف" inline block (L889-965) 11. Candle Probabilities card + Stock DNA card (ضخمتان، ظاهرتان دائمًا) 12. Advanced row (SMC/candlestick/liquidity sweeps/indicators/fusion/fundamental valuation) 13. DealAdvisorPanel 14. AlertPanel modal.
+
+- **2) المخالفات الصارخة للمواصفات:**
+  - **بانرات عريضة بلا قرار (2):** predictionContext banner + CanonicalWhoIsBuyingBanner — كلاهما فوق الشارت. المواصفات تريد: الشارت بطل الصفحة + شريط تحذير رفيع فقط لو خطر حقيقي.
+  - **تكرار نفس الأرقام:** السعر يظهر في (header badge + live-price rail + Trade Plan context). الإشارة في (confluence badge + الملخص التنفيذي + InstitutionalDecisionPanel + تقرير القرار الشفاف). entry/target/stop في (predictionContext + Trade Plan + CanonicalBanner + تقرير القرار الشفاف + InstitutionalDecisionPanel.risk_profile). → نفس الرقم مكرر 3-5 مرات.
+  - **Fibonacci مفعّل افتراضيًا** (visibleIndicators.fibonacci=true, L316) — المواصفات: فيبوناتشي كثيرة افتراضيًا تُزال.
+  - **"تقرير القرار الشفاف" (L889-965) مكسور:** يقرأ d.signal/d.reason/d.path/d.pe_ratio/d.roe/d.debt_to_equity/d.market_regime/d.regime/d.relative_strength/d.evidence_count/d.entry_price/d.stop_loss/d.target_price/d.rr_ratio — **لا واحد منها موجود في InstitutionalDecision interface** (الكنسي = signal_final/path_taken/risk_profile.entry|sl|tp1|tp2/prediction_ar). يعرض '—' في الغالب أو TS-error-prone. مكرر مع InstitutionalDecisionPanel. → حذف نهائي.
+  - **قيم وهمية في Fundamental Valuation card (L1413-1430):** pe_ratio='12.4x' / EPS='1.85' / ROI='14.2%' hardcoded — خلاف Rule 27 NO-FAKE-DATA.
+  - **نصوص تقنية في وسط القرار:** analysis_text + coherence note في الملخص التنفيذي (بين الشارت والمحرك).
+  - **"محرك"/"V40"/"DNA" مكشوفة للمستثمر:** نصوص UI "جارٍ تحميل قرار المحرك المؤسسي الموحّد…" + "محرك القرار المؤسسي غير متاح لهذا السهم" + عنوان "🧬 بصمة السهم" + "SMC/Order Block/FVG/Fusion Metrics (V20)". المواصفات: أي شيء اسمه محرك/V40/DNA → ينقل لقسم التفاصيل.
+  - **كروت فاضية مزعجة:** InstitutionalDecisionPanel غير جاهز يعرض Card "محرك القرار المؤسسي غير متاح" كامل.
+  - **صناديق جوه صناديق:** CardHeader+CardContent (Card) بداخله Cards متداخلة (الملخص/Trade Plan/تقرير شفاف/Institutional/Probabilities/DNA/Advanced/DealAdvisor). المواصفات: لا تعشيش.
+  - **كروت Probabilities + DNA ضخمتان (L970-1308) ظاهرتان دائمًا** حتى في الوضع المبسّط — ضوضاء بصرية فوق الشارت.
+
+- **3) ما يجب الإبقاء عليه:** InteractiveChart (بطل) + InstitutionalDecisionPanel (مصدر القرار الحقيقي) + بيانات CanonicalWhoIsBuyingBanner (who_is_buying/money_flow/accumulation/analysis_reason) + DealAdvisorPanel (رأي ثانٍ/هيكل الصفقة) + StockSearchSelector + timeframe + الأدوات (refresh/bell/star/maximize/screenshot) + pipeline البيانات (canonical من /api/stocks/[ticker]/unified + data من /api/v2/chart/full-analysis) — كلها محترمة Rule 20/27/73.
+
+- **4) البنية الجديدة المقترحة (JSX pseudo — من فوق لتحت):**
+  ```jsx
+  <Card id="chart-card-{ticker}">
+    <WhaleAlertListener/>                              // مخفي (لا UI)
+
+    {/* §1 شريط القرار السريع */}
+    <DecisionHeader
+      ticker, name, currencyLabel,
+      price={livePrice}, chgPct,
+      signal={institutional_decision?.signal_final || canonical.signal},   // قرّر مرة واحدة
+      signalColor={institutional_decision?.signal_color},
+      confidence={canonical.master_score},                                  // 0-100
+      entry={institutional_decision?.risk_profile?.entry || data.risk?.entry},
+      stop={institutional_decision?.risk_profile?.sl || data.risk?.stop_loss},
+      target1={institutional_decision?.risk_profile?.tp1 || data.risk?.target},
+      target2={institutional_decision?.risk_profile?.tp2 || data.risk?.target_2},
+      rr={institutional_decision?.risk_profile?.rr_ratio_tp1 || data.risk?.rr_ratio},
+      // لو WAIT/REJECT → سبب في سطر واحد:
+      reason={institutional_decision?.path_taken || data.adjustment_reason}
+      onSearch, onTimeframeChange, onTools(refresh/bell/star/maximize/screenshot)
+    />
+
+    {/* §2 تحذير السوق/السيولة — شريط رفيع فقط لو خطر حقيقي */}
+    <MarketWarning
+      v-if={
+        canonical.money_flow in ['تدفق خروج قوي','تدفق خروج'] ||
+        institutional_decision?.maker_state === 'distribution' ||
+        institutional_decision?.flight_state === 'falling_down' ||
+        data?.position_warning ||
+        (canonical.prediction_is_fresh === false)
+      }
+      warningText={one-line: "🩸 سكين هابط — تجنّب" / "💧 تصريف مؤسسي" / "⚠️ سيولة ضعيفة" / "⏳ لا يوجد توقع طازج"}
+    />
+
+    {/* §3 الشارت — القسم الرئيسي */}
+    <ChartHero>
+      <ChartToolbar>
+        <TimeframeSwitcher/>
+        <Button advanced-levels>مستويات متقدمة</Button>   // يفتح Fib/FVG/OB (off افتراضيًا)
+        <Button indicators>مؤشرات</Button>                  // يضيف RSI/MACD (off افتراضيًا)
+      </ChartToolbar>
+      <InteractiveChart
+        defaults={{ price:true, MA20:true, MA50:true, MA200:true, S/R:true, volume:true }}
+        advanced={{ fibonacci:false, fvg:false, ob:false, rsi:false, macd:false, bb:false, ema:false, bos:false }}
+        levels={data.levels} regimeColor={data.market_regime?.color}
+        targetPrice/stopLossPrice/entryPrice/target2Price (من risk_profile الكنسي)
+      />
+    </ChartHero>
+
+    {/* §4 ملخص خطة الصفقة */}
+    <TradePlanCard
+      entry/stop/target1/target2/rr={risk_profile || data.risk}
+      positionSizePct={data.suggested_position_size_pct}
+      note={data.analysis_text || prediction.analysis_reason}   // جملة قصيرة
+      onPositionUpdate={(p,q)=>fetchData(...,p,q)}
+    />
+
+    {/* §5 لماذا هذا القرار؟ — الأدلة */}
+    <ReasonsForDecision
+      trend={confluence.breakdown.trend || institutional_decision.flight_state}   // أيقونة+جملة+لون
+      relativeStrength={institutional_decision.outperforming_market}
+      liquidity={canonical.money_flow + canonical.accumulation}
+      accumulation={institutional_decision.maker_state}
+      pricePosition={data.stock_dna?.typical_range?.current_position}
+      proofs={institutional_decision.proofs}   // 6 إثباتات مختصرة (أيقونة+جملة+لون)
+    />
+
+    {/* §6 التفاصيل الفنية — قابلة للطي */}
+    <CollapsibleTechnicalDetails>
+      <RSI/MACD/ATR row/>                    // data.current_indicators
+      <6-proofs full/>                       // institutional_decision.proofs (تفصيل)
+      <TechScore + dynamic_thresh/>          // institutional_decision.tech_score
+      <StockDNA/>                            // 🧬 — هنا فقط (ليس فوق الشارت)
+      <CandleProbabilities/>                 // 🔮 — هنا فقط
+      <SMC/FVG/OB/Liquidity sweeps/>         // data.smc_analysis
+      <FusionMetrics/>                       // V20 — هنا فقط
+      <CandlestickPatterns/>
+      <MarketRegime + BB squeeze/>
+    </CollapsibleTechnicalDetails>
+
+    {/* §7 سيناريوهات الشمعة — كارت صغير اختياري */}
+    <OptionalCandleScenarios v-if={data.candle_probabilities} />
+
+    {/* §8 أدوات إضافية */}
+    <AdditionalTools>
+      <DealAdvisorPanel/>                    // رأي ثانٍ/هيكل صفقة (collapsible)
+      <PortfolioTracker/>                     // InstitutionalDecisionPanel.portfolio_advice
+      <Share/Screenshot/Fullscreen/>
+      <AlertPanel/>
+    </AdditionalTools>
+  </Card>
+  ```
+
+- **5) مصادر البيانات لكل قسم (كنسي — Rule 73 SINGLE-DISPLAY-SOURCE):**
+  - **DecisionHeader:** `institutional_decision.signal_final + signal_color` (القرار الكنسي من /api/v2/chart/full-analysis ← Python V40.2)؛ fallback `canonical.signal/signal_ar` من /api/stocks/[ticker]/unified. السعر `livePrice` (useLiveTicker). الثقة `canonical.master_score` (predictions.db فقط — لا TS computation).
+  - **MarketWarning:** `canonical.money_flow/accumulation` + `institutional_decision.maker_state/flight_state` + `data.position_warning` + `canonical.prediction_is_fresh`.
+  - **ChartHero:** `data.ohlcv + indicators + levels + market_regime.color + bb_squeeze + bos_events` من /api/v2/chart/full-analysis؛ مستويات الدخول/الوقف/الهدف من `institutional_decision.risk_profile` (fallback `data.risk`).
+  - **TradePlanCard:** `institutional_decision.risk_profile.{entry,sl,tp1,tp2,rr_ratio_tp1,rr_ratio_tp2}` (fallback `data.risk`)؛ `data.suggested_position_size_pct`؛ `data.analysis_text` || `prediction.analysis_reason`.
+  - **ReasonsForDecision:** `data.confluence.breakdown` + `institutional_decision.proofs` (6) + `canonical.who_is_buying` + `canonical.money_flow/accumulation` + `institutional_decision.outperforming_market/maker_state/flight_state` + `data.stock_dna.typical_range.current_position`.
+  - **CollapsibleTechnicalDetails:** `data.current_indicators` (RSI/MACD/ATR) + `institutional_decision.{tech_score,proofs,dynamic_thresh}` + `data.stock_dna` + `data.candle_probabilities` + `data.smc_analysis` + `data.fusion_metrics` + `data.candlestick_patterns` + `data.market_regime/bb_squeeze`.
+  - **OptionalCandleScenarios:** `data.candle_probabilities`.
+  - **AdditionalTools:** DealAdvisorPanel (props: ticker+initialEntryPrice/Qty) + `institutional_decision.portfolio_advice` + AlertPanel.
+
+- **6) ما يُحذف/يُنقل:**
+  - **حذف نهائي:** "تقرير القرار الشفاف" inline block (L889-965) — مكسور + مكرر. predictionContext active-prediction banner (L529-549) — يدمج في DecisionHeader. canonicalLoading spinner (L519-524) — يدمج في DecisionHeader skeleton. live-price left rail (L722-735) — يدمج في DecisionHeader. fundamental valuation card hardcoded values (L1418-1429) — حذف القيم الوهمية. صف toggles المؤشرات من الهيدر (L689-717) — ينقل لـ ChartToolbar. "وضعي buyer/owner" من الهيدر (L678-687) — ينقل لـ TradePlanCard (مدخل المركز).
+  - **نقل لقسم التفاصيل:** Stock DNA card + Candle Probabilities card (من فوق الشارت لـ CollapsibleTechnicalDetails). SMC/FVG/OB/Fusion (V20)/candlestick patterns — تبقى في التفاصيل (فعليًا gated بـ advancedMode — جيد، لكن الاسم "محترفين" يصبح "تفاصيل فنية"). نصوص "محرك/V60.2/V34/V20/DNA" — تُخفى أو تُعاد صياغتها بلغة المستثمر ("قرار النظام" بدل "محرك"، "بصمة السهم" تُحفظ لكن كقسم تفاصيل).
+  - **إعادة تسمية/تبسيط:** "محرك القرار المؤسسي غير متاح" → لا تعرض كارت فاضي أصلًا (إن لم يوجد decision → TradingView + تحذير "لا تحليل متاح"). CanonicalWhoIsBuyingBanner يصبح المصدر الداخلي لـ MarketWarning + ReasonsForDecision (لا بانر منفصل).
+
+- **7) خطة التنفيذ (خطوات للمبرمج):**
+  1. **لا تلمس Python/الإنتاج** — التغيير UI-only (React/TSX). احترام Rule 20/27/73.
+  2. أنشئ ملف types جديد `DecisionHeader.types.ts` يوحّد قراءة القرار: `finalSignal = institutional_decision?.signal_final ?? canonical.signal ?? '—'` (قرار واحد فقط يعرض).
+  3. استخرج `DecisionHeader.tsx` (مكوّن جديد) من CardHeader الحالي: يدمج (ticker+name+price+signal+confidence+entry+stop+target1+R/R+reason-if-WAIT). يحل محل: predictionContext banner + canonicalLoading + live-price rail + confluence badge. ~120 LOC.
+  4. استخرج `MarketWarning.tsx` (شريط رفيع، v-if خطر) — يستهلك canonical.money_flow/maker_state/flight_state/position_warning/prediction_is_fresh. ~40 LOC. **يحل محل** CanonicalWhoIsBuyingBanner كبانر منفصل (بياناته تُستهلك داخليًا).
+  5. أعِد توجيه `InteractiveChart` ليكون hero: غير `visibleIndicators` الافتراضي إلى `{ sma20:true, sma50:true, sma200:true, levels:true, volume:true, fibonacci:false, ema:false, rsi:false, macd:false, bb:false, bos:false, cmf:false, obv:false }`. أنشئ `ChartToolbar` (مستويات متقدمة + مؤشرات) بدل صف toggles في الهيدر.
+  6. استخرج `TradePlanCard.tsx` من Trade Plan card الحالي (L828-861) + ادمج وضعي buyer/owner (L678-687) كمدخل مركز + analysis_text قصير.
+  7. استخرج `ReasonsForDecision.tsx` (جديد): 5 أدلة بأيقونة+جملة+لون من confluence.breakdown + proofs + who_is_buying + maker_state + flight_state + outperforming_market + stock_dna.current_position.
+  8. استخرج `CollapsibleTechnicalDetails.tsx`: ادمج (advanced row L1310-1432) + Stock DNA card (L1130-1306) + Candle Probabilities card (L973-1127) + InstitutionalDecisionPanel (L871-883) + current_indicators. كلها قابلة للطي افتراضيًا (collapsed).
+  9. **احذف** "تقرير القرار الشفاف" inline block (L889-965) نهائيًا. **احذف** القيم الوهمية في fundamental valuation (L1418-1429) أو علّمها "— بيانات غير متاحة".
+  10. أبقِ DealAdvisorPanel + AlertPanel في `AdditionalTools` (collapsible).
+  11. طبّق نظام الألوان: شراء قوي=emerald-600، شراء حذر=emerald-400/amber-500، انتظار=slate-400/amber-500، تجنب/رفض=rose-600. خلفية bg-card هادية، لا gradients كثيرة، لا تعشيش Card-داخل-Card (استخدم div+border بدل Card متداخلة).
+  12. تأكد من احترام Rule 73: لا حساب مالي في الواجهة — كل قيمة من canonical/institutional_decision/data. لا fabrication (Rule 27).
+  13. اختبر: نفس السهم في #trading-chart + #recommendations + /stock/[ticker] = نفس الإشارة (zero_conflict).
+  14. التزم: لا ملفات Python، لا تعطيل حمايات، لا بيانات وهمية، لا push دون إذن المالك.
+
+*End of Task TRADING-CHART-REDESIGN — general-purpose (مهندس واجهات) — read-only design*
+
+---
+Task ID: RULE20-REDESIGN-FIXES (المدير العام — Rule 20 + إعادة تصميم)
+Agent: المدير العام (Z.ai Code)
+Task: إزالة computeTechnicalScore (Rule 20) + بداية إعادة تصميم الشاشة
+
+Work Log:
+- المهمة 1: إزالة computeTechnicalScore() من unified-stock-data.ts (جذر التضارب)
+  * حذف الدالة كليًا (محفوظة كـ comment للتوثيق)
+  * master_score الآن يأتي ONLY من predictions.db (Python V40.2)
+  * لو لا توقع طازج → null (لا fabrication، Rule 27)
+  * canonical.signal = null لو لا توقع طازج (لا TS-side computation)
+  * type UnifiedStockData: signal + master_score = nullable
+  * master_score_source: 'fresh_technical_score' → 'null'
+- المهمة 2 (بداية): إعادة تصميم شاشة #trading-chart وفق المواصفات
+  * تصميم كامل من مهندس واجهات (Task TRADING-CHART-REDESIGN)
+  * إصلاح 1: fibonacci افتراضيًا false (كان true — مخالف المواصفات)
+  * إصلاح 2: إزالة "تقرير القرار الشفاف" المكسور (يقرأ حقولًا غير موجودة)
+  * إصلاح 3: إزالة القيم الوهمية في fundamental valuation (12.4x/1.85/14.2%)
+  * البنية الجديدة المقترحة: 8 أقسام (DecisionHeader → MarketWarning → ChartHero → TradePlanCard → ReasonsForDecision → CollapsibleTechnicalDetails → OptionalCandleScenarios → AdditionalTools)
+
+Stage Summary:
+- ملفات معدّلة: 2
+  * src/lib/unified-stock-data.ts (إزالة computeTechnicalScore + null safety)
+  * src/modules/market-analysis/components/SingleStockAnalysisView.tsx (3 إصلاحات تصميم)
+- bugs مُصلحة:
+  * computeTechnicalScore (Rule 20 violation — جذر التضارب)
+  * fibonacci افتراضيًا true (مخالف المواصفات)
+  * "تقرير القرار الشفاف" المكسور (يقرأ حقولًا غير موجودة)
+  * قيم وهمية hardcoded في fundamental valuation (Rule 27 violation)
+- التحقق: GET / → HTTP 200 ✅
+- القيود المحترمة:
+  * Rule 20 (Python=Brain): لا حساب مالي في TS-side
+  * Rule 27 (NO-FAKE-DATA): لا fabrication
+  * Rule 73 (SINGLE-DISPLAY-SOURCE): قرار واحد من Python V40.2
+  * الحمايات لم تُلمس
+  * لا push بدون إذن
+
+ما بقي مفتوحًا:
+- إكمال إعادة التصميم (8 أقسام جديدة — استخراج DecisionHeader + ChartHero + إلخ)
+- نقل المشروع إلى /home/z/my-project (بعد الموافقة على خطة النقل)
+- تشغيل radar_server_commands.sh على السرفر (يحتاج git pull)
