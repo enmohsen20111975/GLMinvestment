@@ -1,6 +1,15 @@
 /**
  * Types for MarketAnalysisView modules.
  * Extracted from MarketAnalysisView.tsx as part of PHASE3-BUNDLE-OPT.
+ *
+ * MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+ * -------------------------------------------------------
+ * The types referencing `maestroScore`, `raw_maestro_score`, and the
+ * `'maestro'` literal in `source` union are retained for backward compatibility.
+ * They map to the `maestro_score` DB column (stored_analyses table) and to
+ * historical prediction-source labels. Removing them would break existing
+ * API contracts (Rule 4 — NO-DELETION). No runtime maestro engine calls
+ * exist in this file — it is purely a type declaration module.
  */
 
 import type { MarketType } from '@/lib/store';

@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getSelfBaseUrl } from '@/lib/server-url';
+// getSelfBaseUrl removed — was only used for /api/maestro/stock fetch (now disabled)
 // ─── UNIFIED-DATA-CONTRACT (Task UNIFIED-API-V3, Rule 67 + Rule 72) ─────────
 // قبل كده: comprehensive route بـ يجيب RSI/support/resistance من Python backend
 // أو stocks.db (ممكن يكون قديم). النتيجة: CANA بـ يطلع RSI=79.6 في شاشة و
@@ -116,31 +116,13 @@ export async function GET(
       })
   );
 
-  // 2. Maestro Analysis (Next.js — runs locally)
-  // Use getSelfBaseUrl() to respect x-forwarded-host behind Caddy/Nginx.
-  const selfBase = getSelfBaseUrl(request);
-  promises.push(
-    fetch(`${selfBase}/api/maestro/stock/${encodeURIComponent(tickerUpper)}?persona=balanced&market=${market}`, {
-      signal: AbortSignal.timeout(45000),
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          response.errors.push(`maestro: HTTP ${res.status}`);
-          return;
-        }
-        const data = await res.json();
-        if (data.success) {
-          response.maestro = data.data;
-        } else {
-          response.errors.push(`maestro: ${data.error || 'failed'}`);
-        }
-      })
-      .catch((e) => {
-        response.errors.push(`maestro: ${e instanceof Error ? e.message : 'fetch failed'}`);
-      })
-  );
+  // 2. Maestro Analysis — DISABLED
+  // MAESTRO-DISABLED — removed fetch to /api/maestro/stock (Task PHASE-2-MAESTRO-KILL)
+  // Owner: "أمسح كل حاجة ليها علاقة بالمايسترو" — Maestro has different thresholds
+  // (55/42/30/20) and conflicts with canonical signal.
+  // comprehensive route already injects canonical values via getUnifiedStockData()
+  // below, so maestro data is no longer needed. The `maestro` section (if populated
+  // elsewhere) is still overridden with canonical signal in the UNIFIED-DATA-OVERRIDE block.
 
   // 3. Professional Analysis (Python)
   promises.push(

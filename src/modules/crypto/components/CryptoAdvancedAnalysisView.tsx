@@ -34,6 +34,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// TS canonical source: src/lib/unified-stock-data.ts::computeRSI.
+import { computeRSI } from '@/lib/unified-stock-data';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -678,28 +681,8 @@ const analysisColumns: Column<CryptoAnalysis & { _idx: number }>[] = [
 ];
 
 // ─── RSI helper ─────────────────────────────────────────────────────────────
-
-function computeRSI(closes: number[], period: number = 14): number | null {
-  if (closes.length < period + 1) return null;
-  let gains = 0;
-  let losses = 0;
-  // حساب أول average
-  for (let i = 1; i <= period; i++) {
-    const diff = closes[i] - closes[i - 1];
-    if (diff >= 0) gains += diff;
-    else losses -= diff;
-  }
-  let avgGain = gains / period;
-  let avgLoss = losses / period;
-  // smoothing لباقي القيم
-  for (let i = period + 1; i < closes.length; i++) {
-    const diff = closes[i] - closes[i - 1];
-    const gain = diff >= 0 ? diff : 0;
-    const loss = diff < 0 ? -diff : 0;
-    avgGain = (avgGain * (period - 1) + gain) / period;
-    avgLoss = (avgLoss * (period - 1) + loss) / period;
-  }
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return 100 - 100 / (1 + rs);
-}
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// Before: local `function computeRSI(closes, period)` with inline math (Wilder's,
+// mathematically correct but duplicated). Now: use canonical `computeRSI`
+// imported from '@/lib/unified-stock-data' (single source of truth for TS RSI).
+// (No local wrapper — callers below use `computeRSI(...)` directly.)

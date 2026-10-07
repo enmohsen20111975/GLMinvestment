@@ -1,5 +1,28 @@
 'use client';
 
+// MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// -----------------------------------------------------------------------------
+// This file does NOT call `/api/maestro/*`. All fetches go to:
+//   /api/admin/*, /api/market/*, /api/prediction-performance,
+//   /api/self-learning, /api/data-status, /api/feedback, /api/multi-market/*,
+//   /api/track — none of which are maestro endpoints.
+//
+// Remaining "maestro" references in this file are:
+//   1. `HubId = '...' | 'maestro' | '...'` — internal string identifier for a
+//      hub grouping (engines + learning). Renaming would require a UI-wide
+//      refactor. Left intact per conservative clause of PHASE-2-MAESTRO-UI.
+//   2. `{ id: 'maestro', label: 'المحركات والتعلم الذكي' }` — hub definition
+//      using the legacy id; the Arabic label already says "engines + learning".
+//   3. Button subtitle "Maestro Command Center" — cosmetic UI string.
+//   4. Historical comments describing removed code (MaestroCommandCenter /
+//      MaestroDashboard monoliths, already deleted in FIX-P3-P5-P6) — kept
+//      for traceability.
+//
+// Per Rule 4 (NO-DELETION) and the conservative clause, these identifiers
+// and comments are NOT modified. The legacy MaestroCommandCenter component
+// itself was already deleted in earlier phases; only trace comments remain.
+// -----------------------------------------------------------------------------
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import {

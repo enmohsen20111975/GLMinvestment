@@ -657,25 +657,15 @@ def _compute_fallback_technical_indicators(price_history: List[Dict[str, Any]], 
 
     cp = current_price if current_price > 0 else closes[-1]
 
-    # Calculate RSI (14)
+    # Calculate RSI (14) — CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+    # Backward-compatible wrapper: previously SMA-based (BUG per Rule 67).
     rsi = 50.0
-    if len(closes) >= 14:
-        gains, losses = [], []
-        for i in range(1, len(closes)):
-            diff = closes[i] - closes[i - 1]
-            if diff >= 0:
-                gains.append(diff)
-                losses.append(0)
-            else:
-                gains.append(0)
-                losses.append(abs(diff))
-        avg_gain = sum(gains[-14:]) / 14.0
-        avg_loss = sum(losses[-14:]) / 14.0
-        if avg_loss == 0:
-            rsi = 100.0
-        else:
-            rs = avg_gain / avg_loss
-            rsi = round(100.0 - (100.0 / (1.0 + rs)), 2)
+    if len(closes) >= 15:
+        # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+        from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+        _rsi_val = _canonical_calc_rsi(closes, 14)
+        if _rsi_val is not None:
+            rsi = _rsi_val
 
     # Calculate MA50 & MA200
     ma_50 = round(sum(closes[-50:]) / min(len(closes), 50), 2) if len(closes) >= 5 else cp

@@ -33,6 +33,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { mulberry32 } from './LearningVisuals';
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// TS canonical source: src/lib/unified-stock-data.ts::computeRSI.
+import { computeRSI } from '@/lib/unified-stock-data';
 
 /* ────────────────────────────────────────────────────────────
    Types
@@ -122,6 +125,10 @@ function sma(values: number[], period: number): number[] {
   return out;
 }
 
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing (Connors RSI-2).
+// Math is Wilder's with period=2 (matching canonical formula).
+// Kept as series form (returns number[]) for chart rendering.
+// Single-value RSI calls must use computeRSI() from '@/lib/unified-stock-data'.
 function rsi2(closes: number[]): number[] {
   // RSI with period=2 (Connors style)
   const out: number[] = new Array(closes.length).fill(NaN);

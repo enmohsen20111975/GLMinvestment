@@ -1,5 +1,11 @@
 'use client';
 
+// MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// No `/api/maestro/*` calls in this file. Uses /api/stored-analysis/*,
+// /api/market/morning-bell, /api/stored-analysis/live-tracking instead.
+// The single `item.maestroScore` reference is a property name mapping to the
+// `maestro_score` DB column (stored_analyses). Left intact per Rule 4 (NO-DELETION).
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

@@ -1,5 +1,10 @@
 'use client';
 
+// MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// Phase 0 already removed the MaestroWidget import. The two legacy comment
+// lines below are retained for traceability — no maestro engine code remains
+// in this file. Dashboard fetches go through unified API routes only.
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Download, Zap, RefreshCw, Pin } from 'lucide-react';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';

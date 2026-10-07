@@ -26,6 +26,14 @@ _DEFAULT_STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+# Unified Maestro engine has been permanently disabled by owner directive:
+#   "أمسح كل حاجة ليها علاقة بالمايسترو" (kill everything Maestro-related).
+# Canonical signal now comes from canonical_signal.py + unified-stock-data.ts.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# every main entry point returns None so callers short-circuit cleanly.
+MAESTRO_DISABLED = True
+
 from config.market_config import (
     MarketConfig,
     MarketType,
@@ -350,6 +358,9 @@ class UnifiedMaestroEngine:
         """
         تحليل موحد لأي سهم من أي سوق باستخدام CoreScoringEngine
         """
+        # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+        if MAESTRO_DISABLED:
+            return None  # canonical_signal.py is now the source of truth
         # Detect market if not provided
         if not market:
             market = detect_market_from_ticker(ticker)
@@ -552,12 +563,15 @@ def analyze_ticker(
 ) -> Optional[UnifiedMaestroResult]:
     """
     تحليل سهم من أي سوق
-    
+
     Example:
         result = analyze_ticker("COMI")  # EGX
         result = analyze_ticker("1120.SR", "KSA")  # Saudi
         result = analyze_ticker("bitcoin", "CRYPTO")  # Crypto
     """
+    # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+    if MAESTRO_DISABLED:
+        return None
     engine = UnifiedMaestroEngine(db_path)
     return engine.analyze(ticker, market)
 

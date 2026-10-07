@@ -1,5 +1,13 @@
 'use client';
 
+// MAESTRO-DISABLED — use unified API instead (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// This component fetches from /api/unified/predictions, /api/stored-analysis/results,
+// /api/market/regime, /api/stocks/[ticker] — NONE of these are maestro endpoints.
+// The remaining `maestroScore` references in this file are *property names* on
+// StoredAnalysisItem that map to the `maestro_score` DB column (stored_analyses
+// table). They are NOT maestro-engine calls and are intentionally left intact
+// per Rule 4 (NO-DELETION) and the conservative clause of PHASE-2-MAESTRO-UI.
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

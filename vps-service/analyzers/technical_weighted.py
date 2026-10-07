@@ -147,22 +147,15 @@ class TechnicalAnalyzerWeighted:
     # =========================================================================
     
     def rsi(self, prices: List[float], period: int = 14) -> Optional[float]:
-        """Relative Strength Index."""
-        if len(prices) < period + 1:
-            return None
-        
-        deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
-        gains = [d if d > 0 else 0 for d in deltas]
-        losses = [-d if d < 0 else 0 for d in deltas]
-        
-        avg_gain = sum(gains[-period:]) / period
-        avg_loss = sum(losses[-period:]) / period
-        
-        if avg_loss == 0:
-            return 100.0
-        
-        rs = avg_gain / avg_loss
-        return round(100 - (100 / (1 + rs)), 2)
+        """Relative Strength Index — Wilder's smoothing.
+
+        CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+        Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+        قبل كده: كان SMA-based (`sum(gains[-period:]) / period`) — غلط رياضيًا.
+        """
+        # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+        from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+        return _canonical_calc_rsi(prices, period)
     
     # =========================================================================
     # MACD

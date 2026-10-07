@@ -1,5 +1,11 @@
 'use client';
 
+// MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// No `/api/maestro/*` calls in this file. The two inline comments mentioning
+// "maestro" (TOOLKIT-UNIFY-010, MACD backend unification) are historical
+// notes referring to when MACD was computed by the maestro backend; they are
+// not engine invocations and are left intact for traceability.
+
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   createChart,

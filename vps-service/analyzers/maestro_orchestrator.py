@@ -107,6 +107,15 @@ except ImportError:
 
 _PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 STOCKS_DB = str(_PROJECT_ROOT / 'db' / 'stocks.db')
+
+# MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+# Maestro engine has been permanently disabled by owner directive:
+#   "أمسح كل حاجة ليها علاقة بالمايسترو" (kill everything Maestro-related).
+# Canonical signal now comes from canonical_signal.py + unified-stock-data.ts.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# every main entry point returns None / [] / {} so callers short-circuit cleanly.
+MAESTRO_DISABLED = True
+_MASTRO_DISABLE_REASON = 'maestro_disabled_permanently'
 PRICE_HISTORY_DB = str(_PROJECT_ROOT / 'db' / 'price_history.db')
 DATA_ENGINE_DB = str(_PROJECT_ROOT / 'db' / 'data_engine.db')
 PREDICTIONS_DB = os.environ.get('PREDICTIONS_DB', str(_PROJECT_ROOT / 'db' / 'predictions.db'))
@@ -1288,6 +1297,9 @@ def determine_recommendation(maestro_score: float, regime: str, volume_ratio: fl
 
     Returns: (recommendation, recommendation_ar)
     """
+    # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+    if MAESTRO_DISABLED:
+        return ('disabled', 'مايسترو متوقف')
     # ── T+1 / Swing BUY shortcuts (مش personas-dependent) ──
     if distance_to_support_pct <= 4.0 and volume_ratio >= 1.2:
         return 't1_buy', 'شراء T+1'
@@ -1892,6 +1904,9 @@ class MaestroOrchestrator:
         return True
 
     def analyze(self, ticker: str, stock: Dict, price_history: List[Dict], options: Dict = None) -> MaestroResult:
+        # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+        if MAESTRO_DISABLED:
+            return None  # canonical_signal.py is now the source of truth
         options = options or {}
         persona_type = options.get('persona_type', 'balanced')
         force_regime = options.get('force_regime')
@@ -4214,6 +4229,14 @@ class MaestroOrchestrator:
 # ==================== CONVENIENCE FUNCTIONS ====================
 
 def run_maestro_analysis(ticker: str, stock: Dict, price_history: List[Dict], db_path: str, options: Dict = None) -> Dict:
+    # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+    if MAESTRO_DISABLED:
+        return {
+            'ticker': ticker,
+            'maestro_disabled': True,
+            'error': 'maestro_disabled',
+            'canonical_route': f'/api/stocks/{ticker}/unified',
+        }
     orchestrator = MaestroOrchestrator(db_path)
     result = orchestrator.analyze(ticker, stock, price_history, options)
     analysis_json = None
@@ -4264,6 +4287,9 @@ def run_maestro_analysis(ticker: str, stock: Dict, price_history: List[Dict], db
 
 
 def batch_maestro_analysis(stocks: List[Dict], db_path: str, options: Dict = None) -> List[Dict]:
+    # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+    if MAESTRO_DISABLED:
+        return []
     orchestrator = MaestroOrchestrator(db_path)
     results = []
     for stock_data in stocks:
@@ -4281,6 +4307,9 @@ def batch_maestro_analysis(stocks: List[Dict], db_path: str, options: Dict = Non
 # ==================== DAILY OPPORTUNITIES ====================
 
 def daily_opportunities(market: str = 'EGX', limit: int = 5) -> Dict:
+    # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+    if MAESTRO_DISABLED:
+        return {'date': datetime.now().strftime('%Y-%m-%d'), 'top_3': [], 'count': 0, 'maestro_disabled': True}
     from core.database import DatabaseManager
     db_path = STOCKS_DB
     if not os.path.exists(db_path):

@@ -200,13 +200,17 @@ function calcBollingerBands(
   return { upper, middle, lower };
 }
 
-// ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67: CALCULATION-CANONICAL) ─
+// ─── CANONICAL-CALCULATIONS (Task PHASE-2-RSI-UNIFICATION, Rule 67: CALCULATION-CANONICAL) ─
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// مطابق src/lib/unified-stock-data.ts::computeRSI (TS canonical) +
+// analyzers/indicators/rsi.py::calc_rsi (Python canonical).
 // قبل كده: RSI كان بـ SMA (Simple Moving Average) — خطأ رياضي.
 // Rule 67 canonical: Wilder's smoothing
 //   avg_gain[i] = (avg_gain[i-1] * (period-1) + gain[i]) / period
 //   avg_loss[i] = (avg_loss[i-1] * (period-1) + loss[i]) / period
 // الفرق: ~10-20 نقطة في قيمة RSI → نفس السهم بـ يطلع قيم مختلفة على chart vs stock detail.
-// الحل: استخدام Wilder's smoothing المطابق للـ Python canonical (analyzers/indicators/rsi.py)
+// ملاحظة: هذا هو نسخة series (ترجع List<number|null>) للرسم على الـ chart —
+// قيمة RSI الواحدة لازم تيجي من computeRSI في unified-stock-data.ts.
 function calcRSI(data: number[], period: number = 14): (number | null)[] {
   const result: (number | null)[] = [];
 

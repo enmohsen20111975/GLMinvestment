@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// TS canonical source: src/lib/unified-stock-data.ts::computeRSI.
+import { computeRSI } from '@/lib/unified-stock-data';
 
 /**
  * /api/crypto/full-analysis?ticker=BTC&timeframe=DAY&limit=365
@@ -61,15 +64,9 @@ function ema(values: number[], period: number): number | null {
 }
 
 function rsi(closes: number[], period = 14): number | null {
-  if (closes.length < period + 1) return null;
-  let gains = 0, losses = 0;
-  for (let i = closes.length - period; i < closes.length; i++) {
-    const diff = closes[i] - closes[i - 1];
-    if (diff >= 0) gains += diff; else losses -= diff;
-  }
-  if (losses === 0) return 100;
-  const rs = gains / losses;
-  return 100 - 100 / (1 + rs);
+  // CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+  // قبل كده: كان SMA-based على آخر `period` شمعة فقط — غلط رياضيًا.
+  return computeRSI(closes, period);
 }
 
 function atr(candles: OHLCVCandle[], period = 14): number | null {

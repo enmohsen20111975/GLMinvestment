@@ -68,33 +68,23 @@ def _inv_compute_52w(ticker: str) -> tuple:
 
 
 def _inv_compute_rsi(ticker: str, period: int = 14) -> float:
-    """حساب RSI من price_history (fallback لو مفيش في stocks table)."""
+    """حساب RSI من price_history (fallback لو مفيش في stocks table).
+
+    CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+    Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+    قبل كده: كان SMA-based على آخر `period` شمعة فقط — غلط رياضيًا.
+    """
     rows = _inv_load_price_history(ticker)
-    if len(rows) < period + 1:
+    if not rows or len(rows) < period + 1:
         return 0.0
     # rows مرتبة DESC (الأحدث أول) — نعكسها
     closes = [r['close_price'] for r in reversed(rows) if r.get('close_price') and r['close_price'] > 0]
     if len(closes) < period + 1:
         return 0.0
-    gains = []
-    losses = []
-    for i in range(1, len(closes)):
-        change = closes[i] - closes[i - 1]
-        if change > 0:
-            gains.append(change)
-            losses.append(0)
-        else:
-            gains.append(0)
-            losses.append(abs(change))
-    if len(gains) < period:
-        return 0.0
-    avg_gain = sum(gains[:period]) / period
-    avg_loss = sum(losses[:period]) / period
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return round(rsi, 2)
+    # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+    from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+    val = _canonical_calc_rsi(closes, period)
+    return val if val is not None else 0.0
 
 
 @dataclass

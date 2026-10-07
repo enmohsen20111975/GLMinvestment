@@ -1,5 +1,13 @@
 'use client';
 
+// MAESTRO-DISABLED — use unified API instead (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// This component fetches from /api/predictions/honest-tracking/* and
+// /api/predictions/honest-tracking/missed-opportunities — NOT maestro endpoints.
+// The remaining `maestroScore` / `maestro_score` references are property names
+// mapping to the `maestro_score` DB column (stored_analyses / predictions tables).
+// They are NOT maestro-engine invocations and are intentionally left intact
+// per Rule 4 (NO-DELETION) and the conservative clause of PHASE-2-MAESTRO-UI.
+
 /**
  * ExecutiveReportView — ملخص أداء التوقعات
  * ==============================================================================

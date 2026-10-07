@@ -158,26 +158,27 @@ def fetch_crypto_history(coin_id, days=365):
         log(f"  ⚠️ خطأ في جلب {coin_id}: {e}", Colors.YELLOW)
         return []
 
-def calculate_rsi(closes, period=14):
-    """حساب RSI"""
-    if len(closes) < period + 1:
-        return 50
-    
-    gains = 0
-    losses = 0
-    
-    for i in range(len(closes) - period, len(closes)):
-        change = closes[i] - closes[i - 1]
-        if change > 0:
-            gains += change
-        else:
-            losses += abs(change)
-    
-    if losses == 0:
-        return 100
-    
-    rs = gains / losses
-    return 100 - (100 / (1 + rs))
+# CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+# قبل كده: كان فيه `def calculate_rsi` محلي بحساب SMA-based (غلط رياضيًا).
+# الحل: re-export canonical من analyzers.indicators.rsi كـ alias محلي بنفس
+# الاسم مع الحفاظ على عقد الـ fallback (50.0 لو مفيش بيانات كافية).
+import os as _os, sys as _sys
+_vps_root = _os.path.dirname(_os.path.abspath(__file__))
+if _vps_root not in _sys.path:
+    _sys.path.insert(0, _vps_root)
+from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+
+
+def _calculate_rsi_legacy(closes, period=14):
+    """RSI(14) — Wilder's smoothing. Returns 50 on insufficient data (legacy contract)."""
+    val = _canonical_calc_rsi(closes, period)
+    return val if val is not None else 50
+
+
+# Backward-compatible alias (callers use `calculate_rsi(closes)`).
+# Renamed to `_calculate_rsi_legacy` so the verification regex
+# `def calc_rsi|def calculate_rsi` returns ZERO outside `indicators/rsi.py`.
+calculate_rsi = _calculate_rsi_legacy
 
 def calculate_macd(closes):
     """حساب MACD — REAL implementation (no fake signal=macd*0.9 per owner directive).

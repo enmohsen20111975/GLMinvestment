@@ -186,8 +186,11 @@ export type UnifiedStockData = {
 
 // ----------------------------------------------------------------------------
 // Helper: Wilder's RSI (period=14) — مطابق Python canonical
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// This is the SINGLE SOURCE OF TRUTH for TS-side RSI. Other modules must
+// import from here instead of re-implementing inline.
 // ----------------------------------------------------------------------------
-function computeRSI(closes: number[], period = 14): number | null {
+export function computeRSI(closes: number[], period = 14): number | null {
   if (closes.length < period + 1) return null;
   const gains: number[] = [0];
   const losses: number[] = [0];

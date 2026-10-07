@@ -27,6 +27,14 @@ from analyzers.crypto_analyzer import CryptoAnalyzer, CryptoAnalysis, OHLCV
 from analyzers.crypto_regime import CryptoRegimeDetector, CryptoRegime
 from analyzers.crypto_circuit import CryptoCircuitBreaker, CircuitBreakerResult
 
+# MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+# Crypto Maestro engine has been permanently disabled by owner directive:
+#   "أمسح كل حاجة ليها علاقة بالمايسترو" (kill everything Maestro-related).
+# Canonical signal now comes from canonical_signal.py + unified-stock-data.ts.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# every main entry point returns None so callers short-circuit cleanly.
+MAESTRO_DISABLED = True
+
 
 # ============================================================================
 # CONSTANTS - CRYPTO SPECIFIC
@@ -140,7 +148,10 @@ class CryptoMaestroOrchestrator:
         Returns:
             CryptoMaestroResult أو None
         """
-        
+        # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+        if MAESTRO_DISABLED:
+            return None  # canonical_signal.py is now the source of truth
+
         # 1. Get basic analysis
         crypto_analysis = self.analyzer.analyze(coin_id)
         if not crypto_analysis:
@@ -418,6 +429,9 @@ class CryptoMaestroOrchestrator:
 # Convenience function
 def analyze_crypto(coin_id: str) -> Optional[CryptoMaestroResult]:
     """Analyze a cryptocurrency"""
+    # MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+    if MAESTRO_DISABLED:
+        return None
     maestro = CryptoMaestroOrchestrator()
     return maestro.analyze(coin_id)
 

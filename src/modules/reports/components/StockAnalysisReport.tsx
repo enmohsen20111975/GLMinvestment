@@ -1,5 +1,15 @@
 'use client';
 
+// MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// This component fetches from `/api/stocks/${ticker}/comprehensive` — the
+// unified Python aggregator (Rule 67). It does NOT call `/api/maestro/*`.
+// The `maestro?: Record<string, unknown>` field in `ComprehensiveData` and
+// the inline comments mentioning "maestro" describe a sub-object returned
+// by the comprehensive aggregator (Python brain → Node display only, Rule 20).
+// These are response-shape property names / historical comments, NOT engine
+// invocations. Left intact per Rule 4 (NO-DELETION) and the conservative
+// clause of PHASE-2-MAESTRO-UI.
+
 /**
  * StockAnalysisReport — تقرير تحليل السهم (Task 42 redesign)
  * =========================================================================

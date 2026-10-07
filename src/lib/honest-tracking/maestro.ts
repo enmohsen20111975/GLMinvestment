@@ -1,3 +1,18 @@
+// ============================================================================
+// MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+// This file is the legacy "Maestro Engine" implementation. It is still
+// imported by the honest-tracking API routes (`/api/predictions/honest-tracking/*`)
+// and the admin generate-historical-predictions route, so it CANNOT be
+// deleted (Rule 4 — NO-DELETION). It is retained for backward compatibility.
+//
+// IMPORTANT: New UI components MUST NOT call `/api/maestro/*` endpoints — they
+// must use the unified API (`/api/stocks/[ticker]/unified`) instead. The
+// `maestro_score` column in `stored_analyses` is a DB column (kept for compat)
+// and is NOT a maestro-engine reference.
+//
+// Deprecation status: retained as-is; no new callers should be added.
+// ============================================================================
+
 /**
  * Maestro Engine — Honest Tracking
  * =================================
@@ -5,6 +20,10 @@
  * "Honest Predictions" admin page. Replaces the previous Python-only
  * `backfill_with_personas.py` (which only worked for EGX because it depended
  * on `egypt_stocks.db`).
+ *
+ * @deprecated (Task PHASE-2-MAESTRO-KILL) — retained only for backward
+ *   compatibility with existing honest-tracking API routes. New code should
+ *   use the unified analysis API instead.
  *
  * What this module does
  * ----------------------
@@ -36,6 +55,10 @@
 
 import Database from 'better-sqlite3';
 import path from 'path';
+
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// TS canonical source for RSI is src/lib/unified-stock-data.ts::computeRSI.
+import { computeRSI } from '@/lib/unified-stock-data';
 
 import {
   detectStockRegime, classifyVolatility, classifySectorSpeed,
@@ -526,19 +549,11 @@ function sma(values: number[], period: number): number | null {
   return sum / period;
 }
 
+// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+// قبل كده: كان SMA-based على آخر 14 شمعة فقط — غلط رياضيًا.
+// الحل: delegate to unified-stock-data.ts::computeRSI (TS canonical source).
 function rsi(closes: number[], period = 14): number | null {
-  if (closes.length < period + 1) return null;
-  let gains = 0, losses = 0;
-  for (let i = closes.length - period; i < closes.length; i++) {
-    const change = closes[i] - closes[i - 1];
-    if (change > 0) gains += change;
-    else losses += Math.abs(change);
-  }
-  const avgGain = gains / period;
-  const avgLoss = losses / period;
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return Math.round((100 - (100 / (1 + rs))) * 100) / 100;
+  return computeRSI(closes, period);
 }
 
 function atr(rows: PriceRow[], period = 14): number | null {

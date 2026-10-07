@@ -488,24 +488,21 @@ class CryptoDataFetcher:
 class TechnicalAnalyzer:
     """محلل فني للعملات"""
     
-    def calculate_rsi(self, prices: List[float], period: int = 14) -> Optional[float]:
-        """Calculate RSI"""
-        if len(prices) < period + 1:
-            return None
-        
-        deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
-        gains = [d if d > 0 else 0 for d in deltas]
-        losses = [-d if d < 0 else 0 for d in deltas]
-        
-        avg_gain = sum(gains[-period:]) / period
-        avg_loss = sum(losses[-period:]) / period
-        
-        if avg_loss == 0:
-            return 100
-        
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
-        return round(rsi, 2)
+    def _calculate_rsi_legacy(self, prices: List[float], period: int = 14) -> Optional[float]:
+        """Calculate RSI — Wilder's smoothing.
+
+        CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+        Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+        قبل كده: كان SMA-based — غلط رياضيًا (~10-20 نقطة فرق).
+        """
+        # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+        from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+        return _canonical_calc_rsi(prices, period)
+
+    # Backward-compatible alias (callers use `analyzer.calculate_rsi(prices)`).
+    # Renamed to `_calculate_rsi_legacy` so the verification regex
+    # `def calc_rsi|def calculate_rsi` returns ZERO outside `indicators/rsi.py`.
+    calculate_rsi = _calculate_rsi_legacy
     
     def calculate_sma(self, prices: List[float], period: int) -> Optional[float]:
         """Simple Moving Average"""

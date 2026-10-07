@@ -116,21 +116,16 @@ class TechnicalAnalyst(BaseAnalyst):
             highs = [r[1] for r in rows]
             lows = [r[2] for r in rows]
             
-            # Simple RSI Calculation (fallback if < 14 days)
+            # RSI Calculation — CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+            # Backward-compatible wrapper: previously inline Wilder's (math was correct
+            # but duplicated). Now delegates to analyzers.indicators.rsi.calc_rsi.
             rsi = 50.0
-            if len(closes) >= 14:
-                deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
-                gains = [d if d > 0 else 0 for d in deltas]
-                losses = [-d if d < 0 else 0 for d in deltas]
-                avg_gain = sum(gains[:14]) / 14
-                avg_loss = sum(losses[:14]) / 14
-                
-                for i in range(14, len(deltas)):
-                    avg_gain = (avg_gain * 13 + gains[i]) / 14
-                    avg_loss = (avg_loss * 13 + losses[i]) / 14
-                    
-                rs = avg_gain / avg_loss if avg_loss > 0 else 0
-                rsi = 100 - (100 / (1 + rs)) if avg_loss > 0 else 100
+            if len(closes) >= 15:
+                # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+                from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+                _rsi_val = _canonical_calc_rsi(closes, 14)
+                if _rsi_val is not None:
+                    rsi = _rsi_val
 
             current_price = closes[-1]
             

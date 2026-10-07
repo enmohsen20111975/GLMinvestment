@@ -35,33 +35,19 @@ from config.unified_config import (
 # AXIS-5: Rocket Hunter — configurable score boost via admin settings
 from analyzers.engine_settings import get_setting
 
+# ============================================================================
+# CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
+# قبل كده: كان فيه `def calc_rsi` محلي بحساب Wilder's صحيح لكنه duplicate.
+# الحل: re-export canonical من analyzers.indicators.rsi — callers بـ تستخدم
+# `from analyzers.core_scoring_engine import calc_rsi` أو `core_scoring_engine.calc_rsi`
+# بدون أي تغيير في الـ API. يرجع None لو البيانات غير كافية (per Rule 24).
+# ============================================================================
+from analyzers.indicators.rsi import calc_rsi  # noqa: F401 — re-exported for backward compat
+
 
 # ============================================================================
 # TECHNICAL INDICATORS
 # ============================================================================
-
-def calc_rsi(closes: List[float], period: int = 14) -> Optional[float]:
-    """حساب RSI — Rule 54: بندوّد لـ analyzers.indicators.canonical (Wilder's smoothing).
-    يرجع None لو البيانات غير كافية (per owner directive + Rule 24).
-    """
-    try:
-        from analyzers.indicators import calc_rsi as _canonical_rsi
-        return _canonical_rsi(closes, period)
-    except Exception:
-        if not closes or len(closes) < period + 1:
-            return None
-        deltas = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
-        gains = [d if d > 0 else 0 for d in deltas]
-        losses = [-d if d < 0 else 0 for d in deltas]
-        avg_gain = sum(gains[:period]) / period
-        avg_loss = sum(losses[:period]) / period
-        for i in range(period, len(gains)):
-            avg_gain = (avg_gain * (period - 1) + gains[i]) / period
-            avg_loss = (avg_loss * (period - 1) + losses[i]) / period
-        if avg_loss == 0:
-            return 100.0
-        rs = avg_gain / avg_loss
-        return round(100 - 100 / (1 + rs), 2)
 
 
 def calc_macd(closes: List[float]) -> Tuple[float, float, str]:

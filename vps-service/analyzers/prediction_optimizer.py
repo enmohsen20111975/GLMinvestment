@@ -1148,20 +1148,16 @@ class PredictionOptimizer:
             return 'range'
 
     def _calc_rsi(self, prices: List[float], period: int = 14) -> float:
-        """حساب RSI."""
-        if len(prices) < period + 1:
-            return 50.0
-        gains, losses = [], []
-        for i in range(1, len(prices)):
-            diff = prices[i] - prices[i-1]
-            gains.append(max(0, diff))
-            losses.append(max(0, -diff))
-        avg_gain = sum(gains[-period:]) / period
-        avg_loss = sum(losses[-period:]) / period
-        if avg_loss == 0:
-            return 100.0
-        rs = avg_gain / avg_loss
-        return 100 - (100 / (1 + rs))
+        """حساب RSI — Wilder's smoothing.
+
+        CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+        Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+        قبل كده: كان SMA-based — غلط رياضيًا.
+        """
+        # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+        from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+        val = _canonical_calc_rsi(prices, period)
+        return val if val is not None else 50.0
 
     def _calc_bollinger(
         self, prices: List[float], period: int = 20, std_mult: float = 2.0

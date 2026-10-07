@@ -118,23 +118,11 @@ def _compute_indicators(prices: List[Dict]) -> Dict:
     ma20 = sum(closes[-20:]) / min(20, len(closes)) if len(closes) >= 5 else close
     ma50 = sum(closes[-50:]) / min(50, len(closes)) if len(closes) >= 10 else close
 
-    # RSI(14)
-    period = min(14, len(closes) - 1)
-    if period >= 5:
-        gains, losses = [], []
-        for i in range(-period, 0):
-            ch = closes[i] - closes[i - 1]
-            gains.append(max(0, ch))
-            losses.append(max(0, -ch))
-        avg_g = sum(gains) / period
-        avg_l = sum(losses) / period
-        if avg_l == 0:
-            rsi = 100.0
-        else:
-            rs = avg_g / avg_l
-            rsi = 100 - (100 / (1 + rs))
-    else:
-        rsi = 50.0
+    # RSI(14) — CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+    # قبل كده: كان SMA-based على آخر 14 شمعة فقط — غلط رياضيًا.
+    from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+    _rsi_val = _canonical_calc_rsi(closes, 14)
+    rsi = _rsi_val if _rsi_val is not None else 50.0
 
     # ATR(14) — average true range
     atr_period = min(14, len(prices) - 1)

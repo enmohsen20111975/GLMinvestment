@@ -1654,20 +1654,12 @@ def crypto_analyze(coin_id):
         closes = [c[4] for c in ohlc]
         rsi = 50.0
         if len(closes) >= 15:
-            gains, losses = 0, 0
-            for i in range(1, 15):
-                diff = closes[i] - closes[i-1]
-                if diff >= 0:
-                    gains += diff
-                else:
-                    losses -= diff
-            avg_gain = gains / 14
-            avg_loss = losses / 14
-            if avg_loss == 0:
-                rsi = 100.0
-            else:
-                rs = avg_gain / avg_loss
-                rsi = 100 - (100 / (1 + rs))
+            # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+            # قبل كده: كان SMA-based على آخر 14 شمعة فقط — غلط رياضيًا.
+            from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+            _rsi_val = _canonical_calc_rsi(closes, 14)
+            if _rsi_val is not None:
+                rsi = _rsi_val
         last_price = closes[-1] if closes else None
         return jsonify({
             "success": True,

@@ -1,6 +1,15 @@
 /**
  * Helper functions for MarketAnalysisView modules.
  * Extracted from MarketAnalysisView.tsx as part of PHASE3-BUNDLE-OPT.
+ *
+ * MAESTRO-DISABLED (Task PHASE-2-MAESTRO-KILL, Rule 73)
+ * -------------------------------------------------------
+ * The remaining references to `maestroScore` in this file are *property
+ * names* on `StoredAnalysisItem` that map to the `maestro_score` DB column
+ * (stored_analyses table). They are NOT maestro-engine invocations and are
+ * intentionally left intact per Rule 4 (NO-DELETION) and the conservative
+ * clause of PHASE-2-MAESTRO-UI ("leave DB column references alone").
+ * No `/api/maestro/*` calls exist in this file.
  */
 
 import { detectIsSellSignal, isSellSignalLabel, isBuySignalLabel } from '@/lib/signal-utils';

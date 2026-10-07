@@ -1117,21 +1117,11 @@ class UnifiedLearningEngine:
                 variance = sum((x - sma_14) ** 2 for x in close_prices_14) / 14
                 std_dev = math.sqrt(variance) if variance > 0 else 1.0
                 
-                # حساب RSI تقريبي مبسط
-                gains = []
-                losses = []
-                for k in range(1, len(close_prices_14)):
-                    diff = close_prices_14[k] - close_prices_14[k-1]
-                    if diff > 0:
-                        gains.append(diff)
-                        losses.append(0)
-                    else:
-                        gains.append(0)
-                        losses.append(abs(diff))
-                avg_gain = sum(gains) / 13 if gains else 0
-                avg_loss = sum(losses) / 13 if losses else 1
-                rs = avg_gain / avg_loss if avg_loss > 0 else 0
-                rsi = 100 - (100 / (1 + rs)) if (1 + rs) > 0 else 50
+                # RSI — CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+                # قبل كده: كان SMA-based على الـ 14 شمعة في النافذة فقط — غلط رياضيًا.
+                from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+                _rsi_val = _canonical_calc_rsi(close_prices_14, 14)
+                rsi = _rsi_val if _rsi_val is not None else 50.0
                 
                 # تحديد حالة الاتجاه (Regime)
                 regime = 'BULL' if close_price > sma_14 else 'BEAR'

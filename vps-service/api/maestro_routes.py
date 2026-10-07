@@ -39,6 +39,14 @@ from core.database import DatabaseManager
 # Create blueprint
 maestro_bp = Blueprint('maestro', __name__)
 
+# MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+# Maestro API routes have been permanently disabled by owner directive:
+#   "أمسح كل حاجة ليها علاقة بالمايسترو" (kill everything Maestro-related).
+# All /api/maestro/* endpoints now return HTTP 410 Gone with a pointer
+# to the canonical unified endpoint. The blueprint itself stays registered
+# (Rule 4: NO-DELETION) so existing imports / url_for() calls keep working.
+MAESTRO_DISABLED = True
+
 # Database path
 try:
     from config import DATABASE_PATH
@@ -46,6 +54,23 @@ except ImportError:
     from pathlib import Path
     _base_dir = Path(__file__).parent.parent.parent.resolve()
     DATABASE_PATH = os.environ.get('DATABASE_PATH', str(_base_dir / 'db' / 'stocks.db'))
+
+
+# MAESTRO-DISABLED (Task PHASE-2-MAESTRO-PYTHON, Rule 73)
+# before_request hook: short-circuit EVERY route on this blueprint with 410 Gone.
+# This is more robust than guarding each route individually — new routes added
+# later automatically inherit the kill-switch too.
+@maestro_bp.before_request
+def _maestro_disabled_guard():
+    if MAESTRO_DISABLED:
+        return jsonify({
+            'success': False,
+            'deprecated': True,
+            'error': 'maestro_disabled',
+            'error_ar': 'تم إيقاف المايسترو نهائياً',
+            'canonical_route': '/api/stocks/<ticker>/unified',
+            'canonical_route_hint': 'Use /api/stocks/<ticker>/unified for canonical signals.',
+        }), 410
 
 
 # PHASE 2 (v3.51.0): _extract_human_data moved to core.analysis_runner.

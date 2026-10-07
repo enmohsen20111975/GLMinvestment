@@ -97,20 +97,16 @@ def _sma(values: List[float], period: int) -> float:
 
 
 def _rsi(closes: List[float], period: int = 14) -> float:
-    """RSI(14)."""
-    if len(closes) < period + 1:
-        return 50.0  # neutral
-    gains, losses = [], []
-    for i in range(len(closes) - period, len(closes)):
-        change = closes[i] - closes[i - 1]
-        gains.append(max(0, change))
-        losses.append(max(0, -change))
-    avg_gain = sum(gains) / len(gains) if gains else 0
-    avg_loss = sum(losses) / len(losses) if losses else 0
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
+    """RSI(14) — Wilder's smoothing.
+
+    CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67)
+    Backward-compatible wrapper around analyzers.indicators.rsi.calc_rsi.
+    قبل كده: كان SMA-based على آخر `period` شمعة فقط — غلط رياضيًا.
+    """
+    # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+    from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+    val = _canonical_calc_rsi(closes, period)
+    return val if val is not None else 50.0
 
 
 # ═══════════════════════════════════════════════════════════════════════

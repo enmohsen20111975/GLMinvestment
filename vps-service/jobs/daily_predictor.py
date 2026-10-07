@@ -3754,20 +3754,10 @@ def run_crypto_generator(start_date, end_date, scan_interval=1,
                 # — no fake data implication).
                 rsi: Optional[float] = None
                 if len(closes) >= 15:
-                    gains, losses = 0, 0
-                    for i in range(1, 15):
-                        diff = closes[i] - closes[i-1]
-                        if diff >= 0:
-                            gains += diff
-                        else:
-                            losses -= diff
-                    avg_gain = gains / 14
-                    avg_loss = losses / 14
-                    if avg_loss == 0:
-                        rsi = 100.0
-                    else:
-                        rs = avg_gain / avg_loss
-                        rsi = 100 - (100 / (1 + rs))
+                    # CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing
+                    # قبل كده: كان SMA-based على آخر 14 شمعة فقط — غلط رياضيًا.
+                    from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+                    rsi = _canonical_calc_rsi(closes, 14)
 
                 # حساب MA50 (proxy: آخر 30 closes)
                 ma50 = sum(closes) / len(closes) if closes else last_price
