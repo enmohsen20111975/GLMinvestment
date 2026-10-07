@@ -61296,3 +61296,305 @@ Stage Summary:
     B. Patch all 8 INSERT statements (listed above) to explicitly set market column on every INSERT.
     C. Replace the schema DEFAULT 'US' with DEFAULT 'EGX' on the 3 affected tables (via fresh CREATE OR ALTER + new migration).
     D. Verify with: `SELECT market, COUNT(*) FROM egksco_price_history GROUP BY market;` — expected after fix: 'EGX' = majority, 'US' = small (genuine US tickers only, if any).
+
+---
+Task ID: CALC-DUP-1
+Agent: General-Purpose Sub Agent
+Task: Find ALL places that compute 5 key metrics (accumulation/distribution, buy/sell pressure, signal classification, stock phase, volume analysis) so we can identify calculation duplication that causes 3 screens to show 3 different verdicts for the same stock.
+
+Work Log:
+- Read worklog.md head (lines 1-30) for project context (EGX stocks, Next.js frontend + Python vps-service backend, multiple SQLite DBs).
+- Searched target dirs (vps-service/analyzers, vps-service/utils, scripts, src/app/api, src/lib) with Grep (content mode, -n=true, head_limit=20-40).
+- For each of the 5 metrics below, enumerated every producer file/line and the formula in use.
+- Confirmed NO canonical_calcs.py / unified_calc / shared_calc module currently exists (Glob returned 0 matches).
+- Confirmed `vps-service/utils/shared_liquidity.py` already exports `compute_money_flow` and `detect_quiet_accumulation` as the closest thing to canonical — but they are NOT used by `scripts/maker_radar.py`, `scripts/forensic_radar_analysis.py`, `src/app/api/unified/route.ts`, or `src/app/api/stocks/delta-volume/route.ts` — each of which recomputes the same metric with a different formula.
+
+## Metric 1 — تجميع / تصريف (accumulation vs distribution)
+
+| File path | Line | Formula used | Output column / table | Used by which screen? |
+|---|---|---|---|---|
+| `vps-service/utils/shared_liquidity.py` | 416-591 (`detect_quiet_accumulation`) | 6-signal composite: volume_high_recurring + buy_pressure_days (close>prev close AND vol>avg_vol) + compressed range + volume_not_low + not_explosive + no_distribution | radar JSON: `accumulation`, `buy_pressure_days`, `distribution_days` | Radar (Maker Radar Tab) — most rigorous |
+| `vps-service/utils/entry_gate.py` | 642-713 (`_check_accumulation_ratio`) | `buy_vol = Σ volume on up-close days; sell_vol = Σ volume on down-close days; ratio = buy_vol/sell_vol` → boost thresholds 1.5+/1.2+/0.8-1.2/<0.8 | entry_gate checks dict `accumulation` | Entry gate (used by maestro/v40/v68 pipelines) |
+| `scripts/maker_radar.py` | 507-517 | `buy_days = count of closes[i]>closes[i-1] in last 10 days; sell_days = 10-buy_days` → ≥6 قوي, else خفيف | radar JSON `accumulation` field | Maker Radar Tab (UI) |
+| `scripts/forensic_radar_analysis.py` | 97-107 | SAME as maker_radar.py but labels say "شراء غالب"/"بيع غالب" | stdout report | Diagnostic / forensic only |
+| `scripts/monitor_paper_test.py` | 63-93 (`check_distribution`) | `dist_day = close<(high+low)/2 AND volume>avg_20d AND close<prev_close`; ≥1 in last 3 = distribution detected | paper_test JSON | Paper trading monitor |
+| `src/app/api/stocks/delta-volume/route.ts` | 50-72 | SQL aggregation of stored `pressure IN ('STRONG_BUY','BUY')` → buy_days; ratio>0.6 → 'ACCUMULATION' / ratio>0.5 → 'ACCUMULATION_LIGHT' | JSON `summary.maker_direction` | Stock detail / delta-volume widget |
+| `src/modules/publishing/components/UnifiedPublishButton.tsx` | 489 | monthly ratio (buy_days/sell_days over 30d) ≥1.25 → "تجميع شهري", ≤0.8 → "تصريف شهني" | shareable text `accumulation_label` | Publishing / share button |
+| `vps-service/analyzers/maestro_orchestrator.py` | 1757 | internal `accumulate` recommendation (separate logic from above) | `recommendation` field | Maestro engine |
+| `src/app/api/unified/route.ts` | 113-114 / 287-288 | score>=50 → 'ACCUMULATE' (NOT a real accumulation calc — derived from master_score) | unified API `signal` | Unified analysis screen |
+
+→ 9 different producers, 7 different formulas. Same Arabic label "تجميع قوي" produced by at least 3 of them with different thresholds.
+
+## Metric 2 — Buy/Sell pressure (buy_pct / sell_pct / money_flow_state)
+
+| File path | Line | Formula used | Output column / table | Used by which screen? |
+|---|---|---|---|---|
+| `vps-service/utils/shared_liquidity.py` | 751-957 (`compute_money_flow`) | Weighted: `(CLV_5d_avg × 0.40) + (CMF × 0.30) + (vol_confirmation × 0.20) + (price_above_sma × 0.10)` → buy_pct 0-100; money_flow_state 5 buckets | radar JSON `buy_pct`, `sell_pct`, `money_flow_state` | Maker Radar Tab |
+| `scripts/dual_track_generator.py` | 207, 269, 327 | `buy_pressure = 85.0 if close>=open else 40.0` (HARDCODED!) | dual-track JSON | Dual-track predictions (synthetic) |
+| `scripts/maker_radar.py` | 38, 482, 581-587 | imports & calls `compute_money_flow` (single source) | radar JSON | Maker Radar Tab |
+| `src/app/api/market/intraday-pressure/route.ts` | 92-93, 241-242, 288-289, 324-325 | `buy_pressure_pct = buy_volume/total*100` (from intraday ticks) | JSON `buy_pressure_pct` | IntradayPressurePanel |
+| `src/app/api/stocks/[ticker]/depth/route.ts` | 396-397 | `imbalance>0.1 → 'buy_pressure'` (order-book imbalance) | JSON `interpretation` | MarketDepthLiquidityWidget |
+| `src/app/api/flow/[ticker]/route.ts` | 53-54 | proxy field `buy_pressure: null` (placeholder) | JSON | Flow widget |
+| `src/modules/dashboard/components/IntradayPressurePanel.tsx` | 33-34 | reads `buy_pressure_pct` from intraday-pressure API | display | Intraday panel |
+| `src/modules/stock-analysis/components/MarketDepthPanel.tsx` | 31-32, 115-116 | reads `buy_pressure_pct`/`sell_pressure_pct` from depth API | display | Market depth panel |
+
+→ 3 distinct formulas: CLV+CMF weighted (canonical), hardcoded 85/40, and intraday tick-volume split. The hardcoded 85/40 in dual_track_generator is the most damaging — it fabricates buy_pressure values for synthetic predictions.
+
+## Metric 3 — Signal classification (STRONG_BUY / BUY / ACCUMULATE / SELL / STRONG_SELL)
+
+| File path | Line | Thresholds (score → signal) | Output column / table | Used by which screen? |
+|---|---|---|---|---|
+| `src/app/api/unified/route.ts` | 110-117 (and 283-290 — DUPLICATED within same file!) | ≥75 STRONG_BUY / ≥60 BUY / ≥50 ACCUMULATE / ≤25 STRONG_SELL / ≤40 SELL / <50 REDUCE | JSON `signal` + `signal_ar` | Unified analysis screen |
+| `vps-service/analyzers/sniper_engine.py` | 1939-1959 | Internal sniper score thresholds (different) | `signal` | Sniper engine |
+| `scripts/v40_2_build_predictions.py` | 267-273 | different thresholds (≥X STRONG_BUY else ≥Y BUY else SELL) | `signal` column in predictions.db | V40.2 prediction builder |
+| `scripts/backtest_4months_all_stocks.py` | 196-202 | 4+ bullish conditions + positive trend + volume surge → STRONG_BUY | `signal` | Backtest only |
+| `scripts/generate_full_predictions.py` | 214-218 | binary BUY/SELL only (no ACCUMULATE/STRONG_BUY) | `signal` | Old generator |
+| `scripts/generate_real_predictions.py` | 234-242 | BUY / ACCUMULATE / SELL (3 levels, no STRONG) | `signal` | Real predictions generator |
+| `scripts/backfill_history.py` | 137 | only BUY set | `signal` | Backfill only |
+| `scripts/fix-vps-db-complete.py` | 404-408 | BUY or ACCUMULATE only | `signal` | Repair script |
+| `vps-service/reset_predictions.py` | 237-264 | ACCUMULATE / REDUCE only (2-level) | `recommendation` | Reset predictions |
+| `vps-service/glminvestment_engines/engines/donchian_breakout.py` | 133-214 | STRONG_BUY / BUY / NEUTRAL / AVOID (4-level) | `signal_type` | GLM confluence engine |
+| `vps-service/glminvestment_engines/engines/stage2_filter.py` | 178-259 | STRONG_BUY / BUY / NEUTRAL / AVOID / STRONG_AVOID (5-level) | `signal_type` | GLM confluence engine |
+| `vps-service/glminvestment_engines/engines/vcp_detector.py` | 285-330 | STRONG_BUY / BUY / NEUTRAL | `signal_type` | GLM confluence engine |
+| `vps-service/glminvestment_engines/engines/atr_risk_engine.py` | 207-247 | STRONG_BUY / BUY / NEUTRAL / AVOID | `signal_type` | GLM confluence engine |
+
+→ 13+ producers, at least 6 different threshold scales. Same DB column `signal` populated by 6 different generators with non-overlapping scales. This is the primary cause of "3 screens = 3 verdicts".
+
+## Metric 4 — Stock phase (تجميع / تصريف / انفجار / اختراق + correction phase)
+
+| File path | Line | Phase taxonomy | Output column / table | Used by which screen? |
+|---|---|---|---|---|
+| `vps-service/utils/stock_state.py` | 739-869 (`compute_stock_state`) | NO_CORRECTION / EARLY_DROP / LATE_BASE / RECOVERY_STARTING / DEEP_CORRECTION (depth-of-correction based) | JSON `phase` + `phase_ar` | Stock state widget |
+| `vps-service/utils/entry_gate.py` | 460-519 (`_check_stock_phase`) | DOWNTREND / PULLBACK / UPTREND / BULLISH_RECOVERY / TRANSITIONAL / CORRECTION (MA50/MA200 based) | entry_gate checks `phase` | Entry gate |
+| `vps-service/analyzers/maestro_orchestrator.py` | 3499-3503 | 'تجميع'/'تصاعد'/'توزيع'/'تخفيض' (regime-phase based) | `regime_phase.phase` | Maestro engine |
+| `vps-service/api/chart_routes.py` | 3498-3504 | 'تجميع'/'تصريف'/'محايد'/'غير محدد' (news phase based) | chart annotation text | Chart news annotations |
+| `src/modules/predictions/components/MakerRadarTab.tsx` | 2506-2526 | '🎯 تجميع قاع' / fallback derivation `liq>=60?'تجميع قوي':liq<=40?'تصريف قوي':'تجميع هادئ'` | UI display column | Maker Radar Tab (frontend recompute!) |
+| `scripts/weekly_radar_report.py` | 66-68 | 'A_pre_surge' / 'B_quiet_accumulation_strong' / 'C_quiet_accumulation_weak' / 'D_explosive_surge' | report mapping | Weekly report |
+| `scripts/telegram_comprehensive_report.py` | 177-180 | 'Pre-Surge' / 'تجميع قوي' / 'تجميع ضعيف' / 'انفجار' | telegram text | Telegram report |
+| `src/modules/radar/lib/radar-signal-tracker.ts` | 89-98 | `quiet_accumulation_strong` / `quiet_accumulation_weak` | display mapping | Radar tracking |
+| `src/modules/radar/components/RadarStatsCards.tsx` | 64-65 | `quiet_accumulation_strong` / `quiet_accumulation_weak` | display | Radar stats cards |
+
+→ 4 totally different taxonomies (MA-based, depth-based, regime-based, news-based) all labelled "phase" and at least 3 different Arabic translations of "تجميع قوي" depending on the source.
+
+## Metric 5 — Volume analysis (volume_ratio / volume_spike / avg_volume)
+
+| File path | Line | Formula | Output column / table | Used by which screen? |
+|---|---|---|---|---|
+| `vps-service/utils/live_price.py` | 560-597 | `avg_volume_20 = sum(volumes)/len` | JSON `avg_volume_20` | Live price feed |
+| `vps-service/utils/stock_state.py` | 158, 388, 438, 562 | reads `avg_volume` from stocks.db; threshold `volume > avg_volume * 1.2` | stock_state | Stock state widget |
+| `vps-service/core/opportunity_quality.py` | 180-201, 336, 1300-1413 | reads `volume_ratio` from stored maestro, **capped at 50** (`min(volume_ratio, 50.0)`) | opportunity metrics | Quality gate |
+| `scripts/phase1a_common.py` | 229, 265, 295-301 | `volume_ratio = entry_vol / avg_vol; vr_capped = min(volume_ratio, 50.0)` | phase1a JSON | Phase1a backtest |
+| `scripts/phase1a_retrospective.py` | 242, 286, 309-318 | DUPLICATE of phase1a_common.py formula | retrospective JSON | Retrospective |
+| `scripts/unified_logic_whatif.py` | 135 | `avg_volume` (separate computation) | whatif JSON | What-if |
+| `scripts/run_ab_test.py` | 101 | SQL: `SELECT ticker, volume, avg_volume` (reads from DB) | AB test | AB test |
+| `scripts/backfill_persona_classification.py` | 160, 283-305 | reads `volume_ratio` from stocks.db with column-name fallback (`volume_ratio`/`current_volume`/`volume`) | persona backfill | Persona backfill |
+| `src/lib/schedulers/radar-alerts.ts` | 134, 514-515, 641-754 | `volume_ratio_10d_vs_20d` (10d avg ÷ 20d avg — different definition!) | radar alerts JSON | Radar alerts |
+| `src/app/api/stocks/[ticker]/publish-data/route.ts` | 190, 413 | reads `volume_ratio_10d_vs_20d` from radar entry | publish-data output | Publishing |
+| `src/app/api/stocks/route.ts` | 116 | SQL `SELECT ... avg_volume` | stocks list | Stock list |
+| `src/app/api/deal-advisor/[ticker]/route.ts` | 175, 200, 472, 535 | reads avg_volume + comment "القيمة في stocks.db غير موثوقة" + recomputes from price_history | deal-advisor output | Deal advisor |
+| `src/lib/flutter-sqlite-fallback.ts` | 65, 124, 572, 619 | reads `avg_volume` from DB rows | flutter fallback | Flutter SQLite fallback |
+| `src/components/advanced-analysis/SpecialistAnalysisView.tsx` | 104, 291, 1755, 2723 | reads `avg_volume` and `explObj.volume_ratio` | specialist view | Specialist analysis |
+| `src/app/admin/honest-predictions/page.tsx` | 151 | reads `volume_spike: boolean` | admin page | Admin |
+| `src/app/api/predictions/honest-tracking/list/route.ts` | 484 | reads `parsed.volumeSpike` | list endpoint | Honest tracking |
+| `src/app/api/scanner/quick/route.ts` | 183 | `'volume_spike'` (categorical) | scanner JSON | Quick scanner |
+
+→ At least 3 distinct formulas for "volume_ratio": (a) today_vol / avg_20d_vol, (b) 10d_avg / 20d_avg, (c) entry_vol / avg_vol (capped at 50). `volume_spike` is a separate boolean with no shared threshold anywhere.
+
+## Existing canonical modules
+
+- `vps-service/utils/shared_liquidity.py` — exports `compute_money_flow` and `detect_quiet_accumulation`. This is the CLOSEST to a canonical module but is bypassed by 4 of the 9 accumulation producers and ALL of the buy_pct producers in scripts/ and src/.
+- NO `canonical_calcs.py`, `unified_calc*.py`, `shared_calc*.py`, or `shared_metrics*` module exists (Glob returned 0 results).
+- `vps-service/utils/stock_state.py` and `vps-service/utils/entry_gate.py` each define their OWN `_check_stock_phase` / `compute_stock_state` with conflicting taxonomies — neither is canonical.
+
+## Recommended canonical sources
+
+1. **Accumulation/Distribution** → `vps-service/utils/shared_liquidity.py:detect_quiet_accumulation` (already exported, 6-signal composite is the most rigorous). Refactor `scripts/maker_radar.py`, `scripts/forensic_radar_analysis.py`, `scripts/monitor_paper_test.py`, `src/app/api/stocks/delta-volume/route.ts`, `src/modules/publishing/components/UnifiedPublishButton.tsx`, and `vps-service/utils/entry_gate.py:_check_accumulation_ratio` to call it.
+2. **Buy/Sell pressure** → `vps-service/utils/shared_liquidity.py:compute_money_flow` (already canonical for radar). Kill the hardcoded 85/40 in `scripts/dual_track_generator.py:207,269,327` first — that's fabrication, not calculation. Next.js intraday-pressure API can keep its tick-based formula but rename output to `intraday_buy_pct` to disambiguate from money-flow `buy_pct`.
+3. **Signal classification** → NO canonical exists. Recommend creating `vps-service/utils/signal_classifier.py` with ONE function `classify(score, persona) -> signal` and importing it from `src/app/api/unified/route.ts`, `v40_2_build_predictions.py`, `sniper_engine.py`, `generate_real_predictions.py`, `reset_predictions.py`. The duplicated blocks at `src/app/api/unified/route.ts:110-117` and `283-290` must be the first to go.
+4. **Stock phase** → pick `vps-service/utils/stock_state.py:compute_stock_state` as canonical (it already returns `phase` + `phase_ar`). Refactor `entry_gate.py:_check_stock_phase` and `maestro_orchestrator.py:3499` to import its taxonomy. Frontend `MakerRadarTab.tsx:2524` fallback must be removed.
+5. **Volume ratio** → pick ONE formula. Recommend `entry_vol / avg_20d_vol` (capped at 50) from `phase1a_common.py` — it already has a tested cap. Remove the conflicting `volume_ratio_10d_vs_20d` from `src/lib/schedulers/radar-alerts.ts` (rename to `volume_ratio_10d_vs_20d` is fine as long as it's clearly a different metric). `src/app/api/deal-advisor/[ticker]/route.ts:535` already admits `stocks.db` value is unreliable — route everything through the canonical function.
+
+## Highest-priority fixes (cause of "3 screens = 3 verdicts")
+
+1. **`src/app/api/unified/route.ts:110-117` vs `283-290`** — duplicated signal-classification thresholds inside ONE file. Delete the duplicate.
+2. **`scripts/dual_track_generator.py:207,269,327`** — hardcoded `buy_pressure: 85.0 if close>=open else 40.0` is fabrication; replace with `compute_money_flow` import.
+3. **`scripts/maker_radar.py:507-517`** vs **`scripts/forensic_radar_analysis.py:97-107`** — both use the SAME up-close-days formula but the radar feeds the UI while the forensic feeds diagnostics — they MUST agree with `shared_liquidity.detect_quiet_accumulation` or the diagnosis will contradict the live radar.
+4. **`src/app/api/stocks/delta-volume/route.ts:50-72`** — recomputes `maker_direction` from SQL `pressure` column instead of using the same `detect_quiet_accumulation` that produced the radar JSON. This is the screen-3-vs-screen-1 divergence.
+5. **`src/modules/predictions/components/MakerRadarTab.tsx:2524`** — frontend RECOMPUTES `accumulation` label from `liq>=60?'تجميع قوي'...` when backend field is missing. This fallback hides backend bugs and must be removed (or restricted to loading state).
+
+Stage Summary:
+- For each of the 5 metrics, enumerated all producer files with line numbers, formulas, output columns, and consuming screens.
+- Same metric computed in 4-13 different places; worst offender is signal classification (13 producers, 6 threshold scales).
+- NO canonical calc module exists today; `shared_liquidity.py` is the closest but is bypassed by half the producers.
+- Concrete canonical-source recommendation provided for each of the 5 metrics.
+- Top 5 high-priority duplications called out explicitly with file:line for the next fix task.
+---
+
+---
+Task ID: CALC-AUDIT-1
+Agent: Sub-agent (general-purpose) — Calculation Sources Audit
+Task: Audit 3 dashboard calculation sources for conflicting signals on the same stock/day (Predictions / Comprehensive Analysis / Liquidity Radar)
+
+Work Log:
+- Read /home/z/my-project/worklog.md (first 30 lines) for project context (Task 1 fixed data inconsistency between two predictions tabs by switching Tab 1 from Python backend → SQLite direct).
+- Investigated 3 screens in parallel; below are the exact calculation sources, formulas, shared code, and time-synchronization findings.
+- Verified findings by querying the 3 production DBs (`predictions.db`, `stocks.db`, `data_engine.db`) + the radar JSON cache (`scripts/output/maker_radar_EGX_20261007.json`) for the ETEL ticker (المصرية للاتصالات). NOTE: customer wrote "ETCL" but the actual EGX ticker for المصرية للاتصالات is **ETEL** — confirmed via `stocks.db.stocks` row (`ticker='ETEL'`, `name_ar='المصرية للاتصالات'`). No "ETCL" row exists in any DB.
+
+## Screen 1 — توقعات (Predictions)
+- Frontend: `src/modules/predictions/components/PredictionTrackingDashboard.tsx` (2099 lines) — purely renders `signal` column from API; maps to Arabic via local dictionaries (e.g. `LiveTrackingTab.tsx:387` maps STRONG_BUY→شراء قوي).
+- API: `src/app/api/predictions/honest-tracking/list/route.ts` (723 lines) — opens `db/predictions.db` via `better-sqlite3` (line 21) and `SELECT signal, signal_type, master_score, technical_score, fundamental_score, ai_pattern_score, sentiment_score FROM predictions` (lines 354-370). No live computation — just reads pre-computed columns.
+- Backend source (where signal is WRITTEN): `vps-service/analyzers/master_analyzer.py` lines 495-504 (`THRESHOLDS` dict: `STRONG_BUY=78`, `BUY=65`, `ACCUMULATE=55`, `HOLD_LOW=45`, `REDUCE=35`, `SELL=20`, `STRONG_SELL=10`) → `_get_signal_from_score()` (lines 5320-5342) returns the verdict string. NOTE: multiple other call-sites use DIFFERENT thresholds — `src/app/api/unified/route.ts:112` uses `>=75`, `src/app/api/v2/unified/analyze/route.ts:85` uses `>=75`, `master_analyzer.py:516` `CONFLUENCE_THRESHOLDS` uses `>=80`. **STRONG_BUY threshold is not consistent across the codebase** (75 / 78 / 80).
+- List endpoint also applies a quality filter `master_score >= minScore` (default `minScore=70`, `route.ts:267-268`) and `topPerDay=5` post-query cap.
+- DB column origin: `predictions.db.predictions.signal` (TEXT, e.g. `'HOLD'`, `'BUY'`, `'STRONG_BUY'`), `master_score` (FLOAT 0-100), `prediction_date` (TEXT, ISO date).
+
+## Screen 2 — تحليل شامل (Comprehensive Analysis)
+- Frontend: `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` (1370 lines) — consumes `response.technical`, `response.maestro`, `response.professional` from `/api/stocks/[ticker]/comprehensive`. Does NOT compute تصريف/تجميع locally (only RSI تشبع شرائي/بيعي strings at lines 430, 586, 619).
+- API: `src/app/api/stocks/[ticker]/comprehensive/route.ts` (226 lines) — pure aggregator/proxy. Calls 3 backends in parallel via `Promise.allSettled`:
+  1. Python `${PYTHON_BACKEND}/api/stock/deep-analysis?ticker=...` (lines 73-102, 30s timeout)
+  2. Next.js `/api/maestro/stock/[ticker]?persona=balanced` (lines 107-128, 45s timeout)
+  3. Python `${PYTHON_BACKEND}/api/professional-analysis/[ticker]` (lines 131-152, 30s timeout)
+  - NO cached fallback: if Python is down, errors are pushed to `response.errors` and sections remain `undefined`. Frontend then renders missing sections.
+- Backend source: `vps-service/analyzers/master_analyzer.py` (5705 lines). The "تصريف / تجميع بيعي" verdict comes from `detect_who_is_buying()` function (defined at line 846). Logic (lines 1018-1075):
+  - Computes `institutional_buy_score` and `institutional_sell_score` from VWAP, MFI, CMF, OBV, CVD, distribution patterns.
+  - `is_distribution = (not is_red) and (upper_wick / max(candle_range, 0.0001)) > 0.50 and volume_ratio >= 1.30` (line 1026) → +15 to `institutional_sell_score`.
+  - If `institutional_sell_score >= 65 AND institutional_sell_score > institutional_buy_score + 10` → returns `who_state = '🏦 بيع/تصريف مؤسساتي محتمل'` (line 1059). This is the "تصريف" string the customer sees.
+  - The `radar_money_flow` string later embedded into `generate_analysis_reason()` (line 1177-1185) translates `🔥 خروج → "خطر خروج سيولة"` — also rendered as "تصريف"-style warnings.
+- DB columns: `predictions.db.stored_analyses` (table — the comprehensive analysis CACHE) — columns: `maestro_score`, `recommendation`, `recommendation_ar`, `signal`, `smc_signal`, `technical_score`, `fundamental_score`, `prediction_date`. Also `stocks.db.cached_analysis` table caches the live computation result with `analysis_json` containing the full breakdown.
+- **IMPORTANT INCONSISTENCY FOUND**: `stored_analyses` row for ETEL on `prediction_date='2026-10-06'` has `signal='HOLD'` but `recommendation_ar='شراء'` (BUY in Arabic). Two columns disagree about the same record.
+
+## Screen 3 — رادار السيولة (Liquidity Radar / Maker Radar)
+- Frontend: `src/modules/predictions/components/MakerRadarTab.tsx` (3780 lines) — renders `under_microscope`, `path`, `accumulation`, `money_flow_state`, `liquidity_state`, `buy_pct`, `sell_pct`, `maker_activity` from API.
+- API: `src/app/api/maker-radar/route.ts` (186 lines) — ALWAYS reads cached JSON via `readRadarCache(market)` (line 77). If cache stale (>15 min, line 163), triggers `triggerBackgroundWarmup(market)` fire-and-forget (line 168). NEVER blocks on Python.
+- Enriches with live prices from `db/stocks.db` (lines 105-113: `SELECT ticker, current_price, change_percent, volume, name_ar FROM stocks WHERE current_price > 0`).
+- Tracking file: `db/maker_radar_tracking.json` (user-tracked stocks, lines 22-48).
+- Backend source: `scripts/maker_radar.py` (1318 lines) — writes the JSON cache. Critical computation flow:
+  - Line 34: `from utils.shared_liquidity import detect_quiet_accumulation, ..., compute_money_flow, ...` — **uses shared module**.
+  - Line 441: `quiet, quiet_reason, quiet_details = detect_quiet_accumulation(closes, volumes, highs, lows, regime=regime)` — 6-signal quiet-accumulation detector.
+  - Line 482: `money_flow = compute_money_flow(closes, volumes, highs, lows)` — 6-layer CLV+CMF+volume algorithm.
+  - Lines 455-479: `winner_path` priority logic:
+    1. `A_pre_surge` (Pre-Surge تجميع مبكر)
+    2. `B_quiet_accumulation_strong` (≥5/6 signals → تجميع قوي هادئ)
+    3. `C_quiet_accumulation_weak` (4/6 signals)
+    4. `D_explosive_surge` (انفجار حجمي)
+    5. `E_early_break` (اختراق مبكر)
+  - Line 592: `'under_microscope': winner_path is not None` — only stocks with a non-None winner_path are flagged.
+  - **BUG FOUND** at lines 507-517 — the `accumulation` label logic:
+    ```python
+    buy_days_count = sum(1 for i in range(-10, 0) if i > -len(closes) and closes[i] > closes[i-1])
+    sell_days_count = 10 - buy_days_count
+    if buy_days_count >= 6:
+        accumulation = 'تجميع قوي'    # Strong Accumulation
+    elif sell_days_count >= 6:
+        accumulation = 'تصريف قوي'    # Strong Distribution  ← BUG
+    elif buy_days_count >= sell_days_count:
+        accumulation = 'تجميع خفيف'
+    else:
+        accumulation = 'تصريف خفيف'
+    ```
+    This counts GREEN-day vs RED-day (close vs prev_close), NOT actual money flow. A stock with 6 red days out of 10 gets `تصريف قوي` EVEN IF `buy_pct=75.7%` (the volume-weighted buy percentage is high). **This is the root cause of the customer's "تصريف" complaint**.
+- Backend shared module: `vps-service/utils/shared_liquidity.py` (1110 lines). Key functions:
+  - `compute_money_flow()` (line 751) — returns dict with `buy_pct`, `sell_pct`, `net_flow_egp`, `liquidity_state`, `money_flow_state` (Arabic string with emoji like `'🟢 سيولة داخلة'`, `'🔴 سيولة خارجة'`, `'⚪ متوازنة'`). 6-layer algorithm: CLV-5d weighted, CMF-20d, volume confirmation, dead-cat-bounce filter, dying-volume filter, price-above-SMA10 filter.
+  - `detect_quiet_accumulation()` (line 416) — 6-signal detector: returns `(is_quiet: bool, reason: str, details: dict)` with `details['signal_count']` (0-6).
+  - `should_reject_by_liquidity()` (line 262) — liquidity gate.
+
+## Cross-screen Shared Code Analysis
+- `master_analyzer.py` does **NOT** import `shared_liquidity.py` (verified: no `from utils.shared_liquidity import` lines, no `compute_money_flow`/`detect_quiet_accumulation` calls in master_analyzer.py).
+- `master_analyzer.py` has its OWN money-flow logic embedded inside `detect_who_is_buying()` (lines 846-1105) — uses CMF, OBV, CVD, MFI, VWAP independently with its own thresholds (`who_inst_threshold=65`, line 1052).
+- `scripts/maker_radar.py` DOES import `shared_liquidity.py` (line 34).
+- → **Predictions and Comprehensive use independent money-flow code paths from the Radar. The Radar and Comprehensive screens will produce different verdicts for the same stock because they use different algorithms.**
+
+## Time Synchronization Audit
+| Source | Date field | Latest value for ETEL |
+|---|---|---|
+| `predictions.db.predictions.prediction_date` | prediction creation date | `2026-10-07` |
+| `predictions.db.stored_analyses.prediction_date` | comprehensive cache date | `2026-10-06` (1 day stale) |
+| `predictions.db.aiPrediction.prediction_date` | AI prediction date | `2026-10-07` |
+| `stocks.db.cached_analysis.analysis_date` | cached analysis date | `2026-10-06` (1 day stale) |
+| `stocks.db.stocks.last_update` | live price update | `2026-10-06T16:53:11` (1 day stale) |
+| `stocks.db.radar_signal_tracking.signal_date` | radar scan date | `2026-10-07` |
+| `stocks.db.radar_signal_tracking.data_date` | data the radar used | `2026-10-06` (1 day stale) |
+| `scripts/output/maker_radar_EGX_20261007.json` | JSON cache file date | generated 2026-10-07 but uses closes[-1] from 2026-10-06 |
+| `data_engine.db.tab_technical_analysis` | technical analysis | **0 rows for ETEL — data missing entirely!** |
+
+**Conclusion**: NOT synchronized. Predictions table runs on `2026-10-07` data, but cached_analysis/stored_analyses/radar all lag by 1 day. The 3 screens display signals computed on DIFFERENT data dates — that alone guarantees visible disagreement.
+
+## ETEL (المصرية للاتصالات) on 2026-10-07 — actual DB state
+| Screen | DB source | Verdict | Score |
+|---|---|---|---|
+| Predictions | `predictions.db.predictions` (id=51790) | `signal='HOLD'`, `signal_type='HOLD'` | `master_score=50.0` (placeholder — all sub-scores are 50.0 indicating NO real computation ran) |
+| Comprehensive | `predictions.db.stored_analyses` (id=`v40_ETEL_EGX`) | `signal='HOLD'`, `recommendation_ar='شراء'` (CONTRADICTION!) | `maestro_score=46.6`, `technical_score=51.75`, `fundamental_score=76.25` |
+| Comprehensive (cache mirror) | `stocks.db.cached_analysis` (id=123074973) | `signal='HOLD'`, `recommendation='hold'` | `master_score=46.6`, `analysis_date='2026-10-06'` |
+| AI Prediction | `predictions.db.aiPrediction` | `signal_type='HOLD'` | `maestro_score=50.0` |
+| Stocks (live) | `stocks.db.stocks` | `signal=0.0`, `trend='صاعد'`, `smc_signal=NULL` | `fundamental_score=50.0`, `current_price=149.88` |
+| Radar tracking | `stocks.db.radar_signal_tracking` (id=1557) | `signal_type='B_quiet_accumulation_strong'`, `path='B_quiet_accumulation_strong'`, `under_microscope=True` | `entry_price=149.88`, `data_date='2026-10-06'`, `staleness_days=1` |
+| Radar JSON | `scripts/output/maker_radar_EGX_20261007.json` | `under_microscope=True`, `path='B_quiet_accumulation_strong'`, `accumulation='تصريف قوي'` (CONTRADICTION!), `money_flow_state='🟢 سيولة داخلة'`, `expected='صاعد بقوة'` | `buy_pct=75.7`, `sell_pct=24.3`, `maker_activity='منخفض'`, `liquidity_state='عادية'` |
+| Technical analysis | `data_engine.db.tab_technical_analysis` | **NO ROW** for ETEL | — |
+
+### Three internal contradictions inside the radar JSON for ETEL alone:
+1. `path='B_quiet_accumulation_strong'` (titled "🎯 تجميع قوي هادئ" in master_analyzer.py:1191) BUT `accumulation='تصريف قوي'` — same JSON record says both "strong accumulation" AND "strong distribution" at the same time.
+2. `accumulation='تصريف قوي'` (distribution) BUT `money_flow_state='🟢 سيولة داخلة'` (money INFLOW) — distribution usually means outflow.
+3. `accumulation='تصريف قوي'` BUT `buy_pct=75.7` AND `sell_pct=24.3` — 75.7% of trade value was buy-side, but the label says "strong distribution".
+
+### Why each screen disagrees for ETEL:
+- **Predictions screen** stores `HOLD` with placeholder `master_score=50.0`. Customer's claim of "شراء قوي" doesn't match current DB — could be: (a) stale frontend cache, (b) customer looked at the `recommendation_ar='شراء'` field from `stored_analyses` (which is mislabeled — actual signal is HOLD), (c) customer confused ETEL with another ticker, OR (d) a previous day's record (`2026-10-04` had `signal='BUY'`, `signal_ar='شراء'` — note: "شراء" not "شراء قوي").
+- **Comprehensive screen** verdict is "HOLD" in the cached row, but the LIVE Python `master_analyzer.detect_who_is_buying()` may compute `institutional_sell_score >= 65` → returns `'🏦 بيع/تصريف مؤسساتي محتمل'` → frontend renders as "تصريف". The customer likely sees the LIVE verdict which differs from the cache.
+- **Radar** shows ETEL IS under microscope with `path='B_quiet_accumulation_strong'`, but `accumulation='تصريف قوي'` (BUG). Customer's "not under microscope" claim contradicts the actual JSON (`under_microscope=True`). The "low score" perception comes from `maker_activity='منخفض'` + `liquidity_state='عادية'` + 1-day staleness, NOT from an explicit low score field.
+
+## Recommended Unification Approach
+
+### Phase 1 — Bug fix (low effort, immediate)
+- Fix `scripts/maker_radar.py:507-517` — replace the green/red day counting with a money-flow-derived label:
+  ```python
+  if money_flow['buy_pct'] >= 65:
+      accumulation = 'تجميع قوي'
+  elif money_flow['sell_pct'] >= 65:
+      accumulation = 'تصريف قوي'
+  elif money_flow['buy_pct'] >= money_flow['sell_pct']:
+      accumulation = 'تجميع خفيف'
+  else:
+      accumulation = 'تصريف خفيف'
+  ```
+  This makes the label consistent with `buy_pct`/`sell_pct` and `money_flow_state`.
+
+### Phase 2 — Canonical signal module (medium effort, 1-2 days)
+- Create `vps-service/utils/canonical_signal.py` exporting ONE function:
+  ```python
+  def compute_canonical_verdict(closes, volumes, highs, lows, fundamentals, regime, persona) -> dict
+  ```
+  Returns: `{signal, signal_ar, master_score, who_is_buying_state, money_flow_state, radar_path, accumulation, under_microscope}`.
+- Internally calls `shared_liquidity.compute_money_flow` (already proven correct) and a unified `detect_who_is_buying` that uses the same `money_flow` output.
+- `master_analyzer.py` and `maker_radar.py` BOTH import and call this. Remove the duplicated in-place computation.
+
+### Phase 3 — Canonical verdict store (medium effort, 2-3 days)
+- Create a single table `signal_verdict` in `stocks.db` with one row per `(ticker, trading_day)`:
+  ```sql
+  CREATE TABLE signal_verdict (
+    ticker TEXT, trading_day TEXT,
+    signal TEXT, signal_ar TEXT, master_score REAL,
+    who_is_buying_state TEXT, money_flow_state TEXT, buy_pct REAL, sell_pct REAL,
+    radar_path TEXT, under_microscope INTEGER,
+    technical_score REAL, fundamental_score REAL,
+    PRIMARY KEY (ticker, trading_day)
+  );
+  ```
+- All 3 screens (Predictions list, Comprehensive GET, Radar GET) read from this ONE table by `(ticker, today)`. No screen does its own live computation at GET time.
+- A single nightly job (or cron after market close) writes the daily verdict for all tickers.
+
+### Phase 4 — Time sync guarantee
+- Use a single helper `get_latest_trading_day()` that returns the most recent date with non-stale closes across all DBs.
+- All endpoints must accept `?trading_day=YYYY-MM-DD` and refuse to serve data where `data_date < latest_trading_day - 1` with an explicit freshness banner.
+- Currently the radar JSON uses 1-day-old closes while predictions uses today's data — this MUST be unified.
+
+### Phase 5 — Schema cleanup
+- Remove the duplicate `recommendation_ar` column from `stored_analyses` (it conflicts with `signal` for ETEL — row says `signal='HOLD'` but `recommendation_ar='شراء'`).
+- Add `signal_ar` column to `predictions.db.predictions` if missing (currently NULL for the active ETEL row id=51790), so the frontend doesn't have to re-derive Arabic from English (which uses inconsistent thresholds across `unified/route.ts` (75), `master_analyzer.py` (78), `confluence` (80)).
+
+Stage Summary:
+- Found 3 independent calculation sources with 0 shared code between Predictions and the other two screens; only the Radar uses `shared_liquidity.py`.
+- Found 3 internal contradictions in the radar JSON for ETEL alone (path says "strong accumulation" but field `accumulation` says "strong distribution" while `buy_pct=75.7%` says otherwise).
+- Found 1 inconsistency in `stored_analyses` (signal='HOLD' but recommendation_ar='شراء' for the same row).
+- Found 3 different STRONG_BUY thresholds (75 / 78 / 80) across the codebase.
+- Confirmed time de-synchronization: predictions uses today's data, cached_analysis/stored_analyses/radar all use 1-day-old data → guaranteed disagreement.
+- ETEL has NO row in `data_engine.db.tab_technical_analysis` (a fourth silent inconsistency).
+- Recommended 5-phase unification plan starting with the 1-line bug fix in `scripts/maker_radar.py:507-517` (use money_flow.buy_pct/sell_pct instead of green/red day counting) → expected to immediately resolve the "تصريف" misclassification the customer saw.
+---
