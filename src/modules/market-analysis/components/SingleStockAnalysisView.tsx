@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { InteractiveChart } from './InteractiveChart';
 import ChartControls from './ChartControls';
 import { InstitutionalDecisionPanel } from './InstitutionalDecisionPanel';
+// CANONICAL: بانر محرك القرار المؤسسي V60.2 — WHO IS BUYING (مطابق Pine Script)
+import { CanonicalWhoIsBuyingBanner } from './CanonicalWhoIsBuyingBanner';
 import { DealAdvisorPanel } from '@/components/deal-advisor/DealAdvisorPanel';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -234,9 +236,27 @@ interface FullAnalysisResponse {
   // ── P42-FRONTEND-1: new AI insight fields from /api/chart/full-analysis ──
   candle_probabilities?: CandleProbabilities | null;
   stock_dna?: StockDNA | null;
-  // V34-INSTITUTIONAL-DECISION: محرك القرار المؤسسي الموحّد
+// V34-INSTITUTIONAL-DECISION: محرك القرار المؤسسي الموحّد
   institutional_decision?: import('./InstitutionalDecisionPanel').InstitutionalDecision | null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CANONICAL UNIFIED DATA (Task TRADING-CHART-V60.2 — 2026-10-07)
+// ─────────────────────────────────────────────────────────────────────────────
+// مصدر البيانات الكنسي الموحّد — مطابق لمنطق Pine Script V60.2:
+//   - canonical.signal / signal_ar → الإشارة النهائية (78/65/55/40/25 thresholds)
+//   - canonical.master_score → score 0-100
+//   - canonical.money_flow / accumulation / phase → تحليل السيولة والمرحلة
+//   - prediction.who_is_buying → "🏦 شراء مؤسساتي" / "👤 شراء أفراد" (mirror Pine L669-763)
+//   - prediction.analysis_reason → التعليق التحليلي العربي
+//   - prediction.entry_price / target_price / target_price_2 / target_price_3 / stop_loss
+//   - prediction.risk_reward / confidence
+//   - technical.rsi (Wilder) / atr / support / resistance
+// كل الحقول من getUnifiedStockData() — لا حساب مالي في الواجهة، لا تضارب.
+// ─────────────────────────────────────────────────────────────────────────────
+import type { UnifiedStockData } from '@/lib/unified-stock-data';
+
+type CanonicalData = UnifiedStockData | null;
 
 export interface SingleStockAnalysisViewProps {
   initialTicker: string;
@@ -264,6 +284,9 @@ export function SingleStockAnalysisView({
   const [timeframe, setTimeframe] = useState('DAY');
   const [userState, setUserState] = useState<'buyer' | 'owner'>('buyer');
   const [data, setData] = useState<FullAnalysisResponse | null>(null);
+  // CANONICAL: بيانات المحرك الموحّد — نفس المصدر اللي بترجعه كل الشاشات (Rule 73)
+  const [canonical, setCanonical] = useState<CanonicalData>(null);
+  const [canonicalLoading, setCanonicalLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [advancedMode, setAdvancedMode] = useState(false);
@@ -313,6 +336,22 @@ export function SingleStockAnalysisView({
     ) => {
       setLoading(true);
       setError(null);
+      // CANONICAL: جلب موازٍ من المحرك الموحّد — نفس المصدر اللي بترجعه كل الشاشات
+      // (Rule 73 SINGLE-DISPLAY-SOURCE). لا حساب مالي في الواجهة.
+      // مطابق لمنطق Pine V60.2: who_is_buying / signal / money_flow / accumulation / phase.
+      if (!isCrypto) {
+        setCanonicalLoading(true);
+        fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((json: CanonicalData) => setCanonical(json))
+          .catch((e) => {
+            console.warn('[canonical] unified fetch failed:', e);
+            setCanonical(null);
+          })
+          .finally(() => setCanonicalLoading(false));
+      } else {
+        setCanonical(null);
+      }
       try {
         const LIMIT_MAP: Record<string, number> = {
           '5M': 500,
@@ -469,6 +508,20 @@ export function SingleStockAnalysisView({
       )}
     >
       <WhaleAlertListener />
+
+      {/* ════ CANONICAL BANNER: محرك القرار المؤسسي V60.2 — WHO IS BUYING? ════
+          مطابق لـ Pine Script EGX_Pro_Institutional_Engine_V60_2_Who_Is_Buying.pine
+          المصدر: /api/stocks/[ticker]/unified ← getUnifiedStockData() (Rule 73)
+          لا حساب مالي في الواجهة — كل القيم من المحرك الموحّد. */}
+      {canonical && canonical.success && (
+        <CanonicalWhoIsBuyingBanner data={canonical} currencyLabel={currencyLabel} />
+      )}
+      {canonicalLoading && (
+        <div className="mb-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/10 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+          <span>جارٍ تحميل قرار المحرك المؤسسي الموحّد…</span>
+        </div>
+      )}
 
       {/* ════ COHERENCE-FIX: بانر التوقّع النشط (من جدول التوقعات) ════
           لما العميل يفتح النافذة الشاملة من جدول التوقعات، بنعرض التوقّع الأصلي

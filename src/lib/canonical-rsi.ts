@@ -49,3 +49,38 @@ export function computeRSI(closes: number[], period: number = 14): number | null
   const rs = avgGain / avgLoss;
   return 100 - 100 / (1 + rs);
 }
+
+/**
+ * classifyRSIState — تصنيف حالة RSI (مطابق Pine Script L171-184)
+ * ===============================================================================
+ *
+ * Task TRADING-CHART-V60.2 (2026-10-07) — added to canonical-rsi.ts so all
+ * client components can classify RSI without duplicating threshold logic.
+ *
+ * Thresholds (matching Pine V60.2):
+ *   >= 70  → تشبع شرائي (overbought)
+ *   55-70  → إيجابي
+ *   45-55  → محايد
+ *   30-45  → سلبي
+ *   < 30   → تشبع بيعي (oversold)
+ */
+export function classifyRSIState(
+  rsi: number | null
+): { label: string; color: string; emoji: string } {
+  if (rsi === null) {
+    return { label: '— بيانات غير متاحة', color: 'text-muted-foreground', emoji: '⚪' };
+  }
+  if (rsi >= 70) {
+    return { label: 'تشبع شرائي', color: 'text-rose-600', emoji: '🔴' };
+  }
+  if (rsi >= 55) {
+    return { label: 'إيجابي', color: 'text-emerald-600', emoji: '🟢' };
+  }
+  if (rsi >= 45) {
+    return { label: 'محايد', color: 'text-amber-600', emoji: '🟡' };
+  }
+  if (rsi >= 30) {
+    return { label: 'سلبي', color: 'text-orange-600', emoji: '🟠' };
+  }
+  return { label: 'تشبع بيعي', color: 'text-emerald-600', emoji: '🟢' };
+}

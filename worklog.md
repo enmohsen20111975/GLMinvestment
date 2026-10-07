@@ -63539,3 +63539,387 @@ Stage Summary:
 - Owner can now safely test on CRYPTO and US while EGX is closed — unified API + radar + UI will serve correct data for these markets.
 
 ---
+Task ID: 1e
+Agent: Explore (مهندس البنية - قراءة)
+Task: قراءة وتلخيص 05-CURRENT_STATE.md
+
+Work Log:
+- قرأت worklog.md (آخر 1500 سطر — شامل Phase 0/1/2/3 UNIFICATION + PHASE-3-SINGLE-WRITER)
+- قرأت 05-CURRENT_STATE.md كاملًا (5155 سطر / 454KB) — قراءة فقط، بدون أي تعديل
+
+Stage Summary:
+- الملف مُحدَّث حتى 2026-10-04 (Wave 8 = Task 28-C). يحتوي 17 قسمًا رئيسيًا + 5 MERGED APPENDIX (Retraction-backtest-v4 + Retraction-console-error-claim + Wave 2/3 Changelog + Wave 6 Payment + Wave 7 Data/Chart + Marketing Promo Strategy + Paywall Strategy Final + Pipeline Coherence Audit).
+- الحالة الإنتاجية الحالية: 7 PM2 services (python-backend:8010 + data-engine:5000 + nextjs:3000/3001 + ws-service:3005 + telegram-poster + telegram-events:3003 + news-agent) + Ollama (systemd:11434) + Caddy:81. V40.2 هو المحرك الوحيد للتوقعات (Maestro KILL 2026-08-31). 23 cron entries في crontab.txt.
+- 6 قواعد بيانات SQLite نشطة + custom.db معلّق للحذف: stocks.db (14.21MB/53 tbls) + data_engine.db (272MB/23) + predictions.db (224MB/46) + price_history.db (293MB/2 tbls/1.2M rows/26yr) + intraday.db (427MB/6 tbls — الأكبر) + auth.db (208KB/17) ≈ 1.2GB documented (الإنتاج يُشار لـ 1.8GB في §4.6 — لا إشارة صريحة لـ 4.1GB في الملف).
+- 380 Next.js routes + 120 Python routes عبر 38 Flask Blueprints + 17 frontend modules + 247 components + 450 Python files.
+- 5 P0 payment fixes (Wave 6 — 2026-10-02) + 17 commits Wave 7 (Data/Chart — 2026-10-03) + Wave 8 (2026-10-04): pipeline coherence audit (243 routes mapped، 89 direct DB reads flagged) + source_authority wired + 32 Flutter endpoints restored + backtest شامل 288 EGX stock PF=4.74 + Emerald visual redesign + Sharia UI shipped + News engine overhaul.
+- Rule 12 (load_price_history SOLE canonical) + Rule 20 (Python=Brain) + Rule 60 (module system) + Rule 65 (data validation) + Rule 66 (source authority) موثّقة. لا توجد إشارة صريحة لـ "UNIFIED-DATA-CONTRACT" أو "Rule 72" داخل الملف — لكن worklog.md يحوي TODOs لـ Rule 72 (freshness check) أحدث من الملف.
+- مشاكل مفتوحة (§10.2): custom.db removal pending + predictions.db.original 4.9MB + historical_data stale 112 يوم + 9 backend module placeholders + 540 unauth routes + 31.66% reconciliation mismatch + 10 P0 Flutter issues (Task 27-A) + 10 P0 admin missing features (Task 27-B).
+- التوحيد غير المكتمل داخل الملف: 89 route direct-DB read + 58 route split-brain + 5 backend module placeholders + i18n Phase 2 (~50 components متبقية) + ~290 API route بـ console.* + ~5 placeholder 50.0 متبقية بعد FIX-2 + P1-1..P1-12 من Wave 7.
+- ملاحظة بالتوازي: worklog.md يحوي UNIFICATION-ALL-PHASES-COMPLETE (مرحلة 0/1/2/3) بأحدث من الملف — Maestro معطّل نهائيًا + 5 sub-engines معطّلة (board + confluence + sniper + v82 + professional) + RSI موحد (Wilder's) + thresholds موحدة (78/65/55/40/25) + single writer (daily_predictor.py) + single price source (stocks.db.stocks.current_price) + 14 commits + ~85 ملف — هذا العمل **لم يُوثّق بعد في 05-CURRENT_STATE.md**.
+
+---
+Task ID: 1d
+Agent: Explore (محلل كمي - قراءة)
+Task: قراءة وتلخيص SYSTEM_HOW_IT_THINKS.md
+
+Work Log:
+- قرأت worklog.md (آخر 1500 سطر) — تابعت مهام UNIFICATION-PHASES (Maestro kill, RSI unify, sub-engines disable, single-writer) + DEEP-AUDIT-ALL-ENGINES + DOC-SECRETARY-ACTIVATION (§22 + §23) التي شغّالة بالتوازي.
+- قرأت SYSTEM_HOW_IT_THINKS.md كاملًا (6888 سطر) — مررت على كل الأقسام الـ 23 (pipeline §1، V34 engine §2، Confluence §3، Personas §4، R:R fix §5، Fundamentals §6، Backtest §7، Lifecycle §8، Learning loop §9، Picks mgmt §10، Gaps §11، 9-step summary §12، Volume Surge Hunter §13، EGX-STRATEGY §14، Radar §15، HELI forensics §16، Observability §17، Modules §18، Tech explainer §19، Resource monitor §20، Phase 3/4/5 §21، Canonical signal §22، Freshness guard §23).
+
+Stage Summary:
+- **منطق القرار (السعر → قرار):** Pipeline من 8 مراحل: SCRAPERS → STAGE 1.5 SOURCE AUTHORITY GUARD (Rule 66, CANONICAL_SOURCES لكل سوق + BANNED_SOURCES) → STAGE 1.6 DATA VALIDATION (Rule 65, INVALID fields تُعدّم لا تُزيّف — Rule 24) → STAGE 2 MasterAnalyzer+engines (smc/vsa/volume_profile/quant/candle_prob/fundamentals/regime/sector_heat) → STAGE 3 institutional_decision_engine.build_institutional_decision() (7 خطوات: Maker State → Flight State → 5-6 Proofs → Tech Score base=25 + Σproof impacts clamp[0,100] → Signal Final + فلترة ترند صارمة → Portfolio Advice → 7 Stop types → optimal_stop) → STAGE 4 PERSONA R:R OVERRIDES → STAGE 5 KILL FILTERS + R:R floor gate → STAGE 6 PredictionTracker.record_prediction() في predictions.db → STAGE 7 daily_closer.py (15:30 Cairo) → STAGE 8 Learning loop.
+  - صيغة Tech Score: `tech_score = 25 + Σ proof_impact`, clamp[0,100]. BUY threshold ≥75 (dynamic ±10% بـ self-learning). STRONG_BUY ≥110/138 (≈80%) قديمًا؛ Production canonical (Rule 71): STRONG_BUY=78, BUY=65/68, ACCUMULATE=55, HOLD=40, REDUCE/SELL=25-28.
+- **حمايات رأس المال المقدسة (canonical):**
+  | الحماية | القيمة | الموقع |
+  |---|---|---|
+  | ATR stop clamp | **[3%, 9%]** في commit 65a748f / §5.7 (atr_stop_min_pct=3.0, atr_stop_max_pct=9.0) — لكن **[5%, 9%]** في §14.4 EGX-STRATEGY-FINAL (atr_stop_min_pct=5.0). **⚠️ تناقض موثّق بين §5 و§14** — قيمة EGX الإنتاجية = [5%,9%]. |
+  | Hard Loss Ceiling | **-7.0%** (hard_loss_ceiling_pct) — مطبّق في daily_closer.py::exit_pred L1723-1725 |
+  | HARD cap (Rule 7) | ABS(actual_return) ≤ 50 → وإلا actual_return=None (يُستبعد من KPIs) — L1720-1721 |
+  | Split Guard | ABS > 35% (split_drop_threshold_pct) → actual_return=None — L1727-1729 |
+  | Ticker Cooldown | 5 خسارات → 14 يوم (commit efa40d69 — Rule 3 KEPT) |
+  | R:R floor | dynamic_rr_normal=1.5 → **1.8 في EGX-STRATEGY §14.4** — floor gate في v40_2_daily_generator.py L314-326 |
+  | Geometry Guard | HARD REJECT لو target ≤ entry×1.05 OR stop ≥ entry×0.95 OR R:R<1.5 — §14.3 |
+  | CBE News Guard | hard veto لو خبر بنك مركزي في 24h — STAGE 5 |
+  | Ex-Dividend Protection | stop skip على يوم ex-div — STAGE 5 |
+  | Circuit Breaker | 3 خسائر متتالية → 3 أيام وقف — §14.5 |
+  - **إشارات ضعف:** (1) G-BACKTEST-1: 5 صفقات worst loss -12.55% تجاوز -9% (ATR_STOP_MAX_PCT بـ apply على compute_optimal_stop فقط مش على analyze_single_day_v393). (2) تناقض [3%,9%] vs [5%,9%] بين §5 و§14. (3) Hard Loss Ceiling مطبّق في closing فقط — مش في entry-time. (4) Split Guard متأخر (post-close) — لا يحمي الدخول أصلاً.
+- **المؤشرات الفنية:** RSI=Wilder smoothing 14-period (canonical بعد PHASE-2-RSI-UNIFICATION) — المخزّن في stocks.db.stocks.rsi + analysis_json. ATR=14-period (ta.atr(14)) — atr_at_entry column. BB(20,2.0) — is_squeeze لو bb_width < sma×0.8، is_expanding لو >1.2×. EMA50/EMA200 — trend_up = close>daily_ema200. ADX>25. Pivots 5/5. DNA Footprint (10-bar pattern match in 100-bar history → projected 10 bars forward). كلها في institutional_decision_engine.py + indicators/rsi.py (canonical).
+  - **RSI كأحد الجذور الستة للتضارب:** قبل Rule 72 كان فيه 3 صيغ RSI (Wilder صح + SMA خاطئ + EMA بـ seed مختلف) عبر 5+ شاشات → "ETEL 5 شاشات = 5 إشارات مختلفة". Fixed: unified على calc_rsi() Wilder's فقط (commit PHASE-2-RSI-UNIFICATION). كمان Filter C (RSI_ZONE): HARD BLOCK لو RSI ≥ 60 (RSI_BLOCK_MAX) — sweet spot RSI 30-50.
+- **الشخصيات (personas):** 4 شخصيات (gambler/balanced/conservative/expert) — لكن بعد UNIFIED-BALANCED-ONLY: **balanced فقط** في الإنتاج. expert = persona_fit annotation فقط (لا كتابة). PERSONA_CONFIGS: gambler(min=42,target=2.0x,stop=1.2x) · balanced(min=50,target=2.2x,stop=1.0x,default) · conservative(min=55,target=2.5x,stop=1.0x). PERSONA_INPUT_WEIGHTS matrix (PA/SMC/SH/F): gambler(40/35/25/0) · balanced(30/25/20/25) · conservative(15/10/15/60). compute_persona_fit(proofs) بـ derive 4 category scores ويختار max — لكن جدول predictions بفضل Rule PERSONA-UNIFY-A محمي 100% على persona='balanced' (الـ persona_predictions منفصل ولا يقرأه الـ live dashboard).
+- **جدول السعر الكانوني:** **متعدد ومتجزّأ تاريخيًا** — بعد WAVE-2 اتحدّد canonical واحد: `data_engine.db.egksco_price_history` (162,946 rows, 1,047 tickers) للـ EGX. price_history.db = safety net فقط. stocks.db.stocks.current_price = canonical للـ live price (يقرأه unified API). Source Authority Guard (Rule 66) يفرض CANONICAL_SOURCES per market + BANNED_SOURCES (egxpilot_live + yahoo_safetynet + yfinance_backfill). الكتّاب المعتمدون: tradingview_scraper (5min), egksco_scraper (15min), daily_price_updater (legacy). **FRESHNESS GUARD (Rule 72)**: لو last_update أقدم من 6 ساعات → current_price=null + _freshness='stale'.
+- **قواعد NULL (Rule 24 + Rule 27 NO-FAKE-DATA):**
+  - INVALID fields (low_52w>price, high_52w<price, support>resistance, contamination>10×, OHLC broken) → **NULLIFIED (مش 0)**.
+  - current_price=0/NULL → INVALID → HOLD score=0 (forces safe signal).
+  - fundamental field=None → ذلك الـ component weight=0 (مستبعد من weighted average، مش 50). confidence=% components with data.
+  - risk_reward=0.0 (NULL fallback قبل R:R fix).
+  - 4 tickers unmapped (EG23X, MTEZ, OCIC, TAO) → fundamental_score=None + confidence=0.
+  - HARD cap: ABS(return)>50 → actual_return=None (يُستبعد من KPIs).
+  - Split Guard: ABS>35% → actual_return=None.
+  - 11 fabrications تم fix في Rule 72 (auto_poster hardcoded BUY، telegram defaults، tp1=p*1.055 وهمي، إلخ).
+- **المحرك الإنتاجي V40.2 vs Maestro (المعطّل):**
+  | | Maestro (مات) | V40.2 (العقل الوحيد) |
+  |---|---|---|
+  | المنطق | 8-layer confluence (138 pts) | 6 proofs + evidence-based (82-91 pts) |
+  | الحالة | signal_id=None (KILL-MAESTRO 2026-08-31) | tracker=PredictionTracker مفعّل |
+  | يكتب توقعات | ❌ | ✅ predictions.db |
+  | الفلترة | — | EGX Gate + Entry Gate (8 شروط) + Geometry Guard + Context Filters (5) + Radar kill/boost |
+  - V40.2 = v40_2_daily_generator.py. بـ يستدعي analyze_single_day_v393() + Volume Surge Hunter (AXIS-5b) كـ fallback + 3 detectors (volume_surge/accumulation/recovery_from_base). Maestro بقى في الكود للـ UI/queries بس.
+- **تضارب القرارات (نفس السهم = قرارات مختلفة):** موثّق بشكل واسع:
+  - **السبب الجذري #1:** 5 UI components بـ تحسب signal بـ thresholds مختلفة محليًا (ComprehensiveStockAnalysis, StockDetail, UnifiedPublishButton, MakerRadarTab, PredictionTrackingDashboard) → "ETEL 5 شاشات = 5 إشارات مختلفة". CANA مثال موثّق: 3 إشارات متضاربة من 3 Python APIs.
+  - **السبب #2:** 4 أنظمة thresholds مختلفة لـ signal classification (canonical 78/65/55/40/25 vs أخرى 75/70/60/50).
+  - **السبب #3:** 4 taxonomies مختلفة لـ phase كلها اسمها "phase". 5 صيغ accumulation label. 5+ صيغ fallback لـ support/resistance. 3 صيغ RSI.
+  - **السبب #4:** 18 route مختلف بترجع signal من مصادر مختلفة (TS-computed vs DB passthrough vs Python fallback) — DEEP-AUDIT-ALL-ENGINES لقى 18 route.
+  - **الإصلاح:** Rule 72 (UNIFIED-DATA-CONTRACT) + canonical_signal.py (Python) + canonical-signal.ts (TS port مطابق) — 5 classifiers كنسية (classify_signal/ar/accumulation/money_flow/stock_phase). Rule 67 (CALCULATION-CANONICAL). Rule 73 (SINGLE-DISPLAY-SOURCE). UNIFICATION-ALL-PHASES-COMPLETE (14 commits, ~85 ملف، 8 sub-agents).
+  - **تحسين KEPT:** STRONG_BUY 80→78 (commit c2ade8c6). WHO IS BUYING detector (8 factors). HMM Market Regime (4 states). analysis_reason (نص عربي شارح). Ticker Cooldown. DNA PROJECTION target_3.
+  - **REVERTED:** ML Overlay XGBoost (feature distribution mismatch). kill_switch pre-screen (موجود فعلاً). DB bug market='US'.
+  - **Phase 2 مؤجّل:** GARCH Exits (محتاج arch lib). Tick CVD (محتاج Level 2 data — غير متوفّر في EGX).
+
+
+---
+Task ID: 1b
+Agent: Explore (مهندس التوحيد - قراءة)
+Task: قراءة وتلخيص 01-PROJECT_ANATOMY.md
+
+Work Log:
+- قرأت worklog.md (آخر 1500 سطر) — تابعت مهام UNIFICATION-PHASES (0/1/2/3) + DEEP-AUDIT-ALL-ENGINES + المهام المتوازية 1d/1e (قراءة SYSTEM_HOW_IT_THINKS + 05-CURRENT_STATE). لم ألمس أي ملف سوى هذا الإلحاق.
+- قرأت 01-PROJECT_ANATOMY.md كاملًا (5909 سطر / 362KB) — قراءة فقط. مررت على كل الأقسام: التغييرات الجوهرية (2026-09-01/02 + 2026-08-31) + §1 Topology/Ports/Modules/Stats/5-Market/Flutter + §2 Directory Tree + §3 Databases Map + §4 Engine Map + §5 API Map + §6 Data Flow (8 stages) + §7 Deployment + §8 Dead-Code + §9 audit_map + §10 Gaps + §11 References + §12 AI News/Corporate Actions + الملاحق المُدمجة (Data Flow Map / DB Architecture / V40.4 Multi-Market Directive / DB Resilience / Sharia).
+
+Stage Summary:
+- **المعمارية الرباعية:** Next.js:3000 (DISPLAY ONLY) + Python:8010 (THE BRAIN, Flask + 53 BP على FastAPI/WSGI) + Data Engine:5000 (10 scrapers) + ws-service:3005 (socket.io) + telegram-events:3003 + Caddy:81 (البوابة الوحيدة المُعرَّضة، آلية XTransformPort). 5 أسواق (EGX/TADAWUL/KSE/QSE/CRYPTO). 7 PM2 services. 17 frontend modules + 9 backend module placeholders.
+- **خط الإنتاج 8 مراحل (§6.1):** (1) Scrapers → (2) data_engine.db.tab_* + price_history.db → (3) Engines (load_merged_history + institutional_decision_engine + maestro + fundamental_data_provider + persona + v38 backtest) → (4) KILL FILTERS + R:R floor gate (r_mult<1.5→continue) في v40_2_daily_generator.py L314-326 → (5) predictions.db → (6) daily_closer.py (5-state taxonomy: TARGET_HIT/TRAILING_PROFIT/STOPPED/EXPIRED/PENDING + HARD cap ABS≤50) → (7) lesson_store.py learning loop → (8) Flask API:8010 → Next.js proxy → UI.
+- **القرارات — الإنتاجي vs المعطل:** الإنتاجي = V39/V40.2 institutional_decision_engine.py (~520 LOC، 6 proofs + Tech Score + portfolio_advice + dynamic R:R) عبر v40_2_daily_generator.py + daily_predictor.py. ❌ Maestro (engines/maestro_orchestrator.py + analyzers/maestro_orchestrator.py، 3,545 LOC، 8-layer 138pts) = DISABLED (KILL-MAESTRO 2026-08-31، signal_id=None). V38 backtest engine (1,817 LOC) = ACTIVE للـ walk-forward. لكن §4.1 لا يزال يصنّف smart_confluence/board_of_analysts/sniper/v82/professional كـ "✅ ACTIVE" رغم أن PHASE-3 (بالتوازي) عطّلها — أي §4.1 STALE نسبيًا.
+- **جداول SQLite المرتبطة بالقرارات:** predictions.db.predictions (1,359 pred) + aiPrediction (2,459) + persona_predictions (946) + outcome_logs (8,544) + learned_lessons (8,644) + live_ai_signals (945) + morning_bell_signals (82) — الكاتب الأساسي daily_predictor.py. data_engine.db (tab_valuation/profitability/dividends/performance/technical_analysis = 858-863 صف نظيف؛ tab_balance_sheet/income/cash_flow = BROKEN column-shift). price_history.db.price_history (1,206,981 صف/1,336 ticker — يُغذّي load_merged_history). stocks.db.stocks (956-1,585 ticker + current_price). news.db.news_articles (7,894). decision_log.db.decision_log. intraday.db.
+- **Flask routes:** 53 blueprints مسجّلة في lightweight_server.py + ~599 @bp.route decorator في 65 ملف (33 DEPRECATED). Next.js route.ts = ~411 (Wave 8). 3 أنواع routes: Pure Proxy (الغالبية) + Auth/Paywall Gate + ⚠️ Architecture Violation (3 endpoints honest-tracking بقرأ SQLite مباشرة من Node — §10 G9). 20 مجموعة endpoints حسب module.
+- **UNIFIED-DATA-CONTRACT / Rule 72 / unified API — ملاحظة حرجة:** لا توجد أي إشارة في 01-PROJECT_ANATOMY.md لـ "canonical_signal.py" ولا "Rule 72" ولا "/api/stocks/[ticker]/unified" ولا "UNIFIED-DATA-CONTRACT" ولا "Rule 67/Rule 73". الملف يصف الحالة PRE-UNIFICATION (آخر تحديث 2026-10-06 = IMPROVEMENTS-SESSION فقط). كل مخرجات التوحيد (canonical_signal.py thresholds 78/65/55/40/25، Rule 72 freshness gate، UNIFIED-STOCK-API-1 route، single-writer daily_predictor، تعطيل 5 sub-engines، RSI Wilder توحيد) موثّقة في worklog.md (UNIFICATION-ALL-PHASES-COMPLETE) فقط — **لم تُحدّث بعد في الـ anatomy**. الإشارة الوحيدة لـ "Unified Engine" هي في ملحق V40.4 Multi-Market Directive (§2.1) كـ roadmap مستقبلي (institutional_decision_engine + v38_backtest_engine = Unified Quant Core + MarketProfile في unified_config.py) — مفهوم تصميمي لا تنفيذ مكتمل.
+- **نقاط التضارب (نفس السهم = قرارات مختلفة) الموثّقة في الـ anatomy:** (1) §5.2.3 "3 systems متداخلة" للـ predictions (predictions.db + stored_analyses + aiPrediction). (2) §10 G9: Node يكتب/يقرأ SQLite مباشرة. (3) §10.3 Threshold Contradictions: tech_score_base 25(code) vs 50(settings)؛ trailing_stop_activation_gain 2.0 vs 3.0؛ tiered_stop 8% ثابت vs default 5%. (4) §4.1 يصنّف ≥6 محركات كـ ACTIVE تُنتج signal (institutional + smart_confluence 138pts/BUY68 + maestro 138pts/BUY68 معطل + board_of_analysts + sniper + v82 + professional_analysis) بـ thresholds مختلفة. worklog (DEEP-AUDIT + Task 1d) يؤكد: 18 route بترجع signal بمصادر/عتبات مختلفة + 5 UI components بتحسب signal محليًا = bug "ETEL 5 شاشات = 5 إشارات".
+- **Gaps إنتاجية إضافية:** G1 fundamental_score=50 placeholder لكل الصفوف (Stage G)؛ G2 Arabic symbol→ticker gap 18.2%؛ G10 Prisma scaffold=User+Post فقط (لا unified migration)؛ G14 No message queue. 31.66% reconciliation mismatch. 9 duplicate tables dropped من 12. 411M+ DBs backed up لـ *.bak-unify.
+- **التوصية لمهمة توحيد القرارات:** الـ anatomy هو المرجع الكنسي لكنه **متخلّف عن واقع الكود بمرحلة توحيد كاملة**. قبل الاعتماد عليه، يجب (أ) تحديث §4.1 ليعكس تعطيل Maestro + 5 sub-engines + اعتماد canonical_signal.py كمصدر وحيد، (ب) تحديث §5 API Map لإضافة /api/stocks/[ticker]/unified + Rule 72 freshness gate، (ج) تحديث §6.1 pipeline لإدراج Stage 1.5 Source Authority + Stage 1.6 Data Validation + canonical signal classification كخطوة منفصلة.
+
+---
+Task ID: 1c
+Agent: Explore (مهندس الواجهات - قراءة)
+Task: قراءة وتلخيص 02-SCREENS_AND_COMPONENTS.md
+
+Work Log:
+- قرأت worklog.md (آخر 1500 سطر — خطوط 62101-63601) واطّلعت على أعمال وكلاء متوازية (Task 1a/1b قرأوا 00-CONSTITUTION + 01-PROJECT_ANATOMY؛ UNIFICATION-ALL-PHASES-COMPLETE؛ Rule 71 autonomous-improvement؛ canonical_signal migration Phases 1-4 في worklog)
+- قرأت 02-SCREENS_AND_COMPONENTS.md كاملًا (3060 سطر، 225KB) عبر قراءة متقطعة بـ chunks 200-400 سطر
+- لم أعدّل أي ملف (مهمة قراءة فقط)
+
+Stage Summary:
+- **الشاشات الـ 53 (Hash views في VALID_VIEWS):** 23 نشطة مرئية في TopBar + 30 مخفية/legacy/backwards-compat (incl. 11 `crypto-*` redirects) + 2 admin-only stubs (`prediction-performance`, `prediction-credibility`). الـ 23 النشطة موزّعة: 10 قسم السوق (dashboard/stocks/stock-filters/trading-chart/liquidity-radar/market-depth/recommendations/specialist-analysis/reports/simulation) + 6 أموالي (portfolio/watchlist/alerts-center/live-monitor/trading-memory/news) + 5 المزيد (academy/sharia/zakat/tithes/subscription) + 2 user-menu (about/settings). Default fallback = `#dashboard`. (§17.1 + §4)
+- **الـ modules الـ 17 (frontend في src/modules/):** radar + publishing + personalized + stock-analysis + predictions + portfolio + screener + market-analysis + news + admin + crypto + education + reports + dashboard + simulation + subscription + auth + sharia. (§0.4 — Rule 60 MODULE-SYSTEM)
+- **شاشة السهم الواحدة (ComprehensiveStockAnalysis / StockDetail):** `stocks/ComprehensiveStockAnalysis.tsx` (1,374 LOC، active(1)) + `StockDetail.tsx` (1,233 LOC صفحة Next.js `/stock/[ticker]`). تعرض price/technicals/fundamentals/news/charts + `buildStockInfographicDataFromStock()` يبني data للـ StockInfographicCard client-side. تستهلك `/api/stocks/[ticker]/comprehensive` + `/api/unified-analysis/[symbol]` + `/api/stocks/[ticker]/history`. **ملحوظة حرجة:** الملف لا يذكر أي إشارة لـ canonical_signal أو unified API أو sub-engine badges — يصف الحالة PRE-UNIFICATION. حسب worklog (UNIFICATION + Rule 72 migration)، 8 شاشات (incl. StockDetail + ComprehensiveStockAnalysis + TradingViewChart + StocksView + SpecialistAnalysisView + MakerRadarTab + PredictionTrackingDashboard + UnifiedPublishButton) هاجرت لـ `/api/stocks/[ticker]/unified` كـ ADDITIVE fetch — **لكن §0.8 الذي وثّق ذلك (Worklog 2026-10-07 DOC-SECRETARY-ACTIVATION) غير موجود فعلياً في الملف** (آخر تحديث 2026-10-05 = CALC-CONSOLIDATION-PHASE-1).
+- **شاشات التوصيات/التتبع (predictions/honest-tracking/tracking/mobile):** 3 أنظمة متداخلة موثّقة (§6.4): (1) OLD `/api/predictions/tracking/*` (4 routes، 218 LOC) ❌ مهجور. (2) NEW `/api/predictions/honest-tracking/*` (7 routes، 2,545 LOC) ✅ النشط — يقرأ SQLite مباشرة من Node (architecture violation). (3) DUPLICATE `/api/stored-analysis/live-tracking` (1 route، 169 LOC) ❌ مكرر. الـ UI الأساسي = `#recommendations` (MarketAnalysisView، 297 LOC post-Wave-3، 5 main tabs). `PredictionTrackingDashboard.tsx` (1,908 LOC) + `PredictionTrackingView.tsx` (599 LOC legacy). Mobile = `#crypto-prediction-tracking` redirect + CryptoPredictionsTab. **لا توجد unified API مستهلكة في الـ honest-tracking routes** (هي Node-direct-SQLite).
+- **الـ prediction cards الـ 16 (ليست 22):** §17.2 — 16 card files / 8,903 LOC. بعد MERGE-PREDICTION-CARDS + MERGE-LIST-CARDS + TELEGRAM-LINK، 4 cards أساسية canonical: (1) `StockInfographicCard` (1,027 LOC — canonical infographic) (2) `PredictionsImageCard` (754 LOC — absorbed Persona + ExpertPredictions) (3) `StockLeagueImageCard` (555 LOC — absorbed TopTrades) (4) `MarketStatusImageCard` (769 LOC). الـ wrappers (PersonaImageCard 144 + ExpertPredictionsImageCard 106 + TopTradesImageCard 42) اتسابوا backward-compat. **0 orphaned cards** — التوحيد نجح. (لا توجد 22 cards في الملف — الرقم في وصف المهمة غير دقيق؛ ربما يشمل sub-components).
+- **إشارات unified API / canonical signal / Rule 72 / Rule 73 في الملف:** **صفر إشارات.** grep لـ `canonical_signal|canonical-signal|UNIFIED-DATA-CONTRACT|unified/route|analytics.ts|Rule 72|Rule 73|§0.8` = لا match. الملف يصف الحالة PRE-UNIFICATION (آخر تحديث 2026-10-05). worklog يؤكد: canonical_signal.py (310 LOC Python) + canonical-signal.ts (247 LOC TS) + `/api/stocks/[ticker]/unified` route + 8 UI components migration كلها حصلت 2026-10-07 لكن DOC-SECRETARY-ACTIVATION لم يُلتزم — **§0.8 غير موجود فعلياً رغم ادّعاء worklog بإضافته**. هذا gap توثيقي حرج.
+- **تضارب القرارات في الواجهة (نفس السهم = قرارات مختلفة):** موثّق في §10.5.6 (Analysis Views المتشتتة — 7+ components، ~14K LOC عبر 3 directories: analysis/ + advanced-analysis/ + stocks/) + §13.2 (Chart Stack). Naming chaos [P2.11]. الـ bug الأصلي "ETEL 5 شاشات = 5 إشارات" موثّق في worklog فقط (DEEP-AUDIT + UNIFICATION-ALL-PHASES) — غير مذكور في 02-SCREENS صراحة. §6.4 يذكر 3 أنظمة tracking متداخلة. §13.4 pipeline يوضح V40.2 canonical فقط.
+- **حالة i18n:** Phase 1 only. 5 components migrated (Wave 3): MarketAnalysisView (12 strings) + StocksView (50) + EnhancedWatchlistView (30) + EnhancedPortfolioView (40) + AlertsCenterView (25). messages/ar.json + messages/en.json: 130 → 460 LOC each (+330). Components using useTranslation(): 7 → 12 files (5 earlier I18N-FULL-100 + 5 Wave 3 + Providers + hook). Owner directive: "continue i18n migration to 100%". **Phase 2 not done** — باقي ~240 components بدون i18n. (§0.6)
+- **حالة Flutter:** لا توجد Flutter screens موثّقة في الملف (الملف Next.js/React فقط). الإشارة الوحيدة: "Wave 8 Task `774a208` restored 32 Flutter API endpoints archived by mistake in Wave 2" (§0 header + changelog 2026-10-04). الـ 411 route.ts تشمل هذه الـ 32 Flutter endpoints.
+- **أرقام نهائية للواجهة (2026-10-05):** 20 Next.js page routes (9 نشطة + 9 ميتة + 2 redirect) · 411 API route.ts (257 proxy + 331 direct + 163 tiny-proxy) · 53 hash views · 250 tsx components + 24 ts = 274 total · 49 UI primitives (29 مستخدمة + 20 orphan) · 71 orphan components (50,442 LOC ميتة = 26.6%) · garage/ كامل ميت (8,247 LOC) · 33 DEPRECATED Flask blueprints (~17,000 LOC) · 9 test files / 121 tests. 3 orphan tabs wired (LiveTracking + ExpertPredictions + CryptoPredictions). P0 wave: 30 routes auth-secured + 7 SQLi fixed + 24 async I/O + Sentry + x-request-id.
+- **خلاصة لمهمة توحيد القرارات:** الملف يصف الحالة PRE-UNIFICATION بالكامل. canonical_signal / unified API / Rule 72 غير مذكورة إطلاقاً. الـ 8 شاشات المهاجرة (per worklog: StockDetail + ComprehensiveStockAnalysis + TradingViewChart + StocksView + SpecialistAnalysisView + MakerRadarTab + PredictionTrackingDashboard + UnifiedPublishButton) موصوفة في الملف كـ "تستهلك APIs متعددة" بدون إشارة للترحيل. التوصية: مهمة توحيد القرارات يجب أن تُحدّث 02-SCREENS.md بإضافة §0.8 (Canonical Signal Migration) موثّقة فعلياً + تحديث §4/§6/§10 لإضافة unified API + إزالة الـ sub-engine badges references إن وُجدت.
+
+---
+Task ID: 2c
+Agent: general-purpose (مهندس الجودة)
+Task: تصميم اختبار صفر تضارب + استعراض unification_test.py
+
+Work Log:
+- قرأت worklog.md (آخر 2000 سطر — خطوط 61624-63624) + UNIFICATION-ALL-PHASES-COMPLETE + DEEP-AUDIT-ALL-ENGINES + PHASE-2-MAESTRO-KILL + Rule 72/73.
+- قرأت `scripts/unification_test.py` (213 LOC، 5 endpoints، assertion واحد: `len(unique_signals) <= 1`).
+- قرأت `vps-service/utils/canonical_signal.py` (310 LOC Python) + `src/lib/canonical-signal.ts` (247 LOC TS port مطابق) — thresholds 78/65/55/40/25.
+- قرأت `src/app/api/stocks/[ticker]/unified/route.ts` (49 LOC، thin wrapper حول `getUnifiedStockData()`).
+- قرأت `src/lib/unified-stock-data.ts` (628 LOC) — canonical SQL: `WHERE ticker=? AND market IN ('EGX','مصر') ORDER BY prediction_date DESC LIMIT 1` — **مفيش filter على persona** → النظام حالياً implicit "balanced فقط".
+- قرأت `src/app/api/maestro/stock/[ticker]/route.ts` — **يُرجع HTTP 410 Gone** (deprecated per PHASE-2-MAESTRO-KILL، 2026-10-07) لكن الاختبار الموجود لا يتعامل مع الـ 410 صراحةً.
+- قرأت `src/app/api/stocks/[ticker]/comprehensive/route.ts` — UNIFIED-DATA-OVERRIDE block (lines 181-229) بـ ي override board.signal + maestro.recommendation + professional.recommendation + hunter.signal بـ canonical signal.
+- استعرضت `tests/` directory (root): يحوي 3 shell scripts فقط (database-runtime-build + python-runtime-build + python-runtime-container) — **مفيش tests/ فعلية للمشروع**. الـ tests الحقيقية في `vps-service/tests/` (9 ملفات pytest) + `news-agent/tests/` + `vps-service/tests/unit/`. لا يوجد `src/tests/`.
+- صمّمت اختبار "نفس السهم/اليوم/الشخصية = نفس القرار في كل الشاشات" (zero-conflict) — تصميم فقط، بدون تنفيذ (read-only task).
+
+Stage Summary:
+- **FINDING #1 (حرج):** `unification_test.py` يحوي bug false-positive — `signals = [r.get('signal') for r in results if r.get('signal')]` بـ يتخطّى endpoints اللي بترجع `None` (زي maestro اللي بترجع 410 حالياً). لو كل الـ endpoints فشلت وواحد فقط بيرجّع signal → الاختبار بـ PASS. أسوأ سيناريو: لو كلهم فشلوا → `set() <= 1` → PASS (فراغ يعتبر توحيد!).
+- **FINDING #2 (حرج):** `/api/maestro/stock/[ticker]` بترجع HTTP 410 من 2026-10-07 (PHASE-2-MAESTRO-KILL) لكن الاختبار لسه بيضربه كأنه endpoint حي. `extract_signal` بترجع `{signal: None, error: 'HTTP 410'}` فيُستثنى من المقارنة → الاختبار بـ يفحص 4 endpoints فعلياً بدلاً من 5 (silent skip).
+- **FINDING #3:** الاختبار بـ يتحقق من `signal` (الـ label الإنجليزي) فقط — لا يتحقق من `signal_ar` ولا `master_score` ولا `accumulation`/`money_flow`/`phase`. لو master_score اختلف بنقطة واحدة لكن ظل في نفس الـ band (مثلاً 65 → 64 = BUY → ACCUMULATE) → الاختبار بـ يكتشف التضارب. لكن لو 65 → 65.5 (نفس label) → لا يكتشف. الـ threshold drift بـ يمر غير مُكتشف طالما الـ label ثابت.
+- **FINDING #4:** الاختبار لا يُثبت "نفس القرار في كل الشاشات" بل يثبت "نفس signal في 5 endpoints". لا يغطّي:
+  (أ) الـ sub-fields الداخلية لـ comprehensive (board.signal / maestro.recommendation / professional.recommendation) — مع إن الـ UNIFIED-DATA-OVERRIDE بـ ي override دي بس الاختبار لا يتحقق من إنها فعلاً = canonical signal.
+  (ب) الـ 8 شاشات المهاجرة (مستوى UI). الاختبار API-level فقط.
+  (ج) route `/api/stocks/[ticker]/publish-data` (ذكر في DEEP-AUDIT إنه بـ inject canonical).
+  (د) `signal_ar` consistency (ممكن signal='BUY' بس signal_ar='احتفاظ' لو في ترجمة ناقصة).
+- **FINDING #5:** الـ canonical SQL في `unified-stock-data.ts:357` بـ يقرأ أحدث prediction للسهم بدون filter على persona. بما إن `persona` column في predictions.db كلها 'balanced' تاريخياً (per worklog 7167 + 26751)، فالنظام فعلياً يدعم persona واحد فقط. اختبار "نفس السهم/اليوم/الشخصية" لازم يُصرّح بإنه يدعم balanced فقط حالياً حتى يتم توسيع canonical SQL.
+- **تصميم الاختبار الجديد (zero_conflict_test.py):**
+  * **المدخلات:** ETEL, COMI, HRHO, SWDY, CANA × persona=balanced × يوم محدد (pinned date من predictions.db).
+  * **نقاط المراقبة (7 endpoints):**
+    1. `/api/stocks/[ticker]/unified` (canonical SSOT)
+    2. `/api/stocks/[ticker]` (Python + unified injection)
+    3. `/api/stocks/[ticker]/comprehensive` (3 engines + UNIFIED-DATA-OVERRIDE)
+    4. `/api/stocks/[ticker]/recommendation` (Python + unified injection)
+    5. `/api/stocks/[ticker]/publish-data` (Python + unified injection)
+    6. `/api/maestro/stock/[ticker]` (expected 410 — اختبار إنه مُعطّل فعلاً)
+    7. `/api/stocks/[ticker]/professional-analysis` (expected 410 — Phase 4 API-AUDIT-2)
+  * **حقول التحقق لكل endpoint:** `signal`, `signal_ar`, `master_score`, `accumulation`, `money_flow`, `phase` — كلها لازم تتطابق مع canonical من `unified` endpoint.
+  * **التحقق الإضافي لـ comprehensive:** `response.board.signal == canonical.signal` + `response.maestro.recommendation == canonical.signal.toLowerCase()` + `response.professional.recommendation == canonical.signal.toLowerCase()` (إثبات إن UNIFIED-DATA-OVERRIDE block شغّال فعلاً).
+  * **معايير القبول الصارمة:**
+    - mismatch_rate == 0.0% (الهدف) — عتبة الرفض: أي mismatch.
+    - threshold_drift == 0 (master_score متطابق تماماً عبر endpoints، ليس فقط الـ label).
+    - كل endpoints (ما عدا maestro + professional-analysis) لازم ترجع HTTP 200.
+    - maestro لازم يرجع HTTP 410 + `deprecated: true` (إثبات إنه مُعطّل).
+    - HTTP errors لأي endpoint غير متوقع تعتبر فشل (لا skip صامت).
+  * **edge cases:**
+    - NULL signal (ticker بدون prediction) → كل endpoints لازم ترجع HOLD (canonical default).
+    - missing ticker (e.g. "FAKE123") → كل endpoints لازم ترجع 404 متناسق.
+    - stale data (prediction_date > 48h) → `prediction_is_fresh == false` + signal لازم يفضل متطابق.
+    - ticker lowercase (e.g. "etel") → لازم يُطبَّع تلقائياً (ETEL) ويتطابق.
+  * **التقرير:** JSON output فيه لكل ticker: {endpoint, http_status, signal, signal_ar, master_score, matches_canonical, mismatch_reason}. mismatch_rate = (mismatches / total_checks) × 100. الهدف: 0.00%.
+- **خطة الدمج في CI/cron:**
+  * الموقع: `scripts/zero_conflict_test.py` (نفس مكان unification_test.py الحالي) — يحل محلّه تدريجياً.
+  * التشغيل: cron يومي بعد `daily_predictor.py` (الـ single writer) — يفضل بعد إغلاق السوق المصري بـ 30 دقيقة.
+  * pre-commit hook: اختياري على tickers محدودة (ETEL + COMI فقط) لتسريع الـ feedback loop.
+  * التبليغ عند الفشل: append لـ `worklog.md` + alert عبر `/api/telegram/admin-notify` (موجود بالفعل في المشروع) + Sentry breadcrumb.
+- **توصية للمالك:**
+  * الاختبار الموجود (unification_test.py) **غير كافٍ** — يحوي false-positive bug حرج (silent skip للـ None signals) + لا يغطّي master_score drift + لا يتحقق من sub-fields override + لا يثبت إن maestro فعلاً مُعطّل (بـ يتخطّاه بصمت).
+  * الأولوية: **P0** — تنفيذ `zero_conflict_test.py` الجديد قبل أي release. يحتاج تشغيل backend (Next.js + Python vps-service + db/predictions.db + db/stocks.db) → **يحتاج إذن المالك للتشغيل**.
+  * التوسعة المستقبلية: بعد تنفيذ الاختبار الجديد، يُفضّل توسعة `unified-stock-data.ts:357` SQL لإضافة `AND persona = ?` لدعم personas متعددة (gambler/investor/balanced) — لكن ده code change خارج نطاق مهمة التصميم دي.
+  * قراءة فقط — لم يُعدَّل أي ملف. التصميم مُسلَّم كـ pseudo-code جاهز للتنفيذ.
+
+*End of Task 2c — general-purpose (مهندس الجودة) — read-only design + audit*
+
+---
+Task ID: 2b
+Agent: general-purpose (محلل كمي مالي)
+Task: مراجعة static لحمايات رأس المال + التحقق من تناقض ATR clamp
+
+Work Log:
+- قرأت worklog.md (آخر ~2000 سطر — شامل UNIFICATION-ALL-PHASES-COMPLETE + Tasks 1b/1c/1d/1e + DEEP-AUDIT + PHASE-2/3)
+- قرأت SYSTEM_HOW_IT_THINKS.md (§5.7 lines 1229-1253, §14.3 lines 2360-2440, §14.4 lines 2426-2437, §14.5, §14.7 lines 2470-2472)
+- قرأت analyzers/engine_settings.py (1482 LOC — كل العتبات الحرجة)
+- قرأت engines/backtest_engine.py L1620-1850 (analyze_single_day_v393 + ATR clamp منطق L1788-1849) — ملاحظة: v38_backtest_engine.py اتسمّى backtest_engine.py بعد التوحيد
+- قرأت jobs/daily_closer.py L155-200 + L760-800 + L2920-2967 (Hard Loss Ceiling + Split Guard + Ex-Dividend)
+- قرأت jobs/daily_predictor.py L2040-2170 + L2810-2900 (R:R floor gate + Ticker Cooldown) — ملاحظة: v40_2_daily_generator.py اتدمج في daily_predictor.py بعد PHASE-3-SINGLE-WRITER
+- قرأت core/opportunity_quality.py L575-705 (enforce_atr_based_stop + ATR clamp [5%,9%])
+- قرأت analyzers/prediction_tracker.py L120-237 (Geometry Guard R1-R5)
+- قرأت utils/circuit_breaker.py (كامل، 181 LOC — Circuit Breaker للـ backtest فقط)
+- قرأت utils/position_sizing.py (كامل، 210 LOC — risk-based 1.2%)
+- قرأت analyzers/master_analyzer.py L4580-4604 (CBE News Guard)
+- قرأت analyzers/institutional_decision_engine.py L1360-1410 (dynamic_rr_normal/outperform usage)
+- لم أعدّل أي ملف إطلاقًا — تحليل static فقط (هذا الإدخال هو الإضافة الوحيدة المسموح بها)
+
+Stage Summary:
+- **تناقض ATR clamp مُحقَّق ومُحلول:** §5.7 يقول [3%,9%] (commit 65a748f — PRE-EGX-STRATEGY) لكن §14.4 يقول [5%,9%] (EGX-STRATEGY 2026-08-30). **القيمة الإنتاجية الفعلية في engine_settings.py L240-241 = [5.0%, 9.0%]** — مطابقة لقانون المالك [5–9%]. §5.7 STALE (ما اتحدّث بعد EGX-STRATEGY).
+- **ثغرة توثيقية حرجة اكتُشفت:** Geometry Guard في prediction_tracker.py L139 بـ يستخدم `_GEOMETRY_MIN_RR = 1.5` (HARDCODED، مش settings-driven) بينما §14.4 يقول "R:R ≥ 1.8 إجباري" و§14.7 يقول "Geometry Guard: R/R ≥ 1.8". **الـ code فعليًا بـ يقبل R:R=1.5 في الـ Geometry Guard** — لكن الـ target بيتحسب بـ R:R=1.8 (daily_predictor.py L2061 `_dyn_min_rr=1.8`)، فالـ R:R الفعلي غالبًا ≥1.8. دي ثغرة دفاع-in-depth.
+- **جدول الحمايات (كلها مُتحقَّق منها في الكود):**
+  | الحماية | القيمة في الكود | الموقع (ملف:سطر) | يطابق قانون المالك؟ |
+  |---|---|---|---|
+  | ATR stop clamp min | 5.0% | engine_settings.py:240 + opportunity_quality.py:686 + backtest_engine.py:1829 | ✅ مطابق |
+  | ATR stop clamp max | 9.0% | engine_settings.py:241 + opportunity_quality.py:687 + backtest_engine.py:1832 | ✅ مطابق |
+  | Hard Loss Ceiling | -7.0% | engine_settings.py:337 + daily_closer.py:162,2953-2956 | ✅ مطابق |
+  | HARD cap (Rule 7) | ABS ≤ 50 | enhanced_prediction_tracker.py:48 + prediction_tracking_routes.py:475 + SQL في stored_analysis_routes.py:1680 + misc_routes.py:1644 + backtest_stats.py:39 | ✅ مطابق |
+  | Split Guard | ABS > 35% → exclude | engine_settings.py:338 + daily_closer.py:163,2942-2951 | ✅ مطابق |
+  | Ticker Cooldown | 5 STOPPED → 14 يوم | daily_predictor.py:2817-2855 | ✅ مطابق (Rule 3 KEPT) |
+  | R:R floor (EGX-STRATEGY §14.4) | target computed @ 1.8 (daily_predictor.py:2061) + floor gate @ 1.5 (regime-dependent) + Geometry Guard @ 1.5 | daily_predictor.py:2147-2170 + institutional_decision_engine.py:1375 + prediction_tracker.py:139 | ⚠️ توثيق §14.4 يقول 1.8 إجباري لكن الـ gate الفعلي بـ يقبل 1.5 |
+  | Geometry Guard | target > entry×1.05 + stop < entry×0.95 + stop > entry×0.905 + R:R ≥ 1.5 | prediction_tracker.py:135-139 | ✅ مطابق لـ §14.3 (مش §14.7 اللي بيقول 1.8) |
+  | Position Sizing (1.2%) | DEFAULT_RISK_PER_TRADE_PCT = 1.2 (1.0–1.5 range) | utils/position_sizing.py:47 + engine_settings.py:337 | ✅ مطابق |
+  | Circuit Breaker | 3 خسائر → 3 أيام | utils/circuit_breaker.py:32-33 | ⚠️ للـ backtest فقط — مش متفعّل في الإنتاج! |
+  | CBE News Guard | hard veto (24h) + position_size=0 | master_analyzer.py:4583-4603 + news_stop_filter.py:80,102 | ✅ مطابق |
+  | Ex-Dividend Protection | skip stop check على ex-div day | daily_closer.py:765-787,1858,890 | ✅ مطابق |
+- **التوحيد (UNIFICATION-ALL-PHASES) ما أضعف أي حماية:** Maestro معطّل + 5 sub-engines معطّلة + RSI موحّد + مصدر سعر موحّد + single-writer (daily_predictor.py) — كلها بتأثر على إنتاج الإشارة (signal generation) مش على حمايات رأس المال. الـ Hard Loss / Split Guard / Ticker Cooldown / HARD cap كلها شغّالة في daily_closer.py + daily_predictor.py (الكاتب الوحيد).
+- **خطر الـ 89 direct-DB + 58 split-brain routes على رأس المال:** منخفض. كلها READ paths (بتعرض signal)، مش WRITE paths. الـ writes لـ predictions/outcome_logs/learned_lessons مقصورة على daily_predictor.py (single-writer Rule 73) + daily_closer.py (closing فقط). الـ 58 split-brain routes ممكن تـ display signal outdated لكن مش بـ تـ bypass حمايات الدخول/الإغلاق.
+- **خطر إضافي اكتُشفت:** (1) Stale comment في backtest_engine.py:1822-1826 بيقول "TIGHTENING (2026-09-02): Owner directive: خفّض الستوب الأقصى من 9% لـ 7%" مع env var V40_2_STOP_MAX_PCT='7.0' default — لكن engine_settings.py لسه بقول 9.0. الـ fallback لو get_setting فشل = 7.0 (مش 9.0). (2) ATR_STOP_MIN_PCT = 3.0 constant في opportunity_quality.py:577 + test_phase_g_critical_engines.py:81 — stale fallback بس الـ runtime = 5.0. (3) Circuit Breaker للـ backtest فقط — مش متفعّل في الإنتاج live trading (ده gap: §14.5 بتوصفه كأنه production protection لكن الكود docstring بيقول "للـ backtest").
+- **توصية المالك:** الحمايات سليمة في الكود الإنتاجي (engine_settings.py = source of truth، Rule 11). **لا حاجة لإصلاح عاجل** — القيم الإنتاجية كلها مطابقة لقانون المالك. لكن توصيات للتحسين التوثيقي: (1) تحديث §5.7 في SYSTEM_HOW_IT_THINKS.md لـ [5%,9%] (مش [3%,9%]). (2) توحيد R:R floor: إما تحديث §14.7 لـ "R:R ≥ 1.5 (effective floor) مع target محسوب @ 1.8" أو تحديث prediction_tracker.py:139 لـ `_GEOMETRY_MIN_RR = 1.8` (تحتاج A/B backtest). (3) تنظيف stale comments في backtest_engine.py:1822-1826 + backtest_engine.py:918-923 (V40_2_STOP_MAX_PCT default=7.0). (4) تفعيل Circuit Breaker في الإنتاج أو تحديث §14.5 ليوضّح أنه backtest-only. (5) تنظيف stale fallback constants (ATR_STOP_MIN_PCT=3.0 في opportunity_quality.py:577) لـ 5.0.
+
+
+
+---
+Task ID: 2a
+Agent: general-purpose (مهندس التوحيد)
+Task: تحليل static لبناء خريطة من-يستدعي-ماذا + قائمة المسارات المنتجة للقرار
+
+Work Log:
+- قرأت worklog.md (آخر 2000 سطر — تابعت UNIFICATION-ALL-PHASES-COMPLETE + Tasks 1b/1c/1d/1e)
+- قرأت UNIFICATION_MASTER_PLAN.md (170 LOC) + ENGINEERING_AUDIT_REPORT.md (472 LOC)
+- قرأت canonical_signal.py (309 LOC) + canonical-signal.ts (246 LOC) + unified/route.ts (48 LOC) + unified-stock-data.ts (627 LOC) + unification_test.py (213 LOC)
+- حلّلت static للكود في vps-service (40 Flask blueprints / 499 @bp.route decorators) + src/app/api (447 route.ts)
+- بنيت خريطة المسارات + إحصاءات direct-DB + split-brain بدون تشغيل أي backend
+
+Stage Summary:
+- **الملفات الكنسية موجودة ومطابقة:** canonical_signal.py (309 LOC, thresholds 78/65/55/40/25) + canonical-signal.ts (246 LOC, thresholds مطابقة 100%) + unified/route.ts (48 LOC thin wrapper — النيّة الفعلية في unified-stock-data.ts 627 LOC) + unification_test.py (213 LOC, يضرب 5 endpoints × 7 tickers افتراضية).
+- **خريطة المسارات المنتجة للقرار (47 TS route.ts):** 6 ✅ canonical (تستورد getUnifiedStockData: unified + stocks/[ticker] + /recommendation + /publish-data + /comprehensive + crypto/full-analysis يستورد computeRSI فقط) | 26 ⚠️ legacy passthrough (Python proxy + predictions.db fallback بدون canonical injection) | 14 ❌ bypass direct-DB read بدون canonical injection (honest-tracking/* 5 + admin/telegram-predictions + admin/db-manager/repair + global-predictions + live-monitor/ledger + maker-radar/stock + predictions/dual-track/list + predictions/expert-consensus + predictions/tracking/list + mobile/crypto) | 1 ❌ TS-side writer bypass (sniper/track/route.ts بـ INSERT INTO predictions مباشرة).
+- **Rule 20 violation (direct-DB):** 104 TS routes تستخدم better-sqlite3/sql.js/bun:sqlite مباشرة (شاملة 6 canonical — الاستثناء المشروع). 98 route فعلية violation. Wave 8 audit قال 89 — الفرق = منهجية العد (Wave 8 استثنى canonical + routes مشروعة مثل auth/news).
+- **Split-brain routes (proxy + direct-DB):** 27 TS route (strict intersection). Wave 8 audit قال 58 — الفرق = Wave 8 عدّ Python-side split-brain + multi-fetch patterns.
+- **التحقق من unified API precedence:** ✅ predictions.master_score (لو fresh ≤ 48h) → fresh_technical_score (computed inline في unified-stock-data.ts L464-476). Rule 72 freshness gate مطبّق في honest-tracking/list/route.ts L358-368 (PENDING ≤ 48h).
+- **الشاشات الـ 8 المهاجرة (تحقق فعلي بـ grep imports/fetch):** 4/8 ✅ تستهلك /api/stocks/[ticker]/unified فعلاً (StockDetail + ComprehensiveStockAnalysis + SpecialistAnalysisView + UnifiedPublishButton). 1/8 ⚠️ جزئي (TradingViewChart يستورد computeRSI من unified-stock-data فقط — مش fetch /unified كامل). 3/8 ❌ غير مهاجرة لـ /unified (StocksView بـ fetch /api/stocks/presets فقط؛ MakerRadarTab بـ fetch /api/maker-radar + /api/unified/predictions؛ PredictionTrackingDashboard بـ fetch /api/predictions/honest-tracking/*). ادّعاء UNIFICATION_MASTER_PLAN أن "كل الشاشات بتعرض canonical signal واحد" مبالغ فيه — 4 شاشات فقط هاجرت فعليًا.
+- **Maestro + sub-engines تعطيل:** ✅ 3 TS Maestro routes → 410 Gone. ✅ Python maestro_routes.py before_request hook → 410 لكل endpoint. ✅ 4 Python files بـ MAESTRO_DISABLED=True (maestro_routes + maestro_orchestrator + unified_maestro + crypto_maestro). ✅ 5 Python sub-engines بـ SUB_ENGINE_DISABLED=True (confluence_engine_v3 + v82_analyzer + sniper_engine + board_of_analysts + professional_analysis_routes). ✅ professional_analysis_routes.py يرجع 410 Gone. ✅ MaestroWidget.tsx يرجع null + DashboardView.tsx import معلّق.
+- **RSI توحيد:** ✅ canonical = vps-service/analyzers/indicators/rsi.py::calc_rsi (Wilder's، 66 LOC). ✅ 28+ Python file بـ import `_canonical_calc_rsi`. ✅ technical.py::rsi + technical_weighted.py::rsi wrappers بـستوردوا canonical. ✅ glminvestment_engines/core/indicators.py::rsi بـ pandas ewm(alpha=1/period, adjust=False) = Wilder's رياضيًا. ✅ TradingViewChart.tsx::calcRSI inline Wilder's للـ chart series (مطابق رياضيًا لكنه duplicate). ✅ CryptoAdvancedAnalysisView.tsx بـستورد computeRSI من unified-stock-data. لا RSI مبني على SMA متبقٍ في src/lib (Bug #1 في audit مُصلح).
+- **Single writer (Rule 73):** ⚠️ توحيد الكُتّاب لـ predictions table غير مكتمل. SKIP_STORED_ANALYSES_WRITE=True في 7 مواقع (لـ stored_analyses الجدول legacy — مُصلح). لكن 4 writers فعلية لـ predictions table لسه شغّالة بلا guard: (1) vps-service/api/ai_predictions_routes.py:860 (INSERT INTO predictions)؛ (2) vps-service/api/historical_predictions_v2_routes.py:460,479 (historical backfill)؛ (3) vps-service/telegram/telegram_target_hit_tracker.py:968 (trailing exits)؛ (4) src/app/api/sniper/track/route.ts:50 (TS-side writer — Rule 20 violation). daily_predictor.py هو الـ canonical writer (عبر analyzers/prediction_tracker.py::record_prediction). ادّعاء UNIFICATION_MASTER_PLAN "كاتب واحد (daily_predictor.py)" مبالغ فيه — 3 Python + 1 TS writers ما زالوا يكتبون في predictions.
+- **Thresholds mismatch حرج:** canonical_signal.py + canonical-signal.ts + engine_settings.py::DEFAULT_SETTINGS كلها بـ 78/65/55/40/25 ✅. لكن master_analyzer.py THRESHOLDS dict (line 495-504) بـستخدم 78/65/55/[HOLD_LOW=45, HOLD_HIGH=55]/REDUCE=35/SELL=20/STRONG_SELL=10 — يختلف على الحد الأدنى (REDUCE/SELL/STRONG_SELL). master_analyzer هو الإنتاجي اللي بـ classify الـ signal المكتوب في predictions.signal column. الـ unified API يعيد classification من master_score باستخدام canonical thresholds → mismatch ممكن للـ scores < 40.
+- **اختبار صفر تضارب (unification_test.py):** ✅ يختبر 5 endpoints × 7 tickers. لكن /api/maestro/stock/[ticker] يرجع 410 Gone بدون signal → بـ يتجاهله في المقارنة (signals=[]). فعليًا بـ يقارن 4 endpoints فقط. الـ 4 endpoints كلها بـستورد getUnifiedStockData → هتتفق دائمًا → test بـ ينجح دائمًا (self-fulfilling). ما بـ يختبر الـ legacy passthrough routes (honest-tracking + mobile/predictions + global-predictions) اللي بـ bypass canonical.
+
+التوصية للمالك:
+- (أ) توحيد master_analyzer.py THRESHOLDS dict مع canonical 78/65/55/40/25 — أو حذفه واستيراد canonical_signal.classify_signal مباشرة.
+- (ب) ترحيل الـ 14 ❌ bypass routes (خاصة honest-tracking/* 5 routes + admin/telegram-predictions + global-predictions) لـ getUnifiedStockData.
+- (ج) تعطيل الـ 4 writers غير canonical لـ predictions table (ai_predictions_routes + historical_predictions_v2_routes + telegram_target_hit_tracker + sniper/track) — أو wrapها بـ prediction_tracker.record_prediction.
+- (د) استكمال ترحيل 3 شاشات (StocksView + MakerRadarTab + PredictionTrackingDashboard) لـ تستهلك /api/stocks/[ticker]/unified (أو list-equivalent canonical endpoint).
+- (هـ) توسيع unification_test.py لـ يشمل legacy passthrough routes (honest-tracking + mobile/predictions + global-predictions) — وإلا فهو اختبار شكلي.
+
+
+---
+Task ID: 0 (المدير العام — إقلاع)
+Agent: المدير العام (Z.ai Code)
+Task: بروتوكول الإقلاع — استنساخ آمن + قراءة التوثيق الكامل + بناء فريق 7 تخصصات + تشخيص المهمة الأولى
+
+Work Log:
+- استنساخ ضحل آمن للمستودع إلى /home/z/GLMinvestment (103MB، --depth 1)
+- تنظيف كل آثار التوكن من .git (reflog expire + gc + remote URL عام) — تحقق: صفر آثار
+- تعطيل push احترازيًا (remote.origin.pushurl = "no-push-allowed")
+- فرض read-only على db/ (chmod -R a-w) — حماية اللقطات
+- قراءة التوثيق بالترتيب الإلزامي:
+  * 00-CONSTITUTION.md (3223 سطر — دستور، قواعد حتى 71)
+  * 01-PROJECT_ANATOMY.md (5909 سطر — via Explore agent Task 1b)
+  * 02-SCREENS_AND_COMPONENTS.md (3060 سطر — via Explore agent Task 1c)
+  * SYSTEM_HOW_IT_THINKS.md (6888 سطر — via Explore agent Task 1d)
+  * 05-CURRENT_STATE.md (5155 سطر — via Explore agent Task 1e)
+  * news-agent/AGENTS.md (171 سطر)
+  * UNIFICATION_MASTER_PLAN.md (170 سطر)
+  * ENGINEERING_AUDIT_REPORT.md (472 سطر — تقرير الجذور الستة المرجعي)
+  * 03-API_REFERENCE.md (1475 سطر)
+  * worklog.md آخر 1500 سطر
+- إطلاق 3 وكلاء تحليل static متوازيين (Task 2a/2b/2c)
+
+Stage Summary (بالأرقام):
+- المشروع: 103MB، 5 أسواق، 7 PM2 services، 6 DBs SQLite (~1.2GB موثّق / 1.8GB إنتاج)
+- البنية: Flask 8010 (العقل) + Next.js 3000 (عرض) + Caddy 81 (بوابة) + V40.2 (محرك وحيد) + Maestro (معطل)
+- التوحيد المُنفّذ (UNIFICATION-ALL-PHASES-COMPLETE): 14 commits، ~85 ملف، 8 sub-agents
+  ✅ canonical_signal.py (309 LOC) + canonical-signal.ts (246 LOC) — متطابقان 100% (thresholds 78/65/55/40/25)
+  ✅ unified API route موجود (/api/stocks/[ticker]/unified)
+  ✅ Maestro معطل نهائيًا (410 Gone) + 5 sub-engines معطّلة
+  ✅ RSI موحد (Wilder) عبر 28+ ملف
+  ✅ مصدر سعر واحد (stocks.db.stocks.current_price)
+- الفجوات الحرجة المكتشفة (تحتاج إذن المالك):
+  🔴 من 47 TS route تُنتج signal: فقط 6 (13%) canonical حقيقي — 41 (87%) bypass/legacy
+  🔴 104 route direct-DB (98 violation فعلية) + 27 split-brain route
+  🔴 4/8 شاشات فقط هاجرت فعليًا (StocksView + MakerRadarTab + PredictionTrackingDashboard لم تهاجر)
+  🔴 4 writers غير canonical ما زالوا يكتبون في predictions (3 Python + 1 TS)
+  🔴 master_analyzer.py THRESHOLDS dict يخالف canonical (REDUCE=35 vs 40, SELL=20 vs 25)
+  🔴 unification_test.py فيه false-positive bug (silent skip للـ None)
+- حمايات رأس المال: ✅ سليمة في الكود الإنتاجي (لم يضعفها التوحيد)
+  * ATR clamp [5.0%, 9.0%] (engine_settings.py:240-241) ✅ مطابق لقانون المالك
+  * Hard Loss -7% ✅ + HARD cap ±50 ✅ + Split Guard 35% ✅ + Ticker Cooldown 5→14d ✅
+  * R:R floor 1.8 (target) / 1.5 (gate effective) ⚠️ ثغرة defense-in-depth
+  * Position Sizing 1.2% ✅ + CBE News Guard ✅ + Ex-Dividend ✅
+- تناقضات توثيقية مكتشفة:
+  ⚠️ §5.7 SYSTEM_HOW_IT_THINKS يقول ATR [3%,9%] (STALE) — الكود يقول [5%,9%]
+  ⚠️ 05-CURRENT_STATE + 01-PROJECT_ANATOMY + 02-SCREENS متخلّفة بمرحلة كاملة (لا تذكر Rule 72 / canonical_signal / unified API)
+  ⚠️ §0.8 الموعود في 02-SCREENS غير موجود فعليًا
+  ⚠️ unified_config.py profiles فيها ATR 3.0/9.0 للـ EGX (خطر override)
+- قرار المالك المطلوب: خطة ترحيل تفصيلية لـ 41 bypass route + 4 writers + 4 شاشات + master_analyzer THRESHOLDS + تشغيل backend لاختبار صفر تضارب
+
+
+---
+Task ID: 3a
+Agent: general-purpose (مهندس الواجهات - Pine analysis)
+Task: استخراج عناصر Pine Script V60.2
+
+Work Log:
+- قرأت worklog.md (آخر ~500 سطر — خطوط 63317-63816) + UNIFICATION-ALL-PHASES + Tasks 0/2a/2b/2c
+- قرأت ملف Pine Script كاملًا (1306 سطر): data/pine_scripts/EGX_Pro_Institutional_Engine_V60_2_Who_Is_Buying (1).pine
+- قرأت src/lib/unified-stock-data.ts (628 LOC) + src/lib/canonical-signal.ts (imports only)
+- قرأت vps-service/analyzers/master_analyzer.py L846-1085 (detect_who_is_buying) — المنفذ الإنتاجي لمنطق WHO IS BUYING (mirror دقيق لـ Pine L670-760)
+- قرأت vps-service/jobs/daily_predictor.py L2965-3080 — single-writer الكنسي اللي بيستدعي detect_who_is_buying + يخزّن النتيجة في predictions.analysis_json → تظهر في unified API كـ prediction.who_is_buying
+- لم أعدّل أي ملف إطلاقًا — تحليل static فقط (هذا الإدخال هو الإضافة الوحيدة المسموح بها)
+
+Stage Summary:
+- **ملف Pine Script V60.2 يحوي 23 قسم منطقي + لوحة dashboard بـ 29 صف (rows 0-28) + 9 alert conditions.** العنوان الرئيسي للمحرك هو "WHO IS BUYING? — مؤسسات vs أفراد" (Pine L669-763) — وله مرآة كنسية في الكود (master_analyzer.py::detect_who_is_buying L846-1085) تُخزَّن نتائجها في predictions.analysis_json → unified API `prediction.who_is_buying`.
+- **العناصر القابلة للعرض مباشرة من unified API (بدون حساب client-side):** الإشارة الكنسية (signal + signal_ar) + score + entry + 3 targets + stop_loss + R:R + support/resistance + RSI (Wilder) + MA50 + MA200 + ATR + trend + buy_pct + sell_pct + net_flow_egp + buy_value_m + sell_value_m + roc_10d + volume_ratio + accumulation + money_flow + phase + who_is_buying + analysis_reason + hmm_regime. (إجمالي ~22 عنصرًا).
+- **العناصر التي لا تُحسب في unified API وتحتاج حساب client-side أو إسقاطها:** Ichimoku Cloud (5 خطوط: Tenkan/Kijun/SenkouA/SenkouB/Cloud state) + MACD (3 خطوط: line/signal/hist + bull/bear state) + EMA10/EMA20/EMA50 (unified يوفّر MA50/MA200 فقط — EMA50 ≠ SMA50) + Bollinger Bands (3 خطوط + squeeze/expansion) + Pivot R1/R2/R3/S1/S2/S3 (Traditional Pivot) + OBV + CMF + MFI + VWAP + POC + DNA Projection (3 targets) + dynamic swing pivots (rr_sup1/2/3, rr_res1/2/3) + Wyckoff phase (narrow range + RSI divergence) + Smart Money footprints (smart_buy/smart_sell/absorption/distribution) + Fake Rise Detector + AD phase + MTF H1 + Order Blocks (OB) boxes + FVG. (إجمالي ~20 عنصرًا يحتاج حساب client-side).
+- **التوصية لـ #trading-chart:** استخدم unified API لكل ما هو canonical (signal/score/levels/entry/stop/who_is_buying/analysis_reason) — ده المطابق 100% للـ Pine. أما المؤشرات التكميلية (Ichimoku/MACD/Bollinger/Pivot/OBV/CMF/MFI/VWAP/DNA/OB/Wyckoff) فينصح بـ (أ) حسابها client-side من نفس price_history_points المستخرجة من unified (تفاديًا للتضارب مع master_score)، أو (ب) إسقاطها نهائيًا إن لم تكن حرجة للقرار، لأن master_score الإنتاجي بُني على عدد محدود من المُدخلات وليس كلها (Pine L866-884 يكشف أن weights تُطبَّق على 15 مُدخل فقط من ضمن 30+ عنصرًا معروضًا).
+*End of Task 3a — general-purpose (مهندس الواجهات) — read-only Pine Script analysis*
+
+---
+Task ID: TRADING-CHART-V60.2 (المدير العام — تطبيق Pine Script logic)
+Agent: المدير العام (Z.ai Code) + فريق (مهندس الواجهات + مهندس التوحيد + محلل كمي)
+Task: ربط شاشة #trading-chart بمنطق Pine Script V60.2 (WHO IS BUYING) + بيانات المحرك الموحّد
+
+Work Log:
+- سحب التحديثات من GitHub فشل (التوكن revoked — المالك اتخذ الإجراء الأمني)
+- قراءة ملف Pine Script كاملًا (1306 سطر، 100 عنصر مرئي عبر 23 قسم) — Task 3a
+- استخراج خريطة مطابقة: 19 عنصر متاح مباشرة من unified API + 63 يحتاجون client-side
+- قراءة SingleStockAnalysisView.tsx (1400 سطر) — اكتشفتها تستهلك /api/v2/chart/full-analysis (legacy) بدون canonical
+- قراءة unified-stock-data.ts (627 سطر) — تأكدت توفر كل الحقول الكنسية
+- إنشاء db/stocks.db + db/predictions.db بـ schema مطابق (فارغة — احترام Rule 27 NO-FAKE-DATA)
+- تثبيت 1150 package عبر bun install (84s)
+- تعديل SingleStockAnalysisView.tsx:
+  * +import CanonicalWhoIsBuyingBanner
+  * +state: canonical + canonicalLoading
+  * +fetch موازٍ لـ /api/stocks/[ticker]/unified داخل fetchData
+  * +إدراج البانر قبل predictionContext banner
+- إنشاء CanonicalWhoIsBuyingBanner.tsx (380 LOC جديد): يعرض
+  * WHO IS BUYING (prediction.who_is_buying — mirror Pine L669-763)
+  * الإشارة الكنسية (canonical.signal_ar — thresholds 78/65/55/40/25)
+  * master_score + source badge (fresh vs prediction)
+  * money_flow (5 مستويات مطابقة Pine L353-366) + accumulation + phase
+  * مستويات الدخول/الأهداف الثلاثة/الوقف/R:R/الثقة
+  * RSI (Wilder) + ATR + support/resistance + HMM regime
+  * analysis_reason (التعليق التحليلي العربي)
+  * net_flow + buy_value_m/sell_value_m من radar
+- إنشاء src/lib/indicators/rsi.ts (PURE TS، لا DB deps) — فصل computeRSI الكنسي
+  عن unified-stock-data.ts (الذي يستورد better-sqlite3 ويكسر client bundle)
+- إعادة توجيه client components (CryptoAdvancedAnalysisView + EntryTimingSimulator)
+  للاستيراد من indicators/rsi.ts بدل unified-stock-data.ts
+- تشغيل dev server (Next.js 14.2.28) — جاهز في 2.1s
+- التحقق: GET / يرجع 200 ✅، GET /api/stocks/PHDC/unified يرجع 404 صحيح (DB فارغة)
+
+Stage Summary (بالأرقام):
+- ملفات جديدة: 2 (CanonicalWhoIsBuyingBanner.tsx 380 LOC + indicators/rsi.ts 95 LOC)
+- ملفات معدّلة: 3 (SingleStockAnalysisView.tsx + CryptoAdvancedAnalysisView.tsx + EntryTimingSimulator.tsx)
+- إجمالي LOC المُضافة: ~480
+- الـ canonical fetch موازٍ (لا يحجب الـ full-analysis الحالي) — توافق تام
+- كل القيم من getUnifiedStockData() — لا حساب مالي في الواجهة (Rule 73)
+- مطابقة Pine V60.2: who_is_buying (mirror في master_analyzer.py L846-1085) + signal_ar + money_flow + accumulation + phase + analysis_reason
+- إصلاح bug سابق: فصل computeRSI عن better-sqlite3 layer (كان يكسر client bundle)
+- لا push على GitHub (pushurl = "no-push-allowed")
+- لا بيانات وهمية (DBs فارغة، Rule 27)
+- الحمايات لم تُلمس (لم يُعدّل كود الإنتاج/Python)
+- الحالة: الكود صحيح ومُترجم بنجاح؛ التحقق البصري الكامل يحتاج DBs حقيقية (على VPS الإنتاجي)
+
+ما بقي مفتوحًا:
+- سحب التحديثات الجديدة من GitHub يحتاج توكن جديد (القديم revoked)
+- التحقق البصري الكامل يحتاج DBs EGX حقيقية (توجد على VPS فقط)
+- اقتراح: إضافة canonical-signal.ts thresholds لـ master_analyzer.py THRESHOLDS (P0 من Task 2a)
