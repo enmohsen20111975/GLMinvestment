@@ -330,22 +330,36 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
       path.join(PROJECT_ROOT, 'db', 'predictions.db'),
       { readonly: true, fileMustExist: true }
     );
-    // MULTI-MARKET-AUDIT (2026-10-07): dropped the `market IN ('EGX','مصر')`
-    // filter that was silently returning NULL predictions for every non-EGX
-    // ticker (TADAWUL/KSE/QSE/US/CRYPTO/GOLD). The DB column `market` is also
-    // historically noisy (e.g. many EGX tickers were mislabeled 'US' during the
-    // egx_investment_migration), so filtering ON market is unsafe. `ticker`
-    // alone is sufficient — it is the predictions PK plus prediction_date.
+    // DEEP-MARKET-SEPARATION (Task DEEP-MARKET-SEPARATION-AUDIT, Rule 73)
+    // قبل كده شيلنا الـ market filter كلياً (كان بـ يرفض non-EGX tickers).
+    // بس الـ audit كشف إن في 15 ticker متكررين بين EGX و US في predictions.db
+    // (بسبب migration قديم خربان). شيلنا الفلتر كلياً → بترجّع prediction غلط.
+    //
+    // الحل: نفلتر بـ market بتاع السهم من stocks.db (موثوق) مش من predictions.db
+    // (اللي فيه data خربانة). + نـ map العربي لـ English.
+    const stockMarket = String(stock?.market || '').trim();
+    const marketVariants: string[] = [];
+    if (stockMarket === 'EGX' || stockMarket === 'مصر') {
+      marketVariants.push('EGX', 'مصر');
+    } else if (stockMarket) {
+      marketVariants.push(stockMarket);
+    }
+    // بناء WHERE clause
+    const marketFilter = marketVariants.length > 0
+      ? `AND market IN (${marketVariants.map(() => '?').join(',')})`
+      : '';
+    const marketParams = marketVariants.length > 0 ? marketVariants : [];
+
     prediction = (predDb
       .prepare(`
         SELECT id, signal, signal_type, entry_price, target_price, target_price_2,
                stop_loss, master_score, risk_reward, confidence, prediction_date,
                atr_at_entry, analysis_json, status
         FROM predictions
-        WHERE ticker = ?
+        WHERE ticker = ? ${marketFilter}
         ORDER BY prediction_date DESC LIMIT 1
       `)
-      .get(tickerUpper) ?? null) as PredictionRow | null;
+      .get(tickerUpper, ...marketParams) ?? null) as PredictionRow | null;
     predDb.close();
   } catch (e) {
     console.error('[unified-stock-data] predictions.db read failed:', e);

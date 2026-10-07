@@ -100,11 +100,14 @@ export async function GET(req: NextRequest) {
   const tracking = await loadTracking();
 
   // Load live prices from stocks.db so radar items ALWAYS reflect the active session
+  // FIX (Task DEEP-MARKET-SEPARATION): فلترة بـ market عشان ميبقاش في تداخل بين أسواق
   const liveMap = new Map<string, { current_price: number; change_percent: number; volume?: number; name_ar?: string }>();
   try {
     const dbPath = path.join(PROJECT_ROOT, 'db', 'stocks.db');
     const db = new Database(dbPath, { readonly: true });
-    const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar FROM stocks WHERE current_price > 0`).all() as any[];
+    // DEEP-MARKET-SEPARATION: فلترة بـ market بتاع السوق المختار
+    const marketFilter = market === 'EGX' ? `AND market IN ('EGX','مصر')` : `AND market = '${market}'`;
+    const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar FROM stocks WHERE current_price > 0 ${marketFilter}`).all() as any[];
     for (const r of liveRows) {
       if (r.ticker) {
         liveMap.set(String(r.ticker).toUpperCase(), r);
