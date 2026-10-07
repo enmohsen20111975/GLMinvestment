@@ -62998,3 +62998,31 @@ Next actions (for follow-up task, NOT executed in this audit):
 6. Create missing `analyzers/technical_analyzer.py` OR update Rule 67 docs to remove the broken reference (canonical calc_vwap/calc_obv/detect_regime).
 ---
 *End of DEEP-AUDIT-ALL-ENGINES — general-purpose sub agent — Rule 67 (CALCULATION-CANONICAL) + Rule 27 (NO-FAKE-DATA)*
+
+---
+Task ID: UNIFICATION-PHASE-0-AND-1-COMPLETE
+Agent: main (with colleague guidance)
+Task: تنفيذ المرحلة 0 + المرحلة 1 من خطة التوحيد الجذرية
+
+Work Log:
+- المرحلة 0 (إخفاء الشارات):
+  * ComprehensiveStockAnalysis.tsx: شيل Board + Hunter Cards (-120 LOC)
+  * SpecialistAnalysisView.tsx: شيل 4 sub-engine API calls (-30 LOC)
+  * UnifiedPublishButton.tsx: شيل 6 client-side indicators (-50 LOC)
+  * StockDetail.tsx: شيل fabricated signal counts (-25 LOC)
+  * MaestroWidget.tsx + DashboardView.tsx: تعطيل كامل
+
+- المرحلة 1 (توحيد العتبات + حداثة + اختبار):
+  * engine_settings.py: +6 canonical thresholds (78/65/55/40/25) + institutional thresholds متطابقة
+  * honest-tracking/list/route.ts: +freshnessGate (PENDING ≤ 48h)
+  * scripts/unification_test.py (NEW, 213 LOC): اختبار آلي يضرب 5 endpoints
+
+Stage Summary:
+- 5 commits على GitHub (2591485 + c768e57 + 514d1c2 + ba5c61a + 9eeb00a + a5c2d1a)
+- كل الشاشات بتعرض canonical signal واحد فقط (مش 7 شارات)
+- كل engines بتستخدم نفس الـ thresholds (78/65/55/40/25)
+- predictions القديمة (>48h) مش بتعرض للـ PENDING
+- اختبار آلي يكتشف التناقضات
+
+التالي: المرحلة 2 (توحيد RSI + قتل Maestro نهائياً)
+
