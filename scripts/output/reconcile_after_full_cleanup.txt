@@ -1,0 +1,47 @@
+[INFO] predictions.db:   /home/z/my-project/db/predictions.db
+[INFO] price_history.db: /home/z/my-project/db/price_history.db
+[INFO] READ-ONLY mode (URI ?mode=ro) — no DB writes will occur.
+
+[1/4] Fetched 1213 closed predictions.
+[2/4] Fetching price history for 80 distinct tickers (batched per-ticker)...
+      Price-history rows cached for 79 / 80 tickers.
+
+========================================================================
+[3/4] RECONCILIATION SUMMARY
+========================================================================
+Total closed predictions checked : 1213
+  MATCH (recorded == actual)      : 698  (57.54%)
+  MISMATCH (recorded != actual)   : 478  (39.41%)
+  INSUFFICIENT_DATA               : 37  (3.05%)
+
+Mismatches by type (recorded_to_actual):
+  EXPIRED_to_STOPPED               : 183
+  TARGET_HIT_to_EXPIRED            : 94
+  EXPIRED_to_TARGET_HIT            : 90
+  TARGET_HIT_to_STOPPED            : 60
+  STOPPED_to_EXPIRED               : 28
+  STOPPED_to_TARGET_HIT            : 23
+
+Anomalies (exit_date < prediction_date etc.): 0
+
+Top 10 mismatches (by largest |recorded actual_return|):
+------------------------------------------------------------------------
+id      ticker   pred_date   recorded     actual           entry    target     stop   max_high    min_low     ret%
+------------------------------------------------------------------------
+50281   PHDC     2025-10-09  TARGET_HIT   EXPIRED           6.12     19.05     5.76      16.43       6.11  +119.61
+50475   ABUK     2025-12-03  TARGET_HIT   EXPIRED          45.37    136.21    42.67     124.63      45.18  +106.52
+50470   ABUK     2025-12-02  TARGET_HIT   EXPIRED          45.57    136.25    42.86     124.63      45.18  +105.62
+50465   ABUK     2025-12-01  TARGET_HIT   EXPIRED          45.62    136.26    42.91     124.63      45.18  +105.39
+50481   ABUK     2025-12-04  TARGET_HIT   EXPIRED          45.64    136.26    42.93     124.63      45.30  +105.30
+50461   ABUK     2025-11-30  TARGET_HIT   EXPIRED          45.94    136.32    43.20     124.63      45.18  +103.96
+50455   ABUK     2025-11-27  TARGET_HIT   EXPIRED          46.00    136.34    43.26     124.63      45.18  +103.70
+50451   ABUK     2025-11-26  TARGET_HIT   EXPIRED          46.01    136.34    43.27     124.63      45.18  +103.65
+50415   ABUK     2025-11-17  TARGET_HIT   EXPIRED          46.04    136.34    43.30     124.63      45.18  +103.52
+50446   ABUK     2025-11-25  TARGET_HIT   EXPIRED          46.12    136.36    43.37     124.63      45.18  +103.17
+
+[4/4] Wrote JSON report: /home/z/my-project/scripts/output/hit_target_reconciliation_20260927T162110Z.json
+[4/4] Wrote SQL fixes : /home/z/my-project/scripts/output/hit_target_fixes_20260927T162110Z.sql
+
+========================================================================
+DONE. checked=1213  match=698 (57.54%)  mismatch=478 (39.41%)  insufficient=37
+========================================================================

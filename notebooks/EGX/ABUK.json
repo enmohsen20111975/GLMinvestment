@@ -1,0 +1,71 @@
+{
+  "symbol": "ABUK",
+  "name_ar": "ابوقير للاسمدة والصناعات الكيماوية",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 4,
+  "identity": {
+    "is_index_related": true,
+    "related_index": "EGX30",
+    "liquidity_profile": "high",
+    "free_float_note": "",
+    "ownership_concentration": "low",
+    "is_story_stock": false,
+    "is_zombie_prone": false,
+    "notes": "أبو قير للأسمدة — سهم قطاعي قوي. بيتحرك مع أسعار الغاز والأسمدة العالمية."
+  },
+  "price_behavior": {
+    "typical_correction_pct": 16.2,
+    "typical_correction_range": [
+      7.2,
+      27.5
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": false,
+    "respects_key_levels": true,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "",
+    "notes": "التصحيحات عميقة (15-20%) لكن بيرتد بقوة. حساس لأسعار اليوريا."
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 5,
+      "drop_range": [
+        4,
+        7
+      ],
+      "behavior_before_ex": "",
+      "notes": "توزيعات سخية. نزول يوم الاستحقاق واضح."
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [],
+  "learned_lessons": [
+    {
+      "date": "2026-06-01",
+      "type": "success",
+      "summary": "دخل بعد تصحيح 16% من القمة + حجم هادي، طلع 18%",
+      "lesson": "يحترم التصحيح 15-18% + حجم هادي = دخول صحيح"
+    }
+  ],
+  "machine_summary": {
+    "typical_correction_pct": 16,
+    "max_expected_correction_pct": 22,
+    "liquidity_profile": "high",
+    "danger_level": 2,
+    "preferred_entry_style": "correction_or_grab",
+    "avoid_chase": true,
+    "distribution_sensitivity": "medium"
+  }
+}

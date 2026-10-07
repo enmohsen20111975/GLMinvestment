@@ -1,0 +1,76 @@
+{
+  "symbol": "ISPH",
+  "name_ar": "ابن سينا فارما",
+  "market": "EGX",
+  "sector": "",
+  "last_updated": "2026-09-01",
+  "version": 4,
+  "identity": {
+    "is_index_related": false,
+    "related_index": null,
+    "liquidity_profile": "very_low",
+    "free_float_note": "",
+    "ownership_concentration": "high",
+    "is_story_stock": true,
+    "is_zombie_prone": false,
+    "notes": "إعمار للمواد الغذائية — سهم خفيف جداً. ملعوب. بيتحرك بعنف."
+  },
+  "price_behavior": {
+    "typical_correction_pct": 14.8,
+    "typical_correction_range": [
+      8.9,
+      23.2
+    ],
+    "avg_up_move_after_correction_pct": 0,
+    "moves_violently_with_volume": true,
+    "respects_key_levels": false,
+    "gap_behavior": "fills_most_gaps",
+    "ramadan_behavior": "",
+    "notes": "بيتحرك بعنف مع أي حجم. التصحيح ممكن 25%+. فخاخ متكررة."
+  },
+  "liquidity_and_sector": {
+    "liquidity_sensitivity": "medium",
+    "leads_sector": false,
+    "follows_sector": true,
+    "follows_specific_stock": null,
+    "sector_beta_note": "",
+    "notes": ""
+  },
+  "events_behavior": {
+    "dividend": {
+      "typical_ex_date_drop_pct": 0,
+      "drop_range": [
+        0,
+        0
+      ],
+      "behavior_before_ex": "",
+      "notes": ""
+    },
+    "rights_issue_history": [],
+    "capital_increase_history": [],
+    "other_recurring_events": []
+  },
+  "danger_flags": [
+    "concentrated_ownership",
+    "story_stock",
+    "low_float_volatile",
+    "distributes_hard_after_pump"
+  ],
+  "learned_lessons": [
+    {
+      "date": "2026-03-10",
+      "type": "failure",
+      "summary": "دخل بعد قفزة 25%، توزيع قاسي -18%",
+      "lesson": "سهم خفيف جداً — بيتحرك بعنف. danger_level=5"
+    }
+  ],
+  "machine_summary": {
+    "typical_correction_pct": 20,
+    "max_expected_correction_pct": 35,
+    "liquidity_profile": "very_low",
+    "danger_level": 5,
+    "preferred_entry_style": "grab_only",
+    "avoid_chase": true,
+    "distribution_sensitivity": "high"
+  }
+}
