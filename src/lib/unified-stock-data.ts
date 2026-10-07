@@ -330,13 +330,19 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
       path.join(PROJECT_ROOT, 'db', 'predictions.db'),
       { readonly: true, fileMustExist: true }
     );
+    // MULTI-MARKET-AUDIT (2026-10-07): dropped the `market IN ('EGX','مصر')`
+    // filter that was silently returning NULL predictions for every non-EGX
+    // ticker (TADAWUL/KSE/QSE/US/CRYPTO/GOLD). The DB column `market` is also
+    // historically noisy (e.g. many EGX tickers were mislabeled 'US' during the
+    // egx_investment_migration), so filtering ON market is unsafe. `ticker`
+    // alone is sufficient — it is the predictions PK plus prediction_date.
     prediction = (predDb
       .prepare(`
         SELECT id, signal, signal_type, entry_price, target_price, target_price_2,
                stop_loss, master_score, risk_reward, confidence, prediction_date,
                atr_at_entry, analysis_json, status
         FROM predictions
-        WHERE ticker = ? AND market IN ('EGX', 'مصر')
+        WHERE ticker = ?
         ORDER BY prediction_date DESC LIMIT 1
       `)
       .get(tickerUpper) ?? null) as PredictionRow | null;
@@ -346,17 +352,49 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
   }
 
   // ─── Step 3: radar cache JSON ─────────────────────────────────────────
+  // MULTI-MARKET-AUDIT (2026-10-07): the previous code hardcoded
+  // `maker_radar_EGX_${stamp}.json` — so for any non-EGX ticker the radar
+  // block always came back null even when a maker_radar_TADAWUL_*.json
+  // (or KSE/QSE/US/CRYPTO/GOLD) cache existed on disk. We now look up the
+  // ticker's market from the stocks row we just read and scan the matching
+  // per-market cache files first, falling back to EGX for legacy data.
   let radarData: RadarEntry | null = null;
   try {
-    const candidates: string[] = [];
+    const stockMarketRaw = String(stock.market ?? 'EGX').trim().toUpperCase() || 'EGX';
+    // Map stocks.db.market values to the cache filename code used by
+    // maker_radar.py / radar-cache.ts (e.g. مصر → EGX, السعودية → TADAWUL).
+    const MARKET_CODE_MAP: Record<string, string> = {
+      'EGX': 'EGX', 'مصر': 'EGX', 'EGYPT': 'EGX',
+      'TADAWUL': 'TADAWUL', 'السعودية': 'TADAWUL', 'KSA': 'TADAWUL', 'SA': 'TADAWUL',
+      'KSE': 'KSE', 'الكويت': 'KSE', 'KUWAIT': 'KSE',
+      'QSE': 'QSE', 'قطر': 'QSE', 'QATAR': 'QSE',
+      'US': 'US', 'USA': 'US',
+      'CRYPTO': 'CRYPTO', 'كريبتو': 'CRYPTO',
+      'GOLD': 'GOLD', 'ذهب': 'GOLD',
+    };
+    const marketCodes = new Set<string>();
+    const primary = MARKET_CODE_MAP[stockMarketRaw] ?? stockMarketRaw;
+    marketCodes.add(primary);
+    // Always also try EGX as a legacy fallback (older caches had no market suffix).
+    marketCodes.add('EGX');
+
     const today = new Date();
+    const candidates: string[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const stamp = d.toISOString().slice(0, 10).replace(/-/g, '');
-      candidates.push(
-        path.join(PROJECT_ROOT, 'scripts', 'output', `maker_radar_EGX_${stamp}.json`)
-      );
+      for (const code of marketCodes) {
+        candidates.push(
+          path.join(PROJECT_ROOT, 'scripts', 'output', `maker_radar_${code}_${stamp}.json`)
+        );
+        // Legacy EGX-only pattern (no market code in filename) — only for EGX.
+        if (code === 'EGX') {
+          candidates.push(
+            path.join(PROJECT_ROOT, 'scripts', 'output', `maker_radar_${stamp}.json`)
+          );
+        }
+      }
     }
 
     for (const cachePath of candidates) {
