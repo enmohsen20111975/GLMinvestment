@@ -1280,9 +1280,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                     if (invested <= 0 && weightGrams > 0 && purchasePricePerGram > 0) {
                       invested = weightGrams * purchasePricePerGram;
                     }
-                    const goldPricesObj = goldPrices || { '24k': 4200, '21k': 3675, '18k': 3150 };
+                    // UNIFY-FIX (Rule 27 NO-FAKE-DATA): أزلت أسعار الذهب الوهمية (4200/3675/3150)
+                    // لو goldPrices = null → اعرض "— بيانات غير متاحة" بدل القيم الوهمية
+                    const goldPricesObj = goldPrices || null;
                     const livePricePerGram = Number(asset.current_price_per_gram) ||
-                      (karat === 24 ? goldPricesObj['24k'] : karat === 21 ? goldPricesObj['21k'] : karat === 18 ? goldPricesObj['18k'] : goldPricesObj['24k']);
+                      (goldPricesObj ? (karat === 24 ? goldPricesObj['24k'] : karat === 21 ? goldPricesObj['21k'] : karat === 18 ? goldPricesObj['18k'] : goldPricesObj['24k']) : 0);
 
                     // Current Value fallback
                     let currVal = Number(asset.current_value || 0);

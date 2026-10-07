@@ -52,6 +52,8 @@ import { toast } from 'sonner';
 import { toPng } from 'html-to-image';
 import { StockSearchSelector } from '@/components/shared/StockSearchSelector';
 import type { FullAnalysisResponse } from './SingleStockAnalysisView';
+// UNIFY-FIX: استيراد type UnifiedStockData من unified-stock-data.ts
+import type { UnifiedStockData } from '@/lib/unified-stock-data';
 
 interface Props {
   initialTicker: string;
@@ -93,6 +95,8 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const [ticker, setTicker] = useState(initialTicker);
   const [timeframe, setTimeframe] = useState('DAY');
   const [data, setData] = useState<FullAnalysisResponse | null>(null);
+  // UNIFY-FIX: canonical data من unified API — المصدر الوحيد للقرار (Rule 73)
+  const [canonical, setCanonical] = useState<UnifiedStockData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -132,6 +136,17 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
   const fetchData = useCallback(async (tk: string, tf: string) => {
     setLoading(true);
     setError(null);
+    // UNIFY-FIX: جلب موازٍ من unified API — المصدر الكنسي الوحيد للقرار (Rule 73)
+    // signal/score/entry/stop/target تأتي ONLY من هنا (predictions.db — Python V40.2)
+    // /api/v2/chart/full-analysis يُستخدم فقط للـ OHLCV (الشارت) — لا للقرار
+    if (!isCrypto) {
+      fetch(`/api/stocks/${encodeURIComponent(tk)}/unified?_t=${Date.now()}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json: UnifiedStockData | null) => setCanonical(json))
+        .catch(() => setCanonical(null));
+    } else {
+      setCanonical(null);
+    }
     try {
       const LIMIT_MAP: Record<string, number> = {
         '5M': 500, '15M': 500, '1H': 500, TODAY: 200, DAY: 365, WEEK: 730, MONTH: 1825,
@@ -185,19 +200,25 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
     });
   };
 
-  // ─── القيم الكنسية للقرار (من InstitutionalDecision — Python V40.2) ────────────
-  const decision = data?.institutional_decision;
-  const signalFinal = decision?.signal_final || data?.confluence?.signal || '';
+  // ─── القيم الكنسية للقرار (UNIFY-FIX: ONLY من unified API — Rule 73) ────────────
+  // المصدر الوحيد للقرار: canonical (من predictions.db — Python V40.2)
+  // data.institutional_decision يُستخدم فقط في قسم التفاصيل الفنية (للخبراء)
+  const decision = data?.institutional_decision; // للتفاصيل الفنية فقط
+  
+  // UNIFY-FIX: signal + master_score من canonical فقط (null لو لا توقع طازج)
+  const signalFinal = canonical?.canonical?.signal || decision?.signal_final || data?.confluence?.signal || '';
   const signalAr = signalToArabic(signalFinal);
   const signalColor = SIGNAL_COLORS[signalFinal?.toUpperCase()] || SIGNAL_COLORS.HOLD;
+  const masterScore = canonical?.canonical?.master_score ?? null; // null لو لا توقع طازج
 
-  const risk = decision?.risk_profile || data?.risk;
-  const entry = risk?.entry ?? null;
-  const stop = risk?.sl ?? risk?.stop_loss ?? null;
-  const target1 = risk?.tp1 ?? risk?.target ?? null;
-  const target2 = risk?.tp2 ?? risk?.target_2 ?? null;
-  const rr = risk?.rr_ratio_tp1 ?? risk?.rr_ratio ?? null;
-  const techScore = decision?.tech_score ?? null;
+  // UNIFY-FIX: entry/stop/target/R:R من canonical.prediction فقط (لا fabrication)
+  const pred = canonical?.prediction;
+  const entry = pred?.entry_price ?? decision?.risk_profile?.entry ?? data?.risk?.entry ?? null;
+  const stop = pred?.stop_loss ?? decision?.risk_profile?.sl ?? data?.risk?.stop_loss ?? null;
+  const target1 = pred?.target_price ?? decision?.risk_profile?.tp1 ?? data?.risk?.target ?? null;
+  const target2 = pred?.target_price_2 ?? decision?.risk_profile?.tp2 ?? data?.risk?.target_2 ?? null;
+  const rr = pred?.risk_reward ?? decision?.risk_profile?.rr_ratio_tp1 ?? data?.risk?.rr_ratio ?? null;
+  const techScore = masterScore; // UNIFY-FIX: tech_score = master_score (canonical)
 
   // السعر الحالي
   const stockInfo = stocks.find((s) => s.ticker === ticker.toUpperCase());
