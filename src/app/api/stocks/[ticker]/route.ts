@@ -3,6 +3,11 @@ import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import { getStockByTickerFallback } from '@/lib/flutter-sqlite-fallback';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { checkTrialNotExpired } from '@/lib/subscription-gate';
+// ─── UNIFIED-DATA-CONTRACT (Task UNIFIED-API-V3, Rule 72) ────────────────
+// قبل كده: /api/stocks/[ticker] بـ يجيب RSI/signal من Python backend فقط.
+// النتيجة: CANA بـ يطلع RSI=56.8 هنا لكن RSI=79.6 في شاشة comprehensive.
+// الحل: نـ inject canonical values من getUnifiedStockData() في الـ response.
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +60,9 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
       const res = await fetch(targetUrl, { signal: AbortSignal.timeout(5000), cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        return NextResponse.json(applyFairValueGate(data, fairValueLocked));
+        // UNIFIED-DATA-CONTRACT: inject canonical values BEFORE paywall gate
+        const unifiedData = injectUnifiedData(data, ticker);
+        return NextResponse.json(applyFairValueGate(unifiedData, fairValueLocked));
       }
     } catch (_err) {
       // Try next fallback
@@ -65,7 +72,9 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   // ── FLUTTER-FULL-AUDIT: stocks.db fallback (Python unreachable) ──
   const fallback = getStockByTickerFallback(ticker);
   if (fallback) {
-    return NextResponse.json(applyFairValueGate(fallback, fairValueLocked));
+    // UNIFIED-DATA-CONTRACT: inject canonical values into fallback too
+    const unifiedFallback = injectUnifiedData(fallback, ticker);
+    return NextResponse.json(applyFairValueGate(unifiedFallback, fairValueLocked));
   }
 
   return NextResponse.json({
@@ -74,6 +83,97 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
     ticker: ticker.toUpperCase(),
     source: 'sqlite_fallback_empty',
   }, { status: 200 });
+}
+
+/**
+ * Inject canonical unified values into the stock response.
+ * (UNIFIED-DATA-CONTRACT, Task UNIFIED-API-V3, Rule 72)
+ *
+ * This guarantees that EVERY field that varies across screens (RSI, signal,
+ * support, resistance, accumulation, money_flow, master_score) is sourced from
+ * the SAME canonical computation, regardless of which backend produced the
+ * rest of the response.
+ *
+ * This is the ROOT-CAUSE fix for: "CANA shows RSI=79.6 in one screen,
+ * RSI=56.8 in another, RSI=50.0 in a third".
+ */
+function injectUnifiedData(data: unknown, ticker: string): unknown {
+  const unified = getUnifiedStockData(ticker);
+  if (!unified) return data;
+
+  const inject = (rec: Record<string, unknown>): Record<string, unknown> => {
+    const next = { ...rec };
+
+    // Override technical fields with canonical values
+    next.rsi = unified.technical.rsi ?? next.rsi;
+    next.rsi_source = unified.technical.rsi_source;
+    next.ma_50 = unified.technical.ma_50 ?? next.ma_50;
+    next.ma_200 = unified.technical.ma_200 ?? next.ma_200;
+    next.support = unified.technical.support ?? next.support;
+    next.resistance = unified.technical.resistance ?? next.resistance;
+    next.high_52w = unified.technical.high_52w ?? next.high_52w;
+    next.low_52w = unified.technical.low_52w ?? next.low_52w;
+    next.trend = unified.technical.trend ?? next.trend;
+    next.atr = unified.technical.atr ?? next.atr;
+
+    // Override signal with canonical classification
+    next.signal = unified.canonical.signal;
+    next.signal_ar = unified.canonical.signal_ar;
+    next.master_score = unified.canonical.master_score;
+    next.accumulation = unified.canonical.accumulation;
+    next.money_flow_state = unified.canonical.money_flow;
+    next.phase = unified.canonical.phase;
+
+    // Override current_price with fresh value
+    if (unified.stock.current_price != null) {
+      next.current_price = unified.stock.current_price;
+    }
+    if (unified.stock.change_percent != null) {
+      next.change_percent = unified.stock.change_percent;
+    }
+    if (unified.stock.last_update != null) {
+      next.last_update = unified.stock.last_update;
+    }
+
+    // Inject prediction if available (entry/target/stop)
+    if (unified.prediction) {
+      next.entry_price = unified.prediction.entry_price;
+      next.target_price = unified.prediction.target_price;
+      next.target_price_2 = unified.prediction.target_price_2;
+      next.stop_loss = unified.prediction.stop_loss;
+      next.prediction_date = unified.prediction.prediction_date;
+      next.analysis_reason = unified.prediction.analysis_reason;
+      next.who_is_buying = unified.prediction.who_is_buying;
+      next.hmm_regime = unified.prediction.hmm_regime;
+    }
+
+    // Inject radar buy_pct if available
+    if (unified.radar) {
+      next.buy_pct = unified.radar.buy_pct;
+      next.sell_pct = unified.radar.sell_pct;
+      next.radar_path = unified.radar.path;
+      next.under_microscope = unified.radar.under_microscope;
+      next.data_quality = unified.radar.data_quality;
+      next.staleness_days = unified.radar.staleness_days;
+    }
+
+    // Tag the response so frontend knows it's been unified
+    next.unified = true;
+    next.unified_source = unified.canonical.master_score_source;
+    return next;
+  };
+
+  if (Array.isArray(data)) {
+    return data.map((r) => (r && typeof r === 'object' ? inject(r as Record<string, unknown>) : r));
+  }
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    if (obj.stock && typeof obj.stock === 'object') {
+      return { ...obj, stock: inject(obj.stock as Record<string, unknown>) };
+    }
+    return inject(obj);
+  }
+  return data;
 }
 
 /**

@@ -28,6 +28,12 @@ import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import {
   getStockByTickerFallback,
 } from '@/lib/flutter-sqlite-fallback';
+// ─── UNIFIED-DATA-CONTRACT (Task UNIFIED-API-V3, Rule 72) ────────────────
+// قبل كده: publish-data route بـ يجيب RSI/signal/support من Python backend
+// أو stocks.db (ممكن يكون قديم). النتيجة: CANA بـ يطلع RSI=56.8 في publish-data
+// لكن RSI=79.6 في comprehensive و RSI=50.0 في stocks/[ticker].
+// الحل: نـ inject canonical values من getUnifiedStockData() في الـ response.
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
 import {
   getRadarDb,
   getRadarDbConfig,
@@ -310,6 +316,38 @@ export async function GET(
   if (!skipPython) {
     const py = await fetchPythonPublishData(tickerUpper, market);
     if (py && py.ticker) {
+      // UNIFIED-DATA-CONTRACT: inject canonical values into Python response
+      const unified = getUnifiedStockData(tickerUpper);
+      if (unified) {
+        // Override technical fields with canonical values
+        py.rsi = unified.technical.rsi ?? py.rsi;
+        py.ma_50 = unified.technical.ma_50 ?? py.ma_50;
+        py.ma_200 = unified.technical.ma_200 ?? py.ma_200;
+        py.support_level = unified.technical.support ?? py.support_level;
+        py.resistance_level = unified.technical.resistance ?? py.resistance_level;
+        py.signal = unified.canonical.signal as any;
+        py.signal_ar = unified.canonical.signal_ar;
+        py.master_score = unified.canonical.master_score;
+        py.accumulation = unified.canonical.accumulation;
+        py.money_flow_state = unified.canonical.money_flow;
+        py.phase = unified.canonical.phase;
+        if (unified.prediction) {
+          py.entry_price = unified.prediction.entry_price ?? py.entry_price;
+          py.target_price = unified.prediction.target_price ?? py.target_price;
+          py.target_price_2 = unified.prediction.target_price_2 ?? py.target_price_2;
+          py.stop_loss = unified.prediction.stop_loss ?? py.stop_loss;
+          py.analysis_reason = unified.prediction.analysis_reason ?? py.analysis_reason;
+          py.who_is_buying = unified.prediction.who_is_buying ?? py.who_is_buying;
+          py.hmm_regime = unified.prediction.hmm_regime ?? py.hmm_regime;
+        }
+        if (unified.radar) {
+          py.buy_pct = unified.radar.buy_pct ?? py.buy_pct;
+          py.sell_pct = unified.radar.sell_pct ?? py.sell_pct;
+        }
+        // Tag the response
+        py.unified = true;
+        py.unified_source = unified.canonical.master_score_source;
+      }
       return NextResponse.json({
         success: true,
         source: 'python',
