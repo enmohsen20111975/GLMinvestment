@@ -96,6 +96,28 @@ def main():
     conn = sqlite3.connect(str(STOCKS_DB))
     cur = conn.cursor()
 
+    # Task FIX-ORDERING-2026-10-07: أضف الأعمدة لو مش موجودة
+    # (maker_radar.py بـ يضيفهم بس لو اشتغل — لكن لو الـ backfill اشتغل قبله، لازم يضيفهم بنفسه)
+    print('→ التأكد من وجود أعمدة freshness في radar_signal_tracking')
+    cur.execute("PRAGMA table_info(radar_signal_tracking)")
+    existing_cols = {row[1] for row in cur.fetchall()}
+    new_cols = {
+        'data_date': 'TEXT',
+        'data_quality': 'TEXT',
+        'staleness_days': 'INTEGER',
+        'price_source': 'TEXT',
+        'live_price': 'REAL',
+        'daily_price': 'REAL',
+    }
+    for col_name, col_type in new_cols.items():
+        if col_name not in existing_cols:
+            try:
+                cur.execute(f"ALTER TABLE radar_signal_tracking ADD COLUMN {col_name} {col_type}")
+                print(f'  ✓ Added column {col_name} ({col_type})')
+            except Exception as e:
+                print(f'  ⚠️ Could not add column {col_name}: {e}')
+    conn.commit()
+
     # Find all pending entries with no data_quality (old rows before the schema upgrade)
     cur.execute("""
         SELECT id, ticker, signal_date, entry_price, reason, status

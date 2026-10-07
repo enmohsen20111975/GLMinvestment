@@ -274,22 +274,16 @@ print("=" * 70)
 PYEOF
 
 # ============================================================================
-# STEP 3 (Phase 2): تحديث stock_phase + market_indices
+# STEP 3 (Phase 2): تحديث stock_phase (آمن — SQL مباشرة، مش اعتماد على script غلط)
 # ============================================================================
-section "STEP 3 — تحديث stock_phase (43 يوم قديم) + market_indices"
+section "STEP 3 — تحديث stock_phase.last_close (SQL مباشرة)"
 
-# ابحث عن phase computer script
-PHASE_SCRIPT=$(find "$PROJECT_ROOT/scripts" "$PROJECT_ROOT/vps-service" -maxdepth 3 -name "*.py" 2>/dev/null | xargs grep -l "stock_phase\|compute_phase\|update_phase" 2>/dev/null | head -1)
-if [[ -n "$PHASE_SCRIPT" ]]; then
-    log "🎯 Found phase script: $PHASE_SCRIPT"
-    log "→ تشغيل $PHASE_SCRIPT ..."
-    python3 "$PHASE_SCRIPT" 2>&1 | tee -a "$LOG_FILE" || log "⚠️ Phase script فشل"
-else
-    log "⚠️ ما لقيناش phase script — هاتحديث يدوي:"
-    python3 - <<PYEOF 2>&1 | tee -a "$LOG_FILE"
+# Task FIX-ORDERING-2026-10-07: ما نعتمدش على find عشوائي — أعطينا script غلط.
+# الحل: SQL مباشر على stock_daily_prices.last close.
+python3 - <<PYEOF 2>&1 | tee -a "$LOG_FILE"
 import sqlite3
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime
 import os
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", str(Path.cwd())))
@@ -301,47 +295,78 @@ print("→ تحديث stock_phase.last_close من stock_daily_prices")
 stocks_db = sqlite3.connect(str(PROJECT_ROOT / 'db/stocks.db'))
 cur = stocks_db.cursor()
 
+# تحقق من وجود جدول stock_phase
+try:
+    cur.execute("SELECT COUNT(*) FROM stock_phase")
+    n_phase = cur.fetchone()[0]
+    print(f"  stock_phase: {n_phase} صف موجود")
+except Exception as e:
+    print(f"  ⚠️ جدول stock_phase مش موجود: {e}")
+    stocks_db.close()
+    exit(0)
+
 # تحديث stock_phase.last_close + last_close_date من آخر إغلاق متاح
-cur.execute("""
-    UPDATE stock_phase
-    SET last_close = (
-            SELECT sdp.close FROM stock_daily_prices sdp
-            WHERE sdp.ticker = stock_phase.ticker
+# Task FIX-COL-NAME: stock_phase يستخدم 'symbol' مش 'ticker'
+try:
+    cur.execute("""
+        UPDATE stock_phase
+        SET last_close = (
+                SELECT sdp.close FROM stock_daily_prices sdp
+                WHERE sdp.ticker = stock_phase.symbol
+                  AND sdp.close IS NOT NULL AND sdp.close > 0
+                ORDER BY sdp.price_date DESC LIMIT 1
+            ),
+            computed_at = (
+                SELECT sdp.price_date FROM stock_daily_prices sdp
+                WHERE sdp.ticker = stock_phase.symbol
+                  AND sdp.close IS NOT NULL AND sdp.close > 0
+                ORDER BY sdp.price_date DESC LIMIT 1
+            )
+        WHERE EXISTS (
+            SELECT 1 FROM stock_daily_prices sdp
+            WHERE sdp.ticker = stock_phase.symbol
               AND sdp.close IS NOT NULL AND sdp.close > 0
-            ORDER BY sdp.price_date DESC LIMIT 1
-        ),
-        last_close_date = (
-            SELECT sdp.price_date FROM stock_daily_prices sdp
-            WHERE sdp.ticker = stock_phase.ticker
-              AND sdp.close IS NOT NULL AND sdp.close > 0
-            ORDER BY sdp.price_date DESC LIMIT 1
         )
-    WHERE EXISTS (
-        SELECT 1 FROM stock_daily_prices sdp
-        WHERE sdp.ticker = stock_phase.ticker
-          AND sdp.close IS NOT NULL AND sdp.close > 0
-    )
-""")
-stocks_db.commit()
-print(f"  ✅ تم تحديث {cur.rowcount} صف في stock_phase (last_close + last_close_date)")
+    """)
+    stocks_db.commit()
+    print(f"  ✅ تم تحديث {cur.rowcount} صف في stock_phase (last_close + computed_at)")
+except Exception as e:
+    print(f"  ⚠️ خطأ في التحديث: {e}")
 
 # تحديث updated_at
-cur.execute("UPDATE stock_phase SET updated_at = ?", (datetime.now().isoformat(),))
-stocks_db.commit()
+try:
+    cur.execute("UPDATE stock_phase SET updated_at = ?", (datetime.now().isoformat(),))
+    stocks_db.commit()
+except Exception as e:
+    print(f"  ⚠️ خطأ في updated_at: {e}")
 
 # تحقق
-cur.execute("SELECT ticker, last_close, last_close_date FROM stock_phase WHERE ticker IN ('DTPP','HRHO') LIMIT 2")
-for r in cur.fetchall():
-    print(f"  ✅ {r[0]}: last_close={r[1]} date={r[2]}")
+try:
+    cur.execute("SELECT symbol, last_close, computed_at FROM stock_phase WHERE symbol IN ('DTPP','HRHO') LIMIT 5")
+    for r in cur.fetchall():
+        print(f"  ✅ {r[0]}: last_close={r[1]} date={r[2]}")
+except Exception as e:
+    print(f"  ⚠️ خطأ في التحقق: {e}")
 
 stocks_db.close()
 PYEOF
+
+# ============================================================================
+# STEP 4 (ترتيب صحيح): تشغيل maker_radar الأول — يضيف أعمدة freshness + يعيد توليد الإشارات
+# ============================================================================
+section "STEP 4 — تشغيل maker_radar.py الأول (يضيف أعمدة freshness قبل backfill)"
+
+if [[ -f "$PROJECT_ROOT/scripts/maker_radar.py" ]]; then
+    log "→ تشغيل maker_radar.py --market EGX (regenerate signals + add freshness columns)"
+    python3 "$PROJECT_ROOT/scripts/maker_radar.py" --market EGX --json-only 2>&1 | tail -30 | tee -a "$LOG_FILE" || log "⚠️ radar فشل"
+else
+    log "❌ scripts/maker_radar.py مش موجود"
 fi
 
 # ============================================================================
-# STEP 4: تشغيل radar backfill + verify
+# STEP 5 (بعد maker_radar): تشغيل radar backfill + verify
 # ============================================================================
-section "STEP 4 — تشغيل radar backfill + verify (إحنا اللي عملناه)"
+section "STEP 5 — تشغيل radar backfill + verify (بعد ما maker_radar ضاف الأعمدة)"
 
 if [[ -f "$PROJECT_ROOT/scripts/backfill_stale_radar_signals.py" ]]; then
     log "→ تشغيل backfill_stale_radar_signals.py"
@@ -351,16 +376,6 @@ fi
 if [[ -f "$PROJECT_ROOT/scripts/verify_radar_fix.py" ]]; then
     log "→ تشغيل verify_radar_fix.py"
     python3 "$PROJECT_ROOT/scripts/verify_radar_fix.py" 2>&1 | tee -a "$LOG_FILE" || log "⚠️ verify فشل"
-fi
-
-# ============================================================================
-# STEP 5: تشغيل radar بشكل كامل لإعادة توليد الإشارات بـ live prices
-# ============================================================================
-section "STEP 5 — تشغيل maker_radar.py لـ EGX (regenerate signals)"
-
-if [[ -f "$PROJECT_ROOT/scripts/maker_radar.py" ]]; then
-    log "→ تشغيل maker_radar.py --market EGX"
-    python3 "$PROJECT_ROOT/scripts/maker_radar.py" --market EGX --json-only 2>&1 | tail -30 | tee -a "$LOG_FILE" || log "⚠️ radar فشل"
 fi
 
 # ============================================================================
@@ -413,31 +428,45 @@ cur = db.cursor()
 print("  stock_daily_prices market distribution:")
 cur.execute("SELECT market, COUNT(*) FROM stock_daily_prices GROUP BY market")
 for r in cur.fetchall():
-    print(f"    market={r[0]:15s}: {r[1]:>8} صف")
+    # FIX: market column may be NULL — use safe formatting
+    mkt = r[0] if r[0] is not None else '(NULL)'
+    print(f"    market={mkt:15s}: {r[1]:>8} صف")
 
 print()
 print("  radar_signal_tracking status distribution:")
 cur.execute("SELECT status, COUNT(*) FROM radar_signal_tracking GROUP BY status ORDER BY 2 DESC")
 for r in cur.fetchall():
-    print(f"    status={r[0]:15s}: {r[1]:>6} صف")
+    st = r[0] if r[0] is not None else '(NULL)'
+    print(f"    status={st:15s}: {r[1]:>6} صف")
 
 print()
 print("  radar_signal_tracking data_quality distribution:")
 cur.execute("SELECT data_quality, COUNT(*) FROM radar_signal_tracking GROUP BY data_quality ORDER BY 2 DESC")
 for r in cur.fetchall():
-    print(f"    quality={r[0]:15s}: {r[1]:>6} صف")
+    q = r[0] if r[0] is not None else '(NULL)'
+    print(f"    quality={q:15s}: {r[1]:>6} صف")
 
 print()
 print("  آخر 3 إشارات DTPP:")
 cur.execute("SELECT signal_date, entry_price, daily_price, data_quality, status FROM radar_signal_tracking WHERE ticker='DTPP' ORDER BY signal_date DESC LIMIT 3")
 for r in cur.fetchall():
-    print(f"    {r[0]} entry={r[1]} daily={r[2]} quality={r[3]} status={r[4]}")
+    sd = r[0] or '?'
+    ep = r[1] if r[1] is not None else 0
+    dp = r[2] if r[2] is not None else 0
+    dq = r[3] or '?'
+    ss = r[4] or '?'
+    print(f"    {sd} entry={ep} daily={dp} quality={dq} status={ss}")
 
 print()
 print("  آخر 3 إشارات HRHO:")
 cur.execute("SELECT signal_date, entry_price, daily_price, data_quality, status FROM radar_signal_tracking WHERE ticker='HRHO' ORDER BY signal_date DESC LIMIT 3")
 for r in cur.fetchall():
-    print(f"    {r[0]} entry={r[1]} daily={r[2]} quality={r[3]} status={r[4]}")
+    sd = r[0] or '?'
+    ep = r[1] if r[1] is not None else 0
+    dp = r[2] if r[2] is not None else 0
+    dq = r[3] or '?'
+    ss = r[4] or '?'
+    print(f"    {sd} entry={ep} daily={dp} quality={dq} status={ss}")
 
 print()
 print("  stocks.close (كارثة #4) — عدد الصفوف بـ close=0:")
