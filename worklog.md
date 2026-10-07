@@ -64678,3 +64678,28 @@ Stage Summary:
 ما يحتاج المالك التحقق منه على السرفر:
 - v402_min_evidence_count في system_settings (لو=0 → كل HOLD يدخل DB)
 - إعادة تشغيل daily_predictor.py بعد git pull
+
+---
+Task ID: ALERTCIRCLE-FIX (المدير العام — إصلاح bug الشاشة)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح ReferenceError: AlertCircle is not defined (يكسر #trading-chart)
+
+Work Log:
+- المالك أبلغ: ReferenceError: AlertCircle is not defined في #trading-chart
+- السبب: في CONFLICT-FIX استبدلت AlertCircle بـ AlertTriangle في الـ import
+  لكن نسيت تحديث الاستخدام في getWhoIsBuyingStyle (L71)
+- الإصلاح: AlertCircle → AlertTriangle في L71
+- إنشاء check_v402_predictions.sh: سكربت بديل لـ sqlite3 (Python-based)
+  للمالك لأن sqlite3 غير مثبت على سرفره
+
+Stage Summary:
+- ملفات معدّلة: 1 (CanonicalWhoIsBuyingBanner.tsx L71)
+- ملفات جديدة: 1 (check_v402_predictions.sh)
+- bug مُصلح: ReferenceError: AlertCircle → AlertTriangle (مطابق للاستيراد)
+- التحقق: GET / → HTTP 200 ✅
+- القيود: لا حذف، لا push بدون إذن
+
+اكتشاف من نتائج السرفر:
+- V40.2 يعمل وينتج 3 توقعات حقيقية (GBCO/INSTITUTIONAL_BUY 91، MFPC/STRONG_BUY 90، RACC/STRONG_BUY)
+- risk_reward + who_is_buying الآن يُكتبان (الـ migration نجحت)
+- باقي الأسهم HOLD بسبب "insufficient vol data" (بيانات 2026-09-26 قديمة)
