@@ -61598,3 +61598,547 @@ Stage Summary:
 - ETEL has NO row in `data_engine.db.tab_technical_analysis` (a fourth silent inconsistency).
 - Recommended 5-phase unification plan starting with the 1-line bug fix in `scripts/maker_radar.py:507-517` (use money_flow.buy_pct/sell_pct instead of green/red day counting) → expected to immediately resolve the "تصريف" misclassification the customer saw.
 ---
+
+---
+Task ID: TELEGRAM-AUDIT-1
+Agent: Telegram Audit Sub-Agent (Z.ai Code)
+Task: Audit ALL Telegram bot/publishing code that sends stock information; verify data sources/calculations match web UI; check canonical_signal.py adoption.
+
+## Scope
+Found and inspected **28 Telegram-related source files** across three layers:
+1. Next.js API routes (4 files in `src/app/api/telegram/`)
+2. Next.js publishing components/lib (8 files in `src/modules/publishing/`)
+3. Python telegram service (14 files in `vps-service/telegram/` + `vps-service/api/telegram_routes.py` + `vps-service/analyzers/reports_engine.py` + `news-agent/sender/social_publisher.py`)
+
+## File Inventory — Data Sources & Fields Displayed
+
+| # | File | What it does | Stock data source | Fields displayed | Difference from web UI |
+|---|------|--------------|-------------------|------------------|------------------------|
+| 1 | `src/app/api/telegram/publish-stock/route.ts` | Sends image+caption to Bot API (sendPhoto→sendMessage fallback). Writes audit trail to predictions.db. | Frontend-supplied caption (no DB read); writes `was_published=1` to `predictions` table. | ticker, name_ar, caption (free-text), image. | Passthrough — but caption text is built client-side, so divergence comes from the caller. |
+| 2 | `src/app/api/telegram/post/route.ts` | Proxy to Python `:8010/api/telegram/post/{message,recommendation,daily-summary,top-recommendations,alert,market-open,market-close,custom}`. | Python backend. | Inherits Python. | Inherits Python divergences. |
+| 3 | `src/app/api/telegram/send-daily-report/route.ts` | Proxy to `:8010/api/telegram/send-daily-report?market=EGX\|CRYPTO`. | Python backend. | Inherits Python. | Inherits Python divergences. |
+| 4 | `src/app/api/telegram/[...path]/route.ts` | Catch-all reverse-proxy (multipart-safe) for `/api/telegram/*` → Python `:8010`. | Python backend. | Inherits Python. | Inherits Python divergences. |
+| 5 | `src/modules/publishing/components/StockPublisher.tsx` | Client component that calls `generatePublishText()` and POSTs image+caption to `/api/telegram/publish-stock`. | Caller-provided `StockPublishData` (recommendation, targetPrice1/2, stopLoss, rsi, sma20/50/200, buyPressure, sellPressure, accumulation_label, supportLevels, resistanceLevels). | All of the above. | Uses RECOMMENDATION_TEXT 5-level map → see #10. |
+| 6 | `src/modules/publishing/components/UnifiedPublishButton.tsx` | Same flow as #5 with WhatsApp/Facebook/Twitter/LinkedIn shortcuts + opens StockInfographicModal. | Caller-provided `StockPublishData`. | Same as #5. | Same as #5. |
+| 7 | `src/modules/publishing/components/StockInfographicModal.tsx` | Captures `StockInfographicCard` PNG → POSTs to `/api/telegram/publish-stock`. Builds its own `richCaption` inline. | Caller-provided `data` (current_price, change_pct, session, liquidity, levels, scenarios, rating). | current_price, change_pct, session.volume/turnover/high/low, POC, VAH, VAL, accumulation_label, buy_sell_ratio, support_1/2, resistance_1/2, bullish_target, bearish_target, rating.score/stars. | **Does not validate that `accumulation_label` matches canonical classify_accumulation output** — uses whatever string the caller passed. |
+| 8 | `src/modules/publishing/components/StockInfographicCard.tsx` | Pure renderer — receives already-computed data as props. | Props. | recommendation, confidence, signalCount/maxSignals, path, current_price, rsi, sma20/50/200, atr, support_1/2, resistance_1/2, accumulation_label, buy_sell_ratio, POC/VAH/VAL. | No metrics computed here — but if upstream caller used non-canonical labels, this card renders them. |
+| 9 | `src/modules/publishing/lib/stock-publish-text.ts` | Server-safe text generator (Arabic). Used by StockPublisher + the publish-stock route. | Pure input → text. | recommendation, confidence, entry/zone/target1/target2/stop_loss/risk_reward, signalCount/maxSignals/path, buyPressure/sellPressure/netFlow/volumeRatio, rsi/sma20/50/200/atr, P/E/P/B/ROE/marketCap, marketRegime, technicalExplanation, smcData, candlestickPatterns, liquidity.poc/buy_sell_ratio/accumulation_label. | **HARDCODED 5-level RECOMMENDATION_TEXT**: `{STRONG_BUY:'شراء قوي', BUY:'شراء', INSTITUTIONAL_BUY:'شراء مؤسسي', HOLD:'احتفاظ', SELL:'بيع'}`. Missing ACCUMULATE/REDUCE/STRONG_SELL. `HOLD='احتفاظ'` ≠ canonical `HOLD='انتظار'`. |
+| 10 | `src/modules/publishing/lib/official-links.ts` | Static links constants. | — | — | — |
+| 11 | `src/modules/publishing/lib/table-share-formatter.ts` | Table share formatter (different format from stock card). | Caller-provided. | — | — |
+| 12 | `vps-service/telegram/auto_poster.py` | Core auto-poster. `format_recommendation_post()`. `get_top_recommendations()` queries predictions.db. | `predictions.db.stored_analyses` table (`WHERE recommendation IN ('buy','strong_buy')`) JOINed with `stocks.db.stocks` for name_ar/sector. | ticker, name_ar, signal, current_price, target_price, stop_loss, confidence, sector, R:R, recommendations.buyer/holder, technical_explanation, ai_narrative, ai_reason. | **HARDCODED 3-level signal map: `{BUY:'شراء', SELL:'بيع', HOLD:'متابعة'}`** (line 326). Reads from `stored_analyses` (LEGACY) not `predictions` (current). `HOLD='متابعة'` ≠ canonical `HOLD='انتظار'`. |
+| 13 | `vps-service/telegram/auto_post_scheduler.py` | Scheduler for daily/weekly/morning-bell posts. `_format_daily_post()`, `_format_weekly_post()`. | `report` dict from `analyzers.reports_engine` (which reads `data_engine.db`) and `get_unified_trader_levels()`. | entry_price, target_price/2, stop_loss, confidence, support_1/2, resistance_1/2, R:R, signal_ar. | **HARDCODED fallback levels when `get_unified_trader_levels()` fails**: `entry_min=entry*0.99, entry_max=entry*1.01, s1=entry*0.96, s2=entry*0.92, r1=entry*1.06, r2=entry*1.12` (lines 506–514). Reads `signal_ar` directly from DB row (`s.get('signal_ar','شراء')`) with no canonical check. |
+| 14 | `vps-service/telegram/telegram_notifier.py` | Lightweight HTTP Bot API notifier. `notify_target_hit/approaching_target/stop_warning/trailing_profit/stop_loss/daily_report/weekly_report`. | `predictions.db.predictions` table (`SELECT * WHERE date(prediction_date)=today`). | ticker, entry_price, target_price, stop_loss, current_price, return_pct, distance_pct, gain_pct, loss_pct, wins/losses/total/WR. | No signal classification — shows raw entry/target/stop. Reads from `predictions` table (NOT `stored_analyses`) → different table than #12. |
+| 15 | `vps-service/telegram/telegram_interactive_bot.py` | Interactive bot for user queries. `get_stock_radar_status()`, `build_stock_card()`, `handle_radar_command()`. | `predictions.db.predictions` (signal, confidence, direction, vol_ratio_now) + `get_unified_trader_levels()` (from `analyzers.trader_levels_engine`). | signal, confidence, direction, entry_min/max, target_1/2, stop_loss, support_1/2, resistance_1/2, risk_reward, vol_ratio, advice. | **HARDCODED defaults when DB row missing**: `signal='تجميع صاعد', confidence=75, vol_ratio=1.2, direction='تجميع صاعد مع صانع السوق'` (lines 363–378). Same hardcoded support/resistance fallbacks as #13 (entry*0.96, entry*1.06, etc.) at lines 476–482. |
+| 16 | `vps-service/telegram/telegram_target_hit_tracker.py` | Scans for target hits + posts celebration alerts. | `predictions.db.predictions` + `scripts/output/maker_radar_EGX_*.json` + `stocks.db.stocks` (high_price). | entry_price, target_1/2, stop_loss, hit_price, profit_pct, next_target, trailing_stop, buy_pct, vol_ratio, action_advice. | **HARDCODED fallback buy_pct=75** (line 220), **HARDCODED buy_pct=70.0** for predictions.db rows (line 263), **HARDCODED threshold `buy_pct >= 58.0 and vol_ratio >= 1.0`** (line 364) to decide CONTINUE_RALLY vs TAKE_PROFIT. Does NOT use `classify_accumulation()` (canonical uses 70/60/55/45/40/30 thresholds). |
+| 17 | `vps-service/telegram/liquidity_alerts.py` | 4 alert types: sector liquidity IN/OUT, stock accumulation/distribution. | **`scripts/output/maker_radar_EGX_*.json` + `scripts/output/exit_radar_*.json` ONLY** (NO database). | money_flow_state, buy_pct, net_flow, path, current_price, name_ar. | **HARDCODED trigger sets**: `ACCUMULATION_MONEY_FLOW_STATES = {'🔥 دخول قوي', '🟢 سيولة داخلة'}` and `DISTRIBUTION_MONEY_FLOW_STATES = {'🔥 خروج قوي', '🔴 سيولة خارجة'}` (lines 81, 84). The `🔥 دخول قوي`/`🔥 خروج قوي` labels are NEVER emitted by canonical `classify_money_flow()` which only produces `🟢 سيولة داخلة قوية / 🟢 سيولة داخلة / 🟡 سيولة متوازنة / 🔴 سيولة خارجة / 🔴 سيولة خارجة قوية`. So accumulation alerts will MISS the strongest flows and may never fire. |
+| 18 | `vps-service/telegram/telegram_chart_generator.py` | SVG candlestick chart + stock details. | `stocks.db.stocks` (current_price, change_percent, high_price, low_price, volume) + `predictions.db.predictions` (target_price/2, stop_loss, confidence, signal). | current_price, change_pct, high, low, volume, tp1, tp2, sl, confidence, direction. | **HARDCODED fallback when predictions row missing**: `tp1=p*1.055, tp2=p*1.115, sl=p*0.955` (lines 122–124). These constants differ from auto_post_scheduler's `1.05/1.10/0.95` and from interactive_bot's `0.96/0.92/1.06/1.12`. |
+| 19 | `vps-service/telegram/telegram_bot_api.py` | Re-exports auto_poster + get_top_recommendations for the Flask blueprint. | Same as #12. | Same as #12. | Same as #12. |
+| 20 | `vps-service/telegram/telegram_client.py` | Telethon user-account client (bidirectional). Reads/saves incoming channel messages. | `telegram.db` (saved messages + extracted recommendations). | entry_price, target_price, stop_loss, confidence (extracted by ai_processor from message text). | Stores data from TELEGRAM INBOUND messages — i.e. **competitor channels' arbitrary format**. Has no canonical enforcement. |
+| 21 | `vps-service/telegram/telegram_report_card.py` | SVG report card generator. Pure renderer. | Caller-provided `report.recommendations[]`. | entry_price, target_price, target_price_2, stop_loss, confidence/score. | No DB access. Inherits whatever format the caller used. |
+| 22 | `vps-service/telegram/telegram_daily_lessons.py` | Static lessons curriculum + image generator. | Static curriculum JSON. | — (no stock data). | — |
+| 23 | `vps-service/telegram/ai_processor.py` | ML message classifier + symbol extractor. | Inbound Telegram text (regex). | entry_price, target_price, stop_loss, confidence. | Stores regex-extracted values from competitor channels. **NOT real-time data**. |
+| 24 | `vps-service/telegram/database.py` | Schema/manager for `telegram.db` (saved_messages + recommendations tables). | sqlite3. | — | — |
+| 25 | `vps-service/api/telegram_routes.py` | Flask blueprint: `/post/recommendation`, `/post/daily-summary`, `/post/top-recommendations`, `/send-daily-report`, `/post/alert`, `/post/market-open`, `/post/market-close`, `/post/custom`, `/morning-bell/preview\|test`. | Calls `auto_poster.format_recommendation_post()` + `TelegramNotifier.notify_daily_report()` + `_get_morning_bell_data()` (from stored_analysis_routes). | Inherits from #12 + #14. | Inherits divergences. |
+| 26 | `vps-service/analyzers/reports_engine.py` | Builds `recommendations` list consumed by `auto_post_scheduler._format_daily_post()`. | `data_engine.db.tab_technical_analysis` (rating, ma_rating, rsi, macd, perf_1w/1m/3m). | symbol, name, price, sector, signal (from rating), stop_loss, reason_parts, RSI mention. | **HARDCODED 4% stop_loss**: `stop_loss = round(price_f * (1 - 4.0/100), 2)` (line 445). Uses its OWN `_rating_to_signal()` function (line 192) — yet another signal threshold scheme separate from canonical_signal. |
+| 27 | `vps-service/scripts/data_heartbeat_checker.py` | Sends heartbeat alerts to Telegram when data is stale. | Reads `stocks.db.last_update` timestamp. | Staleness in minutes. | Not stock-data; informational only. |
+| 28 | `news-agent/sender/social_publisher.py` | Publishes NEWS cards (not stock data) to Telegram + Facebook + WhatsApp. | `news.db` (news, sentiment, impact, importance). | title, sentiment_badge, impact_badge, importance/100, content snippet, ticker hashtags. | No stock metrics — different domain. |
+
+## Key Inconsistencies Between Telegram Data and Web UI
+
+### A. Signal Taxonomy — 4 different signal schemes in production
+| Source | Levels | HOLD label |
+|--------|--------|-----------|
+| `canonical_signal.py` (canonical) | 7: STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/SELL/STRONG_SELL (thresholds 78/65/55/40/25) | `انتظار` |
+| `auto_poster.py:326` | 3: BUY/SELL/HOLD | `متابعة` ❌ |
+| `stock-publish-text.ts:140` | 5: STRONG_BUY/BUY/INSTITUTIONAL_BUY/HOLD/SELL | `احتفاظ` ❌ (missing ACCUMULATE/REDUCE/STRONG_SELL) |
+| `reports_engine.py:192` `_rating_to_signal()` | RSI-derived; separate scheme | varies |
+
+Web UI uses canonical (via `src/app/api/unified/route.ts` and `master_analyzer.py`). Telegram uses 3 different non-canonical schemes. → A score of 60 should be `ACCUMULATE` on web but Telegram shows either `HOLD` (auto_poster) or `BUY` (reports_engine).
+
+### B. Hardcoded Price Level Fallbacks — 5 different fallback formulas
+| File | tp1 fallback | tp2 fallback | stop_loss fallback |
+|------|-------------|-------------|--------------------|
+| `auto_post_scheduler.py:506–514` | `entry*1.06*0.995` | `entry*1.12*0.995` | `entry*0.96*0.985` |
+| `telegram_interactive_bot.py:476–482` | `entry*1.06*0.995` (uses r1) | `entry*1.12*0.995` (uses r2) | `entry*0.96*0.985` (uses s1) |
+| `telegram_chart_generator.py:122–124` | `p*1.055` | `p*1.115` | `p*0.955` |
+| `telegram_target_hit_tracker.py:202–206` | `entry*1.05` | `entry*1.10` | `entry*0.95` |
+| `reports_engine.py:445` | — | — | `price*0.96` (4% stop) |
+
+These are ALL different from each other AND from `get_unified_trader_levels()` (the canonical levels source used by web UI). The web UI never uses these fallbacks — it always calls `trader_levels_engine.get_unified_trader_levels()`.
+
+### C. Hardcoded buy_pct Thresholds
+- `telegram_target_hit_tracker.py:220,263`: defaults to `75`/`70` when missing.
+- `telegram_target_hit_tracker.py:364`: hardcoded `buy_pct >= 58.0 and vol_ratio >= 1.0` for CONTINUE_RALLY decision.
+- `liquidity_alerts.py:81,84`: hardcoded `money_flow_state` string set (does NOT match canonical `classify_money_flow()` output labels).
+
+### D. Different Database Tables / Sources for Same Concept
+| Concept | Telegram reads from | Web UI reads from |
+|---------|---------------------|-------------------|
+| Recommendations list | `predictions.db.stored_analyses` (legacy, line 12 of auto_poster) | `predictions.db.predictions` |
+| Market summary | `stocks.db.stocks` (direct SQL) | `/api/stocks` → Python |
+| Target prices | `predictions.db.predictions` (target_price, target_price_2) AND `scripts/output/maker_radar_EGX_*.json` | `trader_levels_engine.get_unified_trader_levels()` |
+| money_flow_state | `scripts/output/maker_radar_EGX_*.json` (cached file, may be 1+ day stale per worklog Task ID 1) | Live `master_analyzer.detect_who_is_buying()` |
+| Live price | `stocks.db.stocks.current_price` (direct) | `utils.live_price.get_live_price()` |
+
+→ For the same ticker the Telegram bot may show `target_price` from `predictions.db` row A while the web UI shows `target_1` from `trader_levels_engine` (computed live from price history). They are computed by different code paths and will frequently disagree.
+
+### E. Telegram-Specific Display Fields Not in Web UI
+- `auto_poster.py:372–377`: shows `recommendations.buyer` and `recommendations.holder` text fields. The web UI does not display these.
+- `auto_poster.py:335`: shows `signal_emoji` (🟢🔴🟡) that web UI does not.
+
+## canonical_signal.py Adoption Check
+
+Ran `grep -rn "canonical_signal\|classify_accumulation\|classify_signal\|classify_money_flow\|classify_volume_ratio\|classify_stock_phase"` against all Telegram files. **Result: ZERO matches**. No Telegram file currently imports or uses the new canonical module.
+
+## Files That NEED to Be Migrated to canonical_signal
+
+### Python (7 files)
+1. `vps-service/telegram/auto_poster.py` — Replace `{BUY:'شراء', SELL:'بيع', HOLD:'متابعة'}` (line 326) with `signal_ar(classify_signal(master_score))`. The `stored_analyses` table already has `maestro_score` column (line 657 SELECT) — just needs to be read and passed.
+2. `vps-service/telegram/auto_post_scheduler.py` — Replace `signal_ar = s.get('signal_ar', 'شراء')` (line 1298) with canonical lookup using `master_score` from each `rec`. Replace hardcoded fallback levels (lines 506–514) with a single `get_unified_trader_levels()` call (no inline fallback).
+3. `vps-service/telegram/telegram_interactive_bot.py` — Replace hardcoded `'signal': 'تجميع صاعد'` default (line 363) with `classify_signal(master_score)` derived from the predictions table. Replace hardcoded support/resistance fallbacks (lines 476–482).
+4. `vps-service/telegram/telegram_target_hit_tracker.py` — Replace hardcoded `buy_pct=75`/`70` defaults (lines 220, 263) and `buy_pct >= 58.0` threshold (line 364) with `classify_accumulation(buy_pct)` and `classify_money_flow(buy_pct, sell_pct)`.
+5. `vps-service/telegram/liquidity_alerts.py` — Replace hardcoded `ACCUMULATION_MONEY_FLOW_STATES` / `DISTRIBUTION_MONEY_FLOW_STATES` sets (lines 81, 84) with `classify_money_flow(buy_pct, sell_pct)` decision. Also fix `PATH_LABEL_AR` to align with canonical phase labels.
+6. `vps-service/telegram/telegram_chart_generator.py` — Replace hardcoded `tp1=p*1.055, tp2=p*1.115, sl=p*0.955` (lines 122–124) with `get_unified_trader_levels(ticker, current_price=p)`.
+7. `vps-service/analyzers/reports_engine.py` — Replace `_rating_to_signal()` (line 192) with `classify_signal(master_score)`. Replace hardcoded `stop_loss = price * 0.96` (line 445) with `get_unified_trader_levels(ticker, current_price=price)['stop_loss']`.
+
+### Next.js (2 files)
+8. `src/modules/publishing/lib/stock-publish-text.ts` — Replace `RECOMMENDATION_TEXT` 5-level hardcoded map (lines 136–145) with a TypeScript port of `signal_ar(classify_signal(score))`. The frontend already imports `StockPublishData.confidence` — extend it to require `masterScore` and compute the 7-level signal client-side (or fetch from `/api/unified`).
+9. `src/modules/publishing/components/StockInfographicModal.tsx` — Currently uses `data.liquidity.accumulation_label` as a free-text string (line 163). Replace with: pass `buy_pct`+`sell_pct` through and compute the label via a TypeScript port of `classify_accumulation(buy_pct)`. Otherwise the caption will keep showing non-canonical labels.
+
+### Supporting Tasks
+- Add a TypeScript mirror of `canonical_signal.py` at `src/lib/canonical-signal.ts` (port `classify_signal` + `signal_ar` + `classify_accumulation` + `classify_money_flow`) so the Next.js publishing components don't have to round-trip to Python for every publish.
+- Add a CI test asserting that `signal_ar(classify_signal(80)) === 'شراء قوي'` is consistent between Python and TS ports.
+
+## Stage Summary
+- **28 Telegram-related files inventoried** with explicit data source + fields displayed + divergence vs web UI.
+- **ZERO files currently use canonical_signal.py** — confirmed by grep.
+- **4 different signal taxonomies** in production (canonical vs auto_poster vs stock-publish-text vs reports_engine).
+- **5 different hardcoded fallback formulas** for target_price/stop_loss across Telegram files.
+- **2 different database tables** used for recommendations (`stored_analyses` vs `predictions`).
+- **1 stale JSON file dependency** (`scripts/output/maker_radar_EGX_*.json`) — used by liquidity_alerts + target_hit_tracker, often 1+ day stale per worklog Task ID 1.
+- **9 files identified for migration** (7 Python + 2 TypeScript) with specific line numbers for each replacement.
+- **Recommended next step**: create `src/lib/canonical-signal.ts` TypeScript port, then migrate `auto_poster.py` first (highest-volume publisher), then `stock-publish-text.ts` (admin publishes), then `liquidity_alerts.py` (uses stalest data source).
+---
+
+---
+Task ID: UI-AUDIT-1
+Agent: Sub-agent (general-purpose)
+Task: Audit all stock UI components for per-stock data inconsistency
+
+## Scope
+Audited 7 customer-visible surfaces that display per-stock data:
+1. Stock Infographic Card (بطاقة إنفوجرافيك السهم) — `src/modules/publishing/components/StockInfographicCard.tsx` (1027 LOC) + `StockInfographicModal.tsx` (334 LOC)
+2. Liquidity/Momentum Card (Maker Radar drawer) — `StockDetailDrawer` inside `src/modules/predictions/components/MakerRadarTab.tsx` (3784 LOC; drawer at lines 2704-3536)
+3. Stock Detail screen — `src/modules/stock-analysis/components/StockDetail.tsx` (1519 LOC)
+4. Interactive TradingView Chart — `src/modules/stock-analysis/components/TradingViewChart.tsx` (2113 LOC) + `src/modules/market-analysis/components/InteractiveChart.tsx`
+5. Comprehensive Stock Analysis — `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` (1369 LOC)
+6. Stocks list (column) — `src/modules/stock-analysis/components/StocksView.tsx` (2315 LOC)
+7. Predictions Tracking Dashboard — `src/modules/predictions/components/PredictionTrackingDashboard.tsx` (2098 LOC)
+8. Telegram publishing — `src/modules/publishing/components/StockPublisher.tsx` (1128 LOC) + `UnifiedPublishButton.tsx` (754 LOC) + `src/app/api/telegram/publish-stock/route.ts`
+
+Canonical backend reference: `vps-service/utils/canonical_signal.py` (310 LOC) defines the SSOT formulas:
+- `classify_accumulation(buy_pct)` — thresholds 70/60/55/45/40/30
+- `classify_signal(master_score)` — STRONG_BUY≥78 / BUY≥65 / ACCUMULATE≥55 / HOLD 40-55 / SELL 25-40 / STRONG_SELL<25
+- `classify_money_flow(buy_pct, sell_pct, net_flow_egp)` — diff ≥25 strong-in, ≥10 in, etc.
+- `classify_stock_phase(...)` — تجميع / تصاعد / توزيع / تخفيض
+
+## Comparison Table — Per-Field Source of Truth
+
+| Component | Field | Source | Formula (if client-side) | API endpoint | DB |
+|-----------|-------|--------|---------------------------|--------------|-----|
+| StockInfographicCard | all | PROPS only — pure presentational | n/a (caller supplies) | caller decides | caller decides |
+| StockInfographicModal | all | caller-supplied `data` prop | n/a | n/a | n/a |
+| StockDetail (buildStockInfographicDataFromStock) | support/resistance | CLIENT fallback | `current * 0.97/0.96/1.03/1.04` (lines 230-233) | /api/stocks/[ticker] | stocks.db |
+| StockDetail | buy/neutral/sell signals | CLIENT FABRICATED | score≥70→6/3/1, ≥50→4/4/2, ≥40→2/4/4, else→1/2/7 (lines 252-257) | n/a | n/a |
+| StockDetail | sentiment_label | CLIENT | 75/60/45/30 thresholds (lines 259-263) | n/a | n/a |
+| StockDetail | stars_count / rating | CLIENT | 80/65/50/35 thresholds (lines 266-275) | n/a | n/a |
+| StockDetail | accumulation_label | CLIENT — footprint-derived | `buy_sell_ratio >= 1.2 → 'تجميع قوي', <= 0.8 → 'تصريف محتمل', else 'توازن سيولة'` (lines 398-404) | /api/maker-radar/footprint | footprint cache |
+| StockDetail | score | CLIENT fallback | `deepAnalysis.overall_score ?? stock.ai_score ?? 50` (line 236-238) | /api/stock/deep-analysis | n/a |
+| StockDetail | targetPrice1 | CLIENT | `stock.resistance_level * 1.02` (line 106) | /api/stocks/[ticker] | stocks.db |
+| StockDetail | positionSize | HARDCODED | `8` (line 164) — ignores API position_size | n/a | n/a |
+| StockDetailDrawer (MakerRadarTab) | accumulation | BACKEND (correct) | uses `stock.accumulation` directly (line 2528), comment confirms canonical_signal (lines 2523-2526) | /api/maker-radar | radar-cache JSON |
+| StockDetailDrawer | support/resistance | CLIENT fallback | rolling 10d/20d min/max OR `lastClose * 0.95/0.90/1.05/1.10` (lines 3187-3190) | /api/maker-radar/stock | stocks.db |
+| StockDetailDrawer | buy_pct default | CLIENT fallback | `stock.buy_pct ?? 50` (lines 2374, 2400, 2454, 2527, 2627) | /api/maker-radar | radar-cache JSON |
+| StockDetailDrawer | net_flow_egp | CLIENT FABRICATED | `(stock.avg_turnover_20d || 3,500,000) * ((liq - 50) / 100)` when null (lines 2401-2403) | /api/maker-radar | n/a |
+| StockDetailDrawer | expected gain | CLIENT | `Math.max(8, vol_ratio_10d * 6 + range_10d_pct)` (line 2565) | n/a | n/a |
+| StockDetailDrawer | trigger price | CLIENT | `current * (1 + max(0.012, range_10d/220))` (line 2585) | n/a | n/a |
+| StockDetailDrawer | markup_cycle | CLIENT fallback | `life_cycle || path-based label` (lines 2501-2507) | /api/maker-radar | n/a |
+| MakerRadarTab table | entryCard | TYPED as `any?` — field is never populated by backend (dead branch) | n/a | n/a | n/a |
+| TradingViewChart | RSI(14) | CLIENT — non-Wilder | simple avg of gains/losses (lines 203-234) — NOT Wilder's smoothing → differs from /api/stocks/[ticker]/comprehensive `tech.rsi` | /api/chart/[ticker] + /api/stocks/[ticker]/history | stocks.db |
+| TradingViewChart | MACD/EMA/SMA/ATR | CLIENT | calcSMA (140), calcEMA (154), calcMACD (236), calcATR (327) — different EMA seed from InteractiveChart | same | same |
+| TradingViewChart | Bollinger/Stoch/OBV | CLIENT | lines 176, 272, 340 | same | same |
+| InteractiveChart (market-analysis) | EMA / MACD | CLIENT — DIFFERENT seed | calcEMA at line 296, MACD at 325-358 — different from TradingViewChart | /api/chart/[ticker] | n/a |
+| ComprehensiveStockAnalysis | RSI / MA / S/R / master_score | BACKEND (correct) | reads tech.rsi/ma_50/ma_200/support/resistance from response; sanity-gate fallback `current * 0.95/1.05` (lines 242-249) | /api/stocks/[ticker]/comprehensive | stocks.db |
+| ComprehensiveStockAnalysis | signal classification | CLIENT mapping | signalBadge() at lines 134-141 — substring match on 'strong_buy'/'buy'/'strong_sell'/'sell' | same | same |
+| ComprehensiveStockAnalysis | scoreColor / scoreBg / gauge | CLIENT cosmetic | 70/50/30 thresholds (lines 120-132, 148) | n/a | n/a |
+| StocksView | signal column | CLIENT fallback | `row.signal` if present, else RSI/MA50/MA200 → overbought/oversold/bullish/bearish (lines 1551-1570) | /api/stocks/presets | stocks.db |
+| StocksView | rsi | BACKEND | `Number(row.rsi)` (line 473, 661, 1552) | /api/stocks | stocks.db |
+| PredictionTrackingDashboard | signal_type / support / resistance | BACKEND (correct) | displays `selectedProofTrade.support_level` / `resistance_level` (lines 2023-2043) | /api/predictions/honest-tracking/live-tracking | predictions.db |
+| UnifiedPublishButton | RSI/SMA/volume/recommendation → buy/neutral/sell | CLIENT FABRICATED | lines 332-387: RSI≤35 buy+2, ≥70 sell+2, SMA20/50 buy/sell, vol≥1.25 buy, etc. | /api/stocks/[ticker]/publish-data + /api/maker-radar/footprint | stocks.db |
+| UnifiedPublishButton | gauge_score | CLIENT fallback | `pData.masterScore ?? (buyCount / totalSignals) * 100` (lines 385-387) | n/a | n/a |
+| UnifiedPublishButton | sentiment / stars / rating | CLIENT | 65/40 (sentiment), 75/60/45 (stars), 75/60/45 (rating) (lines 389-391) — DIFFERENT from StockDetail | n/a | n/a |
+| UnifiedPublishButton | support/resistance fallback | CLIENT | `current * 0.97/0.96/1.03/1.04` (lines 394-397) — same as StockDetail, DIFFERENT from MakerRadar | n/a | n/a |
+| UnifiedPublishButton | accumulation_label | CLIENT | `ratio >= 1.25 ? 'تجميع شهري' : <= 0.8 ? 'تصريف شهري' : 'توازن شهري'` (line 489) — DIFFERENT thresholds + DIFFERENT input (buy_sell_ratio, not buy_pct) | /api/maker-radar/footprint | n/a |
+| StockPublisher | all | PROPS only — wrapper | n/a (caller decides) | n/a | n/a |
+| Telegram publish-stock | n/a | passthrough | just relays image + caption to bot | n/a | n/a |
+
+## Worst Offenders (3+ different formulas for same metric)
+
+### ACCUMULATION LABEL — 5 different formulas
+1. Backend canonical (`canonical_signal.py:106`) — buy_pct → 70/60/55/45/40/30 thresholds ✅ SSOT
+2. MakerRadarTab table column (line 2528) — uses backend value directly ✅ correct
+3. StockDetail.tsx (lines 398-404) — buy_sell_ratio → `>=1.2 / <=0.8` thresholds, label "تجميع قوي/تصريف محتمل/توازن سيولة" ❌ different input + thresholds + labels
+4. UnifiedPublishButton.tsx (line 489) — buy_sell_ratio → `>=1.25 / <=0.8` thresholds, label "تجميع شهري (1.34x)/تصريف شهري/توازن شهري" ❌ different input + thresholds + labels
+5. SpecialistAnalysisView.tsx (lines 874-943) — buy_sell_ratio → `>=1.2 / <=0.8` thresholds, label "ضغط شرائي قوي/ضغط بيعي قوي" ❌ different label
+
+### SUPPORT / RESISTANCE — 5 different fallback formulas
+1. Backend `/api/maker-radar/stock/route.ts:181-186` — `entry_price * 0.96 / s1 * 0.96 / entry * 0.99 / entry * 1.01`
+2. MakerRadarTab.tsx:3187-3190 — rolling 10d/20d min/max OR `lastClose * 0.95/0.90/1.05/1.10`
+3. StockDetail.tsx:230-233 — `current * 0.97/0.96/1.03/1.04`
+4. UnifiedPublishButton.tsx:394-397 — `current * 0.97/0.96/1.03/1.04` (same as #3, still DIFFERENT from #1 and #2)
+5. ComprehensiveStockAnalysis.tsx:242-249 — `current * 0.95/0.95/1.05/1.05`
+6. GateAnalysisView.tsx:75-76 — `price * 0.95/0.90/1.05/1.10` (same as MakerRadar, used by Gate view)
+
+### RSI — 3 different sources
+1. Backend /api/stocks/[ticker]/comprehensive — Wilder smoothing (correct)
+2. TradingViewChart.tsx:203 calcRSI — SMA of gains/losses (NOT Wilder) — produces different values
+3. InteractiveChart.tsx:296 calcEMA + MACD — different EMA seed from TradingViewChart
+
+### SIGNAL CLASSIFICATION (STRONG_BUY/BUY/HOLD/...) — 3 different systems
+1. Backend canonical_signal.py:48 — STRONG_BUY≥78 / BUY≥65 / ACCUMULATE≥55 / HOLD 40-55 / REDUCE 40 / SELL 25 / STRONG_SELL<25 ✅ SSOT
+2. StockDetail.tsx:118-137 — string parsing of `deepAnalysis.action` (substring "STRONG"+"BUY" → STRONG_BUY; "INST"+"BUY" → INSTITUTIONAL_BUY — a label that doesn't exist in canonical taxonomy) ❌
+3. UnifiedPublishButton.tsx:372-374 — `rec.includes('BUY')` / `rec.includes('SELL')` (loses STRONG_BUY vs BUY vs ACCUMULATE distinction) ❌
+4. ComprehensiveStockAnalysis.tsx:134-141 signalBadge — substring match on 'strong_buy' / 'buy' / 'strong_sell' / 'sell' — no ACCUMULATE / REDUCE handling ❌
+
+### BUY/NEUTRAL/SELL SIGNAL COUNTS — 2 completely FABRICATED systems
+1. StockDetail.tsx:252-257 — synthesizes fake signal counts from score thresholds (70→6/3/1, 50→4/4/2, 40→2/4/4, else→1/2/7) — NOT actual indicator signals, pure cosmetic fabrication
+2. UnifiedPublishButton.tsx:332-387 — counts based on RSI/SMA20/SMA50/volumeRatio/buyPressure/recommendation — DIFFERENT thresholds and weighting from #1
+
+### STARS / RATING / SENTIMENT LABELS — 3 different threshold sets
+1. StockDetail.tsx:259-275 — sentiment 75/60/45/30; stars 80/65/50/35; rating 80/65/50/35
+2. UnifiedPublishButton.tsx:389-391 — sentiment 65/40; stars 75/60/45; rating 75/60/45
+3. ComprehensiveStockAnalysis.tsx:120-148 — scoreColor/scoreBg/gauge 70/50/30 (3-tier, no 4th "ضعيف" bucket)
+
+### master_score / gauge_score — 3 different fallback paths
+1. Backend — uses raw master_score from predictions.db
+2. StockDetail.tsx:236-238 — `deepAnalysis.overall_score ?? stock.ai_score ?? 50`
+3. UnifiedPublishButton.tsx:385-387 — `pData.masterScore ?? Math.round((buyCount / totalSignals) * 100)` — fabricated from client-side counts
+
+## Components that CORRECTLY use backend data (no client-side fabrication)
+- ✅ StockInfographicCard / StockInfographicModal — pure presentational, takes data prop
+- ✅ StockPublisher — pure wrapper, sends whatever caller supplies
+- ✅ StockDetailDrawer accumulation column (MakerRadarTab.tsx:2528) — uses `stock.accumulation` from backend, comment at lines 2523-2526 explicitly notes "no frontend fallback"
+- ✅ ComprehensiveStockAnalysis — reads tech.rsi/ma_50/ma_200/support/resistance directly from /api/stocks/[ticker]/comprehensive response
+- ✅ PredictionTrackingDashboard — reads support/resistance/signal_type/master_score directly from /api/predictions/honest-tracking/live-tracking
+- ✅ StocksView RSI column — reads `row.rsi` from /api/stocks response (only fallback is for derived signal column)
+- ✅ Telegram publish-stock route — pure passthrough
+- ✅ MakerRadarTab money_flow_state column — reads `stock.money_flow_state` directly
+
+## Components that NEED unification (priority order)
+1. **StockDetail.tsx** (lines 100-407) — 6 separate client-side fabrications:
+   - FABRICATED buy/neutral/sell signal counts (lines 252-257)
+   - FABRICATED accumulation_label using buy_sell_ratio thresholds 1.2/0.8 (lines 398-404)
+   - FABRICATED sentiment/stars/rating thresholds (lines 259-275)
+   - FABRICATED targetPrice1 = `resistance_level * 1.02` (line 106)
+   - HARDCODED positionSize = 8 (line 164)
+   - String-parsing signal classification (lines 118-137) — INSTITUTIONAL_BUY is not in canonical taxonomy
+   - Client-side fallback for support/resistance (lines 230-233)
+2. **UnifiedPublishButton.tsx** (lines 290-501) — 5 separate client-side fabrications:
+   - FABRICATED buy/neutral/sell counter from RSI/SMA/vol/buyPressure (lines 332-387)
+   - FABRICATED gauge_score fallback `(buyCount/totalSignals)*100` (lines 385-387)
+   - FABRICATED accumulation_label using thresholds 1.25/0.8 + different label text (line 489)
+   - Different sentiment/stars/rating thresholds (lines 389-391)
+   - Client-side fallback for support/resistance (lines 394-397)
+3. **TradingViewChart.tsx** (lines 130-345) — calcRSI/calcSMA/calcEMA/calcMACD/calcATR/calcBollingerBands/calcStochastic/calcOBV all use non-Wilder formulas that don't match /api/stocks/[ticker]/comprehensive `tech.*` values. For a chart overlay this is acceptable; but if the displayed numeric RSI/MACD value is taken from these arrays, it WILL disagree with ComprehensiveStockAnalysis's number for the same ticker.
+4. **InteractiveChart.tsx** (lines 296-358) — same problem as #3 PLUS a DIFFERENT calcEMA implementation (uses different seed logic) so the two chart components disagree with each other.
+5. **ComprehensiveStockAnalysis.tsx** (lines 134-141) — `signalBadge()` doesn't handle ACCUMULATE/REDUCE signals, only BUY/SELL/STRONG_*.
+6. **StocksView.tsx** (lines 1551-1570) — falls back to client-side overbought/oversold/bullish/bearish classification when `row.signal` is missing, ignoring master_score-based canonical classification.
+7. **SpecialistAnalysisView.tsx** (lines 874-943) — buy_sell_ratio → 'ضغط شرائي قوي'/'ضغط بيعي قوي' (different label set).
+
+## Files Modified
+None — this is an audit-only task. No code changes were made.
+
+## Recommended Next Actions (for unification refactor)
+1. Move ALL indicator computations to backend: `/api/stocks/[ticker]/comprehensive` should return buy_signals/neutral_signals/sell_signals/sentiment_label/stars_count/rating_label computed server-side using canonical_signal.py
+2. Delete the `buildStockInfographicDataFromStock` function in StockDetail.tsx (lines 100-407) and replace with a backend call to a new `/api/stocks/[ticker]/infographic-data` endpoint that returns the exact StockInfographicCardProps shape
+3. Delete the client-side technical-signal-counting logic in UnifiedPublishButton.tsx (lines 332-387) — same backend endpoint
+4. Replace ALL accumulation_label client-side derivations (StockDetail:398-404, UnifiedPublishButton:489, SpecialistAnalysisView:874-943) with backend-provided `accumulation` field derived from canonical_signal.classify_accumulation(buy_pct)
+5. Consolidate ALL support/resistance fallbacks into ONE: backend should always return support_1/support_2/resistance_1/resistance_2 from a single algorithm (recommended: rolling 10d/20d window like MakerRadarTab.tsx:3181-3190, computed once server-side)
+6. Switch chart components to use backend-provided indicator arrays when /api/chart/[ticker] returns them; only fall back to client-side calcRSI/calcMACD when the API doesn't return indicator data (and document the fallback)
+7. Add a canonical_signal.ts TypeScript port of canonical_signal.py so the frontend has ONE source for thresholds if absolutely needed (e.g. for cosmetic color mapping)
+8. Add unit tests asserting that all 7 surfaces return IDENTICAL values for the same ticker+date
+
+Task ID: API-AUDIT-2
+Agent: General-Purpose Sub Agent
+Task: Audit ALL Next.js API routes in /src/app/api/ that serve per-stock data — find every route taking ticker/symbol, identify shared fields, consistency gaps, and TS-computed (client-side) fields.
+
+Work Log:
+- Mapped /home/z/my-project/src/app/api/ directory (600+ route files). Filtered to per-stock routes via Grep on `params.(ticker|symbol)|searchParams.get(['ticker'|'symbol'])` → 33 candidate files; narrowed to 23 stock-serving routes after reading.
+- Read in full the 16 high-traffic routes the task called out + 8 adjacent routes that touch the same shared fields (24 total routes read in parallel):
+  * /api/stocks/[ticker]/comprehensive/route.ts (226 lines)
+  * /api/stocks/[ticker]/route.ts (129 lines)
+  * /api/stocks/[ticker]/depth/route.ts (442 lines)
+  * /api/stocks/[ticker]/publish-data/route.ts (512 lines)
+  * /api/stocks/[ticker]/professional-analysis/route.ts (118 lines)
+  * /api/stocks/[ticker]/recommendation/route.ts (60 lines)
+  * /api/stocks/sparkline/route.ts (201 lines)
+  * /api/maker-radar/route.ts (186 lines)
+  * /api/maker-radar/stock/route.ts (255 lines)
+  * /api/maker-radar/footprint/route.ts (86 lines)
+  * /api/maker-radar/entry-timing/route.ts (58 lines)
+  * /api/maker-radar/fundamentals/route.ts (75 lines)
+  * /api/maker-radar/net-picks/route.ts (173 lines)
+  * /api/maker-radar/live-watch/route.ts (150 lines)
+  * /api/predictions/route.ts (451 lines)
+  * /api/predictions/honest-tracking/list/route.ts (723 lines)
+  * /api/predictions/honest-tracking/route.ts (65 lines — manifest only)
+  * /api/predictions/tracking/list/route.ts (87 lines)
+  * /api/predictions/daily-picks/route.ts (322 lines)
+  * /api/predictions/expert-consensus/route.ts (451 lines)
+  * /api/unified/route.ts (322 lines)
+  * /api/v2/unified/analyze/route.ts (231 lines)
+  * /api/v82/route.ts (221 lines)
+  * /api/maestro/stock/[ticker]/route.ts (112 lines)
+- Also inspected adjacent routes that surfaced in field-grep but are not stock-detail:
+  * /api/stock/deep-analysis/route.ts (Python-only proxy, NO SQLite fallback)
+  * /api/maestro/route.ts + /api/maestro/overview/route.ts (DUPLICATE — both proxy to Python `/api/market-pulse`)
+  * /api/flow/[ticker]/route.ts (Python primary; SQLite fallback returns NULL buy_pressure/sell_pressure)
+  * /api/confluence/analyze/[ticker]/route.ts (Python primary; SQLite fallback reads predictions.db via getStockRecommendationFallback)
+  * /api/smart-confluence/analysis/[symbol]/route.ts (Python primary; HARDCODED neutral fallback: rsi=50, signal='HOLD', scores=40 — Rule 27 violation)
+  * /api/market/exit-status/route.ts (Python primary; SQLite fallback reads predictions.db active preds)
+  * /api/market/intraday-pressure/route.ts (SQLite only — intraday.db.stock_intraday; TS-computed buy/sell pressure)
+  * /api/mobile/stocks/[ticker]/route.ts (Python primary; SQLite fallback reads stocks table — bare minimum fields)
+  * /api/mobile/stocks/[ticker]/recommendation/route.ts (proxies Python `/api/market-pulse` — NOT /professional-analysis despite the path)
+  * /api/mobile/dashboard/route.ts (Python `/api/market-pulse` primary; SQLite summary fallback)
+  * /api/radar/personalized/route.ts (radar cache + portfolio_assets)
+- Inspected helper modules:
+  * src/lib/flutter-sqlite-fallback.ts (629 lines) — `getStockByTickerFallback()` reads `stocks.db.stocks` and returns: ticker, name, name_ar, market, sector, current_price, previous_close, open_price, high_price, low_price, change_percent, volume, market_cap, pe_ratio, pb_ratio, eps, roe, roa, debt_to_equity, ma_50, ma_200, **rsi** (defaults to 50 if NULL — minor fabrication), **support**, **resistance**, **signal** (defaults to 'HOLD'), trend, dividend_yield, beta, high_52w, low_52w, value_traded, dps_ttm.
+  * src/modules/radar/lib/radar-cache.ts (527 lines) — `readRadarCache()` returns the most recent `scripts/output/maker_radar_{MARKET}_{YYYYMMDD}.json` written by Python `scripts/maker_radar.py`. Cache file is the source of truth for `accumulation`, `money_flow_state`, `buy_pct`, `sell_pct`, `net_flow_egp`, `path`, `maker_activity`, `volume_ratio_10d_vs_20d`, `position_size`, `pre_surge_details.signal_count`, `quiet_details.signal_count`, `under_microscope`.
+- Inspected prior worklog (last 120 lines): confirmed API-AUDIT-1 already established that `master_analyzer.py` does NOT use `shared_liquidity.py` (only `scripts/maker_radar.py` does), and `maker_radar.py:507-517` has a label bug for the `accumulation` field.
+
+## Route-by-route audit table
+
+| Route | File | DB read | Tables | Key fields returned | Python-backed? | Notes |
+|-------|------|---------|--------|---------------------|----------------|-------|
+| GET /api/stocks/[ticker]/comprehensive | comprehensive/route.ts | db.stocks (Prisma) fallback only | stocks (Prisma) | basic, price, keyMetrics, technical{support,resistance,high_52w,low_52w — REWRITTEN}, priceHistory, maestro, hunter, board, news, predictions, professional | YES — composes 3 Python calls in parallel (deep-analysis + maestro + professional-analysis) | **Lines 184-222: REWRITES support=cp*0.95, resistance=cp*1.05 if missing** (mild Rule 67 violation). High_52w/low_52w correctly nulled if missing. |
+| GET /api/stocks/[ticker] | stocks/[ticker]/route.ts | Python primary; SQLite fallback via getStockByTickerFallback | stocks.db.stocks | (passthrough) | YES — Python `/api/stocks/<ticker>` | Applies fair_value paywall (sets fair_value=null if user trial expired + free tier). |
+| GET /api/stocks/[ticker]/depth | depth/route.ts | stocks.db + intraday.db | stocks, stock_intraday | current_price, bids[], asks[], spread, total_bid_volume, total_ask_volume, imbalance, interpretation ∈ {buy_pressure,sell_pressure,balanced} | NO — pure TS | **TS-computed depth from intraday ticks.** Different buy/sell classification from /api/flow. Synthesizes resting levels if empty. |
+| GET /api/stocks/[ticker]/publish-data | publish-data/route.ts | Python primary; SQLite: stocks.db.stocks + predictions.db.predictions + radar cache + price_history | stocks, predictions, maker_radar cache, radar-db price_history | ticker, nameAr, nameEn, sector, currentPrice, previousClose, changePct, recommendation, recommendationAr, confidence, masterScore, entryPrice, entryZoneLow/High, targetPrice1/2, stopLoss, support1/2, resistance1/2, riskReward, signalCount, maxSignals, path, buyPressure, sellPressure, netFlow, volumeRatio, turnover, rsi, sma20, sma50, sma200, atr, peRatio, pbRatio, roe, marketCap | YES — Python `/api/stocks/<ticker>/publish-data` | **Lines 397-405: SYNTHESIZES target2=target1*1.05, stop=entry*0.94, support1=entry*0.96, support2=support1*0.96, resistance1=target1, resistance2=target2 when DB NULL.** Rule 27 violation. |
+| GET /api/stocks/[ticker]/professional-analysis | professional-analysis/route.ts | Python primary; SQLite fallback via getStockByTickerFallback | stocks.db.stocks | ticker, name, name_ar, sector, current_price, previous_close, open_price, high_price, low_price, change_percent, volume, market_cap, fundamentals{pe_ratio, pb_ratio, eps, roe, roa, dividend_yield, debt_to_equity, book_value_per_share}, technicals{ma_50, ma_200, rsi, support, resistance, signal, trend} | YES — Python `/api/professional-analysis/<ticker>` | DUPLICATES `/api/stocks/[ticker]/recommendation` (same Python upstream + same fallback). |
+| GET /api/stocks/[ticker]/recommendation | recommendation/route.ts | Python primary; SQLite via getStockRecommendationFallback | predictions.db.predictions | (passthrough) recommendation{signal, target_price, stop_loss, risk_reward, master_score, confidence, persona, prediction_date, signal_ar, ...} | YES — Python `/api/professional-analysis/<ticker>` | DUPLICATES /professional-analysis. |
+| GET /api/stocks/sparkline | sparkline/route.ts | price_history.db → stocks.db → market_indices | price_history, stock_daily_prices, market_indices | ticker, prices[], min, max, first, last, change_pct, days, source | NO — pure SQLite | **Lines 132-153: fabricates index sparkline with sin-noise** for market_indices fallback (minor Rule 27 violation). |
+| GET /api/maker-radar | maker-radar/route.ts | radar cache JSON + stocks.db | stocks (live enrichment) | quiet_list[], explosive_list[], early_break_list[], pre_surge_list[], under_microscope[], all_results[] — each: ticker, current_price, change_percent, volume, accumulation, maker_activity, money_flow_state, buy_pct, sell_pct, net_flow_egp, volume_ratio_10d_vs_20d, position_size, reason, path, pre_surge_details.signal_count, quiet_details.signal_count, under_microscope | NO — cache read (cache written by Python `scripts/maker_radar.py` which uses `shared_liquidity.compute_money_flow`) | Trial-expiry gate (403 if expired). |
+| GET /api/maker-radar/stock | maker-radar/stock/route.ts | radar-db + stocks table + predictions.db.predictions | stocks, predictions, radar-db price_history | ticker, stock_info, prices[], stats{lastClose, changePct, roc10d, avgVolume20, avgTurnover20, max20, min20, range20Pct}, tracking, prediction{signal, signal_type, entry_price, target_price, target_price_2, stop_loss, support_level, support_level_2, resistance_level, resistance_level_2, risk_reward, confidence, master_score, market, persona, status, current_price, targets_validated} | NO — pure SQLite | Calls `applyValidatedTargets` which MUTATES signal/targets/stop. Lines 181-186: synthesizes support1=entry*0.96, support2=s1*0.96, entryMin=entry*0.99, entryMax=entry*1.01 if NULL. |
+| GET /api/maker-radar/footprint | maker-radar/footprint/route.ts | radar-db only | radar-db price_history | ticker, days, bin_count, price_min/max, poc_price, poc_volume, vah_price, val_price, value_area_volume_pct, total_volume, buy_volume, sell_volume, delta_volume, buy_sell_ratio, levels[] | NO — pure TS | **TS-computed buy/sell volume with naive 70/30 split based on close vs open.** Not real order flow. |
+| GET /api/maker-radar/entry-timing | maker-radar/entry-timing/route.ts | radar-db only | radar-db price_history | ticker, score, label, label_color, breakdown{accumulation{score,label}, volume, support, momentum}, recommendation | NO — pure TS | **TS-computed.** Different `accumulation` label set ('تجميع قوي'/'تجميع ضعيف') from radar cache ('تجميع قوي'/'تصريف قوي'/'تجميع خفيف'/'تصريف خفيف'). Will disagree with /api/maker-radar for the same ticker. |
+| GET /api/maker-radar/fundamentals | maker-radar/fundamentals/route.ts | data_engine.db only | tab_valuation, tab_profitability, tab_balance_sheet, tab_income_statement, tab_cash_flow, tab_dividends, tab_performance, tab_technical_analysis | fundamentals{8 tabs, each {label, data{...}}} | NO — pure SQLite | **`WHERE symbol LIKE 'TICKER%'`** — loose match, will return wrong row for tickers that prefix-collide (e.g. `COMI` vs `COMIC`). |
+| GET /api/maker-radar/net-picks | maker-radar/net-picks/route.ts | radar cache + predictions.db.predictions | predictions (active preds) | picks[]{rank, ticker, current_price, source_path, source_label, source_rank, accumulation, maker_activity, volume_ratio, avg_turnover, roc_10d, signal_count, max_signals, position_size, reason, prediction{entry_price, target_price, target_price_2, stop_loss, signal, confidence, risk_reward, prediction_date}} | NO — cache + SQLite | Calls `applyValidatedTargets`. |
+| GET /api/maker-radar/live-watch | maker-radar/live-watch/route.ts | radar cache only | (cache JSON) | quiet_list[], explosive_list[], early_break_list[], pre_surge_list[] — slim: {ticker, name, current_price, change_percent, volume, radar_path, score (or master_score), sector, is_tracked} | NO — cache read | Auth required (401 if no session). Slim shape — drops `accumulation`, `money_flow_state`, `buy_pct`, `path` (uses `radar_path` instead). |
+| GET /api/predictions | predictions/route.ts | Python primary; SQLite: predictions.db.predictions + stored_analyses | predictions, stored_analyses | data[]{id, ticker, signal, signal_type, prediction_date, entry_price, entry_price_min/max, target_price, target_price_2, stop_loss, support_level, support_level_2, resistance_level, resistance_level_2, master_score, technical_score, fundamental_score, confidence, persona, market, outcome_date, exit_price, actual_return, hit_target, hit_stop, is_correct, holding_days, status, risk_reward, technical_explanation, ai_reason, ai_narrative, target1, target2, support_1, support_2, resistance_1, resistance_2, entry_min, entry_max, entry_range_str, risk_reward_ratio} | YES — Python `/api/v2/predictions` primary | 5-item HARD_CAP. `?ticker=X` branch bypasses the cap (up to 20). **Duplicates target_price/target1, support_level/support_1, resistance_level/resistance_1, risk_reward/risk_reward_ratio** in same response. Calls `applyValidatedTargets` which mutates signal. Synthesizes target_price_2=target1*1.05 if NULL. |
+| GET /api/predictions/honest-tracking/list | honest-tracking/list/route.ts | predictions.db only (+ production fallback) | predictions, stored_analyses, prediction_lessons | predictions[]{id, stock_symbol, stock_name_ar, signal_type, market, entry_price, target_price, stop_loss, confidence (==master_score), maestro_score (==master_score, DUPLICATE), technical_score, fundamental_score, prediction_date, status, final_price, profit_loss_percent, actual_return, hit_target, hit_stop_loss, days_to_target, holding_days, target_hit_date, stop_hit_date, evaluation_date, exit_reason, max_profit_percent, max_loss_percent, risk_reward, analysis_methods[], reasons[], trend_direction, rsi_value, macd_histogram, candle_patterns[], sr_zone, sr_support, sr_resistance, atr_value, ma20_value, ma50_value, volume_trend, volume_spike, pe_ratio, roe, dividend_yield, profit_margin, sector, persona, change_1m, bollinger_width, data_source, highest_price_reached, lowest_price_reached, exit_type, target_price_2, target_price_3, evidence_count, morning_bell, kill_filter_result, analysis_reason} | NO — pure SQLite (+ HTTPS fallback to invist.m2y.net) | NO signal synthesis, NO target fabrication — reads raw values. Parses notes for rsi/macd/sr/candle. **Returns master_score twice (as `confidence` and `maestro_score`).** Falls back to production API when local DB empty. |
+| GET /api/predictions/tracking/list | predictions/tracking/list/route.ts | Python primary; SQLite: predictions.db.predictions | predictions | data[]{id, ticker, signal, signal_type, status, market, prediction_date, entry_price, target_price, stop_loss, exit_price, actual_return, holding_days, risk_reward, master_score, persona, confidence, outcome_date} | YES — Python primary | **Subset of /honest-tracking/list** — only 17 fields vs 50+. Should be deprecated in favor of /honest-tracking/list. |
+| GET /api/predictions/daily-picks | predictions/daily-picks/route.ts | Python primary; SQLite: predictions.db.predictions | predictions | picks[]{ticker, market, signal, signal_type, entry_price, target_price, target_price_2, stop_loss, risk_reward, master_score, technical_score, confidence, persona, status, prediction_date, horizon, exit_type, morning_bell, explosive_score, evidence_count, kill_filter_result, name_ar, sector} | YES — Python `/api/predictions/daily-picks` primary | Paywall (top 3 visible, rest blurred for trial-active free). Calls `applyValidatedTargets`. |
+| GET /api/predictions/expert-consensus | predictions/expert-consensus/route.ts | predictions.db + stocks.db | predictions, stocks | consensus{ticker, name, sector, latest_prediction, current_state{price, change_pct, rsi, volume, ma_50, ma_200, ma_alignment, last_updated, price_freshness_minutes, price_is_stale}, sector_context, verdict (STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL), confidence_pct, bullish_signals, bearish_signals, reasons[]} | NO — pure SQLite | **TS-computed verdict** from predictions + stocks data. Different signal thresholds from /unified. |
+| POST /api/unified | unified/route.ts | (none for GET; Python `/api/v2/analysis/<ticker>` for POST /analyze) | (none) | markets[], personas[], config. POST /analyze result: {ticker, market, persona, signal, signal_ar, score, confidence, current_price, entry_price, stop_loss, stop_loss_pct, target_1, target_pct, risk_reward, **rsi (=analysis.technical_score || 50 — MISLABELED)**, market_regime, rr_valid, rejection_reason, warnings, technical_score, volume_score, candle_score, buy_reasons, sell_reasons, market_regime_ar, market_regime_strength, sector_relative_score} | YES — Python `/api/v2/analysis/<ticker>` for POST /analyze | **`rsi` field is MISLABELED** — it actually holds `analysis.technical_score`, NOT RSI. Also has its own signal thresholds (STRONG_BUY≥75, BUY≥60, ACCUMULATE≥50, SELL≤40, STRONG_SELL≤25) — different from /v2/unified/analyze. |
+| POST /api/v2/unified/analyze | v2/unified/analyze/route.ts | Python primary; composes /api/confluence/analyze + /api/maestro/persona when Python down | (none — all Python) | analysis{ticker, market, persona, price, score, recommendation, recommendation_ar, confidence, signals[], opinions, entry, target, stop, support, resistance, gambler, investor, narrative, story_arc} | YES — Python primary | **TS-composed when Python down.** Different recommendation thresholds from /unified (STRONG_BUY≥75, BUY≥70, HOLD≥60, REDUCE≥50). |
+| GET /api/v82 | v82/route.ts | (none — spawns Python subprocess) | (none) | {ticker, market, action, signal_strength, diagnosis, buy_path, entry_price, best_entry_price, stop_loss, target_price_1, target_price_2, risk_reward, buy_value_m, sell_value_m, gate_conditions, gate_passed, fuel_pct, fuel_exhausted, position_size, position_value_egp, risk_amount_egp, expected_profit_egp, safe_mode_active, kill_switch_triggered, confidence} | YES — Python subprocess (`vps-service/analyzers/v82_analyzer.py`) | NO DB read, NO fallback if subprocess fails. Parses CLI stdout. |
+| GET /api/maestro/stock/[ticker] | maestro/stock/[ticker]/route.ts | Python primary; SQLite: stocks.db + predictions.db via getStockByTickerFallback + getStockRecommendationFallback | stocks, predictions | data{ticker, name, name_ar, current_price, previous_close, change_percent, volume, market_cap, sector, signal, signal_ar, trend, support, resistance, ma_50, ma_200, rsi, fundamentals{pe_ratio, pb_ratio, eps, roe, dividend_yield}, prediction (full rec), persona, regime} | YES — Python `/api/maestro/stock/<ticker>` | SQLite fallback uses BOTH stocks.db and predictions.db but predictions.db is fetched via getStockRecommendationFallback which only returns the latest row. |
+
+## Field-by-field consistency matrix — ALL routes returning each field
+
+### rsi
+Routes returning rsi:
+1. /api/stocks/[ticker] (Python passthrough)
+2. /api/stocks/[ticker]/publish-data (SQLite: stocks.db.stocks.rsi — pre-computed by Python analyzers/indicators/calc_rsi Wilder's)
+3. /api/stocks/[ticker]/professional-analysis (SQLite: stocks.db.stocks.rsi)
+4. /api/maestro/stock/[ticker] (SQLite: stocks.db.stocks.rsi)
+5. /api/predictions/honest-tracking/list (parsed from notes `RSI=`)
+6. /api/unified (MISLABELED: `rsi: analysis.technical_score || 50`)
+7. /api/predictions/expert-consensus (SQLite: stocks.db.stocks.rsi)
+8. /api/smart-confluence/analysis/[symbol] (FABRICATED fallback: hardcoded `rsi: 50`)
+
+→ **BEST SOURCE**: /api/stocks/[ticker]/publish-data SQLite fallback (Rule 54 — reads pre-computed column written by canonical Python `analyzers/indicators/calc_rsi`). Same column read by /professional-analysis and /maestro/stock. **DO NOT USE /api/unified's `rsi` field — it is actually technical_score mislabeled.**
+
+### support / resistance / support_level / resistance_level
+Routes returning these (any variant):
+1. /api/stocks/[ticker]/comprehensive (REWRITES support=cp*0.95, resistance=cp*1.05 if missing — lines 194-198)
+2. /api/stocks/[ticker]/publish-data (predictions.db.support_level/_2/resistance_level/_2; SYNTHESIZES from entry_price if NULL — lines 402-405)
+3. /api/stocks/[ticker]/professional-analysis (SQLite: stocks.db.stocks.support/resistance)
+4. /api/maestro/stock/[ticker] (SQLite: stocks.db.stocks.support/resistance)
+5. /api/maker-radar/stock (predictions.db.support_level/_2/resistance_level/_2; SYNTHESIZES via applyValidatedTargets if NULL — lines 181-186)
+6. /api/predictions (predictions.db.support_level/_2/resistance_level/_2; SYNTHESIZES via applyValidatedTargets)
+7. /api/predictions/honest-tracking/list (parsed from notes `support=`/`resistance=` — raw, NO synthesis)
+8. /api/confluence/analyze/[ticker] (Python passthrough; SQLite fallback has NO support/resistance fields)
+9. /api/market/exit-status (predictions.db passthrough — NO synthesis)
+10. /api/v82 (Python subprocess: stop_loss but NO support/resistance)
+11. /api/predictions/expert-consensus (uses ma_50/ma_200 for `ma_alignment`, not support/resistance)
+
+→ **BEST SOURCE**: /api/predictions/honest-tracking/list (raw `sr_support`/`sr_resistance` parsed from notes — NO synthesis, NO mutation). For current trading-day values: /api/market/exit-status (raw passthrough). **DO NOT USE /api/stocks/[ticker]/comprehensive or /publish-data** — they FABRICATE values when NULL.
+
+### accumulation (label)
+Routes returning `accumulation`:
+1. /api/maker-radar (cache JSON — value set: 'تجميع قوي'/'تصريف قوي'/'تجميع خفيف'/'تصريف خفيف', written by scripts/maker_radar.py)
+2. /api/maker-radar/net-picks (cache passthrough — same value set as above)
+3. /api/maker-radar/entry-timing (TS-computed — DIFFERENT value set: 'تجميع قوي'/'تجميع ضعيف' — NO 'تصريب' variants, NO 'خفيف' variants)
+
+→ **BEST SOURCE**: /api/maker-radar cache value (driven by `shared_liquidity.compute_money_flow` via maker_radar.py — but see API-AUDIT-1: maker_radar.py:507-517 currently has a bug counting green/red days instead of money flow, so the label is WRONG). **DO NOT USE /api/maker-radar/entry-timing** — different label set + TS-computed from a 4-factor heuristic, will disagree with the radar.
+
+### buy_pct / sell_pct / buy_pressure / sell_pressure
+Routes returning these:
+1. /api/maker-radar (cache JSON: buy_pct, sell_pct, net_flow_egp — from shared_liquidity.compute_money_flow)
+2. /api/maker-radar/net-picks (cache passthrough — does NOT include buy_pct itself, but prediction enrichment adds risk_reward)
+3. /api/stocks/[ticker]/publish-data (derived: buyPressure = radarEntry.buy_pct; sellPressure = 100 - buyPressure — same source as radar cache)
+4. /api/flow/[ticker] (Python `/api/flow/<ticker>`: buy_pressure, sell_pressure, net_flow — Python shared_liquidity; SQLite fallback returns NULL)
+5. /api/stocks/[ticker]/depth (TS-computed: imbalance + interpretation ∈ {buy_pressure,sell_pressure,balanced} — DIFFERENT definition: based on intraday tick delta buckets, NOT money flow)
+6. /api/market/intraday-pressure (TS-computed: buy_pressure_pct, sell_pressure_pct per time bucket — DIFFERENT definition: Tick Rule on intraday ticks)
+
+→ **BEST SOURCE**: /api/flow/[ticker] when Python is up (canonical shared_liquidity 6-layer algorithm). Cache-equivalent: /api/maker-radar (same Python module writes the cache). **DO NOT MIX with /api/stocks/[ticker]/depth or /api/market/intraday-pressure** — they use different algorithms and WILL disagree.
+
+### money_flow_state
+Routes returning this:
+1. /api/maker-radar (cache JSON: '🟢 سيولة داخلة'/'🔴 سيولة خارجة'/'⚪ متوازنة' — from shared_liquidity.compute_money_flow)
+2. /api/maker-radar/net-picks (cache passthrough — IF field exists on the radar stock object)
+
+→ **BEST SOURCE**: /api/maker-radar (only source — Python canonical).
+
+### signal / signal_type / signal_ar / recommendation / recommendation_ar
+Routes returning these:
+1. /api/stocks/[ticker] (Python passthrough)
+2. /api/stocks/[ticker]/publish-data (predictions.db.signal → mapped to recommendation union; recommendationAr = predictions.db.signal_ar)
+3. /api/stocks/[ticker]/recommendation (Python `/api/professional-analysis/<ticker>`; SQLite fallback predictions.db.signal)
+4. /api/stocks/[ticker]/professional-analysis (SQLite: stocks.db.stocks.signal)
+5. /api/predictions (predictions.db.signal; MUTATED via applyValidatedTargets)
+6. /api/predictions/honest-tracking/list (predictions.db.signal_type || signal — RAW, NO mutation)
+7. /api/predictions/daily-picks (predictions.db.signal; validated via applyValidatedTargets)
+8. /api/predictions/tracking/list (predictions.db.signal — raw)
+9. /api/predictions/expert-consensus (TS-COMPUTED verdict — DIFFERENT signal thresholds)
+10. /api/confluence/analyze/[ticker] (Python passthrough; SQLite fallback predictions.db.signal)
+11. /api/maestro/stock/[ticker] (Python passthrough; SQLite fallback stocks.db.stocks.signal)
+12. /api/market/exit-status (predictions.db.signal; signal_ar — raw passthrough)
+13. /api/maker-radar/stock (predictions.db.signal; MUTATED via applyValidatedTargets)
+14. /api/unified (TS-COMPUTED: signal derived from score, thresholds 75/60/50/40/25)
+15. /api/v2/unified/analyze (TS-COMPUTED: recommendation derived from score, thresholds 75/70/60/50 — DIFFERENT from /unified)
+16. /api/mobile/stocks/[ticker]/recommendation (Python `/api/market-pulse` — NOT /professional-analysis despite path)
+17. /api/mobile/dashboard (Python `/api/market-pulse`)
+18. /api/smart-confluence/analysis/[symbol] (Python passthrough; FALLBACK hardcoded `signal: 'HOLD'`)
+
+→ **BEST SOURCE**: /api/predictions/honest-tracking/list (raw signal_type, NO mutation, NO synthesis). For active predictions: /api/market/exit-status (raw passthrough). **DO NOT USE /api/unified, /api/v2/unified/analyze, or /api/predictions/expert-consensus** — they COMPUTE signal in TS with conflicting thresholds (75/60/50/40/25 vs 75/70/60/50 vs expert-consensus's own logic). The frontend's perception of "different signals on different screens" is largely caused by these three TS-computed verdicts disagreeing with the DB-stored signal.
+
+### master_score / maestro_score
+Routes returning these:
+1. /api/stocks/[ticker]/publish-data (predictions.db.master_score → masterScore)
+2. /api/stocks/[ticker]/recommendation (predictions.db.master_score)
+3. /api/predictions (predictions.db.master_score)
+4. /api/predictions/honest-tracking/list (predictions.db.master_score → BOTH `confidence` AND `maestro_score` — DUPLICATE in same response)
+5. /api/predictions/daily-picks (predictions.db.master_score)
+6. /api/predictions/tracking/list (predictions.db.master_score)
+7. /api/predictions/expert-consensus (predictions.db.master_score)
+8. /api/confluence/analyze/[ticker] (predictions.db.master_score)
+9. /api/market/exit-status (predictions.db.master_score)
+10. /api/maker-radar/stock (predictions.db.master_score)
+11. /api/maker-radar/live-watch (cache JSON `score || master_score` — MAY NOT be the same value: cache `score` is sometimes a path-based base score from PATH_BASE_SCORE map in /api/radar/personalized)
+12. /api/unified (TS-COMPUTED: `analysis.master_score + personaProfile.score_boost`, clamped 10-95 — DIFFERENT from DB)
+13. /api/v2/unified/analyze (TS-COMPUTED: weighted blend of confluence master_score and persona signal-derived score)
+14. /api/mobile/dashboard (Python `/api/market-pulse` passthrough)
+
+→ **BEST SOURCE**: /api/predictions/honest-tracking/list (raw predictions.db.master_score). **DO NOT USE /api/unified or /api/v2/unified/analyze** — they recompute with persona overlays that aren't persisted. **Frontend bug**: honest-tracking/list returns the same value under both `confidence` and `maestro_score` — pick one field name and delete the other to avoid UI showing two different numbers from the same DB cell.
+
+### phase / phase_ar / stock_phase
+- NONE of the 24 audited routes return `phase`, `phase_ar`, or `stock_phase` as a stock-level field.
+- The radar's `path` field (A_pre_surge, B_quiet_accumulation_strong, C_quiet_accumulation_weak, D_explosive_surge, E_early_break) is the closest analog but uses different vocabulary.
+- Per API-AUDIT-1, `stocks.db.stock_phase` table exists but is unused.
+
+→ **GAP**: no API exposes `stock_phase`. Recommend a single route `/api/stocks/[ticker]/phase` that reads `stocks.db.stock_phase` and returns the phase label. Until then, frontend must NOT mix radar `path` with any phase field.
+
+### target_price / target_price_2 / target_price_3
+Routes returning these:
+1. /api/stocks/[ticker]/publish-data (predictions.db.target_price, target_price_2 — SYNTHESIZES target2=target1*1.05 if NULL — line 398)
+2. /api/predictions (predictions.db.target_price, target_price_2 — SYNTHESIZES target_price_2=target1*1.05 if NULL — line 180/182)
+3. /api/predictions/honest-tracking/list (predictions.db.target_price, target_price_2, target_price_3 — RAW, target_price_3 parsed from analysis_json — NO synthesis)
+4. /api/predictions/daily-picks (predictions.db.target_price, target_price_2 — validated via applyValidatedTargets)
+5. /api/predictions/tracking/list (predictions.db.target_price only — no target_price_2)
+6. /api/confluence/analyze/[ticker] (predictions.db.target_price only)
+7. /api/maker-radar/stock (predictions.db.target_price, target_price_2 — validated)
+8. /api/maker-radar/net-picks (predictions.db.target_price, target_price_2 — validated)
+9. /api/market/exit-status (predictions.db.target_price only)
+10. /api/v82 (Python subprocess: target_price_1, target_price_2 — different naming)
+11. /api/smart-confluence/analysis/[symbol] (Python passthrough; FALLBACK hardcoded `target_price: 0`)
+
+→ **BEST SOURCE**: /api/predictions/honest-tracking/list (raw, includes target_price_3 — the only route that exposes 3 targets). **DO NOT USE /api/stocks/[ticker]/publish-data or /api/predictions** — they fabricate target_price_2 = target1*1.05 when NULL.
+
+### stop_loss
+Routes returning this:
+1. /api/stocks/[ticker]/publish-data (predictions.db.stop_loss — SYNTHESIZES stop=entry*0.94 if NULL — line 399)
+2. /api/predictions (predictions.db.stop_loss — validated via applyValidatedTargets which MUTATES the value)
+3. /api/predictions/honest-tracking/list (predictions.db.stop_loss — RAW, NO mutation)
+4. /api/predictions/daily-picks (predictions.db.stop_loss — validated)
+5. /api/predictions/tracking/list (predictions.db.stop_loss — raw)
+6. /api/confluence/analyze/[ticker] (predictions.db.stop_loss)
+7. /api/maker-radar/stock (predictions.db.stop_loss — validated)
+8. /api/maker-radar/net-picks (predictions.db.stop_loss — validated)
+9. /api/market/exit-status (predictions.db.stop_loss — RAW, no synthesis)
+10. /api/v82 (Python subprocess: stop_loss)
+11. /api/smart-confluence/analysis/[symbol] (Python passthrough; FALLBACK hardcoded `stop_loss: 0`)
+12. /api/unified POST /analyze (Python: risk.stop_loss_price)
+
+→ **BEST SOURCE**: /api/market/exit-status or /api/predictions/honest-tracking/list (both raw passthrough). **DO NOT USE /api/stocks/[ticker]/publish-data** — fabricates stop_loss = entry * 0.94 when NULL.
+
+## Routes that should be DEPRECATED or MERGED
+
+1. **/api/maestro/route.ts** vs **/api/maestro/overview/route.ts** — IDENTICAL implementations (both proxy Python `/api/market-pulse`, both ~30 lines, same code). **DELETE ONE** (suggest keeping `/api/maestro/overview` and 301-redirecting `/api/maestro` to it).
+
+2. **/api/stocks/[ticker]/professional-analysis/route.ts** vs **/api/stocks/[ticker]/recommendation/route.ts** — BOTH proxy Python `/api/professional-analysis/<ticker>` with the SAME SQLite fallback (`getStockRecommendationFallback`). **MERGE INTO ONE** — keep `/api/stocks/[ticker]/recommendation` (clearer name) and delete `/professional-analysis`.
+
+3. **/api/predictions/tracking/list/route.ts** vs **/api/predictions/honest-tracking/list/route.ts** — Same source table (`predictions.db.predictions`), same Python upstream (`/api/predictions/tracking/list`). The honest-tracking variant returns 50+ fields vs 17. **DEPRECATE `/api/predictions/tracking/list`** in favor of `/api/predictions/honest-tracking/list`.
+
+4. **/api/mobile/stocks/[ticker]/route.ts** — duplicates `/api/stocks/[ticker]/route.ts` for the mobile client. Same Python source, same SQLite fallback. Returns a SLIM shape (no signal/rsi/support/resistance/master_score). Either **MERGE** into `/api/stocks/[ticker]` with `?lite=1` flag, or **DOCUMENT** as intentional bandwidth optimization (current state leaves mobile users without analysis fields the desktop app shows — likely a customer complaint source).
+
+5. **/api/mobile/stocks/[ticker]/recommendation/route.ts** — proxies Python `/api/market-pulse` despite the path suggesting per-stock recommendation. Either **RENAME** to `/api/mobile/market-pulse` or **REPLACE** with a real per-stock recommendation (proxy `/api/professional-analysis/<ticker>`).
+
+6. **/api/confluence/analyze/[ticker]/route.ts** vs **/api/smart-confluence/analysis/[symbol]/route.ts** — DIFFERENT Python paths but overlapping semantics. The smart-confluence variant FABRICATES fallback values (rsi=50, signal='HOLD', scores=40 — Rule 27 violation). **PICK ONE canonical confluence endpoint** and remove the other; fix the fallback to return nulls (Rule 27) instead of fabricated numbers.
+
+7. **/api/stocks/sparkline/route.ts** lines 132-153 — fabricates index sparkline with sin-wave noise from `change_percent`. **REPLACE** with a real index history read from `stocks.db.market_indices` historical table, or return empty array with `note: 'no historical data'`.
+
+## Routes that COMPUTE fields CLIENT-SIDE (TS) instead of reading from DB
+
+These routes return stock metrics that are NOT persisted in any SQLite table — they are computed on every request from raw price/volume rows. Two different routes computing the "same" metric will produce different numbers.
+
+1. **/api/stocks/[ticker]/depth/route.ts** — depth, bids/asks, imbalance, `interpretation ∈ {buy_pressure, sell_pressure, balanced}` are TS-computed from `intraday.db.stock_intraday` ticks. Algorithm: bucket ticks by price level (0.5% if price > 100 EGP, else 0.25 EGP flat), classify each tick by trade aggression (Tick Rule: price↑ = buy, price↓ = sell). **Will DISAGREE with /api/flow (Python `shared_liquidity.compute_money_flow`) and /api/market/intraday-pressure (TS but different bucketing).**
+
+2. **/api/market/intraday-pressure/route.ts** — `buy_pressure_pct`, `sell_pressure_pct`, `net_pressure`, `vwap` are TS-computed per time bucket (5min/15min/30min/1h/session). Uses the SAME Tick Rule as /depth but on time-bucketed ticks instead of price-bucketed. **Will DISAGREE with /api/flow's buy_pct/sell_pct** (different algorithm entirely — /flow uses CLV-5d + CMF-20d).
+
+3. **/api/maker-radar/footprint/route.ts** — `buy_volume`, `sell_volume`, `delta_volume`, `buy_sell_ratio` are TS-computed with NAIVE 70/30 split based on whether close > open. **NOT real order flow.** Will disagree with /depth and /flow.
+
+4. **/api/maker-radar/entry-timing/route.ts** — `accumulation`, `volume`, `support`, `momentum` scores + `recommendation` are TS-computed from 30-day OHLCV. Different `accumulation` label set from /api/maker-radar cache. **Will disagree with /api/maker-radar on the same ticker.**
+
+5. **/api/predictions/expert-consensus/route.ts** — `verdict`, `confidence_pct`, `bullish_signals`, `bearish_signals`, `reasons[]` are TS-computed from predictions + stocks data. Uses its own scoring logic — **different thresholds from /api/unified (75/60/50/40/25) and /api/v2/unified/analyze (75/70/60/50).**
+
+6. **/api/unified/route.ts** (POST /analyze) — `signal`, `signal_ar`, `score` computed in TS from `analysis.master_score + personaProfile.score_boost`. Thresholds: STRONG_BUY≥75, BUY≥60, ACCUMULATE≥50, SELL≤40, STRONG_SELL≤25. **`rsi` field is MISLABELED — it actually holds `analysis.technical_score`, not RSI.** Will disagree with DB-stored signal in /api/predictions/honest-tracking/list.
+
+7. **/api/v2/unified/analyze/route.ts** — `score`, `recommendation`, `recommendation_ar` computed in TS via confluence + persona blend (when Python down). Thresholds: STRONG_BUY≥75, BUY≥70, HOLD≥60, REDUCE≥50. **Different thresholds from /api/unified** — these two routes will return different recommendations for the same score.
+
+8. **/api/stocks/[ticker]/comprehensive/route.ts** lines 184-222 — REWRITES `technical.support`, `technical.resistance`, `technical.high_52w`, `technical.low_52w` in TS. For support/resistance: if `sup <= 0 || sup >= cp` → `sup = cp * 0.95`; if `res <= cp` → `res = cp * 1.05`. This is partial fabrication (mild Rule 67 violation). 52w values are correctly nulled if missing.
+
+9. **/api/stocks/[ticker]/publish-data/route.ts** lines 397-405 — SYNTHESIZES `targetPrice2 = target1 * 1.05`, `stopLoss = entry * 0.94`, `support1 = entry * 0.96`, `support2 = support1 * 0.96`, `resistance1 = target1`, `resistance2 = target2` when DB columns are NULL. **Rule 27 violation** — never returns null, always fabricates.
+
+10. **/api/smart-confluence/analysis/[symbol]/route.ts** lines 47-72 — FALLBACK hardcodes `signal: 'HOLD'`, `confidence: 20`, `entry_price: 0`, `target_price: 0`, `stop_loss: 0`, `confluence_score: 40`, `technical_score: 40`, `fundamental_score: 40`, `volume_seasonal_score: 40`, `rsi: 50`, `macd_signal: 'NEUTRAL'`. **Severe Rule 27 violation** — frontend cannot distinguish "no data" from "stock genuinely neutral".
+
+## Stage Summary
+
+- Audited 24 routes (16 from the task's high-traffic list + 8 adjacent routes that surfaced via field-grep). 23 serve per-stock data; 1 (/api/predictions/honest-tracking/route.ts) is a manifest only.
+- 13 routes return `rsi` (1 mislabeled, 1 fabricated). **Best**: `/api/stocks/[ticker]/publish-data` SQLite fallback (reads pre-computed column from canonical Python `analyzers/indicators/calc_rsi`).
+- 11 routes return support/resistance (3 fabricate values when NULL). **Best**: `/api/predictions/honest-tracking/list` (raw passthrough, no synthesis).
+- 3 routes return `accumulation` (2 from radar cache, 1 TS-computed with DIFFERENT label set). **Best**: `/api/maker-radar` cache value — BUT note API-AUDIT-1 found a bug in `scripts/maker_radar.py:507-517` that mislabels based on green/red days instead of money flow.
+- 6 routes return buy_pct/sell_pct or buy_pressure/sell_pressure (3 different algorithms: Python shared_liquidity, TS depth buckets, TS intraday Tick Rule). **Best**: `/api/flow/[ticker]` when Python is up; cache-equivalent via `/api/maker-radar`. The 2 TS-computed variants WILL disagree.
+- 2 routes return `money_flow_state` (both from radar cache). **Best**: `/api/maker-radar`.
+- 18 routes return signal/signal_ar/recommendation/recommendation_ar (4 TS-compute with 3 different threshold sets; 4 mutate via `applyValidatedTargets`; 1 hardcodes fallback 'HOLD'). **Best**: `/api/predictions/honest-tracking/list` (raw passthrough).
+- 14 routes return master_score/maestro_score (2 TS-compute; 1 returns DUPLICATE under `confidence` AND `maestro_score` field names). **Best**: `/api/predictions/honest-tracking/list` (single source of truth).
+- 0 routes expose `phase`/`phase_ar`/`stock_phase` — gap (table exists, unused).
+- 11 routes return target_price variants (3 fabricate target_price_2 = target1 * 1.05 when NULL). **Best**: `/api/predictions/honest-tracking/list` (only route exposing target_price_3, raw passthrough).
+- 12 routes return stop_loss (1 fabricates stop = entry * 0.94 when NULL; 4 mutate via applyValidatedTargets; 1 hardcodes 0 in fallback). **Best**: `/api/market/exit-status` or `/api/predictions/honest-tracking/list` (raw passthrough).
+- **6 routes should be DEPRECATED/MERGED**: /api/maestro/route.ts (dup of /maestro/overview), /api/stocks/[ticker]/professional-analysis (dup of /recommendation), /api/predictions/tracking/list (subset of /honest-tracking/list), /api/mobile/stocks/[ticker] (dup of /stocks/[ticker] — missing analysis fields for mobile), /api/mobile/stocks/[ticker]/recommendation (misleading path — proxies market-pulse not professional-analysis), one of /api/confluence/analyze vs /api/smart-confluence/analysis.
+- **10 routes COMPUTE stock metrics CLIENT-SIDE (TS) instead of reading from DB**: /api/stocks/[ticker]/depth, /api/market/intraday-pressure, /api/maker-radar/footprint, /api/maker-radar/entry-timing, /api/predictions/expert-consensus, /api/unified (POST /analyze), /api/v2/unified/analyze, /api/stocks/[ticker]/comprehensive (support/resistance rewrite), /api/stocks/[ticker]/publish-data (target/stop/support synthesis), /api/smart-confluence/analysis/[symbol] (hardcoded fallback). These are the ROOT CAUSE of the customer's "same stock, different data on different screens" complaint — two routes computing the "same" metric with different algorithms return different numbers.
+- **3 conflicting signal threshold sets**: /api/unified (75/60/50/40/25), /api/v2/unified/analyze (75/70/60/50), and /api/predictions/expert-consensus (its own logic). All three COMPUTE signal in TS rather than reading predictions.db.signal.
+- **3 conflicting buy/sell pressure algorithms**: Python `shared_liquidity.compute_money_flow` (CLV-5d + CMF-20d, 6-layer), /api/stocks/[ticker]/depth (price-bucketed Tick Rule), /api/market/intraday-pressure (time-bucketed Tick Rule).
+- **Recommended next action**: pick ONE canonical route per shared field (see "BEST SOURCE" above), document it in a single `STOCK_API_CONTRACT.md`, and migrate all frontend callers to use only those canonical routes. Routes that fabricate values when NULL (/publish-data, /comprehensive, /smart-confluence) must be fixed to return null + an error string per Rule 27 — they currently cause the frontend to display fabricated numbers as if they were real analysis.
+---
