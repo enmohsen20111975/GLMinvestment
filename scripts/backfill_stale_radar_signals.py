@@ -118,11 +118,15 @@ def main():
                 print(f'  ⚠️ Could not add column {col_name}: {e}')
     conn.commit()
 
-    # Find all pending entries with no data_quality (old rows before the schema upgrade)
+    # ─── STRICTER RULE (Task FIX-STALE-DTPP-FOLLOWUP) ─────────────────
+    # Process BOTH: rows without data_quality AND rows with staleness>7d but still pending.
+    # The previous rule only marked deviation >5% as stale_data. Now any signal older
+    # than 7 days needs to be marked stale_data regardless of deviation.
     cur.execute("""
         SELECT id, ticker, signal_date, entry_price, reason, status
         FROM radar_signal_tracking
-        WHERE data_quality IS NULL OR data_quality = ''
+        WHERE (data_quality IS NULL OR data_quality = '')
+           OR (staleness_days > 7 AND status = 'pending')
         ORDER BY id
     """)
     rows = cur.fetchall()
@@ -150,6 +154,12 @@ def main():
                 staleness = (today - pd).days
             except Exception:
                 staleness = None
+
+            # ─── STRICTER RULE (Task FIX-STALE-DTPP-FOLLOWUP) ─────────────
+            # أي إشارة أقدم من 7 أيام → stale_data تلقائياً (بصرف النظر عن deviation)
+            # السبب: حتى لو entry_price موافق للسعر الفعلي، الإشارة اللي عمرها أسبوع
+            # مش مفيدة للعميل كموصى "نشطة".
+            STRICT_STALENESS_DAYS = 7
 
             if deviation_pct > DEVIATION_THRESHOLD_PCT:
                 # Entry_price is significantly off from actual close → STALE
@@ -180,15 +190,32 @@ def main():
                     quality = 'stale'
                 else:
                     quality = 'very_stale'
+
+                # ─── STRICTER RULE (Task FIX-STALE-DTPP-FOLLOWUP) ─────────
+                # لو الإشارة أقدم من 7 أيام → status='stale_data' (مش pending)
+                # السبب: الإشارة القديمة مش مفيدة للعميل كموصى "نشطة"
+                initial_status = status
+                if staleness is not None and staleness > STRICT_STALENESS_DAYS:
+                    initial_status = 'stale_data'
+                    age_note = f' | ⏳ BACKFILL: إشارة قديمة ({staleness}d) — تم تعليمها stale_data تلقائياً'
+                    new_reason = ((reason or '') + age_note)[:500]
+                else:
+                    initial_status = status
+                    new_reason = reason
+
                 cur.execute("""
                     UPDATE radar_signal_tracking
                     SET data_date=?,
                         data_quality=?,
                         staleness_days=?,
                         price_source='daily',
-                        daily_price=?
+                        daily_price=?,
+                        status=?,
+                        reason=?
                     WHERE id=?
-                """, (actual_date, quality, staleness, actual_close, rid))
+                """, (actual_date, quality, staleness, actual_close, initial_status, new_reason, rid))
+                if initial_status == 'stale_data':
+                    print(f'  ⏳ STALE (age) id={rid} {ticker} sig={sig_date} entry={entry_price} age={staleness}d')
                 fresh_marked += 1
 
     conn.commit()

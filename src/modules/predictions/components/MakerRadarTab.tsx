@@ -163,6 +163,18 @@ interface RadarStock {
   trackingEntryDate?: string;
   trackingEntryPrice?: number;
   changeSinceTracking?: number;
+  // ─── FRESHNESS GUARD (Task FIX-STALE-DTPP-2026-10-07) ────────────────
+  // كل الأسهم تحت الميكروسكوب لازم تبان للعميل بـ freshness metadata
+  // عشان يقدر يثق في إن السعر اللي شايفه فعلاً live (مش قديم بـ 10 أيام)
+  last_close_date?: string | null;       // آخر تاريخ إغلاق في الـ DB
+  staleness_days?: number | null;        // كم يوم قديم (0=اليوم، 1=أمس، ...)
+  data_quality?: 'fresh' | 'stale' | 'very_stale' | 'unknown' | null;
+  data_stale?: boolean | null;           // true لو stale
+  live_price?: number | null;            // السعر الحي من stocks.current_price
+  live_change_percent?: number | null;
+  live_last_update?: string | null;      // ISO timestamp آخر تحديث لـ stocks
+  price_source?: 'live' | 'daily' | null; // مصدر current_price
+  data_date?: string | null;             // التاريخ الفعلي للسعر المعروض
 }
 
 interface MakerRadarResponse {
@@ -2205,7 +2217,45 @@ const StockTable = memo(function StockTable({
       render: (stock) => {
         const liveInfo = stockInfoForTicker(stock.ticker);
         const livePrice = liveInfo?.current_price ?? stock.current_price;
-        return <FlashingPriceCell price={livePrice} />;
+        // ─── FRESHNESS GUARD (Task FIX-STALE-DTPP) ────────────────────────
+        // عرض badge صغير تحت السعر يوضّح لو البيانات fresh أو stale.
+        // العميل لازم يعرف لو السعر ده فعلاً بتاع اليوم ولا قديم بـ 10 أيام.
+        const q = stock.data_quality;
+        const sd = stock.staleness_days;
+        const src = stock.price_source;
+        let badgeColor = 'bg-muted text-muted-foreground';
+        let badgeText = '—';
+        let badgeTitle = '';
+        if (q === 'fresh') {
+          badgeColor = 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+          badgeText = src === 'live' ? '🔴 live' : `✓ ${sd ?? 0}d`;
+          badgeTitle = `بيانات حديثة — ${src === 'live' ? 'مصدر حي' : `آخر إغلاق ${sd ?? 0} يوم`} (data_date: ${stock.data_date ?? '?'})`;
+        } else if (q === 'stale') {
+          badgeColor = 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
+          badgeText = `⚠️ ${sd}d`;
+          badgeTitle = `بيانات قديمة (${sd} يوم) — آخر تحديث: ${stock.data_date ?? '?'}`;
+        } else if (q === 'very_stale') {
+          badgeColor = 'bg-rose-500/15 text-rose-600 dark:text-rose-400';
+          badgeText = `⛔ ${sd}d`;
+          badgeTitle = `بيانات قديمة جداً (${sd} يوم) — السعر ده مش مظبوط! آخر تحديث: ${stock.data_date ?? '?'}`;
+        } else if (q === 'unknown') {
+          badgeColor = 'bg-muted text-muted-foreground';
+          badgeText = '?';
+          badgeTitle = 'بيانات freshness مش متاحة';
+        }
+        return (
+          <div className="flex flex-col items-end gap-0.5">
+            <FlashingPriceCell price={livePrice} />
+            {q && (
+              <span
+                className={`text-[9px] px-1 rounded font-bold ${badgeColor}`}
+                title={badgeTitle}
+              >
+                {badgeText}
+              </span>
+            )}
+          </div>
+        );
       },
     },
     {
