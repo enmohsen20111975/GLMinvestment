@@ -29,12 +29,17 @@ export async function GET(request: NextRequest) {
     let recentUsers: Array<Record<string, unknown>> = [];
 
     try {
-      userCount = await db.user.count();
+      // ─── SOFT-DELETE-FIX (Task SUBSCRIPTION-FIX-2026-10-07) ───────────────
+      // قبل كده: userCount كان بـ يحسب كل المستخدمين بما فيهم المعطلين (soft-deleted)
+      // → العدد بيتذبذب بشكل غريب.
+      // الحل: فلترة بـ is_active=true (المستخدمين النشطين فقط).
+      userCount = await db.user.count({ where: { is_active: true } });
       activeUserCount = await db.user.count({ where: { is_active: true } });
       premiumUserCount = await db.user.count({
-        where: { subscription_tier: 'premium' },
+        where: { subscription_tier: 'premium', is_active: true },
       });
       const recentDbUsers = await db.user.findMany({
+        where: { is_active: true },
         orderBy: { created_at: 'desc' },
         take: 5,
         select: { email: true, name: true, created_at: true, subscription_tier: true, last_login: true },

@@ -13,16 +13,24 @@
  */
 
 import { withOfficialLinks } from '@/modules/publishing/lib/official-links';
+// CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+// Single source of truth for signal classification + Arabic label.
+// Local Recommendation type was 5-level (BUY/STRONG_BUY/SELL/HOLD/INSTITUTIONAL_BUY);
+// canonical-signal.ts provides the full 7-level taxonomy + signalAr() helper.
+import {
+  signalAr as canonicalSignalAr,
+  type SignalType,
+} from '@/lib/canonical-signal';
 
 // ============================================================================
 // Types
 // ============================================================================
 
+// Recommendation now aligns with canonical SignalType (7 levels) while
+// preserving legacy INSTITUTIONAL_BUY for backward compatibility with
+// existing callers (canonicalSignalAr() maps it → 'شراء قوي').
 export type Recommendation =
-  | 'BUY'
-  | 'STRONG_BUY'
-  | 'SELL'
-  | 'HOLD'
+  | SignalType
   | 'INSTITUTIONAL_BUY';
 
 export type MarketRegime = 'DEFENSIVE' | 'NORMAL' | 'AGGRESSIVE';
@@ -131,17 +139,27 @@ export interface StockPublishData {
 
 // ============================================================================
 // Constants — server-safe subset of RECOMMENDATION_META (no JSX)
+// CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+// Migrated from 5-level (STRONG_BUY/BUY/INSTITUTIONAL_BUY/HOLD/SELL) to the
+// full canonical 7-level taxonomy (STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/
+// SELL/STRONG_SELL). Arabic labels are now sourced from canonicalSignalAr()
+// to guarantee consistency across screens. Emojis stay here as presentation.
 // ============================================================================
 
+// Back-compat: keep RECOMMENDATION_TEXT export for callers that read .ar/.emoji
+// directly (e.g. StockPublisher.tsx). Now sourced from canonicalSignalAr().
 export const RECOMMENDATION_TEXT: Record<
   Recommendation,
   { ar: string; emoji: string }
 > = {
-  STRONG_BUY: { ar: 'شراء قوي', emoji: '🚀' },
-  BUY: { ar: 'شراء', emoji: '✅' },
-  INSTITUTIONAL_BUY: { ar: 'شراء مؤسسي', emoji: '🏛️' },
-  HOLD: { ar: 'احتفاظ', emoji: '⏸️' },
-  SELL: { ar: 'بيع', emoji: '🔻' },
+  STRONG_BUY: { ar: canonicalSignalAr('STRONG_BUY'), emoji: '🚀' },
+  BUY: { ar: canonicalSignalAr('BUY'), emoji: '✅' },
+  ACCUMULATE: { ar: canonicalSignalAr('ACCUMULATE'), emoji: '📦' },
+  HOLD: { ar: canonicalSignalAr('HOLD'), emoji: '⏸️' },
+  REDUCE: { ar: canonicalSignalAr('REDUCE'), emoji: '🔻' },
+  SELL: { ar: canonicalSignalAr('SELL'), emoji: '🔻' },
+  STRONG_SELL: { ar: canonicalSignalAr('STRONG_SELL'), emoji: '🔻' },
+  INSTITUTIONAL_BUY: { ar: canonicalSignalAr('INSTITUTIONAL_BUY'), emoji: '🏛️' },
 };
 
 export const MARKET_REGIME_AR: Record<MarketRegime, string> = {

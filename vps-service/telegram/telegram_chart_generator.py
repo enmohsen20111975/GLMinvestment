@@ -20,6 +20,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, List
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for signal/accumulation/money_flow classification.
+_VPS_SERVICE_ROOT = Path(__file__).resolve().parents[1]
+if str(_VPS_SERVICE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_VPS_SERVICE_ROOT))
+try:
+    from utils.canonical_signal import classify_signal, signal_ar as canonical_signal_ar
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def classify_signal(_score):  # type: ignore[no-redef]
+        return None
+    def canonical_signal_ar(_sig):  # type: ignore[no-redef]
+        return None
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DB_DIR = PROJECT_ROOT / 'db'
 PRICE_HISTORY_DB = DB_DIR / 'price_history.db'
@@ -64,6 +77,10 @@ def get_stock_candles(ticker: str, limit: int = 40) -> List[Dict]:
 
 def get_stock_details(ticker: str) -> Dict:
     """جلب تفاصيل السهم ومستويات الرادار."""
+    # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27 NO-FAKE-DATA)
+    # Removed fabricated defaults: confidence=65, direction='تجميع صاعد مع الميكر'.
+    # Numeric levels default to 0 / None — chart conditionally omits the
+    # corresponding badges/lines (see build_svg_chart at lines ~210-243).
     data = {
         'ticker': ticker,
         'name': ticker,
@@ -76,10 +93,11 @@ def get_stock_details(ticker: str) -> Dict:
         'tp1': 0.0,
         'tp2': 0.0,
         'sl': 0.0,
-        'confidence': 65,
-        'direction': 'تجميع صاعد مع الميكر'
+        'confidence': None,
+        'direction': None,
+        'signal': None,
     }
-    
+
     if STOCKS_DB.exists():
         try:
             con = sqlite3.connect(STOCKS_DB)
@@ -111,18 +129,24 @@ def get_stock_details(ticker: str) -> Dict:
                 data['tp1'] = float(r['target_price'] or 0)
                 data['tp2'] = float(r['target_price_2'] or 0)
                 data['sl'] = float(r['stop_loss'] or 0)
-                data['confidence'] = int(r['confidence'] or 65)
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27)
+                # Don't fabricate confidence=65 when NULL — preserve None.
+                _raw_conf = r['confidence']
+                data['confidence'] = int(_raw_conf) if _raw_conf is not None else None
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+                # Stash canonical signal label so the chart card matches all
+                # other screens (rule 67 — single source of truth).
+                _raw_sig = r['signal']
+                if _raw_sig:
+                    data['signal'] = _raw_sig
+                    data['direction'] = canonical_signal_ar(_raw_sig)
             con.close()
         except Exception:
             pass
 
-    # إذا لم تكن الأهداف مسجلة نحسبها استناداً للسعر الحالي
-    p = data['current_price']
-    if p > 0:
-        if data['tp1'] <= 0: data['tp1'] = round(p * 1.055, 2)
-        if data['tp2'] <= 0: data['tp2'] = round(p * 1.115, 2)
-        if data['sl'] <= 0: data['sl'] = round(p * 0.955, 2)
-
+    # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27 NO-FAKE-DATA)
+    # Removed fabricated price-level fallbacks (was: tp1=p*1.055, tp2=p*1.115,
+    # sl=p*0.955). Chart now conditionally skips drawing these levels when 0.
     return data
 
 def build_svg_chart(candles: List[Dict], stock: Dict, width: int = 1000, height: int = 560) -> str:
@@ -273,10 +297,19 @@ def render_html_card(stock: Dict, svg_chart: str) -> str:
     """بناء الصفحة الكاملة للبطاقة التسويقية المصورة."""
     change_color = '#10b981' if stock['change_pct'] >= 0 else '#ef4444'
     change_sign = '+' if stock['change_pct'] >= 0 else ''
-    
-    tp1_gain = ((stock['tp1'] - stock['current_price']) / stock['current_price'] * 100) if stock['current_price'] > 0 else 0
-    tp2_gain = ((stock['tp2'] - stock['current_price']) / stock['current_price'] * 100) if stock['current_price'] > 0 else 0
-    sl_loss = ((stock['current_price'] - stock['sl']) / stock['current_price'] * 100) if stock['current_price'] > 0 else 0
+
+    # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27 NO-FAKE-DATA)
+    # Don't fabricate price levels when missing — show "—" placeholder.
+    _cur = stock['current_price']
+    tp1_gain = ((stock['tp1'] - _cur) / _cur * 100) if (_cur > 0 and stock['tp1'] > 0) else 0
+    tp2_gain = ((stock['tp2'] - _cur) / _cur * 100) if (_cur > 0 and stock['tp2'] > 0) else 0
+    sl_loss = ((_cur - stock['sl']) / _cur * 100) if (_cur > 0 and stock['sl'] > 0) else 0
+
+    # Rule 27: when level missing, show "—" instead of fabricated value.
+    tp1_val = f"{stock['tp1']:.2f} <span style='font-size:13px;'>(+{tp1_gain:.1f}%)</span>" if stock['tp1'] > 0 else "—"
+    tp2_val = f"{stock['tp2']:.2f} <span style='font-size:13px;'>(+{tp2_gain:.1f}%)</span>" if stock['tp2'] > 0 else "—"
+    sl_val = f"{stock['sl']:.2f} <span style='font-size:13px;'>(-{sl_loss:.1f}%)</span>" if stock['sl'] > 0 else "—"
+    conf_val = f"{stock['confidence']}%" if stock.get('confidence') is not None else "—"
 
     return f"""
 <!DOCTYPE html>
@@ -431,19 +464,19 @@ def render_html_card(stock: Dict, svg_chart: str) -> str:
   <div class="metrics-row">
     <div class="metric-card" style="border-color:#10b981;">
       <div class="metric-label">🎯 الهدف الأول (TP1)</div>
-      <div class="metric-value" style="color:#10b981;">{stock['tp1']:.2f} <span style="font-size:13px;">(+{tp1_gain:.1f}%)</span></div>
+      <div class="metric-value" style="color:#10b981;">{tp1_val}</div>
     </div>
     <div class="metric-card" style="border-color:#059669;">
       <div class="metric-label">🚀 الهدف الثاني (TP2)</div>
-      <div class="metric-value" style="color:#34d399;">{stock['tp2']:.2f} <span style="font-size:13px;">(+{tp2_gain:.1f}%)</span></div>
+      <div class="metric-value" style="color:#34d399;">{tp2_val}</div>
     </div>
     <div class="metric-card" style="border-color:#ef4444;">
       <div class="metric-label">🛡 وقف الخسارة (SL)</div>
-      <div class="metric-value" style="color:#ef4444;">{stock['sl']:.2f} <span style="font-size:13px;">(-{sl_loss:.1f}%)</span></div>
+      <div class="metric-value" style="color:#ef4444;">{sl_val}</div>
     </div>
     <div class="metric-card" style="border-color:#d4af37;">
       <div class="metric-label">🔒 دقة وثقة الرادار</div>
-      <div class="metric-value" style="color:#d4af37;">{stock['confidence']}%</div>
+      <div class="metric-value" style="color:#d4af37;">{conf_val}</div>
     </div>
   </div>
 

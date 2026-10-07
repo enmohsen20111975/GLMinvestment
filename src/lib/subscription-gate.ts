@@ -485,7 +485,10 @@ export interface TrialStatus {
   trialEndsAt: Date | null;
 }
 
-const TRIAL_DAYS = 7;
+// ─── CANONICAL-CALCULATIONS (Task SUBSCRIPTION-FIX-2026-10-07, Rule 67) ─────
+// TRIAL_DAYS exported — كان hardcoded في subscription/status/route.ts (14)
+// مختلف عن القيمة هنا (7). الحل: استيرادها من هنا (مصدر واحد).
+export const TRIAL_DAYS = 7;
 const WARNING_DAYS = 0; // انتهاء الفترة التجريبية = حظر فوري (من غير فترة سماح)
 
 /**

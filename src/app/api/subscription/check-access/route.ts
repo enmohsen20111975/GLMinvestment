@@ -80,7 +80,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const TRIAL_DAYS = 7;
+    // ─── CANONICAL-CALCULATIONS (Task SUBSCRIPTION-FIX-2026-10-07, Rule 67) ─────
+    // قبل كده: كان فيه hardcoded inline list مش متطابق مع PAID_TIERS →
+    // b2b_starter/b2b_pro/b2b_enterprise/vip_pass كانوا بـ يتعاملوا معاهم كـ free
+    // → العملاء اللي دفعوا فلوس بـ يتعملهم lock out!
+    // الحل: استيراد PAID_TIERS من subscription-gate.ts (مصدر واحد).
+    import { PAID_TIERS, TRIAL_DAYS as CANONICAL_TRIAL_DAYS } from '@/lib/subscription-gate';
+
+    const TRIAL_DAYS = CANONICAL_TRIAL_DAYS;
     const WARNING_DAYS = 0;
 
     const createdAt = userRecord?.created_at ? new Date(userRecord.created_at) : new Date();
@@ -97,7 +104,8 @@ export async function POST(request: NextRequest) {
     const isExpiredAndDeletionPending = isTrialExpired && now >= warningEndsAt;
     const warningDaysLeft = isInWarning ? Math.max(0, Math.ceil((warningEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
-    const isFreeUser = !['normal', 'premium', 'developer', 'admin', 'pro', 'enterprise'].includes(tier.toLowerCase()) && !hasActiveSubscription;
+    // P0-5: use canonical PAID_TIERS Set (لا hardcoded inline list)
+    const isFreeUser = !PAID_TIERS.has(tier.toLowerCase()) && !hasActiveSubscription;
 
     const featureAccess: Record<string, string[]> = {
       'pro_analysis': ['pro', 'premium', 'enterprise'],

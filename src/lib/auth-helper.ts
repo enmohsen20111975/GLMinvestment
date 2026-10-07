@@ -142,7 +142,41 @@ export async function getSessionUserId(): Promise<{ userId: string | null; isAdm
         logger.warn('bearer token auth error', { err: err instanceof Error ? err.message : String(err) });
       }
     }
-    
+
+    // ─── ADMIN-SESSION-COOKIE (Task SUBSCRIPTION-FIX-2026-10-07, Rule 67) ───────
+    // قبل كده: admin_session cookie (password-login path) ما كانش بيتعرّف عليه →
+    // الأدمن بيشوف "14 يوم تجريبي" رغم إنه المالك.
+    // الحل: نقرأ admin_session cookie ونجيب الـ user_id من الـ DB.
+    if (cookie.includes('admin_session=')) {
+      try {
+        const adminCookieMatch = cookie.match(/admin_session=([^;]+)/);
+        if (adminCookieMatch) {
+          const adminCookieValue = decodeURIComponent(adminCookieMatch[1]);
+          // admin_session cookie بياخد شكل email أو userId
+          // نجرّب نبص على الـ DB بالـ email الأول
+          const adminUser = await db.user.findFirst({
+            where: {
+              OR: [
+                { email: adminCookieValue },
+                { id: adminCookieValue },
+                { username: adminCookieValue },
+              ],
+            },
+            select: { id: true, email: true, username: true, subscription_tier: true, is_active: true },
+          });
+          if (adminUser && adminUser.is_active) {
+            const isAdmin = adminUser.subscription_tier === 'admin' ||
+                            isServerAdmin(adminUser.email || '', adminUser.username || '');
+            logger.debug('admin_session cookie auth ok', { userId: adminUser.id, isAdmin });
+            if (adminUser.id) updateLastActive(adminUser.id);
+            return { userId: adminUser.id, isAdmin };
+          }
+        }
+      } catch (err) {
+        logger.warn('admin_session cookie auth error', { err: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
     // Second: Try Session (Web App)
     const session = await getServerSession(authOptions);
     

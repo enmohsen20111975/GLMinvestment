@@ -26,6 +26,21 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for signal classification. Used to be a 3-level
+# BUY/SELL/HOLD derived from technical_rating strings; now uses the canonical
+# 7-level taxonomy (STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/SELL/STRONG_SELL).
+_VPS_SERVICE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _VPS_SERVICE_ROOT not in sys.path:
+    sys.path.insert(0, _VPS_SERVICE_ROOT)
+try:
+    from utils.canonical_signal import classify_signal, signal_ar as canonical_signal_ar
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def classify_signal(_score):  # type: ignore[no-redef]
+        return 'HOLD'
+    def canonical_signal_ar(_sig):  # type: ignore[no-redef]
+        return 'انتظار'
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Path setup — find market_hours.py and data_engine modules
 # ─────────────────────────────────────────────────────────────────────────────
@@ -190,15 +205,15 @@ def _rating_to_score(rating: Optional[str]) -> float:
 
 
 def _rating_to_signal(rating: Optional[str]) -> str:
-    """تحويل technical_rating إلى إشارة BUY/SELL/HOLD"""
+    """CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+    تحويل technical_rating إلى canonical signal (7-level taxonomy).
+    Was: 3-level BUY/SELL/HOLD mapping (collapsed STRONG_BUY→BUY, STRONG_SELL→SELL).
+    Now: classify_signal(_rating_to_score(rating)) which preserves the full
+    7-level granularity (STRONG_BUY / BUY / ACCUMULATE / HOLD / REDUCE / SELL / STRONG_SELL).
+    """
     if not rating:
         return 'HOLD'
-    r = str(rating).strip().lower()
-    if r in ('شراء', 'شراء قوي', 'buy', 'strong buy'):
-        return 'BUY'
-    if r in ('بيع', 'بيع قوي', 'sell', 'strong sell'):
-        return 'SELL'
-    return 'HOLD'
+    return classify_signal(_rating_to_score(rating))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -422,11 +437,16 @@ class ReportsEngine:
 
             rows = cur.fetchall()
             picks = []
+            # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+            # Buy-side canonical signals — was just `signal == 'BUY'` (3-level).
+            # Now includes STRONG_BUY / BUY / ACCUMULATE so we don't drop the
+            # strong_buy picks (was 'BUY' before, now canonical STRONG_BUY).
+            _BUY_SIDE_SIGNALS = {'STRONG_BUY', 'BUY', 'ACCUMULATE'}
             for r in rows:
                 symbol, name, price, sector, rating, ma_rating, rsi, macd, perf_1w, perf_1m, perf_3m = r
-                # Only include BUY signals
+                # Only include canonical buy-side signals
                 signal = _rating_to_signal(rating)
-                if signal != 'BUY':
+                if signal not in _BUY_SIDE_SIGNALS:
                     continue
 
                 price_f = _to_float(price)
@@ -439,6 +459,12 @@ class ReportsEngine:
                 rsi_f = _to_float(rsi, 50.0)
                 if 40 <= rsi_f <= 65:
                     maestro_score += 5
+
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+                # Reclassify signal from the bonus-adjusted maestro_score so the
+                # canonical label reflects the RSI bonus (e.g. 'BUY' → 'STRONG_BUY'
+                # when RSI bumps the score above 78). Single source of truth.
+                signal = classify_signal(maestro_score)
 
                 upside_pct = 8.0 if rating == 'شراء قوي' else 6.0
                 target = round(price_f * (1 + upside_pct / 100), 2)

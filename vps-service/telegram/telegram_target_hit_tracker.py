@@ -39,6 +39,14 @@ TELEGRAM_DIR = Path(__file__).resolve().parent
 if str(TELEGRAM_DIR) not in sys.path:
     sys.path.insert(0, str(TELEGRAM_DIR))
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for signal/accumulation/money_flow classification.
+try:
+    from utils.canonical_signal import classify_accumulation
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def classify_accumulation(_buy_pct):  # type: ignore[no-redef]
+        return None
+
 DATA_DIR = VPS_SERVICE_DIR / 'data'
 if str(DATA_DIR) not in sys.path:
     sys.path.insert(0, str(DATA_DIR))
@@ -209,6 +217,11 @@ def get_active_radar_targets() -> List[Dict]:
                         name_ar = get_arabic_stock_name(tk, raw_name)
                         item_date = str(item.get('date') or item.get('entry_date') or radar_date)[:10]
 
+                        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27 NO-FAKE-DATA)
+                        # Don't fabricate buy_pct/confidence/vol_ratio — use None when source has no value.
+                        _raw_conf = item.get('confidence_score')
+                        _raw_buy = item.get('buy_pct')
+                        _raw_vol = item.get('vol_ratio_now')
                         active_items[tk] = {
                             'ticker': tk,
                             'name_ar': name_ar,
@@ -216,9 +229,9 @@ def get_active_radar_targets() -> List[Dict]:
                             'target_1': tp1,
                             'target_2': tp2,
                             'stop_loss': sl,
-                            'confidence': float(item.get('confidence_score') or 60),
-                            'buy_pct': float(item.get('buy_pct') or 75),
-                            'vol_ratio': float(item.get('vol_ratio_now') or 1.2),
+                            'confidence': float(_raw_conf) if _raw_conf is not None else None,
+                            'buy_pct': float(_raw_buy) if _raw_buy is not None else None,
+                            'vol_ratio': float(_raw_vol) if _raw_vol is not None else None,
                             'source': 'رادار السيولة والتجميع',
                             'prediction_date': item_date
                         }
@@ -252,6 +265,11 @@ def get_active_radar_targets() -> List[Dict]:
                     sl = float(r['stop_loss'] or 0)
                     if entry > 0:
                         name_ar = get_arabic_stock_name(tk, tk)
+                        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27 NO-FAKE-DATA)
+                        # predictions.db rows don't carry buy_pct/vol_ratio — leave None
+                        # instead of fabricating 70.0/1.1. Downstream classify_accumulation
+                        # returns None for None input (Rule 27 compliant).
+                        _raw_conf = r['confidence']
                         active_items[tk] = {
                             'ticker': tk,
                             'name_ar': name_ar,
@@ -259,9 +277,9 @@ def get_active_radar_targets() -> List[Dict]:
                             'target_1': tp1 if tp1 > 0 else (entry * 1.05),
                             'target_2': tp2 if tp2 > 0 else (entry * 1.10),
                             'stop_loss': sl if sl > 0 else (entry * 0.95),
-                            'confidence': float(r['confidence'] or 65),
-                            'buy_pct': 70.0,
-                            'vol_ratio': 1.1,
+                            'confidence': float(_raw_conf) if _raw_conf is not None else None,
+                            'buy_pct': None,
+                            'vol_ratio': None,
                             'source': 'توقعات المنصة الذكية',
                             'prediction_date': p_date
                         }
@@ -358,10 +376,22 @@ def scan_for_target_hits(active_targets: List[Dict]) -> List[Dict]:
         clean_arabic_name = get_arabic_stock_name(tk, s.get('name_ar') or target.get('name_ar') or tk)
 
         # تحديد المسار القادم (استكمال صعود أم جني أرباح؟)
-        buy_pct = float(s.get('buy_pct') or target.get('buy_pct') or 60.0)
-        vol_ratio = float(s.get('vol_ratio') or target.get('vol_ratio') or 1.2)
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67 + Rule 27)
+        # Was: float(... or 60.0) → fabricated 60% default. Now None when missing.
+        # Was: hardcoded `if buy_pct >= 58.0`. Now uses canonical classify_accumulation
+        # which maps 55+ → 'تجميع خفيف' (light accumulation) or higher. The 3
+        # accumulation labels (تجميع قوي/تجميع/تجميع خفيف) trigger CONTINUE_RALLY.
+        _raw_buy = s.get('buy_pct') or target.get('buy_pct')
+        _raw_vol = s.get('vol_ratio') or target.get('vol_ratio')
+        buy_pct = float(_raw_buy) if _raw_buy is not None else None
+        vol_ratio = float(_raw_vol) if _raw_vol is not None else None
 
-        if buy_pct >= 58.0 and vol_ratio >= 1.0:
+        _accum_label = classify_accumulation(buy_pct) if buy_pct is not None else None
+        _is_accumulating = _accum_label in (
+            'تجميع قوي', 'تجميع', 'تجميع خفيف'
+        ) if _accum_label is not None else False
+
+        if _is_accumulating and (vol_ratio is not None and vol_ratio >= 1.0):
             next_action = 'CONTINUE_RALLY'
             next_action_title = 'استكمال صعود قوي وحماية الأرباح'
             if hit_level == 'TP1':
@@ -370,8 +400,10 @@ def scan_for_target_hits(active_targets: List[Dict]) -> List[Dict]:
                 next_target = high_p * 1.08
             next_profit_pct = ((next_target - entry_p) / entry_p) * 100
             trailing_stop = max(sl, entry_p * 1.01, hit_price * 0.96)
+            # Rule 27: don't fabricate buy_pct in the message text if missing.
+            _buy_pct_txt = f"السيولة الشرائية لا تزال مهيمنة بنسبة ({buy_pct:.0f}%). " if buy_pct is not None else ""
             action_advice = (
-                f"السيولة الشرائية لا تزال مهيمنة بنسبة ({buy_pct:.0f}%). "
+                f"{_buy_pct_txt}"
                 f"نوصي بالاستمرار مع السهم ورفع وقف الخسارة إلى ({trailing_stop:.2f} ج.م) "
                 f"لتأمين الأرباح تماماً مع التطلع للهدف القادم ({next_target:.2f} ج.م)."
             )

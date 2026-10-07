@@ -43,6 +43,14 @@ from typing import Dict, Optional
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for signal/accumulation/money_flow classification.
+try:
+    from utils.canonical_signal import signal_ar as canonical_signal_ar
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def canonical_signal_ar(_sig):  # type: ignore[no-redef]
+        return 'انتظار'
+
 try:
     from analyzers.trader_levels_engine import get_unified_trader_levels
 except ImportError:
@@ -1295,7 +1303,19 @@ def _format_morning_bell_post(data: Dict) -> str:
     for i, s in enumerate(stocks, 1):
         ticker = s.get('ticker', '')
         name_ar = s.get('name_ar', ticker)
-        signal_ar = s.get('signal_ar', 'شراء')
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67 + Rule 27 NO-FAKE-DATA)
+        # Prefer canonical signal_ar() for the 7 canonical levels (matches all
+        # screens). For non-canonical upstream signals (e.g. 'morning_bell_buy'
+        # with rich Arabic label '🔔 شراء جرس الصباح') pass through the upstream
+        # signal_ar. No longer fabricate 'شراء' as default.
+        _signal_en = (s.get('signal') or '').upper()
+        _CANONICAL_SIGNALS = frozenset({
+            'STRONG_BUY', 'BUY', 'ACCUMULATE', 'HOLD', 'REDUCE', 'SELL', 'STRONG_SELL'
+        })
+        if _signal_en in _CANONICAL_SIGNALS:
+            signal_ar = canonical_signal_ar(_signal_en)
+        else:
+            signal_ar = s.get('signal_ar')  # may be None — Rule 27 (no fake data)
         entry = s.get('entry', 0) or 0
         target = s.get('target', 0) or 0
         stop = s.get('stop', 0) or 0
@@ -1316,7 +1336,8 @@ def _format_morning_bell_post(data: Dict) -> str:
 
         rocket = ' 🚀' if ath else ''
         text += f"{i}. 🏦 **{name_ar}** ({ticker}){rocket}\n"
-        text += f"   الإشارة: {signal_ar}\n"
+        if signal_ar:  # Rule 27 (NO-FAKE-DATA): skip line when no signal available
+            text += f"   الإشارة: {signal_ar}\n"
         text += f"   💰 الدخول: {entry:.2f}\n"
         if target_1 > 0:
             text += f"   🎯 الهدف 1: {target_1:.2f} (+{t1_gain:.1f}%)\n"

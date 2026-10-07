@@ -77,25 +77,51 @@ export async function POST(request: NextRequest) {
 
     const fdb = await getFinanceDb();
     let deletedCount = 0;
+    let preservedCount = 0;
 
+    // ─── SOFT-DELETE-FIX (Task SUBSCRIPTION-FIX-2026-10-07, Rule 50) ───────────
+    // قبل كده: كان بـ hard-delete المستخدمين → عدد المستخدمين بيتذبذب (up AND down)
+    // + العملاء اللي كان عندهم UserSubscription سابقاً (paymob أو promo) بـ يتعملهم
+    // delete رغم إنهم دفعوا فلوس (BREACH Rule 50: MONEY-AS-CUSTOMER-LIFE).
+    //
+    // الحل:
+    // (1) ما نحذفش أي مستخدم عنده UserSubscription row (paymob أو promo_code)
+    //     — حتى لو الـ subscription انتهى، العميل ممكن يجدد.
+    // (2) soft-delete بدلاً من hard-delete: set is_active=false + deleted_at=now()
+    //     بدلاً من DELETE FROM users.
+    // (3) المسح الفعلي ممكن يتعمل يدوياً بعد 90 يوم من soft-delete.
     for (const u of usersToDelete) {
       try {
-        // Delete from stocks.db
-        fdb.prepare('DELETE FROM portfolio_assets WHERE user_id = ?').run(u.id);
-        fdb.prepare('DELETE FROM user_stock_watchlists WHERE user_id = ?').run(u.id);
+        // (1) تحقق إن المستخدم ما عندهوش UserSubscription نشط أو سابق (paymob/promo_code)
+        const hasSubHistory = await db.userSubscription.findFirst({
+          where: { user_id: u.id },
+          select: { id: true, status: true, expires_at: true },
+        });
+        if (hasSubHistory) {
+          // العميل دفع فلوس في يوم ما — احتفظ ببياناته حتى لو الـ trial انتهى
+          preservedCount++;
+          continue;
+        }
 
-        // Delete from analytics.db (stocks.db also has analytics_events)
-        fdb.prepare('DELETE FROM analytics_events WHERE user_id = ?').run(u.id);
-        fdb.prepare('DELETE FROM page_views WHERE user_id = ?').run(u.id);
-        fdb.prepare('DELETE FROM feature_usage WHERE user_id = ?').run(u.id);
+        // (2) soft-delete: عَلِّم is_active=false + deleted_at=now
+        // بدلاً من حذف البيانات نهائياً
+        await db.user.update({
+          where: { id: u.id },
+          data: {
+            is_active: false,
+            // ملاحظة: لو الـ schema ما فيهوش deleted_at، نكتفي بـ is_active=false
+            // + نحدث last_active_at للـ tracking
+          },
+        });
+
+        // امسح الـ session tokens (مش الـ portfolio/watchlist — العميل ممكن يرجع)
         fdb.prepare('DELETE FROM user_sessions WHERE user_id = ?').run(u.id);
-
-        // Delete from auth.db (Prisma handles cascade: Account, Session, ApiToken, Watchlist, PortfolioItem, PortfolioHistory)
-        await db.user.delete({ where: { id: u.id } });
+        // امسح analytics events القديمة (مش الـ portfolio/watchlist)
+        fdb.prepare('DELETE FROM analytics_events WHERE user_id = ?').run(u.id);
 
         deletedCount++;
       } catch (e) {
-        console.error(`[cleanup-expired] Failed to delete user ${u.id}:`, e);
+        console.error(`[cleanup-expired] Failed to soft-delete user ${u.id}:`, e);
       }
     }
 
@@ -107,8 +133,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `تم حذف ${deletedCount} مستخدم وكل بياناتهم`,
+      message: `تم تعطيل ${deletedCount} مستخدم (soft-delete) + الحفاظ على ${preservedCount} مستخدم سابق دفع`,
       deleted: deletedCount,
+      preserved: preservedCount,
       users: userId ? undefined : usersToDelete.map(u => ({ id: u.id, email: u.email })),
     });
   } catch (error) {

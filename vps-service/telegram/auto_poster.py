@@ -25,6 +25,16 @@ from pathlib import Path
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for signal/accumulation/money_flow classification.
+try:
+    from utils.canonical_signal import classify_signal, signal_ar as canonical_signal_ar
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def classify_signal(_score):  # type: ignore[no-redef]
+        return 'HOLD'
+    def canonical_signal_ar(_sig):  # type: ignore[no-redef]
+        return 'انتظار'
+
 try:
     from telethon import TelegramClient
     from telethon.tl.types import InputPeerChannel
@@ -323,8 +333,14 @@ class TelegramAutoPoster:
         ticker = rec.get('ticker', '')
         name_ar = rec.get('name_ar', rec.get('name', ''))
         signal = rec.get('signal', 'HOLD')
-        signal_ar = {'BUY': 'شراء', 'SELL': 'بيع', 'HOLD': 'متابعة'}.get(signal, signal)
-        signal_emoji = {'BUY': '🟢', 'SELL': '🔴', 'HOLD': '🟡'}.get(signal, '⚪')
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+        # Use canonical signal_ar() — supports 7-level taxonomy.
+        signal_ar_label = canonical_signal_ar(signal)
+        signal_emoji = {
+            'STRONG_BUY': '🟢', 'BUY': '🟢', 'ACCUMULATE': '🟢',
+            'HOLD': '🟡', 'REDUCE': '🟠',
+            'SELL': '🔴', 'STRONG_SELL': '🔴',
+        }.get(signal, '⚪')
         
         price = rec.get('current_price') or rec.get('price', 0)
         target = rec.get('target_price')
@@ -335,7 +351,7 @@ class TelegramAutoPoster:
         text = f"""📊 **تحليل سهم {ticker}**
 🏦 {name_ar}
 
-{signal_emoji} **التوقعة: {signal_ar}**
+{signal_emoji} **التوقعة: {signal_ar_label}**
 💰 **السعر الحالي:** {price:.2f} ج.م
 """
         
@@ -496,7 +512,12 @@ class TelegramAutoPoster:
             for rec in recommendations:
                 ticker = rec.get('ticker', '')
                 signal = rec.get('signal', '')
-                signal_emoji = {'BUY': '🟢', 'SELL': '🔴'}.get(signal, '🟡')
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — 7-level emoji map
+                signal_emoji = {
+                    'STRONG_BUY': '🟢', 'BUY': '🟢', 'ACCUMULATE': '🟢',
+                    'HOLD': '🟡', 'REDUCE': '🟠',
+                    'SELL': '🔴', 'STRONG_SELL': '🔴',
+                }.get(signal, '🟡')
                 text += f"• {signal_emoji} {ticker} - {rec.get('name_ar', '')}\n"
         
         text += f"""
@@ -710,7 +731,9 @@ def get_top_recommendations(limit: int = 5, min_score: int = 70) -> List[Dict]:
             recommendations.append({
                 'ticker': ticker,
                 'name_ar': name_ar,
-                'signal': 'BUY', # متوافق مع الفورمات للتلجرام
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67 + Rule 27 NO-FAKE-DATA)
+                # Was hardcoded 'BUY' — now computed from master_score via canonical classifier.
+                'signal': classify_signal(score) if score is not None else 'HOLD',
                 'current_price': entry,
                 'target_price': target,
                 'stop_loss': stop,

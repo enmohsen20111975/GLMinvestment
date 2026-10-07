@@ -23,6 +23,23 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(PROJECT_ROOT / "vps-service"))
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for signal/accumulation/money_flow classification.
+try:
+    from utils.canonical_signal import (
+        classify_signal, signal_ar as canonical_signal_ar,
+        classify_stock_phase, classify_accumulation,
+    )
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def classify_signal(_score):  # type: ignore[no-redef]
+        return None
+    def canonical_signal_ar(_sig):  # type: ignore[no-redef]
+        return None
+    def classify_stock_phase(*_a, **_kw):  # type: ignore[no-redef]
+        return None
+    def classify_accumulation(*_a, **_kw):  # type: ignore[no-redef]
+        return None
+
 try:
     from analyzers.trader_levels_engine import get_unified_trader_levels
 except ImportError:
@@ -359,9 +376,13 @@ def search_stock(query: str) -> Optional[Dict]:
 def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -> Dict:
     """استخراج إشارات رادار الميكرز V40.2 ومستويات الأهداف الموحدة هندسياً من trader_levels_engine (SSOT)."""
     sym = symbol.upper().strip()
+    # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67 + Rule 27 NO-FAKE-DATA)
+    # signal/direction/confidence/vol_ratio previously had fabricated defaults
+    # ('تجميع صاعد', 'تجميع صاعد مع صانع السوق', 75, 1.2). Now None — only
+    # populated when a real source provides them.
     radar_info = {
-        'signal': 'تجميع صاعد',
-        'confidence': 75,
+        'signal': None,
+        'confidence': None,
         'entry': 0.0,
         'entry_min': 0.0,
         'entry_max': 0.0,
@@ -373,9 +394,9 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
         'support_2': 0.0,
         'resistance_1': 0.0,
         'resistance_2': 0.0,
-        'risk_reward': 2.0,
-        'vol_ratio': 1.2,
-        'direction': 'تجميع صاعد مع صانع السوق',
+        'risk_reward': None,
+        'vol_ratio': None,
+        'direction': None,
         'advice': ''
     }
 
@@ -418,10 +439,22 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
 
             if row:
                 d = dict(row)
-                radar_info['signal'] = d.get('signal') or radar_info['signal']
-                radar_info['confidence'] = int(d.get('confidence') or radar_info['confidence'])
-                radar_info['vol_ratio'] = float(d.get('vol_ratio_now') or 1.2) if 'vol_ratio_now' in cols else 1.2
-                radar_info['direction'] = d.get('direction') or radar_info['direction']
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 27)
+                # Don't fabricate values when DB rows are missing — keep None.
+                if d.get('signal'):
+                    radar_info['signal'] = d.get('signal')
+                if d.get('confidence') is not None:
+                    try:
+                        radar_info['confidence'] = int(d.get('confidence'))
+                    except (TypeError, ValueError):
+                        pass
+                if 'vol_ratio_now' in cols and d.get('vol_ratio_now') is not None:
+                    try:
+                        radar_info['vol_ratio'] = float(d.get('vol_ratio_now'))
+                    except (TypeError, ValueError):
+                        pass
+                if d.get('direction'):
+                    radar_info['direction'] = d.get('direction')
             conn.close()
         except Exception as e:
             log.warning(f"خطأ قراءة predictions.db لـ {sym}: {e}")

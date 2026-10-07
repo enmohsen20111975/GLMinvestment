@@ -10,11 +10,13 @@ liquidity_alerts.py — تنبيهات تدفق السيولة للتليجرا�
      المصدر:  FlowSystemEngine.detect_sector_rotation().leaving[]
   3. Stock accumulation        — "🐋 السهم بيجمع سيولة مؤسسية"
      المصدر:  scripts/output/maker_radar_EGX_*.json
-     التريجر: money_flow_state ∈ {'🔥 دخول قوي', '🟢 سيولة داخلة'}
+     التريجر: money_flow_state ∈ {'🟢 سيولة داخلة قوية', '🟢 سيولة داخلة'}
+              (legacy: {'🔥 دخول قوي', '🟢 سيولة داخلة'})
               AND path ∈ {'A_pre_surge', 'B_quiet_accumulation_strong'}
   4. Stock distribution        — "⚠️ السهم فيه خروج سيولة"
      المصدر:  scripts/output/maker_radar_EGX_*.json + scripts/output/exit_radar_*.json
-     التريجر: money_flow_state ∈ {'🔥 خروج قوي', '🔴 سيولة خارجة'}
+     التريجر: money_flow_state ∈ {'🔴 سيولة خارجة قوية', '🔴 سيولة خارجة'}
+              (legacy: {'🔥 خروج قوي', '🔴 سيولة خارجة'})
               OR exit_radar.path == 'X1_distribution_strong'
 
 Design rules:
@@ -69,6 +71,14 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_VPS_SERVICE_ROOT) not in sys.path:
     sys.path.insert(0, str(_VPS_SERVICE_ROOT))
 
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Single source of truth for money_flow classification.
+try:
+    from utils.canonical_signal import classify_money_flow
+except ImportError:  # pragma: no cover - fallback if utils not on path
+    def classify_money_flow(_b, _s, _n=None):  # type: ignore[no-redef]
+        return '🟡 سيولة متوازنة'
+
 _DB_DIR = _PROJECT_ROOT / 'db'
 _RADAR_OUTPUT_DIR = _PROJECT_ROOT / 'scripts' / 'output'
 _STATE_FILE = _DB_DIR / 'liquidity_alerts_state.json'
@@ -77,12 +87,45 @@ logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Trigger thresholds (per owner directive)
+# CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+# Migrated from legacy labels {'🔥 دخول قوي', '🟢 سيولة داخلة'} to the
+# canonical 5-level taxonomy produced by classify_money_flow().
+# Legacy '🔥 دخول قوي' is now '🟢 سيولة داخلة قوية';
+# Legacy '🔥 خروج قوي' is now '🔴 سيولة خارجة قوية'.
 # ---------------------------------------------------------------------------
-ACCUMULATION_MONEY_FLOW_STATES = {'🔥 دخول قوي', '🟢 سيولة داخلة'}
+ACCUMULATION_MONEY_FLOW_STATES = {'🟢 سيولة داخلة قوية', '🟢 سيولة داخلة'}
 ACCUMULATION_PATHS = {'A_pre_surge', 'B_quiet_accumulation_strong'}
 
-DISTRIBUTION_MONEY_FLOW_STATES = {'🔥 خروج قوي', '🔴 سيولة خارجة'}
+DISTRIBUTION_MONEY_FLOW_STATES = {'🔴 سيولة خارجة قوية', '🔴 سيولة خارجة'}
 DISTRIBUTION_EXIT_PATHS = {'X1_distribution_strong'}
+
+# Legacy → canonical money_flow_state label map (radar JSON files older than
+# the canonical migration still emit the legacy strings).
+_LEGACY_MFS_TO_CANONICAL: Dict[str, str] = {
+    '🔥 دخول قوي':  '🟢 سيولة داخلة قوية',
+    '🟢 سيولة داخلة': '🟢 سيولة داخلة',
+    '🟡 سيولة متوازنة': '🟡 سيولة متوازنة',
+    '🔴 سيولة خارجة': '🔴 سيولة خارجة',
+    '🔥 خروج قوي':  '🔴 سيولة خارجة قوية',
+}
+
+
+def _canonical_money_flow_state(stock: Dict) -> str:
+    """CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+    Prefer computing money_flow_state from buy_pct/sell_pct via canonical
+    classifier. Fall back to mapping the legacy upstream label to canonical
+    when numeric inputs are unavailable. Returns '🟡 سيولة متوازنة' if no
+    signal can be derived (Rule 27: not fabricated as 'inflow').
+    """
+    buy_pct = stock.get('buy_pct')
+    sell_pct = stock.get('sell_pct')
+    if buy_pct is not None and sell_pct is not None:
+        try:
+            return classify_money_flow(float(buy_pct), float(sell_pct))
+        except (TypeError, ValueError):
+            pass
+    legacy = stock.get('money_flow_state') or ''
+    return _LEGACY_MFS_TO_CANONICAL.get(legacy, legacy or '🟡 سيولة متوازنة')
 
 # Arabic labels for radar paths (mirrors scripts/telegram_comprehensive_report.py
 # and src/lib/schedulers/radar-alerts.ts PATH_SHORT_AR).
@@ -332,7 +375,10 @@ def _format_stock_accumulation(stock: Dict, name_ar: str) -> str:
     price = float(stock.get('current_price', 0) or 0)
     path = stock.get('path', '') or ''
     path_ar = PATH_LABEL_AR.get(path, path or '—')
-    money_flow_state = stock.get('money_flow_state', '—') or '—'
+    # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+    money_flow_state = _canonical_money_flow_state(stock)
+    if money_flow_state == '🟡 سيولة متوازنة' and not stock.get('money_flow_state'):
+        money_flow_state = '—'  # display placeholder when no source signal
     turnover = stock.get('avg_turnover_20d', 0) or 0
     net_flow = float(stock.get('net_flow_egp', 0) or 0)
     buy_pct = float(stock.get('buy_pct', 0) or 0)
@@ -363,7 +409,10 @@ def _format_stock_distribution(stock: Dict, name_ar: str,
     """Build Arabic HTML message for stock distribution WARNING alert."""
     ticker = stock.get('ticker', '???')
     price = float(stock.get('current_price', 0) or 0)
-    money_flow_state = stock.get('money_flow_state', '—') or '—'
+    # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
+    money_flow_state = _canonical_money_flow_state(stock)
+    if money_flow_state == '🟡 سيولة متوازنة' and not stock.get('money_flow_state'):
+        money_flow_state = '—'  # display placeholder when no source signal
     kill_reason = stock.get('kill_reason')
 
     exit_path_str = ''
@@ -464,7 +513,8 @@ def notify_stock_accumulation(radar_data: Optional[Dict] = None) -> int:
         ticker = stock.get('ticker', '')
         if not ticker:
             continue
-        money_flow_state = stock.get('money_flow_state', '') or ''
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — canonical label
+        money_flow_state = _canonical_money_flow_state(stock)
         path = stock.get('path', '') or ''
         if (money_flow_state in ACCUMULATION_MONEY_FLOW_STATES
                 and path in ACCUMULATION_PATHS):
@@ -516,7 +566,8 @@ def notify_stock_distribution(radar_data: Optional[Dict] = None,
         ticker = stock.get('ticker', '')
         if not ticker:
             continue
-        money_flow_state = stock.get('money_flow_state', '') or ''
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — canonical label
+        money_flow_state = _canonical_money_flow_state(stock)
         if money_flow_state not in DISTRIBUTION_MONEY_FLOW_STATES:
             continue
         distribution_tickers_seen.add(ticker)
@@ -548,6 +599,9 @@ def notify_stock_distribution(radar_data: Optional[Dict] = None,
             meta = _fetch_stock_meta(ticker)
             # Synthesize a "stock" dict from exit_radar entry so we can reuse
             # the same formatter (gives a consistent look across both paths).
+            # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — canonical label
+            # for synthetic exit_radar distribution record (no buy_pct available
+            # so we mark it as the canonical distribution label).
             synthetic = {
                 'ticker': ticker,
                 'current_price': er.get('current_price', 0),
@@ -666,13 +720,14 @@ def build_liquidity_digest(top_n: int = 3) -> List[str]:
     # Accumulation candidates
     accum_stocks: List[Dict] = []
     for s in candidates:
-        if (s.get('money_flow_state', '') in ACCUMULATION_MONEY_FLOW_STATES
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — canonical label
+        if (_canonical_money_flow_state(s) in ACCUMULATION_MONEY_FLOW_STATES
                 and s.get('path', '') in ACCUMULATION_PATHS):
             accum_stocks.append(s)
-    # Sort: stronger flow first (🔥 دخول قوي > 🟢 سيولة داخلة), then by net_flow_egp desc
-    state_rank = {'🔥 دخول قوي': 2, '🟢 سيولة داخلة': 1}
+    # Sort: stronger flow first (🟢 سيولة داخلة قوية > 🟢 سيولة داخلة), then by net_flow_egp desc
+    state_rank = {'🟢 سيولة داخلة قوية': 2, '🟢 سيولة داخلة': 1}
     accum_stocks.sort(
-        key=lambda s: (state_rank.get(s.get('money_flow_state', ''), 0),
+        key=lambda s: (state_rank.get(_canonical_money_flow_state(s), 0),
                        float(s.get('net_flow_egp', 0) or 0)),
         reverse=True,
     )
@@ -683,7 +738,7 @@ def build_liquidity_digest(top_n: int = 3) -> List[str]:
         for s in accum_stocks[:top_n]:
             ticker = s.get('ticker', '???')
             price = float(s.get('current_price', 0) or 0)
-            mfs = s.get('money_flow_state', '—')
+            mfs = _canonical_money_flow_state(s)  # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
             path = s.get('path', '') or ''
             path_ar = PATH_LABEL_AR.get(path, path or '—')
             net = float(s.get('net_flow_egp', 0) or 0)
@@ -697,7 +752,8 @@ def build_liquidity_digest(top_n: int = 3) -> List[str]:
     dist_stocks: List[Dict] = []
     seen_tickers: set = set()
     for s in candidates:
-        if s.get('money_flow_state', '') in DISTRIBUTION_MONEY_FLOW_STATES:
+        # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — canonical label
+        if _canonical_money_flow_state(s) in DISTRIBUTION_MONEY_FLOW_STATES:
             t = s.get('ticker', '')
             if t and t not in seen_tickers:
                 dist_stocks.append(s)
@@ -708,15 +764,16 @@ def build_liquidity_digest(top_n: int = 3) -> List[str]:
             dist_stocks.append({
                 'ticker': t,
                 'current_price': er.get('current_price', 0),
+                # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67) — canonical label
                 'money_flow_state': '🔴 سيولة خارجة',
                 '_exit_path': er.get('path', ''),
                 '_exit_reason': er.get('reason', ''),
             })
             seen_tickers.add(t)
-    # Sort: stronger flow first, then by exit_radar presence
-    dist_rank = {'🔥 خروج قوي': 2, '🔴 سيولة خارجة': 1}
+    # Sort: stronger flow first (🔴 قوية > 🔴 خارجة), then by exit_radar presence
+    dist_rank = {'🔴 سيولة خارجة قوية': 2, '🔴 سيولة خارجة': 1}
     dist_stocks.sort(
-        key=lambda s: dist_rank.get(s.get('money_flow_state', ''), 0),
+        key=lambda s: dist_rank.get(_canonical_money_flow_state(s), 0),
         reverse=True,
     )
 
@@ -726,7 +783,7 @@ def build_liquidity_digest(top_n: int = 3) -> List[str]:
         for s in dist_stocks[:top_n]:
             ticker = s.get('ticker', '???')
             price = float(s.get('current_price', 0) or 0)
-            mfs = s.get('money_flow_state', '—')
+            mfs = _canonical_money_flow_state(s)  # CANONICAL-CALCULATIONS (Task PHASE-3, Rule 67)
             ex_path = (s.get('_exit_path')
                        or exit_radar_by_ticker.get(ticker, {}).get('path', ''))
             ex_path_ar = PATH_LABEL_AR.get(ex_path, ex_path) if ex_path else ''
