@@ -23,11 +23,17 @@
 
 **النتيجة:** كل الشاشات بتعرض canonical signal واحد فقط من unified API.
 
-### المرحلة 1 — ⏳ محجوزة (أسبوع)
+### المرحلة 1 — ✅ مكتملة (commits `514d1c2` + `ba5c61a` + `9eeb00a`)
 
-- توحيد العتبات الأربعة في مفتاح واحد (engine_settings.py)
-- بوابة حداثة على stored_analyses (لا عرض predictions أقدم من 48 ساعة)
-- اختبار آلي يومي يضرب 5 endpoints يرجعوا نفس القرار لنفس السهم
+**تم توحيد العتبات + بوابة حداثة + اختبار آلي:**
+
+| الجزء | الملف | التغيير |
+|-------|------|---------|
+| 1.1 توحيد العتبات | `vps-service/analyzers/engine_settings.py` | +6 canonical thresholds (78/65/55/40/25) + institutional thresholds متطابقة |
+| 1.2 بوابة حداثة | `src/app/api/predictions/honest-tracking/list/route.ts` | +freshnessGate SQL (PENDING ≤ 48h) |
+| 1.3 اختبار آلي | `scripts/unification_test.py` (NEW, 213 LOC) | يضرب 5 endpoints + يتحقق من توحيد الإشارات |
+
+**النتيجة:** كل engines بتستخدم نفس الـ thresholds + predictions القديمة مش بتعرض + اختبار آلي يكتشف التناقضات.
 
 ### المرحلة 2 — ⏳ محجوزة (2-3 أسابيع)
 
@@ -119,6 +125,6 @@
 ## 🎯 الترتيب التنفيذي (الحالة الحالية)
 
 1. ✅ **المرحلة 0** — مكتملة (commit `2591485`)
-2. ⏳ **المرحلة 1** — توحيد العتبات + بوابة حداثة
+2. ✅ **المرحلة 1** — مكتملة (commits `514d1c2` + `ba5c61a` + `9eeb00a`)
 3. ⏳ **المرحلة 2** — توحيد RSI + قتل Maestro نهائياً
 4. ⏳ **المرحلة 3** — V40.2 canonical engine
