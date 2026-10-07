@@ -68,7 +68,8 @@ const SIGNAL_STYLES: Record<string, { bg: string; text: string; border: string; 
 // ─── خريطة WHO IS BUYING (مطابقة Pine L742-761) ─────────────────────────────
 function getWhoIsBuyingStyle(state: string | null): { bg: string; text: string; icon: React.ReactNode; label: string } {
   if (!state) {
-    return { bg: 'bg-muted', text: 'text-muted-foreground', icon: <AlertCircle className="w-4 h-4" />, label: '— بيانات غير متاحة' };
+    // P0 FIX: AlertCircle → AlertTriangle (مطابق للاستيراد في lucide)
+    return { bg: 'bg-muted', text: 'text-muted-foreground', icon: <AlertTriangle className="w-4 h-4" />, label: '— بيانات غير متاحة' };
   }
   const s = state.toLowerCase();
   if (s.includes('مؤسس') && s.includes('شراء')) {
