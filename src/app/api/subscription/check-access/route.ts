@@ -4,6 +4,12 @@ export const dynamic = "force-dynamic";
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
+// ─── CANONICAL-CALCULATIONS (Task SUBSCRIPTION-FIX-2026-10-07, Rule 67) ─────
+// قبل كده: كان فيه hardcoded inline list مش متطابق مع PAID_TIERS →
+// b2b_starter/b2b_pro/b2b_enterprise/vip_pass كانوا بـ يتعاملوا معاهم كـ free
+// → العملاء اللي دفعوا فلوس بـ يتعملهم lock out!
+// الحل: استيراد PAID_TIERS من subscription-gate.ts (مصدر واحد).
+import { PAID_TIERS, TRIAL_DAYS as CANONICAL_TRIAL_DAYS } from '@/lib/subscription-gate';
 
 /**
  * POST /api/subscription/check-access
@@ -85,7 +91,6 @@ export async function POST(request: NextRequest) {
     // b2b_starter/b2b_pro/b2b_enterprise/vip_pass كانوا بـ يتعاملوا معاهم كـ free
     // → العملاء اللي دفعوا فلوس بـ يتعملهم lock out!
     // الحل: استيراد PAID_TIERS من subscription-gate.ts (مصدر واحد).
-    import { PAID_TIERS, TRIAL_DAYS as CANONICAL_TRIAL_DAYS } from '@/lib/subscription-gate';
 
     const TRIAL_DAYS = CANONICAL_TRIAL_DAYS;
     const WARNING_DAYS = 0;
