@@ -116,6 +116,23 @@ export async function GET(request: NextRequest) {
         db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
       }
       const tickerLimit = Math.min(Math.max(parseInt(requestedLimit, 10) || 10, 1), 20);
+      // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+      // قبل كده: `WHERE ticker = ?` بس → كان بـ يرجع predictions من كل الأسواق
+      // لنفس الـ ticker (فيه 15 ticker متكرر بين EGX و US في predictions.db بسبب
+      // migration قديم خربان). الحل: نضيف `AND market IN (...)` بناءً على market param.
+      // لو market='' (مش متحدد) بنـ skip الفلتر علشان نحافظ على الـ backward compat.
+      const marketVariants: string[] = [];
+      if (market) {
+        if (market.toUpperCase() === 'EGX') {
+          marketVariants.push('EGX', 'مصر');
+        } else {
+          marketVariants.push(market);
+        }
+      }
+      const marketClause = marketVariants.length > 0
+        ? `AND market IN (${marketVariants.map(() => '?').join(',')})`
+        : '';
+      const marketParams = marketVariants;
       // NOTE: schema uses `risk_reward` (not `risk_reward_ratio`) — the validator
       // below derives `risk_reward_ratio` numerically and merges it into the row.
       const query = `
@@ -129,10 +146,10 @@ export async function GET(request: NextRequest) {
           hit_target, hit_stop, is_correct, holding_days,
           status, risk_reward, created_at, analysis_json
         FROM predictions
-        WHERE ticker = ?
+        WHERE ticker = ? ${marketClause}
         ORDER BY prediction_date DESC, id DESC
         LIMIT ?`;
-      const preds = db.prepare(query).all(ticker, tickerLimit) as any[];
+      const preds = db.prepare(query).all(ticker, ...marketParams, tickerLimit) as any[];
       // DON'T close db here — we need it for the accuracy query below.
 
       // TASK-C: Fetch latest stored_analyses rows for this ticker in one shot
@@ -204,8 +221,9 @@ export async function GET(request: NextRequest) {
         FROM predictions
         WHERE ticker = ?
           AND status IN ('EXPIRED', 'STOPPED', 'TARGET_HIT')
-          AND actual_return IS NOT NULL`;
-      const accRow = db.prepare(accQuery).get(ticker) as { total: number; hits: number } | undefined;
+          AND actual_return IS NOT NULL
+          ${marketClause}`;
+      const accRow = db.prepare(accQuery).get(ticker, ...marketParams) as { total: number; hits: number } | undefined;
       const allClosed = accRow?.total ?? 0;
       const allHits = accRow?.hits ?? 0;
       const accuracy = allClosed >= 5
@@ -302,6 +320,21 @@ export async function GET(request: NextRequest) {
     // FIX (Aug 2026): aiPrediction table فاضي (0 صفوف) — استخدم predictions table
     // الـ schema: ticker, signal, prediction_date, entry_price, target_price, stop_loss,
     // master_score, confidence, market, outcome_date, exit_price, actual_return
+    // MARKET-FILTER-COMPLETE: السطر ده كان بـ يـ ORDER + LIMIT بس من غير WHERE، فكان
+    // بـ يخلط predictions من كل الأسواق. بناءً على market param نضيف WHERE clause.
+    // لو market مش متحدد بنـ skip الفلتر (backward compat — يرجّع كل الأسواق).
+    const fbMarketVariants: string[] = [];
+    if (market) {
+      if (market.toUpperCase() === 'EGX') {
+        fbMarketVariants.push('EGX', 'مصر');
+      } else {
+        fbMarketVariants.push(market);
+      }
+    }
+    const fbMarketClause = fbMarketVariants.length > 0
+      ? `WHERE market IN (${fbMarketVariants.map(() => '?').join(',')})`
+      : '';
+    const fbMarketParams = fbMarketVariants;
     let query = `
       SELECT
         id,
@@ -332,9 +365,10 @@ export async function GET(request: NextRequest) {
         created_at,
         analysis_json
       FROM predictions
+      ${fbMarketClause}
       ORDER BY prediction_date DESC, master_score DESC
       LIMIT ?`;
-    const predictions = db.prepare(query).all(parseInt(limit)) as any[];
+    const predictions = db.prepare(query).all(...fbMarketParams, parseInt(limit)) as any[];
 
     // TASK-C: Batch-fetch the latest stored_analyses row per ticker (for ai_reason / ai_narrative)
     // FRESHNESS-CHECK (Task PHASE-3, Rule 72)

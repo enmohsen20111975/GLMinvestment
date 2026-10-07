@@ -36,6 +36,12 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   const { ticker } = params;
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
+  // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+  // قبل كده: route كان بـ يمرر ticker بس لـ flutter-sqlite-fallback من غير ما
+  // يفلتر بـ market → لو فيه ticker متكرر بين EGX و US (15 حالة بسبب migration
+  // قديم) كان بـ يرجع السهم الخطأ. الحل: نقرأ `?market=` param ونمرره.
+  // Default: 'EGX' (matching maker-radar default).
+  const marketParam = (url.searchParams.get('market') || 'EGX').trim();
 
   const targetUrls = [
     `${PYTHON_BACKEND_URL}/api/stocks/${ticker.toUpperCase()}${qs ? `?${qs}` : ''}`,
@@ -70,7 +76,7 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   }
 
   // ── FLUTTER-FULL-AUDIT: stocks.db fallback (Python unreachable) ──
-  const fallback = getStockByTickerFallback(ticker);
+  const fallback = getStockByTickerFallback(ticker, marketParam);
   if (fallback) {
     // UNIFIED-DATA-CONTRACT: inject canonical values into fallback too
     const unifiedFallback = injectUnifiedData(fallback, ticker);

@@ -1052,6 +1052,7 @@ export function StockDetail() {
     deepAnalysis,
     selectedTicker,
     loadStockNews,
+    currentMarket,
   } = useAppStore();
   const [exporting, setExporting] = useState(false);
   const [addingToWatchlist, setAddingToWatchlist] = useState(false);
@@ -1068,8 +1069,13 @@ export function StockDetail() {
   useEffect(() => {
     if (selectedTicker && selectedStock) {
       loadStockNews(selectedTicker, 15);
+      // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+      // قبل كده: الـ fetches دي كانت بدون `?market=` → الـ API بـ يرجع أي سهم
+      // بالـ ticker ده بغض النظر عن السوق المختار. لو فيه ticker متكرر بين EGX و US
+      // بيرجع الأول → بيانات خاطئة. الحل: نمرر currentMarket لكل fetch.
+      const mkt = encodeURIComponent(currentMarket);
       // Fetch liquidity footprint for infographic card
-      fetch(`/api/maker-radar/footprint?ticker=${selectedTicker}&days=30`)
+      fetch(`/api/maker-radar/footprint?ticker=${selectedTicker}&days=30&market=${mkt}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.success) setFootprintData(data);
@@ -1078,14 +1084,14 @@ export function StockDetail() {
 
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
       // Fetch canonical unified response — best-effort, must not break UI on failure.
-      fetch(`/api/stocks/${selectedTicker}/unified`)
+      fetch(`/api/stocks/${selectedTicker}/unified?market=${mkt}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.success) setUnifiedData(data);
         })
         .catch((err) => console.error('[unified] fetch failed:', err));
     }
-  }, [selectedTicker, selectedStock, loadStockNews]);
+  }, [selectedTicker, selectedStock, loadStockNews, currentMarket]);
 
   const handleExportPDF = async () => {
     setExporting(true);

@@ -6,20 +6,14 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
+import { fetchMarketIndices, MARKET_NAMES_AR, MARKET_ALIASES } from '@/lib/market-data-access';
 
-const MARKET_NAMES: Record<string, string> = {
-  EGX: 'البورصة المصرية',
-  TADAWUL: 'تداول السعودية',
-  KSE: 'بورصة الكويت',
-  QSE: 'بورصة قطر',
-  US: 'البورصة الأمريكية',
-  CRYPTO: 'العملات الرقمية',
-};
+const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const market = (url.searchParams.get('market') || 'EGX').toUpperCase();
+  const marketRaw = (url.searchParams.get('market') || 'EGX').toUpperCase();
+  const market = MARKET_ALIASES[marketRaw] || marketRaw;
   // FIX-WAVE-3-HIGH / AUDIT-DEEP-4 #8: pagination params (Rule 56)
   const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '100', 10), 1), 1000);
   const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0);
@@ -77,6 +71,7 @@ export async function GET(req: NextRequest) {
       totalStocksCount = (db.prepare('SELECT COUNT(*) AS c FROM stocks').get() as { c: number }).c;
       stocks = db.prepare('SELECT ticker, name_ar, name, current_price, previous_close, volume, sector FROM stocks LIMIT ? OFFSET ?').all(limit, offset);
     }
+    db.close();
 
     // Compute change_percent for each stock if missing
     const stocksWithChange = stocks.map((s: any) => {
@@ -95,52 +90,44 @@ export async function GET(req: NextRequest) {
     const totalVolume = stocksWithChange.reduce((sum, s) => sum + Number(s.volume || 0), 0);
     const totalTurnover = stocksWithChange.reduce((sum, s) => sum + (Number(s.current_price || 0) * Number(s.volume || 0)), 0);
 
-    // Compute market index dynamically (average weighted by turnover)
-    const validStocks = stocksWithChange.filter(s => Number(s.current_price) > 0 && Number(s.volume) > 0);
-    let indexValue = 0;
-    let indexChangePct = 0;
-    if (validStocks.length > 0) {
-      const totalWeight = validStocks.reduce((sum, s) => sum + (Number(s.current_price) * Number(s.volume)), 0);
-      const weightedChange = validStocks.reduce((sum, s) => sum + (Number(s.change_percent) * Number(s.current_price) * Number(s.volume)), 0);
-      indexChangePct = totalWeight > 0 ? weightedChange / totalWeight : 0;
-      // Index value = average price * 100 (simple composite)
-      indexValue = validStocks.reduce((sum, s) => sum + Number(s.current_price), 0) / validStocks.length;
-    }
-
-    // Try to get stored indices first (only for EGX)
+    // MARKET-INDICES-SYSTEM: fetch real market-specific indices
+    // (Yahoo for US, CoinGecko for CRYPTO, TASI for TADAWUL, composite for KSE/QSE,
+    //  market_indices table for EGX)
     let indices: any[] = [];
-    if (dbMarket === 'EGX') {
-      try {
-        const storedIndices = db.prepare('SELECT * FROM market_indices ORDER BY id ASC').all();
-        indices = storedIndices.map((idx: any) => ({
-          symbol: idx.symbol,
-          name_ar: idx.name_ar,
-          value: idx.current_value,
-          previous_close: idx.previous_close,
-          change: idx.change,
-          change_percent: idx.change_percent,
-        })).filter((idx: any) => idx.symbol && idx.symbol.includes('EGX'));
-      } catch {}
-    }
+    try {
+      const result = await fetchMarketIndices(market);
+      indices = result.indices;
+    } catch {}
 
-    // If no stored indices (non-EGX), use computed index
+    // If fetch failed, fall back to a composite computed inline
     if (indices.length === 0) {
+      const validStocks = stocksWithChange.filter(s => Number(s.current_price) > 0 && Number(s.volume) > 0);
+      let indexValue = 0;
+      let indexChangePct = 0;
+      if (validStocks.length > 0) {
+        const totalWeight = validStocks.reduce((sum, s) => sum + (Number(s.current_price) * Number(s.volume)), 0);
+        const weightedChange = validStocks.reduce((sum, s) => sum + (Number(s.change_percent) * Number(s.current_price) * Number(s.volume)), 0);
+        indexChangePct = totalWeight > 0 ? weightedChange / totalWeight : 0;
+        indexValue = validStocks.reduce((sum, s) => sum + Number(s.current_price), 0) / validStocks.length;
+      }
       indices = [{
         symbol: `${dbMarket}_COMPOSITE`,
-        name_ar: `مؤشر ${MARKET_NAMES[dbMarket] || dbMarket} المركّب`,
+        name: `${dbMarket} Composite Index`,
+        name_ar: `مؤشر ${MARKET_NAMES_AR[dbMarket] || dbMarket} المركّب`,
         value: indexValue,
         previous_close: indexValue / (1 + indexChangePct / 100),
         change: indexValue * indexChangePct / 100,
         change_percent: indexChangePct,
+        last_updated: new Date().toISOString(),
+        is_composite: true,
+        source: 'stocks_db_composite',
       }];
     }
-
-    db.close();
 
     return NextResponse.json({
       success: true,
       market: dbMarket,
-      market_name_ar: MARKET_NAMES[dbMarket] || dbMarket,
+      market_name_ar: MARKET_NAMES_AR[dbMarket] || dbMarket,
       summary: {
         total_stocks: stocksWithChange.length,
         total_stocks_in_market: totalStocksCount,

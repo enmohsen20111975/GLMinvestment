@@ -156,8 +156,19 @@ export async function GET(
   // If basic info is missing, try to get it from the database directly
   if (!response.basic) {
     try {
+      // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+      // قبل كده: `findFirst({ where: { ticker } })` بـ يرجع أي سهم بالـ ticker ده
+      // بغض النظر عن السوق → لو فيه ticker متكرر بين EGX و US (فيه 15 حالة كده
+      // بسبب migration قديم) بـ يرجع الأول في الترتيب. الحل: نضيف market filter.
+      // EGX → ['EGX', 'مصر'] (الاتنين موجودين في stocks.db). غير كده → market بس.
+      const marketVariants = market.toUpperCase() === 'EGX'
+        ? ['EGX', 'مصر']
+        : [market];
       const stock = await db.stocks.findFirst({
-        where: { ticker: tickerUpper },
+        where: {
+          ticker: tickerUpper,
+          market: { in: marketVariants },
+        },
       });
       if (stock) {
         response.basic = {

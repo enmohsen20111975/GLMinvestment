@@ -325,7 +325,24 @@ export async function GET(request: NextRequest) {
     const qualityClause = applyQuality && minScore > 0
       ? `master_score IS NOT NULL AND master_score >= ${minScore}`
       : '';
-    const whereParts = [qualityClause, protClause].filter(Boolean);
+    // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+    // قبل كده: الـ market filter كان بـ يتعمل في JS بعد LIMIT 500. المشكلة: لو فيه
+    // 400 صف EGX + 400 صف US، الـ LIMIT بـ ياخد أول 500 → بيرجّع 400 EGX + 100 US.
+    // الـ JS filter بيشيل الـ US → المستخدم بيشوف 100 صف US بس بدل 400. الحل: نضيف
+    // الـ market filter للـ SQL WHERE clause قبل الـ LIMIT علشان نـ fetch الصفوف
+    // الصح من البداية. ملاحظة: 'EGX' في الـ DB ممكن يكون 'EGX' أو 'مصر'.
+    const marketSqlParts: string[] = [];
+    const marketSqlParams: string[] = [];
+    if (market !== 'all') {
+      if (market.toUpperCase() === 'EGX') {
+        marketSqlParts.push(`market IN (?, ?)`);
+        marketSqlParams.push('EGX', 'مصر');
+      } else {
+        marketSqlParts.push(`market = ?`);
+        marketSqlParams.push(market);
+      }
+    }
+    const whereParts = [qualityClause, protClause, ...marketSqlParts].filter(Boolean);
     const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
     // FIX-5D: schema-aware SELECT — نتأكد إن target_price_2 موجود قبل ما نضيفه للـ SELECT
     // (لو الـ DB محلي قديم وما عندهوش العمود، الـ query ما بـ يكسرش). الـ PRAGMA
@@ -383,7 +400,7 @@ export async function GET(request: NextRequest) {
       ${whereWithFreshness}
       ORDER BY (outcome_date IS NULL AND UPPER(TRIM(COALESCE(status,''))) != 'CLOSED' AND exit_type IS NULL) DESC, prediction_date DESC, master_score DESC, outcome_date DESC, closed_at DESC, id DESC
       LIMIT ${maxRows}
-    `).all() as any[];
+    `).all(...marketSqlParams) as any[];
     db.close();
   } catch (dbErr) {
     // RL-FIX-8: لو الـ query فشل (مثلاً عمود ناقص في الـ schema المحلي)، نـ fallback فوراً
@@ -620,9 +637,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply filters
-    if (market !== 'all') {
-      predictions = predictions.filter((p) => p.market === market.toUpperCase());
-    }
+    // MARKET-FILTER-COMPLETE: market filter تم نقله للـ SQL WHERE (سطر ~328-344).
+    // شيلنا JS filter القديم لإنه كان بـ يـ reject صفوف الـ 'مصر' (الـ DB بيخزن EGX
+    // كـ 'EGX' أو 'مصر'). الـ SQL filter بـ يستخدم `IN ('EGX','مصر')` علشان
+    // يلتقط الـ variants كلها.
     if (status !== 'all') {
       predictions = predictions.filter((p) => p.status === status.toUpperCase());
     }

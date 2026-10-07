@@ -50,11 +50,29 @@ function safeNum(v: unknown): number {
 // ---------------------------------------------------------------------------
 
 export function getStockByTickerFallback(
-  ticker: string
+  ticker: string,
+  market?: string
 ): Record<string, unknown> | null {
   const db = openReadonly(STOCKS_DB_PATH);
   if (!db) return null;
   try {
+    // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+    // قبل كده: `WHERE ticker = ? COLLATE NOCASE` بس → كان بـ يرجع أي سهم بالـ ticker
+    // ده بغض النظر عن السوق. لو فيه ticker متكرر بين EGX و US (15 حالة بسبب migration
+    // قديم) بـ يرجع الأول في الترتيب. الحل: لو market متحدد نضيف filter.
+    // EGX → IN ('EGX','مصر'). غير كده → market بس. لو مش متحدد بنـ skip (backward compat).
+    const marketVariants: string[] = [];
+    if (market) {
+      if (market.toUpperCase() === 'EGX') {
+        marketVariants.push('EGX', 'مصر');
+      } else {
+        marketVariants.push(market);
+      }
+    }
+    const placeholders = marketVariants.map(() => '?').join(',');
+    const marketClause = marketVariants.length > 0
+      ? `AND market IN (${placeholders})`
+      : '';
     const row = db
       .prepare(
         `SELECT ticker, name, name_ar, market, sector, industry,
@@ -66,10 +84,10 @@ export function getStockByTickerFallback(
                 is_active, is_egx30, is_egx70, is_egx100,
                 last_update, currency, exchange, dps_ttm, turnover_egp, value_traded
          FROM stocks
-         WHERE ticker = ? COLLATE NOCASE
+         WHERE ticker = ? COLLATE NOCASE ${marketClause}
          LIMIT 1`
       )
-      .get(ticker.toUpperCase()) as Record<string, unknown> | undefined;
+      .get(ticker.toUpperCase(), ...marketVariants) as Record<string, unknown> | undefined;
 
     if (!row) return null;
 

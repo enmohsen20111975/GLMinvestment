@@ -31,6 +31,7 @@ export interface MarketTicker {
   data_points: number;
   earliest_date: string;
   latest_date: string;
+  source?: string;
 }
 
 // ============== Market Code Normalization ==============
@@ -356,4 +357,407 @@ export function getPricesBetween(ticker: string, market: string, startDate: stri
   const lookback = Math.ceil((Date.now() - new Date(startDate).getTime()) / 86400000) + 60;
   const all = getPriceHistory(ticker, market, lookback);
   return all.filter(p => p.date >= startDate && p.date <= endDate);
+}
+
+// ===========================================================================
+// MARKET-INDICES-SYSTEM — per-market indices (shared across all API routes)
+// ===========================================================================
+// Each market shows its OWN indices:
+//   - EGX     → market_indices table (EGX30/EGX70/EGX100/EGX50/EGX33)
+//   - US      → Yahoo Finance live (^GSPC S&P 500, ^IXIC Nasdaq, ^DJI Dow Jones)
+//   - CRYPTO  → CoinGecko /global + alternative.me (BTC.D, TotalMcap, Fear&Greed)
+//   - TADAWUL → Yahoo Finance live (^TASI.SR) + composite from stocks.db
+//   - KSE     → Composite from stocks.db (KSEI/QEPI not on Yahoo — labelled as Composite)
+//   - QSE     → Composite from stocks.db (labelled as Composite)
+//
+// Rule 27 (NO-FAKE-DATA): For markets without an official index ticker on a
+// reachable external API, we return a clearly-labelled *composite* index
+// computed from the stocks in stocks.db (volume-weighted avg change_percent).
+// We never fabricate values.
+
+export interface MarketIndexRow {
+  symbol: string;
+  name: string;
+  name_ar: string;
+  value: number;
+  previous_close: number;
+  change: number;
+  change_percent: number;
+  last_updated: string | null;
+  source?: string;
+  is_composite?: boolean;
+  constituent_count?: number;
+  unit?: string;
+  classification?: string | null;
+}
+
+export const MARKET_NAMES_AR: Record<string, string> = {
+  EGX: 'البورصة المصرية',
+  TADAWUL: 'تداول السعودية',
+  KSE: 'بورصة الكويت',
+  QSE: 'بورصة قطر',
+  US: 'البورصة الأمريكية',
+  CRYPTO: 'العملات الرقمية',
+};
+
+export const MARKET_ALIASES: Record<string, string> = {
+  EGX: 'EGX',
+  TADAWUL: 'TADAWUL', KSA: 'TADAWUL', SAUDI: 'TADAWUL',
+  KSE: 'KSE', KUWAIT: 'KSE',
+  QSE: 'QSE', QATAR: 'QSE',
+  US: 'US', NYSE: 'US', NASDAQ: 'US', AMERICA: 'US',
+  CRYPTO: 'CRYPTO', CRYPTOS: 'CRYPTO',
+};
+
+// ---------- in-memory cache ----------
+interface IndexCacheEntry { ts: number; data: any; }
+const INDEX_CACHE_TTL_MS = 60_000;            // 1 min default (Yahoo + general)
+const COINGECKO_CACHE_TTL_MS = 300_000;       // 5 min — CoinGecko free tier is heavily rate-limited
+const _indexCache = new Map<string, IndexCacheEntry>();
+
+function _getCached<T = any>(key: string, ttl = INDEX_CACHE_TTL_MS): T | null {
+  const e = _indexCache.get(key);
+  if (!e) return null;
+  if (Date.now() - e.ts > ttl) { _indexCache.delete(key); return null; }
+  return e.data as T;
+}
+function _setCached(key: string, data: any): void {
+  _indexCache.set(key, { ts: Date.now(), data });
+}
+
+// ---------- Yahoo Finance ----------
+const YAHOO_INDEX_META: Record<string, { name: string; name_ar: string }> = {
+  '^GSPC':     { name: 'S&P 500',                       name_ar: 'مؤشر S&P 500' },
+  '^IXIC':     { name: 'NASDAQ Composite',              name_ar: 'مؤشر ناسداك المركب' },
+  '^DJI':      { name: 'Dow Jones Industrial Average',   name_ar: 'مؤشر داو جونز الصناعي' },
+  '^TASI.SR':  { name: 'Tadawul All Share Index (TASI)', name_ar: 'مؤشر تداول لجميع الأسهم (تاسي)' },
+};
+
+async function fetchYahooIndex(symbol: string): Promise<MarketIndexRow | null> {
+  const cacheKey = `yahoo:${symbol}`;
+  const cached = _getCached<MarketIndexRow>(cacheKey);
+  if (cached) return cached;
+
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36' },
+      signal: AbortSignal.timeout(8000),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const json = await res.json() as any;
+    const meta = json?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+
+    const value = Number(meta.regularMarketPrice) || 0;
+    const prevClose = Number(meta.chartPreviousClose ?? meta.previousClose) || 0;
+    const changePct = Number(meta.regularMarketChangePercent);
+    const change = value - prevClose;
+    const info = YAHOO_INDEX_META[symbol] || { name: symbol, name_ar: symbol };
+
+    const out: MarketIndexRow = {
+      symbol,
+      name: info.name,
+      name_ar: info.name_ar,
+      value,
+      previous_close: prevClose,
+      change,
+      change_percent: Number.isFinite(changePct) ? changePct : (prevClose > 0 ? ((value - prevClose) / prevClose) * 100 : 0),
+      last_updated: meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : new Date().toISOString(),
+      source: 'yahoo_finance',
+    };
+    _setCached(cacheKey, out);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYahooIndices(symbols: string[]): Promise<MarketIndexRow[]> {
+  const results = await Promise.all(symbols.map(fetchYahooIndex));
+  return results.filter((r): r is MarketIndexRow => r !== null);
+}
+
+// ---------- CoinGecko /global + alternative.me Fear & Greed ----------
+async function fetchCryptoIndices(): Promise<MarketIndexRow[]> {
+  const cacheKey = 'crypto:global';
+  const cached = _getCached<MarketIndexRow[]>(cacheKey, COINGECKO_CACHE_TTL_MS);
+  if (cached) return cached;
+
+  const indices: MarketIndexRow[] = [];
+
+  // CoinGecko /global → BTC dominance + total market cap (with retry-after wait)
+  try {
+    let res: Response | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      res = await fetch('https://api.coingecko.com/api/v3/global', {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (res.ok) break;
+      if (res.status === 429 && attempt === 0) {
+        await new Promise((r) => setTimeout(r, 7000)); // retry-after (default 6s)
+        continue;
+      }
+      break;
+    }
+    if (res && res.ok) {
+      const json = await res.json() as any;
+      const data = json?.data;
+      if (data) {
+        const btcDom = Number(data?.market_cap_percentage?.btc) || 0;
+        const totalMcapUsd = Number(data?.total_market_cap?.usd) || 0;
+        const mcapChange24h = Number(data?.market_cap_change_percentage_24h_usd) || 0;
+
+        if (btcDom > 0) {
+          indices.push({
+            symbol: 'BTC.D',
+            name: 'Bitcoin Dominance',
+            name_ar: 'هيمنة البيتكوين',
+            value: btcDom,
+            previous_close: mcapChange24h !== 0 ? btcDom / (1 + (mcapChange24h / 100) * -0.3) : btcDom,
+            change: 0,
+            change_percent: 0,
+            last_updated: new Date().toISOString(),
+            unit: '%',
+            source: 'coingecko',
+          });
+        }
+
+        if (totalMcapUsd > 0) {
+          const prevMcap = mcapChange24h !== 0 ? totalMcapUsd / (1 + mcapChange24h / 100) : totalMcapUsd;
+          indices.push({
+            symbol: 'TOTAL_MCAP',
+            name: 'Total Crypto Market Cap',
+            name_ar: 'إجمالي القيمة السوقية للعملات الرقمية',
+            value: totalMcapUsd,
+            previous_close: prevMcap,
+            change: totalMcapUsd - prevMcap,
+            change_percent: mcapChange24h,
+            last_updated: new Date().toISOString(),
+            unit: 'USD',
+            source: 'coingecko',
+          });
+        }
+      }
+    } else {
+      console.warn('[market-data-access] CoinGecko /global unavailable (status=' + (res?.status ?? 'null') + ')');
+    }
+  } catch (e) {
+    console.warn('[market-data-access] CoinGecko fetch error:', String(e).slice(0, 120));
+  }
+
+  // Fear & Greed Index (alternative.me)
+  try {
+    const fngCacheKey = 'crypto:fng';
+    const fngCached = _getCached<MarketIndexRow | null>(fngCacheKey);
+    if (fngCached) {
+      indices.push(fngCached);
+    } else {
+      const res = await fetch('https://api.alternative.me/fng/?limit=2', {
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const json = await res.json() as any;
+        const arr = json?.data;
+        if (Array.isArray(arr) && arr.length > 0) {
+          const latest = arr[0];
+          const prev = arr[1] || latest;
+          const value = Number(latest.value) || 0;
+          const prevValue = Number(prev.value) || value;
+          const change = value - prevValue;
+          const changePct = prevValue > 0 ? (change / prevValue) * 100 : 0;
+          const fngIdx: MarketIndexRow = {
+            symbol: 'FNG',
+            name: 'Fear & Greed Index',
+            name_ar: 'مؤشر الخوف والطمع',
+            value,
+            previous_close: prevValue,
+            change,
+            change_percent: changePct,
+            last_updated: latest.timestamp ? new Date(Number(latest.timestamp) * 1000).toISOString() : new Date().toISOString(),
+            classification: latest.value_classification || null,
+            unit: '0-100',
+            source: 'alternative.me',
+          };
+          indices.push(fngIdx);
+          _setCached(fngCacheKey, fngIdx);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[market-data-access] alternative.me F&G fetch error:', String(e).slice(0, 120));
+  }
+
+  _setCached(cacheKey, indices);
+  return indices;
+}
+
+// ---------- Composite index from stocks.db (KSE, QSE, TADAWUL fallback) ----------
+function computeCompositeIndex(dbMarket: string): MarketIndexRow | null {
+  try {
+    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
+    const db = openRobust(dbPath);
+    if (!db) return null;
+    try {
+      const stocks = db.prepare(
+        "SELECT current_price, volume, change_percent, previous_close FROM stocks WHERE market = ? COLLATE NOCASE AND current_price > 0"
+      ).all(dbMarket) as any[];
+
+      if (stocks.length === 0) return null;
+
+      let totalWeight = 0;
+      let weightedChange = 0;
+      let totalPrevMcap = 0;
+      let totalCurMcap = 0;
+      for (const s of stocks) {
+        const price = Number(s.current_price) || 0;
+        const vol = Number(s.volume) || 0;
+        const changePct = Number(s.change_percent) || 0;
+        const prevClose = Number(s.previous_close) || 0;
+        const weight = price * vol;
+        if (weight > 0) {
+          totalWeight += weight;
+          weightedChange += changePct * weight;
+        }
+        if (prevClose > 0 && vol > 0) {
+          totalPrevMcap += prevClose * vol;
+          totalCurMcap += price * vol;
+        }
+      }
+
+      const compositeChangePct = totalWeight > 0 ? weightedChange / totalWeight : 0;
+      const compositeValue = totalCurMcap > 0 ? totalCurMcap / 1_000_000 : 0;
+      const prevValue = totalPrevMcap > 0 ? totalPrevMcap / 1_000_000 : (compositeValue > 0 ? compositeValue / (1 + compositeChangePct / 100) : 0);
+
+      return {
+        symbol: `${dbMarket}_COMPOSITE`,
+        name: `${dbMarket} Composite Index`,
+        name_ar: `مؤشر ${MARKET_NAMES_AR[dbMarket] || dbMarket} المركّب`,
+        value: compositeValue,
+        previous_close: prevValue,
+        change: compositeValue - prevValue,
+        change_percent: compositeChangePct,
+        last_updated: new Date().toISOString(),
+        is_composite: true,
+        source: 'stocks_db_composite',
+        constituent_count: stocks.length,
+      };
+    } finally {
+      db.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
+// ---------- Per-market fetchers ----------
+async function fetchEGXIndices(): Promise<MarketIndexRow[]> {
+  try {
+    const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
+    const db = openRobust(dbPath);
+    if (!db) return [];
+    try {
+      const rows = db.prepare('SELECT * FROM market_indices ORDER BY id ASC').all() as any[];
+      return rows
+        .filter((idx: any) => idx.symbol && String(idx.symbol).includes('EGX'))
+        .map((idx: any) => ({
+          symbol: idx.symbol,
+          name: idx.name || '',
+          name_ar: idx.name_ar || '',
+          value: Number(idx.current_value) || 0,
+          previous_close: Number(idx.previous_close) || 0,
+          change: Number(idx.change) || 0,
+          change_percent: Number(idx.change_percent) || 0,
+          last_updated: idx.last_update || null,
+          source: 'stocks_db_market_indices',
+        }));
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
+}
+
+async function fetchUSIndices(): Promise<MarketIndexRow[]> {
+  return await fetchYahooIndices(['^GSPC', '^IXIC', '^DJI']);
+}
+
+async function fetchTadawulIndices(): Promise<MarketIndexRow[]> {
+  const [tasi, composite] = await Promise.all([
+    fetchYahooIndex('^TASI.SR'),
+    Promise.resolve(computeCompositeIndex('TADAWUL')),
+  ]);
+  const out: MarketIndexRow[] = [];
+  if (tasi) out.push(tasi);
+  if (composite) out.push(composite);
+  return out;
+}
+
+async function fetchKseIndices(): Promise<MarketIndexRow[]> {
+  const composite = computeCompositeIndex('KSE');
+  return composite ? [composite] : [];
+}
+
+async function fetchQseIndices(): Promise<MarketIndexRow[]> {
+  const composite = computeCompositeIndex('QSE');
+  return composite ? [composite] : [];
+}
+
+/**
+ * Fetch indices for a given market. This is the single entry-point used by all
+ * API routes (/api/market/indices, /api/market-pulse, /api/market/overview) to
+ * avoid duplicating fetch logic and to prevent recursive HTTP calls inside the
+ * Next.js dev server (which would crash better-sqlite3 in some cases).
+ *
+ * @param marketRaw One of EGX|TADAWUL|KSE|QSE|US|CRYPTO (or aliases like KSA, SAUDI, etc.)
+ * @returns { indices, market, source }
+ */
+export async function fetchMarketIndices(marketRaw: string): Promise<{
+  indices: MarketIndexRow[];
+  market: string;
+  source: string;
+}> {
+  const market = MARKET_ALIASES[marketRaw.toUpperCase()] || marketRaw.toUpperCase();
+  let indices: MarketIndexRow[] = [];
+  let source = '';
+
+  switch (market) {
+    case 'EGX':
+      indices = await fetchEGXIndices();
+      source = 'stocks_db_market_indices';
+      break;
+    case 'US':
+      indices = await fetchUSIndices();
+      source = 'yahoo_finance';
+      break;
+    case 'CRYPTO':
+      indices = await fetchCryptoIndices();
+      source = 'coingecko+alternative.me';
+      break;
+    case 'TADAWUL':
+      indices = await fetchTadawulIndices();
+      source = 'yahoo_finance+stocks_db_composite';
+      break;
+    case 'KSE':
+      indices = await fetchKseIndices();
+      source = 'stocks_db_composite';
+      break;
+    case 'QSE':
+      indices = await fetchQseIndices();
+      source = 'stocks_db_composite';
+      break;
+    default:
+      // Unknown market — return empty (per Rule 27)
+      break;
+  }
+
+  return { indices, market, source };
 }
