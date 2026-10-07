@@ -130,13 +130,14 @@ export type UnifiedStockData = {
   };
 
   canonical: {
-    signal: SignalType;
+    // Rule 20 FIX: signal + master_score = null لو لا توقع طازج (لا TS-side computation)
+    signal: SignalType | null;
     signal_ar: string;
     accumulation: AccumulationLabel;
     money_flow: MoneyFlowState;
     phase: StockPhase;
-    master_score: number;
-    master_score_source: 'prediction_db_fresh' | 'fresh_technical_score';
+    master_score: number | null;
+    master_score_source: 'prediction_db_fresh' | 'null';
     prediction_is_fresh: boolean;
     buy_pct_source: 'radar_cache' | 'fresh_candle_colors' | 'null';
     buy_pct: number | null;
@@ -244,35 +245,19 @@ function computeSupportResistance(history: PriceRow[]): {
 }
 
 // ----------------------------------------------------------------------------
-// Helper: technical score → master_score (0-100)
+// ⚠️ REMOVED (Rule 20 — Python=Brain, 2026-10-07):
+// computeTechnicalScore() كان يحسب master_score في TS-side (Rule 20 violation).
+// صار master_score يأتي ONLY من predictions.db (Python V40.2).
+// الدالة محذوفة — لا حساب مالي في الواجهة.
 // ----------------------------------------------------------------------------
-function computeTechnicalScore(opts: {
-  rsi: number | null;
-  price: number;
-  ma50: number | null;
-  ma200: number | null;
-  roc10d: number | null;
-  volumeRatio: number | null;
-}): number {
-  let score = 50;
-  const { rsi, price, ma50, ma200, roc10d, volumeRatio } = opts;
-  if (rsi !== null) {
-    if (rsi < 30) score += 20;
-    else if (rsi > 70) score -= 20;
-    else if (rsi >= 40 && rsi <= 60) score += 5;
-  }
-  if (ma50 !== null && ma200 !== null) {
-    if (price > ma50 && ma50 > ma200) score += 25;
-    else if (price < ma50 && ma50 < ma200) score -= 25;
-    else if (price > ma50) score += 10;
-  }
-  if (roc10d !== null) {
-    if (roc10d > 5) score += 15;
-    else if (roc10d < -5) score -= 15;
-  }
-  if (volumeRatio !== null && volumeRatio > 1.5) score += 10;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
+// (النسخة القديمة محفوظة كـ comment للتوثيق — VERIFY-BEFORE-DELETE)
+//
+// function computeTechnicalScore(opts: { ... }): number {
+//   let score = 50;
+//   ... (RSI + MA + ROC + Volume logic — كان يخالف Rule 20)
+//   return Math.max(0, Math.min(100, Math.round(score)));
+// }
+// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // MAIN FUNCTION: getUnifiedStockData — single source of truth
@@ -495,23 +480,22 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
     }
   }
 
-  const freshTechScore = computeTechnicalScore({
-    rsi: freshRSI,
-    price: currentPrice,
-    ma50: freshMA50,
-    ma200: freshMA200,
-    roc10d: roc10dFresh,
-    volumeRatio: volumeRatioFresh,
-  });
-
-  const masterScore =
-    predMaster !== null && predMaster !== undefined && predictionIsFresh
-      ? Number(predMaster)
-      : freshTechScore;
+  // ⚠️ CRITICAL FIX (Rule 20 — Python=Brain, 2026-10-07):
+  // كان الكود يحسب freshTechScore (TS-side computation) ويستخدمه كـ master_score
+  // عند غياب التوقع الطازج. هذا Rule 20 violation — لا يجب أن تحسب الواجهة score.
+  // النتيجة: canonical.signal كان يأتي من TS-side (شراء 70/100) بينما V40.2 الحقيقي
+  // (Python /api/v2/chart/full-analysis) يقول تجنب 35/100 → تضارب صريح.
+  //
+  // الإصلاح: master_score يأتي ONLY من predictions.db (Python V40.2).
+  // لو لا توقع طازج → null (لا fabrication، Rule 27 NO-FAKE-DATA).
+  // canonical.signal يصبح null أيضًا → الواجهة تعرض "لا توقع طازج" بدل قرار وهمي.
+  const hasFreshPrediction = predMaster !== null && predMaster !== undefined && predictionIsFresh;
+  const masterScore = hasFreshPrediction ? Number(predMaster) : null;
 
   // ─── Step 6: Compute canonical classifications ────────────────────────
-  const canonicalSignal: SignalType = classifySignal(masterScore);
-  const canonicalSignalAr: string = signalAr(canonicalSignal);
+  // canonicalSignal = null لو لا توقع طازج (لا نخترع signal من TS-side)
+  const canonicalSignal: SignalType | null = masterScore !== null ? classifySignal(masterScore) : null;
+  const canonicalSignalAr: string = masterScore !== null ? signalAr(canonicalSignal as SignalType) : '— لا يوجد توقع طازج';
   const canonicalAccumulation: AccumulationLabel = classifyAccumulation(buyPct);
   const canonicalMoneyFlow: MoneyFlowState = classifyMoneyFlow(buyPct, sellPct);
   const canonicalPhase: StockPhase = classifyStockPhase(buyPct, roc10d);
@@ -590,22 +574,23 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
         ma_50: freshMA50,
         roc_10d: roc10dFresh,
         volume_ratio: volumeRatioFresh,
-        technical_score: freshTechScore,
+        // technical_score: REMOVED (Rule 20 — لا حساب مالي في TS-side)
+        // master_score يأتي فقط من predictions.db (Python V40.2)
+        technical_score: null,
         price_history_points: closes.length,
       },
     },
 
     canonical: {
-      signal: canonicalSignal,
+      signal: canonicalSignal,  // null لو لا توقع طازج (لا fabrication)
       signal_ar: canonicalSignalAr,
       accumulation: canonicalAccumulation,
       money_flow: canonicalMoneyFlow,
       phase: canonicalPhase,
       master_score: masterScore,
-      master_score_source:
-        predMaster !== null && predMaster !== undefined && predictionIsFresh
-          ? 'prediction_db_fresh'
-          : 'fresh_technical_score',
+      // Rule 20 FIX: 'fresh_technical_score' أُزيل — لا حساب مالي في TS-side
+      // master_score_source = 'prediction_db_fresh' لو متوفر، وإلا 'null'
+      master_score_source: hasFreshPrediction ? 'prediction_db_fresh' : 'null',
       prediction_is_fresh: predictionIsFresh,
       buy_pct_source: radarData?.buy_pct != null ? 'radar_cache' : (freshBuyPct != null ? 'fresh_candle_colors' : 'null'),
       buy_pct: buyPct,

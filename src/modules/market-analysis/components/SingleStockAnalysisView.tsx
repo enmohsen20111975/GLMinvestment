@@ -313,7 +313,7 @@ export function SingleStockAnalysisView({
     macd: true,
     volume: true,
     obv: false,
-    fibonacci: true,
+    fibonacci: false,  // P0-REDESIGN: افتراضيًا معطل (المواصفات: عرض نظيف)
     levels: true,
     bos: true,
   });
@@ -882,10 +882,11 @@ export function SingleStockAnalysisView({
               />
             )}
 
-            {/* ── لوحة القرار الشفافة (مرحلة منفصلة 3 — 2026-08-30) ──
-                تقرير مرتب وجميل زي Pine Script V56 — يعرض:
-                الحالة + القرار + الأساسيات + الفني + السيولة + خطة التداول
-                مرئي لما فيه institutional_decision */}
+            {/* ─── DISABLED (P0-REDESIGN, 2026-10-07): "تقرير القرار الشفاف" ───
+                كان مكسورًا (يقرأ حقولًا غير موجودة في InstitutionalDecision interface
+                مثل d.signal/d.pe_ratio/d.roe/d.entry_price/d.target_price/d.rr_ratio —
+                الكنسي = signal_final/risk_profile.entry/sl/tp1/tp2) + مكرر مع
+                InstitutionalDecisionPanel. حُفظ كـ comment للتوثيق (VERIFY-BEFORE-DELETE).
             {data.institutional_decision && (() => {
               const d = data.institutional_decision;
               const sig = d.signal || '—';
@@ -899,7 +900,6 @@ export function SingleStockAnalysisView({
                     </div>
                   </CardHeader>
                   <CardContent className="p-3 space-y-2 text-xs">
-                    {/* الحالة + القرار */}
                     <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
                       <div>
                         <span className="text-muted-foreground">الحالة: </span>
@@ -910,7 +910,6 @@ export function SingleStockAnalysisView({
                         <span className={`font-bold ${sigColor}`}>{sig}</span>
                       </div>
                     </div>
-                    {/* الأساسيات */}
                     <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
                       <div>
                         <span className="text-muted-foreground">مكرر الربحية: </span>
@@ -925,7 +924,6 @@ export function SingleStockAnalysisView({
                         <span className="font-medium">{d.debt_to_equity != null ? d.debt_to_equity.toFixed(1) + '%' : '—'}</span>
                       </div>
                     </div>
-                    {/* الفني */}
                     <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
                       <div>
                         <span className="text-muted-foreground">نظام السوق: </span>
@@ -940,7 +938,6 @@ export function SingleStockAnalysisView({
                         <span className="font-medium">{d.evidence_count ?? '—'}/6</span>
                       </div>
                     </div>
-                    {/* خطة التداول */}
                     <div className="grid grid-cols-4 gap-2">
                       <div>
                         <span className="text-muted-foreground">الدخول: </span>
@@ -963,6 +960,7 @@ export function SingleStockAnalysisView({
                 </Card>
               );
             })()}
+            ─── END DISABLED ─── */}
 
             {/* ── P42-FRONTEND-1: Row 1.5 — Insight Cards ──
                 Visible in both simple and advanced modes. Each card renders only when its
@@ -1415,17 +1413,32 @@ export function SingleStockAnalysisView({
                   <span className="font-bold text-[11px] block border-b border-amber-500/30 text-amber-700 dark:text-amber-300">
                     🏛️ التقييم والتحليل الأساسي:
                   </span>
+                  {/* P0-REDESIGN FIX (Rule 27 NO-FAKE-DATA): أزلت القيم الوهمية
+                      (12.4x / 1.85 / 14.2%) — كانت hardcoded fallback.
+                      الآن: "— بيانات غير متاحة" لو لا بيانات حقيقية. */}
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">مكرر الربحية (P/E):</span>
-                    <span className="font-mono font-bold text-foreground">{(data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio?.toFixed(2) || '12.4x'}</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {(data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio
+                        ? `${Number((data as Record<string, unknown>).fundamentals?.valuation?.pe_ratio).toFixed(2)}x`
+                        : '— بيانات غير متاحة'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">ربحية السهم (EPS):</span>
-                    <span className="font-mono text-foreground">{(data as Record<string, unknown>).fundamentals?.profitability?.eps?.toFixed(2) || '1.85'} {currencyLabel}</span>
+                    <span className="font-mono text-foreground">
+                      {(data as Record<string, unknown>).fundamentals?.profitability?.eps
+                        ? `${Number((data as Record<string, unknown>).fundamentals?.profitability?.eps).toFixed(2)} ${currencyLabel}`
+                        : '— بيانات غير متاحة'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-muted-foreground">العائد على الاستثمار:</span>
-                    <span className="font-mono text-emerald-500 font-bold">14.2%</span>
+                    <span className="font-mono text-foreground">
+                      {(data as Record<string, unknown>).fundamentals?.profitability?.roe
+                        ? `${Number((data as Record<string, unknown>).fundamentals?.profitability?.roe).toFixed(1)}%`
+                        : '— بيانات غير متاحة'}
+                    </span>
                   </div>
                 </div>
               </div>
