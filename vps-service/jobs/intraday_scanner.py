@@ -323,6 +323,10 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
             print(f"  💾 تم حفظ {saved_count} توقع لحظي في {PREDICTIONS_DB}", flush=True)
 
             # مزامنة الفرص اللحظية فوراً في stored_analyses ليراها المستخدم في شاشة التوقعات مباشرة
+            # SINGLE-WRITER (Task PHASE-3, Rule 73) — only daily_predictor.py should write to stored_analyses.
+            # The INSERT below is DISABLED to prevent conflicting decisions (last-writer-wins).
+            # The cached_analysis (stocks.db) update that follows still runs (different table).
+            SKIP_STORED_ANALYSES_WRITE = True
             try:
                 try:
                     from core.db_manager import db_manager
@@ -386,36 +390,48 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                         'source': 'V40.2_INTRADAY_5M'
                     }
                     sa_id = f"v40_{p['ticker']}_EGX"
-                    cur_sa.execute('''
-                        INSERT INTO stored_analyses (
-                            id, ticker, market, maestro_score, recommendation, recommendation_ar,
-                            confidence, entry_price, target_price, stop_loss, risk_reward,
-                            prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity, logo_url
-                        ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)
-                        ON CONFLICT(ticker, market) DO UPDATE SET
-                            maestro_score = excluded.maestro_score,
-                            recommendation = excluded.recommendation,
-                            recommendation_ar = excluded.recommendation_ar,
-                            confidence = excluded.confidence,
-                            entry_price = excluded.entry_price,
-                            target_price = excluded.target_price,
-                            stop_loss = excluded.stop_loss,
-                            risk_reward = excluded.risk_reward,
-                            prediction_date = excluded.prediction_date,
-                            updated_at = excluded.updated_at,
-                            analysis_json = excluded.analysis_json,
-                            is_gambler_opportunity = 1,
-                            is_investor_opportunity = 1,
-                            logo_url = excluded.logo_url
-                    ''', (
-                        sa_id, p['ticker'], p['score'], p['signal'], 'شراء قوي' if 'STRONG' in p['signal'] else 'شراء',
-                        p.get('maker_confidence', 80), p['entry_price'], p['target_price'], p['stop_loss'],
-                        p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False),
-                        logo_url
-                    ))
-                conn_sa.commit()
-                conn_sa.close()
-                print(f"  ⚡ تم مزامنة {len(top_picks)} فرصة لحظية في stored_analyses لشاشة التوقعات", flush=True)
+                    # SINGLE-WRITER (Task PHASE-3, Rule 73) — guard wraps the actual INSERT.
+                    if not SKIP_STORED_ANALYSES_WRITE:
+                        cur_sa.execute('''
+                            INSERT INTO stored_analyses (
+                                id, ticker, market, maestro_score, recommendation, recommendation_ar,
+                                confidence, entry_price, target_price, stop_loss, risk_reward,
+                                prediction_date, updated_at, analysis_json, is_gambler_opportunity, is_investor_opportunity, logo_url
+                            ) VALUES (?, ?, 'EGX', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)
+                            ON CONFLICT(ticker, market) DO UPDATE SET
+                                maestro_score = excluded.maestro_score,
+                                recommendation = excluded.recommendation,
+                                recommendation_ar = excluded.recommendation_ar,
+                                confidence = excluded.confidence,
+                                entry_price = excluded.entry_price,
+                                target_price = excluded.target_price,
+                                stop_loss = excluded.stop_loss,
+                                risk_reward = excluded.risk_reward,
+                                prediction_date = excluded.prediction_date,
+                                updated_at = excluded.updated_at,
+                                analysis_json = excluded.analysis_json,
+                                is_gambler_opportunity = 1,
+                                is_investor_opportunity = 1,
+                                logo_url = excluded.logo_url
+                        ''', (
+                            sa_id, p['ticker'], p['score'], p['signal'], 'شراء قوي' if 'STRONG' in p['signal'] else 'شراء',
+                            p.get('maker_confidence', 80), p['entry_price'], p['target_price'], p['stop_loss'],
+                            p.get('risk_reward', 2.0), today_str, now_iso, json.dumps(analysis_dict, ensure_ascii=False),
+                            logo_url
+                        ))
+                    else:
+                        # SINGLE-WRITER skip — no INSERT executed; transaction stays empty.
+                        pass
+                if not SKIP_STORED_ANALYSES_WRITE:
+                    conn_sa.commit()
+                    conn_sa.close()
+                    print(f"  ⚡ تم مزامنة {len(top_picks)} فرصة لحظية في stored_analyses لشاشة التوقعات", flush=True)
+                else:
+                    try:
+                        conn_sa.close()
+                    except Exception:
+                        pass
+                    print(f"  ⚡ [SINGLE-WRITER] Skipping stored_analyses sync for {len(top_picks)} picks — use daily_predictor.py", flush=True)
 
                 # تحديث cached_analysis في stocks.db لإزالة تحذير الكاش القديم
                 try:

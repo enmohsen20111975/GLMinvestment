@@ -47,6 +47,16 @@ PRICE_HISTORY_DB = str(PROJECT_ROOT / 'db' / 'price_history.db')
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
 PREDICTIONS_DB = str(PROJECT_ROOT / 'db' / 'predictions.db')
 
+# SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73: SINGLE-DISPLAY-SOURCE)
+# V82 Analyzer produces an `action` field (BUY/SELL/WAIT/AVOID) using its own
+# 9-condition gate. This competes with the canonical signal produced by
+# master_analyzer.py + canonical_signal.py (thresholds 78/65), violating Rule 67
+# (CALCULATION-CANONICAL) and Rule 73 (SINGLE-DISPLAY-SOURCE).
+# Canonical signal comes from master_analyzer.py + canonical_signal.py.
+# This file is kept for backward compatibility (Rule 4: NO-DELETION) but
+# V82Analyzer.analyze() now short-circuits and returns a disabled V82Signal.
+SUB_ENGINE_DISABLED = True
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data Classes
@@ -160,6 +170,22 @@ class V82Analyzer:
         Returns:
             V82Signal بكل القرارات
         """
+        # SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73)
+        # Canonical signal is produced only by master_analyzer.py + canonical_signal.py
+        # (thresholds 78/65). V82 produces a competing `action` field.
+        # Short-circuit and return a disabled V82Signal with no decision —
+        # callers must consume the canonical source.
+        if SUB_ENGINE_DISABLED:
+            return V82Signal(
+                ticker=ticker,
+                market=(market_data or {}).get('market', 'EGX') if isinstance(market_data, dict) else 'EGX',
+                action='DISABLED',
+                signal_strength='disabled',
+                diagnosis='تم إيقاف محرك V82 — استخدم canonical_signal.py',
+                buy_path='محرك متوقف',
+                created_at=datetime.now().isoformat(),
+            )
+
         if not ohlcv or len(ohlcv) < 60:
             return V82Signal(ticker=ticker, diagnosis='بيانات غير كافية')
 

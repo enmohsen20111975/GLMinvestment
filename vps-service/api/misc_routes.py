@@ -1288,7 +1288,27 @@ def refresh_persona_flags():
     Returns:
       { success, total, updated, gambler_count, investor_count,
         both_count, skipped, errors }
+
+    # SINGLE-WRITER (Task PHASE-3, Rule 73) — DISABLED. daily_predictor.py is the
+    # canonical writer. This endpoint now returns a skip response without touching
+    # stored_analyses. Set SKIP_STORED_ANALYSES_WRITE = False to re-enable.
     """
+    # SINGLE-WRITER (Task PHASE-3, Rule 73)
+    # Only daily_predictor.py is allowed to write to stored_analyses.
+    # This writer is disabled to prevent conflicting decisions (last-writer-wins).
+    SKIP_STORED_ANALYSES_WRITE = True
+    if SKIP_STORED_ANALYSES_WRITE:
+        try:
+            _logger.info('[SINGLE-WRITER] Skipping refresh_persona_flags stored_analyses writes — use daily_predictor.py')
+        except Exception:
+            pass
+        return jsonify({
+            'success': True,
+            'skipped': True,
+            'updated': 0,
+            'message': 'SINGLE-WRITER (PHASE-3 Rule 73) — disabled; daily_predictor.py is canonical',
+        })
+
     try:
         data = request.get_json(silent=True) or {}
         market_filter = (data.get('market') or '').upper() or None
@@ -3682,6 +3702,22 @@ def live_refresh_analyses():
             'success': True,
             'message': 'التحليل جارٍ بالفعل في الخلفية',
             'running': True,
+        })
+
+    # SINGLE-WRITER (Task PHASE-3, Rule 73)
+    # Only daily_predictor.py is allowed to write to stored_analyses.
+    # This writer is disabled to prevent conflicting decisions (last-writer-wins).
+    SKIP_STORED_ANALYSES_WRITE = True
+    if SKIP_STORED_ANALYSES_WRITE:
+        try:
+            _logger.info('[SINGLE-WRITER] Skipping live_refresh_analyses stored_analyses writes — use daily_predictor.py')
+        except Exception:
+            pass
+        return jsonify({
+            'success': True,
+            'skipped': True,
+            'running': False,
+            'message': 'SINGLE-WRITER (PHASE-3 Rule 73) — disabled; daily_predictor.py is canonical',
         })
 
     def _run_background_refresh():

@@ -714,6 +714,12 @@ def _build_stored_analysis_row(
 ) -> Optional[tuple]:
     """Build the 28-value tuple for a stored_analyses INSERT row (NO DB I/O).
 
+    SINGLE-WRITER (Task PHASE-3, Rule 73) — This helper performs NO DB I/O
+    (it only builds the row tuple in memory). The actual INSERT must be
+    performed by `daily_predictor.py` (the canonical writer). Any caller
+    that takes this tuple and INSERTs it into stored_analyses is a
+    non-canonical writer and must be disabled via SKIP_STORED_ANALYSES_WRITE.
+
     PHASE 5-2 (v3.55.0): Extracted from persist_analysis_with_persona so the
     row can be built entirely in memory. This lets run_analysis_batch collect
     all rows in the loop (zero predictions.db queries per stock) and write

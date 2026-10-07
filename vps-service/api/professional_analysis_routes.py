@@ -24,6 +24,16 @@ except Exception:
     _get_board_manager = None
 # ───────────────────────────────────────────────────────────────────────────
 
+# SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73: SINGLE-DISPLAY-SOURCE)
+# Professional Analysis route produces a `recommendation.action` field using
+# thresholds (65/55/48) that differ from the canonical thresholds (78/65)
+# defined in canonical_signal.py. Producing a competing `signal`/`action` field
+# here violates Rule 67 (CALCULATION-CANONICAL) and Rule 73 (SINGLE-DISPLAY-SOURCE).
+# Canonical signal comes from master_analyzer.py + canonical_signal.py and is
+# exposed via the unified route. This blueprint is kept (Rule 4: NO-DELETION)
+# but the route now returns HTTP 410 Gone with a pointer to the canonical route.
+PROFESSIONAL_ANALYSIS_DISABLED = True
+
 prof_analysis_bp = Blueprint('professional_analysis', __name__)
 
 
@@ -39,6 +49,18 @@ def professional_analysis(ticker):
     Professional analysis endpoint for frontend.
     This matches the Next.js API response format.
     """
+    # SUB-ENGINE-DISABLED (Task PHASE-3-DISABLE-SUB-ENGINES, Rule 73)
+    # Thresholds (65/55/48) compete with canonical thresholds (78/65).
+    # Return 410 Gone with pointer to the canonical unified route.
+    if PROFESSIONAL_ANALYSIS_DISABLED:
+        return jsonify({
+            'success': False,
+            'deprecated': True,
+            'error': 'sub_engine_disabled',
+            'error_ar': 'تم إيقاف المحرك الاحترافي — استخدم /api/stocks/<ticker>/unified',
+            'canonical_route': '/api/stocks/<ticker>/unified',
+        }), 410
+
     try:
         ticker = ticker.upper()
         

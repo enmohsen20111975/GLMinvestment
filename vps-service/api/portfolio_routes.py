@@ -967,6 +967,9 @@ def _fallback_last_close(ticker: str) -> Optional[float]:
     نقرأ آخر close_price من price_history.db (نُفضّل مصدر egksco ثم migration).
 
     PHASE 1 (v3.50.0): delegate to data.prices — single source of truth.
+
+    CANONICAL-PRICE (Task PHASE-3, Rule 72) — this is the FALLBACK only.
+    Primary LIVE source = stocks.db.stocks.current_price (caller responsibility).
     """
     if not ticker:
         return None

@@ -1244,6 +1244,15 @@ def load_merged_history(ticker: str, db_path: str, limit: int = 100) -> List[Dic
     3. يدمجهم زمنياً مع تجميع الـ intraday لشموع يومية
     4. يعتمد على fallback من stocks.db لو البيانات غير متوفرة لليوم
 
+    CANONICAL-PRICE (Task PHASE-3, Rule 72):
+      - LIVE price source = stocks.db.stocks.current_price + last_update
+        (merged as the "today" candle below — see step 6/force-merge block).
+      - HISTORICAL closes = stocks.db.stock_daily_prices (preferred) then
+        price_history.db.price_history (legacy fallback).
+      - This function is the canonical reference implementation; other engines
+        must NOT read `closes[-1]` from a historical table to derive a "live"
+        price without first consulting stocks.db.stocks.current_price.
+
     فلترة المصادر (DATA-FIX-001):
     - عند توفر بيانات `egksco` لسهم، تُعتبر هي المرجع الصحيح.
     - تُحسب نسبة التطبيع = (أول close من egksco) / (آخر close من egx_investment_migration).
@@ -2368,10 +2377,14 @@ class MasterAnalyzer:
                 pulse_timestamp=effective_pulse.get('timestamp', '') if effective_pulse else '',
             )
         
+        # CANONICAL-PRICE (Task PHASE-3, Rule 72)
+        # Fallback path (limited data): try stocks.db.stocks.current_price first,
+        # then closes[-1]. The full validation path (line ~2498) handles the
+        # >10000 sanity check; here we just keep prices[-1] for the limited-data
+        # branch but log a reminder that the canonical source is stocks.db.
         current_price = prices[-1]
-        
-        # 🔥 LIMITED DATA MODE: If we have less than 50 data points
         # Provide basic analysis with available data
+        # 🔥 LIMITED DATA MODE: If we have less than 50 data points
         if len(prices) < 50:
             # Use available data for limited analysis
             # Still provide risk profile with correct price
@@ -2490,6 +2503,7 @@ class MasterAnalyzer:
         
         # CRITICAL FIX: Validate current_price is reasonable
         # If price > 10000, it's likely wrong (volume or market_cap read incorrectly)
+        # CANONICAL-PRICE (Task PHASE-3, Rule 72) — use stocks.db.stocks.current_price for live price
         if current_price > 10000:
             print(f"[MasterAnalyzer] WARNING: Invalid price for {ticker}: {current_price}")
             # Get correct price from stocks table

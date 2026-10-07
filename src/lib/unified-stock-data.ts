@@ -418,6 +418,9 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
   const closes = priceHistory.map((r) => r.close).filter((c) => typeof c === 'number' && c > 0);
   const volumes = priceHistory.map((r) => r.volume).filter((v) => typeof v === 'number' && v > 0);
   const lastClose = closes.length > 0 ? closes[closes.length - 1] : null;
+  // CANONICAL-PRICE (Task PHASE-3, Rule 72) — `stock.current_price` (from
+  // stocks.db.stocks, selected at line ~313) is the canonical LIVE source.
+  // `lastClose` (from stocks.db.stock_daily_prices) is the HISTORICAL fallback.
   const currentPrice = Number(stock.current_price ?? lastClose ?? 0);
 
   const freshRSI = computeRSI(closes);

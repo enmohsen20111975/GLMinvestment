@@ -786,6 +786,9 @@ class FlowSystemEngine:
             cur = conn.cursor()
             
             # Try to get historical turnover from price_history.db
+            # CANONICAL-PRICE (Task PHASE-3, Rule 72) — HISTORICAL closes only (for
+            # sector turnover trend). LIVE current_price is already used above from
+            # stocks.db.stocks.current_price (line ~796) for today's snapshot.
             ph_db = self.db_path.replace('stocks.db', 'price_history.db')
             if not os.path.exists(ph_db):
                 ph_db = os.path.join(os.path.dirname(self.db_path), 'price_history.db')

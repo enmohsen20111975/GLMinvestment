@@ -203,7 +203,12 @@ def map_recommendation_to_signal(recommendation: str) -> str:
 
 
 def _get_historical_prices(symbol: str, limit: int = 30) -> List[Dict]:
-    """جلب الأسعار التاريخية من price_history.db لحساب ATR"""
+    """جلب الأسعار التاريخية من price_history.db لحساب ATR
+
+    CANONICAL-PRICE (Task PHASE-3, Rule 72):
+      - HISTORICAL closes only (for ATR/volatility calc), NOT for live price.
+      - For LIVE price use utils.live_price.get_live_price() or stocks.db.stocks.current_price.
+    """
     try:
         conn = sqlite3.connect(PRICE_HISTORY_DB)
         conn.row_factory = sqlite3.Row
@@ -321,6 +326,9 @@ def get_current_price(symbol: str) -> Optional[float]:
             pass
 
         # Fallback: stocks table (لو live_price مش متاح)
+        # CANONICAL-PRICE (Task PHASE-3, Rule 72) — stocks.db.stocks.current_price is the
+        # canonical LIVE source. The chain below (live_price → stocks.current_price →
+        # price_history.close_price) implements the hierarchy correctly.
         stocks = query_db(STOCKS_DB,
             "SELECT current_price FROM stocks WHERE ticker = ?",
             (symbol.upper(),))

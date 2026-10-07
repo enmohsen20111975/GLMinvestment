@@ -595,7 +595,15 @@ class DatabaseManager:
         return results
 
     def get_price_history(self, ticker: str, days: int = 365) -> List[Dict]:
-        """Get historical price data for a stock - returns LATEST days including today's live price."""
+        """Get historical price data for a stock - returns LATEST days including today's live price.
+
+        CANONICAL-PRICE (Task PHASE-3, Rule 72) — price source hierarchy:
+          1. LIVE price: stocks.db.stocks.current_price (appended via _append_today_live_bar)
+          2. HISTORICAL closes: stocks.db.stock_daily_prices (preferred, EOD clean)
+          3. Fallback: price_history.db.price_history (legacy, 1.24M rows)
+          4. Fallback: DailyPrice table (sandbox/dev only)
+        FORBIDDEN: data_engine.db.historical_data / stock_prices (stale, disabled below).
+        """
         results = []
         # Use price_history.db with ticker directly
         # FIX (Aug 2026): Use safe_connect to enforce timeout + busy_timeout

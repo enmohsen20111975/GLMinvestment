@@ -47,6 +47,22 @@ _cache: Dict[str, Any] = {
     "ts": 0.0,          # timestamp of last load
 }
 
+# ─── CANONICAL-PRICE-SOURCE (Task PHASE-3, Rule 72) ─────────────────
+# Price source hierarchy (ALL engines must follow this):
+# 1. LIVE price: stocks.db.stocks.current_price (updated by scrapers every 5 min)
+# 2. HISTORICAL closes: stocks.db.stock_daily_prices (EOD data, most up-to-date)
+# 3. Fallback: data_engine.db.egksco_price_history (stale — only if 1+2 fail)
+#
+# FORBIDDEN sources:
+# - price_history.db (deprecated, stale)
+# - data_engine.db.historical_data (stale, 5 weeks old)
+# - data_engine.db.stock_prices (4 months stale)
+#
+# Enforcement: any Python engine reading `current_price = closes[-1]` from a
+# historical table MUST first try `stocks.db.stocks.current_price` and only
+# fall back to `closes[-1]` when the live column is missing/zero.
+# See master_analyzer.load_merged_history() for the canonical implementation.
+
 # ──────────────────────────────────────────────────────────────────────────
 # Default Settings — القيم الافتراضية لكل الإعدادات
 # ──────────────────────────────────────────────────────────────────────────
