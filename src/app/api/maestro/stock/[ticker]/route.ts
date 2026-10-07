@@ -9,6 +9,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getStockByTickerFallback, getStockRecommendationFallback } from '@/lib/flutter-sqlite-fallback';
+// ─── UNIFIED-DATA-CONTRACT (Task DEEP-AUDIT-FIX, Rule 72) ────────────────
+// قبل كده: maestro route بـ يرجّع signal من Python + stocks.db.signal
+// (غير محسوب بـ canonical thresholds).
+// الحل: نـ inject canonical values من getUnifiedStockData() في كل response.
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +50,26 @@ export async function GET(
       const pyData = await pyRes.json();
       if (pyData.success !== false) {
         const result = pyData.result || pyData.data || pyData;
+        // UNIFIED-DATA-CONTRACT: inject canonical signal/score/rsi into Python response
+        const unified = getUnifiedStockData(tickerUpper);
+        if (unified && result && typeof result === 'object') {
+          const r = result as Record<string, unknown>;
+          r.signal = unified.canonical.signal;
+          r.signal_ar = unified.canonical.signal_ar;
+          r.master_score = unified.canonical.master_score;
+          r.recommendation = unified.canonical.signal.toLowerCase();
+          r.recommendation_ar = unified.canonical.signal_ar;
+          r.rsi = unified.technical.rsi ?? r.rsi;
+          r.support = unified.technical.support ?? r.support;
+          r.resistance = unified.technical.resistance ?? r.resistance;
+          r.ma_50 = unified.technical.ma_50 ?? r.ma_50;
+          r.ma_200 = unified.technical.ma_200 ?? r.ma_200;
+          r.accumulation = unified.canonical.accumulation;
+          r.money_flow_state = unified.canonical.money_flow;
+          r.phase = unified.canonical.phase;
+          r.unified = true;
+          r.unified_source = unified.canonical.master_score_source;
+        }
         return NextResponse.json({
           success: true,
           data: result,

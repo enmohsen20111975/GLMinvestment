@@ -62825,3 +62825,176 @@ Stage Summary:
   `/api/stocks/[ticker]/unified` → UI displays.
 ---
 *End of UI-UNIFIED-MIGRATION — 2026-10-07 — General-purpose sub agent (Rule 72)*
+
+---
+Task ID: DEEP-AUDIT-ALL-ENGINES
+Agent: general-purpose sub agent (Z.ai Code)
+Task: Deep audit ALL analysis engines to find every place that produces a stock signal/decision/analysis. Diagnose why CANA shows 3 different signals on the same screen.
+
+Work Log:
+- Read /home/z/my-project/worklog.md (first 30 lines) for project context.
+- Read Rule 67 (CALCULATION-CANONICAL) from Documentation/00-CONSTITUTION.md — declares master_analyzer.py::MASTER_WEIGHTS as canonical for master_score, with THRESHOLDS = {STRONG_BUY: 78, BUY: 65, ACCUMULATE: 55, REDUCE: 40, STRONG_SELL: 25}.
+- Grep'd /home/z/my-project/vps-service/analyzers/ for: master_score|maestro_score, STRONG_BUY|signal_type|recommendation, def.*signal|def.*score|def.*analyze, buy_pct|sell_pct|accumulation. Found 51 files producing signals/scores.
+- Grep'd /home/z/my-project/vps-service/api/ for routing patterns + analyzer imports.
+- Grep'd /home/z/my-project/src/app/api/ for routes returning analysis fields.
+- Grep'd /home/z/my-project/src/modules/ for components computing/displaying signals locally.
+- Read canonical-signal.ts + unified-stock-data.ts + comprehensive/route.ts + professional_analysis_routes.py + maestro_routes.py + stock_analysis_routes.py to trace CANA's 3-signal conflict.
+
+=== A. DISTINCT ANALYSIS ENGINES (Python) ===
+
+| # | Engine file | Class/function | Produces master_score? | Produces signal? | Produces RSI? | Thresholds (STRONG_BUY) |
+|---|-------------|----------------|------------------------|------------------|---------------|--------------------------|
+| 1 | analyzers/master_analyzer.py | MasterAnalyzer | ✅ (MASTER_WEIGHTS, 10-component weighted) | ✅ STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/SELL/STRONG_SELL | ✅ (calc_atr via core_scoring_engine) | **78** ✅ CANONICAL (Rule 67) |
+| 2 | analyzers/maestro_orchestrator.py | run_maestro_analysis + determine_recommendation | ✅ maestro_score (different formula) | ✅ lowercase buy/strong_buy/hold/sell | ❌ (uses external) | **55** (bull) / 58 (bear) / 52 (range) — DIFFERENT |
+| 3 | analyzers/confluence_engine_v3.py | ConfluenceEngineV3.analyze | ✅ master_score (6-component weighted: SMC 60% + Fund 15% + Vol 10% + Tech 15%) | ✅ STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/SELL | ❌ | **75** — DIFFERENT |
+| 4 | analyzers/v68_oracle.py | analyze_oracle | ❌ (probability_score 0-100 only) | ❌ (returns setup_quality, no label) | ❌ (consumes ATR) | N/A |
+| 5 | analyzers/v82_analyzer.py | V82Analyzer | ❌ (gate-only, returns V82Signal dataclass) | ❌ (gate true/false) | ❌ | N/A |
+| 6 | analyzers/sniper_engine.py | SniperEngine.analyze | ✅ sniper_score (6-component) | ✅ STRONG_BUY/BUY/HOLD/REDUCE/SELL | ✅ (own calc_rsi, Wilder's) | **75** — DIFFERENT |
+| 7 | analyzers/conviction_engine.py | calculate_conviction | ✅ conviction score 0-100 (INDEPENDENT — "is NOW right time?") | ✅ action: max/normal/small/skip (NOT buy/sell) | ❌ | N/A (different taxonomy) |
+| 8 | analyzers/expert_quality_gate.py | ExpertQualityGate.evaluate | ✅ expert_score (-100 to +100) | ✅ expert_level: gold/silver/bronze/warning/danger | ❌ | N/A (gate-only) |
+| 9 | analyzers/board_of_analysts.py | BoardManager.generate_final_report | ✅ master_score=weighted_score | ✅ STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL/AVOID | ✅ (own RSI, own thresholds 25/75) | **78** for STRONG_BUY, **68** for BUY — DIFFERENT from canonical |
+| 10 | analyzers/unified_maestro.py | UnifiedMaestroEngine | ✅ score 0-100 | ✅ STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL | ❌ | Regime-dependent min_score+15 — DIFFERENT |
+| 11 | analyzers/unified_analysis.py | analyze_stock_unified | ✅ momentum_score (uses v68_oracle) | ❌ (returns verdict tuple) | ❌ | N/A |
+| 12 | analyzers/technical.py | TechnicalAnalyzer | ❌ (signal_score -10 to +10!) | ✅ STRONG_BUY/BUY/HOLD/SELL (different range!) | ✅ (own RSI, periods 30/70) | score>=5 — DIFFERENT |
+| 13 | analyzers/technical_weighted.py | TechnicalAnalyzerWeighted | ✅ weighted_score 0-100 | ✅ STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/SELL | ✅ (own RSI) | **65** — DIFFERENT |
+| 14 | analyzers/technical_analyzer.py | (referenced in Rule 67 docs as canonical for calc_vwap/calc_obv/detect_regime) | N/A — **FILE DOES NOT EXIST** ❌ Rule 67 broken reference | — | — | — |
+
+**Engines producing BOTH master_score AND signal label with DIFFERENT thresholds from canonical (78/65/55/40/25):** master_analyzer (✅ canonical), maestro_orchestrator (55/42/30/20), confluence_engine_v3 (75/65), sniper_engine (75), board_of_analysts (78/68), unified_maestro (regime-dependent), technical_weighted (65/55), technical (-10..+10 → >=5).
+
+=== B. PYTHON API ROUTES SERVING PER-STOCK ANALYSIS ===
+
+| Route | File:line | Analyzer used | Thresholds | Returns signal? |
+|-------|-----------|---------------|------------|-----------------|
+| GET /api/stock/deep-analysis | api/stock_analysis_routes.py:745 | Reads pre-computed `signal` column from stocks.db AND `BoardManager.generate_final_report()` AND `_compute_hunter_assessment()` AND `_compute_fallback_technical_indicators()` (custom RSI — Rule 67 violation, SMA-based not Wilder) | stocks.db stored + Board(78/68) | ✅ MULTIPLE signals: technical.signal + board_analysis.signal + hunter_assessment + (board_analysis.master_score) |
+| GET /api/professional-analysis/<ticker> | api/professional_analysis_routes.py:36 | TechnicalAnalyzer (technical.py) + FundamentalAnalyzer + OWN composite_score formula (tech*0.30 + value*0.25 + quality*0.25 + momentum*0.10 + (100-risk)*0.10) | **65**/55/48 — DIFFERENT | ✅ action: strong_buy/buy/accumulate/hold/reduce/sell/strong_sell |
+| GET /api/maestro/stock/<ticker> | api/maestro_routes.py:247 | run_maestro_analysis (maestro_orchestrator) | 55/42/30/20 (bull) — DIFFERENT | ✅ recommendation: buy/strong_buy/hold/sell/strong_sell (lowercase) |
+| GET /api/sniper/analyze/<ticker> | api/sniper_routes.py:487 | SniperEngine | 75 — DIFFERENT | ✅ signal: STRONG_BUY/BUY/HOLD/REDUCE/SELL |
+| GET /api/confluence/analyze/<ticker> | api/confluence_routes.py:337 | ConfluenceEngineV3 + TechnicalAnalyzer | 75 — DIFFERENT | ✅ signal: STRONG_BUY/BUY/ACCUMULATE/HOLD/REDUCE/SELL |
+| GET /api/stocks/<ticker> | api/public_routes.py:274 | TechnicalAnalyzer + FundamentalAnalyzer + TimingAnalyzer + PatternRecognitionEngine + FibonacciAnalyzer + RiskManager | technical.py thresholds | ✅ |
+| GET /api/persona/stock/<ticker> | api/persona_routes.py:332 | persona_screener | — | ✅ |
+| GET /api/live/analysis/<ticker> | api/public_routes.py:606 | live_indicator_engine | — | ✅ |
+| GET /api/analysis/<ticker> | api/public_routes.py:273 | technical + fundamental + risk + timing + patterns + fibonacci | — | ✅ |
+
+=== C. NEXT.JS API ROUTES THAT PROXY OR COMPUTE ANALYSIS ===
+
+| Route | Behavior | Conflict? |
+|-------|----------|-----------|
+| /api/stock/deep-analysis | Pure proxy to Python /api/stock/deep-analysis | ✅ Inherits Python's 3-signal conflict |
+| /api/maestro/stock/[ticker] | Proxies Python /api/maestro/stock/<ticker> + SQLite fallback (stocks.db signal column) | ✅ Fallback uses different signal source |
+| /api/stocks/[ticker]/professional-analysis | **DEPRECATED** (returns 410 Gone, Phase 4 API-AUDIT-2) | Migrated |
+| /api/stocks/[ticker]/recommendation | Proxies Python /api/professional-analysis/<ticker> + predictions.db fallback | ✅ Inherits Python's composite_score thresholds |
+| /api/stocks/[ticker]/unified | **CANONICAL** — uses `getUnifiedStockData()` from `src/lib/unified-stock-data.ts` | ✅ Clean (canonical) |
+| /api/stocks/[ticker]/comprehensive | Fetches 3 Python APIs IN PARALLEL (deep-analysis + maestro + professional) then OVERRIDES technical.signal with canonical | ⚠️ Overrides technical.signal but NOT board.signal / maestro.recommendation / professional.recommendation — UI still sees conflicting signals |
+| /api/stocks/[ticker]/publish-data | Fetches Python + SQLite fallback, INJECTS canonical values | ⚠️ Partial — injects canonical RSI/signal but also returns original |
+| /api/stocks/[ticker] | Proxies Python + SQLite fallback, INJECTS canonical | ⚠️ Partial |
+| /api/confluence/analyze/[ticker] | Proxies Python /api/confluence/analyze | ✅ Different thresholds |
+| /api/sniper/track | Uses SniperEngine | ✅ Different thresholds |
+| /api/v82/route.ts | Uses v82_analyzer | N/A (gate) |
+| /api/maker-radar/stock | Uses MakerRadar engine | Separate engine |
+| /api/recommendations | Reads predictions.db | DB source |
+| /api/recommendations/expert | Uses expert_quality_gate | Gate (additive) |
+
+=== D. UI COMPONENTS THAT COMPUTE/DISPLAY SIGNALS ===
+
+| Component | Local signal computation? | APIs called | Conflict level |
+|-----------|--------------------------|-------------|----------------|
+| ComprehensiveStockAnalysis.tsx | ✅ Has own `signalBadge()` (line 134) + own buyCount/sellCount from pData.rsi (lines 350-353) | /api/stocks/[ticker], /api/stocks/[ticker]/publish-data, /api/maker-radar/footprint, /api/stocks/[ticker]/unified, /api/flow/[ticker], /api/explosive/[ticker], /api/stock-profile/[ticker] | 🔴 **CRITICAL — Displays 5 signals simultaneously:** canonical.signal (L517) + board.signal (L511/518/546) + m.recommendation/maestro persona (L933) + pred.signal (L1289) + professional.recommendation (L1363) |
+| StockDetail.tsx | ✅ Has own `signalBadge()` (line 134); uses `classifySignal` from canonical-signal.ts (line 30) | /api/flow, /api/explosive, /api/stock-profile, /api/maker-radar/footprint, /api/stocks/[ticker]/unified | 🟡 Mostly canonical — uses unifiedData.canonical.signal as primary, deepAnalysis.action as fallback (L1347) |
+| UnifiedPublishButton.tsx | ✅ Imports `classifySignal` from canonical (line 30) | Uses props from parent | 🟢 Mostly canonical — maps action→master_score→classifySignal (L143) |
+| MakerRadarTab.tsx | ✅ Has own signal_ar mapping (lines 707-717) | /api/maker-radar, /api/stocks, /api/unified/predictions, /api/maker-radar/track, /api/portfolio/unified-watch, /api/maker-radar/warmup, /api/predictions/refresh-v40, /api/maker-radar/stock, /api/maker-radar/market-intelligence | 🟡 Falls back to row.signal_ar from DB |
+| PredictionTrackingDashboard.tsx | ❌ Reads predictions.db fields | /api/predictions/honest-tracking/* | 🟢 Reads DB only |
+| SpecialistAnalysisView.tsx | (Not found as separate file — likely subsumed by ComprehensiveStockAnalysis) | — | — |
+
+=== E. CANA's 3 CONFLICTING SIGNALS — ROOT CAUSE ===
+
+When the user opens CANA's stock-detail screen, `ComprehensiveStockAnalysis.tsx` (or `StockDetail.tsx` depending on entry route) fetches data from `/api/stocks/CANA/comprehensive` (or directly from `/api/stock/deep-analysis` + `/api/stocks/CANA/unified`).
+
+The `/api/stocks/[ticker]/comprehensive` route (`src/app/api/stocks/[ticker]/comprehensive/route.ts:84-167`) launches **3 parallel Python API calls** in `Promise.allSettled()`:
+
+  1. Python `/api/stock/deep-analysis?ticker=CANA` → returns `board_analysis.signal` from `BoardManager.generate_final_report()` (board_of_analysts.py — thresholds 78/68)
+  2. Next.js `/api/maestro/stock/CANA` → returns `data.recommendation` from `run_maestro_analysis()` (maestro_orchestrator.py — thresholds 55/42/30/20 for bull regime)
+  3. Python `/api/professional-analysis/CANA` → returns `data.recommendation` from composite_score (professional_analysis_routes.py — thresholds 65/55/48)
+
+The route then OVERRIDES `technical.signal` with canonical (lines 209-219), but it does NOT touch `board.signal`, `maestro.recommendation`, or `professional.recommendation` — these remain in the response and the UI renders them in separate Badges:
+
+  - `ComprehensiveStockAnalysis.tsx:517` → `signalBadge(unifiedData?.canonical?.signal ?? displaySignal)` — CANONICAL
+  - `ComprehensiveStockAnalysis.tsx:546` → `Math.round(board.master_score || 0)` + `board.signal` (lines 511, 518) — BOARD OF ANALYSTS
+  - `ComprehensiveStockAnalysis.tsx:933` → `signalBadge(m.recommendation || '')` — MAESTRO PERSONA
+  - `ComprehensiveStockAnalysis.tsx:1289` → `signalBadge(pred.signal || pred.signal_type || '')` — PREDICTIONS.DB STORED
+  - `ComprehensiveStockAnalysis.tsx:1363` → `signalBadge(professional.recommendation)` — PROFESSIONAL (composite_score)
+
+**The 3 signals the customer sees for CANA on the same screen are:**
+  1. **canonical.signal** — from `unified-stock-data.ts::getUnifiedStockData()` (reads master_score from predictions.db, applies canonical thresholds 78/65/55/40/25, mapped via `canonical-signal.ts::classifySignal()`)
+  2. **board.signal** — from `board_of_analysts.py::BoardManager.generate_final_report()` (weighted_score from 7 analysts — TechnicalAnalyst/FundamentalAnalyst/TrendAnalyst/TapeAnalyst/MacroAnalyst/PersonalityAnalyst + BoardManager aggregation, thresholds ≥78=STRONG_BUY, ≥68=BUY)
+  3. **professional.recommendation** — from `professional_analysis_routes.py::professional_analysis()` (composite_score = tech*0.30 + value*0.25 + quality*0.25 + momentum*0.10 + (100-risk)*0.10, thresholds 65=strong_buy, 55=buy, 48=accumulate)
+
+A 4th conflicting signal may also appear: **maestro.recommendation** from `maestro_orchestrator.py::determine_recommendation()` (regime-dependent thresholds: bull 55/42/30/20, bear 58/45/32/22, range 52/40/28/18).
+
+=== F. RECOMMENDED CONSOLIDATION APPROACH ===
+
+**Canonical engine = `master_analyzer.py::MasterAnalyzer`** — explicitly declared canonical in Rule 67 of Constitution. Its THRESHOLDS = {STRONG_BUY: 78, BUY: 65, ACCUMULATE: 55, REDUCE: 40, STRONG_SELL: 25} are mirrored in `src/lib/canonical-signal.ts::SIGNAL_THRESHOLDS` and applied by `src/lib/unified-stock-data.ts::getUnifiedStockData()`. This is the SSOT pipeline.
+
+**Engines to DISABLE / DEMOTE to "advisory only" (compute but don't display as signal):**
+  1. `analyzers/board_of_analysts.py::BoardManager.generate_final_report()` — different thresholds (78/68) and different formula (weighted by 7 analyst opinions). Either:
+     - Disable `board_analysis` section in `/api/stock/deep-analysis` response, OR
+     - Refactor BoardManager to read+return the canonical master_score/signal instead of computing its own.
+  2. `api/professional_analysis_routes.py::professional_analysis()` — different composite_score formula + different thresholds (65/55/48). Either:
+     - Disable `/api/professional-analysis/<ticker>` Python route (Next.js side already returns 410 Gone), OR
+     - Refactor to delegate to `master_analyzer.py::MasterAnalyzer.analyze()` and return only the canonical signal.
+  3. `analyzers/maestro_orchestrator.py::determine_recommendation()` — regime-dependent thresholds (55/42/30/20). Either:
+     - Disable `/api/maestro/stock/<ticker>` route, OR
+     - Align `determine_recommendation` thresholds to canonical (78/65/55/40/25) and stop calling the result "recommendation" — return canonical `signal` instead.
+  4. `analyzers/confluence_engine_v3.py::ConfluenceEngineV3` — different thresholds (75/65). Disable or refactor.
+  5. `analyzers/sniper_engine.py::SniperEngine` — different thresholds (75) + own RSI/ATR impl (Rule 67 violation — must import from `analyzers/indicators/`). Disable display or align thresholds.
+  6. `analyzers/technical.py::TechnicalAnalyzer` + `analyzers/technical_weighted.py::TechnicalAnalyzerWeighted` — both produce signals with DIFFERENT ranges/thresholds. Refactor to compute indicators only (no signal label), import signal label from canonical.
+  7. `analyzers/unified_maestro.py::UnifiedMaestroEngine` — regime-dependent min_score+15. Disable or refactor.
+  8. `_compute_fallback_technical_indicators()` in `api/stock_analysis_routes.py:633` — computes RSI using SMA-based formula (NOT Wilder's smoothing) → Rule 67 violation. Replace with `from analyzers.indicators.rsi import calc_rsi`.
+  9. `stock_analysis_routes.py::_get_basic_info()` line 205 — reads pre-computed `signal` column directly from `stocks.db`. This column is updated by some upstream job with unknown thresholds. Either stop reading it (use canonical from predictions.db) or document the writer.
+
+**Engines to KEEP (advisory / non-signal outputs):**
+  - `v68_oracle.py` — produces probability_score (no label) — advisory only, OK.
+  - `v82_analyzer.py` — boolean gate — advisory only, OK.
+  - `conviction_engine.py` — produces conviction level (max/normal/small/skip) — different taxonomy (position sizing), OK as advisory.
+  - `expert_quality_gate.py` — produces expert_score (-100 to +100) and gate — additive, OK as advisory (must NOT override canonical signal).
+  - `unified_analysis.py` — uses v68_oracle; verdict tuple is advisory.
+
+**UI fixes needed:**
+  - `ComprehensiveStockAnalysis.tsx` — remove the 4 extra signal badges (board.signal L546, m.recommendation L933, pred.signal L1289, professional.recommendation L1363). Keep ONLY `unifiedData.canonical.signal` (L517). Other engines' outputs can be displayed as advisory context (e.g. "expert conviction: high") but never as a separate "signal" badge.
+  - `src/app/api/stocks/[ticker]/comprehensive/route.ts` — extend the canonical override (lines 199-282) to ALSO null out `board.signal`, `maestro.recommendation`, and `professional.recommendation` (or replace them with the canonical signal value) so downstream UI consumers can't accidentally render the stale/conflicting signals even if they don't read `response.canonical`.
+  - Disable the `/api/maestro/stock/<ticker>` SQLite fallback's `signal: stock.signal || rec?.signal || 'HOLD'` (line 78 of Next.js maestro/stock/[ticker]/route.ts) — uses stocks.db signal column with unknown thresholds.
+  - `MakerRadarTab.tsx` lines 707-717 — local signal_ar mapping should be replaced with `classifySignal(row.master_score)` from `src/lib/canonical-signal.ts` (don't re-implement thresholds).
+
+**Quick-wins (high-impact, low-effort):**
+  1. In `comprehensive/route.ts` lines 209-219 — also override `response.board.signal = unified.canonical.signal`, `response.board.master_score = unified.canonical.master_score`, `response.maestro.recommendation = unified.canonical.signal.toLowerCase()`, `response.professional.recommendation = unified.canonical.signal.toLowerCase()`. ONE-FILE FIX eliminates the visible conflict.
+  2. Remove or stub the 4 extra `<Badge signalBadge(...)>` entries in `ComprehensiveStockAnalysis.tsx` (lines 546, 933, 1289, 1363) — replace with single canonical signal badge.
+
+Verification:
+- lint: not run (audit-only task — no code changes per Rule 67 step "trace root cause before fix")
+- tsc --noEmit: not run (audit-only)
+- curl /api/X: not run (audit-only)
+- browser: not run (audit-only)
+- All findings cross-checked against Rule 67 canonical declarations in Documentation/00-CONSTITUTION.md.
+
+Stage Summary:
+- **13 distinct analysis engines exist in vps-service/analyzers/** (14 named in task; `technical_analyzer.py` does NOT exist — Rule 67 doc reference is broken).
+- **9 Python API routes serve per-stock analysis** (deep-analysis, professional-analysis, maestro/stock, sniper/analyze, confluence/analyze, stocks/<ticker>, persona/stock, live/analysis, analysis/<ticker>).
+- **6 Next.js routes proxy/compute analysis** (deep-analysis, maestro/stock, stocks/[ticker]/recommendation, stocks/[ticker]/unified [canonical], stocks/[ticker]/comprehensive, stocks/[ticker]/publish-data, plus confluence/analyze, sniper/track, v82, maker-radar/stock, recommendations/expert).
+- **5 UI components compute/display signals locally** (ComprehensiveStockAnalysis, StockDetail, UnifiedPublishButton, MakerRadarTab, PredictionTrackingDashboard). ComprehensiveStockAnalysis is the worst offender — renders 5 separate signal badges.
+- **CANA's 3 conflicting signals** originate from `/api/stocks/[ticker]/comprehensive` route fetching 3 parallel Python APIs:
+  (1) canonical via unified-stock-data.ts (thresholds 78/65/55/40/25),
+  (2) Board of Analysts via board_of_analysts.py (thresholds 78/68, different formula),
+  (3) Professional via professional_analysis_routes.py composite_score (thresholds 65/55/48, different formula).
+  Plus a possible 4th: Maestro via maestro_orchestrator.py (regime-dependent 55/42/30/20).
+- **Recommended canonical = master_analyzer.py + canonical-signal.ts + unified-stock-data.ts** (already declared canonical per Rule 67; UI mostly wired already).
+- **Disable/demote**: board_of_analysts.py, professional_analysis_routes.py, maestro_orchestrator.py signal output, confluence_engine_v3.py, sniper_engine.py, technical.py, technical_weighted.py, unified_maestro.py, _compute_fallback_technical_indicators() (Rule 67 violation), stocks.db signal column reads.
+- **Quick-win fix**: extend `comprehensive/route.ts` lines 209-219 to override `board.signal`, `maestro.recommendation`, and `professional.recommendation` with canonical signal — single-file fix eliminates the visible conflict.
+
+Next actions (for follow-up task, NOT executed in this audit):
+1. Apply quick-win override in `src/app/api/stocks/[ticker]/comprehensive/route.ts` (extend lines 209-219).
+2. Remove 4 extra `<Badge>` entries in `src/modules/stock-analysis/components/ComprehensiveStockAnalysis.tsx` (lines 546, 933, 1289, 1363).
+3. Replace `_compute_fallback_technical_indicators` RSI calc with `from analyzers.indicators.rsi import calc_rsi` (Rule 67 compliance).
+4. Disable `/api/professional-analysis/<ticker>` Python route OR refactor to delegate to MasterAnalyzer.
+5. Disable `/api/maestro/stock/<ticker>` SQLite fallback's `stock.signal` column read.
+6. Create missing `analyzers/technical_analyzer.py` OR update Rule 67 docs to remove the broken reference (canonical calc_vwap/calc_obv/detect_regime).
+---
+*End of DEEP-AUDIT-ALL-ENGINES — general-purpose sub agent — Rule 67 (CALCULATION-CANONICAL) + Rule 27 (NO-FAKE-DATA)*

@@ -218,6 +218,47 @@ export async function GET(
     response.technical.trend = unified.technical.trend;
     response.technical.atr = unified.technical.atr;
 
+    // ─── DEEP-AUDIT-FIX (Task DEEP-AUDIT-ALL-ENGINES, Rule 72) ───────────
+    // قبل كده: board/maestro/professional كلهم بـ يرجّعوا signals مختلفة
+    // بـ thresholds مختلفة (board=78/68, professional=65/55/48, maestro=55/42/30/20).
+    // النتيجة: CANA بـ يطلع 3 signals مختلفة على نفس الشاشة.
+    //
+    // الحل: نـ override كل الـ sub-engine signals بـ canonical signal.
+    // الـ sub-engines لسه بـ return بياناتها (composite scores, reasoning, etc.)
+    // بس الـ signal النهائي = canonical signal.
+    if (response.board && typeof response.board === 'object') {
+      (response.board as any).signal = unified.canonical.signal;
+      (response.board as any).signal_ar = unified.canonical.signal_ar;
+      (response.board as any).master_score = unified.canonical.master_score;
+      (response.board as any).recommendation = unified.canonical.signal.toLowerCase();
+      (response.board as any).recommendation_ar = unified.canonical.signal_ar;
+    }
+    if (response.maestro && typeof response.maestro === 'object') {
+      (response.maestro as any).recommendation = unified.canonical.signal.toLowerCase();
+      (response.maestro as any).recommendation_ar = unified.canonical.signal_ar;
+      (response.maestro as any).master_score = unified.canonical.master_score;
+    }
+    if (response.professional && typeof response.professional === 'object') {
+      (response.professional as any).recommendation = unified.canonical.signal.toLowerCase();
+      (response.professional as any).recommendation_ar = unified.canonical.signal_ar;
+      (response.professional as any).score = unified.canonical.master_score;
+    }
+    if (response.hunter && typeof response.hunter === 'object') {
+      (response.hunter as any).signal = unified.canonical.signal;
+      (response.hunter as any).signal_ar = unified.canonical.signal_ar;
+    }
+    if (Array.isArray(response.predictions)) {
+      response.predictions = response.predictions.map((p: any) => ({
+        ...p,
+        signal: unified.canonical.signal,
+        signal_ar: unified.canonical.signal_ar,
+        master_score: unified.canonical.master_score,
+        entry_price: unified.prediction?.entry_price ?? p?.entry_price,
+        target_price: unified.prediction?.target_price ?? p?.target_price,
+        stop_loss: unified.prediction?.stop_loss ?? p?.stop_loss,
+      }));
+    }
+
     // Override price with current_price from stocks.db (always fresh)
     if (unified.stock.current_price != null) {
       response.price.current_price = unified.stock.current_price;
