@@ -737,6 +737,13 @@ def check_entry_gate(data: Dict[str, Any]) -> Dict[str, Any]:
             'total_checks': int,
         }
     """
+    # ─── SUB-ENGINE-DISABLED (Task PHASE-3-FINAL, Rule 73: SINGLE-DISPLAY-SOURCE) ─
+    # entry_gate.py بيحسب signal="انتظر" + RSI=50.0 بـ thresholds مختلفة عن canonical.
+    # النتيجة: CANA بـ يطلع "انتظر" هنا + "شراء قوي" في unified API.
+    # الحل: entry_gate يبقى فلتر دخول (gates) بس — لا ينتج signal.
+    # الـ signal النهائي = canonical من master_analyzer.py + canonical_signal.py.
+    # ده مش تعطيل للفلتر (الفلتر لسه بـ يفحص الشروط) — بس الـ signal بياخده من canonical.
+    # ملاحظة: الـ caller (daily_predictor.py) بـ يستخدم passed/reasons بس.
     entry_price = _safe_float(data.get('entry_price'))
     target_price = _safe_float(data.get('target_price'))
     stop_price = _safe_float(data.get('stop_price'))

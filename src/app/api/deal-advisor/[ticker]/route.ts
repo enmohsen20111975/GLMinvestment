@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 
 import { openDb } from '@/lib/shared-db';
 import path from 'path';
+// ─── PHASE-3-FINAL (Task UNIFICATION-PHASE-3, Rule 73) ────────────────────
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
 
 /**
  * GET /api/deal-advisor/[ticker]
@@ -746,17 +748,29 @@ export async function GET(
       name_ar: 'تشبع بيعي',
       trigger: `RSI = ${rsi.toFixed(0)} (تحت 30)`,
       trigger_ar: `RSI = ${rsi.toFixed(0)} (تحت 30)`,
-      action: 'wait',
+      action: 'hold_conditional' as const,
       action_ar: 'انتظار تأكيد الارتداد قبل الإضافة',
       priority: 'medium',
     });
   }
 
   // التوقع الحالية (محسوبة من البيانات)
+  // ─── PHASE-3-FINAL (Task UNIFICATION-PHASE-3, Rule 73: SINGLE-DISPLAY-SOURCE) ─
+  // قبل كده: deal-advisor كان بـ ينتج signal خاص بيه (wait/exit/hold_conditional)
+  // من computations محلية بـ thresholds مختلفة → CANA بـ يطلع "انتظر" هنا +
+  // "شراء قوي" في unified API.
+  //
+  // الحل: deal-advisor بـ ياخد canonical signal من unified API.
+  // الـ action scenarios لسه بتشتغل (للـ entry assessment) بس الـ signal الأساسي
+  // = canonical.
+  const _unifiedStockData = getUnifiedStockData(ticker);
+  const _canonicalSignal = _unifiedStockData?.canonical?.signal ?? 'HOLD';
+  const _canonicalSignalAr = _unifiedStockData?.canonical?.signal_ar ?? 'انتظار';
+
   let currentRec: DealAdvisorResponse['action_scenarios']['current_recommendation'] = {
-    action: 'wait',
-    action_ar: 'انتظار',
-    reason_ar: 'لا توجد إشارة واضحة — انتظر تأكيد',
+    action: (_canonicalSignal.toLowerCase() as any) ?? 'hold_conditional',
+    action_ar: _canonicalSignalAr,
+    reason_ar: 'الإشارة الموحدة: ' + _canonicalSignalAr,
   };
 
   if (entryAssessment) {
