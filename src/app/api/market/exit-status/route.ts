@@ -73,8 +73,12 @@ export async function GET(request: NextRequest) {
       stop_loss: stop,
       risk_reward: p.risk_reward || computeRiskReward(entry, target, stop),
       status: p.status || 'active',
-      exit_status: 'HOLD',
+      // P0-6 FIX (RADAR-AUDIT-TS B24): لا نخترع 'HOLD' (Rule 27 NO-FAKE-DATA).
+      // exit_status اللحظي يحتاج Python backend لحساب hit_target/trailing/stop
+      // بدقة. عند فشل Python، نرجع null + ملاحظة واضحة بدل fabrication.
+      exit_status: null,
       exit_reason: null,
+      exit_note: 'حالة الخروج اللحظي غير متاحة — Python backend غير متاح. القيم الأساسية (دخول/هدف/وقف) صحيحة من predictions.db.',
       prediction_date: p.prediction_date,
       persona: p.persona,
       master_score: p.master_score,
@@ -84,6 +88,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     source: 'sqlite_fallback',
+    fallback_mode: true, // مؤشر للواجهة أن exit_status غير محسوب
     exits: exitStatuses,
     data: exitStatuses,
     count: exitStatuses.length,
