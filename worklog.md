@@ -62488,3 +62488,38 @@ Stage Summary:
 - 0 files created, 0 deleted (Rule 4 ✓). 0 TS errors introduced (only pre-existing `.next/types` TS6053s remain). All 4 routes compile cleanly.
 - Next actions for a follow-up task: (1) grep the frontend for any active callers of the 3 deprecated routes and rewire them to the canonical routes; (2) after a deprecation grace period (e.g. 30 days), consider bumping 410 → 404 if telemetry shows zero remaining callers; (3) extend the same mobile parity treatment to other `/api/mobile/*` routes if any exist with similar field-dropping patterns (audit recommended).
 ---
+
+---
+
+Task ID: UNIFIED-STOCK-API-1
+Agent: main-agent
+Task: Create CANONICAL unified stock API (`/api/stocks/[ticker]/unified`) merging stocks.db + predictions.db + maker_radar cache + canonical-signal.ts into ONE response to fix the ETEL 5-screens-5-signals bug.
+
+Work Log:
+- Verified `better-sqlite3` is installed; confirmed schemas of stocks.db.stocks and predictions.db.predictions.
+- Confirmed canonical-signal.ts exports classifySignal, signalAr, classifyAccumulation, classifyMoneyFlow, classifyStockPhase.
+- Created `/home/z/my-project/src/app/api/stocks/[ticker]/unified/route.ts` (355 LOC):
+  - `export const dynamic = 'force-dynamic'` + `revalidate = 0` to bypass route caching.
+  - Step 1: stocks.db.stocks row (ticker, name, name_ar, current_price, change_percent, volume, market_cap, pe_ratio, pb_ratio, roe, eps, dividend_yield, sector, industry, rsi, ma_50, ma_200, support, resistance, signal, trend, high_52w, low_52w, beta, avg_volume, last_update) — wrapped in try/catch, returns 404 if not found.
+  - Step 2: predictions.db.predictions latest row (WHERE ticker=? AND market IN ('EGX','مصر') ORDER BY prediction_date DESC LIMIT 1) — wrapped in try/catch, returns null on miss.
+  - Step 3: radar cache JSON — walks `scripts/output/maker_radar_EGX_<YYYYMMDD>.json` for today + 6 days back; searches both `all_results` and `under_microscope` arrays.
+  - Step 4: canonical classifications — master_score precedence: predictions.master_score → stocks.signal (numeric) → null. Uses classifySignal, signalAr, classifyAccumulation, classifyMoneyFlow, classifyStockPhase.
+  - Step 5: parses analysis_json for analysis_reason, who_is_buying, hmm_regime, target_price_3, support_level, resistance_level.
+  - Step 6: builds unified response with 6 sections (stock, fundamentals, technical, canonical, prediction, radar) + cached_at ISO timestamp. Every field nullable; no fabricated data.
+- Ran `bun run lint` — clean (0 errors, 0 warnings).
+- Verified with `curl http://localhost:3000/api/stocks/ETEL/unified`:
+  - canonical.signal = 'HOLD', canonical.signal_ar = 'انتظار', canonical.master_score = 50 (from predictions.db).
+  - canonical.accumulation = 'تجميع قوي' (buy_pct=75.7 ≥ 70).
+  - canonical.money_flow = '🟢 سيولة داخلة قوية' (75.7 − 24.3 = 51.4 ≥ 25).
+  - canonical.phase = 'تصاعد' (buy_pct=75.7 ≥ 55 AND roc_10d=13.55 > 5).
+  - technical.rsi = 76.31 (from stocks.db — Wilder's pre-computed).
+  - prediction.entry_price=148.45, target_price=174.7225, stop_loss=138.291.
+  - radar.path='B_quiet_accumulation_strong', position_size_pct=1.5, buy_pct=75.7, sell_pct=24.3, data_quality='fresh'.
+- Verified graceful degradation: COMI (no radar, no prediction) → prediction=null, radar=null, canonical.signal falls back to STRONG_SELL (stocks.signal=0).
+- Verified 404 path: ZZZZ → {success: false, error: 'stock_not_found'}.
+
+Stage Summary:
+- Single source of truth live. ETEL now returns ONE consistent signal (HOLD/انتظار) across all 5 dimensions, plus the radar-derived accumulation (تجميع قوي) and money_flow (🟢 سيولة داخلة قوية) classifications.
+- All 6 response sections present (stock, fundamentals, technical, canonical, prediction, radar) + cached_at timestamp.
+- Empty/missing ETEL data sources: prediction.analysis_json=NULL (analysis_reason, who_is_buying, hmm_regime, target_price_3, support_level, resistance_level all returned null), prediction.atr_at_entry=NULL → technical.atr=null, prediction.risk_reward=NULL, prediction.confidence=NULL, prediction.target_price_2=NULL. These are real DB nulls, NOT fabricated.
+- Recommended next step: migrate the 5 conflicting UI screens (predictions list, prediction detail, stock data, investment guide, smart analysis) to fetch from `/api/stocks/[ticker]/unified` and read all signal/RSI/entry/target/stop/accumulation/money_flow/phase values from the `canonical` + `prediction` + `radar` + `technical` sections.
