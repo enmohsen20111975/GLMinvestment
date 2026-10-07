@@ -192,7 +192,8 @@ function buildStockPublishDataFromStock(
 function buildStockInfographicDataFromStock(
   stock: Stock,
   deepAnalysis: DeepAnalysisType | null,
-  footprint?: any
+  footprint?: any,
+  unifiedData?: any  // PHASE-0-FIX: passed from main component scope
 ): StockInfographicCardProps['data'] {
   const current = stock.current_price;
   const prevClose = stock.previous_close || current;
@@ -1350,12 +1351,12 @@ export function StockDetail() {
         />
         <StockPublisher
           data={buildStockPublishDataFromStock(stock, deepAnalysis)}
-          infographicData={buildStockInfographicDataFromStock(stock, deepAnalysis, footprintData)}
+          infographicData={buildStockInfographicDataFromStock(stock, deepAnalysis, footprintData, unifiedData)}
           variant="button"
           size="sm"
         />
         <StockInfographicModal
-          data={buildStockInfographicDataFromStock(stock, deepAnalysis, footprintData)}
+          data={buildStockInfographicDataFromStock(stock, deepAnalysis, footprintData, unifiedData)}
           trigger={
             <Button
               variant="outline"
