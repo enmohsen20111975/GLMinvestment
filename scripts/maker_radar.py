@@ -504,17 +504,27 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
     else:
         maker_activity = 'منخفض'
 
-    # تجميع/تصريف: أيام الشراء vs أيام البيع في آخر 10 أيام
+    # ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule: CANONICAL) ───────
+    # قبل كده: كان accumulation بيتحسب من "عدد أيام الإغلاق الأخضر في 10 أيام"
+    # → كان بيعطي "تصريف قوي" لما buy_pct=75% (تناقض واضح مع money_flow_state)
+    #
+    # الحل: نستخدم canonical_signal.classify_accumulation(buy_pct) كمصدر واحد
+    # كل الشاشات (توقعات + تحليل شامل + رادار) لازم تستخدم نفس الصيغة
     buy_days_count = sum(1 for i in range(-10, 0) if i > -len(closes) and closes[i] > closes[i-1])
     sell_days_count = 10 - buy_days_count
-    if buy_days_count >= 6:
-        accumulation = 'تجميع قوي'
-    elif sell_days_count >= 6:
-        accumulation = 'تصريف قوي'
-    elif buy_days_count >= sell_days_count:
-        accumulation = 'تجميع خفيف'
-    else:
-        accumulation = 'تصريف خفيف'
+    try:
+        from utils.canonical_signal import classify_accumulation as _canon_acc
+        accumulation = _canon_acc(money_flow.get('buy_pct'))
+    except ImportError:
+        # Fallback لو canonical_signal غير متاح (مش مفروض يحدث)
+        if buy_days_count >= 6:
+            accumulation = 'تجميع قوي'
+        elif sell_days_count >= 6:
+            accumulation = 'تصريف قوي'
+        elif buy_days_count >= sell_days_count:
+            accumulation = 'تجميع خفيف'
+        else:
+            accumulation = 'تصريف خفيف'
 
     # حالة التصحيح: نزول من آخر قمة 20 يوم
     max_20_price = max(closes[-20:]) if len(closes) >= 20 else max(closes)
@@ -535,7 +545,7 @@ def scan_ticker(rows, ticker, regime='NORMAL'):
         expected = 'تجميع — ممكن انفجار'
     elif drop_from_peak < -10:
         expected = 'في تصحيح'
-    elif maker_activity == 'عالي' and buy_days_count >= 5:
+    elif maker_activity == 'عالي' and money_flow.get('buy_pct', 0) >= 60:
         expected = 'ميكرز نشط'
     else:
         expected = 'عادي'

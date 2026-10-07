@@ -2520,8 +2520,12 @@ const StockTable = memo(function StockTable({
       filterable: true,
       className: 'text-xs',
       render: (stock) => {
+        // CANONICAL-CALCULATIONS (Task CALC-DUP-1): accum الآن يأتي من backend
+        // باستخدام canonical_signal.classify_accumulation(buy_pct) — لا حاجة
+        // لـ frontend fallback. الـ fallback القديم كان بيعطي نتائج متضاربة
+        // مع الـ backend (وكان بيخفي bug الـ buy_days_count القديم).
         const liq = stock.buy_pct ?? 50;
-        const accum = stock.accumulation || (liq >= 60 ? 'تجميع قوي' : liq <= 40 ? 'تصريف قوي' : 'تجميع هادئ');
+        const accum = stock.accumulation || 'محايد';
         const isStrong = accum.includes('تجميع قوي');
         const isDist = accum.includes('تصريف');
         return (
