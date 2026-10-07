@@ -504,124 +504,129 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
   const price = data.price || {};
   const tech = data.technical || {};
 
-  // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
-  // Prefer canonical.signal_ar from unified API (single source of truth);
-  // fall back to board.signal_ar / board.signal when unified not loaded.
-  // Also derive badge styling from canonical signal classification.
+  // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 72 + Rule 73) ───────────
+  // ROOT CAUSE FIX: قبل كده كان في 7 شارات قرار من 7 محركات مختلفة معروضة جنب
+  // بعض → العميل بيشوف 3-5 signals مختلفة على نفس السهم.
+  //
+  // الحل: عرض canonical signal فقط (من unified API) — لا board/maestro/professional/hunter signals.
+  // لو unified API مش متاح → عرض "— بيانات غير متاحة" (سياسة الفراغ، مش fabrication).
   const canonicalSignalAr = unifiedData?.canonical?.signal_ar ?? null;
-  const displaySignal = canonicalSignalAr
-    ?? (board.signal_ar as string | undefined)
-    ?? (board.signal as string | undefined)
-    ?? '—';
-  const displaySignalBadge = canonicalSignalAr
-    ? signalBadge(unifiedData?.canonical?.signal ?? displaySignal)
-    : signalBadge((board.signal as string) || '');
+  const canonicalSignal = unifiedData?.canonical?.signal ?? null;
+  const canonicalMasterScore = unifiedData?.canonical?.master_score ?? null;
+  const canonicalAccumulation = unifiedData?.canonical?.accumulation ?? null;
+  const canonicalMoneyFlow = unifiedData?.canonical?.money_flow ?? null;
+  const canonicalPhase = unifiedData?.canonical?.phase ?? null;
+
+  // Prediction (single source of truth for entry/target/stop)
+  const prediction = unifiedData?.prediction ?? null;
+
+  // سياسة الفراغ: لو canonical NULL → "— بيانات غير متاحة" (مش HOLD الكاذب)
+  const displaySignal = canonicalSignalAr ?? '— بيانات غير متاحة';
+  const displaySignalBadge = canonicalSignal
+    ? signalBadge(canonicalSignal)
+    : { label: '—', className: 'bg-muted text-muted-foreground' };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      {/* Board of Analysts */}
-      <Card>
+      {/* ─── CANONICAL Signal (UNIFIED-DATA-CONTRACT, Rule 72 + Rule 73) ─── */}
+      {/* العميل بيشوف قرار واحد فقط — من unified API (single display source). */}
+      <Card className="md:col-span-2 border-emerald-500/30 bg-emerald-500/5">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Award className="w-4 h-4" />
-            مجلس المحللين
+            <Award className="w-4 h-4 text-emerald-600" />
+            الإشارة الموحدة (Canonical)
+            {unifiedData?.canonical?.master_score_source && (
+              <Badge variant="outline" className="text-[9px] text-muted-foreground ml-2">
+                {unifiedData.canonical.master_score_source === 'prediction_db_fresh'
+                  ? 'من قاعدة التوقعات'
+                  : 'محسوب فورياً'}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
-          {board.available ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">الإشارة</span>
-                <Badge className={displaySignalBadge.className}>
-                  {displaySignal}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Signal */}
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-xs text-muted-foreground mb-1">الإشارة</span>
+              <Badge className={cn('text-sm font-bold py-1 px-3', displaySignalBadge.className)}>
+                {displaySignal}
+              </Badge>
+            </div>
+            {/* Master Score */}
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-xs text-muted-foreground mb-1">الدرجة الإجمالية</span>
+              <span className="text-2xl font-bold tabular-nums">
+                {canonicalMasterScore !== null ? Math.round(canonicalMasterScore) : '—'}
+              </span>
+            </div>
+            {/* Accumulation */}
+            {canonicalAccumulation && (
+              <div className="flex flex-col items-center justify-center">
+                <span className="text-xs text-muted-foreground mb-1">التجميع/التصريف</span>
+                <Badge variant="outline" className="text-xs font-bold">
+                  {canonicalAccumulation}
                 </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">الثقة</span>
-                <span className="font-bold">{Math.round(board.confidence || 0)}%</span>
+            )}
+            {/* Phase */}
+            {canonicalPhase && (
+              <div className="flex flex-col items-center justify-center">
+                <span className="text-xs text-muted-foreground mb-1">المرحلة</span>
+                <Badge variant="outline" className="text-xs font-bold">
+                  {canonicalPhase}
+                </Badge>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">الدرجة</span>
-                <span className="font-bold">{Math.round(board.master_score || 0)}</span>
-              </div>
-              {board.entry_price && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">الدخول</span>
-                  <span className="font-bold tabular-nums">{formatPrice(board.entry_price)}</span>
+            )}
+          </div>
+
+          {/* Money Flow */}
+          {canonicalMoneyFlow && (
+            <div className="mt-3 pt-3 border-t flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">حالة السيولة</span>
+              <span className="text-sm font-bold">{canonicalMoneyFlow}</span>
+            </div>
+          )}
+
+          {/* Trade setup (entry/target/stop) — from prediction only, NO fabrication */}
+          {prediction && (
+            <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-4">
+              {prediction.entry_price != null && (
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-muted-foreground">سعر الدخول</span>
+                  <span className="font-bold tabular-nums">{formatPrice(prediction.entry_price)}</span>
                 </div>
               )}
-              {board.target_price && (
-                <div className="flex items-center justify-between">
+              {prediction.target_price != null && (
+                <div className="flex flex-col items-center">
                   <span className="text-xs text-muted-foreground">الهدف</span>
-                  <span className="font-bold tabular-nums text-emerald-600">{formatPrice(board.target_price)}</span>
+                  <span className="font-bold tabular-nums text-emerald-600">{formatPrice(prediction.target_price)}</span>
                 </div>
               )}
-              {board.stop_loss && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">الوقف</span>
-                  <span className="font-bold tabular-nums text-red-600">{formatPrice(board.stop_loss)}</span>
+              {prediction.stop_loss != null && (
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-muted-foreground">وقف الخسارة</span>
+                  <span className="font-bold tabular-nums text-red-600">{formatPrice(prediction.stop_loss)}</span>
                 </div>
               )}
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground py-8">المجلس غير متاح</p>
+          )}
+
+          {/* Freshness indicator */}
+          {unifiedData?.canonical?.prediction_is_fresh === false && prediction && (
+            <div className="mt-3 pt-3 border-t flex items-center gap-2 text-xs text-amber-600">
+              <AlertTriangle className="w-3 h-3" />
+              <span>التوقع غير حديث (أقدم من 48 ساعة) — يُنصح بمراجعة التحليل</span>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Hunter */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            تقييم الصياد
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2">
-          {hunter.available ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">الحالة</span>
-                <Badge variant={hunter.eligible ? 'default' : 'secondary'}>
-                  {hunter.eligible ? 'مؤهل' : 'غير مؤهل'}
-                </Badge>
-              </div>
-              {hunter.entry && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">الدخول</span>
-                  <span className="font-bold tabular-nums">{formatPrice(hunter.entry)}</span>
-                </div>
-              )}
-              {hunter.target && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">الهدف</span>
-                  <span className="font-bold tabular-nums text-emerald-600">{formatPrice(hunter.target)}</span>
-                </div>
-              )}
-              {hunter.stop && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">الوقف</span>
-                  <span className="font-bold tabular-nums text-red-600">{formatPrice(hunter.stop)}</span>
-                </div>
-              )}
-              {hunter.rr && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">R/R</span>
-                  <span className={cn('font-bold', hunter.rr >= 1.5 ? 'text-emerald-600' : hunter.rr >= 1 ? 'text-amber-600' : 'text-red-600')}>
-                    {Number(hunter.rr).toFixed(2)}:1
-                  </span>
-                </div>
-              )}
-              {hunter.narrative && (
-                <p className="text-xs text-muted-foreground pt-2 border-t">{hunter.narrative}</p>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground py-8">الصياد غير متاح</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* ─── HIDDEN sub-engine badges (Task UNIFICATION-PHASE-0) ─────── */}
+      {/* قبل كده: كان فيه Cards لـ board/hunter بـ تعرض signals مختلفة.
+          تم إخفاؤها لأنها بتسبب تناقضات للعميل (Rule 73: SINGLE-DISPLAY-SOURCE).
+          الـ canonical signal أعلاه هو المصدر الوحيد للقرار المعروض. */}
     </div>
   );
 }
