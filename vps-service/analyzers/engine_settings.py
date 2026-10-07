@@ -78,14 +78,30 @@ DEFAULT_SETTINGS: Dict[str, float] = {
     "rsi_oversold_base": 30,            # العتبة الأساسية للتشبع البيعي
     "rsi_trend_adjustment": 10,         # كم نقطة نزودها لو الترند قوي (0..1 → 0..10)
 
-    # ===== درجة الشراء (BUY Threshold) =====
-    # DYNAMIC: العتبة بتتحرك بناءً على حالة السوق.
+    # ===== درجة الشراء (BUY Threshold) — CANONICAL (Task UNIFICATION-PHASE-1, Rule 72) =====
+    # ─── PHASE-1 (Task UNIFICATION-PHASE-1, Rule 72 + Rule 67) ───────────
+    # قبل كده: كان فيه 4 مفاتيح عتبة مختلفة (buy_threshold_base=68, institutional_strong_buy=75,
+    # default_buy_threshold=75, base_buy_threshold=75) → كل engine بيستخدم key مختلف.
+    # النتيجة: نفس السهم بـ يطلع signal مختلف على كل engine.
+    #
+    # الحل: توحيد كل الـ thresholds في مفاتيح canonical واحدة (مطابقة لـ canonical_signal.py):
+    #   STRONG_BUY = 78, BUY = 65, ACCUMULATE = 55, HOLD = 40, SELL = 25, STRONG_SELL < 25
+    # أي engine بـ يستخدم threshold مختلف = bug (Rule 67 + Rule 72).
+    "signal_strong_buy_threshold": 78,   # CANONICAL — مطابق canonical_signal.py
+    "signal_buy_threshold": 65,          # CANONICAL
+    "signal_accumulate_threshold": 55,  # CANONICAL
+    "signal_hold_threshold": 40,         # CANONICAL
+    "signal_sell_threshold": 25,         # CANONICAL
+    "signal_strong_sell_threshold": 25,  # CANONICAL (< 25)
+
+    # DYNAMIC: العتبة بتتحرك بناءً على حالة السوق (مش thresholds signal، ده adjustment).
     # bull_market → 60 كفاية. bear_market → 75 مطلوب. range → 68 (الافتراضي).
+    # ملاحظة: ده adjustment للـ buy_threshold، مش signal classification.
     "buy_threshold_base": 68,           # العتبة الأساسية
     "buy_threshold_bull_adjust": -8,    # في السوق الصاعد: خفّض 8 نقاط (60)
     "buy_threshold_bear_adjust": 7,     # في السوق الهابط: زوّد 7 نقاط (75)
-    "accumulate_threshold": 50,         # عتبة ACCUMULATE (أقل من BUY)
-    "hold_threshold": 35,               # عتبة HOLD (أقل من ACCUMULATE)
+    "accumulate_threshold": 50,         # عتبة ACCUMULATE (أقل من BUY) — DEPRECATED، استخدم signal_accumulate_threshold
+    "hold_threshold": 35,               # عتبة HOLD (أقل من ACCUMULATE) — DEPRECATED، استخدم signal_hold_threshold
     # P4-MIN-SCORE: الحد الأدنى لتخزين توقع شراء. لو score < 60 → SKIP تماماً.
     # الباك-تست أثبت إن min_score=60 هو السحر: 51.5% WR (Gambler 63.6%).
     # التوقعات الضعيفة مش بتتحفظ في DB — مفيش لازمة لـ noise.
@@ -225,11 +241,11 @@ DEFAULT_SETTINGS: Dict[str, float] = {
 
     # ===== القرار المؤسسي (Institutional Decision Engine) =====
     # DYNAMIC: عتبات الشراء/البيع بتتحرك بناءً على حالة السوق.
-    "institutional_buy_threshold": 70,          # V39.3-v3: رفعناها من 65 لتقليل الإشارات الضعيفة
-    "institutional_strong_buy_threshold": 75,   # V39.3-v3: رفعناها من 70
-    "institutional_regular_buy_threshold": 60,  # V39.3-v3: رفعناها من 55
-    "institutional_sell_threshold": 25,         # عتبة بيع وتجنب (كانت ثابت 25)
-    "institutional_reduce_threshold": 40,       # عتبة تقليل (كانت ثابت 40)
+    "institutional_buy_threshold": 65,          # CANONICAL (Task UNIFICATION-PHASE-1) — مطابق signal_buy_threshold
+    "institutional_strong_buy_threshold": 78,   # CANONICAL — مطابق signal_strong_buy_threshold
+    "institutional_regular_buy_threshold": 55,  # CANONICAL — مطابق signal_accumulate_threshold
+    "institutional_sell_threshold": 25,         # CANONICAL — مطابق signal_sell_threshold
+    "institutional_reduce_threshold": 40,       # CANONICAL — مطابق signal_hold_threshold
     "tech_score_base": 50,                      # القاعدة لدرجة التقنية (كانت ثابت 50)
     "accumulation_override_threshold": 65,      # V39.3 tightened: كان 58، رفعناها لتقليل الإشارات الضعيفة
     "vwap_premium_threshold": 5.0,              # حد القيمة العادلة +5% (كانت ثابت 5)
