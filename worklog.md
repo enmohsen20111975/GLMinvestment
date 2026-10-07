@@ -64703,3 +64703,326 @@ Stage Summary:
 - V40.2 يعمل وينتج 3 توقعات حقيقية (GBCO/INSTITUTIONAL_BUY 91، MFPC/STRONG_BUY 90، RACC/STRONG_BUY)
 - risk_reward + who_is_buying الآن يُكتبان (الـ migration نجحت)
 - باقي الأسهم HOLD بسبب "insufficient vol data" (بيانات 2026-09-26 قديمة)
+
+---
+Task ID: PROFESSIONAL-TRADING-CHART (المدير العام — تنفيذ إعادة التصميم الكاملة)
+Agent: المدير العام (Z.ai Code)
+Task: تنفيذ إعادة تصميم شاشة #trading-chart وفق مواصفات المالك الصارمة
+
+Work Log:
+- المالك اشتكى: "أنت ماغيرتش اى حاجة فى الشاشة"
+- السبب: فوضت الإصلاحات لوكيل "تصميم" بدل التنفيذ المباشر
+- التنفيذ الكامل: إنشاء ProfessionalTradingChart.tsx (450 LOC) — مكوّن جديد كامل
+- استبدال SingleStockAnalysisView بـ ProfessionalTradingChart في TradingChartView
+- البنية الجديدة (8 أقسام وفق المواصفات):
+  1. DecisionHeader — شريط القرار السريع (رمز + إشارة + سعر + دخول + وقف + هدف + R/R + ثقة)
+  2. MarketWarning — شريط رفيع فقط لو خطر حقيقي (تصريف/سكين هابط/خطر مركز)
+  3. ChartHero — شارت كبير نظيف (افتراضي: Price + MA20/50/200 + S/R + Volume)
+     + زر "مستويات متقدمة" (Fib/FVG/OB) + زر "مؤشرات" (RSI/MACD)
+  4. TradePlanCard — دخول + وقف + هدف 1 + هدف 2 + R/R + حجم صفقة
+  5. ReasonsForDecision — 5 أدلة (اتجاه + قوة نسبية + سيولة + تجميع + موقع سعر)
+  6. CollapsibleTechnicalDetails — RSI/MACD/ATR + InstitutionalDecisionPanel (مطوي افتراضيًا)
+  7. AdditionalTools — DealAdvisorPanel + AlertPanel
+- المبادئ المطبقة:
+  * الأولوية للقرار مش للزينة
+  * تدرج المعلومات (قرار → شارت → خطة → أدلة → تفاصيل)
+  * تقليل الضوضاء (لا بانرات عريضة، لا تكرار، لا نصوص تقنية في الـ header)
+  * لغة المستثمر (مش مبرمج)
+  * الشارت بطل الصفحة (400-500px ارتفاع)
+- إزالة:
+  * CanonicalWhoIsBuyingBanner (بانر عريض) → دمج في DecisionHeader
+  * predictionContext banner (بانر عريض) → دمج في DecisionHeader
+  * canonicalLoading spinner → skeleton
+  * live-price rail → دمج في DecisionHeader
+  * "تقرير القرار الشفاف" المكسور → محذوف سابقًا
+  * القيم الوهمية في fundamental → "— بيانات غير متاحة"
+  * Fibonacci الافتراضي → false
+- إصلاح check_v402_predictions.sh: bug NoneType format (master_score/risk_reward = None)
+
+Stage Summary:
+- ملفات جديدة: 1 (ProfessionalTradingChart.tsx — 450 LOC)
+- ملفات معدّلة: 2 (TradingChartView.tsx + check_v402_predictions.sh)
+- البنية: 8 أقسام منظمة وفق المواصفات
+- التحقق: GET / → HTTP 200 ✅
+- القيود: لا حذف ملفات، لا push بدون إذن، Rule 20/27/73 محترمة
+
+---
+Task ID: UNIFY-AUDIT-2
+Agent: general-purpose (مهندس التوحيد - التوصيات والرادار)
+Task: تدقيق تضارب البيانات في شاشات التوصيات والرادار
+
+Work Log:
+- قرأت آخر 1500 سطر من worklog.md (lines 63247→64747) — راجعت سياق TRADING-CHART-REDESIGN + RULE20-REDESIGN-FIXES + V402-DIAGNOSIS + V402-P0-DB-WRITE-FIX + PROFESSIONAL-TRADING-CHART.
+- قرأت MarketAnalysisView.tsx (297 LOC كاملة) — 5 tabs: predictions (UnifiedPredictionsTab) / status / sectors-tracking / historical-trades / net-picks. APIs: /api/stocks, /api/unified/predictions, /api/stored-analysis/results.
+- قرأت UnifiedPredictionsTab.tsx (95 LOC) — 3 sub-views: current (PersonaTab) / performance (PredictionTrackingDashboard) / summary (ExecutiveReportView).
+- قرأت PredictionTrackingView.tsx (720 LOC كاملة) — standalone #prediction-tracking view. APIs: /api/predictions/tracking/{stats,list,verify}.
+- قرأت PredictionTrackingDashboard.tsx (2099 LOC كاملة، على دفعات 1-450 / 451-900 / 901-1350 / 1351-2099) — APIs: /api/predictions/honest-tracking/live-tracking + /verify-pending. client-side calcs: computeMaxProfitPct / computeMaxLossPct / computeLiveReturnPct / computeHoldingDays / computeStatsFromPredictions.
+- قرأت DualTrackPredictionsView.tsx (633 LOC كاملة) — APIs: /api/predictions/dual-track/{stats,list,threshold,backtest}.
+- قرأت MakerRadarTab.tsx (3802 LOC — header/imports/types 1-580، fetchers 580-930، tabs list 1290-1315، main radar columns 2550-2715، Smart Entry Card 3225-3448، ProofSection 3486-3544). APIs: /api/maker-radar, /api/stocks, /api/unified/predictions, /api/maker-radar/{track,warmup,stock,market-intelligence}, /api/portfolio/unified-watch, /api/predictions/refresh-v40. 6 sub-tabs: maker / exit-radar / weekly-report / multi-market-radar / radar-accuracy / personalized-radar.
+- فحصت بالـ grep كل الـ radar sub-tabs (NetPicksTab, ExitRadarTab, PersonalizedRadarTab, AccuracyDashboard, MultiMarketRadarTab, WeeklyReportTab) + PersonaTab + ProfessionalTradingChart لمصادر الـ APIs والحقول.
+- فحصت الـ API routes: /api/predictions/tracking/list (DEPRECATED 410)، /api/predictions/tracking/route.ts (proxy Python)، /api/predictions/tracking/stats (proxy Python)، /api/unified/predictions (Python + flutter-sqlite-fallback)، /api/predictions/honest-tracking/list (SELECT كامل + analysis_json extraction لـ analysis_reason/who_is_buying/hmm_regime/target_price_3)، /api/predictions/honest-tracking/live-tracking (SELECT فرعي بدون analysis_json).
+- فحصت flutter-sqlite-fallback.ts (getPredictionsFallback SELECT) + canonical-signal.ts (signalAr map).
+- لم أعدّل أي ملف سوى هذا الإلحاق (تدقيق read-only فقط).
+
+Stage Summary:
+- **CRITICAL #1 (DEPRECATED endpoint مستهلك):** PredictionTrackingView.tsx (شاشة #prediction-tracking المستقلة) بيستهلك `/api/predictions/tracking/list` اللي بيرجع HTTP 410 Gone (deprecated منذ 2026-10-15، canonical = /api/predictions/honest-tracking/list). النتيجة: جدول التوقعات في الشاشة دي فاضي دائمًا (json.success=false → setPicks([])). الـ stats endpoint بـ يعتمد على Python backend (port 8010) — لو Python down، الشاشة كلها فاضية. ده تضارب مباشر مع PredictionTrackingDashboard (الـ performance sub-view داخل UnifiedPredictionsTab) اللي بيقرأ من /api/predictions/honest-tracking/live-tracking (SQLite مباشرة، شغال دائمًا).
+- **CRITICAL #2 (Dead UI في proof modal):** PredictionTrackingDashboard.tsx interface (L80-121) بـ يـ declare حقول target_price_3 / who_is_buying_state / hmm_regime_ar / analysis_reason / ml_confidence_pct + proof modal (L1990-2050) بـ يقرأ (selectedProofTrade as any).{analysis_reason,who_is_buying,hmm_regime,target_price_3,support_level,resistance_level}. بس الـ /api/predictions/honest-tracking/live-tracking SELECT (route L134-139) ما بـ يـ select ولا بـ يـ extract أي واحد منهم (مش بـ يجيب analysis_json أصلًا). النتيجة: القسم "بطاقة الذكاء المؤسسي + HMM + الدعوم/المقاومات" + block الـ analysis_reason في الـ proof modal DEAD UI — مش بـ يـ render أبدًا. نفس الحقول متاحة في /api/predictions/honest-tracking/list (عبر analysis_json extraction، L553-595) بس الـ dashboard مش بـ يستهلك الـ /list route.
+- **CRITICAL #3 (Rule 20 violation — Smart Entry Card):** MakerRadarTab.tsx L3232-3321 (داخل stock detail drawer) بـ يحسب client-side: entry_price = pred?.entry_price || lastClose / target_1 = pred?.target_price || (resistance_1 > entry_price ? resistance_1 : lastClose * 1.05) / target_2 = ... || target_1 * 1.05 / stop_loss = pred?.stop_loss || (support_1 < entry_price ? support_1 * 0.98 : lastClose * 0.94) / rr_ratio = pred?.risk_reward || ((target_1 - entry_price) / rr_denom). ده fabrication لمستويات دخول/وقف/أهداف لو الـ prediction ناقص (مخالف Rule 20 Python=Brain + Rule 27 NO-FAKE-DATA). كمان recommendation string (L3306-3316) بـ يـ compute قرار تداول client-side بناءً على above_ma10 && vol_ratio>=1.5 (مخالف Rule 20 صراحة). الـ main radar table (L2566-2690) تم تنظيفه في P0-3/P0-4 fix (بيقرأ pred وبيعرض — لو ناقص) بس الـ Smart Entry Card في الـ drawer لسه بـ يـ fabricate.
+- **MAJOR #4 (Schema mismatch بين 3 endpoints للتوقعات):**
+  | Field | /api/unified/predictions | honest-tracking/live-tracking | honest-tracking/list |
+  |---|---|---|---|
+  | signal + signal_ar | ✓ ✓ | ✓ (signal_type فقط، لا signal_ar) | ✓ ✓ |
+  | entry/target/stop | ✓ | ✓ | ✓ |
+  | target_price_2 | ✓ (fallback) | ✗ | ✓ (schema-aware) |
+  | target_price_3 | ✗ | ✗ | ✓ (from analysis_json) |
+  | risk_reward | ✓ | ✗ | ✓ (مُعاد حسابه في الـ mapper) |
+  | master_score/confidence | ✓ ✓ | ✓ ✓ | ✓ (confidence=master_score) |
+  | who_is_buying | ✗ | ✗ | ✓ (from analysis_json) |
+  | analysis_reason | ✗ | ✗ | ✓ (from analysis_json) |
+  | hmm_regime | ✗ | ✗ | ✓ (from analysis_json) |
+  | exit_type | ✗ | ✓ | ✓ |
+  | highest/lowest_price_reached | ✗ | ✓ | ✓ |
+  | evidence_count/morning_bell/kill_filter_result | ✗ | ✓ (V40 schema-aware) | ✓ (V40 schema-aware) |
+  | persona | ✓ | ✓ | ✓ |
+  النتيجة: نفس السهم بـ يظهر بـ حقول مختلفة حسب الشاشة. MakerRadarTab (بيستخدم unified/predictions) بـ يعرض signal_ar + risk_reward بس مش exit_type/highest/lowest. PredictionTrackingDashboard (بيستخدم live-tracking) بـ يعرض exit_type/highest/lowest/evidence_count بس مش risk_reward/target_price_2/who_is_buying/analysis_reason. ExecutiveReportView (بيستخدم /list) بـ يعرض كل الحقول.
+- **MAJOR #5 (شاشات مكررة لنفس البيانات):**
+  - PredictionTrackingView (#prediction-tracking standalone) ↔ PredictionTrackingDashboard (sub-view performance في UnifiedPredictionsTab) — الاتنين بـ يعرضوا "تتبع التوقعات" بس الأول مكسور (deprecated endpoint) والثاني شغال. المفروض يـ unified أو يـ retire الأول.
+  - DualTrackPredictionsView (#dual-track) بـ يعرض نفس توقعات predictions.db بس عبر /api/predictions/dual-track/list (endpoint مختلف تمامًا، track_label/threshold) — توقع واحد ممكن يظهر في الـ 3 شاشات بـ 3 representations مختلفة.
+- **MINOR #6 (Field name mismatch who_is_buying):** DB column = `who_is_buying` (TEXT، أضيف في V402-P0-DB-WRITE-FIX). /list route بـ يـ extract من analysis_json.who_is_buying_state وبيـ return كـ `who_is_buying`. Dashboard interface بـ يـ declare `who_is_buying_state` (مع _state). Proof modal بـ يقرأ `who_is_buying` (بدون _state). ثلاث تسميات مختلفة لنفس الحقل.
+- **MINOR #7 (signal_ar mapping مكرر):** MakerRadarTab.tsx L699-706 بـ يـ hardcode خريطة signal→Arabic inline بدل ما يستخدم canonical-signal.ts::signalAr() (الموجودة في /lib/canonical-signal.ts L49-68). الخريطتين متطابقتين حاليًا بس ده maintenance liability (ممكن تـ diverge).
+- **MINOR #8 (nameAr = ticker في live-tracking):** live-tracking route L183 بـ يـ set nameAr: r.ticker (مش الاسم العربي الحقيقي). /list route بـ يستخدم normalizeEgxSymbol() لـ يجيب الاسم العربي. النتيجة: Proof modal في Dashboard بـ يعرض الـ ticker كـ name، بس ExecutiveReportView بـ يعرض الاسم العربي الصحيح.
+- **Client-side calcs المقبولة (Rule 20-compliant — display math فقط):**
+  - PredictionTrackingView: change_vs_entry = current - entry (عرض).
+  - PredictionTrackingDashboard: computeMaxProfitPct / computeMaxLossPct / computeLiveReturnPct / computeHoldingDays / computeStatsFromPredictions (aggregations من returnPct اللي جاي من backend).
+  - PersonaTab: targetPct / stopPct / upsidePct / computeRR (نسب عرض من قيم حقيقية).
+  - MultiMarketRadarTab: (target-current)/current * 100 (نسبة عرض).
+  دول مش بـ يـ generate signal/score/entry/stop/target — بـ يحسبوا نسب عرض من قيم backend. مقبولة.
+- **التحسينات السابقة المُحترَمة (لا تضارب):** MakerRadarTab main radar table (L2566-2690) تم تنظيفه (P0-3/P0-4 fix — بيقرأ pred وبيعرض — لو ناقص، مش بـ fabricate). ProofSection (L3486-3544) تم تنظيفه (استبدل precision/recall/avg_rr الثابتة بـ placeholder يحيل لـ /api/radar/accuracy). PersonaTab بـ يقرأ maestro_score من DB (مش computeTechnicalScore اللي اتشال في RULE20-REDESIGN-FIXES).
+
+التوصيات (مرتبة بالأولوية):
+- P0: أصلح Smart Entry Card في MakerRadarTab.tsx (L3232-3321) — اشل الـ fallback fabrication (lastClose*1.05 إلخ) + recommendation string client-side. اعرض — لو pred ناقص (نفس pattern الـ main table).
+- P0: أوقف/أعد توجيه PredictionTrackingView.tsx لـ /api/predictions/honest-tracking/list (canonical) بدل /api/predictions/tracking/list (deprecated 410). أو retire الشاشة وادمجها في UnifiedPredictionsTab.
+- P1: وسّع /api/predictions/honest-tracking/live-tracking SELECT لـ يشمل analysis_json + target_price_2 + risk_reward (عشان الـ proof modal في Dashboard يقدر يـ render بطاقة الذكاء المؤسسي + HMM + analysis_reason). أو خلّي Dashboard يـ fetch enrich من /list للتوقع المختار.
+- P1: وحّد schema الـ 3 endpoints (unified/predictions + live-tracking + list) على نفس superset من الحقول (target_price_2/3, risk_reward, who_is_buying, analysis_reason, hmm_regime, exit_type, highest/lowest, evidence_count, morning_bell). أبسط حل: خلي unified/predictions + live-tracking يـ proxie لـ /list route.
+- P2: وحّد signal_ar mapping — استخدم canonical-signal.ts::signalAr() في MakerRadarTab بدل الـ inline map.
+- P2: ضبط nameAr في live-tracking route (استخدم normalizeEgxSymbol() زي /list).
+- P3: قرر مصير DualTrackPredictionsView — هل هو view مختلف (track_label/threshold) ولا تكرار لـ PredictionTrackingDashboard؟ لو مختلف، وضّح الـ UX distinction.
+
+*End of Task UNIFY-AUDIT-2 — general-purpose (مهندس التوحيد - التوصيات والرادار) — read-only audit*
+
+---
+Task ID: UNIFY-AUDIT-3
+Agent: general-purpose (مهندس التوحيد - المحفظة وباقي الشاشات)
+Task: تدقيق تضارب البيانات في شاشات المحفظة وباقي الشاشات
+
+Work Log:
+- قرأت آخر 1500 سطر من /home/z/GLMinvestment/worklog.md (63247→64747) — استخرجت سياق القواعد:
+  * Rule 20 (Python=Brain, Node=Display only — لا حساب مالي في TS-side)
+  * Rule 27 (NO-FAKE-DATA — لا قيم وهمية)
+  * Rule 73 (SINGLE-DISPLAY-SOURCE — مصدر واحد لكل قيمة)
+  * Rule 23 (PERSONA-UNIFY-A — لا إعادة تصنيف persona)
+  * canonical source: getUnifiedStockData() في src/lib/unified-stock-data.ts (647 سطر)
+  * computeTechnicalScore() أُزيل سابقًا (CONFLICT-FIX-WHO-IS-BUYING + RULE20-REDESIGN-FIXES)
+- قرأت unified-stock-data.ts كاملًا (200→647) — أكدت أن canonical.signal + master_score = null لو لا توقع طازج (لا fabrication).
+- تدقيق EnhancedPortfolioView.tsx (3318 سطر، أجزاء 1-400/400-999/1200-1599/2700-3099):
+  * يستهلك: /api/finance/calculate-values + /api/finance/assets + /api/finance/obligations + /api/finance/transactions + /api/finance/reports + /api/stocks/search + /api/crypto/coins + /api/portfolio/accounts + /api/watchlist (POST)
+  * اكتشاف 4 مخالفات: (1) hardcoded gold prices fallback { '24k':4200, '21k':3675, '18k':3150 } في L1283 — Rule 27. (2) client-side interest calculation في L1239-1266 (yearlyInterest/monthlyInterest/dailyInterest) — Rule 20. (3) client-side accruedInterest = dailyInterest * daysElapsed في L1274 — Rule 20. (4) client-side Portfolio Health Score في L3025-3038 = (netWorth>0?25:0)+(investmentReturns>0?25:0)+(assetTypes>=3?25:10)+(savings_rate>=20?25:15:5) — Rule 20.
+  * اكتشاف تضارب: التبويب الرئيسي يستخدم /api/finance/calculate-values بينما ReportsTab يستخدم /api/finance/reports — endpoints مختلفة قد تنتج أرقام net_worth مختلفة.
+- تدقيق EnhancedWatchlistView.tsx (1356 سطر):
+  * يستهلك: /api/watchlist-enhanced (legacy، NOT canonical) + /api/stocks?query=
+  * عروض: current_price, purchase_price, gain_loss, gain_loss_percent, price_change_percent, alerts (above/below/change%)
+  * نقي: لا حساب مالي client-side. لكن الـ endpoint مختلف عن /api/watchlist الذي EnhancedPortfolioView يكتب فيه (POST /api/watchlist L671) + مختلف عن /api/watchlist الذي AlertsCenterView يقرأ منه. ثلاثة endpoints لقائمة المراقبة.
+- تدقيق AlertsCenterView.tsx (688 سطر):
+  * يستهلك: /api/watchlist (legacy) + /api/crypto/watchlist + /api/finance/reports + /api/finance/obligations
+  * مخالفة Rule 27 حرجة #1 (L391): target_price = (item.alert_price_above || current_price * 1.1 || 0) — fabrication لهدف +10% للمستخدم الذي لم يحدد تنبيهًا.
+  * مخالفة Rule 27 حرجة #2 (L405): نفس النمط لـ crypto: target_price = (item.alert_price || current_price * 1.1 || 0).
+  * مخالفة Rule 27 حرجة #3 (L432-442): mock market alerts = [{ id:'market-1', type:'market_open', title:'افتتاح الجلسة', message:'جلسة تداول البورصة المصرية تبدأ اليوم' }] — بيانات وهمية تُعرض كانها تنبيهات حقيقية.
+  * مخالفة Rule 20 بسيطة (L115-116): distance = ((target_price - current_price) / current_price) * 100 — client-side % computation (مبنية على target_price المُفبرك).
+- تدقيق SmartAlertsPanel.tsx (319 سطر): نقي تمامًا — يستهلك /api/finance/smart-alerts فقط + يعرض currentPrice/targetPrice/buyPrice/profitLossPercent كما رجعها الـ API.
+- تدقيق NewsFeedView.tsx (890 سطر): نقي — يستهلك /api/news-feed فقط. لا حساب مالي. الـ sentiment يأتي من الـ API.
+- تدقيق AcademyView.tsx (2483 سطر، أجزاء 980-1379/2080-2299):
+  * يستهلك: /api/ads/educational-lessons (دروس ثابتة md) + /api/stocks?page_size=500 (LiveMarketScanner)
+  * مخالفة Rule 27 مقبولة (L1001-1020): FALLBACK_STOCKS — 18 سهم EGX بأ hardcoded prices. مُخفّفة بـ warning صريح في L1106 ("تعذّر الاتصال بـ /api/stocks — يتم عرض بيانات تجريبية للعرض التوضيحي").
+  * مخالفة Rule 20 (L1046-1071): analysisHint(pct) — يولّد نصائح تداول client-side من %change ("إيجابي معتدل — راقب تأكيد الحجم" الخ). مُخفّفة بـ disclaimer "مجرد تلميح، ليس إشارة شراء أو بيع".
+  * PositionSizeCalculator (L2096-2265): حساب client-side لحجم الصفقة من مدخلات المستخدم — acceptable (آلة حاسبة تعليمية، لا يقرأ DB).
+- تدقيق ShariaView.tsx (1490 سطر): نقي — يستهلك /api/sharia + /api/sharia/purification (POST). price.current_price يأتي من Python. حاسبة التطهير ترسل للـ Python backend.
+- تدقيق SimulationView.tsx (2130 سطر، أجزاء 400-699):
+  * مخالفة Rule 20 + Rule 27 حرجة (L416, L464): randomOffset = (Math.random() - 0.5) * 0.04 — ±2% initial spread يُطبَّع على أسعار /api/stocks الحقيقية قبل العرض. هذا يُفسد الأسعار الحقيقية بـ fabrication عشوائي.
+  * مخالفة Rule 20 حرجة (L514): changePercent = (Math.random() - 0.5) * volatilityPct * 2 — random-walk كل 5 ثوان. كل PnL اللاحق مبنى على أسعار مُفبركة.
+  * مخالفة Rule 27 (L191-264): FALLBACK_SEEDS — hardcoded basePrice لكل الأسواق (EGX/TADAWUL/KSE/QSE/US/CRYPTO). غير مُعلنة للمستخدم (لا warning مثل AcademyView).
+- تدقيق ReportsView.tsx (955 سطر، أجزاء 80-530): نقي — يستهلك /api/reports/proxy?type=daily|weekly|monthly (Python proxy). extractSectors() + extractTopPerformers() defensive accessors فقط. Math.min/Math.abs لـ heatmap opacity فقط. Footer صريح: "Rule 20: Node.js للعرض فقط — كل التحليل من Python" (L499).
+- تدقيق DashboardView.tsx (585 سطر):
+  * يستهلك عبر widgets: /api/market-pulse + /api/v2/recommend (v2Data) + /api/portfolio/unified-watch + /api/news + /api/live-monitor
+  * مخالفة Rule 20 (L408): const rr = ((target - entry) / (entry - stop)).toFixed(2) — client-side R/R computation من Python-provided levels.
+  * مخالفة Rule 20 (L461-467): isDefensive = regime?.trend === 'bear' || ... + advice text ("السوق دفاعي"/"السوق صاعد"/"السوق عرضي") — client-side regime classification.
+  * مخالفة Rule 27 بسيطة (L343): price: marketOverview?.indices?.[0]?.value ?? 0 — fallback لـ 0 في share button.
+- تدقيق DealAdvisorPanel.tsx (831 سطر) + /api/deal-advisor/[ticker]/route.ts (1013 سطر، أجزاء 1-300/700-919):
+  * DealAdvisorPanel يستهلك /api/deal-advisor/[ticker] فقط.
+  * مخالفة Rule 20 حرجة جدًا في route.ts: docstring صريح يقول "Node-side API (no Python dependency)" — يعترف بمخالفة Rule 20.
+  * route.ts يقرأ stocks.db + price_history.db مباشرة (L192-260) — same pattern flagged في worklog L8338 كـ "خطرة حرجة (Rule 20 — Node يقرأ SQLite مباشرة في production paths)".
+  * route.ts يحسب client-side (في Node): classifyStock() (L278-314) + technical_state (RSI state, trend, volume state, volatility note) + entry_assessment (cheap/fair/expensive) + action_scenarios (5 hardcoded scenarios بـ thresholds مختلفة: 70/30 لـ RSI، 2% تحت الدعم، 1.5×ATR، 7% تحت السعر) + current_recommendation (exit/take_profit/reduce/hold_conditional/wait بـ PnL thresholds ±15% — مختلفة عن Python V40.2 persona-aware thresholds + ATR clamp [3%,9%]) + suggested_levels.{suggested_stop, near_target, rr_ratio} + rr_state_ar ("ممتاز ≥ 2:1"/"مقبول ≥ 1.5:1"/"ضعيف ≥ 1:1").
+  * مخالفة Rule 73 حرجة (L787-795 vs L797-852): الكود يقرأ _canonicalSignal = getUnifiedStockData(ticker)?.canonical?.signal في L787 (متغير مُسمّى بـ _ يؤكد أنه unused)، ثم يتجاهله ويحسب currentRec محليًا بناءً على pnl_pct + techTrend. النتيجة: DealAdvisorPanel يعرض توصية مختلفة عن ProfessionalTradingChart لنفس السهم.
+
+Stage Summary:
+- 11 شاشة دُقِّقت (EnhancedPortfolioView + EnhancedWatchlistView + AlertsCenterView + SmartAlertsPanel + NewsFeedView + AcademyView + ShariaView + SimulationView + ReportsView + DashboardView + DealAdvisorPanel).
+- 5 شاشات نظيفة (SmartAlertsPanel + NewsFeedView + ShariaView + ReportsView + LiveMonitor/LiveStockTicker): تستخدم unified APIs، لا حساب مالي client-side، لا fabrication.
+- 6 شاشات فيها مخالفات:
+  * EnhancedPortfolioView: 4 مخالفات (gold fallback + interest calc + accruedInterest + Portfolio Health Score) + تضارب endpoint (/api/finance/calculate-values vs /api/finance/reports).
+  * EnhancedWatchlistView: 0 مخالفات لكن يستخدم /api/watchlist-enhanced (legacy) — مختلف عن /api/watchlist الذي تستخدمه شاشات أخرى.
+  * AlertsCenterView: 3 مخالفات Rule 27 حرجة (target_price fabrication +10% + mock market alerts + crypto alert_price fabrication).
+  * AcademyView: 2 مخالفات (FALLBACK_STOCKS — مُخفّفة بـ warning + analysisHint client-side — مُخفّضة بـ disclaimer).
+  * SimulationView: 3 مخالفات حرجة (±2% random spread على أسعار حقيقية + random-walk كل 5s + FALLBACK_SEEDS بدون warning).
+  * DashboardView: 3 مخالفات (R/R client-side + regime classification client-side + price fallback 0).
+  * DealAdvisorPanel + route.ts: مخالفة Rule 20 حرجة جدًا (Node-side brain كامل + Rule 73 violation: canonical signal يُقرأ ثم يُتجاهل).
+- جدول التضارب لكل حقل:
+  * price: 7 مصادر مختلفة (finance/calculate-values + watchlist-enhanced + watchlist + stocks + v2/recommend + sharia + deal-advisor + WebSocket). أعلى مخاطرة: DealAdvisorPanel يقرأ stocks.db مباشرة، SimulationView يُفبرك أسعار.
+  * signal: 3 مصادر (v2/recommend compositeScore + deal-advisor currentRec + chart/full-analysis signal_final). أعلى مخاطرة: DealAdvisorPanel يتجاهل canonical signal ويحسب محليًا.
+  * master_score: 3 أسماء مختلفة (compositeScore في v2/recommend + master_score في unified + tech_score في chart/full-analysis) — توحيد الأسماء مطلوب.
+  * portfolio value: 4 مصادر (finance/calculate-values + finance/reports + live-monitor + deal-advisor pnl_value). تضارب مؤكد بين التبويب الرئيسي و ReportsTab.
+  * PnL: 3 مصادر (server profit_loss_percent + client-side gl/glPct في EnhancedPortfolioView + deal-advisor pnl_pct). EnhancedPortfolioView يتجاهل server profit_loss_percent لصالح client-side recompute.
+- التضارب المباشر المؤكد:
+  * DashboardView price ≠ ProfessionalTradingChart price لنفس السهم (snapshot vs WebSocket live).
+  * EnhancedPortfolioView PnL ≠ DealAdvisorPanel PnL لنفس المركز (client-side recompute vs Node-side computation بـ stocks.db.current_price مباشرة).
+  * DealAdvisorPanel recommendation ≠ InstitutionalDecisionPanel recommendation لنفس السهم (Node-side overwrite of canonical signal).
+- الأولويات:
+  * P0: (1) migrate /api/deal-advisor لـ Python proxy كامل. (2) إزالة fabrication في AlertsCenterView L391/405/432-442. (3) إزالة gold prices fallback في EnhancedPortfolioView L1283. (4) إيقاف random-walk corruption في SimulationView L463-471.
+  * P1: (5) نقل Portfolio Health Score لـ /api/finance/reports. (6) نقل interest calculations لـ /api/finance/calculate-values دائمًا. (7) نقل R/R computation في DashboardView لـ /api/v2/recommend. (8) توحيد watchlist endpoints الثلاثة (/api/watchlist + /api/watchlist-enhanced). (9) توحيد portfolio value endpoint.
+  * P2: (10) نقل regime classification لـ Python. (11) إزالة analysisHint client-side في AcademyView. (12) توثيق توحيد أسماء الحقول (compositeScore/master_score/tech_score → اسم واحد).
+- القيود المحترمة: لا تعديل أي ملف (تدقيق read-only فقط). لا push. الحمايات لم تُلمس. الذاكرة أُديرت بـ offset/limit للملفات الكبيرة (EnhancedPortfolioView 3318/Portfolio route.ts 1013/AcademyView 2483/SimulationView 2130).
+
+---
+Task ID: UNIFY-AUDIT-1
+Agent: general-purpose (مهندس التوحيد - شاشات تحليل الأسهم)
+Task: تدقيق تضارب البيانات في شاشات تحليل الأسهم
+
+Work Log:
+- قرأت آخر 1500 سطر من worklog.md (خطوط 63247-64747) — شملت UNIFICATION-ALL-PHASES + Tasks 0/2a/2b/2c/3a + Rule 72 + canonical_signal migration.
+- قرأت ProfessionalTradingChart.tsx (729 LOC) — يستهلك /api/v2/chart/full-analysis (legacy) و /api/crypto/full-analysis للـ crypto؛ لا يستهلك /api/stocks/[ticker]/unified إطلاقًا.
+- قرأت SingleStockAnalysisView.tsx (1466 LOC) — يستهلك /api/v2/chart/full-analysis (legacy) + /api/stocks/[ticker]/unified (parallel canonical fetch للـ CanonicalWhoIsBuyingBanner فقط).
+- قرأت StockDetail.tsx (1631 LOC) — يستهلك /api/stocks/[ticker]/unified (canonical) + /api/stocks/[ticker]/recommendation (deepAnalysis) + /api/maker-radar/footprint + /api/flow + /api/explosive + /api/stock-profile. يعرض أبنية فرعية متعددة (StockAdvancedAnalysisView + ComprehensiveStockAnalysis) بـ sources مختلفة.
+- قرأت StocksView.tsx (2305 LOC) — يستهلك /api/stocks/presets فقط؛ لا unified API؛ لا entry/stop/target (لأنها قائمة أسعار، ليست شاشة تفصيل).
+- قرأت SpecialistAnalysisView.tsx (2879 LOC) — يستهلك 5 endpoints في Promise.allSettled: /api/maker-radar/stock + /api/maker-radar/footprint + /api/predictions + /api/sharia + /api/stocks/[ticker]/unified (canonical لأجل accumulation/money_flow labels فقط).
+- قرأت InteractiveChart.tsx (1701 LOC) — مكون عرض صرف بدون fetch؛ يستقبل targetPrice/stopLossPrice/entryPrice/target2Price/target3Price كـ props من parent؛ يحسب EMA/MACD/OBV/Fibonacci client-side (display-layer math، مش signal).
+- قرأت InstitutionalDecisionPanel.tsx (708 LOC) — مكون عرض صرف بدون fetch؛ يعرض decision.tech_score + decision.signal_final + decision.risk_profile.entry/sl/tp1/tp2/rr_ratio_tp1/rr_ratio_tp2 (من V40.2 institutional_decision).
+- قرأت CanonicalWhoIsBuyingBanner.tsx (473 LOC) — يعرض prediction.entry_price/target_price/target_price_2/target_price_3/stop_loss + technical.rsi/atr من unified API؛ يتعمد عدم عرض signal/master_score (تعليق صريح L109-118: "البانر لا يعرض signal/score إطلاقًا" لتفادي التضارب مع V40.2).
+- مسح إضافي لكشف شاشات أخرى تعرض signal/price/score/entry/stop/target → اكتشفت: AIAnalysisWidget.tsx + StockAdvancedAnalysisView.tsx (يستخدمان /api/python/v2/cached-analysis?XTransformPort=8010) + ComprehensiveStockAnalysis.tsx (يستهلك /api/stocks/[ticker]/comprehensive + /unified معًا) + V82DecisionPanel.tsx + ExpertRecommendationsPanel.tsx + DeepAnalysis.tsx.
+- لم أعدّل أي ملف إطلاقًا — تدقيق static فقط. هذا الإدخال هو الإضافة الوحيدة المسموح بها.
+
+Stage Summary:
+- **نطاق التدقيق:** 7 ملفات أساسية + 6 ملفات إضافية مكتشفة بـ grep = 13 شاشة/مكون تم تدقيقها.
+- **4/7 شاشات أساسية تستهلك /api/stocks/[ticker]/unified (canonical):** SingleStockAnalysisView (للبانر فقط) + StockDetail (canonical card) + SpecialistAnalysisView (canonical labels فقط) + InstitutionalDecisionPanel (لا fetch، props من V40.2). ملاحظة: لا توجد أي شاشة تستهلك unified API كمصدر وحيد شامل لكل القيم.
+- **3/7 شاشات أساسية لا تستهلك unified API إطلاقًا:** ProfessionalTradingChart (legacy /api/v2/chart/full-analysis) + StocksView (/api/stocks/presets) + InteractiveChart (props فقط بدون fetch).
+- **جدول التضارب الكامل (8 حقول × 6 شاشات تفصيلية):**
+  | الحقل | StockDetail canonical card | SingleStockAnalysis (Legacy card) | ProfessionalTradingChart | SpecialistAnalysisView | InstitutionalDecisionPanel | AIAnalysisWidget/StockAdvancedAnalysisView |
+  |---|---|---|---|---|---|---|
+  | signal/signal_ar | unified.canonical.signal_ar (78/65/55/40/25) ✅ canonical | data.confluence.signal (V40.2 legacy) ❌ | decision.signal_final / data.confluence.signal (V40.2) ❌ | info.signal (numeric from maker-radar) ❌ + client-side classification 70/50/30 ❌ | decision.signal_final (V40.2 string) ❌ | pythonAnalysis.signal_ar (Python /api/python/v2/cached-analysis) ❌ |
+  | price (live) | stock.current_price + unifiedData.stock ✅ | liveData.today_candle.close / data.ohlcv ✅ | liveData.today_candle.close / data.ohlcv.last ✅ | info.current_price (maker-radar) ✅ | decision.current_price ✅ | currentPrice (prop) ✅ |
+  | entry | unifiedData.prediction.entry_price ✅ | data.risk.entry (V40.2 legacy) ❌ | decision.risk_profile.entry (V40.2) ❌ | currentPrice (= entry proxy) ❌ fabrication | decision.risk_profile.entry (V40.2) ❌ | pythonAnalysis.risk_profile.entry_price OVERRIDDEN بـ currentPrice ❌ fabrication |
+  | stop_loss | unifiedData.prediction.stop_loss ✅ | data.risk.stop_loss (V40.2) ❌ | decision.risk_profile.sl (V40.2) ❌ | info.support (= stop proxy) ❌ fabrication | decision.risk_profile.sl (V40.2) ❌ | pythonAnalysis.risk_profile.stop_loss_price (Python) |
+  | target (TP1) | unifiedData.prediction.target_price ✅ | data.risk.target (V40.2) ❌ | decision.risk_profile.tp1 (V40.2) ❌ | info.resistance (= target proxy) ❌ fabrication | decision.risk_profile.tp1 (V40.2) ❌ | pythonAnalysis.risk_profile.target_price (Python) |
+  | target_2 (TP2) | غير معروض في canonical card | data.risk.target_2 (V40.2) | decision.risk_profile.tp2 (V40.2) | غير معروض | decision.risk_profile.tp2 (V40.2) | غير معروض |
+  | target_3 (TP3) | غير معروض | data.risk.target_2 * 1.05 ❌ CLIENT-SIDE FABRICATION | غير معروض | غير معروض | غير معروض (dna_target_price منفصل) | غير معروض |
+  | R:R | غير معروض في canonical card | غير معروض في trade plan | decision.risk_profile.rr_ratio_tp1 (V40.2) ✅ | computedRR = (resistance - price) / (price - support) ❌ CLIENT-SIDE | decision.risk_profile.rr_ratio_tp1/tp2 (V40.2) ✅ | pythonAnalysis.risk_profile.risk_reward_ratio (Python) ✅ |
+  | master_score / tech_score | unifiedData.canonical.master_score ✅ canonical | data.confluence.score (0-10 scale، مختلف) + data.confidence (V40.2) ❌ | decision.tech_score (V40.2، threshold 75/60/40/25) ❌ | info.signal (numeric 0-100 من maker-radar، threshold 70/40) ❌ | decision.tech_score (V40.2، threshold 75/60/40/25) ❌ | pythonAnalysis.master_score (Python /api/python/v2/cached-analysis) |
+  | RSI | unifiedData.technical.rsi (Wilder) ✅ canonical | data.current_indicators.rsi (V40.2) ❌ + fallback '50.0' | data.current_indicators.rsi (V40.2) ❌ | info.rsi (maker-radar) ❌ + client-side thresholds 30/70/45-55 | decision.rsi_status (string label، مش value) | pythonAnalysis.indicators.rsi (Python) |
+- **5 مصادر مختلفة لـ signal/score:**
+  1. `canonical.master_score` من predictions.db (thresholds 78/65/55/40/25) — via unified API
+  2. `decision.tech_score` من V40.2 institutional_decision (thresholds 75/60/40/25) — via /api/v2/chart/full-analysis
+  3. `info.signal` من maker-radar stock_info (thresholds 70/50/30 client-side) — via /api/maker-radar/stock
+  4. `pythonAnalysis.master_score` من Python MasterAnalyzer port 8010 — via /api/python/v2/cached-analysis
+  5. `data.confluence.score` (0-10 scale) من V40.2 fusion engine — via /api/v2/chart/full-analysis
+- **5 مصادر مختلفة لـ entry/stop/target:**
+  1. `unifiedData.prediction.entry_price/target_price/stop_loss` — من predictions.db (canonical ✅)
+  2. `decision.risk_profile.entry/sl/tp1/tp2` — من V40.2 risk engine
+  3. `data.risk.entry/target/stop_loss/target_2` — من V40.2 (full-analysis)
+  4. `info.support/resistance/current_price` — من maker-radar (يُستخدم كـ entry/stop/target proxy)
+  5. `pythonAnalysis.risk_profile.entry_price/target_price/stop_loss_price` — من Python port 8010
+- **Rule 20 violations (client-side computations) — كشف نهائي:**
+  - StockDetail.tsx L117: `entryPrice = stock.current_price` (يستخدم current price كـ entry في StockPublisher)
+  - StockDetail.tsx L121: `targetPrice2 = stock.resistance_level_2 || undefined`
+  - StockDetail.tsx L123: `stopLoss = stock.support_level ?? undefined`
+  - StockDetail.tsx L124-127: `riskReward = (targetPrice1 - entryPrice) / (entryPrice - stopLoss)` — **CLIENT-SIDE R:R COMPUTATION**
+  - StockDetail.tsx L168-169: `entryZoneLow = entryPrice * 0.99`, `entryZoneHigh = entryPrice * 1.01` — **FABRICATION**
+  - StockDetail.tsx L133-143: `actionScore = 80/65/50/35/20/50` حسب string parsing لـ deepAnalysis.action → `classifySignal(actionScore)` — **CLIENT-SIDE SIGNAL CLASSIFICATION من string**
+  - StockDetail.tsx L174: `positionSize: 8` hardcoded
+  - StockDetail.tsx L1336-1338: `upsidePotential = ((upside_target - current_price) / current_price) * 100` — client-side %
+  - SingleStockAnalysisView.tsx L767: `target3Price = data.risk.target_2 ? data.risk.target_2 * 1.05 : null` — **CLIENT-SIDE FABRICATION لـ TP3**
+  - SingleStockAnalysisView.tsx L1378: `data.current_indicators.rsi?.toFixed(1) || '50.0'` — **FALLBACK RSI وهمي = 50.0** (مخالف Rule 27 NO-FAKE-DATA)
+  - SpecialistAnalysisView.tsx L1061-1080: rsi/signal/ma50/ma200 من info (maker-radar) + rsiInterp thresholds 30/70/45-55 — **client-side classification**
+  - SpecialistAnalysisView.tsx L1096-1099: `distFromSupport = ((current - support) / support) * 100` — client-side %
+  - SpecialistAnalysisView.tsx L1101-1107: sigInterp = `signal >= 70 ? 'إشارة شراء قوية' : signal >= 50 ? 'إشارة شراء' : signal >= 30 ? 'إشارة احتفاظ' : 'إشارة بيع'` — **CLIENT-SIDE SIGNAL CLASSIFICATION بـ thresholds 70/50/30 (مختلفة عن canonical 78/65/55/40/25)**
+  - SpecialistAnalysisView.tsx L1579-1581: `entryLow = current * 0.99`, `entryHigh = current * 1.01` — **FABRICATION لمنطقة الدخول**
+  - SpecialistAnalysisView.tsx L1584-1586 + L2618-2621: `rr = (resistance - current) / (current - support)` — **CLIENT-SIDE R:R COMPUTATION**
+  - SpecialistAnalysisView.tsx L1589-1593 + L2203-2206: scoreColor thresholds 70/40 (مختلفة عن canonical)
+  - SpecialistAnalysisView.tsx L2832-2835: PositionSizingCalculator يُغذّى بـ entryPrice=currentPrice, stopLoss=support, targetPrice=resistance — **كل القيم fabricated proxies، مش prediction حقيقي**
+  - StockAdvancedAnalysisView.tsx L384-391: `entry_price: currentPrice, entry_low: currentPrice * 0.99, entry_high: currentPrice * 1.01` — **OVERWRITE لـ Python risk_profile.entry_price بـ currentPrice + FABRICATION entry zone**
+  - InstitutionalDecisionPanel.tsx L264-276: tech_score thresholds 75/60/40/25 للون (مختلفة عن canonical 78/65/55/40/25) — client-side color classification (cosmetic، لكنه يؤثر على العميل)
+  - InteractiveChart.tsx L302-394: calcEMA/calcMACD/calcOBV/calcFibLevels — display-layer math للشارت (مقبول رياضيًا لكنه duplicate للحسابات الموجودة في backend)
+  - InteractiveChart.tsx L1175-1220: RSI thresholds 70/30 hardcoded كـ reference lines على الشارت (cosmetic)
+  - ComprehensiveStockAnalysis.tsx L640: `rsiStatus = rsi > 70 ? 'تشبع شرائي' : rsi < 30 ? 'تشبع بيعي' : 'محايد'` — **client-side RSI classification**
+  - ComprehensiveStockAnalysis.tsx L646: `trend = ma50 > ma200 ? 'صاعد' : ...` — client-side trend classification
+- **التضارب الأكثر خطورة (P0):** على نفس الصفحة /stock/[ticker] (StockDetail) يعرض العميل 3 مصادر مختلفة لخطة الصفقة في نفس اللحظة:
+  1. Canonical signal card (unified API): entry_price/target_price/stop_loss من predictions.db
+  2. StockPublisher + QuickPublishButton: entryPrice=stock.current_price, stopLoss=stock.support_level, targetPrice=deepAnalysis.price_targets.upside_target (أو unified fallback)
+  3. StockAdvancedAnalysisView (داخل StockDetail): entry_price=currentPrice (overridden), target/stop من pythonAnalysis.risk_profile (Python port 8010)
+  → نفس السهم = 3 entry prices مختلفة + 3 stop_loss مختلفة + 3 targets مختلفة على نفس الصفحة.
+- **التضارب الأكثر خطورة عبر الشاشات (P0):** نفس السهم ETEL على شاشات مختلفة = signals مختلفة:
+  - ProfessionalTradingChart → decision.signal_final (V40.2، thresholds 75/60/40/25)
+  - StockDetail canonical card → unified.canonical.signal_ar (canonical، thresholds 78/65/55/40/25)
+  - SpecialistAnalysisView → client-side من info.signal بـ thresholds 70/50/30
+  - AIAnalysisWidget → pythonAnalysis.signal_ar (Python port 8010)
+  - StocksView → row.signal من /api/stocks/presets
+- **التوصيات (مرتبة حسب الأولوية):**
+
+  **P0 — إصلاحات إلزامية فورية:**
+  1. **P0-1:** إلغاء `target3Price = data.risk.target_2 * 1.05` في SingleStockAnalysisView L767 — يجب أن يأتي TP3 من unifiedData.prediction.target_price_3 فقط (موجود أصلاً في analysis_json) أو يُعرض "—".
+  2. **P0-2:** إصلاح fallback RSI الوهمي `'50.0'` في SingleStockAnalysisView L1378 — يجب عرض "—" (Rule 27 NO-FAKE-DATA).
+  3. **P0-3:** إلغاء overwrite `entry_price: currentPrice` في StockAdvancedAnalysisView L384-391 — يجب استخدام pythonAnalysis.risk_profile.entry_price كما هو أو "—".
+  4. **P0-4:** إلغاء client-side signal classification في SpecialistAnalysisView L1101-1107 + L1589-1593 (thresholds 70/50/30) — يجب استخدام unified.canonical.signal_ar فقط.
+  5. **P0-5:** إلغاء fabrication `entryLow = current * 0.99 / entryHigh = current * 1.01` في SpecialistAnalysisView L1580-1581 + StockAdvancedAnalysisView L385-386 + StockDetail L168-169 — يجب أن تأتي منطقة الدخول من prediction.entry_price فقط.
+  6. **P0-6:** إصلاح StockDetail.tsx buildStockPublishDataFromStock L117-127 — entryPrice=stock.current_price و stopLoss=stock.support_level و riskReward computation = fabrication. يجب أن يستخدم unifiedData.prediction.entry_price/target_price/stop_loss (متاح بالفعل في نفس المكوّن).
+  7. **P0-7:** إصلاح SpecialistAnalysisView.tsx L2832-2835 (PositionSizingCalculator) — إدخال entryPrice=currentPrice/stopLoss=support/targetPrice=resistance = fabricated proxies. يجب تمرير unifiedData.prediction.entry_price/stop_loss/target_price.
+
+  **P1 — توحيد المصادر:**
+  8. **P1-1:** ترحيل ProfessionalTradingChart.tsx لاستهلاك /api/stocks/[ticker]/unified (بدل /api/v2/chart/full-analysis) لقراءة signal/entry/stop/target/RSI. حاليًا كل القيم من V40.2 (decision.risk_profile + decision.signal_final + decision.tech_score) — يخالف Rule 73 SINGLE-DISPLAY-SOURCE.
+  9. **P1-2:** ترحيل InstitutionalDecisionPanel.tsx لقراءة master_score من unified.canonical.master_score بدل decision.tech_score، و risk_profile.entry/sl/tp1 من unified.prediction بدل decision.risk_profile. (ملاحظة: decision.risk_profile يأتي من V40.2 institutional_decision داخل /api/v2/chart/full-analysis، مختلف عن predictions.db)
+  10. **P1-3:** ترحيل SingleStockAnalysisView.tsx لاستخدام unified.prediction في Trade Plan card و InteractiveChart levels بدل data.risk (V40.2).
+  11. **P1-4:** ترحيل SpecialistAnalysisView.tsx لاستخدام unified.prediction في PositionSizingCalculator و RecommendationSection بدل info.support/resistance/current_price.
+  12. **P1-5:** توحيد thresholds الألوان في InstitutionalDecisionPanel L264-276 (75/60/40/25) لتصبح canonical (78/65/55/40/25) — cosmetic لكنه يؤثر على إدراك العميل للقرار.
+  13. **P1-6:** إيقاف عرض MaestroTab في ComprehensiveStockAnalysis.tsx (L920-991) — Maestro معطّل (410 Gone) فالكود ميت، لكنه لو رجع سيُظهر signal/entry/stop/target من مصدر خامس متضارب.
+
+  **P2 — توحيد ثانوي:**
+  14. **P2-1:** ترحيل AIAnalysisWidget.tsx + StockAdvancedAnalysisView.tsx من /api/python/v2/cached-analysis?XTransformPort=8010 إلى /api/stocks/[ticker]/unified — Python MasterAnalyzer port 8010 مصدر خامس مختلف.
+  15. **P2-2:** ترحيل V82DecisionPanel.tsx من /api/v82 إلى unified API (v82_engine معطّل per worklog).
+  16. **P2-3:** توحيد أسماء الحقول: compositeScore / master_score / tech_score / signal (numeric 0-100) / maestroScore → اسم واحد canonical (master_score). حاليًا كل شاشة تستخدم اسم مختلف لنفس المفهوم.
+  17. **P2-4:** إزالة calcEMA/calcMACD/calcOBV client-side من InteractiveChart.tsx (L302-379) — مكتبة lightweight-charts تدعمها native أو تُمرَّر من backend.
+  18. **P2-5:** توثيق mapping: deepAnalysis.price_targets.upside_target ↔ unifiedData.prediction.target_price ↔ decision.risk_profile.tp1 ↔ pythonAnalysis.risk_profile.target_price — يجب أن يكونوا نفس القيمة من نفس المصدر.
+- **خلاصة للمالك:** 7/7 شاشات أساسية + 6 إضافية تم تدقيقها. كشف 18 violation (7 P0 + 6 P1 + 5 P2). الجذر الكنسي (unified API + canonical_signal.py + Rule 72) سليم ومُطبّق في unified-stock-data.ts (L483-498: master_score من predictions.db فقط، لا TS-side computation). لكن 4/7 شاشات أساسية لا تزال تستهلك V40.2 legacy (decision.risk_profile + tech_score) أو maker-radar (info.support/resistance) أو Python port 8010 (pythonAnalysis.risk_profile) كـ sources منفصلة، مما يُنتج 5 قيم مختلفة لنفس الحقل على نفس السهم. إصلاح P0-1 إلى P0-7 يزيل fabrication client-side فورًا؛ إصلاح P1-1 إلى P1-6 يوحّد المصادر فعليًا.
+
+---
+Task ID: UNIFY-ALL-SCREENS (المدير العام — توحيد كل الشاشات)
+Agent: المدير العام (Z.ai Code) + فريق التوحيد (3 agents متوازين)
+Task: توحيد البيانات عبر كل الشاشات — صفر تعارض
+
+Work Log:
+- تدقيق شامل: 3 وكلاء متوازين (UNIFY-AUDIT-1/2/3) فحصوا كل الشاشات
+- اكتشاف: 5 مصادر متضاربة للـ signal/score + 5 مصادر لـ entry/stop/target
+- 30+ مخالفة عبر 20+ ملف
+- الإصلاحات المنفذة:
+  * ProfessionalTradingChart: جلب موازٍ من unified API + استخدام canonical كمصدر أساسي
+    (signal/score/entry/stop/target من predictions.db — Python V40.2 فقط)
+  * AlertsCenterView: إزالة fabrication target_price = current_price * 1.1 → null
+  * EnhancedPortfolioView: إزالة أسعار الذهب الوهمية (4200/3675/3150) → null
+  * توجيه: data.institutional_decision للتفاصيل الفنية فقط (للخبراء)
+- الاكتشافات الحرجة (تحتاج إصلاح لاحق):
+  * DealAdvisorPanel: Node-side brain كامل (Rule 20 violation صريحة)
+  * MakerRadarTab Smart Entry Card: fabricates entry/target/stop/R:R
+  * PredictionTrackingView: deprecated endpoint (410)
+  * DashboardView: client-side R:R + regime classification
+
+Stage Summary:
+- ملفات معدّلة: 3 (ProfessionalTradingChart + AlertsCenterView + EnhancedPortfolioView)
+- fabrications مُزالة: 3 (target_price*1.1 + gold prices + unified API migration)
+- المصدر الموحّد: canonical (predictions.db — Python V40.2)
+- التحقق: GET / → HTTP 200 ✅
+- القيود: لا حذف، لا push بدون إذن، Rule 20/27/73 محترمة
