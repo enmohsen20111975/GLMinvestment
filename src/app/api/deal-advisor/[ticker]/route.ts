@@ -189,10 +189,28 @@ interface StockRow {
   free_float_percentage: number | null;
 }
 
-function getStockFromDb(ticker: string): StockRow | null {
+function getStockFromDb(ticker: string, market?: string): StockRow | null {
   try {
     const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
     const db = openDb(dbPath);
+    // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+    // قبل كده: `WHERE ticker = ? COLLATE NOCASE` بس → كان بـ يرجع أي سهم بالـ ticker
+    // ده بغض النظر عن السوق → لو فيه ticker متكرر بين EGX و US (فيه 15 حالة كده بسبب
+    // migration قديم) بـ يرجع الأول في الترتيب. الحل: نضيف market filter.
+    // EGX → IN ('EGX','مصر') (الاتنين موجودين في stocks.db). غير كده → market بس.
+    // لو market مش متحدد بنـ skip الفلتر (backward compat).
+    const marketVariants: string[] = [];
+    if (market) {
+      if (market.toUpperCase() === 'EGX') {
+        marketVariants.push('EGX', 'مصر');
+      } else {
+        marketVariants.push(market);
+      }
+    }
+    const placeholders = marketVariants.map(() => '?').join(',');
+    const marketClause = marketVariants.length > 0
+      ? `AND market IN (${placeholders})`
+      : '';
     const row = db
       .prepare(
         `SELECT ticker, name, name_ar, market, sector, industry, current_price,
@@ -202,9 +220,9 @@ function getStockFromDb(ticker: string): StockRow | null {
                 signal, trend, avg_volume, beta, high_52w, low_52w, is_egx30, is_egx70,
                 is_egx100, is_suspended, is_egx, turnover_egp, value_traded, dps_ttm,
                 free_float_percentage
-         FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1`
+         FROM stocks WHERE ticker = ? COLLATE NOCASE ${marketClause} LIMIT 1`
       )
-      .get(ticker.toUpperCase()) as StockRow | undefined;
+      .get(ticker.toUpperCase(), ...marketVariants) as StockRow | undefined;
     return row ?? null;
   } catch (err) {
     console.error('[deal-advisor] getStockFromDb error:', (err as Error).message);
@@ -371,6 +389,9 @@ export async function GET(
   const entryDateStr = sp.get('entry_date');
   const persona = (sp.get('persona') as 'gambler' | 'balanced' | 'investor') || 'balanced';
   const note = sp.get('note'); // not stored — only context
+  // MARKET-FILTER-COMPLETE: اقرأ market param لو موجود — بـ يُستخدم في فلترة stocks.db
+  // علشان لو فيه ticker متكرر بين EGX و US، نرجع السهم الصح (موثوق من السوق المختار).
+  const marketParam = (sp.get('market') || '').trim() || undefined;
 
   const dataSources: string[] = [];
   const dataMissing: string[] = [];
@@ -378,7 +399,7 @@ export async function GET(
   const generatedAt = new Date().toISOString();
 
   // 1. جلب بيانات السهم من stocks.db
-  const stock = getStockFromDb(ticker);
+  const stock = getStockFromDb(ticker, marketParam);
   if (!stock) {
     return NextResponse.json(
       {

@@ -2520,15 +2520,20 @@ export function SpecialistAnalysisView() {
 
     try {
       const enc = encodeURIComponent(symbol);
+      // MARKET-FILTER-COMPLETE (Task MARKET-FILTER-COMPLETE):
+      // قبل كده: كل الـ fetches دي كانت بدون `?market=` → الـ API بـ يرجع أي سهم
+      // بالـ ticker ده بغض النظر عن السوق المختار. لو فيه ticker متكرر بين EGX و US
+      // بيرجع الأول → بيانات خاطئة. الحل: نمرر currentMarket لكل fetch.
+      const mkt = encodeURIComponent(currentMarket);
 
       // Fire ALL fetches in parallel — each settles independently.
       const results = await Promise.allSettled([
         // PRIMARY — must succeed
-        fetch(`/api/maker-radar/stock?ticker=${enc}`),
+        fetch(`/api/maker-radar/stock?ticker=${enc}&market=${mkt}`),
         // SECONDARY — must succeed
-        fetch(`/api/maker-radar/footprint?ticker=${enc}&days=30`),
+        fetch(`/api/maker-radar/footprint?ticker=${enc}&days=30&market=${mkt}`),
         // TERTIARY — predictions.db direct
-        fetch(`/api/predictions?ticker=${enc}&limit=10`),
+        fetch(`/api/predictions?ticker=${enc}&limit=10&market=${mkt}`),
         // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
         // شيلنا نداءات الـ sub-engine APIs الميتة:
         //   - /api/flow (compute_flow engine)
@@ -2536,9 +2541,10 @@ export function SpecialistAnalysisView() {
         //   - /api/stocks/${enc}/comprehensive (multiple sub-engines)
         //   - /api/stocks/${enc} (Python raw)
         // كل دي كانت بـ تعرض signals مختلفة. الـ unified API هو المصدر الوحيد.
+        // Sharia: EGX-only — no market param needed (per task description).
         fetch(`/api/sharia?symbol=${enc}`),
         // UNIFIED-API — canonical signal_ar / accumulation / money_flow / technical / prediction
-        fetch(`/api/stocks/${enc}/unified`),
+        fetch(`/api/stocks/${enc}/unified?market=${mkt}`),
       ]);
 
       const [radarRes, footprintRes, predRes, shariaRes, unifiedRes] = results;
@@ -2588,7 +2594,7 @@ export function SpecialistAnalysisView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentMarket]);
 
   const handleSearch = useCallback(() => {
     if (ticker.trim()) {
