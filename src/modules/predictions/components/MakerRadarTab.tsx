@@ -532,20 +532,12 @@ function resolveMaxSignals(path?: RadarPath | null): number | null {
 }
 
 // ============================================================================
-// Backtest / proof constants (from scripts/output/retroactive_radar_test_*.json)
-// These are static-shown metrics. Live values would require a separate API.
+// P0-3 FIX (RADAR-AUDIT-UI, 2026-10-07): PROOF_METRICS كانت قيم ثابتة static
+// تُعرَض كأنها live (precision=24.20%، recall=21.08%، avg_rr=0.014). هذا fabrication
+// مخالف لـ Rule 27 (NO-FAKE-DATA). القيم الحقيقية متاحة عبر /api/radar/accuracy.
+// تم تعطيل عرض القيم الثابتة + استبدالها بـ placeholder يحيل للـ API الكنسي.
 // ============================================================================
-const PROOF_METRICS = {
-  total_detections: 3265,
-  target_hits: 790,
-  precision: 24.20,
-  explosive_moves: 555,
-  detected_explosive: 117,
-  recall: 21.08,
-  avg_rr: 0.014,
-  lookforward: 10,
-  surge_threshold: 15,
-};
+const PROOF_METRICS_DEPRECATED = true; // flag: الواجهة تستخدم هذا لعرض placeholder
 
 // ============================================================================
 // Main Component
@@ -709,9 +701,9 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             : sig === 'BUY' ? 'شراء'
             : sig === 'STRONG_SELL' ? 'بيع قوي'
             : sig === 'SELL' ? 'بيع'
-            : sig === 'HOLD' ? 'احتفظ'
-            : sig === 'WAIT' ? 'انتظر'
-            : 'محايد';
+            : sig === 'HOLD' ? 'انتظار'  // P0-3: canonical-signal.ts يستخدم 'انتظار' لـ HOLD
+            : sig === 'WAIT' ? 'انتظار'
+            : '— بيانات غير متاحة';  // P0-3: لا 'محايد' الوهمي (Rule 27)
           map.set(ticker, {
             signal: sig,
             signal_ar: String(row.signal_ar || signal_ar),
@@ -2397,10 +2389,14 @@ const StockTable = memo(function StockTable({
       filterable: true,
       className: 'font-mono text-xs',
       render: (stock) => {
-        const liq = stock.buy_pct ?? 50;
-        const flowVal = stock.net_flow_egp && stock.net_flow_egp !== 0
+        // P0-4 FIX (RADAR-AUDIT-UI): أزلنا fabrication net_flow_egp بـ 3.5M fallback.
+        // القيمة الحقيقية من radar cache أو لا شيء (Rule 27 NO-FAKE-DATA).
+        const flowVal = (stock.net_flow_egp && stock.net_flow_egp !== 0)
           ? stock.net_flow_egp
-          : ((stock.avg_turnover_20d || 3500000) * ((liq - 50) / 100));
+          : null;
+        if (flowVal === null) {
+          return <span className="text-muted-foreground text-xs">—</span>;
+        }
         const sign = flowVal >= 0 ? '+' : '';
         const absVal = Math.abs(flowVal);
         const formatted = absVal >= 1e6 ? `${(absVal / 1e6).toFixed(1)}M` : `${(absVal / 1e3).toFixed(0)}K`;
@@ -2551,7 +2547,12 @@ const StockTable = memo(function StockTable({
       sortable: true,
       className: 'font-mono text-xs',
       render: (stock) => {
-        const adr = stock.range_10d_pct ? (stock.range_10d_pct / 2.8).toFixed(1) : '2.4';
+        // P0-3 FIX: أزلنا fabrication '2.4%' للتردد (Rule 27 NO-FAKE-DATA).
+        // التردد الحقيقي يحتاج حساب ATR من Python (canonical).
+        if (!stock.range_10d_pct) {
+          return <span className="text-muted-foreground font-mono">—</span>;
+        }
+        const adr = (stock.range_10d_pct / 2.8).toFixed(1);
         return <span className="text-muted-foreground font-mono">±{adr}%</span>;
       },
     },
@@ -2562,11 +2563,25 @@ const StockTable = memo(function StockTable({
       sortable: true,
       className: 'text-xs',
       render: (stock) => {
-        const expGain = Math.round(Math.max(8, (stock.volume_ratio_10d_vs_20d || 1) * 6 + (stock.range_10d_pct || 5)));
+        // P0-3 FIX (RADAR-AUDIT-UI): أزلنا fabrication expGain = Math.max(8, ...).
+        // المتوقع الحقيقي يأتي من prediction.target_price عبر unified API (Rule 73).
+        // لا نخترع +8% كحد أدنى — هذا قرار تداول محسوب client-side (مخالف Rule 20).
+        const pred = predictionForTicker(stock.ticker);
+        if (!pred?.target_price || !stock.current_price) {
+          return (
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-muted-foreground font-mono text-xs">—</span>
+              <span className="text-[9px] text-muted-foreground whitespace-nowrap">
+                راجع التوصية الرسمية
+              </span>
+            </div>
+          );
+        }
+        const expGain = ((pred.target_price - stock.current_price) / stock.current_price * 100);
         return (
           <div className="flex flex-col items-center leading-tight">
             <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">
-              +{expGain}%
+              +{expGain.toFixed(0)}%
             </span>
             <span className="text-[9px] text-muted-foreground whitespace-nowrap">
               خلال 7-14ي
@@ -2582,7 +2597,13 @@ const StockTable = memo(function StockTable({
       sortable: true,
       className: 'font-mono text-xs',
       render: (stock) => {
-        const trig = Number((stock.current_price * (1 + Math.max(0.012, (stock.range_10d_pct || 4) / 220))).toFixed(2));
+        // P0-3 FIX: أزلنا fabrication سعر التفعيل = price * (1 + Math.max(0.012, ...)).
+        // سعر التفعيل الحقيقي يأتي من prediction.entry_price عبر unified API.
+        const pred = predictionForTicker(stock.ticker);
+        const trig = pred?.entry_price ?? null;
+        if (trig === null) {
+          return <span className="font-mono text-muted-foreground">—</span>;
+        }
         return (
           <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
             {fmtNum(trig)}
@@ -2598,9 +2619,28 @@ const StockTable = memo(function StockTable({
       className: 'font-mono text-[10px]',
       render: (stock) => {
         const pred = predictionForTicker(stock.ticker);
-        const expGain = Math.round(Math.max(8, (stock.volume_ratio_10d_vs_20d || 1) * 6 + (stock.range_10d_pct || 5)));
-        const tPrice = pred?.target_price ?? Number((stock.current_price * (1 + expGain / 100)).toFixed(2));
-        const slPrice = pred?.stop_loss ?? Number((stock.current_price * 0.94).toFixed(2));
+        // P0-4 FIX (RADAR-AUDIT-UI): أزلنا fabrication tPrice = price*(1+expGain/100)
+        // و slPrice = price*0.94 عند غياب التوقع. الآن نعرض "— بيانات غير متاحة"
+        // بدل fabrication (Rule 27 NO-FAKE-DATA + Rule 73 SINGLE-DISPLAY-SOURCE).
+        const tPrice = pred?.target_price ?? null;
+        const slPrice = pred?.stop_loss ?? null;
+        if (tPrice === null || slPrice === null || !stock.current_price) {
+          return (
+            <div className="flex flex-col text-[10px] leading-tight font-mono">
+              <div className="flex gap-1 justify-between">
+                <span className="text-muted-foreground">هدف:</span>
+                <span className="text-muted-foreground">— بيانات غير متاحة</span>
+              </div>
+              <div className="flex gap-1 justify-between">
+                <span className="text-muted-foreground">وقف:</span>
+                <span className="text-muted-foreground">—</span>
+              </div>
+              <div className="text-[9px] text-muted-foreground text-center">
+                راجع التوصية الرسمية
+              </div>
+            </div>
+          );
+        }
         const rr = ((tPrice - stock.current_price) / Math.max(0.01, stock.current_price - slPrice)).toFixed(1);
         return (
           <div className="flex flex-col text-[10px] leading-tight font-mono">
@@ -2624,23 +2664,29 @@ const StockTable = memo(function StockTable({
       sortable: true,
       className: 'text-xs',
       render: (stock) => {
-        const liq = stock.buy_pct ?? 50;
-        const accum = stock.accumulation || '';
-        let actLabel = '👀 مراقبة';
-        let actCls = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300';
+        // P0-3 FIX (RADAR-AUDIT-UI): أزلنا fabrication "دخول فوري" / "اختراق وشيك".
+        // قرار التداول يجب أن يأتي من Python (Rule 20 Python=Brain) عبر unified API
+        // canonical.signal (Rule 73 SINGLE-DISPLAY-SOURCE). لا قرار تداول client-side.
+        const pred = predictionForTicker(stock.ticker);
         if (stock.kill_switch) {
-          actLabel = '⚠️ حذر';
-          actCls = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300';
-        } else if (stock.path === 'A_pre_surge' || (stock.volume_ratio_10d_vs_20d >= 1.4 && liq >= 60)) {
-          actLabel = 'دخول فوري';
-          actCls = 'bg-emerald-600 text-white border-emerald-500 font-bold shadow-sm';
-        } else if (stock.path === 'E_early_break' || (stock.range_10d_pct <= 10 && accum.includes('تجميع'))) {
-          actLabel = '⚡ اختراق وشيك';
-          actCls = 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300 font-medium';
+          return (
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300">
+              ⚠️ حذر
+            </Badge>
+          );
         }
+        // اعرض canonical signal من prediction (لو متوفر) بدل fabrication.
+        if (pred?.signal_ar) {
+          return (
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300">
+              {pred.signal_ar}
+            </Badge>
+          );
+        }
+        // لا توقع → لا قرار client-side. اعرض توجيه للـ canonical API.
         return (
-          <Badge variant="outline" className={`text-[10px] h-5 px-1.5 whitespace-nowrap ${actCls}`}>
-            {actLabel}
+          <Badge variant="outline" className="text-[10px] h-5 px-1.5 whitespace-nowrap bg-muted text-muted-foreground border-border">
+            راجع التوصية الرسمية
           </Badge>
         );
       },
@@ -3440,6 +3486,11 @@ function FundamentalField({ label, value }: { label: string; value: string | nul
 function ProofSection() {
   const [open, setOpen] = useState(false);
 
+  // P0-3 FIX (RADAR-AUDIT-UI): PROOF_METRICS كانت قيم ثابتة (precision=24.20%،
+  // recall=21.08%، avg_rr=0.014) تُعرَض كأنها live. هذا fabrication مخالف لـ
+  // Rule 27 (NO-FAKE-DATA). القيم الحقيقية متاحة عبر /api/radar/accuracy.
+  // تم استبدال القسم الثابت بـ placeholder يحيل للـ API الكنسي.
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <Card className="overflow-hidden">
@@ -3451,13 +3502,13 @@ function ProofSection() {
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">إثباتات دقة الرادار</div>
-                <div className="text-xs text-muted-foreground">نتائج الاختبار الرجعي — شفافية كاملة</div>
+                <div className="text-xs text-muted-foreground">القيم الحقيقية متاحة عبر API الدقة</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs hidden sm:inline-flex">
+              <Badge variant="outline" className="text-xs hidden sm:inline-flex bg-amber-50 text-amber-700 border-amber-300">
                 <Award className="h-3 w-3 ml-1" />
-                Recall {PROOF_METRICS.recall.toFixed(1)}%
+                بيانات حقيقية مطلوبة
               </Badge>
               <ChevronLeft className={`h-4 w-4 text-muted-foreground transition-transform ${open ? '-rotate-90' : ''}`} />
             </div>
@@ -3466,71 +3517,39 @@ function ProofSection() {
 
         <CollapsibleContent>
           <div className="p-3 md:p-4 pt-0 space-y-3 border-t border-border/50">
-            {/* 4 metric cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3">
-              <ProofMetricCard
-                icon={<Crosshair className="h-4 w-4" />}
-                label="Recall"
-                value={`${PROOF_METRICS.recall.toFixed(1)}%`}
-                sub={`${PROOF_METRICS.detected_explosive} من ${PROOF_METRICS.explosive_moves}`}
-                accent="emerald"
-              />
-              <ProofMetricCard
-                icon={<Target className="h-4 w-4" />}
-                label="Precision"
-                value={`${PROOF_METRICS.precision.toFixed(1)}%`}
-                sub={`${PROOF_METRICS.target_hits} من ${PROOF_METRICS.total_detections}`}
-                accent="blue"
-              />
-              <ProofMetricCard
-                icon={<Clock className="h-4 w-4" />}
-                label="نافذة الاختبار"
-                value={`${PROOF_METRICS.lookforward} أيام`}
-                sub={`عتبة ${PROOF_METRICS.surge_threshold}%`}
-                accent="amber"
-              />
-              <ProofMetricCard
-                icon={<BarChart3 className="h-4 w-4" />}
-                label="متوسط R:R"
-                value={PROOF_METRICS.avg_rr.toFixed(2)}
-                sub="عبر كل التوقعات"
-                accent="rose"
-              />
-            </div>
-
-            {/* mini bar chart — explosive caught vs missed */}
-            <Card className="p-3">
-              <div className="text-xs font-semibold mb-2">الانفجارات المكتشفة مقابل الفائتة</div>
-              <ExplosiveBarChart
-                detected={PROOF_METRICS.detected_explosive}
-                total={PROOF_METRICS.explosive_moves}
-              />
-            </Card>
-
-            {/* Summary text */}
-            <div className="bg-muted/30 rounded-md p-3 text-xs leading-relaxed text-muted-foreground">
-              <p>
-                الرادار اكتشف <span className="font-bold text-foreground">{PROOF_METRICS.detected_explosive} سهم</span> من أصل{' '}
-                <span className="font-bold text-foreground">{PROOF_METRICS.explosive_moves} انفجار</span> في فترة الاختبار الرجعي
-                ({PROOF_METRICS.recall.toFixed(1)}% recall)، من أصل{' '}
-                <span className="font-bold text-foreground">{PROOF_METRICS.total_detections} كشف</span> إجمالي للرادار
-                ({PROOF_METRICS.precision.toFixed(1)}% precision).
+            {/* P0-3: placeholder بدل القيم الثابتة الوهمية */}
+            <div className="mt-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <span className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                  القيم الحقيقية متاحة عبر API الدقة
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                كانت تُعرَض هنا قيم ثابتة (precision=24.20%، recall=21.08%، avg_rr=0.014)
+                كأنها نتائج حية — وهذا مخالف لقاعدة &quot;لا بيانات وهمية&quot;.
+                القيم الحقيقية تُحسَب من predictions.db عبر:
               </p>
-              <p className="mt-2 text-[11px]">
-                الأرقام من الاختبار الرجعي على بيانات EGX التاريخية — يتم تحديثها دورياً.
+              <code className="block text-[10px] font-mono bg-card border border-border rounded p-2 text-emerald-700 dark:text-emerald-400 mb-2" dir="ltr">
+                GET /api/radar/accuracy?market=EGX&amp;days=90
+              </code>
+              <p className="text-[10px] text-muted-foreground">
+                (P0-3 RADAR-AUDIT-UI — Rule 27 NO-FAKE-DATA + Rule 73 SINGLE-DISPLAY-SOURCE)
               </p>
             </div>
-
-            <Button variant="outline" size="sm" className="w-full" disabled>
-              <Award className="h-4 w-4 ml-1" />
-              شاهد التفاصيل الكاملة (قريباً)
-            </Button>
           </div>
         </CollapsibleContent>
       </Card>
     </Collapsible>
   );
 }
+
+// ─── ORPHAN CODE (P0-3 RADAR-AUDIT-UI — kept for reference, no longer used) ───
+// ProofMetricCard + ExplosiveBarChart كانت تُستخدم في ProofSection القديم
+// الذي عرض PROOF_METRICS الثابتة. مع تعطيل القيم الثابتة (Rule 27)،
+// لم يعدا يُستخدمان. يُحتفظ بهما للتوثيق (VERIFY-BEFORE-DELETE).
+// لإعادة التفعيل: اجلب القيم الحقيقية من /api/radar/accuracy بدل الثوابت.
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface ProofMetricCardProps {
   icon: React.ReactNode;

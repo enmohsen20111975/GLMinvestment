@@ -1,9 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRadarDb, getRadarDbConfig, parseVolume } from '@/modules/radar/lib/radar-db';
+
+/**
+ * GET /api/maker-radar/footprint?ticker=X&days=30
+ * ===============================================================================
+ *
+ * ⚠️ DISABLED — P0-5 FIX (RADAR-AUDIT-TS B-footprint, 2026-10-07)
+ * ===============================================================================
+ *
+ * هذا الـ route كان يستخدم **NAIVE 70/30 split** بناءً على لون الشمعة
+ * (close > open → 70% شراء) — وهو **NOT real order flow**. سهم أخضر 1%
+ * يوميًا يظهر دائمًا 70% شراء بغض النظر عن الفعل الفعلي.
+ *
+ * هذا يخدع المستخدم بأنه "real order flow" بينما هو تقسيم ثابت وهمي.
+ * مخالف لـ Rule 27 (NO-FAKE-DATA) + Rule 73 (SINGLE-DISPLAY-SOURCE).
+ *
+ * Canonical replacement:
+ *   GET /api/flow/[ticker]  ←  Python `shared_liquidity.compute_money_flow`
+ *   (CLV-5d + CMF-20d + vol_confirmation — حساب سيولة حقيقي)
+ *
+ * الكود القديم محفوظ كـ comment أسفل للتوثيق (VERIFY-BEFORE-DELETE).
+ * لإعادة التفعيل: احذف هذا الـ early-return + استرجع الكود من comment.
+ */
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const ticker = (url.searchParams.get('ticker') || '').toUpperCase();
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'endpoint_deprecated',
+      error_ar: 'هذا المسار معطّل — كان يستخدم تقسيم 70/30 وهمي وليس order flow حقيقي.',
+      deprecated: true,
+      canonical_route: `/api/flow/${encodeURIComponent(ticker)}`,
+      canonical_route_hint:
+        'استخدم /api/flow/[ticker] للحصول على money flow حقيقي من Python compute_money_flow (CLV + CMF + vol_confirmation).',
+      reason: 'P0-5: 70/30 naive split violates Rule 27 (NO-FAKE-DATA) + Rule 73 (SINGLE-DISPLAY-SOURCE).',
+      fix_date: '2026-10-07',
+    },
+    { status: 410 } // 410 Gone — permanently removed
+  );
+}
+
+/* ───────────────────────── DISABLED CODE (kept for documentation) ─────────────────────────
+ * P0-5 RADAR-AUDIT: الكود التالي معطّل لأنه يستخدم 70/30 split وهمي.
+ *
+import { getRadarDb, getRadarDbConfig, parseVolume } from '@/modules/radar/lib/radar-db';
+
+export async function GET_DISABLED(req: NextRequest) {
   const url = new URL(req.url);
   const ticker = (url.searchParams.get('ticker') || '').toUpperCase();
   const days = parseInt(url.searchParams.get('days') || '30', 10);
@@ -39,6 +85,7 @@ export async function GET(req: NextRequest) {
           if (overlap > 0) {
             const v = parseVolume(p.volume) * (overlap / barRange);
             volume += v;
+            // ⚠️ BUG: 70/30 naive split — NOT real order flow (P0-5)
             if (p.close > p.open) { buyVol += v * 0.7; sellVol += v * 0.3; }
             else if (p.close < p.open) { buyVol += v * 0.3; sellVol += v * 0.7; }
             else { buyVol += v * 0.5; sellVol += v * 0.5; }
@@ -48,7 +95,6 @@ export async function GET(req: NextRequest) {
       levels.push({ price_low: low, price_high: high, price_mid: mid, volume: Math.round(volume), buy_volume: Math.round(buyVol), sell_volume: Math.round(sellVol), delta: Math.round(buyVol - sellVol), volume_pct: 0, is_poc: false, is_value_area: false });
     }
 
-    // Find POC + VAH/VAL
     const pocIdx = levels.reduce((max, l, i, arr) => l.volume > arr[max].volume ? i : max, 0);
     levels[pocIdx].is_poc = true;
     const totalVol = levels.reduce((s, l) => s + l.volume, 0);
@@ -83,3 +129,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   }
 }
+───────────────────────────────────────────────────────────────────────── */
