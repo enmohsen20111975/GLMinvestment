@@ -157,11 +157,26 @@ class NewsAgent:
         self.store.mark_sent(sent_ids)
 
         # 2. نشر على منصات التواصل (تيليجرام) للأخبار المؤثرة وذات الصلة بالأسهم
+        # ─── TELEGRAM-FILTER (Task PHASE-2-COMPLETE-2026-10-07) ────────────────
+        # العميل اشتكى إن الأخبار بتيجي على التليجرام بكميات كبيرة (80+ رسالة في كل مرة).
+        # الفلتر الجديد:
+        #   (أ) EGX فقط: mkt='EGX' (مش news عامة)
+        #   (ب) درجة أهمية عالية: importance >= 70 (مش 50/60)
+        #   (ج) لازم يكون فيه tickers مرتبطة (فيه EGX stock)
+        #   (د) حد أقصى 10 رسائل لكل batch (لو cron كل 5 دقايق = ~80 رسالة/يوم كحد أقصى)
         social_platforms = [p.strip() for p in os.getenv('SOCIAL_PLATFORMS', 'telegram').split(',') if p.strip()]
         if not social_platforms:
             console.print('[dim]  ↳ النشر الاجتماعي متوقف لهذا الوكيل[/dim]')
             return sent
 
+        # Config للفلتر (env-driven، تقدر تـ override)
+        TG_MIN_IMPORTANCE = int(os.getenv('TG_MIN_IMPORTANCE', '70'))
+        TG_REQUIRE_TICKERS = os.getenv('TG_REQUIRE_TICKERS', '1').lower() in ('1', 'true', 'yes', 'on')
+        TG_MARKET_FILTER = os.getenv('TG_MARKET_FILTER', 'EGX').upper()
+        TG_MAX_PER_BATCH = int(os.getenv('TG_MAX_PER_BATCH', '10'))
+
+        # فلترة الأخبار المؤهلة للنشر على التليجرام
+        tg_eligible = []
         for item in valid_items[:sent]:
             raw_analysis = item.get('raw_analysis', '{}')
             if isinstance(raw_analysis, str):
@@ -173,7 +188,11 @@ class NewsAgent:
             importance = raw_analysis.get('importance', item.get('importance', 0))
             is_catalyst = bool(raw_analysis.get('is_catalyst') or item.get('is_catalyst'))
 
-            # استخراج الأسهم المرتبطة
+            # (أ) درجة الأهمية: لازم >= TG_MIN_IMPORTANCE (default 70)
+            if importance < TG_MIN_IMPORTANCE:
+                continue
+
+            # (ب) لازم يكون فيه tickers مرتبطة (لها صلة بأسهم EGX)
             item_tickers = item.get('tickers')
             if isinstance(item_tickers, str):
                 try:
@@ -183,8 +202,43 @@ class NewsAgent:
             if not item_tickers and raw_analysis.get('tickers'):
                 item_tickers = raw_analysis.get('tickers', [])
 
-            # شروط النشر على تيليجرام
-            should_publish = is_catalyst or importance >= 60 or (item_tickers and importance >= 50)
+            if TG_REQUIRE_TICKERS and not item_tickers:
+                continue
+
+            # (ج) فلتر السوق: خبر EGX فقط (default)
+            item_market = (item.get('market') or '').upper()
+            if TG_MARKET_FILTER and item_market and item_market != TG_MARKET_FILTER:
+                continue
+
+            tg_eligible.append({
+                'item': item,
+                'raw_analysis': raw_analysis,
+                'importance': importance,
+                'is_catalyst': is_catalyst,
+                'tickers': item_tickers,
+            })
+
+        # (د) حد أقصى 10 رسائل لكل batch — عشان التليجرام ما يغرقش
+        # لو فيه catalyst قوي (importance >= 85) → له الأولوية
+        tg_eligible.sort(key=lambda x: -x['importance'])
+        tg_to_publish = tg_eligible[:TG_MAX_PER_BATCH]
+
+        if not tg_to_publish:
+            console.print(f'[dim]  ↳ مفيش أخبار جاية معايير التليجرام (EGX + importance≥{TG_MIN_IMPORTANCE} + tickers) — تخطّي النشر[/dim]')
+            return sent
+
+        console.print(f'[cyan]  📢 {len(tg_to_publish)} خبر مؤهل للتليجرام (من {len(valid_items[:sent])} تم تحليلهم) — importance≥{TG_MIN_IMPORTANCE}, market={TG_MARKET_FILTER}[/cyan]')
+
+        for entry in tg_to_publish:
+            item = entry['item']
+            raw_analysis = entry['raw_analysis']
+            is_catalyst = entry['is_catalyst']
+            item_tickers = entry['tickers']
+            importance = entry['importance']
+
+            # (تم استخراج tickers + is_catalyst + importance فوق في الـ filter)
+            # شروط النشر على تيليجرام (كلها اتطمنت في الفلتر فوق، بس نتأكد)
+            should_publish = is_catalyst or importance >= TG_MIN_IMPORTANCE
             if should_publish:
                 try:
                     item_to_publish = dict(item)
@@ -197,11 +251,11 @@ class NewsAgent:
 
                     links = await self.social.publish(item_to_publish, platforms=social_platforms)
                     self.store.save_published_links(item['id'], links)
-                    console.print(f"[bold cyan]  📢 تم نشر الخبر على تيليجرام: {item.get('title', '')[:40]}...[/bold cyan]")
+                    console.print(f"[bold cyan]  📢 [{importance}/100] نُشر على تليجرام: {item.get('title', '')[:40]}...[/bold cyan]")
                 except Exception as e:
                     log.warning(f"Social publish error for {item['id']}: {e}")
 
-        console.print(f"[green]  ✓ تم إرسال {sent} خبر[/green]")
+        console.print(f"[green]  ✓ تم نشر {len(tg_to_publish)} خبر على التليجرام (من {sent} تم إرسالهم للموقع)[/green]")
         return sent
 
     def _state_file(self) -> Path:

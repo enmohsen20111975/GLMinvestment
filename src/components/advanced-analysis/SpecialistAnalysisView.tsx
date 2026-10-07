@@ -74,6 +74,11 @@ import {
 import { toast } from 'sonner';
 import { OFFICIAL_LINKS_BLOCK } from '@/modules/publishing/lib/official-links';
 import { useAppStore, MARKET_NAMES_AR } from '@/lib/store';
+// ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
+// قبل كده: كان فيه labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8
+// غير موجودة في canonical → نتائج متضاربة مع الرادار + تفاصيل السهم.
+// الحل: استيراد classifyAccumulation من canonical-signal.ts
+import { classifyAccumulation } from '@/lib/canonical-signal';
 import { StockPublisher } from '@/modules/publishing/components/StockPublisher';
 
 // ============================================================================
@@ -938,10 +943,20 @@ function LiquidityFootprintSection({ data }: { data: FootprintData | null }) {
           <div className="text-center">
             <p className={`text-4xl font-bold ${ratioColor}`}>{ratio != null ? ratio.toFixed(2) : '—'}</p>
             <p className="text-xs text-muted-foreground mt-1">
+              {/* ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ─────────── */}
+              {/* قبل كده: كان labels "ضغط شرائي قوي/ضغط بيعي قوي" بـ thresholds 1.2/0.8 */}
+              {/* الحل: نحسب buy_pct من buyVol/sellVol ونستخدم canonical classifyAccumulation */}
               {ratio == null ? '—'
-                : ratio >= 1.2 ? '✓ ضغط شرائي قوي'
-                : ratio <= 0.8 ? '⚠ ضغط بيعي قوي'
-                : 'توازن نسبي بين البائعين والمشترين'}
+                : (() => {
+                    const bV = Number(buyVol || 0);
+                    const sV = Number(sellVol || 0);
+                    const buyPct = (bV + sV) > 0 ? (bV / (bV + sV)) * 100 : null;
+                    const label = classifyAccumulation(buyPct);
+                    const isAccum = label.includes('تجميع');
+                    const isDist = label.includes('تصريف');
+                    return isAccum ? `✓ ${label}` : isDist ? `⚠ ${label}` : label;
+                  })()
+              }
             </p>
           </div>
           <div className="mt-2">

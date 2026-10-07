@@ -8,6 +8,11 @@ import { StockDetail } from './StockDetail';
 import { ShareButton } from '@/components/share/ShareButton';
 import { TreasuryBondsView } from './TreasuryBondsView';
 import { cn, safeNum } from '@/lib/utils';
+// ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────────────
+// قبل كده: overbought/oversold كانوا بـ يتحسبوا client-side بـ RSI thresholds
+// 70/30 → نتائج متضاربة مع canonical signal classification.
+// الحل: نعرض الـ signal الصريح من الـ DB (ولو NULL → "—").
+import { signalAr } from '@/lib/canonical-signal';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -1548,25 +1553,10 @@ export function StocksView() {
               </span>
             );
           }
-          // fallback: compute from RSI + MA50 + MA200 if available
-          const rsi = Number(row.rsi ?? 0);
-          const ma50 = Number(row.ma_50 ?? 0);
-          const ma200 = Number(row.ma_200 ?? 0);
-          const price = Number(row.current_price ?? 0);
-          if (rsi > 0 && price > 0 && ma50 > 0 && ma200 > 0) {
-            if (rsi >= 70) {
-              return <span className="inline-block text-[10px] px-2 py-0.5 rounded font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{t('stocks.signal.overbought')}</span>;
-            }
-            if (rsi <= 30) {
-              return <span className="inline-block text-[10px] px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{t('stocks.signal.oversold')}</span>;
-            }
-            if (ma50 > ma200 && price > ma50) {
-              return <span className="inline-block text-[10px] px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{t('stocks.signal.bullish')}</span>;
-            }
-            if (ma50 < ma200 && price < ma50) {
-              return <span className="inline-block text-[10px] px-2 py-0.5 rounded font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{t('stocks.signal.bearish')}</span>;
-            }
-          }
+          // ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67) ───────────
+          // قبل كده: كان فيه client-side fallback بـ RSI thresholds 70/30 + MA50/MA200
+          // → نتائج متضاربة مع canonical signal classification.
+          // الحل: لو signal من DB موجود → نعرضه. لو NULL → "—" (لا fabrication).
           return <span className="text-muted-foreground">—</span>;
         },
       },

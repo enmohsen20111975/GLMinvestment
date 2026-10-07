@@ -200,36 +200,55 @@ function calcBollingerBands(
   return { upper, middle, lower };
 }
 
+// ─── CANONICAL-CALCULATIONS (Task CALC-DUP-1, Rule 67: CALCULATION-CANONICAL) ─
+// قبل كده: RSI كان بـ SMA (Simple Moving Average) — خطأ رياضي.
+// Rule 67 canonical: Wilder's smoothing
+//   avg_gain[i] = (avg_gain[i-1] * (period-1) + gain[i]) / period
+//   avg_loss[i] = (avg_loss[i-1] * (period-1) + loss[i]) / period
+// الفرق: ~10-20 نقطة في قيمة RSI → نفس السهم بـ يطلع قيم مختلفة على chart vs stock detail.
+// الحل: استخدام Wilder's smoothing المطابق للـ Python canonical (analyzers/indicators/rsi.py)
 function calcRSI(data: number[], period: number = 14): (number | null)[] {
   const result: (number | null)[] = [];
-  const changes: number[] = [];
-  
-  for (let i = 1; i < data.length; i++) {
-    changes.push(data[i] - data[i - 1]);
+
+  if (data.length < period + 1) {
+    return data.map(() => null);
   }
-  
-  for (let i = 0; i < data.length; i++) {
-    if (i < period) {
-      result.push(null);
-      continue;
-    }
-    
-    let gainSum = 0;
-    let lossSum = 0;
-    
-    for (let j = i - period; j < i; j++) {
-      const change = changes[j] || 0;
-      if (change > 0) gainSum += change;
-      else lossSum += Math.abs(change);
-    }
-    
-    const avgGain = gainSum / period;
-    const avgLoss = lossSum / period;
+
+  // Step 1: حساب الـ gains + losses لكل فترة
+  const gains: number[] = [0];
+  const losses: number[] = [0];
+  for (let i = 1; i < data.length; i++) {
+    const change = data[i] - data[i - 1];
+    gains.push(change > 0 ? change : 0);
+    losses.push(change < 0 ? -change : 0);
+  }
+
+  // Step 2: أول قيمة avgGain/avgLoss = SMA بسيط (seed)
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 1; i <= period; i++) {
+    avgGain += gains[i];
+    avgLoss += losses[i];
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  // أول قيمة RSI بتتحط عند index = period
+  for (let i = 0; i < period; i++) {
+    result.push(null);
+  }
+
+  // Step 3: Wilder's smoothing للباقي
+  for (let i = period + 1; i < data.length; i++) {
+    // Wilder's: avg = (prev_avg * (period-1) + current) / period
+    avgGain = (avgGain * (period - 1) + gains[i]) / period;
+    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+
     const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-    const rsi = 100 - (100 / (1 + rs));
+    const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
     result.push(rsi);
   }
-  
+
   return result;
 }
 
