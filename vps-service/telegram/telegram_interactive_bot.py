@@ -81,6 +81,15 @@ def load_env():
 load_env()
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@Arabian_investment_guide").strip()
+
+# ─── ADMIN-TELEGRAM-BYPASS (Task DEEP-AUDIT-FIX, Rule 50 + Rule 72) ────────
+# قبل كده: البوت كان بـ يطلب من الأدمن يسجّل + يربط حسابه رغم إنه المالك.
+# السبب: check_subscription() بـ يتحقق من user_telegram_links table — لو
+# الـ chat_id مش متسجل هناك، البوت بيرفض الدخول حتى لو كان الأدمن نفسه.
+# الحل: قائمة ADMIN_TELEGRAM_IDS من env vars — أي chat_id فيها بـ يدخل مباشرة.
+ADMIN_TELEGRAM_IDS = set(
+    tid.strip() for tid in os.environ.get("ADMIN_TELEGRAM_IDS", "").split(",") if tid.strip()
+)
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PLATFORM_URL = "https://invist.m2y.net"
 
@@ -667,6 +676,22 @@ def check_subscription(chat_id: int) -> dict:
     """
     اسأل الموقع هل الـ chat_id ده مربوط بحساب + هل الحساب مدفوع/في trial نشطة (7 أيام).
     """
+    # ─── ADMIN-TELEGRAM-BYPASS (Task DEEP-AUDIT-FIX, Rule 50) ──────────────
+    # لو chat_id في قائمة ADMIN_TELEGRAM_IDS → ادخل مباشرة بدون أي فحص.
+    if str(chat_id) in ADMIN_TELEGRAM_IDS:
+        log.info(f"[ADMIN-BYPASS] chat_id={chat_id} is in ADMIN_TELEGRAM_IDS — granting full access")
+        return {
+            "linked": True,
+            "user_id": "admin",
+            "subscription_tier": "admin",
+            "is_paid": True,
+            "is_trial_active": True,
+            "days_left": 999,
+            "trial_ends_at": None,
+            "display_name": "المالك / الأدمن",
+            "_admin_bypass": True,
+        }
+
     if not BOT_API_SECRET:
         log.warning("BOT_API_SECRET is empty — subscription gate disabled (fail-open)")
         return {"linked": False, "is_paid": True, "_fail_open": True}
