@@ -67171,3 +67171,22 @@ Stage Summary:
 - Footer sticky-bottom fixed (redundant min-h-screen removed)
 - 1 ملف مُعدّل: src/app/page.tsx
 - Phase 5 complete. All 5 phases done.
+
+---
+Task ID: PHASE5-SCREENS-P1 (المدير العام — RSI dedup)
+Agent: المدير العام (Z.ai Code)
+Task: P1 cleanup — TradingViewChart local calcRSI → canonical import
+
+Work Log:
+- أضفت computeRSISeries لـ src/lib/canonical-rsi.ts (Wilder's smoothing time-series للرسم)
+- أزلت local calcRSI من TradingViewChart.tsx (44 LOC duplicate) → استبدلت بـ import from @/lib/canonical-rsi
+- calcATR تركتها محلية (P2: تحتاج canonical-atr.ts منفصل)
+
+Verification:
+- ✅ canonical-rsi.ts: computeRSISeries added
+- ✅ TradingViewChart.tsx: calcRSI imported from canonical (not local)
+- ✅ Lint: 0 errors
+
+Stage Summary:
+- 1 duplicate removed (44 LOC)
+- Rule 67 (CALCULATION-CANONICAL) + Rule 72 (UNIFIED-DATA-CONTRACT) مُحترمة
