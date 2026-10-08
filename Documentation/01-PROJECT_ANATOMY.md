@@ -881,11 +881,10 @@ GLMinvestment/                              # ← PROJECT ROOT
 │   │   ├── auth.db                          # Prisma-managed (User, Session, Account)
 │   │   ├── analytics.db                     # persona / scoring cache
 │   │   ├── learned.db                       # learning engine weights
-│   │   ├── news.db / community.db / telegram_data.db  # sentiment
+│   │   ├── news.db / community.db            # sentiment
 │   │   ├── intraday.db                      # intraday OHLC (aggregated → price_history)
 │   │   ├── gold_prices.db / silver_prices.db
 │   │   ├── crypto.db / crypto-lab.db / crypto_learning.db
-│   │   ├── exchange_rates.db / ai_search_cache.db
 │   │   └── (17 DBs total — full inventory in §3)
 │   └── schemas/                             # SQL schema definitions + migrations
 │

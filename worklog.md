@@ -66036,3 +66036,66 @@ Stage Summary:
   IMPORTANT (15): historical, gold_prices, market, learned, egypt_stocks, production_snapshot, paper_trading, finance, decision_log, crypto_learning, crypto_disclosures, content, community, analytics, unified_stocks
 - تم استبعاد 8 DBs (false positives = متغيرات كود / Python modules / orphaned)
 - القاعدة المطبّقة: بس الـ DBs اللي بـ تتعمل ليها reference كـ "مسار ملف فعلي" في الكود الحي.
+
+---
+Task ID: DB-TRACE-ERADICATION
+Agent: Main Agent (Z.ai Code)
+Task: محو أثر الـ 8 orphaned DBs من كل مكان في المشروع (basic.db, egx_investment.db, ai_search_cache.db, radarData.db, prediction_tracker.db, live_journal.db, telegram_data.db, core.db).
+
+Work Log:
+- بحث شامل عن كل mention للـ 8 orphaned DBs في كل الملفات (باستثناء node_modules, .git, .next, archive, backups).
+- اكتشاف 27 ملف فيهم mentions. تصنيفهم:
+  • كود حي (4 ملفات): كلها false positives - Python/JS attribute access (object.xxx) مش ملفات فعلية
+  • migration scripts قديمة (14 ملف): scripts/migrate-*.ts, scripts/fix-vps-db-complete.py, scripts/clean-databases.sh, scripts/compare_all_dbs.py, scripts/diagnose-db.ts, scripts/analyze-stocks*.ts, scripts/live_journal.py
+  • schemas قديمة (2 ملف): db/schemas/02_egx_investment_db_schema.sql, db/schemas/README.md
+  • migration log (1 ملف): db/migration_log.json (636 سطر، سجل تاريخي)
+  • Documentation (3 ملفات): 01-PROJECT_ANATOMY.md, 00-CONSTITUTION.md
+  • worklog (1 ملف): سجل العمل (مسموح)
+  • archive (2 ملف): restore_from_local.py, restore_dbs.py (مسموح، مؤرشف)
+- التحقق إن مفيش أي reference للـ migration scripts في package.json/cron/ecosystem.config.js → كلها orphaned.
+- حذف 14 migration script قديم (إجمالي ~7750 سطر كود ميت):
+  • scripts/migrate-from-egx-investment.ts (646)
+  • scripts/migrate_to_4_dbs.py (366)
+  • scripts/migrate-databases.ts (1552)
+  • scripts/migrate-v2.ts (426)
+  • scripts/migrate-to-unified-db.ts (1212)
+  • scripts/vps-migrate-big-dbs.ts (803)
+  • scripts/migrate-price-history.ts (310)
+  • scripts/fix-vps-db-complete.py (902)
+  • scripts/clean-databases.sh (680)
+  • scripts/compare_all_dbs.py (70)
+  • scripts/diagnose-db.ts (218)
+  • scripts/analyze-stocks.ts (108)
+  • scripts/analyze-stocks2.ts (25)
+  • scripts/live_journal.py (454)
+- حذف db/schemas/02_egx_investment_db_schema.sql + db/schemas/README.md + مجلد db/schemas الفاضي.
+- حذف db/migration_log.json (سجل تاريخي قديم 15K).
+- تنظيف vps-service/utils/db_paths.py:
+  • حذف alias TELEGRAM_DATA_DB (مش مستخدم بره db_paths.py)
+  • حذف alias AI_SEARCH_CACHE_DB (مش مستخدم بره db_paths.py)
+  • تنظيف comments "was xxx.db" من COMMUNITY_DB, CRYPTO_LEARNING_DB, NEWS_DB
+- تنظيف src/lib/sqlite-admin.ts: حذف قسم "تم استبعادها" بالكامل (مفيش داعي للتوثيق السلبي).
+- تنظيف scripts/db-inventory-recover.ts: حذف comment الـ "تم استبعادها".
+- تنظيف Documentation/01-PROJECT_ANATOMY.md:
+  • حذف telegram_data.db من الـ tree diagram (line 884)
+  • حذف exchange_rates.db / ai_search_cache.db (line 888)
+- تنظيف Documentation/00-CONSTITUTION.md:
+  • حذف telegram_data.db و ai_search_cache.db من قائمة الـ secondary DBs (line 777)
+  • حذف egx_investment.db من قائمة الممنوعات (line 784)
+- التحقق النهائي: grep أكد إن الـ mentions المتبقية كلها:
+  • false positives (JS/Python attribute access: radarData.db_source, self.prediction_tracker.db_path)
+  • worklog.md (سجل العمل - مسموح)
+  • archive/ (مؤرشف - مسموح)
+- Lint passed. Dev server HTTP 200. Inventory: 24/24 DB سليمة.
+
+Stage Summary:
+- تم محو أثر الـ 8 orphaned DBs من كل مكان في المشروع:
+  • 14 migration script قديم محذوفة (~7750 سطر كود ميت)
+  • 3 ملفات schemas/logs محذوفة
+  • 2 alias ملغى في db_paths.py
+  • 4 mentions منقحة في Documentation
+  • comments سلبية محذوفة من sqlite-admin.ts + db-inventory-recover.ts
+- النتيجة: مفيش أي reference للـ orphaned DBs في الكود الحي. كل ما بقي:
+  • false positives (attribute access بنفس الاسم بالصدفة)
+  • سجل العمل (worklog.md)
+  • ملفات مؤرشفة (archive/)
