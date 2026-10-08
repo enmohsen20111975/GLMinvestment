@@ -12,7 +12,6 @@ export { LiveDashboardWidget, HeartbeatStatusBar, WhaleAlertListener } from './c
 export { AlertPanel } from './components/AlertPanel';
 export { HistoricalTradesTable } from './components/HistoricalTradesTable';
 export { MarketDepthLiquidityWidget } from './components/MarketDepthLiquidityWidget';
-export { AnalysisFlowDiagram } from './components/AnalysisFlowDiagram';
 export { ExpertRecommendationsPanel } from './components/ExpertRecommendationsPanel';
 export { LearnedLessonsDashboard } from './components/LearnedLessonsDashboard';
 
