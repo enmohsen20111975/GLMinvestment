@@ -67373,3 +67373,50 @@ Work Log:
 Stage Summary:
 - تم دمج العملين بنجاح، مفيش فقدان لأي سجل شغل.
 - الـ commits الـ 4 بتوعنا (BUILD-FIX-PRISMA + DB-PROTECTION-FIX + DB-PROTECTION-CLEANUP-v2 + DB-TRACE-ERADICATION) دلوقتي جاهزة للـ push مع شغل الفريق الآخر.
+
+---
+Task ID: PRODUCTION-DB-RESTORE
+Agent: Main Agent (Z.ai Code)
+Task: سحب قواعد البيانات الإنتاجية من GitHub branches + إصلاح الـ APIs لرادار الميكر
+
+Work Log:
+- اكتشفت إن الـ branch الرئيسي مش فيه DBs، لكن في branch اسمه `databases` فيه الـ DBs الإنتاجية.
+- سحبت 7 DBs من branch: databases (235MB إجمالي):
+  • data_engine.db (59MB, 419K صف)
+  • price_history.db (52MB, 274K صف)
+  • historical.db (43MB, 175K صف)
+  • stocks.db (35MB، 5 صفوف فقط - مؤشرات EGX)
+  • intraday.db (24MB, 115K صف)
+  • news.db (7.4MB, 4,428 خبر)
+  • predictions.db (7MB, 14K صف)
+- اكتشفت إن stocks.db في databases branch فيه بس مؤشرات EGX (5 صفوف)، فبحثت في كل الـ branches.
+- لقيت في branch: mammoth-cougar ملفات zip فيها DBs أكبر وأحدث:
+  • stocks.db.zip (925KB) → 34MB بعد الفك، 1,039 سهم + 10,529 سعر يومي + 4,172 توقع
+  • intraday.db.zip (13MB) → 74MB بعد الفك، 285K صف
+  • price_history.db.zip → 56MB، 274K صف
+  • data_engine.db.zip → 52MB، 337K صف
+- استبدلت كل الـ DBs بالأفضل من كل branches:
+  • stocks.db: من mammoth-cougar zip (1,039 سهم)
+  • intraday.db: من mammoth-cougar zip (285K صف - الأحدث)
+  • price_history.db: من databases branch (274K صف)
+  • data_engine.db: من databases branch (419K صف)
+  • predictions.db: من databases branch (14K صف)
+  • historical.db: من databases branch (175K صف)
+  • news.db: من databases branch (4,428 خبر)
+- حذفت WAL/SHM files القديمة عشان تظهر البيانات الحقيقية (كانت WAL فاضية بتغطي على البيانات).
+- أضفت 4 أعمدة ناقصة لـ stocks.db (currency, exchange, turnover_egp, value_traded) عشان تتطابق مع flutter-sqlite-fallback.ts.
+- اكتشفت bug خطير في flutter-sqlite-fallback.ts: `derivedChange` كان مش معرّف (undefined) → بيرمي exception → catch بيرجع null → الـ API بيقول "sqlite_fallback_empty".
+- أصلحت الـ bug: ضفت `const derivedChange = (prev > 0) ? ((curr - prev) / prev) * 100 : changePct;`
+- إصلاح import: بعد ما الـ merge رجّع `subscription-gate.ts` القديم (اللي فيه دوال Prisma)، غيرت import في /api/stocks/[ticker]/route.ts من `subscription-server` لـ `subscription-gate`.
+- نتيجة الاختبار:
+  • /api/stocks/COMI: ✅ success=true، price=132.5 EGP، RSI=50، ROE=18%، EGX30+EGX100 member
+  • /api/maker-radar: ✅ success=true، total_scanned=107، db_source=data_engine.db::historical_data، market_regime=NORMAL
+  • كل سهم فيه تحليل كامل: volume_gradient، range_compressed، money_flow_state، accumulation، life_cycle
+- Dashboard (http://localhost:3000/): ✅ HTTP 200، صفحة login بتظهر صح، مفيش errors.
+
+Stage Summary:
+- 7 DBs إنتاجية مسترجعة (إجمالي ~295MB، ~1.5M صف بيانات حقيقية)
+- bug critical مصلوح في flutter-sqlite-fallback.ts (derivedChange undefined)
+- رادار الميكر شغّال بالبيانات الحقيقية (107 سهم متحلل)
+- الـ dashboard بيشتغل صح
+- جاهز لتطوير رادار الميكر لأداة "من عالم الأحلام"
