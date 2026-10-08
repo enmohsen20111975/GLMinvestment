@@ -305,7 +305,7 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
           <div className="flex items-center justify-center gap-2 mb-4 text-sm">
             <span className="text-muted-foreground">نسبة المخاطرة/العائد:</span>
             <Badge variant="outline" className={cn(
-              analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-emerald-500 border-emerald-500/50' :
+              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-emerald-500 border-emerald-500/50' :
               (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-amber-500 border-amber-500/50' :
               'text-red-500 border-red-500/50'
             )}>
