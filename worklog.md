@@ -66299,3 +66299,24 @@ Stage Summary:
 - معادن جديدة: 4 (ذهب + فضة + بلاتين + نحاس)
 - عملات جديدة: 5 (EGP + SAR + KWD + QAR + AED)
 - القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: FIX-V3 (المدير العام — إصلاح 3 مشاكل من نتائج اللابتوب)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح market_indices (list.get) + exchange_rates (schema) + auto-migration
+
+Work Log:
+- إصلاح 1: update_market_indices.py — TradingView scanner يرجع dict أو list
+  * isinstance(data, dict) → data.get('data', [])
+  * isinstance(data, list) → rows = data
+  * isinstance(row, dict) → row.get('s', '')
+- إصلاح 2: update_metals_and_forex.py — exchange_rates schema
+  * قبل: base_currency + target_currency (خاطئ)
+  * بعد: timestamp + currency + rate_to_usd (مطابق لـ metals_forex_fetcher.py)
+- إصلاح 3: auto-migration للجداول
+  * gold_prices + silver_prices + exchange_rates: CREATE TABLE IF NOT EXISTS
+
+Stage Summary:
+- ملفات معدّلة: 2 (update_market_indices.py + update_metals_and_forex.py)
+- bugs مُصلحة: 3 (list.get + schema mismatch + missing tables)
+- القيود: Rule 20/27/66 محترمة، لا حذف
