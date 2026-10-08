@@ -66398,3 +66398,28 @@ Stage Summary:
 - P1 issues: 22 (confidence_engine vs conviction_engine overlap + 4 persona files غير موحدة + 6 learning files بدون owner واضح + dead methods _get_market_regime_score + _check_screener_stale + _is_spark_setup in master_analyzer + CONFLUENCE_THRESHOLDS منفصلة + multiple fair_value_calculator + fundamental* 7 files + seasonality* 3 files + regime* 4 files + engine/flow_system مكرر مع analyzers/flow + tools/run_backtest_versions references dead + glminvestment_engines منفصل + scoring_fix في master + history of patches غير مراجعة)
 - Dead LOC estimate: ~10,900 LOC disabled/orphan في analyzers/ (Maestro + 4 sub-engines) + ~5,800 LOC learning duplicates + ~2,300 LOC fix/patch files = ~19,000 LOC إجماليًا (بدون archive)
 - Top recommendations: (1) حذف THRESHOLDS من master_analyzer.py:499 + CONFLUENCE_THRESHOLDS من master_analyzer.py:516 (dead code — delegations تعمل بدونهم). (2) إزالة THRESHOLDS من technical_weighted.py:109 أو delegation لـ canonical_signal. (3) منع telegram_target_hit_tracker من INSERT في predictions — يكتب في جدول منفصل `telegram_observed_hits` (مفهوم مختلف عن توقعات النظام). (4) توحيد calc_atr/calc_rsi — كل الـ duplicates تـ delegate لـ analyzers/indicators/{atr,rsi}.py. (5) توحيد learning files: lesson_store + win_lesson_store → utils/lesson_store.py واحد + حذف learning_file_storage (gzip file-based deprecated لما صار SQLite canonical). (6) حذف unified_learning_engine.py orphan (فقط unified_learning_routes بيستورده). (7) institutional_decision_engine fallback يجب يرجع None بدل tech_score=50 fabricated. (8) master_analyzer fallbacks (lines 4839/4847/5281) يجب ترجع None بدل 50.0. (9) إزالة confidence_engine أو conviction_engine (توحيد على واحد). (10) توحيد persona engines في ملف واحد. (11) حذف analyzers/backtest_engine.py OR engines/backtest_engine.py (الاسم نفسه = collision). (12) حذف analyzers/base_engine.py + feature_extractor.py orphans. (13) إزالة api/historical_predictions_v2_routes.py manual INSERT — يجب يـ delegate لـ PredictionTracker. (14) توحيد fundamental* 7 files + regime* 4 files + seasonality* 3 files.
+Task ID: ALL-TASKS-FINAL (المدير العام — كل المهام دفعة واحدة)
+Agent: المدير العام (Z.ai Code)
+Task: P0-2 (fundamentals) + P1 (cron jobs) + مراجعة المبرمج الثالث
+
+Work Log:
+- مراجعة المبرمج الثالث (commits 38665fd + add385d):
+  * إكمال كل الشغل المتبقي (8 scripts disabled + fabrications cleanup)
+  * تحديث التوثيق (05 + 01 + 02 + SYSTEM + CHANGELOG)
+  * Python backend يعمل (53 blueprints + 4 DBs + 4 circuit breakers)
+  * zero_conflict_test PASS 0.00% mismatch
+  * لا تعارض مع عملي ✅
+- P0-2: إنشاء update_fundamentals.py داخل data_engine/scrapers/
+  * يجلب P/E, ROE, EPS من TradingView REST scanner
+  * يحفظ في tab_valuation + tab_profitability
+  * auto-migration (CREATE TABLE IF NOT EXISTS)
+- P1: إضافة cron jobs للمصادر الجديدة في fix_cron_paths.sh:
+  * market_indices: يومي 02:45 UTC
+  * metals_forex: كل 15 دقيقة
+  * fundamentals: أسبوعي (السبت 14:00)
+
+Stage Summary:
+- ملفات جديدة: 1 (update_fundamentals.py)
+- ملفات معدّلة: 1 (fix_cron_paths.sh + cron jobs جديدة)
+- مراجعة المبرمج الثالث: ✅ لا تعارض
+- القيود: Rule 20/27/66 محترمة، احترام البنية التحتية
