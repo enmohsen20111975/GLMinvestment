@@ -12,18 +12,50 @@
 
 ---
 
-## [Unreleased] — قيد العمل (لا رفع على GitHub)
+## [2026-10-08 — CONSTITUTION-R75-R76 + REAPPLY-CRITICAL-FIXES] — المدير العام عضو مهم في الفريق
+
+### أُضيف (New)
+- **Rule 73 — SINGLE-DISPLAY-SOURCE** (Documentation/00-CONSTITUTION.md): كل شاشة تعرض decision data تقرأ من `/api/stocks/[ticker]/unified` فقط. مكملة لـ Rule 20 + 27 + 67(b) + 72. الإنفاذ: `scripts/zero_conflict_test.py`.
+- **Rule 74 — TICKER-COOLDOWN** (Documentation/00-CONSTITUTION.md): توثيق حماية موجودة (5 خسارات/سهم→14 يوم + Circuit Breaker 3 متتالية→3 أيام) كقاعدة دستورية صريحة. حماية رأس مال مقدسة (Rule 19).
+- **Rule 75 — PUSH-AFTER-EVERY-TASK ⭐ قاعدة ثابتة** (Documentation/00-CONSTITUTION.md): كل مهمة مكتملة = commit + push فوري لـ GitHub. تكملة Rule 63. ينتهي BREACH-001 (sandbox resets).
+- **Rule 76 — TEAM-WORK-REVIEW ⭐ قاعدة ثابتة** (Documentation/00-CONSTITUTION.md): قبل أي مهمة، `git pull` + قراءة آخر worklog + مراجعة commits الفريق. حماية من التكرار/التعارض/الـ overclaims.
+- **`scripts/zero_conflict_test.py`** (201 LOC): اختبار صفر تضارب — 7 endpoints × 5 tickers × 6 canonical fields. mismatch_rate=0.00% PASS.
+
+### تغيّر (Changed)
+- **`vps-service/analyzers/master_analyzer.py`**: THRESHOLDS dict (REDUCE 35→40, SELL 20→25, STRONG_SELL 10→25, حذف HOLD_LOW/HIGH) + `_get_signal_from_score` يفوّض لـ `canonical_signal.classify_signal` + `_get_signal_arabic` يفوّض لـ `signal_ar`.
+- **`vps-service/config/unified_config.py`**: EGX profile ATR 3.0→5.0 + R:R 1.5→1.8 (L147-150 defaults + L377-380 EGX). KSA/KSE/QSE/DFM/CRYPTO غير ملموسة.
+- **`vps-service/core/opportunity_quality.py`**: ATR_STOP_MIN_PCT 3.0→5.0 (defense-in-depth).
+- **`vps-service/engines/backtest_engine.py` + `vps-service/jobs/daily_predictor.py`**: `V40_2_STOP_MAX_PCT` default 7.0→9.0 (3 مواضع — aligns مع engine_settings.py canonical).
+
+### أُصلح (Fixed)
+- **`src/app/api/sniper/track/route.ts`**: non-canonical writer → HTTP 410 Gone guard (Rule 35).
+- **`vps-service/api/ai_predictions_routes.py` + `vps-service/api/historical_predictions_v2_routes.py`**: early-return guards للـ writers غير canonical.
+- **`src/app/api/maker-radar/stock/route.ts`**: إزالة 5 fabrication fallbacks (entry*0.96, r1*1.04, entry*0.99/1.01). Rule 27 محترمة.
+- **`src/app/api/crypto/full-analysis/route.ts`**: إزالة 3 fabrications (currentPrice*1.1 target, *0.95 stop, *1.05 target_2). Rule 27 محترمة.
+
+### مُتحقَّق منه (Verified)
+- ✅ `zero_conflict_test`: mismatch_rate=0.00% + threshold_drift=0 + 25 NULL agreement (legit).
+- ✅ `bun run lint`: 0 errors.
+- ✅ canonical parity: `classify_signal(85/70/60/50/37/15)` = STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL/STRONG_SELL.
+- ✅ maker-radar/stock: 0 fabrication patterns.
+- ✅ شغل الفريق الآخر محفوظ (DEEP-ROOT-FIX + FALLBACK-FIX + SYNC-STALE-DBS + UI-FIX-V2 + build fixes) — لم يُلمس.
+
+### قيود (Constraints Honored)
+- ❌ **لا حذف ملفات** (Rule 16).
+- ❌ **لا بيانات وهمية** (Rule 27) — كل الـ fabrications اتحوّلت لـ NULL.
+- ❌ **لم تُلمس الحمايات** (Rule 8/18/19: ATR [5%,9%] + R:R 1.8 + Hard Loss 7% + Split Guard 35%).
+- ✅ **مراجعة شغل الفريق** (Rule 76 الجديدة) — تم تنفيذها قبل المهمة.
+
+---
+
+## [Unreleased] — قيد العمل
 
 ### المُخطَّط (بانتظار إذن المالك)
-- **ترحيل 41 bypass route** لـ canonical_signal (من أصل 47 route منتجة للقرار — 87% ما زالت bypass).
-- **تعطيل 4 writers غير canonical** لـ predictions table (3 Python + 1 TS).
-- **استكمال ترحيل 4 شاشات** لـ unified API (StocksView + MakerRadarTab + PredictionTrackingDashboard + TradingViewChart كاملًا).
-- **توحيد master_analyzer.py THRESHOLDS** مع canonical (78/65/55/40/25).
-- **إنشاء `scripts/zero_conflict_test.py`** (تصميم جاهز من Task 2c) — اختبار "نفس السهم/اليوم/الشخصية = نفس القرار" بمعايير صارمة.
-- **تحديث التوثيق المتأثر**: 05-CURRENT_STATE + 01-PROJECT_ANATOMY + 02-SCREENS_AND_COMPONENTS + SYSTEM_HOW_IT_THINKS §5.7.
-- **إضافة §0.8 لـ 02-SCREENS_AND_COMPONENTS** (Canonical Signal Migration — موعود في worklog لكن غير موجود فعليًا).
-- **تحديث §5.7 في SYSTEM_HOW_IT_THINKS**: ATR clamp [3%,9%] → [5%,9%] (STALE — لم يُحدّث بعد EGX-STRATEGY).
-- **تنظيف unified_config.py profiles**: ATR 3.0/9.0 للـ EGX profile → 5.0/9.0 (خطر override).
+- **تشغيل Python backend (8010)** + باقي خدمات PM2 للإنتاج الكامل.
+- **15 TIER 3 routes** (listers/admin/mobile/fallbacks) — دفعة ترحيل ثانية.
+- **8 one-off scripts** في `vps-service/scripts/` تعمل INSERT — تعطيل يدوي.
+- **Pre-existing TS errors** في كود legacy — مشروع تنظيف منفصل.
+- **zero_conflict_test** — إضافة `--require-real-data` flag للاختبار بقيم non-null.
 
 ---
 
