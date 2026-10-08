@@ -109,7 +109,11 @@ SIGNAL_COOLDOWN_DAYS = 3     # Don't repeat same signal for same stock
 # ============================================================================
 # THRESHOLDS
 # ============================================================================
-
+# DISABLED engine (SUB_ENGINE_DISABLED=True above) — THRESHOLDS here are dead
+# code. canonical_signal.py is the SSOT for signal classification.
+# Task PHASE3-ENGINES: NOT changing values (engine is disabled; risky to
+# touch dead code). If this engine is ever re-enabled, the values below MUST
+# be brought in line with canonical_signal.SIGNAL_THRESHOLDS (78/65/55/40/25).
 THRESHOLDS = {
     'STRONG_BUY': 75,   # Raised from 80
     'BUY': 65,

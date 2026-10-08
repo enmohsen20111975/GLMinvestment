@@ -496,6 +496,13 @@ MASTER_WEIGHTS = {
 # STRONG_SELL=boundary for SELL. Matches src/lib/canonical-signal.ts +
 # vps-service/utils/canonical_signal.py (single source of truth). Was drifting
 # with HOLD_LOW/HOLD_HIGH/SELL=20/STRONG_SELL=10 — now unified.
+#
+# Task PHASE3-ENGINES: DEAD CODE — kept for backward compat.
+# _get_signal_from_score() now delegates to canonical_signal.classify_signal
+# (line ~5358). canonical_signal.py is the SSOT. This dict is exported via
+# analyzers/__init__.py (THRESHOLDS) so external callers may still reference
+# the symbol — values are mirrored here for parity. Do NOT edit values without
+# updating utils/canonical_signal.py:SIGNAL_THRESHOLDS first.
 THRESHOLDS = {
     'STRONG_BUY': 78,
     'BUY': 65,
@@ -3929,21 +3936,32 @@ class MasterAnalyzer:
             except Exception as e:
                 print(f"[MasterAnalyzer] Sentiment unavailable for {ticker}: {e}")
 
-            conviction = calculate_conviction(
-                signal=signal or 'WAIT',
-                rsi=float(_rsi),
-                macd_bullish=_macd_bullish,
-                ma_alignment=_ma_alignment,
-                bb_position=str(_bb_pos).lower(),
-                stochastic_signal=_stoch_signal,
-                volume_ratio=float(_vol_ratio),
-                close=current_price,
-                nearest_support=float(_sup) if _sup else current_price * 0.95,
-                nearest_resistance=float(_res) if _res else current_price * 1.05,
-                market_regime=self.market_regime_info.get('regime', 'range'),
-                sector_change_pct=float(sector_relative_info.get('sector_change', 0)) if isinstance(sector_relative_info, dict) else 0.0,
-                rr_ratio=risk_params.get('risk_reward', 0) if risk_params else 0,
-            )
+            # Task PHASE3-ENGINES (Rule 27): do NOT fabricate
+            # nearest_support = entry*0.95 / nearest_resistance = entry*1.05
+            # when S/R data is missing. The conviction engine's _score_sr_proximity
+            # factor divides by `close` and would otherwise treat the fabricated
+            # 5%-off values as real S/R levels (masking missing data). Instead,
+            # skip conviction scoring entirely — `conviction` stays None and the
+            # downstream code already handles None (guard at L3957/3960/3987).
+            if _sup is not None and _res is not None:
+                conviction = calculate_conviction(
+                    signal=signal or 'WAIT',
+                    rsi=float(_rsi),
+                    macd_bullish=_macd_bullish,
+                    ma_alignment=_ma_alignment,
+                    bb_position=str(_bb_pos).lower(),
+                    stochastic_signal=_stoch_signal,
+                    volume_ratio=float(_vol_ratio),
+                    close=current_price,
+                    nearest_support=float(_sup),
+                    nearest_resistance=float(_res),
+                    market_regime=self.market_regime_info.get('regime', 'range'),
+                    sector_change_pct=float(sector_relative_info.get('sector_change', 0)) if isinstance(sector_relative_info, dict) else 0.0,
+                    rr_ratio=risk_params.get('risk_reward', 0) if risk_params else 0,
+                )
+            else:
+                # S/R unavailable — skip conviction (Rule 24: invalid → NULL).
+                conviction = None
             # ── Sentiment adjustment on conviction ─────────────────────────
             # Positive news (sentiment > 65) boosts conviction by up to 5 pts;
             # Negative news (sentiment < 35) penalises by up to 8 pts.
@@ -4074,33 +4092,45 @@ class MasterAnalyzer:
             short_target = _engine_stop   # engine's below-entry stop → SHORT target (below)
             short_stop = _engine_target   # engine's above-entry target → SHORT stop (above)
 
-            # Guard against degenerate inputs (engine gave same value both sides)
+            # Task PHASE3-ENGINES (Rule 27): do NOT fabricate entry*0.95 / entry*1.05
+            # when geometry is degenerate. If the swap produces invalid geometry
+            # (target above entry, or stop below entry), we NULL the bad side
+            # and skip the SHORT swap entirely (fall through to the LONG else).
+            # Rule 24: invalid → NULL not fake.
             if short_target >= _engine_entry:
-                short_target = round(_engine_entry * 0.95, 4)
+                short_target = None
             if short_stop <= _engine_entry:
-                short_stop = round(_engine_entry * 1.05, 4)
+                short_stop = None
 
-            _short_target_pct = (_engine_entry - short_target) / _engine_entry if _engine_entry > 0 else 0
-            _short_stop_pct = (short_stop - _engine_entry) / _engine_entry if _engine_entry > 0 else 0
-            _short_risk = short_stop - _engine_entry
-            _short_reward = _engine_entry - short_target
-            _short_rr = round(_short_reward / _short_risk, 2) if _short_risk > 0 else 0
-            # Rule 54: استخدم canonical compute_risk_reward (SELL-aware)
-            try:
-                from utils.risk_reward import compute_risk_reward
-                _short_rr = compute_risk_reward(_engine_entry, short_target, short_stop, fallback=_short_rr)
-            except Exception:
-                pass  # keep inline _short_rr computed above
+            # Only apply the SHORT swap if BOTH sides are still valid.
+            # Otherwise: degenerate geometry → keep LONG values from risk_params
+            # (the else branch's risk_dict updates will not run because we are
+            # inside the if _is_short_signal block — but we DO NOT touch
+            # risk_dict here so it keeps the LONG-only values risk_profile
+            # already produced, which is the safest fallback).
+            if short_target is not None and short_stop is not None:
+                _short_target_pct = (_engine_entry - short_target) / _engine_entry if _engine_entry > 0 else 0
+                _short_stop_pct = (short_stop - _engine_entry) / _engine_entry if _engine_entry > 0 else 0
+                _short_risk = short_stop - _engine_entry
+                _short_reward = _engine_entry - short_target
+                _short_rr = round(_short_reward / _short_risk, 2) if _short_risk > 0 else 0
+                # Rule 54: استخدم canonical compute_risk_reward (SELL-aware)
+                try:
+                    from utils.risk_reward import compute_risk_reward
+                    _short_rr = compute_risk_reward(_engine_entry, short_target, short_stop, fallback=_short_rr)
+                except Exception:
+                    pass  # keep inline _short_rr computed above
 
-            risk_dict['direction'] = 'SHORT'
-            risk_dict['target_price'] = round(short_target, 4)
-            risk_dict['target_pct'] = round(_short_target_pct * 100, 1)
-            risk_dict['stop_loss_price'] = round(short_stop, 4)
-            risk_dict['stop_loss_pct'] = round(_short_stop_pct * 100, 1)
-            risk_dict['risk_reward_ratio'] = _short_rr
-            risk_dict['entry_price'] = _engine_entry
-            risk_dict['stop_method'] = risk_params.get('stop_method', '') + '_SHORT_SWAPPED'
-            risk_dict['target_method'] = risk_params.get('target_method', '') + '_SHORT_SWAPPED'
+                risk_dict['direction'] = 'SHORT'
+                risk_dict['target_price'] = round(short_target, 4)
+                risk_dict['target_pct'] = round(_short_target_pct * 100, 1)
+                risk_dict['stop_loss_price'] = round(short_stop, 4)
+                risk_dict['stop_loss_pct'] = round(_short_stop_pct * 100, 1)
+                risk_dict['risk_reward_ratio'] = _short_rr
+                risk_dict['entry_price'] = _engine_entry
+                risk_dict['stop_method'] = risk_params.get('stop_method', '') + '_SHORT_SWAPPED'
+                risk_dict['target_method'] = risk_params.get('target_method', '') + '_SHORT_SWAPPED'
+            # else: degenerate geometry — keep LONG values from risk_profile.to_dict()
         else:
             # LONG (or engine produced no usable values): original behavior.
             risk_dict['target_price'] = risk_params['target_price']
@@ -4126,18 +4156,25 @@ class MasterAnalyzer:
                     # SHORT: swap optimizer target/stop too
                     opt_short_target = optimizer_stop    # below → SHORT target
                     opt_short_stop = optimizer_target    # above → SHORT stop
+                    # Task PHASE3-ENGINES (Rule 27): no fabrication entry*0.95 / entry*1.05.
+                    # If the optimizer swap produced invalid geometry, NULL the
+                    # bad side; the null-check below skips the SHORT swap and
+                    # falls through to the LONG else-branch (keeps prior risk_dict).
                     if opt_short_target >= _engine_entry:
-                        opt_short_target = round(_engine_entry * 0.95, 4)
+                        opt_short_target = None
                     if opt_short_stop <= _engine_entry:
-                        opt_short_stop = round(_engine_entry * 1.05, 4)
-                    risk_dict['direction'] = 'SHORT'
-                    risk_dict['target_price'] = round(opt_short_target, 4)
-                    risk_dict['target_pct'] = round(abs(_engine_entry - opt_short_target) / _engine_entry * 100, 2) if _engine_entry > 0 else 0
-                    risk_dict['stop_loss_price'] = round(opt_short_stop, 4)
-                    risk_dict['stop_loss_pct'] = round(abs(opt_short_stop - _engine_entry) / _engine_entry * 100, 2) if _engine_entry > 0 else 0
-                    risk_dict['risk_reward_ratio'] = optimizer_rr
-                    risk_dict['stop_method'] = 'OPTIMIZER_ATR_SR_SHORT_SWAPPED'
-                    risk_dict['target_method'] = 'OPTIMIZER_ATR_SR_SHORT_SWAPPED'
+                        opt_short_stop = None
+                    # Apply optimizer SHORT swap only if both sides are still valid.
+                    if opt_short_target is not None and opt_short_stop is not None:
+                        risk_dict['direction'] = 'SHORT'
+                        risk_dict['target_price'] = round(opt_short_target, 4)
+                        risk_dict['target_pct'] = round(abs(_engine_entry - opt_short_target) / _engine_entry * 100, 2) if _engine_entry > 0 else 0
+                        risk_dict['stop_loss_price'] = round(opt_short_stop, 4)
+                        risk_dict['stop_loss_pct'] = round(abs(opt_short_stop - _engine_entry) / _engine_entry * 100, 2) if _engine_entry > 0 else 0
+                        risk_dict['risk_reward_ratio'] = optimizer_rr
+                        risk_dict['stop_method'] = 'OPTIMIZER_ATR_SR_SHORT_SWAPPED'
+                        risk_dict['target_method'] = 'OPTIMIZER_ATR_SR_SHORT_SWAPPED'
+                    # else: degenerate optimizer geometry — keep prior risk_dict
                 else:
                     # LONG: original behavior
                     risk_dict['target_price'] = optimizer_target
@@ -4834,9 +4871,19 @@ class MasterAnalyzer:
 
     @staticmethod
     def _inline_rsi(closes, period=14):
-        """Simple Wilder's RSI for inline use (no tech_indicators needed)."""
+        """Simple Wilder's RSI for inline use (no tech_indicators needed).
+
+        Task PHASE3-ENGINES (Rule 24): returns None when data is insufficient
+        instead of the previous fabrication `return 50.0`. The caller at
+        L4967 (`_rsi_8l = float(_rsi_8l or 50.0)`) still falls back to 50.0
+        at the confluence layer — that confluence-layer fallback is intentional
+        (the layer needs *some* number to score). The point of returning None
+        here is to make the *insufficient-data* signal explicit so callers can
+        choose to skip the layer entirely rather than treating 50.0 as a real
+        measurement.
+        """
         if not closes or len(closes) < period + 1:
-            return 50.0
+            return None
         gains = []
         losses = []
         for i in range(1, len(closes)):
@@ -4844,7 +4891,7 @@ class MasterAnalyzer:
             gains.append(max(0, change))
             losses.append(max(0, -change))
         if len(gains) < period:
-            return 50.0
+            return None
         avg_gain = sum(gains[:period]) / period
         avg_loss = sum(losses[:period]) / period
         for i in range(period, len(gains)):
@@ -5274,11 +5321,15 @@ class MasterAnalyzer:
         
         return {'sector': 'Unknown'}
     
-    def _get_market_regime_score(self) -> float:
-        """Get market regime score (simplified)."""
-        # In production, this would check EGX30 vs MA200
-        # For now, return neutral
-        return 50.0
+    # DEAD METHOD — kept for backward compat (Task PHASE3-ENGINES, Rule 16).
+    # Use regime_detector.detect_market_regime() instead (wired in via
+    # _detect_market_regime_cached at L5290). This method is never called in
+    # production — it just returns a placeholder 50.0 (now None, Rule 24).
+    def _get_market_regime_score(self):
+        """Get market regime score (DEAD — placeholder, Rule 24: invalid → NULL)."""
+        # In production, this would check EGX30 vs MA200 — but it is never called.
+        # Returning None (Rule 24) instead of fabricated 50.0.
+        return None
 
     def _detect_market_regime_cached(self) -> Dict[str, Any]:
         """
