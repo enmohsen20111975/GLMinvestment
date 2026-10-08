@@ -13,17 +13,6 @@ const DB_DIR = path.join(process.cwd(), 'db')
 // PROTECT-FIX v2 (2026-10-08): بعد تحليل دقيق، اتعمل تنظيف للقائمة.
 // القاعدة: بس الـ DBs اللي بـ تتعمل ليها reference كـ "مسار ملف فعلي"
 // (db/xxx.db أو 'xxx.db' في string literal) في الكود الحي.
-//
-// تم استبعاد:
-//   - core.db        ← Python module `core.db_manager` (مش ملف)
-//   - basic.db       ← orphaned (مفيش reference فعلي)
-//   - egx_investment.db ← orphaned (legacy من مبرمجين سابقين)
-//   - ai_search_cache.db ← deprecated (اتنقل لـ STOCKS_DB)
-//   - radarData.db   ← JS variable `radarData.db_source` (مش ملف)
-//   - prediction_tracker.db ← Python attr `self.prediction_tracker.db_path`
-//   - live_journal.db ← orphaned
-//   - telegram_data.db ← orphaned
-// دول "أخطاء مبرمجين سابقين" — مش بنحميها.
 const PROTECTED_DBS = new Set([
   // ── CRITICAL: النظام مش هيشتغل من غيرهم ──
   'stocks.db',              // بيانات أسهم EGX — 428 مرجع كملف

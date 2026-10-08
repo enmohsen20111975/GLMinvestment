@@ -51,9 +51,6 @@ const CRITICAL_DBS = [
   { name: 'community.db', desc: 'مجتمع', priority: 'IMPORTANT' },
   { name: 'analytics.db', desc: 'تحليلات', priority: 'IMPORTANT' },
   { name: 'unified_stocks.db', desc: 'أسهم موحدة (عربي)', priority: 'IMPORTANT' },
-  // ❌ تم استبعادها (orphaned / متغيرات كود / Python modules):
-  //   core.db, basic.db, egx_investment.db, ai_search_cache.db,
-  //   radarData.db, prediction_tracker.db, live_journal.db, telegram_data.db
 ];
 
 // ─── Schemas أساسية للـ DBs الناقصة ──────────────────────────────────

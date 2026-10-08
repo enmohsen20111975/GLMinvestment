@@ -115,12 +115,10 @@ class DBPaths:
     # Aliases for legacy code (توجّه للـ canonical source — updated P0-8-DB-UNIFY 2026-09-27)
     GOLD_PRICES_DB: str = DATA_ENGINE_DB  # gold_prices — canonical: data_engine.db (187K rows). Dropped: stocks.db (3 stale rows).
     HISTORICAL_DB: str = DATA_ENGINE_DB   # historical_data (ticker format رقمي)
-    TELEGRAM_DATA_DB: str = STOCKS_DB     # telegram_news — canonical: stocks.db (6 rows). Dropped: predictions.db (0 rows, different schema).
-    NEWS_DB: str = STOCKS_DB              # was stocks.db → content.db (target architecture); news still in stocks.db for now.
-    COMMUNITY_DB: str = CONTENT_DB        # was community.db → content.db
+    NEWS_DB: str = STOCKS_DB              # news still in stocks.db (target: content.db).
+    COMMUNITY_DB: str = CONTENT_DB        # community tables in content.db
     ANALYTICS_DB: str = STOCKS_DB          # cached_analysis — canonical: stocks.db (143 rows). Dropped: predictions.db (0 rows, fallback-cache recreated by migrator).
-    AI_SEARCH_CACHE_DB: str = STOCKS_DB   # was ai_search_cache.db
-    CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # was crypto_learning.db → predictions.db
+    CRYPTO_LEARNING_DB: str = PREDICTIONS_DB  # crypto_learning tables in predictions.db
 
     @classmethod
     def all_dbs(cls) -> dict[str, str]:

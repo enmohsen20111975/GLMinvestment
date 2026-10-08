@@ -774,14 +774,14 @@ SELECT COUNT(*) FROM predictions WHERE exit_type = 'trailing_profit';  -- > 0 (p
 6. `auth.db` — مصادقة NextAuth.
 7. `news.db` — الأخبار.
 8. `crypto.db` — العملات الرقمية.
-9. ثانوية: `gold_prices.db`, `silver_prices.db`, `analytics.db`, `community.db`, `telegram_data.db`, `learned.db`, `crypto_learning.db`, `crypto-lab.db`, `exchange_rates.db`, `ai_search_cache.db`, `historical.db`.
+9. ثانوية: `gold_prices.db`, `silver_prices.db`, `analytics.db`, `community.db`, `learned.db`, `crypto_learning.db`, `crypto-lab.db`, `exchange_rates.db`, `historical.db`.
 
 ### قواعد السلامة
 
 1. **WAL mode + busy_timeout=30000** على كل DBs (عبر `scripts/init_db_safety.py`).
 2. **لا `ALTER TABLE`** — بس `CREATE TABLE IF NOT EXISTS`. (ملاحظة: `ALTER TABLE ADD COLUMN` مسموح للـ migrations الآمنة فقط).
 3. **كل عمليات DB في `try/except`** — لو فشل التخزين، التحليل بيكمل.
-4. **ممنوع استخدام** `db/egx_investment.db` أو `db/custom.db` (runtime فقط).
+4. **ممنوع استخدام** `db/custom.db` (runtime فقط).
 5. **نسخ احتياطي يومي:** `scripts/auto-backup.sh` + `POST /api/admin/db-manager/auto-backup`.
 6. **أرشيف GitHub:** `db/databases_backup.tar.gz` (37 MB) — يسترجع عبر `vps-service/tools/restore_from_local.py --from-git`.
 7. **الاسترجاع الآمن** (SAFE restore):
