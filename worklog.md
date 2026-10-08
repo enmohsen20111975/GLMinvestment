@@ -66660,3 +66660,186 @@ Consolidation recommendations:
 - لم أُجرِ أي push على GitHub (GM handles per Rule 75).
 - READ-ONLY audit — كل التوصيات قابلة للتنفيذ في TASKS منفصلة.
 
+
+---
+Task ID: AUDIT-TELEGRAM
+Agent: general-purpose (مهندس التليجرام/النشر)
+Task: تدقيق عميق للنشر + التليجرام + البوت
+
+Stage Summary:
+- P0: 12 + P1: 18 + dead LOC: ~1,575 (3 orphan scripts + 2 disabled collectors + dead formatters in auto_poster.py) + security issues: 6 (1 CRITICAL hardcoded bot token + 1 CRITICAL fail-open auth + 1 CRITICAL publish-stock no-admin + 1 HIGH market publish-status no-auth + 1 HIGH EODHD key hardcoded + 1 HIGH channel fallback) + duplicate publish paths: 8 + duplicate send implementations: 7
+- Top recommendations: (1) حذف Telegram Bot Token من social_publisher.py:42 فورًا + rotation عبر BotFather. (2) إصلاح fail-open في check_subscription (BOT_API_SECRET فارغ = كل المستخدمين VIP). (3) إضافة requireAdminAsync لـ /api/telegram/publish-stock + /api/market/publish-status-image. (4) حذف INSERT المُفبرك في telegram_target_hit_tracker.py:967-978 (signal='BUY' + confidence=75 + tp2=hit*1.05 + sl=entry*0.95) — يلوّث predictions.db بـ BUY signals وهمية. (5) إزالة fabrication في build_stock_card (telegram_interactive_bot.py:516-526 — price*0.99/0.96/0.92/1.06/1.12 + r1*0.995 + rr=2.0). (6) توحيد 7 تطبيقات إرسال Telegram في TelegramBotClient واحد (telegram_bot_api.py). (7) توحيد 8 مسارات نشر في TelegramPublisher واحد.
+
+Work Log:
+- قرأت آخر ~250 سطر من worklog.md (سياق AUDIT-APIS + AUDIT-SCREENS + AUDIT-DATA + AUDIT-ENGINES + AUDIT-INFRA + METALS-FOREX-INTEGRATION + ALL-TASKS-FINAL).
+- جردت كل ملفات التليجرام: 17 ملف في vps-service/telegram/ (~12,200 LOC) + 4 routes في src/app/api/telegram/ (473 LOC) + 2 ملفات telegram-events (135 LOC) + 7 ملفات news-agent/sender+collectors (~1,500 LOC) + 3 scripts في /scripts/ (653 LOC) + 1 في vps-service/scripts (381 LOC) + 1 في vps-service/ai/ (telegram_signal_importer.py, 818 LOC) + 1 telegram blueprint في api/telegram_routes.py (1,860 LOC) ≈ 18,000 LOC إجماليًا.
+- إعداد PM2 (ecosystem.config.js): 3 عمليات Telegram نشطة:
+  * `telegram-poster` (auto_post_scheduler.py, 1686 LOC) — scheduler يومي/أسبوعي/شهري + ReportsEngine + Morning Bell 9:45 + target_hit_tracker كل 5 دقايق أثناء الجلسة.
+  * `telegram-interactive-bot` (telegram_interactive_bot.py, 1295 LOC) — Long polling بوت استعلامات (5 استعلامات/يوم لـ trial).
+  * `telegram-events` (index.ts, 123 LOC, port 3003) — socket.io relay لأحداث الـ Python backend.
+- فحص Telegram Bot (telegram_interactive_bot.py):
+  * الأوامر: /start (deep-linking stock_), /help, /list, /radar, /lesson + بحث حر (عربي/إنجليزي).
+  * Auth: ADMIN_TELEGRAM_IDS bypass (line 90-92) + /api/bot/check-subscription + fallback لـ auth.db.
+  * FAIL-OPEN (P0): لو BOT_API_SECRET فارغ → check_subscription بترجّع {is_paid: True, _fail_open: True} (line 695-697) — أي مستخدم بياخد وصول كامل VIP.
+  * Limit: 5 queries/day لـ trial (check_and_increment_daily_limit) + trial 7 أيام.
+  * FABRICATIONS (Rule 27): build_stock_card (line 516-526) بـ يـ fabricate entry_min/entry_max/s1/s2/r1/r2/tp1/tp2/sl/rr/advice بقيم افتراضية (price*0.99, *0.96, *0.92, *1.06, *1.12, r1*0.995, r2*0.995, s1*0.985, rr=2.0) لما trader_levels_engine يرجع NULL.
+- فحص Auto-poster:
+  * Schedule (auto_post_scheduler.py): Daily 3PM Cairo, Weekly Sun 10AM, Monthly 1st 10AM + ReportsEngine (tomorrow_picks 8:30 / daily_summary 16:00 / weekly Fri 9:00 / monthly 1st 10:00) + Morning Bell 9:45 يوم عمل + target_hit_tracker كل 5 دقايق (10:00-14:35 EGX hours).
+  * Content: MarketDailyReport (gainers/losers/breadth + recommendations) + ReportsEngine + Morning Bell (top 3 EGX فرص من _get_morning_bell_data).
+  * Duplicate formatters: auto_poster.format_daily_summary_post (line 457) ≈ auto_post_scheduler._format_daily_post (line 449) — منطق موازي بدون single source of truth.
+  * Orphan formatters في auto_poster.py: format_market_open (584) + format_market_close (611) + format_stock_alert (536) — غير مستخدمة من الـ scheduler (بستخدم ReportsEngine بدلها).
+- فحص target_hit_tracker (telegram_target_hit_tracker.py):
+  * VERIFIED (P0 fabrication): line 967-978 INSERT جديد في predictions.db لو مفيش توقع نشط — بـ fabricate:
+    - signal='BUY', signal_type='BUY', signal_ar='شراء' (hardcoded)
+    - confidence=75 (line 965: `float(item.get('confidence', 75))`)
+    - target_2 = hit_price * 1.05 (line 963: `float(item.get('target_2', hit_price * 1.05))`)
+    - stop_loss = entry_price * 0.95 (line 964: `float(item.get('stop_loss', entry_price * 0.95))`)
+    - target_1 = hit_price (line 962 default)
+    → يلوّث predictions.db بـ BUY signals وهمية كل ما target hit على سهم بدون توقع نشط → إحصائيات التوقعات بتتحسّن وهميًا → Regime 27 violation خطير.
+  * VERIFIED (P0 fabrication): line 1023-1030 في mode `--force` لما مفيش hit_price → بـ fabricate:
+    - hit_price = entry_price * 1.07 (+7% وهمي)
+    - profit_pct = 7.0
+    - hit_level = 'TP1'
+    - next_target = entry_price * 1.14 (+14% وهمي)
+    - trailing_stop = entry_price * 1.01
+    - action_advice = "السيولة إيجابية..."
+  * VERIFIED (P1 fabrications): line 398/400/402/413/415 next_target/trailing_stop fabrication لما buy_pct غير متوفر (high_p * 1.06 / 1.08 / 1.03 + hit_price * 0.96 / 0.97 + entry_p * 1.01).
+- فحص publish flow (Next.js → Python → Telegram Bot API):
+  * /api/telegram/publish-stock (route.ts, 205 LOC): getSessionUserId فقط (NOT admin!) → استلام image blob + caption → POST https://api.telegram.org/bot{token}/sendPhoto + UPDATE predictions.db SET published_at, telegram_message_id, was_published=1 (Rule 35 violation: TS يكتب predictions.db).
+  * /api/telegram/post/route.ts (114 LOC): proxy لـ Python /api/telegram/post/{connect,message,recommendation,daily-summary,top-recommendations,alert,market-open,market-close,custom} (8 sub-actions).
+  * /api/telegram/send-daily-report/route.ts (30 LOC): proxy لـ Python /api/telegram/send-daily-report.
+  * /api/telegram/[...path]/route.ts (124 LOC): catch-all proxy مع XTransformPort.
+  * /api/market/publish-status-image/route.ts (proxy): NO AUTH CHECK AT ALL — بـ يـ proxy لـ Python.
+  * Flow: StockPublisher.tsx (1,129 LOC) → adminFetch('/api/telegram/publish-stock', multipart image+caption) → /api/telegram/publish-stock → POST https://api.telegram.org/bot{token}/sendPhoto. ImageCardExport / MarketStatusExport → fetch('/api/market/publish-status-image') → Python → TelegramAutoPoster.send_photo.
+  * Rule 20 violation: StockPublisher.tsx بـ يستخدم generatePublishText (TS) لبناء الـ caption المنشور — الـ text بيتكوّن في TS بدل ما Python يكون المصدر الوحيد.
+- فحص telegram credentials:
+  * CRITICAL: news-agent/sender/social_publisher.py:42 — `os.getenv('TELEGRAM_BOT_TOKEN', '8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U').strip()` — Bot Token إنتاجي حقيقي مُلتزم في الـ repo. أي حد مع read access يقدر ياخده ويتحكم في البوت (نشر/حذف/قراءة messages).
+  * HIGH: ecosystem.config.js:326 — `TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || '@Arabian_investment_guide'` — channel fallback مُلتزم.
+  * HIGH: ecosystem.config.js:169 — `EODHD_API_KEY: process.env.EODHD_API_KEY || '6990ef9ee966c5.41761316'` — API key إنتاجي حقيقي مُلتزم.
+  * MEDIUM: telegram_interactive_bot.py:83 + telegram_target_hit_tracker.py:110 + telegram_daily_lessons.py:58 — كلهم بـ يرجعوا لـ '@Arabian_investment_guide' كـ fallback channel.
+  * 5 ملفات تانيين بـ يحملوا OFFICIAL_LINKS fallback dictionary (auto_poster.py:72-84 + telegram_target_hit_tracker.py:72-82) فيها روابط invist.m2y.net + facebook + whatsapp + bot + t.me/Arabian_investment_guide.
+- فحص telegram-events mini-service:
+  * Port: 3003 (confirmed in index.ts:109 + ecosystem.config.js:356).
+  * Status: ACTIVE في PM2 (ecosystem.config.js:344-365).
+  * Events: بـ poll Python backend كل 2 ثانية على /api/telegram/events/poll?since=timestamp → io.emit('telegram:event') + io.emit(`telegram:${event.type}`) — ببث أحداث telegram للـ admin TelegramTab.tsx.
+  * Wiring: TelegramTab.tsx:196 — `io('/?XTransformPort=3003')`.
+  * Status endpoint: socket.on('telegram:status') بيرجّع lastEventTimestamp, lastPollSuccess, pollCount, errorCount.
+- فحص news-agent → Telegram:
+  * main.py:40-41: SocialPublisher + ProductionSender. ProductionSender بـ يـ POST لـ /api/news (NOT Telegram). SocialPublisher بـ ينشر على Telegram مباشرة.
+  * main.py:159-258: كل خبر (importance ≥ 70 + EGX + tickers) بيتنشر على تيليجرام — أقصى 10 رسائل لكل batch (TG_MAX_PER_BATCH=10).
+  * DUPLICATE POSTING PATH: news-agent SocialPublisher بـ ينشر تحليلات أخبار على نفس القناة الـ telegram-poster بـ بينشر فيها تقارير يومية/أسبوعية + target hits → احتمالية غرق القناة بالرسائل + عدم تحكم مركزي في الـ rate.
+  * TelegramCollector (news-agent/collectors/telegram_collector.py): DISABLED لو TELEGRAM_API_ID/TELEGRAM_API_HASH ناقصين (main.py:72-77) — prior audit claim VERIFIED. الـ collector بـ يستخدم Telethon user session (not bot) للقراءة من القنوات.
+- فحص 16 cards → Telegram:
+  * Consumers of /api/telegram/publish-stock: StockPublisher.tsx:351,376 + StockInfographicModal.tsx:186 + TelegramPredictionsTab.tsx:117.
+  * Consumers of /api/market/publish-status-image: ImageCardExport.tsx:129 (wrapper) + MarketStatusExport.tsx:163 + TradeResultsGenerator.tsx:359 + TradingChartView.tsx:123.
+  * ImageCardExport بـ يـ wrap 8 cards: ExpertPredictions + Persona + MarketStatus + SectorTracking + CryptoPredictions + MorningBell + Predictions + LiveTracking.
+  * StockLeagueImageCard بـ يـ wrap ImageCardExport مرتين (periods: daily + monthly).
+  * StockInfographicCard.tsx هو الـ canonical publish card (StockPublisher بـ captureـه كـ PNG).
+  * FABRICATIONS في cards:
+    * PersonaImageCard.tsx:89-99 — بـ يـ derive signal من verdict text ('BUY' لو فيه 'فرصة/ادخل/قوي/شراء'، 'SELL' لو 'ابعد/بيع/تجنب/اخرج'، غير كده 'HOLD'). Rule 27 marginal — classification من نص الـ verdict مش signal فعلي.
+    * PredictionsImageCard.tsx:100,105 — بـ يـ fabricate signal='BUY' لو status=PROFIT/TARGET_HIT + signal='HOLD' كـ fallback.
+- فحص dead/disabled telegram features:
+  * ORPHAN scripts (3): scripts/telegram_live_monitor.py (39 LOC، NOT في crontab رغم docstring بيقترح */15 10-14 * * 1-5) + scripts/telegram_sniper_bot.py (182 LOC PHASE5-052، NOT في crontab ولا PM2) + vps-service/scripts/publish_today_picks.py (381 LOC، NOT في crontab — بيـ publish لـ website مش Telegram).
+  * DISABLED collectors (2): news-agent/collectors/investing_news_collector.py.disabled + news-agent/collectors/scrappers/investing_scraper.py.disabled.
+  * DUPLICATE collectors (1): news-agent/collectors/rss_collector.py.disabled (duplicate of rss_collector.py النشط).
+  * DEAD formatters في auto_poster.py: format_market_open (584) + format_market_close (611) + format_stock_alert (536) — غير مستخدمين من scheduler (بستخدم ReportsEngine).
+  * Duplicate send implementations (7):
+    1. telegram_notifier.py:58-95 (urllib, sync) — canonical outbound (Rule 54).
+    2. telegram_bot_api.py:107-498 (urllib, sync, with retries + dry_run) — thin client.
+    3. telegram_target_hit_tracker.py:844-895 (requests.post) — duplicate sendPhoto + sendMessage.
+    4. telegram_interactive_bot.py:242-300 (requests.post) — duplicate send_message + send_photo + answerCallbackQuery + deleteMessage.
+    5. telegram_daily_lessons.py:414 (requests.post) — duplicate sendPhoto.
+    6. auto_poster.py:206-310 (Telethon async) — bidirectional via Telethon.
+    7. telegram_client.py (Telethon, 1,256 LOC) — full Telethon client for receiving.
+    8. news-agent/sender/social_publisher.py:294-393 (urllib) — 3 separate _telegram_send_message + _telegram_send_photo_url + _telegram_send_photo_file.
+  * Duplicate publish paths (8):
+    1. PM2 telegram-poster (auto_post_scheduler.py) — daily/weekly/monthly + ReportsEngine + Morning Bell + target_hit_tracker.
+    2. MarketScheduler.run_telegram_publish (jobs/market_scheduler.py:1530-1594) — يومي 10:00 Cairo (sniper opportunities) — INDEPENDENT عن telegram-poster.
+    3. Intraday scanner hook (jobs/intraday_scanner.py:485-511) — liquidity_alerts.run_liquidity_alerts كل 5 دقايق أثناء الجلسة.
+    4. Cron 14:30 UTC (scripts/telegram_comprehensive_report.py) — تقرير شامل يومي.
+    5. Cron 06:00 Sun (scripts/weekly_radar_report.py --send-telegram) — تقرير رادار أسبوعي.
+    6. news-agent SocialPublisher كل 15 دقيقة (PM2 news-agent) — أخبار EGX مؤثرة.
+    7. daily_closer.py (cron 14:00 UTC) — closing scorecard للصفقات المُنجزة (notify_target_hit via TelegramNotifier).
+    8. Admin manual publish: TelegramPredictionsTab + StockPublisher + StockInfographicModal + ImageCardExport + MarketStatusExport + TradeResultsGenerator + TradingChartView.
+
+P0 Issues (12):
+1. news-agent/sender/social_publisher.py:42 — Telegram Bot Token إنتاجي مُلتزم في الكود (`8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U`). SECURITY CRITICAL.
+2. telegram_interactive_bot.py:695-697 — check_subscription fail-open لما BOT_API_SECRET فارغ → كل المستخدمين بياخدوا VIP. SECURITY CRITICAL.
+3. /api/telegram/publish-stock route.ts:34 — getSessionUserId فقط (NOT requireAdminAsync) → أي trial user يقدر ينشر على القناة. SECURITY.
+4. /api/market/publish-status-image route.ts — NO AUTH CHECK AT ALL. SECURITY CRITICAL (unauthenticated publish).
+5. telegram_target_hit_tracker.py:967-978 — INSERT fabricated BUY prediction في predictions.db لما مفيش توقع نشط (signal='BUY' + confidence=75 + tp2=hit*1.05 + sl=entry*0.95) — Rule 27 violation خطير يلوّث الـ DB.
+6. telegram_target_hit_tracker.py:1023-1030 — في --force mode بـ fabricate hit_price=entry*1.07 + profit=7% + next_target=entry*1.14 + trailing_stop=entry*1.01 + advice="السيولة إيجابية..." (Rule 27).
+7. telegram_interactive_bot.py:516-526 (build_stock_card) — بـ fabricate entry_min=price*0.99, entry_max=price*1.01, s1=price*0.96, s2=price*0.92, r1=price*1.06, r2=price*1.12, tp1=r1*0.995, tp2=r2*0.995, sl=s1*0.985, rr=2.0, advice="السعر داخل نطاق الشراء الآمن..." (Rule 27).
+8. telegram_target_hit_tracker.py:398,400,402,413,415 — next_target/trailing_stop fabrication (high_p*1.06/1.08/1.03 + hit_price*0.96/0.97 + entry_p*1.01) لما buy_pct غير متوفر.
+9. ecosystem.config.js:169 — EODHD_API_KEY hardcoded fallback (`6990ef9ee966c5.41761316`) — API key إنتاجي مُلتزم.
+10. ecosystem.config.js:326 + telegram_interactive_bot.py:83 + telegram_target_hit_tracker.py:110 + telegram_daily_lessons.py:58 — `@Arabian_investment_guide` hardcoded كـ fallback channel.
+11. TelegramPredictionsTab.tsx:117 — fetch /api/telegram/publish-stock بدون admin gate (المسار نفسه #3 + الـ admin tab مش بـ يفحص admin).
+12. /api/telegram/publish-stock route.ts:169-177 — TS بـ يكتب في predictions.db (`UPDATE predictions SET published_at, telegram_message_id, was_published=1`) — Rule 35 violation (V40.2 only writer).
+
+P1 Issues (18):
+1. telegram_notifier.py + telegram_bot_api.py + auto_poster.py (Telethon) + telegram_client.py (Telethon) + social_publisher.py + telegram_target_hit_tracker.py + telegram_interactive_bot.py + telegram_daily_lessons.py = 8 تطبيقات إرسال Telegram مكررة (Rule 54 بيقول PICK ONE بس عمليًا 8 موجودين).
+2. 8 مسارات نشر مستقلة للقناة (telegram-poster + MarketScheduler + intraday_scanner liquidity + comprehensive_report cron + weekly_radar cron + news-agent + daily_closer + admin manual) — غرق القناة بالرسائل بدون dedup مركزي.
+3. auto_poster.py format_market_open (584) + format_market_close (611) + format_stock_alert (536) — dead formatters (غير مستخدمة من scheduler).
+4. auto_poster.py format_daily_summary_post (457) ≈ auto_post_scheduler._format_daily_post (449) — منطق موازي بدون SSOT.
+5. scripts/telegram_live_monitor.py (39 LOC) — ORPHAN (NOT في crontab، docstring بيقترح cron بس مفيش).
+6. scripts/telegram_sniper_bot.py (182 LOC PHASE5-052) — ORPHAN.
+7. vps-service/scripts/publish_today_picks.py (381 LOC) — ORPHAN (بيـ publish للـ website مش Telegram مباشرة، بس غير مربوط).
+8. news-agent/collectors/investing_news_collector.py.disabled — DISABLED collector.
+9. news-agent/collectors/scrappers/investing_scraper.py.disabled — DISABLED scraper.
+10. news-agent/collectors/rss_collector.py.disabled — DUPLICATE of rss_collector.py النشط (مفروض يُحذف).
+11. TelegramCollector (news-agent/collectors/telegram_collector.py) — DISABLED لو TELEGRAM_API_ID/HASH ناقصين (main.py:72-77). لو مفيش .env بـ credentials → الـ collector مش بـ يشتغل → ناقص 30% من مصادر الأخبار.
+12. telegram_interactive_bot.py:516-526 — fallbacks في build_stock_card (entry_min/max/s1/s2/r1/r2/tp1/tp2/sl/rr) — same as P0 #7 بس بدون حذف كامل (بـ يعمل display fallback).
+13. TelegramPredictionsTab.tsx + StockPublisher.tsx + ImageCardExport.tsx + MarketStatusExport.tsx + TradeResultsGenerator.tsx + TradingChartView.tsx — 6 cards بـ تنشر على تيليجرام بدون dedup مركزي (ممكن نفس السهم يتنشر مرتين لو admin نقر على زرين مختلفين).
+14. PersonaImageCard.tsx:89-99 — بـ يـ derive signal من verdict text بدل ما Python يرجّعه (Rule 20 marginal).
+15. PredictionsImageCard.tsx:100,105 — بـ fabricate signal='BUY'/'HOLD' من status (Rule 27 marginal).
+16. telegram_interactive_bot.py:1251 — log.info بـ يـ print أول 7 حروف من BOT_TOKEN (بيتكشف جزء من الـ token في الـ logs).
+17. /api/telegram/[...path]/route.ts:36-39 — بـ يـ allow XTransformPort query parameter لتحديد بورت الـ backend (ممكن يُستغل لـ SSRF لو المستخدم بـ يـ override البورت لـ host خارجي).
+18. /api/telegram/post/route.ts:73-77 — proxy بدون auth gate (أي مستخدم يقدر يـ trigger connect/message/recommendation/daily-summary/top-recommendations/alert/market-open/market-close/custom على Python).
+
+Dead code estimate: ~1,575 LOC
+- scripts/telegram_live_monitor.py: 39 LOC
+- scripts/telegram_sniper_bot.py: 182 LOC
+- vps-service/scripts/publish_today_picks.py: 381 LOC
+- news-agent/collectors/investing_news_collector.py.disabled: ~250 LOC (estimate)
+- news-agent/collectors/scrappers/investing_scraper.py.disabled: ~200 LOC (estimate)
+- news-agent/collectors/rss_collector.py.disabled: ~110 LOC (estimate)
+- auto_poster.py dead formatters (format_market_open + format_market_close + format_stock_alert): ~120 LOC
+- telegram_signal_importer.py (818 LOC) — غير مستخدم من أي cron/scheduler/PM2 لكن الـ class مستورد في ai_routes.py:522 — نصفه dead (CLI main + evaluate functions).
+- credentials.example.json: 7 LOC (template، مش dead بس placeholder)
+
+Security issues (6):
+1. CRITICAL: news-agent/sender/social_publisher.py:42 — Telegram Bot Token مُلتزم في الكود (`8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U`). → rotation فوري عبر BotFather + حذف من repo + git history scrub.
+2. CRITICAL: telegram_interactive_bot.py:695-697 — fail-open لما BOT_API_SECRET فارغ. → required env var في الإنتاج + raise لو فارغ.
+3. CRITICAL: /api/telegram/publish-stock route.ts:34 + /api/market/publish-status-image route.ts — لا requireAdminAsync. → إضافة admin gate فورًا.
+4. HIGH: ecosystem.config.js:169 — EODHD_API_KEY hardcoded fallback (`6990ef9ee966c5.41761316`). → حذف الـ fallback + require env var.
+5. HIGH: ecosystem.config.js:326 — `@Arabian_investment_guide` hardcoded channel fallback. → حذف الـ fallback + require env var.
+6. MEDIUM: telegram_interactive_bot.py:1251 — log يـ print أول 7 chars من BOT_TOKEN. → mask الـ token في الـ logs.
+
+Consolidation recommendations:
+(1) حذف Telegram Bot Token من social_publisher.py:42 فورًا + rotation عبر BotFather + scrub git history.
+(2) إصلاح fail-open في check_subscription (telegram_interactive_bot.py:695-697): raise RuntimeError لو BOT_API_SECRET فارغ بدل fail-open.
+(3) إضافة requireAdminAsync لـ /api/telegram/publish-stock + /api/telegram/post + /api/market/publish-status-image + /api/telegram/[...path] — كلها تنشر على قناة الإنتاج بدون auth.
+(4) حذف INSERT المُفبرك في telegram_target_hit_tracker.py:967-978 — بدل ما يـ insert BUY signal وهمي، بـ log warning + skip.
+(5) حذف force-mode fabrications في telegram_target_hit_tracker.py:1023-1030 — لا publish بدون hit_price حقيقي.
+(6) إزالة fabrication في build_stock_card (telegram_interactive_bot.py:516-526) — استخدم None + placeholder "—" زي ما telegram_chart_generator.py:302 بيعمل.
+(7) توحيد 8 تطبيقات إرسال Telegram في TelegramBotClient واحد (telegram_bot_api.py هو الأحدث + فيه retries + dry_run + quota handling).
+(8) توحيد 8 مسارات نشر في TelegramPublisher واحد + central rate limiter (10 رسائل/ساعة مثلاً) + dedup per (ticker, type, date) في Redis أو sqlite.
+(9) حذف scripts/telegram_live_monitor.py + scripts/telegram_sniper_bot.py + news-agent/collectors/rss_collector.py.disabled — confirmed dead/duplicate.
+(10) حذف auto_poster.py dead formatters (format_market_open + format_market_close + format_stock_alert).
+(11) دمج auto_poster.py format_daily_summary_post داخل auto_post_scheduler.py _format_daily_post + حذف واحد منهم (SSOT).
+(12) إصلاح /api/telegram/publish-stock route.ts:169-177 — حذف UPDATE predictions.db (Rule 35 violation) + delegate لـ Python /api/telegram/mark-published (endpoint جديد).
+(13) إصلاح /api/telegram/[...path]/route.ts:36-39 — reject XTransformPort خارج whitelist (3003 + 8010 فقط) لمنع SSRF.
+(14) توثيق TelegramCollector (news-agent) — متى يعمل + متى يتعطل + how-to-enable (TELEGRAM_API_ID + TELEGRAM_API_HASH + user session via dashboard).
+(15) إصلاح PersonaImageCard.tsx:89-99 + PredictionsImageCard.tsx:100,105 — استخدام canonical_signal_ar من Python بدل الـ keyword-matching في TS.
+(16) إزالة telegram_interactive_bot.py:1251 partial token log → mask الـ token.
+(17) إضافة cron لـ telegram_live_monitor (لو لسه محتاجينه) أو حذفه نهائيًا (telegram_target_hit_tracker بيغطي نفس الوظيفة).
+(18) إضافة dedup في admin publish: لما admin يضغط publish على نفس السهم مرتين خلال 5 دقايق → toast "تم النشر بالفعل message_id: X".
+(19) نقل كل OFFICIAL_LINKS fallbacks لـ telegram_branding.py canonical (لا hardcoded URLs في 5 ملفات مختلفة).
+(20) توثيق canonical Telegram architecture في docs: من المسؤول عن النشر (1 publisher + 1 bot + 1 events relay) + من المسؤول عن الاستقبال (1 collector) + من المسؤول عن الـ send-only (TelegramNotifier).
+
+القيود:
+- لم ألمس الكود (.py/.ts/.tsx) ولا الدستور (00-CONSTITUTION.md).
+- لم أُجرِ أي push على GitHub (GM handles per Rule 75).
+- READ-ONLY audit — كل التوصيات قابلة للتنفيذ في TASKS منفصلة.
+- لم أُجرِ rotation للـ Telegram Bot Token (يحتاج BotFather access — owner فقط).
+- لم أُجرِ git history scrub للـ token المُلتزم (يحتاج git filter-repo — owner فقط).
