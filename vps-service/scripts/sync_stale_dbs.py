@@ -61,8 +61,23 @@ def sync_egksco_from_price_history():
         
         # اقرأ آخر تاريخ في price_history.db
         ph_db = sqlite3.connect(get_db_path('price_history.db'))
+        
+        # UNIFY-FIX: price_history.db قد تستخدم 'date' أو 'price_date' — اكتشف العمود
+        ph_cols = [row[1] for row in ph_db.execute('PRAGMA table_info(price_history)').fetchall()]
+        date_col = 'price_date' if 'price_date' in ph_cols else ('date' if 'date' in ph_cols else None)
+        if not date_col:
+            log("  ⚠️ price_history.db لا تحتوي عمود تاريخ — تخطي")
+            egksco_db.close()
+            ph_db.close()
+            return 0
+        log(f"  عمود التاريخ في price_history.db: {date_col}")
+        
+        # تحقق من وجود عمود market
+        has_market = 'market' in ph_cols
+        market_filter = "AND market IN ('EGX', 'مصر')" if has_market else ""
+        
         last_ph = ph_db.execute(
-            "SELECT MAX(price_date) FROM price_history WHERE market IN ('EGX', 'مصر')"
+            f"SELECT MAX({date_col}) FROM price_history {('WHERE market IN (\'EGX\', \'مصر\')' if has_market else '')}"
         ).fetchone()[0]
         log(f"  آخر تاريخ في price_history.db: {last_ph}")
         
@@ -73,14 +88,29 @@ def sync_egksco_from_price_history():
             return 0
         
         # اقرأ الصفوف الجديدة من price_history.db (EGX فقط)
-        # price_history schema: ticker, price_date, open, high, low, close, volume, market, source
-        new_rows = ph_db.execute("""
-            SELECT ticker, price_date, open, high, low, close, volume
+        # UNIFY-FIX: استخدم date_col الديناميكي
+        ticker_col = 'ticker' if 'ticker' in ph_cols else ('symbol' if 'symbol' in ph_cols else None)
+        if not ticker_col:
+            log("  ⚠️ price_history.db لا تحتوي عمود ticker/symbol — تخطي")
+            egksco_db.close()
+            ph_db.close()
+            return 0
+        
+        open_col = 'open' if 'open' in ph_cols else 'open_price'
+        high_col = 'high' if 'high' in ph_cols else 'high_price'
+        low_col = 'low' if 'low' in ph_cols else 'low_price'
+        close_col = 'close' if 'close' in ph_cols else 'close_price'
+        vol_col = 'volume' if 'volume' in ph_cols else None
+        
+        vol_select = f", {vol_col}" if vol_col else ", NULL"
+        
+        new_rows = ph_db.execute(f"""
+            SELECT {ticker_col}, {date_col}, {open_col}, {high_col}, {low_col}, {close_col}{vol_select}
             FROM price_history
-            WHERE market IN ('EGX', 'مصر')
-              AND price_date > ?
-              AND close IS NOT NULL AND close > 0
-            ORDER BY price_date ASC
+            WHERE {date_col} > ?
+            {market_filter}
+              AND {close_col} IS NOT NULL AND {close_col} > 0
+            ORDER BY {date_col} ASC
         """, (last_egksco,)).fetchall()
         log(f"  صفوف جديدة للنسخ: {len(new_rows)}")
         
@@ -221,6 +251,23 @@ def backfill_old_predictions():
     
     try:
         pred_db = sqlite3.connect(get_db_path('predictions.db'))
+        
+        # UNIFY-FIX: تأكد من وجود أعمدة risk_reward + who_is_buying (auto-migration)
+        pred_cols = [row[1] for row in pred_db.execute('PRAGMA table_info(predictions)').fetchall()]
+        if 'risk_reward' not in pred_cols:
+            try:
+                pred_db.execute('ALTER TABLE predictions ADD COLUMN risk_reward REAL')
+                pred_db.commit()
+                log("  ✅ تم إضافة عمود risk_reward")
+            except Exception:
+                pass
+        if 'who_is_buying' not in pred_cols:
+            try:
+                pred_db.execute('ALTER TABLE predictions ADD COLUMN who_is_buying TEXT DEFAULT \'\'')
+                pred_db.commit()
+                log("  ✅ تم إضافة عمود who_is_buying")
+            except Exception:
+                pass
         
         # ابحث عن التوقعات بـ NULL values
         null_rows = pred_db.execute("""
