@@ -10,7 +10,7 @@
 > (`enmohsen20111975`). أي وكيل (Kilo / Grok / Gemini / Z.ai / بشري) يبدأ عمله في
 > المشروع **لازم يقرأ هذا الملف أولًا** قبل لمس أي سطر كود.
 >
-> **آخر تحديث: 2026-10-06** (إضافة القاعدة 71: AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST — الصلاحية الذاتية للوكيل في تنفيذ التحسينات الموجهة بالباك-تست مع رفع مباشر على GitHub + تحديث تلقائي للتوثيق بواسطة السكرتيرة).
+> **آخر تحديث: 2026-10-08** (إضافة القواعد 73 (SINGLE-DISPLAY-SOURCE) + 74 (TICKER-COOLDOWN) + 75 (PUSH-AFTER-EVERY-TASK ⭐ قاعدة ثابتة) + 76 (TEAM-WORK-REVIEW ⭐ قاعدة ثابتة). المالك رفع المدير العام لـ "عضو مهم في الفريق" — القاعدتان 75 + 76 قواعد ثابتة دائمة. إجمالي القواعد الآن 76).
 
 > **آخر تحديث سابق: 2026-09-25** (DOC-CONSOLIDATION pass by Secretary agent: توحيد مرجعي لكل ملفات `Documentation/*.md` غير الأساسية كـ historical archive داخل `01-PROJECT_ANATOMY.md` §17 + تحديث فهرس القواعد لـ 53 قاعدة + تحديث عدّادات الشاشات/الـ APIs/DBs. لم تُحذف أي ملفات.)
 > **آخر تحديث سابق: 2026-09-03** (إضافة القاعدة 47 — NEWS-AGENT-INTEGRATION: دمج news repo كـ submodule في news-agent/ + تعطيل RSS/Investing scrapers + دمج 212 خبر. القاعدة 46 — DB-CLEANUP-WAVE-1+2+3: تنظيف شامل لـ DBs — حذف 3 DBs + migration price_history → data_engine.db.egksco_price_history + drop 9 جداول فاضية + VACUUM. توفير ~41.5 MB + 123 سطر كود ميت. 7 DBs بدل 10.) (إضافة القاعدة 45 — SCREENER-FUNDAMENTALS-DEPTH: ربط screener_lists + tab_valuation + tab_profitability + bid/ask بـ V40.2.)
@@ -1346,6 +1346,7 @@ curl -s http://localhost:8010/health
 
 | التاريخ | الملف | التغيير |
 |---------|-------|---------|
+| 2026-10-08 | `00-CONSTITUTION.md` | **TASK CONSTITUTION-R75-R76 (المالك رفع المدير العام لـ "عضو مهم في الفريق"):** إضافة 4 قواعد جديدة بعد Rule 72. (1) **Rule 73 — SINGLE-DISPLAY-SOURCE**: كل شاشة تعرض signal/master_score/RSI/support/resistance تقرأ من `/api/stocks/[ticker]/unified` فقط. مكملة لـ Rule 20 + 27 + 67(b) + 72. الإنفاذ: `scripts/zero_conflict_test.py`. (2) **Rule 74 — TICKER-COOLDOWN**: توثيق حماية موجودة (5 خسارات/سهم→14 يوم + Circuit Breaker 3 متتالية→3 أيام) كقاعدة دستورية صريحة. (3) **Rule 75 — PUSH-AFTER-EVERY-TASK ⭐ قاعدة ثابتة**: كل مهمة مكتملة = commit + push فوري لـ GitHub. تكملة Rule 63. ينتهي BREACH-001 (sandbox resets). (4) **Rule 76 — TEAM-WORK-REVIEW ⭐ قاعدة ثابتة**: قبل أي مهمة، git pull + قراءة آخر worklog + مراجعة commits الفريق. تحديث "آخر تحديث" 2026-10-06→2026-10-08 + عدّادات 66→76 + 1-70→1-76. لم تُحذف أي قاعدة — إضافة + تحديث عدّادات فقط. موافقة المالك الصريحة. |
 | 2026-09-01 | `00-CONSTITUTION.md` | تحديث علامة "آخر تحديث" لـ 2026-09-01. إعادة كتابة القاعدة 38 (SHORT-HOLDING) لتعكس فلسفة الخروج الهيكلية بعد تحوّل `short_holding_exit.py` (614 LOC) من زمني إلى هيكلي: `max_holding_7d` و `no_move_3d` ملغيان كأسباب وحيدة، الأولوية الجديدة `distribution > early_drop > compound_breakdown > review_alert`. إضافة مراجع `is_within_typical_correction()` + `is_breakdown_not_correction()` + `typical_correction_pct` من النوتبوك. إضافة بنود 25-30 لعهد الوكيل (Notebook + apply_notebook_context + Unified Exit Engine + Decision Logger + 10 Feature Flags). |
 
 
@@ -2110,7 +2111,7 @@ radar · predictions · market_regime · market_data · telegram · ai · portfo
 2. **تذكير قراءة الـ Documentation** — قبل بدء أي Task جديد، تذكّر المدير العام:
    ```markdown
    📚 **تذكير السكرتيرة (Rule 41 — DOCS-FIRST-LAST):**
-   - [ ] هل قريت `00-CONSTITUTION.md` (الـ 66 قاعدة) قبل ما تبدأ؟
+   - [ ] هل قريت `00-CONSTITUTION.md` (الـ 76 قاعدة) قبل ما تبدأ؟
    - [ ] هل قريت آخر 200 سطر من `worklog.md` لفهم آخر شغل؟
    - [ ] هل قريت `05-CURRENT_STATE.md` لفهم الوضع الكامل؟
    ```
@@ -2659,7 +2660,7 @@ git push origin main   # إلزامي — مش خطوة اختيارية
 
 #### القيود الصارمة:
 
-1. **لا تعديل على القواعد الدستورية** (Rules 1-70) بدون إذن صريح من المالك
+1. **لا تعديل على القواعد الدستورية** (Rules 1-76) بدون إذن صريح من المالك
 2. **لا تعديل على ملفات الإعدادات الحساسة** (`.env` + `ecosystem.config.js` + `Caddyfile` + `prisma/schema.prisma`) بدون إذن
 3. **لا تعديل على DBs الإنتاجية** (Rule 1) — فقط DBs الساندبوكس للقراءة + الباك-تست
 4. **لا حذف ملفات** بدون VERIFY-BEFORE-DELETE (Rule 16)
@@ -2802,6 +2803,144 @@ grep -rn "canonical_signal\|canonical-signal" src/ vps-service/ --include="*.ts"
 ---
 
 *نهاية التحديثات 2026-10-07 — القاعدة 72 (UNIFIED-DATA-CONTRACT).*
+
+---
+
+### القاعدة 73 — SINGLE-DISPLAY-SOURCE (مصدر عرض واحد لكل شاشة — 2026-10-08)
+
+> **سبب الإضافة:** تكملة Rule 20 (Python=Brain) + Rule 72 (UNIFIED-DATA-CONTRACT) بحماية عرض صريحة. كارثة "نفس السهم = 3 قرارات مختلفة على 5 شاشات" رغم وجود canonical modules كشفت إن الـ gaps كانت في طبقة العرض (screens) مش في طبقة الحساب.
+>
+> **المالك:** "الشاشة الواحدة كانت بتعرض 3 قرارات مختلفة لنفس السهم" — هذا لا يجوز.
+
+#### المبدأ: كل شاشة تعرض decision data تقرأ من مصدر عرض واحد
+
+كل شاشة تعرض `signal` / `master_score` / `RSI` / `support` / `resistance` / `entry` / `target` / `stop_loss` / `risk_reward` لازم تقرأ من مصدر عرض واحد:
+`GET /api/stocks/[ticker]/unified → vps-service/utils/canonical_signal.py → predictions.db (V40.2)`
+
+#### قواعد صارمة:
+
+1. **ممنوع** قراءة هذه الحقول من أكثر من مصدر في نفس الشاشة.
+2. **ممنوع** حسابها client-side (Rule 27 NO-FAKE-DATA + Rule 67(b) CALCULATION-CANONICAL).
+3. **مسموح** بقراءة OHLC chart data + المؤشرات الرياضية الـ pure (data، لا decision).
+4. **الحقول الممنوع حسابها client-side:** `signal`, `master_score`, `entry_price`, `target_1/2/3`, `stop_loss`, `rr_ratio`, `regime_confidence`, `analysis_text`, `who_is_buying_state`, `hmm_regime_ar`, `analysis_reason`.
+5. **لو canonical endpoint رجّع NULL** → اعرض "— بيانات غير متاحة" (سياسة الفراغ Rule 27). ممنوع fabrication بـ multipliers (`*0.95`, `*1.05`, إلخ).
+
+#### العلاقة مع القواعد الأخرى:
+- **Rule 20** (Python=Brain): لا منطق مالي في الـ client.
+- **Rule 27** (NO-FAKE-DATA): NULL يعني NULL.
+- **Rule 67(b)** (CALCULATION-CANONICAL): كل حساب له canonical file واحد.
+- **Rule 72** (UNIFIED-DATA-CONTRACT): 16 canonical metric source.
+- **Rule 73** (هذه): كل شاشة تقرأ من مصدر عرض واحد (`/api/stocks/[ticker]/unified`).
+
+#### التحقق (الإنفاذ):
+```bash
+# scripts/zero_conflict_test.py يضرب 7 endpoints × 5 tickers × 6 canonical fields
+# لازم mismatch_rate == 0.00% + threshold_drift == 0
+python3 scripts/zero_conflict_test.py
+```
+
+---
+
+### القاعدة 74 — TICKER-COOLDOWN (حماية رأس المال — وقف السهم بعد 5 خسائر — 2026-10-08)
+
+> **سبب الإضافة:** المالك أدرج "Ticker Cooldown" ضمن الحمايات المقدسة. كان موجودًا في الكود (improvement commit `efa40d69`) لكن غير مُرقّم كقاعدة دستورية صريحة.
+>
+> **ملاحظة ADDITIVE:** هذه القاعدة توثّق حماية موجودة في الكود، لا تنشئ حماية جديدة.
+
+#### آليتان منفصلتان (كلاهما حمايات مقدسة Rule 19):
+
+| # | الحماية | الترايغر | مدة الوقف | المرجع في الكود |
+|---|---------|---------|----------|-----------------|
+| 1 | **Ticker Cooldown** | 5 خسارات متتالية على نفس الـ ticker | **14 يوم** | `vps-service/jobs/daily_predictor.py:2844-2851` |
+| 2 | **Circuit Breaker** | 3 خسارات متتالية على أي ticker | **3 أيام** | `vps-service/jobs/daily_closer.py:3287` + `vps-service/utils/circuit_breaker.py:48-53` |
+
+#### قواعد صارمة:
+
+1. Ticker Cooldown = per-ticker hard stop (لا override).
+2. Circuit Breaker = حماية منفصلة (لا دمج مع Ticker Cooldown).
+3. كلاهما حمايات رأس مال مقدسة (Rule 19): **لا تُلمس، لا تُضعف، لا تُخفّف thresholds**.
+4. **ممنوع** bypass flag في الإنتاج (مسموح فقط في backtest sandbox).
+5. **ممنوع** توليد توصية على ticker في cooldown بأي persona (Rule 23 NO-PERSONA-RECLASSIFICATION).
+
+---
+
+### القاعدة 75 — PUSH-AFTER-EVERY-TASK (رفع GitHub بعد كل مهمة — 2026-10-08) ⭐ قاعدة ثابتة
+
+> **سبب الإضافة:** المالك رفع المدير العام لـ "عضو مهم في الفريق" + قرّر: "التحديثات تروح للـ GitHub بعد كل مهمة". هذا ينهي مشكلة BREACH-001 (فقدان الشغل في sandbox resets) نهائيًا + يضمن إن شغل الفريق متاح للجميع في الوقت الحقيقي.
+>
+> **تكملة Rule 63** (PUSH-AFTER-EVERY-COMMIT): القاعدة 63 كانت "كل commit = push فوري". القاعدة 75 أوسع: "كل مهمة مكتملة = commit + push فوري" (حتى لو مفيش commit صريح، المهمة المكتملة تستوجب push).
+
+#### المبدأ: المهمة المكتملة = commit + push فوري
+
+كل مهمة (Task) يكملها أي عضو فريق (المدير العام أو وكلاؤه أو أي session متوازية) تستوجب:
+
+1. **commit** بـ message واضح يصف المهمة (ليس UUID عشوائي).
+2. **push** فوري لـ `origin/main`.
+3. **worklog entry** قبل الـ push (عشان باقي الفريق يقرأها بعد الـ pull).
+
+#### قواعد صارمة:
+
+1. **ممنوع** تأجيل الـ push لـ "نهاية الجلسة" — كل مهمة مكتملة = push.
+2. **ممنوع** الـ push بدون worklog entry (باقي الفريق يحتاج السياق).
+3. **commit message format:** `<type>(<scope>): <arabic description>` (مثل `fix(unify): توحيد THRESHOLDS مع canonical` — NOT UUID).
+4. **قبل الـ push:** `git pull --rebase origin main` (لدمج شغل الفريق المتوازي + تجنب conflicts).
+5. **بعد الـ push:** تأكيد إن الـ commit ظهر على GitHub (`git log origin/main -1`).
+6. **الاستثناء الوحيد:** المالك يقول صراحةً "لا ترفع" لمهمة معينة.
+
+#### التحقق:
+```bash
+# بعد كل مهمة:
+git status --short                    # working tree نظيف؟
+git log origin/main -1 --oneline      # آخر push وصل؟
+git log origin/main..HEAD --oneline   # فارغ = كل شيء مرفوع
+```
+
+#### علاقة بـ BREACH-LOG:
+- BREACH-001 (فقدان شغل sandbox reset) كان السبب الأصلي لـ Rule 63.
+- Rule 75 تكمل: sandbox resets ما زالت تحدث → لازم push بعد كل مهمة عشان الشغل محفوظ على GitHub.
+
+---
+
+### القاعدة 76 — TEAM-WORK-REVIEW (مراجعة شغل الفريق قبل البدء — 2026-10-08) ⭐ قاعدة ثابتة
+
+> **سبب الإضافة:** المالك قرّر: "لازم تراجع شغل باقي الفريق". الفريق شغّال بالتوازي على نفس المشروع (sessions متعددة + وكلاء). بدون مراجعة منظمة، يحصل تكرار + تعارض + overclaims.
+>
+> **الدرس المستفاد:** في جلسة سابقة، Tasks 1-7 ادّعت "إكمال التوحيد" لكن المراجعة الجنائية (AUDIT-PRIOR-TEAM) كشفت 6 overclaims + 9 fabrications مخفية. المراجعة المنظمة كانت ستحول دون هذا.
+
+#### المبدأ: قبل أي مهمة جديدة، راجع شغل الفريق المتوازي
+
+كل session تبدأ بـ:
+
+1. **`git pull --rebase origin main`** — سحب آخر تحديثات الفريق.
+2. **قراءة آخر 200-300 سطر من `worklog.md`** — فهم ما فعله الفريق مؤخرًا.
+3. **قراءة آخر 3-5 commits على GitHub** — `git log --oneline -10` + `git show <sha> --stat` للمسائل الحرجة.
+4. **تحديد التداخل:** هل مهمتي الحالية متداخلة مع شغل قائم؟ (نفس الملفات؟ نفس المشكلة؟).
+5. **التواصل:** لو في تداخل، أبلغ المالك قبل البدء.
+
+#### قواعد صارمة:
+
+1. **ممنوع** البدء بمهمة بدون قراءة آخر worklog entries.
+2. **ممنوع** تعديل ملفات شغال عليها فريق آخر بالتوازي (بدون إذن المالك).
+3. **ممنوع** الـ overclaim ("تم الإكمال" بدون تحقق بالـ grep/test).
+4. **إلزامي** تدقيق ادعاءات الفريق السابق قبل المهمة (الحل: وكيل AUDIT-PRIOR-TEAM pattern).
+5. **إلزامي** احترام استراتيجيات الفريق البديلة (مثلًا: لو الفريق أصلح rogue writer بدل تعطيله، لا تُعطّله أنت).
+
+#### التحقق:
+```bash
+# قبل كل مهمة:
+git pull --rebase origin main
+tail -200 worklog.md | head -100         # آخر المهام
+git log --oneline -10                     # آخر commits
+git diff origin/main..HEAD --stat          # تعديلاتي vs الفريق
+```
+
+#### علاقة بـ Rule 68(a) (AGENT-QUALITY-GATE):
+- Rule 68(a) كانت "بوابة جودة الوكلاء" (import verification + file existence + no false claims).
+- Rule 76 أوسع: مراجعة منظمة لـ **شغل الفريق المتوازي** + الحماية من التكرار/التعارض/الـ overclaims.
+
+---
+
+*نهاية التحديثات 2026-10-08 — القواعد 73 (SINGLE-DISPLAY-SOURCE) + 74 (TICKER-COOLDOWN) + 75 (PUSH-AFTER-EVERY-TASK) + 76 (TEAM-WORK-REVIEW). المالك رفع المدير العام لـ "عضو مهم في الفريق" — هاتان القاعدتان (75 + 76) قواعد ثابتة دائمة.*
 
 # ⚖️ التوثيق القانوني — حماية المنصة من مسؤولية "توصية استثمارية"
 
