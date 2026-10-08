@@ -66349,3 +66349,27 @@ Stage Summary:
 - ملفات معدّلة: 2 (update_market_indices.py + update_metals_and_forex.py)
 - bugs مُصلحة: 3 (list.get + schema mismatch + missing tables)
 - القيود: Rule 20/27/66 محترمة، لا حذف origin/main
+
+---
+Task ID: AUDIT-INFRA
+Agent: general-purpose (مهندس البنية والتشغيل)
+Task: تدقيق عميق للبنية التحتية
+
+Work Log:
+- قرأت آخر ~130 سطر من worklog.md (مهام DOCS-UPDATE-FINAL + FIX-V3 + METALS-FOREX-V2)
+- فحصت ecosystem.config.js (7 خدمات PM2) + Caddyfile (:81 + XTransformPort open proxy) + next.config.ts + package.json + tsconfig + eslint + tailwind + postcss
+- فحصت vps-service/main.py (FastAPI 8010) vs lightweight_server.py (Flask 8010) — main.py يستورده ويmountه عبر WSGIMiddleware (مش duplicate فعليًا)
+- فحصت 17 DB في db/ (symlinks → db/vps_real/db/) — إجمالي ~340MB — 4 فقط بـ WAL mode (auth + data_engine + predictions + stocks)
+- فحصت prisma/schema.prisma (User+Post orphan, 32 LOC dead) + auth-schema.prisma (18 models) + predictions-schema.prisma (10 models) — User مكرر
+- فحصت src/lib/db*.ts — 17+ DB helper (data-engine-db/egx-db/finance-db/new-db/community-db/bot-link-db/paper-trading-v2-db/metrics-db/admin-db-manager/shared-db/sqlite-wrapper/flutter-sqlite-fallback/last-active-helper/subscription-enforcement/unified-stock-data/market-data-access/trade-results-engine)
+- فحصت vps-service/config/ (unified_config.py 937 LOC + sys_config.py 175 LOC + market_config.py 606 LOC) — MarketProfile vs MarketConfig duplicate abstraction
+- فحصت .env (DATABASE_URL → custom.db غير موجود!) + crontab.txt (26 jobs) + fix_cron_paths.sh + vps-service/jobs/ (15 scripts، 7 orphans)
+- فحصت mini-services/ (فارغ! فقط .gitkeep) + ws-service (port 3005 hardcoded) + telegram-events (port 3003 hardcoded) + /api/health (6/17 DBs فقط)
+- قدرت dead code LOC: archive 93K + 7 orphan jobs ~1K + 3 disabled news-agent ~600 + root one-offs ~1K + prisma orphan schema 32 + dead postbuild 50 = ~95K LOC شامل archive
+
+Stage Summary:
+- P0 issues: 12 (Caddy open proxy + EODHD_API_KEY hardcoded in ecosystem + DATABASE_URL→custom.db missing + Prisma orphan schema + ignoreBuildErrors:true + npm start max-old-space=256 + 7 orphan cron jobs incl wal_checkpoint + eslint كل القواعد معطّلة + postbuild dead + @Arabian_investment_guide hardcoded + next.config.ts standalone commented but postbuild expects it + telegram channel hardcoded fallback)
+- P1 issues: 18 (13/17 DBs بدون WAL + MarketConfig vs MarketProfile duplicate + 17 DB helpers بدون توحيد كامل + health endpoint 6/17 DBs فقط + servicesDown computed but unused + tsconfig strict:true + noImplicitAny:false تناقض + build==build:prod duplicate + data_engine reads DATA_ENGINE_PORT not PORT + ws-service PORT hardcoded + telegram-events PORT hardcoded + mini-services dead dir + 2 bun.lock files + fix_cron_paths.sh لا يكتشف /home/z/my-project + 3 .disabled news-agent files + tailwind content paths stale + dev script runs watchdog not next dev + nextjs env PORT duplicate with args +PYTHON/.venv hardcoded path + backfill_pid.txt leftover)
+- Dead code LOC estimate: ~2,300 LOC حقيقي (بدون archive) + ~93,000 LOC في archive
+- Top recommendations: (1) إصلاح Caddyfile → :443 + إزالة XTransformPort open proxy. (2) حذف EODHD_API_KEY fallback hardcoded من ecosystem.config.js. (3) تحديث .env DATABASE_URL أو حذف prisma/schema.prisma الـ orphan. (4) تفعيل strict TS + ignoreBuildErrors:false + eslint rules. (5) جدولة wal_checkpoint.py + price_history_stale_monitor.py. (6) توحيد DB helpers في entry واحد. (7) تفعيل WAL mode في كل الـ 13 DB المتبقية. (8) توسيع /api/health لكل الـ 17 DB. (9) إصلاح npm start max-old-space ليطابق ecosystem (2048). (10) حذف mini-services/ + prisma/schema.prisma + copy-sqljs-to-standalone.js postbuild.
+
