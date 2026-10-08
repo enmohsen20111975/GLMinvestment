@@ -66517,3 +66517,146 @@ Stage Summary:
   (18) توحيد 95 route اللي بيفتح `new Database()` inline على shared helpers (@/lib/db* + getUnifiedStockData).
   (19) توحيد 4 persona routes (persona/analyze + persona/gambler + persona/investor + stocks/dual-persona) في canonical واحد (dual-persona).
   (20) حذف 3 dead proxy routes (proxy-prod/[...path] + python/[...path] — aliases of proxy/[...path]).
+
+---
+Task ID: AUDIT-SCREENS
+Agent: general-purpose (مهندس الواجهات)
+Task: تدقيق عميق لكل الشاشات + الكروت + sub-views
+
+Stage Summary:
+- P0: 15 + P1: 25 + DEAD components: 11 (≈5,400 LOC) + duplicate clusters: 6 + 410-route callers: 9 broken (4 endpoints)
+- Top recommendations: (1) ترحيل 9 broken callers للـ 410 routes للـ canonical. (2) حذف 3 crypto dead-views + 2 orphan admin tabs + PredictionsBacktestTable. (3) توحيد 5 stock-analysis screens على canonical. (4) إصلاح N+1 في MakerRadarTab + batch endpoint. (5) جعل Footer sticky/fixed.
+
+Work Log:
+- قرأت آخر ~200 سطر من worklog.md (سياق AUDIT-APIS + AUDIT-ENGINES + AUDIT-DATA + AUDIT-INFRA + METALS-FOREX-INTEGRATION + ALL-TASKS-FINAL).
+- جردت كل ملفات الـ views: src/modules/**/components/*.tsx (134 ملف، ~129K LOC) + src/components/**/*.tsx (100 ملف، ~33K LOC) + src/app/page.tsx (1,052 LOC).
+- جردت كل case في page.tsx switch (52 case) — 37 ACTIVE + 15 HIDDEN/legacy (crypto-* redirects + admin-only + backtesting).
+- جردت VALID_VIEWS (valid-views.ts) — 56 view اسم، 8 فيهم crypto redirects + 2 admin-only.
+- جردت AdminView tabs — 28 tab موزّعة على 6 hubs (health + maestro + learning + data + users + telegram) — تطابق الـ brief "28 admin tabs".
+- جردت MarketAnalysisView tabs — 5 tabs (predictions + status + sectors-tracking + historical-trades + net-picks) — تطابق الـ brief "5 tabs في #recommendations".
+- جردت UnifiedPredictionsTab — 3 sub-views (current + performance + summary) — يحتوي PersonaTab + PredictionTrackingDashboard + ExecutiveReportView.
+- تأكدت إن analysis_json في proof modal الـ PredictionTrackingDashboard.tsx:2010-2060 — تم استخراجها فعليًا في الـ API layer (route.ts:554-578) لـ analysis_reason + target_price_3 + who_is_buying + hmm_regime + support/resistance. الـ audit feedback اللي قال "DEAD fields (analysis_json not extracted)" — FIXED ✅.
+- كشفت 9 broken callers للـ 410 routes:
+  * `/api/maker-radar/footprint` (410) — 4 callers: StockDetail:1078, UnifiedPublishButton:313, SpecialistAnalysisView:2539, RadarStatsCards:641.
+  * `/api/admin/generate-predictions` (410) — 5 callers: PurgeCacheButton:104, EnginesStatusTab:454+490, AdminView:1506, PredictionTrackingView:470.
+  * `/api/stocks/${ticker}/professional-analysis` (410) — 1 caller: GateAnalysisView:60.
+  * maestro + maestro/overview + maestro/stock + sniper/track + predictions/tracking/list — كلها مُرحّلة بالفعل (لا callers حيين).
+- كشفت 11 dead component (≈5,400 LOC):
+  * CryptoLearningView (1,106 LOC) — orphan بعد ترحيل crypto-learning → academy.
+  * CryptoAdditionalViews (34 LOC) — dead shim re-exports CryptoLearningView.
+  * CryptoScreenerView (677 LOC) — imported كـ variable في page.tsx بس مش rendered (crypto-screener → StockScreenerAdvancedView).
+  * CryptoTradingChartView (275 LOC) — نفس المشكلة (crypto-trading-chart → TradingChartView).
+  * CryptoAdvancedAnalysisView (688 LOC) — نفس المشكلة (مفيش case ليه).
+  * IndicesCSVUploader (278 LOC) — orphan admin tab (0 importers).
+  * HumanRecommendationsAdmin (1,028 LOC) — orphan admin tab (0 importers).
+  * PredictionsBacktestTable (533 LOC) — orphan dashboard widget (0 importers).
+  * ProfessionalWatchlistView (472 LOC) — orphan (0 importers فعليين، بس EnhancedWatchlistView هو canonical).
+  * AnalysisFlowDiagram (326 LOC) — orphan (0 importers فعليين).
+  * DataCoverageBanner (209 LOC) — orphan (0 importers فعليين).
+- كشفت duplicate clusters (6):
+  * Stock-analysis 5-way: StockAdvancedAnalysisView + SpecialistAnalysisView + GateAnalysisView + DeepAnalysis + ComprehensiveStockAnalysis — كلهم بيعملوا single-stock deep analysis، بس الأول بـ /api/python/v2/* والباقي بـ /api/stocks/[ticker]/unified.
+  * Prediction-tracking 3-way: PredictionTrackingView + PredictionTrackingDashboard + DualTrackPredictionsView.
+  * Card-publishing 4-way: TradeResultsTemplates + TradeResultsGenerator + StockInfographicCard + UnifiedPublishButton — كلهم بيعملوا publish card.
+  * Crypto-redirects 8-way: كل crypto-* views دلوقتي redirects — بس 4 منهم (CryptoScreener/TradingChart/AdvancedAnalysis/Learning) لسه موجودة كـ dead variables.
+  * Watchlist 2-way: EnhancedWatchlistView (canonical) + ProfessionalWatchlistView (orphan).
+  * Education 2-way: AcademyView + AcademyEncyclopedia — الاتنين بـ 2K+ LOC، مش واضح مين canonical.
+- كشفت Rule 73 violations:
+  * ComprehensiveStockAnalysis.tsx:198 — `/api/stocks/${ticker}/comprehensive` (bypass + fallback لـ unified).
+  * StockAdvancedAnalysisView.tsx:323,332 — `/api/python/v2/cached-analysis/${ticker}` + `/api/python/v2/analyze/${ticker}` (bypass مباشر).
+  * GateAnalysisView.tsx:60 — `/api/stocks/${ticker}/professional-analysis` (410 + bypass).
+  * StockDetail.tsx:1078 — `/api/maker-radar/footprint` (410 caller).
+- كشفت Rule 67 violation:
+  * TradingViewChart.tsx:214 calcRSI + ts:350 calcATR — نسخ محلية duplicate لـ canonical (rsi.py + atr.py) — التعليق بيقول إنها مطابقة بس مش مستوردة من canonical-rsi.ts.
+- كشفت Performance issues:
+  * MakerRadarTab.tsx:801-815 — N+1 POST pattern: Promise.all(toAdd.map(stock => fetch('/api/maker-radar/track', ...))) — يفتح POST per stock.
+  * 95 API route يفتح `new Database()` inline ( bypass shared helpers) — prior audit flagged نفس المشكلة.
+  * God components (>2K LOC): SuperLearningSystem(2,489) + EngineControlRoomTab(2,419) + StrategySandbox(2,188) + TelegramTab(2,200) + StocksView(2,305) + AcademyView(2,483) + DatabaseManagerFull(3,291) + StockScreenerAdvanced(2,517) + SpecialistAnalysisView(2,884) + EnhancedPortfolioView(3,320) + PersonaTab(2,310) + AcademyEncyclopedia(2,054) + PredictionTrackingDashboard(2,098) + ExecutiveReportView(2,088) + TradingViewChart(2,135) + SimulationView(2,130) + AdminView(2,083).
+- كشفت i18n:
+  * ar.json + en.json — 1,019 keys في كل واحد، 0 missing في الاتنين.
+  * 9 keys في ar.json قيمتها Latin فقط (common.siteUrl + common.english + auth.emailPlaceholder + radar.exit.paths.x5.label + radar.multiMarket.paths.preSurge) — مقبولة (URLs + language names).
+- كشفت a11y:
+  * 253 `<button>` element — معظمهم بـ text واضح، لكن icon-only buttons كتير منهم بلا aria-label (UI library Button component بتستلم aria-label كـ prop، لكن الاستخدام ضعيف).
+  * 4 `<img>` tags فقط — كلهم بـ alt (NewsFeedView:147 بـ alt="" decorative — مقبول).
+  * 141 aria-label/aria-hidden استخدام عبر src.
+- كشفت Sticky footer:
+  * Footer.tsx:14 — `className="border-t border-border bg-card/50 mt-auto"` — `mt-auto` بس مش `sticky bottom-0` ولا `fixed`. لصفحات قصيرة بيقعد في viewport bottom، لصفحات طويلة بيبقى في نهاية scroll — مُخالف لـ owner's UI rule "sticky/fixed to bottom".
+  * Mobile responsive: TopBar + MobileNav + MobileMoreSheet موجودة — مقبول.
+- كشفت ORPHAN views (defined but not in VALID_VIEWS):
+  * backtesting → EGXBacktestDashboard — في VALID_VIEWS بس مُصنّف كـ HIDDEN.
+  * prediction-performance + prediction-credibility — admin-only + redirect لـ dashboard.
+  * stock-detail — alias لـ stocks.
+  * analysis → alias لـ recommendations.
+  * finance → alias لـ portfolio.
+  * v2-analysis → alias لـ advanced-analysis (اللي بيرجّع MarketAnalysisView).
+  * picks-management → REMOVED + redirect لـ prediction-tracking.
+
+P0 Issues (15):
+1. StockDetail.tsx:1078 — fetch /api/maker-radar/footprint (410 — broken).
+2. UnifiedPublishButton.tsx:313 — fetch /api/maker-radar/footprint (410 — broken).
+3. SpecialistAnalysisView.tsx:2539 — fetch /api/maker-radar/footprint (410 — broken).
+4. RadarStatsCards.tsx:641 — fetch /api/maker-radar/footprint (410 — broken).
+5. GateAnalysisView.tsx:60 — fetch /api/stocks/${ticker}/professional-analysis (410 — broken).
+6. PurgeCacheButton.tsx:104 — fetch /api/admin/generate-predictions (410 — broken).
+7. EnginesStatusTab.tsx:454 — fetch /api/admin/generate-predictions (410 — broken).
+8. EnginesStatusTab.tsx:490 — fetch /api/admin/generate-predictions (410 — broken).
+9. AdminView.tsx:1506 — fetch /api/admin/generate-predictions (410 — broken).
+10. PredictionTrackingView.tsx:470 — fetch /api/admin/generate-predictions (410 — broken).
+11. ComprehensiveStockAnalysis.tsx:198 — bypass /api/stocks/${ticker}/comprehensive (Rule 73 violation).
+12. StockAdvancedAnalysisView.tsx:323,332 — bypass /api/python/v2/cached-analysis + /api/python/v2/analyze (Rule 73 + Rule 20 violations — TS يـ spawn Python مباشرة).
+13. MakerRadarTab.tsx:801-815 — N+1 POST pattern (Promise.all + fetch per stock) — performance P0 لو 50 سهم = 50 request parallel.
+14. Footer.tsx:14 — NOT sticky/fixed (مُخالف لـ owner's UI rule — `mt-auto` بس مش `sticky bottom-0`).
+15. page.tsx:267-283 — 3 dead variables (CryptoScreenerView + CryptoTradingChartView + CryptoAdvancedAnalysisView — imported but never rendered in JSX switch) — حجم chunk metadata زايد + 1,640 LOC code unused.
+
+P1 Issues (25):
+1. TradingViewChart.tsx:214 + :350 — local calcRSI + calcATR duplicate لـ canonical (Rule 67 violation).
+2. StockAdvancedAnalysisView + SpecialistAnalysisView + GateAnalysisView + DeepAnalysis + ComprehensiveStockAnalysis — 5 شاشات single-stock analysis متداخلة.
+3. PredictionTrackingView + PredictionTrackingDashboard + DualTrackPredictionsView — 3 شاشات تتبع توقعات متداخلة.
+4. CryptoLearningView (1,106 LOC) + CryptoAdditionalViews (34 LOC shim) — orphan بعد redirect.
+5. CryptoPortfolioView (641 LOC) — منفصل عن EnhancedPortfolioView لـ crypto users (UI-Mirror لسه ناقص crypto-portfolio).
+6. StockScreenerAdvanced (2,517 LOC) — duplicate filter functionality مع StocksView.
+7. EnhancedWatchlistView + ProfessionalWatchlistView — 2 watchlist screens (Professional orphan).
+8. AcademyView + AcademyEncyclopedia — 2 education screens (مين canonical؟).
+9. TradeResultsTemplates + TradeResultsGenerator + StockInfographicCard + UnifiedPublishButton — 4 publish-card components متداخلة.
+10. AdminView 28 tabs — overcomplicated navigation (6 hubs × 4-6 tabs).
+11. 16 god components >2K LOC — تحتاج تقسيم.
+12. 253 button بلا aria-label — a11y gap (icon-only buttons).
+13. 95 API route يفتح new Database() inline — bypass shared DB helpers.
+14. i18n: 9 keys Latin-only في ar.json (مقبولة لكن تحتاج مراجعة).
+15. 410 status codes returned without user-facing message — الـ fetch errors بتترجم لـ generic error بدل رسالة "endpoint deprecated".
+16. 5 orphan admin/dashboard components: IndicesCSVUploader + HumanRecommendationsAdmin + PredictionsBacktestTable + DataCoverageBanner + AnalysisFlowDiagram (≈2,374 LOC).
+17. SpecialistAnalysisView.tsx:21,905,2485,2539,2650,2804,2806 — references كتير للـ deprecated /api/maker-radar/footprint في comments + UI labels — لازم تنظيف.
+18. LiveMonitor (1,357 LOC) + LiveDashboard (123 LOC) + LiveTrackingTab (720 LOC) + RealtimeTicker (192 LOC) — 4 live-tracking views متداخلة.
+19. MarketAnalysisView.tsx:128-130 — fetches 3 endpoints متوازية per market change (/api/stocks + /api/unified/predictions + /api/stored-analysis/results) — كويس بس cache لـ 5 دقايق بس + auto-refresh كل 60ث في session — قد يسبب load عالي.
+20. MarketAnalysisView prefetches stored-analysis حتى لو المستخدم مش هيفتح tab معينة — could be lazy.
+21. PersonaTab.tsx:1431 — `signal: pd.signal || item.recommendation || 'HOLD'` — fallback لـ 'HOLD' ممكن يخدع المستخدم لو مفيش signal حقيقي (Rule 27 marginal).
+22. ImageCardExport.tsx:1-228 — publish card wrapper عام لكن غير مستخدم من كل cards (فقط PersonaImageCard + StockLeagueImageCard بيستخدموا html-to-image مباشرة).
+23. UnifiedPublishButton.tsx:313 — fetches 4 endpoints متوازية (stock + publish-data + footprint + unified) — N+1 risk لو tarhet multiple tickers.
+24. /admin/honest-predictions/page.tsx — Next.js page خارج VALID_VIEWS — orphan admin route.
+25. auto-analysis-widget.tsx + eid-predictions-widget.tsx — lowercase file naming inconsistency (باقي الـ files PascalCase).
+
+Dead components count: 11
+- CryptoLearningView (1,106) + CryptoAdditionalViews (34) + CryptoScreenerView (677) + CryptoTradingChartView (275) + CryptoAdvancedAnalysisView (688) + IndicesCSVUploader (278) + HumanRecommendationsAdmin (1,028) + PredictionsBacktestTable (533) + ProfessionalWatchlistView (472) + AnalysisFlowDiagram (326) + DataCoverageBanner (209) = 5,626 LOC.
+
+Duplicate clusters: 6
+- Stock-analysis 5-way + Prediction-tracking 3-way + Card-publishing 4-way + Crypto-redirects 4-way dead + Watchlist 2-way + Education 2-way.
+
+Consolidation recommendations:
+(1) ترحيل 9 broken callers فورًا:
+  - 4 callers لـ /api/maker-radar/footprint → /api/flow/${ticker} (canonical Python compute_money_flow).
+  - 5 callers لـ /api/admin/generate-predictions → حذف الأزرار (التوقعات cron تلقائي).
+  - 1 caller لـ /api/stocks/${ticker}/professional-analysis → /api/stocks/${ticker}/unified.
+(2) حذف 11 dead component (≈5,626 LOC) — Crypto* redirects + orphan admin tabs + orphan dashboard widgets.
+(3) توحيد 5 شاشات single-stock analysis على canonical واحدة (StockDetail يستخدم /api/stocks/[ticker]/unified) + حذف ComprehensiveStockAnalysis + StockAdvancedAnalysisView + GateAnalysisView + DeepAnalysis (دمج في StockDetail).
+(4) إصلاح N+1 في MakerRadarTab:801 — إنشاء batch endpoint /api/maker-radar/track/batch + استبدال Promise.all بـ fetch واحد.
+(5) جعل Footer sticky/fixed — `sticky bottom-0` أو `fixed bottom-0` + إضافة padding-bottom للـ main.
+(6) توحيد 3 شاشات تتبع التوقعات: PredictionTrackingView (active route) + PredictionTrackingDashboard (embedded) + DualTrackPredictionsView — دمج DualTrack داخل PredictionTrackingView كـ tab.
+(7) إضافة aria-label لكل icon-only buttons (TopBar + Header + MobileNav + Cards + Footer).
+(8) إزالة TradingViewChart local calcRSI/calcATR — استيراد من @/lib/canonical-rsi + @/lib/canonical-atr.
+(9) تقسيم 16 god component (>2K LOC) إلى chunks via next/dynamic (already partial — AdminView + MarketAnalysisView).
+(10) تنظيف SpecialistAnalysisView من references deprecated footprint في UI labels + comments.
+
+القيود:
+- لم ألمس الكود (.tsx/.ts) ولا الدستور (00-CONSTITUTION.md).
+- لم أُجرِ أي push على GitHub (GM handles per Rule 75).
+- READ-ONLY audit — كل التوصيات قابلة للتنفيذ في TASKS منفصلة.
+
