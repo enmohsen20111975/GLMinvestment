@@ -65908,3 +65908,22 @@ Stage Summary:
   3. pm2 restart all
   4. تشغيل daily_predictor يدويًا للتحقق
 - القيود: Rule 20/27/67/73 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: FALLBACK-FIX (المدير العام — إصلاح fallback تدفق البيانات)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح get_scan_dates fallback — لو egksco_price_history قديمة، استخدم price_history.db
+
+Work Log:
+- المشكلة: get_scan_dates يرجّع آخر يوم متاح في egksco_price_history (2026-09-26)
+  بدل البحث عن بيانات طازجة في مصادر أخرى
+- الإصلاح: إضافة fallback chain:
+  1. egksco_price_history (PRIMARY)
+  2. price_history.db.price_history (FALLBACK 1 — 1.24M rows، canonical EGX)
+  3. stocks.db.stock_daily_prices (FALLBACK 2 — آخر 30 يوم)
+- إزالة الكود الذي كان يرجّع آخر يوم متاح (كان يسبب بيانات قديمة)
+
+Stage Summary:
+- ملفات معدّلة: 1 (daily_predictor.py)
+- bugs مُصلحة: 1 (fallback chain كان مكسور — يرجع بيانات قديمة)
+- القيود: Rule 20/27/67/73 محترمة، لا حذف، الحمايات لم تُلمس
