@@ -250,7 +250,7 @@ export async function GET(req: NextRequest) {
 
     // Stats summary for the header card (computed on validated picks)
     const buyCount = validatedPicks.filter((p) =>
-      ['BUY', 'STRONG_BUY'].includes(p.signal.toUpperCase())
+      ['BUY', 'STRONG_BUY'].includes((p.signal || '').toUpperCase())
     ).length;
     const avgConfidence =
       validatedPicks.length > 0
