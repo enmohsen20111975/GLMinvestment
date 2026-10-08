@@ -392,7 +392,9 @@ export function PredictionTrackingView() {
     try {
       const params = new URLSearchParams({ market, limit: '200' });
       if (status !== 'all') params.set('status', status);
-      const res = await fetch(`/api/predictions/tracking/list?${params.toString()}`, {
+      // UNIFY-FIX (Rule 73): رحّلنا /api/predictions/tracking/list (deprecated 410)
+      // إلى /api/predictions/honest-tracking/list (canonical)
+      const res = await fetch(`/api/predictions/honest-tracking/list?${params.toString()}`, {
         cache: 'no-store',
       });
       const json = await res.json();

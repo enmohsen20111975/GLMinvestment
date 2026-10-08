@@ -460,13 +460,16 @@ export function DashboardView() {
                 ═══════════════════════════════════════════════════════════════ */}
             {v2Data?.market && (() => {
               const regime = v2Data.market.regime;
-              const isDefensive = regime?.trend === 'bear' || regime?.trend === 'distribution' || (regime?.regimeMultiplier ?? 1) < 0.8;
+              // UNIFY-FIX (Rule 20): isDefensive من regime.trend فقط (لا regimeMultiplier client-side)
+              const isDefensive = regime?.trend === 'bear' || regime?.trend === 'distribution';
               const regimeText = regime?.regimeAr || regime?.trend || 'محايد';
-              const advice = isDefensive
-                ? 'السوق دفاعي — قلل الحجم وركّز على وقف الخسارة'
-                : regime?.trend === 'bull'
-                ? 'السوق صاعد — ركّز على الأسهم ذات الـ RS العالي'
-                : 'السوق عرضي — انتظر فرص أوضح';
+              // UNIFY-FIX: advice من Python (regime.advice_ar) أو fallback نصي بسيط (لا حساب)
+              const advice = regime?.advice_ar
+                || (isDefensive
+                  ? 'السوق دفاعي — قلل الحجم وركّز على وقف الخسارة'
+                  : regime?.trend === 'bull'
+                  ? 'السوق صاعد — ركّز على الأسهم ذات الـ RS العالي'
+                  : 'السوق عرضي — انتظر فرص أوضح');
               return (
                 <section aria-label="حالة السوق">
                   <div className={`rounded-lg border p-3 ${isDefensive ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'}`}>
