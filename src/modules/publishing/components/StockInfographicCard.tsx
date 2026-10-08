@@ -175,9 +175,9 @@ function IntradayAreaChart({ data, isUp, high, low, current }: AreaChartProps) {
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${(p.x ?? 0).toFixed(2)},${(p.y ?? 0).toFixed(2)}`)
     .join(' ');
   const areaPath =
-    `M${points[0].(x ?? 0).toFixed(2)},${(H - PAD_B).toFixed(2)} ` +
+    `M${(points[0].x ?? 0).toFixed(2)},${(H - PAD_B).toFixed(2)} ` +
     points.map((p) => `L${(p.x ?? 0).toFixed(2)},${(p.y ?? 0).toFixed(2)}`).join(' ') +
-    ` L${points[n - 1].(x ?? 0).toFixed(2)},${(H - PAD_B).toFixed(2)} Z`;
+    ` L${(points[n - 1].x ?? 0).toFixed(2)},${(H - PAD_B).toFixed(2)} Z`;
 
   const stroke = isUp ? COLORS.emerald : COLORS.red;
   const gradId = isUp ? 'areaGradUp' : 'areaGradDown';
