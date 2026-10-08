@@ -70,28 +70,31 @@ def fetch_indices_from_tv() -> list:
             method='POST',
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode())
-
-        # UNIFY-FIX: TradingView scanner قد يرجع dict أو list
+            raw = resp.read().decode()
+        
+        # UNIFY-FIX v3: TradingView scanner يرجع dict بقيمة 'data' key
+        # لكن أحيانًا يرجع list مباشرة. نتعامل مع الحالتين.
+        data = json.loads(raw)
+        
+        rows = []
         if isinstance(data, dict):
-            rows = data.get('data', [])
+            rows = data.get('data', []) or []
         elif isinstance(data, list):
             rows = data
-        else:
-            rows = []
-
+        
         if not rows:
-            log("  ❌ TradingView رجع 0 نتائج", 'ERROR')
+            log(f"  ❌ TradingView رجع 0 نتائج (type={type(data).__name__})", 'ERROR')
             return []
 
         results = []
         for row in rows:
-            if isinstance(row, dict):
-                symbol = row.get('s', '')
-                d = row.get('d', {})
-            else:
+            if not isinstance(row, dict):
                 continue
-            name = d.get('description', '') or d.get('name', '')
+            symbol = row.get('s', '') or ''
+            d = row.get('d', {})
+            if not isinstance(d, dict):
+                d = {}
+            name = d.get('description', '') or d.get('name', '') or ''
 
             # ابحث عن المؤشرات بالاسم
             for idx_symbol, idx_info in INDEX_NAMES.items():
