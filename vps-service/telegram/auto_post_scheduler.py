@@ -144,6 +144,42 @@ WORKING_DAYS = (6, 0, 1, 2, 3)
 
 
 # ============================================================================
+# AUDIT-PUBLISH-QUALITY (Task 2026-10-08, Rule 27 — NO-FAKE-DATA)
+# ============================================================================
+# Mandatory legal disclaimer for every published message (constitution req).
+LEGAL_DISCLAIMER = '⚠️ *تحليل كمي بالذكاء الاصطناعي — إدارة رأس المال مسؤوليتك أولاً*'
+
+
+def _fmt_price(value, digits: int = 2) -> str:
+    """Format a price for display. Returns '—' when value is None / NaN /
+    non-finite instead of fabricating '0.00'."""
+    if value is None:
+        return '—'
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return '—'
+    if f != f:  # NaN check
+        return '—'
+    if not (-1e12 < f < 1e12):  # guard against absurd overflow values
+        return '—'
+    return f"{f:.{digits}f}"
+
+
+def _fmt_pct(value, digits: int = 1) -> str:
+    """Format a percentage for display. Returns '—' when value is None / NaN."""
+    if value is None:
+        return '—'
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return '—'
+    if f != f:
+        return '—'
+    return f"{f:+.{digits}f}%"
+
+
+# ============================================================================
 # STATE MANAGEMENT
 # ============================================================================
 def load_state() -> Dict:
@@ -508,8 +544,35 @@ def _format_daily_post(report: Dict, market: str) -> str:
         for i, rec in enumerate(valid_recs[:5], 1):
             sym = rec.get('symbol') or rec.get('ticker', '')
             name_ar = rec.get('name_ar') or rec.get('name') or get_arabic_stock_name(sym, sym)
-            entry = float(rec.get('entry_price') or 0)
-            score = float(rec.get('confidence') or rec.get('score') or 75)
+            # AUDIT-PUBLISH-QUALITY (Rule 27 — NO-FAKE-DATA): keep None when
+            # entry/confidence missing so we render "—" instead of "0.00".
+            entry_raw = rec.get('entry_price')
+            try:
+                entry = float(entry_raw) if entry_raw is not None else None
+            except (TypeError, ValueError):
+                entry = None
+            score_raw = rec.get('confidence')
+            if score_raw is None:
+                score_raw = rec.get('score')
+            try:
+                score = float(score_raw) if score_raw is not None else None
+            except (TypeError, ValueError):
+                score = None
+
+            # AUDIT-PUBLISH-QUALITY: derive support/resistance only when
+            # entry is a real positive number. Otherwise skip the level
+            # block entirely (Rule 27 — no fabricated levels from a 0 base).
+            if entry is None or entry <= 0:
+                # Skip this rec entirely — we cannot fabricate buy zones
+                # from a missing entry. Show name + confidence + analysis only.
+                conf_label = f"{score:.0f}%" if score is not None else "—"
+                text += f"🔹 **{i}. {name_ar} (#{sym})** | نسبة الثقة: **{conf_label}**\n"
+                analysis = rec.get('analysis') or rec.get('notes') or ''
+                if analysis:
+                    text += f"  • 💡 التحليل الفني: {analysis}\n\n"
+                else:
+                    text += "\n"
+                continue
 
             entry_min = entry * 0.99
             entry_max = entry * 1.01
@@ -537,11 +600,12 @@ def _format_daily_post(report: Dict, market: str) -> str:
                 except Exception:
                     pass
 
-            tp1_gain = ((tp1 - entry) / entry * 100) if entry > 0 and tp1 > 0 else 5.0
-            tp2_gain = ((tp2 - entry) / entry * 100) if entry > 0 and tp2 > 0 else 10.0
-            sl_loss = ((sl - entry) / entry * 100) if entry > 0 and sl > 0 else -4.0
+            tp1_gain = ((tp1 - entry) / entry * 100) if entry > 0 and tp1 > 0 else 0
+            tp2_gain = ((tp2 - entry) / entry * 100) if entry > 0 and tp2 > 0 else 0
+            sl_loss = ((sl - entry) / entry * 100) if entry > 0 and sl > 0 else 0
 
-            text += f"🔹 **{i}. {name_ar} (#{sym})** | نسبة الثقة: **{score:.0f}%**\n"
+            conf_label = f"{score:.0f}%" if score is not None else "—"
+            text += f"🔹 **{i}. {name_ar} (#{sym})** | نسبة الثقة: **{conf_label}**\n"
             text += f"  • 📍 نطاق الدخول: `{entry_min:.2f} - {entry_max:.2f} ج.م` (لا تطارد أعلى من `{entry_max:.2f}`)\n"
             text += f"  • 🎯 الهدف الأول: `{tp1:.2f} ج.م` (+{tp1_gain:.1f}%) [مقاومة م1: `{r1:.2f}`]\n"
             text += f"  • 🚀 الهدف الثاني: `{tp2:.2f} ج.م` (+{tp2_gain:.1f}%) [مقاومة م2: `{r2:.2f}`]\n"
@@ -551,8 +615,11 @@ def _format_daily_post(report: Dict, market: str) -> str:
             # التحليل
             analysis = rec.get('analysis') or rec.get('notes') or ''
             if not analysis:
-                ev_cnt = rec.get('evidence_count', 3)
-                analysis = f"نموذج تجميعي واختراق سيولة ذكية مع ثبات السعر أعلى نقطة الارتكاز ({ev_cnt} أدلة تأكيدية)"
+                # AUDIT-PUBLISH-QUALITY (Rule 27): do NOT fabricate a default
+                # "تجميعي + اختراق سيولة" string with fake "3 أدلة تأكيدية"
+                # when there is no real upstream analysis. Render a safe
+                # placeholder instead.
+                analysis = '— لا يتوفر نص تحليلي لهذه الفرصة حالياً.'
             text += f"  • 💡 التحليل الفني: {analysis}\n\n"
 
     # Footer
@@ -614,27 +681,58 @@ def _format_weekly_post(report: Dict, market: str) -> str:
         for i, rec in enumerate(valid_recs[:5], 1):
             sym = rec.get('symbol') or rec.get('ticker', '')
             name_ar = rec.get('name_ar') or rec.get('name') or get_arabic_stock_name(sym, sym)
-            entry = float(rec.get('entry_price') or 0)
-            tp1 = float(rec.get('target_price') or 0)
-            tp2 = float(rec.get('target_price_2') or (tp1 * 1.05 if tp1 else 0))
-            sl = float(rec.get('stop_loss') or 0)
-            score = float(rec.get('confidence') or rec.get('score') or 80)
+            # AUDIT-PUBLISH-QUALITY (Rule 27): keep None when missing so the
+            # published card shows "—" instead of "0.00 ج.م".
+            entry_raw = rec.get('entry_price')
+            try:
+                entry = float(entry_raw) if entry_raw is not None else None
+            except (TypeError, ValueError):
+                entry = None
+            tp1_raw = rec.get('target_price')
+            try:
+                tp1 = float(tp1_raw) if tp1_raw is not None else None
+            except (TypeError, ValueError):
+                tp1 = None
+            tp2_raw = rec.get('target_price_2')
+            try:
+                tp2 = float(tp2_raw) if tp2_raw is not None else (tp1 * 1.05 if tp1 and tp1 > 0 else None)
+            except (TypeError, ValueError):
+                tp2 = None
+            sl_raw = rec.get('stop_loss')
+            try:
+                sl = float(sl_raw) if sl_raw is not None else None
+            except (TypeError, ValueError):
+                sl = None
+            score_raw = rec.get('confidence')
+            if score_raw is None:
+                score_raw = rec.get('score')
+            try:
+                score = float(score_raw) if score_raw is not None else None
+            except (TypeError, ValueError):
+                score = None
 
-            tp1_gain = ((tp1 - entry) / entry * 100) if entry > 0 and tp1 > 0 else 6.0
-            tp2_gain = ((tp2 - entry) / entry * 100) if entry > 0 and tp2 > 0 else 12.0
-            sl_loss = ((sl - entry) / entry * 100) if entry > 0 and sl > 0 else -4.0
+            # AUDIT-PUBLISH-QUALITY: gain/loss % only when entry + level valid.
+            tp1_gain = ((tp1 - entry) / entry * 100) if (entry and entry > 0 and tp1 and tp1 > 0) else None
+            tp2_gain = ((tp2 - entry) / entry * 100) if (entry and entry > 0 and tp2 and tp2 > 0) else None
+            sl_loss = ((sl - entry) / entry * 100) if (entry and entry > 0 and sl and sl > 0) else None
 
-            text += f"🔹 **{i}. {name_ar} (#{sym})** | الثقة: **{score:.0f}%**\n"
-            text += f"  • 🟢 سعر الدخول المقترح: `{entry:.2f} ج.م`\n"
-            text += f"  • 🎯 الهدف الأول: `{tp1:.2f} ج.م` (+{tp1_gain:.1f}%)\n"
-            text += f"  • 🏆 الهدف الثاني: `{tp2:.2f} ج.م` (+{tp2_gain:.1f}%)\n"
-            text += f"  • 🛡️ وقف الخسارة الصارم: `{sl:.2f} ج.م` ({sl_loss:.1f}%)\n"
+            conf_label = f"{score:.0f}%" if score is not None else "—"
+            text += f"🔹 **{i}. {name_ar} (#{sym})** | الثقة: **{conf_label}**\n"
+            text += f"  • 🟢 سعر الدخول المقترح: `{_fmt_price(entry)} ج.م`\n"
+            tp1_gain_label = f" (+{tp1_gain:.1f}%)" if tp1_gain is not None else ""
+            text += f"  • 🎯 الهدف الأول: `{_fmt_price(tp1)} ج.م`{tp1_gain_label}\n"
+            tp2_gain_label = f" (+{tp2_gain:.1f}%)" if tp2_gain is not None else ""
+            text += f"  • 🏆 الهدف الثاني: `{_fmt_price(tp2)} ج.م`{tp2_gain_label}\n"
+            sl_loss_label = f" ({sl_loss:.1f}%)" if sl_loss is not None else ""
+            text += f"  • 🛡️ وقف الخسارة الصارم: `{_fmt_price(sl)} ج.م`{sl_loss_label}\n"
 
             # التحليل وأسباب الفرصة
             analysis = rec.get('analysis') or rec.get('notes') or ''
             if not analysis:
-                ev_cnt = rec.get('evidence_count', 4)
-                analysis = f"إشارات تجميع مؤسسي متطابق مع تدفق سيولة إيجابية وكسر مقاومة فرعية ({ev_cnt} أدلة رقمية)"
+                # AUDIT-PUBLISH-QUALITY (Rule 27): do NOT fabricate a default
+                # "تجميع مؤسسي + تدفق سيولة + كسر مقاومة" string with fake
+                # "4 أدلة رقمية" when no upstream analysis exists.
+                analysis = '— لا يتوفر نص تحليلي لهذه الفرصة حالياً.'
             text += f"  • 💡 التحليل الفني ومصدر التوقع: {analysis}\n\n"
 
     text += """━━━━━━━━━━━━━━━━━
@@ -1137,38 +1235,61 @@ def _format_daily_opportunities_post(result: Dict, market: str) -> str:
     lines.append("")
     
     for idx, opp in enumerate(opportunities, 1):
-        ticker = opp.get('ticker', '???')
-        name = opp.get('name', ticker)
-        price = opp.get('price', 0)
-        maestro_score = opp.get('maestro_score', 0)
-        recommendation_ar = opp.get('recommendation_ar', '')
-        confidence = opp.get('confidence', 0)
+        ticker = opp.get('ticker') or '—'
+        name = opp.get('name') or ticker
+        # AUDIT-PUBLISH-QUALITY (Rule 27): keep None when source missing
+        # so we can render "—" instead of "0.00" in the published card.
+        price = opp.get('price')
+        maestro_score = opp.get('maestro_score')
+        recommendation_ar = opp.get('recommendation_ar') or '—'
+        confidence = opp.get('confidence')
         
-        hunter_score = opp.get('hunter_score', 0)
-        momentum_score = opp.get('momentum_score', 0)
-        value_score = opp.get('value_score', 0)
-        hunter_verdict = opp.get('hunter_verdict', '')
-        momentum_verdict = opp.get('momentum_verdict', '')
-        value_verdict = opp.get('value_verdict', '')
+        hunter_score = opp.get('hunter_score') or 0
+        momentum_score = opp.get('momentum_score') or 0
+        value_score = opp.get('value_score') or 0
+        hunter_verdict = opp.get('hunter_verdict') or ''
+        momentum_verdict = opp.get('momentum_verdict') or ''
+        value_verdict = opp.get('value_verdict') or ''
         
         narrative_line1 = opp.get('narrative_line1', '')
         narrative_line2 = opp.get('narrative_line2', '')
         narrative_line3 = opp.get('narrative_line3', '')
         
-        stop_loss = opp.get('stop_loss', 0)
-        target = opp.get('target', 0)
-        entry_price = opp.get('entry_price', price)
+        stop_loss = opp.get('stop_loss')
+        target = opp.get('target')
+        entry_price = opp.get('entry_price') if opp.get('entry_price') is not None else price
         # RADAR-QUICK-WINS (Priority 4): add target_2 (derived as +10% above
         # target_1 when not present in the source data) so each Telegram card
         # shows entry + target_1 + target_2 + stop_loss with gain/loss %.
-        target_1 = float(opp.get('target_1', target) or 0)
-        target_2 = float(opp.get('target_2', 0) or (target_1 * 1.10 if target_1 else 0))
+        # AUDIT-PUBLISH-QUALITY (Rule 27): use None-safe parsing.
+        def _to_float(v):
+            if v is None:
+                return 0.0
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                return 0.0
+            if f != f or not (-1e12 < f < 1e12):
+                return 0.0
+            return f
+        target_1 = _to_float(opp.get('target_1')) or _to_float(target)
+        target_2 = _to_float(opp.get('target_2')) or (target_1 * 1.10 if target_1 > 0 else 0.0)
+        entry_f = _to_float(entry_price)
+        stop_f = _to_float(stop_loss)
+        price_f = _to_float(price)
 
         emoji = "🏦" if hunter_score >= max(momentum_score, value_score) else "🚀" if momentum_score >= max(hunter_score, value_score) else "💰"
 
         lines.append(f"{idx}️⃣ {emoji} <b>{ticker}</b> — {name}")
-        lines.append(f"💰 السعر: {price:.2f} ج | 🎯 درجة المايسترو: {maestro_score:.1f}")
-        lines.append(f"📊 التوصية: {recommendation_ar} | 🔒 الثقة: {confidence:.0f}%")
+        # AUDIT-PUBLISH-QUALITY: render "—" when price/score/confidence missing.
+        lines.append(
+            f"💰 السعر: {_fmt_price(price)} ج | 🎯 درجة المايسترو: "
+            f"{(f'{maestro_score:.1f}' if maestro_score is not None else '—')}"
+        )
+        lines.append(
+            f"📊 التوصية: {recommendation_ar} | 🔒 الثقة: "
+            f"{(f'{confidence:.0f}%' if confidence is not None else '—')}"
+        )
 
         # Personas
         if hunter_score >= 70:
@@ -1184,17 +1305,17 @@ def _format_daily_opportunities_post(result: Dict, market: str) -> str:
 
         # Levels — RADAR-QUICK-WINS (Priority 4): multi-line format with
         # target_1, target_2, stop_loss + gain/loss percentages.
-        if entry_price:
-            t1_gain = ((target_1 - entry_price) / entry_price * 100) if (entry_price > 0 and target_1 > 0) else 0
-            t2_gain = ((target_2 - entry_price) / entry_price * 100) if (entry_price > 0 and target_2 > 0) else 0
-            sl_loss = ((stop_loss - entry_price) / entry_price * 100) if (entry_price > 0 and stop_loss > 0) else 0
-            lines.append(f"   💰 الدخول: {entry_price:.2f}")
+        if entry_f > 0:
+            t1_gain = ((target_1 - entry_f) / entry_f * 100) if (entry_f > 0 and target_1 > 0) else 0
+            t2_gain = ((target_2 - entry_f) / entry_f * 100) if (entry_f > 0 and target_2 > 0) else 0
+            sl_loss = ((stop_f - entry_f) / entry_f * 100) if (entry_f > 0 and stop_f > 0) else 0
+            lines.append(f"   💰 الدخول: {_fmt_price(entry_f)}")
             if target_1 > 0:
-                lines.append(f"   🎯 الهدف 1: {target_1:.2f} (+{t1_gain:.1f}%)")
+                lines.append(f"   🎯 الهدف 1: {_fmt_price(target_1)} (+{t1_gain:.1f}%)")
             if target_2 > 0:
-                lines.append(f"   🎯 الهدف 2: {target_2:.2f} (+{t2_gain:.1f}%)")
-            if stop_loss > 0:
-                lines.append(f"   🛑 وقف الخسارة: {stop_loss:.2f} ({sl_loss:.1f}%)")
+                lines.append(f"   🎯 الهدف 2: {_fmt_price(target_2)} (+{t2_gain:.1f}%)")
+            if stop_f > 0:
+                lines.append(f"   🛑 وقف الخسارة: {_fmt_price(stop_f)} ({sl_loss:.1f}%)")
         
         lines.append("")
     
@@ -1316,39 +1437,62 @@ def _format_morning_bell_post(data: Dict) -> str:
             signal_ar = canonical_signal_ar(_signal_en)
         else:
             signal_ar = s.get('signal_ar')  # may be None — Rule 27 (no fake data)
-        entry = s.get('entry', 0) or 0
-        target = s.get('target', 0) or 0
-        stop = s.get('stop', 0) or 0
+        entry = s.get('entry') or s.get('entry_price')
+        target = s.get('target') or s.get('target_price')
+        stop = s.get('stop') or s.get('stop_loss')
         # RADAR-QUICK-WINS (Priority 4): add target_1 / target_2 with gain %
         # to the morning bell card (in addition to the existing single-line
         # R/R + score line). target_2 derived as +10% above target_1 when
         # not provided by the source data.
-        target_1 = float(s.get('target_1', target) or 0)
-        target_2 = float(s.get('target_2', 0) or (target_1 * 1.10 if target_1 else 0))
-        rr = s.get('risk_reward', 0) or 0
-        score = s.get('score', 0) or 0
+        # AUDIT-PUBLISH-QUALITY (Rule 27 — NO-FAKE-DATA): keep None instead
+        # of falling back to 0 → "0.00" leak in the published card.
+        def _to_float_or_none(v):
+            if v is None:
+                return None
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                return None
+            if f != f or not (-1e12 < f < 1e12):
+                return None
+            return f
+
+        target_1 = _to_float_or_none(s.get('target_1')) or _to_float_or_none(target) or 0.0
+        target_2 = _to_float_or_none(s.get('target_2')) or (target_1 * 1.10 if target_1 > 0 else 0.0)
+        entry_f = _to_float_or_none(entry) or 0.0
+        stop_f = _to_float_or_none(stop) or 0.0
+        rr = _to_float_or_none(s.get('risk_reward')) or 0.0
+        score = _to_float_or_none(s.get('score')) or 0.0
         ath = bool(s.get('ath_breakout', False))
         delay = bool(s.get('delay_compensation_applied', False))
 
-        t1_gain = ((target_1 - entry) / entry * 100) if (entry > 0 and target_1 > 0) else 0
-        t2_gain = ((target_2 - entry) / entry * 100) if (entry > 0 and target_2 > 0) else 0
-        sl_loss = ((stop - entry) / entry * 100) if (entry > 0 and stop > 0) else 0
+        t1_gain = ((target_1 - entry_f) / entry_f * 100) if (entry_f > 0 and target_1 > 0) else 0
+        t2_gain = ((target_2 - entry_f) / entry_f * 100) if (entry_f > 0 and target_2 > 0) else 0
+        sl_loss = ((stop_f - entry_f) / entry_f * 100) if (entry_f > 0 and stop_f > 0) else 0
 
         rocket = ' 🚀' if ath else ''
         text += f"{i}. 🏦 **{name_ar}** ({ticker}){rocket}\n"
         if signal_ar:  # Rule 27 (NO-FAKE-DATA): skip line when no signal available
             text += f"   الإشارة: {signal_ar}\n"
-        text += f"   💰 الدخول: {entry:.2f}\n"
+        # AUDIT-PUBLISH-QUALITY: show "—" when entry missing instead of "0.00".
+        text += f"   💰 الدخول: {_fmt_price(entry)}\n"
         if target_1 > 0:
-            text += f"   🎯 الهدف 1: {target_1:.2f} (+{t1_gain:.1f}%)\n"
+            text += f"   🎯 الهدف 1: {_fmt_price(target_1)} (+{t1_gain:.1f}%)\n"
         if target_2 > 0:
-            text += f"   🎯 الهدف 2: {target_2:.2f} (+{t2_gain:.1f}%)\n"
-        if stop > 0:
-            text += f"   🛑 وقف الخسارة: {stop:.2f} ({sl_loss:.1f}%)\n"
-        extras = f"⚖️ R/R: {rr:.1f} | 📊 النقاط: {score:.0f}"
-        if delay:
-            extras += " | ⚠️ تعويض تأخير"
-        text += f"   {extras}\n\n"
+            text += f"   🎯 الهدف 2: {_fmt_price(target_2)} (+{t2_gain:.1f}%)\n"
+        if stop_f > 0:
+            text += f"   🛑 وقف الخسارة: {_fmt_price(stop)} ({sl_loss:.1f}%)\n"
+        # AUDIT-PUBLISH-QUALITY: only show R/R + score line when at least
+        # one of them is meaningful (> 0). Otherwise "R/R: 0.0 | النقاط: 0"
+        # is a meaningless leak of fabricated zeros.
+        if rr > 0 or score > 0:
+            extras = f"⚖️ R/R: {rr:.1f} | 📊 النقاط: {score:.0f}"
+            if delay:
+                extras += " | ⚠️ تعويض تأخير"
+            text += f"   {extras}\n"
+        elif delay:
+            text += "   ⚠️ تعويض تأخير\n"
+        text += "\n"
 
     text += "━━━━━━━━━━━━━━━━━━━\n"
     text += "⚠️ ليست توصية شراء مباشرة — راجع استراتيجيتك ومستوى المخاطرة.\n"
