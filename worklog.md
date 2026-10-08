@@ -66274,3 +66274,28 @@ Stage Summary:
 - مصادر جديدة: 3 (metals.dev + frankfurter.dev + تأكيد CoinGecko)
 - اختبارات: 2/3 نجحوا (frankfurter + CoinGecko)، metals.dev يحتاج مفتاح
 - القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس origin/main
+- القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: P0-METALS-FOREX-V2 (المدير العام — مصادر بيانات احترافية v2)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح كامل لـ metals.dev + frankfurter.dev + اختبارات شاملة
+
+Work Log:
+- اختبار metals.dev API key: ✅ نجح (gold $4124, silver $58, platinum $1631, copper $0.45)
+- اكتشاف frankfurter.dev v2 API الصحيح:
+  * /v1/latest = 404 (قديم)
+  * /v2/rates?base=USD = ✅ يعمل (قائمة JSON)
+  * /v2/rate/USD/EGP = ✅ يعمل (سعر مباشر)
+- تحديث update_metals_and_forex.py v2:
+  * metals.dev: API key مفعّل + يحفظ 4 معادن (ذهب/فضة/بلاتين/نحاس)
+  * frankfurter.dev v2: /v2/rates?base=USD + fallback /v2/rate/USD/{target}
+  * CoinGecko: اختبار ✅ يعمل (BTC $81K, ETH $2.4K, BNB $730)
+  * حفظ في data_engine.db (gold_prices + silver_prices + exchange_rates)
+  * تحويل toz → gram (1 toz = 31.1035g)
+
+Stage Summary:
+- اختبارات: 3/3 نجحوا (metals.dev + frankfurter.dev + CoinGecko)
+- معادن جديدة: 4 (ذهب + فضة + بلاتين + نحاس)
+- عملات جديدة: 5 (EGP + SAR + KWD + QAR + AED)
+- القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
