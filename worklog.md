@@ -66713,9 +66713,9 @@ Work Log:
   * Flow: StockPublisher.tsx (1,129 LOC) → adminFetch('/api/telegram/publish-stock', multipart image+caption) → /api/telegram/publish-stock → POST https://api.telegram.org/bot{token}/sendPhoto. ImageCardExport / MarketStatusExport → fetch('/api/market/publish-status-image') → Python → TelegramAutoPoster.send_photo.
   * Rule 20 violation: StockPublisher.tsx بـ يستخدم generatePublishText (TS) لبناء الـ caption المنشور — الـ text بيتكوّن في TS بدل ما Python يكون المصدر الوحيد.
 - فحص telegram credentials:
-  * CRITICAL: news-agent/sender/social_publisher.py:42 — `os.getenv('TELEGRAM_BOT_TOKEN', '8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U').strip()` — Bot Token إنتاجي حقيقي مُلتزم في الـ repo. أي حد مع read access يقدر ياخده ويتحكم في البوت (نشر/حذف/قراءة messages).
+  * CRITICAL: news-agent/sender/social_publisher.py:42 — `os.getenv('TELEGRAM_BOT_TOKEN', '[REDACTED-BOT-TOKEN]').strip()` — Bot Token إنتاجي حقيقي مُلتزم في الـ repo. أي حد مع read access يقدر ياخده ويتحكم في البوت (نشر/حذف/قراءة messages).
   * HIGH: ecosystem.config.js:326 — `TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || '@Arabian_investment_guide'` — channel fallback مُلتزم.
-  * HIGH: ecosystem.config.js:169 — `EODHD_API_KEY: process.env.EODHD_API_KEY || '6990ef9ee966c5.41761316'` — API key إنتاجي حقيقي مُلتزم.
+  * HIGH: ecosystem.config.js:169 — `EODHD_API_KEY: process.env.EODHD_API_KEY || '[REDACTED-EODHD-KEY]'` — API key إنتاجي حقيقي مُلتزم.
   * MEDIUM: telegram_interactive_bot.py:83 + telegram_target_hit_tracker.py:110 + telegram_daily_lessons.py:58 — كلهم بـ يرجعوا لـ '@Arabian_investment_guide' كـ fallback channel.
   * 5 ملفات تانيين بـ يحملوا OFFICIAL_LINKS fallback dictionary (auto_poster.py:72-84 + telegram_target_hit_tracker.py:72-82) فيها روابط invist.m2y.net + facebook + whatsapp + bot + t.me/Arabian_investment_guide.
 - فحص telegram-events mini-service:
@@ -66763,7 +66763,7 @@ Work Log:
     8. Admin manual publish: TelegramPredictionsTab + StockPublisher + StockInfographicModal + ImageCardExport + MarketStatusExport + TradeResultsGenerator + TradingChartView.
 
 P0 Issues (12):
-1. news-agent/sender/social_publisher.py:42 — Telegram Bot Token إنتاجي مُلتزم في الكود (`8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U`). SECURITY CRITICAL.
+1. news-agent/sender/social_publisher.py:42 — Telegram Bot Token إنتاجي مُلتزم في الكود (`[REDACTED-BOT-TOKEN]`). SECURITY CRITICAL.
 2. telegram_interactive_bot.py:695-697 — check_subscription fail-open لما BOT_API_SECRET فارغ → كل المستخدمين بياخدوا VIP. SECURITY CRITICAL.
 3. /api/telegram/publish-stock route.ts:34 — getSessionUserId فقط (NOT requireAdminAsync) → أي trial user يقدر ينشر على القناة. SECURITY.
 4. /api/market/publish-status-image route.ts — NO AUTH CHECK AT ALL. SECURITY CRITICAL (unauthenticated publish).
@@ -66771,7 +66771,7 @@ P0 Issues (12):
 6. telegram_target_hit_tracker.py:1023-1030 — في --force mode بـ fabricate hit_price=entry*1.07 + profit=7% + next_target=entry*1.14 + trailing_stop=entry*1.01 + advice="السيولة إيجابية..." (Rule 27).
 7. telegram_interactive_bot.py:516-526 (build_stock_card) — بـ fabricate entry_min=price*0.99, entry_max=price*1.01, s1=price*0.96, s2=price*0.92, r1=price*1.06, r2=price*1.12, tp1=r1*0.995, tp2=r2*0.995, sl=s1*0.985, rr=2.0, advice="السعر داخل نطاق الشراء الآمن..." (Rule 27).
 8. telegram_target_hit_tracker.py:398,400,402,413,415 — next_target/trailing_stop fabrication (high_p*1.06/1.08/1.03 + hit_price*0.96/0.97 + entry_p*1.01) لما buy_pct غير متوفر.
-9. ecosystem.config.js:169 — EODHD_API_KEY hardcoded fallback (`6990ef9ee966c5.41761316`) — API key إنتاجي مُلتزم.
+9. ecosystem.config.js:169 — EODHD_API_KEY hardcoded fallback (`[REDACTED-EODHD-KEY]`) — API key إنتاجي مُلتزم.
 10. ecosystem.config.js:326 + telegram_interactive_bot.py:83 + telegram_target_hit_tracker.py:110 + telegram_daily_lessons.py:58 — `@Arabian_investment_guide` hardcoded كـ fallback channel.
 11. TelegramPredictionsTab.tsx:117 — fetch /api/telegram/publish-stock بدون admin gate (المسار نفسه #3 + الـ admin tab مش بـ يفحص admin).
 12. /api/telegram/publish-stock route.ts:169-177 — TS بـ يكتب في predictions.db (`UPDATE predictions SET published_at, telegram_message_id, was_published=1`) — Rule 35 violation (V40.2 only writer).
@@ -66808,10 +66808,10 @@ Dead code estimate: ~1,575 LOC
 - credentials.example.json: 7 LOC (template، مش dead بس placeholder)
 
 Security issues (6):
-1. CRITICAL: news-agent/sender/social_publisher.py:42 — Telegram Bot Token مُلتزم في الكود (`8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U`). → rotation فوري عبر BotFather + حذف من repo + git history scrub.
+1. CRITICAL: news-agent/sender/social_publisher.py:42 — Telegram Bot Token مُلتزم في الكود (`[REDACTED-BOT-TOKEN]`). → rotation فوري عبر BotFather + حذف من repo + git history scrub.
 2. CRITICAL: telegram_interactive_bot.py:695-697 — fail-open لما BOT_API_SECRET فارغ. → required env var في الإنتاج + raise لو فارغ.
 3. CRITICAL: /api/telegram/publish-stock route.ts:34 + /api/market/publish-status-image route.ts — لا requireAdminAsync. → إضافة admin gate فورًا.
-4. HIGH: ecosystem.config.js:169 — EODHD_API_KEY hardcoded fallback (`6990ef9ee966c5.41761316`). → حذف الـ fallback + require env var.
+4. HIGH: ecosystem.config.js:169 — EODHD_API_KEY hardcoded fallback (`[REDACTED-EODHD-KEY]`). → حذف الـ fallback + require env var.
 5. HIGH: ecosystem.config.js:326 — `@Arabian_investment_guide` hardcoded channel fallback. → حذف الـ fallback + require env var.
 6. MEDIUM: telegram_interactive_bot.py:1251 — log يـ print أول 7 chars من BOT_TOKEN. → mask الـ token في الـ logs.
 
@@ -67190,3 +67190,39 @@ Verification:
 Stage Summary:
 - 1 duplicate removed (44 LOC)
 - Rule 67 (CALCULATION-CANONICAL) + Rule 72 (UNIFIED-DATA-CONTRACT) مُحترمة
+
+---
+Task ID: P1-CLEANUP (المدير العام — إكمال الـ cleanup)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: P1 cleanup — 10 dead components لـ archive + 23 proxy routes موحّدة + secrets redacted
+
+Work Log:
+- 10 dead components moved to archive/dead-components-2026-10-08/ (reversible via git mv):
+  * crypto/: CryptoLearningView + CryptoAdditionalViews + CryptoScreenerView + CryptoTradingChartView + CryptoAdvancedAnalysisView (5 files)
+  * admin/: IndicesCSVUploader + HumanRecommendationsAdmin (2 files)
+  * dashboard/: PredictionsBacktestTable (1 file)
+  * market-analysis/: AnalysisFlowDiagram (1 file)
+  * stock-analysis/: DataCoverageBanner (1 file)
+  * ProfessionalWatchlistView RESTORED (not dead — used by TradingMemoryView)
+  * Removed dead imports from page.tsx + 4 index.ts re-exports
+- 23 mislabeled market-pulse proxies unified:
+  * Created src/lib/market-pulse-proxy.ts (canonical proxy helper)
+  * 23 routes converted from 29-LOC copy-paste to 12-LOC thin wrapper
+  * ~390 LOC duplicate removed
+  * 4 complex routes skipped (mobile/dashboard + mobile/recommendations + money/smart-monitor + market/recommendations/ai-insights)
+- Old secrets redacted from worklog.md:
+  * Bot Token → [REDACTED-BOT-TOKEN]
+  * EODHD key → [REDACTED-EODHD-KEY]
+  * 0 secrets in any tracked file (verified via git grep)
+
+Verification:
+- ✅ Lint: 0 errors
+- ✅ TS: 0 new errors in modified files
+- ✅ Server: HTTP 200 (health) + unified proxies return 503 (Python not running — correct)
+- ✅ git grep: 0 secrets in tracked files
+
+Stage Summary:
+- 10 dead components archived (5,626 LOC → archive/, reversible)
+- 23 proxies unified (~390 LOC duplicate removed)
+- Secrets fully redacted from all tracked files
+- ProfessionalWatchlistView restored (was falsely flagged as dead)

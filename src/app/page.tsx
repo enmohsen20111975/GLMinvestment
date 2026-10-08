@@ -264,22 +264,16 @@ const AboutView = dynamicImport(() => import('@/components/about/AboutView').the
 // null` + cryptoViewsPromise block is removed.
 
 // ─── مكونات الكريبتو المستقلة (بيانات crypto_prices حقيقية) ────────────────────────
-const CryptoScreenerView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/crypto/components/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
-  'فلتر العملات الرقمية',
-);
+// Task P1-CLEANUP (2026-10-08): CryptoScreenerView + CryptoTradingChartView +
+// CryptoAdvancedAnalysisView + CryptoLearningView moved to archive/dead-components-2026-10-08/
+// (they were imported as dynamic-import variables but never rendered in any JSX).
+// CryptoPredictionTrackingView is KEPT (it IS rendered). To restore: move files back + uncomment.
+const CryptoScreenerView = null;
+const CryptoTradingChartView = null;
+const CryptoAdvancedAnalysisView = null;
 const CryptoPredictionTrackingView = withErrorBoundary(
   dynamicImport(() => import('@/modules/crypto/components/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
   'تتبّع توقعات الكريبتو',
-);
-const CryptoTradingChartView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/crypto/components/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
-  'شارت العملات',
-  { height: 'h-[600px]' },
-);
-const CryptoAdvancedAnalysisView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/crypto/components/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
-  'التحليل المتقدم للعملات',
 );
 
 /**
