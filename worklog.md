@@ -65117,3 +65117,232 @@ Stage Summary:
 - الذاكرة: 869MB available (ضمن الميزانية)
 - مساحة المشروع: 1.8GB
 - القيود: لا حذف ملفات أصلية، الحمايات لم تُلمس، Rule 20/27/73 محترمة
+
+---
+Task ID: DEEP-PY-AUDIT
+Agent: general-purpose (مهندس المحرك Python)
+Task: تدقيق شامل لكل المعادلات/الحسابات في Python — هل مرتبطة بـ predictions.db؟
+
+Work Log:
+- قرأت آخر 1500 سطر من worklog.md (lines 63619→65120) — تابعت V402-DIAGNOSIS (L64637) + V402-P0-DB-WRITE-FIX (L64660) + UNIFY-AUDIT-2 + PROFESSIONAL-TRADING-CHART. أهم اكتشافات السابقين: ROOT CAUSE #1 (build_institutional_decision exception → fallback {tech_score:50, signal_final:'انتظر'} → IMPROVEMENT-12 يحوّل WAIT→HOLD ويخزّن) + ROOT CAUSE #2/3 (risk_reward + who_is_buying محسوبين لكن غير مكتوبين في DB حتى P0 R5+R6 fix 2026-10-07).
+- قرأت daily_predictor.py كامل (3889 سطر) — تتبعت flow: get_scan_dates() → get_tickers() → V38BacktestEngine.get_price_data() → analyze_single_day() → IMPROVEMENT-12 (L1000-1025) → tracker.record_prediction() (L3303) → INSERT INTO stored_analyses (L3400).
+- قرأت prediction_tracker.py (1283 سطر) — فحصت _init_table migrations (L331-357: risk_reward + who_is_buying columns أُضيفت 2026-10-07) + record_prediction INSERT (L613-633) — الآن يكتب risk_reward + who_is_buying_state ✓.
+- قرأت core/db_manager.py (483 سطر) — DBManager singleton مع WAL/busy_timeout/immutable fallback. 8 قواعد معتمدة: stocks + predictions + price_history + data_engine + intraday + auth + crypto + crypto_learning.
+- قرأت master_analyzer.py (5726 سطر، دفعات) — يكتب في stocks.db فقط (self.db_path=stocks.db). لا يكتب في predictions.db. engine API للـ on-demand analysis، مش جزء من V40.2 flow.
+- قرأت institutional_decision_engine.py (1506 سطر، grep) — لا INSERT/UPDATE predictions. يرجع dict فقط. build_institutional_decision exception fallback (L1481-1506) = ROOT CAUSE لـ HOLD/50.
+- قرأت utils/shared_liquidity.py (150 سطر) — حسابات السيولة الديناميكية (low=80K, mid=200K, high=400K). لا يكتب في DB. مستخدمة من daily_predictor.py كبوابة تصفية.
+- قرأت data_engine/main.py (200 سطر) + grep egksco_price_history — الـ Flask service (port 5000) بيستخدم fallback_chain.py (LIGHTWEIGHT egksco_scraper) اللي بيكتب في data_engine.db.stocks فقط (مش egksco_price_history!).
+- قرأت vps-service/data/egksco_scraper.py (L780-880) — الكاتب الوحيد لـ data_engine.db.egksco_price_history. propagation code اتضاف 2026-10-05 (PRED-ENGINE-AUDIT comment) لكن الـ scraper نفسه مش مجدول في cron.
+- قرأت crontab.txt (201 سطر) — فحصت 26 cron job. كلها مفعّلة. المفقود الوحيد: vps-service/data/egksco_scraper.py (الكاتب الوحيد لـ egksco_price_history).
+- grep لكل ملفات .py في vps-service — وجدت 10+ كتاب مختلفين لـ predictions.db (violation لمبدأ SINGLE-WRITER): daily_predictor + intraday_scanner + daily_closer + ai_predictions_routes + historical_predictions_v2_routes + maestro_orchestrator + trader_levels_engine + telegram_target_hit_tracker + scripts/backfill_*.
+
+Stage Summary:
+
+### 1. خريطة تدفق البيانات الكاملة (Data Flow Map)
+```
+                          ┌─────────────────────────────────────────────────────┐
+                          │           المصادر (Scrapers + APIs)                  │
+                          └─────────────────────────────────────────────────────┘
+                                              │
+              ┌───────────────────────────────┼───────────────────────────────┐
+              ▼                               ▼                               ▼
+   ┌─────────────────────┐        ┌──────────────────────┐         ┌──────────────────┐
+   │ data_engine.db      │        │ stocks.db             │         │ price_history.db│
+   │ ─ egksco_price_hist │        │ ─ stocks (live price) │         │ ─ price_history  │
+   │ ─ tab_valuation     │        │ ─ stock_daily_prices   │         │   (25y history) │
+   │ ─ tab_profitability │        │ ─ market_indices        │         │                  │
+   │ ─ tab_technical_... │        │ ─ news_articles        │         └──────────────────┘
+   │ ─ crypto_prices     │        └──────────────────────┘                  ▲
+   │ ─ gold_prices        │                                                   │
+   └──────────┬──────────┘                                                   │
+              │                                                              │
+              │ egksco_price_history FROZEN ← vps-service/data/             │
+              │ (162K rows, last=2026-09-26)    egksco_scraper.py          │
+              │                                  (NOT IN CRON!)             │
+              │                                                              │
+              ▼                                                              │
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │  daily_predictor.py (V40.2 — العقل الوحيد)                              │
+   │  ─ get_scan_dates(): يقرأ egksco_price_history PRIMARY                 │
+   │    → لو اليوم مش موجود → يرجّع آخر تاريخ متاح (2026-09-26) ← BUG      │
+   │  ─ get_tickers(): يقرأ egksco_price_history → price_history.db → stocks│
+   │  ─ V38BacktestEngine.get_price_data(): يدمج 3 مصادر:                   │
+   │    (1) price_history.db (extended) (2) egksco_price_history (primary)  │
+   │    (3) stock_daily_prices (latest) — البيانات الفعلية طازجة من 1+3     │
+   │  ─ institutional_decision_engine.build_institutional_decision()         │
+   │    → exception fallback {tech_score:50, signal:'انتظر'} ← ROOT #1      │
+   │  ─ IMPROVEMENT-12 (L1000-1025): WAIT→HOLD + يخزّن في DB ← ROOT #1     │
+   │  ─ tracker.record_prediction() (L3303) → predictions.db.predictions     │
+   │  ─ INSERT INTO stored_analyses (L3400) → predictions.db.stored_analyses│
+   └──────────────────────────────────────────────────────────────────────────┘
+                                              │
+                                              ▼
+                          ┌─────────────────────────────────────────────────────┐
+                          │        predictions.db (الكاتب الأساسي)              │
+                          │  ─ predictions (1,514 rows, last 2026-10-07 sandbox)│
+                          │  ─ stored_analyses (cache للـ UI)                    │
+                          │  ─ aiPrediction (2,459) — كاتب مختلف                │
+                          │  ─ outcome_logs (8,544) — daily_closer.py            │
+                          │  ─ persona_predictions (946) — معطّل (UNIFIED-BAL)   │
+                          │  ─ learned_lessons (8,644) — learning_engine.py      │
+                          └─────────────────────────────────────────────────────┘
+                                              │
+                                              ▼
+                          ┌─────────────────────────────────────────────────────┐
+                          │  Flask API:8010 → Next.js:3000 → UI                 │
+                          └─────────────────────────────────────────────────────┘
+```
+
+### 2. daily_predictor.py — ماذا يكتب في predictions.db؟
+- **جدول `predictions`** عبر `tracker.record_prediction()` (L3303): يكتب كل الحقول المطلوبة ✓
+  ticker, signal, signal_type, prediction_date, entry_price, target_price, stop_loss, master_score, technical_score, fundamental_score, ai_pattern_score, sentiment_score, persona, atr_at_entry, target_price_2, explosive_score, explosive_label, evidence_count, morning_bell, kill_filter_result, **risk_reward**, **who_is_buying** (آخر 2 أُضيفت 2026-10-07 P0 R5+R6)
+- **جدول `stored_analyses`** عبر direct `INSERT INTO` (L3400): maestro_score, recommendation, confidence, entry_price, target_price, stop_loss, risk_reward, prediction_date, analysis_json, ai_reason, ai_narrative
+- **معادلات محسوبة لكن لم تُكتب (مُصلَحة 2026-10-07):** risk_reward + who_is_buying_state — كانت تُحسب في sig['r_multiple'] + sig['who_is_buying_state'] لكن لم تُمرّر لـ record_prediction. **تم الإصلاح في V402-P0-DB-WRITE-FIX.**
+- **معادلات تُحسب لكن تُفقد بصمت (silent losses):**
+  - sig['technical_explanation'] (L3377) — يُكتب في stored_analyses.ai_narrative فقط (وليس predictions)
+  - sig['proofs'] (الـ 6 أدلة) — يُكتب في kill_filter_result كـ string مختصرة فقط (L3314)، الـ dict الكامل يُفقد
+  - sig['v68_probability'], sig['v68_future_direction'] — يُكتبوا في kill_filter_result string فقط
+  - sig['liquidity_type'], sig['liquidity_score'], sig['liquidity_pos_mult'] — يُكتبوا في kill_filter_result string فقط
+  - persona_fit + persona_fit_scores — معطّل (UNIFIED-BALANCED-ONLY، L3454-3478)
+- **try/except: pass حرجة (silent failures):** 100+ مكان! أهمها:
+  - L3431-3432: `except: pass` بعد فشل INSERT INTO stored_analyses (silent!)
+  - L3451-3452: `except: pass` بعد فشل expert_memory_phase
+  - L3334-3335: `except: pass` بعد فشل notebook add_prediction_observation
+  - L3479-3480: `except: print(...)` بعد فشل record_prediction (يprint بس)
+  - L686-693: `except` بعد فشل regime engine (fallback NORMAL — سليم)
+  - L339-340: `except: pass` بعد فشل get_scan_dates (silent!)
+
+### 3. محركات ت Computing لكن لا ت Writing في predictions.db (أيتام)
+| الملف | LOC | يحسب | يكتب في predictions.db؟ | ملحوظة |
+|---|---|---|---|---|
+| `daily_predictor.py` | 3889 | signal, master_score, entry/target/stop, R:R, who_is_buying, evidence, ATR | ✅ الكاتب الأساسي | متصل بـ predictions.db ✓ |
+| `master_analyzer.py` | 5726 | signal, master_score, tech_score, fundamental_score, risk_profile | ❌ يكتب في stocks.db فقط | engine API للـ on-demand analysis — مش V40.2 flow |
+| `institutional_decision_engine.py` | 1506 | tech_score, signal_final, proofs (6 أدلة) | ❌ يرجع dict فقط | exception fallback → {50, 'انتظر'} = ROOT #1 |
+| `prediction_tracker.py` | 1283 | geometry guard (R1-R5) + dedup + cap | ✅ يكتب predictions + outcome_logs | الكاتب الفعلي (يستدعيه daily_predictor) |
+| `utils/shared_liquidity.py` | 1151 | dynamic_min_turnover, has_volume_surge, should_reject_by_liquidity | ❌ يرجع tuple فقط | بوابة تصفية، مستخدمة من daily_predictor |
+| `engines/backtest_engine.py` | 2399 | get_price_data, calc_atr, analyze_single_day | ❌ يرجع dict فقط | المحرك الفعلي لـ V40.2 |
+| `ai_predictions_routes.py` | — | AI predictions | ⚠️ يكتب INSERT INTO predictions (L860, L1666) | VIOLATES SINGLE-WRITER |
+| `historical_predictions_v2_routes.py` | — | historical predictions | ⚠️ يكتب INSERT INTO predictions (L460, L479) | VIOLATES SINGLE-WRITER |
+| `intraday_scanner.py` | 508 | intraday signals | ⚠️ يكتب UPDATE predictions (L310) — entry_price_min/max + support/resistance | يكتب حقول إضافية daily_predictor ما يكتبهاش! |
+| `daily_closer.py` | 3100+ | exit_type (TARGET_HIT/STOPPED/EXPIRED/TRAILING_PROFIT/PENDING) | ✅ يكتب UPDATE predictions SET outcome_date, exit_price, actual_return, hit_target, hit_stop, is_correct, holding_days, exit_type | الشرعي (closer) |
+| `telegram_target_hit_tracker.py` | — | target tracking | ⚠️ يكتب INSERT INTO predictions (L968) | VIOLATES SINGLE-WRITER |
+| `maestro_orchestrator.py` | 4200+ | exit_policy | ⚠️ يكتب UPDATE predictions SET exit_policy (L4200, L4215) | معطّل (PHASE-2-MAESTRO-KILL) |
+
+### 4. محرك البيانات (data_engine) — الـ Scrapers
+| الـ Scraper | الكرون | يكتب في | يقوم بـ |
+|---|---|---|---|
+| `data_engine/scrapers/tradingview_scraper.py` | #7 (كل 5min) | data_engine.db.stocks | OHLCV live |
+| `data_engine/scrapers/multi_market_scraper.py` | #18 (كل ساعة) | data_engine.db.stocks | multi-market fallback chain |
+| `data_engine/scrapers/us_stock_scraper.py` | #17 (22:00 UTC) | price_history.db | US OHLCV |
+| `data_engine/scrapers/sharia_compliance_scraper.py` | #25 (Sat 15:30) | data_engine.db.sharia_* | sharia data |
+| `data_engine/scrapers/egksco_scraper.py` (LIGHTWEIGHT) | via fallback_chain | data_engine.db.stocks فقط | prices only — لا يكتب egksco_price_history |
+| `vps-service/data/egksco_scraper.py` (FULL) | ❌ **NOT IN CRON** | price_history.db + **data_engine.db.egksco_price_history** + stocks.db | الكاتب الوحيد لـ egksco_price_history! |
+| `vps-service/scripts/daily_price_updater.py` | #6 (2x يومياً) | stocks.db + price_history.db | EGX OHLCV — لا يكتب egksco_price_history |
+| `vps-service/jobs/price_history_safetynet.py` | #8 (06:00 UTC) | price_history.db | Yahoo fallback لسد الفجوات |
+| `vps-service/data/egx_fundamental_fetcher.py` | #11 (Sat 14:00) | data_engine.db.tab_* | الأساسيات الأسبوعية |
+
+**الـ cron jobs كلها مفعّلة (26 job)** — لا cron معطّل. المفقود الوحد: `vps-service/data/egksco_scraper.py` (الكاتب الوحيد لـ `data_engine.db.egksco_price_history` — الـ canonical price table لـ V40.2).
+
+### 5. الأسباب الجذرية (Root Causes) — مرتبة
+**ROOT #1 (CRITICAL — العدد الأكبر HOLD/50/None):** `data_engine.db.egksco_price_history` FROZEN عند 2026-09-26 لأن الكاتب الوحيد (`vps-service/data/egksco_scraper.py`) مش مجدول في cron. الـ fallback_chain.py بيكتب في data_engine.db.stocks فقط (مش egksco_price_history). → `get_scan_dates(--today-only)` يرجّع آخر تاريخ متاح (2026-09-26) → daily_predictor.py يولّد توقعات بـ prediction_date=2026-09-26.
+
+**ROOT #2 (HIGH — signal=HOLD + score=50):** `institutional_decision_engine.build_institutional_decision()` بيرمي exception → fallback `{tech_score:50, signal_final:'🟡 انتظر', proofs:[]}`. IMPROVEMENT-12 (أُضاف 2026-10-07، daily_predictor.py L1000-1025) بيحوّل WAIT→HOLD وبيحاول يخزّن. مع بيانات قديمة (2026-09-26)، معظم الأسهم بتفشل في volume check ("insufficient vol data") → بتتحول لـ HOLD بـ score=50.
+
+**ROOT #3 (MEDIUM — risk_reward=None + who_is_buying=—):** معادلات `risk_reward` و `who_is_buying_state` كانت محسوبة في daily_predictor.py لكن غير ممرّرة لـ record_prediction → NULL في DB. **تم الإصلاح 2026-10-07 (V402-P0-DB-WRITE-FIX، worklog L64660)**: migration بتضيف العمودين + record_prediction بتكتبهم. لكن:
+  - التوقعات القديمة (قبل 2026-10-07) لسه NULL — تحتاج backfill
+  - الإنتاج قد لا يكون سحب الإصلاح (git pull مطلوب)
+
+**ROOT #4 (LOW — schema fragmentation):** intraday_scanner.py بيكتب `entry_price_min/max + support_level + support_level_2 + resistance_level + resistance_level_2` في predictions — حقول daily_predictor.py ما بيكتبهاش → NULL للأسهم اللي ماشفتش intraday signal.
+
+**ROOT #5 (LOW — market_indices stale):** `stocks.db.market_indices` (EGX30/EGX100/EGX33) آخر تحديث 2026-09-26 (11+ يوم stale) — market_regime_engine بيعتمد عليها.
+
+### 6. التوصيات للمالك (مرتبة بالأولوية)
+
+**P0 (عاجل — إصلاح production):**
+1. **أضف cron job لـ `vps-service/data/egksco_scraper.py`** — دي الخطوة الوحيدة اللي هتصلح كل مشكلة الـ stale predictions.
+   ```cron
+   # كل 15 دقيقة أثناء جلسة EGX (08:00-12:00 UTC)
+   */15 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egksco_scraper.py --prices-only >> /tmp/egksco_full.log 2>&1
+   # مرة بعد إغلاق السوق (13:30 UTC) للـ EOD snapshot
+   30 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egksco_scraper.py --prices-only >> /tmp/egksco_eod.log 2>&1
+   ```
+2. **سحب إصلاحات 2026-10-07 على الإنتاج**: `cd /root/GLMinvestment && git pull` ثم `pm2 restart all` — عشان risk_reward + who_is_buying migration يشتغل.
+3. **backfill للتوقعات القديمة**: شغّل script يحدّث risk_reward + who_is_buying لكل التوقعات القديمة في predictions.db (مثل scripts/backfill_*.py).
+
+**P1 (مهم — استقرار الـ pipeline):**
+4. **إصلاح fallback في get_scan_dates()** (daily_predictor.py L324-333): لازم يفصل الـ PRIMARY عن الـ FALLBACK — لو PRIMARY (egksco_price_history) مفيهوش اليوم، يروح لـ price_history.db أو stock_daily_prices مباشرة (مش يرجّع آخر تاريخ قديم).
+5. **تقليل try/except: pass** في daily_predictor.py (100+ مكان) — خاصة L3431 (stored_analyses INSERT failure لازم يـ log + يـ continue، مش silent pass).
+6. **إصلاح build_institutional_decision() exception** في institutional_decision_engine.py (L1481-1506) — log + retry بدل fallback صامت لـ {50, 'انتظر'}.
+
+**P2 (تحسين — تنظيم):**
+7. **تطبيق SINGLE-WRITER principle**: عطّل INSERT INTO predictions في ai_predictions_routes.py + historical_predictions_v2_routes.py + telegram_target_hit_tracker.py — كلهم لازم يستخدموا PredictionTracker.record_prediction() بدل INSERT مباشر.
+8. **تنظيف المحركات الأيتام**: master_analyzer.py + institutional_decision_engine.py يحسبوا نتائج ما بتوصلش predictions.db — إما دمجهم في V40.2 flow أو توثيق إنهم on-demand only.
+
+### 7. أوامر تحقق للمالك على السرفر الإنتاجي
+```bash
+# 1. تحقق من آخر تاريخ في egksco_price_history (المفروض يكون اليوم لو الـ cron شغال)
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/data_engine.db'); print(c.execute('SELECT MAX(price_date), COUNT(*) FROM egksco_price_history').fetchone())"
+
+# 2. تحقق من آخر توقع في predictions.db
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/predictions.db'); print(c.execute('SELECT MAX(prediction_date), COUNT(*) FROM predictions').fetchone())"
+
+# 3. تحقق من risk_reward + who_is_buying في آخر 10 توقعات
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/predictions.db'); [print(r) for r in c.execute('SELECT prediction_date, ticker, signal, master_score, risk_reward, who_is_buying FROM predictions ORDER BY id DESC LIMIT 10').fetchall()]"
+
+# 4. تحقق من الـ cron jobs المفعّلة
+crontab -l | grep -E "egksco|daily_predictor|daily_price_updater|multi_market"
+
+# 5. تحقق من آخر log لـ daily_predictor
+tail -100 /tmp/v40_2_morning.log /tmp/v40_2_evening.log 2>/dev/null
+
+# 6. تحقق من آخر log لـ multi_market_scraper
+tail -50 /tmp/multi_scraper.log 2>/dev/null
+
+# 7. تحقق من market_indices freshness
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/stocks.db'); [print(r) for r in c.execute('SELECT symbol, last_update FROM market_indices').fetchall()]"
+
+# 8. تحقق من v402_min_evidence_count في system_settings (لو=0 → كل HOLD بيدخل DB)
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/predictions.db'); print(c.execute(\"SELECT key, value FROM system_settings WHERE key LIKE 'v402%'\").fetchall())"
+
+# 9. تشغيل daily_predictor يدويًا للتحقق
+cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5 --dry-run 2>&1 | tail -50
+```
+
+### 8. الخلاصة
+**predictions.db مرتبطة بـ daily_predictor.py بشكل صحيح (الكاتب الأساسي) — لكن الـ INPUT (data_engine.db.egksco_price_history) متجمد عند 2026-09-26 لأن الكاتب الوحيد ليه (`vps-service/data/egksco_scraper.py`) مش مجدول في cron.** ده السبب الجذري لكل الأعراض:
+- آخر توقعات 2026-09-26: scan_date بيرجّع آخر تاريخ متاح من egksco_price_history.
+- معظمها HOLD/50: institutional_decision_engine exception → IMPROVEMENT-12 يحوّل WAIT→HOLD بـ score=50.
+- risk_reward/who_is_buying=None: تم الإصلاح 2026-10-07 لكن التوقعات القديمة لسه NULL + الإنتاج ممكن ما سحبش الإصلاح.
+
+**الإصلاح الوحيد المطلوب عاجلاً:** إضافة `vps-service/data/egksco_scraper.py` لـ cron (كل 15 دقيقة أثناء الجلسة + EOD) + `git pull` على الإنتاج.
+
+*End of DEEP-PY-AUDIT — general-purpose (مهندس المحرك Python)*
+
+---
+Task ID: DEEP-PY-AUDIT + AUDIT-SCRIPT (المدير العام — تدقيق محرك Python + سكربت فحص)
+Agent: المدير العام (Z.ai Code) + وكيل DEEP-PY-AUDIT
+Task: تدقيق شامل لمحرك Python + محرك البيانات + إنشاء سكربت فحص شامل
+
+Work Log:
+- تدقيق DEEP-PY-AUDIT كشف الجذور الحقيقية:
+  * ROOT #1 (CRITICAL): egksco_price_history متجمدة 2026-09-26
+    - السبب: vps-service/data/egksco_scraper.py (الكاتب الوحيد) مش مجدول في cron
+    - fallback_chain.py يكتب في stocks فقط، لا egksco_price_history
+  * ROOT #2 (HIGH): signal=HOLD + score=50
+    - institutional_decision_engine exception → fallback {50, 'انتظر'}
+    - IMPROVEMENT-12 يحوّل WAIT→HOLD ويخزّن
+  * ROOT #3 (MEDIUM): risk_reward/who_is_buying=None
+    - تم الإصلاح 2026-10-07 لكن التوقعات القديمة لسه NULL
+  * ROOT #4 (LOW): schema fragmentation (intraday_scanner يكتب حقول إضافية)
+  * ROOT #5 (LOW): market_indices stale (2026-09-26)
+- اكتشاف SINGLE-WRITER violation: 10+ كتاب لـ predictions.db
+- إنشاء deep_server_audit.sh: سكربت فحص شامل (11 خطوة)
+
+Stage Summary:
+- ملفات جديدة: 1 (deep_server_audit.sh)
+- الاكتشافات الحرجة: 5 جذور (1 CRITICAL + 1 HIGH + 3 MEDIUM/LOW)
+- الحل المطلوب من المالك:
+  1. إضافة cron job لـ egksco_scraper.py (كل 15 دقيقة أثناء جلسة EGX)
+  2. git pull + pm2 restart all على السرفر
+  3. تشغيل deep_server_audit.sh + إرسال النتائج
+- القيود: لا تعديل كود Python (تدقيق فقط)، الحمايات لم تُلمس
