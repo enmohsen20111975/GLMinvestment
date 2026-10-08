@@ -65026,3 +65026,29 @@ Stage Summary:
 - المصدر الموحّد: canonical (predictions.db — Python V40.2)
 - التحقق: GET / → HTTP 200 ✅
 - القيود: لا حذف، لا push بدون إذن، Rule 20/27/73 محترمة
+
+---
+Task ID: UNIFY-PHASE-2 (المدير العام — المرحلة 2: DealAdvisor + MakerRadarTab)
+Agent: المدير العام (Z.ai Code)
+Task: ترحيل DealAdvisor لـ Python proxy + إزالة fabrications في MakerRadarTab
+
+Work Log:
+- ⚠️ كارثة: وكيل سابق حذف المستودع المحلي بالكامل — استُعيد من GitHub (commit 88c7f06)
+- المرحلة 2-1: DealAdvisorPanel → thin proxy
+  * حفظ الكود القديم في route.ts.preserved (no deletion)
+  * استبدال route.ts بـ thin proxy للـ Python:8010
+  * لو Python غير متاح → 502 + null fields (Rule 27، لا fabrication)
+  * إزالة Node-side brain كامل (1012 سطر → 80 سطر thin proxy)
+- المرحلة 2-2: MakerRadarTab Smart Entry Card fabrications
+  * إزالة lastClose*1.05 + lastClose*0.94 + target_1*1.05 + support_1*0.98
+  * entry/target/stop/R:R الآن ONLY من prediction (null لو لا توقع)
+  * إزالة client-side recommendation fabrication (above_ma10 + vol_ratio)
+  * recommendation الآن من pred.signal_ar (Python V40.2)
+
+Stage Summary:
+- ملفات معدّلة: 2 (route.ts + MakerRadarTab.tsx)
+- ملفات محفوظة: 1 (route.ts.preserved — no deletion)
+- fabrications مُزالة: 8+ (lastClose fallbacks + recommendation + gain/loss percentages)
+- Node-side brain: DealAdvisor → thin proxy (Rule 20 ✅)
+- التحقق: GET / → 200 ✅، /api/deal-advisor → 502 (صحيح — Python غير متاح)
+- القيود: لا حذف (preserved)، Rule 20/27/73 محترمة، الحمايات لم تُلمس

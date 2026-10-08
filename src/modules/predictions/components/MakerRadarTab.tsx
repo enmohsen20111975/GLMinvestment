@@ -3230,18 +3230,20 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
   const validHighs20 = last20.map((p) => p.high).filter((v) => v > 0);
 
   const pred = detail.prediction;
-  const support_1 = pred?.support_level || (validLows10.length > 0 ? Math.min(...validLows10) : lastClose * 0.95);
-  const support_2 = pred?.support_level_2 || (validLows20.length > 0 ? Math.min(...validLows20) : lastClose * 0.90);
-  const resistance_1 = pred?.resistance_level || (validHighs10.length > 0 ? Math.max(...validHighs10) : (pred?.target_price || lastClose * 1.05));
-  const resistance_2 = pred?.resistance_level_2 || (validHighs20.length > 0 ? Math.max(...validHighs20) : (pred?.target_price_2 || lastClose * 1.10));
+  // UNIFY-FIX (Rule 27 NO-FAKE-DATA): أزلنا كل fabrications في Smart Entry Card.
+  // entry/target/stop/R:R تأتي ONLY من prediction (predictions.db — Python V40.2).
+  // لو لا توقع → null (لا fabrication، لا lastClose*1.05، لا support*0.98).
+  const support_1 = pred?.support_level || (validLows10.length > 0 ? Math.min(...validLows10) : null);
+  const support_2 = pred?.support_level_2 || (validLows20.length > 0 ? Math.min(...validLows20) : null);
+  const resistance_1 = pred?.resistance_level || (validHighs10.length > 0 ? Math.max(...validHighs10) : null);
+  const resistance_2 = pred?.resistance_level_2 || (validHighs20.length > 0 ? Math.max(...validHighs20) : null);
 
-  // Entry / Stop / Targets — from SSOT prediction if available, else structural swings
-  const entry_price = pred?.entry_price || lastClose;
-  const target_1 = pred?.target_price || (resistance_1 > entry_price ? resistance_1 : lastClose * 1.05);
-  const target_2 = pred?.target_price_2 || (resistance_2 > target_1 ? resistance_2 : target_1 * 1.05);
-  const stop_loss = pred?.stop_loss || (support_1 < entry_price ? Number((support_1 * 0.98).toFixed(2)) : Number((lastClose * 0.94).toFixed(2)));
-  const rr_denom = Math.max(0.01, entry_price - stop_loss);
-  const rr_ratio = pred?.risk_reward || ((target_1 - entry_price) / rr_denom);
+  // Entry / Stop / Targets — ONLY from prediction (Rule 73 SINGLE-DISPLAY-SOURCE)
+  const entry_price = pred?.entry_price ?? null;
+  const target_1 = pred?.target_price ?? null;
+  const target_2 = pred?.target_price_2 ?? null;
+  const stop_loss = pred?.stop_loss ?? null;
+  const rr_ratio = pred?.risk_reward ?? null;
 
   // MA10 — average of last 10 closes
   const ma10 = last10.reduce((sum, p) => sum + p.close, 0) / last10.length;
@@ -3302,23 +3304,16 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
     analysis_lines.push(`المدى ${range_10d_pct.toFixed(1)}% في آخر 10 أيام طبيعي.`);
   }
 
-  // Recommendation: derived from real conditions
-  let recommendation: string;
-  if (above_ma10 && vol_ratio >= 1.5) {
-    recommendation = `توقّع: انتظر اختراق ${fmtNum(resistance_1)} بحجم لتأكيد الدخول.`;
-  } else if (!above_ma10) {
-    recommendation = `توقّع: انتظر عودة السعر فوق ${fmtNum(ma10)} قبل الدخول.`;
-  } else {
-    // above_ma10 but volume below threshold — this was previously a second
-    // assignment inside the `!above_ma10` branch, so it overwrote line 2590
-    // (dead code) and left `recommendation` undefined in this case.
-    recommendation = `توقّع: راقب الكسر فوق ${fmtNum(resistance_1)} بحجم للتأكيد.`;
-  }
+  // UNIFY-FIX (Rule 20 Python=Brain): أزلنا client-side recommendation fabrication.
+  // كان الكود يحسب قرار تداول من above_ma10 + vol_ratio (client-side — مخالف Rule 20).
+  // الآن: recommendation تأتي ONLY من prediction.signal_ar (Python V40.2).
+  // لو لا توقع → "راجع التوصية الرسمية" (لا fabrication).
+  const recommendation = pred?.signal_ar || 'راجع التوصية الرسمية من المحرك';
 
-  // Gain / loss percentages for targets + stop
-  const t1Gain = ((target_1 - entry_price) / entry_price) * 100;
-  const t2Gain = ((target_2 - entry_price) / entry_price) * 100;
-  const slLoss = ((stop_loss - entry_price) / entry_price) * 100;
+  // Gain / loss percentages — only if prediction values exist (no fabrication)
+  const t1Gain = (entry_price && target_1) ? ((target_1 - entry_price) / entry_price) * 100 : null;
+  const t2Gain = (entry_price && target_2) ? ((target_2 - entry_price) / entry_price) * 100 : null;
+  const slLoss = (entry_price && stop_loss) ? ((stop_loss - entry_price) / entry_price) * 100 : null;
 
   return (
     <Card className={`p-3 ${pathAccent.softBg} ${pathAccent.card}`}>
