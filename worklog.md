@@ -65927,3 +65927,21 @@ Stage Summary:
 - ملفات معدّلة: 1 (daily_predictor.py)
 - bugs مُصلحة: 1 (fallback chain كان مكسور — يرجع بيانات قديمة)
 - القيود: Rule 20/27/67/73 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: SYNC-STALE-DBS (المدير العام — سكربت مزامنة الجداول المتوقفة)
+Agent: المدير العام (Z.ai Code)
+Task: إنشاء سكربت يأخذ من محرك البيانات البيانات الموجودة ويحدّث الجداول المتوقفة
+
+Work Log:
+- إنشاء sync_stale_dbs.py: سكربت مزامنة شامل
+  1. مزامنة egksco_price_history من price_history.db (1.24M rows، محدّثة)
+  2. مزامنة egksco_price_history من stocks.db.stock_daily_prices (محدّثة يوميًا)
+  3. backfill توقعات قديمة: حساب risk_reward + who_is_buying من analysis_json
+  4. تقرير نهائي شامل
+- يدعم --dry-run (اختبار بدون كتابة)
+
+Stage Summary:
+- ملف جديد: 1 (sync_stale_dbs.py — 280 LOC)
+- الوظائف: 4 (sync price_history + sync stock_daily_prices + backfill predictions + report)
+- القيود: Rule 20/27 محترمة، لا حذف، الحمايات لم تُلمس
