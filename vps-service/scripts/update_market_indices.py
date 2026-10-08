@@ -3,13 +3,14 @@
 update_market_indices.py — تحديث مؤشرات السوق من TradingView REST
 ================================================================================
 
-FIX v2 (2026-10-08):
-  - إصلاح HTTP 400: استخدام نفس طريقة tradingview_rest.py (POST JSON مع columns)
-  - إصلاح schema: auto-migration (ALTER TABLE + CREATE IF NOT EXISTS)
-  - استخدام scanner.tradingview.com/egypt/scan مع filter للمؤشرات
+FIX v4 (2026-10-08):
+  - استخدام global/scan مع tickers filter (وليس egypt/scan)
+  - d هو list (ولس dict) — columns بترتيب محدد
+  - EGX30 متاح في TradingView ✅ (قيمة ~53,265)
+  - EGX70/100 قد لا يكونان متاحين — نحفظ ما يتوفر
 
 الاستخدام:
-  cd ~/my_apps/GLMinvestment (أو /root/GLMinvestment)
+  cd ~/my_apps/GLMinvestment
   .venv/bin/python vps-service/scripts/update_market_indices.py --dry-run
   .venv/bin/python vps-service/scripts/update_market_indices.py
 ================================================================================
@@ -27,21 +28,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / 'db' / 'stocks.db'
 DRY_RUN = '--dry-run' in sys.argv
 
-# TradingView Scanner — نفس طريقة tradingview_rest.py
-TV_SCANNER_URL = 'https://scanner.tradingview.com/egypt/scan'
-TV_COLUMNS = [
-    'name', 'description', 'logoid', 'currency_code',
-    'last', 'change', 'change_abs', 'Recommend.All',
-    'high', 'low', 'volume', 'market_cap_basic',
-    'sector', 'industry',
-]
+# TradingView global scanner مع tickers filter للمؤشرات
+TV_SCANNER_URL = 'https://scanner.tradingview.com/global/scan'
+TV_COLUMNS = ['name', 'description', 'close', 'change', 'change_abs', 'high', 'low', 'volume']
 
-# المؤشرات المطلوبة (نبحث عنها في نتائج scan)
-# TradingView يرجع المؤشرات كجزء من scan نتائج EGX
-INDEX_NAMES = {
-    'EGX30': {'tv_name': 'EGX 30 PR', 'name_ar': 'مؤشر egx 30'},
-    'EGX70': {'tv_name': 'EGX 70 PR', 'name_ar': 'مؤشر egx 70'},
-    'EGX100': {'tv_name': 'EGX 100 PR', 'name_ar': 'مؤشر egx 100'},
+# المؤشرات المطلوبة (tickers في TradingView)
+INDEX_TICKERS = ['EGX:EGX30', 'EGX:EGX70', 'EGX:EGX100']
+INDEX_MAP = {
+    'EGX:EGX30': {'symbol': 'EGX30', 'name_ar': 'مؤشر EGX 30'},
+    'EGX:EGX70': {'symbol': 'EGX70', 'name_ar': 'مؤشر EGX 70'},
+    'EGX:EGX100': {'symbol': 'EGX100', 'name_ar': 'مؤشر EGX 100'},
 }
 
 
@@ -51,13 +47,11 @@ def log(msg, level='INFO'):
 
 
 def fetch_indices_from_tv() -> list:
-    """جلب كل بيانات EGX من TradingView scanner ثم فلترة المؤشرات"""
+    """جلب المؤشرات من TradingView global scanner مع tickers filter"""
     try:
         body = {
-            'range': [0, 500],
+            'symbols': {'tickers': INDEX_TICKERS},
             'columns': TV_COLUMNS,
-            'sort': {'sortBy': 'name', 'sortOrder': 'asc'},
-            'markets': ['egypt'],
         }
         payload = json.dumps(body).encode('utf-8')
         req = urllib.request.Request(
@@ -70,50 +64,53 @@ def fetch_indices_from_tv() -> list:
             method='POST',
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
-            raw = resp.read().decode()
-        
-        # UNIFY-FIX v3: TradingView scanner يرجع dict بقيمة 'data' key
-        # لكن أحيانًا يرجع list مباشرة. نتعامل مع الحالتين.
-        data = json.loads(raw)
-        
+            data = json.loads(resp.read().decode())
+
         rows = []
         if isinstance(data, dict):
             rows = data.get('data', []) or []
         elif isinstance(data, list):
             rows = data
-        
+
         if not rows:
             log(f"  ❌ TradingView رجع 0 نتائج (type={type(data).__name__})", 'ERROR')
             return []
 
+        # columns = ['name', 'description', 'close', 'change', 'change_abs', 'high', 'low', 'volume']
+        # d[0]=name, d[1]=description, d[2]=close, d[3]=change, d[4]=change_abs, d[5]=high, d[6]=low, d[7]=volume
         results = []
         for row in rows:
             if not isinstance(row, dict):
                 continue
-            symbol = row.get('s', '') or ''
-            d = row.get('d', {})
-            if not isinstance(d, dict):
-                d = {}
-            name = d.get('description', '') or d.get('name', '') or ''
+            ticker = row.get('s', '') or ''
+            d = row.get('d', [])
+            if not isinstance(d, list) or len(d) < 3:
+                continue
 
-            # ابحث عن المؤشرات بالاسم
-            for idx_symbol, idx_info in INDEX_NAMES.items():
-                tv_name = idx_info['tv_name']
-                # TradingView يستخدم رموز مثل "EGX30" أو "EGX:EGX30"
-                if symbol == f"EGX:{idx_symbol}" or symbol == idx_symbol or tv_name in name:
-                    value = d.get('last', 0) or d.get('close', 0)
-                    if value and value > 0:
-                        results.append({
-                            'symbol': idx_symbol,
-                            'name_ar': idx_info['name_ar'],
-                            'value': float(value),
-                            'change': float(d.get('change', 0) or 0),
-                            'change_percent': float(d.get('change_abs', d.get('change', 0)) or 0),
-                            'high': float(d.get('high', 0) or 0),
-                            'low': float(d.get('low', 0) or 0),
-                            'volume': float(d.get('volume', 0) or 0),
-                        })
-                        break
+            idx_info = INDEX_MAP.get(ticker)
+            if not idx_info:
+                continue
+
+            close_val = d[2]  # close
+            if close_val is None or close_val <= 0:
+                continue
+
+            change_pct = d[4] if len(d) > 4 else 0  # change_abs (percentage)
+            high = d[5] if len(d) > 5 else 0
+            low = d[6] if len(d) > 6 else 0
+            volume = d[7] if len(d) > 7 else 0
+
+            results.append({
+                'symbol': idx_info['symbol'],
+                'name_ar': idx_info['name_ar'],
+                'value': float(close_val),
+                'change': float(d[3] if len(d) > 3 and d[3] else 0),
+                'change_percent': float(change_pct or 0),
+                'high': float(high or 0),
+                'low': float(low or 0),
+                'volume': float(volume or 0),
+            })
+            log(f"  ✅ {idx_info['symbol']}: {close_val:.2f} ({change_pct:+.2f}%)")
 
         return results
     except Exception as e:
@@ -146,17 +143,12 @@ def ensure_table_schema(conn):
         conn.commit()
         return
 
-    # الجدول موجود — تحقق من الأعمدة
+    # auto-migration للأعمدة المفقودة
     cols = [row[1] for row in cur.execute("PRAGMA table_info(market_indices)").fetchall()]
     migrations = [
-        ('value', 'REAL'),
-        ('change', 'REAL'),
-        ('change_percent', 'REAL'),
-        ('high', 'REAL'),
-        ('low', 'REAL'),
-        ('volume', 'REAL'),
-        ('last_update', 'TEXT'),
-        ('source', "TEXT DEFAULT 'tradingview_rest'"),
+        ('value', 'REAL'), ('change', 'REAL'), ('change_percent', 'REAL'),
+        ('high', 'REAL'), ('low', 'REAL'), ('volume', 'REAL'),
+        ('last_update', 'TEXT'), ('source', "TEXT DEFAULT 'tradingview_rest'"),
     ]
     for col_name, col_type in migrations:
         if col_name not in cols:
@@ -181,7 +173,7 @@ def update_market_indices():
     ensure_table_schema(conn)
     cur = conn.cursor()
 
-    log("  جلب المؤشرات من TradingView...")
+    log("  جلب المؤشرات من TradingView (global/scan)...")
     indices = fetch_indices_from_tv()
 
     if not indices:
