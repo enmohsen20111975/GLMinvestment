@@ -65968,3 +65968,38 @@ Stage Summary:
 - ملفات معدّلة: 3 (MakerRadarTab + PredictionTrackingDashboard + fix_cron_paths.sh)
 - تحسينات: 3 (رادار نسب منطقية + توضيح "منتهية" + cron auto-detect)
 - القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: DB-PROTECTION-FIX
+Agent: Main Agent (Z.ai Code)
+Task: حماية قواعد البيانات من الحذف العرضي + استعادة الـ DBs المفقودة بعد ما المستخدم مسح DBs مهمة من لوحة التحكم.
+
+Work Log:
+- تشخيص المشكلة: المستخدم مسح DBs من لوحة التحكم ظناً إنها "غير مستخدمة". كان السبب إن PROTECTED_DBS في src/lib/sqlite-admin.ts بتحمّي 5 DBs بس (data_engine.db, stocks.db, price_history.db, predictions.db, auth.db)، لكن الكود بيشير لـ 30+ DBs تانية مش محمية.
+- جرد كامل: 28 DB مفقودة + auth.db فارغة (0 bytes) + custom.db موجودة بس فاضية. فقط 1 من 30 DB كانت سليمة.
+-扩充 PROTECTED_DBS في src/lib/sqlite-admin.ts: زوّدت القائمة من 5 لـ 30 DB بتشمل كل الـ DBs الموصى عليها فعلاً في الكود (news.db, intraday.db, learned.db, crypto.db, market.db, analytics.db, gold_prices.db, إلخ). كل DB ليها comment بالوصف وعدد المراجع في الكود.
+- إنشاء scripts/db-inventory-recover.ts (275 سطر): سكربت جرد + استعادة بيعمل:
+  • جرد كل الـ DBs الحرجة (30 DB) مع عرض الحالة (OK/EMPTY/MISSING)
+  • --fix mode: ينشئ الـ DBs الناقصة مع schema أساسي (CREATE TABLE IF NOT EXISTS)
+  • schemas مخصصة لـ 10 DBs حرجة (stocks, predictions, data_engine, price_history, news, intraday, learned, core, crypto, gold_prices, analytics)
+  • default placeholder schema للباقي
+- تشغيل الإصلاح:
+  • bun run scripts/db-inventory-recover.ts --fix → أنشأ 28 DB جديدة + أصلح auth.db
+  • bunx prisma db push --schema=prisma/auth-schema.prisma → 18 جدول في auth.db
+  • bunx prisma db push --schema=prisma/predictions-schema.prisma → 10 جداول في predictions.db
+- نتيجة الجرد النهائي: 30/30 DB سليمة، 0 فارغة، 0 مفقودة
+- Lint passed cleanly. Dev server HTTP 200.
+
+Stage Summary:
+- ROOT CAUSE: قائمة PROTECTED_DBS كانت ناقصة (5 بس بدل 30).
+- FIX: 
+  1. توسيع PROTECTED_DBS لـ 30 DB في src/lib/sqlite-admin.ts
+  2. إنشاء scripts/db-inventory-recover.ts للجرد والاستعادة
+  3. استعادة كل الـ DBs الناقصة (28 DB جديدة + auth.db)
+- الـ DBs دلوقتي فاضية (0 صفوف) ومحتاجة scrapers تعيد ملء البيانات:
+  • stocks.db → egx_scraper.py
+  • news.db → news_scraper.py  
+  • price_history.db → historical price scraper
+  • predictions.db → daily_predictor.py
+  • auth.db → بيانات المستخدمين مش هتترجع (مالم يكن فيه backup على السيرفر)
+- الحماية المستقبلية: لو أي حد حاول يمسح أي DB من الـ 30 دي من لوحة التحكم، هيرفض النظام.

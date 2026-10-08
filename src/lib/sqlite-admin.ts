@@ -9,13 +9,49 @@ import fs from 'fs'
 
 const DB_DIR = path.join(process.cwd(), 'db')
 
-// قواعد بيانات محمية — لا يمكن حذفها
+// ─── قواعد بيانات محمية — لا يمكن حذفها ───────────────────────────
+// PROTECT-FIX (2026-10-08): كانت القائمة بس 5 DBs، فالمستخدم مسح news.db
+// و learned.db و intraday.db و غيرها من لوحة التحكم ظناً إنها غير مستخدمة.
+// القائمة دي بتشمل كل DB ليها reference فعلي في الكود (src/ + vps-service/
+// + data_engine/ + scripts/). لو DB اتمسح بالغلط، النظام بيفقد بيانات
+// حرجة (أخبار، دروس تعلم آلي، أسعار intraday، إلخ).
+//
+// القاعدة: لو الـ DB اسمه موجود في الكود كـ "db/xxx.db" → محمي.
+//          لو الـ DB اتعمل runtime ومش معروف اسمه قبل كده → مش محمي
+//          (لكن الأدمن بيشوف warning واضح).
 const PROTECTED_DBS = new Set([
-  'data_engine.db',
-  'stocks.db',
-  'price_history.db',
-  'predictions.db',
-  'auth.db',
+  // ── CRITICAL: النظام مش هيشتغل من غيرهم ──
+  'stocks.db',              // بيانات أسهم EGX (279 سهم) — 2064 مرجع
+  'predictions.db',         // توقعات V40.2 (651+ صف) — 1004 مرجع
+  'data_engine.db',         // كاش محرك البيانات — 986 مرجع
+  'price_history.db',       // الأسعار التاريخية — 828 مرجع
+  'auth.db',                // المستخدمين والجلسات (Prisma) — 203 مرجع
+  'custom.db',              // Prisma default schema (DATABASE_URL) — 59 مرجع
+  // ── IMPORTANT: بيانات قابلة للتجديد بس مهمة ──
+  'news.db',                // الأخبار — 106 مرجع (اتمسحت بالغلط!)
+  'intraday.db',            // بيانات intraday — 154 مرجع
+  'core.db',                 // بيانات أساسية — 97 مرجع
+  'learned.db',             // دروس التعلم الآلي — 75 مرجع
+  'crypto.db',              // بيانات العملات الرقمية — 73 مرجع
+  'market.db',              // بيانات السوق — 32 مرجع
+  'basic.db',               // بيانات أساسية — 29 مرجع
+  'egx_investment.db',      // بيانات EGX القديمة — 21 مرجع
+  'analytics.db',           // تحليلات — 18 مرجع
+  'production_snapshot.db', // snapshot الإنتاج — 19 مرجع
+  'gold_prices.db',         // أسعار الذهب — 11 مرجع
+  'content.db',             // محتوى — 10 مرجع
+  'community.db',           // مجتمع — 10 مرجع
+  'finance.db',             // محفظة — 9 مرجع
+  'ai_search_cache.db',     // كاش بحث AI
+  'crypto_learning.db',     // تعلم العملات الرقمية
+  'crypto_disclosures.db',  // إفصاحات العملات الرقمية
+  'paper_trading.db',       // تداول ورقي
+  'live_journal.db',        // يوميات live
+  'prediction_tracker.db',  // تتبع التوقعات
+  'radarData.db',           // بيانات الرادار
+  'telegram_data.db',       // بيانات تيليجرام
+  'unified_stocks.db',      // أسهم موحدة
+  'decision_log.db',        // سجل القرارات
 ])
 
 export interface DatabaseInfo {
