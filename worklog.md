@@ -66299,3 +66299,31 @@ Stage Summary:
 - معادن جديدة: 4 (ذهب + فضة + بلاتين + نحاس)
 - عملات جديدة: 5 (EGP + SAR + KWD + QAR + AED)
 - القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: DOCS-UPDATE-FINAL
+Agent: general-purpose (السكرتيرة الدستورية)
+Task: تحديث 5 وثائق متأثرة بكل الشغل (05 + 01 + 02 + SYSTEM + CHANGELOG)
+
+Work Log:
+- قرأت آخر ~150 سطر من worklog.md (offset ~66150) — استوعبت كل سياق المهام المنتهية: REAPPLY-CRITICAL-FIXES + CONSTITUTION-R75-R76 + DISABLE-SCRIPTS + TIER3-ROUTES-MIGRATE + fabrications cleanup + Python backend running + zero_conflict_test improvement + DATA-ENGINE-FULL-AUDIT + P0-MARKET-INDICES + metals.dev/frankfurter.dev/market_indices v2.
+- حدّثت 05-CURRENT_STATE (آخر تحديث L1 + L8 + §1.1 L119-126 canonical migration status + §3.1 L327-329 snapshot 2026-08-17 + §3.3 L355-371 market_indices + predictions row count + §5.1 L543-556 single canonical writer + 8 scripts disabled + 3 routes disabled + §17.1 L2027-2036 REAPPLY+TIER3 update + §17.11 NEW L2038-2057 Python Backend Status 8010)
+- حدّثت 01-PROJECT_ANATOMY (آخر تحديث L8-15 + §1.3.8 L420 ATR [5%,9%] + §4 L1035-1037 V38 + V39/V40.2 + MasterAnalyzer delegation + §4.2 L1060-1076 R:R 1.8 + §4.5 L1096-1128 thresholds canonical 78/65/55/40/25 + §6 L1286-1287 ATR clamp + L1290-1293 R:R floor gate + L1296 predictions snapshot + L2988 type comment)
+- حدّثت 02-SCREENS_AND_COMPONENTS (آخر تحديث L7-10 + §0.8 NEW L328-399 — Canonical Signal Migration: 10/10 screens + canonical data flow + 410 Gone deprecated endpoints + zero_conflict_test.py as Rule 73 enforcement mechanism)
+- حدّثت SYSTEM_HOW_IT_THINKS (آخر تحديث L3-8 + §1.1 STAGE 4 L502 R:R 1.8 + STAGE 5 L510-511 ATR [5%,9%] + R:R 1.8 + §5.3 L1194 ATR clamp fixed + L1198 R:R gate 1.8 + §5.5 L1224 ATR clamp fixed + §5.6 L1229 + L1232 ATR clamp fixed + §5.7 L1234-1247 engine_settings table (atr_stop_min_pct 3.0→5.0 + dynamic_rr_normal 1.5→1.8) + §5.8 L1249-1258 added 3 new files (unified_config + opportunity_quality + master_analyzer) + §5.9 L1260-1273 commit history + §22.1 L6705-6726 threshold table fixed (REDUCE='تخفيض' + HOLD='انتظار') + master_analyzer delegation note + Rule 73/75/76 + zero_conflict_test enforcement)
+- أضفت CHANGELOG entry (Added/Changed/Fixed/Verified/Constraints) فوق إدخال 2026-10-08 CONSTITUTION-R75-R76.
+
+Stage Summary:
+- 5 ملفات مُحدَّثة:
+  * Documentation/05-CURRENT_STATE.md — آخر تحديث + §1.1 + §3.1/§3.3 + §5.1 + §17.1 + §17.11 NEW
+  * Documentation/01-PROJECT_ANATOMY.md — آخر تحديث + §1.3.8 + §4 + §4.2 + §4.5 + §6 + L2988
+  * Documentation/02-SCREENS_AND_COMPONENTS.md — آخر تحديث + §0.8 NEW (Canonical Signal Migration)
+  * Documentation/SYSTEM_HOW_IT_THINKS.md — آخر تحديث + §1.1 STAGE 4+5 + §5.3-§5.9 + §22.1
+  * CHANGELOG.md — NEW entry فوق CONSTITUTION-R75-R76
+- STALE entries متبقية (مُرصودة، لا تحتاج إصلاح):
+  * §1.5.5 في 01-PROJECT_ANATOMY.md بيقول "ATR clamp [3%,9%]" — مرجع تاريخي لـ commit `65a748f` (baseline) — تركتها لأنها معلومة تاريخية صحيحة (commit log) مش stale.
+  * §5.4 في 01-PROJECT_ANATOMY.md فيه جدول قبل/بعد بـ "dynamic 1.5/2.0" — رقم تاريخي من باك-تست 2026-08-17. تركتها لأنها نتيجة فعلية مُقاسة على baseline القديم.
+  * §17 من CHANGELOG `[Unreleased]` بيقول "8 one-off scripts معطّلة" — اتحلّ بالفعل في Task `DISABLE-SCRIPTS`. الـ `[Unreleased]` ده قديم — تركته لإن المالك ممكن يحب يحتفظ بالـ deferred items فيه. لو عايز تحدّثه، شيل البنود اللي اتحلّت (Python backend running + 8 scripts disabled + zero_conflict_test --require-real-data).
+- لم ألمس الكود (.py/.ts/.tsx) ولا الدستور (00-CONSTITUTION.md — تم تحديثه بالفعل في commit `11853f69` Task `CONSTITUTION-R75-R76`).
+- لم أُجرِ أي push على GitHub (GM handles per Rule 75).
+- Commits المُرصودة في الـ docs: `38665fd1` (REAPPLY+DISABLE-SCRIPTS) · `11853f69` (CONSTITUTION-R75-R76) · `64ee8d54` (zero_conflict_test --require-real-data) · `65a748f` (R:R fix baseline — تاريخي) · `c2ade8c6` (STRONG_BUY 80→78 — Rule 71) · `efa40d69` (Ticker Cooldown) · `dc08cee6` (Rule 71).

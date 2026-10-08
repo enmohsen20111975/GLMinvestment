@@ -1,8 +1,13 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-10-07 (Task `DOC-FINAL-SESSION-2026-10-06` — Documentation Secretary — تحديث شامل نهائي بعد جلسة التحسينات الكاملة. تم تطبيق **8 تحسينات KEPT** + **3 تحسينات REVERTED** + **2 طبقات كمية مؤجّلة**. كل التحسينات مذكورة بالتفصيل أدناه مع status + commit hash + طريقة التفعيل).
-> 
-> **التحسينات المُفعّلة (KEPT — شغّالة على الساندبوكس):**
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010). التحديثات الحرجة في هذا الـ pass:
+> - **§5.7 engine_settings (canonical)** — `atr_stop_min_pct` 3.0 → **5.0** + `dynamic_rr_normal` 1.5 → **1.8** (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`). `unified_config.py` + `opportunity_quality.py` + `master_analyzer.py` الآن aligned مع `engine_settings.py`.
+> - **§1.1 STAGE 5** — ATR stop clamp `[3%, 9%]` → **`[5%, 9%]`** + R:R floor 1.5 → **1.8**.
+> - **§5.3-§5.9** — كل مراجع `[3%,9%]` و `1.5` اتحلّت للـ canonical الجديد.
+> - **§22.1 الـ 5 classifiers الكنسية** — تصحيح جدول الـ thresholds (REDUCE='تخفيض' بدل 'تقليل' + HOLD='انتظار') + ملاحظة إن `master_analyzer.py` دلوقتي يفوّض لـ `canonical_signal.classify_signal`.
+> - **Rule 73 (SINGLE-DISPLAY-SOURCE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW)** — اتضافت للدستور في commit `11853f69`.
+>
+> ملخص التحسينات السابقة المُفعّلة (KEPT — شغّالة على الساندبوكس):
 > 
 > | # | التحسين | commit | الحالة |
 > |---|---|---|---|
@@ -494,7 +499,7 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 │   ├─ conservative: min_score=55, target_mult=2.5x, stop_mult=1.0x            │
 │   └─ expert:       persona_fit annotation فقط (لا كتابة منفصلة — خيار آمن)    │
 │  _ADAPTIVE_RR_TABLE (core_scoring_engine.py): RR ديّناميكي حسب volatility      │
-│  dynamic_rr_normal=1.5, dynamic_rr_outperform=2.0 (engine_settings)         │
+│  dynamic_rr_normal=1.8 (was 1.5 — Task REAPPLY-CRITICAL-FIXES 2026-10-08), dynamic_rr_outperform=2.0 (engine_settings) │
 └──────────────────────────────────────────────────────────────────────────────┘
                                   ↓
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -502,8 +507,8 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 │  ─────────────────────────────────────────────────────────────────            │
 │  v40_2_daily_generator.py:                                                    │
 │   ├─ liquidity_filter.set_strict_kill_filters(True) (turnover ≥ 3M EGP)      │
-│   ├─ R:R ≥ dynamic_rr_normal (1.5) floor gate (L314-326)                     │
-│   ├─ ATR stop clamp [3%, 9%]                                                 │
+│   ├─ R:R ≥ dynamic_rr_normal (**1.8** — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — commit `38665fd1` — رفع من 1.5) floor gate (L314-326) │
+│   ├─ ATR stop clamp **[5%, 9%]** (was [3%,9%] — Task `REAPPLY-CRITICAL-FIXES` — رفع min 3.0→5.0 + V40_2_STOP_MAX_PCT default 7.0→9.0) │
 │   ├─ CBE News Guard (hard veto لو خبر بنك مركزي في 24h)                      │
 │   └─ Ex-Dividend Protection (stop skip على يوم ex-div)                       │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -1186,11 +1191,11 @@ SELECT COUNT(*) FROM predictions WHERE risk_reward = 0.0 AND signal IN ('BUY','S
 
 **Change 1 — `vps-service/engines/v38_backtest_engine.py` (lines ~1356-1396):**
 - قراءة canonical keys: `sl` / `tp1` / `tp2` (مع backward-compat fallback لـ `stop_loss`/`target_1`/`target_2` لأي decisions قديمة)
-- إضافة ATR stop clamp `[3%, 9%]` باستخدام `get_setting('atr_stop_min_pct')` / `get_setting('atr_stop_max_pct')` — يحترم CONSTITUTION Rule 8
+- إضافة ATR stop clamp **`[5%, 9%]`** (was `[3%, 9%]` — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع min من 3.0→5.0) باستخدام `get_setting('atr_stop_min_pct')` / `get_setting('atr_stop_max_pct')` — يحترم CONSTITUTION Rule 8
 - إعادة اشتقاق `tp1`/`tp2` من الـ clamped stop للحفاظ على R:R ratio من `rr_ratio_tp1` / `rr_ratio_tp2`
 
 **Change 2 — `vps-service/jobs/v40_2_daily_generator.py` (lines ~314-326):**
-- R:R floor gate: `if r_mult < get_setting('dynamic_rr_normal', default=1.5): continue`
+- R:R floor gate: `if r_mult < get_setting('dynamic_rr_normal', default=1.8): continue` (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع من 1.5→1.8)
 - يرفض setups أقل من العتبة **قبل** ما تدخل `predictions.db`
 - مع الـ key-mismatch fix، `dynamic_rr_outperform=2.0` بـ يُحترم للأسهم اللي بتفوق على السوق → الـ gate نادرًا بـ يفعل
 
@@ -1216,24 +1221,26 @@ SELECT COUNT(*) FROM predictions WHERE risk_reward = 0.0 AND signal IN ('BUY','S
 - **PF:** 1.398 → 1.453 (**+0.055**)
 - **Expectancy:** 1.35% → 1.54% (**+0.189%/trade**)
 - **WR:** unchanged (الأهداف الأعلى أصعب، لكن payoff بـ يعوّض)
-- **ATR clamp fired:** **0 trades** (كل الـ stops أصلاً ضمن [3%, 9%])
+- **ATR clamp fired:** **0 trades** (كل الـ stops أصلاً ضمن **[5%, 9%]** — was [3%,9%] قبل Task `REAPPLY-CRITICAL-FIXES` 2026-10-08)
 
 ### 5.6 ماذا تعني الأرقام
 
 1. **النظام ربحان على الأرشيف الحالي الحقيقي** — PF > 1.4, expectancy موجب. الـ PF=0.25 القديم كان على أرشيف أقدم/أضعف.
-2. **Dynamic R:R (1.5/2.0) تحسين هندسي حقيقي** — +0.189%/trade expectancy, +0.055 PF, بدون تضخيم trade count أو WR.
+2. **Dynamic R:R (1.8/2.0 — was 1.5/2.0 before Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) تحسين هندسي حقيقي** — +0.189%/trade expectancy, +0.055 PF, بدون تضخيم trade count أو WR.
 3. **95.27% من الصفقات بـ تحصل على R:R=2.0** (outperforming-market path) — الـ dynamic path هو المهيمن، زي ما هو مُصمّم.
 4. **Max loss بـ يبقى -7.59%** — Hard Loss Ceiling (HARD cap ABS(return) ≤ 50 + the -7% stop floor في `daily_closer.py`) سليم. الإصلاح ما بـ يكسر أي حماية.
-5. **ATR clamp دفاعي، مش نشط** — 0 fires معناه إن الـ ATR stops الحالية بـ تحترم [3%, 9%]؛ الـ clamp شبكة أمان للحالات المستقبلية.
+5. **ATR clamp دفاعي، مش نشط** — 0 fires معناه إن الـ ATR stops الحالية بـ تحترم **[5%, 9%]** (was [3%,9%] — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع الحد الأدنى من 3.0→5.0 لمواءمة حماية رأس المال)؛ الـ clamp شبكة أمان للحالات المستقبلية.
 
 ### 5.7 engine_settings (canonical)
 
+> **تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`):** `unified_config.py` EGX profile (ATR 3.0→5.0 + R:R 1.5→1.8) + `opportunity_quality.py` (ATR_STOP_MIN_PCT 3.0→5.0) + `master_analyzer.py` (THRESHOLDS dict + delegation) دلوقتي aligned مع `engine_settings.py` (canonical). §5.7 updated 2026-10-08.
+
 | Key | القيمة | الوصف |
 |-----|------|------|
-| `dynamic_rr_normal` | **1.5** | R:R floor للأسهم العادية (يتح بها floor gate في `v40_2_daily_generator.py` L314-326) |
+| `dynamic_rr_normal` | **1.8** (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) | R:R floor للأسهم العادية (يتح بها floor gate في `v40_2_daily_generator.py` L314-326) |
 | `dynamic_rr_outperform` | **2.0** | R:R target للأسهم اللي بتفوق على الـ benchmark (EGX30ETF) |
-| `atr_stop_min_pct` | **3.0** | ATR stop clamp الحد الأدنى |
-| `atr_stop_max_pct` | **9.0** | ATR stop clamp الحد الأقصى |
+| `atr_stop_min_pct` | **5.0** (was 3.0 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — Rule 8) | ATR stop clamp الحد الأدنى — رفع من 3.0 لمواءمة حماية رأس المال |
+| `atr_stop_max_pct` | **9.0** (V40_2_STOP_MAX_PCT default رفع من 7.0 — Task `REAPPLY-CRITICAL-FIXES`) | ATR stop clamp الحد الأقصى |
 | `partial_exit_at_rr` | 1.5 | بيع 50% عند 1.5R + breakeven |
 | `partial_exit_trail_remaining` | 1.0 | تفعيل trailing على الباقي |
 | `hard_loss_ceiling_pct` | 7.0 | سقف الخسارة الأقصى (cap) |
@@ -1243,14 +1250,26 @@ SELECT COUNT(*) FROM predictions WHERE risk_reward = 0.0 AND signal IN ('BUY','S
 
 | File | Lines | Change |
 |------|-------|--------|
-| `vps-service/engines/v38_backtest_engine.py` | ~1356-1396 | Read canonical keys `sl`/`tp1`/`tp2` + ATR stop clamp [3%, 9%] + re-derive tp from clamped sl |
-| `vps-service/jobs/v40_2_daily_generator.py` | ~314-326 | R:R ≥ 1.5 floor gate (rejects sub-threshold setups before DB insert) |
+| `vps-service/engines/v38_backtest_engine.py` | ~1356-1396 | Read canonical keys `sl`/`tp1`/`tp2` + ATR stop clamp **[5%, 9%]** (was [3%,9%] — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — رفع min 3.0→5.0 + V40_2_STOP_MAX_PCT default 7.0→9.0) + re-derive tp from clamped sl |
+| `vps-service/jobs/v40_2_daily_generator.py` | ~314-326 | R:R ≥ **1.8** floor gate (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` — rejects sub-threshold setups before DB insert) |
 | `institutional_decision_engine.py` | — | unchanged (was already correct) |
+| `vps-service/config/unified_config.py` (NEW — Task `REAPPLY`) | L147-150 defaults + L377-380 EGX profile | EGX profile: ATR 3.0→5.0 + R:R 1.5→1.8 (KSA/KSE/QSE/DFM/CRYPTO غير ملموسة) |
+| `vps-service/core/opportunity_quality.py` (NEW — Task `REAPPLY`) | L580 | `ATR_STOP_MIN_PCT` 3.0→5.0 |
+| `vps-service/analyzers/master_analyzer.py` (NEW — Task `REAPPLY`) | L495-510 (THRESHOLDS dict) + L5343-5363 (`_get_signal_from_score`) + L5361-5387 (`_get_signal_arabic`) | THRESHOLDS = 78/65/55/40/25 (was drift REDUCE=35/SELL=20/STRONG_SELL=10 — removed HOLD_LOW/HIGH). `_get_signal_from_score` يفوّض لـ `canonical_signal.classify_signal`. `_get_signal_arabic` يفوّض لـ `signal_ar`. |
 
 ### 5.9 Commit
 
 ```
 65a748f fix(rr): unlock dynamic R:R (1.5/2.0) + ATR stop clamp [3%,9%] + R:R>=1.5 floor gate
+        ↑ baseline — 2026-08-17
+
+38665fd1 (Task REAPPLY-CRITICAL-FIXES — 2026-10-08):
+  - master_analyzer THRESHOLDS 78/65/55/40/25 + delegation to canonical_signal.classify_signal
+  - unified_config EGX ATR 3.0→5.0 + R:R 1.5→1.8
+  - opportunity_quality ATR_STOP_MIN_PCT 3.0→5.0
+  - backtest_engine + daily_predictor V40_2_STOP_MAX_PCT 7.0→9.0 (3 occurrences)
+  - sniper/track → 410 Gone + ai_predictions_routes + historical_predictions_v2_routes early-return guards
+  - maker-radar/stock + crypto/full-analysis fabrications removed
 ```
 
 ```bash
@@ -6685,9 +6704,11 @@ don't re-attempt these moves.
 
 ## 22. Canonical Signal Workflow — كيف تُحسَب الإشارات (NEW — 2026-10-07 — Task `DOC-SECRETARY-ACTIVATION`)
 
-> **المرجع الدستوري:** Rule 72 (UNIFIED-DATA-CONTRACT — added 2026-10-07). المصدر: `00-CONSTITUTION.md` § Rule 72 + `vps-service/utils/canonical_signal.py` (309 LOC) + `src/lib/canonical-signal.ts` (246 LOC — TS port مطابق Python 100%).
+> **المرجع الدستوري:** Rule 72 (UNIFIED-DATA-CONTRACT — added 2026-10-07) + **Rule 73 (SINGLE-DISPLAY-SOURCE — added 2026-10-08 — Task `CONSTITUTION-R75-R76`)** + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW). المصدر: `00-CONSTITUTION.md` § Rules 72-76 + `vps-service/utils/canonical_signal.py` (309 LOC) + `src/lib/canonical-signal.ts` (246 LOC — TS port مطابق Python 100%) + `scripts/zero_conflict_test.py` (Rule 73 enforcement).
 >
 > **الهدف:** إنهاء كارثة "نفس السهم = بيانات مختلفة على 5 شاشات + التليجرام". قبل Rule 72، كان فيه 5 صيغ مختلفة لـ accumulation label + 5+ صيغ fallback لـ support/resistance + 3 صيغ RSI (Wilder صح، SMA خاطئ، EMA بـ seed مختلف) + 4 أنظمة thresholds مختلفة لـ signal classification + 4 taxonomies مختلفة لـ phase كلها اسمها "phase" + 3 routes بـ fabricate `target_price_2 = target1 * 1.05` (Rule 27 violation).
+>
+> **تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`):** `master_analyzer.py` دلوقتي بـ يفوّض signal classification لـ `canonical_signal.classify_signal` (single source of truth per Rule 72 + Rule 73). `_get_signal_from_score` (L5343-5363) + `_get_signal_arabic` (L5361-5387) ما عادوش يحسبوا locally. الـ THRESHOLDS dict في `master_analyzer.py` L495-510 دلوقتي 100% مطابق لـ `canonical_signal.py` (78/65/55/40/25 — was drift REDUCE=35/SELL=20/STRONG_SELL=10 + HOLD_LOW/HIGH). تم التحقق عبر `scripts/zero_conflict_test.py` — mismatch_rate=0.00% + threshold_drift=0.
 
 ### 22.1 الـ 5 classifiers الكنسية
 
@@ -6695,12 +6716,14 @@ don't re-attempt these moves.
 
 | # | Classifier | Signature | Output | Thresholds / Logic |
 |---|---|---|---|---|
-| 1 | `classify_signal(score)` | `(score: int) → SignalType` | 7-level taxonomy: `STRONG_BUY` (≥80) · `BUY` (68-79) · `ACCUMULATE` (55-67) · `HOLD` (40-54) · `REDUCE` (28-39) · `SELL` (15-27) · `STRONG_SELL` (<15) | Default thresholds canonical. Rule 71 lowered `STRONG_BUY` 80→78 (commit `c2ade8c6`). |
-| 2 | `canonical_signal_ar(signal)` / `signalAr(signal)` | `(signal: SignalType) → str` | Arabic label per level: `STRONG_BUY` → `'شراء قوي'` · `BUY` → `'شراء'` · `ACCUMULATE` → `'تجميع'` · `HOLD` → `'انتظار'` · `REDUCE` → `'تقليل'` · `SELL` → `'بيع'` · `STRONG_SELL` → `'بيع قوي'`. **ملاحظة:** `'HOLD': 'احتفاظ'` كان non-canonical — اتشال. | One source of truth — no local label maps. |
+| 1 | `classify_signal(score)` | `(score: int) → SignalType` | 7-level taxonomy: `STRONG_BUY` (≥78) · `BUY` (65-77) · `ACCUMULATE` (55-64) · `HOLD` (40-54) · `REDUCE` (25-39) · `SELL` (≤25) · `STRONG_SELL` (≤25). **canonical thresholds = 78/65/55/40/25** (Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — commit `38665fd1` — was drift 80/68/55/35/20/10). Rule 71 lowered `STRONG_BUY` 80→78 (commit `c2ade8c6`). | `master_analyzer._get_signal_from_score` (L5343-5363) يفوّض لهذه — single source of truth per Rule 72 + Rule 73. |
+| 2 | `canonical_signal_ar(signal)` / `signalAr(signal)` | `(signal: SignalType) → str` | Arabic label per level: `STRONG_BUY` → `'شراء قوي'` · `BUY` → `'شراء'` · `ACCUMULATE` → `'تجميع'` · `HOLD` → **`'انتظار'`** · `REDUCE` → **`'تخفيض'`** (was non-canonical `'تقليل'` — اتحلّ في Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) · `SELL` → `'بيع'` · `STRONG_SELL` → `'بيع قوي'`. **ملاحظة:** `'HOLD': 'احتفاظ'` كان non-canonical — اتشال. | One source of truth — no local label maps. `master_analyzer._get_signal_arabic` (L5361-5387) يفوّض لهذه. |
 | 3 | `classify_accumulation(buy_pct)` | `(buy_pct: float) → str` | `'تجميع قوي'` (≥70) · `'تجميع'` (55-69.99) · `'تجميع خفيف'` (50-54.99) · `'توزيع خفيف'` (45-49.99) · `'توزيع'` (30-44.99) · `'توزيع قوي'` (<30) | Canonical 55+ threshold (was 58+ in `telegram_target_hit_tracker.py` — fixed in Task `PHASE-3-TELEGRAM-MIGRATION`). |
 | 4 | `classify_money_flow(buy_pct, sell_pct)` | `(buy_pct, sell_pct: float) → str` | `'🟢 سيولة داخلة قوية'` (delta ≥25) · `'🟢 سيولة داخلة'` (delta 5-24.99) · `'🟡 سيولة متوازنة'` (delta -5 to 4.99) · `'🔴 سيولة خارجة'` (delta -5 to -24.99) · `'🔴 سيولة خارجة قوية'` (delta ≤-25) | delta = buy_pct − sell_pct. Default fallback = `'🟡 سيولة متوازنة'` (not fabricated as inflow — Rule 27). |
 | 5 | `classify_stock_phase(buy_pct, roc_10d)` | `(buy_pct, roc_10d: float) → str` | `'تصاعد'` (buy_pct ≥55 AND roc_10d >5) · `'قمة'` (buy_pct ≥55 AND roc_10d ≤5) · `'تصحيح صحي'` (buy_pct 30-54.99 AND roc_10d >-5) · `'تصحيح هبوطي'` (buy_pct 30-54.99 AND roc_10d ≤-5) · `'قاع'` (buy_pct <30 AND roc_10d ≤-5) · `'تجميع صامت'` (buy_pct <30 AND roc_10d >-5) | 6 phases. Was 4 different taxonomies across screens before Rule 72. |
 | (aux) | `classify_volume_ratio(vol_ratio)` | `(vol_ratio: float) → str` | `'متجاوز'` (≥2.0) · `'مرتفع'` (1.5-1.99) · `'طبيعي'` (0.5-1.49) · `'منخفض'` (<0.5) | Volume ratio relative to average. |
+
+> **آلية الإنفاذ (Rule 73):** `scripts/zero_conflict_test.py` بـ يحقق إن كل شاشة قرار بتقرأ من `/api/stocks/[ticker]/unified` فقط + إن الـ canonical fields (signal/master_score/RSI/support/resistance) متطابقة عبر كل الـ endpoints. لو أي شاشة حاولت تنتج الإشارات بدون ما تمرّ على الـ canonical pipeline → الـ test هيرصد mismatch فورًا. آخر نتيجة (2026-10-08): ✅ **PASS — 0.00% mismatch + 0 threshold drift + 0 HTTP errors** (بعد تشغيل Python backend على 8010).
 
 ### 22.2 Workflow — How a signal is computed end-to-end
 
