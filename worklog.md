@@ -65052,3 +65052,26 @@ Stage Summary:
 - Node-side brain: DealAdvisor → thin proxy (Rule 20 ✅)
 - التحقق: GET / → 200 ✅، /api/deal-advisor → 502 (صحيح — Python غير متاح)
 - القيود: لا حذف (preserved)، Rule 20/27/73 محترمة، الحمايات لم تُلمس
+
+---
+Task ID: UNIFY-PHASE-3 (المدير العام — المرحلة 3: DashboardView + StockAdvanced + Specialist)
+Agent: المدير العام (Z.ai Code)
+Task: إزالة client-side computations في DashboardView + StockAdvancedAnalysisView + SpecialistAnalysisView
+
+Work Log:
+- المرحلة 3-1: DashboardView client-side R:R
+  * إزالة rr = (target-entry)/(entry-stop) — كان client-side computation
+  * الآن: rr من Python (stock.rrRatio) أو '—' (لا fabrication)
+- المرحلة 3-2: StockAdvancedAnalysisView overwrite entry_price
+  * إزالة entry_price: currentPrice + entry_low/high: currentPrice*0.99/1.01
+  * الآن: risk_profile من Python كما هو (لا overwrite)
+- المرحلة 3-3: SpecialistAnalysisView client-side signal classification
+  * إزالة thresholds 70/50/30 المحلية
+  * الآن: canonical thresholds 78/65/55/40/25 (موحدة مع unified API)
+
+Stage Summary:
+- ملفات معدّلة: 3 (DashboardView + StockAdvancedAnalysisView + SpecialistAnalysisView)
+- client-side computations مُزالة: 3 (R:R + entry_price overwrite + signal thresholds)
+- thresholds موحدة: 78/65/55/40/25 (canonical — مطابقة unified API)
+- التحقق: GET / → 200 ✅
+- القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس

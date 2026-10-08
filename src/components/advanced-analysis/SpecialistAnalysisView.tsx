@@ -1098,13 +1098,16 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
   const distFromResistance = current != null && resistance != null && resistance > 0
     ? ((resistance - current) / current) * 100 : null;
 
-  // Signal interpretation (0-100 scale)
+  // UNIFY-FIX (Rule 73): استخدم canonical thresholds 78/65/55/40/25 (موحدة مع unified API)
+  // بدل thresholds 70/50/30 المحلية المتضاربة.
   const sigNum = safeNum(info.signal);
   const sigInterp = sigNum == null ? { txt: '—', cls: 'text-muted-foreground' }
-    : sigNum >= 70 ? { txt: 'إشارة شراء قوية', cls: 'text-emerald-600' }
-    : sigNum >= 50 ? { txt: 'إشارة شراء', cls: 'text-emerald-600' }
-    : sigNum >= 30 ? { txt: 'إشارة احتفاظ', cls: 'text-amber-600' }
-    : { txt: 'إشارة بيع', cls: 'text-red-600' };
+    : sigNum >= 78 ? { txt: 'شراء قوي', cls: 'text-emerald-600' }
+    : sigNum >= 65 ? { txt: 'شراء', cls: 'text-emerald-600' }
+    : sigNum >= 55 ? { txt: 'تجميع', cls: 'text-teal-600' }
+    : sigNum >= 40 ? { txt: 'انتظار', cls: 'text-amber-600' }
+    : sigNum >= 25 ? { txt: 'تقليل', cls: 'text-orange-600' }
+    : { txt: 'بيع', cls: 'text-red-600' };
 
   return (
     <SectionCard
