@@ -704,6 +704,68 @@ _CACHED_ANALYSIS_DDL: List[Tuple[str, str]] = [
     ('index', "CREATE INDEX IF NOT EXISTS idx_news_ticker ON news_items(ticker)"),
     ('index', "CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(published_at DESC)"),
     ('index', "CREATE INDEX IF NOT EXISTS idx_news_category ON news_items(category, published_at DESC)"),
+]
+
+# Helper: news.db DDL (added to news.db by _build_schema).
+# Phase 2 DATA-P0 (2026-10-08): market_news table + migration from news_articles.
+_NEWS_DB_DDL: List[Tuple[str, str]] = [
+    # --- market_news TABLE: 8 readers across Python + TS expect `market_news` table
+    # with columns: summary_ar, url, tickers, is_catalyst, impact_type, importance,
+    # sentiment, source_type, raw_analysis. But news_scraper.py writes to
+    # `news_articles` (7894 rows) with different columns (summary, source_url, category).
+    # Result: all news queries returned 0 rows. Fix: create market_news table with
+    # the expected schema + migrate data from news_articles (one-time, idempotent). ---
+    ('table', """
+        CREATE TABLE IF NOT EXISTS market_news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT,
+            summary_ar TEXT,
+            summary_en TEXT,
+            source TEXT,
+            source_type TEXT DEFAULT 'scraper',
+            url TEXT,
+            image_url TEXT,
+            tickers TEXT,
+            market TEXT DEFAULT 'EGX',
+            category TEXT,
+            impact_type TEXT DEFAULT 'neutral',
+            sentiment TEXT DEFAULT 'neutral',
+            importance INTEGER DEFAULT 1,
+            is_catalyst INTEGER DEFAULT 0,
+            language TEXT DEFAULT 'ar',
+            raw_analysis TEXT,
+            published_at TEXT,
+            fetched_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """),
+    ('index', "CREATE INDEX IF NOT EXISTS idx_market_news_published ON market_news(published_at DESC)"),
+    ('index', "CREATE INDEX IF NOT EXISTS idx_market_news_market ON market_news(market)"),
+    ('index', "CREATE INDEX IF NOT EXISTS idx_market_news_tickers ON market_news(tickers)"),
+    # --- market_news MIGRATION from news_articles (one-time, idempotent) ---
+    # Maps: summary→summary_ar, source_url→url, category→impact_type, symbol→tickers
+    ('migration', """
+        INSERT OR IGNORE INTO market_news (title, content, summary_ar, source, source_type, url, image_url, tickers, market, category, impact_type, language, published_at, fetched_at, created_at)
+        SELECT
+            title,
+            content,
+            summary AS summary_ar,
+            source,
+            'news_scraper_legacy' AS source_type,
+            source_url AS url,
+            image_url,
+            CASE WHEN symbol IS NOT NULL AND symbol != '' THEN json_quote(symbol) ELSE NULL END AS tickers,
+            COALESCE(market, 'EGX') AS market,
+            category,
+            CASE category WHEN 'positive' THEN 'bullish' WHEN 'negative' THEN 'bearish' ELSE 'neutral' END AS impact_type,
+            COALESCE(language, 'ar') AS language,
+            published_at,
+            fetched_at,
+            created_at
+        FROM news_articles
+        WHERE title NOT IN (SELECT title FROM market_news)
+    """),
     # --- price_history VIEW (أغسطس 2026): many analyzers query `price_history` for
     # S/R calculation. The table never existed (only stock_daily_prices did), so S/R
     # fell back to stale Yahoo data. This view aliases stock_daily_prices to the
@@ -791,6 +853,12 @@ def _build_schema() -> Dict[str, List[Tuple[str, str]]]:
     if 'predictions' not in s:
         s['predictions'] = []
     s['predictions'].extend(_PREDICTIONS_CACHED_ANALYSIS_DDL)
+    # Append news.db DDL (market_news table + migration from news_articles).
+    # Phase 2 DATA-P0 (2026-10-08): fix schema mismatch — readers expect market_news,
+    # writers populate news_articles. This migration bridges the gap.
+    if 'news' not in s:
+        s['news'] = []
+    s['news'].extend(_NEWS_DB_DDL)
     return s
 
 
@@ -918,6 +986,9 @@ class Migrator:
                             result['tables'] += 1
                         elif stmt_type == 'index':
                             result['indexes'] += 1
+                        elif stmt_type == 'migration':
+                            result.setdefault('migrations', 0)
+                            result['migrations'] += 1
                     except sqlite3.OperationalError as e:
                         # Common case: table already exists with different schema.
                         # Log and continue — don't fail the whole migration.
