@@ -2662,23 +2662,7 @@ const StockTable = memo(function StockTable({
             </div>
           );
         }
-        const rr = ((tPrice - stock.current_price) / Math.max(0.01, stock.current_price - slPrice)).toFixed(1);
-          return (
-            <div className="flex flex-col text-[10px] leading-tight font-mono">
-              <div className="flex gap-1 justify-between">
-                <span className="text-muted-foreground">هدف:</span>
-                <span className="text-muted-foreground">— بيانات غير متاحة</span>
-              </div>
-              <div className="flex gap-1 justify-between">
-                <span className="text-muted-foreground">وقف:</span>
-                <span className="text-muted-foreground">—</span>
-              </div>
-              <div className="text-[9px] text-muted-foreground text-center">
-                راجع التوصية الرسمية
-              </div>
-            </div>
-          );
-        }
+        // UNIFY-FIX v2: لو يوجد توقع طازج، اعرضه بالكامل
         const rr = ((tPrice - stock.current_price) / Math.max(0.01, stock.current_price - slPrice)).toFixed(1);
         return (
           <div className="flex flex-col text-[10px] leading-tight font-mono">
