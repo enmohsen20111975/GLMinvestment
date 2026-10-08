@@ -2535,8 +2535,12 @@ export function SpecialistAnalysisView() {
       const results = await Promise.allSettled([
         // PRIMARY — must succeed
         fetch(`/api/maker-radar/stock?ticker=${enc}&market=${mkt}`),
-        // SECONDARY — must succeed
-        fetch(`/api/maker-radar/footprint?ticker=${enc}&days=30&market=${mkt}`),
+        // PHASE4-APIS (Task PHASE4-APIS, Rule 27): /api/maker-radar/footprint
+        // (410 Gone — naive 70/30 split) → /api/flow/[ticker] (canonical Python
+        // compute_money_flow: CLV-5d + CMF-20d + vol_confirmation).
+        // The downstream LiquidityFootprintSection consumes a FootprintData-shaped
+        // object; we remap /api/flow fields → footprint fields below.
+        fetch(`/api/flow/${enc}`),
         // TERTIARY — predictions.db direct
         fetch(`/api/predictions?ticker=${enc}&limit=10&market=${mkt}`),
         // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
@@ -2568,9 +2572,35 @@ export function SpecialistAnalysisView() {
       }
       setRadarData(radarJson);
 
-      // SECONDARY: footprint
+      // SECONDARY: footprint (now from /api/flow — PHASE4-APIS)
       if (footprintRes.status === 'fulfilled') {
-        try { setFootprint(await footprintRes.value.json()); } catch { /* ignore */ }
+        try {
+          const flowJson = await footprintRes.value.json();
+          // Map /api/flow/[ticker] response → FootprintData shape.
+          // flow.buy_pressure → buy_volume, flow.sell_pressure → sell_volume,
+          // flow.net_flow → delta_volume; volume-profile fields (poc/vah/val/levels)
+          // not available from money-flow API → null/[] (no fabrication, Rule 27).
+          if (flowJson?.success && flowJson?.flow) {
+            const f = flowJson.flow;
+            const buyVol = Number(f.buy_pressure ?? 0);
+            const sellVol = Number(f.sell_pressure ?? 0);
+            setFootprint({
+              success: true,
+              ticker: f.ticker ?? flowJson.ticker ?? symbol,
+              poc_price: undefined,
+              vah_price: undefined,
+              val_price: undefined,
+              buy_volume: buyVol,
+              sell_volume: sellVol,
+              delta_volume: Number(f.net_flow ?? (buyVol - sellVol)),
+              buy_sell_ratio: sellVol > 0 ? buyVol / sellVol : 0,
+              total_volume: Number(f.volume ?? 0),
+              value_area_volume_pct: undefined,
+              levels: [],
+              computed_at: new Date().toISOString(),
+            } as FootprintData);
+          }
+        } catch { /* ignore */ }
       }
 
       // TERTIARY: predictions

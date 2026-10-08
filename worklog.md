@@ -67111,3 +67111,41 @@ Stage Summary:
 - 3 fabrications من نوع `entry * 0.95` اتحوّلت لـ NULL مع null-checks على كل مسار.
 - 1 INSERT fabrication في telegram اتعمله early-return guard (الـ row الوهمي ما بقاش يُكتب في predictions.db إطلاقًا).
 - Phase 3 complete. جاهز للمراجعة قبل Phase 4 (APIs P0).
+
+---
+Task ID: PHASE4-APIS
+Agent: general-purpose (مهندس الواجهات)
+Task: Phase 4 — Fix 9 broken 410 callers
+
+Stage Summary:
+- 9 إصلاحات P0 (شاشات تستدعي endpoints ميتة بـ 410 Gone):
+
+| # | الملف:السطر | قبل (410) | بعد (canonical) |
+|---|-------------|-----------|------------------|
+| 1 | `src/modules/stock-analysis/components/StockDetail.tsx:1078` | `fetch('/api/maker-radar/footprint?ticker=...')` (410 — naive 70/30 split) | `fetch('/api/flow/${ticker}')` (canonical Python compute_money_flow: CLV-5d + CMF-20d). الحفاظ على الـ response shape المتوقعة من `buildStockInfographicDataFromStock`: `flow.buy_pressure → buy_volume`, `flow.sell_pressure → sell_volume`, `flow.net_flow → delta_volume`، `poc/vah/val = null` (volume-profile concepts غير متوفرة في money-flow API). |
+| 2 | `src/modules/publishing/components/UnifiedPublishButton.tsx:313` | `fetch('/api/maker-radar/footprint?ticker=...')` (410) | `fetch('/api/flow/${ticker}')` + mapping لـ `footprintData` shape (poc/vah/val = `undefined` لمواءمة `StockInfographicCardProps.liquidity?: { poc_price?: number }`). `buy_volume/sell_volume/delta_volume/buy_sell_ratio` من flow API. |
+| 3 | `src/components/advanced-analysis/SpecialistAnalysisView.tsx:2539` | `fetch('/api/maker-radar/footprint?ticker=...&days=30&market=...')` (410) | `fetch('/api/flow/${enc}')` + remap لـ `FootprintData` shape داخل الـ `setFootprint` call. `levels: []` (لا histogram). الـ renderer الأصلي بيـ skip الـ POC/VAH/VAL tiles + histogram تلقائيًا لو `levels.length === 0`. |
+| 4 | `src/modules/radar/components/RadarStatsCards.tsx:641` (LiquidityFootprintCard، مستخدم في MakerRadarTab.tsx:3177) | `fetch('/api/maker-radar/footprint?ticker=...')` (410) | `fetch('/api/flow/${ticker}')` + remap كامل لـ `FootprintData` (poc/vah/val = 0، levels = []). الـ renderer اتعمله conditional rendering: POC/VAH/VAL tiles + histogram + value_area footer بـ تُعرض فقط لو `levels.length > 0`. لما `levels = []` بـ يُعرض banner توضيحي "المصدر: /api/flow · بيانات تدفق السيولة (CLV + CMF) — لا يتوفر مخطط توزيع الحجم". |
+| 5 | `src/modules/admin/components/PurgeCacheButton.tsx:104` (handleGenerate — buttons already commented out) | `fetch('/api/admin/generate-predictions?type=...')` (410) | `handleGenerate` اتعمله no-op: toast توضيحي "التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py) — لا حاجة لتشغيل يدوي." (Option A). الـ buttons دي كانت معطّلة بالفعل من 2026-09-02؛ الدالة بقت safety net لمستقبِل. |
+| 6 | `src/modules/admin/components/EnginesStatusTab.tsx:454` (handleForceUpdate — Prediction Engine branch) | `endpoint = '/api/admin/generate-predictions'` + body `POST` (410) | `if (engineName === 'Prediction Engine')` → toast توضيحي + `return` مبكر (Option A). الـ Data Engine + Analysis Engine paths كما هي (canonical). |
+| 7 | `src/modules/admin/components/EnginesStatusTab.tsx:490` (handleForceUpdateAll — predictions fetch) | `await fetch('/api/admin/generate-predictions', { method: 'POST' })` (410) | شيلنا الـ fetch؛ toast توضيحي "التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py) — تخطي التحديث اليدوي." الـ Data Engine fetch بقي كما هو. (Option A) |
+| 8 | `src/modules/admin/components/AdminView.tsx:1506` (زر "توليد التوقعات" في Quick Actions) | `adminFetch('/api/admin/generate-predictions?type=intraday', { method: 'POST' })` (410) | الزر بقي tooltip-only: `onClick` بيـ show toast "التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py) — لا حاجة لتشغيل يدوي." + `title="..."`. subtitle اتغيّر من "فحص لحظي + يومي" لـ "تلقائي عبر cron". (Option A) |
+| 9 | `src/modules/predictions/components/PredictionTrackingView.tsx:470` (handleGenerateV40 — button already removed) | `fetch('/api/admin/generate-predictions?type=intraday', { method: 'POST' })` (410) | `handleGenerateV40` اتعمله no-op: toast توضيحي (Option A). الـ JSX button كان مُزال بالفعل (commented at line 532 "تم إزالة زرار توليد توقعات V40.2")؛ الدالة بقت safety net. |
+| 10 (bonus) | `src/modules/stock-analysis/components/GateAnalysisView.tsx:60` (fetchAndAnalyze) | `fetch('/api/stocks/${ticker}/professional-analysis')` (410 — duplicates `/recommendation`) | `fetch('/api/stocks/${ticker}/unified')` (canonical SSOT). Mapping كامل لـ legacy `pd.data` shape: `technical.rsi → indicators.rsi.value`, `technical.atr → indicators.atr.value`, `technical.ma_50 → indicators.sma_50`, `technical.ma_200 → indicators.sma_200`, `technical.support → price_levels.support_1`, `technical.resistance → price_levels.resistance_1`, `technical.avg_volume → volume_analysis.avg_volume_20`, `stock.current_price → stock.close`, `stock.volume → stock.volume`. الحقول غير المتوفرة (sma_20, macd, support_2, resistance_2) → `null`/`0` والـ consumer بيـ fall back لـ `||` defaults. |
+
+Verification:
+- ✅ TS compilation: 0 NEW errors in modified files. Pre-existing errors unchanged (7 errors total — 4 in PredictionTrackingView StatCardProps `valueColor` + 3 in StockDetail DeepAnalysis `confidence`/`reasons` — shifted by line numbers only, not caused by my edits).
+- ✅ Files with 0 errors after edit: SpecialistAnalysisView.tsx + RadarStatsCards.tsx + PurgeCacheButton.tsx + EnginesStatusTab.tsx + AdminView.tsx + GateAnalysisView.tsx + UnifiedPublishButton.tsx (after fix to use `undefined` instead of `null` for optional liquidity fields).
+- ✅ No file deleted (Rule 16). No git push. No Python touched.
+- ✅ Canonical endpoints verified to exist: `/api/flow/[ticker]/route.ts` (Python compute_money_flow) + `/api/stocks/[ticker]/unified/route.ts` (SSOT via getUnifiedStockData) + `/api/predictions/route.ts` (admin-gated POST per Phase 1).
+- ✅ Response shapes preserved: كل caller بيستقبل نفس الشكل اللي كان بيتوقعه (map canonical → legacy shape).
+- ✅ Rule 27 (NO-FAKE-DATA): volume-profile fields (poc/vah/val/levels) بقت `null`/`0`/`[]` بدل fabrication — الـ renderer بيتخطاها conditional.
+
+Stage Summary:
+- 9 broken 410 callers fixed (10 actual code edits — EnginesStatusTab had 2 callers in same file).
+- 9 ملفات مُعدّلة: StockDetail.tsx + UnifiedPublishButton.tsx + SpecialistAnalysisView.tsx + RadarStatsCards.tsx + PurgeCacheButton.tsx + EnginesStatusTab.tsx + AdminView.tsx + PredictionTrackingView.tsx + GateAnalysisView.tsx.
+- 410 Gone endpoints fully detached from frontend (no live caller remains).
+- 5/9 callers اتعملها Option A (disable + tooltip) لأن التوقعات cron-auto (daily_predictor.py).
+- 4/9 callers (footprint + professional-analysis) اتعملها canonical URL replacement + field mapping.
+- لم أحذف أي ملف (Rule 16). لم أرفع لـ git. لم أنشئ fake data (Rule 27).
+- Phase 4 complete. جاهز للمراجعة قبل Phase 5 (Screens P0).

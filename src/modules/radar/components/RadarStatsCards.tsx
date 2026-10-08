@@ -638,12 +638,45 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/maker-radar/footprint?ticker=${ticker}&days=30`, { cache: 'no-store' });
+      // PHASE4-APIS (Task PHASE4-APIS, Rule 27): /api/maker-radar/footprint is 410 Gone
+      // (was using naive 70/30 candle-color split — NOT real order flow).
+      // Canonical replacement: /api/flow/[ticker] (Python compute_money_flow:
+      // CLV-5d + CMF-20d + vol_confirmation).
+      //
+      // Response shape mapping (preserves FootprintData interface):
+      //   flow.buy_pressure → buy_volume
+      //   flow.sell_pressure → sell_volume
+      //   flow.net_flow → delta_volume
+      //   derived → buy_sell_ratio
+      //   poc/vah/val/levels/value_area_volume_pct → 0/[] (volume-profile
+      //   concepts not available from money-flow API; renderer hides them).
+      const res = await fetch(`/api/flow/${encodeURIComponent(ticker)}`, { cache: 'no-store' });
       const json = await res.json();
-      if (json.success) {
-        setData(json);
+      if (json?.success && json?.flow) {
+        const f = json.flow;
+        const buyVol = Number(f.buy_pressure ?? 0);
+        const sellVol = Number(f.sell_pressure ?? 0);
+        setData({
+          success: true,
+          ticker: f.ticker ?? ticker,
+          days: 30,
+          bin_count: 0,
+          price_min: 0,
+          price_max: 0,
+          poc_price: 0,
+          poc_volume: 0,
+          vah_price: 0,
+          val_price: 0,
+          value_area_volume_pct: 0,
+          total_volume: Number(f.volume ?? 0),
+          buy_volume: buyVol,
+          sell_volume: sellVol,
+          delta_volume: Number(f.net_flow ?? (buyVol - sellVol)),
+          buy_sell_ratio: sellVol > 0 ? buyVol / sellVol : 0,
+          levels: [],
+        });
       } else {
-        setError(json.error || 'فشل تحميل البصمة');
+        setError(json?.error_ar || json?.error || 'فشل تحميل بصمة السيولة');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'خطأ في الاتصال');
@@ -698,24 +731,34 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
         </Button>
       </div>
 
-      {/* Top KPIs */}
-      <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
-        <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/20 text-center">
-          <div className="text-[9px] text-muted-foreground">POC</div>
-          <div className="font-bold text-purple-700 dark:text-purple-300">{data.poc_price.toFixed(2)}</div>
-          <div className="text-[9px] text-muted-foreground">نقطة التحكم</div>
+      {/* Top KPIs — POC/VAH/VAL only available from volume-profile API.
+          When source is /api/flow (money flow), levels=[] and poc_price=0,
+          so we skip these tiles (Rule 27: no fabrication of volume-profile
+          concepts from money-flow data). */}
+      {data.levels.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+          <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/20 text-center">
+            <div className="text-[9px] text-muted-foreground">POC</div>
+            <div className="font-bold text-purple-700 dark:text-purple-300">{data.poc_price.toFixed(2)}</div>
+            <div className="text-[9px] text-muted-foreground">نقطة التحكم</div>
+          </div>
+          <div className="p-1.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-center">
+            <div className="text-[9px] text-muted-foreground">VAH</div>
+            <div className="font-bold text-emerald-700 dark:text-emerald-300">{data.vah_price.toFixed(2)}</div>
+            <div className="text-[9px] text-muted-foreground">قمة منطقة القيمة</div>
+          </div>
+          <div className="p-1.5 rounded bg-rose-50 dark:bg-rose-950/20 text-center">
+            <div className="text-[9px] text-muted-foreground">VAL</div>
+            <div className="font-bold text-rose-700 dark:text-rose-300">{data.val_price.toFixed(2)}</div>
+            <div className="text-[9px] text-muted-foreground">قاع منطقة القيمة</div>
+          </div>
         </div>
-        <div className="p-1.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-center">
-          <div className="text-[9px] text-muted-foreground">VAH</div>
-          <div className="font-bold text-emerald-700 dark:text-emerald-300">{data.vah_price.toFixed(2)}</div>
-          <div className="text-[9px] text-muted-foreground">قمة منطقة القيمة</div>
+      )}
+      {data.levels.length === 0 && (
+        <div className="mb-3 text-[10px] text-muted-foreground bg-slate-50 dark:bg-slate-900/40 rounded p-1.5 text-center">
+          المصدر: /api/flow/{data.ticker} · بيانات تدفق السيولة (CLV + CMF) — لا يتوفر مخطط توزيع الحجم
         </div>
-        <div className="p-1.5 rounded bg-rose-50 dark:bg-rose-950/20 text-center">
-          <div className="text-[9px] text-muted-foreground">VAL</div>
-          <div className="font-bold text-rose-700 dark:text-rose-300">{data.val_price.toFixed(2)}</div>
-          <div className="text-[9px] text-muted-foreground">قاع منطقة القيمة</div>
-        </div>
-      </div>
+      )}
 
       {/* Buy/Sell pressure */}
       <div className="mb-3">
@@ -739,55 +782,61 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
         </div>
       </div>
 
-      {/* Volume profile horizontal bars (top-to-bottom = high-to-low price) */}
-      <div className="space-y-0.5">
-        <div className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center justify-between">
-          <span>مستوى السعر</span>
-          <span>الحجم</span>
+      {/* Volume profile horizontal bars (top-to-bottom = high-to-low price).
+          Only rendered when levels[] is populated (volume-profile source).
+          When /api/flow is the source (levels=[]), this section is skipped. */}
+      {levels.length > 0 && (
+        <div className="space-y-0.5">
+          <div className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center justify-between">
+            <span>مستوى السعر</span>
+            <span>الحجم</span>
+          </div>
+          <div className="max-h-56 overflow-y-auto pr-1">
+            {levels.map((lvl, i) => {
+              const isPoc = lvl.is_poc;
+              const isInVA = lvl.is_value_area;
+              return (
+                <div key={i} className="flex items-center gap-1 text-[10px] py-0.5">
+                  <div className="w-16 text-left font-mono text-muted-foreground flex-shrink-0">
+                    {lvl.price_mid.toFixed(2)}
+                  </div>
+                  <div className="flex-1 relative h-4 rounded-sm overflow-hidden bg-muted/40">
+                    {/* Buy volume (right side, green) */}
+                    <div
+                      className="absolute right-0 top-0 h-full bg-emerald-500/70"
+                      style={{ width: `${(lvl.buy_volume / maxVolume) * 100}%` }}
+                    />
+                    {/* Sell volume (left side, red) */}
+                    <div
+                      className="absolute left-0 top-0 h-full bg-rose-500/70"
+                      style={{ width: `${(lvl.sell_volume / maxVolume) * 100}%` }}
+                    />
+                    {/* POC marker */}
+                    {isPoc && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-white drop-shadow">★ POC</span>
+                      </div>
+                    )}
+                    {/* Value area border */}
+                    {isInVA && !isPoc && (
+                      <div className="absolute inset-0 border-y border-purple-500/30" />
+                    )}
+                  </div>
+                  <div className="w-12 text-left font-mono text-muted-foreground flex-shrink-0">
+                    {fmtMoney(lvl.volume)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="max-h-56 overflow-y-auto pr-1">
-          {levels.map((lvl, i) => {
-            const isPoc = lvl.is_poc;
-            const isInVA = lvl.is_value_area;
-            return (
-              <div key={i} className="flex items-center gap-1 text-[10px] py-0.5">
-                <div className="w-16 text-left font-mono text-muted-foreground flex-shrink-0">
-                  {lvl.price_mid.toFixed(2)}
-                </div>
-                <div className="flex-1 relative h-4 rounded-sm overflow-hidden bg-muted/40">
-                  {/* Buy volume (right side, green) */}
-                  <div
-                    className="absolute right-0 top-0 h-full bg-emerald-500/70"
-                    style={{ width: `${(lvl.buy_volume / maxVolume) * 100}%` }}
-                  />
-                  {/* Sell volume (left side, red) */}
-                  <div
-                    className="absolute left-0 top-0 h-full bg-rose-500/70"
-                    style={{ width: `${(lvl.sell_volume / maxVolume) * 100}%` }}
-                  />
-                  {/* POC marker */}
-                  {isPoc && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-white drop-shadow">★ POC</span>
-                    </div>
-                  )}
-                  {/* Value area border */}
-                  {isInVA && !isPoc && (
-                    <div className="absolute inset-0 border-y border-purple-500/30" />
-                  )}
-                </div>
-                <div className="w-12 text-left font-mono text-muted-foreground flex-shrink-0">
-                  {fmtMoney(lvl.volume)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
-      <div className="mt-2 text-[9px] text-muted-foreground text-center">
-        ★ = نقطة التحكم (POC) · الإطار = منطقة القيمة ({data.value_area_volume_pct.toFixed(0)}% من الحجم)
-      </div>
+      {levels.length > 0 && (
+        <div className="mt-2 text-[9px] text-muted-foreground text-center">
+          ★ = نقطة التحكم (POC) · الإطار = منطقة القيمة ({data.value_area_volume_pct.toFixed(0)}% من الحجم)
+        </div>
+      )}
     </Card>
   );
 }
