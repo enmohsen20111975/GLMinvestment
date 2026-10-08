@@ -5,7 +5,16 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-10-06** (Task `IMPROVEMENTS-SESSION-2026-10-06` — Documentation Secretary — تحديث بعد جلسة التحسينات الذاتية (Rule 71 — AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST). تم تطبيق 2 تحسين فعلي على الكود + إضافة Rule 71 للدستور:
+> **آخر تحديث: 2026-10-08** (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010). ملخص التحديثات في هذا الـ pass:
+> 1. **§4 Engine Map** — `master_analyzer.py` دلوقتي بـ يفوّض signal classification لـ `canonical_signal.classify_signal` (single source of truth per Rule 72 + Rule 73). `_get_signal_from_score` + `_get_signal_arabic` ما عادوش يحسبوا locally.
+> 2. **§4.5 thresholds table** — توثيق العتبات الكنسية **78/65/55/40/25** (Rule 71 lowered `STRONG_BUY` 80→78). كان فيه drift سابق (REDUCE=35, SELL=20, STRONG_SELL=10 + HOLD_LOW/HIGH) — اتحلّ في commit `38665fd1` (Task `REAPPLY-CRITICAL-FIXES`). الآن 100% مطابق لـ `canonical_signal.py` + `engine_settings.py`.
+> 3. **§6 pipeline diagram** — ATR stop clamp اتصلّح من `[3%, 9%]` → **`[5%, 9%]`** (Rule 8 — حماية رأس المال مقدسة) + R:R floor من 1.5 → **1.8** (Rule 18). الإصلاح في `vps-service/config/unified_config.py` EGX profile (ATR 3.0→5.0 + R:R 1.5→1.8) + `vps-service/core/opportunity_quality.py` (ATR_STOP_MIN_PCT 3.0→5.0) + `vps-service/engines/backtest_engine.py` + `vps-service/jobs/daily_predictor.py` (V40_2_STOP_MAX_PCT default 7.0→9.0).
+> 4. **§1.3.8** — نفس إصلاح ATR clamp.
+> 5. **8 one-off scripts معطّلة** بـ early-return guards في `vps-service/scripts/` (Rule 35 — DEFENSE-IN-DEPTH).
+> 6. **3 route writers غير canonical معطّلة** بـ HTTP 410 Gone أو early-return guard (`sniper/track` + `ai_predictions_routes` + `historical_predictions_v2_routes`).
+> Commits: `38665fd1` (REAPPLY+DISABLE-SCRIPTS) · `11853f69` (CONSTITUTION-R75-R76 — أضاف Rules 73-76). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق: 2026-10-06** (Task `IMPROVEMENTS-SESSION-2026-10-06` — Documentation Secretary — تحديث بعد جلسة التحسينات الذاتية (Rule 71 — AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST). تم تطبيق 2 تحسين فعلي على الكود + إضافة Rule 71 للدستور:
 > 1. **Ticker Cooldown** (commit `efa40d69`): رفض السهم نهائياً بعد 5 خسارات متتالية (STOPPED) لمدة 14 يوم تداول. السبب: ORTE كان 48 توقع، 29 max consecutive losses. الإصلاح في `vps-service/jobs/daily_predictor.py` (line ~2693).
 > 2. **STRONG_BUY threshold خفض** (commit `c2ade8c6`): `THRESHOLDS['STRONG_BUY']` من 80 → 78. النتيجة: STRONG_BUY طلعت من 4.5% لـ 75% من إجمالي التوقعات (تنوع الإشارات). الإصلاح في `vps-service/analyzers/master_analyzer.py` (line 495).
 > 3. **Rule 71** (commit `dc08cee6`): AUTONOMOUS-IMPROVEMENT-WITH-BACKTEST — صلاحية الوكيل في تنفيذ التحسينات الموجهة بالباك-تست بدون إذن صريح لكل تعديل + رفع مباشر على GitHub.
@@ -408,7 +417,7 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 5. **Unified Data Pipeline** — `load_merged_history()` في `vps-service/analyzers/master_analyzer.py` هو المصدر الوحيد لقراءة الأسعار.
 6. **Strict Liquidity Filter** — أي سهم turnover يومي < 500,000 EGP → يُسقط من `stored_analyses` نهائياً.
 7. **Single-Viewport** — شاشة `#trading-chart` 75% شارت + 25% sidebar بدون scroll عمودي على desktop.
-8. **Commission edge + risk ceiling** (CONSTITUTION Rule 8) — ATR stop clamp `[3%, 9%]` مُفعّل في `v38_backtest_engine.py` (post-commit `65a748f`).
+8. **Commission edge + risk ceiling** (CONSTITUTION Rule 8) — ATR stop clamp **`[5%, 9%]`** مُفعّل في `v38_backtest_engine.py` (post-commit `65a748f` set initial [3%,9%] baseline; Task `REAPPLY-CRITICAL-FIXES` commit `38665fd1` — 2026-10-08 — رفع الحد الأدنى 3.0→5.0 لمواءمة `engine_settings.py` + `opportunity_quality.py` + `unified_config.py` EGX profile). حماية رأس المال مقدسة (Rule 19).
 9. **Single-route shell** (CONSTITUTION Rule 3) — لا صفحات جديدة. كل شيء عبر hash routes من `/`.
 10. **STICKY FOOTER** — الـ Footer لاصق أسفل كل شاشة (CSS sticky).
 
@@ -478,7 +487,7 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 **UI-Mirror Protocol (القاعدة 53 — CRYPTO-IN-MARKETS):**
 - شاشات الأسهم (`DashboardView`, `StocksView`, `EnhancedWatchlistView`, `TradingChartView`) بتتشارك نفس المكوّنات مع `currentMarket='CRYPTO'` بدل إنشاء شاشات منفصلة.
 - الـ `<MarketSwitcher />` (`src/components/shared/MarketSelector.tsx`) هو نقطة التبديل الوحيدة؛ يكتب `currentMarket` في `useAppStore` ويُعيد تحميل الـ view.
-- لما `currentMarket='CRYPTO'` → `InvestorsFlowPanel` + `MarketDepthPanel` بـ تختفي (مش متاحة للكريبتو) — باقي الـ widgets بتشتغل بـ thresholds مكيّفة (القاعدة 8: ATR stop [5%,15%] للكريبتو بدل [3%,9%] للأسهم).
+- لما `currentMarket='CRYPTO'` → `InvestorsFlowPanel` + `MarketDepthPanel` بـ تختفي (مش متاحة للكريبتو) — باقي الـ widgets بتشتغل بـ thresholds مكيّفة (القاعدة 8: ATR stop [5%,15%] للكريبتو بدل **[5%,9%]** للأسهم — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع min للأسهم من 3.0→5.0).
 - `loadStocks(market)` بـ يمرر `market` لـ `/api/stocks?market=X` → كل سوق بـ يجيب بياناته الحقيقية بدون تفرع شاشات.
 
 **SQLite Fallback Pattern (القاعدة 20 — Python = العقل، Node = العرض فقط):**
@@ -800,7 +809,7 @@ GLMinvestment/                              # ← PROJECT ROOT
 │   ├── main.py                              # FastAPI app + WSGIMiddleware للـ Flask (v7.0.0)
 │   ├── lightweight_server.py                # Flask app + 53 blueprint registrations
 │   ├── engines/                             # ⭐ محركات التحليل الأساسية
-│   │   ├── v38_backtest_engine.py           # 1,817 LOC — walk-forward backtest (COMMIT 65a748f — canonical sl/tp1/tp2 + ATR clamp [3%,9%])
+│   │   ├── v38_backtest_engine.py           # 1,817 LOC — walk-forward backtest (COMMIT 65a748f baseline + 38665fd1 — Task REAPPLY-CRITICAL-FIXES 2026-10-08 — canonical sl/tp1/tp2 + ATR clamp [5%,9%])
 │   │   ├── maestro_orchestrator.py          # 3,545 LOC — 8-layer confluence + 15+ modifier
 │   │   └── ... (9 engines more)
 │   ├── engine/                              # engine subsystem (flow_system.py 1,078 LOC, ...)
@@ -1023,8 +1032,9 @@ Actual:    symbol=السعودية | market=2025-Q3 | fiscal_period=2025-12-31 |
 
 | Engine | File | LOC | الوصف | Status |
 |---|---|---:|---|---|
-| **V38 Backtest Engine** | `engines/v38_backtest_engine.py` | 1,817 | walk-forward backtest — NOW reads canonical `sl`/`tp1`/`tp2` + ATR clamp `[3%, 9%]` (commit `65a748f`) | ✅ ACTIVE |
-| **V39/V40.2 Institutional Decision Engine** | `analyzers/institutional_decision_engine.py` | ~520 | 6 proofs + Tech Score (base 25, max 100) + portfolio_advice + dynamic R:R (1.5/2.0) — returns `sl`/`tp1`/`tp2` keys | ✅ ACTIVE — THE ONLY ENGINE |
+| **V38 Backtest Engine** | `engines/v38_backtest_engine.py` | 1,817 | walk-forward backtest — NOW reads canonical `sl`/`tp1`/`tp2` + ATR clamp **`[5%, 9%]`** (commit `65a748f` baseline; commit `38665fd1` — Task `REAPPLY-CRITICAL-FIXES` — رفع min 3.0→5.0 + V40_2_STOP_MAX_PCT default 7.0→9.0) | ✅ ACTIVE |
+| **V39/V40.2 Institutional Decision Engine** | `analyzers/institutional_decision_engine.py` | ~520 | 6 proofs + Tech Score (base 25, max 100) + portfolio_advice + dynamic R:R (1.8/2.0 — `unified_config.py` EGX profile fixed 1.5→1.8 في commit `38665fd1` — Task `REAPPLY-CRITICAL-FIXES`) — returns `sl`/`tp1`/`tp2` keys | ✅ ACTIVE — THE ONLY ENGINE |
+| **MasterAnalyzer** (تحديث 2026-10-08 — Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`) | `analyzers/master_analyzer.py` | ~5,400+ | **`THRESHOLDS` dict صار canonical:** 78/65/55/40/25 (was drift REDUCE=35, SELL=20, STRONG_SELL=10 — fixed). `_get_signal_from_score` (L5343-5363) يفوّض لـ `canonical_signal.classify_signal` (single source of truth per Rule 72 + Rule 73). `_get_signal_arabic` (L5361-5387) يفوّض لـ `canonical_signal.signal_ar`. removed `HOLD_LOW`/`HOLD_HIGH` brackets. | ✅ ACTIVE |
 | **Maestro Orchestrator** | `engines/maestro_orchestrator.py` = `analyzers/maestro_orchestrator.py` | 3,545 | 8-layer confluence (138 pts max، BUY threshold 68) + 15+ modifier بعد الفازات | ❌ DISABLED (KILL-MAESTRO 2026-08-31) — signal_id = None، مش بيكتب توقعات |
 | **Stock Fundamentals** | `analyzers/stock_fundamentals.py` | — | reads `tab_balance_sheet` (with `symbol ≠ ticker` gap resolver — Arabic prefix match) | ✅ ACTIVE (with gap) |
 | **EGX Fundamental Fetcher** | `vps-service/data/egx_fundamental_fetcher.py` | 573 | fetches from **EGXPilot FREE API** — writes to `egx_fundamentals` table. HARDENED (4cde9f0): ticker guard + no-args cron fix + `verify` integrity check | ✅ SCHEDULED (a268957) |
@@ -1047,14 +1057,23 @@ Actual:    symbol=السعودية | market=2025-Q3 | fiscal_period=2025-12-31 |
 | **Sharia Compliance Scraper** (NEW — Rule 64 — Task 23-A — 2026-10-03) | `data_engine/scrapers/sharia_compliance_scraper.py` | — | scrapes from `stocks.templatesnippet.com` → writes 5 tables in `data_engine.db` (sharia_sources + sharia_source_status + sharia_metrics + sharia_purification_rates + sharia_history). AAOIFI excluded. S&P Shariah primary + Musaffa/Kashif/Osoul supplementary. `consensus_min=6`. Cron: Sat 15:30 UTC. | ✅ ACTIVE (cron #25) |
 | **Purification Calculator** (NEW — Rule 64 — Task 23-A — 2026-10-03) | `vps-service/portfolio/purification_calculator.py` | — | single-trade + portfolio purification (Python=Brain per Rule 20). Called by `/api/sharia/purification` POST endpoint. | ✅ ACTIVE |
 
-### 4.2 V40.2 Daily Generator (post R:R fix — commit 65a748f)
+### 4.2 V40.2 Daily Generator (post R:R fix — commit 65a748f + commit 38665fd1)
 
 > `vps-service/jobs/v40_2_daily_generator.py` (lines ~314-326) — **R:R floor gate** مُفعّل:
 
 ```python
-if r_mult < get_setting('dynamic_rr_normal', default=1.5):
+if r_mult < get_setting('dynamic_rr_normal', default=1.8):
     continue  # يرفض sub-threshold setups قبل ما تدخل predictions.db
 ```
+
+> **تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`):**
+> `dynamic_rr_normal` رفع من 1.5 → **1.8** (Rule 18 — حماية رأس المال مقدسة). مواءمة كاملة في:
+> - `vps-service/config/unified_config.py` EGX profile (L377-380 + L147-150 defaults).
+> - `vps-service/core/engine_settings.py` (canonical default).
+> - `vps-service/jobs/daily_predictor.py` (consumer).
+> - `vps-service/engines/backtest_engine.py` (V40_2_STOP_MAX_PCT default 7.0→9.0).
+>
+> KSA/KSE/QSE/DFM/CRYPTO profiles غير ملموسة (ما زالت بمواصفاتها السابقة — التغيير EGX-only).
 
 - مع الـ key-mismatch fix، `dynamic_rr_outperform=2.0` يُحترم للأسهم اللي outperforming الـ market → الـ gate نادرًا what يفعل.
 - 95.27% من الصفقات بـ R:R=2.0 (outperform path).
@@ -1085,15 +1104,30 @@ if r_mult < get_setting('dynamic_rr_normal', default=1.5):
 
 ### 4.5 الـ Thresholds الحالية (engine_settings)
 
+> **تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`):**
+> العتبات الكنسية للإشارات دلوقتي موحّدة على 3 طبقات: `canonical_signal.py` (Python source) + `engine_settings.py` (DB settings) + `master_analyzer.py` (consumer).
+> - `master_analyzer.THRESHOLDS` = `{STRONG_BUY: 78, BUY: 65, ACCUMULATE: 55, REDUCE: 40, SELL: 25}` (was drift REDUCE=35, SELL=20, STRONG_SELL=10).
+> - `_get_signal_from_score` بـ يفوّض لـ `canonical_signal.classify_signal`.
+> - `HOLD_LOW`/`HOLD_HIGH` brackets اتشالوا (ما عادش لهم دور — `classify_signal` بيرجّع `HOLD` لكل score بين 40-54).
+> - `unified_config.py` EGX profile: ATR clamp `[5%, 9%]` (was 3.0) + R:R floor 1.8 (was 1.5). KSA/KSE/QSE/DFM/CRYPTO profiles غير ملموسة.
+> - `opportunity_quality.py` L580: `ATR_STOP_MIN_PCT = 5.0` (was 3.0).
+> - `backtest_engine.py` + `daily_predictor.py`: `V40_2_STOP_MAX_PCT default = 9.0` (was 7.0 — 3 occurrences).
+
 | Key | Value | Source |
 |---|---|---|
-| `dynamic_rr_normal` | **1.5** | engine_settings.py (default) |
+| `dynamic_rr_normal` | **1.8** (was 1.5 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — commit `38665fd1`) | engine_settings.py (default) + `unified_config.py` EGX profile |
 | `dynamic_rr_outperform` | **2.0** | engine_settings.py (default) |
-| `atr_stop_min_pct` | 3.0 | CONSTITUTION Rule 8 |
-| `atr_stop_max_pct` | 9.0 | CONSTITUTION Rule 8 |
+| `atr_stop_min_pct` | **5.0** (was 3.0 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — Rule 8) | engine_settings.py + opportunity_quality.py + unified_config.py EGX |
+| `atr_stop_max_pct` | **9.0** (V40_2_STOP_MAX_PCT default رفع من 7.0 — Task `REAPPLY-CRITICAL-FIXES`) | CONSTITUTION Rule 8 |
 | `min_rr_ratio` | 1.8 | optimizer_params_routes DEFAULT_PARAMS |
 | `max_stop_pct` | 9.0 | optimizer_params_routes DEFAULT_PARAMS |
 | `default_stop_pct` | 5.0 | engine_settings.py |
+| `THRESHOLDS['STRONG_BUY']` | **78** (was 80 — Rule 71 — commit `c2ade8c6`) | `master_analyzer.py` L495 + `canonical_signal.py` |
+| `THRESHOLDS['BUY']` | 65 | `master_analyzer.py` + `canonical_signal.py` |
+| `THRESHOLDS['ACCUMULATE']` | 55 | `master_analyzer.py` + `canonical_signal.py` |
+| `THRESHOLDS['REDUCE']` | **40** (was 35 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 — commit `38665fd1`) | `master_analyzer.py` + `canonical_signal.py` |
+| `THRESHOLDS['SELL']` | **25** (was 20 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) | `master_analyzer.py` + `canonical_signal.py` |
+| `THRESHOLDS['STRONG_SELL']` | **25** (was 10 — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08) | `master_analyzer.py` + `canonical_signal.py` |
 | `trailing_stop_activation_gain` | ⚠️ **2.0 vs 3.0 CONTRADICTION** — engine_settings يقول 2.0 لكن V38 backtest + institutional_decision_engine بـ يتوقعون 3.0 (G7 — open) |
 | `tech_score_base` | 25 (code) vs 50 (settings) — الفعلي 25 (G6) |
 | `MAX_PREDICTIONS_PER_DAY` | 7 (hardcoded) — may be low in uptrend |
@@ -1257,16 +1291,18 @@ return NextResponse.json(await r.json());
 │    • maestro_orchestrator.py → 8-layer confluence (138 pts max)         │
 │    • fundamental_data_provider.py → fundamental_score (40/30/15/15)     │
 │    • persona_engine.py → 4 personas + R:R overrides                     │
-│    • v38_backtest_engine.py → simulate_trade() (canonical sl/tp1/tp2    │
-│      + ATR clamp [3%,9%] — commit 65a748f)                              │
+│    • v38_backtest_engine.py → simulate_trade() (canonical sl/tp1/tp2     │
+│      + ATR clamp [5%,9%] — commit 65a748f baseline + commit 38665fd1     │
+│      Task REAPPLY-CRITICAL-FIXES رفع min 3.0→5.0 + max default 7→9)        │
 │    ↓ writes                                                             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ 4. KILL FILTERS + R:R FLOOR GATE (v40_2_daily_generator.py L314-326)    │
-│    • if r_mult < get_setting('dynamic_rr_normal', default=1.5): continue│
+│    • if r_mult < get_setting('dynamic_rr_normal', default=1.8): continue│
+│      (Task REAPPLY-CRITICAL-FIXES — commit 38665fd1 — رفع من 1.5→1.8)    │
 │    • set_strict_kill_filters(True) — liquidity + turnover               │
 │    ↓ filtered                                                           │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ 5. predictions.db (153 preds, 148 closed)                               │
+│ 5. predictions.db (snapshot 2026-08-17 archive: 153 preds, 148 closed)  │
 │    • fundamental_score = 50 (placeholder — Stage G fix pending)         │
 │    • evidence_count + morning_bell + kill_filter_result                 │
 │    • persona = 'balanced' (default — PROTECTED by PERSONA-UNIFY-A)      │
@@ -2949,7 +2985,7 @@ class MarketProfile:
     min_turnover_local: float      # الحد الأدنى للسيولة بالعملة المحلية
     atr_stop_min_pct: float        # الحد الأدنى لوقف الخسارة
     atr_stop_max_pct: float        # الحد الأقصى لوقف الخسارة
-    dynamic_rr_normal: float       # العائد للمخاطرة في السوق العادي (Default >= 1.5)
+    dynamic_rr_normal: float       # العائد للمخاطرة في السوق العادي (Default >= 1.8 — Task REAPPLY-CRITICAL-FIXES 2026-10-08 — رفع من 1.5)
     dynamic_rr_outperform: float   # العائد للمخاطرة عند التفوق على المؤشر (2.0)
     data_provider_type: str        # 'financial_statements' أو 'on_chain_tokenomics'
     price_db_table: str            # 'price_history' أو 'crypto_prices'

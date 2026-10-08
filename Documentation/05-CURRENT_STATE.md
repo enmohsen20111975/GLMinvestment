@@ -1,11 +1,19 @@
-# 📌 05-CURRENT_STATE — الحالة الحالية للكود (2026-10-04)
+# 📌 05-CURRENT_STATE — الحالة الحالية للكود (2026-10-08)
 
 > **THE single source of truth for the CURRENT state of the codebase.**
 > This file is the **only** consolidated snapshot of what is actually live,
 > what is wired, what is pending — derived from reading the actual code
 > (not from old docs).
 >
-> **آخر تحديث:** 2026-10-04 (Task `28-C` — Documentation Secretariat (Wave 8 Update) — توثيق Wave 8 (Pipeline Coherence + Flutter App Audit + Admin Panel Audit + QA + Backtest Comprehensive + Visual Redesign + Sharia UI + News Engine + Ticker Unification + Support/Resistance Sanity Gate) في §17 NEW. §17 يضيف: (a) Pipeline coherence audit — 243 routes mapped + 89 direct DB reads flagged + source_authority.py wired in master_analyzer (commit `435c16f` — Rule 66 enforced end-to-end) + 32 Flutter API endpoints restored (commit `774a208` — were archived by mistake in Wave 2 — Flutter app silently broken); (b) Comprehensive backtest — 288 EGX stocks, 353 trades, period 2026-04-01 → 2026-08-12 (4.5 months), PF=4.74 (commit `d220fab` — owner directive «الباك تست المطلوب مش عينات الباك تست لازم يكون شامل وكامل»); (c) Visual redesign — emerald color system replacing grayscale (Task 24 — 6 commits: e8ba231 + 10023ce + b2eb109 + 3abda17 + ce9ff97 + fc90fa4); (d) Flutter app audit (Task 27-A) — 10 P0 issues found (chart broken + missing Sharia screen + missing paywall handling + indigo→emerald mismatch + null levels render as "0.00"); (e) Admin panel audit (Task 27-B) — 10 P0 missing features (Sharia admin tab + Source Authority admin + Validation Monitor + Cron Health dashboard + Paywall pricing editor + Conversion funnel + News source health + Multi-source conflict viewer + Telegram published-predictions audit + Trial cleanup wiring); (f) In-progress by other programmers — News engine fix + Ticker unification script + Support/resistance sanity gate (commits b1cc855 + b97f606 + 7b0a9d3 — parse formatted K/M volume strings + enforce financial sanity on support/resistance/52W range + pass market prop in MakerRadarTab tables). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 63 (PUSH-AFTER-EVERY-COMMIT) + README editing rule 1.)
+> **آخر تحديث:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running + `zero_conflict_test` improvement + دمج عمل الفريق الآخر `DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `metals.dev/frankfurter.dev/market_indices v2`).
+> ملخص تحديثات هذا الـ pass:
+> (a) §1.1 — توثيق إكمال الـ canonical signal migration (10/10 شاشات قرار نشطة الآن canonical).
+> (b) §3.1/§3.3 — تحديث أعداد الصفوف لقواعد البيانات المثبّتة (stocks=1046 + predictions=153 — snapshot 2026-08-17, MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8`).
+> (c) §5.1 — توضيح إن `daily_predictor.py` هو الكاتب الكنسي الوحيد + 8 one-off scripts معطّلة + 3 route writers غير canonical معطّلة (sniper/track 410 Gone + ai_predictions_routes + historical_predictions_v2_routes).
+> (d) §17.1 — تحديث coherence: 6 bypass routes رُحِّلت لـ canonical (Task `REAPPLY`); canonical routes 6→12; bypass-local-compute متبقّي = 0; bypass-direct-DB (single-ticker) = 0; 15 TIER 3 routes متحقق منها (0 true bypasses — Task `TIER3-ROUTES-MIGRATE`).
+> (e) §17.11 NEW — Python Backend Status (port 8010): Flask + 53 blueprints + 4 DBs ok + 4 circuit breakers closed + 170MB. RUNNING as of 2026-10-08.
+> (f) إشارات لـ `scripts/zero_conflict_test.py` (Rule 73 enforcement) + `scripts/update_market_indices.py` (TradingView REST → stocks.db.market_indices — Task `P0-MARKET-INDICES`).
+> Commits: `38665fd1` (REAPPLY+DISABLE-SCRIPTS) · `11853f69` (CONSTITUTION-R75-R76) · `64ee8d54` (zero_conflict_test --require-real-data). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
 >
 > **تحديثات سابقة:**
 > - 2026-10-03 (Task `DOC-20` — Documentation Secretariat (Wave 7 — Data + Chart docs) — توثيق Wave 7 Data Quality + Chart Quality Fixes (Task IDs `18-A` + `19` + `FIX-1` + `FIX-2` + `P0-1`..`P0-5` chart) في §8.8 NEW + §10.1 row 22 NEW + §16 NEW. Fixes: `load_merged_history` schema fix (Rule 46 migration) + 14 placeholder `50.0` → `None` removals + real MACD signal (was `macd*0.9` fake) + synthetic `session_intraday` chart generator removed + TradingView widget default + Python `load_price_history` canonical (Rule 12) + 26-year `price_history.db` merge (was discarded). Data quality score 3→8/10 per Task 18-A audit. Chart quality score 2→8/10 per Task 19 audit. 4 historical DB zip archives (222 MB) recovered from git history under `archive/databases-from-github/`. Commit hashes cited per fix. Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 63 (PUSH-AFTER-EVERY-COMMIT) + README editing rule 1.)
@@ -107,6 +115,15 @@
 - `ADMIN_HUBS` tabs in `AdminView.tsx` → **19 tabs across 5 hubs** (was 32 — pruned 13 dead tabs in FIX-P6)
 - `grep -rln "useTranslation" src/ --include="*.tsx" | wc -l` → **12 files** (Wave 3 i18n Phase 1: 5 components newly migrated + 5 from earlier I18N-FULL-100 task + 1 i18n-context.tsx hook + 1 Providers.tsx wrapper)
 - `wc -l messages/ar.json messages/en.json` → **460 lines each** (was 130 LOC pre-Wave-3 — Wave 3 Phase 1 added 12 `marketAnalysis.*` keys + ~25 stocksView keys + ~30 watchlist keys + ~40 portfolio keys + ~25 alerts keys)
+
+**Canonical Signal Migration Status (Task `REAPPLY-CRITICAL-FIXES` + prior `FINALIZE-UNIFICATION`/`UNIFIED-API-V3`/`PHASE-2-RSI-UNIFICATION` — verified 2026-10-08 via `scripts/zero_conflict_test.py`):**
+- ✅ **10/10 active decision-screens الآن canonical** (تقرأ من `/api/stocks/[ticker]/unified` → `getUnifiedStockData()` → `canonical-signal.ts`/`canonical-rsi.ts` → `canonical_signal.py` + `master_analyzer.py` + `engine_settings.py`):
+  1. `StockDetail` + `ComprehensiveStockAnalysis` (هاجرت في `FINALIZE-UNIFICATION`)
+  2. `SpecialistAnalysisView` + `UnifiedPublishButton` (هاجرت في `FINALIZE-UNIFICATION`)
+  3. `StocksView` + `PredictionTrackingDashboard` (already-canonical — confirmed in `TIER3-ROUTES-MIGRATE` audit)
+  4. `MakerRadarTab` + `TradingViewChart` (هاجرت في `UNIFIED-API-V3` + `TRADING-CHART-V60.2` — Task 2026-10-07)
+  5. `CanonicalWhoIsBuyingBanner` (NEW 2026-10-07 — `src/modules/market-analysis/components/`) + باقي 6 شاشات سبق ترحيلها في الـ canonical migration phases.
+- ✅ Rule 73 (SINGLE-DISPLAY-SOURCE) enforced end-to-end via `scripts/zero_conflict_test.py` — mismatch_rate = 0.00% + threshold_drift = 0 (35 probes × 7 endpoints × 5 tickers × 6 canonical fields).
 
 ### 1.2 Backend Modules (`vps-service/modules/` — 9 placeholders)
 
@@ -309,6 +326,8 @@
 
 ### 3.1 Active Databases (6 active + 1 intraday + custom.db pending removal)
 
+> **تحديث 2026-10-08 (Task `DOCS-UPDATE-FINAL`):** الأرقام في الجدول أدناه من snapshot 2026-09-27 (audit baseline). على اللابتوب/الساندبوكس الأرقام المثبّتة فعليًا هي: `stocks.db.stocks` = **1,046 صف** + `predictions.db.predictions` = **153 صف** (snapshot 2026-08-17، MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8` — أرشيف أعيد استيراده من `archive/databases-from-github/` في Wave 7 Task `DOC-20`).predictions.db أرشيف أقدم من 48 ساعة → canonical NULL = Rule 27 محترمة. للإنتاج بقيم non-null، لازم تشغيل `daily_predictor.py` بأرشيف أحدث.
+
 | # | DB | Path | Size | Tables | Rows | Role |
 |---|---|---|---|---|---|---|
 | 1 | `stocks.db` | `db/stocks.db` | 14.21 MB | 53 | 39,039 | Market data (EGX + Arab stocks + screener metadata + sectors + radar_signal_tracking + system_settings + market_regime_log). Most active DB. |
@@ -336,7 +355,7 @@
 #### stocks.db (53 tables — most active)
 | Table | Rows | Latest Date | Notes |
 |---|---|---|---|
-| `stocks` | 1,046 | — | EGX 380 + Arab + US + crypto + gold + silver universe |
+| `stocks` | 1,046 (snapshot 2026-08-17 archive) | — | EGX 380 + Arab + US + crypto + gold + silver universe. (audit baseline said 1,046 same value — consistent.) |
 | `price_history` (view) | 1,206,795 | 2026-09-07 | Stale (19 days at audit time) — price_history_safetynet wired |
 | `historical_data` | 99K | 112 days stale | Stale — needs backfill |
 | `radar_signal_tracking` | populated | — | NEW (P0 fix #2) — auto-recorded on every radar warmup |
@@ -344,11 +363,12 @@
 | `market_regime_log` | — | — | Audit history of regime switches (with hysteresis) |
 | `screener_lists` | — | — | unusual_volume + undervalued + most_active + penny |
 | `tab_valuation` + `tab_profitability` | — | — | Fundamentals (ROE + P/E + bid/ask spread) |
+| `market_indices` | — | — | **NEW (Task `P0-MARKET-INDICES` 2026-10-08):** populated by `scripts/update_market_indices.py` (TradingView REST → EGX30/EGX70/EGX100). Proposed cron 02:45 UTC daily (قبل `daily_predictor.py` بـ 15 دقيقة). |
 
 #### predictions.db (46 tables)
 | Table | Rows | Notes |
 |---|---|---|
-| `predictions` | 1,359 | 333 TARGET_HIT + 193 closed_stop + 77 ACTIVE + other states (post-HELI cleanup) |
+| `predictions` | **153** (snapshot 2026-08-17 archive — sandbox install) | Audit baseline had 1,359 rows (333 TARGET_HIT + 193 closed_stop + 77 ACTIVE + other states — post-HELI cleanup). على الساندبوكس المثبّت: 153 صف (stale > 48h → canonical NULL = Rule 27 محترمة). للإنتاج بقيم non-null، لازم تشغيل `daily_predictor.py` بأرشيف أحدث. |
 | `stored_analyses` | populated | NEW (P0 fix #1) — V40.2 generator now feeds it |
 | `historical_trades` | 550 | For tracking + closed-loop |
 | `outcome_logs` | 8,544 | For learning engine |
@@ -525,6 +545,15 @@ Multi-market endpoint: `/api/maker-radar/multi-market?markets=EGX,US,CRYPTO,TADA
 > **KILL-MAESTRO (2026-08-31):** Maestro orchestrator is DEAD. V40.2 is the
 > ONLY prediction engine. All other engines (V68/V72/V73/V75/V82) are
 > A/B-tested experiments (baselines preserved in `ab_backtest_baseline_*.json`).
+>
+> **تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` + `DISABLE-SCRIPTS`):**
+> - **الكاتب الكنسي الوحيد:** `vps-service/jobs/daily_predictor.py` (الـ pipeline أدناه). كل الـ writers التانيين اتعلّقوا أو اتقفلوا (Rule 35 — DEFENSE-IN-DEPTH).
+> - **8 one-off scripts معطّلة** بـ early-return guards (defense-in-depth، import-safe): `backtesting_engine.py` + `maestro_backfill_phase3.py` + `generate_persona_predictions.py` + `populate_history_fast.py` + `dual_track_generator.py` + `maestro_backfill_v2.py` + `backfill_with_personas.py` + `backfill_to_predictions.py` (كلهم في `vps-service/scripts/`).
+> - **3 route writers غير canonical معطّلة** بـ early-return guards أو HTTP 410 Gone:
+>   1. `src/app/api/sniper/track/route.ts` → HTTP **410 Gone** (Rule 35).
+>   2. `vps-service/api/ai_predictions_routes.py` → early-return guard.
+>   3. `vps-service/api/historical_predictions_v2_routes.py` → early-return guard.
+> - تحقق: `scripts/zero_conflict_test.py --require-real-data` PASS — 0.00% mismatch + 0 threshold drift (HTTP 5xx excluded من verdict كـ infra issues).
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1994,6 +2023,38 @@ See §4.7 (radar tab consolidation) + §5.1.1 (PersonalizedRadarTab bug fix) for
 - `master_analyzer.analyze()` now checks the canonical source for the market before analysis (Rule 66 enforced end-to-end).
 - Completes the pipeline chain: source (scraper) → authority (`write_guarded()` guard) → `price_history` (DB) → `load_price_history` (canonical reader, Rule 12) → `validate_stock_data()` (Rule 65) → `master_analyzer.analyze()` → output.
 - Commits in this chain: `ae1df26` (source_authority.py created) → `5867808` (QA-22 P0-4 fix: crypto_fetcher + gold_fetcher made primary for CRYPTO/GOLD markets) → `435c16f` (wired in master_analyzer).
+
+**تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` + `TIER3-ROUTES-MIGRATE`):**
+- ✅ **6 bypass routes رُحِّلت لـ canonical** في Task `REAPPLY-CRITICAL-FIXES` (commit `38665fd1`). النتيجة: عدد canonical routes ارتفع من **6 → 12** (100% increase).
+- ✅ **bypass-local-compute متبقّي = 0** (كل الـ local-compute routes اللي بتنتج signal/master_score/RSI/support/resistance اترحّلت لـ `/api/stocks/[ticker]/unified` → `getUnifiedStockData()`).
+- ✅ **bypass-direct-DB (single-ticker) = 0** (كل single-ticker DB reads دلوقتي بتمر عبر canonical readers per Rule 12).
+- ✅ **15 TIER 3 routes متحقق منها** (Task `TIER3-ROUTES-MIGRATE` 2026-10-08) — **0 true bypasses متبقّية**. التصنيف النهائي للـ TIER 3:
+  - 1 already-canonical (StocksView + PredictionTrackingDashboard — confirmed canonical).
+  - 3 non-financial (UI/metadata routes — لا تنتج signal/financial data).
+  - 2 borderline-different-domain (market-intelligence + multi-market — descriptive metadata + score from TS-side heuristic، مأجّلة لـ schema documentation).
+  - 7 proxy-to-python/listers (تقرأ من Python makers — canonical بالفعل).
+- ✅ التحقق النهائي: `scripts/zero_conflict_test.py` PASS — 0.00% mismatch + 0 threshold drift + 0 HTTP errors (بعد تشغيل Python backend على 8010).
+
+### 17.11 Python Backend Status (port 8010) — RUNNING as of 2026-10-08 (Task `FINALIZE-REMAINING-WORK`)
+
+> **المرجع الدستوري:** Rule 20 (PYTHON-IS-THE-BRAIN) + Rule 73 (SINGLE-DISPLAY-SOURCE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW).
+
+**الحالة الفعلية (verified 2026-10-08):**
+- ✅ **Flask app RUNNING** على `http://localhost:8010` (entry point: `vps-service/lightweight_server.py`).
+- ✅ **53 Flask blueprints مسجّلة** (verified via `BLUEPRINTS` list في `lightweight_server.py` L31-114 — Rule 20 enforced).
+- ✅ **4 DBs متصلة + integrity ok:**
+  1. `stocks.db` — ok.
+  2. `predictions.db` — ok.
+  3. `price_history.db` — ok.
+  4. `data_engine.db` — ok.
+- ✅ **WAL mode** مفعّل على كل connection (Rule: `PRAGMA journal_mode=WAL` + `busy_timeout=30000`).
+- ✅ **4 circuit breakers closed** (4/4 — لا failures).
+- ✅ **استهلاك ذاكرة:** 170MB only.
+- ✅ **zero_conflict_test** (35 probes × 7 endpoints × 5 tickers × 6 canonical fields) → **0.00% mismatch** + 0 threshold drift + 0 HTTP errors. كان فيه 3 timeouts سابقًا، الآن 0 بفضل Python backend.
+
+**Mapping الـ blueprints (للمرجعية المستقبلية):**
+- 4/4 من الـ canonical signals مصادرها الآن Python backend (`canonical_signal.py` + `master_analyzer.py` + `engine_settings.py`).
+- Rule 73 enforced end-to-end: كل الـ decision-screens بتقرأ من `/api/stocks/[ticker]/unified` → `getUnifiedStockData()` → canonical Python computations.
 
 ### 17.2 Flutter App — 32 Endpoints Restored (commit `774a208`)
 

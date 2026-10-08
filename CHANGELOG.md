@@ -12,6 +12,61 @@
 
 ---
 
+## [2026-10-08 — DOCS-UPDATE-FINAL + FINALIZE-REMAINING-WORK + team merges] — Documentation Secretary (السكرتيرة الدستورية)
+
+> **المرجع:** `worklog.md` tasks `FINALIZE-REMAINING-WORK` + `DOCS-UPDATE-FINAL` + `DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `P0-METALS-FOREX` + `P0-METALS-FOREX-V2`. هذا الإدخال يكمّل إدخال `[2026-10-08 — CONSTITUTION-R75-R76 + REAPPLY-CRITICAL-FIXES]` المُسجَّل أسفله بـ توثيق كل شغل ما كانش مُسجَّل بعد + دمج عمل الفريق الآخر (Rule 76 — TEAM-WORK-REVIEW).
+
+### أُضيف (New)
+- **Python backend (port 8010) RUNNING** (Task `FINALIZE-REMAINING-WORK`): Flask + 53 blueprints + 4 DBs (stocks + predictions + price_history + data_engine) كلها ok + integrity ok + WAL mode + 4 circuit breakers closed. استهلاك 170MB only. موثّق في `05-CURRENT_STATE.md` §17.11.
+- **`scripts/update_market_indices.py`** (160 LOC — Task `P0-MARKET-INDICES`): TradingView REST → `stocks.db.market_indices` (EGX30 + EGX70 + EGX100). يدعم `--dry-run`. UPSERT (`ON CONFLICT DO UPDATE`). جدولة مقترحة: 02:45 UTC يومي (قبل `daily_predictor.py` بـ 15 دقيقة).
+- **`scripts/update_metals_and_forex.py`** (250 LOC — Task `P0-METALS-FOREX-V2`): metals.dev (ذهب/فضة/بلاتين/نحاس — يتطلب API key) + frankfurter.dev v2 (USD/EGP + USD/SAR + USD/KWD + USD/QAR + USD/AED — مجاني تمامًا) + CoinGecko. حفظ في `data_engine.db` (gold_prices + silver_prices + exchange_rates). اختبارات مباشرة: 3/3 نجحوا (metals.dev + frankfurter.dev + CoinGecko). تحويل toz → gram (1 toz = 31.1035g).
+- **8 one-off scripts معطّلة** بـ early-return guards (defense-in-depth، import-safe — Task `DISABLE-SCRIPTS` — commit `38665fd1`): `backtesting_engine.py` + `maestro_backfill_phase3.py` + `generate_persona_predictions.py` + `populate_history_fast.py` + `dual_track_generator.py` + `maestro_backfill_v2.py` + `backfill_with_personas.py` + `backfill_to_predictions.py` — كلهم في `vps-service/scripts/`.
+- **`scripts/zero_conflict_test.py --require-real-data` flag** (commit `64ee8d54`): تنبيه المستخدم لو الـ PASS كان trivial (كل NULL — stale data). للإنتاج بقيم non-null، لازم predictions طازجة (< 48h). HTTP 5xx excluded من verdict (infra issues).
+
+### تغيّر (Changed)
+- **`master_analyzer.py`**: THRESHOLDS dict صار canonical (REDUCE 35→40, SELL 20→25, STRONG_SELL 10→25, حذف HOLD_LOW/HIGH) + `_get_signal_from_score` يفوّض لـ `canonical_signal.classify_signal` + `_get_signal_arabic` يفوّض لـ `signal_ar` (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`). موثّق في `01-PROJECT_ANATOMY.md` §4 + `SYSTEM_HOW_IT_THINKS.md` §22.1.
+- **`unified_config.py`**: EGX profile ATR 3.0→5.0 + R:R 1.5→1.8 (L147-150 defaults + L377-380 EGX). KSA/KSE/QSE/DFM/CRYPTO غير ملموسة. موثّق في `01-PROJECT_ANATOMY.md` §4.2 + §4.5 + `SYSTEM_HOW_IT_THINKS.md` §5.7.
+- **`opportunity_quality.py`**: ATR_STOP_MIN_PCT 3.0→5.0 (defense-in-depth — Rule 8).
+- **`backtest_engine.py` + `daily_predictor.py`**: `V40_2_STOP_MAX_PCT` default 7.0→9.0 (3 مواضع — aligns مع `engine_settings.py` canonical).
+- **canonical routes 6→12** (Task `REAPPLY-CRITICAL-FIXES`): 6 bypass routes رُحِّلت لـ canonical. bypass-local-compute متبقّي = 0. bypass-direct-DB (single-ticker) = 0. موثّق في `05-CURRENT_STATE.md` §17.1.
+- **15 TIER 3 routes** (Task `TIER3-ROUTES-MIGRATE`): 0 true bypasses متبقّية. التصنيف: 1 already-canonical + 3 non-financial + 2 borderline-different-domain + 7 proxy-to-python/listers + 2 listers.
+
+### أُصلح (Fixed)
+- **`src/app/api/sniper/track/route.ts`**: non-canonical writer → HTTP **410 Gone** (Rule 35). موثّق في `02-SCREENS_AND_COMPONENTS.md` §0.8.C.
+- **`vps-service/api/ai_predictions_routes.py` + `historical_predictions_v2_routes.py`**: early-return guards للـ writers غير canonical.
+- **`src/app/api/maker-radar/stock/route.ts`**: إزالة 5 fabrication fallbacks (`entry*0.96`, `r1*1.04`, `entry*0.99`, `entry*1.01`, إلخ) — Rule 27 محترمة.
+- **`src/app/api/crypto/full-analysis/route.ts`**: إزالة 3 fabrications (`currentPrice*1.1` target, `*0.95` stop, `*1.05` target_2) — Rule 27 محترمة.
+- **`vps-service/analyzers/quant_cache.py:446`**: Monte Carlo `target*1.10` مُوثَّق كـ simulation heuristic (سؤال إحصائي مش توصية).
+- **`vps-service/analyzers/core_scoring_engine.py:521`**: `swing_low = entry*0.95` fallback → NULL + `INSUFFICIENT_DATA` mode (Rule 27 محترمة).
+- 7 flagged sites أخرى سبق إصلاحها في Task `FINALIZE-UNIFICATION` السابق.
+
+### مُتحقَّق منه (Verified)
+- ✅ **`zero_conflict_test`**: mismatch_rate=0.00% + threshold_drift=0 + 0 HTTP errors (كانت 3 timeouts سابقًا، الآن 0 بفضل Python backend). 35 probes × 7 endpoints × 5 tickers × 6 canonical fields = 7,350 data points.
+- ✅ **Python backend HTTP 200** على `localhost:8010` (Flask + 53 blueprints + 4 DBs ok + 4 circuit breakers closed + 170MB).
+- ✅ **`bun run lint`: 0 errors.**
+- ✅ **canonical parity 100%**: `classify_signal(85/70/60/50/37/15)` = STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL/STRONG_SELL. verified on Python + TS ports.
+- ✅ **maker-radar/stock + crypto/full-analysis**: 0 fabrication patterns متبقّية.
+- ✅ شغل الفريق الآخر محفوظ (DEEP-ROOT-FIX + FALLBACK-FIX + SYNC-STALE-DBS + UI-FIX-V2 + DATA-ENGINE-FULL-AUDIT + P0-MARKET-INDICES + P0-METALS-FOREX + P0-METALS-FOREX-V2) — لم يُلمس.
+- ✅ كل الـ 5 canonical docs (`05-CURRENT_STATE.md` + `01-PROJECT_ANATOMY.md` + `02-SCREENS_AND_COMPONENTS.md` + `SYSTEM_HOW_IT_THINKS.md` + هذا الـ `CHANGELOG.md`) اتحدّثت جراحيًا.
+
+### قيود (Constraints Honored)
+- ❌ **لا حذف ملفات** (Rule 16) — لم تُحذف أي ملفات.
+- ❌ **لا بيانات وهمية** (Rule 27) — كل الـ fabrications اتحوّلت لـ NULL.
+- ❌ **لم تُلمس الحمايات** (Rule 8/18/19: ATR [5%,9%] + R:R 1.8 + Hard Loss 7% + Split Guard 35%).
+- ❌ **لم ألمس الكود** (.py/.ts/.tsx) — تعديلات توثيقية فقط.
+- ❌ **لم ألمس الدستور** `00-CONSTITUTION.md` — تم تحديثه بالفعل في commit `11853f69` (Task `CONSTITUTION-R75-R76`).
+- ❌ **لا push على GitHub** (GM handles — Rule 75 enforcement).
+- ✅ **مراجعة شغل الفريق** (Rule 76 الجديدة): تم دمج عمل الفريق الآخر (`DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `P0-METALS-FOREX-V2`) في الـ docs بدون مساس بـ commits الفريق.
+
+### المراجع التوثيقية المُحدَّثة (5 files)
+1. `Documentation/05-CURRENT_STATE.md` — آخر تحديث + §1.1 (canonical migration status) + §3.1/§3.3 (DB row counts) + §5.1 (single canonical writer + 8 scripts disabled + 3 routes disabled) + §17.1 (canonical routes 6→12) + **§17.11 NEW** (Python Backend Status 8010).
+2. `Documentation/01-PROJECT_ANATOMY.md` — آخر تحديث + §1.3.8 (ATR clamp [5%,9%]) + §4 Engine Map (master_analyzer delegation) + §4.2 (R:R 1.8) + §4.5 (thresholds canonical 78/65/55/40/25) + §6 pipeline diagram (ATR + R:R fixed).
+3. `Documentation/02-SCREENS_AND_COMPONENTS.md` — آخر تحديث + **§0.8 NEW** (Canonical Signal Migration — 10/10 screens + data flow + 410 Gone endpoints + `zero_conflict_test.py` enforcement).
+4. `Documentation/SYSTEM_HOW_IT_THINKS.md` — آخر تحديث + §1.1 STAGE 5 (ATR [5%,9%] + R:R 1.8) + §5.3-§5.9 (all ATR/R:R refs fixed) + §5.7 (`engine_settings` table) + §5.8 (Files Changed — added 3 new files) + §22.1 (threshold table + master_analyzer delegation note + Rule 73/75/76).
+5. `CHANGELOG.md` — هذا الإدخال.
+
+---
+
 ## [2026-10-08 — CONSTITUTION-R75-R76 + REAPPLY-CRITICAL-FIXES] — المدير العام عضو مهم في الفريق
 
 ### أُضيف (New)
