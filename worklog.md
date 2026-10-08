@@ -67035,3 +67035,30 @@ Stage Summary:
 - 7 ملفات مُعدّلة: social_publisher.py + telegram_interactive_bot.py + telegram_daily_lessons.py + telegram_target_hit_tracker.py + 4 TS routes + ecosystem.config.js
 - لم أحذف أي ملف (Rule 16). لم أرفع بعد (جاري).
 - Phase 1 complete. Moving to Phase 2.
+
+---
+Task ID: PHASE2-DATA-P0 (المدير العام — إصلاحات البيانات الحرجة)
+Agent: المدير العام (Z.ai Code)
+Task: Phase 2 — Data integrity P0 (news.db schema mismatch fix)
+
+Work Log:
+- news.db schema mismatch (CRITICAL — كل الأخبار ترجع فارغة):
+  * المشكلة: writers يكتبون news_articles (7894 صف)، readers يقرأون market_news (0 صف)
+  * الحل: أضفت _NEWS_DB_DDL في migrator.py:
+    - CREATE TABLE IF NOT EXISTS market_news (schema كامل بـ 20 عمود)
+    - INSERT OR IGNORE migration من news_articles → market_news (column mapping: summary→summary_ar, source_url→url, category→impact_type, symbol→tickers JSON)
+    - 3 indexes على market_news (published_at + market + tickers)
+  * _build_schema() تضيف 'news' DB section (DB #7 في SCHEMA)
+  * 'migration' type statement يُعالج في run_migrations
+
+Verification:
+- ✅ Python syntax: migrator.py pass ast.parse
+- ✅ SCHEMA has 7 DBs now (was 6): stocks + predictions + data_engine + auth + crypto + intraday + news
+- ✅ Migration test on copy: 7894 rows migrated successfully from news_articles → market_news
+- ✅ Reader query test: SELECT COUNT(*) FROM market_news = 7894 (was 0)
+- ✅ Lint: 0 errors
+
+Stage Summary:
+- news.db schema mismatch FIXED (7894 rows will appear in UI after deploy)
+- 1 ملف مُعدّل: vps-service/core/migrator.py (+85 lines)
+- Phase 2 complete. Moving to Phase 3.
