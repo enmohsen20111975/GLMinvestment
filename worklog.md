@@ -66080,3 +66080,33 @@ Stage Summary:
 - ✅ شغل الفريق الآخر محترم (لم ألمسه).
 - ⏳ جاري الـ commit + push لـ GitHub (أول تطبيق فعلي لـ Rule 75).
 - لم أحذف أي قاعدة. التعديلات additive فقط.
+Task ID: DATA-ENGINE-FULL-AUDIT
+Agent: general-purpose (مهندس بيانات خبير)
+Task: حفر شامل لمحرك البيانات + تقرير نهائي
+Work Log:
+- قرأت آخر 2000 سطر من /home/z/my-project/worklog.md (lines 63970-65970) لاستيعاب سياق المهام السابقة (DEEP-ROOT-FIX + FALLBACK-FIX + SYNC-STALE-DBS + UI-FIX-V2 + DATA-ENGINE-DEEP-DIG السابق).
+- استخرجت خريطة الملفات: data_engine/ (8 سكربتات + 19 سكريبر + 1 config) + vps-service/data/ (12 fetcher/scraper) + vps-service/jobs/ (intraday_aggregator + market_scheduler + price_history_safetynet + price_history_stale_monitor) + vps-service/utils/ (db_paths + data_engine_guard + fallback_chain غير موجود في vps-service) + crontab.txt (202 سطر، 26 cron jobs) + scripts/setup_cron.sh.
+- قعدت الـ LOCs: data_engine/main.py=1165, sync.py=792, intraday_storage.py=1122, scrapers/fallback_chain.py=450, tradingview_rest.py=462, egksco_scraper.py=438 (data_engine) + 1046 (vps-service), daily_price_updater.py=284, intraday_aggregator.py=390, source_authority.py=239, validation.py=345, market_scheduler.py=2780, egypt_scheduler.py=535, db_paths.py=241, prices.py=602, source_priority_cleaner.py=301, eodhd_fetcher.py=780, gap_filler.py=190, egx_fetcher.py=928, egx_fundamental_fetcher.py=590, historical_fetcher.py=530, historical_fetcher_5years.py=377, us_stock_scraper.py=695, metals_forex_fetcher.py=653, crypto_fetcher.py=468 (data_engine) + 144 (vps-service), news_scraper.py=550, sharia_compliance_scraper.py=855, fetch_logos.py=104, technical_fetcher.py=245, multi_market_scraper.py=391, auto_refresh_scheduler.py=180, smart_scheduler.py=328, realtime_sync.py=175.
+- تحققت من بنية DBs عبر utils/db_paths.py + core/migrator.py: الـ target 4-DB architecture (market.db + predictions.db + auth.db + content.db) لم يكتمل (market.db = 0 بايت على الإنتاج). الفعلي 5 DBs نشطة: data_engine.db + stocks.db + price_history.db + intraday.db + news.db + predictions.db + auth.db.
+- قرأت كل سكربت رئيسي بالتفصيل (offset/limit للملفات الضخمة). لم أُعدّل أي ملف — تحليل static فقط.
+- قارنت الـ writers الفعلية لـ price_history.db.price_history: 7 منهم منفّذة، 4 منها بـ write_guarded (الـ guard بيرفض 3 منها فعليًا) + 3 DIRECT INSERT (بتتجاوز الـ guard).
+- تأكدت إن vps-service/crontab.txt غير موجود فعليًا (DEPRECATED حسب crontab.txt:23).
+- تأكدت إن utils/fallback_chain.py المطلوب في الـ task غير موجود — الـ canonical هو data_engine/scrapers/fallback_chain.py.
+- لم أجد أي DB فعلية على disk في /db (الـ sandbox ما عندهاش بيانات الإنتاج) — التحليل اعتمد على الكود + migrator.py + db_paths.py لتحديد الـ schemas والـ writers.
+
+Stage Summary:
+- خريطة محرك البيانات الكاملة (23 سكريبر + 3 schedulers + 2 guards) مرسومة بأدلة من الكود.
+- 5 كتاب لـ price_history.db.price_history متعطلون صامتًا بسبب source_authority guard (daily_price_updater بـ 'tradingview_live' + gap_filler بـ 'yfinance_autofill' + price_history_safetynet بـ BANNED 'yahoo_safetynet' + eodhd_fetcher بـ 'eodhd' — الكل SKIP للـ EGX). الكتاب الأحياء: intraday_aggregator (canonical EGX) + vps-service/data/egksco_scraper.py (DIRECT INSERT، بيجاوز الـ guard) + us_stock_scraper.py (DIRECT INSERT، بيجاوز الـ guard).
+- egksco_price_history (data_engine.db) LIVE writer وحيد: vps-service/data/egksco_scraper.py:sync_to_db (شمعة النهارده فقط، كل 15 دقيقة من EgyptScheduler). مفيش backfill آلي.
+- tab_* tables (8 جداول) في data_engine.db: NO LIVE WRITER. tradingview_scraper.py (Playwright، cron #7) بيـ CREATE-ها بـ schema خاطئ (symbol + data TEXT) بس ما بـ INSERT فيهاش أبدًا — migrator.py schema (ticker + columns) هو اللي بيكسب. egx_fundamental_fetcher.py بيقرأ منها بـ `WHERE symbol = ? AND market = "مصر"` لكن الـ schema ما عندهاش symbol ولا market → silent fail → بيرجع None → fallback لـ stocks.db.stocks فقط.
+- historical_data في data_engine.db: writer (historical_fetcher_5years.py) متقاعد من main.py scheduler (line 1094-1099). 99K rows قديمة. مفيش LIVE writer.
+- egx_fundamentals في data_engine.db: writer (egx_fundamental_fetcher.fetch_all_egx_fundamentals) بيحاول يجيب من EGXPilot (HTTP 404 dead) → بيرجع early-error 'EGXPilot مش متاح'. fetcher دلوقتي بقرا من tab_* (broken queries) + stocks.db.stocks فقط — ما بيكتب بيانات جديدة لـ egx_fundamentals.
+- cron #7 (tradingview_scraper.py Playwright) + cron #18 (multi_market_scraper.py — بيشغل Playwright version كمان): تبديد CPU على Playwright بينما الـ canonical فعليًا هو tradingview_rest.py (no Playwright، 1-3s بدل 60-120s). الـ fallback_chain.py بيستدعي tradingview_rest فقط.
+- EGXPilot (مصدر canonical في توثيق egx_fetcher.py + egx_fundamental_fetcher.py) ميت (HTTP 404). الـ docstrings لسه بيقولوا "EGXPilot API (أساسي)" بس الكود فعليًا flipped لـ TV-PRIMARY مع EGXPilot كـ reference/fallback.
+- yahoo_scraper.py + egxpilot_scraper.py (data_engine versions): DEPRECATED بـ comments واضحة، مفيش invocation من fallback_chain.py. الـ functions لسه موجودة للتوافق فقط.
+- news.db: news_scraper.py بـ يحتاج 5 API keys (NEWSAPI/GNEWS/AlphaVantage/MediaStack/CurrentsAPI) — لو مفيش keys → بيرجع early بدون fetch. news.db هتكون فاضية تقريبًا على الإنتاج.
+- investors_data (stocks.db): egx_investors_scraper.py مفيهوش cron ولا scheduler → orphan. dashboard InvestorsFlowPanel بيقرأ من جدول فاضي.
+- فجوة price_history.db: canonical reader (load_egksco_history في prices.py) بـ fall back تلقائيًا لـ master_analyzer.load_merged_history (price_history.db → stocks.db.stock_daily_prices). ده الـ actual path على الإنتاج.
+- التوصيات مرتبة بـ P0/P1/P2/P3 + جدول خريطة الـ writers + جدول الـ DBs.
+
+See full report below ⬇️
