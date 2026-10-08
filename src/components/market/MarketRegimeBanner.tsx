@@ -300,7 +300,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
             <div className="p-2 rounded bg-muted/40">
               <span className="block text-[10px]">مؤشر القياس</span>
               <span className="font-mono font-bold text-foreground">
-                {ind.index_ticker_used || market} ({ind.index_current ? ind.index_current.toFixed(2) : '-'})
+                {ind.index_ticker_used || market} ({ind.index_current ? (ind.index_current ?? 0).toFixed(2) : '-'})
               </span>
             </div>
           </div>

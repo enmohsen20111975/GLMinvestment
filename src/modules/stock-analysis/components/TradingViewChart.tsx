@@ -755,14 +755,14 @@ function MultiPersonaDynamicCard({
               dir="ltr"
               value={entryInput}
               onChange={(e) => setEntryInput(e.target.value)}
-              placeholder={defaultEntry > 0 ? defaultEntry.toFixed(3) : '0'}
+              placeholder={defaultEntry > 0 ? (defaultEntry ?? 0).toFixed(3) : '0'}
               className="h-8 text-xs"
             />
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label className="text-[10px] text-muted-foreground">
-                ATR {autoAtr ? `(تلقائي: ${autoAtr.toFixed(3)})` : '(تلقائي: —)'}
+                ATR {autoAtr ? `(تلقائي: ${(autoAtr ?? 0).toFixed(3)})` : '(تلقائي: —)'}
               </Label>
               <div className="flex items-center gap-1">
                 <Label className="text-[9px] text-muted-foreground">تلقائي</Label>
@@ -780,7 +780,7 @@ function MultiPersonaDynamicCard({
               value={atrInput}
               disabled={autoAtrEnabled}
               onChange={(e) => setAtrInput(e.target.value)}
-              placeholder={autoAtr ? autoAtr.toFixed(3) : (entry * 0.03).toFixed(3)}
+              placeholder={autoAtr ? (autoAtr ?? 0).toFixed(3) : (entry * 0.03).toFixed(3)}
               className="h-8 text-xs"
             />
           </div>
@@ -1773,7 +1773,7 @@ export function TradingViewChart({
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold">{stockName || ticker}</span>
           <div className="flex items-center gap-2" dir="ltr">
-            <span className="text-lg font-bold">{displayPrice.toFixed(3)}</span>
+            <span className="text-lg font-bold">{(displayPrice ?? 0).toFixed(3)}</span>
             <span
               className={cn(
                 'text-sm font-medium flex items-center gap-0.5',
@@ -1786,8 +1786,8 @@ export function TradingViewChart({
                 <TrendingDown className="size-3" />
               )}
               {isPositive ? '+' : ''}
-              {displayChange.toFixed(3)} ({isPositive ? '+' : ''}
-              {displayChangePercent.toFixed(2)}%)
+              {(displayChange ?? 0).toFixed(3)} ({isPositive ? '+' : ''}
+              {(displayChangePercent ?? 0).toFixed(2)}%)
             </span>
           </div>
 

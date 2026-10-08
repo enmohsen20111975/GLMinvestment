@@ -34,8 +34,9 @@ function getScoreColor(score: number): string {
   return 'text-red-500';
 }
 
-function getRecBadge(rec: string) {
-  const lower = rec.toLowerCase();
+function getRecBadge(rec?: string | null) {
+  const lower = (rec || '').toLowerCase();
+  if (!rec) return <Badge variant="outline">غير محدد</Badge>;
   if (lower.includes('strong_buy') || lower.includes('شراء قوي')) {
     return <Badge className="bg-green-500 hover:bg-green-600">شراء قوي</Badge>;
   }
@@ -51,7 +52,7 @@ function getRecBadge(rec: string) {
   if (lower.includes('sell') || lower.includes('بيع')) {
     return <Badge className="bg-red-500 hover:bg-red-600">بيع</Badge>;
   }
-  return <Badge variant="outline">{rec || 'غير محدد'}</Badge>;
+  return <Badge variant="outline">{rec}</Badge>;
 }
 
 const MARKET_NAMES: Record<string, string> = {

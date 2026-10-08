@@ -256,7 +256,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           ticker: ticker.toUpperCase(),
           current_price: refPrice,
           drop_pct: DROP_PCT,
-          label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${refPrice.toFixed(2)}`,
+          label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)}`,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -268,10 +268,10 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
         ticker: ticker.toUpperCase(),
         type: 'price_below',
         threshold: thresholdPrice,
-        label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${refPrice.toFixed(2)} (عتبة: ${thresholdPrice.toFixed(2)})`,
+        label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`,
       });
       setQuickAdded(true);
-      toast.success(`🔔 تنبيه مسجّل: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${refPrice.toFixed(2)}`);
+      toast.success(`🔔 تنبيه مسجّل: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)}`);
       setTimeout(() => setQuickAdded(false), 2000);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'فشل تسجيل التنبيه');
@@ -364,9 +364,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
                       : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300'
                   )}
                 >
-                  {livePrice > 0 ? `${livePrice.toFixed(2)} ${currencyLabel}` : '—'}
+                  {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
                   <span className="text-[10px] mr-1">
-                    ({isUp ? '+' : ''}{chgPct.toFixed(1)}%)
+                    ({isUp ? '+' : ''}{(chgPct ?? 0).toFixed(1)}%)
                   </span>
                 </Badge>
                 {isLive && (
@@ -404,31 +404,31 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               {entry !== null && entry > 0 && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">الدخول</span>
-                  <span className="font-mono font-bold text-foreground">{entry.toFixed(2)}</span>
+                  <span className="font-mono font-bold text-foreground">{(entry ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {stop !== null && stop > 0 && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">الوقف</span>
-                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{stop.toFixed(2)}</span>
+                  <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{(stop ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {target1 !== null && target1 > 0 && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">الهدف</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{target1.toFixed(2)}</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(target1 ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {rr !== null && rr > 0 && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">R:R</span>
-                  <span className="font-mono font-bold text-foreground">{rr.toFixed(2)}</span>
+                  <span className="font-mono font-bold text-foreground">{(rr ?? 0).toFixed(2)}</span>
                 </div>
               )}
               {techScore !== null && (
                 <div className="flex flex-col items-center">
                   <span className="text-[9px] text-muted-foreground">الثقة</span>
-                  <span className="font-mono font-bold text-foreground">{techScore.toFixed(0)}%</span>
+                  <span className="font-mono font-bold text-foreground">{(techScore ?? 0).toFixed(0)}%</span>
                 </div>
               )}
             </div>
@@ -567,7 +567,7 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
               </div>
               {rr !== null && rr > 0 && (
                 <Badge variant="outline" className="text-[10px] font-mono">
-                  R:R 1:{rr.toFixed(2)}
+                  R:R 1:{(rr ?? 0).toFixed(2)}
                 </Badge>
               )}
             </div>
@@ -707,7 +707,7 @@ function PlanLevel({ label, value, currencyLabel, color }: {
       <span className="text-[9px] text-muted-foreground">{label}</span>
       <span className={cn('font-mono font-bold text-sm', color)}>
         {value !== null && value !== undefined && value > 0
-          ? `${value.toFixed(2)} ${currencyLabel}`
+          ? `${(value ?? 0).toFixed(2)} ${currencyLabel}`
           : '— بيانات غير متاحة'}
       </span>
     </div>

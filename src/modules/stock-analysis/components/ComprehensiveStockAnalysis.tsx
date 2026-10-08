@@ -462,14 +462,14 @@ function QuickStatsRow({ price, tech, metrics }: { price: Record<string, unknown
     },
     {
       label: 'RSI (14)',
-      value: tech.rsi ? tech.rsi.toFixed(1) : '—',
+      value: tech.rsi ? (tech.rsi ?? 0).toFixed(1) : '—',
       sub: tech.rsi > 70 ? 'تشبع شرائي' : tech.rsi < 30 ? 'تشبع بيعي' : 'محايد',
       icon: Activity,
       color: tech.rsi > 70 ? 'text-red-500' : tech.rsi < 30 ? 'text-emerald-500' : 'text-amber-500',
     },
     {
       label: 'P/E',
-      value: metrics.pe_ratio ? metrics.pe_ratio.toFixed(1) : '—',
+      value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : '—',
       sub: metrics.pe_ratio < 15 ? 'رخيص' : metrics.pe_ratio > 30 ? 'غالي' : 'عادل',
       icon: BarChart3,
       color: 'text-purple-600 dark:text-purple-400',
@@ -660,7 +660,7 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
           </CardHeader>
           <CardContent className="pt-2">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-3xl font-bold tabular-nums">{rsi.toFixed(1)}</span>
+              <span className="text-3xl font-bold tabular-nums">{(rsi ?? 0).toFixed(1)}</span>
               <span className={cn('text-sm font-semibold', rsiColor)}>{rsiStatus}</span>
             </div>
             <div className="relative h-3 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full">
@@ -800,18 +800,18 @@ function TechnicalTab({ tech, price, priceHistory }: { tech: Record<string, unkn
 function FundamentalTab({ metrics, basic }: { metrics: Record<string, unknown> | null | undefined; basic: Record<string, unknown> | null | undefined }) {
   const items = [
     { label: 'القيمة السوقية', value: formatMarketCap(metrics.market_cap), icon: DollarSign },
-    { label: 'P/E (السعر/الربح)', value: metrics.pe_ratio ? metrics.pe_ratio.toFixed(1) : '—', icon: BarChart3 },
-    { label: 'P/B (السعر/القيمة الدفترية)', value: metrics.pb_ratio ? metrics.pb_ratio.toFixed(2) : '—', icon: BarChart3 },
-    { label: 'P/S (السعر/المبيعات)', value: metrics.ps_ratio ? metrics.ps_ratio.toFixed(2) : '—', icon: BarChart3 },
-    { label: 'EPS (ربحية السهم)', value: metrics.eps ? metrics.eps.toFixed(2) : '—', icon: DollarSign },
-    { label: 'ROE (العائد على حقوق الملكية)', value: metrics.roe ? `${metrics.roe.toFixed(1)}%` : '—', icon: TrendingUp },
-    { label: 'ROA (العائد على الأصول)', value: metrics.roa ? `${metrics.roa.toFixed(1)}%` : '—', icon: TrendingUp },
-    { label: 'هامش الربح', value: metrics.profit_margin ? `${metrics.profit_margin.toFixed(1)}%` : '—', icon: PieChart },
-    { label: 'توزيعات الأرباح', value: metrics.dividend_yield ? `${metrics.dividend_yield.toFixed(2)}%` : '—', icon: DollarSign },
-    { label: 'دين/حقوق ملكية', value: metrics.debt_to_equity ? metrics.debt_to_equity.toFixed(2) : '—', icon: Shield },
-    { label: 'السيولة (Current Ratio)', value: metrics.current_ratio ? metrics.current_ratio.toFixed(2) : '—', icon: Activity },
-    { label: 'القيمة الدفترية/السهم', value: metrics.book_value_per_share ? metrics.book_value_per_share.toFixed(2) : '—', icon: DollarSign },
-    { label: 'Beta', value: metrics.beta ? metrics.beta.toFixed(2) : '—', icon: Activity },
+    { label: 'P/E (السعر/الربح)', value: metrics.pe_ratio ? (metrics.pe_ratio ?? 0).toFixed(1) : '—', icon: BarChart3 },
+    { label: 'P/B (السعر/القيمة الدفترية)', value: metrics.pb_ratio ? (metrics.pb_ratio ?? 0).toFixed(2) : '—', icon: BarChart3 },
+    { label: 'P/S (السعر/المبيعات)', value: metrics.ps_ratio ? (metrics.ps_ratio ?? 0).toFixed(2) : '—', icon: BarChart3 },
+    { label: 'EPS (ربحية السهم)', value: metrics.eps ? (metrics.eps ?? 0).toFixed(2) : '—', icon: DollarSign },
+    { label: 'ROE (العائد على حقوق الملكية)', value: metrics.roe ? `${(metrics.roe ?? 0).toFixed(1)}%` : '—', icon: TrendingUp },
+    { label: 'ROA (العائد على الأصول)', value: metrics.roa ? `${(metrics.roa ?? 0).toFixed(1)}%` : '—', icon: TrendingUp },
+    { label: 'هامش الربح', value: metrics.profit_margin ? `${(metrics.profit_margin ?? 0).toFixed(1)}%` : '—', icon: PieChart },
+    { label: 'توزيعات الأرباح', value: metrics.dividend_yield ? `${(metrics.dividend_yield ?? 0).toFixed(2)}%` : '—', icon: DollarSign },
+    { label: 'دين/حقوق ملكية', value: metrics.debt_to_equity ? (metrics.debt_to_equity ?? 0).toFixed(2) : '—', icon: Shield },
+    { label: 'السيولة (Current Ratio)', value: metrics.current_ratio ? (metrics.current_ratio ?? 0).toFixed(2) : '—', icon: Activity },
+    { label: 'القيمة الدفترية/السهم', value: metrics.book_value_per_share ? (metrics.book_value_per_share ?? 0).toFixed(2) : '—', icon: DollarSign },
+    { label: 'Beta', value: metrics.beta ? (metrics.beta ?? 0).toFixed(2) : '—', icon: Activity },
   ];
 
   return (
@@ -905,7 +905,7 @@ function ValuationRow({ label, value, low, high, lowLabel, highLabel, reverse }:
     <div className="flex items-center justify-between">
       <span className="text-sm">{label}</span>
       <div className="flex items-center gap-2">
-        <span className={cn('font-bold tabular-nums', color)}>{value.toFixed(1)}</span>
+        <span className={cn('font-bold tabular-nums', color)}>{(value ?? 0).toFixed(1)}</span>
         <Badge variant="outline" className={cn('text-xs', color)}>{status}</Badge>
       </div>
     </div>
@@ -1178,10 +1178,10 @@ function PriceWithMAChart({ history, ma50, ma200, support, resistance }: {
           />
         )}
         {support > 0 && (
-          <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" label={{ value: `دعم: ${support.toFixed(2)}`, fontSize: 10, fill: '#10b981' }} />
+          <ReferenceLine y={support} stroke="#10b981" strokeDasharray="3 3" label={{ value: `دعم: ${(support ?? 0).toFixed(2)}`, fontSize: 10, fill: '#10b981' }} />
         )}
         {resistance > 0 && (
-          <ReferenceLine y={resistance} stroke="#ef4444" strokeDasharray="3 3" label={{ value: `مقاومة: ${resistance.toFixed(2)}`, fontSize: 10, fill: '#ef4444' }} />
+          <ReferenceLine y={resistance} stroke="#ef4444" strokeDasharray="3 3" label={{ value: `مقاومة: ${(resistance ?? 0).toFixed(2)}`, fontSize: 10, fill: '#ef4444' }} />
         )}
       </ComposedChart>
     </ResponsiveContainer>

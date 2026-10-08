@@ -2087,7 +2087,7 @@ export function SuperLearningSystem() {
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
-                            {PERSONA_BENCHMARK_DATA[p].stopFactor.toFixed(1)}
+                            {PERSONA_BENCHMARK_DATA[p].(stopFactor ?? 0).toFixed(1)}
                           </TableCell>
                         );
                       })}
@@ -2105,7 +2105,7 @@ export function SuperLearningSystem() {
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
-                            {PERSONA_BENCHMARK_DATA[p].targetFactor.toFixed(1)}
+                            {PERSONA_BENCHMARK_DATA[p].(targetFactor ?? 0).toFixed(1)}
                           </TableCell>
                         );
                       })}
@@ -2123,7 +2123,7 @@ export function SuperLearningSystem() {
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
-                            {PERSONA_BENCHMARK_DATA[p].maxRiskPct.toFixed(1)}%
+                            {PERSONA_BENCHMARK_DATA[p].(maxRiskPct ?? 0).toFixed(1)}%
                           </TableCell>
                         );
                       })}
@@ -2159,7 +2159,7 @@ export function SuperLearningSystem() {
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
-                            {PERSONA_BENCHMARK_DATA[p].profitFactor.toFixed(2)}
+                            {PERSONA_BENCHMARK_DATA[p].(profitFactor ?? 0).toFixed(2)}
                           </TableCell>
                         );
                       })}
@@ -2177,7 +2177,7 @@ export function SuperLearningSystem() {
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
-                            -{PERSONA_BENCHMARK_DATA[p].maxDrawdown.toFixed(1)}%
+                            -{PERSONA_BENCHMARK_DATA[p].(maxDrawdown ?? 0).toFixed(1)}%
                           </TableCell>
                         );
                       })}
@@ -2213,7 +2213,7 @@ export function SuperLearningSystem() {
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
-                            +{PERSONA_BENCHMARK_DATA[p].totalReturn.toFixed(1)}%
+                            +{PERSONA_BENCHMARK_DATA[p].(totalReturn ?? 0).toFixed(1)}%
                           </TableCell>
                         );
                       })}
@@ -2297,7 +2297,7 @@ export function SuperLearningSystem() {
                               {loading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto text-emerald-600" />
                               ) : r?.winRate !== null && r?.winRate !== undefined ? (
-                                <span className="text-emerald-600 dark:text-emerald-400">{r.winRate.toFixed(1)}%</span>
+                                <span className="text-emerald-600 dark:text-emerald-400">{(r.winRate ?? 0).toFixed(1)}%</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
@@ -2331,7 +2331,7 @@ export function SuperLearningSystem() {
                               {loading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto text-emerald-600" />
                               ) : r?.profitFactor !== null && r?.profitFactor !== undefined ? (
-                                <span className="text-blue-600 dark:text-blue-400">{r.profitFactor.toFixed(2)}</span>
+                                <span className="text-blue-600 dark:text-blue-400">{(r.profitFactor ?? 0).toFixed(2)}</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
@@ -2365,7 +2365,7 @@ export function SuperLearningSystem() {
                               {loading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto text-emerald-600" />
                               ) : r?.totalReturn !== null && r?.totalReturn !== undefined ? (
-                                <span className="text-purple-600 dark:text-purple-400">+{r.totalReturn.toFixed(2)}%</span>
+                                <span className="text-purple-600 dark:text-purple-400">+{(r.totalReturn ?? 0).toFixed(2)}%</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}

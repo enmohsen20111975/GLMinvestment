@@ -236,7 +236,7 @@ export function StockSearchSelector({
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {s.current_price !== undefined && s.current_price > 0 && (
                       <span className="font-mono text-[11px] font-bold text-foreground">
-                        {s.current_price.toFixed(2)} {isCrypto ? '$' : 'ج.م'}
+                        {(s.current_price ?? 0).toFixed(2)} {isCrypto ? '$' : 'ج.م'}
                       </span>
                     )}
                     {isSelected && <Check className="w-4 h-4 text-emerald-500" />}

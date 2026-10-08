@@ -703,11 +703,11 @@ export function NewsFeedView() {
       const q = searchQuery.toLowerCase();
       list = list.filter(
         (n) =>
-          n.title.toLowerCase().includes(q) ||
+          (n.title || '').toLowerCase().includes(q) ||
           (n.body && n.body.toLowerCase().includes(q)) ||
           (n.summary && n.summary.toLowerCase().includes(q)) ||
-          (n.tickers && n.tickers.some((t) => t.toLowerCase().includes(q))) ||
-          n.source.toLowerCase().includes(q)
+          (n.tickers && n.tickers.some((t) => (t || '').toLowerCase().includes(q))) ||
+          (n.source || '').toLowerCase().includes(q)
       );
     }
 

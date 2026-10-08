@@ -130,12 +130,12 @@ const SIGNAL_CONFIG = {
 
 function formatPrice(price: number | null | undefined, currency: string = 'ج.م'): string {
   if (price == null) return `-- ${currency}`;
-  return `${price.toFixed(2)} ${currency}`;
+  return `${(price ?? 0).toFixed(2)} ${currency}`;
 }
 
 function formatPercent(value: number): string {
   const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return `${sign}${(value ?? 0).toFixed(2)}%`;
 }
 
 function getScoreColor(score?: number): string {
@@ -196,10 +196,10 @@ function PriceChart({ data, analysis }: { data: OHLCVData[]; analysis: PythonAna
             />
             <Area type="monotone" dataKey="close" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorClose)" strokeWidth={2} />
             {targetPrice && currentPrice && (
-              <ReferenceLine y={targetPrice} stroke="#22c55e" strokeDasharray="5 5" label={{ value: `الهدف: ${targetPrice.toFixed(2)}`, fontSize: 10, fill: '#22c55e', position: 'left' }} />
+              <ReferenceLine y={targetPrice} stroke="#22c55e" strokeDasharray="5 5" label={{ value: `الهدف: ${(targetPrice ?? 0).toFixed(2)}`, fontSize: 10, fill: '#22c55e', position: 'left' }} />
             )}
             {stopLoss && currentPrice && (
-              <ReferenceLine y={stopLoss} stroke="#ef4444" strokeDasharray="5 5" label={{ value: `الستوب: ${stopLoss.toFixed(2)}`, fontSize: 10, fill: '#ef4444', position: 'left' }} />
+              <ReferenceLine y={stopLoss} stroke="#ef4444" strokeDasharray="5 5" label={{ value: `الستوب: ${(stopLoss ?? 0).toFixed(2)}`, fontSize: 10, fill: '#ef4444', position: 'left' }} />
             )}
           </AreaChart>
         </ResponsiveContainer>
@@ -232,7 +232,7 @@ function ScoreCircle({ score, label }: { score?: number; label: string }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn('text-xl font-bold', getScoreColor(safeScore))}>{safeScore.toFixed(0)}</span>
+          <span className={cn('text-xl font-bold', getScoreColor(safeScore))}>{(safeScore ?? 0).toFixed(0)}</span>
         </div>
       </div>
       <span className="text-xs text-muted-foreground mt-1 block">{label}</span>
@@ -549,7 +549,7 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
                 <span className="text-xs text-muted-foreground block">منطقة الدخول</span>
                 <span className="font-medium">
                   {updatedAnalysis.risk_profile.entry_low && updatedAnalysis.risk_profile.entry_high
-                    ? `${updatedAnalysis.risk_profile.entry_low.toFixed(2)} - ${updatedAnalysis.risk_profile.entry_high.toFixed(2)}`
+                    ? `${(updatedAnalysis.risk_profile.entry_low ?? 0).toFixed(2)} - ${(updatedAnalysis.risk_profile.entry_high ?? 0).toFixed(2)}`
                     : updatedAnalysis.risk_profile.entry_price?.toFixed(2) || '--'}
                 </span>
               </div>

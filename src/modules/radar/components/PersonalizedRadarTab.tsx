@@ -162,14 +162,14 @@ const fmtPct = (n: number | null | undefined, withSign = false): string => {
   if (n == null || isNaN(n as number)) return '-';
   const num = Number(n);
   const sign = withSign && num > 0 ? '+' : '';
-  return `${sign}${num.toFixed(1)}%`;
+  return `${sign}${(num ?? 0).toFixed(1)}%`;
 };
 
 const fmtCurrency = (n: number | null | undefined): string => {
   if (n == null || isNaN(n as number)) return '-';
   const num = Number(n);
   if (num >= 1000) return `${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-  return num.toFixed(2);
+  return (num ?? 0).toFixed(2);
 };
 
 // ─── Component ────────────────────────────────────────────────────────────
@@ -386,7 +386,7 @@ function ProfileCard({
           {hasTradeHistory && (
             <ProfileStatBox
               label="فترة الاحتفاظ"
-              value={`${profile.averageHoldingDays.toFixed(0)} يوم`}
+              value={`${(profile.averageHoldingDays ?? 0).toFixed(0)} يوم`}
               sub={HOLDING_PERIOD_AR[profile.holdingPeriodCategory]}
               icon={<Clock className="h-4 w-4" />}
               testId="stat-holding-period"

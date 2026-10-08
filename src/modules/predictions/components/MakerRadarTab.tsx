@@ -2024,7 +2024,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
                   {chg > 0 ? '+' : ''}{(chg ?? 0).toFixed(1)}%
                 </span>
                 <span className="text-[8px] opacity-60">
-                  {(s.totalTurnover / 1e6).toFixed(0)}M
+                  {((s.totalTurnover ?? 0) / 1e6).toFixed(0)}M
                 </span>
                 {/* Mini flow indicator */}
                 <span className={isInflow ? 'text-emerald-500' : isOutflow ? 'text-rose-500' : 'text-amber-500'}>

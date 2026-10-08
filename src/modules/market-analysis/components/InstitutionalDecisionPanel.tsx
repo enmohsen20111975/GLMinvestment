@@ -514,7 +514,7 @@ export function InstitutionalDecisionPanel({
                   'text-[8px] mt-0.5',
                   backtest.net_return >= 0 ? 'text-emerald-400' : 'text-rose-400'
                 )}>
-                  صافي: {backtest.net_return >= 0 ? '+' : ''}{backtest.net_return.toFixed(2)}%
+                  صافي: {backtest.net_return >= 0 ? '+' : ''}{(backtest.net_return ?? 0).toFixed(2)}%
                 </div>
               )}
             </div>
@@ -570,7 +570,7 @@ export function InstitutionalDecisionPanel({
             {/* V39: DNA target note */}
             {dna_target_price && dna_target_price > 0 && (
               <div className="text-[8px] text-purple-300 mt-1 leading-tight">
-                🔮 TP1 من البصمة المستقبلية: {dna_target_price.toFixed(2)}
+                🔮 TP1 من البصمة المستقبلية: {(dna_target_price ?? 0).toFixed(2)}
               </div>
             )}
             <div className="flex justify-between text-[9px] text-muted-foreground mt-1.5 pt-1 border-t border-border/30">
@@ -596,7 +596,7 @@ export function InstitutionalDecisionPanel({
             {current_price && (
               <>
                 <span>·</span>
-                <span>السعر: <strong className="text-foreground font-mono">{current_price.toFixed(2)} {currencyLabel}</strong></span>
+                <span>السعر: <strong className="text-foreground font-mono">{(current_price ?? 0).toFixed(2)} {currencyLabel}</strong></span>
               </>
             )}
           </div>
@@ -619,7 +619,7 @@ export function InstitutionalDecisionPanel({
                   'font-mono font-black text-sm',
                   portfolio_advice.pnl_pct >= 0 ? 'text-emerald-400' : 'text-rose-400'
                 )}>
-                  {portfolio_advice.pnl_pct >= 0 ? '+' : ''}{portfolio_advice.pnl_pct.toFixed(2)}%
+                  {portfolio_advice.pnl_pct >= 0 ? '+' : ''}{(portfolio_advice.pnl_pct ?? 0).toFixed(2)}%
                 </div>
               </div>
               <div className="rounded bg-black/20 p-1.5">
@@ -628,7 +628,7 @@ export function InstitutionalDecisionPanel({
                   'font-mono font-black text-sm',
                   portfolio_advice.pnl_value >= 0 ? 'text-emerald-400' : 'text-rose-400'
                 )}>
-                  {portfolio_advice.pnl_value >= 0 ? '+' : ''}{portfolio_advice.pnl_value.toFixed(2)}
+                  {portfolio_advice.pnl_value >= 0 ? '+' : ''}{(portfolio_advice.pnl_value ?? 0).toFixed(2)}
                 </div>
               </div>
             </div>

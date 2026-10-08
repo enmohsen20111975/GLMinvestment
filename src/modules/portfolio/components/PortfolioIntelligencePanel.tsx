@@ -183,7 +183,7 @@ export function PortfolioIntelligencePanel() {
             "text-xs",
             data.summary.total_pnl_percent >= 0 ? "text-emerald-500" : "text-red-600"
           )}>
-            ({data.summary.total_pnl_percent >= 0 ? '+' : ''}{data.summary.total_pnl_percent.toFixed(2)}%)
+            ({(data.summary.total_pnl_percent ?? 0) >= 0 ? '+' : ''}{(data.summary.total_pnl_percent ?? 0).toFixed(2)}%)
           </div>
         </Card>
         <Card className="p-3">
@@ -259,13 +259,13 @@ export function PortfolioIntelligencePanel() {
                         {rec.target_price && (
                           <div className="flex items-center gap-2">
                             <Target className="h-4 w-4 text-emerald-500" />
-                            <span>الهدف: {rec.target_price.toFixed(2)} ج.م</span>
+                            <span>الهدف: {(rec.target_price ?? 0).toFixed(2)} ج.م</span>
                           </div>
                         )}
                         {rec.stop_loss && (
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="h-4 w-4 text-red-600" />
-                            <span>وقف الخسارة: {rec.stop_loss.toFixed(2)} ج.م</span>
+                            <span>وقف الخسارة: {(rec.stop_loss ?? 0).toFixed(2)} ج.م</span>
                           </div>
                         )}
                       </div>
@@ -278,11 +278,11 @@ export function PortfolioIntelligencePanel() {
                           </div>
                           <div>
                             <span className="text-muted-foreground">متوسط:</span>
-                            <span className="font-medium mr-1">{stock.avg_buy_price.toFixed(2)}</span>
+                            <span className="font-medium mr-1">{(stock.avg_buy_price ?? 0).toFixed(2)}</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">الحالي:</span>
-                            <span className="font-medium mr-1">{stock.current_price.toFixed(2)}</span>
+                            <span className="font-medium mr-1">{(stock.current_price ?? 0).toFixed(2)}</span>
                           </div>
                         </div>
                       )}
@@ -318,11 +318,11 @@ export function PortfolioIntelligencePanel() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">الدعم</div>
-                      <div className="font-medium">{analysis.support.toFixed(2)}</div>
+                      <div className="font-medium">{(analysis.support ?? 0).toFixed(2)}</div>
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">المقاومة</div>
-                      <div className="font-medium">{analysis.resistance.toFixed(2)}</div>
+                      <div className="font-medium">{(analysis.resistance ?? 0).toFixed(2)}</div>
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
                       <div className="text-muted-foreground">RSI</div>
@@ -331,7 +331,7 @@ export function PortfolioIntelligencePanel() {
                         analysis.rsi > 70 ? "text-red-600" : 
                         analysis.rsi < 30 ? "text-emerald-500" : ""
                       )}>
-                        {analysis.rsi.toFixed(0)}
+                        {(analysis.rsi ?? 0).toFixed(0)}
                       </div>
                     </div>
                     <div className="bg-muted/50 p-2 rounded">
@@ -358,16 +358,16 @@ export function PortfolioIntelligencePanel() {
                   <div className="text-left">
                     <div className={cn(
                       "font-bold",
-                      stock.profit_loss >= 0 ? "text-emerald-500" : "text-red-600"
+                      (stock.profit_loss ?? 0) >= 0 ? "text-emerald-500" : "text-red-600"
                     )}>
-                      {stock.profit_loss >= 0 ? '+' : ''}
-                      {stock.profit_loss.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
+                      {(stock.profit_loss ?? 0) >= 0 ? '+' : ''}
+                      {(stock.profit_loss ?? 0).toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م
                     </div>
                     <div className={cn(
                       "text-sm",
-                      stock.profit_loss_percent >= 0 ? "text-emerald-500" : "text-red-600"
+                      (stock.profit_loss_percent ?? 0) >= 0 ? "text-emerald-500" : "text-red-600"
                     )}>
-                      ({stock.profit_loss_percent >= 0 ? '+' : ''}{stock.profit_loss_percent.toFixed(2)}%)
+                      ({(stock.profit_loss_percent ?? 0) >= 0 ? '+' : ''}{(stock.profit_loss_percent ?? 0).toFixed(2)}%)
                     </div>
                   </div>
                 </div>
@@ -379,15 +379,15 @@ export function PortfolioIntelligencePanel() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">متوسط:</span>
-                    <span className="font-medium mr-1">{stock.avg_buy_price.toFixed(2)}</span>
+                    <span className="font-medium mr-1">{(stock.avg_buy_price ?? 0).toFixed(2)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">الحالي:</span>
-                    <span className="font-medium mr-1">{stock.current_price.toFixed(2)}</span>
+                    <span className="font-medium mr-1">{(stock.current_price ?? 0).toFixed(2)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">القيمة:</span>
-                    <span className="font-medium mr-1">{stock.total_value.toLocaleString('ar-EG', { maximumFractionDigits: 0 })}</span>
+                    <span className="font-medium mr-1">{(stock.total_value ?? 0).toLocaleString('ar-EG', { maximumFractionDigits: 0 })}</span>
                   </div>
                 </div>
               </CardContent>

@@ -174,7 +174,7 @@ function formatPercent(value: number | null | undefined): string {
   const numValue = Number(value);
   if (!Number.isFinite(numValue)) return '—';
   const sign = numValue >= 0 ? '+' : '';
-  return `${sign}${numValue.toFixed(2)}%`;
+  return `${sign}${(numValue ?? 0).toFixed(2)}%`;
 }
 
 function abbreviateNumber(value: number | null | undefined): string {
@@ -184,7 +184,7 @@ function abbreviateNumber(value: number | null | undefined): string {
   if (!Number.isFinite(numValue)) return '—';
   if (Math.abs(numValue) >= 1_000_000) return (numValue / 1_000_000).toFixed(1) + 'M';
   if (Math.abs(numValue) >= 1_000) return (numValue / 1_000).toFixed(1) + 'K';
-  return numValue.toFixed(2);
+  return (numValue ?? 0).toFixed(2);
 }
 
 const ASSET_TYPE_LABELS: Record<AssetType, string> = {
@@ -473,9 +473,9 @@ function CryptoSearchDropdown({
                 <div className="text-xs text-muted-foreground" dir="ltr">{coin.symbol}</div>
               </div>
               <div className="text-left flex-shrink-0">
-                <div className="text-sm font-semibold" dir="ltr">${coin.price_usd > 0 ? coin.price_usd.toFixed(2) : '—'}</div>
+                <div className="text-sm font-semibold" dir="ltr">${coin.price_usd > 0 ? (coin.price_usd ?? 0).toFixed(2) : '—'}</div>
                 <div className={cn('text-xs font-medium', coin.change_24h >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                  {coin.change_24h >= 0 ? '+' : ''}{coin.change_24h.toFixed(2)}%
+                  {coin.change_24h >= 0 ? '+' : ''}{(coin.change_24h ?? 0).toFixed(2)}%
                 </div>
               </div>
             </button>
@@ -983,7 +983,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       const sellQty = price > 0 ? Math.ceil(overflowValueEGP / price) : 0;
       const qtyLabel = sellQty > 0 ? `${sellQty.toLocaleString('ar-EG')} وحدة من ` : '';
       toast.warning(
-        `بيع ${qtyLabel}${ticker} لتقليل نسبة ${assetLabels[alert.asset] || alert.asset} من ${alert.currentPercent.toFixed(1)}% إلى ${alert.ceilingPercent}%`,
+        `بيع ${qtyLabel}${ticker} لتقليل نسبة ${assetLabels[alert.asset] || alert.asset} من ${(alert.currentPercent ?? 0).toFixed(1)}% إلى ${alert.ceilingPercent}%`,
         { duration: 8000 },
       );
     });
@@ -1034,7 +1034,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                   تنبيه: أنت مزنوق في {severeLossPositions.length} {severeLossPositions.length === 1 ? 'سهم' : 'أسهم'} بخسارة 15% أو أكبر
                 </div>
                 <div className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                  أسوأها: <span dir="ltr" className="font-bold">{worst.stock_ticker}</span> بخسارة {lossPct.toFixed(1)}% — اضغط هنا للحصول على خطة الإنقاذ الفورية
+                  أسوأها: <span dir="ltr" className="font-bold">{worst.stock_ticker}</span> بخسارة {(lossPct ?? 0).toFixed(1)}% — اضغط هنا للحصول على خطة الإنقاذ الفورية
                 </div>
               </div>
             </div>
@@ -1415,7 +1415,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                             {isStock && currentPrice > 0 && (
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">السعر الحالي</span>
-                                <span className="font-medium" dir="ltr">{currentPrice.toFixed(2)} ج.م</span>
+                                <span className="font-medium" dir="ltr">{(currentPrice ?? 0).toFixed(2)} ج.م</span>
                               </div>
                             )}
                             
@@ -1477,7 +1477,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                           {/* Footer info */}
                           {isStock && qty > 0 && (
                             <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
-                              {qty.toLocaleString('ar-EG')} سهم @ {avgBuy.toFixed(2)} ج.م
+                              {qty.toLocaleString('ar-EG')} سهم @ {(avgBuy ?? 0).toFixed(2)} ج.م
                             </div>
                           )}
                           {asset.type === 'gold' && (
@@ -1485,7 +1485,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                               {weightGrams ? `${weightGrams.toLocaleString('ar-EG')} جرام` : ''} {karat ? `عيار ${karat}` : ''}
                               {livePricePerGram > 0 && (
                                 <span className="block mt-1 text-emerald-500 dark:text-emerald-400">
-                                  سعر الجرام الحالي: {livePricePerGram.toFixed(2)} ج.م
+                                  سعر الجرام الحالي: {(livePricePerGram ?? 0).toFixed(2)} ج.م
                                 </span>
                               )}
                             </div>
@@ -1546,7 +1546,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formSelectedPrice && formSelectedPrice > 0 && (
                   <div className="bg-muted rounded-md px-3 py-2 text-xs flex justify-between">
                     <span className="text-muted-foreground">السعر الحالي للسهم</span>
-                    <span className="font-semibold" dir="ltr">{formSelectedPrice.toFixed(2)} ج.م</span>
+                    <span className="font-semibold" dir="ltr">{(formSelectedPrice ?? 0).toFixed(2)} ج.م</span>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
@@ -1744,7 +1744,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                 {formSelectedPrice && formSelectedPrice > 0 && (
                   <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-md px-3 py-2 text-xs flex justify-between">
                     <span className="text-muted-foreground">السعر الحالي (USD)</span>
-                    <span className="font-semibold text-orange-700 dark:text-orange-400" dir="ltr">${formSelectedPrice.toFixed(2)}</span>
+                    <span className="font-semibold text-orange-700 dark:text-orange-400" dir="ltr">${(formSelectedPrice ?? 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
@@ -1934,7 +1934,7 @@ function WealthAllocationMatrixCard({
                 </div>
                 <div className="flex items-baseline gap-1.5 mb-2">
                   <span className={cn('text-2xl font-bold', severityText[alert.severity])}>
-                    {alert.currentPercent.toFixed(1)}%
+                    {(alert.currentPercent ?? 0).toFixed(1)}%
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     / سقف {alert.ceilingPercent}%
@@ -2246,7 +2246,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
               <TrendingUp className="w-4 h-4" />
               <span className="text-xs font-medium">نسبة الادخار</span>
             </div>
-            <p className="text-lg font-bold">{savingsRate.toFixed(1)}%</p>
+            <p className="text-lg font-bold">{(savingsRate ?? 0).toFixed(1)}%</p>
             <Progress value={Math.min(savingsRate, 100)} className="h-2 mt-2" />
           </Card>
         </div>
@@ -2270,7 +2270,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
                   <div key={cat} className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">{label}</span>
-                      <span className="font-medium">{formatCurrency(amount)} ({pct.toFixed(1)}%)</span>
+                      <span className="font-medium">{formatCurrency(amount)} ({(pct ?? 0).toFixed(1)}%)</span>
                     </div>
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-red-400 transition-all" style={{ width: `${pct}%` }} />
@@ -2645,7 +2645,7 @@ const ObligationsTab = memo(function ObligationsTab() {
                   <div className="mt-3 space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">تم السداد</span>
-                      <span className="font-medium">{paidPercent.toFixed(1)}%</span>
+                      <span className="font-medium">{(paidPercent ?? 0).toFixed(1)}%</span>
                     </div>
                     <Progress value={paidPercent} className="h-2" />
                   </div>
@@ -2997,7 +2997,7 @@ const ReportsTab = memo(function ReportsTab() {
                       <div className="flex items-center gap-2">
                         <Badge className={cn('text-[10px] px-1.5', colorClass)}>{label}</Badge>
                       </div>
-                      <span className="font-medium">{formatCurrency(value)} ({pct.toFixed(1)}%)</span>
+                      <span className="font-medium">{formatCurrency(value)} ({(pct ?? 0).toFixed(1)}%)</span>
                     </div>
                     <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                       <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${(value / maxAssetTypeValue) * 100}%` }} />
@@ -3058,7 +3058,7 @@ const ReportsTab = memo(function ReportsTab() {
                         <div>
                           <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">تنويع المحفظة</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            الأسهم تمثل {stockPercent.toFixed(1)}% من محفظتك. يُنصح بتقليل النسبة إلى 30-40% وتوزيع الباقي على شهادات وصناديق استثمار.
+                            الأسهم تمثل {(stockPercent ?? 0).toFixed(1)}% من محفظتك. يُنصح بتقليل النسبة إلى 30-40% وتوزيع الباقي على شهادات وصناديق استثمار.
                           </p>
                         </div>
                       </div>

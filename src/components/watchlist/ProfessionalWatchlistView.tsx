@@ -190,7 +190,7 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
                 "text-sm text-right",
                 item.profit_loss_percent >= 0 ? "text-green-600" : "text-red-600"
               )}>
-                {item.profit_loss_percent >= 0 ? '+' : ''}{item.profit_loss_percent.toFixed(1)}%
+                {item.profit_loss_percent >= 0 ? '+' : ''}{(item.profit_loss_percent ?? 0).toFixed(1)}%
               </div>
             </div>
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -208,15 +208,15 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
             <div className="grid grid-cols-4 gap-2 text-sm">
               <div className="bg-muted/50 p-2 rounded">
                 <div className="text-muted-foreground">الكمية</div>
-                <div className="font-medium">{item.quantity.toLocaleString('ar-EG')}</div>
+                <div className="font-medium">{(item.quantity ?? 0).toLocaleString('ar-EG')}</div>
               </div>
               <div className="bg-muted/50 p-2 rounded">
                 <div className="text-muted-foreground">سعر الشراء</div>
-                <div className="font-medium">{item.avg_buy_price.toFixed(2)}</div>
+                <div className="font-medium">{(item.avg_buy_price ?? 0).toFixed(2)}</div>
               </div>
               <div className="bg-muted/50 p-2 rounded">
                 <div className="text-muted-foreground">السعر الحالي</div>
-                <div className="font-medium">{item.current_price.toFixed(2)}</div>
+                <div className="font-medium">{(item.current_price ?? 0).toFixed(2)}</div>
               </div>
               <div className="bg-muted/50 p-2 rounded">
                 <div className="text-muted-foreground">القيمة</div>
@@ -242,7 +242,7 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
                   {item.tradingview.rsi !== null && (
                     <div>
                       <div className="text-muted-foreground text-xs">RSI</div>
-                      <div className="font-medium">{item.tradingview.rsi.toFixed(0)}</div>
+                      <div className="font-medium">{(item.tradingview.rsi ?? 0).toFixed(0)}</div>
                     </div>
                   )}
                   {item.tradingview.valuation.pe && (
@@ -292,13 +292,13 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
                 {item.action.target_price && (
                   <div className="flex items-center gap-1 text-green-600">
                     <Target className="h-3 w-3" />
-                    <span>الهدف: {item.action.target_price.toFixed(2)}</span>
+                    <span>الهدف: {(item.action.target_price ?? 0).toFixed(2)}</span>
                   </div>
                 )}
                 {item.action.stop_loss && (
                   <div className="flex items-center gap-1 text-red-600">
                     <ShieldAlert className="h-3 w-3" />
-                    <span>وقف الخسارة: {item.action.stop_loss.toFixed(2)}</span>
+                    <span>وقف الخسارة: {(item.action.stop_loss ?? 0).toFixed(2)}</span>
                   </div>
                 )}
               </div>

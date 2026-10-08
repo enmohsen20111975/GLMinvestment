@@ -100,7 +100,7 @@ function ScoreBar({ value, label, color = 'bg-teal-500' }: {
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="text-gray-400">{label}</span>
-        <span className="text-white font-medium">{value.toFixed(0)}%</span>
+        <span className="text-white font-medium">{(value ?? 0).toFixed(0)}%</span>
       </div>
       <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
         <div
@@ -287,9 +287,9 @@ export default function UnifiedAnalysisView() {
               <h2 className="text-sm font-semibold text-gray-300 mb-3">⚙️ الإعدادات الفعلية</h2>
               <div className="space-y-2 text-sm">
                 {[
-                  { label: 'الحد الأدنى للشراء', value: `${effectiveConfig.min_score_buy.toFixed(0)}%` },
+                  { label: 'الحد الأدنى للشراء', value: `${(effectiveConfig.min_score_buy ?? 0).toFixed(0)}%` },
                   { label: 'R/R الأدنى', value: `${effectiveConfig.min_rr}` },
-                  { label: 'حجم الصفقة', value: `${effectiveConfig.position_size.toFixed(0)}%` },
+                  { label: 'حجم الصفقة', value: `${(effectiveConfig.position_size ?? 0).toFixed(0)}%` },
                   { label: 'أقصى صفقات', value: `${effectiveConfig.max_trades}` },
                   { label: 'مضاعف ATR', value: `${effectiveConfig.stop_atr_mult}×` },
                   { label: 'مضاعف الهدف', value: `${effectiveConfig.target_rr_mult}×` },

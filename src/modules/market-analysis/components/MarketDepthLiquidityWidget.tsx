@@ -75,20 +75,21 @@ interface WidgetProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-function fmtVol(n: number): string {
+function fmtVol(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '0';
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
   if (abs >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-  return n.toFixed(0);
+  return (n ?? 0).toFixed(0);
 }
 
-function fmtPrice(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return '—';
-  return n.toFixed(2);
+function fmtPrice(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n) || n === 0) return '—';
+  return (n ?? 0).toFixed(2);
 }
 
-function fmtPct(n: number): string {
-  if (!Number.isFinite(n)) return '0.0%';
+function fmtPct(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '0.0%';
   return (n * 100).toFixed(1) + '%';
 }
 
@@ -194,7 +195,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
             ) : null}
             {data && data.spread > 0 ? (
               <Badge variant="outline" className="text-xs font-mono">
-                سبريد {data.spread.toFixed(2)}
+                سبريد {(data.spread ?? 0).toFixed(2)}
               </Badge>
             ) : null}
             {data && (
@@ -412,7 +413,7 @@ export function MarketDepthLiquidityWidget({ ticker, compact = false }: WidgetPr
               <div className="text-center p-1.5 rounded bg-muted/30">
                 <div className="text-[9px] text-muted-foreground">السبريد</div>
                 <div className="text-[11px] font-bold tabular-nums">
-                  {data.spread > 0 ? data.spread.toFixed(2) : '—'}
+                  {data.spread > 0 ? (data.spread ?? 0).toFixed(2) : '—'}
                 </div>
               </div>
               <div className="text-center p-1.5 rounded bg-rose-500/5 border border-rose-500/15">

@@ -189,13 +189,13 @@ export function TradingMemoryView() {
                             "text-sm font-medium",
                             p.avg_pnl > 0 ? "text-green-600" : "text-red-600"
                           )}>
-                            {p.avg_pnl > 0 ? '+' : ''}{p.avg_pnl.toFixed(1)}%
+                            {p.avg_pnl > 0 ? '+' : ''}{(p.avg_pnl ?? 0).toFixed(1)}%
                           </span>
                         )}
                         <Badge
-                          variant={p.win_rate >= 50 ? 'success' : 'destructive'}
+                          variant={(p.win_rate ?? 0) >= 50 ? 'success' : 'destructive'}
                         >
-                          {p.win_rate.toFixed(0)}%
+                          {(p.win_rate ?? 0).toFixed(0)}%
                         </Badge>
                       </div>
                     </div>
@@ -258,7 +258,7 @@ export function TradingMemoryView() {
                         <span className="font-medium">{t.ticker}</span>
                       </div>
                       <Badge variant="success" className="text-xs">
-                        {t.win_rate.toFixed(0)}%
+                        {(t.win_rate ?? 0).toFixed(0)}%
                       </Badge>
                     </div>
                   ))
@@ -293,7 +293,7 @@ export function TradingMemoryView() {
                         <span className="font-medium">{t.ticker}</span>
                       </div>
                       <Badge variant="destructive" className="text-xs">
-                        {t.win_rate.toFixed(0)}%
+                        {(t.win_rate ?? 0).toFixed(0)}%
                       </Badge>
                     </div>
                   ))

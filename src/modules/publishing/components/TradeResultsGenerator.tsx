@@ -108,13 +108,13 @@ function buildCaption(data: ReportData | null, period: ReportPeriod): string {
     `📅 ${date}`,
     '',
     `🏆 الصفقات الناجحة: ${s.winning_closed} من ${s.total_closed}`,
-    `🎯 نسبة النجاح: ${s.success_rate.toFixed(1)}%`,
-    `📈 متوسط العائد: ${s.average_return >= 0 ? '+' : ''}${s.average_return.toFixed(2)}%`,
-    `📊 إجمالي الحركة: ${s.total_price_movement.toFixed(2)}%`,
+    `🎯 نسبة النجاح: ${(s.success_rate ?? 0).toFixed(1)}%`,
+    `📈 متوسط العائد: ${s.average_return >= 0 ? '+' : ''}${(s.average_return ?? 0).toFixed(2)}%`,
+    `📊 إجمالي الحركة: ${(s.total_price_movement ?? 0).toFixed(2)}%`,
     '',
     '⭐ أبرز الصفقات الرابحة:',
     ...s.top_trades.slice(0, 5).map((t, i) => {
-      const ret = t.realized_return_pct >= 0 ? `+${t.realized_return_pct.toFixed(2)}%` : `${t.realized_return_pct.toFixed(2)}%`;
+      const ret = t.realized_return_pct >= 0 ? `+${(t.realized_return_pct ?? 0).toFixed(2)}%` : `${(t.realized_return_pct ?? 0).toFixed(2)}%`;
       const badge = t.exit_price >= t.target_price ? ' 🎯 تجاوز الهدف' : '';
       return `${i + 1}. ${t.ticker} — ${ret}${badge}`;
     }),

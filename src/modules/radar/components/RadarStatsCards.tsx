@@ -78,7 +78,7 @@ const SIGNAL_TYPE_COLOR: Record<string, string> = {
 function fmtPct(n: number | null | undefined, withSign = true): string {
   if (n == null || Number.isNaN(n)) return '—';
   const sign = withSign && n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${(n ?? 0).toFixed(1)}%`;
 }
 
 function pnlColorClass(n: number | null | undefined): string {
@@ -92,7 +92,7 @@ function fmtMoney(n: number): string {
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toFixed(0);
+  return (n ?? 0).toFixed(0);
 }
 
 export function RadarSignalStatsCard() {
@@ -234,7 +234,7 @@ export function RadarSignalStatsCard() {
             <div className="text-center p-2 rounded-md bg-muted/30">
               <div className="text-[10px] text-muted-foreground">نسبة النجاح</div>
               <div className={`text-lg font-bold ${stats.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : stats.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                {stats.win_rate_pct.toFixed(1)}%
+                {(stats.win_rate_pct ?? 0).toFixed(1)}%
               </div>
             </div>
           </div>
@@ -281,7 +281,7 @@ export function RadarSignalStatsCard() {
                   <div className="flex items-center gap-2 text-xs">
                     <span className="text-muted-foreground">{s.wins} رابح</span>
                     <span className={`font-bold ${s.win_rate_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : s.win_rate_pct >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {s.win_rate_pct.toFixed(0)}%
+                      {(s.win_rate_pct ?? 0).toFixed(0)}%
                     </span>
                   </div>
                 </div>
@@ -412,13 +412,13 @@ export function SectorTreemapCard() {
               key={s.sector}
               className={`${dir.bg} ${dir.text} p-2 rounded-md transition-all hover:scale-105 hover:shadow-md cursor-default`}
               style={{ flex: `${Math.max(1, sizePct / 4)} 1 ${Math.max(80, sizePct * 4)}px`, minHeight: '64px' }}
-              title={`${s.sector} — ${s.stocks_count} سهم — سيولة ${fmtMoney(s.total_turnover)} — أداء ${s.avg_change_pct.toFixed(2)}%`}
+              title={`${s.sector} — ${s.stocks_count} سهم — سيولة ${fmtMoney(s.total_turnover)} — أداء ${(s.avg_change_pct ?? 0).toFixed(2)}%`}
             >
               <div className="text-[10px] font-bold leading-tight truncate">{s.sector}</div>
               <div className="text-[10px] opacity-90">{s.stocks_count} سهم</div>
               <div className="text-xs font-bold mt-0.5">{fmtMoney(s.total_turnover)}</div>
               <div className="text-[9px] opacity-80">
-                {s.avg_change_pct >= 0 ? '+' : ''}{s.avg_change_pct.toFixed(1)}%
+                {(s.avg_change_pct ?? 0) >= 0 ? '+' : ''}{(s.avg_change_pct ?? 0).toFixed(1)}%
               </div>
               <div className="text-[9px] opacity-70 mt-0.5">{dir.label}</div>
             </div>
@@ -440,9 +440,9 @@ export function SectorTreemapCard() {
                 <Badge
                   key={t.ticker}
                   variant="outline"
-                  className={`text-[9px] h-4 px-1 ${t.change_pct >= 0 ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400' : 'border-rose-500/40 text-rose-700 dark:text-rose-400'}`}
+                  className={`text-[9px] h-4 px-1 ${(t.change_pct ?? 0) >= 0 ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400' : 'border-rose-500/40 text-rose-700 dark:text-rose-400'}`}
                 >
-                  {t.ticker} {t.change_pct >= 0 ? '+' : ''}{t.change_pct.toFixed(1)}%
+                  {t.ticker} {(t.change_pct ?? 0) >= 0 ? '+' : ''}{(t.change_pct ?? 0).toFixed(1)}%
                 </Badge>
               ))}
             </div>
@@ -735,21 +735,21 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
           When source is /api/flow (money flow), levels=[] and poc_price=0,
           so we skip these tiles (Rule 27: no fabrication of volume-profile
           concepts from money-flow data). */}
-      {data.levels.length > 0 && (
+      {Array.isArray(data.levels) && data.levels.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
           <div className="p-1.5 rounded bg-purple-50 dark:bg-purple-950/20 text-center">
             <div className="text-[9px] text-muted-foreground">POC</div>
-            <div className="font-bold text-purple-700 dark:text-purple-300">{data.poc_price.toFixed(2)}</div>
+            <div className="font-bold text-purple-700 dark:text-purple-300">{(data.poc_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">نقطة التحكم</div>
           </div>
           <div className="p-1.5 rounded bg-emerald-50 dark:bg-emerald-950/20 text-center">
             <div className="text-[9px] text-muted-foreground">VAH</div>
-            <div className="font-bold text-emerald-700 dark:text-emerald-300">{data.vah_price.toFixed(2)}</div>
+            <div className="font-bold text-emerald-700 dark:text-emerald-300">{(data.vah_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">قمة منطقة القيمة</div>
           </div>
           <div className="p-1.5 rounded bg-rose-50 dark:bg-rose-950/20 text-center">
             <div className="text-[9px] text-muted-foreground">VAL</div>
-            <div className="font-bold text-rose-700 dark:text-rose-300">{data.val_price.toFixed(2)}</div>
+            <div className="font-bold text-rose-700 dark:text-rose-300">{(data.val_price ?? 0).toFixed(2)}</div>
             <div className="text-[9px] text-muted-foreground">قاع منطقة القيمة</div>
           </div>
         </div>
@@ -778,7 +778,7 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
           />
         </div>
         <div className="text-[9px] text-muted-foreground text-center mt-1">
-          نسبة الشراء/البيع: <span className={`font-semibold ${data.buy_sell_ratio >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{data.buy_sell_ratio.toFixed(2)}x</span>
+          نسبة الشراء/البيع: <span className={`font-semibold ${data.buy_sell_ratio >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{(data.buy_sell_ratio ?? 0).toFixed(2)}x</span>
         </div>
       </div>
 
@@ -798,7 +798,7 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
               return (
                 <div key={i} className="flex items-center gap-1 text-[10px] py-0.5">
                   <div className="w-16 text-left font-mono text-muted-foreground flex-shrink-0">
-                    {lvl.price_mid.toFixed(2)}
+                    {(lvl.price_mid ?? 0).toFixed(2)}
                   </div>
                   <div className="flex-1 relative h-4 rounded-sm overflow-hidden bg-muted/40">
                     {/* Buy volume (right side, green) */}
@@ -834,7 +834,7 @@ export function LiquidityFootprintCard({ ticker }: { ticker: string }) {
 
       {levels.length > 0 && (
         <div className="mt-2 text-[9px] text-muted-foreground text-center">
-          ★ = نقطة التحكم (POC) · الإطار = منطقة القيمة ({data.value_area_volume_pct.toFixed(0)}% من الحجم)
+          ★ = نقطة التحكم (POC) · الإطار = منطقة القيمة ({(data.value_area_volume_pct ?? 0).toFixed(0)}% من الحجم)
         </div>
       )}
     </Card>

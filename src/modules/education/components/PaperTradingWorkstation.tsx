@@ -177,7 +177,7 @@ function fmtPct(v: number | null | undefined): string {
 
 function fmtPrice(v: number | null | undefined): string {
   if (v == null || !Number.isFinite(v)) return '—';
-  return v.toFixed(2);
+  return (v ?? 0).toFixed(2);
 }
 
 function pnlColor(v: number | null | undefined): string {
