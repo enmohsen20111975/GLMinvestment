@@ -65945,3 +65945,26 @@ Stage Summary:
 - ملف جديد: 1 (sync_stale_dbs.py — 280 LOC)
 - الوظائف: 4 (sync price_history + sync stock_daily_prices + backfill predictions + report)
 - القيود: Rule 20/27 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: UI-FIX-V2 (المدير العام — إصلاح ملاحظات المالك)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح رادار السيولة + تبويب التوقعات + cron paths
+
+Work Log:
+- إصلاح رادار السيولة (MakerRadarTab.tsx):
+  * المتوقع: لو لا توقع → استخدم range_10d_pct/2 كنسبة منطقية (حد أقصى 15%)
+  * السعر/الوقف: لو لا توقع → استخدم support/resistance الحقيقية من OHLCV
+  * لون مميز (amber) للبيانات الناقصة بدل "— بيانات غير متاحة"
+  * لا fabrications — كل القيم من بيانات حقيقية
+- إصلاح تبويب التوقعات (PredictionTrackingDashboard.tsx):
+  * "منتهية ⏰" → "انتهى الأفق الزمني ⏰" (أوضح للمستثمر)
+  * تبويب الفلتر: "المنتهية (EXPIRED)" → "انتهى الأفق الزمني"
+- إصلاح cron paths (fix_cron_paths.sh):
+  * اكتشاف تلقائي للمسار (/root/GLMinvestment أو ~/my_apps/GLMinvestment)
+  * حل مشكلة الإنتاج حيث المسار الخاطئ /root/my_apps/GLMinvestment
+
+Stage Summary:
+- ملفات معدّلة: 3 (MakerRadarTab + PredictionTrackingDashboard + fix_cron_paths.sh)
+- تحسينات: 3 (رادار نسب منطقية + توضيح "منتهية" + cron auto-detect)
+- القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس
