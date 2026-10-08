@@ -65968,3 +65968,91 @@ Stage Summary:
 - ملفات معدّلة: 3 (MakerRadarTab + PredictionTrackingDashboard + fix_cron_paths.sh)
 - تحسينات: 3 (رادار نسب منطقية + توضيح "منتهية" + cron auto-detect)
 - القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: REAPPLY-CRITICAL-FIXES
+Agent: general-purpose (مهندس التوحيد)
+Task: إعادة تطبيق الإصلاحات الحرجة المفقودة بعد sandbox reset (THRESHOLDS + ATR + writers + fabrications)
+
+Work Log:
+- قرأت آخر ~200 سطر من worklog.md (شغل الفريق الآخر: DEEP-ROOT-FIX + FALLBACK-FIX + SYNC-STALE-DBS + UI-FIX-V2)
+- FIX-1: master_analyzer THRESHOLDS + delegation
+  * vps-service/analyzers/master_analyzer.py:495-505 — استبدلت THRESHOLDS dict (كان فيه HOLD_LOW/HOLD_HIGH/SELL=20/STRONG_SELL=10 drift) بالـ canonical values {STRONG_BUY:78, BUY:65, ACCUMULATE:55, REDUCE:40, STRONG_SELL:25} (matches canonical_signal.py)
+  * vps-service/analyzers/master_analyzer.py:5343-5359 — _get_signal_from_score بقت delegate لـ utils.canonical_signal.classify_signal(score - threshold_boost) — حفاظًا على DNA threshold_boost semantics (boost سالب → يخفض العتبة ⟺ score-boost يرفع الـ score)
+  * vps-service/analyzers/master_analyzer.py:5361-5387 — _get_signal_arabic بقت delegate لـ canonical_signal.signal_ar للـ 7 إشارات الأساسية، مع الاحتفاظ بالـ special signals (REJECTED_*/EXCLUDED/INSUFFICIENT_DATA) محليًا
+- FIX-2: unified_config EGX ATR + R:R
+  * vps-service/config/unified_config.py:147-151 (MarketProfile dataclass defaults) — atr_stop_min_pct: 3.0 → 5.0 + dynamic_rr_normal: 1.5 → 1.8
+  * vps-service/config/unified_config.py:379-383 (EGX profile) — atr_stop_min_pct=3.0 → 5.0 + dynamic_rr_normal=1.5 → 1.8 (matches engine_settings.py:240,289 SSOT)
+  * vps-service/core/opportunity_quality.py:580 — ATR_STOP_MIN_PCT = 3.0 → 5.0 (constant fallback)
+  * لم ألمس KSA/KSE/QSE/DFM/CRYPTO profiles (قيمها خاصة بسوقها)
+- FIX-3: sniper/track 410 guard
+  * src/app/api/sniper/track/route.ts:19-32 — أضفت early-return بـ HTTP 410 Gone + JSON deprecation notice. الكود الأصلي محفوظ في comment block للـ rollback. لم أحذف الملف. (active INSERT INTO predictions = 0 بعد الإصلاح)
+- FIX-4: ai_predictions_routes + historical_predictions_v2_routes guards
+  * vps-service/api/ai_predictions_routes.py:517-617 — generate_predictions_internal() بقت early-return مع print + None tuple (Rule 35). الكود الأصلي محفوظ كـ comment block. (INSERT INTO predictions غير متاح — early-return at body[2], 3 stmts below unreachable dead code)
+  * vps-service/api/historical_predictions_v2_routes.py:408-450 — _insert_prediction() بقت early-return None. الكود الأصلي (geometry guard + INSERT) محفوظ كـ dead code. (early-return at body[2], 3 stmts below unreachable dead code)
+  * intraday_scanner.py — لم ألمسه (DEEP-ROOT-FIX خلّاه canonical-compliant، نهج بديل صالح)
+- FIX-5: V40_2_STOP_MAX_PCT default 7.0→9.0
+  * vps-service/engines/backtest_engine.py:925 — default '7.0' → '9.0' + comment
+  * vps-service/engines/backtest_engine.py:1832-1835 — default '7.0' → '9.0' + default=3.0 → 5.0 للـ atr_stop_min_pct fallback + comment
+  * vps-service/jobs/daily_predictor.py:2216 — default '7.0' → '9.0' + comment
+  * (canonical = engine_settings.py:241 atr_stop_max_pct=9.0, Rule 8)
+- FIX-6: maker-radar/stock + crypto/full-analysis fabrications
+  * src/app/api/maker-radar/stock/route.ts:181-191 — أزلت entry*0.96 (s1), s1*0.96 (s2), entry*0.99 (entryMin), entry*1.01 (entryMax). استبدلت بـ null (Rule 27). الـ UI بـ MakerRadarTab بيتعامل مع null عبر amber "data missing" badge
+  * src/app/api/crypto/full-analysis/route.ts:273-285 — أزلت currentPrice*1.1 (target), currentPrice*0.95 (stopLoss). استبدلت بـ null. target_2: target*1.05 → null. الـ score=5 + signal=score>=7 اتحط لهم تعليق clarifying أنهم TS-side view من candle data حقيقي (Rule 20: canonical من daily_predictor.py)
+
+Stage Summary:
+- FIX-1: master_analyzer.py:495-505 + 5343-5387 → ✅ THRESHOLDS unified + delegation works (verified: classify_signal(85/70/60/50/37/15) = STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL/STRONG_SELL)
+- FIX-2: unified_config.py:147-151 + 379-383 + opportunity_quality.py:580 → ✅ EGX ATR=5.0/9.0 + R:R=1.8 (verified: MARKET_PROFILES['EGX'].atr_stop_min_pct=5.0, dynamic_rr_normal=1.8)
+- FIX-3: src/app/api/sniper/track/route.ts:19-32 → ✅ 410 Gone + 0 active INSERT (verified by AST analysis)
+- FIX-4: ai_predictions_routes.py:517-617 + historical_predictions_v2_routes.py:408-450 → ✅ early-return confirmed (AST: body[2] = Return, dead code below unreachable)
+- FIX-5: backtest_engine.py:925+1834 + daily_predictor.py:2216 → ✅ 0 occurrences of V40_2_STOP_MAX_PCT default '7.0' (grep clean)
+- FIX-6: maker-radar/stock/route.ts:181-191 + crypto/full-analysis/route.ts:273-285,333 → ✅ 0 active *0.96/*0.99/*1.01/*1.1/*1.05 (matches only in comments documenting removed fabrications)
+
+Verification:
+- Python syntax: ✅ 7/7 files pass ast.parse (master_analyzer, unified_config, opportunity_quality, ai_predictions_routes, historical_predictions_v2_routes, backtest_engine, daily_predictor)
+- canonical parity: ✅ classify_signal(85)=STRONG_BUY, (70)=BUY, (60)=ACCUMULATE, (50)=HOLD, (37)=SELL, (15)=STRONG_SELL
+- master_analyzer delegation: ✅ _get_signal_from_score(85,boost=0)=STRONG_BUY matches canonical
+- Rule 27 grep (active code): ✅ clean for the 2 fixed files (maker-radar/stock + crypto/full-analysis); الـ fabrications الموجودة في vps-service/analyzers/* هي pre-existing technical debt خارج نطاق هذه المهمة
+- dev server: لم يكن يعمل عند بدء المهمة (sandbox reset فقد الـ session السابق). لم أحاول تشغيله. لا توجد تعارضات مع شغل الفريق الآخر.
+- لم أحذف أي ملف (Rule 16). لم أرفع على GitHub (أمر المالك). لم أنشئ fake data (Rule 27).
+
+Drifts fixed: 6 (THRESHOLDS + ATR/R:R + ATR_STOP_MIN_PCT + 2 writers + V40_2_STOP_MAX_PCT defaults + 2 fabrication clusters)
+Writers disabled: 3 (sniper/track POST + ai_predictions_routes.generate_predictions_internal + historical_predictions_v2_routes._insert_prediction)
+Remaining gaps (out of scope — flagged for future tasks):
+- prediction_tracker.py:434 comment يشير لـ AUTO-FIX للـ BUY (entry*1.05 / entry*0.95) — تحقق من enforce_geometry_guard في مهمة منفصلة
+- vps-service/analyzers/risk.py:144 + persona_gambler.py:471-478 + fusion_engine.py:617,640 + multi_path_detector.py:229 + real_backtester.py:273,283 + technical_target_engine.py:434 + hunting_engine.py:941 + stock_analysis_routes.py:514 — كلها فيها entry*0.95 / *1.05 fabrications (pre-existing، خارج نطاق REAPPLY-CRITICAL-FIXES)
+- confluence_engine_v3.py:580 _rsi_value = 75 hardcoded — pre-existing
+
+---
+Task ID: REBUILD-AFTER-RESET (المدير العام — إعادة بناء بعد sandbox reset)
+Agent: المدير العام (Z.ai Code)
+Task: استعادة المشروع بعد sandbox reset + سحب آخر التعديلات من GitHub + حل المشكلة كاملة
+
+Work Log:
+- 1) اكتشاف: الساندبوكس اُعيد تعيينه — كل شغلي السابق (Tasks 1-7 + P0 + constitution) ضاع. /home/z/my-project رجع لـ Initial commit فارغ.
+- 2) التحقق من GitHub token: صالح ✅. اكتشفت 10 commits جديدة على main من فريق آخر (DEEP-ROOT-FIX + FALLBACK-FIX + SYNC-STALE-DBS + UI-FIX-V2 + build fixes) — شغل بنّاء على نفس مشكلة التوحيد.
+- 3) استنساخ آخر main (commit 3b9eaf21) + استرجاع DB blob عبر GitHub API (MD5 مطابق 100%: 0947bdf6c2eff1a75ff8af6c3e576ed8).
+- 4) تثبيت الـ 17 DB (stocks=1046، predictions=153) + symlinks + .env.
+- 5) مراجعة شغل الفريق الآخر: اكتشفت أنهم اتبعوا استراتيجية مختلفة (إصلاح rogue writer بدل تعطيله). شغلهم بنّاء لكن الإصلاحات الحرجة (THRESHOLDS + ATR + sniper/track + fabrications) ما زالت مفقودة.
+- 6) bun install: 1150 packages مثبتة. تشغيل Next.js dev (HTTP 200).
+- 7) أطلقت وكيل REAPPLY-CRITICAL-FIXES — أعاد تطبيق 6 إصلاحات:
+  * FIX-1: master_analyzer THRESHOLDS → canonical (78/65/55/40/25) + delegation لـ canonical_signal.classify_signal
+  * FIX-2: unified_config EGX ATR 3.0→5.0 + R:R 1.5→1.8 + opportunity_quality ATR_STOP_MIN_PCT 3.0→5.0
+  * FIX-3: sniper/track → 410 Gone guard
+  * FIX-4: ai_predictions_routes + historical_predictions_v2_routes → early-return guards
+  * FIX-5: V40_2_STOP_MAX_PCT default 7.0→9.0 (3 مواضع)
+  * FIX-6: maker-radar/stock + crypto/full-analysis fabrications removed
+- 8) أعدت إنشاء scripts/zero_conflict_test.py (ضاع في الـ reset).
+- 9) شغّلت zero_conflict_test: mismatch_rate=0.00% + threshold_drift=0 + 25 NULL agreement (legit). الـ 3 HTTP errors كانت timeouts (ليست تضاربًا).
+- 10) lint: 0 errors. الصفحة الرئيسية تُعرض (34KB، "دليل الاستثمار"). unified API canonical.
+
+Stage Summary:
+- ✅ المشروع مستعاد بالكامل (آخر main + DBs حقيقية + .env).
+- ✅ شغل الفريق الآخر محفوظ (DEEP-ROOT-FIX + FALLBACK-FIX + SYNC-STALE-DBS + UI-FIX-V2 + build fixes).
+- ✅ 6 إصلاحات حرجة أُعيد تطبيقها (THRESHOLDS + ATR + R:R + 3 writers disabled + V40_2_STOP_MAX_PCT + fabrications removed).
+- ✅ zero_conflict_test: 0.00% mismatch (صفر تضارب مُثبَت).
+- ✅ lint: 0 errors.
+- ⚠️ Python backend (8010) غير مشتغل (يحتاج venv + Python deps منفصل).
+- ⚠️ خادم dev ينهار أحيانًا تحت ضغط الذاكرة (قيد ساندبوكس 4.1GB).
+- 11 ملف مُعدّل + 1 جديد. لا push على GitHub (احترام أمر المالك).
+- وقفت. بانتظار توجيه المالك.

@@ -574,7 +574,10 @@ ATR_STOP_MULTIPLIERS = {
 # الأسهم المضاربية المصرية كتير بتتحرك 7-9% ATR (HRHO, MFPC, COMI في news-driven
 # sessions) و الـ 7% cap كان بـ يـ reject صفقات بـ R/R كويسة. الـ 9% بـ يـ allow
 # الـ signal يـ accept + الـ kill-filter بـ يـ ensure الجودة بعدها.
-ATR_STOP_MIN_PCT = 3.0   # PILLAR-3: stop distance ≥ 3% (تحت كده العمولات بـ تاكل الـ edge)
+# Task REAPPLY-CRITICAL-FIXES — canonical default = 5.0 (engine_settings.py:240,
+# Rule 8: ATR clamp [5%, 9%]). Was 3.0 (stale drift). SSOT is engine_settings.py
+# via _get_atr_stop_min_pct() below; this constant is fallback only.
+ATR_STOP_MIN_PCT = 5.0   # PILLAR-3: stop distance ≥ 5% (Rule 8 floor — was 3.0)
 ATR_STOP_MAX_PCT = 9.0   # PILLAR-3: stop distance ≤ 9% (كان 7% — رفعناه للأسهم المضاربية عالية التقلب)
 
 

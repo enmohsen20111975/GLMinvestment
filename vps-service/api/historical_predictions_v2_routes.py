@@ -416,6 +416,12 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
                        notes: str) -> Optional[int]:
     """Insert a single historical prediction row with a CUSTOM prediction_date.
 
+    Task REAPPLY-CRITICAL-FIXES — non-canonical writer disabled (Rule 35).
+    V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY writer to
+    predictions.db. This function previously INSERTed prediction rows directly.
+    The original body below is preserved (DO NOT EXECUTE) — the early-return
+    ensures no INSERT runs. Returns None (no row created).
+
     🔥 MASTER DIRECTIVE المحور 3 (HARD GEOMETRY GATE):
     بـ يستدعي enforce_geometry_guard من prediction_tracker قبل INSERT.
     لو أي قاعدة من R1-R5 فشلت → بـ يرجّع None (REJECT) بدون حفظ.
@@ -424,6 +430,24 @@ def _insert_prediction(prediction_date: str, ticker: str, market: str,
       - MFPC entry=37 stop=0.37 (وقف هزلي)
       - BTFH entry=3.12 target=1392 (تلوث تجزئة)
     """
+    # Task REAPPLY-CRITICAL-FIXES — non-canonical writer disabled (Rule 35).
+    # V40.2 (daily_predictor.py) is the ONLY writer to predictions.db.
+    # Early-return ensures no INSERT runs. Original body below is preserved
+    # (DO NOT EXECUTE) — kept for rollback reference.
+    print(
+        f"[REAPPLY-CRITICAL-FIXES] _insert_prediction() DISABLED for {ticker} — "
+        "Rule 35: V40.2 (daily_predictor.py) is the ONLY writer. Returning None.",
+        flush=True,
+    )
+    return None
+    # ─── ORIGINAL CODE BELOW — preserved for rollback reference (DO NOT EXECUTE) ───
+    # The body below (geometry guard + INSERT) is preserved verbatim.
+    # It is unreachable due to the early-return above.
+    # To re-enable: delete the early-return block above (3 lines: print + return + comment).
+    # === PRESERVED BLOCK START ===
+    if False:  # dead-code guard (REAPPLY-CRITICAL-FIXES)
+        pass
+    # === PRESERVED BLOCK END ===
     # 🔥 HARD GEOMETRY GATE — قبل أي INSERT (نفس حراسة record_prediction)
     try:
         from analyzers.prediction_tracker import enforce_geometry_guard

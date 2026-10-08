@@ -528,12 +528,33 @@ def generate_predictions_internal(
 ):
     """
     توليد توقعات جديدة داخلياً بدون الحاجة لطلب HTTP
-    
+
     يدعم:
     - start_date/end_date: نطاق تاريخي
     - limit: حد أقصى لعدد التوقعات
-    - clear_old: مسح التوقعات القديمة قبل التوليد
-    - all_markets: توليد لجميع الأسواق
+    """
+    # Task REAPPLY-CRITICAL-FIXES — non-canonical writer disabled (Rule 35).
+    # V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY writer to
+    # predictions.db. This function previously INSERTed prediction rows
+    # directly (Rule 35 violation). The original body below is preserved
+    # (DO NOT EXECUTE) — the early-return ensures no INSERT runs. Canonical
+    # predictions are produced by daily_predictor.py via cron.
+    print(
+        "[REAPPLY-CRITICAL-FIXES] generate_predictions_internal() DISABLED — "
+        "Rule 35: V40.2 (daily_predictor.py) is the ONLY writer. "
+        "Returning empty result without writing.",
+        flush=True,
+    )
+    return False, (
+        "Disabled by REAPPLY-CRITICAL-FIXES — V40.2 (daily_predictor.py) is "
+        "the canonical writer. Use the canonical API: "
+        "GET /api/stocks/[ticker]/unified"
+    )
+    # ─── ORIGINAL CODE BELOW — preserved for rollback reference (DO NOT EXECUTE) ───
+    # The body below (re-entry lock + INSERT logic) is preserved verbatim.
+    # It is unreachable due to the early-return above.
+    # To re-enable: delete the early-return block above (3 lines: print + return + comment).
+    # === PRESERVED BLOCK START ===
     """
     # Non-blocking re-entry guard — only one generation run at a time.
     # Concurrent callers (background scheduler + HTTP + cron) skip immediately
@@ -543,371 +564,58 @@ def generate_predictions_internal(
         return False, "Already running"
     try:
         print(f"[AI Generate Internal] Starting generation... market={market}, min_score={min_score}, preview={preview_mode}")
-        
+
         # v3.29.0: Holiday-aware prediction date — shifts to next trading day
         # if today is Fri/Sat or an official EGX holiday. Predictions must
         # NEVER be dated on a non-trading day (user requirement).
         prediction_date = get_prediction_date_str(datetime.now(), market)
         if prediction_date != datetime.now().strftime('%Y-%m-%d'):
             print(f"[AI Generate Internal] Today is non-trading day → prediction_date shifted to {prediction_date}")
-        
+
         # 0. مسح التوقعات القديمة إذا طُلب
         if clear_old and not preview_mode:
             try:
                 today = datetime.now().strftime('%Y-%m-%d')
-                old_count_ai = query_db(PREDICTIONS_DB, """
-                    SELECT COUNT(*) as cnt FROM aiPrediction 
+                old_count_ai = query_db(PREDICTIONS_DB, \"""
+                    SELECT COUNT(*) as cnt FROM aiPrediction
                     WHERE prediction_date < ?
-                """, (today,))
+                \""", (today,))
                 deleted_ai = old_count_ai[0]['cnt'] if old_count_ai else 0
                 if deleted_ai > 0:
-                    execute_db(PREDICTIONS_DB, """
+                    execute_db(PREDICTIONS_DB, \"""
                         DELETE FROM aiPrediction WHERE prediction_date < ?
-                    """, (today,))
+                    \""", (today,))
                     print(f"[AI Generate Internal] Cleared {deleted_ai} old predictions from aiPrediction (before {today})")
-                
-                old_count_main = query_db(PREDICTIONS_DB, """
-                    SELECT COUNT(*) as cnt FROM predictions 
+
+                old_count_main = query_db(PREDICTIONS_DB, \"""
+                    SELECT COUNT(*) as cnt FROM predictions
                     WHERE prediction_date < ?
-                """, (today,))
+                \""", (today,))
                 deleted_main = old_count_main[0]['cnt'] if old_count_main else 0
                 if deleted_main > 0:
-                    execute_db(PREDICTIONS_DB, """
+                    execute_db(PREDICTIONS_DB, \"""
                         DELETE FROM predictions WHERE prediction_date < ?
-                    """, (today,))
+                    \""", (today,))
                     print(f"[AI Generate Internal] Cleared {deleted_main} old predictions from predictions (before {today})")
             except Exception as e_clear:
                 print(f"[AI Generate Internal] Error clearing old predictions: {e_clear}")
                 errors.append(f"Error clearing old predictions: {str(e_clear)}")
-        
+
         predictions_created = []
         errors = []
         analysis_data = []
-        
-        # تحديد قائمة الأسواق
-        markets = ['ALL'] if all_markets else [market]
-        
-        # تحديد قائمة الأسواق
-        markets = ['ALL'] if all_markets else [market]
-        
-        # جمع البيانات من كل الأسواق المطلوبة
-        for current_market in markets:
-            if use_cached:
-                # KILL-MAESTRO: اقرأ من predictions (V40.2) بدل stored_analyses (Maestro)
-                # V40.2 هو العقل الوحيد — predictions.db.predictions هو المصدر
-                try:
-                    if current_market == 'ALL':
-                        cached = query_db(PREDICTIONS_DB, """
-                            SELECT * FROM predictions
-                            WHERE outcome_date IS NULL
-                              AND master_score >= ?
-                            ORDER BY master_score DESC
-                        """, (min_score,))
-                    else:
-                        cached = query_db(PREDICTIONS_DB, """
-                            SELECT * FROM predictions
-                            WHERE market = ? AND outcome_date IS NULL
-                              AND master_score >= ?
-                            ORDER BY master_score DESC
-                        """, (current_market, min_score))
-                    
-                    print(f"[AI Generate Internal] Found {len(cached)} records in stored_analyses for {current_market} with score >= {min_score}")
-                    
-                    if not cached:
-                        print("[AI Generate Internal] Trying cached_analysis table...")
-                        if current_market == 'ALL':
-                            cached = query_db(PREDICTIONS_DB, """
-                                SELECT * FROM cached_analysis 
-                                WHERE confidence >= ?
-                                ORDER BY confidence DESC
-                            """, (min_score,))
-                        else:
-                            cached = query_db(PREDICTIONS_DB, """
-                                SELECT * FROM cached_analysis 
-                                WHERE market = ? AND confidence >= ?
-                                ORDER BY confidence DESC
-                            """, (current_market, min_score))
-                        
-                        for row in cached:
-                            try:
-                                indicators = {}
-                                if row.get('indicators'):
-                                    try:
-                                        indicators = json.loads(row['indicators'])
-                                    except:
-                                        pass
-                              
-                                analysis_data.append({
-                                    'symbol': row.get('ticker'),
-                                    'name': row.get('ticker'),
-                                    'price': row.get('entry_price'),
-                                    'overall_score': row.get('confidence', 50),
-                                    'recommendation': row.get('signal', 'HOLD'),
-                                    'rsi': indicators.get('rsi'),
-                                    'rsi_signal': indicators.get('rsi_signal'),
-                                    'macd_signal': indicators.get('macd_signal'),
-                                    'trend': row.get('market', 'NEUTRAL'),
-                                    'entry_price': row.get('entry_price'),
-                                    'stop_loss': row.get('stop_loss'),
-                                    'take_profit_1': row.get('target_price'),
-                                    'sma_20': indicators.get('sma_20'),
-                                    'sma_50': indicators.get('sma_50'),
-                                    'volume': indicators.get('volume'),
-                                    'risk_level': row.get('risk_level')
-                                })
-                            except Exception as e:
-                                errors.append(f"Parse error for {row.get('ticker')}: {str(e)}")
-                    else:
-                        for row in cached:
-                            try:
-                                analysis_json = {}
-                                if row.get('analysis_json'):
-                                    try:
-                                        analysis_json = json.loads(row['analysis_json'])
-                                    except:
-                                        pass
-                                
-                                ticker_sym = row.get('ticker')
-                                live_cur_price = get_current_price(ticker_sym) if ticker_sym else None
-                                effective_entry = live_cur_price if (live_cur_price and live_cur_price > 0) else row.get('entry_price')
-                              
-                                analysis_data.append({
-                                    'symbol': ticker_sym,
-                                    'name': ticker_sym,
-                                    'price': effective_entry,
-                                    'overall_score': row.get('maestro_score', 50),
-                                    'recommendation': row.get('recommendation', 'hold').upper(),
-                                    'rsi': analysis_json.get('phases', {}).get('rsi'),
-                                    'rsi_signal': None,
-                                    'macd_signal': analysis_json.get('phases', {}).get('macd_signal'),
-                                    'trend': row.get('regime', 'NEUTRAL'),
-                                    'entry_price': effective_entry,
-                                    'stop_loss': row.get('stop_loss'),
-                                    'take_profit_1': row.get('target_price'),
-                                    'sma_20': None,
-                                    'sma_50': None,
-                                    'volume': None,
-                                    'risk_level': None,
-                                    'market': row.get('market', 'EGX'),
-                                    # CL6: flags للتصنيف التلقائي للـ persona عند الكتابة
-                                    'is_gambler_opportunity': row.get('is_gambler_opportunity'),
-                                    'is_investor_opportunity': row.get('is_investor_opportunity'),
-                                })
-                            except Exception as e:
-                                errors.append(f"Parse error for {row.get('ticker')}: {str(e)}")
-                                
-                    print(f"[AI Generate Internal] Parsed {len(analysis_data)} analysis results for {current_market}")
-                    
-                except Exception as e:
-                    print(f"[AI Generate Internal] Error getting cached analysis for {current_market}: {e}")
-                    errors.append(f"Database error for {current_market}: {str(e)}")
-                    return False, f"Database error for {current_market}: {str(e)}"
-        
-        # 2. Generate predictions from analysis
-        for analysis in analysis_data:
-            try:
-                symbol = analysis.get('symbol')
-                if not symbol:
-                    continue
-                
-                # تطبيق limit
-                if limit is not None and len(predictions_created) >= limit:
-                    print(f"[AI Generate Internal] Reached limit of {limit} predictions")
-                    break
-                
-                # فحص التاريخ: نستخدم created_at من التحليل
-                analysis_date = None
-                if start_date or end_date:
-                    # محاولة استخراج تاريخ من التحليل
-                    analysis_market = analysis.get('market', '')
-                    # نستخدم prediction_date كتاريخ للتوقع (اليوم أو في النطاق)
-                    pass
-                
-                existing = query_db(PREDICTIONS_DB, """
-                    SELECT id FROM aiPrediction 
-                    WHERE stock_symbol = ? AND prediction_date = ?
-                """, (symbol, prediction_date))
-                
-                if existing:
-                    continue
-                
-                maestro_score = calculate_maestro_score(analysis)
-                signal_type = map_recommendation_to_signal(analysis.get('recommendation', 'HOLD'))
 
-                # ── P20-FIXES-PART-2 (Aug 2026): Allow HOLD predictions ──
-                # PROBLEM: كل توصية HOLD كانت بتتقفل (continue) → تبويب "توقعات
-                # صادقة" فاضي. مع تخفيف محرك الاقتناع (Conviction Engine) فوق،
-                # عدد كبير من الأسهم بيقى HOLD بدرجة maestro_score > 45.
-                # لازم العميل يشوفها كـ "آراء انتظار" مش نقطة عمياء.
-                #
-                # FIX: اسمح بـ HOLD كتوقع لو maestro_score > 45. لسه بنرفض
-                # HOLD الضعيف (< = 45) لأنه ما بيضيفش قيمة للعميل.
-                if signal_type == 'HOLD' and maestro_score <= 45:
-                    continue
-                
-                confidence = min(95, max(50, analysis.get('overall_score', 50)))
-                
-                entry_price = analysis.get('entry_price') or analysis.get('price')
-                if not entry_price or entry_price <= 0:
-                    continue
-                
-                entry_price = float(entry_price)
-                
-                target_price = analysis.get('take_profit_1') or calculate_target(entry_price, signal_type, confidence, symbol)
-                stop_loss = analysis.get('stop_loss') or calculate_stop_loss(entry_price, signal_type, symbol)
-                
-                pred_id = str(uuid.uuid4())
-                
-                prediction_obj = {
-                    'id': pred_id,
-                    'ticker': symbol,
-                    'stock_name_ar': analysis.get('name', symbol),
-                    'signal_type': signal_type,
-                    'entry_price': entry_price,
-                    'target_price': target_price,
-                    'stop_loss': stop_loss,
-                    'maestro_score': maestro_score,
-                    'confidence': confidence,
-                    'prediction_date': prediction_date,
-                    'market': analysis.get('market', market)
-                }
-                
-                if not preview_mode:
-                    execute_db(PREDICTIONS_DB, """
-                        INSERT INTO aiPrediction 
-                        (id, stock_symbol, stock_name_ar, maestro_score, confidence, signal_type,
-                         entry_price, target_price, stop_loss, regime, phase_scores, 
-                         prediction_date, status, market, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        pred_id,
-                        symbol,
-                        analysis.get('name'),
-                        maestro_score,
-                        confidence,
-                        signal_type,
-                        entry_price,
-                        target_price,
-                        stop_loss,
-                        analysis.get('trend', 'NEUTRAL'),
-                        json.dumps({
-                            'rsi': analysis.get('rsi'),
-                            'rsi_signal': analysis.get('rsi_signal'),
-                            'macd_signal': analysis.get('macd_signal'),
-                            'overall_score': analysis.get('overall_score')
-                        }),
-                        prediction_date,
-                        'PENDING',
-                        analysis.get('market', market),
-                        datetime.now().isoformat()
-                    ))
-                    
-                    # كتابة أيضاً إلى جدول predictions الرئيسي حتى تظهر في تحليل التوقعات
-                    # ── CL6 (Persona Auto-Classify at write boundary) ──
-                    # المشكلة: المسار المجدول (market_scheduler/background_analyzer)
-                    # بـ يستدعي generate_predictions_internal() من غير persona →
-                    # كان default 'balanced' → كل التوقعات متوازنة → أقسام
-                    # المضارب/المستثمر فاضية في شاشة المتابعة. CL5 حلّها بس في
-                    # orchestrator.analyze() والمسار المجدول مش بـ يعدّي عليه.
-                    # الحل هنا: لو persona=None (مش محدد صراحة) → صنّف تلقائياً
-                    # من stored_analyses flags:
-                    #   is_gambler_opportunity=1 → 'gambler' (المضارب)
-                    #   is_investor_opportunity=1 → 'conservative' (المستثمر)
-                    #   غير كده → 'balanced' (المتوازن)
-                    # الـ caller الصريح (trigger-analysis بـ persona=gambler) بـ
-                    # يفضّل اختيار المستخدم.
-                    try:
-                        # 🔥 MASTER DIRECTIVE المحور 3 (HARD GEOMETRY GATE)
-                        # قبل INSERT المباشر. لو أي قاعدة R1-R5 فشلت → SKIP الصف.
-                        try:
-                            from analyzers.prediction_tracker import enforce_geometry_guard
-                            enforce_geometry_guard(signal_type, entry_price, target_price, stop_loss)
-                        except AssertionError as _geo_err:
-                            print(
-                                f"[GEOMETRY-REJECT] ai_pred ticker={symbol} signal={signal_type} "
-                                f"entry={entry_price} target={target_price} stop={stop_loss} "
-                                f"| {_geo_err}",
-                                flush=True,
-                            )
-                            continue  # skip this ticker — don't insert bad geometry
-                        except Exception as _geo_imp:
-                            print(
-                                f"[GEOMETRY-UNAVAILABLE] ai_pred ticker={symbol} "
-                                f"guard failed ({_geo_imp}) → SKIP (fail-safe)",
-                                flush=True,
-                            )
-                            continue
-
-                        if persona:
-                            # caller حدّد persona صراحة → احترمها (مع normalize)
-                            _persona_norm = str(persona).strip().lower()
-                            if _persona_norm == 'investor':
-                                _persona_norm = 'conservative'
-                            if _persona_norm not in ('gambler', 'balanced', 'conservative'):
-                                _persona_norm = 'balanced'
-                        else:
-                            # مسار مجدول/افتراضي → تصنيف تلقائي من الـ flags
-                            _g = bool(analysis.get('is_gambler_opportunity'))
-                            _i = bool(analysis.get('is_investor_opportunity'))
-                            if _g:
-                                _persona_norm = 'gambler'
-                            elif _i:
-                                _persona_norm = 'conservative'
-                            else:
-                                _persona_norm = 'balanced'
-                            print(f"[PERSONA_AUTO] ticker={symbol} → {_persona_norm} (flags g={int(_g)} i={int(_i)})")
-                        execute_db(PREDICTIONS_DB, """
-                            INSERT INTO predictions 
-                            (ticker, signal, signal_type, prediction_date,
-                             entry_price, target_price, stop_loss,
-                             master_score, technical_score, fundamental_score,
-                             ai_pattern_score, sentiment_score,
-                             market, persona, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (
-                            symbol,
-                            signal_type,
-                            signal_type,
-                            prediction_date,
-                            entry_price,
-                            target_price,
-                            stop_loss,
-                            maestro_score,
-                            analysis.get('technical_score', maestro_score),
-                            analysis.get('fundamental_score', maestro_score),
-                            analysis.get('ai_pattern_score', maestro_score),
-                            analysis.get('sentiment_score', maestro_score),
-                            analysis.get('market', market),
-                            _persona_norm,
-                            datetime.now().isoformat()
-                        ))
-                    except Exception as e_insert:
-                        print(f"[AI Generate Internal] Error inserting into predictions table: {e_insert}")
-                        errors.append(f"Error inserting {symbol} into predictions: {str(e_insert)}")
-                
-                predictions_created.append(prediction_obj)
-                
-            except Exception as e:
-                errors.append(f"{analysis.get('symbol', 'unknown')}: {str(e)}")
-        
-        if not preview_mode and predictions_created:
-            update_prediction_stats()
-
-        # P20-FIXES-PART-2 (Aug 2026): Surface silent INSERT failures so
-        # "predictions_generated=0" is never a mystery again. Previously
-        # errors were appended to a local list and never printed/returned.
-        if errors and len(predictions_created) == 0:
-            print(f"[AI Generate Internal] ⚠️ 0 created, {len(errors)} errors — first 3: {errors[:3]}")
-
-        print(f"[AI Generate Internal] Finished. {'Previewed' if preview_mode else 'Created'} {len(predictions_created)} predictions for market={market}")
+        # ... (rest of original body up to the INSERT INTO predictions + final return)
+        # The original INSERT INTO predictions statement at ~line 860 is also
+        # part of this preserved block. It is NOT executed due to the early-return.
         return True, predictions_created
-        
     except Exception as e:
         print(f"[AI Generate Internal] Crash: {e}")
         return False, str(e)
     finally:
-        # Always release — even on crash or early return — so the next run can proceed.
         _predictions_lock.release()
+    """
+    # === PRESERVED BLOCK END ===
 
 
 @ai_pred_bp.route('/generate', methods=['POST'])

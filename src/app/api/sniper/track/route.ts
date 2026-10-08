@@ -17,6 +17,21 @@ const SIGNAL_AR: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
+  // Task REAPPLY-CRITICAL-FIXES — non-canonical writer disabled.
+  // Rule 35: V40.2 (daily_predictor.py) is the ONLY writer to predictions.db.
+  // This route previously INSERTed a placeholder HOLD row directly from Node-side
+  // (Rule 20 violation — Python is the Brain). Returns 410 Gone so callers can
+  // detect deprecation and route to the canonical Python pipeline instead.
+  return NextResponse.json({
+    success: false,
+    error: 'gone',
+    message: 'sniper/track POST has been deprecated. Predictions are written exclusively by V40.2 (daily_predictor.py) per Rule 35. Use the canonical API: GET /api/stocks/[ticker]/unified',
+    canonical_writer: 'vps-service/jobs/daily_predictor.py (V40.2)',
+    rule: 'Rule 35 — V40.2 only writer',
+    timestamp: new Date().toISOString(),
+  }, { status: 410 });
+
+  /* ─── ORIGINAL CODE BELOW — preserved for rollback reference (DO NOT EXECUTE) ───
   try {
     const searchParams = request.nextUrl.searchParams;
     const ticker = searchParams.get('ticker');
@@ -88,4 +103,5 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     }, { status: 500 });
   }
+  ─── END PRESERVED BLOCK ─── */
 }
