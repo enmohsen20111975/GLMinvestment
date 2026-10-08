@@ -66466,3 +66466,54 @@ Stage Summary:
 - ملفات مؤرشفة: 2 (السكربتات المنفصلة → _archived/)
 - المصادر الجديدة مدمجة في البنية الأصلية ✅
 - القيود: Rule 20/27/66 محترمة، لا حذف، احترام البنية التحتية Stashed changes
+
+---
+Task ID: AUDIT-APIS
+Agent: general-purpose (مهندس الواجهات/التوحيد)
+Task: تدقيق عميق للـ APIs (447 routes)
+
+Work Log:
+- قرأت آخر ~200 سطر من worklog.md (سياق AUDIT-INFRA + AUDIT-ENGINES + AUDIT-DATA + DOCS-UPDATE-FINAL + METALS-FOREX-V2 + ALL-TASKS-FINAL).
+- جردت كل route.ts في src/app/api/: 448 ملف (متوقع 447 — فرق 1 من [...slug] catch-all).
+- صنّفت كل route: GET/POST/PUT/DELETE + path + purpose (1-line) — 32 top-level domain.
+  * توزيع: admin(83) + predictions(29) + market(25) + stocks(19) + mobile(19) + finance(17) + maker-radar(16) + portfolio(15) + crypto(14) + v2(13) + subscription(12) + data-engine(9) + …
+- فحصت الـ duplicate clusters عبر grep على Python target endpoints:
+  * 37 route يـ proxy لـ /api/market-pulse تحت أسماء مختلفة (scaffolded copy-paste — broken semantics!)
+  * 5 routes تـ proxy لـ /api/daily/rebuild-predictions (mislabeled)
+  * 27 route يرجع some form of single-stock analysis (canonical = /api/stocks/[ticker]/unified)
+  * 21 route يرجع some form of predictions list (canonical = /api/predictions/honest-tracking/list)
+- فحصت الـ 410-Gone routes (8): sniper/track + predictions/tracking/list + maestro + maestro/overview + maestro/stock/[ticker] + maker-radar/footprint + admin/generate-predictions + stocks/[ticker]/professional-analysis.
+- فحصت الـ frontend consumers للـ 410 routes: 7 active callers broken (maker-radar/footprint×4 + admin/generate-predictions×3 + stocks/.../professional-analysis×1) — شاشات مكسورة في الإنتاج.
+- فحصت Rule 20 (Python=Brain): 12 route يعمل financial computation في TS أو spawn python3 مباشرة.
+- فحصت Rule 27 (NO-FAKE-DATA): 7 route فيه fabricated fallbacks (signal='HOLD' + confidence + target/stop).
+- فحصت Rule 35 (V40.2 only writer): 4 route يكتب predictions.db من TS (honest-tracking/learn-from-errors + admin/generate-historical-predictions + admin/backtest/v40/run + admin/clean-predictions).
+- فحصت Route health: 14 route بلا try/catch (500-risk) + 7 route connection-leak (open > close) + chart/[ticker] يفتح 7 DB per request.
+- فحصت Auth: 82/83 admin routes عندها requireAdmin — admin/import-indices-csv فقط بلا auth gate (P0!).
+- فحصت Performance: 95 route يفتح `new Database()` inline (bypass shared helpers) + 26 route blocking I/O (readFileSync/execSync/spawn) + /api/predictions/route.ts يفتح 4 DBs.
+
+Stage Summary:
+- P0 issues: 15 (top: admin/import-indices-csv بلا auth + 7 broken callers للـ 410 routes + 5 routes بـ TS financial computation + admin/generate-historical-predictions يكتب predictions.db + portfolio/smart-monitor + finance/smart-watchlist fabricated + smart-confluence fabricated fallback + v82 spawn + predictions POST بلا auth)
+- P1 issues: 25 (top: 37 mislabeled market-pulse proxies + 27 stock-analysis duplicates بلا getUnifiedStockData + 21 predictions-list duplicates + 7 connection-leaks + chart/[ticker] 7 DB opens + 14 routes بلا try/catch + admin/clean-predictions Prisma DELETE + predictions/refresh-v40 spawn + admin/pm2-control execSync + admin/backtest/v40/status spawnSync)
+- Dead routes count: 8 (410 Gone routes — كلها consumers migrated ما عدا 7 broken callers)
+- Duplicate clusters: 6 main (stock-analysis×27 + predictions-list×21 + market-pulse-mislabeled×37 + recommendations×9 + market-sync×6 + persona×4)
+- Top recommendations:
+  (1) إصلاح admin/import-indices-csv: إضافة requireAdminAsync gate فورًا (P0 auth bypass يسمح بـ CSV upload لـ stocks.db بدون auth!).
+  (2) إصلاح 7 شاشات مكسورة بترحيل الـ callers من 410 routes للـ canonical (SpecialistAnalysisView + UnifiedPublishButton + RadarStatsCards + StockDetail ← ترحيل من /api/maker-radar/footprint للـ canonical /api/maker-radar أو حذف الـ fetch؛ PurgeCacheButton + EnginesStatusTab + PredictionTrackingView ← ترحيل من /api/admin/generate-predictions لـ /api/admin/ai-predictions/generate؛ GateAnalysisView ← ترحيل من /api/stocks/[ticker]/professional-analysis لـ /api/stocks/[ticker]/recommendation).
+  (3) إصلاح /api/portfolio/smart-monitor/signals: منع TS من احتساب signalCode/confidence — يجب proxy لـ Python /api/portfolio/smart-monitor مع NULL fallback (Rule 20 + Rule 27).
+  (4) إصلاح /api/finance/smart-watchlist: منع TS من احتساب action.type/confidence/stop_loss/target_price — يجب proxy لـ Python أو رجوع NULL (Rule 20 + Rule 27).
+  (5) إصلاح /api/smart-confluence/analysis/[symbol]: منع fabricated fallback (signal='HOLD' + confidence=20 + rsi=50) — يجب رجوع {success: false, error: 'python_unavailable'} (Rule 27).
+  (6) حذف /api/admin/generate-historical-predictions (calls TS Maestro pipeline من lib/honest-tracking/maestro.ts يحسب RSI/ATR/signal/target/stop ويكتب predictions.db — كسر Rule 20 + Rule 35) — يجب ترحيل الـ callers لـ Python /api/daily/rebuild-predictions أو حذف الـ endpoint.
+  (7) حذف /api/v82 (spawns python3 v82_analyzer.py مباشرة بدل HTTP proxy — كسر Rule 20) — يجب ترحيل لـ Python HTTP API.
+  (8) حذف /api/predictions/honest-tracking/learn-from-errors INSERT INTO prediction_lessons (Rule 35) — يجب delegate لـ Python /api/daily/full-cycle.
+  (9) إصلاح /api/admin/backtest/v40/run: حذف `DELETE FROM predictions` من TS + استبدال spawn لـ daily_predictor.py بـ HTTP POST لـ Python /api/daily/rebuild-predictions (Rule 20 + Rule 35).
+  (10) إصلاح /api/predictions POST: إضافة requireAdminAsync (POST غير موثّق يـ proxy لـ Python /api/v2/predictions الذي يكتب predictions.db — كسر Rule 35).
+  (11) توحيد 37 mislabeled market-pulse proxies: حذف features + system-control + data-status + walk-forward-test + iterative-learning + seasonality-signals + self-learning + admin/ai-analyze + admin/ai-predictions/generate + prediction-performance + v2/live-analysis + advanced-analysis/results + recommendations + subscribe/[plan] + money/smart-monitor — كلها scaffolded copy-paste بلا implementation حقيقي. إما يـ delegate لـ endpoint صحيح أو يُحذف.
+  (12) توحيد 27 stock-analysis routes على canonical واحد (/api/stocks/[ticker]/unified) + حذف الـ 6 routes الـ 410 + دمج v2/unified/analyze + dual-persona + persona/analyze + smart-confluence/analysis + confluence/analyze في canonical واحد.
+  (13) توحيد 21 predictions-list routes على canonical واحد (/api/predictions/honest-tracking/list) + حذف tracking/list + expert-consensus + active-management + dual-track/list + mobile/predictions + global-predictions + crypto-predictions + crypto-lab/predictions + unified/predictions.
+  (14) إصلاح connection leaks: predictions/route.ts (4 opens/2 closes) + predictions/eid (4/?) + chart/[ticker] (7 opens!) + 5 routes في honest-tracking/ (open > close) — يجب ضمان db.close() في finally block.
+  (15) إصلاح /api/stocks/[ticker]/unified (canonical route!) بدون try/catch — يجب wrap في try/catch + 500 fallback.
+  (16) إضافة try/catch لـ 14 route بدون error handling (predictions/dual-track/backtest + keepalive + metals/gold/history + mobile/gold/history + ai/models + stocks/[ticker]/unified + ...).
+  (17) استبدال execSync/spawnSync في admin/pm2-control + admin/backtest/v40/status/[jobId] بـ async equivalents (event-loop blocking).
+  (18) توحيد 95 route اللي بيفتح `new Database()` inline على shared helpers (@/lib/db* + getUnifiedStockData).
+  (19) توحيد 4 persona routes (persona/analyze + persona/gambler + persona/investor + stocks/dual-persona) في canonical واحد (dual-persona).
+  (20) حذف 3 dead proxy routes (proxy-prod/[...path] + python/[...path] — aliases of proxy/[...path]).
