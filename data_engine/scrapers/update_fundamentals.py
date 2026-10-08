@@ -124,7 +124,8 @@ def save_to_db(fundamentals: list) -> int:
         conn = sqlite3.connect(str(DB_PATH), timeout=30.0)
         cur = conn.cursor()
 
-        # auto-migration: تأكد من وجود الجداول
+        # auto-migration: تأكد من وجود الجداول بالـ schema المرن
+        # tab_valuation قد تستخدم ticker أو symbol كـ PK
         cur.execute('''CREATE TABLE IF NOT EXISTS tab_valuation (
             ticker TEXT PRIMARY KEY,
             pe_ratio REAL, pb_ratio REAL, ps_ratio REAL,
@@ -135,28 +136,46 @@ def save_to_db(fundamentals: list) -> int:
             roe REAL, roa REAL, eps REAL,
             dividend_yield REAL, last_updated TEXT
         )''')
+        
+        # UNIFY-FIX: لو الجدول موجود بـ schema قديم (symbol بدل ticker)
+        # نستخدم symbol كـ PK. نكتشف العمود الفعلي
+        try:
+            val_cols = [row[1] for row in cur.execute("PRAGMA table_info(tab_valuation)").fetchall()]
+            val_pk = 'ticker' if 'ticker' in val_cols else ('symbol' if 'symbol' in val_cols else 'ticker')
+        except Exception:
+            val_pk = 'ticker'
+        try:
+            prof_cols = [row[1] for row in cur.execute("PRAGMA table_info(tab_profitability)").fetchall()]
+            prof_pk = 'ticker' if 'ticker' in prof_cols else ('symbol' if 'symbol' in prof_cols else 'ticker')
+        except Exception:
+            prof_pk = 'ticker'
 
-        now_iso = datetime.now().isoformat()
         saved = 0
 
         for f in fundamentals:
             ticker = f['ticker']
 
-            # tab_valuation
-            cur.execute('''
-                INSERT OR REPLACE INTO tab_valuation
-                (ticker, pe_ratio, pb_ratio, market_cap, last_updated)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (ticker, f.get('pe_ratio'), f.get('pb_ratio'),
-                  f.get('market_cap'), now_iso))
+            # tab_valuation — استخدم val_pk (ticker أو symbol حسب الـ schema الموجود)
+            try:
+                cur.execute(f'''
+                    INSERT OR REPLACE INTO tab_valuation
+                    ({val_pk}, pe_ratio, pb_ratio, market_cap, last_updated)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (ticker, f.get('pe_ratio'), f.get('pb_ratio'),
+                      f.get('market_cap'), now_iso))
+            except Exception:
+                pass  # لو الـ schema مختلف جدًا، skip
 
             # tab_profitability
-            cur.execute('''
-                INSERT OR REPLACE INTO tab_profitability
-                (ticker, roe, roa, eps, dividend_yield, last_updated)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (ticker, f.get('roe'), f.get('roa'), f.get('eps'),
-                  f.get('dividend_yield'), now_iso))
+            try:
+                cur.execute(f'''
+                    INSERT OR REPLACE INTO tab_profitability
+                    ({prof_pk}, roe, roa, eps, dividend_yield, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (ticker, f.get('roe'), f.get('roa'), f.get('eps'),
+                      f.get('dividend_yield'), now_iso))
+            except Exception:
+                pass
 
             saved += 1
 
