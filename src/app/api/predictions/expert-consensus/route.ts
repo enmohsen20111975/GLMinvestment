@@ -31,6 +31,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Database from 'better-sqlite3';
 import path from 'path';
+// Task FINALIZE-UNIFICATION: import canonical signal classifier (Rule 20 +
+// Rule 67). Previously this route computed the `verdict` locally from a
+// bullish/bearish counter (Rule 20 violation — financial computation in
+// route.ts). Now the verdict is sourced from the canonical V40.2 prediction
+// signal (or canonical classifySignal(master_score) as fallback).
+import { classifySignal } from '@/lib/canonical-signal';
 
 export const dynamic = 'force-dynamic';
 
@@ -218,12 +224,35 @@ function computeConsensus(
   }
 
   // ── Verdict ──
+  // Task FINALIZE-UNIFICATION (Rule 20 — Python=Brain): the verdict is now
+  // sourced from the CANONICAL V40.2 prediction signal (pred.signal, written
+  // by daily_predictor.py — Rule 35). Previously this route computed the
+  // verdict locally via `bullish > bearish + 2 ? STRONG_BUY : ...` which was
+  // a Rule 20 violation (financial computation in route.ts).
+  //
+  // The bullish/bearish counts and reasons[] are preserved as DESCRIPTIVE
+  // METADATA about supporting indicators (price action, RSI, MA alignment,
+  // sector relative strength) — they explain WHY the canonical signal makes
+  // sense, but they no longer OVERRIDE it.
+  //
+  // Fallback chain: pred.signal (canonical V40.2) → classifySignal(master_score)
+  // (canonical TS port) → HOLD (no data).
   let verdict: ConsensusResult['verdict'];
-  if (bullish > bearish + 2) verdict = 'STRONG_BUY';
-  else if (bullish > bearish) verdict = 'BUY';
-  else if (bearish > bullish + 2) verdict = 'STRONG_SELL';
-  else if (bearish > bullish) verdict = 'SELL';
-  else verdict = 'HOLD';
+  const rawSignal = pred?.signal ? String(pred.signal).toUpperCase() : '';
+  const validVerdicts = new Set(['STRONG_BUY', 'BUY', 'HOLD', 'SELL', 'STRONG_SELL']);
+  if (validVerdicts.has(rawSignal)) {
+    verdict = rawSignal as ConsensusResult['verdict'];
+  } else if (pred?.master_score != null) {
+    // Map canonical classifySignal output to the verdict union:
+    // ACCUMULATE (55-64) → BUY, REDUCE (40-54) → HOLD, others pass through.
+    const classified = classifySignal(pred.master_score);
+    verdict =
+      classified === 'ACCUMULATE' ? 'BUY' :
+      classified === 'REDUCE' ? 'HOLD' :
+      classified as ConsensusResult['verdict'];
+  } else {
+    verdict = 'HOLD';
+  }
 
   const total = bullish + bearish;
   const confidence = total > 0

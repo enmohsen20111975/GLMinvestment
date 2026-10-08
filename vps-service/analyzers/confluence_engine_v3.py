@@ -571,15 +571,14 @@ class ConfluenceEngineV3:
         # ── BRIEF-044 Rule 2: TRAP DETECTOR (كشف الفخاخ) ──
         # RSI > 70 = تشبع شرائي - العقل التقليدي بيقول "بيع"
         # العقل المطور بيتحقق من الـ SMC:
-        _rsi_value = None
-        try:
-            # محاولة استخراج RSI من indicators_breakdown أو من الـ signal
-            if rsi_signal == 'BUY':
-                _rsi_value = 25  # RSI منخفض
-            elif rsi_signal == 'SELL':
-                _rsi_value = 75  # RSI مرتفع
-        except:
-            pass
+        # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+        # Previously fabricated _rsi_value = 25 (BUY) / 75 (SELL) based on
+        # the rsi_signal label. Now: _rsi_value = None unless the caller
+        # sets engine._passed_rsi_value = calc_rsi(closes) before calling
+        # analyze(). The trap detector below is skipped when RSI is unknown
+        # (the `if _rsi_value` guards short-circuit to False). This is
+        # acceptable per Rule 27 — better to skip the check than fabricate.
+        _rsi_value = getattr(self, '_passed_rsi_value', None)
 
         if _rsi_value and _rsi_value > TRAP_DETECTION_RSI_HIGH:
             # RSI > 70 - تشبع شرائي محتمل

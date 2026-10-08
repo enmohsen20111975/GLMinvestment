@@ -226,7 +226,11 @@ def compute_maker_death_point(
     ده بـ يـ give وقف tighter لو فيه structure واضح، أوسع لو مفيش.
     """
     if atr <= 0 or entry <= 0:
-        return entry * 0.95  # fallback 5% under entry
+        # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+        # Previously fabricated as entry * 0.95 (5% under entry) as a
+        # fallback when no ATR / entry data. Now returns None — callers
+        # MUST handle None as "stop_loss unavailable".
+        return None
 
     if bone_breaking_sweep and sweep_low is not None and sweep_low > 0:
         return sweep_low - (atr * 0.5)

@@ -179,12 +179,15 @@ export async function GET(request: NextRequest) {
           target1: p.target_price,
           stop_loss: p.stop_loss,
         });
-        const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : (v.entry_price ? Number((v.entry_price * 0.99).toFixed(2)) : null);
-        const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : (v.entry_price ? Number((v.entry_price * 1.01).toFixed(2)) : null);
-        const s1 = (p.support_level && p.support_level > 0) ? p.support_level : (v.entry_price ? Number((v.entry_price * 0.96).toFixed(2)) : null);
-        const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : (s1 ? Number((s1 * 0.96).toFixed(2)) : null);
-        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : v.target1;
-        const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 || (v.target1 ? Number((v.target1 * 1.05).toFixed(2)) : null));
+        // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
+        // (entry*0.99/1.01, support entry*0.96, target1*1.05). Now NULL when
+        // the prediction record lacks these fields.
+        const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : null;
+        const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
+        const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
+        const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
+        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
+        const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
 
         return enrichWithTechnical({
           ...p,
@@ -196,9 +199,10 @@ export async function GET(request: NextRequest) {
           entry_max: entryMax,
           entry_range_str: (entryMin && entryMax) ? `من ${entryMin.toFixed(2)} إلى ${entryMax.toFixed(2)} ج.م` : '',
           target_price: v.target1,
-          target_price_2: p.target_price_2 || (v.target1 ? Number((v.target1 * 1.05).toFixed(2)) : 0),
+          // Rule 27: NULL when no canonical target_price_2 (was target1 * 1.05).
+          target_price_2: p.target_price_2 ?? null,
           target1: v.target1,
-          target2: p.target_price_2 || (v.target1 ? Number((v.target1 * 1.05).toFixed(2)) : 0),
+          target2: p.target_price_2 ?? null,
           stop_loss: v.stop_loss,
           support_1: s1,
           support_2: s2,
@@ -403,12 +407,15 @@ export async function GET(request: NextRequest) {
         target1: p.target_price,
         stop_loss: p.stop_loss,
       });
-      const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : (validated.entry_price ? Number((validated.entry_price * 0.99).toFixed(2)) : null);
-      const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : (validated.entry_price ? Number((validated.entry_price * 1.01).toFixed(2)) : null);
-      const s1 = (p.support_level && p.support_level > 0) ? p.support_level : (validated.entry_price ? Number((validated.entry_price * 0.96).toFixed(2)) : null);
-      const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : (s1 ? Number((s1 * 0.96).toFixed(2)) : null);
-      const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : validated.target1;
-      const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 || (validated.target1 ? Number((validated.target1 * 1.05).toFixed(2)) : null));
+      // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
+      // (entry*0.99/1.01, support entry*0.96, target1*1.05). Now NULL when
+      // the prediction record lacks these fields.
+      const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : null;
+      const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
+      const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
+      const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
+      const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
+      const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
 
       return enrichWithTechnical({
         ...p,
@@ -420,9 +427,10 @@ export async function GET(request: NextRequest) {
         entry_max: entryMax,
         entry_range_str: (entryMin && entryMax) ? `من ${entryMin.toFixed(2)} إلى ${entryMax.toFixed(2)} ج.م` : '',
         target_price: validated.target1,
-        target_price_2: p.target_price_2 || (validated.target1 ? Number((validated.target1 * 1.05).toFixed(2)) : 0),
+        // Rule 27: NULL when no canonical target_price_2 (was target1 * 1.05).
+        target_price_2: p.target_price_2 ?? null,
         target1: validated.target1,
-        target2: p.target_price_2 || (validated.target1 ? Number((validated.target1 * 1.05).toFixed(2)) : 0),
+        target2: p.target_price_2 ?? null,
         stop_loss: validated.stop_loss,
         support_1: s1,
         support_2: s2,
