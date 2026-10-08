@@ -66843,3 +66843,165 @@ Consolidation recommendations:
 - READ-ONLY audit — كل التوصيات قابلة للتنفيذ في TASKS منفصلة.
 - لم أُجرِ rotation للـ Telegram Bot Token (يحتاج BotFather access — owner فقط).
 - لم أُجرِ git history scrub للـ token المُلتزم (يحتاج git filter-repo — owner فقط).
+
+---
+Task ID: AUDIT-CROSSCUT (المدير العام — التقرير الشامل المُجمّع)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: تدقيق شامل للتكرارات + المنطق المعيب + doc/code gaps + Top 50 P0 master list
+
+Work Log:
+- جمعت نتائج الـ 6 تدقيقات السابقة (INFRA + ENGINES + DATA + APIS + SCREENS + TELEGRAM).
+- صنّفت التكرارات الشاملة + المنطق المعيب + الفجوات التوثيقية.
+- بنيت Top 50 P0 master list مرتبة بالأولوية.
+
+Stage Summary — الإجمالي الشامل:
+- **إجمالي Dead Code**: ~32,461 LOC (INFRA 2,760 + ENGINES 15,100 + DATA 7,400 + SCREENS 5,626 + TELEGRAM 1,575)
+- **إجمالي P0**: 74 (INFRA 10 + ENGINES 10 + DATA 10 + APIS 15 + SCREENS 15 + TELEGRAM 12 + cross-cut 2)
+- **إجمالي P1**: 121 (INFRA 20 + ENGINES 20 + DATA 20 + APIS 25 + SCREENS 25 + TELEGRAM 18 - overlaps)
+- **مستوى الأمان**: CRITICAL — 6 ثغرات أمنية (Bot Token مكشوف + fail-open auth + 3 routes بلا admin gate + secrets في ecosystem)
+
+Top 20 Cross-Cutting Duplicates (نفس المنطق في Python + TS):
+1. RSI computation: 7+ copies (Python: indicators/rsi.py + technical.py + technical_weighted.py + enhanced_indicators + trend_following + sniper + kimi_fixes + dynamic_target; TS: canonical-rsi.ts + TradingViewChart local calcRSI)
+2. ATR computation: 7+ copies (Python: indicators/atr.py + core_scoring + enhanced + trend_following + sniper + kimi_fixes + dynamic_target)
+3. THRESHOLDS: 4 sources (canonical_signal.py 78/65/55/40/25 ✅ + master_analyzer dead dict + technical_weighted مخالف 65/55/48/35/28/20/10 ❌ + confluence_engine_v3 مخالف 75/65/55/45/35/25/15 ❌)
+4. signal classification: 5 sources (canonical_signal ✅ + master_analyzer delegation ✅ + reports_engine fallback + technical_weighted مخالف + confluence_engine_v3 مخالف)
+5. Telegram senders: 8 implementations (telegram_notifier + telegram_bot_api + auto_poster Telethon + telegram_client Telethon + social_publisher + target_hit_tracker + interactive_bot + daily_lessons)
+6. Publishing paths: 8 مسارات مستقلة للقناة
+7. Stock-analysis views: 5 شاشات overlap (StockAdvancedAnalysisView + SpecialistAnalysisView + GateAnalysisView + DeepAnalysis + ComprehensiveStockAnalysis)
+8. Prediction-tracking views: 3 overlap (PredictionTrackingView + PredictionTrackingDashboard + DualTrackPredictionsView)
+9. Card-publishing: 4 flows (TradeResultsTemplates + TradeResultsGenerator + StockInfographicCard + UnifiedPublishButton)
+10. DB helpers: 17+ TS files تفتح اتصالاتها (db.ts + data-engine-db + egx-db + finance-db + new-db + community-db + bot-link-db + paper-trading-v2-db + metrics-db + admin-db-manager + shared-db + sqlite-wrapper + flutter-sqlite-fallback + last-active-helper + subscription-enforcement + unified-stock-data + market-data-access + trade-results-engine)
+11. Config sources: 8 (engine_settings.py + unified_config.py + market_config.py + sys_config.py + .env + ecosystem.config.js + active_settings.json + optimizer_params.json)
+12. backtest_engine.py: name collision في حزمتين (analyzers/ + engines/)
+13. regime*.py: 4 ملفات (regime_detector + regime_filter + market_regime_engine + hmm_market_regime + engines/market_regime)
+14. fundamental*.py: 7 ملفات (fundamental + fundamental_engine + fundamental_enhanced + fundamental_relative + fundamental_scorer + fundamental_data_provider + fair_value_calculator)
+15. seasonality*.py: 3 ملفات (seasonality_first_engine + seasonality_engine_v2 + seasonality_scorer)
+16. learning files: 6 (lesson_store + win_lesson_store + learning_engine + feedback_loop + learning_file_storage + unified_learning_engine)
+17. persona files: 4 (engine/persona_engine + analyzers/persona_gambler + persona_investor + persona_screener)
+18. egksco_scraper.py: نسختان (data_engine/scrapers/ 437 LOC + vps-service/data/ 1046 LOC)
+19. proxy routes: 3 aliases (/api/proxy/[...path] + /api/proxy-prod/ + /api/python/)
+20. subscription routes: 3 aliases (subscribe/[plan] + subscription/subscribe + subscription/upgrade)
+
+Top 20 Logical Nonsense:
+1. .env يشير لـ custom.db غير موجود + prisma/schema.prisma orphan (User+Post سكافولد)
+2. next.config.ts ignoreBuildErrors:true + eslint كل القواعد off = lint مجرد ديكور
+3. cron 8 (price_history_safetynet) يستخدم BANNED source yahoo_safetynet — guard يرفض دائمًا لكن cron يستهلك وقت
+4. cron 12 (egx_fundamental_fetcher) — EGXPilot dead (404) + 0 صفوف ناتجة لكن cron يستهلك وقت
+5. cron 17 (us_stock_scraper) — Yahoo محجوب فعليًا + 0 صفوف لكن cron يستهلك وقت
+6. 7 شاشات تستدعي 410 routes (مكسورة في الإنتاج)
+7. news.db schema: writers يكتبون news_articles، readers يقرأون market_news = كل الأخبار ترجع فارغة
+8. predictions مكررة: 4172 في stocks.db + 153 في predictions.db (canonical)
+9. historical.db (44M) يتيمة — لا قارئ canonical
+10. 13 DB من 17 بدون WAL mode = lock contention
+11. /api/predictions POST بلا auth — يـ proxy لـ Python الذي يكتب predictions.db
+12. /api/admin/import-indices-csv بلا admin gate — أي أحد يقدر يرفع CSV
+13. 37 mislabeled market-pulse proxies — routes بـ URLs توحي بوظائف لكنها كلها proxy فارغ
+14. MasterAnalyzer._get_market_regime_score dead method يرجع 50.0 placeholder
+15. institutional_decision_engine except fallback يرجع fabricated tech_score=50 + signal='🟡 انتظر'
+16. master_analyzer 6+ fabrications (entry*0.95 fallbacks + return 50.0 fallbacks)
+17. telegram_target_hit_tracker يـ INSERT fabricated signal='BUY' + confidence=75 في predictions.db
+18. check_subscription fail-open — كل المستخدمين VIP لو BOT_API_SECRET فارغ
+19. Footer NOT sticky (قاعدة المالك مكسورة)
+20. V40.2 STAGE 8 doc يذكر continuous_learning.py لكن الملف archived
+
+Top 20 Doc/Code Mismatches:
+1. الدستور: "72 قاعدة" — الفعلي: 76 (بعد إضافاتي) — لكن العدّادات القديمة ما زالت 67/66 في 5 مواضع
+2. §5.7: كان ATR [3%,9%] — صُلح لـ [5%,9%] لكن §1.1 + §5.3-5.9 ما زالت تشير لـ [3%,9%] في بعض النسخ
+3. UNIFICATION_MASTER_PLAN يدعي "7 writers معطّلون → daily_predictor.py وحده" — الفعلي: 14+ writer ما زالوا يكتبون
+4. Docs تدعي "canonicalSignal.py مصدر واحد" — الفعلي: 4 sources للـ THRESHOLDS (واحد مخالف كليًا في technical_weighted)
+5. Docs تدعي "load_merged_history() المصدر الموحد" — الفعلي: 4 DIRECT INSERT bypass + 5 writers blocked
+6. Docs تدعي "TADAWUL/KSE/QSE/US مدعومة" — الفعلي: 0 صف في price_history.db لهذه الأسواق
+7. Docs تدعي "EGX primary = intraday_aggregated" — الفعلي: 0 صف من هذا المصدر في price_history.db
+8. Docs تدعي "single Telegram sender" — الفعلي: 8 implementations
+9. Docs تدعي "single publish path" — الفعلي: 8 مسارات
+10. Docs تدعي "17 DBs كلها WAL" — الفعلي: 13 من 17 بدون WAL
+11. Docs تدعي "10/10 شاشات canonical" — الفعلي: 9 شاشات مكسورة تستدعي 410 + 5 bypass routes
+12. Docs تدعي "single writer Rule 35" — الفعلي: telegram_target_hit_tracker يـ INSERT fabricated BUY
+13. Docs تدعي "Bot auth secure" — الفعلي: fail-open + token مكشوف
+14. Docs تدعي "Footer sticky" — الفعلي: mt-auto فقط (not sticky)
+15. Docs تدعي "V40.2 8-stage pipeline" — الفعلي: STAGE 8 doc/code mismatch (continuous_learning archived)
+16. Docs تدعي "news engine: 6 مصادر، ~360 خبر/يوم" — الفعلي: news.db schema mismatch = 0 أخبار تصل القراء
+17. Docs تدعي "source_authority موصول في 5 scrapers" — الفعلي: 4 من 5 blocked + 4 DIRECT INSERT bypass
+18. Docs تدعي "Rule 20 Python=Brain" — الفعلي: 12 route TS-side computation + 3 pure-TS Maestro pipeline
+19. Docs تدعي "Rule 27 NO-FAKE-DATA" — الفعلي: 7 route fabrications + 6 bot fabrications + 6 master_analyzer fabrications
+20. Docs تدعي "zero_conflict_test PASS" — الفعلي: PASS trivial (25/30 NULL-NULL agreement due to stale archive)
+
+═══════════════════════════════════════════════════════
+Top 50 P0 Master List (الأولوية القصوى للمالك):
+═══════════════════════════════════════════════════════
+
+الأمن (CRITICAL — إصلاح فوري):
+1. Bot Token مكشوف في social_publisher.py:42 → rotation عبر BotFather + git scrub
+2. check_subscription fail-open في telegram_interactive_bot.py:695-697 → raise بدل fail-open
+3. /api/telegram/publish-stock بلا admin gate → إضافة requireAdminAsync
+4. /api/market/publish-status-image بلا auth إطلاقًا → إضافة requireAdminAsync
+5. /api/admin/import-indices-csv بلا auth → إضافة requireAdminAsync
+6. /api/predictions POST بلا auth → إضافة requireAdminAsync
+7. EODHD_API_KEY hardcoded في ecosystem.config.js:169 → حذف fallback
+8. TELEGRAM_CHANNEL_ID hardcoded في 5 ملفات → حذف fallbacks
+9. Caddyfile open proxy عبر XTransformPort → تقييد بـ whitelist
+10. Caddyfile على :81 بدل :443 → نقل + auto-TLS
+
+البيانات (CRITICAL — الإنتاج مكسور):
+11. news.db schema mismatch → إعادة تسمية news_articles → market_news
+12. intraday_aggregator ينتج 0 صف رغم 340K في stock_intraday → إصلاح + cron مستقل
+13. 469 صف BANNED source (egxpilot_live) في price_history.db → حذف
+14. TADAWUL/KSE/QSE/US/GOLD = 0 صف في price_history.db → بناء scrapers
+15. us_stock_scraper DIRECT INSERT بـ source='yahoo_us' غير canonical → fix source + Yahoo محجوب
+16. egksco_scraper DIRECT INSERT bypassing guard (vps-service/data/) → use write_guarded()
+17. 4 writers blocked بصمت (daily_price_updater + eodhd + gap_filler + safetynet) → fix sources
+18. historical.db (44M) يتيمة → migrate لـ price_history.db ثم حذف
+19. egx_fundamentals = 0 صف رغم cron → EGXPilot dead + fallback لا يعمل
+20. predictions مكررة: 4172 في stocks.db + 153 في predictions.db → حذف stocks.db.predictions
+
+المحركات (CRITICAL — fabrications):
+21. telegram_target_hit_tracker.py:968 INSERT fabricated signal='BUY' → حذف INSERT
+22. institutional_decision_engine.py:1481 fallback tech_score=50 + signal='🟡 انتظر' → NULL
+23. master_analyzer.py:3941 + 4079 + 4130 entry*0.95 fabrications → NULL
+24. master_analyzer.py:4839 + 4847 + 5281 return 50.0 fallbacks → None
+25. technical_weighted.py:109 THRESHOLDS مخالف كليًا (65/55/48/35/28/20/10) → delegation لـ canonical
+26. 7+ copies من calc_atr + 5+ copies من calc_rsi → delegation لـ indicators/
+27. master_analyzer._get_market_regime_score dead + placeholder 50.0 → حذف
+28. confluence_engine_v3.py:113 THRESHOLDS مخالف → حذف (engine disabled)
+29. 14+ ملف بـ INSERT INTO predictions خارج daily_predictor → تعطيل
+30. learning_file_storage + unified_learning_engine (1,667 LOC zombie) → حذف
+
+الـ APIs (CRITICAL — broken):
+31. 7 شاشات مكسورة تستدعي 410 routes → ترحيل callers
+32. 37 mislabeled market-pulse proxies → حذف أو توحيد
+33. 27 stock-analysis routes → توحيد على /api/stocks/[ticker]/unified
+34. 21 predictions-list routes → توحيد على /api/predictions/honest-tracking/list
+35. 12 routes TS-side computation (Rule 20) → delegate لـ Python
+36. 7 routes fabrications (Rule 27) → NULL
+37. 4 routes TS writes predictions.db (Rule 35) → delegate لـ Python
+38. 14 routes بلا try/catch → wrap
+39. 7 routes connection leaks → db.close() في finally
+40. 95 routes تفتح new Database() inline → توحيد عبر db/index.ts
+
+الشاشات (CRITICAL — broken):
+41. 9 broken 410 callers (4 footprint + 5 generate-predictions + 1 professional-analysis) → ترحيل
+42. Footer NOT sticky (قاعدة المالك مكسورة) → sticky bottom-0
+43. 11 dead components (5,626 LOC) → حذف
+44. 5 duplicate stock-analysis views → توحيد على StockDetail
+45. TradingViewChart local calcRSI/calcATR → استيراد من canonical
+46. MakerRadarTab N+1 POST pattern → batch endpoint
+47. 16 god components >2K LOC → splitting
+48. 253 buttons بدون aria-label → a11y
+
+البنية التحتية (HIGH):
+49. next.config.ts ignoreBuildErrors:true → false + إصلاح TS errors
+50. eslint كل القواعد off → إعادة تفعيل تدريجيًا
+
+═══════════════════════════════════════════════════════
+التوصية الاستراتيجية للمالك:
+═══════════════════════════════════════════════════════
+المشروع فيه ~32,461 LOC dead code + 74 P0 + 121 P1 + 6 CRITICAL security + 20 doc/code mismatches.
+الـ "lying/misleading" الذي ذكره المالك واضح في:
+- UNIFICATION_MASTER_PLAN يدعي إكمال لكن 14+ writer ما زالوا يكتبون
+- Docs تدعي canonical لكن 4 THRESHOLDS sources (واحد مخالف كليًا)
+- Docs تدعي single Telegram sender لكن 8 implementations
+- Docs تدعي 10/10 شاشات canonical لكن 9 مكسورة + 5 bypass
+
+الخطة المقترحة: 5 phases (Security P0 → Data P0 → Engines P0 → APIs P0 → Screens P0) + رفع GitHub بعد كل phase (Rule 75) + مراجعة الفريق قبل كل phase (Rule 76).
+
+لم ألمس أي كود. لم أرفع. التقرير مُجمّع من 6 تدقيقات + تحليل شامل.
