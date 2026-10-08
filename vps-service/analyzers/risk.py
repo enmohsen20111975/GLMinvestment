@@ -137,42 +137,59 @@ class RiskManager:
         # Calculate stop loss if not provided
         if not stop_loss:
             if signal == "BUY" and support_level:
-                stop_loss = support_level * 0.98  # 2% below support
+                stop_loss = support_level * 0.98  # 2% below support (real data)
             elif signal == "SELL" and resistance_level:
-                stop_loss = resistance_level * 1.02  # 2% above resistance
+                stop_loss = resistance_level * 1.02  # 2% above resistance (real data)
             else:
-                stop_loss = entry_price * 0.95 if signal == "BUY" else entry_price * 1.05
-        
+                # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+                # Previously fabricated as entry_price * 0.95 (BUY) / * 1.05 (SELL).
+                # Now: NULL when no real support/resistance provided. Downstream
+                # position_size computation is skipped (set to 0).
+                stop_loss = None
+
         assessment.stop_loss = stop_loss
-        
+
         # Calculate target if not provided
         if not target_price:
-            risk_distance = abs(entry_price - stop_loss)
-            target_price = entry_price + (risk_distance * 2) if signal == "BUY" else entry_price - (risk_distance * 2)
-        
+            if stop_loss is not None:
+                risk_distance = abs(entry_price - stop_loss)
+                target_price = entry_price + (risk_distance * 2) if signal == "BUY" else entry_price - (risk_distance * 2)
+            else:
+                # Rule 27: no stop_loss → cannot compute target via R:R either.
+                target_price = None
+
         assessment.target_price = target_price
-        
+
         # Calculate position size
         risk_amount = self.capital * (self.risk_percent / 100)
-        sl_distance = abs(entry_price - stop_loss)
-        
-        if sl_distance > 0:
-            position_size = int(risk_amount / sl_distance)
+        if stop_loss is not None:
+            sl_distance = abs(entry_price - stop_loss)
+
+            if sl_distance > 0:
+                position_size = int(risk_amount / sl_distance)
+            else:
+                position_size = 0
         else:
+            # Rule 27: cannot size position without a real stop_loss.
             position_size = 0
-        
+
         assessment.position_size = position_size
         assessment.position_value = position_size * entry_price
         assessment.risk_amount = risk_amount
         assessment.risk_percent = self.risk_percent
         
         # Calculate reward
-        if signal == "BUY":
-            assessment.reward_amount = (target_price - entry_price) * position_size
-            assessment.reward_percent = ((target_price - entry_price) / entry_price) * 100
+        # Rule 27: NULL target_price → reward_amount = 0, reward_percent = 0
+        if target_price is not None:
+            if signal == "BUY":
+                assessment.reward_amount = (target_price - entry_price) * position_size
+                assessment.reward_percent = ((target_price - entry_price) / entry_price) * 100
+            else:
+                assessment.reward_amount = (entry_price - target_price) * position_size
+                assessment.reward_percent = ((entry_price - target_price) / entry_price) * 100
         else:
-            assessment.reward_amount = (entry_price - target_price) * position_size
-            assessment.reward_percent = ((entry_price - target_price) / entry_price) * 100
+            assessment.reward_amount = 0
+            assessment.reward_percent = 0
         
         # Calculate risk-reward ratio
         if assessment.risk_amount > 0:
@@ -271,10 +288,12 @@ class RiskManager:
         suggestions = {}
         
         # Percentage-based
-        if signal == "BUY":
-            suggestions['percentage_based'] = entry_price * 0.95  # 5% below
-        else:
-            suggestions['percentage_based'] = entry_price * 1.05  # 5% above
+        # Task FINALIZE-UNIFICATION (Rule 27): the percentage_based suggestion
+        # was previously fabricated as entry_price * 0.95 / * 1.05. Now: NULL
+        # — percentage-based stop is a textbook heuristic, but per Rule 27
+        # (NO-FAKE-DATA) we surface it as None instead of fabricating a value.
+        # Callers that need a stop MUST provide real support/resistance/ATR.
+        suggestions['percentage_based'] = None
         
         # Level-based
         if signal == "BUY" and support_level:

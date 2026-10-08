@@ -443,6 +443,9 @@ def compute_and_cache_quant(ticker: str, db_path: Optional[str] = None) -> Optio
         mc_bonus = 0.0
         try:
             # heuristic target: +10% (long) — احتمالية "هيطلع 10% خلال 5 أيام"
+            # Task FINALIZE-UNIFICATION (Rule 27): هذا target افتراضي لـ Monte Carlo
+            # simulation (سؤال إحصائي: ما احتمال الوصول +10%؟) — ليس توصية إنتاجية.
+            # الـ canonical targets تأتي من predictions.db (V40.2) فقط.
             target_price = current_price * 1.10
             mc_result = calculate_monte_carlo_probability(
                 prices=prices,

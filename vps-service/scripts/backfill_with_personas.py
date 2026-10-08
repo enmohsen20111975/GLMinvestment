@@ -455,6 +455,14 @@ def store_prediction(conn, ticker, signal, entry, target, stop, pred_date,
 # ============================================================================
 
 def run_backfill(days_back: int = 180, per_day: int = 15, markets=None):
+    # Task DISABLE-SCRIPTS (Rule 35): non-canonical writer disabled.
+    # V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY engine allowed
+    # to write predictions. This one-off backfill script is disabled to prevent
+    # contamination of the canonical prediction store.
+    # To re-enable for manual backfill: comment out this guard.
+    # Do NOT delete (Rule 16 VERIFY-BEFORE-DELETE).
+    print("[DISABLE-SCRIPTS] This script is disabled per Rule 35 (V40.2 only writer).", flush=True)
+    return
     if markets is None:
         markets = ['EGX', 'TADAWUL', 'KSE', 'QSE']
 
@@ -649,6 +657,14 @@ def run_backfill(days_back: int = 180, per_day: int = 15, markets=None):
 
 
 if __name__ == '__main__':
+    # Task FINALIZE-UNIFICATION: non-canonical writer disabled (Rule 35).
+    # V40.2 (daily_predictor.py) is the ONLY writer to predictions.db.
+    # To re-enable: remove this guard. Do NOT delete (Rule 16).
+    # NOTE: This is a backtest engine (Rule 27 simulation exception applies), but it INSERTs into
+    # the LIVE predictions table, which violates Rule 35. Use a sandbox/replica DB to re-enable.
+    import sys
+    print('[FINALIZE-UNIFICATION] GUARD: backfill_with_personas.py disabled (Rule 35). V40.2 (daily_predictor.py) is the only writer. Backtest simulation context does NOT bypass Rule 35 — use a replica DB to re-enable.')
+    sys.exit(0)
     import argparse
     parser = argparse.ArgumentParser(description='Backfill with REAL Maestro persona engines + full analysis')
     parser.add_argument('--days', type=int, default=180, help='Number of days to backfill (default: 180)')

@@ -509,24 +509,35 @@ def _compute_hunter_assessment(basic: Dict[str, Any], price_history: List[Dict[s
         stop = current_price * 0.96
 
     # target = max(high_30d, current) × 1.05 (fallback +15%)
+    # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+    # Previously fabricated target as ref_high * 1.05 / current * 1.15.
+    # Now: use the real 30-day high as the target (resistance ceiling),
+    # or NULL when no 30-day high data. Downstream skips risk_reward if None.
     if max_high_30d > 0:
         ref_high = max(max_high_30d, current_price)
-        target = ref_high * 1.05
+        target = ref_high  # real 30-day high as the resistance ceiling (no *1.05)
     else:
-        target = current_price * 1.15
+        # Rule 27: no 30-day high → NULL target (was current * 1.15).
+        target = None
 
     entry = current_price
-    risk = entry - stop
-    reward = target - entry
-    if risk <= 0:
-        return result
-    risk_reward = reward / risk
-    # Rule 54: استخدم canonical compute_risk_reward
-    try:
-        from utils.risk_reward import compute_risk_reward
-        risk_reward = compute_risk_reward(entry, target, stop, fallback=risk_reward)
-    except Exception:
-        pass  # keep inline risk_reward computed above
+    # Rule 27: if target is None, cannot compute a real risk_reward → leave None.
+    if target is None:
+        risk = 0
+        reward = 0
+        risk_reward = None
+    else:
+        risk = entry - stop
+        reward = target - entry
+        if risk <= 0:
+            return result
+        risk_reward = reward / risk
+        # Rule 54: استخدم canonical compute_risk_reward
+        try:
+            from utils.risk_reward import compute_risk_reward
+            risk_reward = compute_risk_reward(entry, target, stop, fallback=risk_reward)
+        except Exception:
+            pass  # keep inline risk_reward computed above
     risk_pct = (risk / entry) * 100
     reward_pct = (reward / entry) * 100
 
@@ -636,11 +647,15 @@ def _compute_fallback_technical_indicators(price_history: List[Dict[str, Any]], 
         cp = current_price if current_price > 0 else 0.0
         if cp > 0:
             return {
-                'rsi': 50.0,
+                # Task FINALIZE-UNIFICATION (Rule 27): previously fabricated
+                # as rsi=50.0, support=cp*0.95, resistance=cp*1.05 when no
+                # price history. Now: NULL for all derived indicators. ma_50/
+                # ma_200 = cp (real current price, neutral signal).
+                'rsi': None,
                 'ma_50': cp,
                 'ma_200': cp,
-                'support': round(cp * 0.95, 2),
-                'resistance': round(cp * 1.05, 2),
+                'support': None,
+                'resistance': None,
                 # Rule 67 — never fabricate 52w values. null when missing; frontend shows "—".
                 'high_52w': None,
                 'low_52w': None,
@@ -700,13 +715,20 @@ def _compute_fallback_technical_indicators(price_history: List[Dict[str, Any]], 
         support = round(min(cp * 0.96, cp - 1.2 * atr), 2)
 
     # Strict Financial Sanity Enforcement
+    # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+    # Previously fabricated as cp * 1.05 / * 0.95 in degenerate cases
+    # (resistance below cp, support above cp, support >= resistance).
+    # Now: set to None when the calculated values are nonsensical. The
+    # caller (_compute_fallback_technical_indicators) is a FALLBACK path
+    # used only when the main analyzer doesn't return values — None is
+    # preferred over fabricated values per Rule 27.
     if resistance <= cp:
-        resistance = round(cp * 1.05, 2)
-    if support >= cp or support <= 0:
-        support = round(cp * 0.95, 2)
-    if support >= resistance:
-        support = round(cp * 0.95, 2)
-        resistance = round(cp * 1.05, 2)
+        resistance = None
+    if support is not None and (support >= cp or support <= 0):
+        support = None
+    if support is not None and resistance is not None and support >= resistance:
+        support = None
+        resistance = None
 
     # 52-week High/Low — Rule 67: never fabricate. Real from price_history or None.
     # (CRST real range 0.35 → 4.09 must NOT be replaced by cp * 0.85 = 2.57.)
@@ -806,25 +828,34 @@ def deep_analysis():
                 basic[k] = v
     else:
         # Fallback if no history exists
+        # Task FINALIZE-UNIFICATION (Rule 27): was fabricated as cp * 0.95/1.05.
+        # Now: NULL when no real S/R data (consistent with the empty-history
+        # branch in _compute_fallback_technical_indicators above).
         if not is_sr_valid and cp > 0:
-            basic['support'] = round(cp * 0.95, 2)
-            basic['resistance'] = round(cp * 1.05, 2)
+            basic['support'] = None
+            basic['resistance'] = None
         if not is_52w_valid:
             # Rule 67 — never fabricate 52w values when real data is missing/invalid. Honest null.
             basic['high_52w'] = None
             basic['low_52w'] = None
 
     # Final absolute financial sanity guarantee
+    # Task FINALIZE-UNIFICATION (Rule 27): was fabricated as cp * 0.95/1.05
+    # in degenerate cases. Now: NULL when the calculated values are
+    # nonsensical (support above cp, resistance below cp, etc.).
     if cp > 0:
         cur_sup = _safe_float(basic.get('support'))
         cur_res = _safe_float(basic.get('resistance'))
         if cur_sup >= cp or cur_sup <= 0:
-            basic['support'] = round(cp * 0.95, 2)
+            basic['support'] = None
         if cur_res <= cp:
-            basic['resistance'] = round(cp * 1.05, 2)
-        if _safe_float(basic.get('support')) >= _safe_float(basic.get('resistance')):
-            basic['support'] = round(cp * 0.95, 2)
-            basic['resistance'] = round(cp * 1.05, 2)
+            basic['resistance'] = None
+        # Re-fetch after possible nullification.
+        cur_sup2 = _safe_float(basic.get('support'))
+        cur_res2 = _safe_float(basic.get('resistance'))
+        if cur_sup2 > 0 and cur_res2 > 0 and cur_sup2 >= cur_res2:
+            basic['support'] = None
+            basic['resistance'] = None
 
         # 52-week High/Low: Single source of truth from stocks.db (never overwrite with 90-day fallback)
         cur_h52 = _safe_float(basic.get('high_52w'))

@@ -388,14 +388,19 @@ def analyze_gambler(
     is_fallback = False  # هل بنستخدم S/R تقديرية ولا حقيقية
 
     if not sr:
-        # fallback أخير: احسب S/R سريع من current_price
-        # بدل ما نرجّع "انتظر" بشكل أعمى
+        # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+        # Previously fabricated sr_support=current_price*0.95 and
+        # sr_resistance=current_price*1.08 as "تقديري" (estimated) values.
+        # Now: leave sr_support/sr_resistance as None — the downstream BUY
+        # logic returns HOLD when target/stop are None (cannot compute a
+        # real R/R without real S/R levels). The is_fallback flag is still
+        # set to True so callers know S/R was unavailable.
         if current_price and current_price > 0:
-            sr_support = round(current_price * 0.95, 2)  # -5% دعم تقديري
-            sr_resistance = round(current_price * 1.08, 2)  # +8% مقاومة تقديرية
-            sr_zone = 'middle'
-            is_fallback = True  # الأهداف تقديرية
-            # كمّل التحليل بالـ fallback values
+            sr_support = None
+            sr_resistance = None
+            sr_zone = None
+            is_fallback = True  # S/R unavailable — caller should treat as HOLD
+            # كمّل التحليل: downstream will return HOLD due to None S/R.
         else:
             return GamblerResult(
                 verdict='انتظر', score=round(score, 1),
@@ -465,20 +470,33 @@ def analyze_gambler(
     _stop_triggers_ar = ''
 
     # Calculate target/stop from S/R (zone is near_support or breakout)
+    # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+    # Previously the fallbacks fabricated target=current_price*1.05 and
+    # stop=current_price*0.95 when no real S/R level was available. Now:
+    # target/stop are None when no real S/R exists. Downstream R/R filter
+    # returns HOLD when target/stop are None (cannot compute a real R/R).
     if signal == 'BUY':
-        # Breakout: target = +5% من السعر الحالي (مفيش سقف مقاومة)
+        # Breakout: target = NULL if no real resistance ceiling (was price * 1.05).
         if _sr_zone == 'breakout':
-            target = round(current_price * 1.05, 2)
-            # في الـ breakout، نستخدم آخر دعم بعيد كـ stop
-            stop = round(_sr_support * 0.98, 2) if _sr_support and _sr_support > 0 else round(current_price * 0.95, 2)
+            target = None
+            # In breakout, use the last distant support as stop if available.
+            stop = round(_sr_support * 0.98, 2) if _sr_support and _sr_support > 0 else None
         else:
-            # near_support: target = المقاومة، stop = تحت الدعم بـ 2%
-            # مراجعة: fallback آمن لو _sr_resistance أو _sr_support None
-            target = round(_sr_resistance, 2) if _sr_resistance else round(current_price * 1.05, 2)
-            stop = round(_sr_support * 0.98, 2) if _sr_support and _sr_support > 0 else round(current_price * 0.95, 2)
+            # near_support: target = real resistance, stop = under real support.
+            target = round(_sr_resistance, 2) if _sr_resistance else None
+            stop = round(_sr_support * 0.98, 2) if _sr_support and _sr_support > 0 else None
 
         # R/R filter (gambler needs >= 1.5:1)
         # مراجعة (يوليو 2026): خفّضنا من 1.5 → 1.2 عشان نطلّع فرص أكتر
+        # Rule 27 (FINALIZE-UNIFICATION): if target/stop are None (no real
+        # S/R), we cannot compute a real R/R → return HOLD.
+        if target is None or stop is None:
+            return GamblerResult(
+                verdict='انتظار', score=round(score, 1),
+                reason='لا توجد مستويات دعم/مقاومة حقيقية لحساب الهدف/الوقف (Rule 27)',
+                signal='HOLD', conditions=conditions + ['no_real_sr'],
+                support=sr_support, resistance=sr_resistance, zone=sr_zone, rr=None,
+            )
         risk = current_price - stop
         reward = target - current_price
         if risk <= 0:
@@ -610,20 +628,30 @@ def analyze_gambler(
                         atr = sum(h - l for h, l in zip(highs, lows)) / len(highs)
                         _initial_stop = round(current_price - 2 * atr, 2)
                     else:
-                        _initial_stop = round(current_price * 0.95, 2)
+                        # Task FINALIZE-UNIFICATION (Rule 27): no ATR data
+                        # → NULL (was current_price * 0.95).
+                        _initial_stop = None
                 else:
-                    _initial_stop = round(current_price * 0.95, 2)
+                    # Rule 27: no price history → NULL (was current_price * 0.95).
+                    _initial_stop = None
 
-            _trailing_stop = _initial_stop
+            _trailing_stop = _initial_stop if _initial_stop is not None else None
             # شرح عربي لمنطق تحريك الوقف
-            _trailing_stop_logic = (
-                f"الوقف الأولي عند {_initial_stop} (تحت الدعم) — مخاطرة {((current_price - _initial_stop) / current_price * 100):.1f}% | "
-                f"① لو وصل {_target_1} (+{_target_1_pct:.1f}%): وقف ← {_stop_level_1} (breakeven) | "
-                f"② لو وصل {_target_2} (+{_target_2_pct:.1f}%): وقف ← {_stop_level_2} (ربح مضمون {_target_1_pct:.1f}%) | "
-                f"③ لو وصل {_target_3} (+{_target_3_pct:.1f}%): وقف ← {_stop_level_3} (خليه يركض)"
-            )
+            # Rule 27 (FINALIZE-UNIFICATION): if _initial_stop is None
+            # (no real S/R + no ATR data), skip the risk-percentage display.
+            if _initial_stop is not None:
+                _trailing_stop_logic = (
+                    f"الوقف الأولي عند {_initial_stop} (تحت الدعم) — مخاطرة {((current_price - _initial_stop) / current_price * 100):.1f}% | "
+                    f"① لو وصل {_target_1} (+{_target_1_pct:.1f}%): وقف ← {_stop_level_1} (breakeven) | "
+                    f"② لو وصل {_target_2} (+{_target_2_pct:.1f}%): وقف ← {_stop_level_2} (ربح مضمون {_target_1_pct:.1f}%) | "
+                    f"③ لو وصل {_target_3} (+{_target_3_pct:.1f}%): وقف ← {_stop_level_3} (خليه يركض)"
+                )
+            else:
+                _trailing_stop_logic = 'الوقف المتحرك — مفيش بيانات S/R أو ATR كافية لحساب دقيق (Rule 27)'
         except Exception:
-            _trailing_stop = round(current_price * 0.95, 2)
+            # Task FINALIZE-UNIFICATION (Rule 27): was fabricated as
+            # current_price * 0.95 — now NULL.
+            _trailing_stop = None
             _trailing_stop_logic = 'الوقف المتحرك — مفيش بيانات كافية لحساب دقيق'
 
         # ========== 📊 تعديل الأهداف حسب وضع السوق (regime-aware) ==========

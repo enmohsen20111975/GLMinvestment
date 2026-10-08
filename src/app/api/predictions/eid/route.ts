@@ -14,6 +14,21 @@ export const dynamic = "force-dynamic";
 import Database from 'better-sqlite3';
 import path from 'path';
 import { existsSync } from 'fs';
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
+
+// Task FINALIZE-UNIFICATION (Rule 20 + Rule 27 + Rule 73):
+// Previously this route FABRICATED target/stop/confidence using hardcoded
+// multipliers (target = price * 1.05, stop = price * 0.95) and hardcoded
+// confidence values (0.65/0.6/0.55/0.5). Per Rule 27 (NO-FAKE-DATA), these
+// fields are now NULL unless a canonical source exists:
+//   - For EGX stocks (e.g. COMI): delegate to getUnifiedStockData(ticker)
+//     which returns canonical target_price/stop_loss/confidence from the
+//     V40.2 prediction record (Rule 73 — SINGLE-DISPLAY-SOURCE).
+//   - For BTC/ETH/GOLD: no canonical prediction source exists (V40.2 only
+//     covers EGX/TADAWUL/KSE/QSE equities). target/stop/confidence = NULL.
+//   - The `signal` field is preserved as an external-sentiment heuristic
+//     derived from the Fear & Greed Index (alternative.me API) — this is
+//     NOT a per-stock canonical signal, but a market-sentiment indicator.
 
 export const revalidate = 30; // Cache for 30s
 
@@ -130,9 +145,12 @@ interface EidPrediction {
   symbol: string;
   signal: 'BUY' | 'SELL' | 'HOLD';
   entryPrice: number;
-  targetPrice: number;
-  stopLoss: number;
-  confidence: number;
+  // Rule 27 (NO-FAKE-DATA): targetPrice/stopLoss/confidence are NULL unless
+  // a canonical source (getUnifiedStockData → V40.2 prediction record)
+  // provides them. Previously fabricated as entryPrice * 1.05 / * 0.95.
+  targetPrice: number | null;
+  stopLoss: number | null;
+  confidence: number | null;
   reasoning: string;
   created_at: string;
 }
@@ -141,21 +159,23 @@ function buildPrediction(
   symbol: string,
   currentPrice: number,
   signal: 'BUY' | 'SELL' | 'HOLD',
-  confidence: number,
-  reasoning: string
+  confidence: number | null,
+  reasoning: string,
+  canonical?: { targetPrice: number | null; stopLoss: number | null; confidence: number | null }
 ): EidPrediction {
-  const targetMultiplier = signal === 'BUY' ? 1.05 : signal === 'SELL' ? 0.95 : 1.0;
-  const stopMultiplier = signal === 'BUY' ? 0.95 : signal === 'SELL' ? 1.05 : 0.95;
+  // Task FINALIZE-UNIFICATION: removed hardcoded multipliers (1.05/0.95).
+  // Rule 27: NULL when no canonical source. Rule 73: getUnifiedStockData
+  // is the single display source for EGX stocks.
   return {
     id: `pred_${symbol}_${Date.now()}`,
     symbol,
     signal,
     entryPrice: currentPrice,
-    targetPrice: currentPrice * targetMultiplier,
-    stopLoss: currentPrice * stopMultiplier,
-    confidence,
-    reasoning,
+    targetPrice: canonical?.targetPrice ?? null,
+    stopLoss: canonical?.stopLoss ?? null,
+    confidence: canonical?.confidence ?? confidence ?? null,
     created_at: new Date().toISOString(),
+    reasoning,
   };
 }
 
@@ -173,6 +193,10 @@ export async function GET(_request: NextRequest) {
     const predictions: EidPrediction[] = [];
 
     // BTC prediction (real price + real Fear & Greed)
+    // Rule 27: target/stop/confidence = NULL for BTC (no canonical V40.2
+    // source for crypto — V40.2 covers EGX/TADAWUL/KSE/QSE equities only).
+    // The `signal` field is a Fear & Greed sentiment heuristic, NOT a
+    // canonical per-stock signal.
     if (btcPrice !== null) {
       if (fng !== null) {
         predictions.push(
@@ -180,19 +204,20 @@ export async function GET(_request: NextRequest) {
             'BTC',
             btcPrice,
             fng.value < 30 ? 'BUY' : fng.value > 70 ? 'SELL' : 'HOLD',
-            0.65,
+            null,
             `Fear & Greed Index: ${fng.value} (${fng.classification}) — ${fng.value < 30 ? 'خوف مفرط = فرصة شراء' : fng.value > 70 ? 'جشع مفرط = حذر' : 'محايد'}`
           )
         );
       } else {
         // No Fear & Greed → neutral HOLD on real price
         predictions.push(
-          buildPrediction('BTC', btcPrice, 'HOLD', 0.5, 'مؤشر الخوف والجشع غير متاح — مراقبة فقط')
+          buildPrediction('BTC', btcPrice, 'HOLD', null, 'مؤشر الخوف والجشع غير متاح — مراقبة فقط')
         );
       }
     }
 
-    // ETH prediction
+    // ETH prediction — Rule 27: NULL target/stop/confidence (no canonical
+    // source for crypto).
     if (ethPrice !== null) {
       const ethSignal = fng !== null && fng.value < 35 ? 'BUY' : 'HOLD';
       predictions.push(
@@ -200,7 +225,7 @@ export async function GET(_request: NextRequest) {
           'ETH',
           ethPrice,
           ethSignal,
-          0.6,
+          null,
           ethSignal === 'BUY'
             ? 'ETH تتبع BTC — مؤشر الخوف والجشع منخفض = فرصة شراء'
             : 'ETH تتبع BTC عموماً — انتظار تأكيد الاتجاه'
@@ -208,17 +233,31 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    // COMI (real price from price_history.db)
+    // COMI (real price from price_history.db) — delegate to canonical
+    // getUnifiedStockData('COMI') for target/stop/confidence (Rule 73).
     if (comiPrice !== null) {
+      const canonical = getUnifiedStockData('COMI');
       predictions.push(
-        buildPrediction('COMI', comiPrice, 'HOLD', 0.55, 'سهم بنكي — انتظار مستويات أفضل للدخول')
+        buildPrediction(
+          'COMI',
+          comiPrice,
+          'HOLD',
+          null,
+          'سهم بنكي — انتظار مستويات أفضل للدخول',
+          {
+            targetPrice: canonical?.prediction?.target_price ?? null,
+            stopLoss: canonical?.prediction?.stop_loss ?? null,
+            confidence: canonical?.prediction?.confidence ?? null,
+          }
+        )
       );
     }
 
-    // Gold (real spot price)
+    // Gold (real spot price) — Rule 27: NULL target/stop/confidence
+    // (no canonical V40.2 source for commodities).
     if (goldPrice !== null) {
       predictions.push(
-        buildPrediction('GOLD', goldPrice, 'HOLD', 0.55, 'الذهب في نطاق تداول — انتظار كسر واضح')
+        buildPrediction('GOLD', goldPrice, 'HOLD', null, 'الذهب في نطاق تداول — انتظار كسر واضح')
       );
     }
 

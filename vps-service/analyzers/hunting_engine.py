@@ -933,18 +933,29 @@ def stage3_boss_pick(tickers_list: List[Dict[str, Any]], market: str = 'EGX') ->
 
         # 🔧 V2.2 Fix 1: الهدف الواقعي = أعلى سعر في آخر 30 يوم + 5%
         # لو مفيش بيانات 30 يوم → fallback السعر الحالي + 15% (مش 50%)
-        # النتيجة: R/R يبقى 2-4 (واقعي) مش 8 (حلم)
+        # النتيجة: R/N يبقى 2-4 (واقعي) مش 8 (حلم)
+        # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+        # Previously fabricated target as ref_high * 1.05 / current * 1.15
+        # when no real resistance ceiling was available. Now: target = None
+        # → downstream `continue`s this stock (cannot compute a real R:R).
         max_high_30d = _get_30d_max_high(ticker, current_price)
         if max_high_30d > 0:
             # max() عشان لو السهم كسر القمة النهاردة (current > max_high_30d)
+            # Rule 27: the 30-day high is REAL data, but using it as a target
+            # via * 1.05 is a fabrication. Use the 30-day high as the target
+            # itself (a real resistance ceiling), or NULL if no high.
             ref_high = max(max_high_30d, current_price)
-            target = ref_high * 1.05
+            target = ref_high  # real 30-day high as the resistance ceiling
         else:
-            # fallback: +15% (مش 50% اللي كان بيعمل R/R وهمي)
-            target = current_price * 1.15
+            # Rule 27: no 30-day high → NULL target (was current * 1.15).
+            target = None
 
         # entry = current_price
         entry = current_price
+
+        # Rule 27: if target is None, cannot compute a real R:R → skip this stock.
+        if target is None:
+            continue
 
         risk = entry - stop
         reward = target - entry

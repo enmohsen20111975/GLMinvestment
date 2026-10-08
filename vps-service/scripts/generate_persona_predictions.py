@@ -43,6 +43,14 @@ def sync_persona_predictions(refresh_active: bool = True):
     في الموقع دايماً تظهر أحدث تفكير (نفس الـ explosive thinking اللي في
     جرس الصباح) بدل ما تفضل عالـ stale predictions القديمة.
     """
+    # Task DISABLE-SCRIPTS (Rule 35): non-canonical writer disabled.
+    # V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY engine allowed
+    # to write predictions. This one-off backfill script is disabled to prevent
+    # contamination of the canonical prediction store.
+    # To re-enable for manual backfill: comment out this guard.
+    # Do NOT delete (Rule 16 VERIFY-BEFORE-DELETE).
+    print("[DISABLE-SCRIPTS] This script is disabled per Rule 35 (V40.2 only writer).", flush=True)
+    return
     mode_label = "REFRESH (clear+reinsert)" if refresh_active else "INSERT-only (skip existing)"
     log(f"Starting persona predictions sync... [{mode_label}]")
     pconn = sqlite3.connect(PREDICTIONS_DB)
@@ -317,6 +325,12 @@ def sync_persona_predictions(refresh_active: bool = True):
     log("Persona predictions sync completed successfully!")
 
 if __name__ == '__main__':
+    # Task FINALIZE-UNIFICATION: non-canonical writer disabled (Rule 35).
+    # V40.2 (daily_predictor.py) is the ONLY writer to predictions.db.
+    # To re-enable: remove this guard. Do NOT delete (Rule 16).
+    import sys
+    print('[FINALIZE-UNIFICATION] GUARD: generate_persona_predictions.py disabled (Rule 35). V40.2 (daily_predictor.py) is the only writer.')
+    sys.exit(0)
     import argparse
     ap = argparse.ArgumentParser(description='Sync persona predictions from stored_analyses')
     ap.add_argument('--no-refresh', action='store_true',

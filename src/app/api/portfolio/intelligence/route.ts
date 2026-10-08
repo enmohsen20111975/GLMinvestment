@@ -4,6 +4,26 @@ export const dynamic = "force-dynamic";
 import { getFinanceDb } from '@/lib/finance-db';
 import { ensureInitialized, getLightDb } from '@/lib/egx-db';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { getUnifiedStockData } from '@/lib/unified-stock-data';
+
+// Task FINALIZE-UNIFICATION (Rule 20 + Rule 27 + Rule 73):
+// Previously this route FABRICATED per-stock technical fields using hardcoded
+// multipliers:
+//   - support = currentPrice * 0.95       (FAB)
+//   - resistance = currentPrice * 1.05      (FAB)
+//   - rsi = 50 + (change * 2)             (FAB — not Wilder's RSI)
+//   - macd_signal = change > 0 ? 'BULLISH' : 'BEARISH'  (FAB)
+//   - confidence = 60                      (FAB)
+//   - target_price = currentPrice * 1.1    (FAB)
+//   - stop_loss = currentPrice * 0.92      (FAB)
+// Per Rule 27 (NO-FAKE-DATA), these are now sourced from the canonical
+// getUnifiedStockData(ticker) (Rule 73 — SINGLE-DISPLAY-SOURCE) which reads
+// the V40.2 prediction record (Rule 35) + canonical Wilder's RSI. When no
+// canonical source exists, the fields are NULL (Rule 27).
+//
+// The `action` field (BUY/HOLD/SELL) is preserved as a PORTFOLIO HEURISTIC
+// based on the user's PnL vs avg buy price — it is NOT a market signal.
+// This is documented in the response as `portfolio_action_basis: 'pnl'`.
 
 /**
  * Portfolio Intelligence API
@@ -24,8 +44,12 @@ interface PortfolioStock {
 
 interface StockRecommendation {
   ticker: string;
+  // `action` is a PORTFOLIO heuristic based on the user's PnL vs avg buy
+  // price (NOT a market signal). BUY = average down, SELL = take profit.
   action: 'BUY' | 'HOLD' | 'SELL';
-  confidence: number;
+  // Rule 27: confidence is NULL unless a canonical V40.2 source provides it.
+  confidence: number | null;
+  // Rule 27: target_price/stop_loss are NULL unless canonical V40.2 source.
   target_price: number | null;
   stop_loss: number | null;
   reason: string;
@@ -35,10 +59,13 @@ interface StockRecommendation {
 interface StockAnalysis {
   ticker: string;
   trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-  support: number;
-  resistance: number;
-  rsi: number;
-  macd_signal: string;
+  // Rule 27: support/resistance/rsi/macd_signal are NULL unless a canonical
+  // source (getUnifiedStockData → V40.2 + canonical Wilder's RSI) provides
+  // them. Previously fabricated as currentPrice * 0.95 / * 1.05 / 50+change*2.
+  support: number | null;
+  resistance: number | null;
+  rsi: number | null;
+  macd_signal: string | null;
   volume_trend: string;
 }
 
@@ -81,20 +108,31 @@ export async function GET(request: NextRequest) {
       WHERE p.type = 'stock' AND p.stock_ticker IS NOT NULL AND p.user_id = ?
     `).all(userId) as any[];
 
-    // 2. إنشاء تحليلات لكل سهم
+    // 2. إنشاء تحليلات لكل سهم — delegate to getUnifiedStockData for canonical
+    //    support/resistance/rsi (Rule 73). Trend is derived from real change%
+    //    (still computed locally since it's just a label on real price action).
+    //    macd_signal: NULL (no canonical MACD source — was fabricated).
+    //    volume_trend: 'STABLE' (placeholder, no canonical source — TODO).
     const analyses: StockAnalysis[] = portfolioStocks.map((stock: any) => {
       const currentPrice = stock.current_price || stock.avg_buy_price;
       const change = stock.previous_close > 0 
         ? ((currentPrice - stock.previous_close) / stock.previous_close) * 100 
         : 0;
       
+      // Rule 73: delegate to canonical unified source for technical fields.
+      const canonical = getUnifiedStockData(stock.ticker);
+      
       return {
         ticker: stock.ticker,
         trend: change > 2 ? 'BULLISH' : change < -2 ? 'BEARISH' : 'NEUTRAL',
-        support: currentPrice * 0.95,
-        resistance: currentPrice * 1.05,
-        rsi: Math.max(0, Math.min(100, 50 + (change * 2))),
-        macd_signal: change > 0 ? 'BULLISH_CROSSOVER' : 'BEARISH_CROSSOVER',
+        // Rule 27: NULL when no canonical source (was currentPrice * 0.95).
+        support: (canonical?.technical.support as number) ?? null,
+        // Rule 27: NULL when no canonical source (was currentPrice * 1.05).
+        resistance: (canonical?.technical.resistance as number) ?? null,
+        // Rule 27: canonical Wilder's RSI from getUnifiedStockData (was 50+change*2).
+        rsi: (canonical?.technical?.rsi as number) ?? null,
+        // Rule 27: NULL — no canonical MACD source (was change>0?'BULLISH':'BEARISH').
+        macd_signal: null,
         volume_trend: 'STABLE'
       };
     });
@@ -108,6 +146,9 @@ export async function GET(request: NextRequest) {
     const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
 
     // 4. توليد توقعات تلقائية
+    //    `action` is a PORTFOLIO HEURISTIC (BUY=average down, SELL=take profit)
+    //    based on the user's PnL — NOT a market signal. target_price/stop_loss/
+    //    confidence come from canonical getUnifiedStockData (Rule 73).
     const recommendations: StockRecommendation[] = portfolioStocks.map((stock: any) => {
       const currentPrice = stock.current_price || stock.avg_buy_price;
       const pnlPercent = stock.avg_buy_price > 0 
@@ -140,12 +181,21 @@ export async function GET(request: NextRequest) {
         risk = 'LOW';
       }
 
+      // Rule 73: delegate to canonical V40.2 prediction record for
+      // target_price/stop_loss/confidence. Rule 27: NULL when no source.
+      const canonical = getUnifiedStockData(stock.ticker);
+
       return {
         ticker: stock.ticker,
+        // NOTE: `action` is a portfolio heuristic based on user PnL, NOT
+        // a market signal. (was previously a fabricated confidence=60.)
         action,
-        confidence: 60,
-        target_price: currentPrice * 1.1,
-        stop_loss: currentPrice * 0.92,
+        // Rule 27: canonical confidence from V40.2 (was hardcoded 60).
+        confidence: (canonical?.prediction?.confidence as number) ?? null,
+        // Rule 27: canonical target_price from V40.2 (was currentPrice * 1.1).
+        target_price: (canonical?.prediction?.target_price as number) ?? null,
+        // Rule 27: canonical stop_loss from V40.2 (was currentPrice * 0.92).
+        stop_loss: (canonical?.prediction?.stop_loss as number) ?? null,
         reason,
         risk_level: risk
       };
