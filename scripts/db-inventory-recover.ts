@@ -32,30 +32,28 @@ const CRITICAL_DBS = [
   { name: 'price_history.db', desc: 'الأسعار التاريخية', priority: 'CRITICAL' },
   { name: 'auth.db', desc: 'المستخدمين والجلسات (Prisma)', priority: 'CRITICAL' },
   { name: 'custom.db', desc: 'Prisma default schema', priority: 'CRITICAL' },
-  { name: 'news.db', desc: 'الأخبار', priority: 'IMPORTANT' },
   { name: 'intraday.db', desc: 'بيانات intraday', priority: 'IMPORTANT' },
-  { name: 'core.db', desc: 'بيانات أساسية', priority: 'IMPORTANT' },
-  { name: 'learned.db', desc: 'دروس التعلم الآلي', priority: 'IMPORTANT' },
+  { name: 'news.db', desc: 'الأخبار', priority: 'IMPORTANT' },
   { name: 'crypto.db', desc: 'بيانات العملات الرقمية', priority: 'IMPORTANT' },
-  { name: 'market.db', desc: 'بيانات السوق', priority: 'IMPORTANT' },
-  { name: 'basic.db', desc: 'بيانات أساسية', priority: 'IMPORTANT' },
-  { name: 'egx_investment.db', desc: 'بيانات EGX القديمة', priority: 'IMPORTANT' },
-  { name: 'analytics.db', desc: 'تحليلات', priority: 'IMPORTANT' },
-  { name: 'production_snapshot.db', desc: 'snapshot الإنتاج', priority: 'IMPORTANT' },
+  // ── IMPORTANT: بيانات قابلة للتجديد بس مهمة ──
+  { name: 'historical.db', desc: 'بيانات تاريخية', priority: 'IMPORTANT' },
   { name: 'gold_prices.db', desc: 'أسعار الذهب', priority: 'IMPORTANT' },
-  { name: 'content.db', desc: 'محتوى', priority: 'IMPORTANT' },
-  { name: 'community.db', desc: 'مجتمع', priority: 'IMPORTANT' },
+  { name: 'market.db', desc: 'بيانات السوق', priority: 'IMPORTANT' },
+  { name: 'learned.db', desc: 'دروس التعلم الآلي', priority: 'IMPORTANT' },
+  { name: 'egypt_stocks.db', desc: 'أسهم مصرية', priority: 'IMPORTANT' },
+  { name: 'production_snapshot.db', desc: 'snapshot الإنتاج', priority: 'IMPORTANT' },
+  { name: 'paper_trading.db', desc: 'تداول ورقي', priority: 'IMPORTANT' },
   { name: 'finance.db', desc: 'محفظة', priority: 'IMPORTANT' },
-  { name: 'ai_search_cache.db', desc: 'كاش بحث AI', priority: 'IMPORTANT' },
+  { name: 'decision_log.db', desc: 'سجل القرارات', priority: 'IMPORTANT' },
   { name: 'crypto_learning.db', desc: 'تعلم العملات الرقمية', priority: 'IMPORTANT' },
   { name: 'crypto_disclosures.db', desc: 'إفصاحات العملات الرقمية', priority: 'IMPORTANT' },
-  { name: 'paper_trading.db', desc: 'تداول ورقي', priority: 'IMPORTANT' },
-  { name: 'live_journal.db', desc: 'يوميات live', priority: 'IMPORTANT' },
-  { name: 'prediction_tracker.db', desc: 'تتبع التوقعات', priority: 'IMPORTANT' },
-  { name: 'radarData.db', desc: 'بيانات الرادار', priority: 'IMPORTANT' },
-  { name: 'telegram_data.db', desc: 'بيانات تيليجرام', priority: 'IMPORTANT' },
-  { name: 'unified_stocks.db', desc: 'أسهم موحدة', priority: 'IMPORTANT' },
-  { name: 'decision_log.db', desc: 'سجل القرارات', priority: 'IMPORTANT' },
+  { name: 'content.db', desc: 'محتوى', priority: 'IMPORTANT' },
+  { name: 'community.db', desc: 'مجتمع', priority: 'IMPORTANT' },
+  { name: 'analytics.db', desc: 'تحليلات', priority: 'IMPORTANT' },
+  { name: 'unified_stocks.db', desc: 'أسهم موحدة (عربي)', priority: 'IMPORTANT' },
+  // ❌ تم استبعادها (orphaned / متغيرات كود / Python modules):
+  //   core.db, basic.db, egx_investment.db, ai_search_cache.db,
+  //   radarData.db, prediction_tracker.db, live_journal.db, telegram_data.db
 ];
 
 // ─── Schemas أساسية للـ DBs الناقصة ──────────────────────────────────
@@ -160,6 +158,20 @@ const DB_SCHEMAS: Record<string, string[]> = {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       path TEXT, user_id TEXT,
       created_at TEXT DEFAULT (datetime('now'))
+    )`,
+  ],
+  'historical.db': [
+    `CREATE TABLE IF NOT EXISTS historical_data (
+      ticker TEXT, date TEXT, open REAL, high REAL,
+      low REAL, close REAL, volume REAL,
+      UNIQUE(ticker, date)
+    )`,
+  ],
+  'egypt_stocks.db': [
+    `CREATE TABLE IF NOT EXISTS egypt_stocks (
+      ticker TEXT PRIMARY KEY, name TEXT,
+      sector TEXT, market TEXT DEFAULT 'EGX',
+      last_updated TEXT
     )`,
   ],
 };
