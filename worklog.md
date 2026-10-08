@@ -66135,3 +66135,31 @@ Stage Summary:
 - المؤشرات المطلوبة: EGX30 + EGX70 + EGX100
 - المصدر: TradingView REST (canonical — نفس مصدر الأسعار)
 - القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: P0-METALS-FOREX (المدير العام — مصادر بيانات احترافية)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح market_indices + إضافة metals.dev + frankfurter.dev + اختبار CoinGecko
+
+Work Log:
+- إصلاح update_market_indices.py v2:
+  * HTTP 400: استخدام POST JSON مع columns (نفس tradingview_rest.py)
+  * schema mismatch: auto-migration (ALTER TABLE + CREATE IF NOT EXISTS)
+  * فلترة المؤشرات من نتائج scan بدل طلب مباشر
+- إنشاء update_metals_and_forex.py (250 LOC):
+  * metals.dev: ذهب/فضة/بلاتين/نحاس (يتطلب API key مجاني)
+  * frankfurter.dev: USD/EGP + USD/SAR + USD/KWD + USD/QAR + USD/AED (مجاني تمامًا)
+  * CoinGecko: اختبار أن الكريبتو يعمل
+  * حفظ في data_engine.db (gold_prices + silver_prices + exchange_rates)
+  * fallback للذهب من Daleelak الموجود
+- اختبارات مباشرة:
+  * frankfurter.dev: ✅ نجح (USD/EGP + 4 عملات أخرى)
+  * CoinGecko: ✅ نجح (BTC + ETH + BNB)
+  * metals.dev: يحتاج API key من المالك
+
+Stage Summary:
+- ملفات جديدة: 1 (update_metals_and_forex.py)
+- ملفات معدّلة: 1 (update_market_indices.py v2)
+- مصادر جديدة: 3 (metals.dev + frankfurter.dev + تأكيد CoinGecko)
+- اختبارات: 2/3 نجحوا (frankfurter + CoinGecko)، metals.dev يحتاج مفتاح
+- القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
