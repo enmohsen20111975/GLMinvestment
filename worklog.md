@@ -66003,3 +66003,36 @@ Stage Summary:
   • predictions.db → daily_predictor.py
   • auth.db → بيانات المستخدمين مش هتترجع (مالم يكن فيه backup على السيرفر)
 - الحماية المستقبلية: لو أي حد حاول يمسح أي DB من الـ 30 دي من لوحة التحكم، هيرفض النظام.
+
+---
+Task ID: DB-PROTECTION-CLEANUP-v2
+Agent: Main Agent (Z.ai Code)
+Task: تنقية قائمة PROTECTED_DBS بعد ما المستخدم وضّح إن السيرفر ده تجريبي، والـ DBs المهمة بس اللي مستخدمة فعلاً في الكود.
+
+Work Log:
+- تحليل دقيق لكل DB name في الكود الحي (src/ + vps-service/ + data_engine/):
+  - عدّ المراجع كـ "مسار ملف فعلي" (db/xxx.db أو 'xxx.db' في string literal)
+  - استبعاد الـ substring matches والـ Python module imports
+- اكتشاف 8 false positives في القائمة الأولى:
+  • core.db → Python module `core.db_manager` (from core.db_manager import)
+  • basic.db → orphaned (مفيش reference فعلي في الكود)
+  • egx_investment.db → orphaned (legacy)
+  • ai_search_cache.db → deprecated (comment: "was ai_search_cache.db", انتقل لـ STOCKS_DB)
+  • radarData.db → JS variable `radarData.db_source` (مش ملف)
+  • prediction_tracker.db → Python attr `self.prediction_tracker.db_path`
+  • live_journal.db → orphaned
+  • telegram_data.db → orphaned
+- تحديث src/lib/sqlite-admin.ts: PROTECTED_DBS من 30 → 24 DB (بعد استبعاد الـ 8 false positives). كل DB ليها comment بعدد المراجع كـ file path فعلي.
+- تحديث scripts/db-inventory-recover.ts: CRITICAL_DBS من 30 → 24. أضفت schemas لـ historical.db و egypt_stocks.db (كانوا ناقصين).
+- حذف 8 orphaned DB files اللي اتعملت بالغلط في التشغيل السابق:
+  rm db/core.db db/basic.db db/egx_investment.db db/ai_search_cache.db db/radarData.db db/prediction_tracker.db db/live_journal.db db/telegram_data.db
+- تشغيل --fix لإنشاء historical.db و egypt_stocks.db الناقصين.
+- النتيجة النهائية: 24/24 DB سليمة، 0 فارغة، 0 مفقودة.
+- Lint passed. Dev server HTTP 200.
+
+Stage Summary:
+- القائمة النهائية للـ DBs المحمية (24 DB):
+  CRITICAL (9): stocks, predictions, data_engine, price_history, auth, custom, intraday, news, crypto
+  IMPORTANT (15): historical, gold_prices, market, learned, egypt_stocks, production_snapshot, paper_trading, finance, decision_log, crypto_learning, crypto_disclosures, content, community, analytics, unified_stocks
+- تم استبعاد 8 DBs (false positives = متغيرات كود / Python modules / orphaned)
+- القاعدة المطبّقة: بس الـ DBs اللي بـ تتعمل ليها reference كـ "مسار ملف فعلي" في الكود الحي.
