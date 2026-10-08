@@ -66301,6 +66301,7 @@ Stage Summary:
 - القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
 
 ---
+<<<<<<< Updated upstream
 Task ID: DOCS-UPDATE-FINAL
 Agent: general-purpose (السكرتيرة الدستورية)
 Task: تحديث 5 وثائق متأثرة بكل الشغل (05 + 01 + 02 + SYSTEM + CHANGELOG)
@@ -66423,3 +66424,25 @@ Stage Summary:
 - ملفات معدّلة: 1 (fix_cron_paths.sh + cron jobs جديدة)
 - مراجعة المبرمج الثالث: ✅ لا تعارض
 - القيود: Rule 20/27/66 محترمة، احترام البنية التحتية
+=======
+Task ID: METALS-FOREX-INTEGRATION (المدير العام — احترام البنية التحتية)
+Agent: المدير العام (Z.ai Code)
+Task: دمج metals.dev + frankfurter.dev v2 داخل metals_forex_fetcher.py (احترام البنية)
+
+Work Log:
+- احترام البنية التحتية: محرك البيانات في data_engine/ هو المسؤول عن الجلب
+- دمج metals.dev داخل metals_forex_fetcher.py:
+  * fetch_gold_price_usd(): metals.dev PRIMARY → Daleelak fallback → isagha → 4495
+  * fetch_silver_price_usd(): metals.dev PRIMARY → Daleelak fallback → 60
+- إصلاح frankfurter.dev v2 fallback في fetch_exchange_rates():
+  * URL الصحيح: /v2/rates?base=USD (ليس /v2/latest)
+  * v2 يرجع list [{date, base, quote, rate}] — نحوّله لـ dict
+- أرشفة السكربتات المنفصلة (update_metals_and_forex.py + update_market_indices.py)
+  → نقل لـ _archived/ (لا حذف — VERIFY-BEFORE-DELETE)
+
+Stage Summary:
+- ملفات معدّلة: 1 (metals_forex_fetcher.py — دمج المصادر الجديدة)
+- ملفات مؤرشفة: 2 (السكربتات المنفصلة → _archived/)
+- المصادر الجديدة مدمجة في البنية الأصلية ✅
+- القيود: Rule 20/27/66 محترمة، لا حذف، احترام البنية التحتية
+>>>>>>> Stashed changes
