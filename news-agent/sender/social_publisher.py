@@ -39,11 +39,14 @@ class SocialPublisher:
     """ينشر الأخبار والتحليلات الاستثمارية على منصات التواصل (تليجرام) بتنسيق مالي احترافي"""
 
     def __init__(self):
-        self.telegram_token = os.getenv('TELEGRAM_BOT_TOKEN', '8607763114:AAFkSWD5uvjbB0yzFl57R6J9rU_6ajrEi5U').strip()
+        # Task SECURITY-P0 (Rule 5 — لا أسرار في الكود): تم إزالة التوكن المكشوف.
+        # الإنتاج يجب أن يمرر TELEGRAM_BOT_TOKEN عبر env (ecosystem.config.js يفعل ذلك).
+        # لو env missing → token = '' → publish سيفشل بأمان بدل استخدام توكن مسروق.
+        self.telegram_token = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
         self.telegram_chat_id = (
             os.getenv('TELEGRAM_CHAT_ID') or
             os.getenv('TELEGRAM_CHANNEL_ID') or
-            '@Arabian_investment_guide'
+            ''  # Task SECURITY-P0: حذف fallback القناة المكشوفة
         ).strip()
         self.main_domain = os.getenv('MAIN_DOMAIN', 'https://invist.m2y.net').rstrip('/')
 

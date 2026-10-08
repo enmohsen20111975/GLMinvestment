@@ -15,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminAsync } from '@/lib/admin-auth-server';
 import Database from 'better-sqlite3';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
@@ -42,6 +43,10 @@ function toNumber(val: string | null | undefined): number | null {
 }
 
 export async function POST(request: NextRequest) {
+  // Task SECURITY-P0: admin-only — رفع CSV لـ stocks.db يحتاج صلاحية أدمن.
+  // كان: بلا auth إطلاقًا — أي أحد يقدر يرفع CSV ويعدّل stocks.db.
+  const adminError = await requireAdminAsync(request);
+  if (adminError) return adminError;
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;

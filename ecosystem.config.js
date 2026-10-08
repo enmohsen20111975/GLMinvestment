@@ -165,8 +165,9 @@ module.exports = {
         TELEGRAM_API_ID: process.env.TELEGRAM_API_ID || '',
         TELEGRAM_API_HASH: process.env.TELEGRAM_API_HASH || '',
         TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || '',
-        // EODHD API - primary data source for historical + daily EOD data
-        EODHD_API_KEY: process.env.EODHD_API_KEY || '6990ef9ee966c5.41761316'
+        // Task SECURITY-P0: removed hardcoded EODHD_API_KEY fallback (was '6990ef9ee966c5.41761316' — Rule 5 violation).
+        // If env var missing → empty string → eodhd_fetcher will skip (subscription cancelled anyway).
+        EODHD_API_KEY: process.env.EODHD_API_KEY || ''
       },
       error_file: './logs/python-backend-error.log',
       out_file: './logs/python-backend-out.log',
@@ -323,7 +324,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
-        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || '@Arabian_investment_guide',
+        // Task SECURITY-P0: removed hardcoded channel fallback (was '@Arabian_investment_guide' — exposed production channel).
+        TELEGRAM_CHANNEL_ID: process.env.TELEGRAM_CHANNEL_ID || '',
         BOT_API_SECRET: process.env.BOT_API_SECRET || '',
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://invist.m2y.net',
       },

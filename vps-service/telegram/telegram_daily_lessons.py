@@ -55,7 +55,7 @@ def load_env():
 
 load_env()
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-TELEGRAM_CHANNEL_ID = os.environ.get('TELEGRAM_CHANNEL_ID', '@Arabian_investment_guide')
+TELEGRAM_CHANNEL_ID = os.environ.get('TELEGRAM_CHANNEL_ID', '')  # Task SECURITY-P0: removed hardcoded channel fallback
 
 # ─────────────────────────────────────────────────────────────────────────────
 # المنهج التعليمي الشامل (30 درساً احترافياً لمجتمع المتداولين)

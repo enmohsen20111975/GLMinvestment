@@ -80,7 +80,7 @@ def load_env():
 
 load_env()
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@Arabian_investment_guide").strip()
+CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "").strip()  # Task SECURITY-P0: removed hardcoded channel fallback
 
 # ─── ADMIN-TELEGRAM-BYPASS (Task DEEP-AUDIT-FIX, Rule 50 + Rule 72) ────────
 # قبل كده: البوت كان بـ يطلب من الأدمن يسجّل + يربط حسابه رغم إنه المالك.
@@ -693,8 +693,10 @@ def check_subscription(chat_id: int) -> dict:
         }
 
     if not BOT_API_SECRET:
-        log.warning("BOT_API_SECRET is empty — subscription gate disabled (fail-open)")
-        return {"linked": False, "is_paid": True, "_fail_open": True}
+        # Task SECURITY-P0 (fail-closed): كان fail-open (يرجع is_paid=True) → أي مستخدم VIP.
+        # الآن fail-closed: لو BOT_API_SECRET فارغ → رفض الوصول (is_paid=False).
+        log.error("BOT_API_SECRET is empty — subscription gate CLOSED (fail-closed). Set BOT_API_SECRET env var.")
+        return {"linked": False, "is_paid": False, "_fail_closed": True, "error": "bot_api_secret_missing"}
     try:
         r = requests.get(
             f"{NEXT_PUBLIC_API_URL}/api/bot/check-subscription",

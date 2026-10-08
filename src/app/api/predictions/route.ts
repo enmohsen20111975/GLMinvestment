@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { getSessionUserId } from '@/lib/auth-helper';
+import { requireAdminAsync } from '@/lib/admin-auth-server';
 import { applyValidatedTargets } from '@/lib/targets-validator';
 import { trialExpiredResponse } from '@/lib/subscription-gate';
 import Database from 'better-sqlite3';
@@ -470,6 +471,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Task SECURITY-P0: admin-only — POST يـ proxy لـ Python الذي يكتب predictions.db.
+  // كان: بلا auth — أي أحد يقدر يكتب توقعات. الآن: admin gate.
+  const adminError = await requireAdminAsync(request);
+  if (adminError) return adminError;
+
   try {
     const body = await request.json();
 
