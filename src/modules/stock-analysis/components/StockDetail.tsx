@@ -1074,11 +1074,34 @@ export function StockDetail() {
       // بالـ ticker ده بغض النظر عن السوق المختار. لو فيه ticker متكرر بين EGX و US
       // بيرجع الأول → بيانات خاطئة. الحل: نمرر currentMarket لكل fetch.
       const mkt = encodeURIComponent(currentMarket);
-      // Fetch liquidity footprint for infographic card
-      fetch(`/api/maker-radar/footprint?ticker=${selectedTicker}&days=30&market=${mkt}`)
+      // PHASE4-APIS (Task PHASE4-APIS, Rule 27 + Rule 73):
+      // قبل كده: fetch لـ /api/maker-radar/footprint (410 Gone — كان بـ يستخدم
+      // naive 70/30 split بناءً على لون الشمعة، مش real order flow).
+      // الآن: fetch لـ /api/flow/[ticker] (canonical Python compute_money_flow:
+      // CLV-5d + CMF-20d + vol_confirmation).
+      // الحفاظ على الـ response shape المتوقعة من buildStockInfographicDataFromStock:
+      //   flow.buy_pressure → buy_volume
+      //   flow.sell_pressure → sell_volume
+      //   flow.net_flow → delta_volume
+      //   poc_price / vah_price / val_price = null (volume-profile concepts غير متوفرة في money-flow API)
+      fetch(`/api/flow/${encodeURIComponent(selectedTicker)}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.success) setFootprintData(data);
+          if (data?.success && data?.flow) {
+            const f = data.flow;
+            const buyVol = Number(f.buy_pressure ?? 0);
+            const sellVol = Number(f.sell_pressure ?? 0);
+            setFootprintData({
+              success: true,
+              poc_price: null,
+              vah_price: null,
+              val_price: null,
+              buy_volume: buyVol,
+              sell_volume: sellVol,
+              delta_volume: Number(f.net_flow ?? (buyVol - sellVol)),
+              buy_sell_ratio: sellVol > 0 ? buyVol / sellVol : 0,
+            });
+          }
         })
         .catch(() => {});
 

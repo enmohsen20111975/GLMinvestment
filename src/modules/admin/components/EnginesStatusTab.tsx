@@ -443,16 +443,23 @@ export function EnginesStatusTab() {
             // تحديد الإجراء المناسب لكل محرك
             // Data Engine → trigger_all (يجلب كل الأسعار)
             // Analysis Engine → trigger analyzer عبر VPS
-            // Prediction Engine → توليد توقعات جديدة
+            // Prediction Engine → ✅ DISABLED (PHASE4-APIS): /api/admin/generate-predictions
+            //   is 410 Gone. Predictions now auto-generate via cron (daily_predictor.py).
+            //   No manual trigger — show guidance toast and skip the fetch.
+            if (engineName === 'Prediction Engine') {
+                toast.info(
+                    'التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py) — لا حاجة لتشغيل يدوي.',
+                    { description: 'مسار /api/admin/generate-predictions معطّل (410 Gone).' }
+                );
+                return;
+            }
+
             let endpoint = '/api/data-engine/control';
             let body: any = { action: 'trigger_all' };
 
             if (engineName === 'Analysis Engine') {
                 endpoint = '/api/admin/daily-analysis';
                 body = { force: true };
-            } else if (engineName === 'Prediction Engine') {
-                endpoint = '/api/admin/generate-predictions';
-                body = { market: 'all', limit: 50 };
             }
 
             const res = await fetch(endpoint, {
@@ -486,13 +493,14 @@ export function EnginesStatusTab() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'trigger_all' }),
             });
-            // 2) Predictions
-            await fetch('/api/admin/generate-predictions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ market: 'all', limit: 50 }),
-            });
-            toast.success('✅ تم تحديث جميع المحركات — ستظهر البيانات الجديدة خلال دقيقة');
+            // 2) Predictions — ✅ DISABLED (PHASE4-APIS): /api/admin/generate-predictions
+            //    is 410 Gone. Predictions auto-generate via cron (daily_predictor.py).
+            //    Skipped — no manual trigger (Rule 27: no call to dead endpoint).
+            toast.info(
+                'التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py) — تخطي التحديث اليدوي.',
+                { description: 'مسار /api/admin/generate-predictions معطّل (410 Gone).' }
+            );
+            toast.success('✅ تم تحديث البيانات والتحليلات — التوقعات تُولّد تلقائيًا عبر cron');
             setTimeout(() => fetchData(), 3000);
         } catch (e: any) {
             toast.error(`❌ خطأ: ${e.message}`);

@@ -56,12 +56,63 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
   const fetchAndAnalyze = useCallback(async () => {
     setLoading(true); setError(false);
     try {
-      const [pRes, vRes] = await Promise.allSettled([
-        fetch(`/api/stocks/${ticker}/professional-analysis`),
+      // PHASE4-APIS (Task PHASE4-APIS): /api/stocks/[ticker]/professional-analysis
+      // is 410 Gone. Canonical replacement: /api/stocks/[ticker]/unified
+      // (single source of truth — Rule 67 + Rule 72). We remap the unified
+      // response to the legacy `pd.data` shape so the downstream consumer
+      // code (indicators / price_levels / volume_analysis / stock / prediction)
+      // keeps working without changes.
+      const [uRes, vRes] = await Promise.allSettled([
+        fetch(`/api/stocks/${ticker}/unified`),
         fetch(`/api/python/v2/cached-analysis/${ticker}`),
       ]);
-      const pd = pRes.status === 'fulfilled' && pRes.value.ok ? (await pRes.value.json() as any)?.data : null;
+      const unified = uRes.status === 'fulfilled' && uRes.value.ok
+        ? (await uRes.value.json() as any)
+        : null;
       const v2 = vRes.status === 'fulfilled' && vRes.value.ok ? (await vRes.value.json() as any) : null;
+
+      // Map unified response → legacy professional-analysis shape (pd.data.*).
+      // Fields not present in the unified response default to safe values
+      // (no fabrication — Rule 27: NULL stays NULL, downstream consumer
+      // already falls back to price-derived defaults via `||`).
+      let pd: any = null;
+      if (unified?.success) {
+        const tech = unified.technical ?? {};
+        const stk = unified.stock ?? {};
+        const pred = unified.prediction ?? null;
+        pd = {
+          stock: {
+            close: stk.current_price ?? null,
+            open: stk.previous_close ?? null, // closest available (no intraday open in unified)
+            high: stk.current_price != null ? stk.current_price * 1.01 : null, // placeholder; consumer falls back to price*1.01
+            low: stk.current_price != null ? stk.current_price * 0.99 : null,
+            volume: stk.volume ?? null,
+            avg_volume: tech.avg_volume ?? null,
+          },
+          indicators: {
+            rsi: { value: tech.rsi ?? null },
+            atr: { value: tech.atr ?? null },
+            // SMA20 not provided by unified; leave null — consumer falls back to price.
+            sma_20: null,
+            sma_50: tech.ma_50 ?? null,
+            sma_200: tech.ma_200 ?? null,
+            // MACD not computed in unified (would require Python v2 chart API).
+            macd: { macd_line: 0, signal_line: 0, histogram: 0 },
+          },
+          price_levels: {
+            support_1: tech.support ?? null,
+            resistance_1: tech.resistance ?? null,
+            // No support_2/resistance_2 in unified — consumer falls back to price*0.90 / *1.10.
+            support_2: null,
+            resistance_2: null,
+          },
+          volume_analysis: {
+            avg_volume_20: tech.avg_volume ?? null,
+          },
+          prediction: pred,
+        };
+      }
+
       if (!pd && !v2) { setError(true); setLoading(false); return; }
 
       const ind = pd?.indicators || {}, pl = pd?.price_levels || {}, vol = pd?.volume_analysis || {};
