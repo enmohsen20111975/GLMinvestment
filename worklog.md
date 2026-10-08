@@ -67005,3 +67005,33 @@ Top 50 P0 Master List (الأولوية القصوى للمالك):
 الخطة المقترحة: 5 phases (Security P0 → Data P0 → Engines P0 → APIs P0 → Screens P0) + رفع GitHub بعد كل phase (Rule 75) + مراجعة الفريق قبل كل phase (Rule 76).
 
 لم ألمس أي كود. لم أرفع. التقرير مُجمّع من 6 تدقيقات + تحليل شامل.
+
+---
+Task ID: PHASE1-SECURITY-P0 (المدير العام — إصلاحات الأمان الحرجة)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: Phase 1 — Security P0 fixes (الأخطر أولًا)
+
+Work Log:
+- 8 إصلاحات أمنية حرجة (P0):
+  1. social_publisher.py:42 — Bot Token إنتاجي مكشوف → env only (empty fallback)
+  2. telegram_interactive_bot.py:695 — fail-open auth (is_paid=True لو secret فارغ) → fail-closed (is_paid=False)
+  3. /api/telegram/publish-stock — getSessionUserId فقط → requireAdminAsync (admin-only)
+  4. /api/market/publish-status-image — بلا auth إطلاقًا → requireAdminAsync
+  5. /api/admin/import-indices-csv — بلا auth → requireAdminAsync
+  6. /api/predictions POST — بلا auth → requireAdminAsync
+  7. ecosystem.config.js:169 — EODHD_API_KEY hardcoded → env only (empty fallback)
+  8. ecosystem.config.js:326 + 3 Python files — TELEGRAM_CHANNEL_ID hardcoded fallback → env only (empty)
+
+Verification:
+- ✅ Python syntax: 4/4 files pass ast.parse
+- ✅ TS lint: 0 errors
+- ✅ TS compilation: 0 new errors in modified files (pre-existing errors unchanged)
+- ✅ Runtime admin gates: /api/telegram/publish-stock POST → 403, /api/predictions POST → 403 (unauthenticated rejected)
+- ✅ GET routes still work: /api/health → 200, /api/predictions GET → 200
+- ✅ ecosystem.config.js valid JS
+
+Stage Summary:
+- 8 P0 security fixes applied (Bot Token + fail-open + 4 admin gates + 2 secrets removed)
+- 7 ملفات مُعدّلة: social_publisher.py + telegram_interactive_bot.py + telegram_daily_lessons.py + telegram_target_hit_tracker.py + 4 TS routes + ecosystem.config.js
+- لم أحذف أي ملف (Rule 16). لم أرفع بعد (جاري).
+- Phase 1 complete. Moving to Phase 2.
