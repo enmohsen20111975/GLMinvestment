@@ -67149,3 +67149,25 @@ Stage Summary:
 - 4/9 callers (footprint + professional-analysis) اتعملها canonical URL replacement + field mapping.
 - لم أحذف أي ملف (Rule 16). لم أرفع لـ git. لم أنشئ fake data (Rule 27).
 - Phase 4 complete. جاهز للمراجعة قبل Phase 5 (Screens P0).
+
+---
+Task ID: PHASE5-SCREENS (المدير العام — إصلاحات الشاشات)
+Agent: المدير العام (Z.ai Code)
+Task: Phase 5 — Screens P0 (Footer sticky-bottom fix)
+
+Work Log:
+- Footer sticky-bottom fix:
+  * المشكلة: page.tsx L871 had redundant `min-h-screen` on inner container (parent L846 already has it).
+  * هذا كان يسبب ارتفاع مضاعف + Footer لا يلتصق بأسفل viewport عند المحتوى القصير.
+  * الإصلاح: removed `min-h-screen` from inner div L871. الـ Footer الآن يلتصق بأسفل viewport على الصفحات القصيرة + يُدفع طبيعيًا على الصفحات الطويلة (Rule: sticky-bottom + natural push).
+- TradingViewChart RSI/ATR dedup: P1 (مؤجل لـ Phase 5b — يتطلب إضافة computeRSISeries لـ canonical-rsi.ts).
+- 11 dead components (5,626 LOC): P1 (مؤجل — يتطلب owner approval per Rule 4 NO-NEW-SCREENS-FILES).
+
+Verification:
+- ✅ page.tsx: 0 new TS errors
+- ✅ Lint: 0 errors
+
+Stage Summary:
+- Footer sticky-bottom fixed (redundant min-h-screen removed)
+- 1 ملف مُعدّل: src/app/page.tsx
+- Phase 5 complete. All 5 phases done.

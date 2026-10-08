@@ -868,7 +868,10 @@ function AppShell() {
         {/* TOPBAR: قائمة علوية مرتبة بدل الـ Sidebar الجانبي القديم */}
         <TopBar />
         <div className="flex-1 flex flex-col overflow-x-hidden">
-          <div className="flex-1 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
+          {/* Task PHASE5-SCREENS (Footer sticky-bottom fix): removed redundant min-h-screen
+              from inner container — the parent (L846) already has min-h-screen flex flex-col.
+              This ensures Footer stays at viewport bottom on short pages + pushed down on long pages. */}
+          <div className="flex-1 min-w-0 w-full flex flex-col overflow-x-hidden">
             <main className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
               {/* N1: page transition animation — fade + slight slide for professional feel */}
               <motion.div
