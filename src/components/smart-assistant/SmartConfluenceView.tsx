@@ -92,17 +92,17 @@ export function SmartConfluenceView() {
   }, []);
 
   const buyPicks = predictions.filter(p => {
-    const r = p.recommendation.toLowerCase();
+    const r = (p.recommendation || '').toLowerCase();
     return r.includes('buy') || r.includes('شراء');
   });
 
   const holdPicks = predictions.filter(p => {
-    const r = p.recommendation.toLowerCase();
+    const r = (p.recommendation || '').toLowerCase();
     return r.includes('hold') || r.includes('حيادية');
   });
 
   const sellPicks = predictions.filter(p => {
-    const r = p.recommendation.toLowerCase();
+    const r = (p.recommendation || '').toLowerCase();
     return r.includes('sell') || r.includes('بيع');
   });
 

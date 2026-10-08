@@ -223,16 +223,16 @@ export async function GET(
       (response.board as any).signal = unified.canonical.signal;
       (response.board as any).signal_ar = unified.canonical.signal_ar;
       (response.board as any).master_score = unified.canonical.master_score;
-      (response.board as any).recommendation = unified.canonical.signal.toLowerCase();
+      (response.board as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
       (response.board as any).recommendation_ar = unified.canonical.signal_ar;
     }
     if (response.maestro && typeof response.maestro === 'object') {
-      (response.maestro as any).recommendation = unified.canonical.signal.toLowerCase();
+      (response.maestro as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
       (response.maestro as any).recommendation_ar = unified.canonical.signal_ar;
       (response.maestro as any).master_score = unified.canonical.master_score;
     }
     if (response.professional && typeof response.professional === 'object') {
-      (response.professional as any).recommendation = unified.canonical.signal.toLowerCase();
+      (response.professional as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
       (response.professional as any).recommendation_ar = unified.canonical.signal_ar;
       (response.professional as any).score = unified.canonical.master_score;
     }

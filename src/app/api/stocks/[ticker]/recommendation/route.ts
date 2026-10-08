@@ -40,7 +40,7 @@ export async function GET(
         d.signal = unified.canonical.signal;
         d.signal_ar = unified.canonical.signal_ar;
         d.master_score = unified.canonical.master_score;
-        d.recommendation = unified.canonical.signal.toLowerCase();
+        d.recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
         d.recommendation_ar = unified.canonical.signal_ar;
         d.rsi = unified.technical.rsi ?? d.rsi;
         d.support = unified.technical.support ?? d.support;
@@ -71,7 +71,7 @@ export async function GET(
       (rec as any).signal = unified.canonical.signal;
       (rec as any).signal_ar = unified.canonical.signal_ar;
       (rec as any).master_score = unified.canonical.master_score;
-      (rec as any).recommendation = unified.canonical.signal.toLowerCase();
+      (rec as any).recommendation = unified.canonical.signal ? unified.canonical.signal.toLowerCase() : null;
       (rec as any).recommendation_ar = unified.canonical.signal_ar;
       (rec as any).rsi = unified.technical.rsi ?? (rec as any).rsi;
       (rec as any).unified = true;

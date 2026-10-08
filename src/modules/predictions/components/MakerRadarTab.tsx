@@ -345,14 +345,14 @@ const fmtMoney = (n: number | null | undefined): string => {
   if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(1)}B`;
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
-  return num.toFixed(0);
+  return (num ?? 0).toFixed(0);
 };
 
 const fmtPct = (n: number | null | undefined, withSign = true): string => {
   if (n == null || isNaN(n as number)) return '-';
   const num = Number(n);
   const sign = withSign && num > 0 ? '+' : '';
-  return `${sign}${num.toFixed(1)}%`;
+  return `${sign}${(num ?? 0).toFixed(1)}%`;
 };
 
 const pnlColorClass = (pnl: number | null | undefined): string => {
@@ -1394,7 +1394,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             value={radarKpi.topMomentumTicker ?? '—'}
             sub={
               radarKpi.topMomentumRoc != null
-                ? `ROC 10 أيام: ${radarKpi.topMomentumRoc.toFixed(2)}%`
+                ? `ROC 10 أيام: ${(radarKpi.topMomentumRoc ?? 0).toFixed(2)}%`
                 : 'بانتظار البيانات'
             }
             accent="emerald"
@@ -1971,7 +1971,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
               style={{ flexGrow: widthPct, flexBasis: '0%' }}
               onMouseEnter={() => setHoveredSector(s.sector)}
               onMouseLeave={() => setHoveredSector(null)}
-              title={`${s.sector} · ${s.totalStocks} سهم · ${chg >= 0 ? '+' : ''}${chg.toFixed(1)}% · سيولة ${(s.totalTurnover / 1e6).toFixed(0)}M EGP`}
+              title={`${s.sector} · ${s.totalStocks} سهم · ${chg >= 0 ? '+' : ''}${(chg ?? 0).toFixed(1)}% · سيولة ${(s.totalTurnover / 1e6).toFixed(0)}M EGP`}
             >
               {/* Animated shimmer for inflow sectors */}
               {isInflow && (
@@ -2021,7 +2021,7 @@ function SectorHeatStrip({ sectors, loading }: SectorHeatStripProps) {
               >
                 <span className="font-medium truncate max-w-[100px]">{s.sector}</span>
                 <span className="font-mono font-bold">
-                  {chg > 0 ? '+' : ''}{chg.toFixed(1)}%
+                  {chg > 0 ? '+' : ''}{(chg ?? 0).toFixed(1)}%
                 </span>
                 <span className="text-[8px] opacity-60">
                   {(s.totalTurnover / 1e6).toFixed(0)}M
@@ -2317,7 +2317,7 @@ const StockTable = memo(function StockTable({
         const volHighlight = volRatio >= 1.4;
         return (
           <span className={`font-mono ${volHighlight ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}`}>
-            {volRatio.toFixed(2)}×
+            {(volRatio ?? 0).toFixed(2)}×
           </span>
         );
       },
@@ -2457,11 +2457,11 @@ const StockTable = memo(function StockTable({
           <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-2 text-[10px] font-mono">
               <span className={`font-bold ${isBuyDominant ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                🟢 {buyPct.toFixed(0)}%
+                🟢 {(buyPct ?? 0).toFixed(0)}%
               </span>
               <span className="text-muted-foreground">|</span>
               <span className={`font-bold ${isSellDominant ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'}`}>
-                🔴 {sellPct.toFixed(0)}%
+                🔴 {(sellPct ?? 0).toFixed(0)}%
               </span>
             </div>
             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden flex">
@@ -2572,7 +2572,7 @@ const StockTable = memo(function StockTable({
           return (
             <div className="flex flex-col items-center leading-tight">
               <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">
-                +{expGain.toFixed(0)}%
+                +{(expGain ?? 0).toFixed(0)}%
               </span>
               <span className="text-[9px] text-muted-foreground whitespace-nowrap">
                 خلال 7-14ي
@@ -2586,7 +2586,7 @@ const StockTable = memo(function StockTable({
           return (
             <div className="flex flex-col items-center leading-tight">
               <span className="text-amber-600 dark:text-amber-400 font-bold font-mono text-xs">
-                ±{expectedMove.toFixed(0)}%
+                ±{(expectedMove ?? 0).toFixed(0)}%
               </span>
               <span className="text-[9px] text-amber-500/70 whitespace-nowrap">
                 تقدير من التقلب
@@ -2835,7 +2835,7 @@ function StockDetailDrawer({
     const points = prices.map((p, i) => {
       const x = (i / (prices.length - 1)) * w;
       const y = h - ((p - min) / range) * h;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
+      return `${(x ?? 0).toFixed(1)},${(y ?? 0).toFixed(1)}`;
     }).join(' ');
     const isUp = prices[prices.length - 1] >= prices[0];
     const firstP = prices[0];
@@ -3309,21 +3309,21 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
   );
 
   if (vol_ratio >= 1.5) {
-    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — تأكيد قوة.`);
+    analysis_lines.push(`الحجم الحالي ${(vol_ratio ?? 0).toFixed(2)}× متوسط 20 يوم — تأكيد قوة.`);
   } else if (vol_ratio < 0.7) {
-    analysis_lines.push(`الحجم الحالي ${vol_ratio.toFixed(2)}× متوسط 20 يوم — ضعف سيولة.`);
+    analysis_lines.push(`الحجم الحالي ${(vol_ratio ?? 0).toFixed(2)}× متوسط 20 يوم — ضعف سيولة.`);
   }
 
   if (range_10d_pct < 6) {
-    analysis_lines.push(`المدى الضيق ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتجميع.`);
+    analysis_lines.push(`المدى الضيق ${(range_10d_pct ?? 0).toFixed(1)}% في آخر 10 أيام يشير لتجميع.`);
   } else if (range_10d_pct > 15) {
-    analysis_lines.push(`المدى الواسع ${range_10d_pct.toFixed(1)}% في آخر 10 أيام يشير لتقلب عالي.`);
+    analysis_lines.push(`المدى الواسع ${(range_10d_pct ?? 0).toFixed(1)}% في آخر 10 أيام يشير لتقلب عالي.`);
   } else {
     // Same dead-assignment shape as the recommendation block: this line used
     // to sit inside the `> 15` branch, so it could only ever render alongside
     // the "wide range / high volatility" message and the normal 6-15% range
     // produced no line at all.
-    analysis_lines.push(`المدى ${range_10d_pct.toFixed(1)}% في آخر 10 أيام طبيعي.`);
+    analysis_lines.push(`المدى ${(range_10d_pct ?? 0).toFixed(1)}% في آخر 10 أيام طبيعي.`);
   }
 
   // UNIFY-FIX (Rule 20 Python=Brain): أزلنا client-side recommendation fabrication.
@@ -3359,7 +3359,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
         {positionSizePct != null && (
           <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${pathAccent.badge}`} title="حجم المركز المقترح من المحفظة">
             <Crosshair className="h-3 w-3 ml-1" />
-            حجم المركز: {positionSizePct.toFixed(1)}%
+            حجم المركز: {(positionSizePct ?? 0).toFixed(1)}%
           </Badge>
         )}
       </div>
@@ -3387,7 +3387,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
             {fmtNum(target_1)}
           </div>
           <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-            (+{t1Gain.toFixed(1)}%)
+            (+{(t1Gain ?? 0).toFixed(1)}%)
           </div>
         </div>
         <div className="bg-background/60 rounded-md p-2 border border-emerald-200/60 dark:border-emerald-900/40">
@@ -3398,7 +3398,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
             {fmtNum(target_2)}
           </div>
           <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-            (+{t2Gain.toFixed(1)}%)
+            (+{(t2Gain ?? 0).toFixed(1)}%)
           </div>
         </div>
         <div className="bg-background/60 rounded-md p-2 border border-rose-200/60 dark:border-rose-900/40">
@@ -3409,7 +3409,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
             {fmtNum(stop_loss)}
           </div>
           <div className="text-[10px] text-rose-600 dark:text-rose-400 font-mono">
-            ({slLoss.toFixed(1)}%)
+            ({(slLoss ?? 0).toFixed(1)}%)
           </div>
         </div>
       </div>
@@ -3446,7 +3446,7 @@ function TradingPlanSection({ detail, radarStock }: { detail: StockDetail; radar
           <TradingFieldRow label="الدعم الثاني" value={fmtNum(support_2)} sub="(أقل سعر في 20 يوم)" valueClass="text-emerald-600 dark:text-emerald-400" />
           <TradingFieldRow label="المقاومة الأولى" value={fmtNum(resistance_1)} sub="(أعلى سعر في 10 أيام)" valueClass="text-rose-600 dark:text-rose-400" />
           <TradingFieldRow label="المقاومة الثانية" value={fmtNum(resistance_2)} sub="(أعلى سعر في 20 يوم)" valueClass="text-rose-600 dark:text-rose-400" />
-          <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${rr_ratio.toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
+          <TradingFieldRow label="نسبة العائد/المخاطرة" value={`${(rr_ratio ?? 0).toFixed(1)}:1`} valueClass="text-amber-600 dark:text-amber-400 font-bold" />
         </div>
       </details>
 
