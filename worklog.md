@@ -66327,3 +66327,25 @@ Stage Summary:
 - لم ألمس الكود (.py/.ts/.tsx) ولا الدستور (00-CONSTITUTION.md — تم تحديثه بالفعل في commit `11853f69` Task `CONSTITUTION-R75-R76`).
 - لم أُجرِ أي push على GitHub (GM handles per Rule 75).
 - Commits المُرصودة في الـ docs: `38665fd1` (REAPPLY+DISABLE-SCRIPTS) · `11853f69` (CONSTITUTION-R75-R76) · `64ee8d54` (zero_conflict_test --require-real-data) · `65a748f` (R:R fix baseline — تاريخي) · `c2ade8c6` (STRONG_BUY 80→78 — Rule 71) · `efa40d69` (Ticker Cooldown) · `dc08cee6` (Rule 71).
+
+---
+<!-- merged team work -->
+Task ID: FIX-V3 (المدير العام — إصلاح 3 مشاكل من نتائج اللابتوب)
+Agent: المدير العام (Z.ai Code)
+Task: إصلاح market_indices (list.get) + exchange_rates (schema) + auto-migration
+
+Work Log:
+- إصلاح 1: update_market_indices.py — TradingView scanner يرجع dict أو list
+  * isinstance(data, dict) → data.get('data', [])
+  * isinstance(data, list) → rows = data
+  * isinstance(row, dict) → row.get('s', '')
+- إصلاح 2: update_metals_and_forex.py — exchange_rates schema
+  * قبل: base_currency + target_currency (خاطئ)
+  * بعد: timestamp + currency + rate_to_usd (مطابق لـ metals_forex_fetcher.py)
+- إصلاح 3: auto-migration للجداول
+  * gold_prices + silver_prices + exchange_rates: CREATE TABLE IF NOT EXISTS
+
+Stage Summary:
+- ملفات معدّلة: 2 (update_market_indices.py + update_metals_and_forex.py)
+- bugs مُصلحة: 3 (list.get + schema mismatch + missing tables)
+- القيود: Rule 20/27/66 محترمة، لا حذف origin/main
