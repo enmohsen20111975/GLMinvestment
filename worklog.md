@@ -65878,3 +65878,33 @@ Stage Summary:
 
 - **التوصية:** الـ egksco_price_history canonical reader (load_egksco_history في vps-service/data/prices.py) بيـ fallback تلقائيًا لـ price_history.db.price_history. على الإنتاج ده الـ actual data source. الـ owner directive (Rule 46) بيقول egksco هو الـ canonical، بس عمليًا الـ canonical فعليًا هو price_history.db. التوصية: إما (أ) تشغيل scripts/consolidate_prices.py يومياً post-market كـ cron job لـ populate egksco_price_history على الـ VPS، أو (ب) reverse الـ reader priority لـ price_history.db يكون PRIMARY و egksco_price_history يكون fallback (matching الـ actual data flow).
 
+
+---
+Task ID: DEEP-ROOT-FIX (المدير العام — إصلاح جذري من الأعماق)
+Agent: المدير العام (Z.ai Code) + فريق DEEP-PY-AUDIT + DATA-ENGINE-DEEP-DIG + PRED-ENGINE-DEEP-DIG
+Task: إصلاح جذري من الأعماق — الكاتب المتسلل + confidence hardcoded + RSI bug + cron paths
+
+Work Log:
+- اكتشاف الكاتب المتسلل: intraday_scanner.py يكتب predictions بدون risk_reward + who_is_buying
+  * الإصلاح: إضافة risk_reward=p['risk_reward'] + who_is_buying_state=p.get('maker_flow','')
+- اكتشاف confidence=85 hardcoded في daily_predictor.py L3425
+  * الإصلاح: confidence = sig.get('combined_score', sig['tech_score']) (ديناميكي)
+- اكتشاف RSI SMA-based bug في daily_predictor.py L1110 (4 implementations متناقضة)
+  * الإصلاح: استخدم calc_rsi من analyzers.indicators.rsi (Wilder canonical)
+- اكتشاف cron paths خاطئة: /root/GLMinvestment/ بدل /home/meme/my_apps/GLMinvestment/
+  * الإصلاح: fix_cron_paths.sh — استبدال المسار + إضافة 4 cron jobs ناقصة
+    (daily_predictor + maker_radar + intraday_scanner + market_regime_engine)
+- اكتشاف egksco_price_history قديمة (2026-09-26)
+  * الجذر: egksco_scraper.py يعمل من EgyptScheduler لكن يكتب شمعة اليوم فقط
+  * الحل: fix_cron_paths.sh + pm2 restart all لسحب الإصلاحات
+
+Stage Summary:
+- ملفات معدّلة: 2 (daily_predictor.py + intraday_scanner.py)
+- ملفات جديدة: 1 (fix_cron_paths.sh)
+- bugs مُصلحة: 4 (rogue writer + confidence hardcoded + RSI SMA + cron paths)
+- الحل النهائي للمالك:
+  1. git pull origin main
+  2. ./fix_cron_paths.sh
+  3. pm2 restart all
+  4. تشغيل daily_predictor يدويًا للتحقق
+- القيود: Rule 20/27/67/73 محترمة، لا حذف، الحمايات لم تُلمس

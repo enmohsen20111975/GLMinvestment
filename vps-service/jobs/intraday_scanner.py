@@ -283,6 +283,8 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
             tracker = PredictionTracker(str(PREDICTIONS_DB))
             saved_count = 0
             for p in top_picks:
+                # UNIFY-FIX (Rule 73 SINGLE-WRITER): مرر risk_reward + who_is_buying_state
+                # كان intraday_scanner يكتب predictions بدون هذه الحقول → NULL في DB
                 pid = tracker.record_prediction(
                     ticker=p['ticker'],
                     signal=p['signal'],
@@ -296,6 +298,8 @@ def scan_intraday(save_to_db: bool = True, limit: int = 5) -> List[Dict[str, Any
                     target_price_2=p['target_price_2'],
                     prediction_date=datetime.now().strftime('%Y-%m-%d'),
                     evidence_count=4,
+                    risk_reward=p['risk_reward'],  # P0 FIX: كان مفقود
+                    who_is_buying_state=p.get('maker_flow', ''),  # P0 FIX: كان مفقود
                     kill_filter_result=f"INTRADAY-5M | MAKER:{p['maker_flow']}({p['maker_confidence']}%) | R={p['risk_reward']} | {p['v76_signal']}"
                 )
                 if pid:

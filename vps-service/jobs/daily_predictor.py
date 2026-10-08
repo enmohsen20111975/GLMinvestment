@@ -1108,14 +1108,13 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                     # if RSI was actually computed.
                     _rsi_quick: Optional[float] = None
                     if len(closes[:day_idx+1]) >= 15:
-                        _gains, _losses = 0, 0
-                        for _ri in range(1, 15):
-                            _diff = closes[_ri] - closes[_ri-1] if _ri < len(closes[:day_idx+1]) else 0
-                            if _diff >= 0: _gains += _diff
-                            else: _losses -= _diff
-                        _avg_g = _gains / 14
-                        _avg_l = _losses / 14
-                        _rsi_quick = 100 - (100 / (1 + (_avg_g / _avg_l if _avg_l > 0 else 999))) if _avg_l > 0 else 100
+                        # UNIFY-FIX (Rule 67 CALCULATION-CANONICAL): استخدم Wilder's RSI
+                        # بدل SMA-based (كان bug: sum/14 بدل Wilder's smoothing)
+                        try:
+                            from analyzers.indicators.rsi import calc_rsi as _canonical_calc_rsi
+                            _rsi_quick = _canonical_calc_rsi(closes[:day_idx+1], 14)
+                        except Exception:
+                            _rsi_quick = None
                     # رفض لو قرب القمة + RSI مرتفع
                     # FIX-2: guard _rsi_quick is not None (no fake 50.0 comparison)
                     if _rsi_quick is not None and _near_peak >= float(get_setting('v402_near_peak_threshold', default=95)) and _rsi_quick > float(get_setting('v402_near_peak_rsi_max', default=65)):
@@ -3422,7 +3421,10 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                             ''', (
                                 sa_id, sig['ticker'], sig['tech_score'], sig['signal'],
                                 'شراء قوي' if 'STRONG' in sig['signal'] else 'شراء',
-                                85, sig['entry'], sig['target'], sig['stop'],
+                                # UNIFY-FIX (Rule 20): confidence ديناميكي = master_score
+                                # كان hardcoded=85 — كل التوقعات عندها نفس الثقة (مخالفة Rule 73)
+                                sig.get('combined_score', sig['tech_score']),
+                                sig['entry'], sig['target'], sig['stop'],
                                 sig['r_multiple'], scan_date, now_iso, sa_json,
                                 _sa_ai_reason, _sa_ai_narrative,
                             ))
