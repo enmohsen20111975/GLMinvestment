@@ -65092,3 +65092,28 @@ Stage Summary:
 - تضارب مُزال: 3 (sigInt thresholds + regime computation + deprecated endpoint)
 - التحقق: GET / → 200 ✅
 - القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: PROJECT-MOVE (المدير العام — نقل المشروع)
+Agent: المدير العام (Z.ai Code)
+Task: نقل المشروع من /home/z/GLMinvestment/ إلى /home/z/my-project/
+
+Work Log:
+- إيقاف dev server
+- نسخ احتياطي للملفات الفريدة للساندبوكس (skills, examples, tests, Caddyfile, public)
+- تنظيف my-project القديم
+- نسخ محتوى GLMinvestment إلى my-project (بما في ذلك .git)
+- استرجاع الملفات الفريدة للساندبوكس
+- تثبيت deps (1189 package)
+- إعادة إنشاء DBs (فارغة — Rule 27 NO-FAKE-DATA)
+- تشغيل dev server من /home/z/my-project/
+- التحقق: GET / → 200, unified → 404 (صحيح), footprint → 410 (صحيح), deal-advisor → 502 (صحيح)
+
+Stage Summary:
+- المشروع الآن يعمل من /home/z/my-project/ (متوافق مع إعداد الساندبوكس)
+- .git محفوظ (آخر commit: 773f6e5)
+- pushurl معطّل (no-push-allowed)
+- .git/config نظيف من التوكن
+- الذاكرة: 869MB available (ضمن الميزانية)
+- مساحة المشروع: 1.8GB
+- القيود: لا حذف ملفات أصلية، الحمايات لم تُلمس، Rule 20/27/73 محترمة
