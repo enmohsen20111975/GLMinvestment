@@ -7,6 +7,17 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // UNIFY-FIX (2026-10-08): تفعيل standalone output لتسريع البناء
+  // بدل توليد مئات serverless functions منفصلة (تستهلك ذاكرة + وقت)
+  // يولّد خادم Node واحد مستقل (أسرع بناء + أقل استهلاك ذاكرة)
+  output: 'standalone',
+  // UNIFY-FIX: تقليل عدد الصفحات المُجمّعة مسبقًا (تسريع البناء)
+  // الصفحات تُجمّع عند الطلب (on-demand) بدلًا من كلها مسبقًا
+  experimental: {
+    optimizePackageImports: true,
+  },
+  // UNIFY-FIX: تعطيل source maps في الإنتاج (تسريع البناء)
+  productionBrowserSourceMaps: false,
 };
 
 // P0 #15 fix (2026-09-27): wire Sentry SDK into the Next.js build.
@@ -30,5 +41,5 @@ export default withSentryConfig(nextConfig, {
   hideSourceMaps: true,
   disableLogger: true,
   widenClientFileUpload: true,
-  autoInstrumentServerFunctions: true,
+  autoInstrumentServerFunctions: false, // UNIFY-FIX: تعطيل لتسريع البناء
 });
