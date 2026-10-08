@@ -3,9 +3,14 @@
 update_metals_and_forex.py — تحديث المعادن + العملات من مصادر احترافية
 ================================================================================
 
+FIX v2 (2026-10-08):
+  - metals.dev: API key يعمل ✅ (gold $4124, silver $58, platinum $1631, copper $0.45)
+  - frankfurter.dev: الـ URL الصحيح هو /v2/rates?base=USD (ليس /v1/latest)
+  - frankfurter.dev: /v2/rate/USD/EGP يعطي EGP مباشرة
+
 المصادر:
-  1. metals.dev — الذهب/الفضة/البلاتين/النحاس (API مجاني، سريع، موثوق)
-  2. frankfurter.dev — العملات الأجنبية (API مجاني، بنك مركزي أوروبي)
+  1. metals.dev — الذهب/الفضة/البلاتين/النحاس (API key مفعّل)
+  2. frankfurter.dev v2 — العملات (بنك مركزي أوروبي، مجاني)
   3. CoinGecko — الكريبتو (موجود بالفعل، هذا السكربت يضيف اختبار)
 
 الاستخدام:
@@ -23,6 +28,7 @@ import urllib.request
 import urllib.error
 import json
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 
@@ -31,23 +37,21 @@ DB_PATH = PROJECT_ROOT / 'db' / 'data_engine.db'
 DRY_RUN = '--dry-run' in sys.argv
 
 # === metals.dev ===
-# API مجاني: https://metals.dev/
-# يتطلب API key مجاني (1000 طلب/شهر)
 METALS_DEV_URL = 'https://api.metals.dev/v1/latest'
-METALS_DEV_KEY = ''  # المالك يجب أن يحصل على مفتاح مجاني من metals.dev
+# API key من env أو hardcoded (المالك: PC38QRRLVNN1YENBR0UG389NBR0UG)
+METALS_DEV_KEY = os.environ.get('METALS_DEV_KEY', 'PC38QRRLVNN1YENBR0UG389NBR0UG')
+METALS = ['gold', 'silver', 'platinum', 'copper']
 
-# === frankfurter.dev ===
-# API مجاني بالكامل بدون مفتاح (بنك مركزي أوروبي)
-FRANKFURTER_URL = 'https://api.frankfurter.dev/v1/latest'
+# === frankfurter.dev v2 ===
+# الـ URL الصحيح: /v2/rates?base=USD (ليس /v1/latest)
+FRANKFURTER_RATES_URL = 'https://api.frankfurter.dev/v2/rates'
+FRANKFURTER_RATE_URL = 'https://api.frankfurter.dev/v2/rate'
 FRANKFURTER_BASE = 'USD'
 FRANKFURTER_TARGETS = ['EGP', 'SAR', 'KWD', 'QAR', 'AED']
 
 # === CoinGecko ===
 COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price'
 COINGECKO_COINS = ['bitcoin', 'ethereum', 'binancecoin']
-
-# المعادن المطلوبة من metals.dev
-METALS = ['gold', 'silver', 'platinum', 'copper']
 
 
 def log(msg, level='INFO'):
@@ -60,11 +64,7 @@ def log(msg, level='INFO'):
 # ============================================================================
 
 def fetch_metals_from_metals_dev() -> list:
-    """جلب أسعار المعادن من metals.dev"""
-    if not METALS_DEV_KEY:
-        log("  ⚠️ metals.dev: لا يوجد API key — استخدم fallback من Daleelak")
-        return []
-
+    """جلب أسعار المعادن من metals.dev (API key مفعّل)"""
     try:
         url = f"{METALS_DEV_URL}?api_key={METALS_DEV_KEY}&currency=USD&unit=toz"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -72,13 +72,14 @@ def fetch_metals_from_metals_dev() -> list:
             data = json.loads(resp.read().decode())
 
         results = []
+        metals_data = data.get('metals', {})
         for metal in METALS:
-            if metal in data.get('metals', {}):
-                price = data['metals'][metal]
+            if metal in metals_data:
+                price = float(metals_data[metal])
                 if price and price > 0:
                     results.append({
                         'metal': metal,
-                        'price_usd': float(price),
+                        'price_usd': price,
                         'currency': 'USD',
                         'unit': 'toz',
                     })
@@ -89,67 +90,160 @@ def fetch_metals_from_metals_dev() -> list:
         return []
 
 
-def fetch_gold_from_egksco_or_daleelak() -> dict | None:
-    """Fallback: جلب الذهب من data_engine.db (البيانات الموجودة من Daleelak)"""
+def save_metals_to_db(metals: list) -> int:
+    """حفظ المعادن في data_engine.db (gold_prices + silver_prices)"""
+    if not metals or DRY_RUN:
+        return 0
+
     try:
         conn = sqlite3.connect(str(DB_PATH))
         cur = conn.cursor()
-        # آخر سعر ذهب من gold_prices
-        row = cur.execute("""
-            SELECT price_per_gram, karat, timestamp
-            FROM gold_prices
-            WHERE karat = '24k'
-            ORDER BY timestamp DESC LIMIT 1
-        """).fetchone()
-        conn.close()
+        now_iso = datetime.now().isoformat()
+        saved = 0
 
-        if row and row[0]:
-            return {
-                'source': 'daleelak_fallback',
-                'price_per_gram_24k': float(row[0]),
-                'timestamp': row[2],
-            }
-        return None
-    except Exception:
-        return None
+        for m in metals:
+            metal_name = m['metal']
+            price_usd = m['price_usd']
+
+            # تحويل من troy ounce إلى gram (1 toz = 31.1035g)
+            price_per_gram_usd = price_usd / 31.1035
+
+            if metal_name == 'gold':
+                # حفظ في gold_prices (24k = price per gram)
+                cur.execute("""
+                    INSERT OR REPLACE INTO gold_prices (timestamp, karat, price_per_gram, price_per_ounce, currency)
+                    VALUES (?, '24k', ?, ?, 'USD')
+                """, (now_iso, price_per_gram_usd, price_usd))
+                saved += 1
+                log(f"  💾 ذهب محفوظ: {price_per_gram_usd:.2f} USD/جرام ({price_usd:.2f} USD/أونصة)")
+            elif metal_name == 'silver':
+                cur.execute("""
+                    INSERT OR REPLACE INTO silver_prices (timestamp, price_per_gram, price_per_ounce, currency)
+                    VALUES (?, ?, ?, 'USD')
+                """, (now_iso, price_per_gram_usd, price_usd))
+                saved += 1
+                log(f"  💾 فضة محفوظة: {price_per_gram_usd:.4f} USD/جرام ({price_usd:.2f} USD/أونصة)")
+            elif metal_name == 'platinum':
+                # حفظ في gold_prices كـ platinum (نفس الجدول لكل المعادن)
+                cur.execute("""
+                    INSERT OR REPLACE INTO gold_prices (timestamp, karat, price_per_gram, price_per_ounce, currency)
+                    VALUES (?, 'platinum', ?, ?, 'USD')
+                """, (now_iso, price_per_gram_usd, price_usd))
+                saved += 1
+                log(f"  💾 بلاتين محفوظ: {price_per_gram_usd:.2f} USD/جرام")
+            elif metal_name == 'copper':
+                cur.execute("""
+                    INSERT OR REPLACE INTO gold_prices (timestamp, karat, price_per_gram, price_per_ounce, currency)
+                    VALUES (?, 'copper', ?, ?, 'USD')
+                """, (now_iso, price_per_gram_usd, price_usd))
+                saved += 1
+                log(f"  💾 نحاس محفوظ: {price_per_gram_usd:.4f} USD/جرام")
+
+        conn.commit()
+        conn.close()
+        return saved
+    except Exception as e:
+        log(f"  ❌ حفظ المعادن: {e}", 'ERROR')
+        return 0
 
 
 # ============================================================================
-# 2. frankfurter.dev — العملات
+# 2. frankfurter.dev v2 — العملات
 # ============================================================================
 
 def fetch_forex_from_frankfurter() -> list:
-    """جلب أسعار العملات من frankfurter.dev (بنك مركزي أوروبي — موثوق 100%)"""
+    """جلب أسعار العملات من frankfurter.dev v2 API"""
     try:
-        targets_str = ','.join(FRANKFURTER_TARGETS)
-        url = f"{FRANKFURTER_URL}?base={FRANKFURTER_BASE}&symbols={targets_str}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        # v2 API: /v2/rates?base=USD
+        url = f"{FRANKFURTER_RATES_URL}?base={FRANKFURTER_BASE}"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0',
+            'Accept': 'application/json',
+        })
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
 
+        # v2 يرجع قائمة: [{"date":"2026-10-08","base":"USD","quote":"AED","rate":3.6725}, ...]
         results = []
-        rates = data.get('rates', {})
-        date = data.get('date', datetime.now().strftime('%Y-%m-%d'))
+        if isinstance(data, list):
+            for item in data:
+                quote = item.get('quote', '')
+                if quote in FRANKFURTER_TARGETS:
+                    rate = float(item.get('rate', 0))
+                    if rate > 0:
+                        results.append({
+                            'base': FRANKFURTER_BASE,
+                            'target': quote,
+                            'rate': rate,
+                            'date': item.get('date', ''),
+                        })
+                        log(f"  ✅ {FRANKFURTER_BASE}/{quote}: {rate:.4f}")
+        elif isinstance(data, dict):
+            # fallback: لو v2 رجع dict بدل list
+            rates = data.get('rates', {})
+            for target in FRANKFURTER_TARGETS:
+                if target in rates:
+                    rate = float(rates[target])
+                    if rate > 0:
+                        results.append({
+                            'base': FRANKFURTER_BASE,
+                            'target': target,
+                            'rate': rate,
+                            'date': data.get('date', ''),
+                        })
+                        log(f"  ✅ {FRANKFURTER_BASE}/{target}: {rate:.4f}")
 
-        for target in FRANKFURTER_TARGETS:
-            if target in rates:
-                rate = float(rates[target])
-                if rate > 0:
-                    results.append({
-                        'base': FRANKFURTER_BASE,
-                        'target': target,
-                        'rate': rate,
-                        'date': date,
-                    })
-                    log(f"  ✅ {FRANKFURTER_BASE}/{target}: {rate:.4f}")
         return results
     except Exception as e:
         log(f"  ❌ frankfurter.dev خطأ: {e}", 'ERROR')
         return []
 
 
+def fetch_single_rate(base: str, target: str) -> dict | None:
+    """جلب سعر عملة واحد من frankfurter.dev /v2/rate/USD/EGP"""
+    try:
+        url = f"{FRANKFURTER_RATE_URL}/{base}/{target}"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0',
+            'Accept': 'application/json',
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        return data
+    except Exception as e:
+        log(f"  ❌ frankfurter /rate/{base}/{target}: {e}", 'ERROR')
+        return None
+
+
+def save_forex_to_db(forex: list) -> int:
+    """حفظ العملات في data_engine.db.exchange_rates"""
+    if not forex or DRY_RUN:
+        return 0
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        cur = conn.cursor()
+        now_iso = datetime.now().isoformat()
+        saved = 0
+
+        for f in forex:
+            cur.execute("""
+                INSERT OR REPLACE INTO exchange_rates (timestamp, base_currency, target_currency, rate, date)
+                VALUES (?, ?, ?, ?, ?)
+            """, (now_iso, f['base'], f['target'], f['rate'], f['date']))
+            saved += 1
+            log(f"  💾 {f['base']}/{f['target']}: {f['rate']:.4f} محفوظ")
+
+        conn.commit()
+        conn.close()
+        return saved
+    except Exception as e:
+        log(f"  ❌ حفظ العملات: {e}", 'ERROR')
+        return 0
+
+
 # ============================================================================
-# 3. CoinGecko — الكريبتو (اختبار)
+# 3. CoinGecko — الكريبتو (اختبار + تأكيد)
 # ============================================================================
 
 def test_coingecko() -> bool:
@@ -161,6 +255,7 @@ def test_coingecko() -> bool:
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
 
+        all_ok = True
         for coin in COINGECKO_COINS:
             if coin in data:
                 price = data[coin].get('usd', 0)
@@ -168,84 +263,14 @@ def test_coingecko() -> bool:
                     log(f"  ✅ CoinGecko {coin}: ${price:.2f}")
                 else:
                     log(f"  ⚠️ CoinGecko {coin}: سعر = 0")
-                    return False
+                    all_ok = False
             else:
-                log(f"  ⚠️ CoinGecko {coin}: غير موجود في الاستجابة")
-                return False
-        return True
+                log(f"  ⚠️ CoinGecko {coin}: غير موجود")
+                all_ok = False
+        return all_ok
     except Exception as e:
         log(f"  ❌ CoinGecko خطأ: {e}", 'ERROR')
         return False
-
-
-# ============================================================================
-# 4. كتابة البيانات في data_engine.db
-# ============================================================================
-
-def save_metals_to_db(metals: list):
-    """حفظ المعادن في data_engine.db.gold_prices + silver_prices"""
-    if not metals or DRY_RUN:
-        return 0
-
-    try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cur = conn.cursor()
-        now_iso = datetime.now().isoformat()
-
-        saved = 0
-        for m in metals:
-            metal_name = m['metal']
-            price_usd = m['price_usd']
-
-            if metal_name == 'gold':
-                # تحويل من troy ounce إلى gram (1 toz = 31.1035g)
-                price_per_gram_usd = price_usd / 31.1035
-                # حفظ في gold_prices
-                cur.execute("""
-                    INSERT OR REPLACE INTO gold_prices (timestamp, karat, price_per_gram, price_per_ounce, currency)
-                    VALUES (?, '24k', ?, ?, 'USD')
-                """, (now_iso, price_per_gram_usd, price_usd))
-                saved += 1
-            elif metal_name == 'silver':
-                price_per_gram_usd = price_usd / 31.1035
-                cur.execute("""
-                    INSERT OR REPLACE INTO silver_prices (timestamp, price_per_gram, price_per_ounce, currency)
-                    VALUES (?, ?, ?, 'USD')
-                """, (now_iso, price_per_gram_usd, price_usd))
-                saved += 1
-
-        conn.commit()
-        conn.close()
-        return saved
-    except Exception as e:
-        log(f"  ❌ حفظ المعادن: {e}", 'ERROR')
-        return 0
-
-
-def save_forex_to_db(forex: list):
-    """حفظ العملات في data_engine.db.exchange_rates"""
-    if not forex or DRY_RUN:
-        return 0
-
-    try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cur = conn.cursor()
-        now_iso = datetime.now().isoformat()
-
-        saved = 0
-        for f in forex:
-            cur.execute("""
-                INSERT OR REPLACE INTO exchange_rates (timestamp, base_currency, target_currency, rate, date)
-                VALUES (?, ?, ?, ?, ?)
-            """, (now_iso, f['base'], f['target'], f['rate'], f['date']))
-            saved += 1
-
-        conn.commit()
-        conn.close()
-        return saved
-    except Exception as e:
-        log(f"  ❌ حفظ العملات: {e}", 'ERROR')
-        return 0
 
 
 # ============================================================================
@@ -260,27 +285,37 @@ if __name__ == '__main__':
     log("=" * 60)
 
     # 1. metals.dev
+    log("")
     log("=" * 60)
     log("1️⃣ metals.dev — الذهب/الفضة/البلاتين/النحاس")
     log("=" * 60)
     metals = fetch_metals_from_metals_dev()
-    if not metals:
-        # Fallback: استخدم الذهب الموجود من Daleelak
-        gold_data = fetch_gold_from_egksco_or_daleelak()
-        if gold_data:
-            log(f"  📋 Fallback: ذهب 24k من Daleelak: {gold_data['price_per_gram_24k']:.2f} ج.م/جرام")
-        else:
-            log("  ⚠️ لا توجد بيانات معادن إطلاقًا")
-    else:
+    if metals:
         saved = save_metals_to_db(metals)
         log(f"  ✅ تم حفظ {saved} معدن في data_engine.db")
+    else:
+        log("  ⚠️ لا توجد بيانات معادن")
 
-    # 2. frankfurter.dev
+    # 2. frankfurter.dev v2
     log("")
     log("=" * 60)
-    log("2️⃣ frankfurter.dev — العملات (بنك مركزي أوروبي)")
+    log("2️⃣ frankfurter.dev v2 — العملات (بنك مركزي أوروبي)")
     log("=" * 60)
     forex = fetch_forex_from_frankfurter()
+    if not forex:
+        # Fallback: جرّب /v2/rate/USD/EGP مباشرة
+        log("  🔄 محاولة fallback: /v2/rate/USD/EGP مباشرة...")
+        for target in FRANKFURTER_TARGETS:
+            single = fetch_single_rate(FRANKFURTER_BASE, target)
+            if single and single.get('rate'):
+                forex.append({
+                    'base': single.get('base', FRANKFURTER_BASE),
+                    'target': single.get('quote', target),
+                    'rate': float(single['rate']),
+                    'date': single.get('date', ''),
+                })
+                log(f"  ✅ {FRANKFURTER_BASE}/{target}: {single['rate']:.4f} (مباشر)")
+
     if forex:
         saved = save_forex_to_db(forex)
         log(f"  ✅ تم حفظ {saved} عملة في data_engine.db")
