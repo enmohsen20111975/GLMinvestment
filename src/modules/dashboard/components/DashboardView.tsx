@@ -405,7 +405,9 @@ export function DashboardView() {
                       const stop = stock.exitStrategy?.stopLoss || 0;
                       const target = stock.exitStrategy?.targetPrice || 0;
                       const target2 = stock.exitStrategy?.targetPrice2 || 0;
-                      const rr = stop > 0 && entry > 0 ? ((target - entry) / (entry - stop)).toFixed(2) : '—';
+                      // UNIFY-FIX (Rule 20): R:R من Python (stock.rrRatio) — لا حساب client-side
+                      const rr = (stock as Record<string, unknown>).rrRatio as number | undefined;
+                      const rrDisplay = rr != null ? rr.toFixed(2) : '—';
                       const isStrong = stock.recommendation === 'Strong Buy';
                       return (
                         <Card

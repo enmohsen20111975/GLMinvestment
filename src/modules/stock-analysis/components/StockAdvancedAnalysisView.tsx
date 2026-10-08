@@ -375,21 +375,10 @@ export function StockAdvancedAnalysisView({ ticker, stockName, currentPrice }: S
   // 🔥 FIXED: Always use currentPrice from stock detail (passed as prop) as primary source
   // This ensures consistency with the stock detail page
   const currentPriceValue = currentPrice || chartData?.indicators?.currentPrice || 0;
-  
-  // Update pythonAnalysis with current price if available
-  const updatedAnalysis = pythonAnalysis && currentPrice ? {
-    ...pythonAnalysis,
-    risk_profile: pythonAnalysis.risk_profile ? {
-      ...pythonAnalysis.risk_profile,
-      entry_price: currentPrice,
-      entry_low: currentPrice * 0.99,
-      entry_high: currentPrice * 1.01,
-    } : {
-      entry_price: currentPrice,
-      entry_low: currentPrice * 0.99,
-      entry_high: currentPrice * 1.01,
-    }
-  } : pythonAnalysis;
+  // UNIFY-FIX (Rule 20 + Rule 27): أزلنا overwrite entry_price بـ currentPrice.
+  // كان الكود يستبدل entry_price الحقيقي من Python بـ currentPrice + fabrication
+  // entry_low/high = currentPrice * 0.99/1.01. الآن نحترم risk_profile من Python كما هو.
+  const updatedAnalysis = pythonAnalysis;
 
   return (
     <div className="space-y-6" dir="rtl" ref={shareCardRef}>
