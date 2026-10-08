@@ -65346,3 +65346,535 @@ Stage Summary:
   2. git pull + pm2 restart all على السرفر
   3. تشغيل deep_server_audit.sh + إرسال النتائج
 - القيود: لا تعديل كود Python (تدقيق فقط)، الحمايات لم تُلمس
+
+---
+Task ID: PRED-ENGINE-DEEP-DIG
+Agent: general-purpose (مهندس محرك Python)
+Task: حفر عميق في محرك التوقعات + رسم خريطة كل عملية حسابية
+
+Work Log:
+- قرأت آخر 1500 سطر من worklog.md (خط 63848→65348) — تابعت سياق V402-DIAGNOSIS + V402-P0-DB-WRITE-FIX + DEEP-PY-AUDIT + UNIFY-AUDIT-2 + PROFESSIONAL-TRADING-CHART.
+- قرأت daily_predictor.py كامل (3889 LOC) — تتبعت pipeline: get_scan_dates() → get_tickers() → V38BacktestEngine.get_price_data() → analyze_single_day() → 13 kill filters → tracker.record_prediction() (L3303) → INSERT INTO stored_analyses (L3400). اكتشفت `confidence=85` hardcoded في L3425!
+- قرأت prediction_tracker.py (1283 LOC) — فحصت schema predictions (L297-326) + 24 migrations (L331-357) + record_prediction INSERT (L613-633) — يكتب 24 عمود. enforce_geometry_guard R1-R5 (L144-236) + dedup UPDATE (L508-555) + cap (L558-571).
+- قرأت institutional_decision_engine.py (1506 LOC) — فحصت _build_6_proofs (L339-486) + _compute_tech_score (L489-498) + _compute_signal_final (L632-944) + fallback exception (L1479-1506) + build_institutional_decision (L1191-1506).
+- قرأت master_analyzer.py (5726 LOC، دفعات) — فحصت detect_who_is_buying (L846-1113) — 8 factors × 4 scores + state + generate_analysis_reason (L1124-1243) + MASTER_WEIGHTS (L470-482) + THRESHOLDS (L495-504) + analyze() (L2044) + master_score formula (L2841-2852) + SMC blend (L2854-2906) + Screener boosts (L3017-3050). اكتشفت THRESHOLDS مختلفة عن canonical_signal.py SIGNAL_THRESHOLDS!
+- قرأت engines/backtest_engine.py (2399 LOC) — فحصت calc_sma/calc_ema (L224-244) + _calc_rsi_series (Wilder's) (L247-291) + calc_atr (L294-309) + detect_maker_state (L349-414) + calculate_score_and_proofs (L650-734) + analyze_single_day (L1487-1850) + V38BacktestEngine (L1135+) + Trade dataclass (L788-816). اكتشفت calc_atr ثاني في core_scoring_engine!
+- قرأت utils/shared_liquidity.py (1151 LOC) — فحصت dynamic_min_turnover (L89-115) + has_volume_surge (L118-157) + is_explosive_surge (L163+) + should_reject_by_liquidity (L262-357) + detect_quiet_accumulation (L416+) + detect_pre_surge (L599+) + compute_money_flow (L751-978) — اكتشفت TWO FORMULAS (legacy vs Pine canonical، flag-gated) + detect_life_cycle (L985+).
+- قرأت utils/risk_reward.py (88 LOC) + utils/position_sizing.py (210 LOC) + utils/canonical_signal.py (309 LOC) — كلها canonical sources. اكتشفت SIGNAL_THRESHOLDS ≠ master_analyzer.THRESHOLDS.
+- قرأت core/opportunity_quality.py (2111 LOC، دفعات) — فحصت classify_liquidity (L805-959) — 5 tiers + position_size_mult + hold_multiplier + INVESTOR/GAMBLER/BALANCED thresholds (L973-1014) + SECTOR_HEAT thresholds (L1058-1064).
+- قرأت analyzers/engine_settings.py (1483 LOC) — فحصت DEFAULT_SETTINGS (L300-459) + V40.2 thresholds (L416-458) + system_settings schema (L465-481) + dynamic helpers (L1328-1417). اكتشفت V40.2 thresholds في DEFAULT_SETTINGS بس مش بالضرورة في stocks.db.system_settings table.
+- grep كل ملفات .py في vps-service لـ `INSERT INTO predictions|stored_analyses|UPDATE predictions` — اكتشفت 25 ملف يكتب في predictions.db! 5 منهم VIOLATE SINGLE-WRITER principle (background_analyzer + ai_predictions_routes + historical_predictions_v2_routes + telegram_target_hit_tracker + scripts/*). أهم اكتشاف: background_analyzer.py L1952 + L2239 بيكتب INSERT OR REPLACE INTO stored_analyses رغم إن daily_predictor.py comment بيقول إنه الـ single-writer الوحيد!
+- grep رصد 100+ `except: pass` في daily_predictor.py — أهمها L3431 (stored_analyses INSERT failure silent) + L3451 (expert_memory_phase silent) + L3334 (notebook silent).
+- لم أعدّل أي ملف — تحليل static فقط (هذا الإدخال هو الإضافة الوحيدة المسموح بها).
+
+Stage Summary:
+
+### 1. خريطة كل عملية حسابية (Calculation Map)
+
+| العملية | الصيغة | المدخلات + المصدر | مكان الحفظ | الحالة |
+|---|---|---|---|---|
+| **signal** | institutional_decision_engine._compute_signal_final() — Evidence-based (3+ أدلة → BUY، 2+ → HOLD، 2+ ضعف → SELL). daily_predictor IMPROVEMENT-12 (L1005-1007) بيحوّل WAIT→HOLD قبل الحفظ | closes/highs/lows/volumes + proofs (6) + maker_state + flight_state + kill_filter_result + benchmark_change + breadth_pct + closes+sma20+rsi+rr_ratio | predictions.db.predictions.signal (TEXT) + stored_analyses.recommendation (TEXT) | ✅ يُحفظ |
+| **master_score** | `sig.get('combined_score', sig['tech_score'])` — combined_score = tech_score AFTER news/sector/radar/maker_buying boosts (L1162-1230) | tech_score (من institutional_decision_engine) + feedback_loop boost + sector_heat ±10/8 + maker_buying ±12 + news_impact ±×10 + screener_boosts | predictions.db.predictions.master_score (REAL) + stored_analyses.maestro_score (REAL) | ✅ يُحفظ |
+| **tech_score** | institutional_decision_engine._compute_tech_score(proofs) = `get_setting('tech_score_base', 50) + sum(proof.score_impact)` clamped 0-100 | proofs (6 إثباتات) + engine_settings.tech_score_base | predictions.db.predictions.technical_score (REAL DEFAULT 50) + stored_analyses.maestro_score | ✅ يُحفظ |
+| **entry** | `risk_profile['entry'] = current_price = closes[-1]` (L1366 + L1780) | closes[-1] (آخر إغلاق) من data_engine.db.egksco_price_history.close_price | predictions.db.predictions.entry_price (REAL NOT NULL) + stored_analyses.entry_price | ✅ يُحفظ |
+| **stop_loss** | `entry - (atr × dynamic_sl_mult)` حيث dynamic_sl_mult من _compute_dynamic_sl_mult (ATR percentile: >80% → 2.5، <20% → 1.0، بينهم linear interp). clamp لـ [3%, 7%] من entry (L1827-1848) | atr_val (calc_atr highs/lows/closes 14) + engine_settings.atr_stop_min_pct=3.0 + V40_2_STOP_MAX_PCT env var default 7.0 | predictions.db.predictions.stop_loss (REAL) + stored_analyses.stop_loss | ✅ يُحفظ |
+| **target (TP1)** | `entry + (risk × dynamic_rr1)` حيث dynamic_rr1 = 2.0 لو outperforming_market else 1.5. لو DNA bullish و dna_target_price > entry → استخدم DNA target بدلها. EXPLOSIVE_UNCAP: 5×ATR لو pump/high_mom | risk (= entry - stop) + dynamic_rr1 + dna_target_price + V40_EXPLOSIVE_UNCAP env var | predictions.db.predictions.target_price (REAL) + stored_analyses.target_price | ✅ يُحفظ |
+| **target_2 (TP2)** | `entry + (risk × (dynamic_rr1 × 2))` — تضاعف R:R | risk + dynamic_rr1 | predictions.db.predictions.target_price_2 (REAL DEFAULT 0) | ✅ يُحفظ |
+| **target_3 (DNA)** | `target_2 × (1 + avg_hist_move_pct × 0.7)` من آخر 3 أزواج swing_low→swing_high (capped 50%) fallback target_2 × 1.15 | closes[-30:] swing pivots | sig['target_3'] في signals_by_date بس مش بيكتب في predictions! | ❌ AITIM — يُحفظ في stored_analyses.analysis_json.target_price_3 بس مش في predictions جدول |
+| **risk_reward (R:R)** | `compute_risk_reward(entry, target, stop, fallback=0.0)` من utils/risk_reward.py — BUY: reward/risk = (target-entry)/(entry-stop). SELL: معكوس | entry + target + stop | predictions.db.predictions.risk_reward (REAL) — column أُضيف 2026-10-07 (P0 FIX V402-DIAGNOSIS R5) | ✅ يُحفظ (مُصلَح) لكن التوقعات القديمة لسه NULL |
+| **RSI** | **4 implementations مختلفة!** (1) analyzers/indicators/rsi.py calc_rsi (Wilder's canonical — single value)، (2) engines/backtest_engine._calc_rsi_series (Wilder's series form)، (3) master_analyzer._inline_rsi (Wilder's — L4835-4855)، (4) daily_predictor.py L1110-1118 (SMA-based، NOT Wilder!) — **DUPLICATION BUG**: daily_predictor بستخدم SMA بدل Wilder في فلتر near-peak | closes (period=14) | predictions.db.predictions.technical_score (لما يبقى RSI) + sig['proofs']['technicals'] string | ⚠️ DUPLICATION — 4 صيغ مختلفة |
+| **ATR** | **2 implementations مختلفة!** (1) engines/backtest_engine.calc_atr (Wilder's EMA smoothing of TR، L294-309)، (2) analyzers/core_scoring_engine.calc_atr (المستدعى من master_analyzer L3131) | highs/lows/closes (period=14) | predictions.db.predictions.atr_at_entry (REAL) | ⚠️ DUPLICATION — صيغتان |
+| **money_flow (buy_pct/sell_pct)** | utils/shared_liquidity.compute_money_flow() — multi-layer: (legacy) CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15 + trend_penalty. (Pine canonical) CLV×0.65 + body×0.35 — **flag-gated** (RADAR_USE_PINE_FORMULA env var) | closes + volumes + highs + lows (آخر 20-21 يوم) | **NOT saved in predictions.db** — يُستهلك فقط في canonical_signal.classify_money_flow() و يُمرّر لـ stored_analyses.analysis_json داخل kill_filter_result string | ❌ ORPHAN — محسوب لكن مش متسجّل في عمود مستقل |
+| **who_is_buying** | master_analyzer.detect_who_is_buying() (L846-1113) — 8 factors × 4 scores (institutional_buy_score، institutional_sell_score، retail_buy_score، retail_sell_score) + who_state + who_buying_score | closes + volumes + highs + lows + opens (lookback=20، mfi_length=14) | predictions.db.predictions.who_is_buying (TEXT) — column أُضيف 2026-10-07 (P0 FIX R6) | ✅ يُحفظ (مُصلَح) لكن التوقعات القديمة لسه NULL |
+| **accumulation** | classify_accumulation(buy_pct) من canonical_signal.py — 7 tiers: STRONG_ACCUMULATION(≥70)/ACCUMULATION(≥60)/LIGHT_ACCUMULATION(≥55)/NEUTRAL(45-55)/LIGHT_DISTRIBUTION/DISTRIBUTION/STRONG_DISTRIBUTION. **بنفس الوقت** master_analyzer.detect_maker_state() بيرجع 'absorption'/'distribution'/'calm' + institutional_decision_engine._detect_maker_state() كمان برجع نفس الأسماء — **THREE NAMING SYSTEMS** | buy_pct من compute_money_flow (canonical) أو state من detect_maker_state (master_analyzer) | **NOT saved in predictions.db** — يُستهلك في proofs.markers (kill_filter_result string) | ❌ ORPHAN + DUPLICATION — 3 أنظمة تسمية مختلفة |
+| **phase** | classify_stock_phase(buy_pct, roc_10d, roc_30d) من canonical_signal.py — 5 tiers: تجميع/تصاعد/توزيع/تخفيض/محايد. المنطق: buy_pct ≥ 60 + roc_10d ∈ [-3,+5] → تجميع | buy_pct (من compute_money_flow) + roc_10d + roc_30d | **NOT saved in predictions.db** — يُستهلك في UI فقط | ❌ ORPHAN — محسوب لكن مش متسجّل |
+| **confidence** | `int(85)` **HARDCODED** في daily_predictor.py L3425 (stored_analyses INSERT)! مفيش confidence ديناميكي من الـ result — الكود بيكتب 85 لكل توقع! | nothing — fixed value | predictions.db.predictions.confidence (REAL) — مرتبط بـ master_score عبر UI | ❌ HARDCODED — كل التوقعات stored_analyses عندها confidence=85 |
+| **evidence_count** | `count_evidence(result['proofs']) = sum(1 for v in proofs.values() if '✅' in str(v))` (L223-225) — بيمسح كل الـ proofs dict و يعدّ اللي فيها '✅' | proofs dict (الـ 6 proofs من institutional_decision_engine + soft_surge markers) | predictions.db.predictions.evidence_count (INTEGER DEFAULT 0) | ✅ يُحفظ |
+
+### 2. تدفق daily_predictor.py (Pipeline كامل)
+
+```
+Stage 1: قراءة الأسعار (get_scan_dates)
+   ├─ PRIMARY: data_engine.db.egksco_price_history.price_date (162K rows)
+   │  └─ 🐛 BUG: لو اليوم مش موجود → يرجّع آخر يوم متاح (2026-09-26 لو متجمد!)
+   └─ FALLBACK: stocks.db.stock_daily_prices.price_date
+
+Stage 2: قراءة الأساسيات (get_tickers + _load_fundamentals)
+   ├─ get_tickers: data_engine.db.egksco_price_history → price_history.db → stocks.db.stock_daily_prices
+   │  └─ filter_egx_tickers_detailed (utils/egx_gate.py) — EGX canonical فقط
+   └─ engine._load_fundamentals() — من data_engine.db.tab_valuation + tab_profitability + tab_technical
+
+Stage 3: حساب المؤشرات (V38BacktestEngine.analyze_single_day)
+   ├─ calc_atr(highs, lows, closes, 14) — Wilder's EMA of TR
+   ├─ calc_sma(closes, 200) → sma200 (تغيّر من calc_ema → calc_sma — Rule 54 BUG FIX)
+   ├─ calc_bollinger_bands(closes, 20, 2.0) → bb_mid/up/low + bb_width + squeeze/expansion
+   ├─ calc_sma(volumes, 20) → vol_ma + vol_ratio + volume_surge (≥1.3×)
+   ├─ detect_order_blocks_and_sweeps(highs, lows, closes, lookback=5) → ob_state
+   ├─ detect_maker_state() → absorption/distribution/calm
+   ├─ calc_fair_value() → fair_value + fair_premium
+   └─ dna_pattern_match() → bullish + target_price
+
+Stage 4: institutional_decision_engine.build_institutional_decision()
+   ├─ المدخلات: closes/highs/lows/volumes/opens + atr + sma20 + sma200 + smc_data + 
+   │           fusion_metrics + quant_metrics + fundamental_score + market_regime +
+   │           bb_squeeze + levels + sector_change + stock_roc + benchmark_change
+   ├─ _detect_maker_state() → state=absorption/distribution/calm
+   ├─ _detect_flight_state() → flying_up/falling_down/coiling/sideways
+   ├─ _build_6_proofs() → [trend, maker, dna, fundamentals, sector, benchmark]
+   ├─ _compute_tech_score(proofs) = 50 + sum(score_impact) clamped 0-100
+   ├─ _count_strong_evidences(proofs) → strong_count/weak_count/maker_passed/benchmark_passed
+   ├─ evaluate_kill_filters() → kill_filter_result (passed/kill_reasons)
+   ├─ _compute_self_learning_thresh() → dynamic_thresh
+   ├─ _compute_signal_final() → signal_final + path_taken + color
+   ├─ _compute_dynamic_sl_mult() → dynamic_sl_mult (ATR percentile-based)
+   ├─ _compute_dynamic_fair_state() → غالي/عادل/رخيص
+   ├─ _compute_portfolio_advice() → exit_type + exit_pct + pnl_pct
+   └─ المخرجات: dict فيه maker_state + flight_state + proofs + tech_score +
+                signal_final + risk_profile{entry/sl/tp1/tp2/rr_ratio_tp1/rr_ratio_tp2} +
+                prediction_ar + dynamic_thresh + dynamic_sl_mult + evidence + kill_filter_result
+
+Stage 5: Kill Filters (13 فلتر — كلها continue عند الفشل)
+   ├─ Liquidity filter (shared_liquidity.should_reject_by_liquidity) — dynamic turnover thresholds
+   ├─ Penny stock + dead volume filter (v402_penny_stock_price=1.0 + v402_dead_volume_threshold=1000)
+   ├─ Near-peak filter (near_peak ≥ 95% + RSI > 65 → reject) — 🐛 BUG: RSI SMA-based مش Wilder
+   ├─ Drawdown filter (drawdown_from_high ≥ 5% → reject)
+   ├─ Min evidence gate (evidence_count < v402_min_evidence_count=3 → reject)
+   ├─ Fundamentals veto (fundamental_score < v402_fund_score_min=30 → reject)
+   ├─ Entry gate (utils.entry_gate.check_entry_gate) — evidence + RS + Deep Correction + Don't Chase + R:R ≥ 1.8
+   ├─ Sector dead filter (avg_chg ≤ -1.5% + rising_pct ≤ 20% → reject)
+   ├─ BOS/ChoCH filter (broke_support + not sweep_low → reject)
+   ├─ V62 fake_pump + distribution + story_stock (P/E > 50 → حجم ×0.5)
+   ├─ V68 dirty_distribution + no_chase_2d + A+_liquidity_grab (A/B toggles)
+   ├─ V72 hidden_dist_block (DNA-WINNER disabled)
+   ├─ V73 desert_phase_reject (DNA-WINNER)
+   ├─ V76 PUMP_FROM_DESERT detection
+   ├─ HMM regime veto (Distribution/Markdown → reject)
+   ├─ Who is buying veto (institutional_sell ≥ 65 → reject)
+   ├─ News veto (V40_2_NEWS_IMPACT env var، verdict=VETO → reject)
+   ├─ Local news agent veto (V40_2_LOCAL_NEWS env var)
+   └─ Expert memory veto (run_expert_memory_phase recommendation='block')
+
+Stage 6: record_prediction (tracker.record_prediction L3303)
+   ├─ enforce_geometry_guard R1-R5 (target > entry×1.05, stop < entry×0.95, stop > entry×0.905,
+   │                                target ≤ entry×3.0, R:R ≥ 1.5) — HARD REJECT
+   ├─ DATA-QUALITY W1-W9 validation (validate_write from data_quality_rules)
+   ├─ DEDUP (ticker, persona) — UPDATE لو موجود PENDING لنفس persona
+   ├─ CAP — رفض لو PENDING ≥ MAX_PENDING_PER_PERSONA=5 (BYPASS_PRED_CAP='1' = disabled)
+   └─ INSERT INTO predictions (24 columns) — ticker + signal + signal_type + prediction_date +
+      entry_price + target_price + stop_loss + master_score + technical_score + fundamental_score +
+      ai_pattern_score + sentiment_score + notes + persona + created_at + atr_at_entry +
+      target_price_2 + explosive_score + explosive_label + evidence_count + morning_bell +
+      kill_filter_result + risk_reward + who_is_buying
+
+Stage 7: stored_analyses INSERT (daily_predictor.py L3400)
+   ├─ INSERT INTO stored_analyses (18 columns) — id, ticker, market, maestro_score, recommendation,
+   │  recommendation_ar, confidence=85 ⚠️ HARDCODED, entry_price, target_price, stop_loss, risk_reward,
+   │  prediction_date, updated_at, analysis_json (JSON includes target_3 + technical_explanation),
+   │  is_gambler_opportunity=1, is_investor_opportunity=1, ai_reason, ai_narrative
+   ├─ ON CONFLICT(ticker, market) DO UPDATE — UPSERT
+   └─ except: pass (L3431-3432) — silent failure لو INSERT فشل
+
+Stage 8: daily_closer.py (يعمل بشكل منفصل بـ cron)
+   ├─ _mark_closed() L2886 — UPDATE predictions SET outcome_date, actual_exit_price, actual_return,
+   │  hit_target, hit_stop, is_correct, holding_days, exit_type, highest_price_reached,
+   │  lowest_price_reached, status
+   ├─ SPLIT GUARD (actual_return < -35% → exit_type='split_excluded', actual_return=0)
+   ├─ HARD LOSS CEILING (actual_return < -7% → cap at -7%)
+   └─ Truthful-status assertion (TARGET_HIT لو highest < target → downgrade لـ closed_win/EXPIRED)
+```
+
+### 3. محرك القرار المؤسسي (institutional_decision_engine.py)
+
+**الـ 6 Proofs (مدخلاتها من institutional_decision_engine.build_institutional_decision args):**
+
+| # | الإثبات | المصدر | الصيغة | الوزن (score_impact) |
+|---|---|---|---|---|
+| 1 | trend | closes[-1] vs sma200 (من calc_sma) | closes[-1] > sma200 → ✅ | ±15 (engine_settings.proof_weight_trend=15) |
+| 2 | maker (الميكرز) | maker_state.state من _detect_maker_state() — بياخد closes/opens/highs/lows/volumes/smc_data/quant_metrics/vol_ratio/atr_val | absorption → ✅، distribution → ❌، calm → ⚪ | ±20 (proof_weight_makers=20) |
+| 3 | dna (البصمة) | candle_probabilities.bias + candle_probabilities.up_prob + stock_dna.personality_type | bias='bullish' OR up_prob>55 → ✅ | ±15 (proof_weight_dna=15) |
+| 4 | fundamentals | fundamental_score من engine._get_fundamentals() (data_engine.db.tab_valuation) | score ≥ 60 → ✅، score < 40 → ❌، 40-60 → ⚪ | ±15 (proof_weight_fundamental=15) |
+| 5 | sector (القطاع) | sector_change (PROXY من closes[-1]/closes[-6] في daily_predictor L798-806) + market_regime.trend | sector_change > 0 → ✅ | ±10 (proof_weight_sector=10) |
+| 6 | benchmark (القوة النسبية) | stock_roc (closes[-1]/closes[-15]) vs benchmark_change (من EGX30ETF في engine._benchmark_roc_by_date) | stock_roc > benchmark_change → ✅ (outperforming_market) | ±15 (proof_weight_benchmark=15) |
+
+**كيف يُحسب tech_score** (L489-498):
+```python
+def _compute_tech_score(proofs):
+    score = get_setting('tech_score_base', default=50)  # = 50
+    for p in proofs:
+        score += p.get('score_impact', 0)  # +15/+20/+15/+15/+10/+15 لو كلهم ✅
+    return max(0, min(100, int(score)))  # clamped 0-100
+```
+أقصى tech_score ممكن = 50 + (15+20+15+15+10+15) = 140 → clamped لـ 100.
+أدنى tech_score = 50 - 90 = -40 → clamped لـ 0.
+
+**متى يرجع fallback {50, 'انتظر'}** (L1479-1506):
+```python
+except Exception as e:
+    logger.error(f"[InstitutionalDecision] {ticker} error: {e}", exc_info=True)
+    return {
+        'ticker': ticker, 'ready': False, 'error': str(e),
+        'maker_state': {'state': 'calm', ...},
+        'flight_state': {'state': 'sideways', ...},
+        'proofs': [],
+        'tech_score': 50,
+        'signal_final': '🟡 انتظر',
+        'path_taken': 'خطأ في الحساب',
+        'signal_color': 'yellow',
+        ...
+    }
+```
+**الاستثناءات اللي بتشغّله (مثلاً):**
+- `closes` list empty → `IndexError` على closes[-1]
+- `volumes` None → TypeError على sum(volumes[-20:])
+- `sma200` = 0 → ZeroDivisionError في trend proof
+- `risk_params['stop_loss']` مفقود → KeyError
+- `kill_filter_result['passed']` مفقود (لو evaluate_kill_filters فشل) → KeyError
+- `backtest_stats['win_rate']` = None → TypeError على `_safe_float(None, 0)`
+- **أي خطأ في أي proof** بيـ abort الـ build كله → fallback
+
+**أين تُحفظ النتيجة:**
+- build_institutional_decision() بيرجع dict فقط (مش بيكتب في DB بنفسه)
+- daily_predictor.py بياخد الـ dict و يكتبه في predictions.db.predictions + stored_analyses عبر record_prediction() + INSERT INTO stored_analyses
+
+### 4. الحسابات الأيتام (Orphan Calculations)
+
+**محسوبة في daily_predictor.py بس مش متسجّلة في predictions.db:**
+
+| الحساب | مكانه في الكود | ليه مش متسجّل |
+|---|---|---|
+| sig['technical_explanation'] (dict كامل) | L3126, L3377 | يُكتب في stored_analyses.ai_narrative فقط (وليس predictions) |
+| sig['proofs'] (6 proofs كاملة dicts) | L3078 | يُكتب في kill_filter_result كـ string مختصرة (L3314)، الـ dict الكامل يُفقد |
+| sig['v68_probability'] + sig['v68_future_direction'] + sig['v68_future_momentum'] + sig['v68_quiet_accumulation'] + sig['v68_dirty_distribution'] + sig['v68_no_chase_2d'] + sig['v68_liquidity_grab'] + sig['v68_low_magnet'] + sig['v68_high_magnet'] + sig['v68_trend_state'] + sig['v68_delta_vol'] | L3104-3116 | يُكتبوا في kill_filter_result string فقط (prob/dir) — الباقي يُفقد |
+| sig['liquidity_type'] + sig['liquidity_score'] + sig['liquidity_pos_mult'] + sig['liquidity_hold_mult'] | L3083-3086 | يُكتب في kill_filter_result string فقط (type/score/pos_mult) — hold_mult يُفقد |
+| sig['hmm_regime_ar'] | L3081 | مش متسجّل إطلاقاً (column مش موجود في predictions) |
+| sig['ml_confidence_pct'] | L3082 | مش متسجّل إطلاقاً |
+| sig['analysis_reason'] | L3079 | مش متسجّل في predictions (column مش موجود) — كان موجود في stored_analyses.analysis_json كـ JSON key بس |
+| sig['target_3'] (DNA projection) | L3062 | مش متسجّل في predictions (column مش موجود) — موجود في stored_analyses.analysis_json.target_price_3 فقط |
+| sig['maker_flow'] + sig['maker_confidence'] | L1215-1216 | مش متسجّل إطلاقاً |
+| sig['sector_heat'] + sig['sector_avg_change'] | L1197-1198 | مش متسجّل إطلاقاً |
+| sig['news_sentiment'] + sig['news_score'] + sig['news_summary'] | L3149-3151 | مش متسجّل إطلاقاً |
+| sig['v62_fake_pump'] + sig['v62_distribution'] + sig['v62_story_stock'] + sig['v62_delta_vol'] + sig['v62_maker_sweep'] | L1732-1736 | مش متسجّل إطلاقاً |
+| sig['persona_fit'] + sig['persona_fit_scores'] | L3076-3077 | مش متسجّل (UNIFIED-BALANCED-ONLY معطّل) |
+| sig['news_level'] + sig['news_score'] + sig['news_delta'] + sig['news_count'] + sig['news_summary_ar'] + sig['news_action_ar'] + sig['news_client_message'] | L3097-3103 | مش متسجّل إطلاقاً |
+
+**try/except: pass حرجة (silent losses):**
+- L3431-3432: except: pass بعد فشل INSERT INTO stored_analyses — silent!
+- L3451-3452: except: pass بعد فشل expert_memory_phase — silent!
+- L3334-3335: except: pass بعد فشل notebook add_prediction_observation — silent!
+- L3479-3480: except print بعد فشل record_prediction — بـ print بس (no retry, no log)
+- L686-693: except fallback NORMAL regime لو regime engine فشل (سليم)
+- L339-340: except: pass بعد فشل get_scan_dates (silent! — يكمل بـ empty list)
+- L433-434, L473-474, L510-511: except: pass بعد فشل get_tickers (silent!)
+- L3014-3015: except: pass بعد فشل detect_who_is_buying (safe-by-design — سليم بس معناه who_is_buying=—)
+- L1047-1048: except: pass بعد فشل generate_analysis_reason (safe fallback)
+- L110+ مواقع تانية بـ `except: pass` (رصدتها 100+ مكان في daily_predictor.py لوحده)
+
+### 5. التكرارات (Duplications)
+
+| العملية | الملف 1 | الملف 2 | الاختلاف |
+|---|---|---|---|
+| **RSI** | `analyzers/indicators/rsi.py::calc_rsi` (Wilder's، single value) + `engines/backtest_engine.py::_calc_rsi_series` (Wilder's، series form، alias `calc_rsi`) | `analyzers/master_analyzer.py::_inline_rsi` (L4835-4855، Wilder's) + `daily_predictor.py` L1110-1118 (SMA-based، NOT Wilder!) | 4 implementations — daily_predictor.py بيستخدم SMA RSI في فلتر near-peak (BUG: مش متطابق مع canonical Wilder) |
+| **ATR** | `engines/backtest_engine.py::calc_atr` (Wilder's EMA، L294-309) | `analyzers/core_scoring_engine.calc_atr` (المستدعى من master_analyzer L3131) | 2 implementations — لازم نتأكد إنهم نفس الصيغة |
+| **money_flow** | `utils/shared_liquidity.py::compute_money_flow` legacy: CLV×0.35 + CMF×0.30 + vol×0.20 + SMA10×0.15 | `utils/shared_liquidity.py::compute_money_flow` Pine canonical: CLV×0.65 + body×0.35 (flag-gated RADAR_USE_PINE_FORMULA، default=false) | صيغتان — default=legacy، لازم backtest قبل التبديل |
+| **maker_state** | `engines/backtest_engine.py::detect_maker_state` (V38 Pine logic — absorption=red+vol>1.5×+close>low+0.2×atr) | `analyzers/institutional_decision_engine.py::_detect_maker_state` (V39 Dynamic — structure_absorption + egx_quiet_absorption + vsa_absorption + sweep_bullish) | صيغتان — V38 في backtest_engine، V39 في institutional_decision_engine. النتيجة مختلفة! |
+| **signal thresholds** | `analyzers/master_analyzer.py::THRESHOLDS` (L495: STRONG_BUY=78, BUY=65, ACCUMULATE=55, HOLD_LOW=45, HOLD_HIGH=55, REDUCE=35, SELL=20, STRONG_SELL=10) | `utils/canonical_signal.py::SIGNAL_THRESHOLDS` (L37: STRONG_BUY=78, BUY=65, ACCUMULATE=55, REDUCE=40, STRONG_SELL=25 — لا يوجد HOLD_LOW/HOLD_HIGH) | قيم مختلفة لـ REDUCE/SELL/STRONG_SELL! canonical_signal.py هو المصدر الكنسي بس master_analyzer.py لسه مستخدم THRESHOLDS القديمة |
+| **8-layer confluence thresholds** | `analyzers/master_analyzer.py::CONFLUENCE_THRESHOLDS` (L515: STRONG_BUY=80, BUY=55, HOLD=45, SELL=45) | `analyzers/master_analyzer.py::THRESHOLDS` (L495) | مجموعتان في نفس الملف، لكن confluence score max ~135 (مش 100) |
+| **master_score formula** | `daily_predictor.py` بستخدم `sig.get('combined_score', sig['tech_score'])` (combined = tech AFTER boosts) | `master_analyzer.py::analyze` بستخدم MASTER_WEIGHTS dict + SMC blend + screener boosts | صيغتان مختلفتان في pipeline مختلفين (daily_predictor vs master_analyzer) |
+| **target_3 (DNA projection)** | `daily_predictor.py` L2099-2137 (swing_high/swing_low → avg_move_pct → target_2 × 1.7) | `engines/backtest_engine.py::dna_pattern_match` (L421-502) | 2 implementations — daily_predictor بيحسب DNA projection بشكل inline، بس backtest_engine عنده dna_pattern_match function كمان |
+
+### 6. الفجوات الحرجة
+
+**1. ليه predictions.db تحتوي HOLD/50/None؟**
+- **جذر #1 (CRITICAL):** `build_institutional_decision()` exception في L1479-1506 بيرجع fallback `{tech_score:50, signal_final:'🟡 انتظر', proofs:[]}`.IMP IMPROVEMENT-12 (daily_predictor.py L1000-1025، أُضاف 2026-10-07) بيحوّل WAIT→HOLD وبيحاول يخزّن. → أي exception في proofs/kill_filters بيسجل HOLD/50.
+- **جذر #2 (CRITICAL):** data_engine.db.egksco_price_history FROZEN عند 2026-09-26 (لأن vps-service/data/egksco_scraper.py مش مجدول في cron). مع بيانات قديمة، معظم الأسهم بتفشل في volume check → بتتحول لـ HOLD بـ score=50.
+- **جذر #3:** `get_scan_dates(start_date == end_date == today)` fallback (L324-333): لو اليوم مش موجود → يرجّع آخر يوم متاح. → التوقع بيتسجل بـ prediction_date = 2026-09-26 (مش اليوم الحقيقي).
+
+**2. ليه risk_reward/who_is_buying = NULL رغم إصلاحي؟**
+- إصلاح V402-P0-DB-WRITE-FIX (2026-10-07) أضاف العمودين + record_prediction بيكتبهم (L613-633 + L3313).
+- لكن 3 مشاكل لسه موجودة:
+  - **(أ) التوقعات القديمة (قبل 2026-10-07) لسه NULL** — الـ migration بيضيف الأعمدة بس ما بيعمرش القيم القديمة.
+  - **(ب) الإنتاج قد يكون ما سحبش الإصلاح** — المالك لازم يعمل `git pull` على السرفر + `pm2 restart all`.
+  - **(ج) أي توقع بيمر بـ build_institutional_decision exception** (fallback {50,'انتظر'}) بيرجع proofs=[] فمفيش who_is_buying حقيقي — sig['who_is_buying_state'] بيبقى '' (string فاضي من fallback في L1485).
+
+**3. ليه system_settings لا تحتوي V40.2 thresholds؟**
+- engine_settings.py::DEFAULT_SETTINGS (L416-458) فيها الـ V40.2 thresholds كـ defaults.
+- `_ensure_schema()` (L465-481) بتنشئ `system_settings` table لو مش موجودة.
+- `_load_all_from_db()` (L506-516) بتحاول تحميل الـ settings من stocks.db.system_settings.
+- **لكن**: DEFAULT_SETTINGS دي soft defaults — القيم تتكتب في DB فقط لما الأدمن يعمل `update_setting(key, value)` (L1259). قبل كده، `get_setting('v402_min_evidence_count', default=3)` بيرجّع default=3 من DEFAULT_SETTINGS — لكن ما بيكتبش القيمة في DB.
+- → الـ table فاضية من V40.2 keys (ما عدا لو الأدمن كتبها يدويًا). ده سليم design-wise (lazy init) لكن بيخلي التحقق من الإنتاج صعب (مفيش row في system_settings).
+
+**4. ليه Python:8010 غير متاح (PM2 python-backend online لكن timeout)؟**
+- **اكتشاف حرج**: TWO servers بيحاولوا يشتغلوا على port 8010:
+  - `vps-service/main.py` L366: `uvicorn.run("main:app", host="0.0.0.0", port=8010, reload=False)` — FastAPI
+  - `vps-service/lightweight_server.py` L1891: `app.run(host='0.0.0.0', port=8010, debug=False, threaded=True)` — Flask
+- في PM2 ecosystem، ممك واحد منهم بيشتغل و التاني بيـ bind failure. لو الـ FastAPI server (main.py) شغال، الـ Flask (lightweight_server) هيقع. لو العكس، الـ API routes مختلفة (Flask routes `/api/market-pulse` و `/api/flow/*` فقط، FastAPI routes `/api/stocks/*` و `/api/predictions/*` الخ).
+- → الـ PM2 بيقول python-backend online لكن الـ server اللي شغال فعليًا ممكن يكون Flask (lightweight) مش FastAPI (main) → الـ routes اللي بيطلبها Next.js غير متاحة → timeout.
+
+### 7. التوصيات للمالك (مرتبة بالأولوية)
+
+**P0 (عاجل — إصلاح production):**
+1. **تشغيل cron job لـ `vps-service/data/egksco_scraper.py`** — ده الكاتب الوحيد لـ data_engine.db.egksco_price_history (الـ PRIMARY price source). بدونه، كل التوقعات بتستخدم بيانات 2026-09-26.
+   ```cron
+   */15 8-12 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egksco_scraper.py --prices-only >> /tmp/egksco_full.log 2>&1
+   30 13 * * 0-4 cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/data/egksco_scraper.py --prices-only >> /tmp/egksco_eod.log 2>&1
+   ```
+2. **git pull على الإنتاج + pm2 restart all** — عشان إصلاح V402-P0-DB-WRITE-FIX (risk_reward + who_is_buying columns + record_prediction writes) يشتغل.
+3. **backfill للتوقعات القديمة** — script يحدّث risk_reward + who_is_buying لكل التوقعات قبل 2026-10-07:
+   ```bash
+   cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 -c "
+   import sqlite3
+   from utils.risk_reward import compute_risk_reward
+   from analyzers.master_analyzer import detect_who_is_buying
+   c = sqlite3.connect('db/predictions.db')
+   for r in c.execute('SELECT id, ticker, entry_price, target_price, stop_loss FROM predictions WHERE risk_reward IS NULL').fetchall():
+       pid, tk, ep, tp, sl = r
+       rr = compute_risk_reward(ep, tp, sl, fallback=0.0)
+       # who_is_buying needs OHLC — skip if not available
+       c.execute('UPDATE predictions SET risk_reward=? WHERE id=?', (rr, pid))
+   c.commit()
+   "
+   ```
+4. **إصلاح Python:8010 conflict**: حدد أي server لازم يشتغل (main.py FastAPI بيشمل كل routes). عطّل lightweight_server.py من PM2 ecosystem أوغيّر port.
+5. **إصلاح build_institutional_decision exception silent fallback** — log + retry بدل fallback صامت لـ {50, 'انتظر'} (institutional_decision_engine.py L1479-1506).
+
+**P1 (مهم — استقرار الـ pipeline):**
+6. **إصلاح fallback في get_scan_dates()** (daily_predictor.py L324-333): لازم يفصل الـ PRIMARY عن الـ FALLBACK — لو PRIMARY (egksco_price_history) مفيهوش اليوم، يروح لـ price_history.db أو stock_daily_prices مباشرة (مش يرجّع آخر تاريخ قديم).
+7. **تقليل try/except: pass** في daily_predictor.py (100+ مكان) — خاصة:
+   - L3431 (stored_analyses INSERT failure لازم يـ log + continue، مش silent pass)
+   - L339-340 (get_scan_dates silent failure — لازم يـ raise)
+   - L3334-3335 (notebook silent — مش حرج بس ينفع log)
+8. **توحيد RSI implementations**: استخدم `analyzers.indicators.rsi.calc_rsi` (Wilder's canonical) في daily_predictor.py L1110 بدل الـ SMA-based inline.
+9. **توحيد signal thresholds**: استبدل `master_analyzer.py::THRESHOLDS` بـ import من `utils/canonical_signal.py::SIGNAL_THRESHOLDS`.
+10. **إصلاح `confidence=85` hardcoded** في daily_predictor.py L3425 — لازم يبقى `sig.get('combined_score', sig['tech_score'])` أو confidence ديناميكي من الـ result.
+11. **توحيد money_flow formula**: ابني backtest مقارن لـ legacy vs Pine canonical، ثم فعّل `RADAR_USE_PINE_FORMULA=true`.
+
+**P2 (تحسين — تنظيم):**
+12. **تطبيق SINGLE-WRITER principle فعليًا**: عطّل INSERT INTO predictions في:
+    - `api/ai_predictions_routes.py` L860
+    - `api/historical_predictions_v2_routes.py` L460 + L479
+    - `telegram/telegram_target_hit_tracker.py` L968
+    - `scripts/backfill_*.py` (7 scripts)
+    كلهم لازم يستخدموا `PredictionTracker.record_prediction()` بدل INSERT مباشر.
+13. **تعطيل background_analyzer.py من الكتابة في stored_analyses** (L1952 + L2239) — ده VIOLATION لـ SINGLE-WRITER claim في daily_predictor.py L3352-3355. background_analyzer ممكن يستخدم `daily_predictor` كـ proxy writer.
+14. **إضافة أعمدة مفقودة في predictions table** لـ:
+    - `target_3 REAL` (DNA projection)
+    - `analysis_reason TEXT` (نص عربي)
+    - `hmm_regime_ar TEXT`
+    - `liquidity_type TEXT` + `liquidity_score REAL` + `liquidity_pos_mult REAL` + `liquidity_hold_mult REAL`
+    - `v68_probability REAL` + `v68_future_direction TEXT` + `v68_dirty_distribution INTEGER` + `v68_liquidity_grab INTEGER`
+    - `maker_flow TEXT` + `maker_confidence REAL`
+    - `sector_heat TEXT` + `sector_avg_change REAL`
+    - `technical_explanation TEXT` (JSON)
+15. **توحيد ATR implementations**: استخدم `engines/backtest_engine.calc_atr` (Wilder's) في كل مكان، أزيل `core_scoring_engine.calc_atr` لو هو نفس الصيغة.
+16. **توحيد maker_state**: استخدم `institutional_decision_engine._detect_maker_state` (V39 Dynamic) في كل مكان، أزيل `backtest_engine.detect_maker_state` (V38).
+
+**أوامر تحقق للمالك على السرفر الإنتاجي:**
+```bash
+# 1. تحقق من آخر تاريخ في egksco_price_history
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/data_engine.db'); print(c.execute('SELECT MAX(price_date), COUNT(*) FROM egksco_price_history').fetchone())"
+
+# 2. تحقق من آخر توقع في predictions.db
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/predictions.db'); print(c.execute('SELECT MAX(prediction_date), COUNT(*) FROM predictions').fetchone())"
+
+# 3. تحقق من risk_reward + who_is_buying في آخر 10 توقعات
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/predictions.db'); [print(r) for r in c.execute('SELECT prediction_date, ticker, signal, master_score, risk_reward, who_is_buying FROM predictions ORDER BY id DESC LIMIT 10').fetchall()]"
+
+# 4. تحقق من الـ cron jobs المفعّلة
+crontab -l | grep -E "egksco|daily_predictor|daily_price_updater|multi_market"
+
+# 5. تحقق من آخر log لـ daily_predictor
+tail -100 /tmp/v40_2_morning.log /tmp/v40_2_evening.log 2>/dev/null
+
+# 6. تحقق من market_indices freshness
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/stocks.db'); [print(r) for r in c.execute('SELECT symbol, last_update FROM market_indices').fetchall()]"
+
+# 7. تحقق من V40.2 thresholds في system_settings (ممكن تكون فاضية = normal — lazy init)
+python3 -c "import sqlite3; c=sqlite3.connect('/root/GLMinvestment/db/stocks.db'); print(c.execute(\"SELECT key, value FROM system_settings WHERE key LIKE 'v402%'\").fetchall())"
+
+# 8. تحقق من PM2 + أي server شغال على 8010
+pm2 list
+pm2 logs python-backend --lines 50
+curl -s http://localhost:8010/api/stocks/AAPL 2>&1 | head -20
+curl -s http://localhost:8010/health 2>&1 | head -10
+
+# 9. تشغيل daily_predictor يدويًا للتحقق
+cd /root/GLMinvestment && /root/GLMinvestment/.venv/bin/python3 vps-service/jobs/daily_predictor.py --today-only --max-picks 5 --dry-run 2>&1 | tail -50
+```
+
+*End of Task PRED-ENGINE-DEEP-DIG — general-purpose (مهندس محرك Python) — read-only deep dig*
+
+---
+Task ID: DATA-ENGINE-DEEP-DIG
+Agent: general-purpose (مهندس بيانات)
+Task: حفر عميق في محرك البيانات + رسم خريطة كاملة لتدفق البيانات
+
+Work Log:
+- قرأت آخر 1500 سطر من /home/z/my-project/worklog.md (lines 63848-65348) — عشان أفهم السياق اللى تم اكتشافه مسبقًا في entry "explore-1" عن egksco_price_history + خريطة الـ data engine.
+- استخرجت قائمة الـ scrapers كاملة من data_engine/scrapers/ (22 ملف بايثون) + vps-service/data/ (11 ملف) + vps-service/jobs/ المتعلقة بالـ data pipeline.
+- قرأت ملف الـ entry-point للمحرك: data_engine/main.py (1166 سطر) — حددت الـ scheduler intervals (stocks=5min, crypto=2min, metals=15min, news=6h) + auto_start=True من env.
+- قرأت data_engine/scrapers/fallback_chain.py (450 سطر) — السلسلة الرسمية (Phase 1 Data Sources Cleanup، يوليو 2026): TradingView REST → EGKSCO → dead-end + Telegram alert. EGXPilot + Yahoo اتشالوا (deprecated، بس الـ functions لسه موجودة للتوافق).
+- قرأت data_engine/scrapers/tradingview_rest.py (462 سطر) — المصدر الأساسي: HTTP POST إلى scanner.tradingview.com/{slug}/scan (no Playwright). بيرجّع list of dicts، وبيكتب لـ data_engine.db.stocks (UPSERT، schema: symbol, name, price, change_percent, volume, market_cap, sector, market, tabs_data, last_update).
+- قرأت data_engine/scrapers/egksco_scraper.py (data_engine version, 437 سطر) — المصدر الاحتياطي: HTTP GET لـ https://egksco-online.com/etrade/Sectors.aspx + regex parse. بيرجّع list of dicts بنفس الـ schema. بيكتب لـ data_engine.db.stocks (INSERT OR REPLACE).
+- قرأت data_engine/scrapers/tradingview_scraper.py (298 سطر) — Playwright-based (legacy، بطيء 60-120s). بيكتب لـ data_engine.db.stocks + بـ CREATE الـ tab_* tables بـ schema خاطئة (symbol TEXT PRIMARY KEY, data TEXT). ملحوظ: مفيش INSERT لـ tab_* — CREATE فقط.
+- قرأت data_engine/scrapers/egxpilot_scraper.py (342 سطر) — DEPRECATED (مصدر ميت). الـ function _try_egxpilot() لسه موجود بس fallback_chain.py ما بيستدعيهوش.
+- قرأت data_engine/scrapers/yahoo_scraper.py (315 سطر) — DEPRECATED (بيرجّع بيانات أمس). الـ function _try_yahoo() لسه موجود بس fallback_chain.py ما بيستدعيهوش.
+- قرأت data_engine/scrapers/crypto_fetcher.py (468 سطر) — CoinGecko → Binance → CoinCap fallback chain. بيكتب لـ data_engine.db.crypto_prices + btc_local_prices.
+- قرأت data_engine/scrapers/metals_forex_fetcher.py (653 سطر) — Daleelak API (gold/silver/exchange rates) → Frankfurter.dev fallback → hardcoded. بيكتب لـ data_engine.db.gold_prices + gold_prices_clean + silver_prices + exchange_rates.
+- قرأت data_engine/scrapers/historical_fetcher.py (530 سطر) — Yahoo Finance (yfinance) للـ EGX/TADAWUL/KSE/QSE/US/Crypto/Indices/Metals. بيكتب لـ historical.db.historical_prices (NOT data_engine.db).
+- قرأت data_engine/scrapers/historical_fetcher_5years.py (378 سطر) — Yahoo Finance 5y. بيكتب لـ data_engine.db.historical_data (الجدول المختلط symbol, name, market, date, open, high, low, close, volume, last_fetch).
+- قرأت data_engine/scrapers/us_stock_scraper.py (695 سطر) — Yahoo Finance للـ 50 سهم أمريكي. بيكتب لـ price_history.db.price_history (source='yahoo_us', market='US', adjusted=0).
+- قرأت data_engine/scrapers/news_scraper.py (551 سطر) — NewsAPI + GNews + AlphaVantage + MediaStack + CurrentsAPI. بيكتب لـ news.db.news_articles.
+- قرأت data_engine/scrapers/sharia_compliance_scraper.py (856 سطر) — JSON static من stocks.templatesnippet.com. بيكتب لـ data_engine.db.sharia_sources + sharia_source_status + sharia_metrics + sharia_purification_rates + sharia_symbol_map + sharia_history.
+- قرأت data_engine/scrapers/tradingview_market_movers.py (436 سطر) — Playwright-based. بيكتب لـ data_engine.db.market_movers_tabs (UNIQUE(market_type, tab_qa_id, symbol)).
+- قرأت data_engine/scrapers/tradingview_screener_lists.py (246 سطر) — Playwright-based. بيكتب لـ data_engine.db.screener_lists.
+- قرأت data_engine/scrapers/technical_fetcher.py (246 سطر) — Playwright-based، بيجيب RSI/MACD/Recommendations لـ 18 سهم. ملحوظ: ما عندهوش save_to_db — بيرجّع dict بس.
+- قرأت data_engine/scrapers/fetch_logos.py (105 سطر) — Playwright-based. بيكتب لـ data_engine.db.stocks.logo_url (UPDATE WHERE symbol).
+- قرأت data_engine/scrapers/auto_refresh_scheduler.py + smart_scheduler.py — أوركستراتورز قديمة، الـ active هو data_engine/main.py:run_scheduler.
+- قرأت data_engine/sync.py (792 سطر) — بينسخ الأسعار من data_engine.db.stocks → stocks.db.stocks + stocks.db.stock_daily_prices (UPSERT بـ Live Developing Candle logic). بث WebSocket على port 3005.
+- قرأت data_engine/intraday_storage.py (1122 سطر) — بينشئ intraday.db منفصلة + 3 جداول: stock_intraday + crypto_intraday + commodity_intraday. Smart Dedup (0.01% أو 15min checkpoint).
+- قرأت data_engine/realtime_sync.py (175 سطر) — Webhook لـ Next.js على endpoint /api/data-engine/reload (best-effort).
+- قرأت vps-service/data/source_authority.py (240 سطر) — Rule 66 SOURCE-AUTHORITY: CANONICAL_SOURCES hierarchy per market. EGX: ['intraday_aggregated', 'egksco', 'yahoo_clean']. BANNED_SOURCES = {egxpilot_live, yahoo_safetynet, yfinance_backfill}. write_guarded() function.
+- قرأت vps-service/data/validation.py (345 سطر) — Rule 65 DATA-VALIDATION-LAYER: validate_stock_data() بتفحص current_price/52W/support/resistance/MA/RSI/MACD + dependency cascade (إذا current_price INVALID → كل الـ derived يبقوا INVALID).
+- قرأت vps-service/data/source_priority_cleaner.py (301 سطر) — Rule 12 enforcement: لكل ticker+date مع sources متعددة، بيمسك بس أعلى priority. SOURCE_PRIORITY: yahoo_clean → intraday_aggregated → egx_investment_migration → tradingview_live → egksco → egxpilot_live → yahoo_safetynet → yfinance_backfill.
+- قرأت vps-service/data/prices.py (603 سطر) — load_price_history() الـ canonical reader. الأولوية الجديدة (Rule 46 FIX-1): 1) data_engine.db.egksco_price_history (PRIMARY), 2) master_analyzer.load_merged_history (tries price_history.db → data_engine.db → stocks.db.stock_daily_prices), 3) EMPTY []. فيها LRU cache (500 ticker، TTL 5 min).
+- قرأت vps-service/data/egksco_scraper.py (1047 سطر) — النسخة الـ legacy الثقيلة (بتعمل download PDFs). sync_to_db() بيكتب لـ 4 أهداف: (a) stocks.db.egksco_stocks UPSERT, (b) stocks.db.stocks UPDATE, (c) price_history.db.price_history INSERT OR REPLACE (source='egksco' + delta_volume), (d) data_engine.db.egksco_price_history INSERT OR REPLACE (schema: symbol, price_date, open_price, high_price, low_price, close_price, volume, turnover, source, buy_volume, sell_volume, delta_volume, delta_pct, pressure).
+- قرأت vps-service/data/egx_fetcher.py (928 سطر) — EGXPilot API (الـ primary) + TradingView TA (احتياطي). بيكتب لـ stocks.db.stocks (UPDATE WHERE ticker).
+- قرأت vps-service/data/egx_fundamental_fetcher.py (590 سطر) — بيقرا من tab_profitability + tab_valuation في data_engine.db. ملحوظة: EGXPilot ميت (HTTP 404) — دلوقتي بـ يقرا من DB فقط. الـ fetch_all_egx_fundamentals() بيكتب لـ data_engine.db.egx_fundamentals (CREATE + INSERT OR REPLACE).
+- قرأت vps-service/data/eodhd_fetcher.py (781 سطر) — EODHD API (اشتراك متلغي، API_KEY=''). backfill_ticker() بيكتب لـ stocks.db.stock_daily_prices + price_history.db.price_history (عبر write_guarded, source='eodhd' — NOT in any market hierarchy → guard بيـ SKIP الكتابة دايماً). كمان بيكتب لـ data_engine.db.egx_fundamentals.
+- قرأت vps-service/data/crypto_fetcher.py (144 سطر) — CoinGecko client. مفيوش save_to_db — بيرجّع dataclasses.
+- قرأت vps-service/data/gap_filler.py (190 سطر) — Yahoo Finance gap-filler لـ non-EGX markets (EGX skipped لأن yfinance بيرجّع "possibly delisted"). بيكتب لـ stocks.db.stock_daily_prices + price_history.db.price_history (عبر write_guarded, source='yfinance_autofill' — NOT in any market hierarchy → guard بيـ SKIP).
+- قرأت vps-service/jobs/intraday_aggregator.py (390 سطر) — بياخد intraday.db.stock_intraday + group بـ (ticker, date) + aggregate OHLCV + بيكتب لـ price_history.db.price_history بـ source='intraday_aggregated' (عبر write_guarded — canonical لـ EGX).
+- قرأت vps-service/jobs/price_history_safetynet.py (443 سطر) — Yahoo Finance لـ EGX. بيكتب لـ price_history.db.price_history بـ source='yahoo_safetynet' (BANNED → guard بيـ SKIP).
+- قرأت vps-service/jobs/daily_predictor.py (3889 سطر) — بـ يقرا egksco_price_history PRIMARY في get_scan_dates + get_tickers. الـ failure fallback لـ price_history.db ثم stocks.db.stock_daily_prices.
+- قرأت vps-service/jobs/daily_closer.py (3453 سطر) — بـ يقرا egksco_price_history مباشرة (SELECT price_date AS date, high_price AS high, low_price AS low, close_price AS close, open_price AS open FROM egksco_price_history WHERE symbol=? AND price_date >= ? AND price_date <= ?).
+- قرأت vps-service/jobs/learning_engine.py (1413 سطر) — بـ يقرا stocks.db.egksco_price_history لـ EGX30 regime inference (DEAD table — column reference خاطئ بيستخدم `date` بدل `price_date`).
+- قرأت vps-service/jobs/market_scheduler.py (2781 سطر) — الأوركستراتور الرئيسي. بيستدعي: run_v40_2_generation, run_intraday_aggregator, run_price_history_safetynet, run_daily_closer, run_learning_engine.
+- قرأت vps-service/jobs/intraday_scanner.py (507 سطر) — بـ يقرا intraday.db.stock_intraday + بيكتب لـ predictions.db.predictions (UPDATE entry_price_min, support_level, resistance_level).
+- قرأت vps-service/scripts/daily_price_updater.py (284 سطر) — بيستدعي egx_fetcher.update_egx_prices + _sync_to_all_tables (Pollution Guard + write_guarded بـ source='tradingview_live').
+- قرأت vps-service/utils/db_paths.py (241 سطر) — DBPaths class.egksco_price_history canonical = data_engine.db. ملحوظة: stocks.db.egksco_price_history محذوفة (0 rows — name conflict).
+- قرأت vps-service/utils/data_engine_guard.py (296 سطر) — health check على port 5000 + auto-restart + POST /trigger/stocks + /trigger/sync.
+- قرأت vps-service/core/migrator.py (lines 470-560) — Schema الـ canonical لـ egksco_price_history: id INTEGER PRIMARY KEY, symbol TEXT NOT NULL, price_date TEXT NOT NULL, open_price REAL, high_price REAL, low_price REAL, close_price REAL, volume INTEGER, turnover REAL, UNIQUE(symbol, price_date). كمان egksco_stocks + egx_fundamentals + tab_valuation + tab_profitability + tab_balance_sheet (كلها بـ schema ticker TEXT PRIMARY KEY).
+- قرأت crontab.txt (202 سطر) — 26 cron jobs (V40.2 generator, intraday_scanner, daily_closer, learning_engine, daily_price_updater, tradingview_scraper, price_history_safetynet, etc.). مفيش cron لـ egksco_scraper.py الـ legacy (بيشتغل من EgyptScheduler داخل python-backend بدل cron).
+- قرأت scripts/consolidate_prices.py (174 سطر) + scripts/cleanup_db_architecture.py + scripts/import_egx_indices.py + scripts/maker_radar.py (1327 سطر، _find_radar_db market-aware) — كلهم بـ يقراوا من data_engine.db.egksco_price_history + stocks.db.stock_daily_prices.
+- قرأت src/app/api/chart/[ticker]/route.ts (lines 420-560) + src/app/api/stocks/sparkline/route.ts (200 سطر) + src/lib/market-data-access.ts (lines 180-220) + src/lib/data-engine-db.ts — كلهم بـ يقراوا egksco_price_history بـ symbol (مش ticker).
+- قرأت scripts/audit-db-schema.ts + scripts/audit-db-schema.cjs — استخدموا `WHERE ticker = ?` و `COUNT(DISTINCT ticker)` على egksco_price_history (DEAD BUG — العمود `symbol` مش `ticker`).
+- استخرجت الـ schema الكامل لـ egksco_price_history من migrator.py:488-500 + egksco_scraper.py:812-816 (ALTER TABLE لإضافة buy_volume/sell_volume/delta_volume/delta_pct/pressure/source).
+- لم أعدّل أي ملف إطلاقًا — تحليل static فقط (هذا الإدخال هو الإضافة الوحيدة المسموح بها).
+
+Stage Summary:
+- **المالك على صواب في شكه: `egksco_price_history` ليس المصدر الرئيسي.** على الإنتاج، الجدول فاضي أو شبه فاضي (0-13K rows في sandbox). الـ LIVE writer الوحيد هو `vps-service/data/egksco_scraper.py:sync_to_db()` اللي بيـ propagate شمعة النهارده فقط (مش history). الـ 162K rows اللي شافها المالك على الـ laptop جت من تشغيل يدوي لـ `scripts/consolidate_prices.py` + `backfill_yahoo_history.py` — مش من الـ live pipeline.
+
+- **ترتيب المصادر الفعلي (Canonical Priority per Rule 66 — SOURCE-AUTHORITY):**
+  1. **intraday_aggregated** (canonical لـ EGX) — بيتكتب من `vps-service/jobs/intraday_aggregator.py` بـ aggregate من intraday.db.stock_intraday → price_history.db.price_history.
+  2. **egksco** — بيتكتب من `vps-service/data/egksco_scraper.py:sync_to_db()` لـ price_history.db.price_history + data_engine.db.egksco_price_history (شمعة النهارده فقط، كل 15 دقيقة من EgyptScheduler).
+  3. **yahoo_clean** — backfill history (5y) من `vps-service/scripts/backfill_yahoo_history.py` لـ price_history.db.price_history.
+
+- **الـ fallback chain الرسمية (data_engine/scrapers/fallback_chain.py):** TradingView REST → EGKSCO → dead-end + Telegram alert. EGXPilot + Yahoo DEPRECATED (مفيش invocations، بس الـ functions لسه موجودة للتوافق). المصدر الـ canonical فعليًا هو TradingView REST (urllib POST لـ scanner.tradingview.com/egypt/scan، NO Playwright).
+
+- **خريطة الـ DBs (4 قواعد رئيسية على الإنتاج + 2 legacy):**
+  | DB | الوظيفة | الكتاب الأساسيون | القراء |
+  |---|---|---|---|
+  | `data_engine.db` | live snapshot + fundamentals | data_engine/scrapers/tradingview_rest.py + egksco_scraper.py + crypto_fetcher.py + metals_forex_fetcher.py + sharia_compliance_scraper.py + tradingview_market_movers.py + tradingview_screener_lists.py + fetch_logos.py + vps-service/data/egksco_scraper.py + vps-service/data/egx_fundamental_fetcher.py + historical_fetcher_5years.py + migrator.py (boot) | data_engine/main.py:stats + vps-service/api/top_performers_routes.py + chart/[ticker]/route.ts + maker_radar.py + egx_fundamental_fetcher.py + daily_predictor.py + daily_closer.py + learning_engine.py |
+  | `stocks.db` | stocks metadata + daily prices | data_engine/sync.py + vps-service/data/egksco_scraper.py + egx_fetcher.py + daily_price_updater.py + eodhd_fetcher.py + gap_filler.py + sharia_compliance_scraper.py | معظم analyzers + api routes |
+  | `price_history.db` | canonical OHLCV history | intraday_aggregator.py + price_history_safetynet.py + daily_price_updater.py + eodhd_fetcher.py + gap_filler.py + us_stock_scraper.py + egksco_scraper.py:sync_to_db (legacy propagation) + consolidate_prices.py (manual) | master_analyzer.load_merged_history + sparkline/route.ts + chart/[ticker]/route.ts |
+  | `intraday.db` | tick-level data (5-min snapshots) | data_engine/intraday_storage.py (store_stocks_snapshot + store_crypto_snapshot + store_commodities_snapshot) | intraday_scanner.py + intraday_aggregator.py + intraday_reader.py |
+  | `predictions.db` | كل التوقعات + التعلم | daily_predictor.py + daily_closer.py + learning_engine.py + intraday_scanner.py | معظم analyzers + api routes |
+  | `news.db` | الأخبار | data_engine/scrapers/news_scraper.py | news routes + ai agents |
+
+- **التحقيق في egksco_price_history:**
+  - **الـ schema الفعلي (migrator.py:488-500):** `id, symbol TEXT NOT NULL, price_date TEXT NOT NULL, open_price, high_price, low_price, close_price REAL, volume INTEGER, turnover REAL, UNIQUE(symbol, price_date)`. الـ egksco_scraper.py بيـ ALTER TABLE لإضافة: `buy_volume, sell_volume, delta_volume, delta_pct, pressure, source TEXT DEFAULT 'egksco'`.
+  - **الـ column هو `symbol` مش `ticker`.** الـ column للـ date هو `price_date` مش `date`.
+  - **سبب خطأ "no such column: ticker":** `scripts/audit-db-schema.ts:115` و `scripts/audit-db-schema.cjs:150` بيستخدموا `SELECT COUNT(DISTINCT ticker) FROM egksco_price_history` — خطأ. الـ readers الصحيحة بتستخدم `symbol` (مثل src/app/api/chart/[ticker]/route.ts:458 `WHERE symbol = ?` و src/lib/market-data-access.ts:200 `GROUP BY symbol` و vps-service/data/prices.py:254 `WHERE symbol = ?`).
+  - **bug إضافي في learning_engine.py:464:** `WHERE symbol = 'EGX30' AND date <= ?` — بيستخدم `date` بدل `price_date` (هتـ fail مع `no such column: date`). الـ learning engine بيـ fallback لطريقة تالتة (inferring من actual returns) — safe-by-design.
+  - **هل canonical؟** نظريًا نعم (Rule 46 FIX-1 — `load_egksco_history()` في vps-service/data/prices.py هو الـ PRIMARY reader). عمليًا على الإنتاج: DEAD (0-13K rows فقط) — كل الـ readers بـ fall back لـ price_history.db.price_history تلقائيًا.
+
+- **الـ LIVE writers لـ egksco_price_history (data_engine.db):**
+  1. `vps-service/data/egksco_scraper.py:sync_to_db()` lines 790-868 — بيكتب شمعة النهارده فقط (INSERT OR REPLACE على UNIQUE(symbol, price_date)) كل 15 دقيقة بين 09:00-14:30 Cairo من `EgyptScheduler.setup_egksco_scheduler()` المسجل في `vps-service/main.py:202`.
+  2. `scripts/consolidate_prices.py` (manual one-shot) — بينسخ من stocks.db.stock_daily_prices → data_engine.db.egksco_price_history.
+  3. `scripts/cleanup_db_architecture.py` (manual one-shot) — نفس المنطق.
+  4. الـ migrator.py بـ CREATE الجدول بس (no data).
+
+- **الـ readers لـ egksco_price_history (data_engine.db) — كلها بتستخدم `symbol` بشكل صحيح:**
+  - vps-service/data/prices.py:load_egksco_history (الـ canonical reader per Rule 46)
+  - vps-service/jobs/daily_predictor.py:get_scan_dates + get_tickers (PRIMARY)
+  - vps-service/jobs/daily_closer.py:379 (PRIMARY fallback لـ data.prices)
+  - vps-service/api/top_performers_routes.py (PRIMARY، لا fallback)
+  - vps-service/api/chart/[ticker]/route.ts (priority 2 — بعد price_history.db)
+  - src/app/api/chart/[ticker]/route.ts:458 (priority 2)
+  - src/lib/market-data-access.ts:200 (source 3)
+  - src/lib/data-engine-db-sqljs.ts:435 + src/lib/data-engine-db.ts:710
+  - src/lib/new-db-queries.ts:124
+  - scripts/maker_radar.py:_find_radar_db (EGX fallback #2)
+  - scripts/delta_volume_calculator.py + scripts/delta_volume_ab_test.py
+  - scripts/v40_2_build_predictions.py + scripts/v40_2_flag_ablation.py + scripts/v40_2_sector_limit.py + scripts/v40_2_forensic.py + scripts/v402_live_simulation.py
+  - scripts/retroactive_radar_test.py + scripts/backfill_stale_radar_signals.py + scripts/forensic_radar_analysis.py
+  - scripts/retrospective_analysis.py + scripts/v4_daily_detector.py + scripts/stage1_v4_daily_v2_test.py + scripts/volume_surge_hunter_test.py + scripts/monitor_live_session.py + scripts/run_production_baseline_check.py
+
+- **الـ readers الـ buggy (بتستخدم `ticker` بدل `symbol` — هتـ fail):**
+  - scripts/audit-db-schema.ts:115 (`SELECT COUNT(DISTINCT ticker) FROM egksco_price_history`)
+  - scripts/audit-db-schema.ts:186 (`SELECT COUNT(*), COUNT(DISTINCT ticker) FROM egksco_price_history`)
+  - scripts/audit-db-schema.cjs:150 (`SELECT COUNT(*), MIN(date), MAX(date) FROM egksco_price_history WHERE ticker = '${ticker}'`)
+
+- **Cron jobs الحقيقية (crontab.txt، 26 jobs):**
+  | # | الجدولة | السكربت | الـ DBs المستهدفة |
+  |---|---|---|---|
+  | 1 | 03:00 UTC يومياً (Sun-Thu) | daily_predictor.py --today-only | predictions.db.predictions |
+  | 2 | 13:30 UTC يومياً (Sun-Thu) | daily_predictor.py --yesterday-only | predictions.db.predictions |
+  | 3 | كل 5 دقائق 08-12 UTC (Sun-Thu) | intraday_scanner.py | predictions.db.predictions (UPDATE) |
+  | 4 | 14:00 UTC يومياً (Sun-Thu) | daily_closer.py | predictions.db.predictions (UPDATE outcome) |
+  | 5 | 15:00 UTC يومياً (Sun-Thu) | learning_engine.py | predictions.db.learned_lessons + sniper_performance |
+  | 6 | 04:00 UTC يومياً (Sun-Thu) | fetch_corporate_actions.py | (dividends/IPO data) |
+  | 7a | 07:00 UTC يومياً (Sun-Thu) | daily_price_updater.py | stocks.db.stocks + stock_daily_prices + price_history.db.price_history |
+  | 7b | 13:00 UTC يومياً (Sun-Thu) | daily_price_updater.py | (نفس ما سبق) |
+  | 8 | كل 5 دقائق 08-12 UTC (Sun-Thu) | data_engine/scrapers/tradingview_scraper.py (Playwright، LEGACY) | data_engine.db.stocks |
+  | 9 | 06:00 UTC يومياً (Sun-Thu) | price_history_safetynet.py | price_history.db.price_history (guard بيـ SKIP — BANNED source) |
+  | 10 | 01:00 UTC يومياً (every day) | data_heartbeat_checker.py | (read-only check) |
+  | 11 | 01:30 UTC يومياً (every day) | smart_db_backup.py | (backups) |
+  | 12 | السبت 14:00 UTC (weekly) | egx_fundamental_fetcher.py | data_engine.db.egx_fundamentals |
+  | 13 | كل ساعتين 08-12 UTC (Sun-Thu) | egx_disclosure_engine (inline) | (EGX disclosures) |
+  | 14 | 13:35 UTC يومياً (Sun-Thu) | sync_hunter_pick_tracking.py | predictions.db (UPDATE) |
+  | 15 | 02:00 UTC يومياً (every day) | curl maker-radar/signal-tracker/verify | predictions.db (UPDATE) |
+  | 15a | 02:50 UTC يومياً (Sun-Thu) | market_regime_engine.py (inline) | stocks.db.system_settings + market_regime_log |
+  | 15b | السبت 02:55 UTC (weekly) | market_regime_engine.py --all | (نفس ما سبق) |
+  | 16 | الأحد 06:00 UTC (weekly) | weekly_radar_report.py | (file output) |
+  | 17 | 22:00 UTC يومياً (Mon-Fri) | us_stock_scraper.py | price_history.db.price_history (source='yahoo_us') |
+  | 18 | كل ساعة 09-22 UTC (every day) | multi_market_scraper.py | (orchestrator — بيستدعي tradingview_scraper + us_stock_scraper + crypto_fetcher + metals_forex_fetcher) |
+  | 19 | الأحد 04:00 UTC (weekly) | mine_learned_lessons.py | predictions.db.learned_lessons |
+  | 20 | يوم 1 من كل شهر 05:00 UTC | exit_policy_optimizer.py | (file output) |
+  | 21 | 14:30 UTC يومياً (Sun-Thu) | post_market_feedback.py | predictions.db (UPDATE exit fields) |
+  | 22 | كل 15 دقيقة 08-12 UTC (Sun-Thu) | hot_candidate_detector.py | (file output + Telegram) |
+  | 23 | 14:30 UTC يومياً (Sun-Thu) | telegram_comprehensive_report.py --send | (Telegram) |
+  | 24 | 03:00 UTC يومياً (every day) | downgrade-expired-subscriptions.ts (bun) | auth.db (Prisma) |
+  | 25 | السبت 15:30 UTC (weekly) | sharia_compliance_scraper.py | data_engine.db.sharia_* |
+  | 26 | كل 5 دقائق 08-14 UTC (Sun-Thu) | maker_radar.py --market EGX/TADAWUL/KSE/QSE/US --json-only | (file output) |
+  | 26b | كل 5 دقائق 24/7 | maker_radar.py --market CRYPTO/GOLD --json-only | (file output) |
+  
+  **مهم:** الـ EGKSCO legacy scraper (vps-service/data/egksco_scraper.py) مش ليه cron entry — بيشتغل من EgyptScheduler داخل python-backend (PM2 process) كل 15 دقيقة بين 09:00-14:30 Cairo. ده الـ LIVE writer الوحيد لـ data_engine.db.egksco_price_history.
+
+- **معالجة البيانات قبل الحفظ (Validation & Cleaning):**
+  1. **Rule 65 DATA-VALIDATION-LAYER (vps-service/data/validation.py):** `validate_stock_data()` بتفحص current_price > 0 + 52W_low <= current_price <= 52W_high + support/resistance scale (10x = cross-stock contamination) + MA50/MA200 ratio + RSI [0,100] + dependency cascade (لو current_price INVALID → كل الـ derived INVALID).
+  2. **Rule 66 SOURCE-AUTHORITY (vps-service/data/source_authority.py):** `write_guarded()` بـ enforce canonical source hierarchy per market. BANNED_SOURCES = {egxpilot_live, yahoo_safetynet, yfinance_backfill} — لو أي محاولة كتابة بـ source banned → guard بيـ SKIP + log warning. لو source fallback + primary fresh (< 7d) → SKIP. لو primary stale → بيكتب بـ primary source name (مش fallback name).
+  3. **Pollution Guard (daily_price_updater.py:120-150):** بـ skip كتابة price_history.db لو high > close×5 أو low < close×0.2 أو high < low.
+  4. **Smart Dedup (intraday_storage.py):** بـ skip كتابة لو price change < 0.01% AND آخر checkpoint < 15 دقيقة.
+  5. **source_priority_cleaner.py:** manual script بـ delete الـ duplicates (لو في ticker+date مع sources متعددة، بيمسك بس أعلى priority).
+
+- **الفجوات الحرجة المكتشفة:**
+  1. **`tab_*` tables (tab_valuation, tab_profitability, tab_balance_sheet, tab_income_statement, tab_cash_flow, tab_dividends, tab_performance, tab_technical_analysis) في data_engine.db** — NO LIVE WRITER. الـ schema موجود في migrator.py (مع `ticker TEXT PRIMARY KEY`) و في tradingview_scraper.py (schema مختلف: `symbol TEXT PRIMARY KEY, data TEXT`). على sandbox فيهم 858-866 rows من زمن بعيد (مفيش INSERT نشط في الكود دلوقتي). الـ readers بتوعهم (egx_fundamental_fetcher.py + fundamental_data_provider.py + chart_routes.py + flow_system.py + stock_fundamentals.py) بيقرأوا منهم بـ `WHERE symbol = ?` بس الجدول بـ `ticker` — ممكن يرجّع None (safe-by-design في الكود الحالي).
+  2. **`egksco_stocks` في data_engine.db** — orphan (0 rows). الـ canonical هو `stocks.db.egksco_stocks` (250 rows). الـ migrator.py لسه بـ create النسخة الفاضية في data_engine.db.
+  3. **`egx_fundamentals` في data_engine.db** — partial orphan. الـ writer هو `egx_fundamental_fetcher.py:fetch_all_egx_fundamentals()` اللي بـ يحاول يجيب من EGXPilot (HTTP 404 → fail). الـ fetcher دلوقتي بـ يقرا من tab_* فقط — ما بـ يكتبش حاجة جديدة. الـ table في حالتها الـ last-known.
+  4. **`historical_data` في data_engine.db** — بيـ hold 99K rows من 2026-06-07 (116 days stale). الـ writer هو historical_fetcher_5years.py (محذوف من الـ scheduler تلقائي حسب main.py:1094-1099) + import_egx_indices.py (manual one-shot). مفيش LIVE writer.
+  5. **`historical_prices` في historical.db** — بيتكتب من historical_fetcher.py بس الـ script اتعمل retire (main.py:1094-1099). الـ table موجود بس مفيش LIVE writer.
+  6. **`stocks.db.egksco_price_history`** — DEAD table (name conflict مع data_engine.db.egksco_price_history). 0 rows. learning_engine.py:455 بيقرا منها لـ EGX30 regime inference → بيرجع 0 rows → بيـ fallback.
+  7. **`tab_growth` في data_engine.db** — orphan (0 columns، 0 rows — لم يـ populate أبدًا).
+  8. **`stock_prices` في data_engine.db** — 692 rows. مش متأكد من الـ writer. ممكن يكون legacy.
+  9. **`intraday_prices` في intraday.db** — ORPHAN (0 rows، 9 columns). legacy table — ما تكتبش من أي script دلوقتي.
+  10. **`lost_and_found` في data_engine.db** — 38 rows. ما بـ يستخدمهاش أي reader.
+  11. **`audit-db-schema.ts:115` + `audit-db-schema.cjs:150`** — بـ query egksco_price_history بـ `ticker` بدل `symbol` (العمود الفعلي `symbol`). هتـ fail مع `no such column: ticker`.
+  12. **`learning_engine.py:464`** — بـ query `WHERE symbol = 'EGX30' AND date <= ?` — بيستخدم `date` بدل `price_date`. هتـ fail مع `no such column: date`. الـ learning engine بـ fallback لطريقة تالتة (inferring من actual returns) — safe-by-design.
+  13. **EGXPilot + Yahoo DEPRECATED** — الـ functions لسه موجودة في fallback_chain.py (lines 140-161) بس مفيش invocation. الـ documentation (comments) لسه بيقول "TV → EGXPilot → Yahoo" بس الفعلي هو "TV → EGKSCO → dead-end" (Phase 1 Data Sources Cleanup، يوليو 2026).
+  14. **`data_engine/scrapers/tradingview_scraper.py` (Playwright)** — cron job #7 بيشغله كل 5 دقايق. ده LEGACY (60-120 ثانية لكل run بسبب Playwright). الـ canonical فعليًا هو `tradingview_rest.py` (no Playwright، 1-3 ثواني). الـ fallback_chain.py بيستدعي tradingview_rest مش tradingview_scraper. بس الـ cron لسه بيشغل الـ Playwright version — تبديد CPU.
+  15. **`scripts/cleanup_db_architecture.py` + `scripts/consolidate_prices.py`** — manual one-shot writers لـ egksco_price_history. الـ worklog line 9146 ذكر إن المالك شغلهم يدويًا عشان يـ populate egksco_price_history على الـ laptop (162K rows). على الـ VPS مفيش حاجة بـ يـ populate — egksco_price_history = 0 rows.
+  16. **`vps-service/data/eodhd_fetcher.py`** — EODHD API (اشتراك متلغي). كل الـ writes لـ price_history.db بيـ skip لأن source='eodhd' مش في أي market hierarchy (guard بيـ reject). الـ backfill_ticker() بيـ skip الأساسيات.
+
+- **التوصية:** الـ egksco_price_history canonical reader (load_egksco_history في vps-service/data/prices.py) بيـ fallback تلقائيًا لـ price_history.db.price_history. على الإنتاج ده الـ actual data source. الـ owner directive (Rule 46) بيقول egksco هو الـ canonical، بس عمليًا الـ canonical فعليًا هو price_history.db. التوصية: إما (أ) تشغيل scripts/consolidate_prices.py يومياً post-market كـ cron job لـ populate egksco_price_history على الـ VPS، أو (ب) reverse الـ reader priority لـ price_history.db يكون PRIMARY و egksco_price_history يكون fallback (matching الـ actual data flow).
+
