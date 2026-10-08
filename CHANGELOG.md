@@ -12,6 +12,60 @@
 
 ---
 
+## [2026-10-08 — PHASE-1-TO-5 (5 Phases Implementation)] — المدير العام (عضو مهم في الفريق)
+
+### Phase 1 — Security P0 (commit `03ea211f`)
+**CRITICAL security fixes (8):**
+- **Removed:** Bot Token hardcoded in `social_publisher.py:42` → env only.
+- **Fixed:** `telegram_interactive_bot.py:695` fail-open auth → fail-closed (is_paid=False if BOT_API_SECRET empty).
+- **Added admin gates:** 4 routes that had no/broken auth → `requireAdminAsync`:
+  - `/api/telegram/publish-stock` (was: getSessionUserId only)
+  - `/api/market/publish-status-image` (was: no auth at all)
+  - `/api/admin/import-indices-csv` (was: no auth at all)
+  - `/api/predictions POST` (was: no auth)
+- **Removed hardcoded secrets:** `EODHD_API_KEY` fallback in ecosystem.config.js + `TELEGRAM_CHANNEL_ID` fallback in 4 files → env only.
+- **Verified:** runtime admin gates return 403 for unauthenticated requests.
+
+### Phase 2 — Data Integrity P0 (commit `ae6e2030`)
+**CRITICAL data fix:**
+- **Fixed:** news.db schema mismatch (was: writers wrote `news_articles`, readers read `market_news` = all news queries returned 0 rows).
+- **Added:** `_NEWS_DB_DDL` in `migrator.py` — creates `market_news` table with full schema + idempotent migration from `news_articles` (column mapping: summary→summary_ar, source_url→url, category→impact_type, symbol→tickers JSON).
+- **Result:** 7894 rows will appear in UI after deploy (was: 0).
+- **Verified:** migration test on copy = 7894 rows migrated successfully.
+
+### Phase 3 — Engines Fabrications P0 (commit `05c95e16`)
+**CRITICAL engine fixes (10):**
+- **Fixed:** `technical_weighted.py` THRESHOLDS (was: 65/55/48/35/28/20/10 — مخالفة كليًا) → canonical 78/65/55/40/25 + delegation.
+- **Fixed:** `institutional_decision_engine.py` except fallback (was: tech_score=50 + signal='🟡 انتظر') → NULL (Rule 27).
+- **Fixed:** 3× `return 50.0` in `master_analyzer.py` (RSI/Bollinger/regime) → `return None` (Rule 24).
+- **Fixed:** 3× `entry*0.95` fabrications in `master_analyzer.py` → None + null-checks.
+- **Fixed:** `telegram_target_hit_tracker.py` INSERT fabricated signal='BUY' → early-return guard (Rule 27).
+- **Documented:** `master_analyzer.THRESHOLDS` dead code + `_get_market_regime_score` dead method + `confluence_engine_v3` disabled THRESHOLDS.
+
+### Phase 4 — APIs P0 (commit `80f79109`)
+**Fixed 9 broken 410 callers:**
+- 4 callers of `/api/maker-radar/footprint` (410) → `/api/flow/${ticker}` (canonical Python compute_money_flow).
+- 5 callers of `/api/admin/generate-predictions` (410) → no-op + toast (predictions auto-generated via cron).
+- 1 caller of `/api/stocks/X/professional-analysis` (410) → `/api/stocks/X/unified` (canonical).
+- **Verified:** 0 remaining 410 callers + 0 new TS errors.
+
+### Phase 5 — Screens P0 (commit `113a86e5`)
+- **Fixed:** Footer sticky-bottom — removed redundant `min-h-screen` from inner container (parent already has it). Footer now sticks to viewport bottom on short pages + pushed down naturally on long pages.
+
+### Verification Summary
+- ✅ Python syntax: all modified files pass ast.parse
+- ✅ TS lint: 0 errors
+- ✅ TS compilation: 0 new errors in modified files
+- ✅ Runtime admin gates: return 403 for unauthenticated
+- ✅ news.db migration: 7894 rows migrated on test copy
+- ✅ 0 remaining 410 callers
+- ✅ Rule 16 (NO-DELETION): no files deleted
+- ✅ Rule 27 (NO-FAKE-DATA): all fabrications → NULL
+- ✅ Rule 75 (PUSH-AFTER-EVERY-TASK): all 5 phases pushed to GitHub
+- ✅ Rule 76 (TEAM-WORK-REVIEW): merged team commits before each push
+
+---
+
 ## [2026-10-08 — DOCS-UPDATE-FINAL + FINALIZE-REMAINING-WORK + team merges] — Documentation Secretary (السكرتيرة الدستورية)
 
 > **المرجع:** `worklog.md` tasks `FINALIZE-REMAINING-WORK` + `DOCS-UPDATE-FINAL` + `DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `P0-METALS-FOREX` + `P0-METALS-FOREX-V2`. هذا الإدخال يكمّل إدخال `[2026-10-08 — CONSTITUTION-R75-R76 + REAPPLY-CRITICAL-FIXES]` المُسجَّل أسفله بـ توثيق كل شغل ما كانش مُسجَّل بعد + دمج عمل الفريق الآخر (Rule 76 — TEAM-WORK-REVIEW).
