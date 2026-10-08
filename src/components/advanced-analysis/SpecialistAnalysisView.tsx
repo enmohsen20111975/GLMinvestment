@@ -1588,11 +1588,13 @@ function RecommendationSection({ info }: { info: StockInfo }) {
     ? (resistance - current) / (current - support)
     : null;
 
-  // Signal interpretation
+  // UNIFY-FIX (Rule 73): توحيد thresholds مع canonical 78/65/55/40/25
   const sigInt = signal == null ? null
-    : signal >= 70 ? { txt: 'شراء قوي', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
-    : signal >= 50 ? { txt: 'شراء', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
-    : signal >= 30 ? { txt: 'احتفاظ', cls: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' }
+    : signal >= 78 ? { txt: 'شراء قوي', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
+    : signal >= 65 ? { txt: 'شراء', cls: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30' }
+    : signal >= 55 ? { txt: 'تجميع', cls: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-950/30' }
+    : signal >= 40 ? { txt: 'انتظار', cls: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' }
+    : signal >= 25 ? { txt: 'تقليل', cls: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950/30' }
     : { txt: 'بيع', cls: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/30' };
 
   const trendAr = trend == null ? null

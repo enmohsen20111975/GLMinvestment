@@ -65075,3 +65075,20 @@ Stage Summary:
 - thresholds موحدة: 78/65/55/40/25 (canonical — مطابقة unified API)
 - التحقق: GET / → 200 ✅
 - القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس
+
+---
+Task ID: UNIFY-PHASE-4-FINAL (المدير العام — إكمال P1 المتبقية)
+Agent: المدير العام (Z.ai Code)
+Task: إكمال توحيد ما تبقى (SpecialistAnalysisView الثانية + DashboardView regime + PredictionTrackingView)
+
+Work Log:
+- SpecialistAnalysisView: توحيد thresholds الثانية (sigInt) 70/50/30 → 78/65/55/40/25
+- DashboardView: إزالة client-side regime computation (regimeMultiplier < 0.8)
+  + advice الآن من Python (regime.advice_ar) أو fallback نصي بسيط
+- PredictionTrackingView: ترحيل deprecated endpoint /tracking/list → /honest-tracking/list
+
+Stage Summary:
+- ملفات معدّلة: 3 (SpecialistAnalysisView + DashboardView + PredictionTrackingView)
+- تضارب مُزال: 3 (sigInt thresholds + regime computation + deprecated endpoint)
+- التحقق: GET / → 200 ✅
+- القيود: Rule 20/27/73 محترمة، لا حذف، الحمايات لم تُلمس
