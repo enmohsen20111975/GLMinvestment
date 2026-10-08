@@ -172,12 +172,12 @@ function IntradayAreaChart({ data, isUp, high, low, current }: AreaChartProps) {
   });
 
   const linePath = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${(p.x ?? 0).toFixed(2)},${(p.y ?? 0).toFixed(2)}`)
     .join(' ');
   const areaPath =
-    `M${points[0].x.toFixed(2)},${(H - PAD_B).toFixed(2)} ` +
-    points.map((p) => `L${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ') +
-    ` L${points[n - 1].x.toFixed(2)},${(H - PAD_B).toFixed(2)} Z`;
+    `M${points[0].(x ?? 0).toFixed(2)},${(H - PAD_B).toFixed(2)} ` +
+    points.map((p) => `L${(p.x ?? 0).toFixed(2)},${(p.y ?? 0).toFixed(2)}`).join(' ') +
+    ` L${points[n - 1].(x ?? 0).toFixed(2)},${(H - PAD_B).toFixed(2)} Z`;
 
   const stroke = isUp ? COLORS.emerald : COLORS.red;
   const gradId = isUp ? 'areaGradUp' : 'areaGradDown';
@@ -807,7 +807,7 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
                   {data.liquidity.accumulation_label || 'توازن سيولة'}
                 </div>
                 <div className="text-[9px] mt-0.5" style={{ color: COLORS.gray }}>
-                  نسبة ش/ب: {data.liquidity.buy_sell_ratio ? data.liquidity.buy_sell_ratio.toFixed(2) : '1.00'}x
+                  نسبة ش/ب: {data.liquidity.buy_sell_ratio ? (data.liquidity.buy_sell_ratio ?? 0).toFixed(2) : '1.00'}x
                 </div>
               </div>
             </div>

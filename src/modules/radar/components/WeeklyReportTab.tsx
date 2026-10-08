@@ -167,18 +167,18 @@ const REGIME_STYLES: Record<string, { color: string; bg: string; border: string;
 // ============================================================================
 function fmtPrice(n?: number | null): string {
   if (n == null || Number.isNaN(n)) return '—';
-  return n.toFixed(2);
+  return (n ?? 0).toFixed(2);
 }
 
 function fmtPct(n?: number | null, withSign = true): string {
   if (n == null || Number.isNaN(n)) return '—';
   const sign = withSign && n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${(n ?? 0).toFixed(1)}%`;
 }
 
 function fmtPctPlain(n?: number | null): string {
   if (n == null || Number.isNaN(n)) return '0.0';
-  return n.toFixed(1);
+  return (n ?? 0).toFixed(1);
 }
 
 // Note: regime Arabic label is now resolved via i18n at render time via
@@ -469,7 +469,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                   <div className="text-sm">
                     <span className="text-muted-foreground">R/R: </span>
                     <span className="font-bold text-blue-700 dark:text-blue-300">
-                      {sow.risk_reward.toFixed(2)}
+                      {(sow.risk_reward ?? 0).toFixed(2)}
                     </span>
                   </div>
                 )}
@@ -530,7 +530,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                     <span className="font-mono">{fmtPrice(s.current_price)}</span>
                     {s.volume_ratio_10d_vs_20d != null && (
                       <span className="text-xs text-muted-foreground">
-                        {s.volume_ratio_10d_vs_20d.toFixed(2)}×
+                        {(s.volume_ratio_10d_vs_20d ?? 0).toFixed(2)}×
                       </span>
                     )}
                   </div>
@@ -573,7 +573,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                 <div className="rounded-lg border border-muted p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.lastWeek.winRate')}</div>
                   <div className="text-base font-bold text-emerald-700 dark:text-emerald-300">
-                    {perf.win_rate_pct.toFixed(0)}%
+                    {(perf.win_rate_pct ?? 0).toFixed(0)}%
                   </div>
                 </div>
               </div>

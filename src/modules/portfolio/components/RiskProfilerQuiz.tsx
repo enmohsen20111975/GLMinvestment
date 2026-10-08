@@ -388,14 +388,14 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
                         <div
                           className="absolute top-0 h-2 w-1 bg-teal-600 rounded"
                           style={{ right: `${100 - currentPct}%` }}
-                          title={`الحالي: ${currentPct.toFixed(0)}%`}
+                          title={`الحالي: ${(currentPct ?? 0).toFixed(0)}%`}
                         />
                       )}
                     </div>
                     <span className="text-sm font-bold w-12 text-left">{a.pct}%</span>
                     {currentPct !== null && (
                       <span className="text-xs text-muted-foreground w-12 text-left">
-                        ({currentPct.toFixed(0)}%)
+                        ({(currentPct ?? 0).toFixed(0)}%)
                       </span>
                     )}
                   </div>

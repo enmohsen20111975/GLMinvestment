@@ -395,7 +395,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     align: 'right',
     sortable: true,
     className: 'font-mono text-sm',
-    render: (p) => (typeof p.entry_price === 'number' ? p.entry_price.toFixed(2) : '—'),
+    render: (p) => (typeof p.entry_price === 'number' ? (p.entry_price ?? 0).toFixed(2) : '—'),
   },
   {
     key: 'target_price',
@@ -403,7 +403,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     align: 'right',
     sortable: true,
     className: 'font-mono text-sm text-emerald-600',
-    render: (p) => (typeof p.target_price === 'number' ? p.target_price.toFixed(2) : '—'),
+    render: (p) => (typeof p.target_price === 'number' ? (p.target_price ?? 0).toFixed(2) : '—'),
   },
   {
     key: 'stop_loss',
@@ -411,7 +411,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     align: 'right',
     sortable: true,
     className: 'font-mono text-sm text-red-600',
-    render: (p) => (typeof p.stop_loss === 'number' ? p.stop_loss.toFixed(2) : '—'),
+    render: (p) => (typeof p.stop_loss === 'number' ? (p.stop_loss ?? 0).toFixed(2) : '—'),
   },
   {
     key: 'r_multiple',
@@ -419,7 +419,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     align: 'center',
     sortable: true,
     className: 'font-mono text-sm',
-    render: (p) => (typeof p.r_multiple === 'number' ? p.r_multiple.toFixed(2) : '—'),
+    render: (p) => (typeof p.r_multiple === 'number' ? (p.r_multiple ?? 0).toFixed(2) : '—'),
   },
   {
     key: 'confidence',
@@ -427,7 +427,7 @@ const predictionsColumns: Column<PredictionRow>[] = [
     align: 'center',
     sortable: true,
     render: (p) => (typeof p.confidence === 'number' && p.confidence > 0
-      ? <Badge variant="secondary" className="text-xs">{p.confidence.toFixed(0)}%</Badge>
+      ? <Badge variant="secondary" className="text-xs">{(p.confidence ?? 0).toFixed(0)}%</Badge>
       : <span className="text-muted-foreground">—</span>
     ),
   },
@@ -503,7 +503,7 @@ const activeStatusColumns: Column<PredictionRow>[] = [
     align: 'right',
     sortable: true,
     className: 'font-mono text-sm',
-    render: (s) => (typeof s.original_entry_price === 'number' ? s.original_entry_price.toFixed(2) : '—'),
+    render: (s) => (typeof s.original_entry_price === 'number' ? (s.original_entry_price ?? 0).toFixed(2) : '—'),
   },
   {
     key: 'current_price',
@@ -511,7 +511,7 @@ const activeStatusColumns: Column<PredictionRow>[] = [
     align: 'right',
     sortable: true,
     className: 'font-mono text-sm',
-    render: (s) => (typeof s.current_price === 'number' ? s.current_price.toFixed(2) : '—'),
+    render: (s) => (typeof s.current_price === 'number' ? (s.current_price ?? 0).toFixed(2) : '—'),
   },
   {
     key: 'progress_percent',
@@ -526,7 +526,7 @@ const activeStatusColumns: Column<PredictionRow>[] = [
             'font-mono text-sm font-bold',
             p >= 70 ? 'text-emerald-600' : p >= 30 ? 'text-amber-600' : p < 0 ? 'text-red-600' : 'text-muted-foreground'
           )}>
-            {p > 0 ? '+' : ''}{p.toFixed(1)}%
+            {p > 0 ? '+' : ''}{(p ?? 0).toFixed(1)}%
           </span>
           <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
             <div className={cn(

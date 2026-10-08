@@ -666,7 +666,7 @@ export function ExpertIntelligencePanel({
                           </span>
                         )}
                         {c.current_state?.rsi != null && c.current_state.rsi > 0 && (
-                          <span> · RSI {c.current_state.rsi.toFixed(0)}</span>
+                          <span> · RSI {(c.current_state.rsi ?? 0).toFixed(0)}</span>
                         )}
                         {c.sector_context?.relative_strength != null && (
                           <span className={cn(

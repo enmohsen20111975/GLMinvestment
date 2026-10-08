@@ -159,8 +159,8 @@ const sectorFlowColumns: Column<SectorFlow>[] = [
         : 'text-muted-foreground';
       return (
         <span className={cn(cls, 'font-semibold')}>
-          {s.avg_change_pct > 0 ? '+' : ''}
-          {s.avg_change_pct.toFixed(2)}%
+          {(s.avg_change_pct ?? 0) > 0 ? '+' : ''}
+          {(s.avg_change_pct ?? 0).toFixed(2)}%
         </span>
       );
     },
@@ -198,8 +198,8 @@ function StockFlowRow({ stock }: { stock: StockFlowItem }) {
               : 'text-muted-foreground'
           )}
         >
-          {stock.latest_change_pct > 0 ? '+' : ''}
-          {stock.latest_change_pct.toFixed(2)}%
+          {(stock.latest_change_pct ?? 0) > 0 ? '+' : ''}
+          {(stock.latest_change_pct ?? 0).toFixed(2)}%
         </div>
       </div>
     </div>

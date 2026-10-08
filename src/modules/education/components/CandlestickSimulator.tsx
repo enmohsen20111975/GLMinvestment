@@ -444,7 +444,7 @@ function CandleSvg({ o, h, l, c }: CandleSvgProps) {
               fill="currentColor"
               className="text-muted-foreground"
             >
-              {p.toFixed(0)}
+              {(p ?? 0).toFixed(0)}
             </text>
           </g>
         );
@@ -541,7 +541,7 @@ function PriceTag({
         className="text-muted-foreground"
         textAnchor={align}
       >
-        {value.toFixed(1)}
+        {(value ?? 0).toFixed(1)}
       </text>
     </g>
   );
@@ -602,7 +602,7 @@ function SliderRow({ label, value, onChange, color }: SliderRowProps) {
           className="rounded-md px-2 py-0.5 text-xs font-bold tabular-nums text-white"
           style={{ backgroundColor: color }}
         >
-          {value.toFixed(1)}
+          {(value ?? 0).toFixed(1)}
         </span>
       </div>
       <Slider

@@ -123,7 +123,7 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
       totalOccurrences,
       failures,
       successes,
-      avgFailureRate: avgFailureRate.toFixed(1),
+      avgFailureRate: (avgFailureRate ?? 0).toFixed(1),
     };
   }, [lessons]);
 

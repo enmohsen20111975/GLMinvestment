@@ -122,7 +122,7 @@ function ShareCard({
 
       {/* Price */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '20px' }}>
-        <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#f8fafc' }}>{data.price.toFixed(2)}</span>
+        <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#f8fafc' }}>{(data.price ?? 0).toFixed(2)}</span>
         <span style={{ fontSize: '13px', color: '#64748b' }}>جنيه مصري</span>
         {change !== undefined && (
           <span style={{
@@ -151,7 +151,7 @@ function ShareCard({
               marginRight: 'auto', padding: '4px 12px', borderRadius: '20px',
               background: `${recColor}20`, color: recColor, fontSize: '13px', fontWeight: '600',
             }}>
-              ثقة: {data.confidence.toFixed(0)}%
+              ثقة: {(data.confidence ?? 0).toFixed(0)}%
             </span>
           )}
         </div>
@@ -170,7 +170,7 @@ function ShareCard({
                 background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
               }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>✅ سعر الشراء الجيد</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{data.buyPrice.toFixed(2)}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{(data.buyPrice ?? 0).toFixed(2)}</div>
               </div>
             )}
             {(data.sellPrice || data.targetPrice) && (
@@ -190,7 +190,7 @@ function ShareCard({
                 background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
               }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>🎯 السعر المستهدف</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{data.targetPrice.toFixed(2)}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{(data.targetPrice ?? 0).toFixed(2)}</div>
               </div>
             )}
             {data.stopLoss && (
@@ -199,7 +199,7 @@ function ShareCard({
                 background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
               }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>🛑 وقف الخسارة</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444' }}>{data.stopLoss.toFixed(2)}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444' }}>{(data.stopLoss ?? 0).toFixed(2)}</div>
               </div>
             )}
             {data.fairValue && (
@@ -207,7 +207,7 @@ function ShareCard({
                 padding: '12px 16px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)',
               }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>📐 القيمة العادلة</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{data.fairValue.toFixed(2)}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{(data.fairValue ?? 0).toFixed(2)}</div>
               </div>
             )}
             {(data.expectedReturn ?? data.upsidePotential) !== undefined && (data.expectedReturn ?? data.upsidePotential) !== 0 && (
@@ -229,22 +229,22 @@ function ShareCard({
       {data.metrics && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
           {data.metrics.pe !== undefined && data.metrics.pe !== 0 && (
-            <MetricBox label="P/E" value={data.metrics.pe.toFixed(1)} />
+            <MetricBox label="P/E" value={(data.metrics.pe ?? 0).toFixed(1)} />
           )}
           {data.metrics.roe !== undefined && data.metrics.roe !== 0 && (
-            <MetricBox label="ROE" value={data.metrics.roe.toFixed(1) + '%'} highlight={data.metrics.roe > 15} />
+            <MetricBox label="ROE" value={(data.metrics.roe ?? 0).toFixed(1) + '%'} highlight={data.metrics.roe > 15} />
           )}
           {data.metrics.pb !== undefined && data.metrics.pb !== 0 && (
-            <MetricBox label="P/B" value={data.metrics.pb.toFixed(1)} />
+            <MetricBox label="P/B" value={(data.metrics.pb ?? 0).toFixed(1)} />
           )}
           {data.metrics.dividendYield !== undefined && data.metrics.dividendYield !== 0 && (
-            <MetricBox label="عائد التوزيعات" value={data.metrics.dividendYield.toFixed(1) + '%'} highlight={data.metrics.dividendYield > 3} />
+            <MetricBox label="عائد التوزيعات" value={(data.metrics.dividendYield ?? 0).toFixed(1) + '%'} highlight={data.metrics.dividendYield > 3} />
           )}
           {data.metrics.eps !== undefined && data.metrics.eps !== 0 && (
-            <MetricBox label="EPS" value={data.metrics.eps.toFixed(2) + ' EGP'} />
+            <MetricBox label="EPS" value={(data.metrics.eps ?? 0).toFixed(2) + ' EGP'} />
           )}
           {data.metrics.debtToEquity !== undefined && data.metrics.debtToEquity !== 0 && (
-            <MetricBox label="دين/حقوق ملكية" value={data.metrics.debtToEquity.toFixed(2)} />
+            <MetricBox label="دين/حقوق ملكية" value={(data.metrics.debtToEquity ?? 0).toFixed(2)} />
           )}
         </div>
       )}
@@ -306,50 +306,50 @@ export function ShareButton({
     const changeStr = d.change !== undefined ? `${d.change >= 0 ? '▲' : '▼'} ${Math.abs(d.change).toFixed(2)}%` : '';
 
     let text = `📈 تحليل ${d.ticker} - ${d.nameAr || d.name}\n`;
-    text += `💰 السعر الحالي: ${d.price.toFixed(2)} ج.م ${changeStr}\n`;
+    text += `💰 السعر الحالي: ${(d.price ?? 0).toFixed(2)} ج.م ${changeStr}\n`;
 
     if (d.recommendation) {
       text += `🎯 التحليل: ${d.recommendationAr || d.recommendation}\n`;
     }
     if (d.confidence !== undefined) {
-      text += `📊 مستوى الثقة: ${d.confidence.toFixed(0)}%\n`;
+      text += `📊 مستوى الثقة: ${(d.confidence ?? 0).toFixed(0)}%\n`;
     }
 
     // === أسعار التداول المهمة ===
     text += `\n〰️〰️ أسعار التداول 〰️〰️\n`;
     
     if (d.buyPrice) {
-      text += `✅ سعر الشراء الجيد: ${d.buyPrice.toFixed(2)} ج.م\n`;
+      text += `✅ سعر الشراء الجيد: ${(d.buyPrice ?? 0).toFixed(2)} ج.م\n`;
     } else if (d.fairValue && d.fairValue < d.price * 0.95) {
       // إذا القيمة العادلة أقل من السعر بـ 5%، نستخدمها كسعر شراء
-      text += `✅ سعر الشراء الجيد: ${d.fairValue.toFixed(2)} ج.م\n`;
+      text += `✅ سعر الشراء الجيد: ${(d.fairValue ?? 0).toFixed(2)} ج.م\n`;
     }
     
     if (d.sellPrice) {
-      text += `📤 سعر البيع المقترح: ${d.sellPrice.toFixed(2)} ج.م\n`;
+      text += `📤 سعر البيع المقترح: ${(d.sellPrice ?? 0).toFixed(2)} ج.م\n`;
     } else if (d.targetPrice) {
-      text += `📤 سعر البيع المقترح: ${d.targetPrice.toFixed(2)} ج.م\n`;
+      text += `📤 سعر البيع المقترح: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
     }
     
     if (d.targetPrice) {
-      text += `🎯 السعر المستهدف: ${d.targetPrice.toFixed(2)} ج.م\n`;
+      text += `🎯 السعر المستهدف: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
     }
     
     if (d.stopLoss) {
-      text += `🛑 وقف الخسارة: ${d.stopLoss.toFixed(2)} ج.م\n`;
+      text += `🛑 وقف الخسارة: ${(d.stopLoss ?? 0).toFixed(2)} ج.م\n`;
     }
     
     if (d.expectedReturn !== undefined) {
-      text += `📈 العائد المتوقع: ${d.expectedReturn >= 0 ? '+' : ''}${d.expectedReturn.toFixed(1)}%\n`;
+      text += `📈 العائد المتوقع: ${d.expectedReturn >= 0 ? '+' : ''}${(d.expectedReturn ?? 0).toFixed(1)}%\n`;
     } else if (d.upsidePotential !== undefined && d.upsidePotential !== 0) {
-      text += `📈 العائد المتوقع: ${d.upsidePotential >= 0 ? '+' : ''}${d.upsidePotential.toFixed(1)}%\n`;
+      text += `📈 العائد المتوقع: ${d.upsidePotential >= 0 ? '+' : ''}${(d.upsidePotential ?? 0).toFixed(1)}%\n`;
     }
 
     // === القيمة العادلة ===
     if (d.fairValue) {
-      text += `\n📐 القيمة العادلة: ${d.fairValue.toFixed(2)} ج.م`;
+      text += `\n📐 القيمة العادلة: ${(d.fairValue ?? 0).toFixed(2)} ج.م`;
       if (d.upsidePotential !== undefined && d.upsidePotential !== 0) {
-        text += ` (${d.upsidePotential >= 0 ? '+' : ''}${d.upsidePotential.toFixed(1)}%)`;
+        text += ` (${d.upsidePotential >= 0 ? '+' : ''}${(d.upsidePotential ?? 0).toFixed(1)}%)`;
       }
       text += `\n`;
     }
@@ -360,10 +360,10 @@ export function ShareButton({
       const hasMetrics = m.pe || m.roe || m.pb || m.dividendYield;
       if (hasMetrics) {
         text += `\n📊 المؤشرات المالية:\n`;
-        if (m.pe) text += `   P/E: ${m.pe.toFixed(1)} | `;
-        if (m.roe) text += `ROE: ${m.roe.toFixed(1)}% | `;
-        if (m.pb) text += `P/B: ${m.pb.toFixed(1)}\n`;
-        if (m.dividendYield) text += `   عائد التوزيعات: ${m.dividendYield.toFixed(1)}%\n`;
+        if (m.pe) text += `   P/E: ${(m.pe ?? 0).toFixed(1)} | `;
+        if (m.roe) text += `ROE: ${(m.roe ?? 0).toFixed(1)}% | `;
+        if (m.pb) text += `P/B: ${(m.pb ?? 0).toFixed(1)}\n`;
+        if (m.dividendYield) text += `   عائد التوزيعات: ${(m.dividendYield ?? 0).toFixed(1)}%\n`;
       }
     }
     
@@ -465,7 +465,7 @@ export function ShareButton({
 
   const shareText = getShareText();
   const platformUrl = typeof window !== 'undefined' ? window.location.origin : 'https://invist.m2y.net';
-  const shortText = `${stockData.ticker} - ${stockData.nameAr || stockData.name}\nالسعر: ${stockData.price.toFixed(2)} ج.م\nالتحليل: ${stockData.recommendationAr || stockData.recommendation || 'غير محدد'}\n\ndليل الاستثمار${OFFICIAL_LINKS_BLOCK}`;
+  const shortText = `${stockData.ticker} - ${stockData.nameAr || stockData.name}\nالسعر: ${(stockData.price ?? 0).toFixed(2)} ج.م\nالتحليل: ${stockData.recommendationAr || stockData.recommendation || 'غير محدد'}\n\ndليل الاستثمار${OFFICIAL_LINKS_BLOCK}`;
   
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,

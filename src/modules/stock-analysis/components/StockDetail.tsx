@@ -711,27 +711,27 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                     <div className="text-[10px] text-slate-500">مكرر الربحية (P/E)</div>
                     <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5 flex items-center gap-1">
-                      <span>{val?.pe_ratio ? val.pe_ratio.toFixed(2) : (profile.basic?.pe_ratio ? profile.basic.pe_ratio.toFixed(2) : 'N/A')}</span>
+                      <span>{val?.pe_ratio ? (val.pe_ratio ?? 0).toFixed(2) : (profile.basic?.pe_ratio ? (profile.basic.pe_ratio ?? 0).toFixed(2) : 'N/A')}</span>
                       {isEst(val, 'pe_ratio') && <EstimatedBadge />}
                     </div>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                     <div className="text-[10px] text-slate-500">القيمة الدفترية (P/B)</div>
                     <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5 flex items-center gap-1">
-                      <span>{val?.pb_ratio ? val.pb_ratio.toFixed(2) : (profile.basic?.pb_ratio ? profile.basic.pb_ratio.toFixed(2) : 'N/A')}</span>
+                      <span>{val?.pb_ratio ? (val.pb_ratio ?? 0).toFixed(2) : (profile.basic?.pb_ratio ? (profile.basic.pb_ratio ?? 0).toFixed(2) : 'N/A')}</span>
                       {isEst(val, 'pb_ratio') && <EstimatedBadge />}
                     </div>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                     <div className="text-[10px] text-slate-500">مكرر المبيعات (P/S)</div>
                     <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
-                      {val?.ps_ratio ? val.ps_ratio.toFixed(2) : (profile.basic?.ps_ratio ? profile.basic.ps_ratio.toFixed(2) : 'N/A')}
+                      {val?.ps_ratio ? (val.ps_ratio ?? 0).toFixed(2) : (profile.basic?.ps_ratio ? (profile.basic.ps_ratio ?? 0).toFixed(2) : 'N/A')}
                     </div>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                     <div className="text-[10px] text-slate-500">مكرر نمو الأرباح (PEG)</div>
                     <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
-                      {val?.peg_ratio ? val.peg_ratio.toFixed(2) : 'N/A'}
+                      {val?.peg_ratio ? (val.peg_ratio ?? 0).toFixed(2) : 'N/A'}
                     </div>
                   </div>
                 </div>
@@ -745,7 +745,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">العائد على حقوق الملكية (ROE)</span>
                       <span className="font-bold text-emerald-600 flex items-center gap-1">
-                        <span>{prof?.roe ? `${prof.roe.toFixed(2)}%` : (profile.basic?.roe ? `${profile.basic.roe.toFixed(2)}%` : 'N/A')}</span>
+                        <span>{prof?.roe ? `${(prof.roe ?? 0).toFixed(2)}%` : (profile.basic?.roe ? `${(profile.basic.roe ?? 0).toFixed(2)}%` : 'N/A')}</span>
                         {(isEst(prof, 'roe') || isEst(profile.basic, 'roe')) && <EstimatedBadge />}
                       </span>
                     </div>
@@ -758,7 +758,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">هامش الربح التشغيلي (Operating Margin)</span>
                       <span className="font-bold text-teal-600">
-                        {prof?.operating_margin ? `${prof.operating_margin.toFixed(2)}%` : 'N/A'}
+                        {prof?.operating_margin ? `${(prof.operating_margin ?? 0).toFixed(2)}%` : 'N/A'}
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
@@ -770,7 +770,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">هامش صافي الربح (Net Margin)</span>
                       <span className="font-bold text-purple-600">
-                        {prof?.net_margin ? `${prof.net_margin.toFixed(2)}%` : (profile.basic?.profit_margin ? `${profile.basic.profit_margin.toFixed(2)}%` : 'N/A')}
+                        {prof?.net_margin ? `${(prof.net_margin ?? 0).toFixed(2)}%` : (profile.basic?.profit_margin ? `${(profile.basic.profit_margin ?? 0).toFixed(2)}%` : 'N/A')}
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-1.5">
@@ -845,7 +845,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   <div className="flex justify-between">
                     <span className="text-slate-500">نمو الإيرادات</span>
                     <span className={cn("font-bold", (inc?.revenue_growth || 0) >= 0 ? "text-emerald-500" : "text-red-500")}>
-                      {inc?.revenue_growth ? `${inc.revenue_growth >= 0 ? '+' : ''}${inc.revenue_growth.toFixed(2)}%` : '—'}
+                      {inc?.revenue_growth ? `${inc.revenue_growth >= 0 ? '+' : ''}${(inc.revenue_growth ?? 0).toFixed(2)}%` : '—'}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -858,7 +858,7 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                   <div className="flex justify-between">
                     <span className="text-slate-500">ربحية السهم (EPS)</span>
                     <span className="font-bold flex items-center gap-1">
-                      <span>{inc?.eps ? `${inc.eps.toFixed(2)} EGP` : (profile.basic?.eps ? `${profile.basic.eps.toFixed(2)} EGP` : '—')}</span>
+                      <span>{inc?.eps ? `${(inc.eps ?? 0).toFixed(2)} EGP` : (profile.basic?.eps ? `${(profile.basic.eps ?? 0).toFixed(2)} EGP` : '—')}</span>
                       {(isEst(inc, 'eps') || isEst(profile.basic, 'eps')) && <EstimatedBadge />}
                     </span>
                   </div>
@@ -915,19 +915,19 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">عائد التوزيع الحالي</div>
-                  <div className="text-sm font-extrabold text-emerald-600 mt-0.5">{div?.div_yield ? `${div.div_yield.toFixed(2)}%` : '0.00%'}</div>
+                  <div className="text-sm font-extrabold text-emerald-600 mt-0.5">{div?.div_yield ? `${(div.div_yield ?? 0).toFixed(2)}%` : '0.00%'}</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">توزيع السهم للسنة (DPS)</div>
-                  <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{div?.dps_fy ? `${div.dps_fy.toFixed(2)} EGP` : 'N/A'}</div>
+                  <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{div?.dps_fy ? `${(div.dps_fy ?? 0).toFixed(2)} EGP` : 'N/A'}</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">نسبة التوزيع من الأرباح</div>
-                  <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{div?.payout_ratio ? `${div.payout_ratio.toFixed(1)}%` : 'N/A'}</div>
+                  <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{div?.payout_ratio ? `${(div.payout_ratio ?? 0).toFixed(1)}%` : 'N/A'}</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">نمو التوزيعات</div>
-                  <div className="text-sm font-extrabold text-emerald-600 mt-0.5">{div?.dps_growth ? `${div.dps_growth.toFixed(1)}%` : 'N/A'}</div>
+                  <div className="text-sm font-extrabold text-emerald-600 mt-0.5">{div?.dps_growth ? `${(div.dps_growth ?? 0).toFixed(1)}%` : 'N/A'}</div>
                 </div>
               </div>
             </div>
@@ -939,37 +939,37 @@ function FundamentalsCard({ ticker }: { ticker: string }) {
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">أسبوع (1W)</div>
                   <div className={cn("font-bold mt-0.5", perf?.perf_1w >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {perf?.perf_1w ? `${perf.perf_1w >= 0 ? '+' : ''}${perf.perf_1w.toFixed(1)}%` : 'N/A'}
+                    {perf?.perf_1w ? `${perf.perf_1w >= 0 ? '+' : ''}${(perf.perf_1w ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">شهر (1M)</div>
                   <div className={cn("font-bold mt-0.5", perf?.perf_1m >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {perf?.perf_1m ? `${perf.perf_1m >= 0 ? '+' : ''}${perf.perf_1m.toFixed(1)}%` : 'N/A'}
+                    {perf?.perf_1m ? `${perf.perf_1m >= 0 ? '+' : ''}${(perf.perf_1m ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">3 شهور (3M)</div>
                   <div className={cn("font-bold mt-0.5", perf?.perf_3m >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {perf?.perf_3m ? `${perf.perf_3m >= 0 ? '+' : ''}${perf.perf_3m.toFixed(1)}%` : 'N/A'}
+                    {perf?.perf_3m ? `${perf.perf_3m >= 0 ? '+' : ''}${(perf.perf_3m ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">سنة (1Y)</div>
                   <div className={cn("font-bold mt-0.5", perf?.perf_1y >= 0 ? "text-emerald-500" : "text-red-500")}>
-                    {perf?.perf_1y ? `${perf.perf_1y >= 0 ? '+' : ''}${perf.perf_1y.toFixed(1)}%` : 'N/A'}
+                    {perf?.perf_1y ? `${perf.perf_1y >= 0 ? '+' : ''}${(perf.perf_1y ?? 0).toFixed(1)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">تذبذب شهر</div>
                   <div className="font-bold text-slate-950 dark:text-white mt-0.5">
-                    {perf?.volatility_1m ? `${perf.volatility_1m.toFixed(2)}%` : 'N/A'}
+                    {perf?.volatility_1m ? `${(perf.volatility_1m ?? 0).toFixed(2)}%` : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-900">
                   <div className="text-[10px] text-slate-500">تذبذب أسبوع</div>
                   <div className="font-bold text-slate-950 dark:text-white mt-0.5">
-                    {perf?.volatility_1w ? `${perf.volatility_1w.toFixed(2)}%` : 'N/A'}
+                    {perf?.volatility_1w ? `${(perf.volatility_1w ?? 0).toFixed(2)}%` : 'N/A'}
                   </div>
                 </div>
               </div>

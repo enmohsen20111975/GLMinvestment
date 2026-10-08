@@ -328,7 +328,7 @@ export function DualTrackPredictionsView() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="text-3xl font-bold text-cyan-600 dark:text-cyan-400">
-              {combined.toFixed(1)}%
+              {(combined ?? 0).toFixed(1)}%
             </div>
             <div className="flex-1">
               <Progress value={combined} className="h-2" />
@@ -524,7 +524,7 @@ function TrackCard({
       <CardContent className="pt-0">
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <div className="text-lg font-bold">{track.hit_rate.toFixed(1)}%</div>
+            <div className="text-lg font-bold">{(track.hit_rate ?? 0).toFixed(1)}%</div>
             <div className="text-[10px] text-muted-foreground">hit_rate</div>
           </div>
           <div>

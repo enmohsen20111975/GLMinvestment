@@ -86,16 +86,16 @@ interface ApiResponse {
 function formatPrice(n: number | null): string {
   if (n === null || n === undefined) return '—';
   if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
-  if (n >= 1) return '$' + n.toFixed(2);
-  if (n >= 0.01) return '$' + n.toFixed(4);
-  return '$' + n.toFixed(6);
+  if (n >= 1) return '$' + (n ?? 0).toFixed(2);
+  if (n >= 0.01) return '$' + (n ?? 0).toFixed(4);
+  return '$' + (n ?? 0).toFixed(6);
 }
 
 function formatPercent(n: number | null): { text: string; positive: boolean } {
   if (n === null || n === undefined || Number.isNaN(n))
     return { text: '—', positive: false };
   return {
-    text: (n >= 0 ? '+' : '') + n.toFixed(2) + '%',
+    text: (n >= 0 ? '+' : '') + (n ?? 0).toFixed(2) + '%',
     positive: n >= 0,
   };
 }
@@ -202,7 +202,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
       const potential = getPotentialReturn(p);
       return potential !== null ? (
         <Badge variant="outline" className="text-xs font-mono text-emerald-600 bg-emerald-50 border-emerald-200">
-          +{potential.toFixed(1)}%
+          +{(potential ?? 0).toFixed(1)}%
         </Badge>
       ) : '—';
     },
@@ -215,7 +215,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     className: 'font-mono text-sm',
     render: (p) => {
       const rr = getRiskReward(p);
-      return rr !== null ? rr.toFixed(2) : '—';
+      return rr !== null ? (rr ?? 0).toFixed(2) : '—';
     },
   },
   {
@@ -224,7 +224,7 @@ const predictionColumns: Column<CryptoPrediction>[] = [
     align: 'center',
     sortable: true,
     render: (p) => p.confidence !== null ? (
-      <Badge variant="secondary" className="text-xs">{p.confidence.toFixed(0)}</Badge>
+      <Badge variant="secondary" className="text-xs">{(p.confidence ?? 0).toFixed(0)}</Badge>
     ) : '—',
   },
   {
@@ -366,7 +366,7 @@ export default function CryptoPredictionTrackingView() {
           variant="outline"
           size="sm"
           title="متابعة توقعات العملات الرقمية"
-          content={`متابعة توقعات العملات الرقمية\nإجمالي: ${stats.total} · مغلقة: ${stats.closed} · مكاسب: ${stats.wins} · خسائر: ${stats.losses}\nنسبة النجاح: ${winRate.toFixed(1)}%\n\nأحدث التوقعات:\n${filtered.slice(0, 15).map((p, i) => `${i + 1}. ${p.ticker} — ${p.signal} — دخول ${formatPrice(p.entry_price)} — هدف ${formatPrice(p.target_price)} — وقف ${formatPrice(p.stop_loss)}`).join('\n')}`}
+          content={`متابعة توقعات العملات الرقمية\nإجمالي: ${stats.total} · مغلقة: ${stats.closed} · مكاسب: ${stats.wins} · خسائر: ${stats.losses}\nنسبة النجاح: ${(winRate ?? 0).toFixed(1)}%\n\nأحدث التوقعات:\n${filtered.slice(0, 15).map((p, i) => `${i + 1}. ${p.ticker} — ${p.signal} — دخول ${formatPrice(p.entry_price)} — هدف ${formatPrice(p.target_price)} — وقف ${formatPrice(p.stop_loss)}`).join('\n')}`}
           filename={`crypto-predictions-${Date.now()}`}
           hashtags={['crypto', 'توقعات', 'بيتكوين']}
           triggerLabel="نشر"
@@ -406,7 +406,7 @@ export default function CryptoPredictionTrackingView() {
         <StatCard
           icon={<Percent className="h-4 w-4" />}
           label="نسبة النجاح"
-          value={winRate.toFixed(1) + '%'}
+          value={(winRate ?? 0).toFixed(1) + '%'}
           tone={winRate >= 50 ? 'positive' : 'negative'}
         />
       </div>

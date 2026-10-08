@@ -289,19 +289,19 @@ function ProofPredictionsTableView({
                   {displayDate}
                 </td>
                 <td className="p-3 text-center font-mono font-semibold text-foreground">
-                  {entryPrice ? `${entryPrice.toFixed(2)} ${currencyLabel}` : '—'}
+                  {entryPrice ? `${(entryPrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
                 </td>
                 <td className="p-3 text-center font-mono text-xs whitespace-nowrap">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-semibold">🎯 {targetPrice ? targetPrice.toFixed(2) : '—'} ({targetPct}%)</div>
-                  <div className="text-rose-500 font-normal text-[11px]">🛑 {stopLoss ? stopLoss.toFixed(2) : '—'}</div>
+                  <div className="text-emerald-600 dark:text-emerald-400 font-semibold">🎯 {targetPrice ? (targetPrice ?? 0).toFixed(2) : '—'} ({targetPct}%)</div>
+                  <div className="text-rose-500 font-normal text-[11px]">🛑 {stopLoss ? (stopLoss ?? 0).toFixed(2) : '—'}</div>
                 </td>
                 {/* أعلى وأقل سعر منذ التوقع */}
                 <td className="p-3 text-center font-mono text-xs whitespace-nowrap">
                   <div className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                    ▲ {maxHigh > 0 ? maxHigh.toFixed(2) : (liveStock?.high_price ? liveStock.high_price.toFixed(2) : (currentPrice ? currentPrice.toFixed(2) : '—'))}
+                    ▲ {maxHigh > 0 ? (maxHigh ?? 0).toFixed(2) : (liveStock?.high_price ? (liveStock.high_price ?? 0).toFixed(2) : (currentPrice ? (currentPrice ?? 0).toFixed(2) : '—'))}
                   </div>
                   <div className="text-rose-600 dark:text-rose-400 font-semibold">
-                    ▼ {minLow > 0 ? minLow.toFixed(2) : (liveStock?.low_price ? liveStock.low_price.toFixed(2) : (currentPrice ? currentPrice.toFixed(2) : '—'))}
+                    ▼ {minLow > 0 ? (minLow ?? 0).toFixed(2) : (liveStock?.low_price ? (liveStock.low_price ?? 0).toFixed(2) : (currentPrice ? (currentPrice ?? 0).toFixed(2) : '—'))}
                   </div>
                 </td>
                 <td className="p-3 text-center font-mono">
@@ -311,12 +311,12 @@ function ProofPredictionsTableView({
                     pnl < 0 ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300" :
                     "bg-gray-100 text-gray-700"
                   )}>
-                    {pnl > 0 ? `+${pnl.toFixed(2)}%` : `${pnl.toFixed(2)}%`}
+                    {pnl > 0 ? `+${(pnl ?? 0).toFixed(2)}%` : `${(pnl ?? 0).toFixed(2)}%`}
                   </span>
                   {/* P6-PREDICTIONS: "best potential" للصفقات النشطة */}
                   {bestPotentialPnl !== null && bestPotentialPnl > 0 && (
                     <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
-                      قمة: +{bestPotentialPnl.toFixed(2)}%
+                      قمة: +{(bestPotentialPnl ?? 0).toFixed(2)}%
                     </div>
                   )}
                 </td>
@@ -430,7 +430,7 @@ export function PreviousPredictionsArchive({
                         {p.signal_ar || p.signal}
                       </span>
                     </td>
-                    <td className="p-2 hidden sm:table-cell">{entryVal > 0 ? entryVal.toFixed(2) : '—'}</td>
+                    <td className="p-2 hidden sm:table-cell">{entryVal > 0 ? (entryVal ?? 0).toFixed(2) : '—'}</td>
                     <td className="p-2 hidden sm:table-cell">{p.target_price ? Number(p.target_price).toFixed(2) : '—'}</td>
                     {/* P6-PREDICTIONS: القيم التاريخية */}
                     <td className="p-2 hidden md:table-cell font-mono text-xs">
@@ -706,7 +706,7 @@ export function PredictionsTab({ market }: { market: MarketType }) {
             <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-emerald-100 dark:border-emerald-900">
               <p className="text-xs text-muted-foreground mb-0.5">نسبة دقة التوقعات</p>
               <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                {dynamicWinRate.toFixed(0)}%
+                {(dynamicWinRate ?? 0).toFixed(0)}%
               </p>
             </div>
             <div className="rounded-lg bg-white/70 dark:bg-black/30 p-2.5 border border-teal-100 dark:border-teal-900">

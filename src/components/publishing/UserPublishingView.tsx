@@ -328,29 +328,29 @@ export function UserPublishingView() {
                     {post.entry_price && (
                       <div className="bg-muted/50 rounded-lg p-2 text-center">
                         <div className="text-xs text-muted-foreground">سعر الدخول</div>
-                        <div className="font-bold">{post.entry_price.toFixed(2)}</div>
+                        <div className="font-bold">{(post.entry_price ?? 0).toFixed(2)}</div>
                       </div>
                     )}
                     {post.target_price && (
                       <div className="bg-green-500/10 rounded-lg p-2 text-center">
                         <div className="text-xs text-green-600">الهدف</div>
-                        <div className="font-bold text-green-600">{post.target_price.toFixed(2)}</div>
+                        <div className="font-bold text-green-600">{(post.target_price ?? 0).toFixed(2)}</div>
                       </div>
                     )}
                     {post.stop_loss && (
                       <div className="bg-red-500/10 rounded-lg p-2 text-center">
                         <div className="text-xs text-red-600">الوقف</div>
-                        <div className="font-bold text-red-600">{post.stop_loss.toFixed(2)}</div>
+                        <div className="font-bold text-red-600">{(post.stop_loss ?? 0).toFixed(2)}</div>
                       </div>
                     )}
                     {post.currentPrice && (
                       <div className="bg-teal-500/10 rounded-lg p-2 text-center">
                         <div className="text-xs text-teal-600">السعر الحالي</div>
                         <div className="font-bold text-teal-600">
-                          {post.currentPrice.toFixed(2)}
+                          {(post.currentPrice ?? 0).toFixed(2)}
                           {post.priceChange && (
                             <span className={post.priceChange >= 0 ? 'text-green-500 mr-1' : 'text-red-500 mr-1'}>
-                              {post.priceChange >= 0 ? '+' : ''}{post.priceChange.toFixed(1)}%
+                              {post.priceChange >= 0 ? '+' : ''}{(post.priceChange ?? 0).toFixed(1)}%
                             </span>
                           )}
                         </div>

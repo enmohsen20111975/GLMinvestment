@@ -244,10 +244,10 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                 value={session!.buy_sell_ratio != null ? session!.buy_sell_ratio.toFixed(2) : '—'}
                 tone={session!.buy_sell_ratio != null && session!.buy_sell_ratio > 1 ? 'pos' : session!.buy_sell_ratio != null && session!.buy_sell_ratio < 1 ? 'neg' : 'neutral'}
               />
-              <SummaryCell label="VWAP الجلسة" value={session!.session_vwap.toFixed(2)} />
-              <SummaryCell label="الافتتاح" value={session!.session_open.toFixed(2)} />
-              <SummaryCell label="الإغلاق" value={session!.session_close.toFixed(2)} tone={session!.session_close >= session!.session_open ? 'pos' : 'neg'} />
-              <SummaryCell label="أعلى / أدنى" value={`${session!.session_high.toFixed(2)} / ${session!.session_low.toFixed(2)}`} />
+              <SummaryCell label="VWAP الجلسة" value={(session!.session_vwap ?? 0).toFixed(2)} />
+              <SummaryCell label="الافتتاح" value={(session!.session_open ?? 0).toFixed(2)} />
+              <SummaryCell label="الإغلاق" value={(session!.session_close ?? 0).toFixed(2)} tone={(session!.session_close ?? 0) >= (session!.session_open ?? 0) ? 'pos' : 'neg'} />
+              <SummaryCell label="أعلى / أدنى" value={`${(session!.session_high ?? 0).toFixed(2)} / ${(session!.session_low ?? 0).toFixed(2)}`} />
             </div>
 
             {/* Buy/Sell pressure bars per bucket */}
@@ -293,17 +293,17 @@ export function IntradayPressurePanel({ initialTicker = 'COMI' }: Props) {
                             <div
                               className="bg-emerald-500/70 transition-all"
                               style={{ width: `${buyWidth}%` }}
-                              title={`شراء: ${b.buy_pressure_pct.toFixed(1)}%`}
+                              title={`شراء: ${(b.buy_pressure_pct ?? 0).toFixed(1)}%`}
                             />
                             <div
                               className="bg-red-500/70 transition-all"
                               style={{ width: `${sellWidth}%` }}
-                              title={`بيع: ${b.sell_pressure_pct.toFixed(1)}%`}
+                              title={`بيع: ${(b.sell_pressure_pct ?? 0).toFixed(1)}%`}
                             />
                           </div>
                           <div className="text-[9px] text-muted-foreground mt-0.5 flex items-center justify-between">
                             <span>{formatNumber(b.total_volume)} حصة</span>
-                            <span>شراء {b.buy_pressure_pct.toFixed(0)}% / بيع {b.sell_pressure_pct.toFixed(0)}%</span>
+                            <span>شراء {(b.buy_pressure_pct ?? 0).toFixed(0)}% / بيع {(b.sell_pressure_pct ?? 0).toFixed(0)}%</span>
                           </div>
                         </div>
                         <div

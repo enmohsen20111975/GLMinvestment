@@ -89,9 +89,10 @@ function formatCurrency(value: number, isCrypto: boolean = false): string {
   }).format(value) + ' ج.م';
 }
 
-function formatPercent(value: number): string {
+function formatPercent(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
   const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return `${sign}${(value ?? 0).toFixed(2)}%`;
 }
 
 function formatTimeAgo(dateStr: string): string {

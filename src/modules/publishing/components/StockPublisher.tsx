@@ -679,7 +679,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
               {recMeta.emoji} {recMeta.ar}
               {data.confidence != null && data.confidence > 0 && (
                 <span className="opacity-80 font-mono">
-                  · {data.confidence.toFixed(0)}%
+                  · {(data.confidence ?? 0).toFixed(0)}%
                 </span>
               )}
             </Badge>
@@ -716,7 +716,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                 <TrendingDown className="h-4 w-4" />
               )}
               {isUp ? '+' : ''}
-              {data.changePct.toFixed(2)}%
+              {(data.changePct ?? 0).toFixed(2)}%
             </div>
           )}
         </div>
@@ -791,7 +791,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                 className="gap-1 font-mono font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
               >
                 <Gauge className="h-3 w-3" />
-                R:R {data.riskReward.toFixed(1)}:1
+                R:R {(data.riskReward ?? 0).toFixed(1)}:1
               </Badge>
             )}
             {data.positionSize != null && (
@@ -800,7 +800,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                 className="gap-1 font-mono font-semibold bg-muted/50"
               >
                 <Activity className="h-3 w-3" />
-                حجم المركز: {data.positionSize.toFixed(1)}%
+                حجم المركز: {(data.positionSize ?? 0).toFixed(1)}%
               </Badge>
             )}
           </div>
@@ -868,10 +868,10 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                 </div>
                 <div className="flex items-center justify-between text-[10px] font-mono">
                   <span className="text-emerald-600 dark:text-emerald-400">
-                    شراء {buyPressure.toFixed(0)}%
+                    شراء {(buyPressure ?? 0).toFixed(0)}%
                   </span>
                   <span className="text-rose-600 dark:text-rose-400">
-                    بيع {sellPressure.toFixed(0)}%
+                    بيع {(sellPressure ?? 0).toFixed(0)}%
                   </span>
                 </div>
               </div>
@@ -889,7 +889,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
                         : 'text-foreground'
                   )}
                 >
-                  {data.volumeRatio.toFixed(2)}×
+                  {(data.volumeRatio ?? 0).toFixed(2)}×
                 </span>
               </div>
             )}
@@ -911,7 +911,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
               {rsi != null && (
                 <IndicatorRow
                   label="RSI(14)"
-                  value={rsi.toFixed(1)}
+                  value={(rsi ?? 0).toFixed(1)}
                   state={
                     rsiState === 'overbought'
                       ? '⚠️ تشبع شرائي'
@@ -931,23 +931,23 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
               {data.sma20 != null && (
                 <IndicatorRow
                   label="SMA20"
-                  value={data.sma20.toFixed(2)}
+                  value={(data.sma20 ?? 0).toFixed(2)}
                 />
               )}
               {data.sma50 != null && (
                 <IndicatorRow
                   label="SMA50"
-                  value={data.sma50.toFixed(2)}
+                  value={(data.sma50 ?? 0).toFixed(2)}
                 />
               )}
               {data.sma200 != null && (
                 <IndicatorRow
                   label="SMA200"
-                  value={data.sma200.toFixed(2)}
+                  value={(data.sma200 ?? 0).toFixed(2)}
                 />
               )}
               {data.atr != null && (
-                <IndicatorRow label="ATR" value={data.atr.toFixed(2)} />
+                <IndicatorRow label="ATR" value={(data.atr ?? 0).toFixed(2)} />
               )}
             </div>
           </div>
@@ -965,15 +965,15 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-1 text-[11px]">
               {data.peRatio != null && (
-                <IndicatorRow label="P/E" value={data.peRatio.toFixed(1)} />
+                <IndicatorRow label="P/E" value={(data.peRatio ?? 0).toFixed(1)} />
               )}
               {data.pbRatio != null && (
-                <IndicatorRow label="P/B" value={data.pbRatio.toFixed(1)} />
+                <IndicatorRow label="P/B" value={(data.pbRatio ?? 0).toFixed(1)} />
               )}
               {data.roe != null && (
                 <IndicatorRow
                   label="ROE"
-                  value={`${data.roe.toFixed(1)}%`}
+                  value={`${(data.roe ?? 0).toFixed(1)}%`}
                 />
               )}
               {data.marketCap != null && (
@@ -1122,7 +1122,7 @@ function fmtMoney(n: number | null | undefined): string {
     return `${(num / 1_000_000_000).toFixed(2)}B`;
   if (Math.abs(num) >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (Math.abs(num) >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
-  return num.toFixed(0);
+  return (num ?? 0).toFixed(0);
 }
 
 export default StockPublisher;

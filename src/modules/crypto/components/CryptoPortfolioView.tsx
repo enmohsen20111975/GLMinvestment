@@ -80,8 +80,8 @@ interface PortfolioSummary {
 function formatPrice(price: number | null | undefined): string {
   if (price == null || Number.isNaN(price)) return '$0.00';
   if (price >= 1) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (price >= 0.01) return '$' + price.toFixed(4);
-  return '$' + price.toFixed(8);
+  if (price >= 0.01) return '$' + (price ?? 0).toFixed(4);
+  return '$' + (price ?? 0).toFixed(8);
 }
 
 function formatNumber(num: number | null | undefined): string {
@@ -89,7 +89,7 @@ function formatNumber(num: number | null | undefined): string {
   if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
   if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
   if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
-  return num.toFixed(2);
+  return (num ?? 0).toFixed(2);
 }
 
 /* ------------------------------------------------------------------ */
@@ -165,7 +165,7 @@ function AllocationPieChart({ positions }: { positions: PositionWithLive[] }) {
               style={{ backgroundColor: s.color }}
             />
             <span className="font-semibold font-mono">{s.symbol}</span>
-            <span className="text-muted-foreground mr-auto">{s.pct.toFixed(1)}%</span>
+            <span className="text-muted-foreground mr-auto">{(s.pct ?? 0).toFixed(1)}%</span>
             <span className="text-muted-foreground" dir="ltr">{formatPrice(positions.find(p => p.symbol === s.symbol)?.currentValue)}</span>
           </div>
         ))}
@@ -430,7 +430,7 @@ export function CryptoPortfolioView() {
                 'text-lg font-bold',
                 summary.totalProfitLossPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'
               )}>
-                {summary.totalProfitLossPercent >= 0 ? '+' : ''}{summary.totalProfitLossPercent.toFixed(2)}%
+                {summary.totalProfitLossPercent >= 0 ? '+' : ''}{(summary.totalProfitLossPercent ?? 0).toFixed(2)}%
               </span>
               <span className="text-xs text-muted-foreground">نسبة التغير</span>
             </CardContent>
@@ -504,10 +504,10 @@ export function CryptoPortfolioView() {
                           isProfit ? 'text-emerald-600' : 'text-rose-600'
                         )} dir="ltr">
                           {isProfit ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {isProfit ? '+' : '-'}{formatPrice(Math.abs(position.profitLoss))} ({isProfit ? '+' : ''}{position.profitLossPercent.toFixed(2)}%)
+                          {isProfit ? '+' : '-'}{formatPrice(Math.abs(position.profitLoss))} ({isProfit ? '+' : ''}{(position.profitLossPercent ?? 0).toFixed(2)}%)
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5" dir="ltr">
-                          سعر: {formatPrice(position.currentPrice)} ({position.change24h >= 0 ? '+' : ''}{position.change24h.toFixed(2)}%)
+                          سعر: {formatPrice(position.currentPrice)} ({position.change24h >= 0 ? '+' : ''}{(position.change24h ?? 0).toFixed(2)}%)
                         </p>
                       </div>
 
@@ -613,7 +613,7 @@ export function CryptoPortfolioView() {
               <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/30">
                 السعر الحالي لـ {newCoin.symbol}: <span className="font-semibold" dir="ltr">{formatPrice(livePriceMap[newCoin.symbol].price)}</span>
                 <span className={cn('mr-2', livePriceMap[newCoin.symbol].change >= 0 ? 'text-emerald-600' : 'text-rose-600')} dir="ltr">
-                  ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{livePriceMap[newCoin.symbol].change.toFixed(2)}%)
+                  ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{livePriceMap[newCoin.symbol].(change ?? 0).toFixed(2)}%)
                 </span>
               </div>
             )}

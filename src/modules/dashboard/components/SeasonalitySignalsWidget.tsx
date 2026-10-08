@@ -154,7 +154,7 @@ export function SeasonalitySignalsWidget() {
                   <span className="text-[9px] text-muted-foreground">بيع</span>
                 </div>
                 <div className="text-center">
-                  <span className="block text-sm font-bold">{summary.avg_win_rate.toFixed(0)}%</span>
+                  <span className="block text-sm font-bold">{(summary.avg_win_rate ?? 0).toFixed(0)}%</span>
                   <span className="text-[9px] text-muted-foreground">نجاح</span>
                 </div>
               </div>
@@ -189,11 +189,11 @@ export function SeasonalitySignalsWidget() {
                   <div className="flex items-center gap-3 text-[9px] text-muted-foreground">
                     <span className="flex items-center gap-0.5">
                       <Target className="w-2.5 h-2.5" />
-                      {s.win_rate.toFixed(0)}%
+                      {(s.win_rate ?? 0).toFixed(0)}%
                     </span>
                     <span className="flex items-center gap-0.5">
                       <TrendingUp className="w-2.5 h-2.5" />
-                      {s.avg_return > 0 ? '+' : ''}{s.avg_return.toFixed(1)}%
+                      {(s.avg_return ?? 0) > 0 ? '+' : ''}{(s.avg_return ?? 0).toFixed(1)}%
                     </span>
                     <span className="flex items-center gap-0.5">
                       <Clock className="w-2.5 h-2.5" />

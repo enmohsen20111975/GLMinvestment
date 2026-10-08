@@ -448,9 +448,9 @@ export function BacktestTab() {
                           <td className="p-2 font-mono text-xs text-red-600">{t.stop?.toFixed?.(2) ?? '—'}</td>
                           <td className={cn(
                             'p-2 font-mono text-xs font-bold',
-                            t.actual_return > 0 ? 'text-emerald-600' : t.actual_return < 0 ? 'text-red-600' : '',
+                            (t.actual_return ?? 0) > 0 ? 'text-emerald-600' : (t.actual_return ?? 0) < 0 ? 'text-red-600' : '',
                           )}>
-                            {t.actual_return > 0 ? '+' : ''}{t.actual_return.toFixed(2)}%
+                            {(t.actual_return ?? 0) > 0 ? '+' : ''}{(t.actual_return ?? 0).toFixed(2)}%
                           </td>
                           <td className="p-2">
                             <Badge
@@ -511,10 +511,10 @@ export function BacktestTab() {
                           <td className="p-2 font-mono">{m.month}</td>
                           <td className="p-2">{m.trades}</td>
                           <td className="p-2">
-                            <Badge variant={m.wr >= 50 ? 'default' : 'destructive'}>{m.wr.toFixed(0)}%</Badge>
+                            <Badge variant={(m.wr ?? 0) >= 50 ? 'default' : 'destructive'}>{(m.wr ?? 0).toFixed(0)}%</Badge>
                           </td>
-                          <td className={`p-2 font-mono ${m.net > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {m.net > 0 ? '+' : ''}{m.net.toFixed(1)}%
+                          <td className={`p-2 font-mono ${(m.net ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {(m.net ?? 0) > 0 ? '+' : ''}{(m.net ?? 0).toFixed(1)}%
                           </td>
                         </tr>
                       ))}
@@ -551,10 +551,10 @@ export function BacktestTab() {
                           <td className="p-2 font-mono font-bold">{t.ticker}</td>
                           <td className="p-2">{t.trades}</td>
                           <td className="p-2">
-                            <Badge variant={t.wr >= 50 ? 'default' : 'destructive'}>{t.wr.toFixed(0)}%</Badge>
+                            <Badge variant={(t.wr ?? 0) >= 50 ? 'default' : 'destructive'}>{(t.wr ?? 0).toFixed(0)}%</Badge>
                           </td>
-                          <td className={`p-2 font-mono ${t.net > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {t.net > 0 ? '+' : ''}{t.net.toFixed(1)}%
+                          <td className={`p-2 font-mono ${(t.net ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {(t.net ?? 0) > 0 ? '+' : ''}{(t.net ?? 0).toFixed(1)}%
                           </td>
                         </tr>
                       ))}
@@ -588,10 +588,10 @@ export function BacktestTab() {
                           <td className="p-2 font-mono font-bold">{t.ticker}</td>
                           <td className="p-2">{t.trades}</td>
                           <td className="p-2">
-                            <Badge variant={t.wr >= 50 ? 'default' : 'destructive'}>{t.wr.toFixed(0)}%</Badge>
+                            <Badge variant={(t.wr ?? 0) >= 50 ? 'default' : 'destructive'}>{(t.wr ?? 0).toFixed(0)}%</Badge>
                           </td>
-                          <td className={`p-2 font-mono ${t.net > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {t.net > 0 ? '+' : ''}{t.net.toFixed(1)}%
+                          <td className={`p-2 font-mono ${(t.net ?? 0) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {(t.net ?? 0) > 0 ? '+' : ''}{(t.net ?? 0).toFixed(1)}%
                           </td>
                         </tr>
                       ))}
@@ -639,10 +639,10 @@ function OosCard({ title, stats }: { title: string; stats: OutOfSampleStats }) {
         {stats.trades} <span className="text-sm font-normal text-muted-foreground">صفقة</span>
       </div>
       <div className="flex gap-3 text-sm">
-        <span>WR: <strong>{stats.wr.toFixed(1)}%</strong></span>
-        <span>PF: <strong className={tone === 'success' ? 'text-emerald-600' : tone === 'danger' ? 'text-red-600' : ''}>{stats.pf.toFixed(2)}</strong></span>
+        <span>WR: <strong>{(stats.wr ?? 0).toFixed(1)}%</strong></span>
+        <span>PF: <strong className={tone === 'success' ? 'text-emerald-600' : tone === 'danger' ? 'text-red-600' : ''}>{(stats.pf ?? 0).toFixed(2)}</strong></span>
         <span className={stats.net > 0 ? 'text-emerald-600' : 'text-red-600'}>
-          Net: {stats.net > 0 ? '+' : ''}{stats.net.toFixed(1)}%
+          Net: {stats.net > 0 ? '+' : ''}{(stats.net ?? 0).toFixed(1)}%
         </span>
       </div>
     </div>

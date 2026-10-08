@@ -185,7 +185,7 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
               {cryptoSignalLabelAr(p.signal)} · {p.signal}
             </Badge>
             <span className="text-xs text-muted-foreground tabular-nums">
-              ثقة {p.confidence.toFixed(1)}%
+              ثقة {(p.confidence ?? 0).toFixed(1)}%
             </span>
           </div>
         </div>
@@ -237,20 +237,20 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
               <div className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5">
                 <span className="text-xs text-muted-foreground">RSI</span>
                 <span className={cn('text-xs font-semibold tabular-nums', rsiColor)}>
-                  {rsiNum !== undefined ? rsiNum.toFixed(2) : '—'}
+                  {rsiNum !== undefined ? (rsiNum ?? 0).toFixed(2) : '—'}
                 </span>
               </div>
               <CryptoIndicatorRow
                 label="MACD Hist"
                 value={
-                  typeof macdHist === 'number' ? macdHist.toFixed(4) : '—'
+                  typeof macdHist === 'number' ? (macdHist ?? 0).toFixed(4) : '—'
                 }
                 hint="MACD Histogram"
               />
               <CryptoIndicatorRow
                 label="ATR %"
                 value={
-                  typeof atrPct === 'number' ? `${atrPct.toFixed(2)}%` : '—'
+                  typeof atrPct === 'number' ? `${(atrPct ?? 0).toFixed(2)}%` : '—'
                 }
                 hint="Average True Range %"
               />
@@ -258,7 +258,7 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
                 label="تغيّر 24h"
                 value={
                   typeof change24h === 'number'
-                    ? `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`
+                    ? `${change24h >= 0 ? '+' : ''}${(change24h ?? 0).toFixed(2)}%`
                     : '—'
                 }
               />
@@ -288,7 +288,7 @@ function CryptoPredictionCard({ p }: { p: CryptoPrediction }) {
                   MACD Line / Signal
                 </span>
                 <span className="text-xs font-semibold tabular-nums">
-                  {macdLine.toFixed(2)} / {macdSignal.toFixed(2)}
+                  {(macdLine ?? 0).toFixed(2)} / {(macdSignal ?? 0).toFixed(2)}
                 </span>
               </div>
             )}

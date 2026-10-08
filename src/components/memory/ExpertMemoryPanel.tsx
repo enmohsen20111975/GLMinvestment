@@ -182,8 +182,8 @@ export function ExpertMemoryPanel({
               <Brain className="h-4 w-4 text-primary" />
               ذاكرتك مع {ticker}
             </span>
-            <Badge variant={insight.win_rate >= 50 ? 'success' : 'destructive'}>
-              {insight.win_rate.toFixed(0)}% نجاح
+            <Badge variant={(insight.win_rate ?? 0) >= 50 ? 'success' : 'destructive'}>
+              {(insight.win_rate ?? 0).toFixed(0)}% نجاح
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -213,10 +213,10 @@ export function ExpertMemoryPanel({
             <div className="flex justify-between text-xs">
               <span>نسبة النجاح</span>
               <span className={getWinRateColor(insight.win_rate)}>
-                {insight.win_rate.toFixed(1)}%
+                {(insight.win_rate ?? 0).toFixed(1)}%
               </span>
             </div>
-            <Progress value={insight.win_rate} className="h-2" />
+            <Progress value={insight.win_rate ?? 0} className="h-2" />
           </div>
 
           {/* Avg PnL */}
@@ -231,7 +231,7 @@ export function ExpertMemoryPanel({
                 <TrendingDown className="h-4 w-4" />
               )}
               <span>
-                متوسط العائد: {insight.avg_pnl > 0 ? '+' : ''}{insight.avg_pnl.toFixed(2)}%
+                متوسط العائد: {insight.avg_pnl > 0 ? '+' : ''}{(insight.avg_pnl ?? 0).toFixed(2)}%
               </span>
             </div>
           )}
@@ -254,7 +254,7 @@ export function ExpertMemoryPanel({
                 <span className="text-sm">{insight.best_pattern}</span>
               </div>
               <Badge variant="success" className="text-xs">
-                {insight.best_pattern_win_rate.toFixed(0)}%
+                {(insight.best_pattern_win_rate ?? 0).toFixed(0)}%
               </Badge>
             </div>
           )}
@@ -266,7 +266,7 @@ export function ExpertMemoryPanel({
                 <span className="text-sm">{insight.worst_pattern}</span>
               </div>
               <Badge variant="destructive" className="text-xs">
-                {insight.worst_pattern_win_rate.toFixed(0)}%
+                {(insight.worst_pattern_win_rate ?? 0).toFixed(0)}%
               </Badge>
             </div>
           )}
@@ -323,7 +323,7 @@ export function ExpertMemoryPanel({
                         "font-medium",
                         c.pnl > 0 ? "text-green-600" : "text-red-600"
                       )}>
-                        {c.pnl > 0 ? '+' : ''}{c.pnl.toFixed(1)}%
+                        {c.pnl > 0 ? '+' : ''}{(c.pnl ?? 0).toFixed(1)}%
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground">
@@ -365,11 +365,11 @@ export function ExpertMemoryBadge({ ticker }: { ticker: string }) {
 
   return (
     <Badge
-      variant={insight.win_rate >= 50 ? 'success' : 'secondary'}
+      variant={(insight.win_rate ?? 0) >= 50 ? 'success' : 'secondary'}
       className="text-xs gap-1"
     >
       <Brain className="h-3 w-3" />
-      {insight.total_trades} صفقة • {insight.win_rate.toFixed(0)}% نجاح
+      {insight.total_trades} صفقة • {(insight.win_rate ?? 0).toFixed(0)}% نجاح
     </Badge>
   );
 }

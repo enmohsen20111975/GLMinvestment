@@ -346,28 +346,28 @@ function PersonaCard({
             {isInvestor ? (
               <>
                 <span className={cn('font-bold', personaTheme.accent)}>🏦 توقيع المستثمر:</span>
-                {fundamentals.pe_ratio ? <span>P/E {fundamentals.pe_ratio.toFixed(1)}</span> : null}
-                {fundamentals.roe ? <span>• ROE {fundamentals.roe.toFixed(0)}%</span> : null}
+                {fundamentals.pe_ratio ? <span>P/E {(fundamentals.pe_ratio ?? 0).toFixed(1)}</span> : null}
+                {fundamentals.roe ? <span>• ROE {(fundamentals.roe ?? 0).toFixed(0)}%</span> : null}
                 {fundamentals.fair_value_upside ? (
                   <span className="text-emerald-700 dark:text-emerald-400">
-                    • خصم {fundamentals.fair_value_upside.toFixed(1)}%
+                    • خصم {(fundamentals.fair_value_upside ?? 0).toFixed(1)}%
                   </span>
                 ) : null}
-                {fundamentals.dividend_yield ? <span>• توزيع {fundamentals.dividend_yield.toFixed(1)}%</span> : null}
+                {fundamentals.dividend_yield ? <span>• توزيع {(fundamentals.dividend_yield ?? 0).toFixed(1)}%</span> : null}
               </>
             ) : (
               <>
                 <span className={cn('font-bold', personaTheme.accent)}>🎯 توقيع المضارب:</span>
                 {fundamentals.volume_ratio && fundamentals.volume_ratio >= 1.0 ? (
-                  <span>حجم {fundamentals.volume_ratio.toFixed(1)}x</span>
+                  <span>حجم {(fundamentals.volume_ratio ?? 0).toFixed(1)}x</span>
                 ) : null}
                 {fundamentals.change_1d ? (
                   <span className={fundamentals.change_1d > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}>
-                    • {fundamentals.change_1d > 0 ? '+' : ''}{fundamentals.change_1d.toFixed(1)}%
+                    • {fundamentals.change_1d > 0 ? '+' : ''}{(fundamentals.change_1d ?? 0).toFixed(1)}%
                   </span>
                 ) : null}
-                {fundamentals.volatility ? <span>• تقلب {fundamentals.volatility.toFixed(1)}%</span> : null}
-                {fundamentals.rsi ? <span>• RSI {fundamentals.rsi.toFixed(0)}</span> : null}
+                {fundamentals.volatility ? <span>• تقلب {(fundamentals.volatility ?? 0).toFixed(1)}%</span> : null}
+                {fundamentals.rsi ? <span>• RSI {(fundamentals.rsi ?? 0).toFixed(0)}</span> : null}
               </>
             )}
           </div>
@@ -393,29 +393,29 @@ function PersonaCard({
                   data.risk_reward >= 1.5 ? 'text-amber-600 dark:text-amber-400' :
                   'text-red-600 dark:text-red-400'
                 )}>
-                  1:{data.risk_reward.toFixed(1)}
+                  1:{(data.risk_reward ?? 0).toFixed(1)}
                 </span>
               )}
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-sm min-w-0">
               <div className="rounded-md bg-background/60 p-2 min-w-0">
                 <p className="text-muted-foreground text-xs mb-0.5">💰 ادخل</p>
-                <p className="font-bold text-foreground text-base">{data.entry ? data.entry.toFixed(2) : '—'}</p>
+                <p className="font-bold text-foreground text-base">{data.entry ? (data.entry ?? 0).toFixed(2) : '—'}</p>
               </div>
               <div className="rounded-md bg-emerald-100/60 dark:bg-emerald-900/30 p-2">
                 <p className="text-emerald-700 dark:text-emerald-400 text-xs mb-0.5">
-                  📈 هدف{targetPct !== null && ` +${targetPct.toFixed(1)}%`}
+                  📈 هدف{targetPct !== null && ` +${(targetPct ?? 0).toFixed(1)}%`}
                 </p>
                 <p className="font-bold text-emerald-700 dark:text-emerald-400 text-base">
-                  {data.target ? data.target.toFixed(2) : '—'}
+                  {data.target ? (data.target ?? 0).toFixed(2) : '—'}
                 </p>
               </div>
               <div className="rounded-md bg-red-100/60 dark:bg-red-900/30 p-2">
                 <p className="text-red-700 dark:text-red-400 text-xs mb-0.5">
-                  🛑 وقف{stopPct !== null && ` ${stopPct.toFixed(1)}%`}
+                  🛑 وقف{stopPct !== null && ` ${(stopPct ?? 0).toFixed(1)}%`}
                 </p>
                 <p className="font-bold text-red-700 dark:text-red-400 text-base">
-                  {data.stop ? data.stop.toFixed(2) : '—'}
+                  {data.stop ? (data.stop ?? 0).toFixed(2) : '—'}
                 </p>
               </div>
             </div>
@@ -426,7 +426,7 @@ function PersonaCard({
         {data.risk_reward !== null && data.risk_reward !== undefined && data.risk_reward > 0 && data.risk_reward < 1.5 && (data.entry || data.target || data.stop) && (
           <div className="flex items-center gap-1.5 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 p-2 text-xs text-red-700 dark:text-red-400">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-            <span>⚠️ عائد/مخاطرة {data.risk_reward.toFixed(2)}:1 — المخاطرة أكبر من الربح، الصفقة غير آمنة.</span>
+            <span>⚠️ عائد/مخاطرة {(data.risk_reward ?? 0).toFixed(2)}:1 — المخاطرة أكبر من الربح، الصفقة غير آمنة.</span>
           </div>
         )}
 
@@ -434,7 +434,7 @@ function PersonaCard({
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-muted-foreground">{data.sniper_score ? '🎯 نتيجة التصطاد' : 'النتيجة'}</span>
-            <span className="font-bold">{score.toFixed(0)}/100</span>
+            <span className="font-bold">{(score ?? 0).toFixed(0)}/100</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
@@ -488,7 +488,7 @@ function PersonaCard({
               data.rsi && data.rsi < 30 ? 'text-emerald-600 dark:text-emerald-400' :
               'text-foreground'
             )}>
-              {data.rsi && data.rsi > 0 ? data.rsi.toFixed(0) : '—'}
+              {data.rsi && data.rsi > 0 ? (data.rsi ?? 0).toFixed(0) : '—'}
             </span>
           </div>
           {/* Risk/Reward */}
@@ -507,7 +507,7 @@ function PersonaCard({
               data.risk_reward && data.risk_reward > 0 ? 'text-red-600 dark:text-red-400' :
               'text-muted-foreground'
             )}>
-              {data.risk_reward && data.risk_reward > 0 ? `${data.risk_reward.toFixed(1)}` : '—'}
+              {data.risk_reward && data.risk_reward > 0 ? `${(data.risk_reward ?? 0).toFixed(1)}` : '—'}
             </span>
           </div>
           {/* Volume */}
@@ -516,7 +516,7 @@ function PersonaCard({
             <span className="font-semibold text-sm text-foreground">
               {formatVol(data.volume)}
               {data.volume_ratio && data.volume_ratio > 1 && (
-                <span className="text-emerald-600 dark:text-emerald-400 text-xs mr-0.5">↑{data.volume_ratio.toFixed(1)}x</span>
+                <span className="text-emerald-600 dark:text-emerald-400 text-xs mr-0.5">↑{(data.volume_ratio ?? 0).toFixed(1)}x</span>
               )}
             </span>
           </div>
@@ -527,17 +527,17 @@ function PersonaCard({
           <div className="flex items-center gap-3 px-1 text-xs">
             {data.perf_1w !== undefined && (
               <span className={cn('font-semibold', perfColor(data.perf_1w))}>
-                أسبوع: {data.perf_1w > 0 ? '+' : ''}{data.perf_1w.toFixed(1)}%
+                أسبوع: {data.perf_1w > 0 ? '+' : ''}{(data.perf_1w ?? 0).toFixed(1)}%
               </span>
             )}
             {data.perf_1m !== undefined && (
               <span className={cn('font-semibold', perfColor(data.perf_1m))}>
-                شهر: {data.perf_1m > 0 ? '+' : ''}{data.perf_1m.toFixed(1)}%
+                شهر: {data.perf_1m > 0 ? '+' : ''}{(data.perf_1m ?? 0).toFixed(1)}%
               </span>
             )}
             {data.perf_3m !== undefined && (
               <span className={cn('font-semibold', perfColor(data.perf_3m))}>
-                3 أشهر: {data.perf_3m > 0 ? '+' : ''}{data.perf_3m.toFixed(1)}%
+                3 أشهر: {data.perf_3m > 0 ? '+' : ''}{(data.perf_3m ?? 0).toFixed(1)}%
               </span>
             )}
           </div>
@@ -548,22 +548,22 @@ function PersonaCard({
           <div className="flex items-center gap-3 px-1 text-xs flex-wrap">
             {data.pe_ratio && data.pe_ratio > 0 && (
               <span className="text-muted-foreground">
-                P/E: <span className="font-semibold text-foreground">{data.pe_ratio.toFixed(1)}</span>
+                P/E: <span className="font-semibold text-foreground">{(data.pe_ratio ?? 0).toFixed(1)}</span>
               </span>
             )}
             {data.roe && (
               <span className="text-muted-foreground">
-                ROE: <span className={cn('font-semibold', data.roe > 10 ? 'text-emerald-600' : 'text-foreground')}>{data.roe.toFixed(1)}%</span>
+                ROE: <span className={cn('font-semibold', data.roe > 10 ? 'text-emerald-600' : 'text-foreground')}>{(data.roe ?? 0).toFixed(1)}%</span>
               </span>
             )}
             {data.net_margin && (
               <span className="text-muted-foreground">
-                هامش: <span className={cn('font-semibold', data.net_margin > 0 ? 'text-emerald-600' : 'text-red-600')}>{data.net_margin.toFixed(1)}%</span>
+                هامش: <span className={cn('font-semibold', data.net_margin > 0 ? 'text-emerald-600' : 'text-red-600')}>{(data.net_margin ?? 0).toFixed(1)}%</span>
               </span>
             )}
             {data.debt_to_equity && (
               <span className="text-muted-foreground">
-                دين/حقوق: <span className={cn('font-semibold', data.debt_to_equity < 1 ? 'text-emerald-600' : 'text-amber-600')}>{data.debt_to_equity.toFixed(2)}</span>
+                دين/حقوق: <span className={cn('font-semibold', data.debt_to_equity < 1 ? 'text-emerald-600' : 'text-amber-600')}>{(data.debt_to_equity ?? 0).toFixed(2)}</span>
               </span>
             )}
           </div>
@@ -590,12 +590,12 @@ function PersonaCard({
           <div className="flex items-center gap-3 px-1 text-xs">
             {data.support_level && (
               <span className="text-muted-foreground">
-                دعم: <span className="font-semibold text-emerald-600">{data.support_level.toFixed(2)}</span>
+                دعم: <span className="font-semibold text-emerald-600">{(data.support_level ?? 0).toFixed(2)}</span>
               </span>
             )}
             {data.resistance_level && (
               <span className="text-muted-foreground">
-                مقاومة: <span className="font-semibold text-red-600">{data.resistance_level.toFixed(2)}</span>
+                مقاومة: <span className="font-semibold text-red-600">{(data.resistance_level ?? 0).toFixed(2)}</span>
               </span>
             )}
             {data.price_vs_sr === 'near_support' && (
@@ -660,7 +660,7 @@ function PersonaCard({
           ) : (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Target className="h-3 w-3" />
-              <span>القيمة العادلة: <span className="font-semibold text-foreground">{data.fair_value.toFixed(2)}</span></span>
+              <span>القيمة العادلة: <span className="font-semibold text-foreground">{(data.fair_value ?? 0).toFixed(2)}</span></span>
             </div>
           )
         )}
@@ -752,10 +752,10 @@ function PersonaCard({
           <span>{data.sniper_score ? `تصطاد: ${data.sniper_score}` : maestroScore ? `مايسترو: ${maestroScore}` : ''}</span>
           <div className="flex items-center gap-2">
             {data.beta !== undefined && data.beta > 0 && (
-              <span>β {data.beta.toFixed(2)}</span>
+              <span>β {(data.beta ?? 0).toFixed(2)}</span>
             )}
             {data.volatility !== undefined && data.volatility > 0 && (
-              <span>σ {data.volatility.toFixed(1)}%</span>
+              <span>σ {(data.volatility ?? 0).toFixed(1)}%</span>
             )}
             {data.signal && <span>{data.signal}</span>}
           </div>
@@ -1111,7 +1111,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">السعر وقت التحليل</p>
-                    <p className="font-bold">{stockDetail?.current_price ? `${stockDetail.current_price.toFixed(2)} ${currencyLabel}` : pd.entry?.price ? `${pd.entry.price.toFixed(2)} ${currencyLabel}` : '—'}</p>
+                    <p className="font-bold">{stockDetail?.current_price ? `${(stockDetail.current_price ?? 0).toFixed(2)} ${currencyLabel}` : pd.entry?.price ? `${(pd.entry.price ?? 0).toFixed(2)} ${currencyLabel}` : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">التغير</p>
@@ -1127,11 +1127,11 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">P/E</p>
-                    <p className="font-bold">{stockDetail?.pe_ratio ? stockDetail.pe_ratio.toFixed(2) : '—'}</p>
+                    <p className="font-bold">{stockDetail?.pe_ratio ? (stockDetail.pe_ratio ?? 0).toFixed(2) : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">P/B</p>
-                    <p className="font-bold">{stockDetail?.pb_ratio ? stockDetail.pb_ratio.toFixed(2) : '—'}</p>
+                    <p className="font-bold">{stockDetail?.pb_ratio ? (stockDetail.pb_ratio ?? 0).toFixed(2) : '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">القيمة السوقية</p>
@@ -1168,15 +1168,15 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الدخول</p>
-                  <p className="font-bold">{pd.entry?.price ? pd.entry.price.toFixed(2) : '—'}</p>
+                  <p className="font-bold">{pd.entry?.price ? (pd.entry.price ?? 0).toFixed(2) : '—'}</p>
                 </div>
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الهدف</p>
-                  <p className="font-bold text-emerald-600">{pd.target ? pd.target.toFixed(2) : '—'}</p>
+                  <p className="font-bold text-emerald-600">{pd.target ? (pd.target ?? 0).toFixed(2) : '—'}</p>
                 </div>
                 <div className="p-3 rounded bg-muted text-center">
                   <p className="text-xs text-muted-foreground">الوقف</p>
-                  <p className="font-bold text-rose-600">{pd.stop ? pd.stop.toFixed(2) : '—'}</p>
+                  <p className="font-bold text-rose-600">{pd.stop ? (pd.stop ?? 0).toFixed(2) : '—'}</p>
                 </div>
               </div>
               {pd.conditions && pd.conditions.length > 0 && (
@@ -1248,13 +1248,13 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
               <div>
                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>السعر وقت التحليل</div>
                 <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#fbbf24' }}>
-                  {price ? price.toFixed(2) : '—'} <span style={{ fontSize: '14px', color: '#94a3b8' }}>{currencyLabel}</span>
+                  {price ? (price ?? 0).toFixed(2) : '—'} <span style={{ fontSize: '14px', color: '#94a3b8' }}>{currencyLabel}</span>
                 </div>
               </div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>التغير اليومي</div>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', color: changePct >= 0 ? '#10b981' : '#ef4444' }}>
-                  {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                  {changePct >= 0 ? '+' : ''}{(changePct ?? 0).toFixed(2)}%
                 </div>
               </div>
               <div style={{
@@ -1277,15 +1277,15 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '18px' }}>
               <div style={{ background: 'rgba(251,191,36,0.1)', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(251,191,36,0.2)' }}>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>الدخول</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#fbbf24' }}>{activePd.entry ? activePd.entry.toFixed(2) : '—'}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#fbbf24' }}>{activePd.entry ? (activePd.entry ?? 0).toFixed(2) : '—'}</div>
               </div>
               <div style={{ background: 'rgba(16,185,129,0.1)', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(16,185,129,0.2)' }}>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>الهدف</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{activePd.target ? activePd.target.toFixed(2) : '—'}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981' }}>{activePd.target ? (activePd.target ?? 0).toFixed(2) : '—'}</div>
               </div>
               <div style={{ background: 'rgba(239,68,68,0.1)', padding: '12px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
                 <div style={{ fontSize: '11px', color: '#94a3b8' }}>الوقف</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444' }}>{activePd.stop ? activePd.stop.toFixed(2) : '—'}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ef4444' }}>{activePd.stop ? (activePd.stop ?? 0).toFixed(2) : '—'}</div>
               </div>
             </div>
 
@@ -1293,7 +1293,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '18px' }}>
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '10px', color: '#94a3b8' }}>R/R</div>
-                <div style={{ fontSize: '16px', fontWeight: 'bold' }}>1:{activePd.risk_reward ? activePd.risk_reward.toFixed(1) : '—'}</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold' }}>1:{activePd.risk_reward ? (activePd.risk_reward ?? 0).toFixed(1) : '—'}</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '10px', color: '#94a3b8' }}>RSI</div>
@@ -1647,8 +1647,8 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             const isLongTerm = persona === 'conservative' || persona === 'investor';
             let verdict = isLongTerm ? 'شراء قوي' : 'شراء';
             const personaReason = isLongTerm
-              ? `توقع ${signal === 'BUY' ? 'صاعد' : signal === 'SELL' ? 'هابط' : 'متعادل'} — ثقة ${confidence.toFixed(0)}% — مدى متوسط/طويل`
-              : `زخم ${signal === 'BUY' ? 'إيجابي' : signal === 'SELL' ? 'سلبي' : 'محايد'} — ثقة ${confidence.toFixed(0)}% — مدى قصير`;
+              ? `توقع ${signal === 'BUY' ? 'صاعد' : signal === 'SELL' ? 'هابط' : 'متعادل'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى متوسط/طويل`
+              : `زخم ${signal === 'BUY' ? 'إيجابي' : signal === 'SELL' ? 'سلبي' : 'محايد'} — ثقة ${(confidence ?? 0).toFixed(0)}% — مدى قصير`;
             // P26: _personaKey معرّف على مستوى الـ component (مش محتاجين نعيد تعريفه هنا)
             const pd: PersonaData = {
               verdict,
@@ -1954,9 +1954,9 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                   <span
                     key={s.sector}
                     className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/40 dark:text-orange-400 dark:border-orange-700 whitespace-nowrap"
-                    title={`avg change ${s.avg_chg.toFixed(2)}% — ${Math.round(s.rising_ratio * 100)}% صاعد — ${s.n} سهم — boost +${Math.round(s.boost * 100)}%`}
+                    title={`avg change ${(s.avg_chg ?? 0).toFixed(2)}% — ${Math.round(s.rising_ratio * 100)}% صاعد — ${s.n} سهم — boost +${Math.round(s.boost * 100)}%`}
                   >
-                    {s.sector} <span className="opacity-70">+{s.avg_chg.toFixed(1)}%</span>
+                    {s.sector} <span className="opacity-70">+{(s.avg_chg ?? 0).toFixed(1)}%</span>
                   </span>
                 ))}
               </div>
@@ -2271,7 +2271,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               {selectedContext && (
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
-                    {selectedContext.rating} · {selectedContext.score.toFixed(0)}%
+                    {selectedContext.rating} · {(selectedContext.score ?? 0).toFixed(0)}%
                   </span>
                 </div>
               )}

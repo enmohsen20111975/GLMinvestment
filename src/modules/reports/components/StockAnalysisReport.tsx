@@ -460,7 +460,7 @@ function CoverPageHeader({
         >
           {isUp ? <ArrowUpRight className="w-3.5 h-3.5 inline -mt-0.5" /> : <ArrowDownRight className="w-3.5 h-3.5 inline -mt-0.5" />}
           {' '}
-          {isUp ? '+' : ''}{change.toFixed(2)} ({safeFmtPct(changePercent, 2)})
+          {isUp ? '+' : ''}{(change ?? 0).toFixed(2)} ({safeFmtPct(changePercent, 2)})
         </div>
       </div>
 
@@ -553,21 +553,21 @@ function ScoreCards({ analysis }: { analysis: ProfessionalAnalysis }) {
 function TechnicalSection({ analysis }: { analysis: ProfessionalAnalysis }) {
   const ind = analysis.indicators;
   const rows = [
-    { name: 'RSI (14)', value: ind.rsi.value.toFixed(1), signal: ind.rsi.signal === 'overbought' ? 'تشبع شراء' : ind.rsi.signal === 'oversold' ? 'تشبع بيع' : 'محايد' },
-    { name: 'MACD', value: ind.macd.line.toFixed(3), signal: ind.macd.signal_text },
-    { name: 'MACD Histogram', value: ind.macd.histogram.toFixed(3), signal: ind.macd.histogram > 0 ? 'صاعد' : 'هابط' },
-    { name: 'Bollinger Upper', value: ind.bollinger.upper.toFixed(2), signal: '' },
-    { name: 'Bollinger Middle', value: ind.bollinger.middle.toFixed(2), signal: '' },
-    { name: 'Bollinger Lower', value: ind.bollinger.lower.toFixed(2), signal: '' },
-    { name: 'BB Position', value: `${ind.bollinger.position.toFixed(0)}%`, signal: ind.bollinger.position > 80 ? 'قرب المقاومة' : ind.bollinger.position < 20 ? 'قرب الدعم' : 'محايد' },
-    { name: 'Stochastic %K', value: ind.stochastic_rsi.k.toFixed(1), signal: ind.stochastic_rsi.signal_text },
-    { name: 'ATR', value: ind.atr.toFixed(3), signal: '' },
-    { name: 'ATR %', value: `${ind.atr_percent.toFixed(2)}%`, signal: '' },
+    { name: 'RSI (14)', value: (ind.rsi.value ?? 0).toFixed(1), signal: ind.rsi.signal === 'overbought' ? 'تشبع شراء' : ind.rsi.signal === 'oversold' ? 'تشبع بيع' : 'محايد' },
+    { name: 'MACD', value: (ind.macd.line ?? 0).toFixed(3), signal: ind.macd.signal_text },
+    { name: 'MACD Histogram', value: (ind.macd.histogram ?? 0).toFixed(3), signal: ind.macd.histogram > 0 ? 'صاعد' : 'هابط' },
+    { name: 'Bollinger Upper', value: (ind.bollinger.upper ?? 0).toFixed(2), signal: '' },
+    { name: 'Bollinger Middle', value: (ind.bollinger.middle ?? 0).toFixed(2), signal: '' },
+    { name: 'Bollinger Lower', value: (ind.bollinger.lower ?? 0).toFixed(2), signal: '' },
+    { name: 'BB Position', value: `${(ind.bollinger.position ?? 0).toFixed(0)}%`, signal: ind.bollinger.position > 80 ? 'قرب المقاومة' : ind.bollinger.position < 20 ? 'قرب الدعم' : 'محايد' },
+    { name: 'Stochastic %K', value: (ind.stochastic_rsi.k ?? 0).toFixed(1), signal: ind.stochastic_rsi.signal_text },
+    { name: 'ATR', value: (ind.atr ?? 0).toFixed(3), signal: '' },
+    { name: 'ATR %', value: `${(ind.atr_percent ?? 0).toFixed(2)}%`, signal: '' },
     { name: 'OBV', value: ind.obv >= 1_000_000 ? `${(ind.obv / 1_000_000).toFixed(2)}M` : ind.obv.toLocaleString(), signal: ind.obv_trend },
-    { name: 'VWAP', value: ind.vwap.toFixed(2), signal: '' },
-    { name: 'ROC (5)', value: `${ind.roc.roc_5.toFixed(2)}%`, signal: '' },
-    { name: 'ROC (10)', value: `${ind.roc.roc_10.toFixed(2)}%`, signal: '' },
-    { name: 'ROC (20)', value: `${ind.roc.roc_20.toFixed(2)}%`, signal: '' },
+    { name: 'VWAP', value: (ind.vwap ?? 0).toFixed(2), signal: '' },
+    { name: 'ROC (5)', value: `${(ind.roc.roc_5 ?? 0).toFixed(2)}%`, signal: '' },
+    { name: 'ROC (10)', value: `${(ind.roc.roc_10 ?? 0).toFixed(2)}%`, signal: '' },
+    { name: 'ROC (20)', value: `${(ind.roc.roc_20 ?? 0).toFixed(2)}%`, signal: '' },
   ];
 
   return (
@@ -771,7 +771,7 @@ function RiskSection({ analysis }: { analysis: ProfessionalAnalysis }) {
     },
     {
       label: 'Vol vs Avg',
-      value: `${analysis.volume_analysis.current_vs_avg.toFixed(2)}x`,
+      value: `${(analysis.volume_analysis.current_vs_avg ?? 0).toFixed(2)}x`,
       tone: analysis.volume_analysis.current_vs_avg >= 1.5 ? 'positive' : analysis.volume_analysis.current_vs_avg <= 0.5 ? 'warning' : 'neutral',
     },
   ];
@@ -845,13 +845,13 @@ function RecommendationSection({ analysis }: { analysis: ProfessionalAnalysis })
           <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
             <p className="text-[10px] text-slate-400">الثقة</p>
             <p className="text-sm font-bold text-amber-300 tabular-nums">
-              {rec.confidence.toFixed(0)}%
+              {(rec.confidence ?? 0).toFixed(0)}%
             </p>
           </div>
           <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
             <p className="text-[10px] text-slate-400">R:R</p>
             <p className="text-sm font-bold text-amber-300 tabular-nums">
-              1 : {rec.risk_reward_ratio.toFixed(2)}
+              1 : {(rec.risk_reward_ratio ?? 0).toFixed(2)}
             </p>
           </div>
           <div className="p-2 rounded-lg bg-white/5 border border-slate-700/40 text-center">
@@ -930,7 +930,7 @@ function PriceLevelsCard({
                     level.isCurrent ? 'text-amber-300' : 'text-slate-200',
                   )}
                 >
-                  {level.value.toFixed(2)}
+                  {(level.value ?? 0).toFixed(2)}
                 </span>
               </div>
             );

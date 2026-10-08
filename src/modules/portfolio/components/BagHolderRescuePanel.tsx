@@ -435,17 +435,17 @@ export function BagHolderRescuePanel({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">سعر الشراء</div>
-                  <div className="font-bold">{result.buy_price.toFixed(2)}</div>
+                  <div className="font-bold">{(result.buy_price ?? 0).toFixed(2)}</div>
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">السعر الحالي</div>
-                  <div className="font-bold">{result.current_price.toFixed(2)}</div>
+                  <div className="font-bold">{(result.current_price ?? 0).toFixed(2)}</div>
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
                   <div className="text-xs text-muted-foreground">الخسارة/الربح</div>
                   <div className={cn('font-bold flex items-center gap-1', result.loss_pct < 0 ? 'text-red-600' : 'text-emerald-500')}>
                     {result.loss_pct < 0 ? <TrendingDown className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
-                    {result.loss_pct >= 0 ? '+' : ''}{result.loss_pct.toFixed(1)}%
+                    {result.loss_pct >= 0 ? '+' : ''}{(result.loss_pct ?? 0).toFixed(1)}%
                   </div>
                 </div>
                 <div className="p-2 rounded-md bg-muted/40">
@@ -463,7 +463,7 @@ export function BagHolderRescuePanel({
                 </Badge>
                 {result.all_time_high > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    القمة التاريخية: {result.all_time_high.toFixed(2)} | القاع: {result.all_time_low.toFixed(2)}
+                    القمة التاريخية: {(result.all_time_high ?? 0).toFixed(2)} | القاع: {(result.all_time_low ?? 0).toFixed(2)}
                   </span>
                 )}
                 {result.recovery_needed_pct > 0 && (
@@ -529,7 +529,7 @@ export function BagHolderRescuePanel({
                   <div className="p-2 rounded-md bg-background/60">
                     <div className="text-muted-foreground">يلزم للتعادل</div>
                     <div className="font-bold text-amber-600">
-                      {result.recovery_needed_pct > 0 ? `+${result.recovery_needed_pct.toFixed(1)}%` : '—'}
+                      {result.recovery_needed_pct > 0 ? `+${(result.recovery_needed_pct ?? 0).toFixed(1)}%` : '—'}
                     </div>
                   </div>
                 </div>
@@ -581,21 +581,21 @@ export function BagHolderRescuePanel({
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">RSI(14)</div>
                           <div className={cn('font-bold', (result.technical.rsi < 30 || result.technical.rsi > 70) ? 'text-amber-600' : '')}>
-                            {result.technical.rsi.toFixed(1)}
+                            {(result.technical.rsi ?? 0).toFixed(1)}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{result.technical.rsi_state}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">MA50</div>
                           <div className={cn('font-bold', result.technical.above_ma_50 ? 'text-emerald-500' : 'text-red-600')}>
-                            {result.technical.ma_50.toFixed(2)}
+                            {(result.technical.ma_50 ?? 0).toFixed(2)}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{result.technical.above_ma_50 ? 'فوق' : 'تحت'}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">MA200</div>
                           <div className={cn('font-bold', result.technical.above_ma_200 ? 'text-emerald-500' : 'text-red-600')}>
-                            {result.technical.ma_200.toFixed(2)}
+                            {(result.technical.ma_200 ?? 0).toFixed(2)}
                           </div>
                           <div className="text-[10px] text-muted-foreground">{result.technical.above_ma_200 ? 'فوق' : 'تحت'}</div>
                         </div>
@@ -604,7 +604,7 @@ export function BagHolderRescuePanel({
                           <div className={cn('font-bold', (result.dist_from_high_pct ?? 0) < -20 ? 'text-red-600' : '')}>
                             {(result.dist_from_high_pct ?? 0).toFixed(1)}%
                           </div>
-                          <div className="text-[10px] text-muted-foreground">القمة: {result.all_time_high.toFixed(2)}</div>
+                          <div className="text-[10px] text-muted-foreground">القمة: {(result.all_time_high ?? 0).toFixed(2)}</div>
                         </div>
                       </div>
                       <div className="p-3 rounded-md bg-muted/40 border border-border">
@@ -622,7 +622,7 @@ export function BagHolderRescuePanel({
                               {result.technical.support.length > 0
                                 ? result.technical.support.map((s, i) => (
                                     <Badge key={i} variant="outline" className="border-emerald-300 text-emerald-700 dark:text-emerald-300 text-[10px]">
-                                      {s.toFixed(2)}
+                                      {(s ?? 0).toFixed(2)}
                                     </Badge>
                                   ))
                                 : <span className="text-muted-foreground">—</span>}
@@ -634,7 +634,7 @@ export function BagHolderRescuePanel({
                               {result.technical.resistance.length > 0
                                 ? result.technical.resistance.map((r, i) => (
                                     <Badge key={i} variant="outline" className="border-red-300 text-red-700 dark:text-red-300 text-[10px]">
-                                      {r.toFixed(2)}
+                                      {(r ?? 0).toFixed(2)}
                                     </Badge>
                                   ))
                                 : <span className="text-muted-foreground">—</span>}
@@ -657,23 +657,23 @@ export function BagHolderRescuePanel({
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">P/E</div>
-                          <div className="font-bold">{result.fundamentals.pe_ratio.toFixed(2)}</div>
+                          <div className="font-bold">{(result.fundamentals.pe_ratio ?? 0).toFixed(2)}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">P/B</div>
-                          <div className="font-bold">{result.fundamentals.pb_ratio.toFixed(2)}</div>
+                          <div className="font-bold">{(result.fundamentals.pb_ratio ?? 0).toFixed(2)}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">EPS</div>
-                          <div className="font-bold">{result.fundamentals.eps.toFixed(2)}</div>
+                          <div className="font-bold">{(result.fundamentals.eps ?? 0).toFixed(2)}</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">ROE</div>
-                          <div className="font-bold">{result.fundamentals.roe.toFixed(1)}%</div>
+                          <div className="font-bold">{(result.fundamentals.roe ?? 0).toFixed(1)}%</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">هامش الربح</div>
-                          <div className="font-bold">{result.fundamentals.profit_margin_pct.toFixed(1)}%</div>
+                          <div className="font-bold">{(result.fundamentals.profit_margin_pct ?? 0).toFixed(1)}%</div>
                         </div>
                         <div className="p-2 rounded-md bg-muted/40">
                           <div className="text-muted-foreground">قطاع</div>
@@ -771,7 +771,7 @@ export function BagHolderRescuePanel({
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
                                 <div className="text-muted-foreground">السعر</div>
-                                <div className="font-bold">{sc.price.toFixed(2)}</div>
+                                <div className="font-bold">{(sc.price ?? 0).toFixed(2)}</div>
                               </div>
                               <div>
                                 <div className="text-muted-foreground">الربح/الخسارة</div>
@@ -782,7 +782,7 @@ export function BagHolderRescuePanel({
                               <div>
                                 <div className="text-muted-foreground">النسبة</div>
                                 <div className={cn('font-bold', sc.profit_pct < 0 ? 'text-red-600' : 'text-emerald-500')}>
-                                  {sc.profit_pct >= 0 ? '+' : ''}{sc.profit_pct.toFixed(1)}%
+                                  {sc.profit_pct >= 0 ? '+' : ''}{(sc.profit_pct ?? 0).toFixed(1)}%
                                 </div>
                               </div>
                             </div>
@@ -888,7 +888,7 @@ export function BagHolderRescuePanel({
                               حاسبة متوسط التكلفة
                             </div>
                             <p className="text-muted-foreground leading-relaxed">
-                              لو أضفت <span className="font-bold text-amber-700 dark:text-amber-300">{AR_NUM.format(breakeven.extra_qty_to_breakeven)} سهم</span> عند السعر الحالي ({result.current_price.toFixed(2)})، متوسطك الجديد هيبقى <span className="font-bold">{breakeven.new_avg_if_added.toFixed(2)}</span>.
+                              لو أضفت <span className="font-bold text-amber-700 dark:text-amber-300">{AR_NUM.format(breakeven.extra_qty_to_breakeven)} سهم</span> عند السعر الحالي ({(result.current_price ?? 0).toFixed(2)})، متوسطك الجديد هيبقى <span className="font-bold">{(breakeven.new_avg_if_added ?? 0).toFixed(2)}</span>.
                             </p>
                             <p className="text-[10px] text-muted-foreground italic">{breakeven.formula}</p>
                           </div>

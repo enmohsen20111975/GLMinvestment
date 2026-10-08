@@ -154,7 +154,7 @@ function fmtNum(n: number | null | undefined): string {
 function fmtPct(n: number | null | undefined): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return '—';
   const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(2)}%`;
+  return `${sign}${(n ?? 0).toFixed(2)}%`;
 }
 
 function fmtDate(s?: string): string {
@@ -714,7 +714,7 @@ function ProjectionCard({
                   {fmtEGP(data.annual_yield_egp)}
                 </div>
                 <div className="text-[10px] text-muted-foreground">
-                  ({data.annual_yield_rate.toFixed(2)}%)
+                  ({(data.annual_yield_rate ?? 0).toFixed(2)}%)
                 </div>
               </div>
               <div className="rounded-md bg-muted/40 px-2 py-1.5">
@@ -814,7 +814,7 @@ function RebalanceAlertsCard({ alerts, loading }: RebalanceAlertsCardProps) {
                       </Badge>
                       {typeof alert.pct === 'number' && (
                         <span className={cn('text-xs font-medium', style.message)}>
-                          ({alert.pct.toFixed(1)}%)
+                          ({(alert.pct ?? 0).toFixed(1)}%)
                         </span>
                       )}
                     </div>
@@ -1097,7 +1097,7 @@ function AllocationCard({ allocation, total }: AllocationCardProps) {
                     }}
                     formatter={(value: any, _name: string, props: any) => {
                       const pct = props?.payload?.pct ?? 0;
-                      return [`${fmtEGP(Number(value))} (${pct.toFixed(1)}%)`, props?.payload?.label || ''];
+                      return [`${fmtEGP(Number(value))} (${(pct ?? 0).toFixed(1)}%)`, props?.payload?.label || ''];
                     }}
                   />
                 </PieChart>
@@ -1121,7 +1121,7 @@ function AllocationCard({ allocation, total }: AllocationCardProps) {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-muted-foreground text-xs">{fmtEGP(item.value)}</span>
                     <Badge variant="outline" className="text-xs font-bold">
-                      {item.pct.toFixed(1)}%
+                      {(item.pct ?? 0).toFixed(1)}%
                     </Badge>
                   </div>
                 </div>

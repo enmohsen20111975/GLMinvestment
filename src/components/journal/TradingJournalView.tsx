@@ -352,7 +352,7 @@ export function TradingJournalView() {
                 <div>
                   <p className="text-sm text-muted-foreground">نسبة النجاح</p>
                   <p className="text-2xl font-bold text-green-500">
-                    {stats.winRate.toFixed(1)}%
+                    {(stats.winRate ?? 0).toFixed(1)}%
                   </p>
                 </div>
                 <Target className="w-8 h-8 text-green-500" />
@@ -366,7 +366,7 @@ export function TradingJournalView() {
                 <div>
                   <p className="text-sm text-muted-foreground">إجمالي الربح/الخسارة</p>
                   <p className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {stats.totalProfit >= 0 ? '+' : ''}{stats.totalProfit.toFixed(2)}%
+                    {stats.totalProfit >= 0 ? '+' : ''}{(stats.totalProfit ?? 0).toFixed(2)}%
                   </p>
                 </div>
                 <DollarSign className={`w-8 h-8 ${stats.totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`} />
@@ -442,15 +442,15 @@ export function TradingJournalView() {
                             </Badge>
                           </td>
                           <td className="p-3">{trade.quantity}</td>
-                          <td className="p-3">{trade.entry_price.toFixed(2)}</td>
+                          <td className="p-3">{(trade.entry_price ?? 0).toFixed(2)}</td>
                           <td className="p-3">
-                            {trade.exit_price ? trade.exit_price.toFixed(2) : '-'}
+                            {trade.exit_price ? (trade.exit_price ?? 0).toFixed(2) : '-'}
                           </td>
                           <td className="p-3">{getResultBadge(trade.result)}</td>
                           <td className="p-3">
                             {trade.profit_loss_pct !== null ? (
-                              <span className={trade.profit_loss_pct >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                {trade.profit_loss_pct >= 0 ? '+' : ''}{trade.profit_loss_pct.toFixed(2)}%
+                              <span className={(trade.profit_loss_pct ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                {(trade.profit_loss_pct ?? 0) >= 0 ? '+' : ''}{(trade.profit_loss_pct ?? 0).toFixed(2)}%
                               </span>
                             ) : '-'}
                           </td>
@@ -478,7 +478,7 @@ export function TradingJournalView() {
                         <div key={i} className="flex justify-between items-center p-2 bg-green-500/10 rounded">
                           <span className="font-medium">{s.symbol}</span>
                           <div className="text-left">
-                            <span className="text-green-500">+{s.profit.toFixed(2)}%</span>
+                            <span className="text-green-500">+{(s.profit ?? 0).toFixed(2)}%</span>
                             <span className="text-xs text-muted-foreground mr-2">({s.trades} صفقة)</span>
                           </div>
                         </div>
@@ -501,7 +501,7 @@ export function TradingJournalView() {
                         <div key={i} className="flex justify-between items-center p-2 bg-red-500/10 rounded">
                           <span className="font-medium">{s.symbol}</span>
                           <div className="text-left">
-                            <span className="text-red-500">{s.profit.toFixed(2)}%</span>
+                            <span className="text-red-500">{(s.profit ?? 0).toFixed(2)}%</span>
                             <span className="text-xs text-muted-foreground mr-2">({s.trades} صفقة)</span>
                           </div>
                         </div>
@@ -522,13 +522,13 @@ export function TradingJournalView() {
                     <div className="text-center p-4 bg-green-500/10 rounded">
                       <p className="text-sm text-muted-foreground">متوسط الربح</p>
                       <p className="text-2xl font-bold text-green-500">
-                        +{stats.avgWin.toFixed(2)}%
+                        +{(stats.avgWin ?? 0).toFixed(2)}%
                       </p>
                     </div>
                     <div className="text-center p-4 bg-red-500/10 rounded">
                       <p className="text-sm text-muted-foreground">متوسط الخسارة</p>
                       <p className="text-2xl font-bold text-red-500">
-                        {stats.avgLoss.toFixed(2)}%
+                        {(stats.avgLoss ?? 0).toFixed(2)}%
                       </p>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ export function TradingJournalView() {
                         <span>أفضل صفقة</span>
                         <div>
                           <span className="font-medium">{stats.bestTrade.symbol}</span>
-                          <span className="text-green-500 mr-2">+{stats.bestTrade.pct.toFixed(2)}%</span>
+                          <span className="text-green-500 mr-2">+{(stats.bestTrade.pct ?? 0).toFixed(2)}%</span>
                         </div>
                       </div>
                     )}
@@ -555,7 +555,7 @@ export function TradingJournalView() {
                         <span>أسوأ صفقة</span>
                         <div>
                           <span className="font-medium">{stats.worstTrade.symbol}</span>
-                          <span className="text-red-500 mr-2">{stats.worstTrade.pct.toFixed(2)}%</span>
+                          <span className="text-red-500 mr-2">{(stats.worstTrade.pct ?? 0).toFixed(2)}%</span>
                         </div>
                       </div>
                     )}

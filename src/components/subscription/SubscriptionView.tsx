@@ -1744,7 +1744,7 @@ function WalletPaymentModal({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">المبلغ المطلوب:</span>
                   <span className="font-bold text-foreground font-mono">
-                    {(paymentData.amount / 100).toFixed(2)} ج.م
+                    {((paymentData.amount ?? 0) / 100).toFixed(2)} ج.م
                   </span>
                 </div>
                 <div className="flex justify-between">

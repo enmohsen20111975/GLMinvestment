@@ -525,7 +525,7 @@ export function UnifiedPublishButton({
           delta_volume: footprintData.delta_volume,
           buy_sell_ratio: ratio,
           // canonical label — مطابق للرادار + تفاصيل السهم
-          accumulation_label: `${accumLabel} (${ratio.toFixed(2)}x)`,
+          accumulation_label: `${accumLabel} (${(ratio ?? 0).toFixed(2)}x)`,
         };
       }
 

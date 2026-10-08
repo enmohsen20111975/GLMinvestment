@@ -597,7 +597,7 @@ export function InteractiveChart(props: FullChartProps) {
       lineWidth: 2,
       lineStyle: 0, // Solid
       axisLabelVisible: true,
-      title: `  ${lastClose.toFixed(2)}`,
+      title: `  ${(lastClose ?? 0).toFixed(2)}`,
     });
 
     // ── EMA 9 & EMA 21 on Main Pane ──
@@ -791,7 +791,7 @@ export function InteractiveChart(props: FullChartProps) {
           crosshairMarkerVisible: false,
           lastValueVisible: false,
           priceLineVisible: false,
-          title: `دعم ${price.toFixed(2)}`,
+          title: `دعم ${(price ?? 0).toFixed(2)}`,
         });
         s.setData(lineData.map((d) => ({ time: d.time, value: price })));
         seriesRefs.current.push(s);
@@ -814,7 +814,7 @@ export function InteractiveChart(props: FullChartProps) {
           crosshairMarkerVisible: false,
           lastValueVisible: false,
           priceLineVisible: false,
-          title: `مقاومة ${price.toFixed(2)}`,
+          title: `مقاومة ${(price ?? 0).toFixed(2)}`,
         });
         r.setData(lineData.map((d) => ({ time: d.time, value: price })));
         seriesRefs.current.push(r);
@@ -829,7 +829,7 @@ export function InteractiveChart(props: FullChartProps) {
           crosshairMarkerVisible: false,
           lastValueVisible: false,
           priceLineVisible: false,
-          title: `Pivot ${levels.pivot.toFixed(2)}`,
+          title: `Pivot ${(levels.pivot ?? 0).toFixed(2)}`,
         });
         p.setData(
           lineData.map((d) => ({ time: d.time, value: levels.pivot }))
@@ -1002,7 +1002,7 @@ export function InteractiveChart(props: FullChartProps) {
           lineWidth: 2,
           lineStyle: 0, // Solid
           axisLabelVisible: true,
-          title: `📊 VWAP ${fusionMetrics.fair_premium > 0 ? '+' : ''}${fusionMetrics.fair_premium.toFixed(1)}%`,
+          title: `📊 VWAP ${fusionMetrics.fair_premium > 0 ? '+' : ''}${(fusionMetrics.fair_premium ?? 0).toFixed(1)}%`,
         });
       }
 
@@ -1609,7 +1609,7 @@ export function InteractiveChart(props: FullChartProps) {
     if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
     if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-    return n.toFixed(0);
+    return (n ?? 0).toFixed(0);
   }
 
   return (
@@ -1684,7 +1684,7 @@ export function InteractiveChart(props: FullChartProps) {
               }}
             >
               {infoOverlay.change >= 0 ? '+' : ''}
-              {infoOverlay.change.toFixed(2)}%
+              {(infoOverlay.change ?? 0).toFixed(2)}%
             </span>
           </div>
         </div>

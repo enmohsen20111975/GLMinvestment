@@ -370,7 +370,7 @@ function formatEGP(v: number): string {
   if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B`;
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
-  return v.toFixed(0);
+  return (v ?? 0).toFixed(0);
 }
 
 function getChangeColor(change: number): string {
@@ -1181,7 +1181,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         render: (s) => {
           const entry = s.support ? s.support * 1.02 : s.current_price;
-          return <span className="font-mono text-xs font-semibold text-foreground">{entry > 0 ? entry.toFixed(2) : '—'}</span>;
+          return <span className="font-mono text-xs font-semibold text-foreground">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1191,7 +1191,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         render: (s) => {
           const stop = s.support ? s.support * 0.97 : (s.current_price ? s.current_price * 0.95 : 0);
-          return <span className="font-mono text-xs font-semibold text-red-600 dark:text-red-400">{stop > 0 ? stop.toFixed(2) : '—'}</span>;
+          return <span className="font-mono text-xs font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1201,7 +1201,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         render: (s) => {
           const target = s.resistance || (s.current_price ? s.current_price * 1.10 : 0);
-          return <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? target.toFixed(2) : '—'}</span>;
+          return <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</span>;
         },
       },
       {
@@ -1216,7 +1216,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           if (entry > 0 && stop > 0 && target > 0 && entry > stop) {
             const rr = (target - entry) / (entry - stop);
             const rrColor = rr >= 2 ? 'text-emerald-600 dark:text-emerald-400' : rr >= 1.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
-            return <span className={`font-mono text-xs font-bold ${rrColor}`}>{rr.toFixed(2)}</span>;
+            return <span className={`font-mono text-xs font-bold ${rrColor}`}>{(rr ?? 0).toFixed(2)}</span>;
           }
           return <span className="text-muted-foreground">—</span>;
         },
@@ -1867,7 +1867,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           <KPIBox label={t('screener.advanced.kpi.totalResults')} value={derivedSummary.total} />
           <KPIBox label={t('screener.advanced.kpi.gainers')} value={derivedSummary.gainers} color="text-emerald-600 dark:text-emerald-400" />
           <KPIBox label={t('screener.advanced.kpi.losers')} value={derivedSummary.losers} color="text-red-600 dark:text-red-400" />
-          <KPIBox label={t('screener.advanced.kpi.avgChange')} value={`${derivedSummary.avgChange > 0 ? '+' : ''}${derivedSummary.avgChange.toFixed(2)}%`} color={derivedSummary.avgChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} />
+          <KPIBox label={t('screener.advanced.kpi.avgChange')} value={`${derivedSummary.avgChange > 0 ? '+' : ''}${(derivedSummary.avgChange ?? 0).toFixed(2)}%`} color={derivedSummary.avgChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} />
           <KPIBox label={t('screener.advanced.kpi.totalLiquidity')} value={`${formatEGP(derivedSummary.totalLiquidity)} ${t('screener.advanced.kpi.egpSuffix')}`} />
           <KPIBox label={t('screener.advanced.kpi.volumeMomentum')} value={derivedSummary.volumeMomentum} color="text-amber-600 dark:text-amber-400" />
         </div>

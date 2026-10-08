@@ -137,11 +137,11 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
                 <td className="p-2 text-center font-mono text-xs">{idx + 1}</td>
                 <td className="p-2 font-bold text-xs">{stock.ticker}</td>
                 <td className="p-2 text-xs text-muted-foreground">{stock.name_ar || stock.name || stock.ticker}</td>
-                <td className="p-2 text-center font-mono text-xs font-bold text-primary">{curPrice ? curPrice.toFixed(2) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs font-bold text-primary">{curPrice ? (curPrice ?? 0).toFixed(2) : '—'}</td>
                 <td className="p-2 text-center font-mono text-xs whitespace-nowrap">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">▲ {highPrice ? highPrice.toFixed(2) : '—'}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">▲ {highPrice ? (highPrice ?? 0).toFixed(2) : '—'}</span>
                   <span className="text-muted-foreground mx-1">/</span>
-                  <span className="text-rose-600 dark:text-rose-400 font-semibold">▼ {lowPrice ? lowPrice.toFixed(2) : '—'}</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-semibold">▼ {lowPrice ? (lowPrice ?? 0).toFixed(2) : '—'}</span>
                 </td>
                 <td className="p-2 text-center">
                   <div className="flex items-center justify-center gap-1 flex-wrap">
@@ -170,11 +170,11 @@ function OpenTableView({ stocks }: { stocks: StockData[] }) {
                     )}
                   </div>
                 </td>
-                <td className="p-2 text-center font-mono text-xs">{stock.entry_price ? stock.entry_price.toFixed(2) : '—'}</td>
-                <td className="p-2 text-center font-mono text-xs text-emerald-600 dark:text-emerald-400">{stock.target_price ? stock.target_price.toFixed(2) : '—'}</td>
-                <td className="p-2 text-center font-mono text-xs text-rose-600 dark:text-rose-400">{stock.stop_loss ? stock.stop_loss.toFixed(2) : '—'}</td>
-                <td className="p-2 text-center font-mono text-xs">{stock.confidence !== undefined ? `${stock.confidence.toFixed(0)}%` : '—'}</td>
-                <td className="p-2 text-center font-mono text-xs">{stock.rsi !== undefined ? stock.rsi.toFixed(0) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs">{stock.entry_price ? (stock.entry_price ?? 0).toFixed(2) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs text-emerald-600 dark:text-emerald-400">{stock.target_price ? (stock.target_price ?? 0).toFixed(2) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs text-rose-600 dark:text-rose-400">{stock.stop_loss ? (stock.stop_loss ?? 0).toFixed(2) : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs">{stock.confidence !== undefined ? `${(stock.confidence ?? 0).toFixed(0)}%` : '—'}</td>
+                <td className="p-2 text-center font-mono text-xs">{stock.rsi !== undefined ? (stock.rsi ?? 0).toFixed(0) : '—'}</td>
               </tr>
             );
           })}
@@ -399,7 +399,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
       `أغلق سوق ${MARKET_NAMES_AR[market]} جلسة اليوم في حالة ${breadthEmoji} ${breadth}، حيث سجّل ${gainers} سهم ارتفاعاً مقابل ${losers} سهم انخفضت، بينما استقر ${unchanged} سهم على بلا تغيّر.`
     );
     parts.push(
-      `متوسط التغير العام بلغ ${weekStats.avgChange >= 0 ? '+' : ''}${weekStats.avgChange.toFixed(2)}%، ومتوسط سعر الأسهم ${weekStats.avgPrice.toFixed(2)} ج.م عبر ${weekStats.totalStocks} سهم متداول.`
+      `متوسط التغير العام بلغ ${weekStats.avgChange >= 0 ? '+' : ''}${(weekStats.avgChange ?? 0).toFixed(2)}%، ومتوسط سعر الأسهم ${(weekStats.avgPrice ?? 0).toFixed(2)} ج.م عبر ${weekStats.totalStocks} سهم متداول.`
     );
     if (topGainer) {
       parts.push(
@@ -471,7 +471,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
       `• لم يتغير: ${unchanged} ⚪`,
       `• نسبة الصعود/الهبوط: ${advDecRatio}`,
       `• الاتجاه العام: ${breadth}`,
-      `• متوسط التغير: ${weekStats.avgChange >= 0 ? '+' : ''}${weekStats.avgChange.toFixed(2)}%`,
+      `• متوسط التغير: ${weekStats.avgChange >= 0 ? '+' : ''}${(weekStats.avgChange ?? 0).toFixed(2)}%`,
       ``,
     ];
 
@@ -853,7 +853,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                       )}
                     >
                       {change > 0 ? '+' : ''}
-                      {change.toFixed(2)}%
+                      {(change ?? 0).toFixed(2)}%
                     </p>
                   </div>
                 );
@@ -903,7 +903,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
                 "text-xl font-bold",
                 weekStats.avgChange >= 0 ? "text-green-600" : "text-red-600"
               )}>
-                {weekStats.avgChange >= 0 ? '+' : ''}{weekStats.avgChange.toFixed(2)}%
+                {weekStats.avgChange >= 0 ? '+' : ''}{(weekStats.avgChange ?? 0).toFixed(2)}%
               </p>
             </div>
             <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950">
@@ -929,7 +929,7 @@ export function MarketStatusTab({ market }: { market: MarketType }) {
             <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-950">
               <p className="text-muted-foreground text-xs mb-1">متوسط السعر</p>
               {/* currencyLabel fix */}
-              <p className="text-xl font-bold text-purple-600">{weekStats.avgPrice.toFixed(2)} {currencyLabel}</p>
+              <p className="text-xl font-bold text-purple-600">{(weekStats.avgPrice ?? 0).toFixed(2)} {currencyLabel}</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-950">
               <p className="text-muted-foreground text-xs mb-1">عدد القطاعات</p>
