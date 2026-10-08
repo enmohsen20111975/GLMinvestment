@@ -66110,3 +66110,28 @@ Stage Summary:
 - التوصيات مرتبة بـ P0/P1/P2/P3 + جدول خريطة الـ writers + جدول الـ DBs.
 
 See full report below ⬇️
+
+---
+Task ID: P0-MARKET-INDICES (المدير العام — عضو أساسي في الفريق)
+Agent: المدير العام (Z.ai Code)
+Task: تحديث الدستور + إنشاء سكربت تحديث market_indices من TradingView REST
+
+قاعدة ثابتة جديدة (تحدّث الدستور):
+  - التحديثات تُرفع على GitHub بعد كل مهمة
+  - مراجعة عمل باقي الفريق قبل البدء
+  - أنا عضو أساسي في الفريق (لست مستشارًا خارجيًا)
+
+Work Log:
+- تحليل كلام ChatGPT: أخذنا (TradingView canonical + Data Freshness + shadow validation) وتركنا (التعقيد الزائد + عدم تنويع المصادر)
+- إنشاء update_market_indices.py: سكربت يجلب EGX30/70/100 من TradingView REST
+  * يستخدم نفس API الموجود في tradingview_rest.py (scanner.tradingview.com)
+  * يكتب في stocks.db.market_indices
+  * يدعم --dry-run
+  * UPSERT (ON CONFLICT DO UPDATE)
+  * جدولة مقترحة: 02:45 UTC يومي (قبل daily_predictor بـ 15 دقيقة)
+
+Stage Summary:
+- ملف جديد: 1 (update_market_indices.py — 160 LOC)
+- المؤشرات المطلوبة: EGX30 + EGX70 + EGX100
+- المصدر: TradingView REST (canonical — نفس مصدر الأسعار)
+- القيود: Rule 20/27/66 محترمة، لا حذف، الحمايات لم تُلمس
