@@ -66398,3 +66398,22 @@ Stage Summary:
 - P1 issues: 22 (confidence_engine vs conviction_engine overlap + 4 persona files غير موحدة + 6 learning files بدون owner واضح + dead methods _get_market_regime_score + _check_screener_stale + _is_spark_setup in master_analyzer + CONFLUENCE_THRESHOLDS منفصلة + multiple fair_value_calculator + fundamental* 7 files + seasonality* 3 files + regime* 4 files + engine/flow_system مكرر مع analyzers/flow + tools/run_backtest_versions references dead + glminvestment_engines منفصل + scoring_fix في master + history of patches غير مراجعة)
 - Dead LOC estimate: ~10,900 LOC disabled/orphan في analyzers/ (Maestro + 4 sub-engines) + ~5,800 LOC learning duplicates + ~2,300 LOC fix/patch files = ~19,000 LOC إجماليًا (بدون archive)
 - Top recommendations: (1) حذف THRESHOLDS من master_analyzer.py:499 + CONFLUENCE_THRESHOLDS من master_analyzer.py:516 (dead code — delegations تعمل بدونهم). (2) إزالة THRESHOLDS من technical_weighted.py:109 أو delegation لـ canonical_signal. (3) منع telegram_target_hit_tracker من INSERT في predictions — يكتب في جدول منفصل `telegram_observed_hits` (مفهوم مختلف عن توقعات النظام). (4) توحيد calc_atr/calc_rsi — كل الـ duplicates تـ delegate لـ analyzers/indicators/{atr,rsi}.py. (5) توحيد learning files: lesson_store + win_lesson_store → utils/lesson_store.py واحد + حذف learning_file_storage (gzip file-based deprecated لما صار SQLite canonical). (6) حذف unified_learning_engine.py orphan (فقط unified_learning_routes بيستورده). (7) institutional_decision_engine fallback يجب يرجع None بدل tech_score=50 fabricated. (8) master_analyzer fallbacks (lines 4839/4847/5281) يجب ترجع None بدل 50.0. (9) إزالة confidence_engine أو conviction_engine (توحيد على واحد). (10) توحيد persona engines في ملف واحد. (11) حذف analyzers/backtest_engine.py OR engines/backtest_engine.py (الاسم نفسه = collision). (12) حذف analyzers/base_engine.py + feature_extractor.py orphans. (13) إزالة api/historical_predictions_v2_routes.py manual INSERT — يجب يـ delegate لـ PredictionTracker. (14) توحيد fundamental* 7 files + regime* 4 files + seasonality* 3 files.
+
+---
+Task ID: AUDIT-DATA
+Agent: general-purpose (مهندس بيانات)
+Task: تدقيق عميق لمصادر البيانات
+
+Stage Summary:
+- 18 P0 + 24 P1 + ~7,200 LOC ميت/يتيم في السكرابرز (دون archive)
+- Top recommendations:
+  (1) حذف egxpilot_scraper.py + yahoo_scraper.py + historical_fetcher.py + historical_fetcher_5years.py + technical_fetcher.py + smart_scheduler.py + auto_refresh_scheduler.py + metals_forex_fetcher.py.original (8 ملفات يتيمة/ميتة، ~4,000 LOC).
+  (2) دمج egksco_scraper.py المكرر (data_engine/scrapers/ + vps-service/data/) في ملف واحد + إجبار تمرير write_guarded().
+  (3) حذف news_scraper.py (commercial 5-key، يتيم، غير مُجدول) + استبداله بـ news_fetcher_analyzer.py canonical.
+  (4) إعادة تسمية news.db.news_articles → market_news (Rule 44) أو تراجع عنها — المنتجون يكتبون news_articles، القراء يقرأون market_news = 0 صف.
+  (5) ترحيل historical.db (44MB) → price_history.db مع source='legacy_historical' + حذف historical.db.
+  (6) إصلاح us_stock_scraper.py: source='yahoo_us' → 'yahoo_clean' + إجبار write_guarded() بدل DIRECT INSERT.
+  (7) حذف 469 صف بـ source='egxpilot_live' (BANNED) من price_history.db.
+  (8) إصلاح daily_price_updater.py: source='tradingview_live' غير موجود في EGX hierarchy → guard يرفض الكتابة بصمت؛ تبديل لـ intraday_aggregated أو إزالة الـ cron بالكامل (cron 6 + cron 8).
+  (9) تشخيص سبب كتابة intraday_aggregator 0 صف (intraday_aggregated) رغم وجود 340K صف في stock_intraday — الغالب: python-backend متوقف أو _should_run لا يطلق أبدًا.
+  (10) إضافة scraper لـ TADAWUL/KSE/QSE/GOLD يكتب في price_history.db بـ source='yahoo_clean' — حاليًا 0 صف لهذه الأسواق في canonical.
