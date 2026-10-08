@@ -7,12 +7,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  // UNIFY-FIX (2026-10-08): تفعيل standalone output لتسريع البناء
-  // بدل توليد مئات serverless functions منفصلة (تستهلك ذاكرة + وقت)
-  // يولّد خادم Node واحد مستقل (أسرع بناء + أقل استهلاك ذاكرة)
-  output: 'standalone',
-  // UNIFY-FIX: تقليل عدد الصفحات المُجمّعة مسبقًا (تسريع البناء)
-  // الصفحات تُجمّع عند الطلب (on-demand) بدلًا من كلها مسبقًا
+  // UNIFY-FIX (2026-10-08): تعطيل standalone — يسبب مشاكل مع next start + ecosystem.config.js
+  // البناء العادي يعمل بشكل صحيح مع pm2 + next start
+  // output: 'standalone',
+  // UNIFY-FIX: تقليل استهلاك الذاكرة في البناء
   experimental: {
     optimizePackageImports: true,
   },

@@ -558,6 +558,14 @@ def run_backfill(days_back: int = 365, markets: List[str] = None,
         min_price: Minimum stock price filter
         min_volume: Minimum volume filter
     """
+    # Task DISABLE-SCRIPTS (Rule 35): non-canonical writer disabled.
+    # V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY engine allowed
+    # to write predictions. This one-off backfill script is disabled to prevent
+    # contamination of the canonical prediction store.
+    # To re-enable for manual backfill: comment out this guard.
+    # Do NOT delete (Rule 16 VERIFY-BEFORE-DELETE).
+    print("[DISABLE-SCRIPTS] This script is disabled per Rule 35 (V40.2 only writer).", flush=True)
+    return
     if markets is None:
         markets = ['EGX']
 
@@ -1030,6 +1038,12 @@ def run_backfill(days_back: int = 365, markets: List[str] = None,
 # ============================================================================
 
 if __name__ == '__main__':
+    # Task FINALIZE-UNIFICATION: non-canonical writer disabled (Rule 35).
+    # V40.2 (daily_predictor.py) is the ONLY writer to predictions.db.
+    # To re-enable: remove this guard. Do NOT delete (Rule 16).
+    import sys
+    print('[FINALIZE-UNIFICATION] GUARD: maestro_backfill_phase3.py disabled (Rule 35). V40.2 (daily_predictor.py) is the only writer.')
+    sys.exit(0)
     import argparse
     parser = argparse.ArgumentParser(
         description='Maestro Backfill with Phase 3 Filters — THE REAL PRODUCTION BACKTEST'

@@ -1478,29 +1478,30 @@ def build_institutional_decision(
 
     except Exception as e:
         logger.error(f"[InstitutionalDecision] {ticker} error: {e}", exc_info=True)
+        # Task PHASE3-ENGINES (Rule 27): NULL means NULL — do not fabricate
+        # tech_score=50 + signal='🟡 انتظر' + neutral evidence. Caller must
+        # check ready=False and treat the prediction as invalid (no score,
+        # no signal, no evidence). Previously this branch fabricated plausible-
+        # looking values, masking engine failures as "neutral wait" signals.
         return {
             'ticker': ticker,
             'ready': False,
             'error': str(e),
-            'maker_state': {'state': 'calm', 'state_ar': 'هدوء', 'emoji': '⚪', 'score_impact': 0},
-            'flight_state': {'state': 'sideways', 'state_ar': 'عرضي 😴', 'emoji': '⚪'},
+            'maker_state': None,
+            'flight_state': None,
             'proofs': [],
-            'tech_score': 50,
-            'signal_final': '🟡 انتظر',
+            'tech_score': None,
+            'signal_final': None,
             'path_taken': 'خطأ في الحساب',
-            'signal_color': 'yellow',
+            'signal_color': None,
             'portfolio_advice': None,
-            'backtest': {'win_rate': 0, 'profit_factor': 0, 'total_trades': 0, 'winning_trades': 0, 'net_return': 0, 'win_rate_text': 'لا يوجد صفقات', 'pf_text': '0.00'},
-            'dynamic_thresh': get_setting('base_buy_threshold', default=75),
+            'backtest': None,
+            'dynamic_thresh': None,
             'dynamic_thresh_reason': 'خطأ',
-            'model_quality': '⏳ خطأ في الحساب',
-            'quality_color': 'gray',
+            'model_quality': None,
+            'quality_color': None,
             'version': 'V40',
-            # V40 new fields (fallback)
-            'evidence': {
-                'strong_count': 0, 'weak_count': 0, 'neutral_count': 6,
-                'maker_passed': False, 'benchmark_passed': False, 'has_distribution': False,
-                'strong_evidence_names': [], 'weak_evidence_names': [],
-            },
-            'kill_filter_result': {'passed': True, 'kill_reasons': [], 'kill_details': {}, 'kill_filter_active': False},
+            # V40 new fields (NULL — previously fabricated neutral evidence)
+            'evidence': None,
+            'kill_filter_result': None,
         }

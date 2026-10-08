@@ -306,17 +306,39 @@ export function UnifiedPublishButton({
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72)
       // Also fetch /api/stocks/[ticker]/unified as the canonical source for
       // signal_ar / accumulation / money_flow / prediction / radar.buy_pct.
-      // Old fetches kept as fallback (Rule: backward compatibility).
-      const [stockRes, publishRes, footprintRes, unifiedRes] = await Promise.allSettled([
+      // PHASE4-APIS (Task PHASE4-APIS, Rule 27): footprint endpoint (410 Gone)
+      // replaced with /api/flow/[ticker] (canonical Python compute_money_flow).
+      // Response shape mapping (preserves buildInfographic consumer contract):
+      //   flow.buy_pressure → buy_volume, flow.sell_pressure → sell_volume,
+      //   flow.net_flow → delta_volume; poc/vah/val = null (volume-profile
+      //   concepts not available from money-flow API).
+      const [stockRes, publishRes, flowRes, unifiedRes] = await Promise.allSettled([
         fetch(`/api/stocks/${resolvedTicker}`),
         fetch(`/api/stocks/${resolvedTicker}/publish-data`),
-        fetch(`/api/maker-radar/footprint?ticker=${resolvedTicker}&days=30`),
+        fetch(`/api/flow/${encodeURIComponent(resolvedTicker)}`),
         fetch(`/api/stocks/${resolvedTicker}/unified`),
       ]);
 
       const stockData = stockRes.status === 'fulfilled' && stockRes.value.ok ? await stockRes.value.json() : null;
       const publishJson = publishRes.status === 'fulfilled' && publishRes.value.ok ? await publishRes.value.json() : null;
-      const footprintData = footprintRes.status === 'fulfilled' && footprintRes.value.ok ? await footprintRes.value.json() : null;
+      const flowJson = flowRes.status === 'fulfilled' && flowRes.value.ok ? await flowRes.value.json() : null;
+      // Map canonical /api/flow response → legacy footprintData shape so the
+      // downstream consumer code (builtData.liquidity block) keeps working.
+      const flowPayload = flowJson?.success && flowJson?.flow ? flowJson.flow : null;
+      const _buyVolF = flowPayload ? Number(flowPayload.buy_pressure ?? 0) : 0;
+      const _sellVolF = flowPayload ? Number(flowPayload.sell_pressure ?? 0) : 0;
+      const footprintData = flowPayload
+        ? {
+            success: true as const,
+            poc_price: undefined as number | undefined,
+            vah_price: undefined as number | undefined,
+            val_price: undefined as number | undefined,
+            buy_volume: _buyVolF,
+            sell_volume: _sellVolF,
+            delta_volume: Number(flowPayload.net_flow ?? (_buyVolF - _sellVolF)),
+            buy_sell_ratio: _sellVolF > 0 ? _buyVolF / _sellVolF : 0,
+          }
+        : null;
       // UNIFIED-API — best-effort; if it fails, fall back to publish-data.
       const unifiedJson = unifiedRes.status === 'fulfilled' && unifiedRes.value.ok ? await unifiedRes.value.json() : null;
       const unified = (unifiedJson?.success ? unifiedJson : null) as any;

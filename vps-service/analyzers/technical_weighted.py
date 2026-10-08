@@ -105,15 +105,18 @@ class TechnicalAnalyzerWeighted:
         print(f"Signal: {indicators.overall_signal}")
     """
     
-    # Score thresholds (0-100 scale) - Updated to match master_analyzer
+    # Score thresholds (0-100 scale) — DELEGATED to canonical_signal (Task PHASE3-ENGINES).
+    # DEAD CODE — kept for backward compat in case external callers reference THRESHOLDS.
+    # canonical_signal.py (SIGNAL_THRESHOLDS) is the SSOT — values: 78/65/55/40/25.
+    # Local values 65/55/48/35/28/20/10 were NON-CANONICAL and have been retired.
     THRESHOLDS = {
-        'STRONG_BUY': 65,
-        'BUY': 55,
-        'ACCUMULATE': 48,
-        'HOLD': 35,
-        'REDUCE': 28,
-        'SELL': 20,
-        'STRONG_SELL': 10,
+        'STRONG_BUY': 78,   # canonical
+        'BUY':        65,   # canonical
+        'ACCUMULATE': 55,   # canonical
+        'HOLD':       40,   # canonical (intentional: matches SIGNAL_THRESHOLDS['REDUCE'])
+        'REDUCE':     40,   # canonical
+        'SELL':       25,   # canonical (matches SIGNAL_THRESHOLDS['STRONG_SELL'])
+        'STRONG_SELL': 25,  # canonical
     }
     
     def __init__(self, weights: Dict[str, float] = None):
@@ -418,21 +421,13 @@ class TechnicalAnalyzerWeighted:
         return round(weighted_score, 2), scores
     
     def _get_signal_from_score(self, score: float) -> str:
-        """تحويل النقاط إلى إشارة"""
-        if score >= self.THRESHOLDS['STRONG_BUY']:
-            return "STRONG_BUY"
-        elif score >= self.THRESHOLDS['BUY']:
-            return "BUY"
-        elif score >= self.THRESHOLDS['ACCUMULATE']:
-            return "ACCUMULATE"
-        elif score >= self.THRESHOLDS['HOLD']:
-            return "HOLD"
-        elif score >= self.THRESHOLDS['REDUCE']:
-            return "REDUCE"
-        elif score >= self.THRESHOLDS['SELL']:
-            return "SELL"
-        else:
-            return "STRONG_SELL"
+        """تحويل النقاط إلى إشارة — DELEGATED to canonical_signal (Task PHASE3-ENGINES).
+
+        canonical_signal.classify_signal is the single source of truth.
+        Local THRESHOLDS dict is kept only for backward compat (dead reference).
+        """
+        from utils.canonical_signal import classify_signal as _canonical_classify_signal
+        return _canonical_classify_signal(score)
     
     # =========================================================================
     # MAIN ANALYSIS

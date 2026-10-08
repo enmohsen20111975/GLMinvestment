@@ -604,28 +604,32 @@ class FusionEngineV20:
             elif atr > 0 and entry > 0:
                 sl = entry + (atr * 1.5)
             else:
-                # last resort: 5% above entry
-                sl = entry * 1.05 if entry > 0 else 0.0
+                # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+                # last resort was fabricated as entry * 1.05 — now None.
+                sl = None
 
             # risk + targets (SHORT: risk = sl - entry, targets under entry)
-            risk_amount = sl - entry if sl > 0 and entry > 0 and sl > entry else 0.0
-            if risk_amount > 0:
+            # Rule 27: NULL sl → cannot compute risk_amount / targets.
+            if sl is not None and sl > 0 and entry > 0 and sl > entry:
+                risk_amount = sl - entry
                 tp1 = entry - (risk_amount * 1.5)
                 tp2 = entry - (risk_amount * 3.0)
             else:
-                # fallback: 5% / 10% targets under entry
-                tp1 = entry * 0.95 if entry > 0 else 0.0
-                tp2 = entry * 0.90 if entry > 0 else 0.0
+                # Rule 27: no real sl → NULL targets (was entry * 0.95 / * 0.90).
+                risk_amount = 0.0
+                tp1 = None
+                tp2 = None
 
             return {
                 'direction': 'SHORT',
                 'entry': round(entry, 4),
-                'sl': round(sl, 4),
-                'tp1': round(tp1, 4),
-                'tp2': round(tp2, 4),
+                'sl': round(sl, 4) if sl is not None else None,
+                'tp1': round(tp1, 4) if tp1 is not None else None,
+                'tp2': round(tp2, 4) if tp2 is not None else None,
                 'risk_amount': round(risk_amount, 4),
-                'rr_ratio_tp1': round((entry - tp1) / risk_amount, 2) if risk_amount > 0 else 0.0,
-                'rr_ratio_tp2': round((entry - tp2) / risk_amount, 2) if risk_amount > 0 else 0.0,
+                # Rule 27: rr_ratio NULL when no real risk_amount (was 0.0).
+                'rr_ratio_tp1': round((entry - tp1) / risk_amount, 2) if risk_amount > 0 and tp1 is not None else None,
+                'rr_ratio_tp2': round((entry - tp2) / risk_amount, 2) if risk_amount > 0 and tp2 is not None else None,
             }
 
         # ----- LONG branch (default — المنطق القديم) -----
@@ -636,28 +640,32 @@ class FusionEngineV20:
         elif atr > 0 and entry > 0:
             sl = entry - (atr * 1.5)
         else:
-            # last resort: 5% below entry
-            sl = entry * 0.95 if entry > 0 else 0.0
+            # Task FINALIZE-UNIFICATION (Rule 27): last resort was fabricated
+            # as entry * 0.95 — now None.
+            sl = None
 
         # risk + targets
-        risk_amount = entry - sl if entry > 0 and sl > 0 else 0.0
-        if risk_amount > 0:
+        # Rule 27: NULL sl → cannot compute risk_amount / targets.
+        if sl is not None and entry > 0 and sl > 0:
+            risk_amount = entry - sl
             tp1 = entry + (risk_amount * 1.5)
             tp2 = entry + (risk_amount * 3.0)
         else:
-            # fallback: 5% / 10% targets
-            tp1 = entry * 1.05 if entry > 0 else 0.0
-            tp2 = entry * 1.10 if entry > 0 else 0.0
+            # Rule 27: no real sl → NULL targets (was entry * 1.05 / * 1.10).
+            risk_amount = 0.0
+            tp1 = None
+            tp2 = None
 
         return {
             'direction': 'LONG',
             'entry': round(entry, 4),
-            'sl': round(sl, 4),
-            'tp1': round(tp1, 4),
-            'tp2': round(tp2, 4),
+            'sl': round(sl, 4) if sl is not None else None,
+            'tp1': round(tp1, 4) if tp1 is not None else None,
+            'tp2': round(tp2, 4) if tp2 is not None else None,
             'risk_amount': round(risk_amount, 4),
-            'rr_ratio_tp1': round((tp1 - entry) / risk_amount, 2) if risk_amount > 0 else 0.0,
-            'rr_ratio_tp2': round((tp2 - entry) / risk_amount, 2) if risk_amount > 0 else 0.0,
+            # Rule 27: rr_ratio NULL when no real risk_amount (was 0.0).
+            'rr_ratio_tp1': round((tp1 - entry) / risk_amount, 2) if risk_amount > 0 and tp1 is not None else None,
+            'rr_ratio_tp2': round((tp2 - entry) / risk_amount, 2) if risk_amount > 0 and tp2 is not None else None,
         }
 
     # ====================================================================

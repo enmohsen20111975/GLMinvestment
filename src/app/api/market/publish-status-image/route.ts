@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminAsync } from '@/lib/admin-auth-server';
 
 export const dynamic = 'force-dynamic';
 // معالجة payloads كبيرة (صور base64) — لا حدود على الـ body
@@ -13,8 +14,14 @@ export const runtime = 'nodejs';
  *
  * يفكّ الـ base64 ويستخدم telegram.auto_poster.send_photo لينشر الصورة
  * على قناة تيليجرام (@Arabian_investment_guide).
+ *
+ * Task SECURITY-P0: admin-only — النشر على قناة الإنتاج يحتاج صلاحية أدمن.
  */
 export async function POST(request: NextRequest) {
+  // Task SECURITY-P0: كان بلا auth إطلاقًا — أي أحد يقدر ينشر. الآن: admin gate.
+  const adminError = await requireAdminAsync(request);
+  if (adminError) return adminError;
+
   const pythonUrl = (
     process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8010'
   ).replace('localhost', '127.0.0.1');

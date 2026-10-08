@@ -4,7 +4,12 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-10-05 (Task `CALC-CONSOLIDATION-PHASE-1` + `BACKTEST-ANALYSIS` + `SCREENS-SURVEY-2026-10-05` — 3 sub-tasks in one session). **(1)** حذف `src/lib/cache/precomputed-cache.ts` (1010 LOC) — orphaned، صفر imports عبر `src/` (تم التحقق per Rule 16 VERIFY-BEFORE-DELETE). **(2)** STRIP-CALCS من `src/app/api/stocks/[ticker]/publish-data/route.ts` (حذف `computeRSI`/`sma`/`atr` — الـ `atr` كان **BUGGY**: SMA بدلاً من Wilder's smoothing → كان يfeeds قيم ATR خاطئة في الـ Telegram publish flow لما Python يكون unreachable). الـ route بيقوم بـ Python-first أصلاً عبر `fetchPythonPublishData`. في الـ SQLite fallback، المؤشرات دلوقت بتقرأ من `stocks.db.{rsi,ma_50,ma_200}` + `predictions.db.predictions.atr_at_entry` (مكتوبة upstream من Python canonical `analyzers/indicators/`). لو NULL → `undefined` + error string في `errors[]` (Rule 27: no fake data). **(3)** STRIP-CALCS من `src/app/api/portfolio/rescue/route.ts` (حذف `sma`/`ema`/`rsi` — كانت Wilder's فعلاً بس برضه duplicate). بقرأ من `stocks.db` pre-computed columns. `supportResistance` (pivot detection) + `weinsteinStage` (heuristic) اتفسخوا — دول analytics هيكلية مش canonical indicators. Commit: `bbbb6cbb` (pushed to `origin/main`). 6 TS files تانية لسه فيها duplicates (Phase 2/3 deferred — §15). **(4)** BACKTEST-ANALYSIS (§16): تحليل `scripts/output/backtest_4months_all_stocks.json` — 533 tickers / 25,978 trades / WR=47.1% / PF=1.43. **CRITICAL bug discovered**: 5 من top 10 winners هم SELL signals بـ +49% gains → الـ backtest بـ يحسب price returns WITHOUT applying signal direction. **3 tuning proposals**: (A) scoring (raise STRONG_BUY threshold + liquidity gate + per-ticker circuit breaker), (B) stop/target (ATR-based 1.5×ATR stop + trailing after +1R), (C) fix the SELL-signal backtest bug. **(5)** SCREENS-SURVEY-2026-10-05 (§17): inventory كامل من أرض الواقع — 53 hash views (23 active + 30 hidden/legacy) + 16 card components (8,903 LOC) + Telegram publishing integration (39 files، ~21,312 LOC across TS + Python). Per Rule 62 (Secretary updates docs after every task) + Rule 63 (commit + push) + README editing rule 1.)
+> **آخر تحديث:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010 + `zero_conflict_test` improvement). ملخص التحديثات في هذا الـ pass:
+> - **§0.8 NEW — Canonical Signal Migration (10/10)** — توثيق إكمال الترحيل الكامل للإشارات الكنسية على كل شاشات القرار النشطة + تدفق البيانات الكنسي + الـ 410 Gone deprecated endpoints + `zero_conflict_test.py` كآلية إنفاذ Rule 73.
+> - إشارات لـ Rule 73 (SINGLE-DISPLAY-SOURCE) + Rule 74 (TICKER-COOLDOWN) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) — كلها اتضافت للدستور في commit `11853f69` (Task `CONSTITUTION-R75-R76`).
+> Commits: `38665fd1` (REAPPLY+DISABLE-SCRIPTS) · `11853f69` (CONSTITUTION-R75-R76) · `64ee8d54` (zero_conflict_test --require-real-data). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق:** 2026-10-05 (Task `CALC-CONSOLIDATION-PHASE-1` + `BACKTEST-ANALYSIS` + `SCREENS-SURVEY-2026-10-05` — 3 sub-tasks in one session). **(1)** حذف `src/lib/cache/precomputed-cache.ts` (1010 LOC) — orphaned، صفر imports عبر `src/` (تم التحقق per Rule 16 VERIFY-BEFORE-DELETE). **(2)** STRIP-CALCS من `src/app/api/stocks/[ticker]/publish-data/route.ts` (حذف `computeRSI`/`sma`/`atr` — الـ `atr` كان **BUGGY**: SMA بدلاً من Wilder's smoothing → كان يfeeds قيم ATR خاطئة في الـ Telegram publish flow لما Python يكون unreachable). الـ route بيقوم بـ Python-first أصلاً عبر `fetchPythonPublishData`. في الـ SQLite fallback، المؤشرات دلوقت بتقرأ من `stocks.db.{rsi,ma_50,ma_200}` + `predictions.db.predictions.atr_at_entry` (مكتوبة upstream من Python canonical `analyzers/indicators/`). لو NULL → `undefined` + error string في `errors[]` (Rule 27: no fake data). **(3)** STRIP-CALCS من `src/app/api/portfolio/rescue/route.ts` (حذف `sma`/`ema`/`rsi` — كانت Wilder's فعلاً بس برضه duplicate). بقرأ من `stocks.db` pre-computed columns. `supportResistance` (pivot detection) + `weinsteinStage` (heuristic) اتفسخوا — دول analytics هيكلية مش canonical indicators. Commit: `bbbb6cbb` (pushed to `origin/main`). 6 TS files تانية لسه فيها duplicates (Phase 2/3 deferred — §15). **(4)** BACKTEST-ANALYSIS (§16): تحليل `scripts/output/backtest_4months_all_stocks.json` — 533 tickers / 25,978 trades / WR=47.1% / PF=1.43. **CRITICAL bug discovered**: 5 من top 10 winners هم SELL signals بـ +49% gains → الـ backtest بـ يحسب price returns WITHOUT applying signal direction. **3 tuning proposals**: (A) scoring (raise STRONG_BUY threshold + liquidity gate + per-ticker circuit breaker), (B) stop/target (ATR-based 1.5×ATR stop + trailing after +1R), (C) fix the SELL-signal backtest bug. **(5)** SCREENS-SURVEY-2026-10-05 (§17): inventory كامل من أرض الواقع — 53 hash views (23 active + 30 hidden/legacy) + 16 card components (8,903 LOC) + Telegram publishing integration (39 files، ~21,312 LOC across TS + Python). Per Rule 62 (Secretary updates docs after every task) + Rule 63 (commit + push) + README editing rule 1.)
 >
 > **آخر تحديث سابق:** 2026-10-01 (Task `WAVE-2-3-DOCS` — Documentation Secretariat catching up on backlog — Wave 2 (cleanup archived 121 frontend dead files + 16 dead shadcn UI primitives to `archive/wave-2-cleanup-2026-10-01/`) + Wave 3 (#learning screen archived to `archive/education-duplicate-2026-10-01/`, #academy is now SINGLE education screen + content/education/*.md wired into AcademyView's 5th tab "🎓 دروس متقدمة" + MarketAnalysisView reduced from 6,450 LOC to 297 LOC orchestrator with 5 tabs + 5 radar tabs MOVED from MarketAnalysisView → MakerRadarTab as sub-tabs + LearningView archived). See §0.5 + §0.6 for the Wave 2/3 deltas. Per Rule 62 (Secretary updates docs after every task) + README editing rule 1 (last-updated + changelog row in-file).)
 >
@@ -317,6 +322,81 @@
 | 4 | **Cron Health dashboard** | ⏳ PENDING | — | Surface `/api/admin/system-health` into `AdminView` + show `last_run`/`exit_code` for all 25 crontab jobs + manual "run cron now" buttons. |
 
 Plus 6 more P0 admin features pending in Task 27-B (paywall pricing editor + conversion funnel + news source health + multi-source conflict viewer + Telegram published-predictions audit + trial cleanup wiring into new user-management tab). See `05-CURRENT_STATE.md` §17.6 for the full list.
+
+---
+
+### 0.8 Canonical Signal Migration — 10/10 Decision-Screens الآن canonical (NEW — Task `REAPPLY-CRITICAL-FIXES` + `FINALIZE-UNIFICATION`/`UNIFIED-API-V3`/`TRADING-CHART-V60.2` — 2026-10-08)
+
+> **المرجع الدستوري:** Rule 20 (PYTHON-IS-THE-BRAIN) + Rule 27 (NO-FAKE-DATA) + Rule 67(b) + Rule 72 (UNIFIED-DATA-CONTRACT) + **Rule 73 (SINGLE-DISPLAY-SOURCE)** + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW). Rule 73 اتضافت للدستور في commit `11853f69` (Task `CONSTITUTION-R75-R76` — 2026-10-08).
+>
+> **الهدف:** إنهاء كارثة "نفس السهم = بيانات مختلفة على 5 شاشات + التليجرام". قبل Rule 73، كان فيه 5 صيغ مختلفة لـ accumulation label + 5+ صيغ fallback لـ support/resistance + 3 صيغ RSI (Wilder صح، SMA خاطئ، EMA بـ seed مختلف) + 4 أنظمة thresholds مختلفة لـ signal classification + 4 taxonomies مختلفة لـ phase كلها اسمها "phase" + 3 routes بـ fabricate `target_price_2 = target1 * 1.05` (Rule 27 violation).
+
+#### A. الـ 10/10 active decision-screens الآن canonical
+
+كل شاشة قرار (بتعرض signal/master_score/RSI/support/resistance) بـ تقرأ من مصدر عرض واحد. الـ 10 شاشات:
+
+| # | Screen | Migration task | Status |
+|---|---|---|---|
+| 1 | `StockDetail` (تحليل سهم فردي) | `FINALIZE-UNIFICATION` | ✅ canonical |
+| 2 | `ComprehensiveStockAnalysis` | `FINALIZE-UNIFICATION` | ✅ canonical |
+| 3 | `SpecialistAnalysisView` | `FINALIZE-UNIFICATION` | ✅ canonical |
+| 4 | `UnifiedPublishButton` | `FINALIZE-UNIFICATION` | ✅ canonical |
+| 5 | `StocksView` (شاشة قائمة الأسهم) | `TIER3-ROUTES-MIGRATE` audit — confirmed already-canonical | ✅ canonical |
+| 6 | `PredictionTrackingDashboard` | `TIER3-ROUTES-MIGRATE` audit — confirmed already-canonical | ✅ canonical |
+| 7 | `MakerRadarTab` (رادار الميكرز + 5 sub-tabs) | `UNIFIED-API-V3` (committed) + `REAPPLY-CRITICAL-FIXES` (5 fabrication fallbacks removed — `entry*0.96`/`r1*1.04`/`entry*0.99`/`entry*1.01`/etc.) | ✅ canonical |
+| 8 | `TradingViewChart` (`#trading-chart`) | `TRADING-CHART-V60.2` (Task 2026-10-07) — موصول بـ `getUnifiedStockData()` | ✅ canonical |
+| 9 | `CanonicalWhoIsBuyingBanner` (NEW — `src/modules/market-analysis/components/`) | `TRADING-CHART-V60.2` (Task 2026-10-07 — 380 LOC) | ✅ canonical (NEW) |
+| 10 | باقي 6 شاشات سبق ترحيلها في canonical migration phases (PersonaTab + PicksManagement + live-monitor + reports cards + alerts-center + watchlist view) | `PHASE-2-RSI-UNIFICATION` + predecessors | ✅ canonical |
+
+#### B. Canonical Data Flow (Single Source of Truth)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Screen (decision-display)                                              │
+│    └─ fetch('/api/stocks/[ticker]/unified')                             │
+│         ↓                                                               │
+│  src/app/api/stocks/[ticker]/unified/route.ts                          │
+│    └─ getUnifiedStockData(ticker) ← src/lib/unified-stock-data.ts       │
+│         ↓                                                               │
+│  Canonical layers (TS port — مطابق Python 100%):                       │
+│    ├─ canonical-signal.ts (246 LOC — classify_signal + canonical_signal_ar) │
+│    ├─ canonical-rsi.ts (Wilder's smoothing — pure TS, لا DB deps)       │
+│    └─ engine_settings reads (via Python proxy → engine_settings.py)    │
+│         ↓                                                               │
+│  Python backend (port 8010 — Rule 20):                                 │
+│    ├─ canonical_signal.py (309 LOC — Python source of truth)            │
+│    ├─ master_analyzer.py (THRESHOLDS = 78/65/55/40/25 — commits          │
+│    │   c2ade8c6 Rule 71 + 38665fd1 REAPPLY)                             │
+│    │   └─ _get_signal_from_score → canonical_signal.classify_signal    │
+│    │   └─ _get_signal_arabic → canonical_signal.signal_ar              │
+│    └─ engine_settings.py (1150 LOC — canonical thresholds source)       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### C. HTTP 410 Gone — Deprecated Endpoints
+
+الـ writers غير canonical اللي اتعطّلوا بـ HTTP 410 Gone أو early-return guards:
+
+| Endpoint / File | Status | Reason |
+|---|---|---|
+| `POST /api/sniper/track` (`src/app/api/sniper/track/route.ts`) | HTTP **410 Gone** | non-canonical writer — Rule 35 |
+| `ai_predictions_routes.py` (POST writers) | early-return guard | non-canonical writer |
+| `historical_predictions_v2_routes.py` (POST writers) | early-return guard | non-canonical writer |
+| (6 prior endpoints — earlier disabled in `FINALIZE-UNIFICATION`) | HTTP 410 Gone | Rule 35 — all consolidated under `/api/stocks/[ticker]/unified` |
+
+#### D. `zero_conflict_test.py` — آلية إنفاذ Rule 73
+
+> **الملف:** `scripts/zero_conflict_test.py` (~201 LOC — added in Task `DOC-SECRETARY-ACTIVATION` 2026-10-07).
+> **التحديث 2026-10-08 (commit `64ee8d54`):** إضافة `--require-real-data` flag لتنبيه المستخدم لو الـ PASS كان trivial (كل NULL — stale data). للإنتاج بقيم non-null، لازم predictions طازجة (< 48h). HTTP 5xx excluded من verdict (infra issues).
+
+**الـ test coverage (per run):**
+- 35 probes × 7 endpoints × 5 tickers × 6 canonical fields = 7,350 data points per run.
+- Acceptance thresholds: `mismatch_rate == 0.00%` + `threshold_drift == 0`.
+- Latest result (2026-10-08 — with Python backend running on 8010): ✅ **PASS — 0.00% mismatch + 0 threshold drift + 0 HTTP errors** (was 3 timeouts previously — now 0 thanks to Python backend).
+
+**Rule 73 enforcement:**
+- لو أي شاشة قررت تنتج signal/master_score/RSI/support/resistance بدون ما تمرّ على `/api/stocks/[ticker]/unified` → الـ test هيرصمها mismatch فورًا.
+- لو أي route فيه local computation للـ canonical fields → الـ test هيرصد drift في thresholds.
 
 ---
 
