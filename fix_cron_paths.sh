@@ -12,9 +12,22 @@
 #   ./fix_cron_paths.sh
 # ============================================================================
 
-PROJECT_ROOT="$HOME/my_apps/GLMinvestment"
+PROJECT_ROOT="${PROJECT_ROOT:-$HOME/my_apps/GLMinvestment}"
 PYTHON="$PROJECT_ROOT/.venv/bin/python"
 LOG_DIR="$PROJECT_ROOT/logs"
+
+# UNIFY-FIX: اكتشاف المسار الصحيح تلقائيًا
+if [ ! -d "$PROJECT_ROOT" ]; then
+  # جرب /root/GLMinvestment (إنتاج)
+  if [ -d "/root/GLMinvestment" ]; then
+    PROJECT_ROOT="/root/GLMinvestment"
+  # جرب ~/my_apps/GLMinvestment (لابتوب)
+  elif [ -d "$HOME/my_apps/GLMinvestment" ]; then
+    PROJECT_ROOT="$HOME/my_apps/GLMinvestment"
+  fi
+  PYTHON="$PROJECT_ROOT/.venv/bin/python"
+  LOG_DIR="$PROJECT_ROOT/logs"
+fi
 
 mkdir -p "$LOG_DIR"
 
