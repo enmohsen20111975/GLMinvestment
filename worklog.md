@@ -66373,3 +66373,28 @@ Stage Summary:
 - Dead code LOC estimate: ~2,300 LOC حقيقي (بدون archive) + ~93,000 LOC في archive
 - Top recommendations: (1) إصلاح Caddyfile → :443 + إزالة XTransformPort open proxy. (2) حذف EODHD_API_KEY fallback hardcoded من ecosystem.config.js. (3) تحديث .env DATABASE_URL أو حذف prisma/schema.prisma الـ orphan. (4) تفعيل strict TS + ignoreBuildErrors:false + eslint rules. (5) جدولة wal_checkpoint.py + price_history_stale_monitor.py. (6) توحيد DB helpers في entry واحد. (7) تفعيل WAL mode في كل الـ 13 DB المتبقية. (8) توسيع /api/health لكل الـ 17 DB. (9) إصلاح npm start max-old-space ليطابق ecosystem (2048). (10) حذف mini-services/ + prisma/schema.prisma + copy-sqljs-to-standalone.js postbuild.
 
+
+---
+Task ID: AUDIT-ENGINES
+Agent: general-purpose (محلل كمي / مهندس محرك Python)
+Task: تدقيق عميق لكل المحركات
+
+Work Log:
+- قرأت آخر ~150 سطر من worklog.md (آخر مهام AUDIT-INFRA + FIX-V3 + DOCS-UPDATE-FINAL)
+- جردت كل engines في analyzers/ (125 .py) + engine/ (8) + engines/ (2) + glminvestment_engines/ (8) + utils/ + portfolio/ — إجمالي 11,961 LOC في analyzers وحدها + 11,393 LOC في engine/engines/glminvestment
+- فحصت duplicates/dead/orphans/fabrications عبر grep + import graph + dead-method detection
+- تأكدت من DISABLED guards على Maestro + 4 sub-engines (confluence_engine_v3 + sniper_engine + board_of_analysts + unified_maestro)
+- تأكدت من canonical_signal.py (309 LOC) — صحيح كمصدر وحيد
+- كشفت 3 THRESHOLDS مكررة (master_analyzer + technical_weighted + confluence_engine_v3) — اثنتان فقط matching canonical، وحدة (technical_weighted) بـ thresholds مختلفة كليًا (65/55/48/35/28/20/10)
+- كشفت 7+ نسخ من calc_atr (canonical: analyzers/indicators/atr.py) + 5+ نسخ من calc_rsi
+- كشفت 14+ ملف بـ INSERT INTO predictions (كسر Rule 35)
+- كشفت 6 ملفات تعلم (lesson_store + win_lesson_store + learning_file_storage + learning_engine + unified_learning_engine + feedback_loop) بدل 3
+- كشفت 3 backtest engines (analyzers/ + engines/ + scripts/) بنفس الإسم — name collision risk
+- كشفت confidence_engine + conviction_engine — semantic overlap (كلاهما 0-100 score للثقة)
+- كشفت 4 persona engines (persona_engine + persona_gambler + persona_investor + persona_screener) — persona_engine.py يعرّف 7 personas، والـ 3 الآخرين standalone
+
+Stage Summary:
+- P0 issues: 14 (أهمها: telegram_target_hit_tracker INSERT مع fabrications + 3 THRESHOLDS مكررة + 7+ ATR duplicates + 14+ INSERT INTO predictions خارج daily_predictor + master_analyzer fallback lines 4839/4847/5281 ترجع 50.0 ثابت + institutional_decision_engine fallback ي fabricate signal_final='انتظر' + tech_score=50 بدل NULL + api/historical_predictions_v2_routes INSERT مع fabricated ai_pattern_score=50, sentiment_score=50 + master_analyzer THRESHOLDS dict dead code + technical_weighted THRESHOLDS مخالفة للـ canonical + 2 backtest_engine.py بنفس الاسم + kimi_fixes.py + scoring_fix.py patches بدون توثيق integration)
+- P1 issues: 22 (confidence_engine vs conviction_engine overlap + 4 persona files غير موحدة + 6 learning files بدون owner واضح + dead methods _get_market_regime_score + _check_screener_stale + _is_spark_setup in master_analyzer + CONFLUENCE_THRESHOLDS منفصلة + multiple fair_value_calculator + fundamental* 7 files + seasonality* 3 files + regime* 4 files + engine/flow_system مكرر مع analyzers/flow + tools/run_backtest_versions references dead + glminvestment_engines منفصل + scoring_fix في master + history of patches غير مراجعة)
+- Dead LOC estimate: ~10,900 LOC disabled/orphan في analyzers/ (Maestro + 4 sub-engines) + ~5,800 LOC learning duplicates + ~2,300 LOC fix/patch files = ~19,000 LOC إجماليًا (بدون archive)
+- Top recommendations: (1) حذف THRESHOLDS من master_analyzer.py:499 + CONFLUENCE_THRESHOLDS من master_analyzer.py:516 (dead code — delegations تعمل بدونهم). (2) إزالة THRESHOLDS من technical_weighted.py:109 أو delegation لـ canonical_signal. (3) منع telegram_target_hit_tracker من INSERT في predictions — يكتب في جدول منفصل `telegram_observed_hits` (مفهوم مختلف عن توقعات النظام). (4) توحيد calc_atr/calc_rsi — كل الـ duplicates تـ delegate لـ analyzers/indicators/{atr,rsi}.py. (5) توحيد learning files: lesson_store + win_lesson_store → utils/lesson_store.py واحد + حذف learning_file_storage (gzip file-based deprecated لما صار SQLite canonical). (6) حذف unified_learning_engine.py orphan (فقط unified_learning_routes بيستورده). (7) institutional_decision_engine fallback يجب يرجع None بدل tech_score=50 fabricated. (8) master_analyzer fallbacks (lines 4839/4847/5281) يجب ترجع None بدل 50.0. (9) إزالة confidence_engine أو conviction_engine (توحيد على واحد). (10) توحيد persona engines في ملف واحد. (11) حذف analyzers/backtest_engine.py OR engines/backtest_engine.py (الاسم نفسه = collision). (12) حذف analyzers/base_engine.py + feature_extractor.py orphans. (13) إزالة api/historical_predictions_v2_routes.py manual INSERT — يجب يـ delegate لـ PredictionTracker. (14) توحيد fundamental* 7 files + regime* 4 files + seasonality* 3 files.
