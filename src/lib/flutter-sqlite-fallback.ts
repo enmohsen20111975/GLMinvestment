@@ -102,6 +102,9 @@ export function getStockByTickerFallback(
     const validLow = (rawLow <= curr && rawLow > 0 && rawLow >= curr * 0.35) ? rawLow : Math.min(curr, prev);
     const validOpen = (rawOpen >= validLow * 0.9 && rawOpen <= validHigh * 1.1 && rawOpen > 0) ? rawOpen : prev;
 
+    // FIX: derivedChange كان مش معرّف — سبب exception في catch فبيرجع null
+    const derivedChange = (prev > 0) ? ((curr - prev) / prev) * 100 : changePct;
+
     return {
       success: true,
       source: 'sqlite_fallback',
