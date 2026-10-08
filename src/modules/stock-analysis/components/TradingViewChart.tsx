@@ -21,6 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+// Task PHASE5-SCREENS-P1 (Rule 67 + 72): import canonical RSI series instead of local calcRSI.
+import { computeRSISeries as calcRSI } from '@/lib/canonical-rsi';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -201,60 +203,12 @@ function calcBollingerBands(
 }
 
 // ─── CANONICAL-CALCULATIONS (Task PHASE-2-RSI-UNIFICATION, Rule 67: CALCULATION-CANONICAL) ─
-// CANONICAL-RSI (Task PHASE-2-RSI-UNIFICATION, Rule 67) — Wilder's smoothing.
-// مطابق src/lib/unified-stock-data.ts::computeRSI (TS canonical) +
-// analyzers/indicators/rsi.py::calc_rsi (Python canonical).
-// قبل كده: RSI كان بـ SMA (Simple Moving Average) — خطأ رياضي.
-// Rule 67 canonical: Wilder's smoothing
-//   avg_gain[i] = (avg_gain[i-1] * (period-1) + gain[i]) / period
-//   avg_loss[i] = (avg_loss[i-1] * (period-1) + loss[i]) / period
-// الفرق: ~10-20 نقطة في قيمة RSI → نفس السهم بـ يطلع قيم مختلفة على chart vs stock detail.
-// ملاحظة: هذا هو نسخة series (ترجع List<number|null>) للرسم على الـ chart —
+// Task PHASE5-SCREENS-P1 (2026-10-08): calcRSI now imported from @/lib/canonical-rsi
+// (was a local duplicate). The local function below was REMOVED — canonical is the SSOT.
+// calcATR remains local for now (P2: will be moved to @/lib/canonical-atr when created).
 // قيمة RSI الواحدة لازم تيجي من computeRSI في unified-stock-data.ts.
-function calcRSI(data: number[], period: number = 14): (number | null)[] {
-  const result: (number | null)[] = [];
-
-  if (data.length < period + 1) {
-    return data.map(() => null);
-  }
-
-  // Step 1: حساب الـ gains + losses لكل فترة
-  const gains: number[] = [0];
-  const losses: number[] = [0];
-  for (let i = 1; i < data.length; i++) {
-    const change = data[i] - data[i - 1];
-    gains.push(change > 0 ? change : 0);
-    losses.push(change < 0 ? -change : 0);
-  }
-
-  // Step 2: أول قيمة avgGain/avgLoss = SMA بسيط (seed)
-  let avgGain = 0;
-  let avgLoss = 0;
-  for (let i = 1; i <= period; i++) {
-    avgGain += gains[i];
-    avgLoss += losses[i];
-  }
-  avgGain /= period;
-  avgLoss /= period;
-
-  // أول قيمة RSI بتتحط عند index = period
-  for (let i = 0; i < period; i++) {
-    result.push(null);
-  }
-
-  // Step 3: Wilder's smoothing للباقي
-  for (let i = period + 1; i < data.length; i++) {
-    // Wilder's: avg = (prev_avg * (period-1) + current) / period
-    avgGain = (avgGain * (period - 1) + gains[i]) / period;
-    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-
-    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-    const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));
-    result.push(rsi);
-  }
-
-  return result;
-}
+// Task PHASE5-SCREENS-P1: local calcRSI REMOVED — now imported from @/lib/canonical-rsi (computeRSISeries).
+// The local function body was deleted (was a 44-line duplicate of canonical-rsi.ts::computeRSISeries).
 
 function calcMACD(
   data: number[],

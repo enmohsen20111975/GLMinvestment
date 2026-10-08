@@ -108,15 +108,32 @@ def log_message(message):
     update_status({'logs': [f"[{timestamp}] {message}"]})
 
 def fetch_gold_price_usd(usd_egp_rate=50.70):
-    """جلب سعر الذهب بالدولار (للأوقية) — من Daleelak API (مصادر مصرية مرخصة)
+    """جلب سعر الذهب بالدولار (للأوقية)
     
-    Daleelak يعطي سعر الذهب عيار 24 بالجنيه المصري لكل جرام (EGP/g).
-    نقوم بتحويله إلى دولار لكل أوقية:
-    (سعر الجرام بالجنيه / سعر الدولار) × 31.1035 جرام للأوقية
+    UNIFY-FIX (2026-10-08): metals.dev هو المصدر الأساسي (سريع + موثوق + مباشر).
+    Daleelak هو fallback (يعطي EGP/جرام ثم نحوّل).
     """
     import urllib.request
     import json as _json
+    import os
     
+    # 0. PRIMARY: metals.dev (سريع + موثوق + مباشر بالدولار للأونصة)
+    metals_dev_key = os.environ.get('METALS_DEV_KEY', 'PC38QRRLVNN1YENBR0UG389NBR0UG')
+    try:
+        url = f"https://api.metals.dev/v1/latest?api_key={metals_dev_key}&currency=USD&unit=toz"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (compatible; MetalsFetcher/2.0)',
+            'Accept': 'application/json',
+        })
+        resp = urllib.request.urlopen(req, timeout=10)
+        data = _json.loads(resp.read())
+        gold_price = data.get('metals', {}).get('gold')
+        if gold_price and float(gold_price) > 0:
+            return round(float(gold_price), 2)
+    except Exception as e:
+        log_message(f"⚠️ metals.dev خطأ في الذهب: {e}")
+    
+    # 1. FALLBACK: Daleelak API (يعطي EGP/جرام → تحويل لأونصة/دولار)
     try:
         url = "https://getdaleelak.com/api/v1/feed.json?category=metals"
         req = urllib.request.Request(url, headers={
@@ -127,7 +144,6 @@ def fetch_gold_price_usd(usd_egp_rate=50.70):
         data = _json.loads(resp.read())
         for asset in data.get('assets', []):
             if asset.get('slug') == 'gold-24k' or asset.get('id') == 'GOLD-24K-EGP':
-                # Daleelak returns EGP per gram
                 global_val = (asset.get('global') or {}).get('value')
                 buy_val = (asset.get('directions', {}).get('buy', {}).get('best') or {}).get('value')
                 val_egp_per_gram = float(global_val or buy_val or 0)
@@ -138,9 +154,8 @@ def fetch_gold_price_usd(usd_egp_rate=50.70):
     except Exception as e:
         log_message(f"⚠️ خطأ في جلب الذهب من دليلَك: {e}")
     
-    # 2. Fallback: isagha cached (from news-agent/data/gold_prices.json)
+    # 2. Fallback: isagha cached
     try:
-        import os
         cached_path = os.path.join(os.path.dirname(__file__).parent.parent, 
                                    'news-agent', 'data', 'gold_prices.json')
         if os.path.exists(cached_path):
@@ -152,16 +167,36 @@ def fetch_gold_price_usd(usd_egp_rate=50.70):
     except Exception:
         pass
     
-    # Last resort: approximate gold ounce USD price
+    # Last resort
     return 4495.0
 
 def fetch_silver_price_usd(usd_egp_rate=50.70):
-    """جلب سعر الفضة بالدولار (للأوقية) — من Daleelak API
-    Daleelak يعطي سعر الفضة عيار 999 بالجنيه المصري لكل جرام.
+    """جلب سعر الفضة بالدولار (للأوقية)
+    
+    UNIFY-FIX (2026-10-08): metals.dev هو المصدر الأساسي.
+    Daleelak هو fallback.
     """
     import urllib.request
     import json as _json
+    import os
     
+    # 0. PRIMARY: metals.dev
+    metals_dev_key = os.environ.get('METALS_DEV_KEY', 'PC38QRRLVNN1YENBR0UG389NBR0UG')
+    try:
+        url = f"https://api.metals.dev/v1/latest?api_key={metals_dev_key}&currency=USD&unit=toz"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (compatible; MetalsFetcher/2.0)',
+            'Accept': 'application/json',
+        })
+        resp = urllib.request.urlopen(req, timeout=10)
+        data = _json.loads(resp.read())
+        silver_price = data.get('metals', {}).get('silver')
+        if silver_price and float(silver_price) > 0:
+            return round(float(silver_price), 2)
+    except Exception as e:
+        log_message(f"⚠️ metals.dev خطأ في الفضة: {e}")
+    
+    # 1. FALLBACK: Daleelak API
     try:
         url = "https://getdaleelak.com/api/v1/feed.json?category=metals"
         req = urllib.request.Request(url, headers={
@@ -222,26 +257,32 @@ def fetch_exchange_rates():
     except Exception:
         pass
     
-    # 2. Fallback: Frankfurter.dev (CBE) — for currencies not in Daleelak
+    # 2. Fallback: Frankfurter.dev v2 (بنك مركزي أوروبي — مجاني + موثوق)
     if not rates or len(rates) < 5:
         try:
-            url = "https://api.frankfurter.dev/v2/rates?providers=CBE"
+            # UNIFY-FIX (2026-10-08): استخدام v2 API الصحيح
+            # /v2/rates?base=USD يرجع قائمة [{date, base, quote, rate}, ...]
+            url = "https://api.frankfurter.dev/v2/rates?base=USD"
             req = urllib.request.Request(url, headers={
                 'User-Agent': 'Mozilla/5.0 (compatible; MetalsFetcher/2.0)',
                 'Accept': 'application/json',
             })
             resp = urllib.request.urlopen(req, timeout=10)
             data = _json.loads(resp.read())
-            for item in data:
-                base = item.get('base')
-                quote = item.get('quote')
-                rate = item.get('rate')
-                if base == 'EUR' and quote and rate:
-                    # Convert EUR-based rate to USD-based
-                    if 'EUR' not in rates:
-                        rates['EUR'] = rate
-                    if quote not in rates and 'EUR' in rates:
-                        rates[quote] = rate / rates['EUR']
+            # v2 يرجع list، نحوّله لـ dict
+            if isinstance(data, list):
+                for item in data:
+                    quote = item.get('quote', '')
+                    rate = item.get('rate', 0)
+                    if quote and rate and float(rate) > 0:
+                        # نخزّن كـ EGP per 1 unit (نفس صيغة Daleelak)
+                        if quote not in rates:
+                            rates[quote] = float(rate)
+            elif isinstance(data, dict):
+                # fallback لو v2 رجع dict
+                for k, v in data.get('rates', {}).items():
+                    if k not in rates and v and float(v) > 0:
+                        rates[k] = float(v)
         except Exception:
             pass
     

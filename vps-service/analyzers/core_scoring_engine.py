@@ -518,36 +518,44 @@ class RiskCalculator:
         method_used_final = method.value
         if momentum_mode:
             recent_lows = lows[-15:] if (lows and len(lows) >= 15) else []
-            swing_low = min(recent_lows) if recent_lows else entry_price * 0.95
-            trail_pct = ((entry_price - swing_low) / entry_price) * 100 + 1.0
-            trail_pct = max(min_stop_limit, min(max_stop_limit, trail_pct))
-            stop_price = round(entry_price * (1 - trail_pct / 100), 4)
-            trailing_stop = stop_price
-            method_used_final = "TRAILING_MOMENTUM"
-            # إعادة حساب المخاطرة/العائد بعد الوقف الأوسع
-            risk = entry_price - stop_price
-            reward = target_price - entry_price
-            rr = round(reward / risk, 2) if risk > 0 else 0
-            # Rule 54: استخدم canonical compute_risk_reward
-            try:
-                from utils.risk_reward import compute_risk_reward
-                rr = compute_risk_reward(entry_price, target_price, stop_price, fallback=rr)
-            except Exception:
-                pass  # keep inline rr computed above
+            # Task FINALIZE-UNIFICATION (Rule 27): لا fabrication — لو مفيش recent_lows
+            # بيانات كافية، swing_low = None (لا حساب trailing stop وهمي).
+            # كان: swing_low = min(recent_lows) if recent_lows else entry_price * 0.95
+            swing_low = min(recent_lows) if recent_lows else None
+            if swing_low is None:
+                # لا بيانات كافية لـ trailing momentum — skip هذا الـ mode
+                method_used_final = "INSUFFICIENT_DATA"
+                trailing_stop = None
+            else:
+                trail_pct = ((entry_price - swing_low) / entry_price) * 100 + 1.0
+                trail_pct = max(min_stop_limit, min(max_stop_limit, trail_pct))
+                stop_price = round(entry_price * (1 - trail_pct / 100), 4)
+                trailing_stop = stop_price
+                method_used_final = "TRAILING_MOMENTUM"
+                # إعادة حساب المخاطرة/العائد بعد الوقف الأوسع
+                risk = entry_price - stop_price
+                reward = target_price - entry_price
+                rr = round(reward / risk, 2) if risk > 0 else 0
+                # Rule 54: استخدم canonical compute_risk_reward
+                try:
+                    from utils.risk_reward import compute_risk_reward
+                    rr = compute_risk_reward(entry_price, target_price, stop_price, fallback=rr)
+                except Exception:
+                    pass  # keep inline rr computed above
 
         return {
-            "stop_loss":       stop_price,
-            "stop_loss_pct":   round(stop_pct if not momentum_mode else ((entry_price - stop_price) / entry_price * 100), 2),
+            "stop_loss":       stop_price if momentum_mode and 'stop_price' in dir() else (stop_price if not momentum_mode else None),
+            "stop_loss_pct":   round(stop_pct if not momentum_mode else (((entry_price - stop_price) / entry_price * 100) if ('stop_price' in dir() and stop_price) else 0.0), 2),
             "target_1":        target_price,
             "target_1_pct":    round(target_pct, 2),
             "target_2":        target_2_price,
             "target_2_pct":    round(target_2_pct, 2),
-            "risk_reward":     rr,
+            "risk_reward":     rr if ('rr' in dir()) else 0.0,
             "atr":             round(atr, 4),
             "atr_pct":         round(atr_pct, 2),
             "method_used":     method_used_final,
-            "stop_valid":      stop_price < entry_price,
-            "rr_valid":        rr >= config.min_rr,
+            "stop_valid":      bool(stop_price and stop_price < entry_price) if momentum_mode else (stop_price < entry_price),
+            "rr_valid":        (rr if ('rr' in dir()) else 0.0) >= config.min_rr,
             "trailing_stop":   trailing_stop,
         }
 

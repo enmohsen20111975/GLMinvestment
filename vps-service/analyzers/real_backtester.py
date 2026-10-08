@@ -269,6 +269,16 @@ class RealBacktester:
                         continue
                     signal = (getattr(result_analysis, 'recommendation', 'hold') or 'hold').upper()
                     entry_price = getattr(result_analysis, 'entry_price', original_entry) or original_entry
+                    # [SIMULATION-ONLY — not production Rule 27]
+                    # Task FINALIZE-UNIFICATION: these multipliers (1.05/0.95)
+                    # are fallbacks for the BACKTEST simulation when Maestro
+                    # didn't return target/stop. This is OK in a backtest
+                    # context (Rule 27 simulation exception per task brief) —
+                    # the simulation needs SOME value to compute trade
+                    # outcomes against historical prices. NOT used in
+                    # production / live predictions (V40.2 is the canonical
+                    # writer per Rule 35, and this file does NOT INSERT into
+                    # predictions.db).
                     target_price = getattr(result_analysis, 'target', None) or (entry_price * 1.05)
                     stop_loss = getattr(result_analysis, 'stop_loss', None) or (entry_price * 0.95)
                     master_score = getattr(result_analysis, 'maestro_score', 50) or 50
@@ -279,6 +289,11 @@ class RealBacktester:
                         continue
                     signal = analysis.signal
                     entry_price = analysis.entry_price or original_entry
+                    # [SIMULATION-ONLY — not production Rule 27]
+                    # Task FINALIZE-UNIFICATION: same as the Maestro branch
+                    # above — backtest simulation fallbacks for target/stop.
+                    # OK per Rule 27 simulation exception (backtest context,
+                    # NOT a live prediction writer).
                     target_price = analysis.target_price or (entry_price * 1.05)
                     stop_loss = analysis.stop_loss or (entry_price * 0.95)
                     master_score = analysis.master_score

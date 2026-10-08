@@ -178,7 +178,9 @@ class ApiClient {
   }
 
   async getProfessionalAnalysis(ticker: string): Promise<Record<string, unknown>> {
-    return this.request(`/api/stocks/${ticker.toUpperCase()}/professional-analysis`);
+    // Task PHASE5-SCREENS-P1: /api/stocks/X/professional-analysis is 410 Gone (deprecated).
+    // Redirected to canonical unified endpoint (Rule 72 + Rule 73).
+    return this.request(`/api/stocks/${ticker.toUpperCase()}/unified`);
   }
 
   async getStockNews(ticker: string, limit = 10): Promise<Record<string, unknown>> {

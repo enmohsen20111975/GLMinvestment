@@ -178,12 +178,17 @@ export async function GET(req: NextRequest) {
               stop_loss: pred.stop_loss,
               risk_reward_ratio: pred.risk_reward,
             });
-            const s1 = pred.support_level || (v.entry_price ? Number((v.entry_price * 0.96).toFixed(2)) : null);
-            const s2 = pred.support_level_2 || (s1 ? Number((s1 * 0.96).toFixed(2)) : null);
+            // Task REAPPLY-CRITICAL-FIXES — fabrication fallbacks removed (Rule 27).
+            // Was: support1 = entry*0.96, support2 = support1*0.96, entry_min = entry*0.99,
+            // entry_max = entry*1.01 — all fabricated from entry_price when DB lacked them.
+            // Now: return null when DB has no real value (Rule 27 — NO-FAKE-DATA).
+            // The UI (MakerRadarTab) handles null gracefully via the amber "data missing" badge.
+            const s1 = pred.support_level || null;
+            const s2 = pred.support_level_2 || null;
             const r1 = pred.resistance_level || v.target1;
             const r2 = pred.resistance_level_2 || v.target2;
-            const entryMin = pred.entry_price_min || (v.entry_price ? Number((v.entry_price * 0.99).toFixed(2)) : null);
-            const entryMax = pred.entry_price_max || (v.entry_price ? Number((v.entry_price * 1.01).toFixed(2)) : null);
+            const entryMin = pred.entry_price_min || null;
+            const entryMax = pred.entry_price_max || null;
 
             predictionEnrichment = {
               ticker: pred.ticker,

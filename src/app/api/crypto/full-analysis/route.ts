@@ -250,6 +250,12 @@ export async function GET(request: NextRequest) {
     const bosEvents = detectBOS(candles, 40);
 
     // ── Confluence score (0-10) from available signals ──
+    // NOTE (Task REAPPLY-CRITICAL-FIXES): the canonical crypto signal/score
+    // comes from vps-service/jobs/daily_predictor.py (V40.2 — Rule 20 Python=Brain).
+    // This local score is a TS-side derived indicator view (computed from real
+    // candle data: RSI/SMA/Bollinger), NOT a fabricated value. Trade-plan fields
+    // (target/stop/target_2) are null'd below when real swing levels are missing
+    // (Rule 27 — NO-FAKE-DATA).
     let score = 5;
     const breakdown: string[] = [];
     if (rsiVal != null) {
@@ -271,10 +277,18 @@ export async function GET(request: NextRequest) {
     const signalColor = score >= 7 ? '#10b981' : score <= 3 ? '#ef4444' : '#f59e0b';
 
     // ── Risk / trade plan ──
+    // Task REAPPLY-CRITICAL-FIXES — fabrication fallbacks removed (Rule 27).
+    // Was: target = currentPrice * 1.1, stopLoss = currentPrice * 0.95,
+    // target_2 = target * 1.05 — all fabricated when no swing level found.
+    // Now: return null when real support/resistance is unavailable (Rule 27).
+    // Rule 20 (Python=Brain): the canonical crypto signals are produced by
+    // vps-service/jobs/daily_predictor.py (CRYPTO market). This route is a
+    // read-only TS-side view for indicators only — trade-plan fields should
+    // come from predictions.db (canonical writer = V40.2).
     const entry = currentPrice;
-    const target = levels.resistance ?? currentPrice * 1.1;
-    const stopLoss = levels.support ?? currentPrice * 0.95;
-    const rrRatio = entry - stopLoss > 0 ? (target - entry) / (entry - stopLoss) : 0;
+    const target = levels.resistance ?? null;
+    const stopLoss = levels.support ?? null;
+    const rrRatio = entry - stopLoss > 0 && target != null ? (target - entry) / (entry - stopLoss) : null;
 
     // ── Market regime ──
     let regime = 'RANGING', regimeAr = 'متذبذب', regimeColor = '#64748b';
@@ -322,7 +336,7 @@ export async function GET(request: NextRequest) {
       risk: {
         entry,
         target,
-        target_2: target * 1.05,
+        target_2: null, // Task REAPPLY-CRITICAL-FIXES — was target * 1.05 (fabricated, Rule 27)
         stop_loss: stopLoss,
         rr_ratio: rrRatio,
         atr: atrVal,

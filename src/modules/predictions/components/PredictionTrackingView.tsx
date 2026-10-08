@@ -463,27 +463,23 @@ export function PredictionTrackingView() {
     }
   };
 
+  // PHASE4-APIS (Task PHASE4-APIS, Option A): /api/admin/generate-predictions
+  // is 410 Gone. Predictions now auto-generate via cron (daily_predictor.py).
+  // The JSX button that called this handler was already removed (see comments
+  // at "تم إزالة زرار توليد توقعات V40.2" below). The function is preserved
+  // as a no-op safety net so any future re-wiring surfaces the canonical
+  // guidance instead of silently calling a dead endpoint.
   const handleGenerateV40 = async () => {
     setGeneratingV40(true);
-    toast.info(t('predictions.tracking.toast.generatingV40'));
-    try {
-      const res = await fetch('/api/admin/generate-predictions?type=intraday', {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(t('predictions.tracking.toast.generateSuccess'), {
-          description: data.message || t('predictions.tracking.toast.generateSuccessDesc'),
-        });
-        refreshAll();
-      } else {
-        toast.error(data.error || t('predictions.tracking.toast.generateFailed'));
+    toast.info(
+      t('predictions.tracking.toast.generatingV40') ||
+        'جاري توليد التوقعات...',
+      {
+        description:
+          'التوقعات تُولّد تلقائيًا عبر cron (daily_predictor.py) — مسار /api/admin/generate-predictions معطّل (410 Gone).',
       }
-    } catch {
-      toast.error(t('predictions.tracking.toast.serverError'));
-    } finally {
-      setGeneratingV40(false);
-    }
+    );
+    setGeneratingV40(false);
   };
 
   // UI-STABILITY fix (2026-09-28): manual refresh button uses silent=true to

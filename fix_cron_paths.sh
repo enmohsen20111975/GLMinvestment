@@ -18,13 +18,13 @@ LOG_DIR="$PROJECT_ROOT/logs"
 
 # UNIFY-FIX: اكتشاف المسار الصحيح تلقائيًا
 if [ ! -d "$PROJECT_ROOT" ]; then
-  # جرب /root/GLMinvestment (إنتاج)
-  if [ -d "/root/GLMinvestment" ]; then
-    PROJECT_ROOT="/root/GLMinvestment"
-  # جرب ~/my_apps/GLMinvestment (لابتوب)
-  elif [ -d "$HOME/my_apps/GLMinvestment" ]; then
-    PROJECT_ROOT="$HOME/my_apps/GLMinvestment"
-  fi
+  # جرب المسارات المحتملة حسب الأولوية
+  for path in "/root/GLMinvestment" "$HOME/my_apps/GLMinvestment" "/root/my_apps/GLMinvestment"; do
+    if [ -d "$path" ]; then
+      PROJECT_ROOT="$path"
+      break
+    fi
+  done
   PYTHON="$PROJECT_ROOT/.venv/bin/python"
   LOG_DIR="$PROJECT_ROOT/logs"
 fi
@@ -126,3 +126,25 @@ echo ""
 echo "ثم شغّل daily_predictor يدويًا للتحقق:"
 echo "  cd $PROJECT_ROOT"
 echo "  $PYTHON vps-service/jobs/daily_predictor.py --today-only --max-picks 5"
+
+# UNIFY-FIX (2026-10-08): إضافة cron jobs للمصادر الجديدة
+# market_indices (يومي قبل daily_predictor)
+if ! crontab -l 2>/dev/null | grep -q "update_market_indices"; then
+    (crontab -l 2>/dev/null; echo "# market_indices — يومي قبل daily_predictor
+45 2 * * 0-4 cd $PROJECT_ROOT && $PYTHON vps-service/scripts/update_market_indices.py >> $LOG_DIR/market_indices.log 2>&1") | crontab -
+    echo "  ✅ market_indices cron added"
+fi
+
+# metals + forex (كل 15 دقيقة)
+if ! crontab -l 2>/dev/null | grep -q "update_metals_and_forex"; then
+    (crontab -l 2>/dev/null; echo "# metals + forex — كل 15 دقيقة
+*/15 * * * * cd $PROJECT_ROOT && $PYTHON vps-service/scripts/update_metals_and_forex.py >> $LOG_DIR/metals_forex.log 2>&1") | crontab -
+    echo "  ✅ metals_forex cron added"
+fi
+
+# fundamentals (أسبوعي)
+if ! crontab -l 2>/dev/null | grep -q "update_fundamentals"; then
+    (crontab -l 2>/dev/null; echo "# fundamentals — أسبوعي (السبت)
+0 14 * * 6 cd $PROJECT_ROOT && $PYTHON -m data_engine.scrapers.update_fundamentals >> $LOG_DIR/fundamentals.log 2>&1") | crontab -
+    echo "  ✅ fundamentals cron added"
+fi

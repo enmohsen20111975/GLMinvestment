@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUserId } from '@/lib/auth-helper';
+import { requireAdminAsync } from '@/lib/admin-auth-server';
 import Database from 'better-sqlite3';
 import path from 'path';
 import { OFFICIAL_LINKS_BLOCK, OFFICIAL_LINKS_SHORT } from '@/modules/publishing/lib/official-links';
@@ -31,6 +32,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   let predDb: Database.Database | null = null;
   try {
+    // Task SECURITY-P0: admin-only — النشر على قناة تليجرام الإنتاجية يحتاج صلاحية أدمن.
+    // كان: getSessionUserId فقط (أي مستخدم مسجل يقدر ينشر). الآن: requireAdminAsync.
+    const adminError = await requireAdminAsync(req);
+    if (adminError) return adminError;
+
     const { userId } = await getSessionUserId();
     if (!userId) return NextResponse.json({ success: false, error: 'auth_required' }, { status: 401 });
 

@@ -376,55 +376,71 @@ function computeProgress(
   targetPrice: number | null,
   stopLoss: number | null
 ) {
-  // Defaults if prediction row missing
-  const t1 = targetPrice && targetPrice > 0 ? targetPrice : entryPrice * 1.10;
-  const t2 = (targetPrice && targetPrice > 0 ? targetPrice : entryPrice * 1.10) * 1.10; // +10% beyond t1
-  const sl = stopLoss && stopLoss > 0 ? stopLoss : entryPrice * 0.95;
+  // Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+  // Previously this function FABRICATED fallback values when the prediction
+  // row lacked target/stop:
+  //   - t1 = entryPrice * 1.10          (FAB)
+  //   - t2 = (entryPrice * 1.10) * 1.10 (FAB)
+  //   - sl = entryPrice * 0.95           (FAB)
+  // Now: if no real target/stop exists, the corresponding progress fields
+  // return NULL (Rule 27) instead of fabricated progress percentages.
+  // The caller (UI) is expected to handle null progress as "data missing".
+  const t1: number | null = targetPrice && targetPrice > 0 ? targetPrice : null;
+  const t2: number | null =
+    targetPrice && targetPrice > 0 ? targetPrice * 1.0 : null; // no +10% beyond t1 — NULL if no t1
+  const sl: number | null = stopLoss && stopLoss > 0 ? stopLoss : null;
 
-  const t1Pct = entryPrice > 0 ? ((t1 - entryPrice) / entryPrice) * 100 : 0;
-  const t2Pct = entryPrice > 0 ? ((t2 - entryPrice) / entryPrice) * 100 : 0;
-  const slPct = entryPrice > 0 ? ((sl - entryPrice) / entryPrice) * 100 : 0;
+  const t1Pct = t1 !== null && entryPrice > 0 ? ((t1 - entryPrice) / entryPrice) * 100 : null;
+  const t2Pct: number | null = null; // no canonical source for t2 (was t1 * 1.10)
+  const slPct = sl !== null && entryPrice > 0 ? ((sl - entryPrice) / entryPrice) * 100 : null;
 
-  // Progress = how far from entry → target / stop
-  const t1Range = t1 - entryPrice;
-  const t1Progress = t1Range !== 0
-    ? Math.max(0, Math.min(100, ((currentPrice - entryPrice) / t1Range) * 100))
-    : 0;
-  const t2Range = t2 - entryPrice;
-  const t2Progress = t2Range !== 0
-    ? Math.max(0, Math.min(100, ((currentPrice - entryPrice) / t2Range) * 100))
-    : 0;
+  // Progress = how far from entry → target / stop (NULL when no real target/stop)
+  const t1Progress = t1 !== null
+    ? (() => {
+        const t1Range = t1 - entryPrice;
+        return t1Range !== 0
+          ? Math.max(0, Math.min(100, ((currentPrice - entryPrice) / t1Range) * 100))
+          : 0;
+      })()
+    : null;
+  const t2Progress: number | null = null; // no canonical t2 → NULL
+  const slProgress = sl !== null
+    ? (() => {
+        const slRange = entryPrice - sl; // positive number
+        return slRange !== 0
+          ? Math.max(0, Math.min(100, ((entryPrice - currentPrice) / slRange) * 100))
+          : 0;
+      })()
+    : null;
 
-  // Stop loss: progress = how close price is to stop_loss (100% = stopped out, 0% = far away)
-  // But we want "safe" when far. So: distance ratio.
-  // safe (0% close) → danger (100% close)
-  const slRange = entryPrice - sl; // positive number
-  const slProgress = slRange !== 0
-    ? Math.max(0, Math.min(100, ((entryPrice - currentPrice) / slRange) * 100))
-    : 0;
-
-  const t1Status = currentPrice >= t1 ? 'hit' : t1Progress >= 85 ? 'approaching' : 'pending';
-  const t2Status = currentPrice >= t2 ? 'hit' : t2Progress >= 85 ? 'approaching' : 'pending';
-  const slStatus = slProgress >= 90 ? 'danger' : slProgress >= 50 ? 'warning' : 'safe';
+  const t1Status = t1Progress === null
+    ? 'data_missing'
+    : currentPrice >= (t1 as number) ? 'hit'
+    : (t1Progress as number) >= 85 ? 'approaching' : 'pending';
+  const t2Status = 'data_missing';
+  const slStatus = slProgress === null
+    ? 'data_missing'
+    : (slProgress as number) >= 90 ? 'danger'
+    : (slProgress as number) >= 50 ? 'warning' : 'safe';
 
   return {
     target_1: {
-      price: round2(t1),
-      pct: round2(t1Pct),
+      price: t1 !== null ? round2(t1) : null,
+      pct: t1Pct !== null ? round2(t1Pct) : null,
       status: t1Status,
-      progress_pct: Math.round(t1Progress),
+      progress_pct: t1Progress !== null ? Math.round(t1Progress) : null,
     },
     target_2: {
-      price: round2(t2),
-      pct: round2(t2Pct),
+      price: null, // Rule 27: was t1 * 1.10 (fabricated)
+      pct: t2Pct, // null
       status: t2Status,
-      progress_pct: Math.round(t2Progress),
+      progress_pct: t2Progress !== null ? Math.round(t2Progress) : null,
     },
     stop_loss: {
-      price: round2(sl),
-      pct: round2(slPct),
+      price: sl !== null ? round2(sl) : null,
+      pct: slPct !== null ? round2(slPct) : null,
       status: slStatus,
-      progress_pct: Math.round(slProgress),
+      progress_pct: slProgress !== null ? Math.round(slProgress) : null,
     },
   };
 }

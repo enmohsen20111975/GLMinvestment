@@ -24,4 +24,3 @@ export { AssetPreferenceOnboarding } from './components/AssetPreferenceOnboardin
 export { PinnableWidget } from './components/PinnableWidget';
 export { SafeWidget } from './components/SafeWidget';
 export { DevelopmentNotice } from './components/DevelopmentNotice';
-export { PredictionsBacktestTable } from './components/PredictionsBacktestTable';

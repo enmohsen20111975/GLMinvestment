@@ -97,27 +97,21 @@ export function PurgeCacheButton() {
 
   const [generating, setGenerating] = useState(false);
 
+  // PHASE4-APIS (Task PHASE4-APIS): /api/admin/generate-predictions is 410 Gone.
+  // Predictions now auto-generate via cron (daily_predictor.py). The two
+  // buttons that called handleGenerate were already commented out (see JSX
+  // below at "DISABLED 2026-09-02" block). This function is kept as a no-op
+  // safety net so future re-enabling surfaces the canonical guidance instead
+  // of silently calling a dead endpoint.
   const handleGenerate = async (type: 'intraday' | 'daily') => {
     setGenerating(true);
-    toast.info(type === 'daily' ? 'جاري تشغيل محرك التوقعات لتوليد توقعات اليوم...' : 'جاري فحص السوق اللحظي (بيانات الـ 5 دقائق)...');
-    try {
-      const res = await fetch(`/api/admin/generate-predictions?type=${type}`, {
-        method: 'POST',
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message || 'تم توليد التوقعات بنجاح!', {
-          description: `تم تحديث التوقعات بنجاح وحفظها في قاعدة البيانات`
-        });
-        await fetchStats();
-      } else {
-        toast.error(data.error || 'فشل توليد التوقعات');
-      }
-    } catch {
-      toast.error('خطأ في الاتصال أثناء توليد التوقعات');
-    } finally {
-      setGenerating(false);
-    }
+    toast.info(
+      type === 'daily'
+        ? 'التوقعات اليومية تُولّد تلقائيًا عبر cron (daily_predictor.py) — لا حاجة لتشغيل يدوي.'
+        : 'فحص السوق اللحظي يتم عبر MarketScheduler.tick في Python backend — لا حاجة لتشغيل يدوي.',
+      { description: 'مسار /api/admin/generate-predictions معطّل (410 Gone).' }
+    );
+    setGenerating(false);
   };
 
   const cacheCount = stats?.cached_analysis ?? -1;

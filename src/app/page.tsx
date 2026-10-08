@@ -264,22 +264,16 @@ const AboutView = dynamicImport(() => import('@/components/about/AboutView').the
 // null` + cryptoViewsPromise block is removed.
 
 // ─── مكونات الكريبتو المستقلة (بيانات crypto_prices حقيقية) ────────────────────────
-const CryptoScreenerView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/crypto/components/CryptoScreenerView'), { ssr: false, loading: () => <LazyTabLoader label="فلتر العملات الرقمية" /> }),
-  'فلتر العملات الرقمية',
-);
+// Task P1-CLEANUP (2026-10-08): CryptoScreenerView + CryptoTradingChartView +
+// CryptoAdvancedAnalysisView + CryptoLearningView moved to archive/dead-components-2026-10-08/
+// (they were imported as dynamic-import variables but never rendered in any JSX).
+// CryptoPredictionTrackingView is KEPT (it IS rendered). To restore: move files back + uncomment.
+const CryptoScreenerView = null;
+const CryptoTradingChartView = null;
+const CryptoAdvancedAnalysisView = null;
 const CryptoPredictionTrackingView = withErrorBoundary(
   dynamicImport(() => import('@/modules/crypto/components/CryptoPredictionTrackingView'), { ssr: false, loading: () => <LazyTabLoader label="تتبّع توقعات الكريبتو" /> }),
   'تتبّع توقعات الكريبتو',
-);
-const CryptoTradingChartView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/crypto/components/CryptoTradingChartView').then(m => ({ default: m.CryptoTradingChartView })), { ssr: false, loading: () => <LazyTabLoader label="شارت العملات" height="h-[600px]" /> }),
-  'شارت العملات',
-  { height: 'h-[600px]' },
-);
-const CryptoAdvancedAnalysisView = withErrorBoundary(
-  dynamicImport(() => import('@/modules/crypto/components/CryptoAdvancedAnalysisView'), { ssr: false, loading: () => <LazyTabLoader label="التحليل المتقدم للعملات" /> }),
-  'التحليل المتقدم للعملات',
 );
 
 /**
@@ -868,7 +862,10 @@ function AppShell() {
         {/* TOPBAR: قائمة علوية مرتبة بدل الـ Sidebar الجانبي القديم */}
         <TopBar />
         <div className="flex-1 flex flex-col overflow-x-hidden">
-          <div className="flex-1 min-w-0 w-full flex flex-col min-h-screen overflow-x-hidden">
+          {/* Task PHASE5-SCREENS (Footer sticky-bottom fix): removed redundant min-h-screen
+              from inner container — the parent (L846) already has min-h-screen flex flex-col.
+              This ensures Footer stays at viewport bottom on short pages + pushed down on long pages. */}
+          <div className="flex-1 min-w-0 w-full flex flex-col overflow-x-hidden">
             <main className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
               {/* N1: page transition animation — fade + slight slide for professional feel */}
               <motion.div

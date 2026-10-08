@@ -1,29 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * advanced-analysis/results — thin proxy to /api/market-pulse (canonical).
+ * Task P1-CLEANUP (2026-10-08): unified from 29-LOC copy-paste to 1-line delegation.
+ * The route name is kept for backward compat with frontend callers.
+ */
+import { NextRequest } from 'next/server';
+import { marketPulseProxy } from '@/lib/market-pulse-proxy';
 
-const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
-  try {
-    const url = new URL(req.url);
-    const qs = url.searchParams.toString();
-    const targetUrl = `${PY}/api/market-pulse${qs ? `?${qs}` : ''}`;
-    
-    const options: RequestInit = { signal: AbortSignal.timeout(30000) };
-    if (req.method !== 'GET') {
-      options.method = req.method;
-      options.headers = { 'Content-Type': 'application/json' };
-      options.body = await req.text();
-    }
-    
-    const res = await fetch(targetUrl, options);
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (e) {
-    console.error('[advanced-analysis:results]', e);
-    return NextResponse.json({
-      success: false,
-      error: 'internal_error',
-    }, { status: 503 });
-  }
-}
+export async function GET(req: NextRequest) { return marketPulseProxy(req); }
+

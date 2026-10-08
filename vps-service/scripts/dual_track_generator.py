@@ -438,6 +438,14 @@ def save_track_b_predictions(conn: sqlite3.Connection, predictions: List[dict]):
 
 
 def main():
+    # Task DISABLE-SCRIPTS (Rule 35): non-canonical writer disabled.
+    # V40.2 (vps-service/jobs/daily_predictor.py) is the ONLY engine allowed
+    # to write predictions. This one-off backfill script is disabled to prevent
+    # contamination of the canonical prediction store.
+    # To re-enable for manual backfill: comment out this guard.
+    # Do NOT delete (Rule 16 VERIFY-BEFORE-DELETE).
+    print("[DISABLE-SCRIPTS] This script is disabled per Rule 35 (V40.2 only writer).", flush=True)
+    return
     parser = argparse.ArgumentParser(description='Dual-Track Generator — Phase 3')
     parser.add_argument('--dry-run', action='store_true', help='عرض فقط بدون حفظ')
     parser.add_argument('--execute', action='store_true', help='حفظ في DB')
@@ -510,4 +518,10 @@ def main():
 
 
 if __name__ == '__main__':
+    # Task FINALIZE-UNIFICATION: non-canonical writer disabled (Rule 35).
+    # V40.2 (daily_predictor.py) is the ONLY writer to predictions.db.
+    # To re-enable: remove this guard. Do NOT delete (Rule 16).
+    import sys
+    print('[FINALIZE-UNIFICATION] GUARD: dual_track_generator.py disabled (Rule 35). V40.2 (daily_predictor.py) is the only writer.')
+    sys.exit(0)
     main()

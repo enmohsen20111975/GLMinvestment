@@ -430,23 +430,41 @@ class TechnicalTargetEngine:
             target_price = _long_stop
             stop_loss = _long_target
             # Guard against degenerate cases
+            # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+            # Previously fabricated as entry_price * 0.95 / * 1.05 when the
+            # LONG geometry produced wrong-direction values for SHORT. Now:
+            # set to None — the downstream R:R computation will skip and
+            # result.target_price/stop_price will be None (Rule 27).
             if target_price >= entry_price:
-                target_price = round(entry_price * 0.95, 4)
+                target_price = None
             if stop_loss <= entry_price:
-                stop_loss = round(entry_price * 1.05, 4)
-            actual_target_pct = (entry_price - target_price) / entry_price  # positive for SHORT
-            actual_stop_pct = (stop_loss - entry_price) / entry_price        # positive for SHORT
-            risk = stop_loss - entry_price     # SHORT risk: stop above entry
-            reward = entry_price - target_price  # SHORT reward: target below entry
-            # Rule 54: استخدم canonical compute_risk_reward
-            try:
-                from utils.risk_reward import compute_risk_reward
-                risk_reward = compute_risk_reward(entry_price, target_price, stop_loss, fallback=0.0)
-            except Exception:
-                risk_reward = reward / risk if risk > 0 else 0
+                stop_loss = None
+            # Rule 27: if either is None, skip R:R computation (cannot
+            # compute a real risk_reward without both real target + stop).
+            if target_price is not None and stop_loss is not None:
+                actual_target_pct = (entry_price - target_price) / entry_price  # positive for SHORT
+                actual_stop_pct = (stop_loss - entry_price) / entry_price        # positive for SHORT
+                risk = stop_loss - entry_price     # SHORT risk: stop above entry
+                reward = entry_price - target_price  # SHORT reward: target below entry
+                # Rule 54: استخدم canonical compute_risk_reward
+                try:
+                    from utils.risk_reward import compute_risk_reward
+                    risk_reward = compute_risk_reward(entry_price, target_price, stop_loss, fallback=0.0)
+                except Exception:
+                    risk_reward = reward / risk if risk > 0 else 0
+            else:
+                actual_target_pct = None
+                actual_stop_pct = None
+                risk = 0
+                reward = 0
+                risk_reward = None
             target_method = (target_method or '') + '_SHORT'
             stop_method = (stop_method or '') + '_SHORT'
-            trace.append(f"DATA-01 SHORT swap → target={target_price:.2f} (under), stop={stop_loss:.2f} (over), R:R={risk_reward:.2f}")
+            # Rule 27: handle None target/stop in trace formatting.
+            _t_str = f"{target_price:.2f}" if target_price is not None else "None"
+            _s_str = f"{stop_loss:.2f}" if stop_loss is not None else "None"
+            _rr_str = f"{risk_reward:.2f}" if risk_reward is not None else "None"
+            trace.append(f"DATA-01 SHORT swap → target={_t_str} (under), stop={_s_str} (over), R:R={_rr_str}")
         else:
             risk = entry_price - stop_loss
             reward = target_price - entry_price
@@ -457,13 +475,15 @@ class TechnicalTargetEngine:
             except Exception:
                 risk_reward = reward / risk if risk > 0 else 0
 
-        result.stop_price = round(stop_loss, 2)
-        result.stop_pct = round(actual_stop_pct * 100, 1)
+        # Rule 27 (FINALIZE-UNIFICATION): handle None stop_loss/target_price/
+        # actual_*_pct/risk_reward (SHORT degenerate case). round(None, ...) crashes.
+        result.stop_price = round(stop_loss, 2) if stop_loss is not None else None
+        result.stop_pct = round(actual_stop_pct * 100, 1) if actual_stop_pct is not None else None
         result.stop_method = stop_method
-        result.target_price = round(target_price, 2)
-        result.target_pct = round(actual_target_pct * 100, 1)
+        result.target_price = round(target_price, 2) if target_price is not None else None
+        result.target_pct = round(actual_target_pct * 100, 1) if actual_target_pct is not None else None
         result.target_method = target_method
-        result.risk_reward = round(risk_reward, 2)
+        result.risk_reward = round(risk_reward, 2) if risk_reward is not None else None
         result.calculation_trace = trace
 
         return result

@@ -433,12 +433,15 @@ export async function GET(
 
   const entryPrice = safe(pred?.entry_price) ?? currentPrice;
   const targetPrice1 = safe(pred?.target_price) ?? undefined;
-  const targetPrice2 = safe(pred?.target_price_2) ?? (targetPrice1 ? Number((targetPrice1 * 1.05).toFixed(2)) : undefined);
-  const stopLoss = safe(pred?.stop_loss) ?? (entryPrice ? Number((entryPrice * 0.94).toFixed(2)) : undefined);
-  const entryMin = safe(pred?.entry_price_min) ?? (entryPrice ? Number((entryPrice * 0.99).toFixed(2)) : undefined);
-  const entryMax = safe(pred?.entry_price_max) ?? (entryPrice ? Number((entryPrice * 1.01).toFixed(2)) : undefined);
-  const support1 = safe(pred?.support_level) ?? safe(stockRow.support_level) ?? (entryPrice ? Number((entryPrice * 0.96).toFixed(2)) : undefined);
-  const support2 = safe(pred?.support_level_2) ?? safe(stockRow.support_level_2) ?? (support1 ? Number((support1 * 0.96).toFixed(2)) : undefined);
+  // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
+  // (target1 * 1.05, entry * 0.94, entry * 0.99/1.01, entry * 0.96). Now
+  // NULL when the prediction record lacks these fields.
+  const targetPrice2 = safe(pred?.target_price_2) ?? undefined;
+  const stopLoss = safe(pred?.stop_loss) ?? undefined;
+  const entryMin = safe(pred?.entry_price_min) ?? undefined;
+  const entryMax = safe(pred?.entry_price_max) ?? undefined;
+  const support1 = safe(pred?.support_level) ?? safe(stockRow.support_level) ?? undefined;
+  const support2 = safe(pred?.support_level_2) ?? safe(stockRow.support_level_2) ?? undefined;
   const resistance1 = safe(pred?.resistance_level) ?? safe(stockRow.resistance_level) ?? targetPrice1;
   const resistance2 = safe(pred?.resistance_level_2) ?? safe(stockRow.resistance_level_2) ?? targetPrice2;
 

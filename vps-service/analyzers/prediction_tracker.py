@@ -186,12 +186,21 @@ def enforce_geometry_guard(signal, entry_price, target_price, stop_loss):
 
     # R2: stop لازم < entry × 0.95 (وقف ≥ 5%)
     # boundary: stop = entry×0.95 (exactly 5% protection) مقبول
+    # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+    # Previously R2 had an AUTO-ADJUST path that fabricated stop=entry*0.945
+    # and target=entry + MIN_RR*(entry-stop) when the original stop was too
+    # tight (stop > entry*0.95). This contradicted the documented HARD-REJECT
+    # strategy (line 115: "🔥 الاستراتيجية الجديدة: HARD REJECT (مش AUTO-FIX)")
+    # and violated Rule 27 (recording fabricated target/stop instead of real
+    # analyzer-computed values). Now: HARD REJECT via AssertionError (same
+    # as R1/R3/R4/R5) — the caller (record_prediction) returns None and the
+    # trade is NOT recorded. This is honest per Rule 27 + Rule 35.
     _geo_warn = None
     if stop > entry * _GEOMETRY_STOP_MAX_MULT:
-        stop = round(entry * 0.945, 4)
-        if (target - entry) / max(entry - stop, 0.0001) < _GEOMETRY_MIN_RR:
-            target = round(entry + _GEOMETRY_MIN_RR * (entry - stop), 4)
-        _geo_warn = f"R2: auto-adjusted tight stop to 5.5% protection (stop={stop:.4f}, target={target:.4f})"
+        raise AssertionError(
+            f"R2: stop={stop:.4f} >= entry×0.95={entry*_GEOMETRY_STOP_MAX_MULT:.4f} "
+            f"(وقف < 5% — حماية غير كافية. AUTO-ADJUST removed per Rule 27 FINALIZE-UNIFICATION.)"
+        )
 
     # R3: stop لازم > entry × 0.91 (وقف ≤ 9% — matching atr_stop_max_pct=9.0)
     # boundary: stop = entry×0.91 (exactly 9%) مقبول
@@ -431,8 +440,14 @@ class PredictionTracker:
             _persona = 'balanced'
 
         # ── MASTER DIRECTIVE المحور 3: حراسة هندسة الأسعار (Geometry Guard) ──
-        # AUTO-FIX للـ BUY: لو target <= entry*1.02 → entry*1.05، لو stop >= entry*0.98 → entry*0.95.
-        # يمنع الأهداف الوهمية المعكوسة (السبب الجذري لـ win rate 35.4%).
+        # Task FINALIZE-UNIFICATION (Rule 27 — NO-FAKE-DATA):
+        # Previously the comment here described an AUTO-FIX path that
+        # fabricated target=entry*1.05 / stop=entry*0.95 when the analyzer's
+        # values violated the geometry rules. The AUTO-FIX was REMOVED in
+        # enforce_geometry_guard (see lines 187-203 above) — now all R1-R5
+        # violations result in HARD REJECT (return None). This aligns with
+        # the documented strategy (line 115: "HARD REJECT مش AUTO-FIX") and
+        # Rule 27 (NO-FAKE-DATA) + Rule 35 (V40.2 is the only writer).
         try:
             _geo_target, _geo_stop, _geo_warn = enforce_geometry_guard(
                 signal, entry_price, target_price, stop_loss,
