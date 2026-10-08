@@ -2212,7 +2212,8 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
                         result['target_2'] = target_2
                         # TIGHTENING (2026-09-02): explosive stop from -8.5% (0.915) to -7% (0.93)
                         # Owner directive: "خفّض الستوب الأقصى من 9% لـ 7% (أو خلّيه ATR-based بس بحد أقصى 7%)"
-                        _explosive_stop_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))
+                        # Task REAPPLY-CRITICAL-FIXES: canonical default = 9.0 (engine_settings.py:241, Rule 8). Was 7.0 (stale).
+                        _explosive_stop_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '9.0'))  # Task REAPPLY-CRITICAL-FIXES — was '7.0'
                         _explosive_stop = round(entry * (1 - _explosive_stop_max_pct / 100.0), 2)
                         if stop < _explosive_stop:
                             stop = _explosive_stop

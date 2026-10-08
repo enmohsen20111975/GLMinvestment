@@ -144,9 +144,11 @@ class MarketProfile:
     # حقن ديناميكي لمعايير كل سوق في المحرك الموحد (Unified Decision Core)
     benchmark_ticker: str = ""                        # EGX30ETF / TASI / BKP / QE_INDEX / BTC.D
     min_turnover_local: float = 500_000.0             # الحد الأدنى للسيولة بالعملة المحلية
-    atr_stop_min_pct: float = 3.0                     # الحد الأدنى لوقف الخسارة (نطاق ATR)
-    atr_stop_max_pct: float = 9.0                     # الحد الأقصى لوقف الخسارة (نطاق ATR)
-    dynamic_rr_normal: float = 1.5                    # أرضية R:R في السوق العادي (Rule 18 floor ≥ 1.5)
+    # Task REAPPLY-CRITICAL-FIXES — canonical (Rule 8 + Rule 18 + engine_settings.py:240,289).
+    # Was 3.0/1.5 (stale drift). Rule 8 ATR clamp = [5%, 9%], Rule 18 R:R floor = 1.8.
+    atr_stop_min_pct: float = 5.0                     # الحد الأدنى لوقف الخسارة (نطاق ATR) — Rule 8 floor
+    atr_stop_max_pct: float = 9.0                     # الحد الأقصى لوقف الخسارة (نطاق ATR) — Rule 8 cap
+    dynamic_rr_normal: float = 1.8                    # أرضية R:R في السوق العادي (Rule 18 floor ≥ 1.8)
     dynamic_rr_outperform: float = 2.0                # أرضية R:R عند التفوق على المؤشر المرجعي
     data_provider_type: str = "financial_statements"  # 'financial_statements' أو 'on_chain_tokenomics'
     price_db_table: str = "price_history"             # 'price_history' أو 'crypto_prices'
@@ -374,9 +376,11 @@ MARKET_PROFILES: Dict[str, MarketProfile] = {
         # V40.4 Market Physics Matrix
         benchmark_ticker="EGX30ETF",
         min_turnover_local=500_000.0,        # 500k EGP
-        atr_stop_min_pct=3.0,               # [3.0%, 9.0%]
+        # Task REAPPLY-CRITICAL-FIXES — canonical (Rule 8 + Rule 18 + engine_settings.py:240,289).
+        # Was 3.0/1.5 (stale drift). Rule 8 ATR clamp = [5%, 9%], Rule 18 R:R floor = 1.8.
+        atr_stop_min_pct=5.0,               # [5.0%, 9.0%] — Rule 8
         atr_stop_max_pct=9.0,
-        dynamic_rr_normal=1.5,              # Normal 1.5, Bull 2.0
+        dynamic_rr_normal=1.8,              # Normal 1.8 (Rule 18), Bull 2.0
         dynamic_rr_outperform=2.0,
         data_provider_type="financial_statements",
         price_db_table="price_history",

@@ -915,12 +915,14 @@ def simulate_trade(
     stop = trade.stop_loss
     highest_price = entry  # تتبع أعلى سعر للستوب المتحرك
 
-    # TIGHTENING (2026-09-02): clamp stop_loss to max V40_2_STOP_MAX_PCT (default 7%)
+    # TIGHTENING (2026-09-02): clamp stop_loss to max V40_2_STOP_MAX_PCT (default 9%)
     # Owner directive: "خفّض الستوب الأقصى من 9% لـ 7% (أو خلّيه ATR-based بس بحد أقصى 7%)"
+    # Task REAPPLY-CRITICAL-FIXES: canonical default = 9.0 (engine_settings.py:241, Rule 8).
+    # Was 7.0 (stale). The owner may still tighten via env var if desired.
     # This is applied HERE (not in the decision engine) so it works in both
     # production AND backtest — regardless of where the stop was originally computed.
     try:
-        _tighten_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))
+        _tighten_max_pct = float(os.environ.get('V40_2_STOP_MAX_PCT', '9.0'))  # Task REAPPLY-CRITICAL-FIXES — was '7.0'
         if entry > 0 and stop > 0:
             _stop_dist_pct = abs((entry - stop) / entry) * 100.0
             if _stop_dist_pct > _tighten_max_pct:
@@ -1820,15 +1822,16 @@ class V38BacktestEngine:
             # huge-ATR stock could have a 15% stop (catastrophic loss). Both are forbidden.
             #
             # TIGHTENING (2026-09-02): Owner directive: "خفّض الستوب الأقصى من 9% لـ 7%"
-            # → default max tightened from 9.0% to 7.0% to reduce MaxDD.
-            # → Override via env var: V40_2_STOP_MAX_PCT=7.0 (or any value).
+            # Task REAPPLY-CRITICAL-FIXES: canonical default = 9.0 (engine_settings.py:241, Rule 8).
+            # Was 7.0 (stale). → default max = 9.0% (env override takes priority).
+            # → Override via env var: V40_2_STOP_MAX_PCT=9.0 (or any value).
             # → The tighter stop reduces per-trade loss but may increase false stops
             #   on volatile stocks. Use with trailing stop activation for best effect.
             try:
                 from analyzers.engine_settings import get_setting
-                _stop_min_pct = get_setting('atr_stop_min_pct', default=3.0)
-                # TIGHTENING: default 7.0% (was 9.0%) — env override takes priority
-                _stop_max_default = float(os.environ.get('V40_2_STOP_MAX_PCT', '7.0'))
+                _stop_min_pct = get_setting('atr_stop_min_pct', default=5.0)  # Task REAPPLY-CRITICAL-FIXES — was 3.0 (stale, Rule 8 floor = 5.0)
+                # TIGHTENING: default 9.0% (was 7.0%, REAPPLY-CRITICAL-FIXES) — env override takes priority
+                _stop_max_default = float(os.environ.get('V40_2_STOP_MAX_PCT', '9.0'))  # Task REAPPLY-CRITICAL-FIXES — was '7.0'
                 _stop_max_pct = get_setting('atr_stop_max_pct', default=_stop_max_default)
                 _stop_dist_pct = abs((entry - sl) / entry) * 100.0 if entry > 0 else 0.0
                 if _stop_dist_pct < _stop_min_pct:

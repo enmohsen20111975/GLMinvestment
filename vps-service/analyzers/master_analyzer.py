@@ -492,15 +492,16 @@ MASTER_WEIGHTS = {
 # Task IMPROVEMENT-04-2026-10-06 (Rule 71): خفض STRONG_BUY من 80 → 78
 # السبب: 97 توقع عندها score 78-79 حالياً بتتصنف BUY بدل STRONG_BUY
 # الهدف: تنوع الإشارات + إثراء قائمة الـ Morning Bells
+# Task REAPPLY-CRITICAL-FIXES — canonical (Rule 72). REDUCE=boundary for HOLD,
+# STRONG_SELL=boundary for SELL. Matches src/lib/canonical-signal.ts +
+# vps-service/utils/canonical_signal.py (single source of truth). Was drifting
+# with HOLD_LOW/HOLD_HIGH/SELL=20/STRONG_SELL=10 — now unified.
 THRESHOLDS = {
     'STRONG_BUY': 78,
     'BUY': 65,
     'ACCUMULATE': 55,
-    'HOLD_LOW': 45,
-    'HOLD_HIGH': 55,
-    'REDUCE': 35,
-    'SELL': 20,
-    'STRONG_SELL': 10,
+    'REDUCE': 40,
+    'STRONG_SELL': 25,
 }
 
 
@@ -5340,39 +5341,41 @@ class MasterAnalyzer:
         return round((variance ** 0.5), 2)
     
     def _get_signal_from_score(self, score: float, threshold_boost: float = 0.0) -> str:
-        """Convert score to signal - Updated thresholds.
+        """Convert score to signal — delegates to canonical_signal (Rule 72).
 
         DNA-WIRING (Axis A): threshold_boost قيمة سالبة (مثلاً -8) بتخفض
         الـ thresholds عشان السهم "الحيّ" (alive) يطلع BUY signals بدل ما
         تتدفن. الـ boost بيتم طرحها من كل threshold (لأنها سالبة → بتقلل العتبة).
+
+        Task REAPPLY-CRITICAL-FIXES: تم delegating لمصدر واحد (canonical_signal).
+        الحفاظ على DNA semantics:
+          قبل:  score >= THRESH + boost  (boost سالب → يخفض العتبة)
+          بعد:  classify_signal(score - boost)  ⟺  classify_signal(score + |boost|)
+                → لما score=60 و boost=-8: classify_signal(68) = BUY ✅
+                (بدل 60 >= 65-8=57 → BUY — نفس النتيجة).
         """
-        # طبّق الـ DNA boost (سالب → يخفض العتبة، موجب → يرفعها)
-        adj = threshold_boost  # عادة سالبة
-        if score >= THRESHOLDS['STRONG_BUY'] + adj:
-            return 'STRONG_BUY'
-        elif score >= THRESHOLDS['BUY'] + adj:
-            return 'BUY'
-        elif score >= THRESHOLDS['ACCUMULATE'] + adj:
-            return 'ACCUMULATE'
-        elif score >= THRESHOLDS.get('HOLD_LOW', 35) + adj:
-            return 'HOLD'
-        elif score >= THRESHOLDS['REDUCE'] + adj:
-            return 'REDUCE'
-        elif score >= THRESHOLDS['SELL'] + adj:
-            return 'SELL'
-        else:
-            return 'STRONG_SELL'
+        # Task REAPPLY-CRITICAL-FIXES — canonical delegation (Rule 72)
+        from utils.canonical_signal import classify_signal
+        return classify_signal(score - threshold_boost)
     
     def _get_signal_arabic(self, signal: str) -> str:
-        """Get Arabic signal name."""
-        translations = {
-            'STRONG_BUY': 'شراء قوي',
-            'BUY': 'شراء',
-            'ACCUMULATE': 'تجميع',
-            'HOLD': 'احتفاظ',
-            'REDUCE': 'تخفيف',
-            'SELL': 'بيع',
-            'STRONG_SELL': 'بيع قوي',
+        """Get Arabic signal name — delegates 7 standard signals to canonical (Rule 72).
+
+        Task REAPPLY-CRITICAL-FIXES: الـ 7 إشارات الأساسية (STRONG_BUY/BUY/
+        ACCUMULATE/HOLD/REDUCE/SELL/STRONG_SELL) بـ تـ delegate لـ
+        canonical_signal.signal_ar. الـ special signals (REJECTED_*/EXCLUDED/
+        INSUFFICIENT_DATA) بتظل محليًا لأنها خاصة بالـ MasterAnalyzer (حق النفو).
+        """
+        # Task REAPPLY-CRITICAL-FIXES — delegate standard signals to canonical
+        _STANDARD_SIGNALS = {
+            'STRONG_BUY', 'BUY', 'ACCUMULATE', 'HOLD',
+            'REDUCE', 'SELL', 'STRONG_SELL',
+        }
+        if signal in _STANDARD_SIGNALS:
+            from utils.canonical_signal import signal_ar
+            return signal_ar(signal)
+        # Special signals (veto / excluded / data) — kept local
+        special = {
             'EXCLUDED': 'مستبعد',
             'INSUFFICIENT_DATA': 'بيانات غير كافية',
             # PHASE-5.1: Hard Veto signals (حق النفو)
@@ -5381,7 +5384,7 @@ class MasterAnalyzer:
             'REJECTED_RR': '🚫 مرفوض — مخاطرة أكبر من الربح (R/R < 1.5)',
             'REJECTED_MACRO': '🚫 مرفوض — السوق هابط (EGX30 نازل 2%+)',
         }
-        return translations.get(signal, signal)
+        return special.get(signal, signal)
     
     def _build_technical_summary(self, indicators) -> str:
         """Build technical summary."""
