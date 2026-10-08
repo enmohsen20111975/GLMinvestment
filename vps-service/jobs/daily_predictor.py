@@ -319,28 +319,34 @@ def get_scan_dates(start_date, end_date, scan_interval):
             (start_date, end_date),
         )
         dates = [row[0] for row in cur.fetchall()]
-        
-        # FIX: لو مفيش تواريخ في النطاق → نرجّع آخر يوم متاح
-        if not dates and start_date == end_date:
-            cur.execute(
-                "SELECT DISTINCT price_date FROM egksco_price_history ORDER BY price_date DESC LIMIT 1"
-            )
-            last_row = cur.fetchone()
-            if last_row:
-                last_date = last_row[0]
-                print(f"[V40.2] ⚠️ اليوم ({start_date}) مش موجود في data_engine.db → استخدام آخر يوم متاح: {last_date}", flush=True)
-                conn.close()
-                return [last_date]
-        
         conn.close()
+        
+        # UNIFY-FIX (2026-10-08): لو egksco_price_history قديمة → fallback لـ price_history.db
+        # كان الكود يرجّع آخر يوم متاح في egksco (2026-09-26) بدل البحث عن بيانات طازجة
         if dates:
             print(f"[V40.2] Using data_engine.db (egksco_price_history) — {len(dates)} dates", flush=True)
             return dates[::scan_interval]
     except Exception:
         pass
     
-    # 2. FALLBACK: stocks.db (stock_daily_prices — آخر 30 يوم)
-    # price_history.db تم إلغاؤه تماماً (2026-09-03)
+    # UNIFY-FIX: FALLBACK 1 — price_history.db.price_history (1.24M rows، canonical EGX)
+    # كان مُلغى (2026-09-03) لكن نعيد تفعيله كـ fallback لأن egksco_price_history قديمة
+    try:
+        conn = sqlite3.connect(str(_db_dir / 'price_history.db'), timeout=10.0)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT DISTINCT price_date FROM price_history WHERE price_date >= ? AND price_date <= ? ORDER BY price_date ASC",
+            (start_date, end_date),
+        )
+        dates = [row[0] for row in cur.fetchall()]
+        conn.close()
+        if dates:
+            print(f"[V40.2] FALLBACK: price_history.db.price_history — {len(dates)} dates (egksco stale)", flush=True)
+            return dates[::scan_interval]
+    except Exception:
+        pass
+    
+    # 3. FALLBACK 2: stocks.db (stock_daily_prices — آخر 30 يوم)
     try:
         # Rule 54 / Phase 3: استخدم db_manager — fallback sqlite3.connect
         _v402_gsd2_ctx = None
