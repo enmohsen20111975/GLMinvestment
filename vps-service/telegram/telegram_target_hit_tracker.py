@@ -957,26 +957,22 @@ def record_target_hit_in_db(item: Dict) -> bool:
             ))
             print(f"✅ تم تحديث التوقع النشط رقم {pred_id} لسهم {tk} كهدف محقق بنجاح في predictions.db")
         else:
-            # إذا لم يوجد توقع نشط في الجدول، نقوم بإدراج صفقة رابحة كاملة التوثيق
-            note = f"صفقة رابحة مرصودة من {source} | تم طرح التوقع في {pred_date} وحقق {hit_level} في {today_str} بمكسب +{profit_pct:.1f}% ({duration_text})"
-            tp1 = float(item.get('target_1', hit_price))
-            tp2 = float(item.get('target_2', hit_price * 1.05))
-            sl = float(item.get('stop_loss', entry_price * 0.95))
-            conf = float(item.get('confidence', 75))
-
-            cursor.execute("""
-                INSERT INTO predictions (
-                    ticker, market, signal, signal_type, signal_ar, entry_price, target_price, target_price_2,
-                    stop_loss, confidence, maestro_score, prediction_date, outcome_date,
-                    exit_price, actual_exit_price, actual_return, pnl_pct, holding_days, days_to_close,
-                    hit_target, is_correct, status, exit_type, exit_reason, notes, created_at, closed_at
-                ) VALUES (?, 'EGX', 'BUY', 'BUY', 'شراء', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'TARGET_HIT', ?, ?, ?, ?, ?)
-            """, (
-                tk, entry_price, tp1, tp2, sl, conf, conf,
-                pred_date, today_str, hit_price, hit_price, profit_pct, profit_pct,
-                days_held, days_held, hit_level, exit_reason, note, pred_date, now_iso
-            ))
-            print(f"✅ تم توثيق صفقة رابحة جديدة لسهم {tk} بنجاح في predictions.db")
+            # Task PHASE3-ENGINES (Rule 27): do not fabricate prediction fields.
+            # The previous code INSERTed a fully-fabricated row with hardcoded
+            # signal='BUY' + confidence=75 + is_correct=1 + sl=entry*0.95 +
+            # tp2=hit*1.05 — pretending a real prediction had existed. That
+            # polluted predictions.db with synthetic rows the engine never
+            # actually produced (Rule 27 violation: NULL means NULL).
+            # Without a real active prediction in the DB, there is nothing to
+            # close — we log + return without inserting fabricated data.
+            print(
+                f"⚠️ [PHASE3-ENGINES] لا يوجد توقع نشط لـ {tk} في predictions.db — "
+                f"تخطّي INSERT الصفقة المُ fabrication (Rule 27). ضربة {hit_level} "
+                f"@ {hit_price:.2f} (+{profit_pct:.1f}%) لن تُسجَّل كتوقع BUY وهمي."
+            )
+            conn.commit()
+            conn.close()
+            return True
 
         conn.commit()
         conn.close()

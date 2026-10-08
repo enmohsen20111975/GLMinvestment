@@ -67062,3 +67062,52 @@ Stage Summary:
 - news.db schema mismatch FIXED (7894 rows will appear in UI after deploy)
 - 1 ملف مُعدّل: vps-service/core/migrator.py (+85 lines)
 - Phase 2 complete. Moving to Phase 3.
+
+---
+Task ID: PHASE3-ENGINES
+Agent: general-purpose (مهندس محرك Python)
+Task: Phase 3 — Engine fabrications + THRESHOLDS drift + dead code
+
+Stage Summary:
+- 10 إصلاحات P0 من AUDIT-ENGINES (المحركات):
+
+| # | الملف:السطر | قبل (fabrication) | بعد (canonical) |
+|---|-------------|-------------------|------------------|
+| 1 | `analyzers/technical_weighted.py:109` | THRESHOLDS مخالفة 65/55/48/35/28/20/10 | THRESHOLDS مُحدَّثة لـ canonical 78/65/55/40/25 + `_get_signal_from_score` يَ delegate لـ `utils.canonical_signal.classify_signal` |
+| 2 | `analyzers/master_analyzer.py:499` | THRESHOLDS dict بلا تعليق (dead code غير موثّق) | أُضيف تعليق `# Task PHASE3-ENGINES: DEAD CODE — kept for backward compat.` + توثيق إن `_get_signal_from_score` (L5358) بيوصل لـ canonical_signal مباشرة |
+| 3 | `analyzers/institutional_decision_engine.py:1481-1506` | except fallback: `tech_score=50` + `signal_final='🟡 انتظر'` + `evidence` مُختلقة محايدة | كل الحقول الـ fabrications → `None` (Rule 27: NULL means NULL). `ready=False` + `error=str(e)` فقط |
+| 4 | `analyzers/master_analyzer.py:4839+4847+5281` | `_inline_rsi` رجع `50.0` مرتين + `_get_market_regime_score` رجع `50.0` | الثلاثة → `return None` (Rule 24: invalid → NULL). caller في L4974 (`_rsi_8l = float(_rsi_8l or 50.0)`) بيحوّل None → 50.0 فقط داخل طبقة الـ confluence (intentional) |
+| 5 | `analyzers/master_analyzer.py:3941+4079+4130` | 3 fabrications من `entry * 0.95` (L3948 nearest_support, L4086 short_target, L4137 opt_short_target) | 3x استبدال بـ `None` + null-check على كل مسار: L3948 → skip conviction بالكامل لو `_sup`/`_res` ناقص؛ L4086 → skip SHORT swap لو geometry degenerate؛ L4137 → نفس المنطق لـ optimizer SHORT swap |
+| 6 | `analyzers/master_analyzer.py:5277` | `_get_market_regime_score` dead method + placeholder `return 50.0` (لم يُستدعَ في الإنتاج إطلاقًا) | تعليق `# DEAD METHOD — kept for backward compat (Rule 16). Use regime_detector.detect_market_regime() instead.` + `return None` بدل `50.0` |
+| 7 | `analyzers/confluence_engine_v3.py:113` | THRESHOLDS مخالفة 75/65/55/45/35/25/15 بلا تعليق (engine DISABLED) | تعليق `# DISABLED engine (SUB_ENGINE_DISABLED=True) — THRESHOLDS here are dead code. canonical_signal.py is the SSOT.` + تعليمات إعادة المواءمة لو اتفعّل المستقبَل |
+| 8 | `telegram/telegram_target_hit_tracker.py:968` | INSERT مُختلق: `signal='BUY' + confidence=75 + is_correct=1 + sl=entry*0.95 + tp2=hit*1.05` لكامل صف prediction وهمي | early-return guard: `# Task PHASE3-ENGINES (Rule 27): do not fabricate prediction fields. Log + return.` — لا INSERT إطلاقًا لو مفيش توقع نشط في DB |
+| 9 | `analyzers/core_scoring_engine.py:521` | ALREADY FIXED (Task FINALIZE-UNIFICATION سابقًا) — تم التحقق | `swing_low = min(recent_lows) if recent_lows else None` + null-check يَskip الـ momentum mode لو مفيش بيانات كافية (method_used_final = "INSUFFICIENT_DATA") |
+| 10 | `analyzers/quant_cache.py:446` | ALREADY DOCUMENTED (Task FINALIZE-UNIFICATION سابقًا) — تم التحقق | `target_price = current_price * 1.10` + تعليق يوضح إن ده سؤال إحصائي لـ Monte Carlo simulation (احتمالية الوصول +10% خلال 5 أيام)، ليس توصية إنتاجية. canonical targets تأتي من predictions.db (V40.2) فقط |
+
+Verification:
+- ✅ Python syntax: 8/8 files pass ast.parse (technical_weighted + master_analyzer + institutional_decision_engine + confluence_engine_v3 + telegram_target_hit_tracker + core_scoring_engine + quant_cache + canonical_signal)
+- ✅ Fabrication patterns gone from active code:
+  * `return 50.0` in master_analyzer active code → 0 matches (one mention in docstring comment only)
+  * `entry * 0.95` / `_engine_entry * 0.95` / `current_price * 0.95` / `entry_price * 0.95` → 0 matches in active code (3 comments only)
+  * `VALUES (?, 'EGX', 'BUY', 'BUY', 'شراء'...` hardcoded INSERT → 0 matches in telegram_target_hit_tracker
+  * technical_weighted non-canonical THRESHOLDS 65/55/48/35/28/20/10 → 0 matches
+  * institutional_decision_engine fabricated `'tech_score': 50,` + `'signal_final': '🟡 انتظر',` → 0 matches
+- ✅ Smoke test (8 assertions):
+  * canonical SIGNAL_THRESHOLDS = {78, 65, 55, 40, 25} ✓
+  * classify_signal(80/70/60/50/35/20/None) → STRONG_BUY/BUY/ACCUMULATE/HOLD/SELL/STRONG_SELL/HOLD ✓
+  * technical_weighted._get_signal_from_score delegates to canonical ✓
+  * master_analyzer._get_signal_from_score delegates to canonical ✓
+  * master_analyzer.THRESHOLDS still exported (backward compat — dead code) ✓
+  * technical_weighted.THRESHOLDS now mirrors canonical (was 65/55/48/35/28/20/10 non-canonical) ✓
+  * master_analyzer._get_market_regime_score() returns None (was 50.0 fabricated) ✓
+  * master_analyzer._inline_rsi([]) returns None (was 50.0 fabricated) ✓
+- لم أرفع لـ git (Rule: GM handles). لم أحذف أي ملف (Rule 16). لم أنشئ fake data (Rule 27).
+
+Stage Summary:
+- 10/10 P0 engine fixes applied (8 surgical code edits + 2 prior-session verifications).
+- 5 ملفات مُعدّلة: technical_weighted.py + master_analyzer.py + institutional_decision_engine.py + confluence_engine_v3.py + telegram_target_hit_tracker.py.
+- 2 ملفات موثّقة (verified): core_scoring_engine.py + quant_cache.py.
+- THRESHOLDS الآن single-source: canonical_signal.py هو الـ SSOT، وكل الـ 3 engines (master_analyzer + technical_weighted + confluence_engine_v3) إما delegate أو تُعلّم كـ dead/disabled.
+- 3 fabrications من نوع `entry * 0.95` اتحوّلت لـ NULL مع null-checks على كل مسار.
+- 1 INSERT fabrication في telegram اتعمله early-return guard (الـ row الوهمي ما بقاش يُكتب في predictions.db إطلاقًا).
+- Phase 3 complete. جاهز للمراجعة قبل Phase 4 (APIs P0).
