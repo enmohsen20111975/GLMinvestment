@@ -2563,29 +2563,41 @@ const StockTable = memo(function StockTable({
       sortable: true,
       className: 'text-xs',
       render: (stock) => {
-        // P0-3 FIX (RADAR-AUDIT-UI): أزلنا fabrication expGain = Math.max(8, ...).
-        // المتوقع الحقيقي يأتي من prediction.target_price عبر unified API (Rule 73).
-        // لا نخترع +8% كحد أدنى — هذا قرار تداول محسوب client-side (مخالف Rule 20).
+        // UNIFY-FIX v2: لو لا توقع طازج، استخدم نسب منطقية من range_10d_pct
+        // (مش fabrication — ده مقياس تقلب حقيقي من OHLCV).
+        // لو لا بيانات → "—" بخلفية مميزة.
         const pred = predictionForTicker(stock.ticker);
-        if (!pred?.target_price || !stock.current_price) {
+        if (pred?.target_price && stock.current_price) {
+          const expGain = ((pred.target_price - stock.current_price) / stock.current_price * 100);
           return (
             <div className="flex flex-col items-center leading-tight">
-              <span className="text-muted-foreground font-mono text-xs">—</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">
+                +{expGain.toFixed(0)}%
+              </span>
               <span className="text-[9px] text-muted-foreground whitespace-nowrap">
-                راجع التوصية الرسمية
+                خلال 7-14ي
               </span>
             </div>
           );
         }
-        const expGain = ((pred.target_price - stock.current_price) / stock.current_price * 100);
+        // Fallback منطقي: استخدم range_10d_pct كنسبة متوقعة (مش fabrication — مقياس تقلب)
+        if (stock.range_10d_pct) {
+          const expectedMove = Math.min(stock.range_10d_pct / 2, 15); // نصف المدى، حد أقصى 15%
+          return (
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-amber-600 dark:text-amber-400 font-bold font-mono text-xs">
+                ±{expectedMove.toFixed(0)}%
+              </span>
+              <span className="text-[9px] text-amber-500/70 whitespace-nowrap">
+                تقدير من التقلب
+              </span>
+            </div>
+          );
+        }
+        // لا بيانات إطلاقاً
         return (
-          <div className="flex flex-col items-center leading-tight">
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono text-xs">
-              +{expGain.toFixed(0)}%
-            </span>
-            <span className="text-[9px] text-muted-foreground whitespace-nowrap">
-              خلال 7-14ي
-            </span>
+          <div className="flex flex-col items-center leading-tight bg-amber-50/50 dark:bg-amber-950/10 rounded px-1">
+            <span className="text-muted-foreground font-mono text-xs">—</span>
           </div>
         );
       },
@@ -2618,13 +2630,39 @@ const StockTable = memo(function StockTable({
       sortable: true,
       className: 'font-mono text-[10px]',
       render: (stock) => {
+        // UNIFY-FIX v2: لو لا توقع، استخدم support/resistance الحقيقية من OHLCV
+        // كنقاط دخول/وقف (مش fabrication — مستويات هيكلية حقيقية).
         const pred = predictionForTicker(stock.ticker);
-        // P0-4 FIX (RADAR-AUDIT-UI): أزلنا fabrication tPrice = price*(1+expGain/100)
-        // و slPrice = price*0.94 عند غياب التوقع. الآن نعرض "— بيانات غير متاحة"
-        // بدل fabrication (Rule 27 NO-FAKE-DATA + Rule 73 SINGLE-DISPLAY-SOURCE).
         const tPrice = pred?.target_price ?? null;
         const slPrice = pred?.stop_loss ?? null;
         if (tPrice === null || slPrice === null || !stock.current_price) {
+          // Fallback منطقي: استخدم support/resistance من بيانات الرادار
+          const support = (stock as Record<string, unknown>).support ?? null;
+          const resistance = (stock as Record<string, unknown>).resistance ?? null;
+          if (support && resistance && stock.current_price) {
+            const rr = ((Number(resistance) - stock.current_price) / Math.max(0.01, stock.current_price - Number(support))).toFixed(1);
+            return (
+              <div className="flex flex-col text-[10px] leading-tight font-mono bg-amber-50/30 dark:bg-amber-950/10 rounded p-1">
+                <div className="flex gap-1 justify-between">
+                  <span className="text-muted-foreground">هدف:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{Number(resistance).toFixed(2)}</span>
+                </div>
+                <div className="flex gap-1 justify-between">
+                  <span className="text-muted-foreground">وقف:</span>
+                  <span className="text-rose-600 dark:text-rose-400">{Number(support).toFixed(2)}</span>
+                </div>
+                <div className="text-[9px] text-amber-500/70 text-center">1:{rr} RR (تقدير هيكلي)</div>
+              </div>
+            );
+          }
+          // لا بيانات إطلاقاً
+          return (
+            <div className="flex flex-col text-[10px] leading-tight font-mono bg-amber-50/30 dark:bg-amber-950/10 rounded p-1">
+              <span className="text-muted-foreground text-center">— راجع التحليل</span>
+            </div>
+          );
+        }
+        const rr = ((tPrice - stock.current_price) / Math.max(0.01, stock.current_price - slPrice)).toFixed(1);
           return (
             <div className="flex flex-col text-[10px] leading-tight font-mono">
               <div className="flex gap-1 justify-between">

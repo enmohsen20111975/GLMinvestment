@@ -225,7 +225,7 @@ const OUTCOME_CONFIG: Record<'WIN' | 'LOSS' | 'EXPIRED' | 'PENDING', {
     accentColor: 'text-rose-500',
   },
   EXPIRED: {
-    label: 'منتهية ⏰',
+    label: 'انتهى الأفق الزمني ⏰',  // UNIFY-FIX v2: أوضح من "منتهية"
     badge: 'bg-muted text-muted-foreground border-border',
     icon: Clock,
     accentColor: 'text-muted-foreground',
@@ -1581,7 +1581,7 @@ export function PredictionTrackingDashboard({
                   {outcomeKey === 'WIN' && '🎯 الناجحة (WIN)'}
                   {outcomeKey === 'LOSS' && '🛑 الخاسرة (LOSS)'}
                   {outcomeKey === 'PENDING' && '⏳ المعلقة (PENDING)'}
-                  {outcomeKey === 'EXPIRED' && '⏰ المنتهية (EXPIRED)'}
+                  {outcomeKey === 'EXPIRED' && '⏰ انتهى الأفق الزمني'}
                 </button>
               ))}
             </div>
