@@ -105,16 +105,23 @@ export async function POST(req: NextRequest) {
         const risk = analysis.risk_profile || {}
         const personaProfile = PERSONA_PROFILES[persona as keyof typeof PERSONA_PROFILES]
         const scoreBoost = personaProfile ? personaProfile.score_boost : 0
-        const finalScore = Math.max(10, Math.min(95, (analysis.master_score || 50) + scoreBoost))
+        // AUDIT-FIX (2026-10-09): إزالة fallback score=50 (Rule 27 NO-FAKE-DATA).
+        // لو master_score = null → finalScore = null → signal = null.
+        const rawScore = analysis.master_score ?? null;
+        const finalScore = rawScore === null ? null : Math.max(10, Math.min(95, rawScore + scoreBoost));
 
-        let signal = 'HOLD'
-        let signal_ar = 'احتفاظ'
-        if (finalScore >= 75) { signal = 'STRONG_BUY'; signal_ar = 'شراء قوي' }
-        else if (finalScore >= 60) { signal = 'BUY'; signal_ar = 'شراء' }
-        else if (finalScore >= 50) { signal = 'ACCUMULATE'; signal_ar = 'تجميع' }
-        else if (finalScore <= 25) { signal = 'STRONG_SELL'; signal_ar = 'بيع قوي' }
-        else if (finalScore <= 40) { signal = 'SELL'; signal_ar = 'بيع' }
-        else if (finalScore < 50) { signal = 'REDUCE'; signal_ar = 'تخفيف' }
+        // AUDIT-FIX: لو مفيش score → signal = null (مش HOLD افتراضي)
+        let signal: string | null = null;
+        let signal_ar: string | null = null;
+        if (finalScore !== null) {
+          signal = 'HOLD'; signal_ar = 'احتفاظ';
+          if (finalScore >= 75) { signal = 'STRONG_BUY'; signal_ar = 'شراء قوي' }
+          else if (finalScore >= 60) { signal = 'BUY'; signal_ar = 'شراء' }
+          else if (finalScore >= 50) { signal = 'ACCUMULATE'; signal_ar = 'تجميع' }
+          else if (finalScore <= 25) { signal = 'STRONG_SELL'; signal_ar = 'بيع قوي' }
+          else if (finalScore <= 40) { signal = 'SELL'; signal_ar = 'بيع' }
+          else if (finalScore < 50) { signal = 'REDUCE'; signal_ar = 'تخفيف' }
+        }
 
         const result = {
           ticker: analysis.ticker,
@@ -123,7 +130,8 @@ export async function POST(req: NextRequest) {
           signal,
           signal_ar,
           score: finalScore,
-          confidence: analysis.confidence || 75,
+          // AUDIT-FIX: إزالة confidence=75 fallback (Rule 27)
+          confidence: analysis.confidence ?? null,
           current_price: risk.entry_price || analysis.current_price || 0,
           entry_price: risk.entry_price || analysis.current_price || 0,
           stop_loss: risk.stop_loss_price || 0,
