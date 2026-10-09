@@ -67865,3 +67865,89 @@ Constraints honored:
 
 Stage Summary:
 - 26 changes total across 3 files (6 + 7 + 13)
+
+---
+Task ID: REPORT-REDESIGN
+Agent: general-purpose (مهندس واجهات)
+Task: إعادة تصميم التقرير الذكي ليناسب المستثمرين + اختيار السوق + branding
+
+Stage Summary:
+- 14 تغيير جراحي في ملف واحد: src/modules/reports/components/ExecutiveReportView.tsx (2089 ← 2349 سطر، +260 سطر).
+- صفر ملفات محذوفة + صفر Python + صفر git push (احترام كامل للقيود).
+
+═══ 1. الـ Imports (REPORT-REDESIGN) ═══
+1. استبدال `Trophy` ← `Award` (أيقونة احترافية بدل لغة البطولات/الألعاب).
+2. إضافة `Landmark, CalendarRange, HandCoins, Building2` لأيقونات الـ branding + الفترة + السوق.
+3. استيراد `Select, SelectContent, SelectItem, SelectTrigger, SelectValue` من `@/components/ui/select` لاختيار السوق.
+4. استيراد `MARKET_NAMES_AR, type MarketType` من `@/lib/store` لأسماء الأسواق العربية + typing قوي.
+
+═══ 2. الثوابت الجديدة (REPORT-REDESIGN) ═══
+5. `MARKET_FILTER_OPTIONS`: قائمة الأسواق الـ 6 (EGX/TADAWUL/KSE/QSE/US/CRYPTO) بأسماء عربية + emoji علم.
+6. `PLATFORM_NAME = 'دليل الاستثمار'` + `PLATFORM_TAGLINE = 'تقرير الأداء الاستثماري'` للـ branding.
+
+═══ 3. الـ Props + الـ State (REPORT-REDESIGN) ═══
+7. تغيير `market?: string` ← `market?: MarketType` (typing أقوى).
+8. إضافة `selectedMarket` state (يُهيَّأ من الـ prop، مستقل بعدها — يتيح تبديل السوق من داخل التقرير).
+
+═══ 4. استبدال `market` ← `selectedMarket` (4 مواقع) ═══
+9. `fetchData`: params + deps (يعيد fetch عند تبديل السوق).
+10. `fetchMissedOpps`: params + deps.
+11. `reportShareText`: نص المشاركة الاحترافي للمستثمرين.
+12. `handleExportPng`: اسم الملف `Dalilestithmar_Report_{market}_{timeLabel}_{ts}.png`.
+13. `UnifiedPublishButton`: title + filename + hashtags محدّثة.
+
+═══ 5. Memos جديدة (REPORT-REDESIGN) ═══
+14. `topFiveWinningPredictions`: أعلى 5 توقعات فائزة (slice 5 + dedupe by ticker) — بيانات entry→target كاملة.
+15. `avgHoldingDays`: متوسط فترة الاحتفاظ من الصفقات المغلقة (null لو لا بيانات → عرض "—" حسب Rule 27).
+16. `periodRange`: نطاق الفترة (start ← end) منسَّق بالعربية، يدعم YTD/0/N.
+
+═══ 6. الـ UI الجديدة (REPORT-REDESIGN) ═══
+17. **Market + Timeframe Selectors**: صف جديد موحَّد فيه dropdown اختيار السوق + أزرار الفترة (استبدل صف الفترة المنفصل).
+18. **Branding Header مُعاد تصميمه** (داخل reportContainerRef للظهور في الـ PNG):
+    - Logo placeholder (علبة ذهبية + Landmark icon) قابلة للاستبدال بـ <Image /> لو فيه شعار.
+    - اسم المنصة «دليل الاستثمار» + سطر التاج لاين «تقرير الأداء الاستثماري».
+    - شارة نطاق الفترة (من ← إلى) + شارة السوق بالعربية + شارات المصدر/الجودة/الفلاتر.
+    - وصف موجز احترافي للمستثمرين (استبدل "ملخص لنتائج التوقعات" بكلام موثَّق).
+    - صندوق يمين: نسبة النجاح + معامل الربحية + عدّاد الصفقات (محسوم/معلق/trailing).
+19. **KPI Grid موسَّع**: 5 ← 6 بطاقات (أضفنا «متوسط فترة الاحتفاظ» — مؤشر رئيسي للمستثمرين).
+    grid: `lg:grid-cols-3 xl:grid-cols-6` (3 على التابلت، 6 على الديسكتوب).
+20. **NEW: جدول «أبرز 5 توقعات فائزة»** — جدول مدمج احترافي للنشر:
+    أعمدة: # | السهم | الإشارة (شراء/بيع badge) | الدخول ← الهدف | المدة | العائد%.
+    كل البيانات من honest-tracking/list — لا fabrication (Rule 27).
+21. استبدال أيقونة `Trophy` ← `Award` في بطاقة «أعلى المكاسب» + إزالة emoji «⚡» من meta.
+22. استبدال أيقونة `Trophy` ← `HandCoins` + إزالة emoji «💰» من عنوان بطاقة trailing profit
+    («💰 خرجت بربح» ← «صفقات أُغلقت بربح جزئي»).
+23. استبدال emoji «💰» في KPI الـ trailing profit counter بأيقونة `HandCoins`.
+24. **Professional Disclaimer**: صندوق تنبيه احترافي جديد قبل الـ footer:
+    «هذا التقرير لأغراض إعلامية فقط ولا يُعد نصيحة استثمارية أو توصية بالبيع أو الشراء.
+    الأداء السابق لا يضمن النتائج المستقبلية. القرار الاستثماري النهائي ومسؤولية المخاطر
+    تقع على عاتق المستثمر وحده...»
+25. تحديث الـ Footer: «دليل الاستثمار — تقرير الأداء الاستثماري | {السوق} · {الفترة}».
+26. تحديث رسالة الـ empty state: «لا توجد توقعات خلال الفترة المحددة» ← «لا توجد توقعات في هذه الفترة» (تطابق Rule 27).
+27. تحديث عنوان Control Bar: «ملخص أداء التوقعات» ← «دليل الاستثمار — تقرير الأداء الاستثماري».
+28. إزالة emoji «📸» من زر «تصدير PNG» (لغة احترافية).
+
+═══ 7. التحقق (Verification) ═══
+- ✅ `bun run lint` → exit 0 (0 errors).
+- ✅ `npx tsc --noEmit --skipLibCheck`:
+  - Baseline (git stash): 1653 error TS.
+  - بعد التعديلات: 1652 error TS → -1 خطأ (تحسُّن طفيف، صفر أخطاء جديدة).
+  - صفر أخطاء في ExecutiveReportView.tsx.
+  - صفر أخطاء في UnifiedPredictionsTab.tsx (الـ caller).
+  - صفر أخطاء في src/modules/reports/* كله.
+- ✅ Rule 27 محترمة: avgHoldingDays=null → "—"، لا توقعات → «لا توجد توقعات في هذه الفترة»،
+  كل الأرقام من /api/predictions/honest-tracking/list.
+- ✅ صفر ملفات محذوفة + صفر Python touched + صفر git push.
+- ✅ كل المخرجات بالعربية.
+
+Constraints honored:
+- ❌ NO file deleted (surgical edits only — +260 سطر في نفس الملف).
+- ❌ NO Python files touched.
+- ❌ NO git push.
+- ✅ All output in ARABIC.
+- ✅ Rule 27: لا fabrication — كل رقم من honest-tracking/list، null/0 → "—".
+
+Next actions (اقتراحات للمالك — مش مطلوب تنفيذها):
+- استبدال logo placeholder بـ <Image src="/logo.png" /> لو فيه ملف شعار فعلي.
+- إضافة API endpoint لجلب الـ logo ديناميكياً من إعدادات المنصة (لو متاح).
+- اعتبار إضافة فلتر «القطاع» لو المنصة بتدعم تصنيف الأسهم بالقطاعات.

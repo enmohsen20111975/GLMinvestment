@@ -17,13 +17,16 @@ export const dynamic = 'force-dynamic';
 
 const PAYMOB_API_KEY = process.env.PAYMOB_API_KEY;
 const PAYMOB_IFRAME_ID = process.env.PAYMOB_IFRAME_ID || '993228';
-const CARD_INTEGRATION_ID = process.env.PAYMOB_CARD_INTEGRATION_ID || '5716783';
+const CARD_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID_CARD || process.env.PAYMOB_CARD_INTEGRATION_ID || '5716783';
+const WALLET_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID_WALLET || process.env.PAYMOB_WALLET_INTEGRATION_ID || '5716784';
 
 interface CheckoutBody {
   tier?: string;
   market?: string;
   billingCycle?: string;
   referralCode?: string;
+  paymentMethod?: 'card' | 'wallet';
+  payment_method?: 'card' | 'wallet';
 }
 
 export async function POST(req: NextRequest) {
@@ -190,6 +193,9 @@ export async function POST(req: NextRequest) {
       state: 'Cairo',
     };
 
+    const isWallet = body.paymentMethod === 'wallet' || body.payment_method === 'wallet';
+    const chosenIntegrationId = isWallet ? Number(WALLET_INTEGRATION_ID) : Number(CARD_INTEGRATION_ID);
+
     const paymentKeyRes = await fetch('https://accept.paymob.com/api/acceptance/payment_keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -200,7 +206,7 @@ export async function POST(req: NextRequest) {
         order_id: paymobOrderId,
         billing_data: billingData,
         currency: 'EGP',
-        integration_id: Number(CARD_INTEGRATION_ID),
+        integration_id: chosenIntegrationId,
         lock_order_when_paid: 'true',
       }),
     });
