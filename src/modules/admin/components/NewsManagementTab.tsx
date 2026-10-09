@@ -62,6 +62,9 @@ export function NewsManagementTab() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSource, setSelectedSource] = useState('all');
+  // PHASE2-ADMIN-PANEL: owner request — "فلترة الأخبار المؤثرة (High-Impact
+  // Catalysts)". 0 = no filter, 70 = high-impact only (default cutoff).
+  const [minImportance, setMinImportance] = useState<number>(0);
 
   // Multi-select
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -145,6 +148,8 @@ export function NewsManagementTab() {
       });
       if (searchQuery.trim()) params.set('q', searchQuery.trim());
       if (selectedSource && selectedSource !== 'all') params.set('source', selectedSource);
+      // PHASE2-ADMIN-PANEL: min_importance filter (High-Impact Catalysts)
+      if (minImportance > 0) params.set('min_importance', String(minImportance));
 
       const res = await adminFetch(`/api/admin/news?${params.toString()}`);
       const data = await res.json();
@@ -163,12 +168,12 @@ export function NewsManagementTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, selectedSource]);
+  }, [page, searchQuery, selectedSource, minImportance]);
 
   useEffect(() => {
     fetchNews(1);
     setPage(1);
-  }, [searchQuery, selectedSource]);
+  }, [searchQuery, selectedSource, minImportance]);
 
   // Handle single delete
   const handleDeleteOne = async (item: AdminNewsItem) => {
@@ -472,6 +477,21 @@ export function NewsManagementTab() {
                     {s.source} ({s.count})
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* PHASE2-ADMIN-PANEL: Impact Filter — owner request:
+                "فلترة الأخبار المؤثرة (High-Impact Catalysts)" */}
+            <div className="w-full md:w-44">
+              <select
+                value={String(minImportance)}
+                onChange={(e) => setMinImportance(Number(e.target.value))}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="0">كل الأهمية</option>
+                <option value="40">⚠️ متوسطة+ (40+)</option>
+                <option value="70">🔥 عالية التأثير (70+)</option>
+                <option value="85">💥 حرجة (85+)</option>
               </select>
             </div>
           </div>

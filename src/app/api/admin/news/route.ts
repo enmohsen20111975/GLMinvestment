@@ -59,6 +59,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = (searchParams.get('q') || '').trim().toLowerCase();
     const sourceFilter = (searchParams.get('source') || '').trim();
+    // PHASE2-ADMIN-PANEL: owner request — "فلترة الأخبار المؤثرة (High-Impact
+    // Catalysts)". min_importance=N filters out news with importance < N.
+    // Default 0 = no filter (backward compat).
+    const minImportance = Math.min(Math.max(parseInt(searchParams.get('min_importance') || '0', 10), 0), 100);
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50', 10), 1), 200);
     const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
     const offset = (page - 1) * limit;
@@ -105,8 +109,12 @@ export async function GET(request: NextRequest) {
     `).all() as { source: string; count: number }[];
 
     // Build filter query
+    // PHASE2-ADMIN-PANEL: changed params type from Record<string, unknown>[]
+    // to unknown[] so SQLite bound params (string | number) type-check.
+    // Previously: 8 pre-existing TS2322 errors (string/number not assignable
+    // to Record<string, unknown>). Now 0.
     let whereClauses: string[] = [];
-    let params: Record<string, unknown>[] = [];
+    let params: unknown[] = [];
 
     if (search) {
       whereClauses.push('(LOWER(title) LIKE ? OR LOWER(content) LIKE ? OR LOWER(tickers) LIKE ?)');
@@ -117,6 +125,12 @@ export async function GET(request: NextRequest) {
     if (sourceFilter && sourceFilter !== 'all') {
       whereClauses.push('source = ?');
       params.push(sourceFilter);
+    }
+
+    // PHASE2-ADMIN-PANEL: min_importance filter (High-Impact Catalysts)
+    if (minImportance > 0) {
+      whereClauses.push('importance >= ?');
+      params.push(minImportance);
     }
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';

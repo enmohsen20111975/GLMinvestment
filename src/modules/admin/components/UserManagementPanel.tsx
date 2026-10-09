@@ -27,6 +27,8 @@ import {
   AlertTriangle,
   Ticket,
   Sparkles,
+  Bot,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -163,6 +165,34 @@ export function UserManagementPanel() {
   const [cleanupResult, setCleanupResult] = useState<
     { dryRun: boolean; deleted: number; message: string; usersPreview?: Array<{ id: string; email: string }> } | null
   >(null);
+
+  // PHASE2-ADMIN-PANEL: owner request — "مزامنة البوت". We poll
+  // /api/admin/system-health (already used by SystemHealthCard) to get the
+  // Telegram bot process status (pgrep -f telegram). Rule 27: if the field
+  // is missing we show "—" — no fabrication.
+  const [botStatus, setBotStatus] = useState<'online' | 'offline' | 'unknown'>('unknown');
+  const [botLastSeen, setBotLastSeen] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchBotStatus() {
+      try {
+        const res = await fetch('/api/admin/system-health', { credentials: 'same-origin' });
+        const json = await res.json();
+        if (cancelled || !json?.success) return;
+        const svc = (json.services || []).find((s: any) => s.id === 'telegram_bot');
+        if (svc) {
+          setBotStatus(svc.status === 'online' ? 'online' : svc.status === 'offline' ? 'offline' : 'unknown');
+          setBotLastSeen(svc.last_seen || null);
+        }
+      } catch {
+        // silent — don't spam toast
+      }
+    }
+    fetchBotStatus();
+    const interval = setInterval(fetchBotStatus, 60_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -430,7 +460,16 @@ export function UserManagementPanel() {
     const admins = users.filter(u => u.role === 'admin').length;
     const withPromo = users.filter(u => !!u.promoCode).length;
     const activePromo = users.filter(u => u.promoCode && u.promoCode.is_active).length;
-    return { total, active, premium, admins, withPromo, activePromo };
+    // PHASE2-ADMIN-PANEL: tier breakdown — owner request:
+    //   "جدول المستخدمين النشطين + مزامنة البوت + سجل المعاملات".
+    //   Active subscribers per tier (only users with status='active').
+    const activeByTier = {
+      free: users.filter(u => u.status === 'active' && u.role === 'user').length,
+      premium: users.filter(u => u.status === 'active' && u.role === 'premium').length,
+      admin: users.filter(u => u.status === 'active' && u.role === 'admin').length,
+      vip: users.filter(u => u.status === 'active' && u.promoCode && (u.promoCode.plan_tier === 'all' || u.promoCode.plan_tier === 'developer')).length,
+    };
+    return { total, active, premium, admins, withPromo, activePromo, activeByTier };
   }, [users]);
 
   return (
@@ -471,6 +510,63 @@ export function UserManagementPanel() {
             <StatBox label="مميزين + أدمن" value={stats.premium} icon={<Crown className="w-4 h-4 text-amber-500" />} />
             <StatBox label="مشتركو البرومو كود" value={`${stats.withPromo} (${stats.activePromo} نشط)`} icon={<Ticket className="w-4 h-4 text-purple-500" />} />
             <StatBox label="أدمن" value={stats.admins} icon={<ShieldCheck className="w-4 h-4 text-red-500" />} />
+          </div>
+
+          {/* PHASE2-ADMIN-PANEL: Active subscribers per tier + Bot sync +
+              Paymob transaction log placeholder — owner request:
+              "جدول المستخدمين النشطين + مزامنة البوت + سجل المعاملات" */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+            {/* Active subscribers per tier */}
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">المشتركون النشطون حسب الباقة</span>
+                <Users className="w-3.5 h-3.5 text-emerald-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <TierStat label="مجاني" value={stats.activeByTier.free} color="text-slate-600 dark:text-slate-300" />
+                <TierStat label="مميز" value={stats.activeByTier.premium} color="text-amber-600" />
+                <TierStat label="أدمن" value={stats.activeByTier.admin} color="text-red-600" />
+                <TierStat label="VIP" value={stats.activeByTier.vip} color="text-purple-600" />
+              </div>
+            </div>
+
+            {/* Bot sync status — uses /api/admin/system-health (pgrep telegram) */}
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">مزامنة Telegram Bot</span>
+                <Bot className="w-3.5 h-3.5 text-cyan-500" />
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full shrink-0',
+                    botStatus === 'online' ? 'bg-emerald-500' : botStatus === 'offline' ? 'bg-red-500' : 'bg-slate-400'
+                  )}
+                />
+                <span className="font-bold">
+                  {botStatus === 'online' ? 'متصل ويعمل' : botStatus === 'offline' ? 'متوقف' : 'غير معروف'}
+                </span>
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                آخر نشاط: {botLastSeen ? new Date(botLastSeen).toLocaleString('ar-EG') : '—'}
+              </div>
+            </div>
+
+            {/* Paymob transaction log placeholder — no Paymob API exists yet.
+                Rule 27: don't fabricate transactions. Show clear "coming soon"
+                message per owner instructions. */}
+            <div className="p-3 rounded-lg bg-muted/30 border border-dashed border-border/50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">سجل معاملات Paymob</span>
+                <CreditCard className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+              <div className="text-xs text-muted-foreground italic">
+                💳 سيتوفر قريباً
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                تكامل Paymob لم يُفعّل بعد. ستظهر هنا معاملات الاشتراكات تلقائياً.
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -793,6 +889,16 @@ function StatBox({ label, value, icon }: { label: string; value: number; icon: R
         {icon}
       </div>
       <div className="text-lg font-bold">{value}</div>
+    </div>
+  );
+}
+
+// PHASE2-ADMIN-PANEL: small stat for the tier-breakdown grid
+function TierStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="flex items-center justify-between p-1.5 rounded bg-background/50">
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className={cn('font-bold text-sm', color)}>{value}</span>
     </div>
   );
 }

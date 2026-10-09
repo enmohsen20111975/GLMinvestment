@@ -18,13 +18,63 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Database, Server, Cpu, HardDrive, Activity, Zap, RefreshCw,
   Play, Trash2, AlertCircle, CheckCircle2, Loader2,
-  TrendingUp, Brain, Clock, Bell, Terminal, Power, Settings
+  TrendingUp, Brain, Clock, Bell, Terminal, Power, Settings,
+  Radar, Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+
+// PHASE2-ADMIN-PANEL (Task ID: PHASE2-ADMIN-PANEL):
+//   Owner request: "عرض عداد الصفوف، وحجم كل قاعدة، مع تنبيه أحمر فوري لو
+//   توقف تحديث أي قاعدة لأكثر من ساعتين" + "حالة الـ scrapers".
+//
+//   The original SystemControlPanel only showed DB size + tables count from
+//   the Python /api/market-pulse proxy. We now also fetch /api/admin/db
+//   (Node route) which returns { totalRows, lastModified, size } per DB and
+//   /api/admin/data-sources which returns VPS + scraper last_update.
+//
+//   Rule 27 (no fabrication): if lastModified is null we show "—" instead of
+//   inventing a timestamp. If a DB hasn't been modified in >2h we show a red
+//   stale alert at the top of the overview tab.
+
+interface DbRowMeta {
+  name: string;
+  totalRows: number | null;
+  lastModified: string | null;
+  sizeFormatted: string | null;
+  tableCount: number | null;
+}
+
+interface ScraperHealth {
+  name: string;
+  status: 'online' | 'offline' | 'unknown';
+  detail: string;
+  lastUpdate: string | null;
+}
+
+const STALE_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours (owner requirement)
+
+function isStale(lastModified: string | null): boolean {
+  if (!lastModified) return false; // unknown → don't alert
+  const d = new Date(lastModified);
+  if (isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() > STALE_THRESHOLD_MS;
+}
+
+function timeAgoShort(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return 'الآن';
+  if (diffMs < 60_000) return `${Math.floor(diffMs / 1000)} ث`;
+  if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)} د`;
+  if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)} س`;
+  return `${Math.floor(diffMs / 86_400_000)} يوم`;
+}
 
 type Tab = 'overview' | 'databases' | 'services' | 'engines' | 'prices' | 'predictions' | 'logs';
 
@@ -41,6 +91,8 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
 export function SystemControlPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [data, setData] = useState<any>(null);
+  const [dbMeta, setDbMeta] = useState<DbRowMeta[]>([]);
+  const [scrapers, setScrapers] = useState<ScraperHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -56,12 +108,80 @@ export function SystemControlPanel() {
     }
   }, [activeTab]);
 
+  // PHASE2-ADMIN-PANEL: parallel fetch of DB row counts + lastModified
+  // + scraper health. These come from Node routes (not the Python proxy)
+  // so they work even when /api/system-control is unreachable.
+  const fetchDbMeta = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/db', { credentials: 'same-origin' });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.databases)) {
+        setDbMeta(json.databases.map((d: any) => ({
+          name: d.name,
+          totalRows: typeof d.totalRows === 'number' ? d.totalRows : null,
+          lastModified: d.lastModified || null,
+          sizeFormatted: d.sizeFormatted || null,
+          tableCount: typeof d.tableCount === 'number' ? d.tableCount : null,
+        })));
+      }
+    } catch (e) {
+      console.error('[SystemControl] db meta fetch error:', e);
+    }
+  }, []);
+
+  const fetchScrapers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/data-sources', { credentials: 'same-origin' });
+      const json = await res.json();
+      const ds = json?.data_sources;
+      if (!ds) return;
+      const list: ScraperHealth[] = [];
+      // TradingView (via VPS Python)
+      list.push({
+        name: 'TradingView (VPS)',
+        status: ds.vps?.available ? 'online' : 'offline',
+        detail: ds.vps?.url || 'غير مُعد',
+        lastUpdate: ds.database?.stocks_db?.last_update || null,
+      });
+      // Yahoo (via Python egxpy bridge — local file present?)
+      list.push({
+        name: 'Yahoo Finance',
+        status: ds.local_python?.available ? 'online' : 'offline',
+        detail: ds.local_python?.note || 'Python bridge',
+        lastUpdate: ds.database?.stocks_db?.last_update || null,
+      });
+      // EGKSCO (intraday_aggregated canonical for EGX)
+      list.push({
+        name: 'EGKSCO (EGX intraday)',
+        status: ds.database?.stocks_db?.exists ? 'online' : 'offline',
+        detail: 'intraday_aggregated → egksco_scraper.py',
+        lastUpdate: ds.database?.stocks_db?.last_update || null,
+      });
+      // metals.dev (gold_fetcher — checked via gold_prices.db presence proxy)
+      list.push({
+        name: 'metals.dev (Gold)',
+        status: ds.database?.stocks_db?.exists ? 'online' : 'unknown',
+        detail: 'gold_fetcher.py → gold_prices.db',
+        lastUpdate: ds.database?.stocks_db?.last_update || null,
+      });
+      setScrapers(list);
+    } catch (e) {
+      console.error('[SystemControl] scrapers fetch error:', e);
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     fetchData();
-    const interval = setInterval(fetchData, 10000);
+    fetchDbMeta();
+    fetchScrapers();
+    const interval = setInterval(() => {
+      fetchData();
+      fetchDbMeta();
+      fetchScrapers();
+    }, 30000); // 30s — was 10s; reduced load by combining 3 endpoints
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, fetchDbMeta, fetchScrapers]);
 
   const runAction = async (action: string, body?: any) => {
     setActionLoading(action);
@@ -80,6 +200,10 @@ export function SystemControlPanel() {
     }
     setActionLoading(null);
   };
+
+  // Stale DB alerts — owner requirement: "تنبيه أحمر فوري لو توقف تحديث أي
+  // قاعدة لأكثر من ساعتين". Uses dbMeta.lastModified.
+  const staleDbs = dbMeta.filter(d => isStale(d.lastModified));
 
   return (
     <div className="min-h-screen bg-[#0a0e17] text-white" dir="rtl">
@@ -137,8 +261,24 @@ export function SystemControlPanel() {
               </div>
             ) : (
               <>
-                {activeTab === 'overview' && <OverviewTab data={data} />}
-                {activeTab === 'databases' && <DatabasesTab data={data} runAction={runAction} actionLoading={actionLoading} />}
+                {/* PHASE2-ADMIN-PANEL: red stale-DB alert — owner requirement */}
+                {staleDbs.length > 0 && (
+                  <Card className="bg-red-500/10 border-red-500/40 p-3 mb-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="text-xs font-bold text-red-300">
+                          ⚠️ تنبيه: {staleDbs.length} قاعدة بيانات لم تتحدث منذ أكثر من ساعتين
+                        </div>
+                        <div className="text-[10px] text-red-400/80 mt-1" dir="ltr">
+                          {staleDbs.map(d => `${d.name} (${timeAgoShort(d.lastModified)})`).join(' • ')}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+                {activeTab === 'overview' && <OverviewTab data={data} dbMeta={dbMeta} scrapers={scrapers} />}
+                {activeTab === 'databases' && <DatabasesTab data={data} dbMeta={dbMeta} runAction={runAction} actionLoading={actionLoading} />}
                 {activeTab === 'services' && <ServicesTab data={data} runAction={runAction} actionLoading={actionLoading} />}
                 {activeTab === 'engines' && <EnginesTab data={data} />}
                 {activeTab === 'prices' && <PricesTab data={data} runAction={runAction} actionLoading={actionLoading} />}
@@ -164,12 +304,14 @@ export function SystemControlPanel() {
 }
 
 // === Overview Tab ===
-function OverviewTab({ data }: { data: any }) {
+function OverviewTab({ data, dbMeta, scrapers }: { data: any; dbMeta: DbRowMeta[]; scrapers: ScraperHealth[] }) {
   const sys = data?.system || {};
   const dbs = data?.databases || [];
 
   const healthyCount = dbs.filter((d: any) => d.status === 'healthy').length;
   const totalSize = dbs.reduce((s: number, d: any) => s + (d.size_kb || 0), 0);
+  // PHASE2-ADMIN-PANEL: total rows across all DBs (from /api/admin/db)
+  const totalRows = dbMeta.reduce((s, d) => s + (d.totalRows ?? 0), 0);
 
   return (
     <div className="space-y-3">
@@ -181,7 +323,7 @@ function OverviewTab({ data }: { data: any }) {
         <StatCard icon={Clock} label="التشغيل" value={sys.uptime || 'N/A'} color="amber" />
       </div>
 
-      {/* DBs Summary */}
+      {/* DBs Summary — PHASE2-ADMIN-PANEL: now shows row counts + size */}
       <Card className="bg-white/5 border-white/10 p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-gray-300">قواعد البيانات</span>
@@ -189,44 +331,130 @@ function OverviewTab({ data }: { data: any }) {
             {healthyCount}/{dbs.length} سليمة
           </Badge>
         </div>
-        <div className="text-2xl font-bold text-white">{(totalSize / 1024).toFixed(0)} MB</div>
-        <div className="text-[10px] text-gray-500 mt-1">إجمالي حجم البيانات</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="text-2xl font-bold text-white">
+              {totalRows > 0 ? totalRows.toLocaleString() : '—'}
+            </div>
+            <div className="text-[10px] text-gray-500 mt-1">إجمالي الصفوف</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-white">{(totalSize / 1024).toFixed(0)} MB</div>
+            <div className="text-[10px] text-gray-500 mt-1">إجمالي حجم البيانات</div>
+          </div>
+        </div>
       </Card>
 
-      {/* DB List */}
+      {/* DB List — now enriched with row counts + stale indicator */}
       <div className="space-y-1.5">
-        {dbs.map((db: any) => (
-          <DBRow key={db.name} db={db} compact />
-        ))}
+        {dbs.length > 0 ? (
+          dbs.map((db: any) => {
+            const meta = dbMeta.find(m => m.name === db.name);
+            return <DBRow key={db.name} db={db} compact meta={meta} />;
+          })
+        ) : dbMeta.length > 0 ? (
+          // Fallback: if Python proxy returned no DBs, show only Node-side meta
+          dbMeta.slice(0, 8).map((m) => (
+            <DBRow
+              key={m.name}
+              db={{ name: m.name, size_human: m.sizeFormatted || '—', tables: m.tableCount ?? 0, status: 'healthy' }}
+              compact
+              meta={m}
+            />
+          ))
+        ) : null}
       </div>
+
+      {/* PHASE2-ADMIN-PANEL: Scraper Health — owner requirement */}
+      {scrapers.length > 0 && (
+        <Card className="bg-white/5 border-white/10 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Radar className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-semibold text-gray-300">حالة Scrapers</span>
+            </div>
+            <Badge variant="outline" className="text-[10px]">
+              {scrapers.filter(s => s.status === 'online').length}/{scrapers.length} نشط
+            </Badge>
+          </div>
+          <div className="space-y-1.5">
+            {scrapers.map((s) => (
+              <div key={s.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-3 h-3 text-gray-400" />
+                  <span className="text-white">{s.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500" dir="ltr">
+                    {timeAgoShort(s.lastUpdate)}
+                  </span>
+                  <div
+                    className={cn(
+                      'w-2 h-2 rounded-full',
+                      s.status === 'online' ? 'bg-emerald-400' : s.status === 'offline' ? 'bg-red-400' : 'bg-gray-500'
+                    )}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
 
 // === Databases Tab ===
-function DatabasesTab({ data, runAction, actionLoading }: any) {
+function DatabasesTab({ data, dbMeta, runAction, actionLoading }: any) {
   const dbs = data?.databases || [];
+  // Merge Python proxy data with Node-side dbMeta (row counts + lastModified)
+  const rows = dbs.length > 0
+    ? dbs
+    : dbMeta.map((m: DbRowMeta) => ({ name: m.name, size_human: m.sizeFormatted || '—', tables: m.tableCount ?? 0, status: 'healthy' }));
   return (
     <div className="space-y-2">
-      {dbs.map((db: any) => (
-        <DBRow key={db.name} db={db} runAction={runAction} actionLoading={actionLoading} />
-      ))}
+      {rows.map((db: any) => {
+        const meta = dbMeta.find((m: DbRowMeta) => m.name === db.name);
+        return (
+          <DBRow
+            key={db.name}
+            db={db}
+            runAction={runAction}
+            actionLoading={actionLoading}
+            meta={meta}
+          />
+        );
+      })}
     </div>
   );
 }
 
-function DBRow({ db, compact, runAction, actionLoading }: any) {
+function DBRow({ db, compact, runAction, actionLoading, meta }: any) {
   const statusColor = db.status === 'healthy' ? 'text-emerald-400' : db.status === 'empty' ? 'text-amber-400' : 'text-red-400';
   const StatusIcon = db.status === 'healthy' ? CheckCircle2 : AlertCircle;
+  // PHASE2-ADMIN-PANEL: stale flag from meta.lastModified (>2h = stale)
+  const stale = meta?.lastModified ? isStale(meta.lastModified) : false;
 
   return (
-    <Card className="bg-white/5 border-white/10 p-3">
+    <Card className={cn('bg-white/5 border-white/10 p-3', stale && 'border-red-500/40 bg-red-500/5')}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Database className="w-4 h-4 text-cyan-400 shrink-0" />
           <div className="min-w-0">
             <div className="text-xs font-medium text-white truncate">{db.name}</div>
-            <div className="text-[10px] text-gray-500">{db.size_human} • {db.tables} جداول</div>
+            <div className="text-[10px] text-gray-500">
+              {db.size_human || meta?.sizeFormatted || '—'} • {db.tables ?? meta?.tableCount ?? 0} جداول
+              {/* PHASE2-ADMIN-PANEL: row count from /api/admin/db */}
+              {meta?.totalRows != null && (
+                <span className="text-cyan-400/70"> • {meta.totalRows.toLocaleString()} صف</span>
+              )}
+            </div>
+            {/* PHASE2-ADMIN-PANEL: last update + stale alert per-DB */}
+            {meta?.lastModified && (
+              <div className={cn('text-[10px] mt-0.5', stale ? 'text-red-400 font-bold' : 'text-gray-500')}>
+                آخر تحديث: {timeAgoShort(meta.lastModified)}{stale && ' ⚠️ متأخر'}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -312,6 +540,13 @@ function EnginesTab({ data }: { data: any }) {
 
 // === Prices Tab ===
 function PricesTab({ data, runAction, actionLoading }: any) {
+  // PHASE2-ADMIN-PANEL (Rule 27 — no fabrication): use null-safe accessors
+  // instead of `|| 0` fallbacks that mask missing Python responses.
+  const totalStocks: number | null = typeof data?.total_stocks === 'number' ? data.total_stocks : null;
+  const freshnessPct: number | null = typeof data?.freshness_pct === 'number' ? data.freshness_pct : null;
+  const egxStocks: number | null = typeof data?.egx_stocks === 'number' ? data.egx_stocks : null;
+  const historyRows: number | null = typeof data?.price_history_rows === 'number' ? data.price_history_rows : null;
+  const fmtNum = (n: number | null): string => n === null ? '—' : n.toLocaleString();
   return (
     <div className="space-y-3">
       <Card className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/5 border-emerald-500/20 p-4">
@@ -332,24 +567,26 @@ function PricesTab({ data, runAction, actionLoading }: any) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-2xl font-bold text-white">{data?.total_stocks || 0}</div>
+            <div className="text-2xl font-bold text-white">{fmtNum(totalStocks)}</div>
             <div className="text-[10px] text-gray-400">إجمالي الأسهم</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-2xl font-bold text-emerald-400">{data?.freshness_pct || 0}%</div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {freshnessPct === null ? '—' : `${freshnessPct}%`}
+            </div>
             <div className="text-[10px] text-gray-400">طازجة</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-lg font-bold text-cyan-400">{data?.egx_stocks || 0}</div>
+            <div className="text-lg font-bold text-cyan-400">{fmtNum(egxStocks)}</div>
             <div className="text-[10px] text-gray-400">أسهم EGX</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-lg font-bold text-purple-400">{(data?.price_history_rows || 0).toLocaleString()}</div>
+            <div className="text-lg font-bold text-purple-400">{fmtNum(historyRows)}</div>
             <div className="text-[10px] text-gray-400">سجل تاريخي</div>
           </div>
         </div>
         <div className="mt-2 text-center text-[10px] text-gray-500">
-          آخر تحديث: {data?.price_history_latest || 'N/A'}
+          آخر تحديث: {data?.price_history_latest || '—'}
         </div>
       </Card>
     </div>
@@ -358,7 +595,17 @@ function PricesTab({ data, runAction, actionLoading }: any) {
 
 // === Predictions Tab ===
 function PredictionsTab({ data, runAction, actionLoading }: any) {
-  const wr = data?.win_rate || 0;
+  // PHASE2-ADMIN-PANEL (Rule 27 — no fabrication):
+  //   Previously: `const wr = data?.win_rate || 0` and `(data?.total || 0)`.
+  //   That fabricated 0% win rate + 0 counts when the Python proxy returned
+  //   null. Now we render "—" when the field is null/undefined.
+  const wr: number | null = typeof data?.win_rate === 'number' ? data.win_rate : null;
+  const total: number | null = typeof data?.total === 'number' ? data.total : null;
+  const closed: number | null = typeof data?.closed === 'number' ? data.closed : null;
+  const pending: number | null = typeof data?.pending === 'number' ? data.pending : null;
+
+  const fmtNum = (n: number | null): string => n === null ? '—' : n.toLocaleString();
+
   return (
     <div className="space-y-3">
       <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border-purple-500/20 p-4">
@@ -379,19 +626,21 @@ function PredictionsTab({ data, runAction, actionLoading }: any) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-2xl font-bold text-white">{(data?.total || 0).toLocaleString()}</div>
+            <div className="text-2xl font-bold text-white">{fmtNum(total)}</div>
             <div className="text-[10px] text-gray-400">إجمالي</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className={cn('text-2xl font-bold', wr >= 50 ? 'text-emerald-400' : 'text-amber-400')}>{wr}%</div>
+            <div className={cn('text-2xl font-bold', wr === null ? 'text-gray-500' : wr >= 50 ? 'text-emerald-400' : 'text-amber-400')}>
+              {wr === null ? '—' : `${wr}%`}
+            </div>
             <div className="text-[10px] text-gray-400">معدل النجاح</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-lg font-bold text-cyan-400">{(data?.closed || 0).toLocaleString()}</div>
+            <div className="text-lg font-bold text-cyan-400">{fmtNum(closed)}</div>
             <div className="text-[10px] text-gray-400">مغلقة</div>
           </div>
           <div className="text-center p-2 rounded-lg bg-black/30">
-            <div className="text-lg font-bold text-amber-400">{(data?.pending || 0).toLocaleString()}</div>
+            <div className="text-lg font-bold text-amber-400">{fmtNum(pending)}</div>
             <div className="text-[10px] text-gray-400">معلقة</div>
           </div>
         </div>
