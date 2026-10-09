@@ -1493,6 +1493,33 @@ function NewsEngineDeepView({ news }: { news: NewsHealthResponse | null }) {
 /** Predictions Engine — by-model performance. */
 function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }) {
   const files = logs?.engines?.predictions?.files || [];
+  // PHASE2-ADMIN-PANEL: owner request — "زر إعادة توليد التوقعات لسوق معين
+  // عند الطلب". Since /api/admin/generate-predictions is 410 Gone and
+  // /api/daily/rebuild does NOT exist in this codebase, we cannot trigger
+  // Python regeneration from the UI. Instead, the button shows a clear
+  // message that predictions are auto-generated via cron (daily_predictor.py).
+  // Rule 27: no fabricated endpoint call.
+  const [market, setMarket] = useState<string>('EGX');
+  const [regenLoading, setRegenLoading] = useState(false);
+
+  const handleRegenerate = useCallback(() => {
+    setRegenLoading(true);
+    // No live endpoint to call — just inform the admin clearly.
+    setTimeout(() => {
+      setRegenLoading(false);
+      toast.info(
+        `التوقعات لسوق ${market} تُولّد تلقائيًا عبر cron (daily_predictor.py)`,
+        {
+          description:
+            'مسار /api/admin/generate-predictions معطّل (410 Gone). ' +
+            'مسار /api/daily/rebuild غير موجود. ' +
+            'يتم التوليد آليًا في 05:00 و15:30 بتوقيت القاهرة.',
+          duration: 6000,
+        },
+      );
+    }, 400);
+  }, [market]);
+
   return (
     <div className="space-y-3">
       <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs">
@@ -1500,6 +1527,41 @@ function PredictionsEngineDeepView({ logs }: { logs: EngineLogsResponse | null }
         الأداء لكل نموذج (technical / fundamental / master_score) بيتحسب من predictions.db.
         هنا بنعرض السجلات الحية لمحرك V40.2 + آخر تشغيل لكل job.
       </div>
+
+      {/* PHASE2-ADMIN-PANEL: regenerate predictions for a specific market */}
+      <Card className="border-emerald-200 dark:border-emerald-900/40">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Brain className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-semibold">إعادة توليد التوقعات لسوق معين</span>
+            <select
+              value={market}
+              onChange={(e) => setMarket(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            >
+              <option value="EGX">🇪🇬 EGX (مصر)</option>
+              <option value="TADAWUL">🇸🇦 TADAWUL (السعودية)</option>
+              <option value="KSE">🇰🇼 KSE (الكويت)</option>
+              <option value="QSE">🇶🇦 QSE (قطر)</option>
+              <option value="US">🇺🇸 US (أمريكا)</option>
+              <option value="CRYPTO">₿ CRYPTO (عملات رقمية)</option>
+            </select>
+            <Button
+              size="sm"
+              onClick={handleRegenerate}
+              disabled={regenLoading}
+              className="gap-1.5 h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+            >
+              {regenLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+              إعادة التوليد
+            </Button>
+            <span className="text-[10px] text-muted-foreground ml-auto">
+              ⚙️ تلقائي عبر cron — لا يدعم التشغيل اليدوي
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {files.map((f) => {
           const running = f.exists && f.mtime

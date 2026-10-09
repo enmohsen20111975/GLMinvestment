@@ -18,7 +18,7 @@
  *   manual "publish pending" button for un-published predictions.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
 } from '@/components/ui/card';
@@ -26,8 +26,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Send, RefreshCw, AlertTriangle, CheckCircle2, XCircle,
-  MessageSquare, Clock, Loader2, FileText,
+  MessageSquare, Clock, Loader2, FileText, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -90,6 +94,12 @@ export function TelegramPredictionsTab() {
   const [data, setData] = useState<TelegramPredictionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishingTicker, setPublishingTicker] = useState<string | null>(null);
+  // PHASE2-ADMIN-PANEL: owner request — "المعاينة قبل النشر (Preview)".
+  //   Previously: clicking "نشر المعلّق" immediately POSTed to
+  //   /api/telegram/publish-stock with no confirmation. Now we open a
+  //   preview modal showing the rendered message (ticker / signal /
+  //   entry/target/stop / score) and a confirm button.
+  const [previewPrediction, setPreviewPrediction] = useState<PredictionRow | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -136,6 +146,26 @@ export function TelegramPredictionsTab() {
       setPublishingTicker(null);
     }
   };
+
+  // PHASE2-ADMIN-PANEL: render a preview of the Telegram message before
+  // actually publishing it. Mirrors the structure used by
+  // /api/telegram/publish-stock (ticker + signal + entry/target/stop + score).
+  const previewMessage = useMemo(() => {
+    if (!previewPrediction) return null;
+    const p = previewPrediction;
+    const lines: string[] = [];
+    lines.push(`📊 ${p.ticker}`);
+    if (p.market) lines.push(`السوق: ${p.market}`);
+    if (p.signal) lines.push(`الإشارة: ${p.signal}`);
+    if (p.signal_type) lines.push(`النوع: ${p.signal_type}`);
+    lines.push('');
+    lines.push(`💵 الدخول: ${p.entry_price != null ? p.entry_price.toFixed(2) : '—'}`);
+    lines.push(`🎯 الهدف: ${p.target_price != null ? p.target_price.toFixed(2) : '—'}`);
+    lines.push(`🛑 الوقف: ${p.stop_loss != null ? p.stop_loss.toFixed(2) : '—'}`);
+    if (p.master_score != null) lines.push(`⭐ النتيجة: ${p.master_score.toFixed(1)}`);
+    if (p.prediction_date) lines.push(`\n📅 ${p.prediction_date}`);
+    return lines.join('\n');
+  }, [previewPrediction]);
 
   const summary = data?.summary;
   const published = data?.published ?? [];
@@ -276,7 +306,7 @@ export function TelegramPredictionsTab() {
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => publishPrediction(p.ticker)}
+                    onClick={() => setPreviewPrediction(p)}
                     disabled={publishingTicker === p.ticker}
                     className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
                   >
@@ -287,8 +317,8 @@ export function TelegramPredictionsTab() {
                       </>
                     ) : (
                       <>
-                        <Send className="w-3 h-3" />
-                        نشر المعلّق
+                        <Eye className="w-3 h-3" />
+                        معاينة ونشر
                       </>
                     )}
                   </Button>
@@ -367,6 +397,92 @@ export function TelegramPredictionsTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* PHASE2-ADMIN-PANEL: Preview-before-publish AlertDialog.
+          Owner request: "المعاينة قبل النشر (Preview)".
+          Shows the rendered Telegram message + a confirm button that calls
+          the actual publish endpoint. Cancel just closes the dialog. */}
+      <AlertDialog
+        open={previewPrediction !== null}
+        onOpenChange={(v) => !v && setPreviewPrediction(null)}
+      >
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-emerald-600" />
+              معاينة قبل النشر على تيليجرام
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              سيُرسل التالي إلى قناة تيليجرام. راجع المحتوى قبل التأكيد.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {previewPrediction && (
+            <div className="space-y-3">
+              {/* Meta badges */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-mono font-bold" dir="ltr">{previewPrediction.ticker}</span>
+                {previewPrediction.market && (
+                  <Badge variant="outline" className="text-[10px]">{previewPrediction.market}</Badge>
+                )}
+                {previewPrediction.signal && (
+                  <Badge variant="outline" className={cn('text-[10px]', signalColor(previewPrediction.signal))} dir="ltr">
+                    {previewPrediction.signal}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-500">
+                  ⏳ معلّق
+                </Badge>
+              </div>
+
+              {/* Rendered message preview (mirrors Telegram layout) */}
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40 p-3">
+                <div className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
+                  <MessageSquare className="w-3 h-3" />
+                  معاينة الرسالة
+                </div>
+                <pre
+                  className="whitespace-pre-wrap text-xs text-foreground font-sans leading-relaxed"
+                  dir="rtl"
+                >
+{previewMessage ?? ''}
+                </pre>
+              </div>
+
+              <div className="text-[10px] text-muted-foreground">
+                ⚠️ سيتم استدعاء <code dir="ltr">/api/telegram/publish-stock</code> فور التأكيد.
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (previewPrediction) {
+                  const ticker = previewPrediction.ticker;
+                  setPreviewPrediction(null);
+                  publishPrediction(ticker);
+                }
+              }}
+              disabled={publishingTicker !== null}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+            >
+              {publishingTicker ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري النشر...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  تأكيد النشر
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

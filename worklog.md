@@ -67733,3 +67733,31 @@ Verification:
 - ✅ Existing content preserved — only surgical additions + updates.
 - ✅ Cross-references between docs (e.g., §17.12 ↔ §1.6 + §0.10 ↔ §17.12).
 >>>>>>> ffd49494d70a43b1078408d07bd0666aa49f59e3
+
+---
+Task ID: PHASE2-ADMIN-PANEL
+Agent: general-purpose (مهندس الواجهات)
+Task: تحسين جودة لوحة الأدمن (5 مجالات)
+
+Stage Summary:
+- 12 تحسين تم تطبيقه على 7 ملفات (6 مكونات + 1 API route):
+  * SystemControlPanel.tsx — عداد الصفوف + تنبيه أحمر للقواعد المتأخرة (>2h) + حالة scrapers (4 مصادر) + إصلاح fabricated `|| 0` (Rule 27) في تبويب الأسعار والتوقعات
+  * SystemHealthCard.tsx — تنبيه أحمر للقواعد المتأخرة + إضافة `last_seen` للـ interface + dot أحمر للـ DB files المتأخرة
+  * EngineControlRoomTab.tsx — زر "إعادة توليد التوقعات لسوق معين" (مع dropdown لـ 6 أسواق + toast cron-auto واضح)
+  * NewsManagementTab.tsx — فلتر High-Impact Catalysts (min_importance dropdown: 0/40/70/85)
+  * api/admin/news/route.ts — دعم `?min_importance=N` + إصلاح نوع `params` (Record<string,unknown>[] → unknown[]) → قلّل 2 أخطاء TS جاهزة
+  * UserManagementPanel.tsx — tier breakdown (free/premium/admin/VIP) + bot sync status (pgrep telegram) + Paymob placeholder ("سيتوفر قريباً" — Rule 27)
+  * TelegramPredictionsTab.tsx — AlertDialog preview قبل النشر (يظهر الرسالة كاملة + تأكيد قبل POST)
+
+Verification:
+- ✅ bun run lint → exit 0 (0 errors)
+- ✅ npx tsc --noEmit --skipLibCheck → 1258 خطأ (كان 1260 baseline) → -2 أخطاء (لا أخطاء جديدة)
+- ✅ Rule 27 (no fabrication): كل البيانات المفقودة تظهر "—" أو "سيتوفر قريباً"
+- ✅ Null-safety على كل .toFixed() في الملفات المعدّلة
+- ✅ 0 ملفات محذوفة + 0 Python files touched + 0 git push
+
+Constraints honored:
+- ❌ NO file deleted (surgical edits only)
+- ❌ NO Python files touched (per task constraint)
+- ❌ NO git push (per task constraint)
+- ✅ All output in ARABIC

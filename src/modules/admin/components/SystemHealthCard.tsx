@@ -42,6 +42,9 @@ interface ServiceCheck {
   latency_ms?: number;
   message: string;
   details?: Record<string, unknown>;
+  // PHASE2-ADMIN-PANEL: surfaced by /api/admin/system-health for file-type
+  // services (DB files) — used by the stale-DB alert (last_update > 2h).
+  last_seen?: string | null;
 }
 
 interface SystemHealthResponse {
@@ -95,6 +98,29 @@ const TYPE_ICON: Record<ServiceCheck['type'], React.ReactNode> = {
   file: <Database className="w-3 h-3" />,
 };
 
+// PHASE2-ADMIN-PANEL: owner requirement — "تنبيه أحمر فوري لو توقف تحديث أي
+// قاعدة لأكثر من ساعتين". Used for DB file service checks (type='file').
+const STALE_THRESHOLD_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function isStaleDb(lastSeen: string | null | undefined): boolean {
+  if (!lastSeen) return false; // unknown — don't alert (Rule 27)
+  const d = new Date(lastSeen);
+  if (isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() > STALE_THRESHOLD_MS;
+}
+
+function timeAgoShort(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return 'الآن';
+  if (diffMs < 60_000) return `${Math.floor(diffMs / 1000)} ث`;
+  if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)} د`;
+  if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)} س`;
+  return `${Math.floor(diffMs / 86_400_000)} يوم`;
+}
+
 function StatusIcon({ status }: { status: ServiceCheck['status'] }) {
   const meta = STATUS_META[status];
   if (meta.icon === 'check') return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />;
@@ -144,6 +170,11 @@ export function SystemHealthCard() {
   const onlineCount = summary?.online ?? 0;
   const offlineCount = summary?.offline ?? 0;
   const totalCount = summary?.total ?? 0;
+
+  // PHASE2-ADMIN-PANEL: stale DB files (type='file', last_seen > 2h)
+  const staleDbServices = services.filter(
+    s => s.type === 'file' && isStaleDb(s.last_seen),
+  );
 
   return (
     <Card className="border-emerald-200 dark:border-emerald-900/40">
@@ -219,22 +250,42 @@ export function SystemHealthCard() {
               </div>
             )}
 
+            {/* PHASE2-ADMIN-PANEL: stale DB alert — owner requirement.
+                "تنبيه أحمر فوري لو توقف تحديث أي قاعدة لأكثر من ساعتين" */}
+            {staleDbServices.length > 0 && (
+              <div className="mb-3 p-2 rounded-lg border border-red-400 bg-red-50 dark:bg-red-950/30 dark:border-red-800 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="text-xs font-bold text-red-700 dark:text-red-400 block">
+                    ⚠️ {staleDbServices.length} قاعدة بيانات لم تتحدث منذ أكثر من ساعتين
+                  </span>
+                  <span className="text-[10px] text-red-600/80 dark:text-red-300/70 block mt-0.5" dir="ltr">
+                    {staleDbServices.map(s => `${s.id.replace('db_', '')} (${timeAgoShort(s.last_seen)})`).join(' • ')}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {services.map((svc) => {
                 const meta = STATUS_META[svc.status];
+                // PHASE2-ADMIN-PANEL: override border/dot for stale DB files
+                const stale = svc.type === 'file' && isStaleDb(svc.last_seen);
                 return (
                   <div
                     key={svc.id}
                     className={cn(
                       'p-2 rounded-lg border flex items-center gap-2 text-xs',
-                      svc.status === 'online'
-                        ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40'
-                        : svc.status === 'degraded'
-                          ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40'
-                          : 'border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40',
+                      stale
+                        ? 'border-red-400 bg-red-50 dark:bg-red-950/30 dark:border-red-800'
+                        : svc.status === 'online'
+                          ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40'
+                          : svc.status === 'degraded'
+                            ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900/40'
+                            : 'border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40',
                     )}
                   >
-                    <div className={cn('w-2 h-2 rounded-full shrink-0', meta.dot)} />
+                    <div className={cn('w-2 h-2 rounded-full shrink-0', stale ? 'bg-red-500' : meta.dot)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {TYPE_ICON[svc.type]}
@@ -243,6 +294,12 @@ export function SystemHealthCard() {
                       </div>
                       <div className="text-[10px] text-muted-foreground truncate" dir="ltr">
                         {svc.message}
+                        {/* PHASE2-ADMIN-PANEL: show last update age for DB files */}
+                        {svc.type === 'file' && svc.last_seen && (
+                          <span className={cn('ml-1', stale ? 'text-red-600 dark:text-red-400 font-bold' : 'text-muted-foreground')}>
+                            • آخر تحديث: {timeAgoShort(svc.last_seen)}{stale && ' ⚠️ متأخر'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {svc.latency_ms !== undefined && svc.latency_ms > 0 && (
