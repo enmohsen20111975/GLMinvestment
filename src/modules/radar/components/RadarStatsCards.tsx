@@ -385,7 +385,7 @@ export function SectorTreemapCard() {
     <Card className="p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Layers className="h-4 w-4 text-primary dark:text-blue-400" />
           <div>
             <h4 className="text-sm font-semibold">خريطة سيولة القطاعات</h4>
             <p className="text-[10px] text-muted-foreground">حجم القطاع = سيولته · اللون = اتجاه الأموال</p>
@@ -532,7 +532,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
     <Card className="p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Gauge className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Gauge className="h-4 w-4 text-primary dark:text-blue-400" />
           <div>
             <div className="text-xs font-semibold">توقيت الدخول الذكي</div>
             <div className="text-[10px] text-muted-foreground">درجة من 0-100 بناءً على 4 عوامل</div>
@@ -587,7 +587,7 @@ export function EntryTimingCard({ ticker }: { ticker: string }) {
       </div>
 
       {/* Recommendation */}
-      <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-[11px] text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
+      <div className="mt-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-[11px] text-primary dark:text-blue-300 flex items-start gap-1.5">
         <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
         <span>{data.recommendation}</span>
       </div>

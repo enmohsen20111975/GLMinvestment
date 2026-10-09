@@ -2061,7 +2061,7 @@ export function TradingViewChart({
             <span
               className={cn(
                 'w-1.5 h-1.5 rounded-full',
-                dataSource.includes('intraday') ? 'bg-emerald-500' : 'bg-blue-500'
+                dataSource.includes('intraday') ? 'bg-emerald-500' : 'bg-primary'
               )}
             />
             {dataSource.includes('intraday')

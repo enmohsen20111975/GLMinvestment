@@ -434,7 +434,7 @@ export function DataScraperControl() {
               onClick={syncMultiMarket}
               disabled={loading}
               variant="default"
-              className="h-auto py-4 flex-col gap-2 bg-blue-600 hover:bg-blue-700"
+              className="h-auto py-4 flex-col gap-2 bg-primary hover:bg-primary"
             >
               <Globe className="w-5 h-5" />
               <span>تحديث الأسواق العربية</span>
@@ -478,7 +478,7 @@ export function DataScraperControl() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      {job.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+                      {job.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
                       {job.status === 'completed' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                       {job.status === 'failed' && <XCircle className="w-4 h-4 text-red-500" />}
                       <span className="font-medium text-sm">

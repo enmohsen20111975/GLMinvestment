@@ -1387,7 +1387,7 @@ export function AdminView() {
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <Users className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                    <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
                     <div className="text-lg md:text-xl lg:text-2xl font-bold">{stats?.users?.total ?? 0}</div>
                     <div className="text-xs text-muted-foreground">مستخدم</div>
                   </div>
@@ -1609,7 +1609,7 @@ export function AdminView() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-                  <Database className="w-5 h-5 text-blue-500" />
+                  <Database className="w-5 h-5 text-primary" />
                   <div>
                     <div className="text-xs text-muted-foreground">قواعد البيانات</div>
                     <div className="font-bold">

@@ -140,7 +140,7 @@ function signalBadge(signal: string): { label: string; className: string } {
   const s = (signal || '').toLowerCase();
   if (s.includes('strong_buy')) return { label: 'شراء قوي', className: 'bg-emerald-500 text-white' };
   if (s.includes('buy')) return { label: 'شراء', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' };
-  if (s.includes('accumulate')) return { label: 'تجميع', className: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' };
+  if (s.includes('accumulate')) return { label: 'تجميع', className: 'bg-blue-100 text-primary dark:bg-blue-950 dark:text-blue-300' };
   if (s.includes('strong_sell')) return { label: 'بيع قوي', className: 'bg-red-500 text-white' };
   if (s.includes('sell')) return { label: 'بيع', className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' };
   if (s.includes('reduce')) return { label: 'تخفيض', className: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' };

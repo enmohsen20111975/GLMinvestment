@@ -156,7 +156,7 @@ export function LearnedLessonsDashboard({ initialLimit = 50 }: LearnedLessonsDas
               <StatPill
                 label="إجمالي الدروس المعروضة"
                 value={lessons.length.toString()}
-                icon={<Activity className="h-3.5 w-3.5 text-blue-500" />}
+                icon={<Activity className="h-3.5 w-3.5 text-primary" />}
               />
               <StatPill
                 label="إجمالي التكرارات"
@@ -390,7 +390,7 @@ function Metric({
   tone: 'blue' | 'red' | 'amber' | 'green' | 'muted';
 }) {
   const toneClass = {
-    blue: 'text-blue-700 dark:text-blue-300 bg-blue-500/5',
+    blue: 'text-primary dark:text-blue-300 bg-primary/5',
     red: 'text-red-700 dark:text-red-300 bg-red-500/5',
     amber: 'text-amber-700 dark:text-amber-300 bg-amber-500/5',
     green: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/5',

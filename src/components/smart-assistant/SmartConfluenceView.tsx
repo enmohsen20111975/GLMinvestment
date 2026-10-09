@@ -147,7 +147,7 @@ export function SmartConfluenceView() {
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">بيع</CardTitle></CardHeader>
           <CardContent><div className="text-xl font-bold text-red-500">{sellPicks.length}</div></CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
+        <Card className="bg-gradient-to-br from-primary/10 to-cyan-500/10">
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">الكل</CardTitle></CardHeader>
           <CardContent><div className="text-xl font-bold">{predictions.length}</div></CardContent>
         </Card>

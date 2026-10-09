@@ -238,7 +238,7 @@ function EngineCard({
                     size="sm"
                     className={cn(
                         'w-full gap-1.5 font-semibold',
-                        engine.name === 'Data Engine' ? 'bg-blue-600 hover:bg-blue-700' :
+                        engine.name === 'Data Engine' ? 'bg-primary hover:bg-primary' :
                         engine.name === 'Analysis Engine' ? 'bg-purple-600 hover:bg-purple-700' :
                         'bg-emerald-600 hover:bg-emerald-700'
                     )}
@@ -259,7 +259,7 @@ function EngineCard({
                 <div className="grid grid-cols-2 gap-3">
                     {/* Last Update */}
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                        <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
                             <div className="text-xs text-muted-foreground">آخر تحديث</div>
                             <div className="text-sm font-medium truncate">{formatTimeAgo(engine.minutes_ago)}</div>
@@ -335,7 +335,7 @@ function EngineCard({
                         <div className="grid grid-cols-2 gap-2">
                             <div className="p-2 rounded-lg bg-muted/50 text-center">
                                 <div className="text-xs text-muted-foreground">توقعات اليوم</div>
-                                <div className="text-lg font-bold text-blue-600">{engine.today_predictions || 0}</div>
+                                <div className="text-lg font-bold text-primary">{engine.today_predictions || 0}</div>
                             </div>
                             <div className="p-2 rounded-lg bg-muted/50 text-center">
                                 <div className="text-xs text-muted-foreground">إجمالي التوقعات</div>
@@ -657,7 +657,7 @@ export function EnginesStatusTab() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <EngineCard
                     engine={{ ...engines.data, pm2_name: engines.data.pm2_name || 'data-engine' }}
-                    icon={<Database className="w-6 h-6 text-blue-600" />}
+                    icon={<Database className="w-6 h-6 text-primary" />}
                     color="bg-blue-100 dark:bg-blue-950/30"
                     expanded={expandedEngine === 'data'}
                     onToggle={() => setExpandedEngine(expandedEngine === 'data' ? null : 'data')}
@@ -694,7 +694,7 @@ export function EnginesStatusTab() {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <Server className="w-5 h-5 text-blue-500" />
+                        <Server className="w-5 h-5 text-primary" />
                         معمارية النظام
                     </CardTitle>
                 </CardHeader>
@@ -702,7 +702,7 @@ export function EnginesStatusTab() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
                             <div className="flex items-center gap-2 mb-1">
-                                <Database className="w-4 h-4 text-blue-600" />
+                                <Database className="w-4 h-4 text-primary" />
                                 <span className="font-medium text-sm">محرك البيانات</span>
                             </div>
                             <p className="text-xs text-muted-foreground">

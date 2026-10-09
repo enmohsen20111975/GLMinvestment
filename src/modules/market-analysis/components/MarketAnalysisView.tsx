@@ -223,7 +223,7 @@ export function MarketAnalysisView({ initialMarket }: MarketAnalysisViewProps = 
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.sectorsTracking')}</span>
           </TabsTrigger>
           <TabsTrigger value="historical-trades" className="flex items-center gap-1">
-            <History className="h-4 w-4 text-blue-600" />
+            <History className="h-4 w-4 text-primary" />
             <span className="hidden sm:inline">{t('marketAnalysis.tabs.historicalTrades')}</span>
           </TabsTrigger>
           <TabsTrigger value="net-picks" className="flex items-center gap-1">
