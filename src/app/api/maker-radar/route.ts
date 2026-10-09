@@ -105,17 +105,15 @@ export async function GET(req: NextRequest) {
   try {
     const dbPath = path.join(PROJECT_ROOT, 'db', 'stocks.db');
     const db = new Database(dbPath, { readonly: true });
-    // SECURITY-FIX (2026-10-09, Team 7 SQL injection): parameterized query بدل interpolation
-    // قبل كده: `AND market = '${market}'` ← SQL injection risk
-    // دلوقتي: parameterized query + columns إضافية من remote merge
+    // SECURITY-FIX + DEEP-MARKET-SEPARATION: parameterized query بدل interpolation
+    const selectCols = `ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close`;
     let liveRows: any[];
     if (market === 'EGX') {
-      liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0 AND market IN ('EGX','مصر')`).all() as any[];
+      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0 AND market IN ('EGX','مصر')`).all() as any[];
     } else if (market) {
-      // SECURITY: parameterized — مش vulnerable لـ SQL injection
-      liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0 AND market = ?`).all(market) as any[];
+      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0 AND market = ?`).all(market) as any[];
     } else {
-      liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0`).all() as any[];
+      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0`).all() as any[];
     }
     for (const r of liveRows) {
       if (r.ticker) {

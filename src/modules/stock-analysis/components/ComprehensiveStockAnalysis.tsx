@@ -260,11 +260,11 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
   // unified.technical is read directly from stocks.db (pre-computed RSI/MA),
   // so it is the single source of truth for these indicators.
   if (unifiedData?.technical) {
-    if (unifiedData.technical.rsi != null) tech.rsi = Number(unifiedData.technical.rsi);
-    if (unifiedData.technical.ma_50 != null) tech.ma_50 = Number(unifiedData.technical.ma_50);
-    if (unifiedData.technical.ma_200 != null) tech.ma_200 = Number(unifiedData.technical.ma_200);
-    if (unifiedData.technical.support != null) tech.support = Number(unifiedData.technical.support);
-    if (unifiedData.technical.resistance != null) tech.resistance = Number(unifiedData.technical.resistance);
+    if (unifiedData?.technical?.rsi != null) tech.rsi = Number(unifiedData?.technical?.rsi);
+    if (unifiedData?.technical?.ma_50 != null) tech.ma_50 = Number(unifiedData?.technical?.ma_50);
+    if (unifiedData?.technical?.ma_200 != null) tech.ma_200 = Number(unifiedData?.technical?.ma_200);
+    if (unifiedData?.technical?.support != null) tech.support = Number(unifiedData?.technical?.support);
+    if (unifiedData?.technical?.resistance != null) tech.resistance = Number(unifiedData?.technical?.resistance);
   }
 
   // Financial Sanity Gate: Ensure support < price < resistance under all circumstances
@@ -545,7 +545,7 @@ function OverviewTab({ data, unifiedData }: { data: ComprehensiveData; unifiedDa
             الإشارة الموحدة (Canonical)
             {unifiedData?.canonical?.master_score_source && (
               <Badge variant="outline" className="text-[9px] text-muted-foreground ml-2">
-                {unifiedData.canonical.master_score_source === 'prediction_db_fresh'
+                {unifiedData?.canonical?.master_score_source === 'prediction_db_fresh'
                   ? 'من قاعدة التوقعات'
                   : 'محسوب فورياً'}
               </Badge>
