@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     try {
       const historyRow = db.prepare('SELECT COUNT(*) as count FROM price_history').get() as { count: number };
       priceHistoryCount = historyRow?.count || 0;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // price_history might be in a separate DB
     }
 

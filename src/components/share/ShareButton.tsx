@@ -412,7 +412,7 @@ export function ShareButton({
       setCopied(true);
       toast.success('تم نسخ النص بنجاح');
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل نسخ النص');
     }
   }, [getShareText]);

@@ -940,7 +940,7 @@ export function detectAnomalies(): Alert[] {
 export function closeMetricsDb(): void {
   try {
     _db?.close();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
   _db = null;

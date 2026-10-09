@@ -41,7 +41,7 @@ export async function ensureInitialized(): Promise<void> {
     try {
       await _ensurePromise;
       return;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       _ensurePromise = null;
     }
   }
@@ -110,7 +110,7 @@ export function getPriceHistoryFromNewDb(ticker: string, days: number = 90): Rec
           SELECT current_price FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1
         `).get(ticker.toUpperCase()) as { current_price: number } | undefined;
         currentPrice = stockRow?.current_price || null;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Ignore validation errors
       }
     }

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
           by_type: byType,
         };
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // 2. Transactions summary (current month)
     let transactionsSummary = { total_income: 0, total_expense: 0, net: 0, count: 0 };
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
           count: txns.length,
         };
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // 3. Obligations summary
     let obligationsSummary = { total_remaining: 0, total_monthly: 0, active_count: 0 };
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
           active_count: obligations.length,
         };
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // 4. Net worth = assets current value - obligations remaining
     const netWorth = assetsSummary.total_current - obligationsSummary.total_remaining;

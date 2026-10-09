@@ -42,7 +42,7 @@ function parseAnalysisJson(raw: any): {
       return { technical_explanation: te as Record<string, any>, analysis_obj: obj as Record<string, any> };
     }
     return { technical_explanation: null, analysis_obj: obj as Record<string, any> };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { technical_explanation: null, analysis_obj: null };
   }
 }

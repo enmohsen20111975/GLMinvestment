@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'internal_error' }, { status: 500 });
   } finally {
     if (predDb) {
-      try { predDb.close(); } catch { /* ignore */ }
+      try { predDb.close(); } catch { /* ignore - safe-by-design */ }
     }
   }
 }

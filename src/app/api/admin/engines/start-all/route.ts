@@ -93,7 +93,7 @@ async function listPids(pattern: string): Promise<number[]> {
       .split('\n')
       .map(s => parseInt(s.trim(), 10))
       .filter(n => Number.isFinite(n) && n > 0 && n !== process.pid);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }

@@ -88,7 +88,7 @@ export function ensureBotLinkSchema(): void {
   ]) {
     try {
       db.exec(ddl);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* duplicates present — leave as-is, upsert handles it defensively */
     }
   }

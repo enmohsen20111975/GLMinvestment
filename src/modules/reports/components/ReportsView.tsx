@@ -242,7 +242,7 @@ function SectorReport() {
     try {
       const data = await fetchDailyReport({ market: useAppStore.getState().currentMarket });
       setReport(data);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setReport({
         success: false,
         skipped: true,
@@ -518,7 +518,7 @@ function PredictionsReport() {
     try {
       const data = await fetchWeeklyReport({ market: useAppStore.getState().currentMarket });
       setReport(data);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setReport({
         success: false,
         skipped: true,

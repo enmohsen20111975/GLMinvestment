@@ -192,7 +192,7 @@ function getCairoClockString(): string {
       second: '2-digit',
       hour12: false,
     }).format(new Date());
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Date().toLocaleTimeString('en-GB', { hour12: false });
   }
 }
@@ -206,7 +206,7 @@ function getCairoDateString(): string {
       month: 'long',
       year: 'numeric',
     }).format(new Date());
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Date().toDateString();
   }
 }

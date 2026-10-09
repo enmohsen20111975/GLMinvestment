@@ -92,7 +92,7 @@ export async function initialize(): Promise<void> {
     (globalThis as Record<string, unknown>)[_cacheKey] = { type: 'better-sqlite3' };
     console.log('[sqlite-wrapper] ✓ Initialized better-sqlite3');
     return;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     console.log('[sqlite-wrapper] better-sqlite3 not available, trying sql.js...');
   }
 
@@ -199,7 +199,7 @@ function createBetterSqlite3Database(dbPath: string, isReadonly: boolean): Sqlit
       db.close();
     },
     save(): void {
-      try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch {}
+      try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch { /* safe-by-design */ }
     },
   };
 }

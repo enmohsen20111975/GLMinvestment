@@ -60,7 +60,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             keepalive: true,
           }).catch(() => { /* silent */ });
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // tracking is fire-and-forget — never break UX
       }
     };

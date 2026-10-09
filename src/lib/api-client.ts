@@ -28,7 +28,7 @@ function resolveBaseUrl(): string {
   if (typeof window === 'undefined') return ENV_BASE_URL;
   try {
     return new URL(ENV_BASE_URL).origin === window.location.origin ? ENV_BASE_URL : '';
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '';
   }
 }

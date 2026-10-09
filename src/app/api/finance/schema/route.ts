@@ -90,7 +90,7 @@ export async function POST() {
       { name: 'asset_class', def: "TEXT DEFAULT 'stock'" },
       { name: 'annual_yield', def: "REAL DEFAULT 0" },
     ]) {
-      try { db.prepare(`ALTER TABLE portfolio_assets ADD COLUMN ${col.name} ${col.def}`).run(); } catch { /* العمود موجود */ }
+      try { db.prepare(`ALTER TABLE portfolio_assets ADD COLUMN ${col.name} ${col.def}`).run(); } catch { /* العمود موجود - safe-by-design */ }
     }
 
     // ROBO-ADVISOR-P3: جدول macro_indicators (معدل التضخم وغيره)

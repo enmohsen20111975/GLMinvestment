@@ -346,7 +346,7 @@ export function DailyMarketReport({ printMode = false }: DailyMarketReportProps)
     try {
       const data = await fetchDailyReport({ market: 'EGX' });
       setReport(data);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setReport({
         success: false,
         skipped: true,

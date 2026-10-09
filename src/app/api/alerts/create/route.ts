@@ -48,10 +48,10 @@ function ensureWatchlistTable(db: SqliteDatabase): void {
   const cols = db.prepare("PRAGMA table_info(user_stock_watchlists)").all() as { name: string }[];
   const have = new Set(cols.map(c => c.name));
   if (!have.has('purchase_price')) {
-    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN purchase_price REAL').run(); } catch { /* exists */ }
+    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN purchase_price REAL').run(); } catch { /* exists - safe-by-design */ }
   }
   if (!have.has('quantity')) {
-    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN quantity INTEGER').run(); } catch { /* exists */ }
+    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN quantity INTEGER').run(); } catch { /* exists - safe-by-design */ }
   }
 }
 
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
         'SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1'
       ).get(ticker) as { id: number } | undefined;
       if (row?.id) stockId = row.id;
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     // ابحث لو السهم موجود في watchlist للمستخدم
     let existingWatchId: number | null = null;
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
         ).get(userId, stockId) as { id: number } | undefined;
         if (row?.id) existingWatchId = row.id;
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     let resultId: number;
     let mode: 'created' | 'updated';

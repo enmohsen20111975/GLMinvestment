@@ -151,7 +151,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
       }));
       setResults(stocks);
       setShowDropdown(stocks.length > 0);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setResults([]);
       setShowDropdown(false);
     } finally {
@@ -220,7 +220,7 @@ function AddStockDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpen
       } else {
         toast.error(data.error || t('watchlist.dialog.addFailed'));
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('watchlist.dialog.connectionError'));
     } finally {
       setSubmitting(false);
@@ -459,7 +459,7 @@ function EditStockDialog({
       } else {
         toast.error(data.error || 'فشل في تحديث السهم');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('watchlist.dialog.connectionError'));
     } finally {
       setSubmitting(false);
@@ -782,7 +782,7 @@ export function EnhancedWatchlistView() {
       setSummary(data.summary || null);
       setLastUpdate(new Date());
       setLoadError(false);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       if (!isRefresh) {
         toast.error('فشل في تحميل قائمة المراقبة');
         setLoadError(true);
@@ -818,7 +818,7 @@ export function EnhancedWatchlistView() {
       } else {
         toast.error(data.error || 'فشل في حذف السهم');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('watchlist.dialog.connectionError'));
     }
   };

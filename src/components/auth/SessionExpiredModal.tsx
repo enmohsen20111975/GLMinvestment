@@ -69,7 +69,7 @@ export function SessionExpiredModal() {
       // The root page's AuthGate will detect the unauthenticated state and
       // surface the LoginPromptModal automatically.
       await signOut({ callbackUrl: '/', redirect: true });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Fallback: hard navigation if signOut fails for any reason.
       if (typeof window !== 'undefined') {
         window.location.href = '/';

@@ -233,8 +233,8 @@ export async function POST(request: NextRequest) {
     const orderId = await createPaymobOrder(authToken, amountCents, merchantOrderId);
 
     // Select the correct integration ID based on payment_method
-    const cardIntegrationId = parseInt(process.env.PAYMOB_INTEGRATION_ID_CARD || '') || DEFAULT_CARD_INTEGRATION_ID;
-    const walletIntegrationId = parseInt(process.env.PAYMOB_INTEGRATION_ID_WALLET || '') || DEFAULT_WALLET_INTEGRATION_ID;
+    const cardIntegrationId = parseInt(process.env.PAYMOB_INTEGRATION_ID_CARD || process.env.PAYMOB_CARD_INTEGRATION_ID || '') || DEFAULT_CARD_INTEGRATION_ID;
+    const walletIntegrationId = parseInt(process.env.PAYMOB_INTEGRATION_ID_WALLET || process.env.PAYMOB_WALLET_INTEGRATION_ID || '') || DEFAULT_WALLET_INTEGRATION_ID;
     const integrationId = payment_method === 'wallet' ? walletIntegrationId : cardIntegrationId;
 
     // Step 3: Get payment key

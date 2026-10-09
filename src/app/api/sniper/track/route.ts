@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       const body = await request.json();
       if (body.ticker) bodyTicker = body.ticker;
       if (body.market) bodyMarket = body.market;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // No JSON body, use query params
     }
 

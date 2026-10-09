@@ -88,7 +88,7 @@ function ensureNewsTable(db: InstanceType<typeof Database>) {
   `);
   try {
     db.exec(`ALTER TABLE market_news ADD COLUMN is_catalyst INTEGER DEFAULT 0`);
-  } catch {}
+  } catch { /* safe-by-design */ }
 }
 
 /**
@@ -127,8 +127,11 @@ export async function GET(request: Request) {
     const conditions: string[] = [];
 
     if (market) {
-      conditions.push('market = ?');
-      params.push(market);
+      // FIX (2026-10-09, Team 7): market_code هو الـ column اللي فيه السوق الحقيقي
+      // قبل كده: conditions.push('market = ?') ← الـ market column = 'general' دائماً
+      // دلوقتي: بنفلتر بـ market_code (EGX, TADAWUL, KSE, QSE, US, CRYPTO)
+      conditions.push('(market_code = ? OR market = ?)');
+      params.push(market, market);
     }
 
     if (catalystParam === 'true' || catalystParam === '1') {
@@ -161,8 +164,9 @@ export async function GET(request: Request) {
     const countParams: any[] = [];
     const countConditions: string[] = [];
     if (market) {
-      countConditions.push('market = ?');
-      countParams.push(market);
+      // FIX: نفس منطق الـ query الرئيسي
+      countConditions.push('(market_code = ? OR market = ?)');
+      countParams.push(market, market);
     }
     if (catalystParam === 'true' || catalystParam === '1') {
       countConditions.push('is_catalyst = 1');
@@ -313,7 +317,7 @@ export async function POST(request: NextRequest) {
           summary_en: cleanSummaryEn,
         }),
       }).catch(() => {});
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     if (result.changes === 0) {
       return NextResponse.json({ ok: true, success: true, message: 'خبر مكرر - تم تجاهله', duplicate: true });

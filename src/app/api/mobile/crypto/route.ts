@@ -92,7 +92,7 @@ export async function GET() {
         timestamp,
       });
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 
@@ -126,7 +126,7 @@ export async function GET() {
         warning: 'تحليل أساسي - بعض البيانات غير متاحة',
       });
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

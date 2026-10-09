@@ -151,11 +151,11 @@ function lookupSharia(ticker: string): { compliant: boolean | null; sources: num
     let row: Row | undefined;
     try {
       row = db.prepare('SELECT * FROM sharia_metrics WHERE UPPER(symbol) = ?').get(ticker.toUpperCase()) as Row | undefined;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // table may not exist
       row = undefined;
     }
-    try { db.close(); } catch { /* ignore */ }
+    try { db.close(); } catch { /* ignore - safe-by-design */ }
     if (!row) return { compliant: null, sources: 0, details: null };
     const compliant = row.is_halal_consensus === 1 || row.is_halal_consensus === true;
     const sources = num(row.compliant_sources_count, 0);
@@ -165,7 +165,7 @@ function lookupSharia(ticker: string): { compliant: boolean | null; sources: num
       sources,
       details: category,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { compliant: null, sources: 0, details: null };
   }
 }
@@ -206,9 +206,9 @@ function fetchCloses(ticker: string, days: number): { closes: number[]; volumes:
         .get(upper) as Row | undefined;
       high52 = num(r52?.h, 0);
       low52 = num(r52?.l, 0);
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
     return { closes, volumes, firstDate, lastDate, high52, low52 };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { closes: [], volumes: [], firstDate: null, lastDate: null, high52: 0, low52: 0 };
   }
 }
@@ -229,7 +229,7 @@ function fetchStock(ticker: string): Row | null {
       )
       .get(ticker) as Row | undefined;
     return row || null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSessionUserId();
     userId = session.userId;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* ignore */
   }
   if (!userId) {
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
   let body: { ticker?: unknown; buy_price?: unknown; quantity?: unknown; buy_date?: unknown };
   try {
     body = await req.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return NextResponse.json(
       { success: false, error: 'Invalid JSON body' },
       { status: 400 },

@@ -126,7 +126,7 @@ export function ensureUserNotifColumns(db: SqliteDatabase): void {
     if (!have.has(name)) {
       try {
         db.prepare(`ALTER TABLE user_notifications ADD COLUMN ${name} ${def}`).run();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* العمود موجود — تجاهل */
       }
     }
@@ -143,7 +143,7 @@ export function ensureUserNotifColumns(db: SqliteDatabase): void {
     db.prepare(
       `CREATE INDEX IF NOT EXISTS idx_user_notif_dedup ON user_notifications(user_id, type, ticker)`
     ).run();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* ignore */
   }
 }
@@ -187,10 +187,10 @@ function ensureWatchlistTable(db: SqliteDatabase): void {
   const cols = db.prepare("PRAGMA table_info(user_stock_watchlists)").all() as { name: string }[];
   const have = new Set(cols.map((c) => c.name));
   if (!have.has('purchase_price')) {
-    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN purchase_price REAL').run(); } catch { /* exists */ }
+    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN purchase_price REAL').run(); } catch { /* exists - safe-by-design */ }
   }
   if (!have.has('quantity')) {
-    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN quantity INTEGER').run(); } catch { /* exists */ }
+    try { db.prepare('ALTER TABLE user_stock_watchlists ADD COLUMN quantity INTEGER').run(); } catch { /* exists - safe-by-design */ }
   }
 }
 
@@ -438,7 +438,7 @@ export async function runGoldAlertsCheck(userId?: string): Promise<number> {
         // تحديث last_triggered
         try {
           db.prepare(`UPDATE gold_alerts SET last_triggered = datetime('now') WHERE id = ?`).run(a.id);
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
     }
 

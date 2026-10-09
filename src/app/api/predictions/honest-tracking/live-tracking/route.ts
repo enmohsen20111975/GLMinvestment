@@ -22,7 +22,7 @@ function openDb(): Database.Database {
     const db = new Database(dbPath, { timeout: 3000 });
     ensureSchema(db);
     return db;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
   }
 }
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     try {
       const cols = db.prepare("PRAGMA table_info(predictions)").all() as Array<{ name: string }>;
       v40Cols = cols.some((c) => c.name === 'evidence_count') && cols.some((c) => c.name === 'morning_bell');
-    } catch { v40Cols = false; }
+    } catch { /* safe-by-design */ v40Cols = false; }
     const v40Sel = v40Cols ? ', evidence_count, morning_bell, kill_filter_result' : '';
 
     // V40.2-PROTECTION: SQL-level filter for morning_bell / hide_weak modes

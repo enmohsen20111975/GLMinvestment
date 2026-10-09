@@ -27,7 +27,7 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
     try {
       await access(TRACKING_FILE);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return {};
     }
     const data = await readFile(TRACKING_FILE, 'utf-8');
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
       let predDbExists = true;
       try {
         await fs.access(predDbPath);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // predictions.db غير موجود — نـ skip الـ enrichment بصمت.
         predDbExists = false;
       }
@@ -250,7 +250,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[maker-radar/stock] error:', error);
-    try { db.close(); } catch {}
+    try { db.close(); } catch { /* safe-by-design */ }
     return NextResponse.json(
       { success: false, error: 'internal_error' },
       { status: 500 }

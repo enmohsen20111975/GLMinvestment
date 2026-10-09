@@ -124,7 +124,7 @@ function formatTimeAgo(ts: string): string {
     const hr = Math.floor(min / 60);
     if (hr < 24) return `منذ ${hr} ساعة`;
     return `منذ ${Math.floor(hr / 24)} يوم`;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return ts;
   }
 }

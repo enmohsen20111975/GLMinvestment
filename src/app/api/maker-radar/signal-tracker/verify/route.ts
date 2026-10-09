@@ -101,7 +101,7 @@ async function fetchPricesAfter(
   for (const src of PRICE_SOURCES) {
     try {
       await access(src.dbPath);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       continue;
     }
     let db: Database.Database | null = null;
@@ -146,7 +146,7 @@ async function fetchPricesAfter(
       db.close();
       return { prices, source: sourceLabel };
     } catch (e) {
-      try { if (db) db.close(); } catch {}
+      try { if (db) db.close(); } catch { /* safe-by-design */ }
       continue;
     }
   }
@@ -170,7 +170,7 @@ async function openTrackerDb(): Promise<Database.Database | null> {
       const db = new Database(p);
       ensureSchema(db);
       return db;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // try next candidate
     }
   }
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
     let body: any = {};
     try {
       body = await req.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       body = {};
     }
     const maxAgeDays = Math.max(7, Math.min(180, Number(body?.max_age_days ?? 45)));
@@ -376,7 +376,7 @@ export async function POST(req: NextRequest) {
         verified_at: nowIso,
       });
     } catch (error: any) {
-      try { db.close(); } catch {}
+      try { db.close(); } catch { /* safe-by-design */ }
       throw error;
     }
   } catch (error: any) {

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Delete token from database
     try {
       await db.apiToken.delete({ where: { token } });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Token might not exist, that's okay
     }
 

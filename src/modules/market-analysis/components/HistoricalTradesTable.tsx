@@ -319,12 +319,12 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
   return (
     <div className="space-y-4" dir="rtl">
       {/* Header */}
-      <Card className="border-blue-500/30 bg-gradient-to-l from-blue-500/5 to-cyan-500/5">
+      <Card className="border-primary/30 bg-gradient-to-l from-primary/5 to-cyan-500/5">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <History className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <History className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <CardTitle className="text-base">الصفقات التاريخية (Backtest)</CardTitle>
@@ -344,7 +344,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <StatPill label="صفقات رابحة" value={stats.wins.toString()} icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-500" />} tone="emerald" />
               <StatPill label="صفقات خاسرة" value={stats.losses.toString()} icon={<TrendingDown className="h-3.5 w-3.5 text-red-500" />} tone="red" />
-              <StatPill label="نسبة النجاح" value={`${stats.winRate}%`} icon={<Filter className="h-3.5 w-3.5 text-blue-500" />} tone="blue" />
+              <StatPill label="نسبة النجاح" value={`${stats.winRate}%`} icon={<Filter className="h-3.5 w-3.5 text-primary" />} tone="blue" />
               <StatPill label="متوسط العائد" value={`${stats.avgReturn}%`} icon={<History className="h-3.5 w-3.5 text-amber-500" />} tone="amber" />
             </div>
           </CardContent>
@@ -575,7 +575,7 @@ function StatPill({
   const toneClass = {
     emerald: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/5 border-emerald-500/20',
     red: 'text-red-700 dark:text-red-300 bg-red-500/5 border-red-500/20',
-    blue: 'text-blue-700 dark:text-blue-300 bg-blue-500/5 border-blue-500/20',
+    blue: 'text-primary dark:text-blue-300 bg-primary/5 border-primary/20',
     amber: 'text-amber-700 dark:text-amber-300 bg-amber-500/5 border-amber-500/20',
   }[tone];
 

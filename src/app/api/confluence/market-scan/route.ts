@@ -40,7 +40,7 @@ async function getPython(path: string, timeoutMs = 10000): Promise<any | null> {
     clearTimeout(timeout);
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

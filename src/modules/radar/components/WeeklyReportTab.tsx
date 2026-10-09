@@ -243,7 +243,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
         { method: 'POST' },
       );
       await fetchData(false);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore — best-effort
     } finally {
       setRegenerating(false);
@@ -433,10 +433,10 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                 </div>
                 <div className="rounded-lg border border-blue-200 dark:border-blue-900 p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.stockOfWeek.target2')}</div>
-                  <div className="text-base font-bold text-blue-700 dark:text-blue-300">
+                  <div className="text-base font-bold text-primary dark:text-blue-300">
                     {fmtPrice(sow.target_2)}
                   </div>
-                  <div className="text-xs text-blue-600">
+                  <div className="text-xs text-primary">
                     {sow.target_2 && sow.current_price
                       ? `+${((sow.target_2 / sow.current_price - 1) * 100).toFixed(1)}%`
                       : '—'}
@@ -468,7 +468,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                 {sow.risk_reward != null && (
                   <div className="text-sm">
                     <span className="text-muted-foreground">R/R: </span>
-                    <span className="font-bold text-blue-700 dark:text-blue-300">
+                    <span className="font-bold text-primary dark:text-blue-300">
                       {(sow.risk_reward ?? 0).toFixed(2)}
                     </span>
                   </div>
@@ -498,7 +498,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Target className="h-5 w-5 text-primary dark:text-blue-400" />
             <span>{t('radar.weekly.top5.title')}</span>
           </CardTitle>
         </CardHeader>
@@ -566,7 +566,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
                 </div>
                 <div className="rounded-lg border border-muted p-2">
                   <div className="text-xs text-muted-foreground">{t('radar.weekly.lastWeek.winRatio')}</div>
-                  <div className="text-base font-bold text-blue-700 dark:text-blue-300">
+                  <div className="text-base font-bold text-primary dark:text-blue-300">
                     {perf.win_count}/{perf.total_count}
                   </div>
                 </div>

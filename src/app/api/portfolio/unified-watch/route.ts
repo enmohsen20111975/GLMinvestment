@@ -159,7 +159,7 @@ export async function GET(req: NextRequest) {
           entry_date: data.entryDate,
           source: 'radar',
         }));
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     // 4. Merge all tickers
@@ -235,7 +235,7 @@ export async function GET(req: NextRequest) {
             stock.change_percent = stockInfo.change_percent;
             stock.previous_close = stockInfo.previous_close;
           }
-        } catch {}
+        } catch { /* safe-by-design */ }
       }
 
       // Last resort: no watchlist quote and no `stocks` row for this ticker, so
@@ -315,7 +315,7 @@ export async function GET(req: NextRequest) {
               };
             }
           }
-        } catch {}
+        } catch { /* safe-by-design */ }
       }
 
       // ─── FOCUS-5-TASKS Task 2 + 5: Exit Radar → Portfolio (actionable alert).

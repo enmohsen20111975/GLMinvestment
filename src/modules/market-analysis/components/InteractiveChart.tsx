@@ -483,7 +483,7 @@ export function InteractiveChart(props: FullChartProps) {
     if (chartRef.current) {
       try {
         chartRef.current.remove();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Already disposed
       }
       chartRef.current = null;
@@ -1448,7 +1448,7 @@ export function InteractiveChart(props: FullChartProps) {
           projSeries.setData(projData);
           seriesRefs.current.push(projSeries);
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     // CHART-V2-044: CMF Line (تدفق المؤسسات)
@@ -1475,7 +1475,7 @@ export function InteractiveChart(props: FullChartProps) {
             .map((d) => ({ time: toTime(d.time), value: d.value }))
         );
         seriesRefs.current.push(cmfSeries);
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     // CHART-V2-044: Smart Markers (broke_r1, smart_money_in, news_confirmed, vol_spike)
@@ -1489,7 +1489,7 @@ export function InteractiveChart(props: FullChartProps) {
           text: m.text,
         }));
         createSeriesMarkers(candleSeriesRef.current || candleSeries, markers);
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
 
     // ── SMART-CHART: Fit content بس لما السياق يتغير (مش مع كل تحديث للبيانات) ──
@@ -1508,7 +1508,7 @@ export function InteractiveChart(props: FullChartProps) {
     return () => {
       try {
         chart.remove();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Already disposed
       }
       chartRef.current = null;
@@ -1536,7 +1536,7 @@ export function InteractiveChart(props: FullChartProps) {
 
     try {
       candleSeriesRef.current.update(updatedCandle as any);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent — لو الـ time مش متطابق بالظبط
     }
   }, [livePrice, ohlcv]);

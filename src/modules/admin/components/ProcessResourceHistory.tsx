@@ -91,7 +91,7 @@ function formatTs(ts: string, range: RangeKey): string {
     const hh = String(d.getHours()).padStart(2, '0');
     const mi = String(d.getMinutes()).padStart(2, '0');
     return `${hh}:${mi}`;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return ts;
   }
 }
@@ -295,7 +295,7 @@ export function ProcessResourceHistory({
         {!loading && !error && chartData.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <StatBox label="نقاط البيانات" value={String(chartData.length)} color="text-foreground" />
-            <StatBox label="أعلى CPU" value={`${(maxCpu ?? 0).toFixed(1)}%`} color="text-blue-600 dark:text-blue-400" />
+            <StatBox label="أعلى CPU" value={`${(maxCpu ?? 0).toFixed(1)}%`} color="text-primary dark:text-blue-400" />
             <StatBox label="أعلى ذاكرة" value={`${(maxMem ?? 0).toFixed(0)} MB`} color="text-emerald-600 dark:text-emerald-400" />
             <StatBox label="إجمالي Restarts" value={`${totalRestarts}`} color="text-red-600 dark:text-red-400" />
           </div>

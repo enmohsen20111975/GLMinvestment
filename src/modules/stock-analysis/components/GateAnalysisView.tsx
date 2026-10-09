@@ -130,7 +130,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
       };
       setCachedInput(input);
       setResult(analyzeGates(input, persona));
-    } catch { setError(true); } finally { setLoading(false); }
+    } catch { /* safe-by-design */ setError(true); } finally { setLoading(false); }
   }, [ticker, currentPrice, persona]);
 
   useEffect(() => { fetchAndAnalyze(); }, [fetchAndAnalyze]);

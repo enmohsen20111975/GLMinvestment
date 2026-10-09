@@ -78,7 +78,7 @@ function loadSeen(): Record<string, SeenEntry> {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
     return raw ? (JSON.parse(raw) as Record<string, SeenEntry>) : {};
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return {};
   }
 }
@@ -91,7 +91,7 @@ function saveSeen(seen: Record<string, SeenEntry>): void {
     const trimmed: Record<string, SeenEntry> = {};
     for (const [k, v] of entries) trimmed[k] = v;
     localStorage.setItem(SEEN_KEY, JSON.stringify(trimmed));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore quota errors
   }
 }
@@ -227,7 +227,7 @@ export function CentralAlertMonitor() {
         }
 
         if (changed) saveSeen(seen);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // silent — network/parse errors لازم ما تكسرش الـ monitor
       }
     };

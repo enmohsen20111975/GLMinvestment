@@ -246,6 +246,14 @@ class TelegramAutoPoster:
         Returns:
             {"success": bool, "message_id": int, "error": str}
         """
+        # RETRY-FIX (2026-10-09, Team 5): إضافة retry logic لـ Telegram API
+        # قبل كده: محاولة واحدة، لو فشلت → رسالة ضاعت
+        # دلوقتي: 3 محاولات مع backoff (2s, 5s, 10s)
+        import asyncio
+        
+        MAX_RETRIES = 3
+        RETRY_DELAYS = [2, 5, 10]  # seconds
+        
         if not self.is_connected:
             result = await self.connect()
             if not result.get('success'):
@@ -257,35 +265,56 @@ class TelegramAutoPoster:
         # تجهيز أزرار الهوية الموحدة (الموقع + البوت + الخدمات + التواصل)
         final_buttons = normalize_telethon_buttons(buttons, ticker=ticker)
 
-        try:
+        last_error = None
+        for attempt in range(MAX_RETRIES):
             try:
-                msg = await self.client.send_message(
-                    self.channel_entity,
-                    text,
-                    parse_mode=parse_mode,
-                    link_preview=False,
-                    buttons=final_buttons
-                )
-            except Exception as btn_err:
-                # لو فشل الإرسال بالأزرار بسبب صلاحية الحساب → إعادة المحاولة بدون أزرار
-                if final_buttons:
-                    print(f"[AutoPoster] Retrying send_message without buttons due to: {btn_err}")
+                try:
                     msg = await self.client.send_message(
                         self.channel_entity,
                         text,
                         parse_mode=parse_mode,
-                        link_preview=False
+                        link_preview=False,
+                        buttons=final_buttons
                     )
-                else:
-                    raise btn_err
+                except Exception as btn_err:
+                    # لو فشل الإرسال بالأزرار بسبب صلاحية الحساب → إعادة المحاولة بدون أزرار
+                    if final_buttons:
+                        print(f"[AutoPoster] Retrying send_message without buttons due to: {btn_err}")
+                        msg = await self.client.send_message(
+                            self.channel_entity,
+                            text,
+                            parse_mode=parse_mode,
+                            link_preview=False
+                        )
+                    else:
+                        raise btn_err
 
-            return {
-                "success": True,
-                "message_id": msg.id,
-                "date": msg.date.isoformat() if msg.date else None
-            }
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+                return {
+                    "success": True,
+                    "message_id": msg.id,
+                    "date": msg.date.isoformat() if msg.date else None
+                }
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                # RETRY-FIX: retry على 429 (flood) و 5xx و network errors
+                should_retry = (
+                    '429' in error_str or
+                    'flood' in error_str or
+                    'timeout' in error_str or
+                    'connection' in error_str or
+                    '500' in error_str or
+                    '502' in error_str or
+                    '503' in error_str
+                )
+                if should_retry and attempt < MAX_RETRIES - 1:
+                    delay = RETRY_DELAYS[attempt]
+                    print(f"[AutoPoster] Send failed (attempt {attempt + 1}/{MAX_RETRIES}), retrying in {delay}s: {e}")
+                    await asyncio.sleep(delay)
+                else:
+                    return {"success": False, "error": str(e)}
+        
+        return {"success": False, "error": str(last_error)}
     
     async def send_photo(self, photo_path: str, caption: str = None, parse_mode: str = 'md', buttons: Any = None, ticker: Optional[str] = None) -> Dict:
         """

@@ -30,7 +30,7 @@ async function getSessionUserId(): Promise<{ userId: string | null; isAdmin: boo
     const token = session.user as Record<string, unknown>;
     const userId = (session.user.id || token.id) as string | undefined ?? null;
     return { userId, isAdmin };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { userId: null, isAdmin: false };
   }
 }

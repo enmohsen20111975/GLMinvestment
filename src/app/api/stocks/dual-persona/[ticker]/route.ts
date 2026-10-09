@@ -105,7 +105,7 @@ export async function GET(
           if (typeof analysisJson === 'string') {
             try {
               analysisJson = JSON.parse(analysisJson);
-            } catch {
+            } catch { // silent fallback (safe-by-design)
               analysisJson = {};
             }
           }

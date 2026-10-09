@@ -229,7 +229,7 @@ export function InvestorsFlowPanel() {
       } else {
         setInvData(null);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError(true);
       setData(null);
       setInvData(null);

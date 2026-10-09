@@ -28,7 +28,7 @@ function safeQuery(
   if (!db) return null;
   try {
     return db.prepare(sql).all(...params);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Table missing or schema mismatch — return null so caller can try next DB
     return null;
   }
@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
     // (via getStocksDb). Either may be missing the `stocks` table depending on
     // the sync state — safeQuery swallows the "no such table" error and lets
     // us try the next source instead of returning a 500.
-    const lightDb = (() => { try { return getLightDb(); } catch { return null; } })();
-    const stocksDb = (() => { try { return getStocksDb(); } catch { return null; } })();
+    const lightDb = (() => { try { return getLightDb(); } catch { /* safe-by-design */ return null; } })();
+    const stocksDb = (() => { try { return getStocksDb(); } catch { /* safe-by-design */ return null; } })();
 
     if (!q) {
       // FIX (DEAL-ADVISOR-002, 2026-08-19): filter out polluted rows where the

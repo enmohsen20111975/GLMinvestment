@@ -52,7 +52,7 @@ export function ensureNotifColumns(db: SqliteDatabase): void {
     if (!have.has(name)) {
       try {
         db.prepare(`ALTER TABLE user_notifications ADD COLUMN ${name} ${def}`).run();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* العمود موجود — تجاهل */
       }
     }
@@ -71,7 +71,7 @@ export function ensureNotifColumns(db: SqliteDatabase): void {
     db.prepare(
       `CREATE INDEX IF NOT EXISTS idx_user_notif_dedup ON user_notifications(user_id, type, ticker)`
     ).run();
-  } catch { /* ignore */ }
+  } catch { /* ignore - safe-by-design */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
         for (const r of portfolioRows) {
           if (r.t) allowedTickers.add(r.t);
         }
-      } catch { /* portfolio_assets may not exist yet — ignore */ }
+      } catch { /* portfolio_assets may not exist yet — ignore - safe-by-design */ }
 
       try {
         const watchlistRows = db.prepare(
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
         for (const r of watchlistRows) {
           if (r.t) allowedTickers.add(r.t);
         }
-      } catch { /* user_stock_watchlists may not exist yet — ignore */ }
+      } catch { /* user_stock_watchlists may not exist yet — ignore - safe-by-design */ }
     }
 
     // ------------------------------------------------------------------
@@ -197,7 +197,7 @@ export async function GET(req: NextRequest) {
         for (const r of rows) {
           if (r.t) marketTickers.add(r.t);
         }
-      } catch { /* stocks table issue — skip market ticker filter */ }
+      } catch { /* stocks table issue — skip market ticker filter - safe-by-design */ }
     }
 
     let sql = `SELECT id, user_id, type, title, message, severity, payload, ticker, market, read, created_at
@@ -255,7 +255,7 @@ export async function GET(req: NextRequest) {
     const notifications = rows.map((r) => {
       let parsedPayload: unknown = null;
       if (r.payload) {
-        try { parsedPayload = JSON.parse(r.payload); } catch { parsedPayload = r.payload; }
+        try { parsedPayload = JSON.parse(r.payload); } catch { /* safe-by-design */ parsedPayload = r.payload; }
       }
       return {
         id: r.id,

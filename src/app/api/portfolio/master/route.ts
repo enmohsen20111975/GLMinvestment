@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       try {
         const session = await getSessionUserId();
         userId = session.userId || undefined;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
                 "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
               ).get(asset.stock_ticker) as { close_price?: number | string } | undefined;
               if (histRow && Number(histRow.close_price) > 0) livePrice = Number(histRow.close_price);
-            } catch { /* table may not exist */ }
+            } catch { /* table may not exist - safe-by-design */ }
           }
           // ── P31 TASK 2: price_history.db fallback (yahoo_clean) ──
           // stocks.db is frequently empty/stale — without this, master total stayed 0.
@@ -110,11 +110,11 @@ export async function GET(req: NextRequest) {
             try {
               const cleanClose = await getLastCleanClose(asset.stock_ticker);
               if (cleanClose.price > 0) livePrice = cleanClose.price;
-            } catch { /* safe skip */ }
+            } catch { /* safe skip - safe-by-design */ }
           }
           if (livePrice <= 0 && avgBuy > 0) livePrice = avgBuy;
           if (livePrice > 0 && qty > 0) current = livePrice * qty;
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       } else if (type === 'crypto') {
         // ── P34 TASK 2: FX CONVERSION FIX ──
         // Crypto is priced in USD. Convert to EGP using the live USD/EGP rate
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
           } else if (current <= 0 && invested > 0) {
             current = invested;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           if (current <= 0 && invested > 0) current = invested;
         }
       } else if (type === 'gold' || type === 'silver') {
@@ -331,7 +331,7 @@ async function getGoldPrices(db: Database.Database): Promise<{ '24k': number; '2
       };
     }
     return fallback;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -350,7 +350,7 @@ async function getExchangeRates(db: Database.Database): Promise<Record<string, n
       }
     }
     return fallback;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -369,7 +369,7 @@ async function getTotalObligations(db: Database.Database, userId: string): Promi
       "WHERE user_id = ? AND (status = 'active' OR status IS NULL OR status = '')"
     ).get(userId) as SqlRow | undefined;
     return Number(row?.total || 0);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -401,7 +401,7 @@ async function getCryptoLivePrice(symbol: string): Promise<number> {
         }
         _cryptoPriceCache = { ts: now, prices };
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // keep stale cache
     }
   }

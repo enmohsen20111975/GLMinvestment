@@ -59,7 +59,7 @@ function openRo(p: string): import('better-sqlite3').Database | null {
     if (!fs.existsSync(p)) return null;
     const Database = require('better-sqlite3');
     return new Database(p, { readonly: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -86,7 +86,7 @@ function fetchStockMeta(
       sector: row.sector || '',
       name_ar: row.name_ar || row.name || '',
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { current_price: 0, sector: '', name_ar: '' };
   }
 }
@@ -177,7 +177,7 @@ export async function GET(_req: NextRequest) {
 
     try {
       sdb?.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
 

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     let body: { chat_id?: unknown; username?: unknown };
     try {
       body = await req.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         { success: false, error: 'invalid_json' },
         { status: 400 },
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     // 4. Best-effort GC of stale tokens (fire and forget — non-fatal).
     try {
       purgeExpiredBotLinkTokens();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore — GC failure should not break the happy path */
     }
 

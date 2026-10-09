@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
         });
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

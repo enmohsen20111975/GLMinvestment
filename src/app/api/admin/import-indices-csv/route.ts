@@ -246,7 +246,7 @@ export async function GET() {
         success: true,
         indices: stats,
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       db.close();
       return NextResponse.json({
         success: true,

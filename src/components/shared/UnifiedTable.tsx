@@ -471,14 +471,14 @@ export function UnifiedTable<T extends object>({
         const parsed = JSON.parse(rawCalc);
         if (Array.isArray(parsed)) setCalculatedColumns(parsed);
       }
-    } catch { /* ignore parse errors */ }
+    } catch { /* ignore parse errors - safe-by-design */ }
     try {
       const rawPresets = typeof window !== 'undefined' ? window.localStorage.getItem(presetsStorageKey) : null;
       if (rawPresets) {
         const parsed = JSON.parse(rawPresets);
         if (Array.isArray(parsed)) setPresets(parsed);
       }
-    } catch { /* ignore parse errors */ }
+    } catch { /* ignore parse errors - safe-by-design */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excelGrid]);
 
@@ -487,7 +487,7 @@ export function UnifiedTable<T extends object>({
     if (!excelGrid) return;
     try {
       window.localStorage.setItem(calcStorageKey, JSON.stringify(calculatedColumns));
-    } catch { /* ignore quota errors */ }
+    } catch { /* ignore quota errors - safe-by-design */ }
   }, [excelGrid, calculatedColumns, calcStorageKey]);
 
   // ─── Persist presets ───
@@ -495,7 +495,7 @@ export function UnifiedTable<T extends object>({
     setPresets(next);
     try {
       window.localStorage.setItem(presetsStorageKey, JSON.stringify(next));
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
   }, [presetsStorageKey]);
 
   // ─── (Task 37) Load column widths from localStorage on mount ───
@@ -509,7 +509,7 @@ export function UnifiedTable<T extends object>({
           setColumnWidths(parsed as Record<string, number>);
         }
       }
-    } catch { /* ignore parse errors */ }
+    } catch { /* ignore parse errors - safe-by-design */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excelGrid]);
 
@@ -518,7 +518,7 @@ export function UnifiedTable<T extends object>({
     if (!excelGrid) return;
     try {
       window.localStorage.setItem(widthsStorageKey, JSON.stringify(columnWidths));
-    } catch { /* ignore quota errors */ }
+    } catch { /* ignore quota errors - safe-by-design */ }
   }, [excelGrid, columnWidths, widthsStorageKey]);
 
   // ─── (Task 37) mutableData — applies local edits on top of incoming data ───
@@ -704,7 +704,7 @@ export function UnifiedTable<T extends object>({
   const getCellFilterValue = useCallback((row: T, colKey: string): unknown => {
     const col = columns.find(c => String(c.key) === colKey);
     if (col?.filterValue) {
-      try { return col.filterValue(row); } catch { /* fallthrough */ }
+      try { return col.filterValue(row); } catch { /* fallthrough - safe-by-design */ }
     }
     return getCellValue(row, colKey);
   }, [columns]);
@@ -1057,7 +1057,7 @@ export function UnifiedTable<T extends object>({
   const handleDragStart = useCallback((e: React.DragEvent, colKey: string) => {
     setDraggedColKey(colKey);
     e.dataTransfer.effectAllowed = 'move';
-    try { e.dataTransfer.setData('text/plain', colKey); } catch { /* IE */ }
+    try { e.dataTransfer.setData('text/plain', colKey); } catch { /* IE - safe-by-design */ }
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent, _targetKey: string) => {

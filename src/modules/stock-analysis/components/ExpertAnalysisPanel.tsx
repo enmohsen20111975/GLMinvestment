@@ -295,7 +295,7 @@ function PriceBox({ label, value, pct, rationale, color }: {
 
   const valueColor = {
     emerald: 'text-emerald-700 dark:text-emerald-400',
-    blue: 'text-blue-700 dark:text-blue-400',
+    blue: 'text-primary dark:text-blue-400',
     purple: 'text-purple-700 dark:text-purple-400',
     rose: 'text-rose-700 dark:text-rose-400',
   };

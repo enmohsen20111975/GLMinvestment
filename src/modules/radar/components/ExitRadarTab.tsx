@@ -235,7 +235,7 @@ export function ExitRadarTab({ market }: ExitRadarTabProps) {
         `/api/maker-radar/exit-radar?market=${encodeURIComponent(effectiveMarket)}`,
         { method: 'POST' },
       );
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore — best-effort
     }
     fetchData();

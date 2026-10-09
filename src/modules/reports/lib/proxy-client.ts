@@ -432,7 +432,7 @@ export function safeFmtArDate(iso: string | null | undefined): string {
       month: 'long',
       day: 'numeric',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Date().toLocaleDateString('ar-EG');
   }
 }

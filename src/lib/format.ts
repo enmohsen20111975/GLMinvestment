@@ -97,7 +97,7 @@ export function formatDate(date: string | null | undefined): string {
       month: '2-digit',
       day: '2-digit',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '—';
   }
 }
@@ -117,7 +117,7 @@ export function formatDateTime(date: string | null | undefined): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '—';
   }
 }

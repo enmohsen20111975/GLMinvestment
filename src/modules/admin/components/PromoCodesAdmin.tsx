@@ -160,7 +160,7 @@ export function PromoCodesAdmin() {
       } else {
         toast.error(data.error || 'فشل التحديث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('حدث خطأ في التحديث');
     }
   };
@@ -181,7 +181,7 @@ export function PromoCodesAdmin() {
       } else {
         toast.error(data.error || 'فشل في الحذف');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('حدث خطأ أثناء الحذف');
     }
   };
@@ -201,7 +201,7 @@ export function PromoCodesAdmin() {
       case 'premium':
         return { label: 'باقة المحترفين', color: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40' };
       case 'normal':
-        return { label: 'الباقة العادية', color: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40' };
+        return { label: 'الباقة العادية', color: 'bg-primary/20 text-primary dark:text-blue-400 border-primary/40' };
       default:
         return { label: tier, color: 'bg-muted text-muted-foreground border-border' };
     }
@@ -258,12 +258,12 @@ export function PromoCodesAdmin() {
 
         <Card className="bg-card border-border/60">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-500">
+            <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
               <Zap className="w-6 h-6" />
             </div>
             <div>
               <div className="text-xs text-muted-foreground">الأكواد المفوّضة النشطة</div>
-              <div className="text-2xl font-bold font-mono text-blue-500">
+              <div className="text-2xl font-bold font-mono text-primary">
                 {stats?.active_codes ?? codes.filter((c) => c.is_active).length}
               </div>
             </div>
@@ -377,13 +377,13 @@ export function PromoCodesAdmin() {
               {/* Max Redemptions */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-blue-500" />
+                  <Users className="w-3.5 h-3.5 text-primary" />
                   أقصى عدد مرات التفعيل (Max Uses):
                 </label>
                 <select
                   value={maxUsesPreset}
                   onChange={(e) => setMaxUsesPreset(e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="1">استخدام واحد (مستخدم شخصي واحد 1x)</option>
                   <option value="10">10 استخدامات</option>

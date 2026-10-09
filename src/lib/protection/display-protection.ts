@@ -70,7 +70,7 @@ export function getProtectionConfig(): ProtectionConfig {
     cachedConfig = { ...DEFAULT_CONFIG, ...parsed };
     cacheTime = now;
     return cachedConfig;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // On any error, default to 'off' (no filtering — safe fallback)
     cachedConfig = { ...DEFAULT_CONFIG };
     cacheTime = now;

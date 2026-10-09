@@ -42,7 +42,7 @@ async function postPython(path: string, body: any, timeoutMs = 15000): Promise<a
     clearTimeout(timeout);
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -60,7 +60,7 @@ async function getPython(path: string, timeoutMs = 12000): Promise<any | null> {
     clearTimeout(timeout);
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     let body: any = {};
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Empty body — fall through to 400-ish path
     }
 

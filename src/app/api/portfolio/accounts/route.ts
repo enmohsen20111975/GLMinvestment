@@ -20,8 +20,8 @@ function ensurePortfoliosTable(db: any) {
     )
   `).run();
 
-  try { db.prepare("ALTER TABLE portfolios ADD COLUMN color TEXT DEFAULT 'blue'").run(); } catch {}
-  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN portfolio_id TEXT DEFAULT 'default'").run(); } catch {}
+  try { db.prepare("ALTER TABLE portfolios ADD COLUMN color TEXT DEFAULT 'blue'").run(); } catch { /* safe-by-design */ }
+  try { db.prepare("ALTER TABLE portfolio_assets ADD COLUMN portfolio_id TEXT DEFAULT 'default'").run(); } catch { /* safe-by-design */ }
 }
 
 function ensureMasterPortfolio(db: any, userId: string) {

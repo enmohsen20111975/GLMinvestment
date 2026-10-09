@@ -191,7 +191,7 @@ export function MultiPortfolioSelector({
       } else {
         toast.error('فشل إنشاء المحفظة', { description: data.error });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل الاتصال بالخادم');
     } finally {
       setSaving(false);
@@ -240,7 +240,7 @@ export function MultiPortfolioSelector({
       } else {
         toast.error('فشل تحديث المحفظة', { description: data.error });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل الاتصال بالخادم');
     } finally {
       setSaving(false);
@@ -270,7 +270,7 @@ export function MultiPortfolioSelector({
       } else {
         toast.error('فشل الحذف', { description: data.error });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل الاتصال بالخادم');
     }
   };

@@ -9,7 +9,7 @@
 //
 // Rule 63 (Education Unification 2026-10-01 — Task 9-A Step 2):
 //   Added a 5th tab "🎓 دروس متقدمة" that wires `content/education/*.md`
-//   (12 institutional-grade lessons written by the owner) into the user-facing
+//   (22 institutional-grade lessons written by the owner) into the user-facing
 //   academy screen. The 12 MD files were previously orphaned (only consumed
 //   by the admin-only ContentStudioHub for video card generation). They are
 //   now surfaced to end-users via the public `/api/ads/educational-lessons`
@@ -269,7 +269,7 @@ function AdvancedLessonsTab() {
           setFullCache((prev) => ({ ...prev, [id]: data.lessons[0].fullContent }));
           setShowFull(true);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* swallow — preview sections already visible */
       } finally {
         setLoadingFull(null);
@@ -1101,7 +1101,7 @@ function LiveMarketScanner() {
         setError(null);
       }
       setLastUpdated(new Date());
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setStocks(FALLBACK_STOCKS);
       setError('تعذّر الاتصال بـ /api/stocks — يتم عرض بيانات تجريبية للعرض التوضيحي.');
       setLastUpdated(new Date());

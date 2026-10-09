@@ -35,7 +35,7 @@ async function ensureTable() {
 
   try {
     db.run(`CREATE INDEX IF NOT EXISTS idx_morning_date ON morning_reports(report_date)`);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Ignore index creation errors
   }
 
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         { success: false, error: 'Invalid JSON body' },
         { status: 400 }

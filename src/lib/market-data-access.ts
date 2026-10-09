@@ -274,7 +274,7 @@ export function getPriceHistory(ticker: string, market: string, daysBack: number
         }
       }
     } catch (e) { /* fall through */ }
-    finally { try { deDb.close(); } catch {} }
+    finally { try { deDb.close(); } catch { /* safe-by-design */ } }
   }
 
   // --- Source 2: historical.db → historical_prices ---
@@ -303,7 +303,7 @@ export function getPriceHistory(ticker: string, market: string, daysBack: number
         }
       }
     } catch (e) { /* fall through */ }
-    finally { try { hDb.close(); } catch {} }
+    finally { try { hDb.close(); } catch { /* safe-by-design */ } }
   }
 
   // --- Source 3: data_engine.db → egksco_price_history (EGX — migrated from price_history.db) ---
@@ -327,7 +327,7 @@ export function getPriceHistory(ticker: string, market: string, daysBack: number
         return rows.map(r => ({ ...r, source: 'data_engine.db.egksco_price_history' }));
       }
     } catch (e) { /* fall through */ }
-    finally { try { phDb.close(); } catch {} }
+    finally { try { phDb.close(); } catch { /* safe-by-design */ } }
   }
 
   return [];
@@ -469,7 +469,7 @@ async function fetchYahooIndex(symbol: string): Promise<MarketIndexRow | null> {
     };
     _setCached(cacheKey, out);
     return out;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -652,7 +652,7 @@ function computeCompositeIndex(dbMarket: string): MarketIndexRow | null {
     } finally {
       db.close();
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -681,7 +681,7 @@ async function fetchEGXIndices(): Promise<MarketIndexRow[]> {
     } finally {
       db.close();
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }

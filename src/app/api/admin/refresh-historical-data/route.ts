@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       const statusPath = path.join(process.cwd(), 'db', 'historical_status.json');
       const statusContent = await fs.readFile(statusPath, 'utf-8');
       historicalStatus = JSON.parse(statusContent);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Status file might not exist
     }
 

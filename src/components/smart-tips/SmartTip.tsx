@@ -143,7 +143,7 @@ export function SmartTip({
       } else {
         setError(true);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError(true);
     } finally {
       setLoading(false);
@@ -414,7 +414,7 @@ export function AllTipsView() {
           }
         }
         setTips(allTips);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore
       } finally {
         setLoading(false);

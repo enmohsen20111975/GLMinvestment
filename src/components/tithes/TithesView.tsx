@@ -63,9 +63,9 @@ function ChristianPattern() {
 function OrnamentDivider() {
   return (
     <div className="flex items-center justify-center gap-2 py-2">
-      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-blue-500/50 to-transparent"/>
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent via-primary/50 to-transparent"/>
       <Cross className="w-4 h-4 text-teal-500/50"/>
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"/>
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"/>
     </div>
   );
 }
@@ -356,7 +356,7 @@ function TitheCalculator() {
               
               <Separator className="my-6"/>
               
-              <div className="relative p-8 bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
+              <div className="relative p-8 bg-gradient-to-br from-primary via-teal-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
                 <Dove className="w-10 h-10 mx-auto mb-2 opacity-80"/>
                 <p className="text-sm opacity-90 mb-1">العُشر الشهري</p>
                 <p className="text-4xl font-bold mb-2">{formatCurrency(totalTithe)}</p>
@@ -419,7 +419,7 @@ function GivingGuide() {
         return (
           <Card key={index} className={cn(
             'relative overflow-hidden border-r-4',
-            guide.color === 'blue' && 'border-r-blue-500 bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-950/20',
+            guide.color === 'blue' && 'border-r-primary bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-950/20',
             guide.color === 'red' && 'border-r-red-500 bg-gradient-to-l from-red-50/50 to-transparent dark:from-red-950/20',
             guide.color === 'amber' && 'border-r-amber-500 bg-gradient-to-l from-amber-50/50 to-transparent dark:from-amber-950/20',
             guide.color === 'purple' && 'border-r-purple-500 bg-gradient-to-l from-purple-50/50 to-transparent dark:from-purple-950/20',
@@ -507,7 +507,7 @@ function AutoTithesCard() {
             );
           }
         }
-      } catch { /* reports endpoint optional — fail soft */ }
+      } catch { /* reports endpoint optional — fail soft - safe-by-design */ }
 
       // 3) Active obligations — monthly debts to deduct from gross income.
       let monthlyDebts = 0;
@@ -523,7 +523,7 @@ function AutoTithesCard() {
             );
           }
         }
-      } catch { /* obligations endpoint optional — fail soft */ }
+      } catch { /* obligations endpoint optional — fail soft - safe-by-design */ }
 
       // otherIncome: reserved for future income fields; currently 0.
       const otherIncome = 0;
@@ -554,7 +554,7 @@ function AutoTithesCard() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-teal-600 flex items-center justify-center shadow">
                 <Sparkles className="w-5 h-5 text-white"/>
               </div>
               <div>
@@ -628,7 +628,7 @@ function AutoTithesCard() {
 
               {/* Result block — green gradient if tithe due, blue info if no income */}
               {tithable > 0 ? (
-                <div className="relative p-6 bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
+                <div className="relative p-6 bg-gradient-to-br from-primary via-teal-500 to-purple-500 rounded-2xl shadow-xl overflow-hidden text-center text-white">
                   <div className="absolute inset-0 opacity-20">
                     <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <pattern id="autoTithesStars" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -695,13 +695,13 @@ export function TithesView() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-teal-500 to-purple-500 flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary via-teal-500 to-purple-500 flex items-center justify-center shadow-lg">
                 <Cross className="w-7 h-7 text-white"/>
               </div>
               <Dove className="absolute -top-1 -left-1 w-5 h-5 text-teal-500"/>
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">حاسبة العُشر</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">حاسبة العُشر</h1>
               <p className="text-sm text-muted-foreground">حساب العُشر حسب التعليم المسيحي</p>
             </div>
           </div>

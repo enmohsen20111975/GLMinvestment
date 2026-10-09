@@ -30,7 +30,7 @@ const INTRADAY_DB_PATH = path.join(process.cwd(), 'db', 'intraday.db');
 function dbExists(p: string): boolean {
   try {
     return fs.existsSync(p) && fs.statSync(p).size > 0;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

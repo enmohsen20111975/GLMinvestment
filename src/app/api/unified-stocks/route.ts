@@ -72,7 +72,7 @@ function openRo(p: string): Database.Database | null {
   try {
     if (!fs.existsSync(p)) return null;
     return new Database(p, { readonly: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         try {
           db.close();
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           /* ignore */
         }
         console.error('[unified-stocks CRYPTO]', e);
@@ -216,7 +216,7 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         try {
           db.close();
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           /* ignore */
         }
         console.error('[unified-stocks GOLD]', e);
@@ -280,7 +280,7 @@ export async function GET(req: NextRequest) {
     } catch (e) {
       try {
         db.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
       console.error('[unified-stocks stocks]', e);

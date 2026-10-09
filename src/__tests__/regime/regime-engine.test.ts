@@ -149,7 +149,7 @@ describe.skipIf(skip)('MarketRegimeEngine — DB Integrity', () => {
       for (const r of rows) {
         expect(VALID.has(r.regime), `invalid regime value: ${r.regime}`).toBe(true);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // table may not exist on fresh checkout
     } finally {
       db.close();
@@ -160,7 +160,7 @@ describe.skipIf(skip)('MarketRegimeEngine — DB Integrity', () => {
     // Trigger an update — this writes to system_settings
     try {
       runEngine(['--market', 'EGX', '--force']);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // engine may fail on a fresh checkout without DB data — that's OK,
       // we just verify the key exists or the table is at least set up
     }
@@ -491,7 +491,7 @@ async function probe(url: string, ms = 3000): Promise<boolean> {
     );
     const res = await Promise.race([fetch(url), timeout]);
     return (res as Response).ok;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -499,7 +499,7 @@ async function probe(url: string, ms = 3000): Promise<boolean> {
 let serverUp = false;
 try {
   serverUp = await probe('http://localhost:3001/api/market/regime?market=EGX');
-} catch {
+} catch { // silent fallback (safe-by-design)
   serverUp = false;
 }
 

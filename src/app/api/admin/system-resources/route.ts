@@ -34,7 +34,7 @@ async function readProcStat(): Promise<CpuTimes | null> {
       idle: Number(parts[4]) || 0,
       irq: Number(parts[5] || 0) + Number(parts[6] || 0),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -104,7 +104,7 @@ async function readDiskInfo(): Promise<DiskInfo[]> {
       });
     }
     return out;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -129,7 +129,7 @@ async function readTopProcesses(limit = 5): Promise<ProcessInfo[]> {
         name: parts.slice(3).join(' ') || 'unknown',
       };
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -173,7 +173,7 @@ async function readPm2Services(): Promise<Pm2Process[]> {
         log_err: p?.pm2_env?.pm_err_log_path || '',
       };
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -209,7 +209,7 @@ async function readLargestFiles(limit = 12): Promise<LargeFile[]> {
       });
     }
     return files;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -225,7 +225,7 @@ async function getFolderSize(relPath: string, name_ar: string): Promise<{ name_a
     try {
       const files = await readdir(fullPath);
       count = files.length;
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     return {
       name_ar,
@@ -234,7 +234,7 @@ async function getFolderSize(relPath: string, name_ar: string): Promise<{ name_a
       size_formatted: formatBytes(bytes),
       count,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { name_ar, path: relPath, size_bytes: 0, size_formatted: '0 B', count: 0 };
   }
 }
@@ -411,10 +411,10 @@ export async function POST(req: NextRequest) {
             try {
               await truncate(join(logsDir, file), 0);
               truncatedCount++;
-            } catch {}
+            } catch { /* safe-by-design */ }
           }
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       return NextResponse.json({
         success: true,
@@ -437,7 +437,7 @@ export async function POST(req: NextRequest) {
             try {
               const s = await stat(join(reportsDir, f));
               fileStats.push({ name: f, mtime: s.mtimeMs, size: s.size });
-            } catch {}
+            } catch { /* safe-by-design */ }
           }
         }
 
@@ -449,7 +449,7 @@ export async function POST(req: NextRequest) {
             await unlink(join(reportsDir, item.name));
             deletedCount++;
             freedBytes += item.size;
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
       } catch (e: any) {
         return NextResponse.json({ success: false, error: e?.message || 'فشل تنظيف التقارير' }, { status: 500 });

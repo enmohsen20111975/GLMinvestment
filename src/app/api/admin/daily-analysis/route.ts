@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         });
         const status = await response.json();
         return NextResponse.json(status);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         return NextResponse.json({
           success: false,
           error: 'Python Backend غير متاح'
@@ -352,7 +352,7 @@ export async function DELETE(request: NextRequest) {
       await db.dailyAnalysisSummary.delete({
         where: { scan_date: date }
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Ignore if not found
     }
     

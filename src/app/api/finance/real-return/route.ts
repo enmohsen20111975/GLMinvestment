@@ -34,7 +34,7 @@ export async function GET() {
         inflationSource = row.source || 'macro_indicators';
         inflationDate = row.recorded_at;
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // الجدول ممكن ما يكونش اتإنشأ بعد — نستخدم الـ fallback
     }
 
@@ -42,10 +42,10 @@ export async function GET() {
     let assets: any[] = [];
     try {
       assets = db.prepare("SELECT id, name, type, asset_class, annual_yield, interest_rate, certificate_return_rate, total_invested, current_value, fund_name, fund_type, bank_name FROM portfolio_assets WHERE asset_class = 'cash_equivalent' OR type IN ('certificate', 'fund', 'bond', 'savings_account')").all() as any[];
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       try {
         assets = db.prepare("SELECT id, name, type, interest_rate, certificate_return_rate, total_invested, current_value, fund_name, fund_type, bank_name FROM portfolio_assets WHERE type IN ('certificate', 'fund', 'bond', 'savings_account')").all() as any[];
-      } catch { assets = []; }
+      } catch { /* safe-by-design */ assets = []; }
     }
 
     // 3. حساب العائد الحقيقي لكل أصل

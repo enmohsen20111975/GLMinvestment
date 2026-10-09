@@ -84,9 +84,9 @@ export function AssetPreferenceOnboarding() {
           if (parsed && parsed !== assetPreference) {
             setAssetPreference(parsed);
           }
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
     // Only run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

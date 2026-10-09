@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         WHERE hit_target = 0 AND hit_stop = 0
         ORDER BY signal_date DESC
       `).all() as any[];
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // جدول real_predictions غير موجود
     }
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
               ORDER BY date DESC 
               LIMIT 60
             `).all(ticker.toUpperCase()) as any[];
-          } catch {
+          } catch { // silent fallback (safe-by-design)
             // محاولة جدول آخر
             try {
               priceData = priceHistoryDb.prepare(`
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
                 ORDER BY date DESC 
                 LIMIT 60
               `).all(ticker.toUpperCase()) as any[];
-            } catch {
+            } catch { // silent fallback (safe-by-design)
               // جدول مختلف
             }
           }

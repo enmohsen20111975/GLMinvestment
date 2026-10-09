@@ -67,7 +67,7 @@ function applySameOriginCors(req: NextRequest, responseHeaders: Headers) {
         responseHeaders.set('Vary', 'Origin');
       }
       // else: do not set ACAO — browser blocks cross-origin reads
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // malformed origin — ignore
     }
   }

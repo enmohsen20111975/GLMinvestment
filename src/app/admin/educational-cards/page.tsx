@@ -328,7 +328,7 @@ function formatDate(value?: string | null): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return String(value);
   }
 }
@@ -347,7 +347,7 @@ function formatRelative(value?: string | null): string {
     const days = Math.floor(hours / 24);
     if (days < 30) return `منذ ${days} يوم`;
     return formatDate(value);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return String(value);
   }
 }
@@ -605,7 +605,7 @@ export default function AdminEducationalCardsPage() {
       } else {
         toast.error(data.error || 'فشل في توليد الإنفوجرافيك', { id: toastId });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال', { id: toastId });
     }
     setGeneratingExtra(false);
@@ -634,7 +634,7 @@ export default function AdminEducationalCardsPage() {
       } else {
         toast.error(data.error || 'فشل في توليد PDF', { id: toastId });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال', { id: toastId });
     }
     setGeneratingExtra(false);
@@ -663,7 +663,7 @@ export default function AdminEducationalCardsPage() {
       } else {
         toast.error(data.error || 'فشل في توليد GIF', { id: toastId });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال', { id: toastId });
     }
     setGeneratingExtra(false);

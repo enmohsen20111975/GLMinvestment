@@ -134,7 +134,7 @@ export async function getPaperTradingUserId(): Promise<string> {
   try {
     const { userId } = await getSessionUserId();
     if (userId) return userId;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* fall through to guest */
   }
   return 'guest';
@@ -384,7 +384,7 @@ export function checkAutoCloseTriggers(
       try {
         const closedOrder = closeOrder(userId, order.id, triggered.price, triggered.reason);
         closed.push({ order: closedOrder, closePrice: triggered.price, reason: triggered.reason });
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* skip — order might have been closed by a concurrent request */
       }
     }

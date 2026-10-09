@@ -165,7 +165,7 @@ export function BacktestTab() {
             clearInterval(interval);
           }
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore
       }
     }, 5000);

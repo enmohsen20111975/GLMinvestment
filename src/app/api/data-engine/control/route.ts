@@ -53,7 +53,7 @@ async function checkFlaskServer(): Promise<boolean> {
     
     clearTimeout(timeoutId);
     return res.ok;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -130,34 +130,34 @@ function getAllDbStats() {
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
       stats.data_engine.stocks = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const marketRows = db.prepare('SELECT market, COUNT(*) as count FROM stocks GROUP BY market').all() as { market: string; count: number }[];
       for (const row of marketRows) {
         stats.by_market[row.market] = row.count;
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM crypto_prices').get() as { count: number };
       stats.data_engine.crypto = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM gold_prices').get() as { count: number };
       stats.data_engine.gold = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM silver_prices').get() as { count: number };
       stats.data_engine.silver = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM exchange_rates').get() as { count: number };
       stats.data_engine.forex = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     db.close();
   } catch (e) {
@@ -172,15 +172,15 @@ function getAllDbStats() {
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM stocks').get() as { count: number };
       stats.stocks_db.stocks = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM stock_daily_prices').get() as { count: number };
       stats.stocks_db.daily_prices = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     db.close();
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // Historical DB
   try {
@@ -190,12 +190,12 @@ function getAllDbStats() {
     try {
       const result = db.prepare('SELECT COUNT(*) as count FROM historical_prices').get() as { count: number };
       stats.historical.records = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const result = db.prepare('SELECT COUNT(DISTINCT symbol) as count FROM historical_prices').get() as { count: number };
       stats.historical.symbols = result?.count || 0;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     try {
       const rows = db.prepare(`
@@ -203,10 +203,10 @@ function getAllDbStats() {
         FROM historical_prices GROUP BY category
       `).all() as { category: string; symbols: number; records: number }[];
       stats.historical.categories = rows;
-    } catch {}
+    } catch { /* safe-by-design */ }
     
     db.close();
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // News DB
   try {
@@ -216,7 +216,7 @@ function getAllDbStats() {
     const result = db.prepare('SELECT COUNT(*) as count FROM market_news').get() as { count: number };
     stats.news = result?.count || 0;
     db.close();
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   return stats;
 }

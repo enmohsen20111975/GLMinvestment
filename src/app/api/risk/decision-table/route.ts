@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

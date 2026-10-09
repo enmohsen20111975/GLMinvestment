@@ -131,7 +131,7 @@ async function resolveCoinId(symbol: string): Promise<string | null> {
     const list = (await res.json()) as Array<{ id: string; symbol: string; name: string }>;
     const match = list.find(c => c.symbol.toUpperCase() === sym);
     return match?.id ?? null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

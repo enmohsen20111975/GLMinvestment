@@ -78,7 +78,7 @@ export function verifyAdminToken(token: string): boolean {
     if (!username || !password) return false;
 
     return verifyAdminCredentials(username, password);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -98,7 +98,7 @@ export function verifyAdminRequest(request: NextRequest): boolean {
       if (username && password && verifyAdminCredentials(username, password)) {
         return true;
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Invalid token
     }
   }

@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
         "SELECT name FROM sqlite_master WHERE type='table' AND name='stocks' LIMIT 1"
       ).get() as { name?: string } | undefined;
       tableExists = !!row?.name;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       tableExists = false;
     }
 
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
         market_cap: 0,
         total_stocks: 0,
       };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // fallback: لو فيه مشكلة في الـ query (مثلاً volume نص)، نعملها بـ row-by-row
       try {
         const rows = db.prepare(

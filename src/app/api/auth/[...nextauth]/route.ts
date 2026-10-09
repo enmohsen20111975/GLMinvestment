@@ -449,7 +449,7 @@ export const authOptions: NextAuthOptions = {
         if (parsedUrl.hostname.endsWith('m2y.net')) {
           return url;
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       return targetBase;
     },

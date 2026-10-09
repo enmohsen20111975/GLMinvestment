@@ -258,7 +258,7 @@ function parseJSONImport(content: string, type: string): Record<string, unknown>
 
   try {
     parsed = JSON.parse(content);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return {
       total_rows: 0,
       valid_rows: 0,

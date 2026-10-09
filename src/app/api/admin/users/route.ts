@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
             WHERE typeof(created_at) = 'text' 
               AND CAST(created_at AS REAL) > 1000000000000
           `);
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // ignore auto-heal error if table or column varies
         }
 
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
               trial_deletion_scheduled_at: true,
             },
           });
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // Step 3: Raw SQL fallback (completely immune to Prisma DateTime parsing failures)
           users = await db.$queryRawUnsafe<Array<Record<string, unknown>>>(
             `SELECT id, email, name, username, image, is_active, subscription_tier, default_risk_tolerance, last_login, last_active_at, email_verified, created_at, updated_at, trial_ends_at, trial_warning_sent_at, trial_deletion_scheduled_at FROM User ORDER BY created_at DESC LIMIT ? OFFSET ?`,
@@ -411,7 +411,7 @@ export async function GET(request: NextRequest) {
             where: { userId: { in: ids } },
             select: { userId: true, expires: true },
           });
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // ignore if sessions table is unavailable in degraded mode
         }
         const loginCountById: Record<string, number> = {};

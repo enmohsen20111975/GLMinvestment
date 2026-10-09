@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-l from-blue-600 to-blue-800 px-8 py-6">
+          <div className="bg-gradient-to-l from-primary to-primary px-8 py-6">
             <h1 className="text-3xl font-bold text-white">سياسة الخصوصية</h1>
             <p className="text-blue-100 mt-2">آخر تحديث: مايو 2025</p>
           </div>
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
             
             {/* مقدمة */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 1. مقدمة
               </h2>
               <p className="text-gray-700 leading-relaxed">
@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
 
             {/* المعلومات المجمعة */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 2. المعلومات التي نجمعها
               </h2>
               
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
 
             {/* استخدام المعلومات */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 3. كيف نستخدم معلوماتكم
               </h2>
               <p className="text-gray-700 leading-relaxed">نستخدم المعلومات المجمعة للأغراض التالية:</p>
@@ -85,7 +85,7 @@ export default function PrivacyPolicyPage() {
 
             {/* مشاركة المعلومات */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 4. مشاركة المعلومات
               </h2>
               <p className="text-gray-700 leading-relaxed">
@@ -101,7 +101,7 @@ export default function PrivacyPolicyPage() {
 
             {/* أمان البيانات */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 5. أمان البيانات
               </h2>
               <p className="text-gray-700 leading-relaxed">
@@ -118,7 +118,7 @@ export default function PrivacyPolicyPage() {
 
             {/* حقوق المستخدم */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 6. حقوقكم
               </h2>
               <p className="text-gray-700 leading-relaxed">لديكم الحق في:</p>
@@ -134,7 +134,7 @@ export default function PrivacyPolicyPage() {
 
             {/* ملفات تعريف الارتباط */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 7. ملفات تعريف الارتباط (Cookies)
               </h2>
               <p className="text-gray-700 leading-relaxed">
@@ -149,7 +149,7 @@ export default function PrivacyPolicyPage() {
 
             {/* الاحتفاظ بالبيانات */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 8. فترة الاحتفاظ بالبيانات
               </h2>
               <p className="text-gray-700 leading-relaxed">
@@ -159,7 +159,7 @@ export default function PrivacyPolicyPage() {
 
             {/* التحديثات */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 9. تحديثات سياسة الخصوصية
               </h2>
               <p className="text-gray-700 leading-relaxed">
@@ -169,7 +169,7 @@ export default function PrivacyPolicyPage() {
 
             {/* الاتصال */}
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-blue-500 pb-2 mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800 border-b-2 border-primary pb-2 mb-4">
                 10. الاتصال بنا
               </h2>
               <p className="text-gray-700 leading-relaxed">

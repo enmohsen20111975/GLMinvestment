@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
         market: inferMarket(r.ticker),
         sources: r.sources_csv.split(',').filter(Boolean).sort(),
       }));
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // price_history.db missing or unreadable — return zero conflicts
       // (the Source Authority tab will still show CANONICAL_SOURCES + BANNED_SOURCES)
     }

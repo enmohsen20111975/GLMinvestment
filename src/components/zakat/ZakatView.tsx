@@ -340,7 +340,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
     try {
       const saved = localStorage.getItem('zakat_nisab_metal');
       if (saved === 'gold' || saved === 'silver') setNisabMetal(saved);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // localStorage غير متاح — نُبقي القيمة الافتراضية
     }
   }, []);
@@ -349,7 +349,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
   useEffect(() => {
     try {
       localStorage.setItem('zakat_nisab_metal', nisabMetal);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // تجاهل أخطاء الكتابة
     }
   }, [nisabMetal]);
@@ -755,7 +755,7 @@ function CalculationMethods() {
             'relative overflow-hidden border-r-4',
             method.color === 'yellow' && 'border-r-yellow-500 bg-gradient-to-l from-yellow-50/50 to-transparent dark:from-yellow-950/20',
             method.color === 'green' && 'border-r-green-500 bg-gradient-to-l from-green-50/50 to-transparent dark:from-green-950/20',
-            method.color === 'blue' && 'border-r-blue-500 bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-950/20',
+            method.color === 'blue' && 'border-r-primary bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-950/20',
             method.color === 'purple' && 'border-r-purple-500 bg-gradient-to-l from-purple-50/50 to-transparent dark:from-purple-950/20',
             method.color === 'emerald' && 'border-r-emerald-500 bg-gradient-to-l from-emerald-50/50 to-transparent dark:from-emerald-950/20',
           )}>

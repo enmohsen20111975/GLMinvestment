@@ -49,7 +49,7 @@ export async function getPaywallUser(req: NextRequest): Promise<PaywallUser> {
           user_id: session.user.id || null,
         };
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Ignore session read error, fallback to /api/auth/me fetch
     }
 

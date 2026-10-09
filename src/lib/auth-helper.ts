@@ -28,7 +28,7 @@ import { updateLastActiveRaw, repairLastActiveAt } from '@/lib/last-active-helpe
 
 // Run repair on module load (idempotent — safe to call multiple times).
 // This fixes any existing corrupted values in the DB.
-try { repairLastActiveAt(); } catch { /* non-fatal */ }
+try { repairLastActiveAt(); } catch { /* non-fatal - safe-by-design */ }
 
 // ANALYTICS-FIX (2026-10-01): throttle in-memory cache so we don't write
 // last_active_at to auth.db on every single API call — only once per user
@@ -58,7 +58,7 @@ function updateLastActive(userId: string): void {
     // Prisma 5.22.0 has a bug where it writes DateTime? as millisecond timestamps
     // to SQLite, then fails to read them back (P2023 error).
     updateLastActiveRaw(userId);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
 }
@@ -126,7 +126,7 @@ export async function getSessionUserId(): Promise<{ userId: string | null; isAdm
                 return isNaN(parsed.getTime()) ? null : parsed;
               }
               return null;
-            } catch {
+            } catch { // silent fallback (safe-by-design)
               return null;
             }
           })();

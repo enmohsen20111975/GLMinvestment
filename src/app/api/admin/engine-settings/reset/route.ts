@@ -44,11 +44,11 @@ export async function POST(request: NextRequest) {
       let data: unknown = null;
       try {
         data = await res.json();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore JSON parse errors */
       }
       result = { ok: res.ok, status: res.status, data };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       result = { ok: false, status: 0, data: null };
     } finally {
       clearTimeout(timeoutId);

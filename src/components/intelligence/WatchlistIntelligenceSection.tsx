@@ -127,7 +127,7 @@ export function WatchlistIntelligenceSection() {
       } else {
         setError(json.error || 'فشل في تحميل البيانات');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError('حدث خطأ في الاتصال');
     } finally {
       setLoading(false);

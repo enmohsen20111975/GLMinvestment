@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
       
       const rangeRow = historyDb.prepare('SELECT MIN(date) as min, MAX(date) as max FROM price_history').get() as { min: string; max: string };
       dateRange = rangeRow || { min: '', max: '' };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Table might not exist yet
     }
 

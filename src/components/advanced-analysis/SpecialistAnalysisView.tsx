@@ -2600,12 +2600,12 @@ export function SpecialistAnalysisView() {
               computed_at: new Date().toISOString(),
             } as FootprintData);
           }
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
 
       // TERTIARY: predictions
       if (predRes.status === 'fulfilled') {
-        try { setPredictions(await predRes.value.json()); } catch { /* ignore */ }
+        try { setPredictions(await predRes.value.json()); } catch { /* ignore - safe-by-design */ }
       }
 
       // ─── PHASE-0 (Task UNIFICATION-PHASE-0, Rule 73) ───────────────────
@@ -2613,14 +2613,14 @@ export function SpecialistAnalysisView() {
       // الـ unified API بيوفر كل القيم المطلوبة في مكان واحد.
 
       if (shariaRes.status === 'fulfilled') {
-        try { setSharia(await shariaRes.value.json()); } catch { /* ignore */ }
+        try { setSharia(await shariaRes.value.json()); } catch { /* ignore - safe-by-design */ }
       }
       // UNIFIED-API (Task UI-UNIFIED-MIGRATION, Rule 72) — best-effort unified fetch.
       if (unifiedRes.status === 'fulfilled') {
         try {
           const u = await unifiedRes.value.json();
           if (u?.success) setUnified(u);
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال بالخادم');

@@ -395,7 +395,7 @@ export function SubscriptionView() {
       else if (lang.startsWith('ar-qa')) setSelectedMarketId('qse');
       else if (lang.startsWith('en-us') || lang.startsWith('en')) setSelectedMarketId('us');
       else setSelectedMarketId('egx');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setSelectedMarketId('egx');
     }
   }, []);

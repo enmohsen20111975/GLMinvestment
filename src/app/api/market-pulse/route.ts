@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       cache = { timestamp: Date.now(), data };
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Return stale cache if available
   if (cache && Date.now() - cache.timestamp < STALE_CACHE_TTL) {

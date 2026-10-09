@@ -49,7 +49,7 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
     try {
       await access(TRACKING_FILE);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return {};
     }
     const data = await readFile(TRACKING_FILE, 'utf-8');
@@ -129,7 +129,7 @@ function readLatestPrediction(ticker: string): PredictionRow | null {
   try {
     // Lazy require so the route never crashes if better-sqlite3 fails on this DB
     db = new Database(PREDICTIONS_DB, { readonly: true, timeout: 1500 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
   try {
@@ -151,7 +151,7 @@ function readLatestPrediction(ticker: string): PredictionRow | null {
   } catch (e) {
     return null;
   } finally {
-    try { db?.close(); } catch {}
+    try { db?.close(); } catch { /* safe-by-design */ }
   }
 }
 
@@ -169,7 +169,7 @@ function readSignalEvents(ticker: string, sinceDate: string): SignalEvent[] {
   let db: Database.Database | null = null;
   try {
     db = new Database(PREDICTIONS_DB, { readonly: true, timeout: 1500 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
   try {
@@ -191,10 +191,10 @@ function readSignalEvents(ticker: string, sinceDate: string): SignalEvent[] {
       entry_price: num(r.entry_price),
       reason: r.reason != null ? String(r.reason) : null,
     }));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
-    try { db?.close(); } catch {}
+    try { db?.close(); } catch { /* safe-by-design */ }
   }
 }
 
@@ -566,7 +566,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[maker-radar/timeline] error:', error);
-    try { db.close(); } catch {}
+    try { db.close(); } catch { /* safe-by-design */ }
     return NextResponse.json(
       { success: false, error: error?.message || 'Internal error', ticker },
       { status: 500 }
