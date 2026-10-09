@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { ExpertAnalysisPanel } from './ExpertAnalysisPanel';
 
 // ============================================================================
 // Types
@@ -343,6 +344,7 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto">
           <TabsTrigger value="overview" className="text-xs">نظرة عامة</TabsTrigger>
+          <TabsTrigger value="expert" className="text-xs">⚡ تحليل خبير</TabsTrigger>
           <TabsTrigger value="technical" className="text-xs">فني</TabsTrigger>
           <TabsTrigger value="fundamental" className="text-xs">أساسي</TabsTrigger>
           <TabsTrigger value="chart" className="text-xs">رسوم</TabsTrigger>
@@ -353,6 +355,11 @@ export function ComprehensiveStockAnalysis({ ticker, market = 'EGX' }: Props) {
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-4">
           <OverviewTab data={data} unifiedData={unifiedData} />
+        </TabsContent>
+
+        {/* Expert Analysis Tab (NEW — 2026-10-09) */}
+        <TabsContent value="expert" className="mt-4">
+          <ExpertAnalysisPanel ticker={ticker} />
         </TabsContent>
 
         {/* Technical Tab */}

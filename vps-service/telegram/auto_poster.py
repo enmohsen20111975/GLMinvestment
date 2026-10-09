@@ -495,6 +495,18 @@ class TelegramAutoPoster:
             # safe-by-design: لو في خطأ في عرض الشرح الفني → نكمّل بدون القسم ده
             pass
 
+        # ────────────────────────────────────────────────────────────────────
+        # EXPERT-ANALYSIS-ENGINE (2026-10-09):
+        # بنجيب التحليل الاحترافي الشامل من /api/stocks/[ticker]/expert-analysis
+        # ونضيفه كقسم "تحليل خبير" في الرسالة — لو الـ API متاح.
+        # ────────────────────────────────────────────────────────────────────
+        try:
+            expert_text = self._fetch_expert_analysis(ticker, price)
+            if expert_text:
+                text += f"\n━━━ 🎓 تحليل خبير ━━━\n{expert_text}\n"
+        except Exception:
+            pass  # safe-by-design
+
         text += f"""
 ━━━━━━━━━━━━━━━━━━━
 🌐 **الموقع:** {OFFICIAL_LINKS['website']}
@@ -511,7 +523,65 @@ class TelegramAutoPoster:
 #البورصة_المصرية #توقعات_أسهم #EGX #الاستثمار #تداول #مصر"""
 
         return text
-    
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # EXPERT-ANALYSIS-ENGINE (2026-10-09):
+    # بنجيب التحليل الاحترافي من الـ Node API ونرجّع ملخص مختصر للتليجرام.
+    # ═══════════════════════════════════════════════════════════════════════════
+    def _fetch_expert_analysis(self, ticker: str, price: Optional[float] = None) -> Optional[str]:
+        """
+        جلب تحليل خبير من /api/stocks/[ticker]/expert-analysis
+        ورجاع ملخص مختصر للنشر في تليجرام.
+        """
+        if not ticker:
+            return None
+        try:
+            import requests
+            # Node API على localhost:3000
+            url = f"http://localhost:3000/api/stocks/{ticker.upper()}/expert-analysis"
+            resp = requests.get(url, timeout=5)
+            if not resp.ok:
+                return None
+            data = resp.json()
+            if not data.get('success') or not data.get('analysis'):
+                return None
+            a = data['analysis']
+            tech = a.get('technical', {})
+            fund = a.get('fundamental', {})
+            risk = a.get('risk', {})
+
+            parts = []
+            # ملخص فني
+            rsi = tech.get('rsi', {})
+            ma = tech.get('movingAverages', {})
+            if rsi.get('value') is not None:
+                parts.append(f"📈 RSI: {rsi['value']:.1f} ({rsi.get('signal_ar', '—')})")
+            if ma.get('trend_ar'):
+                parts.append(f"📊 الترند: {ma['trend_ar']}")
+
+            # ملخص أساسي
+            roe = fund.get('roe', {})
+            pe = fund.get('peRatio', {})
+            div = fund.get('dividend', {})
+            if roe.get('value') is not None:
+                parts.append(f"🏦 ROE: {roe['value']:.1f}% ({roe.get('rating_ar', '—')})")
+            if pe.get('value') is not None:
+                parts.append(f"💰 P/E: {pe['value']:.1f}x ({pe.get('rating_ar', '—')})")
+            if div.get('value') is not None:
+                parts.append(f"💸 توزيعات: {div['value']:.2f}% ({div.get('rating_ar', '—')})")
+
+            # مخاطر
+            if risk.get('level_ar'):
+                parts.append(f"⚠️ المخاطرة: {risk['level_ar']}")
+            if risk.get('positionSize_ar'):
+                parts.append(f"📏 المركز: {risk['positionSize_ar']}")
+
+            if not parts:
+                return None
+            return '\n'.join(parts)
+        except Exception:
+            return None
+
     def format_daily_summary_post(self, summary: Dict) -> str:
         """
         تنسيق ملخص يومي للنشر
