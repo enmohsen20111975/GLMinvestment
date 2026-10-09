@@ -167,7 +167,7 @@ function chunkDbs(dbs: DbInfo[], maxBytes: number): DbInfo[][] {
   return batches;
 }
 
-async function runGit(args: string[], cwd: string, timeoutMs = 300_000): Promise<{ stdout: string; stderr: string }> {
+async function runGit(args: string[], cwd: string, timeoutMs = 900_000): Promise<{ stdout: string; stderr: string }> {
   return execFileAsync(GIT_BIN, args, { cwd, env: EXEC_ENV, maxBuffer: 50 * 1024 * 1024, timeout: timeoutMs });
 }
 
@@ -646,8 +646,8 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         pushArgs.push('origin', `HEAD:${currentBranch}`);
 
         try {
-          // مهلة سخية 300 ثانية للرفع على السيرفر
-          const { stdout: pOut, stderr: pErr } = await runGit(pushArgs, cwd, 300_000);
+          // مهلة سخية 15 دقيقة (900 ثانية) لرفع الأحجام الكبيرة بأمان
+          const { stdout: pOut, stderr: pErr } = await runGit(pushArgs, cwd, 900_000);
           const pushOutput = (pOut || '') + '\n' + (pErr || '');
           emit('git', 'git_push', `مخرجات Git Push:\n${pushOutput.trim()}`, 98);
           emit('success', 'git_push', `🎉 تم رفع ${archivesToPush.length} ملف أرشيف إلى مستودع GitHub بنجاح!`, 100);
@@ -664,10 +664,12 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
           emit('error', 'git_push', `❌ فشل الرفع إلى GitHub: ${rawErr.slice(0, 300)}`, 95, rawErr);
 
           // تشخيص ذكي لسبب الخطأ
-          if (rawErr.includes('Authentication failed') || rawErr.includes('Invalid username or password') || rawErr.includes('403')) {
+          if (pushErr?.killed || rawErr.includes('timed out') || rawErr.includes('ETIMEDOUT')) {
+            emit('warn', 'git_push', '💡 التشخيص: استغرق الرفع وقتاً أطول من المتوقع بسبب بطء سرعة اتصال الإنترنت مقارنة بحجم الملفات الكلي. يمكنك اختيار القواعد الأساسية فقط لتسريع الرفع أو استخدام "رفع الأرشيفات الموجودة فقط".', 95);
+          } else if (rawErr.includes('Authentication failed') || rawErr.includes('Invalid username or password') || rawErr.includes('403')) {
             emit('warn', 'git_push', '💡 التشخيص: توكن GitHub (Personal Access Token) غير صالح أو منتهي الصلاحية أو يفتقر إلى صلاحيات Write/Repo.', 95);
           } else if (rawErr.includes('exceeds GitHub\'s file size limit') || rawErr.includes('this exceeds')) {
-            emit('warn', 'git_push', '💡 التشخيص: أحد الملفات المرفوعة تجاوز حد 100MB لـ GitHub. قلل حجم التجزئة إلى 50MB وأعد المحاولة.', 95);
+            emit('warn', 'git_push', '💡 التشخيص: أحد الملفات المرفوعة تجاوز حد 100MB لـ GitHub. قلل حجم التجزئة إلى 25MB وأعد المحاولة.', 95);
           } else if (rawErr.includes('timed out') || rawErr.includes('SIGTERM')) {
             emit('warn', 'git_push', '💡 التشخيص: انتهت مهلة الرفع بسبب بطء سرعة اتصال الإنترنت. جرب رفع قواعد أقل أو تقليل حجم التجزئة.', 95);
           } else if (rawErr.includes('fetch first') || rawErr.includes('non-fast-forward')) {

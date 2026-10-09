@@ -209,7 +209,7 @@ with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
   }
 }
 
-async function runGit(args: string[], cwd: string, timeoutMs = 300_000): Promise<{ stdout: string; stderr: string }> {
+async function runGit(args: string[], cwd: string, timeoutMs = 900_000): Promise<{ stdout: string; stderr: string }> {
   return execFileAsync(GIT_BIN, args, { cwd, env: EXEC_ENV, maxBuffer: 50 * 1024 * 1024, timeout: timeoutMs });
 }
 
@@ -577,12 +577,12 @@ export async function POST(req: NextRequest) {
 
         try {
           if (strategy === 'force_push') {
-            await runGit(['push', '--force', 'origin', `HEAD:${currentBranch}`], cwd, 300_000);
+            await runGit(['push', '--force', 'origin', `HEAD:${currentBranch}`], cwd, 900_000);
             gitResult.pushed = true;
             gitResult.message = `تم الرفع بالـ force push (${archivesToPush.length} ملف). ⚠️ أي تعديلات على الـ remote اتمسحت.`;
             gitResult.warnings?.push('⚠️ تم استخدام --force — تأكد إن مفيش حد بيرفع على نفس الـ branch');
           } else if (strategy === 'no_pull') {
-            await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 300_000);
+            await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 900_000);
             gitResult.pushed = true;
             gitResult.message = `تم الرفع بدون مزامنة (${archivesToPush.length} ملف).`;
           } else if (strategy === 'fetch_rebase') {
@@ -596,7 +596,7 @@ export async function POST(req: NextRequest) {
               await runGit(['rebase', '--abort'], cwd, 15_000).catch(() => {});
               throw new Error(`rebase conflict — حل يدوي مطلوب: ${rebaseErr instanceof Error ? rebaseErr.message.slice(0, 150) : 'unknown'}`);
             }
-            await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 300_000);
+            await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 900_000);
             gitResult.pushed = true;
             gitResult.message = `تم رفع ${archivesToPush.length} ملف أرشيف إلى GitHub بنجاح (rebase strategy).`;
           } else {
@@ -611,7 +611,7 @@ export async function POST(req: NextRequest) {
               await runGit(['merge', '--abort'], cwd, 15_000).catch(() => {});
               throw new Error(`merge conflict — حل يدوي مطلوب: ${mergeErr instanceof Error ? mergeErr.message.slice(0, 150) : 'unknown'}`);
             }
-            await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 300_000);
+            await runGit(['push', 'origin', `HEAD:${currentBranch}`], cwd, 900_000);
             gitResult.pushed = true;
             gitResult.message = `تم رفع ${archivesToPush.length} ملف أرشيف إلى GitHub بنجاح (merge strategy).`;
           }
