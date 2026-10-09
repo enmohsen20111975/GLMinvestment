@@ -1367,6 +1367,84 @@ def process_update(update: dict):
         )
         return
 
+    # أوامر عامة لا تتطلب اشتراك مسبق
+    if text in ("/id", "/myid", "ايدي", "معرفي", "id"):
+        send_message(
+            chat_id,
+            f"🆔 <b>معرّف تليجرام الخاص بك (Chat ID):</b>\n<code>{chat_id}</code>\n"
+            f"👤 الاسم: <b>{user_name}</b>\n\n"
+            f"💡 <i>استخدم هذا المعرّف للربط أو إضافته لصلاحيات الأدمن والمالك.</i>"
+        )
+        return
+
+    if text.startswith("/claim_admin") or text.startswith("/admin_login"):
+        parts = text.split(None, 1)
+        secret_input = parts[1].strip() if len(parts) > 1 else ""
+        admin_tok = os.environ.get("ADMIN_TOKEN", "").strip()
+        admin_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
+        shared_sec = os.environ.get("SHARED_SECRET", "").strip()
+        bot_sec = os.environ.get("BOT_API_SECRET", "").strip()
+        valid_secrets = {s for s in [admin_tok, admin_pw, shared_sec, bot_sec] if s}
+
+        if secret_input and secret_input in valid_secrets:
+            ADMIN_TELEGRAM_IDS.add(str(chat_id))
+            # تثبيت في auth.db
+            try:
+                auth_db_path = DB_DIR / "auth.db"
+                if auth_db_path.exists():
+                    c = sqlite3.connect(str(auth_db_path))
+                    c.execute(
+                        "INSERT OR REPLACE INTO user_telegram_links (id, user_id, telegram_chat_id, telegram_username, linked_at, is_active) "
+                        "VALUES (?, ?, ?, ?, datetime('now'), 1)",
+                        (
+                            f"admin_link_{chat_id}",
+                            "48457b7f-40f2-4a7e-8955-d4d2cd1d79bd",
+                            str(chat_id),
+                            message.get("from", {}).get("username", user_name)
+                        )
+                    )
+                    c.commit()
+                    c.close()
+            except Exception as ex:
+                log.error(f"Error persisting admin link to auth.db: {ex}")
+
+            # تثبيت في .env
+            try:
+                env_file = PROJECT_ROOT / ".env"
+                if env_file.exists():
+                    content = env_file.read_text(encoding="utf-8")
+                    if "ADMIN_TELEGRAM_IDS=" in content:
+                        import re
+                        content = re.sub(
+                            r"ADMIN_TELEGRAM_IDS=(.*)",
+                            lambda m: f"ADMIN_TELEGRAM_IDS={m.group(1).strip()},{chat_id}" if str(chat_id) not in m.group(1) else m.group(0),
+                            content
+                        )
+                    else:
+                        content += f"\nADMIN_TELEGRAM_IDS={chat_id}\n"
+                    env_file.write_text(content, encoding="utf-8")
+            except Exception as ex:
+                log.error(f"Error persisting to .env: {ex}")
+
+            send_message(
+                chat_id,
+                f"👑 <b>أهلاً بك يا باشمهندس محسن (المالك / الأدمن)!</b> 👋\n\n"
+                f"✅ تم تفعيل وتثبيت حساب التليجرام الخاص بك (Chat ID: <code>{chat_id}</code>) بصلاحيات <b>المالك الكاملة غير المحدودة مدى الحياة</b>.\n"
+                f"• باقة الاشتراك: <b>Owner / Admin VIP</b>\n"
+                f"• الاستعلامات: <b>غير محدودة ♾️</b>\n"
+                f"• رادار الميكرز وشارتات الأسهم مفتوحة بالكامل بدون أي قيود.",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return
+        else:
+            send_message(
+                chat_id,
+                "❌ <b>رمز التحقق غير صحيح.</b>\n"
+                "لتفعيل صلاحيات المالك أرسل الأمر متبوعاً بالرمز:\n"
+                "<code>/claim_admin &lt;ADMIN_TOKEN_OR_PASSWORD&gt;</code>"
+            )
+            return
+
     # كل الأوامر والبحث تخضع للبوابة الحصرية
     sub = check_subscription(chat_id)
     allowed, status = get_user_access_status(sub)
