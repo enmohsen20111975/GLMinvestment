@@ -471,7 +471,7 @@ export function SectorTrackingTab({ market }: { market: MarketType }) {
         <span className={cn(
           st.rsi >= 70 ? 'text-rose-600' : st.rsi <= 30 ? 'text-emerald-600' : 'text-muted-foreground'
         )}>
-          {st.rsi.toFixed(0)}
+          {(st.rsi ?? 0).toFixed(0)}
         </span>
       ) : '—',
     },

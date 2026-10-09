@@ -95,19 +95,26 @@ export function EidPredictionsWidget() {
     fetchPredictions();
   }, [fetchPredictions]);
 
-  const formatPrice = (price: number, symbol: string) => {
+  const formatPrice = (price: number | null | undefined, symbol: string) => {
+    if (price == null || Number.isNaN(price)) return '—';
     if (symbol === 'BTC' || symbol === 'ETH') {
       return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     } else if (symbol === 'GOLD') {
       return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     } else {
-      return `${price.toFixed(2)} ج.م`;
+      return `${(price ?? 0).toFixed(2)} ج.م`;
     }
   };
 
   const getPotentialGain = (pred: Prediction) => {
-    const gain = ((pred.targetPrice - pred.entryPrice) / pred.entryPrice) * 100;
-    return gain.toFixed(1);
+    const entry = pred.entryPrice;
+    const target = pred.targetPrice;
+    if (entry == null || target == null || entry === 0 || Number.isNaN(entry) || Number.isNaN(target)) {
+      return '0.0';
+    }
+    const gain = ((target - entry) / entry) * 100;
+    if (!Number.isFinite(gain)) return '0.0';
+    return (gain ?? 0).toFixed(1);
   };
 
   if (loading) {

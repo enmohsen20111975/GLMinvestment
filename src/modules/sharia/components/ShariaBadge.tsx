@@ -291,7 +291,7 @@ export function ShariaBadge({
       )}
       {showRate && summary.purificationRatePct != null && state === 'ok' && (
         <span className="opacity-70" dir="ltr">
-          {summary.purificationRatePct.toFixed(1)}%
+          {(summary.purificationRatePct ?? 0).toFixed(1)}%
         </span>
       )}
     </span>

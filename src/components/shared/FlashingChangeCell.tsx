@@ -45,7 +45,7 @@ export const FlashingChangeCell = memo(function FlashingChangeCell({
   const isNegative = changePct < 0;
 
   const sign = isPositive ? '+' : '';
-  const formatted = `${sign}${changePct.toFixed(2)}%`;
+  const formatted = `${sign}${(changePct ?? 0).toFixed(2)}%`;
 
   return (
     <span

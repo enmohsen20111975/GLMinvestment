@@ -263,7 +263,7 @@ export function MultiMarketWidget() {
                           : 'text-muted-foreground'
                       )}
                     >
-                      {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                      {change >= 0 ? '+' : ''}{(change ?? 0).toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -455,7 +455,7 @@ export function MultiMarketWidget() {
                         : 'text-muted-foreground'
                     )}
                   >
-                    {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                    {change >= 0 ? '+' : ''}{(change ?? 0).toFixed(2)}%
                   </span>
                 </div>
               </div>
@@ -524,10 +524,10 @@ export function MultiMarketWidget() {
                 <div className="text-left">
                   <p className="font-bold text-sm tabular-nums">
                     {rateInMarketCurrency >= 10
-                      ? rateInMarketCurrency.toFixed(2)
+                      ? (rateInMarketCurrency ?? 0).toFixed(2)
                       : rateInMarketCurrency >= 1
-                      ? rateInMarketCurrency.toFixed(3)
-                      : rateInMarketCurrency.toFixed(4)}
+                      ? (rateInMarketCurrency ?? 0).toFixed(3)
+                      : (rateInMarketCurrency ?? 0).toFixed(4)}
                     <span className="text-[11px] text-muted-foreground mr-1 font-normal">
                       {marketCurr}
                     </span>

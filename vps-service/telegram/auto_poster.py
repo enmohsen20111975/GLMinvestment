@@ -86,6 +86,36 @@ except ImportError:
         def get_telethon_buttons(ticker=None, **kw): return None
         def normalize_telethon_buttons(b, ticker=None): return None
 
+# AUDIT-PUBLISH-QUALITY (Task 2026-10-08):
+# COMMUNITY_PROMPT was used in 5 format methods below but NEVER defined →
+# every call to format_recommendation_post / format_daily_summary_post /
+# format_stock_alert / format_market_open / format_market_close raised
+# NameError. Now defined as a module-level constant (mirrors official-links.ts).
+COMMUNITY_PROMPT = 'انضم الآن إلى مجتمع المتداولين بلا مشاعر، ودع الأرقام تقود محفظتك! 📈'
+
+# AUDIT-PUBLISH-QUALITY: mandatory legal disclaimer for every published message
+# (constitution requirement — لا نشر بدون إخلاء مسؤولية).
+LEGAL_DISCLAIMER = '⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.'
+
+
+def _fmt_price(value, digits: int = 2) -> str:
+    """AUDIT-PUBLISH-QUALITY (Rule 27 — NO-FAKE-DATA):
+    Format a price for display. Returns '—' when value is None / NaN / non-finite
+    instead of fabricating '0.00' (which misled subscribers into thinking the
+    entry price was literally zero).
+    """
+    if value is None:
+        return '—'
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return '—'
+    if f != f:  # NaN check
+        return '—'
+    if not (-1e12 < f < 1e12):  # guard against absurd overflow values
+        return '—'
+    return f"{f:.{digits}f}"
+
 # Database paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 STOCKS_DB = str(PROJECT_ROOT / 'db' / 'stocks.db')
@@ -342,33 +372,59 @@ class TelegramAutoPoster:
             'SELL': '🔴', 'STRONG_SELL': '🔴',
         }.get(signal, '⚪')
         
-        price = rec.get('current_price') or rec.get('price', 0)
-        target = rec.get('target_price')
-        stop = rec.get('stop_loss')
-        confidence = rec.get('confidence', 0)
+        # AUDIT-PUBLISH-QUALITY (Rule 27 — NO-FAKE-DATA):
+        # Previously: `price = rec.get('current_price') or rec.get('price', 0)`
+        # → defaulted to 0 → leaked "0.00 ج.م" in the published message when the
+        # source row had no price. Now we keep `None` and render "—" instead of
+        # fabricating 0.00.
+        _raw_price = rec.get('current_price')
+        if _raw_price is None:
+            _raw_price = rec.get('price')
+        try:
+            price = float(_raw_price) if _raw_price is not None else None
+        except (TypeError, ValueError):
+            price = None
+        try:
+            target = float(rec.get('target_price')) if rec.get('target_price') is not None else None
+        except (TypeError, ValueError):
+            target = None
+        try:
+            stop = float(rec.get('stop_loss')) if rec.get('stop_loss') is not None else None
+        except (TypeError, ValueError):
+            stop = None
+        try:
+            confidence = float(rec.get('confidence')) if rec.get('confidence') is not None else None
+        except (TypeError, ValueError):
+            confidence = None
         sector = rec.get('sector', '')
         
         text = f"""📊 **تحليل سهم {ticker}**
 🏦 {name_ar}
 
 {signal_emoji} **التوقعة: {signal_ar_label}**
-💰 **السعر الحالي:** {price:.2f} ج.م
+💰 **السعر الحالي:** {_fmt_price(price)} ج.م
 """
         
-        if target:
-            upside = ((target - price) / price * 100) if price > 0 else 0
-            text += f"🎯 **الهدف:** {target:.2f} ج.م ({upside:+.1f}%)\n"
+        if target is not None and price and price > 0:
+            upside = ((target - price) / price * 100)
+            text += f"🎯 **الهدف:** {_fmt_price(target)} ج.م ({upside:+.1f}%)\n"
+        elif target is not None:
+            text += f"🎯 **الهدف:** {_fmt_price(target)} ج.م\n"
         
-        if stop:
-            text += f"🛑 **وقف الخسارة:** {stop:.2f} ج.م\n"
+        if stop is not None:
+            text += f"🛑 **وقف الخسارة:** {_fmt_price(stop)} ج.م\n"
         
-        text += f"\n📈 **مستوى الثقة:** {confidence:.0f}%\n"
+        if confidence is not None:
+            text += f"\n📈 **مستوى الثقة:** {confidence:.0f}%\n"
+        else:
+            text += "\n📈 **مستوى الثقة:** —\n"
         
         if sector:
             text += f"🏢 **القطاع:** {sector}\n"
         
         # حساب نسبة المخاطرة للعائد
-        if target and stop and price > 0:
+        rr: Optional[float] = None
+        if target is not None and stop is not None and price and price > 0:
             risk = price - stop
             reward = target - price
             rr = round(reward / risk, 2) if risk > 0 else 0
@@ -379,8 +435,9 @@ class TelegramAutoPoster:
             except Exception:
                 pass  # keep inline rr computed above
             # Phase 8.1: R/R < 1.0 = إشارة فاسدة - تجاهلها
-            if rr < 1.0:
+            if rr is not None and rr < 1.0:
                 return None
+        if rr is not None:
             text += f"⚖️ **نسبة العائد/المخاطرة:** {rr:.2f}:1\n"
 
         # Phase 8.1: EGX Recommendations
@@ -448,6 +505,7 @@ class TelegramAutoPoster:
 📱 **تطبيق أندرويد:** {OFFICIAL_LINKS['android']}
 ✈️ **قناة تليجرام:** {OFFICIAL_LINKS['telegram']}
 ━━━━━━━━━━━━━━━━━━━
+{LEGAL_DISCLAIMER}
 📢 **{COMMUNITY_PROMPT}**
 
 #البورصة_المصرية #توقعات_أسهم #EGX #الاستثمار #تداول #مصر"""
@@ -527,6 +585,7 @@ class TelegramAutoPoster:
 📘 **فيسبوك:** {OFFICIAL_LINKS['facebook']}
 ✈️ **تليجرام:** {OFFICIAL_LINKS['telegram']}
 ━━━━━━━━━━━━━━━━━━━
+{LEGAL_DISCLAIMER}
 📢 **{COMMUNITY_PROMPT}**
 
 #البورصة_المصرية #توقعات_أسهم #EGX #الاستثمار #تداول #مصر #الاقتصاد_المصري"""
@@ -549,7 +608,8 @@ class TelegramAutoPoster:
         ticker = alert.get('ticker', '')
         name_ar = alert.get('name_ar', '')
         alert_type = alert.get('alert_type', '')
-        price = alert.get('price', 0)
+        # AUDIT-PUBLISH-QUALITY (Rule 27): don't fabricate 0.00 when price missing.
+        price = alert.get('price')
         message = alert.get('message', '')
         
         emoji_map = {
@@ -565,7 +625,7 @@ class TelegramAutoPoster:
         text = f"""{emoji} **تنبيه سهمي - {ticker}**
 
 🏦 {name_ar}
-💰 السعر الحالي: {price:.2f} ج.م
+💰 السعر الحالي: {_fmt_price(price)} ج.م
 
 📝 {message}
 
@@ -575,6 +635,7 @@ class TelegramAutoPoster:
 📘 **فيسبوك:** {OFFICIAL_LINKS['facebook']}
 ✈️ **تليجرام:** {OFFICIAL_LINKS['telegram']}
 ━━━━━━━━━━━━━━━━━━━
+{LEGAL_DISCLAIMER}
 📢 **{COMMUNITY_PROMPT}**
 
 #البورصة_المصرية #توقعات_أسهم #EGX #الاستثمار #تداول #مصر"""
@@ -602,6 +663,7 @@ class TelegramAutoPoster:
 📘 **فيسبوك:** {OFFICIAL_LINKS['facebook']}
 ✈️ **تليجرام:** {OFFICIAL_LINKS['telegram']}
 ━━━━━━━━━━━━━━━━━━━
+{LEGAL_DISCLAIMER}
 📢 **{COMMUNITY_PROMPT}**
 
 #البورصة_المصرية #EGX #تداول #مصر #الاقتصاد_المصري"""
@@ -638,6 +700,7 @@ class TelegramAutoPoster:
 📘 **فيسبوك:** {OFFICIAL_LINKS['facebook']}
 ✈️ **تليجرام:** {OFFICIAL_LINKS['telegram']}
 ━━━━━━━━━━━━━━━━━━━
+{LEGAL_DISCLAIMER}
 📢 **{COMMUNITY_PROMPT}**
 
 #البورصة_المصرية #EGX #تداول #مصر #الاقتصاد_المصري"""

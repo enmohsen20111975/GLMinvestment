@@ -173,7 +173,7 @@ function formatPrice(n: number | null): string {
 function formatPct(n: number | null): string {
   if (n === null || n === undefined) return '—';
   const sign = n >= 0 ? '+' : '';
-  return sign + n.toFixed(2) + '%';
+  return sign + (n ?? 0).toFixed(2) + '%';
 }
 
 function classificationBadge(c: string) {
@@ -542,7 +542,7 @@ export function DealAdvisorPanel({
                   <span className="text-muted-foreground">RSI:</span>
                   <span className="font-medium">
                     {data.technical_state.rsi !== null
-                      ? data.technical_state.rsi.toFixed(1)
+                      ? (data.technical_state.rsi ?? 0).toFixed(1)
                       : '—'}{' '}
                     <span className="text-xs text-muted-foreground">
                       ({data.technical_state.rsi_state_ar})
@@ -683,7 +683,7 @@ export function DealAdvisorPanel({
                 )}
                 {data.events.dividend_yield !== null && data.events.dividend_yield > 0 && (
                   <div className="text-xs text-muted-foreground pt-2 mt-2 border-t">
-                    توزيعات: {data.events.dividend_yield.toFixed(2)}% سنوياً
+                    توزيعات: {(data.events.dividend_yield ?? 0).toFixed(2)}% سنوياً
                   </div>
                 )}
               </div>
@@ -764,7 +764,7 @@ export function DealAdvisorPanel({
                     <div className="flex justify-between gap-2">
                       <span className="text-xs text-muted-foreground">نسبة المخاطرة/المكافأة:</span>
                       <span className="text-xs font-medium">
-                        {data.suggested_levels.rr_ratio.toFixed(2)} : 1
+                        {(data.suggested_levels.rr_ratio ?? 0).toFixed(2)} : 1
                       </span>
                     </div>
                     {data.suggested_levels.rr_state_ar && (

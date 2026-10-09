@@ -368,8 +368,8 @@ const CONFIDENCE_OPTIONS: Array<{ value: number; label: string }> = [
 function formatReturnPct(pct: number | null | undefined) {
   if (pct == null || isNaN(Number(pct))) return { text: '—', color: 'text-muted-foreground' };
   const n = Number(pct);
-  if (n > 0) return { text: `+${n.toFixed(2)}%`, color: 'text-emerald-600 dark:text-emerald-400' };
-  if (n < 0) return { text: `${n.toFixed(2)}%`, color: 'text-rose-600 dark:text-rose-400' };
+  if (n > 0) return { text: `+${(n ?? 0).toFixed(2)}%`, color: 'text-emerald-600 dark:text-emerald-400' };
+  if (n < 0) return { text: `${(n ?? 0).toFixed(2)}%`, color: 'text-rose-600 dark:text-rose-400' };
   return { text: '0.00%', color: 'text-muted-foreground' };
 }
 
@@ -377,7 +377,7 @@ function formatProfitFactor(pf: number | null | undefined): string {
   if (pf == null || isNaN(Number(pf))) return '—';
   const n = Number(pf);
   if (n >= 999) return '∞';
-  return n.toFixed(2);
+  return (n ?? 0).toFixed(2);
 }
 
 // P0-v17: عرض تاريخ الدخول/التنفيذ بصيغة موجزة (dd/mm/yyyy) + الوقت إن وُجد
@@ -1072,7 +1072,7 @@ export function PredictionTrackingDashboard({
         if (v == null) return <span className="text-[11px] text-muted-foreground">—</span>;
         return (
           <span className={cn('text-[11px] font-bold', v >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
-            {v >= 0 ? '+' : ''}{v.toFixed(2)}%
+            {v >= 0 ? '+' : ''}{(v ?? 0).toFixed(2)}%
           </span>
         );
       },
@@ -1088,7 +1088,7 @@ export function PredictionTrackingDashboard({
         if (v == null) return <span className="text-[11px] text-muted-foreground">—</span>;
         return (
           <span className={cn('text-[11px] font-bold', v < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
-            {v >= 0 ? '+' : ''}{v.toFixed(2)}%
+            {v >= 0 ? '+' : ''}{(v ?? 0).toFixed(2)}%
           </span>
         );
       },
@@ -1318,7 +1318,7 @@ export function PredictionTrackingDashboard({
                   'text-3xl md:text-4xl font-black tracking-tight font-mono',
                   activeStats.netReturn >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
                 )}>
-                  {activeStats.netReturn >= 0 ? '+' : ''}{activeStats.netReturn.toFixed(1)}%
+                  {activeStats.netReturn >= 0 ? '+' : ''}{(activeStats.netReturn ?? 0).toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -1334,7 +1334,7 @@ export function PredictionTrackingDashboard({
               </div>
               <div className="my-1">
                 <span className="text-2xl md:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                  +{activeStats.grossProfit.toFixed(1)}%
+                  +{(activeStats.grossProfit ?? 0).toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -1350,7 +1350,7 @@ export function PredictionTrackingDashboard({
               </div>
               <div className="my-1">
                 <span className="text-2xl md:text-3xl font-black font-mono text-red-600 dark:text-red-400">
-                  {activeStats.grossLoss.toFixed(1)}%
+                  {(activeStats.grossLoss ?? 0).toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -1366,7 +1366,7 @@ export function PredictionTrackingDashboard({
               </div>
               <div className="my-1">
                 <span className="text-2xl md:text-3xl font-black font-mono text-amber-600 dark:text-amber-400">
-                  {activeStats.maxLoss.toFixed(1)}%
+                  {(activeStats.maxLoss ?? 0).toFixed(1)}%
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -1387,7 +1387,7 @@ export function PredictionTrackingDashboard({
                   activeStats.rrRatio >= 1.0 ? 'text-amber-600 dark:text-amber-400' :
                   'text-red-600 dark:text-red-400'
                 )}>
-                  {activeStats.rrRatio.toFixed(2)}:1
+                  {(activeStats.rrRatio ?? 0).toFixed(2)}:1
                 </span>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -1428,7 +1428,7 @@ export function PredictionTrackingDashboard({
                   </div>
                 </div>
                 <Badge variant="outline" className={cn('text-[10px] font-bold', cfg.badgeBg)}>
-                  {pStats.winRate.toFixed(1)}% نجاح
+                  {(pStats.winRate ?? 0).toFixed(1)}% نجاح
                 </Badge>
               </div>
 
@@ -1449,7 +1449,7 @@ export function PredictionTrackingDashboard({
               </div>
 
               <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground pt-1 border-t border-border/40 mt-1">
-                <span>متوسط الربح: <strong className="text-emerald-600 dark:text-emerald-400">+{pStats.avgWinPct.toFixed(1)}%</strong></span>
+                <span>متوسط الربح: <strong className="text-emerald-600 dark:text-emerald-400">+{(pStats.avgWinPct ?? 0).toFixed(1)}%</strong></span>
                 <span>تصفية بالجدول ↓</span>
               </div>
             </button>
@@ -1520,7 +1520,7 @@ export function PredictionTrackingDashboard({
                     ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                 )}>
-                  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative.toFixed(2)}%
+                  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{cumulativeProfitData[cumulativeProfitData.length - 1]?.(cumulative ?? 0).toFixed(2)}%
                 </Badge>
               </div>
             </div>
@@ -1867,7 +1867,7 @@ export function PredictionTrackingDashboard({
                             title="العائد اللحظي من السعر الحالي (معاينة غير رسمية — لم تُقفل الصفقة بعد)"
                           >
                             معاينة: {liveReturnPct != null
-                              ? `${liveReturnPct >= 0 ? '+' : ''}${liveReturnPct.toFixed(2)}%`
+                              ? `${liveReturnPct >= 0 ? '+' : ''}${(liveReturnPct ?? 0).toFixed(2)}%`
                               : '—'}
                           </Badge>
                         </div>
@@ -1882,7 +1882,7 @@ export function PredictionTrackingDashboard({
                               {highest > 0 ? fmtPrice(highest) : '—'}
                               {maxProfitPct != null && (
                                 <span className="text-[9px] mr-1">
-                                  ({maxProfitPct >= 0 ? '+' : ''}{maxProfitPct.toFixed(1)}%)
+                                  ({maxProfitPct >= 0 ? '+' : ''}{(maxProfitPct ?? 0).toFixed(1)}%)
                                 </span>
                               )}
                             </div>
@@ -1893,7 +1893,7 @@ export function PredictionTrackingDashboard({
                               {lowest > 0 ? fmtPrice(lowest) : '—'}
                               {maxLossPct != null && (
                                 <span className="text-[9px] mr-1">
-                                  ({maxLossPct >= 0 ? '+' : ''}{maxLossPct.toFixed(1)}%)
+                                  ({maxLossPct >= 0 ? '+' : ''}{(maxLossPct ?? 0).toFixed(1)}%)
                                 </span>
                               )}
                             </div>

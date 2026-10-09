@@ -244,11 +244,11 @@ export function AdvancedPortfolioManager() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Progress 
-                    value={portfolioState.total_heat_pct * 100 / 15} 
+                    value={(portfolioState.total_heat_pct ?? 0) * 100 / 15}
                     className="flex-1 h-3"
                   />
                   <span className="text-xl font-bold">
-                    {portfolioState.total_heat_pct.toFixed(2)}%
+                    {(portfolioState.total_heat_pct ?? 0).toFixed(2)}%
                   </span>
                 </div>
               </div>
@@ -257,24 +257,24 @@ export function AdvancedPortfolioManager() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">القيمة الكلية</p>
-                  <p className="text-lg font-bold">{portfolioState.total_value.toLocaleString()} ج.م</p>
+                  <p className="text-lg font-bold">{(portfolioState.total_value ?? 0).toLocaleString()} ج.م</p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">النقد</p>
-                  <p className="text-lg font-bold">{portfolioState.cash_value.toLocaleString()} ج.م</p>
+                  <p className="text-lg font-bold">{(portfolioState.cash_value ?? 0).toLocaleString()} ج.م</p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">السحب</p>
                   <p className={cn(
                     "text-lg font-bold",
-                    portfolioState.current_drawdown_pct > 10 ? "text-red-500" : "text-emerald-500"
+                    (portfolioState.current_drawdown_pct ?? 0) > 10 ? "text-red-500" : "text-emerald-500"
                   )}>
-                    {portfolioState.current_drawdown_pct.toFixed(1)}%
+                    {(portfolioState.current_drawdown_pct ?? 0).toFixed(1)}%
                   </p>
                 </div>
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">التنويع</p>
-                  <p className="text-lg font-bold">{portfolioState.diversification_score}/100</p>
+                  <p className="text-lg font-bold">{(portfolioState.diversification_score ?? 0)}/100</p>
                 </div>
               </div>
 
@@ -380,7 +380,7 @@ export function AdvancedPortfolioManager() {
             <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-semibold">خطة الدخول - {strategyPlan.ticker}</h4>
-                <Badge>متوسط الدخول: {strategyPlan.average_price_target.toFixed(2)}</Badge>
+                <Badge>متوسط الدخول: {(strategyPlan.average_price_target ?? 0).toFixed(2)}</Badge>
               </div>
               
               {/* Lots */}
@@ -393,7 +393,7 @@ export function AdvancedPortfolioManager() {
                     </div>
                     <div className="text-left">
                       <p className="font-bold">{lot.shares} سهم</p>
-                      <p className="text-xs text-muted-foreground">عند {lot.trigger_price.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">عند {(lot.trigger_price ?? 0).toFixed(2)}</p>
                     </div>
                   </div>
                 ))}

@@ -248,13 +248,13 @@ export function SmartAlertsPanel() {
                   
                   {/* Details */}
                   <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
-                    <span>الشراء: {alert.details.buyPrice.toFixed(2)}</span>
-                    <span>الحالي: {alert.details.currentPrice.toFixed(2)}</span>
+                    <span>الشراء: {(alert.details?.buyPrice ?? 0).toFixed(2)}</span>
+                    <span>الحالي: {(alert.details?.currentPrice ?? 0).toFixed(2)}</span>
                     <span className={cn(
                       "font-medium",
-                      alert.details.profitLossPercent >= 0 ? "text-green-600" : "text-red-600"
+                      (alert.details?.profitLossPercent ?? 0) >= 0 ? "text-green-600" : "text-red-600"
                     )}>
-                      {alert.details.profitLossPercent >= 0 ? '+' : ''}{alert.details.profitLossPercent.toFixed(1)}%
+                      {(alert.details?.profitLossPercent ?? 0) >= 0 ? '+' : ''}{(alert.details?.profitLossPercent ?? 0).toFixed(1)}%
                     </span>
                   </div>
                   

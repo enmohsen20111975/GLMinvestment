@@ -70,7 +70,7 @@ function formatNumber(n: number | undefined | null, digits = 2): string {
 function formatPercent(n: number | undefined | null): string {
   if (n === undefined || n === null || Number.isNaN(n)) return '—';
   const sign = n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(2)}%`;
+  return `${sign}${(n ?? 0).toFixed(2)}%`;
 }
 
 /**
@@ -735,7 +735,7 @@ function StockRow({
           }}
         >
           {sign}
-          {change.toFixed(2)}%
+          {(change ?? 0).toFixed(2)}%
         </span>
         {price !== undefined && price > 0 ? (
           <span

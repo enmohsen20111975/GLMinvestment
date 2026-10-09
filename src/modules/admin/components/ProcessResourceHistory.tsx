@@ -114,7 +114,7 @@ function CpuTooltip({ active, payload, label, range }: any) {
               {p.name}
             </span>
             <span className="font-mono font-semibold text-foreground">
-              {typeof p.value === 'number' ? p.value.toFixed(2) : '—'}%
+              {typeof p.value === 'number' ? (p.value ?? 0).toFixed(2) : '—'}%
             </span>
           </div>
         ))}
@@ -141,7 +141,7 @@ function MemTooltip({ active, payload, label, range }: any) {
               {p.name}
             </span>
             <span className="font-mono font-semibold text-foreground">
-              {typeof p.value === 'number' ? p.value.toFixed(1) : '—'} MB
+              {typeof p.value === 'number' ? (p.value ?? 0).toFixed(1) : '—'} MB
             </span>
           </div>
         ))}
@@ -295,8 +295,8 @@ export function ProcessResourceHistory({
         {!loading && !error && chartData.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <StatBox label="نقاط البيانات" value={String(chartData.length)} color="text-foreground" />
-            <StatBox label="أعلى CPU" value={`${maxCpu.toFixed(1)}%`} color="text-blue-600 dark:text-blue-400" />
-            <StatBox label="أعلى ذاكرة" value={`${maxMem.toFixed(0)} MB`} color="text-emerald-600 dark:text-emerald-400" />
+            <StatBox label="أعلى CPU" value={`${(maxCpu ?? 0).toFixed(1)}%`} color="text-blue-600 dark:text-blue-400" />
+            <StatBox label="أعلى ذاكرة" value={`${(maxMem ?? 0).toFixed(0)} MB`} color="text-emerald-600 dark:text-emerald-400" />
             <StatBox label="إجمالي Restarts" value={`${totalRestarts}`} color="text-red-600 dark:text-red-400" />
           </div>
         )}
@@ -337,7 +337,7 @@ export function ProcessResourceHistory({
                   استهلاك CPU عبر الزمن
                 </span>
                 <Badge variant="outline" className="text-[10px] h-5 font-mono">
-                  متوسط: {avgCpu.toFixed(1)}%
+                  متوسط: {(avgCpu ?? 0).toFixed(1)}%
                 </Badge>
               </div>
               <ResponsiveContainer width="100%" height={200}>
@@ -390,7 +390,7 @@ export function ProcessResourceHistory({
                   استهلاك الذاكرة (RAM) عبر الزمن
                 </span>
                 <Badge variant="outline" className="text-[10px] h-5 font-mono">
-                  متوسط: {avgMem.toFixed(0)} MB
+                  متوسط: {(avgMem ?? 0).toFixed(0)} MB
                 </Badge>
               </div>
               <ResponsiveContainer width="100%" height={200}>

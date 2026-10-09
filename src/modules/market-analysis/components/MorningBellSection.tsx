@@ -157,7 +157,7 @@ export function HorizontalSectorsBar({ marketCode }: { marketCode: string }) {
             <span>{s.status === 'hot' ? '🔥' : s.status === 'dead' ? '❄️' : '📊'}</span>
             <span className="font-bold">{s.sector}</span>
             <span className={cn('font-mono text-[11px]', s.avg_chg > 0 ? 'text-emerald-500 font-bold' : s.avg_chg < 0 ? 'text-rose-500 font-bold' : 'text-muted-foreground')}>
-              {s.avg_chg > 0 ? '+' : ''}{s.avg_chg.toFixed(1)}%
+              {s.avg_chg > 0 ? '+' : ''}{(s.avg_chg ?? 0).toFixed(1)}%
             </span>
             {s.top_leader && (
               <span className="text-[10px] px-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">

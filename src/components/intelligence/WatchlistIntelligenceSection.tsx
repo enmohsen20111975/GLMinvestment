@@ -86,7 +86,7 @@ function formatCurrency(value: number | null | undefined): string {
 function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || isNaN(value)) return '—';
   const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return `${sign}${(value ?? 0).toFixed(2)}%`;
 }
 
 function getSignalIcon(signal: string) {
@@ -415,7 +415,7 @@ export function WatchlistIntelligenceSection() {
                         analysis.rsi !== null && analysis.rsi < 30 ? "text-emerald-500" :
                         analysis.rsi !== null && analysis.rsi > 70 ? "text-red-500" : ""
                       )}>
-                        {analysis.rsi !== null ? analysis.rsi.toFixed(1) : '—'}
+                        {analysis.rsi !== null ? (analysis.rsi ?? 0).toFixed(1) : '—'}
                       </span>
                     </div>
                     <div className="p-2 rounded bg-muted/50">
@@ -428,7 +428,7 @@ export function WatchlistIntelligenceSection() {
                     <div className="p-2 rounded bg-muted/50">
                       <div className="text-muted-foreground text-xs">الدعم</div>
                       <span className="font-medium text-emerald-600">
-                        {analysis.support ? analysis.support.toFixed(2) : '—'}
+                        {analysis.support ? (analysis.support ?? 0).toFixed(2) : '—'}
                       </span>
                     </div>
                     <div className="p-2 rounded bg-muted/50">
@@ -437,7 +437,7 @@ export function WatchlistIntelligenceSection() {
                         "font-medium",
                         analysis.distance_to_support !== null && analysis.distance_to_support < 5 ? "text-emerald-500" : ""
                       )}>
-                        {analysis.distance_to_support !== null ? `${analysis.distance_to_support.toFixed(1)}%` : '—'}
+                        {analysis.distance_to_support !== null ? `${(analysis.distance_to_support ?? 0).toFixed(1)}%` : '—'}
                       </span>
                     </div>
                     <div className="p-2 rounded bg-muted/50">
@@ -446,7 +446,7 @@ export function WatchlistIntelligenceSection() {
                         "font-medium",
                         analysis.distance_to_resistance !== null && analysis.distance_to_resistance < 5 ? "text-red-500" : ""
                       )}>
-                        {analysis.distance_to_resistance !== null ? `${analysis.distance_to_resistance.toFixed(1)}%` : '—'}
+                        {analysis.distance_to_resistance !== null ? `${(analysis.distance_to_resistance ?? 0).toFixed(1)}%` : '—'}
                       </span>
                     </div>
                   </div>

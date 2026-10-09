@@ -1122,7 +1122,7 @@ function LiveMarketScanner() {
     const q = search.trim().toLowerCase();
     return stocks.filter(
       (s) =>
-        s.ticker.toLowerCase().includes(q) ||
+        (s.ticker || '').toLowerCase().includes(q) ||
         (s.name_ar || '').toLowerCase().includes(q) ||
         (s.name || '').toLowerCase().includes(q),
     );
@@ -1222,7 +1222,7 @@ function LiveMarketScanner() {
                           </div>
                         </TableCell>
                         <TableCell className="text-left font-mono tabular-nums" dir="ltr">
-                          {s.current_price.toFixed(2)}
+                          {(s.current_price ?? 0).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-left">
                           <span
@@ -1239,8 +1239,8 @@ function LiveMarketScanner() {
                             ) : tone === 'down' ? (
                               <TrendingDown className="h-3 w-3" />
                             ) : null}
-                            {s.change_percent >= 0 ? '+' : ''}
-                            {s.change_percent.toFixed(2)}%
+                            {(s.change_percent ?? 0) >= 0 ? '+' : ''}
+                            {(s.change_percent ?? 0).toFixed(2)}%
                           </span>
                         </TableCell>
                         <TableCell
@@ -1284,7 +1284,7 @@ function LiveMarketScanner() {
                         className="font-mono text-xs tabular-nums text-muted-foreground"
                         dir="ltr"
                       >
-                        {s.current_price.toFixed(2)} · {formatVolume(s.volume)}
+                        {(s.current_price ?? 0).toFixed(2)} · {formatVolume(s.volume)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-2">
@@ -1297,8 +1297,8 @@ function LiveMarketScanner() {
                         )}
                         dir="ltr"
                       >
-                        {s.change_percent >= 0 ? '+' : ''}
-                        {s.change_percent.toFixed(2)}%
+                        {(s.change_percent ?? 0) >= 0 ? '+' : ''}
+                        {(s.change_percent ?? 0).toFixed(2)}%
                       </span>
                       <Button
                         variant="secondary"
@@ -1357,7 +1357,7 @@ function LiveMarketScanner() {
                   <div className="rounded-lg border bg-muted/30 p-2 text-center">
                     <div className="text-[10px] text-muted-foreground">السعر</div>
                     <div className="font-mono text-sm font-semibold tabular-nums" dir="ltr">
-                      {analysis.stock.current_price.toFixed(2)}
+                      {(analysis.stock.current_price ?? 0).toFixed(2)}
                     </div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-2 text-center">
@@ -1373,8 +1373,8 @@ function LiveMarketScanner() {
                       )}
                       dir="ltr"
                     >
-                      {analysis.stock.change_percent >= 0 ? '+' : ''}
-                      {analysis.stock.change_percent.toFixed(2)}%
+                      {(analysis.stock.change_percent ?? 0) >= 0 ? '+' : ''}
+                      {(analysis.stock.change_percent ?? 0).toFixed(2)}%
                     </div>
                   </div>
                   <div className="rounded-lg border bg-muted/30 p-2 text-center">
@@ -2238,7 +2238,7 @@ function PositionSizeCalculator() {
                   % من المحفظة
                 </div>
                 <div className="mt-1 text-base font-bold text-slate-800 dark:text-slate-200" dir="ltr">
-                  {result.positionPct.toFixed(1)}%
+                  {(result.positionPct ?? 0).toFixed(1)}%
                 </div>
               </div>
             </div>
@@ -2247,7 +2247,7 @@ function PositionSizeCalculator() {
                 الاتجاه: {result.direction}
               </span>
               <span className="rounded-md border border-slate-500/30 bg-muted/40 px-2 py-1 text-muted-foreground" dir="ltr">
-                المخاطرة/سهم: {result.perShareRisk.toFixed(3)} ج
+                المخاطرة/سهم: {(result.perShareRisk ?? 0).toFixed(3)} ج
               </span>
             </div>
             <div className="rounded-md border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 text-xs text-amber-900 dark:text-amber-100">

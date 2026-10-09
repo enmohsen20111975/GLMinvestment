@@ -264,7 +264,7 @@ export function PortfolioSimulator() {
                   : 'text-amber-700 dark:text-amber-400',
               )}
             >
-              {totalPct.toFixed(0)}%
+              {(totalPct ?? 0).toFixed(0)}%
             </div>
             <div className="mt-1 text-[10px]">
               {isBalanced
@@ -400,7 +400,7 @@ export function PortfolioSimulator() {
               <MetricCard
                 icon={Shield}
                 label="Sharpe Ratio"
-                value={result.sharpe.toFixed(2)}
+                value={(result.sharpe ?? 0).toFixed(2)}
                 color="text-slate-700 dark:text-slate-300"
               />
             </div>

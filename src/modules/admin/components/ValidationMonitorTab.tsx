@@ -260,13 +260,13 @@ export function ValidationMonitorTab() {
                             key={s}
                             className={cn('h-full', STATUS_COLORS[s])}
                             style={{ width: `${pct}%` }}
-                            title={`${STATUS_LABELS_AR[s]}: ${count} (${pct.toFixed(1)}%)`}
+                            title={`${STATUS_LABELS_AR[s]}: ${count} (${(pct ?? 0).toFixed(1)}%)`}
                           />
                         );
                       })}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      سليم: {summary.VALID || 0} ({validPct.toFixed(1)}%)
+                      سليم: {summary.VALID || 0} ({(validPct ?? 0).toFixed(1)}%)
                     </div>
                   </div>
                 );
@@ -310,7 +310,7 @@ export function ValidationMonitorTab() {
                         {t.market && <Badge variant="outline" className="text-[10px]">{t.market}</Badge>}
                       </td>
                       <td className="p-2 font-mono" dir="ltr">
-                        {t.current_price !== null ? t.current_price.toFixed(2) : '—'}
+                        {t.current_price !== null ? (t.current_price ?? 0).toFixed(2) : '—'}
                       </td>
                       <td className="p-2">
                         <Badge variant="destructive" className="text-[10px]">{t.invalid_count}</Badge>
@@ -388,7 +388,7 @@ export function ValidationMonitorTab() {
                         </Badge>
                       </div>
                       <span className="font-mono text-[11px]" dir="ltr">
-                        value: {n.value !== null ? n.value.toFixed(2) : 'null'}
+                        value: {n.value !== null ? (n.value ?? 0).toFixed(2) : 'null'}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground" dir="ltr">{n.reason}</p>

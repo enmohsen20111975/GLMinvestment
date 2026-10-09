@@ -155,7 +155,7 @@ const fmtPct = (n: number | null | undefined, withSign = false): string => {
   if (n == null || isNaN(n as number)) return '-';
   const num = Number(n);
   const sign = withSign && num > 0 ? '+' : '';
-  return `${sign}${num.toFixed(1)}%`;
+  return `${sign}${(num ?? 0).toFixed(1)}%`;
 };
 
 const fmtNum = (n: number | null | undefined, digits = 2): string => {
@@ -391,7 +391,7 @@ export function AccuracyDashboard({ market, days = 90 }: AccuracyDashboardProps)
                     tickFormatter={(v) => `${v}%`}
                   />
                   <Tooltip
-                    formatter={(value: number) => [`${value.toFixed(1)}%`, 'نسبة النجاح']}
+                    formatter={(value: number) => [`${(value ?? 0).toFixed(1)}%`, 'نسبة النجاح']}
                     labelFormatter={(label: string) => `الشهر: ${label}`}
                     contentStyle={{
                       backgroundColor: 'rgba(30,30,30,0.95)',

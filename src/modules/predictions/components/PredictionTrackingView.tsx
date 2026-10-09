@@ -122,7 +122,7 @@ function formatNumber(v: number | null | undefined, digits = 2): string {
 function formatPct(v: number | null | undefined, withSign = false): string {
   if (v === null || v === undefined || Number.isNaN(v)) return '—';
   const sign = withSign && v > 0 ? '+' : '';
-  return `${sign}${v.toFixed(2)}%`;
+  return `${sign}${(v ?? 0).toFixed(2)}%`;
 }
 
 function shortDate(s: string | null | undefined): string {

@@ -467,7 +467,7 @@ export function SingleStockAnalysisView({
           ticker: ticker.toUpperCase(),
           current_price: refPrice,
           drop_pct: DROP_PCT,
-          label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${refPrice.toFixed(2)}`,
+          label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)}`,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -481,12 +481,12 @@ export function SingleStockAnalysisView({
         ticker: ticker.toUpperCase(),
         type: 'price_below',
         threshold: thresholdPrice,
-        label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${refPrice.toFixed(2)} (عتبة: ${thresholdPrice.toFixed(2)})`,
+        label: `تنبيه سريع: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`,
       });
 
       setQuickAdded(true);
       toast.success(
-        `🔔 تنبيه مسجّل: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${refPrice.toFixed(2)} (عتبة: ${thresholdPrice.toFixed(2)})`
+        `🔔 تنبيه مسجّل: ${ticker.toUpperCase()} نزل ${DROP_PCT}% تحت ${(refPrice ?? 0).toFixed(2)} (عتبة: ${(thresholdPrice ?? 0).toFixed(2)})`
       );
       // Reset the "added" checkmark after 2s
       setTimeout(() => setQuickAdded(false), 2000);
@@ -536,14 +536,14 @@ export function SingleStockAnalysisView({
               {predictionContext.rating}
             </span>
             <span className="text-xs text-muted-foreground">
-              (ثقة {predictionContext.score.toFixed(0)}%)
+              (ثقة {(predictionContext.score ?? 0).toFixed(0)}%)
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs">
-            {predictionContext.entryPrice && <span>الدخول: <b className="font-mono">{predictionContext.entryPrice.toFixed(2)}</b></span>}
-            {predictionContext.targetPrice && <span className="text-emerald-600">الهدف: <b className="font-mono">{predictionContext.targetPrice.toFixed(2)}</b></span>}
-            {predictionContext.stopLoss && <span className="text-red-600">الوقف: <b className="font-mono">{predictionContext.stopLoss.toFixed(2)}</b></span>}
-            {predictionContext.riskReward && <span>R/R: <b>{predictionContext.riskReward.toFixed(2)}</b></span>}
+            {predictionContext.entryPrice && <span>الدخول: <b className="font-mono">{(predictionContext.entryPrice ?? 0).toFixed(2)}</b></span>}
+            {predictionContext.targetPrice && <span className="text-emerald-600">الهدف: <b className="font-mono">{(predictionContext.targetPrice ?? 0).toFixed(2)}</b></span>}
+            {predictionContext.stopLoss && <span className="text-red-600">الوقف: <b className="font-mono">{(predictionContext.stopLoss ?? 0).toFixed(2)}</b></span>}
+            {predictionContext.riskReward && <span>R/R: <b>{(predictionContext.riskReward ?? 0).toFixed(2)}</b></span>}
           </div>
         </div>
       )}
@@ -574,9 +574,9 @@ export function SingleStockAnalysisView({
                   : 'bg-rose-50 text-rose-700 border-rose-200'
               )}
             >
-              {livePrice > 0 ? `${livePrice.toFixed(2)} ${currencyLabel}` : '—'}
+              {livePrice > 0 ? `${(livePrice ?? 0).toFixed(2)} ${currencyLabel}` : '—'}
               <span className="text-[10px] mr-1">
-                ({isUp ? '+' : ''}{chgPct.toFixed(1)}%)
+                ({isUp ? '+' : ''}{(chgPct ?? 0).toFixed(1)}%)
               </span>
             </Badge>
 
@@ -723,8 +723,8 @@ export function SingleStockAnalysisView({
             <div className="text-muted-foreground font-bold border-b border-border pb-1 text-center">السعر اللحظي</div>
             <div className="text-center">
               <div className="text-[10px] text-muted-foreground">إغلاق</div>
-              <div className={cn('text-lg font-black font-mono', isUp ? 'text-emerald-600' : 'text-rose-600')}>{livePrice.toFixed(2)}</div>
-              <div className={cn('font-bold', isUp ? 'text-emerald-600' : 'text-rose-600')}>{isUp ? '+' : ''}{chgPct.toFixed(2)}%</div>
+              <div className={cn('text-lg font-black font-mono', isUp ? 'text-emerald-600' : 'text-rose-600')}>{(livePrice ?? 0).toFixed(2)}</div>
+              <div className={cn('font-bold', isUp ? 'text-emerald-600' : 'text-rose-600')}>{isUp ? '+' : ''}{(chgPct ?? 0).toFixed(2)}%</div>
             </div>
             <div className="space-y-1 pt-2 border-t border-border">
               <div className="flex justify-between"><span className="text-muted-foreground">افتتاح:</span><span className="font-mono">{(tc?.open ?? 0).toFixed(2)}</span></div>
@@ -807,7 +807,7 @@ export function SingleStockAnalysisView({
                 {data.confidence != null && (
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>درجة الثقة:</span>
-                    <span className="font-bold text-foreground">{data.confidence.toFixed(0)}%</span>
+                    <span className="font-bold text-foreground">{(data.confidence ?? 0).toFixed(0)}%</span>
                   </div>
                 )}
                 {data.analysis_text && (
@@ -819,7 +819,7 @@ export function SingleStockAnalysisView({
                 {predictionContext && data?.confluence && (
                   <div className="text-[10px] text-muted-foreground mt-1">
                     النتيجة الشاملة ({data.confluence.score?.toFixed(1)}/10) من محرك التحليل الفني —
-                    التوقّع النشط ({predictionContext.score.toFixed(0)}/100) من نظام التحليل.
+                    التوقّع النشط ({(predictionContext.score ?? 0).toFixed(0)}/100) من نظام التحليل.
                   </div>
                 )}
               </div>
@@ -848,7 +848,7 @@ export function SingleStockAnalysisView({
                   {data.risk.target_2 && (
                     <div className="flex justify-between text-[10px] text-muted-foreground">
                       <span>الهدف الثاني (TP2):</span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{data.risk.target_2.toFixed(2)} {currencyLabel}</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{(data.risk.target_2 ?? 0).toFixed(2)} {currencyLabel}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
@@ -913,7 +913,7 @@ export function SingleStockAnalysisView({
                     <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-100">
                       <div>
                         <span className="text-muted-foreground">مكرر الربحية: </span>
-                        <span className="font-medium">{d.pe_ratio ? d.pe_ratio.toFixed(1) : '—'}</span>
+                        <span className="font-medium">{d.pe_ratio ? (d.pe_ratio ?? 0).toFixed(1) : '—'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">العائد (ROE): </span>
@@ -941,19 +941,19 @@ export function SingleStockAnalysisView({
                     <div className="grid grid-cols-4 gap-2">
                       <div>
                         <span className="text-muted-foreground">الدخول: </span>
-                        <span className="font-medium font-mono">{d.entry_price ? d.entry_price.toFixed(2) : '—'}</span>
+                        <span className="font-medium font-mono">{d.entry_price ? (d.entry_price ?? 0).toFixed(2) : '—'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">الوقف: </span>
-                        <span className="font-medium font-mono text-rose-600">{d.stop_loss ? d.stop_loss.toFixed(2) : '—'}</span>
+                        <span className="font-medium font-mono text-rose-600">{d.stop_loss ? (d.stop_loss ?? 0).toFixed(2) : '—'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">الهدف 1: </span>
-                        <span className="font-medium font-mono text-emerald-600">{d.target_price ? d.target_price.toFixed(2) : '—'}</span>
+                        <span className="font-medium font-mono text-emerald-600">{d.target_price ? (d.target_price ?? 0).toFixed(2) : '—'}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">R:R: </span>
-                        <span className="font-medium font-mono">{d.rr_ratio ? d.rr_ratio.toFixed(2) : '—'}</span>
+                        <span className="font-medium font-mono">{d.rr_ratio ? (d.rr_ratio ?? 0).toFixed(2) : '—'}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -999,7 +999,7 @@ export function SingleStockAnalysisView({
                               🟢 صعود
                             </div>
                             <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none">
-                              {upPct.toFixed(1)}%
+                              {(upPct ?? 0).toFixed(1)}%
                             </div>
                           </div>
                           <div className="text-center p-2 rounded-lg bg-rose-500/10 border border-rose-500/30">
@@ -1007,7 +1007,7 @@ export function SingleStockAnalysisView({
                               🔴 هبوط
                             </div>
                             <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono leading-none">
-                              {dnPct.toFixed(1)}%
+                              {(dnPct ?? 0).toFixed(1)}%
                             </div>
                           </div>
                         </div>
@@ -1017,12 +1017,12 @@ export function SingleStockAnalysisView({
                           <div
                             className="bg-emerald-500 transition-all duration-500"
                             style={{ width: `${upPct}%` }}
-                            title={`صعود ${upPct.toFixed(1)}%`}
+                            title={`صعود ${(upPct ?? 0).toFixed(1)}%`}
                           />
                           <div
                             className="bg-rose-500 transition-all duration-500"
                             style={{ width: `${dnPct}%` }}
-                            title={`هبوط ${dnPct.toFixed(1)}%`}
+                            title={`هبوط ${(dnPct ?? 0).toFixed(1)}%`}
                           />
                         </div>
 
@@ -1174,7 +1174,7 @@ export function SingleStockAnalysisView({
                               )}
                             >
                               {dna.annual_return !== null
-                                ? `${dna.annual_return >= 0 ? '+' : ''}${dna.annual_return.toFixed(1)}%`
+                                ? `${dna.annual_return >= 0 ? '+' : ''}${(dna.annual_return ?? 0).toFixed(1)}%`
                                 : '—'}
                             </span>
                           </div>
@@ -1217,7 +1217,7 @@ export function SingleStockAnalysisView({
                                 <strong className="font-mono text-foreground">{tr.current?.toFixed(2)}</strong>
                               </span>
                               <span className="text-muted-foreground">
-                                {tr.current_position || '—'} ({positionPct.toFixed(0)}%)
+                                {tr.current_position || '—'} ({(positionPct ?? 0).toFixed(0)}%)
                               </span>
                             </div>
                           </div>
@@ -1237,7 +1237,7 @@ export function SingleStockAnalysisView({
                                     className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[9px] font-bold"
                                   >
                                     {m.month}{' '}
-                                    <span className="font-mono">+{m.avg_change.toFixed(1)}%</span>
+                                    <span className="font-mono">+{(m.avg_change ?? 0).toFixed(1)}%</span>
                                   </Badge>
                                 ))}
                               </div>
@@ -1255,7 +1255,7 @@ export function SingleStockAnalysisView({
                                     className="bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 text-[9px] font-bold"
                                   >
                                     {m.month}{' '}
-                                    <span className="font-mono">{m.avg_change.toFixed(1)}%</span>
+                                    <span className="font-mono">{(m.avg_change ?? 0).toFixed(1)}%</span>
                                   </Badge>
                                 ))}
                               </div>

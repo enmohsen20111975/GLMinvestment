@@ -430,15 +430,15 @@ export function DashboardView() {
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
                                 <div className="text-muted-foreground">دخول</div>
-                                <div className="font-mono font-semibold">{entry > 0 ? entry.toFixed(2) : '—'}</div>
+                                <div className="font-mono font-semibold">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
                                 <div className="text-muted-foreground">وقف</div>
-                                <div className="font-mono font-semibold text-red-600 dark:text-red-400">{stop > 0 ? stop.toFixed(2) : '—'}</div>
+                                <div className="font-mono font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</div>
                               </div>
                               <div>
                                 <div className="text-muted-foreground">هدف</div>
-                                <div className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? target.toFixed(2) : '—'}</div>
+                                <div className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</div>
                               </div>
                             </div>
                             {/* R:R + Confidence */}

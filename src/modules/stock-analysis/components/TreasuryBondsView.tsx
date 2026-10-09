@@ -69,7 +69,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
         <span className="font-semibold text-sm">
           {bond.type === 'investment_certificate' 
             ? bond.current_price.toLocaleString() 
-            : bond.current_price.toFixed(2)}
+            : (bond.current_price ?? 0).toFixed(2)}
         </span>
         <span className="text-xs text-muted-foreground mr-1">ج.م</span>
       </TableCell>
@@ -78,7 +78,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
           <div className="flex items-center gap-1">
             <Percent className="w-3 h-3 text-muted-foreground" />
             <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
-              {bond.coupon_rate.toFixed(2)}%
+              {(bond.coupon_rate ?? 0).toFixed(2)}%
             </span>
           </div>
         ) : (
@@ -89,7 +89,7 @@ function BondRow({ bond }: { bond: TreasuryBond }) {
         <div className="flex items-center gap-1">
           <TrendingUp className="w-3 h-3 text-amber-500" />
           <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
-            {bond.ytm.toFixed(2)}%
+            {(bond.ytm ?? 0).toFixed(2)}%
           </span>
         </div>
       </TableCell>
@@ -160,7 +160,7 @@ const bondColumns: Column<TreasuryBond>[] = [
         <span className="font-semibold text-sm">
           {bond.type === 'investment_certificate'
             ? bond.current_price.toLocaleString()
-            : bond.current_price.toFixed(2)}
+            : (bond.current_price ?? 0).toFixed(2)}
         </span>
         <span className="text-xs text-muted-foreground mr-1">ج.م</span>
       </span>
@@ -176,7 +176,7 @@ const bondColumns: Column<TreasuryBond>[] = [
         <span className="text-left tabular-nums inline-flex items-center gap-1 w-full justify-start">
           <Percent className="w-3 h-3 text-muted-foreground" />
           <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
-            {bond.coupon_rate.toFixed(2)}%
+            {(bond.coupon_rate ?? 0).toFixed(2)}%
           </span>
         </span>
       ) : (
@@ -192,7 +192,7 @@ const bondColumns: Column<TreasuryBond>[] = [
       <span className="text-left tabular-nums inline-flex items-center gap-1 w-full justify-start">
         <TrendingUp className="w-3 h-3 text-amber-500" />
         <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
-          {bond.ytm.toFixed(2)}%
+          {(bond.ytm ?? 0).toFixed(2)}%
         </span>
       </span>
     ),

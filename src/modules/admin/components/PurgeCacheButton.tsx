@@ -78,7 +78,7 @@ export function PurgeCacheButton() {
         if (mb !== null && mb > 0) {
           setFreedMB(mb);
           toast.success(data.message || 'تم مسح الكاش بنجاح', {
-            description: `تم تفريغ ${mb.toFixed(1)} MB`,
+            description: `تم تفريغ ${(mb ?? 0).toFixed(1)} MB`,
           });
         } else {
           toast.success(data.message || 'تم مسح الكاش بنجاح');
@@ -231,7 +231,7 @@ export function PurgeCacheButton() {
           >
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             <span>
-              تم تفريغ <span className="font-semibold">{freedMB.toFixed(1)} MB</span> من الكاش
+              تم تفريغ <span className="font-semibold">{(freedMB ?? 0).toFixed(1)} MB</span> من الكاش
             </span>
           </div>
         )}

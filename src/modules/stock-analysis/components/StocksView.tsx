@@ -198,7 +198,7 @@ function formatTurnover(val: number | undefined | null): string {
   if (!val) return '—';
   if (val >= 1_000_000) return (val / 1_000_000).toFixed(1) + 'M ج.م';
   if (val >= 1_000) return (val / 1_000).toFixed(0) + 'K ج.م';
-  return val.toFixed(0) + ' ج.م';
+  return (val ?? 0).toFixed(0) + ' ج.م';
 }
 
 function formatPercent(val: number | null | undefined, decimals = 2): string {
@@ -549,7 +549,7 @@ const StockCard = memo(function StockCard({
           <div className="bg-muted/40 rounded-lg p-2 text-center">
             <p className="text-[10px] text-muted-foreground mb-0.5">مكرر الربحية</p>
             <p className="text-xs font-semibold tabular-nums">
-              {stock.pe_ratio > 0 ? stock.pe_ratio.toFixed(1) : '—'}
+              {stock.pe_ratio > 0 ? (stock.pe_ratio ?? 0).toFixed(1) : '—'}
             </p>
           </div>
           <div className="bg-muted/40 rounded-lg p-2 text-center">
@@ -1343,9 +1343,9 @@ export function StocksView() {
           if (high <= 0 && low <= 0) return <span className="text-muted-foreground">—</span>;
           return (
             <span className="text-xs tabular-nums text-muted-foreground" dir="ltr">
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{high.toFixed(2)}</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{(high ?? 0).toFixed(2)}</span>
               <span className="mx-1 text-muted-foreground/60">/</span>
-              <span className="text-red-600 dark:text-red-400 font-medium">{low.toFixed(2)}</span>
+              <span className="text-red-600 dark:text-red-400 font-medium">{(low ?? 0).toFixed(2)}</span>
             </span>
           );
         },

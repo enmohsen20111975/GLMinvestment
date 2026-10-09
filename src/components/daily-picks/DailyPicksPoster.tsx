@@ -263,17 +263,17 @@ export function DailyPicksPoster() {
                 <div className="py-3 px-2">
                   <div className="text-[10px] text-gray-500 mb-0">شراء من</div>
                   <div className="text-2xl font-bold" style={{ color: '#0033cc' }}>
-                    {pick.buy_price.toFixed(2)}
+                    {(pick.buy_price ?? 0).toFixed(2)}
                   </div>
                 </div>
 
                 {/* Target */}
                 <div className="py-3 px-2">
                   <div className="text-2xl font-bold" style={{ color: '#00a651' }}>
-                    {pick.target_price.toFixed(2)}
+                    {(pick.target_price ?? 0).toFixed(2)}
                   </div>
                   <div className="text-xs font-semibold" style={{ color: '#00a651' }}>
-                    +{pick.target_pct}%
+                    +{pick.target_pct || 0}%
                   </div>
                 </div>
 
@@ -281,7 +281,7 @@ export function DailyPicksPoster() {
                 <div className="py-3 px-2">
                   <div className="text-[10px] text-gray-500 mb-0">وقف الخسارة</div>
                   <div className="text-2xl font-bold" style={{ color: '#e31937' }}>
-                    {pick.stop_loss.toFixed(2)}
+                    {(pick.stop_loss ?? 0).toFixed(2)}
                   </div>
                 </div>
               </div>

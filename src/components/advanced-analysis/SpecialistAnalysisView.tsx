@@ -397,7 +397,7 @@ function fmtCompact(v: unknown, suffix = ''): string {
   if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B${suffix}`;
   if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M${suffix}`;
   if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}K${suffix}`;
-  return `${n.toFixed(2)}${suffix}`;
+  return `${(n ?? 0).toFixed(2)}${suffix}`;
 }
 
 // ============================================================================
@@ -630,19 +630,19 @@ function CandlestickChart({
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs">
-            <span className="text-emerald-600">▲ أعلى: {maxPrice.toFixed(2)}</span>
+            <span className="text-emerald-600">▲ أعلى: {(maxPrice ?? 0).toFixed(2)}</span>
           </Badge>
           <Badge variant="outline" className="text-xs">
-            <span className="text-red-600">▼ أدنى: {minPrice.toFixed(2)}</span>
+            <span className="text-red-600">▼ أدنى: {(minPrice ?? 0).toFixed(2)}</span>
           </Badge>
           {support != null && (
             <Badge variant="outline" className="text-xs">
-              <span className="text-emerald-700">دعم: {support.toFixed(2)}</span>
+              <span className="text-emerald-700">دعم: {(support ?? 0).toFixed(2)}</span>
             </Badge>
           )}
           {resistance != null && (
             <Badge variant="outline" className="text-xs">
-              <span className="text-red-700">مقاومة: {resistance.toFixed(2)}</span>
+              <span className="text-red-700">مقاومة: {(resistance ?? 0).toFixed(2)}</span>
             </Badge>
           )}
         </div>
@@ -686,7 +686,7 @@ function CandlestickChart({
                 textAnchor="end"
                 className="fill-slate-500 dark:fill-slate-400 text-[10px]"
               >
-                {t.toFixed(2)}
+                {(t ?? 0).toFixed(2)}
               </text>
             </g>
           ))}
@@ -705,7 +705,7 @@ function CandlestickChart({
                 opacity={0.7}
               />
               <text x={padL + 4} y={scaleY(support) - 4} className="fill-emerald-600 text-[10px] font-bold">
-                دعم {support.toFixed(2)}
+                دعم {(support ?? 0).toFixed(2)}
               </text>
             </g>
           )}
@@ -724,7 +724,7 @@ function CandlestickChart({
                 opacity={0.7}
               />
               <text x={padL + 4} y={scaleY(resistance) - 4} className="fill-red-600 text-[10px] font-bold">
-                مقاومة {resistance.toFixed(2)}
+                مقاومة {(resistance ?? 0).toFixed(2)}
               </text>
             </g>
           )}
@@ -772,7 +772,7 @@ function CandlestickChart({
                 opacity={0.85}
               />
               <text x={W - padR - 4} y={scaleY(ma50) - 4} textAnchor="end" className="fill-amber-600 text-[10px] font-bold">
-                MA50 {ma50.toFixed(2)}
+                MA50 {(ma50 ?? 0).toFixed(2)}
               </text>
             </g>
           )}
@@ -791,7 +791,7 @@ function CandlestickChart({
                 opacity={0.85}
               />
               <text x={W - padR - 4} y={scaleY(ma200) + 12} textAnchor="end" className="fill-slate-500 dark:fill-slate-400 text-[10px] font-bold">
-                MA200 {ma200.toFixed(2)}
+                MA200 {(ma200 ?? 0).toFixed(2)}
               </text>
             </g>
           )}
@@ -925,13 +925,13 @@ function LiquidityFootprintSection({
               className="bg-emerald-500 flex items-center justify-center text-[10px] text-white font-bold"
               style={{ width: `${buyPct}%` }}
             >
-              {buyPct > 12 ? `${buyPct.toFixed(0)}%` : ''}
+              {buyPct > 12 ? `${(buyPct ?? 0).toFixed(0)}%` : ''}
             </div>
             <div
               className="bg-red-500 flex items-center justify-center text-[10px] text-white font-bold"
               style={{ width: `${sellPct}%` }}
             >
-              {sellPct > 12 ? `${sellPct.toFixed(0)}%` : ''}
+              {sellPct > 12 ? `${(sellPct ?? 0).toFixed(0)}%` : ''}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
@@ -1018,7 +1018,7 @@ function LiquidityFootprintSection({
                   }`}
                 >
                   <span className={`w-16 text-left font-mono ${isPoc ? 'text-amber-700 dark:text-amber-400 font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
-                    {lvl.price_mid.toFixed(2)}
+                    {(lvl.price_mid ?? 0).toFixed(2)}
                   </span>
                   <div className="flex-1 relative h-3 rounded-sm overflow-hidden bg-slate-100 dark:bg-slate-800">
                     {/* Buy portion (left, emerald) */}
@@ -1427,7 +1427,7 @@ function MomentumStatsSection({ stats, info }: { stats: RadarStats | null; info:
         <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between">
           <span className="text-xs text-muted-foreground">تغير آخر جلسة:</span>
           <span className={`text-sm font-bold ${changePct >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+            {changePct >= 0 ? '+' : ''}{(changePct ?? 0).toFixed(2)}%
           </span>
         </div>
       )}
@@ -1617,7 +1617,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
           <p className="text-xs text-muted-foreground">منطقة الدخول</p>
           <p className="text-lg font-bold text-emerald-600 mt-1">
             {entryLow != null && entryHigh != null
-              ? `${entryLow.toFixed(2)} — ${entryHigh.toFixed(2)}`
+              ? `${(entryLow ?? 0).toFixed(2)} — ${(entryHigh ?? 0).toFixed(2)}`
               : '—'}
           </p>
         </div>
@@ -1667,7 +1667,7 @@ function RecommendationSection({ info }: { info: StockInfo }) {
 
       {rr != null && (
         <p className="text-xs text-muted-foreground mt-3 text-center">
-          المعادلة: (المقاومة {fmtNum(resistance)} − السعر {fmtNum(current)}) ÷ (السعر {fmtNum(current)} − الدعم {fmtNum(support)}) = {rr.toFixed(2)}:1
+          المعادلة: (المقاومة {fmtNum(resistance)} − السعر {fmtNum(current)}) ÷ (السعر {fmtNum(current)} − الدعم {fmtNum(support)}) = {(rr ?? 0).toFixed(2)}:1
           {' '}
           {rr >= 2 ? '✓ ممتازة' : rr >= 1.5 ? '✓ جيدة' : '⚠ راجع قاعدة 18 (1.8:1)'}
         </p>
@@ -1730,8 +1730,8 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
       {current != null && high52w != null && low52w != null && range != null && range > 0 && (
         <div className="mt-4">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-red-600">قاع: {low52w.toFixed(2)}</span>
-            <span className="text-emerald-600">قمة: {high52w.toFixed(2)}</span>
+            <span className="text-red-600">قاع: {(low52w ?? 0).toFixed(2)}</span>
+            <span className="text-emerald-600">قمة: {(high52w ?? 0).toFixed(2)}</span>
           </div>
           <div className="relative h-4 rounded-full bg-gradient-to-l from-red-500 via-amber-400 to-emerald-500">
             <div
@@ -1744,7 +1744,7 @@ function Week52AnalysisSection({ info }: { info: StockInfo }) {
           </div>
           <div className="flex justify-between text-xs mt-1">
             <span className="text-muted-foreground">0%</span>
-            <span className="text-muted-foreground">السعر الحالي: {current.toFixed(2)}</span>
+            <span className="text-muted-foreground">السعر الحالي: {(current ?? 0).toFixed(2)}</span>
             <span className="text-muted-foreground">100%</span>
           </div>
           {interp && (
@@ -1955,7 +1955,7 @@ function ComprehensiveAnalysisSection({ data }: { data: ComprehensiveData | null
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
               <Crosshair className="w-3.5 h-3.5 text-amber-600" /> تقييم الـ Hunter
             </p>
-            <p className="text-2xl font-bold text-amber-600">{hunterScore.toFixed(0)}</p>
+            <p className="text-2xl font-bold text-amber-600">{(hunterScore ?? 0).toFixed(0)}</p>
             {hunterAssessment && <p className="text-xs mt-1 text-slate-700 dark:text-slate-200">{hunterAssessment}</p>}
           </div>
         )}
@@ -2460,7 +2460,7 @@ function HeaderCard({
                 }`}
               >
                 {changePct >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                {changePct >= 0 ? '+' : ''}{(changePct ?? 0).toFixed(2)}%
                 {changeValue != null && <span className="text-xs text-muted-foreground">({changeValue >= 0 ? '+' : ''}{changeValue.toFixed(2)})</span>}
               </p>
             )}

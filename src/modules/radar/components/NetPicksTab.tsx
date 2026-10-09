@@ -60,7 +60,7 @@ function fmtMoney(n: number): string {
 
 function fmtPct(n: number | null | undefined): string {
   if (n == null) return '—';
-  return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+  return `${n >= 0 ? '+' : ''}${(n ?? 0).toFixed(1)}%`;
 }
 
 export function NetPicksTab({ market = 'EGX' }: { market?: string }) {

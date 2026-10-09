@@ -11,8 +11,8 @@ export interface FlashingPriceCellProps {
 function defaultFormat(val: number): string {
   if (val == null || isNaN(val)) return '-';
   if (val >= 1000) return val.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  if (val >= 10) return val.toFixed(2);
-  return val.toFixed(3);
+  if (val >= 10) return (val ?? 0).toFixed(2);
+  return (val ?? 0).toFixed(3);
 }
 
 export const FlashingPriceCell = memo(function FlashingPriceCell({

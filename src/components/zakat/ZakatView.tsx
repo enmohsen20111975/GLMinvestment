@@ -157,14 +157,15 @@ interface ZakatResult {
 /*  Helper Functions                                                  */
 /* ------------------------------------------------------------------ */
 
-function formatNumber(num: number): string {
+function formatNumber(num: number | null | undefined): string {
+  if (num == null || !Number.isFinite(num)) return '0';
   if (num >= 1e9) return (num / 1e9).toFixed(2) + ' مليار';
   if (num >= 1e6) return (num / 1e6).toFixed(2) + ' مليون';
   if (num >= 1e3) return (num / 1e3).toFixed(2) + ' ألف';
-  return num.toFixed(2);
+  return (num ?? 0).toFixed(2);
 }
 
-function formatCurrency(num: number): string {
+function formatCurrency(num: number | null | undefined): string {
   return formatNumber(num) + ' ج.م';
 }
 

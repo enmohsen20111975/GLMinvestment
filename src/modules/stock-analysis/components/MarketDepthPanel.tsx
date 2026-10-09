@@ -72,7 +72,7 @@ function fmtVol(n: number): string {
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
   if (abs >= 1_000) return (n / 1_000).toFixed(0) + 'K';
-  return n.toFixed(0);
+  return (n ?? 0).toFixed(0);
 }
 
 export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: string }) {
@@ -184,10 +184,10 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
               <div className="flex items-center justify-between text-[11px]">
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                   <TrendingUp className="w-3 h-3" />
-                  شراء {buyPct.toFixed(1)}%
+                  شراء {(buyPct ?? 0).toFixed(1)}%
                 </span>
                 <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
-                  بيع {sellPct.toFixed(1)}%
+                  بيع {(sellPct ?? 0).toFixed(1)}%
                   <TrendingDown className="w-3 h-3" />
                 </span>
               </div>

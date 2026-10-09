@@ -149,19 +149,19 @@ export function StockInfographicModal({
       // Build rich & accurate analysis caption
       let richCaption = `📊 <b>تحليل سهم: ${data.name_ar} (${data.ticker})</b>\n\n`;
       richCaption += `💰 <b>آخر سعر:</b> ${data.current_price} ${data.currency || 'ج.م'}\n`;
-      richCaption += `📈 <b>التغير اليومي:</b> ${data.change_pct >= 0 ? '+' : ''}${data.change_pct.toFixed(2)}%\n`;
+      richCaption += `📈 <b>التغير اليومي:</b> ${data.change_pct >= 0 ? '+' : ''}${(data.change_pct ?? 0).toFixed(2)}%\n`;
       richCaption += `📊 <b>حجم التداول:</b> ${data.session.volume} | <b>القيمة:</b> ${data.session.turnover}\n`;
       richCaption += `⏱️ <b>الأعلى / الأدنى:</b> ${data.session.high} / ${data.session.low}\n\n`;
 
       // Liquidity & Maker Flow
       if (data.liquidity) {
         richCaption += `🌊 <b>بصمة السيولة وصُنّاع السوق:</b>\n`;
-        if (data.liquidity.poc_price) richCaption += `  • 🎯 <b>نقطة التحكم (POC):</b> ${data.liquidity.poc_price.toFixed(2)}\n`;
+        if (data.liquidity.poc_price) richCaption += `  • 🎯 <b>نقطة التحكم (POC):</b> ${(data.liquidity.poc_price ?? 0).toFixed(2)}\n`;
         if (data.liquidity.vah_price && data.liquidity.val_price) {
-          richCaption += `  • 📦 <b>منطقة القيمة (VAH - VAL):</b> ${data.liquidity.vah_price.toFixed(2)} — ${data.liquidity.val_price.toFixed(2)}\n`;
+          richCaption += `  • 📦 <b>منطقة القيمة (VAH - VAL):</b> ${(data.liquidity.vah_price ?? 0).toFixed(2)} — ${(data.liquidity.val_price ?? 0).toFixed(2)}\n`;
         }
         if (data.liquidity.accumulation_label) {
-          richCaption += `  • 🐋 <b>حركة الميكر:</b> ${data.liquidity.accumulation_label} (نسبة ش/ب: ${data.liquidity.buy_sell_ratio ? data.liquidity.buy_sell_ratio.toFixed(2) : '1.0'}x)\n\n`;
+          richCaption += `  • 🐋 <b>حركة الميكر:</b> ${data.liquidity.accumulation_label} (نسبة ش/ب: ${data.liquidity.buy_sell_ratio ? (data.liquidity.buy_sell_ratio ?? 0).toFixed(2) : '1.0'}x)\n\n`;
         }
       }
 

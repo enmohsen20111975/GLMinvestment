@@ -694,7 +694,7 @@ function CpuCard({ data, loading }: { data: SystemResources | null; loading: boo
           tone === 'warning' ? 'text-amber-500' :
           tone === 'danger' ? 'text-red-500' : 'text-muted-foreground',
         )}>
-          {pct === null ? '—' : `${pct.toFixed(1)}%`}
+          {pct === null ? '—' : `${(pct ?? 0).toFixed(1)}%`}
         </div>
         <Progress value={pct ?? 0} className="h-1.5" />
         <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5 font-mono">

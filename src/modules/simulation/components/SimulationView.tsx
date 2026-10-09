@@ -776,7 +776,7 @@ export function SimulationView() {
   const chartData = useMemo(() => {
     return simState.history.map((h) => ({
       time: h.date,
-      value: Number(h.portfolioValue.toFixed(2)),
+      value: Number(h.(portfolioValue ?? 0).toFixed(2)),
     }));
   }, [simState.history]);
 
@@ -841,7 +841,7 @@ export function SimulationView() {
           variant={s.changePercent >= 0 ? 'default' : 'destructive'}
           className={cn(s.changePercent >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : '')}
         >
-          {s.changePercent >= 0 ? '+' : ''}{s.changePercent.toFixed(2)}%
+          {s.changePercent >= 0 ? '+' : ''}{(s.changePercent ?? 0).toFixed(2)}%
         </Badge>
       ),
     },
@@ -1238,7 +1238,7 @@ export function SimulationView() {
                   <div>
                     <p className="text-sm text-muted-foreground">نسبة الربح/الخسارة</p>
                     <p className={cn('text-xl font-bold', totalPnLPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                      {totalPnLPercent >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%
+                      {totalPnLPercent >= 0 ? '+' : ''}{(totalPnLPercent ?? 0).toFixed(2)}%
                     </p>
                   </div>
                   <div className={cn('p-2 rounded-lg', totalPnLPercent >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
@@ -1564,7 +1564,7 @@ export function SimulationView() {
                             <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: SECTOR_COLORS[item.sector] || '#888' }} />
                             <span className="text-xs truncate">{item.sector}</span>
                           </div>
-                          <span className="text-xs font-mono font-medium whitespace-nowrap">{item.percent.toFixed(1)}%</span>
+                          <span className="text-xs font-mono font-medium whitespace-nowrap">{(item.percent ?? 0).toFixed(1)}%</span>
                         </div>
                       ))}
                     </div>
@@ -1686,7 +1686,7 @@ export function SimulationView() {
                           <p className="text-lg font-bold font-mono">{formatNumber(stock.price)}</p>
                           <div className={cn('flex items-center gap-0.5 justify-end text-sm font-medium', stock.change >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                             {stock.change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                            {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                            {stock.change >= 0 ? '+' : ''}{(stock.changePercent ?? 0).toFixed(2)}%
                           </div>
                         </div>
                       </div>

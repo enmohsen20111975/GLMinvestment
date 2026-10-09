@@ -204,7 +204,7 @@ function ShariaStockCardBody({
           label="السعر"
           value={
             data.price?.current_price != null
-              ? data.price.current_price.toFixed(2)
+              ? (data.price.current_price ?? 0).toFixed(2)
               : '—'
           }
           accent="emerald"

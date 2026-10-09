@@ -151,9 +151,9 @@ export function WealthCharts() {
           },
           wealth_plan: {
             recommendations: (risk.sector_exposure || [])
-              .filter((s: any) => s.percentage > 30)
+              .filter((s: any) => (s.percentage ?? 0) > 30)
               .map((s: any) =>
-                `⚠️ تركيز عالي في قطاع ${s.sector_ar || s.sector} (${s.percentage.toFixed(1)}%) — فكّر في تنويع المحفظة`
+                `⚠️ تركيز عالي في قطاع ${s.sector_ar || s.sector || 'غير معروف'} (${(s.percentage ?? 0).toFixed(1)}%) — فكّر في تنويع المحفظة`
               ),
           },
         });

@@ -847,7 +847,7 @@ export function UnifiedTable<T extends object>({
         }
         if (typeof result.value === 'number') {
           const isWhole = Number.isInteger(result.value);
-          return <span className="font-mono text-xs">{isWhole ? result.value : result.value.toFixed(2)}</span>;
+          return <span className="font-mono text-xs">{isWhole ? result.value : (result.value ?? 0).toFixed(2)}</span>;
         }
         return <span className="font-mono text-xs">{result.value}</span>;
       },
@@ -1934,7 +1934,7 @@ export function UnifiedTable<T extends object>({
                             content = <span className="text-rose-500 text-[10px]" title={r.error}>خطأ</span>;
                           } else if (typeof r.value === 'number') {
                             const isWhole = Number.isInteger(r.value);
-                            content = <span className="font-mono text-xs">{isWhole ? r.value : r.value.toFixed(2)}</span>;
+                            content = <span className="font-mono text-xs">{isWhole ? r.value : (r.value ?? 0).toFixed(2)}</span>;
                           } else {
                             content = <span className="font-mono text-xs">{r.value}</span>;
                           }
@@ -2158,7 +2158,7 @@ export function UnifiedTable<T extends object>({
                         )} dir="ltr">
                           {result.ok
                             ? (typeof result.value === 'number'
-                                ? (Number.isInteger(result.value) ? result.value : result.value.toFixed(4))
+                                ? (Number.isInteger(result.value) ? result.value : (result.value ?? 0).toFixed(4))
                                 : result.value)
                             : `✗ ${result.error}`}
                         </span>

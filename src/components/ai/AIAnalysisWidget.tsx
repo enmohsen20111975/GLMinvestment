@@ -280,9 +280,9 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
             <div className="bg-muted/50 rounded-lg p-2 text-center">
               <p className="text-[10px] text-muted-foreground mb-1">منطقة الدخول</p>
               <p className="text-sm font-bold text-primary">
-                {analysis.risk_profile.entry_low && analysis.risk_profile.entry_high
-                  ? `${analysis.risk_profile.entry_low.toFixed(2)}-${analysis.risk_profile.entry_high.toFixed(2)}`
-                  : analysis.risk_profile.entry_price?.toFixed(2) || '--'}
+                {analysis.risk_profile?.entry_low && analysis.risk_profile?.entry_high
+                  ? `${(analysis.risk_profile?.entry_low ?? 0).toFixed(2)}-${(analysis.risk_profile?.entry_high ?? 0).toFixed(2)}`
+                  : analysis.risk_profile?.entry_price?.toFixed(2) || '--'}
               </p>
             </div>
             <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2 text-center">
@@ -305,11 +305,11 @@ export function AIAnalysisWidget({ ticker, stockName, currentPrice }: AIAnalysis
           <div className="flex items-center justify-center gap-2 mb-4 text-sm">
             <span className="text-muted-foreground">نسبة المخاطرة/العائد:</span>
             <Badge variant="outline" className={cn(
-              analysis.risk_profile.risk_reward_ratio >= 2 ? 'text-emerald-500 border-emerald-500/50' :
-              analysis.risk_profile.risk_reward_ratio >= 1.5 ? 'text-amber-500 border-amber-500/50' :
+              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 2 ? 'text-emerald-500 border-emerald-500/50' :
+              (analysis.risk_profile?.risk_reward_ratio ?? 0) >= 1.5 ? 'text-amber-500 border-amber-500/50' :
               'text-red-500 border-red-500/50'
             )}>
-              {analysis.risk_profile.risk_reward_ratio.toFixed(2)}:1
+              {(analysis.risk_profile?.risk_reward_ratio ?? 0).toFixed(2)}:1
             </Badge>
           </div>
         )}

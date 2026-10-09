@@ -98,7 +98,7 @@ function PFIndicator({ pf }: { pf: number }) {
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Profit Factor</span>
-        <span className={`text-lg font-bold ${color}`}>{pf.toFixed(2)}</span>
+        <span className={`text-lg font-bold ${color}`}>{(pf ?? 0).toFixed(2)}</span>
       </div>
       <Progress value={pct} className={`h-2 ${bgColor}`} />
       <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -182,7 +182,7 @@ function StrategyCard({ strategyKey, strategy }: { strategyKey: string; strategy
                     key={reason}
                     className={`${bgColor} transition-all`}
                     style={{ width: `${pct}%` }}
-                    title={`${reason}: ${count} (${pct.toFixed(1)}%)`}
+                    title={`${reason}: ${count} (${(pct ?? 0).toFixed(1)}%)`}
                   />
                 );
               })}
@@ -247,11 +247,11 @@ function WalkForwardComparison({ data, title }: { data: WalkForwardData; title: 
           return (
             <div key={m.name} className="grid grid-cols-3 gap-2 items-center px-1">
               <span className="text-xs">{m.name}</span>
-              <span className="text-center text-sm font-medium">{m.is.toFixed(2)}{m.unit}</span>
+              <span className="text-center text-sm font-medium">{(m.is ?? 0).toFixed(2)}{m.unit}</span>
               <span className={`text-center text-sm font-medium ${isBetter ? 'text-emerald-500' : 'text-red-500'}`}>
-                {m.oos.toFixed(2)}{m.unit}
+                {(m.oos ?? 0).toFixed(2)}{m.unit}
                 <span className="text-[10px] ml-1">
-                  ({delta >= 0 ? '+' : ''}{delta.toFixed(2)})
+                  ({delta >= 0 ? '+' : ''}{(delta ?? 0).toFixed(2)})
                 </span>
               </span>
             </div>
