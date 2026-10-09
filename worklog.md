@@ -67951,3 +67951,102 @@ Next actions (اقتراحات للمالك — مش مطلوب تنفيذها):
 - استبدال logo placeholder بـ <Image src="/logo.png" /> لو فيه ملف شعار فعلي.
 - إضافة API endpoint لجلب الـ logo ديناميكياً من إعدادات المنصة (لو متاح).
 - اعتبار إضافة فلتر «القطاع» لو المنصة بتدعم تصنيف الأسهم بالقطاعات.
+
+---
+Task ID: PHASE2-PUBLISHING-CARDS
+Agent: general-purpose (مهندس واجهات)
+Task: تحسين كروت النشر الاحترافية (branding + market + dates + disclaimer)
+
+Stage Summary:
+ملخص التعديلات الجراحية على الملفات الثلاثة المُصرَّح بها فقط (لا حذف ملفات، لا تعديل Python، لا git push):
+
+═══ 1. StockInfographicCard.tsx (+200 سطر داخل نفس الملف) ═══
+1. استيراد `MARKET_NAMES_AR` + `type MarketType` من `@/lib/store`.
+2. توسيع `StockInfographicCardProps['data']` بحقول اختيارية جديدة:
+   - `market?: MarketType` — شارة السوق (EGX/TADAWUL/KSE/QSE/US/CRYPTO).
+   - `prediction_date?: string | null` — تاريخ التوقّع.
+   - `verification_date?: string | null` — تاريخ التحقق.
+   - `days_taken?: number | null` — عدد الأيام من التوقّع للتحقق.
+   - `platform_name?: string` — اسم المنصة (default: «دليل الاستثمار»).
+   - `platform_logo_url?: string` — شعار المنصة (لو متاح).
+3. دوال مساعدة جديدة (null-safety كامل حسب Rule 27):
+   - `fmtDateAr(dateStr)` → تاريخ عربي مختصر (Month Year, Day) أو «—».
+   - `fmtMarketAr(market)` → { label, code } بالعربية + الرمز الإنجليزي.
+4. **Section 0 جديد — Platform Branding Header** (قبل Section 1):
+   - يمين RTL: شعار المنصة (مربع ذهبي بحرف «د» fallback أو صورة platform_logo_url) + اسم المنصة + سطر «تحليل كمي بالذكاء الاصطناعي».
+   - وسط: شارة السوق بالعربية + رمز السوق (EGX/TADAWUL/...).
+   - يسار: صف التواريخ الثلاثة (توقّع / تحقق / مدة) بـ monospace وحدات مختلفة لكل قيمة.
+5. تحديث إخلاء المسؤولية (Section 6) ليحوي النصَّين:
+   - النص المطلوب من المالك بالحرف: «⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.»
+   - النص التفصيلي التكميلي القديم (تعليمي/تأخير 15 دقيقة/مستشار مالي مرخّص).
+6. تحسينات لغوية احترافية:
+   - «الهدف المستهدف» ← «الهدف الصعودي».
+   - «الهدف السفلي» ← «الهدف الهبوطي».
+   - `data.sector` fallback إلى «عام» بدلاً من عرض قيمة فارغة.
+
+═══ 2. StockPublisher.tsx (+25 سطر داخل نفس الملف) ═══
+7. استيراد `MARKET_NAMES_AR` + `type MarketType` من `@/lib/store` (مع `useAppStore`).
+8. **mergedInfographicData** (useMemo جديد): يدمج `data.market` من StockPublishData
+   إلى infographicData قبل تمريرها لـ StockInfographicCard — حتى لو الـ caller
+   ما مرَّرش market في البطاقة، شارة السوق هتظهر (مع التحقق من صحة MarketType).
+9. تمرير `mergedInfographicData` لـ:
+   - Branch A (multipart image publish): يلتقط البطاقة المُدمج عليها شارة السوق + branding.
+   - Off-screen render للـ StockInfographicCard (للـ Telegram bot).
+10. إضافة `logo_url` للـ FormData المُرسلة لبوت تيليجرام (مع null-safety).
+11. **StockPublishCard**: شارة سوق ذهبية جديدة بجانب الـ ticker في الـ header
+    (`{EGX} · {البورصة المصرية}`) مع title توضيحي.
+12. **Disclaimer block جديد** فوق الـ Footer في StockPublishCard:
+    «⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.»
+
+═══ 3. ShareButton.tsx (+200 سطر داخل نفس الملف) ═══
+13. توسيع `ShareStockData` بحقول اختيارية جديدة:
+    - `market?` + `marketNameAr?` — شارة السوق بالعربية.
+    - `predictionDate?` + `verificationDate?` + `daysTaken?` — تواريخ التوقّع والتحقق.
+    - `riskReward?` — معامل الربحية R:R.
+    - `entryPrice?` — سعر الدخول المقترح.
+    - `logoUrl?` — شعار/وجه السهم (fallback: أول حرف من ticker).
+14. **ShareCard (الصورة المخفية للـ PNG)** — تحسينات بصرية كاملة:
+    - شريط Branding جديد في الأعلى: شعار «د» ذهبي + «دليل الاستثمار» + شارة السوق.
+    - في الـ Header: دعم `logoUrl` (مع fallback لأول حرف من ticker).
+    - في الـ Trading Grid: تيلز جديدة لـ entryPrice (أزرق) + R:R (كهرماني).
+    - صف تواريخ جديد (gold strip): توقّع / تحقق / مدة — بـ monospace وحدات ملوّنة.
+    - Footer disclaimer مُحدَّث بالنص الحرفي للمالك + إطار ذهبي.
+15. **getShareText()** — تحديث شامل ليضمّ:
+    - اسم المنصة + ticker + اسم السهم + السوق بالعربية في الترويسة.
+    - سعر الدخول (لو متاح) + سعر الشراء الجيد + الهدف + سعر البيع + وقف الخسارة.
+    - **R:R معامل الربحية** (جديد).
+    - **صف التواريخ**: توقّع / تحقق / مدة (جديد).
+    - الإخلاء الإجباري الحرفي للمالك (يحلَّ محل النص القديم).
+    - هاشتاجات متكيّفة مع السوق (`marketHashtagMap`) بدلاً من EGX فقط.
+16. **shortText** (للـ Facebook quote + غيره): تحديث ليضمّ المنصة + السهم + السوق + السعر + الإشارة + الإخلاء.
+
+═══ 4. التحقق (Verification) ═══
+- ✅ `bun run lint` → exit 0 (0 errors).
+- ✅ `npx tsc --noEmit --skipLibCheck`:
+  - Baseline (git stash): 1659 error TS.
+  - بعد التعديلات: 1658 error TS → **-1 خطأ (تحسُّن صافي، صفر أخطاء جديدة)**.
+  - صفر أخطاء في StockInfographicCard.tsx (قبل وبعد).
+  - الأخطاء الباقية في StockPublisher.tsx + ShareButton.tsx هي pre-existing baseline
+    (RECOMMENDATION_META ناقصة ACCUMULATE/REDUCE/STRONG_SELL — ليست من تعديلاتي).
+- ✅ StockPublisher.test.tsx: 20/21 tests تمرّ، الاختبار الفاشل (HOLD emoji)
+  هو **pre-existing على main** (verified via git stash) — من `stock-publish-text.ts`
+  اللي أنا مش مُصرَّح بتعديله.
+- ✅ Rule 27 محترمة: market/dates null → «—»، لا fabrication، كل الحقول الجديدة optional.
+- ✅ صفر ملفات محذوفة + صفر Python touched + صفر git push.
+- ✅ كل المخرجات بالعربية + لغة احترافية تناسب المستثمرين.
+
+Constraints honored:
+- ❌ NO file deleted (surgical edits only — +400 سطر داخل نفس الملفات الثلاثة).
+- ❌ NO Python files touched.
+- ❌ NO git push.
+- ❌ NO test files touched (reverted the test mock change).
+- ✅ All output in ARABIC.
+- ✅ Rule 27: لا fabrication — كل قيمة من الـ props المُمرَّرة فقط، null → «—».
+
+Next actions (اقتراحات للمالك — مش مطلوب تنفيذها):
+- تمرير `prediction_date` + `verification_date` + `days_taken` من API
+  /api/predictions/honest-tracking/list إلى buildStockInfographicDataFromStock
+  (في StockDetail.tsx — خارج نطاق الملفات المُصرَّح بها هنا) حتى تظهر التواريخ ببيانات حقيقية.
+- تمرير `logo_url` (stock face) من نفس البيلدر للـ ShareStockData في الـ caller بتاع ShareButton.
+- استبدال logo placeholder «د» بـ <Image src="/logo.png" /> لو فيه ملف شعار فعلي للمنصة.
+- اعتبار إضافة `sector_ar` (ترجمة عربية للقطاع) لو المنصة بتدعمها.

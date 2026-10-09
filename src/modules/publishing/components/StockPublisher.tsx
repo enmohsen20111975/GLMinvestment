@@ -63,6 +63,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
+// PHASE2-PUBLISHING-CARDS: شارة السوق + التواريخ على البطاقة المنشورة
+import { MARKET_NAMES_AR, type MarketType, useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 // Server-safe text generation + types re-exported from the shared module so the
 // /api/telegram/publish-stock route can reuse generatePublishText server-side.
@@ -72,7 +74,6 @@ import {
   generatePublishPayload,
 } from '@/modules/publishing/lib/stock-publish-text';
 import { useSession } from 'next-auth/react';
-import { useAppStore } from '@/lib/store';
 import { isAdmin, adminFetch } from '@/lib/admin-auth';
 // MERGE-LIST-CARDS + TELEGRAM-LINK: pull in StockInfographicCard so the
 // "نشر على تيليجرام" button captures the unified infographic card as a PNG
@@ -207,6 +208,23 @@ export function StockPublisher({
   // Generate the rich text card (Arabic, formatted for Telegram/WhatsApp)
   const publishText = useMemo(() => generatePublishText(data), [data]);
 
+  // PHASE2-PUBLISHING-CARDS: merge market from StockPublishData into the
+  // infographic payload so StockInfographicCard shows the market badge +
+  // branding header even when the caller didn't set `infographicData.market`.
+  // (Rule 27: never fabricate — only pass through real values from the parent.)
+  const mergedInfographicData = useMemo(() => {
+    if (!infographicData) return infographicData;
+    if (infographicData.market) return infographicData;
+    const validMarkets: MarketType[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO'];
+    const incomingMarket = data.market as string | undefined;
+    const market: MarketType | undefined =
+      incomingMarket && validMarkets.includes(incomingMarket as MarketType)
+        ? (incomingMarket as MarketType)
+        : undefined;
+    if (!market) return infographicData;
+    return { ...infographicData, market };
+  }, [infographicData, data.market]);
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(publishText);
@@ -297,7 +315,7 @@ export function StockPublisher({
       const caption = publishText;
 
       // ── Branch A: infographic available → multipart image+caption publish ──
-      if (infographicData && infographicCardRef.current) {
+      if (mergedInfographicData && infographicCardRef.current) {
         const el = infographicCardRef.current;
         const saved = {
           overflow: el.style.overflow,
@@ -343,9 +361,14 @@ export function StockPublisher({
           const blob = await blobRes.blob();
           const formData = new FormData();
           formData.append('ticker', ticker);
-          formData.append('name_ar', infographicData.name_ar || data.nameAr || ticker);
+          formData.append('name_ar', mergedInfographicData?.name_ar || data.nameAr || ticker);
           formData.append('market', market);
           formData.append('caption', caption);
+          // PHASE2-PUBLISHING-CARDS: pass through the stock logo_url so the
+          // Telegram bot can mirror the same "stock face" used on the card.
+          if (mergedInfographicData?.logo_url) {
+            formData.append('logo_url', String(mergedInfographicData.logo_url));
+          }
           formData.append('image', blob, `${ticker}-infographic.png`);
 
           const res = await adminFetch('/api/telegram/publish-stock', {
@@ -402,7 +425,7 @@ export function StockPublisher({
     } finally {
       setSendingToTelegramBot(false);
     }
-  }, [data.ticker, data.market, data.nameAr, infographicData, publishText]);
+  }, [data.ticker, data.market, data.nameAr, mergedInfographicData, publishText]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -581,8 +604,10 @@ export function StockPublisher({
             "نشر على تيليجرام" button can capture it as PNG via html-to-image.
             The container is visually hidden (absolute + scaled down) but
             kept in the layout so the card renders fully with real dimensions
-            (html-to-image needs the DOM node to be live, not display:none). */}
-        {infographicData && (
+            (html-to-image needs the DOM node to be live, not display:none).
+            PHASE2-PUBLISHING-CARDS: pass `mergedInfographicData` so the
+            branding header + market badge appear on the captured PNG. */}
+        {mergedInfographicData && (
           <div
             aria-hidden
             style={{
@@ -601,7 +626,7 @@ export function StockPublisher({
                 width: '800px',
               }}
             >
-              <StockInfographicCard data={infographicData} cardRef={infographicCardRef} />
+              <StockInfographicCard data={mergedInfographicData} cardRef={infographicCardRef} />
             </div>
           </div>
         )}
@@ -639,6 +664,15 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           ? 'oversold'
           : 'neutral';
 
+  // PHASE2-PUBLISHING-CARDS: شارة السوق + التواريخ على البطاقة المنشورة
+  // (Rule 27: null/undefined → "—" — لا fabrication.)
+  const validMarkets: MarketType[] = ['EGX', 'TADAWUL', 'KSE', 'QSE', 'US', 'CRYPTO'];
+  const marketCode = data.market as string | undefined;
+  const marketAr =
+    marketCode && validMarkets.includes(marketCode as MarketType)
+      ? MARKET_NAMES_AR[marketCode as MarketType]
+      : null;
+
   return (
     <Card className="border-2 border-emerald-200/60 dark:border-emerald-900/40 overflow-hidden">
       {/* Header — gradient + ticker + recommendation */}
@@ -649,10 +683,21 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
               {data.ticker.slice(0, 2)}
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-bold text-base text-foreground">
                   {data.ticker}
                 </span>
+                {marketAr && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] h-4 px-1.5 gap-0.5 bg-amber-50/70 dark:bg-amber-950/30 border-amber-200/60 dark:border-amber-900/40 text-amber-700 dark:text-amber-300"
+                    title="السوق المسجَّل عليه التحليل"
+                  >
+                    <span className="font-mono">{marketCode}</span>
+                    <span className="opacity-80">·</span>
+                    <span>{marketAr}</span>
+                  </Badge>
+                )}
                 {data.sector && (
                   <Badge variant="outline" className="text-[10px] h-4 px-1.5">
                     <Layers className="h-2.5 w-2.5 ml-0.5" />
@@ -1007,6 +1052,13 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           </div>
         )}
       </CardContent>
+
+      {/* PHASE2-PUBLISHING-CARDS: Disclaimer (owner's exact required text) */}
+      <div className="bg-amber-50/60 dark:bg-amber-950/15 border-t border-amber-200/50 dark:border-amber-900/30 px-4 py-2">
+        <p className="text-[10px] leading-relaxed text-amber-800 dark:text-amber-300 text-center">
+          ⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.
+        </p>
+      </div>
 
       {/* Footer */}
       <div className="bg-muted/40 border-t border-border/50 px-4 py-2 text-center text-[10px] text-muted-foreground">
