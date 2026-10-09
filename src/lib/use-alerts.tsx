@@ -220,7 +220,7 @@ export function useAlerts(
           ? 'bg-emerald-950/80 border-emerald-700'
           : direction === 'down'
             ? 'bg-red-950/80 border-red-700'
-            : 'bg-blue-950/80 border-blue-700';
+            : 'bg-blue-950/80 border-primary';
 
       toast.custom(
         () => (

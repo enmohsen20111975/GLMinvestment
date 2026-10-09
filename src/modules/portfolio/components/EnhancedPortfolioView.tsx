@@ -1352,7 +1352,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   if (!m || m === 'EGX') return null; // EGX هو الافتراضي — ما نظهرش badge
                                   const label = MARKET_NAMES_AR[m];
                                   return (
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-primary text-primary dark:text-blue-300">
                                       🏛️ {label}
                                     </Badge>
                                   );

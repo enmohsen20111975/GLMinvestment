@@ -150,7 +150,7 @@ export function CompanyFundamentalsCard({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3">
         <div className="flex items-center gap-2 mb-2">
-          <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Building2 className="h-4 w-4 text-primary dark:text-blue-400" />
           <Skeleton className="h-4 w-32" />
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -188,7 +188,7 @@ export function CompanyFundamentalsCard({ ticker }: { ticker: string }) {
     <Card className="p-3">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Building2 className="h-4 w-4 text-primary dark:text-blue-400" />
           <div>
             <div className="text-xs font-semibold">بيانات الشركة المالية</div>
             <div className="text-[10px] text-muted-foreground">{tablesWithData.length} جداول متاحة</div>

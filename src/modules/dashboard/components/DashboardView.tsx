@@ -412,7 +412,7 @@ export function DashboardView() {
                       return (
                         <Card
                           key={stock.ticker}
-                          className={`border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-blue-500'} cursor-pointer hover:shadow-md transition-shadow`}
+                          className={`border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-primary'} cursor-pointer hover:shadow-md transition-shadow`}
                           onClick={() => useAppStore.getState().setCurrentView('stock-detail') || useAppStore.getState().setSelectedTicker(stock.ticker)}
                         >
                           <CardContent className="p-3 space-y-2">
@@ -422,7 +422,7 @@ export function DashboardView() {
                                 <div className="font-mono font-bold text-sm">{stock.ticker}</div>
                                 <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-primary dark:bg-blue-900/40 dark:text-blue-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
                             </div>

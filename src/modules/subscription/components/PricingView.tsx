@@ -59,16 +59,16 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
   vip_pass: <Crown className="w-5 h-5 text-amber-400 animate-bounce" />,
   b2b_starter: <Building2 className="w-5 h-5 text-sky-500" />,
   b2b_pro: <Building2 className="w-5 h-5 text-sky-600" />,
-  b2b_enterprise: <Building2 className="w-5 h-5 text-indigo-600" />,
+  b2b_enterprise: <Building2 className="w-5 h-5 text-emerald-600" />,
 };
 
 const TIER_ACCENT: Record<string, string> = {
   premium: 'border-amber-500/50 bg-gradient-to-br from-amber-500/5 to-orange-500/5 shadow-md shadow-amber-500/5',
   pro: 'border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5 shadow-md shadow-purple-500/5',
   vip_pass: 'border-amber-400/80 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-orange-500/15 ring-2 ring-amber-400/60 shadow-xl shadow-amber-500/15',
-  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-blue-500/5',
-  b2b_pro: 'border-sky-600/40 bg-gradient-to-br from-sky-600/5 to-indigo-500/5',
-  b2b_enterprise: 'border-indigo-600/40 bg-gradient-to-br from-indigo-600/5 to-purple-600/5',
+  b2b_starter: 'border-sky-500/40 bg-gradient-to-br from-sky-500/5 to-primary/5',
+  b2b_pro: 'border-sky-600/40 bg-gradient-to-br from-sky-600/5 to-emerald-500/5',
+  b2b_enterprise: 'border-emerald-600/40 bg-gradient-to-br from-emerald-600/5 to-purple-600/5',
 };
 
 export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }: PricingViewProps) {

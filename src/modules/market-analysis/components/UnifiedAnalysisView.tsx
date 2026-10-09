@@ -357,7 +357,7 @@ export default function UnifiedAnalysisView() {
               <button
                 onClick={activeTab === 'analyze' ? handleAnalyze : handleCompare}
                 disabled={loading}
-                className="w-full py-3 bg-gradient-to-l from-blue-600 to-purple-600 rounded-xl font-semibold text-white disabled:opacity-50 transition-opacity"
+                className="w-full py-3 bg-gradient-to-l from-primary to-purple-600 rounded-xl font-semibold text-white disabled:opacity-50 transition-opacity"
               >
                 {loading ? '⏳ جاري التحليل...' : activeTab === 'analyze' ? '🔍 تحليل' : '⚖️ مقارنة الشخصيات'}
               </button>
@@ -373,7 +373,7 @@ export default function UnifiedAnalysisView() {
               <button
                 onClick={handleScan}
                 disabled={loading}
-                className="w-full py-3 bg-gradient-to-l from-blue-600 to-purple-600 rounded-xl font-semibold text-white disabled:opacity-50 transition-opacity"
+                className="w-full py-3 bg-gradient-to-l from-primary to-purple-600 rounded-xl font-semibold text-white disabled:opacity-50 transition-opacity"
               >
                 {loading ? '⏳ جاري الفحص...' : `🔭 فحص ${selectedMarket}`}
               </button>

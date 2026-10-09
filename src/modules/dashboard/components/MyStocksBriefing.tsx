@@ -622,7 +622,7 @@ export function MyStocksBriefing() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between" dir="rtl">
             <h4 className="text-xs font-semibold flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
               {t('dashboard.latestNews')}
             </h4>
             {newsTickers.length > 0 && (

@@ -179,7 +179,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   TARGET_HIT: { label: 'حقق الهدف', color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30', icon: <Trophy className="h-3 w-3" /> },
   STOPPED: { label: 'ضرب وقف الخسارة', color: 'bg-red-500/15 text-red-600 border-red-500/30', icon: <XCircle className="h-3 w-3" /> },
   EXPIRED: { label: 'انتهت المدة', color: 'bg-amber-500/15 text-amber-600 border-amber-500/30', icon: <Clock className="h-3 w-3" /> },
-  PENDING: { label: 'قيد التنفيذ', color: 'bg-blue-500/15 text-blue-600 border-blue-500/30', icon: <Clock className="h-3 w-3" /> },
+  PENDING: { label: 'قيد التنفيذ', color: 'bg-primary/15 text-primary border-primary/30', icon: <Clock className="h-3 w-3" /> },
   CLOSED: { label: 'مغلقة', color: 'bg-slate-500/15 text-slate-600 border-slate-500/30', icon: <CheckCircle2 className="h-3 w-3" /> },
 };
 
@@ -934,7 +934,7 @@ export default function HonestPredictionsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground">العائد المتوسط</span>
-                <TrendingUp className="h-4 w-4 text-blue-500" />
+                <TrendingUp className="h-4 w-4 text-primary" />
               </div>
               <div className={cn('text-2xl font-bold', (stats.avg_return ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                 {formatPercent(stats.avg_return)}
@@ -946,7 +946,7 @@ export default function HonestPredictionsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-muted-foreground">قيد التنفيذ</span>
-                <Clock className="h-4 w-4 text-blue-500" />
+                <Clock className="h-4 w-4 text-primary" />
               </div>
               <div className="text-2xl font-bold">{stats.pending}</div>
               <div className="text-xs text-muted-foreground mt-1">بانتظار النتيجة</div>
@@ -997,10 +997,10 @@ export default function HonestPredictionsPage() {
       )}
 
       {testReport && (
-        <Card className="border-blue-500/30 bg-blue-500/5">
+        <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Activity className="h-5 w-5 text-blue-500" />
+              <Activity className="h-5 w-5 text-primary" />
               تقرير الاختبار الكامل للنظام
             </CardTitle>
             <CardDescription>
@@ -1415,7 +1415,7 @@ export default function HonestPredictionsPage() {
                   <TableCell className="text-center">{m.total}</TableCell>
                   <TableCell className="text-center text-emerald-600 font-medium">{m.wins}</TableCell>
                   <TableCell className="text-center text-red-600 font-medium">{m.losses}</TableCell>
-                  <TableCell className="text-center text-blue-600">{m.pending}</TableCell>
+                  <TableCell className="text-center text-primary">{m.pending}</TableCell>
                   <TableCell className="text-center">
                     <span className={cn('font-bold', m.win_rate >= 50 ? 'text-emerald-600' : m.win_rate >= 35 ? 'text-amber-600' : 'text-red-600')}>
                       {m.win_rate}%

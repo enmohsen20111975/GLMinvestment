@@ -1745,7 +1745,7 @@ export function PredictionTrackingDashboard({
                           )}
                           {/* NEW: WHO IS BUYING badge */}
                           {pred.who_is_buying_state && (
-                            <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title={pred.who_is_buying_state}>
+                            <Badge className="bg-primary/15 text-primary dark:text-blue-400 border border-primary/30 text-[9px] py-0 px-1.5 font-bold whitespace-nowrap" title={pred.who_is_buying_state}>
                               {pred.who_is_buying_state.includes('مؤسساتي') ? '🏦 مؤسساتي' : pred.who_is_buying_state.includes('أفراد') ? '👤 أفراد' : '⚪'}
                             </Badge>
                           )}
@@ -2048,7 +2048,7 @@ export function PredictionTrackingDashboard({
                   {(selectedProofTrade as any).who_is_buying && (
                     <div>
                       <span className="text-muted-foreground text-[10px] block">من يشتري؟</span>
-                      <strong className="text-blue-600 dark:text-blue-400 text-sm font-bold">{String((selectedProofTrade as any).who_is_buying)}</strong>
+                      <strong className="text-primary dark:text-blue-400 text-sm font-bold">{String((selectedProofTrade as any).who_is_buying)}</strong>
                     </div>
                   )}
 

@@ -286,7 +286,7 @@ function statusColorFor(variant: ProgressRowProps['variant'], status: string): s
   // target_1 / target_2
   if (status === 'hit') return 'bg-emerald-500';
   if (status === 'approaching') return 'bg-amber-500';
-  if (variant === 'target_2') return 'bg-blue-500';
+  if (variant === 'target_2') return 'bg-primary';
   return 'bg-amber-500';
 }
 
@@ -298,7 +298,7 @@ function statusBadgeClass(variant: ProgressRowProps['variant'], status: string):
   }
   if (status === 'hit') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
   if (status === 'approaching') return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
-  if (variant === 'target_2') return 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400';
+  if (variant === 'target_2') return 'bg-blue-100 text-primary dark:bg-blue-950/40 dark:text-blue-400';
   return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
 }
 
@@ -342,7 +342,7 @@ interface TimelineRowProps {
 
 function eventIcon(event: TimelineEventType): React.ReactNode {
   switch (event) {
-    case 'signal':   return <Satellite className="h-3 w-3 text-blue-500" />;
+    case 'signal':   return <Satellite className="h-3 w-3 text-primary" />;
     case 'milestone': return <Rocket className="h-3 w-3 text-emerald-500" />;
     case 'alert':    return <AlertTriangle className="h-3 w-3 text-amber-500" />;
     case 'current':  return <Crosshair className="h-3.5 w-3.5 text-primary" />;
@@ -351,7 +351,7 @@ function eventIcon(event: TimelineEventType): React.ReactNode {
 
 function eventDotClass(event: TimelineEventType): string {
   switch (event) {
-    case 'signal':    return 'bg-blue-500 border-blue-300';
+    case 'signal':    return 'bg-primary border-blue-300';
     case 'milestone': return 'bg-emerald-500 border-emerald-300';
     case 'alert':     return 'bg-amber-500 border-amber-300';
     case 'current':   return 'bg-primary border-primary-foreground ring-2 ring-primary/30';
@@ -460,7 +460,7 @@ function NoPriceHistoryCard() {
     <Card className="p-4 border-dashed border-blue-200 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-950/10">
       <div className="flex items-start gap-3">
         <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-          <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Activity className="h-4 w-4 text-primary dark:text-blue-400" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">لا توجد بيانات أسعار كافية بعد</div>
@@ -559,7 +559,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-3">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة</span>
         </div>
         <Skeleton className="h-24 w-full" />
@@ -574,7 +574,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <NotTrackedCard />
@@ -586,7 +586,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <EntryPriceMissingCard />
@@ -598,7 +598,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <NoPriceHistoryCard />
@@ -610,7 +610,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <ErrorCard message={errorMsg} onRetry={fetchData} />
@@ -622,7 +622,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
     return (
       <Card className="p-3 space-y-2">
         <div className="flex items-center gap-2">
-          <Satellite className="h-4 w-4 text-blue-500" />
+          <Satellite className="h-4 w-4 text-primary" />
           <span className="text-xs font-semibold">رحلة الإشارة — {ticker}</span>
         </div>
         <NoPriceHistoryCard />
@@ -652,7 +652,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between flex-wrap gap-1">
           <div className="flex items-center gap-1.5">
-            <Satellite className="h-4 w-4 text-blue-500" />
+            <Satellite className="h-4 w-4 text-primary" />
             <span className="text-sm font-bold">{ticker}</span>
             <span className="text-xs text-muted-foreground">— رحلة الإشارة</span>
           </div>
@@ -692,7 +692,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
       {/* ─── 2.3 Target progress bars ─── */}
       <div className="space-y-2 bg-background/60 rounded-md p-2 border border-border/40">
         <div className="text-[11px] font-semibold flex items-center gap-1 mb-1">
-          <Target className="h-3 w-3 text-blue-500" />
+          <Target className="h-3 w-3 text-primary" />
           تقدّم الأهداف
         </div>
         <ProgressRow
@@ -730,7 +730,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
       {/* ─── 2.4 Timeline events (vertical) ─── */}
       <div className="bg-background/60 rounded-md p-2 border border-border/40">
         <div className="text-[11px] font-semibold mb-2 flex items-center gap-1">
-          <Activity className="h-3 w-3 text-blue-500" />
+          <Activity className="h-3 w-3 text-primary" />
           أحداث الخط الزمني
         </div>
         {data.timeline.length === 0 ? (

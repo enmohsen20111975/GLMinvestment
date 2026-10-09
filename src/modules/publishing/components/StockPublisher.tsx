@@ -139,7 +139,7 @@ const RECOMMENDATION_META: Record<
     ar: 'شراء مؤسسي',
     emoji: '🏛️',
     badgeClass:
-      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/60',
+      'bg-blue-50 text-primary border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/60',
     icon: <Shield className="h-3.5 w-3.5" />,
   },
   HOLD: {
@@ -551,7 +551,7 @@ export function StockPublisher({
             {publishing === 'facebook' ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Facebook className="h-4 w-4 text-blue-600" />
+              <Facebook className="h-4 w-4 text-primary" />
             )}
             فيسبوك
           </Button>
@@ -810,7 +810,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
         {(data.signalCount != null || data.path) && (
           <div className="bg-blue-50/60 dark:bg-blue-950/20 rounded-md p-2.5 space-y-1.5 border border-blue-100/60 dark:border-blue-900/30">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+              <span className="font-semibold text-primary dark:text-blue-300 flex items-center gap-1">
                 <Zap className="h-3.5 w-3.5" />
                 قوة الإشارة
               </span>
@@ -837,7 +837,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           <div className="bg-muted/30 rounded-md p-2.5 space-y-2 border border-border/50">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold flex items-center gap-1">
-                <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <Activity className="h-3.5 w-3.5 text-primary dark:text-blue-400" />
                 حركة السيولة
               </span>
               {data.netFlow != null && (
@@ -1035,7 +1035,7 @@ function TradingTile({ label, value, sub, accent, icon }: TradingTileProps) {
   > = {
     blue: {
       bg: 'bg-blue-50/70 dark:bg-blue-950/30',
-      text: 'text-blue-700 dark:text-blue-300',
+      text: 'text-primary dark:text-blue-300',
       border: 'border-blue-200/60 dark:border-blue-900/40',
     },
     emerald: {

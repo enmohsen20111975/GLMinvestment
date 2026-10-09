@@ -50,14 +50,15 @@ export function getEGXMarketStatus(date: Date = new Date()): MarketSessionStatus
         reason: 'عطلة نهاية الأسبوع (الجمعة والسبت)',
         marketNameAr: 'البورصة المصرية EGX',
         timezone: 'Africa/Cairo',
-        scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)',
+        scheduleText: 'الأحد - الخميس (10:00 ص - 2:30 م)',
       };
     }
 
-    // EGX Session Hours: 10:00 AM to 03:00 PM (10:00 to 15:00)
+    // EGX Session Hours: 10:00 AM to 02:30 PM (synced with Python market_config.py)
+    // FIX (2026-10-09, Team 7): كان فيه drift — TS قال 15:00، Python قال 14:30
     const timeInMinutes = hour * 60 + minute;
     const sessionOpenMinutes = 10 * 60; // 10:00 AM
-    const sessionCloseMinutes = 15 * 60; // 03:00 PM (15:00)
+    const sessionCloseMinutes = 14 * 60 + 30; // 02:30 PM (14:30) — matching Python
 
     if (timeInMinutes < sessionOpenMinutes) {
       return {
@@ -65,17 +66,17 @@ export function getEGXMarketStatus(date: Date = new Date()): MarketSessionStatus
         reason: 'قبل بداية الجلسة (افتتاح 10:00 ص)',
         marketNameAr: 'البورصة المصرية EGX',
         timezone: 'Africa/Cairo',
-        scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)',
+        scheduleText: 'الأحد - الخميس (10:00 ص - 2:30 م)',
       };
     }
 
     if (timeInMinutes > sessionCloseMinutes) {
       return {
         isOpen: false,
-        reason: 'بعد إغلاق الجلسة الرسمية (إغلاق 03:00 م)',
+        reason: 'بعد إغلاق الجلسة الرسمية (إغلاق 02:30 م)',
         marketNameAr: 'البورصة المصرية EGX',
         timezone: 'Africa/Cairo',
-        scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)',
+        scheduleText: 'الأحد - الخميس (10:00 ص - 2:30 م)',
       };
     }
 

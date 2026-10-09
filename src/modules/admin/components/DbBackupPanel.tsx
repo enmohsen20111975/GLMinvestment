@@ -972,7 +972,7 @@ export function DbBackupPanel() {
                 subValue={`الحجم: ${selectedSummary.mb} MB`}
               />
               <SummaryStat
-                icon={<Layers className="w-4 h-4 text-indigo-500" />}
+                icon={<Layers className="w-4 h-4 text-emerald-500" />}
                 label="أقصى حجم للتجزئة"
                 value={`${maxPartSizeMb} MB`}
                 subValue="حد أمان GitHub"

@@ -1767,7 +1767,7 @@ export function DatabaseManagerFull() {
                     {/* Import EGX30 History */}
                     <div className="border rounded-lg p-3 flex flex-col justify-between gap-3 bg-slate-50/50">
                       <div>
-                        <div className="text-sm font-semibold text-blue-700 flex items-center gap-1.5">
+                        <div className="text-sm font-semibold text-primary flex items-center gap-1.5">
                           <History className="w-4 h-4" />
                           استيراد تاريخ مؤشر EGX30
                         </div>
@@ -1779,7 +1779,7 @@ export function DatabaseManagerFull() {
                         onClick={() => handleAdvancedOperation('import-egx30', 'استيراد وتحديث تاريخ EGX30')}
                         disabled={advancedLoading !== null}
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                        className="bg-primary hover:bg-primary text-white w-full"
                       >
                         {advancedLoading === 'import-egx30' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
