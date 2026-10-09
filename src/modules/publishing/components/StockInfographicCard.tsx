@@ -24,6 +24,8 @@
 
 import React, { useMemo } from 'react';
 import { OFFICIAL_LINKS } from '@/modules/publishing/lib/official-links';
+// PHASE2-PUBLISHING-CARDS: منصة + شعار + سوق + تواريخ (توقع / تحقق / أيام)
+import { MARKET_NAMES_AR, type MarketType } from '@/lib/store';
 
 // ============================================================================
 // Types
@@ -101,6 +103,14 @@ export interface StockInfographicCardProps {
         is_value_area: boolean;
       }>;
     };
+    // ─── PHASE2-PUBLISHING-CARDS (owner directive) ──────────────────────────
+    // منصة + سوق + تواريخ (توقّع / تحقق / أيام) — كلها اختيارية، null → "—" (Rule 27).
+    market?: MarketType;
+    prediction_date?: string | null;
+    verification_date?: string | null;
+    days_taken?: number | null;
+    platform_name?: string;
+    platform_logo_url?: string;
   };
   cardRef?: React.RefObject<HTMLDivElement>;
 }
@@ -134,6 +144,32 @@ function fmtNum(n: number | string | undefined, digits = 2): string {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
+}
+
+// ─── PHASE2-PUBLISHING-CARDS ──────────────────────────────────────────────
+// صياغة احترافية للتاريخ بالعربية (Rule 27: null/undefined/invalid → "—").
+function fmtDateAr(dateStr?: string | null): string {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
+}
+
+// صياغة اسم السوق بالعربية مع رمزه (مع null-safety).
+function fmtMarketAr(market?: MarketType | null): { label: string; code: string } {
+  if (!market) return { label: '—', code: '—' };
+  return {
+    label: MARKET_NAMES_AR[market] || '—',
+    code: market,
+  };
 }
 
 // ============================================================================
@@ -407,6 +443,16 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
   const changeColor = isUp ? COLORS.emerald : COLORS.red;
   const currency = data.currency || 'ج.م';
 
+  // PHASE2-PUBLISHING-CARDS: منصة + سوق + تواريخ
+  const platformName = data.platform_name || 'دليل الاستثمار';
+  const marketInfo = fmtMarketAr(data.market ?? null);
+  const predictionDateStr = fmtDateAr(data.prediction_date ?? null);
+  const verificationDateStr = fmtDateAr(data.verification_date ?? null);
+  const daysTaken =
+    data.days_taken != null && Number.isFinite(data.days_taken)
+      ? `${data.days_taken} يوم`
+      : '—';
+
   // Chart session up/down
   const sessionUp = useMemo(() => {
     if (!data.chart_data || data.chart_data.length < 2) return data.change_pct >= 0;
@@ -457,6 +503,107 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
         boxShadow: `0 0 60px ${COLORS.gold}15`,
       }}
     >
+      {/* ============================================================ */}
+      {/* Section 0 — Platform Branding Header / ترويسة المنصة           */}
+      {/* (PHASE2-PUBLISHING-CARDS — اسم المنصة + شعار + سوق + تواريخ)  */}
+      {/* ============================================================ */}
+      <section
+        className="px-6 pt-4 pb-3 flex items-center justify-between gap-3"
+        style={{
+          background: `linear-gradient(90deg, #050810 0%, #0c1320 50%, #050810 100%)`,
+          borderBottom: `1px solid ${COLORS.gold}30`,
+        }}
+      >
+        {/* Right (RTL): platform logo + name */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${COLORS.gold} 0%, ${COLORS.goldAmber} 100%)`,
+              border: `1.5px solid ${COLORS.goldBright}`,
+              boxShadow: `0 0 10px ${COLORS.gold}40`,
+            }}
+          >
+            {data.platform_logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={data.platform_logo_url}
+                alt={platformName}
+                className="w-full h-full object-cover"
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span
+                className="text-lg font-extrabold"
+                style={{ color: COLORS.bg, fontFamily: 'Cairo, sans-serif' }}
+              >
+                د
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-extrabold" style={{ color: COLORS.goldBright }}>
+              {platformName}
+            </span>
+            <span className="text-[10px]" style={{ color: COLORS.gray }}>
+              تحليل كمي بالذكاء الاصطناعي
+            </span>
+          </div>
+        </div>
+
+        {/* Center: market badge */}
+        <div className="flex flex-col items-center gap-1 flex-1">
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full"
+            style={{
+              background: `${COLORS.gold}18`,
+              border: `1px solid ${COLORS.gold}55`,
+            }}
+          >
+            <span className="text-[11px] font-bold" style={{ color: COLORS.goldBright }}>
+              {marketInfo.label}
+            </span>
+            <span
+              className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+              style={{
+                background: COLORS.bg,
+                color: COLORS.gold,
+                border: `1px solid ${COLORS.gold}40`,
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              {marketInfo.code}
+            </span>
+          </div>
+          <span className="text-[9px]" style={{ color: COLORS.gray }}>
+            السوق المسجَّل عليه التحليل
+          </span>
+        </div>
+
+        {/* Left: dates row — توقّع / تحقق / أيام */}
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <div className="flex items-center gap-1.5 text-[10px]" style={{ color: COLORS.gray }}>
+            <span>توقّع:</span>
+            <span className="font-bold font-mono" dir="ltr" style={{ color: COLORS.white }}>
+              {predictionDateStr}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px]" style={{ color: COLORS.gray }}>
+            <span>تحقق:</span>
+            <span className="font-bold font-mono" dir="ltr" style={{ color: COLORS.emerald }}>
+              {verificationDateStr}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px]" style={{ color: COLORS.gray }}>
+            <span>المدة:</span>
+            <span className="font-bold font-mono" dir="ltr" style={{ color: COLORS.goldBright }}>
+              {daysTaken}
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* ============================================================ */}
       {/* Section 1 — Header / ترويسة                                  */}
       {/* ============================================================ */}
@@ -520,7 +667,7 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
             }}
           >
             <span>🏭</span>
-            <span>{data.sector}</span>
+            <span>{data.sector || 'عام'}</span>
           </div>
         </div>
 
@@ -682,7 +829,7 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
               🐂 السيناريو الصعودي
             </div>
             <div className="text-[11px] mb-1" style={{ color: COLORS.gray }}>
-              الهدف المستهدف
+              الهدف الصعودي
             </div>
             <div className="text-lg font-extrabold" dir="ltr" style={{ color: COLORS.emerald, fontFamily: 'JetBrains Mono, monospace' }}>
               {data.scenarios.bullish_target}
@@ -704,7 +851,7 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
               🐻 السيناريو الهبوطي
             </div>
             <div className="text-[11px] mb-1" style={{ color: COLORS.gray }}>
-              الهدف السفلي
+              الهدف الهبوطي
             </div>
             <div className="text-lg font-extrabold" dir="ltr" style={{ color: COLORS.red, fontFamily: 'JetBrains Mono, monospace' }}>
               {data.scenarios.bearish_target}
@@ -928,9 +1075,13 @@ export function StockInfographicCard({ data, cardRef }: StockInfographicCardProp
           <span className="text-base shrink-0">⚠️</span>
           <p className="text-[10px] leading-relaxed" style={{ color: COLORS.gray }}>
             <span style={{ color: COLORS.goldBright, fontWeight: 700 }}>إخلاء مسؤولية: </span>
-            هذا التحليل لأغراض تعليمية وإعلامية فقط ولا يُعدّ إشارة مباشرة للشراء أو البيع.
-            تداول الأسهم ينطوي على مخاطر، ويُتحمّل المستخدم المسؤولية الكاملة عن قراراته الاستثمارية.
-            البيانات السوقية قد تتأخر 15 دقيقة. يُرجى الرجوع لمستشار مالي مرخّص قبل اتخاذ أي قرار.
+            تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.
+            <br />
+            <span style={{ color: COLORS.gray, opacity: 0.85 }}>
+              هذا التحليل لأغراض تعليمية وإعلامية فقط ولا يُعدّ إشارة مباشرة للشراء أو البيع.
+              تداول الأسهم ينطوي على مخاطر، والبيانات السوقية قد تتأخر 15 دقيقة. يُرجى الرجوع
+              لمستشار مالي مرخّص قبل اتخاذ أي قرار.
+            </span>
           </p>
         </div>
       </section>
