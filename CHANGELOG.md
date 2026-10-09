@@ -12,6 +12,44 @@
 
 ---
 
+## [2026-10-09 — AUDIT-DEEP-INSPECTION] — Main Agent (Z.ai Code)
+
+### الأوديت العميق
+**فحص شامل كـ "مستخدم صايع معلم" اكتشف 17 مشكلة (8 CRITICAL + 6 HIGH + 3 MEDIUM):**
+
+#### CRITICAL Database Fixes (migration script: `migrate_audit_phase1.py`)
+- **Fix 1:** تعطيل 39 سهم بسعر=0/null/negative (`is_active=0`)
+- **Fix 2:** تصفير 234 RSI خارج [0-100] → NULL
+- **Fix 3:** تصفير 1 change_percent > 50% → NULL
+- **Fix 4:** رفض 344 توقع BUY بـ R:R < 1 (`status='REJECTED_BAD_RR'`)
+- **Fix 5:** إصلاح 131 stop_loss ≈ entry_price (5% ATR fallback)
+- **Fix 6:** إصلاح 62 target_price ≈ entry_price (10% fallback)
+
+#### Technical Indicators Calculation (`migrate_calc_indicators.py`)
+- حساب high_52w/low_52w لـ 957 سهم من `stock_daily_prices`
+- حساب ma_50/ma_200 من بيانات حقيقية
+- حساب RSI (Wilder's 14-period)
+
+#### Cleanup & Archive (`migrate_cleanup_archive.py`)
+- حذف 61 خبر متكرر (60 titles)
+- أرشفة 4,984 توقع أقدم من 6 شهور → `predictions_archive`
+
+#### Code Fixes (Rule 27 NO-FAKE-DATA)
+- `src/app/api/unified/route.ts`: إزالة `confidence || 75` + `master_score || 50` fallbacks → null
+- `src/lib/unified-stock-data.ts`: ربط `stored_analyses` كـ fallback حقيقي بدل fabrication
+- فلتر توقعات `REJECTED_BAD_RR` من الـ queries
+
+#### التوثيق
+- **جديد:** `Documentation/06-AUDIT-FINDINGS.md` — تقرير شامل لكل المشاكل + الإصلاحات
+- **جديد:** 3 migration scripts جاهزة للإنتاج مع `--dry-run` + `--verify` + backup تلقائي
+
+#### ملاحظات مهمة
+- **البيانات المحلية = عينات فقط** — السيرفر الإنتاجي عنده البيانات الكاملة
+- **الـ migration scripts آمنة** — بتتعمل backup تلقائي قبل أي تعديل
+- **باقي المبرمجين بيحدثوا على GitHub** — `git pull` قبل أي `push`
+
+---
+
 ## [2026-10-08 — PHASE-1-TO-5 (5 Phases Implementation)] — المدير العام (عضو مهم في الفريق)
 
 ### Phase 1 — Security P0 (commit `03ea211f`)
