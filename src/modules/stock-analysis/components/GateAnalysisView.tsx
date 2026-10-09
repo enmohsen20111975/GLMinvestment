@@ -209,7 +209,7 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
           <IR label="الهدف" value={`${(r.targetPrice ?? 0).toFixed(2)} (+${(r.targetPct ?? 0).toFixed(1)}%)`} valueClass={`${gc} font-medium`} />
           <IR label="الوقف" value={`${(r.stopLoss ?? 0).toFixed(2)} (-${(r.stopPct ?? 0).toFixed(1)}%)`} valueClass={`${rc} font-medium`} />
           <IR label="R/R" value={`${(r.rrRatio ?? 0).toFixed(1)}:1`} valueClass={`${rrClr} font-medium`} />
-          <IR label="RSI" value={cachedInput?.(rsi ?? 0).toFixed(1) || '—'} valueExtra={` (${r.rsiBuyThreshold}–${r.rsiSellThreshold})`} />
+          <IR label="RSI" value={(cachedInput?.rsi ?? 0).toFixed(1) || '—'} valueExtra={` (${r.rsiBuyThreshold}–${r.rsiSellThreshold})`} />
           <IR label="الاتجاه" value={r.marketStageAr} valueClass={`${trendClr} font-medium`} />
           <IR label="البوابات" value={`${r.gatesPassed}/5`} valueExtra={` (min: ${r.minGates})`} valueClass={`${gatesClr} font-medium`} />
           <IR label="ATR%" value={`${(r.atrPct ?? 0).toFixed(1)}%`} valueClass={`${atrClr} font-medium`} />

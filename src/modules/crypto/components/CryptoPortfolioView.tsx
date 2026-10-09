@@ -613,7 +613,7 @@ export function CryptoPortfolioView() {
               <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/30">
                 السعر الحالي لـ {newCoin.symbol}: <span className="font-semibold" dir="ltr">{formatPrice(livePriceMap[newCoin.symbol].price)}</span>
                 <span className={cn('mr-2', livePriceMap[newCoin.symbol].change >= 0 ? 'text-emerald-600' : 'text-rose-600')} dir="ltr">
-                  ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{livePriceMap[newCoin.symbol].(change ?? 0).toFixed(2)}%)
+                  ({livePriceMap[newCoin.symbol].change >= 0 ? '+' : ''}{(livePriceMap[newCoin.symbol].change ?? 0).toFixed(2)}%)
                 </span>
               </div>
             )}
