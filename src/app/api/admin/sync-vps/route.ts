@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     try {
       db.prepare('SELECT 1 FROM stock_price_history LIMIT 1').get();
       priceHistoryAvailable = true;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       logger.info('sync-vps price history table not available');
     }
 
@@ -338,7 +338,7 @@ export async function POST(request: NextRequest) {
                     ph.volume || null
                   );
                   stats.price_history_imported++;
-                } catch {
+                } catch { // silent fallback (safe-by-design)
                   // Skip duplicate or error
                 }
               }

@@ -104,7 +104,7 @@ function shortDate(s: string): string {
     const d = new Date(s);
     if (isNaN(d.getTime())) return s.slice(0, 10);
     return `${d.getDate()}/${d.getMonth() + 1}`;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return s.slice(0, 10);
   }
 }

@@ -51,7 +51,7 @@ function safeParseJson<T>(val: any, fallback: T): T {
   if (typeof val !== 'string') return val as T;
   try {
     return JSON.parse(val);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -213,7 +213,7 @@ async function getEGXPilotNews(): Promise<NewsItem[]> {
         tickers: item.tickers || [],
       };
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -254,7 +254,7 @@ async function getFearGreedIndex(): Promise<NewsItem | null> {
       category: 'sentiment',
       importance,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -294,7 +294,7 @@ async function getCryptoPrices(): Promise<NewsItem[]> {
       });
     }
     return items;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -317,7 +317,7 @@ async function getGlobalMarketData(): Promise<NewsItem | null> {
       category: 'market',
       importance: Math.abs(change || 0) > 3 ? 'high' : 'low',
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

@@ -396,7 +396,7 @@ function formatDateShort(d?: string | null, withTime = false): string {
       return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
     }
     return `${dd}/${mm}/${yyyy}`;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return String(d).slice(0, 10);
   }
 }
@@ -411,7 +411,7 @@ function computeHoldingDays(entryDate?: string | null, closedAt?: string | null)
     if (isNaN(end.getTime())) return null;
     const diff = Math.floor((end.getTime() - start.getTime()) / 86400000);
     return Math.max(0, diff);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

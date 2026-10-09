@@ -41,7 +41,7 @@ function tableExists(db: ReturnType<typeof getDataEngineDb>, tableName: string):
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=? LIMIT 1")
       .get(tableName) as { name?: string } | undefined;
     return !!row?.name;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tick
     try {
       const stock = getStockBySymbol(symbol);
       if (stock?.price != null) lastPrice = safeNum(stock.price);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
 
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tick
     let db: ReturnType<typeof getDataEngineDb>;
     try {
       db = getDataEngineDb();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // مفيش DB → empty book مع السعر لو موجود
       return NextResponse.json({
         success: true,

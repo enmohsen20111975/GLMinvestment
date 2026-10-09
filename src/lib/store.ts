@@ -632,7 +632,7 @@ function hydrateFromStorage<T>(key: string, fallback: T): T {
     const raw = window.localStorage.getItem(key);
     if (raw == null) return fallback;
     return JSON.parse(raw) as T;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -789,7 +789,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(CURRENT_MARKET_KEY, JSON.stringify(market));
       }
-    } catch { /* silent */ }
+    } catch { /* silent - safe-by-design */ }
     // FIX (Aug 2026): شيلنا window.__currentMarket — كل الـ components دلوقتي بتستخدم useAppStore مباشرة
     // Crypto uses a unified loader that adapts coins into the stocks array
     if (market === 'CRYPTO') {
@@ -810,7 +810,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       get().loadWatchlist?.();
       get().loadPortfolio?.();
       get().loadAiInsights?.();
-    } catch { /* silent — لو الـ function مش معرّفة */ }
+    } catch { /* silent — لو الـ function مش معرّفة - safe-by-design */ }
   },
   setCurrentView: (view) => {
     set({ currentView: view, previousView: get().currentView });
@@ -821,7 +821,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
           window.history.pushState({ view }, '', newHash || window.location.pathname);
         }
       }
-    } catch { /* silent */ }
+    } catch { /* silent - safe-by-design */ }
   },
   setCurrentViewFromHash: (view) => {
     set({ currentView: view, previousView: get().currentView });
@@ -1309,7 +1309,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return { success: true, error: null };
       }
       return { success: false, error: data.error || 'فشل في إضافة السهم' };
-    } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
+    } catch { /* safe-by-design */ return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
   updateWatchlistItem: async (id: number, updates: { alert_price_above?: number | null; alert_price_below?: number | null; alert_change_percent?: number | null; notes?: string | null }) => {
@@ -1325,7 +1325,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return { success: true, error: null };
       }
       return { success: false, error: data.error || 'فشل في تحديث السهم' };
-    } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
+    } catch { /* safe-by-design */ return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
   removeFromWatchlist: async (id: number) => {
@@ -1337,7 +1337,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return { success: true, error: null };
       }
       return { success: false, error: data.error || 'فشل في إزالة السهم' };
-    } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
+    } catch { /* safe-by-design */ return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
   // Portfolio CRUD actions
@@ -1361,7 +1361,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return { success: true, error: null };
       }
       return { success: false, error: data.error || 'فشل في إضافة السهم' };
-    } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
+    } catch { /* safe-by-design */ return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
   updatePortfolioItem: async (id: number | string, updates: Record<string, unknown>) => {
@@ -1377,7 +1377,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return { success: true, error: null };
       }
       return { success: false, error: data.error || 'فشل في تحديث السهم' };
-    } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
+    } catch { /* safe-by-design */ return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
   removeFromPortfolio: async (id: number | string) => {
@@ -1389,7 +1389,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return { success: true, error: null };
       }
       return { success: false, error: data.error || 'فشل في حذف السهم' };
-    } catch { return { success: false, error: 'حدث خطأ في الاتصال' }; }
+    } catch { /* safe-by-design */ return { success: false, error: 'حدث خطأ في الاتصال' }; }
   },
 
   loadStockNews: (ticker, limit = 10) => {
@@ -1471,7 +1471,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.setItem(ASSET_PREF_KEY, JSON.stringify(pref));
-      } catch { /* silent */ }
+      } catch { /* silent - safe-by-design */ }
     }
   },
   togglePin: (widgetId) => {
@@ -1483,7 +1483,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (typeof window !== 'undefined') {
       try {
         window.localStorage.setItem(PINNED_WIDGETS_KEY, JSON.stringify(next));
-      } catch { /* silent */ }
+      } catch { /* silent - safe-by-design */ }
     }
   },
   isPinned: (widgetId) => get().pinnedWidgets.includes(widgetId),
@@ -1498,7 +1498,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(DISPLAY_CURRENCY_KEY, JSON.stringify(c));
       }
-    } catch { /* silent */ }
+    } catch { /* silent - safe-by-design */ }
   },
   usdRate: 48.5,
   sarRate: 48.5 * SAR_PER_USD,
@@ -1520,7 +1520,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(RISK_SCORE_KEY, JSON.stringify(clamped));
       }
-    } catch { /* silent */ }
+    } catch { /* silent - safe-by-design */ }
     // Lazy import to avoid circular dependency on module load.
     import('@/lib/persona-dynamic').then(({ scoreToPersona }) => {
       const derived = scoreToPersona(clamped);
@@ -1536,6 +1536,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(RISK_PROFILER_DONE_KEY, JSON.stringify(done));
       }
-    } catch { /* silent */ }
+    } catch { /* silent - safe-by-design */ }
   },
 }));

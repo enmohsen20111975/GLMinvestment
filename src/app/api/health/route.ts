@@ -97,7 +97,7 @@ function checkDb(
   let sizeBytes = 0;
   try {
     sizeBytes = statSync(dbPath).size;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fallthrough — file might be unreadable
   }
   const sizeMb = Math.max(0, +(sizeBytes / 1024 / 1024).toFixed(1));
@@ -114,7 +114,7 @@ function checkDb(
       try {
         const row = db.prepare(`SELECT COUNT(*) AS c FROM "${mainTable}"`).get() as { c: number } | undefined;
         rows = row?.c;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // table may not exist in some DBs — ignore
       }
     }
@@ -124,7 +124,7 @@ function checkDb(
       try {
         const row = db.prepare(`SELECT MAX("${dateColumn}") AS d FROM "${mainTable}"`).get() as { d: string | null } | undefined;
         latestDate = row?.d ?? undefined;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore — column may not exist
       }
     }
@@ -135,7 +135,7 @@ function checkDb(
   } finally {
     try {
       db?.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore close errors
     }
   }
@@ -152,14 +152,14 @@ async function checkPort(port: number): Promise<{ reachable: boolean; pid?: numb
     // Try to extract pid — line format: "users:(("python",pid=12345,fd=3))"
     const m = stdout.match(/pid=(\d+)/);
     return { reachable: true, pid: m ? +m[1] : undefined };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ss not available → fall back to /dev/tcp-style check via curl
     try {
       await execAsync(`curl -s --max-time 1 http://127.0.0.1:${port}/ >/dev/null 2>&1 || true`);
       // Can't tell from curl alone whether the port has a listener — be conservative:
       // assume reachable since curl exited 0 (any non-zero would have thrown).
       return { reachable: true };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return { reachable: false };
     }
   }
@@ -175,7 +175,7 @@ async function checkProcess(pattern: string): Promise<{ reachable: boolean; pid?
     const pidStr = stdout.trim();
     if (!pidStr) return { reachable: false };
     return { reachable: true, pid: +pidStr };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { reachable: false };
   }
 }

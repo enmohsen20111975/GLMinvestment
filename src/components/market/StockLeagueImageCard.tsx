@@ -95,7 +95,7 @@ function getMonthName(monthStr?: string): string {
     const [, mm] = monthStr.split('-');
     const num = parseInt(mm, 10);
     return ARABIC_MONTHS[num - 1] || monthStr;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return monthStr;
   }
 }
@@ -470,7 +470,7 @@ export function StockLeagueImageCard({
             setPeriodLabel(data.month_name || getMonthName(currentMonth));
           }
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // silent
       } finally {
         if (!cancelled) setLoading(false);

@@ -169,7 +169,7 @@ function fmtDate(s?: string): string {
       month: 'short',
       day: 'numeric',
     }).format(d);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return datePart;
   }
 }

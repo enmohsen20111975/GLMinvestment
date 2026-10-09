@@ -186,7 +186,7 @@ function fmtDate(s: string | null | undefined): string {
     const d = new Date(s);
     if (isNaN(d.getTime())) return s;
     return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return s;
   }
 }

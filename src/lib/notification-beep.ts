@@ -21,7 +21,7 @@ function getAudioCtx(): AudioContext | null {
       _audioCtx.resume().catch(() => {});
     }
     return _audioCtx;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -78,7 +78,7 @@ export function playBeep(type: BeepType = 'signal'): void {
       osc.stop(now + offset + note.dur + 0.02);
       offset += note.dur * 0.9; // تداخل بسيط بين النغمات
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ساكت لو أي حاجة فشلت — الصوت مش critical
   }
 }

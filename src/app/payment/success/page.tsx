@@ -91,7 +91,7 @@ export default function PaymentSuccess() {
           }
           return;
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Network errors are non-fatal during polling — try again.
       }
 

@@ -145,7 +145,7 @@ export async function GET() {
     let lightDb;
     try {
       lightDb = getStocksDb();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       lightDb = getLightDb();
     }
     const stats = lightDb.prepare(`
@@ -162,7 +162,7 @@ export async function GET() {
       const heavyDb = getHeavyDb();
       const pc = heavyDb.prepare('SELECT COUNT(*) as cnt FROM stock_price_history').get() as { cnt: number };
       priceCount = pc.cnt;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Heavy DB not available
     }
 

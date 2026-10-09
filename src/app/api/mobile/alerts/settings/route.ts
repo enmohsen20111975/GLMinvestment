@@ -29,7 +29,7 @@ async function getUserIdFromToken(request: NextRequest): Promise<string | null> 
   try {
     const { userId } = await getSessionUserId();
     if (userId && userId !== 'admin') return userId;
-  } catch { /* fall through to legacy inline check */ }
+  } catch { /* fall through to legacy inline check - safe-by-design */ }
 
   // Legacy fallback for clients that send a malformed token header.
   const authHeader = request.headers.get('authorization');
@@ -46,7 +46,7 @@ async function getUserIdFromToken(request: NextRequest): Promise<string | null> 
       select: { user_id: true },
     });
     return apiToken?.user_id ?? null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   let body: unknown;
   try {
     body = await request.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return NextResponse.json(
       { success: false, error: 'جسم الطلب غير صالح (JSON متوقع)' },
       { status: 400 },

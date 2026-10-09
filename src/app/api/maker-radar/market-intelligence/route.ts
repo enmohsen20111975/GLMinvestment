@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
         }
       }
       db.close();
-    } catch { result.sections.intraday = { error: 'intraday.db not available' }; }
+    } catch { /* safe-by-design */ result.sections.intraday = { error: 'intraday.db not available' }; }
 
     // ═══ 2. FUNDAMENTALS ═══
     try {
@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
         signalCount: signals.length,
       };
       db.close();
-    } catch { result.sections.fundamentals = { error: 'data_engine.db not available' }; }
+    } catch { /* safe-by-design */ result.sections.fundamentals = { error: 'data_engine.db not available' }; }
 
     // ═══ 4. PRICE HISTORY ═══
     try {
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
         };
       }
       db.close();
-    } catch { result.sections.priceHistory = { error: 'price_history.db not available' }; }
+    } catch { /* safe-by-design */ result.sections.priceHistory = { error: 'price_history.db not available' }; }
 
     return NextResponse.json(result);
   } catch (err: any) {

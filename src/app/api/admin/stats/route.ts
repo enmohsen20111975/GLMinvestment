@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       let lightDb;
       try {
         lightDb = getStocksDb();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         lightDb = getLightDb();
       }
       const stockStats = lightDb.prepare(`
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       try {
         const wlStats = lightDb.prepare('SELECT COUNT(*) as cnt FROM user_stock_watchlists').get() as Record<string, unknown>;
         watchlistCount = Number(wlStats?.cnt) || 0;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // table might not exist
       }
 
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       try {
         const pfStats = lightDb.prepare('SELECT COUNT(*) as cnt FROM portfolio_assets').get() as Record<string, unknown>;
         portfolioCount = Number(pfStats?.cnt) || 0;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // table might not exist
       }
     } catch (err) {

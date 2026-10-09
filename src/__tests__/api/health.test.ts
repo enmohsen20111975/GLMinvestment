@@ -28,7 +28,7 @@ async function probe(url: string, ms = 3000): Promise<boolean> {
     );
     const res = await Promise.race([fetch(url), timeout]);
     return (res as Response).ok || (res as Response).status === 503;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

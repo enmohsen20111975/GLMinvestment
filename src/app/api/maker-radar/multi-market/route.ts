@@ -198,7 +198,7 @@ function findLatestRadarFile(market?: string): string | null {
       .reverse();
     if (candidates.length === 0) return null;
     return path.join(OUTPUT_DIR, candidates[0]);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

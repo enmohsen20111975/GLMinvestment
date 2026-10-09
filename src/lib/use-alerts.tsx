@@ -126,7 +126,7 @@ function showBrowserNotification(title: string, body: string): void {
       badge: '/favicon.ico',
       tag: `alert-${Date.now()}`,
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Silent fail
   }
 }
@@ -141,7 +141,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   try {
     const permission = await Notification.requestPermission();
     return permission === 'granted';
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

@@ -123,7 +123,7 @@ function openPredictionsDb(): DbHandle | null {
         continue;
       }
       return { db, source: c.source, hasRadarTrackingTable, hasPredictionsTable };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       continue;
     }
   }
@@ -258,7 +258,7 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   } finally {
-    try { handle.db.close(); } catch { /* ignore */ }
+    try { handle.db.close(); } catch { /* ignore - safe-by-design */ }
   }
 }
 

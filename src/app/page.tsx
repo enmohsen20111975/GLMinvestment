@@ -449,7 +449,7 @@ function AppShell() {
         setTrialEndsAt(j.trialEndsAt ? (typeof j.trialEndsAt === 'string' ? j.trialEndsAt : (j.trialEndsAt as Date).toISOString()) : null);
         // اعرض البانر بس لو المستخدم Free + في trial نشط (مش expired)
         setTrialShowBanner(!j.isPaid && !j.isExpired && j.status === 'trial');
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // network error — متسجلش، يمكن المستخدم offline
       }
     };
@@ -609,7 +609,7 @@ function AppShell() {
               title="عمق السوق"
               subtitle={`لوحة متابعة شاملة — ${marketLabel}`}
             />
-            <main className="flex-1 p-3 md:p-4 space-y-4" dir="rtl">
+            <main id="main-content" className="flex-1 p-3 md:p-4 space-y-4" dir="rtl">
               {/* ── الصف 1: عام لكل الأسواق (عملات + ذهب + كريبتو + أسهم) ── */}
               <section aria-label="العملات والذهب والأسهم — لكل الأسواق">
                 <SafeWidget name="العملات والذهب">
@@ -866,7 +866,7 @@ function AppShell() {
               from inner container — the parent (L846) already has min-h-screen flex flex-col.
               This ensures Footer stays at viewport bottom on short pages + pushed down on long pages. */}
           <div className="flex-1 min-w-0 w-full flex flex-col overflow-x-hidden">
-            <main className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
+            <main id="main-content" className="pb-24 lg:pb-8 flex-1 overflow-x-hidden">
               {/* N1: page transition animation — fade + slight slide for professional feel */}
               <motion.div
                 key={currentView}
@@ -958,7 +958,7 @@ function BotLinkHandler() {
         setErrorMsg(arMap[err] || `تعذّر ربط البوت بحسابك (${err}).`);
         setState('error');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setErrorMsg('حدثت مشكلة في الاتصال. يرجى المحاولة مرة أخرى.');
       setState('error');
     }

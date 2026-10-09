@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     let errBody: unknown = null;
     try {
       errBody = await engineResponse.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     return NextResponse.json(

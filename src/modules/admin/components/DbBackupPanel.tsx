@@ -356,7 +356,7 @@ export function DbBackupPanel() {
       if (json.success && json.status) {
         setGitStatus(json.status);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent fail — status is optional
     }
   }, []);

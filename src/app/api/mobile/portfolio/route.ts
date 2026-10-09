@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — auth required
   const { userId } = await getSessionUserId();
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
         };
       });
       if (sdb) sdb.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Even if SQLite enrichment fails, return the basic items
       holdings = items.map((it: any) => ({
         id: it.id,

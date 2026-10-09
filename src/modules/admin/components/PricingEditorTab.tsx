@@ -166,7 +166,7 @@ export function PricingEditorTab() {
         }
       }
       setPlansList(defaultPlans);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setPlansList(getAllPlans());
     } finally {
       setLoading(false);

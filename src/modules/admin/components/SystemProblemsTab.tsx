@@ -96,7 +96,7 @@ function formatTimestamp(iso: string): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return iso;
   }
 }

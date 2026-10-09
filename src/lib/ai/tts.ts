@@ -199,7 +199,7 @@ export async function synthesizeWav(opts: SynthesizeOptions): Promise<Synthesize
     for (const f of [inFile, outFile]) {
       try {
         if (existsSync(f)) unlinkSync(f);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* cleanup best-effort */
       }
     }

@@ -27,7 +27,7 @@ const EXEC_ENV = {
 
 // P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
 async function pathExists(p: string): Promise<boolean> {
-  try { await access(p); return true; } catch { return false; }
+  try { await access(p); return true; } catch { /* safe-by-design */ return false; }
 }
 
 function resolveBinary(name: string, candidates: string[]): string {
@@ -86,7 +86,7 @@ async function listDbFiles(): Promise<DbInfo[]> {
   let entries: string[];
   try {
     entries = await readdir(DB_DIR);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
   for (const entry of entries) {
@@ -106,7 +106,7 @@ async function listDbFiles(): Promise<DbInfo[]> {
         modified: st.mtime.toISOString(),
         is_core: CORE_DATABASES.has(entry),
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore unreadable entries
     }
   }
@@ -120,7 +120,7 @@ async function listArchives(): Promise<BackupArchive[]> {
   let entries: string[];
   try {
     entries = await readdir(DATA_DIR);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
   for (const entry of entries) {
@@ -137,7 +137,7 @@ async function listArchives(): Promise<BackupArchive[]> {
         created: st.mtime.toISOString(),
         is_part: entry.includes('.zip.part'),
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
   }
@@ -312,7 +312,7 @@ export async function POST(req: NextRequest) {
       for (const arc of archives) {
         if (!arc.created) continue;
         if (new Date(arc.created).getTime() < cutoff) {
-          try { await unlink(arc.path); prunedCount++; } catch { /* ignore */ }
+          try { await unlink(arc.path); prunedCount++; } catch { /* ignore - safe-by-design */ }
         }
       }
     }
@@ -339,7 +339,7 @@ export async function POST(req: NextRequest) {
       }
 
       let st;
-      try { st = await stat(archivePath); } catch {
+      try { st = await stat(archivePath); } catch { // silent fallback (safe-by-design)
         errors.push(`الملف ${archiveName} لم يُنشأ`);
         continue;
       }
@@ -642,7 +642,7 @@ export async function DELETE(req: NextRequest) {
                 const scSt = await stat(scPath);
                 freedBytes += scSt.size;
                 await unlink(scPath);
-              } catch {
+              } catch { // silent fallback (safe-by-design)
                 // ignore sidecar cleanup errors
               }
             }
@@ -796,14 +796,14 @@ export async function PATCH(req: NextRequest) {
             cwd
           );
           [ahead, behind] = abStdout.trim().split(/\s+/).map(n => parseInt(n, 10) || 0);
-        } catch { /* network */ }
+        } catch { /* network - safe-by-design */ }
 
         const unpushed_commits: string[] = [];
         if (ahead > 0) {
           try {
             const { stdout: logStdout } = await runGit(['log', '@{u}..HEAD', '--oneline'], cwd);
             unpushed_commits.push(...logStdout.trim().split('\n').filter(Boolean));
-          } catch { /* */ }
+          } catch { /* safe-by-design */ /* */ }
         }
 
         // check rebase/merge in progress

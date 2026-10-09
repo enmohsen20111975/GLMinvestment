@@ -31,7 +31,7 @@ export const dynamic = 'force-dynamic';
 function openDb(dbPath: string): Database.Database {
   try {
     return new Database(dbPath, { readonly: true, timeout: 5000, fileMustExist: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${dbPath}?immutable=1`, { readonly: true, timeout: 5000 });
   }
 }
@@ -79,7 +79,7 @@ function daysBetween(from: string, to: string): number {
     const d1 = new Date(from.slice(0, 10));
     const d2 = new Date(to.slice(0, 10));
     return Math.max(0, Math.floor((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -92,7 +92,7 @@ function minutesSinceLastUpdate(lastUpdate: string | null): number | null {
     if (isNaN(d.getTime())) return null;
     const diffMs = Date.now() - d.getTime();
     return Math.max(0, Math.floor(diffMs / (1000 * 60)));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -318,7 +318,7 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    try { predDb?.close(); } catch { /* ignore */ }
-    try { stocksDb?.close(); } catch { /* ignore */ }
+    try { predDb?.close(); } catch { /* ignore - safe-by-design */ }
+    try { stocksDb?.close(); } catch { /* ignore - safe-by-design */ }
   }
 }

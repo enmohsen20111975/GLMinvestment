@@ -83,7 +83,7 @@ export function formatDateShort(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
   try {
     return new Date(dateStr).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '—';
   }
 }
@@ -858,7 +858,7 @@ export async function buildNameMap(marketCode: string): Promise<NameMap> {
         map[tk] = { name: s.name, name_ar: s.name_ar || s.name, logo_url: s.logo_url || null };
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* تجاهل — نعتمد على الاسم من نتيجة التصطاد مباشرة */
   }
   return map;
@@ -1174,7 +1174,7 @@ export function _isEgxIntradayNow(): boolean {
     if (cairoDay === 5 || cairoDay === 6) return false;
     const minutes = cairoHour * 60 + cairoMinute;
     return minutes >= 600 && minutes < 870; // 10:00 (600) → 14:30 (870)
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

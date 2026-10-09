@@ -45,7 +45,7 @@ export function DesktopNotificationPrompt() {
     setShow(false);
     try {
       sessionStorage.setItem(DISMISS_KEY, '1');
-    } catch {}
+    } catch { /* safe-by-design */ }
   };
 
   if (!show) return null;

@@ -65,9 +65,9 @@ function runScraper(args: string[], cwd: string, timeoutMs: number): Promise<Spa
 
     const timer = setTimeout(() => {
       timedOut = true;
-      try { child.kill('SIGTERM'); } catch { /* ignore */ }
+      try { child.kill('SIGTERM'); } catch { /* ignore - safe-by-design */ }
       // Force-kill after 5s grace
-      setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } }, 5000);
+      setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore - safe-by-design */ } }, 5000);
     }, timeoutMs);
 
     child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     try {
       await access(scraperPath);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         {
           success: false,
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     let body: { sync_stocks?: boolean; full?: boolean } = {};
     try {
       body = await req.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       body = {};
     }
 

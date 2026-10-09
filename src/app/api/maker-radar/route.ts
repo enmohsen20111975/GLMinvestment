@@ -36,7 +36,7 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
     try {
       await access(TRACKING_FILE);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return {};
     }
     const data = await readFile(TRACKING_FILE, 'utf-8');

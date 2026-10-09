@@ -47,7 +47,7 @@ function wrapNativeDatabase(db: Database.Database): SqliteDatabase {
       // (The process will release the file handle on exit.)
     },
     save(): void {
-      try { db.pragma('wal_checkpoint(TRUNCATE)') } catch { /* ignore */ }
+      try { db.pragma('wal_checkpoint(TRUNCATE)') } catch { /* ignore - safe-by-design */ }
     },
   }
 }
@@ -85,7 +85,7 @@ export async function ensureInitialized(): Promise<void> {
     try {
       await _ensurePromise
       return
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       _ensurePromise = null
     }
   }
@@ -98,7 +98,7 @@ export async function ensureInitialized(): Promise<void> {
     // cheap no-op after the first boot.
     try {
       ensureUserPortfolioIndexes(getWritableDb())
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // stocks.db unavailable here — the routes degrade gracefully.
     }
   })
@@ -177,7 +177,7 @@ export function getStocksDb(): SqliteDatabase {
   // "file is not a database". No longer requires sql.js initialization.
   const native = openDb('stocks.db')
   _stocksDb = wrapNativeDatabase(native)
-  try { _stocksDb.pragma('foreign_keys = ON') } catch { /* ignore */ }
+  try { _stocksDb.pragma('foreign_keys = ON') } catch { /* ignore - safe-by-design */ }
   console.log('[egx-db] Stocks DB loaded (stocks.db) [robust]')
   return _stocksDb
 }
@@ -206,7 +206,7 @@ export function getPriceHistoryDb(): SqliteDatabase {
   // Robust open via shared-db.
   const native = openDb('price_history.db')
   _priceHistoryDb = wrapNativeDatabase(native)
-  try { _priceHistoryDb.pragma('foreign_keys = ON') } catch { /* ignore */ }
+  try { _priceHistoryDb.pragma('foreign_keys = ON') } catch { /* ignore - safe-by-design */ }
   console.log('[egx-db] Price History DB loaded [robust]')
   return _priceHistoryDb
 }
@@ -258,8 +258,8 @@ export function getWritableStocksDb(): SqliteDatabase {
   // Robust open via shared-db, forced writable so admin writes go through.
   const native = openDb('stocks.db', { writable: true })
   _writableStocksDb = wrapNativeDatabase(native)
-  try { _writableStocksDb.pragma('journal_mode = WAL') } catch { /* ignore */ }
-  try { _writableStocksDb.pragma('foreign_keys = ON') } catch { /* ignore */ }
+  try { _writableStocksDb.pragma('journal_mode = WAL') } catch { /* ignore - safe-by-design */ }
+  try { _writableStocksDb.pragma('foreign_keys = ON') } catch { /* ignore - safe-by-design */ }
   console.log('[egx-db] Writable Stocks DB created [robust]')
   return _writableStocksDb
 }
@@ -285,8 +285,8 @@ export function getWritablePriceHistoryDb(): SqliteDatabase {
   // Robust open via shared-db, forced writable so historical sync writes go through.
   const native = openDb('price_history.db', { writable: true })
   _writablePriceHistoryDb = wrapNativeDatabase(native)
-  try { _writablePriceHistoryDb.pragma('journal_mode = WAL') } catch { /* ignore */ }
-  try { _writablePriceHistoryDb.pragma('foreign_keys = ON') } catch { /* ignore */ }
+  try { _writablePriceHistoryDb.pragma('journal_mode = WAL') } catch { /* ignore - safe-by-design */ }
+  try { _writablePriceHistoryDb.pragma('foreign_keys = ON') } catch { /* ignore - safe-by-design */ }
   console.log('[egx-db] Writable Price History DB created [robust]')
   return _writablePriceHistoryDb
 }
@@ -358,7 +358,7 @@ export function ensureExpertRecommendationSchema(db: SqliteDatabase): void {
     for (const col of EXPERT_REC_EXTRA_COLUMNS) {
       try {
         db.prepare(`ALTER TABLE ExpertRecommendation ADD COLUMN ${col.name} ${col.def}`).run()
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // column already exists — expected
       }
     }
@@ -399,7 +399,7 @@ export function ensureUserPortfolioIndexes(db: SqliteDatabase): void {
     for (const sql of USER_PORTFOLIO_INDEXES) {
       try {
         db.prepare(sql).run()
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Table does not exist in this deployment variant — expected.
       }
     }
@@ -855,7 +855,7 @@ function computeConstituentChangePercent(
       return Math.round((equalSum / equalCount) * 10000) / 10000
     }
     return null
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null
   }
 }
@@ -1093,7 +1093,7 @@ export function getAvailablePriceDates(): { min: string; max: string; count: num
     const db = getPriceHistoryDb()
     const row = db.prepare(`SELECT MIN(date) as min, MAX(date) as max, COUNT(*) as count FROM price_history`).get() as { min: string; max: string; count: number }
     return row || { min: '', max: '', count: 0 }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { min: '', max: '', count: 0 }
   }
 }
@@ -1153,8 +1153,8 @@ export function getWritableDb(): SqliteDatabase {
   // Robust open via shared-db, forced writable.
   const native = openDb('stocks.db', { writable: true })
   _writableDb = wrapNativeDatabase(native)
-  try { _writableDb.pragma('journal_mode = WAL') } catch { /* ignore */ }
-  try { _writableDb.pragma('foreign_keys = ON') } catch { /* ignore */ }
+  try { _writableDb.pragma('journal_mode = WAL') } catch { /* ignore - safe-by-design */ }
+  try { _writableDb.pragma('foreign_keys = ON') } catch { /* ignore - safe-by-design */ }
   return _writableDb
 }
 
@@ -1228,7 +1228,7 @@ export function getStockIdFromHeavyDb(ticker: string): number | null {
   try {
     const row = db.prepare('SELECT DISTINCT ticker FROM price_history WHERE ticker = ? LIMIT 1').get(ticker.toUpperCase()) as { ticker: string } | undefined
     return row ? 1 : null // Return 1 if exists, null otherwise
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null
   }
 }

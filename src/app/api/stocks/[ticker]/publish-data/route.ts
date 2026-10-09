@@ -99,7 +99,7 @@ async function fetchPythonPublishData(
       return (json.data as Record<string, unknown>) || (json as Record<string, unknown>);
     }
     return null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -158,13 +158,13 @@ function fetchLatestPrediction(ticker: string): PredictionRow | null {
       )
       .get(ticker.toUpperCase()) as PredictionRow | undefined;
     return row || null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
     if (db) {
       try {
         db.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* noop */
       }
     }
@@ -238,7 +238,7 @@ async function fetchRadarEntryAsync(
       all.find((s) => s.ticker?.toUpperCase() === tickerUpper) ||
       null
     );
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -285,12 +285,12 @@ function fetchPriceHistory(ticker: string): PriceRow[] {
       volume: parseVolume(r.volume),
       turnover: computeTurnover(r, cfg),
     }));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   } finally {
     try {
       db.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* noop */
     }
   }

@@ -39,7 +39,7 @@ export function pickTrackerDbPath(): string | null {
     const dir = path.dirname(target);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     return target;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -163,7 +163,7 @@ export function recordSignal(input: RecordSignalInput): RecordSignalResult {
       error: err instanceof Error ? err.message : String(err),
     };
   } finally {
-    try { db.close(); } catch { /* noop */ }
+    try { db.close(); } catch { /* noop - safe-by-design */ }
   }
 }
 

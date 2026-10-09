@@ -76,5 +76,5 @@ export async function getGLMSubscriptionFromM2Y(userId: string): Promise<any> {
       { headers: { 'X-M2Y-Sync-Secret': M2Y_SYNC_SECRET }, signal: AbortSignal.timeout(8000) }
     );
     return res.ok ? await res.json() : null;
-  } catch { return null; }
+  } catch { /* safe-by-design */ return null; }
 }

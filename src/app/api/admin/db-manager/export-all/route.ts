@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 
 // P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
 async function pathExists(p: string): Promise<boolean> {
-  try { await access(p); return true; } catch { return false; }
+  try { await access(p); return true; } catch { /* safe-by-design */ return false; }
 }
 
 /**

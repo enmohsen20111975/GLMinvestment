@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
                       ? JSON.parse(a.insights_payload)
                       : a.insights_payload;
                   return (payload as Record<string, unknown>)?.admin_override || {};
-                } catch {
+                } catch { // silent fallback (safe-by-design)
                   return {};
                 }
               })()

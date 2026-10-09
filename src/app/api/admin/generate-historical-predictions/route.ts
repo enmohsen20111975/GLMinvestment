@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       if (typeof tp.minRiskReward === 'number') params.minRiskReward = Math.max(0.5, Math.min(10, tp.minRiskReward));
       if (typeof tp.exitSignalThreshold === 'number') params.exitSignalThreshold = Math.max(0, Math.min(100, tp.exitSignalThreshold));
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* use defaults */
   }
 
@@ -307,7 +307,7 @@ export async function GET(req: NextRequest) {
         if (atr > 0 && close > 0) { atrPctSum += (atr / close) * 100; atrPctCount++; }
         if (vol) volumeTrends[vol] = (volumeTrends[vol] || 0) + 1;
         if (sector) sectorCounts[sector] = (sectorCounts[sector] || 0) + 1;
-      } catch { /* skip malformed */ }
+      } catch { /* skip malformed - safe-by-design */ }
     }
 
     const avgRsi = rsiCount > 0 ? rsiSum / rsiCount : 50;

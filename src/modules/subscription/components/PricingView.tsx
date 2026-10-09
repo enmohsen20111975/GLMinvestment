@@ -91,7 +91,7 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
       else if (lang.startsWith('ar-qa')) setMarket('qse');
       else if (lang.startsWith('en-us')) setMarket('us');
       else setMarket('egx');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setMarket('egx');
     }
   }, [forcedMarket]);

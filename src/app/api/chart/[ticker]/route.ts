@@ -49,7 +49,7 @@ function resolveCanonicalTicker(rawTicker: string): string {
       if (byDedup) { db.close(); return byDedup.ticker; }
 
       db.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
   }
@@ -205,7 +205,7 @@ async function fetchYahooChartCandles(
           if (row?.market) market = row.market.toUpperCase();
           db.close();
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       if (market === 'EGX' || market === 'EGYPT' || /^[A-Z]{4}$/.test(sym)) {
         sym = sym.endsWith('.CA') ? sym : `${sym}.CA`;
@@ -362,7 +362,7 @@ async function getPythonDailyData(
     }
     candles.sort((a, b) => a.timestamp - b.timestamp);
     return candles.length > 0 ? candles : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Python backend down or timed out — caller falls back to direct SQLite
     // (defensive, sandbox-safe). Logged by the caller if it also fails.
     return null;
@@ -724,7 +724,7 @@ export async function GET(
           }
         }
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // Direct local SQLite fallback from intraday.db
     const localIntra = getLocalIntradayData(resolvedTicker, freqMinutes, period);
@@ -861,7 +861,7 @@ export async function GET(
         });
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
 

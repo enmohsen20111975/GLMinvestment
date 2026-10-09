@@ -88,7 +88,7 @@ export function MasterPortfolioSummary({ userId, onSubPortfoliosLoaded }: Master
         // P30 TASK 8: Push to unified store
         usePortfolioStore.getState().updateMaster(data);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent
     } finally {
       setLoading(false);

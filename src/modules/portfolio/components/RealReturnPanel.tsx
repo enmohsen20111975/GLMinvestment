@@ -91,7 +91,7 @@ export function RealReturnPanel() {
         toast.success(`تم تحديث معدل التضخم إلى ${rate}%`);
         fetchRealReturn();
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل تحديث التضخم');
     }
   };

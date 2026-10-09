@@ -75,7 +75,7 @@ async function findProcess(pattern: string): Promise<{ found: boolean; pids: num
     const { stdout } = await execFileAsync('pgrep', ['-f', pattern], { timeout: 3000 });
     const pids = stdout.trim().split('\n').filter(Boolean).map(s => Number(s)).filter(n => Number.isFinite(n) && n > 0);
     return { found: pids.length > 0, pids, count: pids.length };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { found: false, pids: [], count: 0 };
   }
 }
@@ -89,7 +89,7 @@ async function logFileMtime(path: string): Promise<string | null> {
   try {
     const st = await stat(path);
     return st.mtime.toISOString();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -99,7 +99,7 @@ async function dbFileMeta(name: string): Promise<{ exists: boolean; sizeMb: stri
   const path = join(process.cwd(), 'db', name);
   try {
     await access(path);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { exists: false, sizeMb: null, modified: null };
   }
   try {
@@ -109,7 +109,7 @@ async function dbFileMeta(name: string): Promise<{ exists: boolean; sizeMb: stri
       sizeMb: (st.size / 1024 / 1024).toFixed(2),
       modified: st.mtime.toISOString(),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { exists: false, sizeMb: null, modified: null };
   }
 }

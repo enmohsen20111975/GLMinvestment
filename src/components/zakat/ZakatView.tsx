@@ -340,7 +340,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
     try {
       const saved = localStorage.getItem('zakat_nisab_metal');
       if (saved === 'gold' || saved === 'silver') setNisabMetal(saved);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // localStorage غير متاح — نُبقي القيمة الافتراضية
     }
   }, []);
@@ -349,7 +349,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
   useEffect(() => {
     try {
       localStorage.setItem('zakat_nisab_metal', nisabMetal);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // تجاهل أخطاء الكتابة
     }
   }, [nisabMetal]);

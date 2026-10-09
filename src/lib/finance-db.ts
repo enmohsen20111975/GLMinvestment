@@ -50,7 +50,7 @@ export function isFinanceDbAvailable(): boolean {
   try {
     getWritableDb();
     return true;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

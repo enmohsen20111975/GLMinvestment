@@ -24,7 +24,7 @@ let _stocksDb: Database.Database | null = null;
 export function getDataEngineDb(): Database.Database {
   if (_dataEngineDb) {
     try { _dataEngineDb.prepare('SELECT 1').get(); return _dataEngineDb; }
-    catch { try { _dataEngineDb.close(); } catch { /* ignore */ } _dataEngineDb = null; }
+    catch { try { _dataEngineDb.close(); } catch { /* ignore - safe-by-design */ } _dataEngineDb = null; }
   }
   const dbPath = path.join(process.cwd(), 'db', 'data_engine.db');
   if (!existsSync(dbPath)) {
@@ -61,7 +61,7 @@ export function getPriceHistoryDb(): Database.Database {
 export function getStocksDb(): Database.Database {
   if (_stocksDb) {
     try { _stocksDb.prepare('SELECT 1').get(); return _stocksDb; }
-    catch { try { _stocksDb.close(); } catch { /* ignore */ } _stocksDb = null; }
+    catch { try { _stocksDb.close(); } catch { /* ignore - safe-by-design */ } _stocksDb = null; }
   }
   const dbPath = path.join(process.cwd(), 'db', 'stocks.db');
   if (!existsSync(dbPath)) {

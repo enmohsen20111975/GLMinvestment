@@ -88,7 +88,7 @@ function ensureNewsTable(db: InstanceType<typeof Database>) {
   `);
   try {
     db.exec(`ALTER TABLE market_news ADD COLUMN is_catalyst INTEGER DEFAULT 0`);
-  } catch {}
+  } catch { /* safe-by-design */ }
 }
 
 /**
@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
           summary_en: cleanSummaryEn,
         }),
       }).catch(() => {});
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     if (result.changes === 0) {
       return NextResponse.json({ ok: true, success: true, message: 'خبر مكرر - تم تجاهله', duplicate: true });

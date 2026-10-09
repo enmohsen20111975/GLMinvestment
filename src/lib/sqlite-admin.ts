@@ -144,12 +144,12 @@ export function listDatabases(): DatabaseInfo[] {
             c: number
           }
           totalRows += count.c
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // تخطّي الجداول المعطوبة
         }
       }
       db.close()
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // قاعدة معطوبة — نرجّعها لكن بـ 0
     }
 
@@ -181,7 +181,7 @@ export function listTables(dbName: string): TableInfo[] {
       try {
         const r = db.prepare(`SELECT COUNT(*) as c FROM "${t.name}"`).get() as { c: number }
         rowCount = r.c
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // skip
       }
       return { name: t.name, rowCount, schema }

@@ -260,7 +260,7 @@ export default function HonestPredictionsPage() {
         setMinRiskReward(data.params.minRiskReward ?? 1.5);
         setExitSignalThreshold(data.params.exitSignalThreshold ?? 60);
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
   }, []);
 
   const [startDate, setStartDate] = useState('2025-01-01');

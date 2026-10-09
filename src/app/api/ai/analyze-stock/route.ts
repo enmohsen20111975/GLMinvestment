@@ -31,7 +31,7 @@ const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 function dbExists(p: string): boolean {
   try {
     return fs.existsSync(p) && fs.statSync(p).size > 0;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -109,7 +109,7 @@ function fetchStoredAnalysis(db: any, ticker: string): StoredAnalysisRow | null 
       SELECT * FROM stored_analyses WHERE ticker = ? COLLATE NOCASE LIMIT 1
     `).get(ticker) as StoredAnalysisRow | undefined;
     return row ?? null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -126,7 +126,7 @@ function fetchRecentPredictions(db: any, ticker: string, limit: number): Predict
       ORDER BY prediction_date DESC
       LIMIT ?
     `).all(ticker, limit) as PredictionRow[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     try {
       return db.prepare(`
         SELECT id, ticker, signal_type, prediction_date, entry_price,
@@ -138,7 +138,7 @@ function fetchRecentPredictions(db: any, ticker: string, limit: number): Predict
         ORDER BY prediction_date DESC
         LIMIT ?
       `).all(ticker, limit) as PredictionRow[];
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return [];
     }
   }
@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
         currentPrice = safeNum(stock.price);
         stockName = stock.name;
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* safe skip */
     }
 
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
     if (stored?.analysis_json) {
       try {
         fullAnalysis = JSON.parse(stored.analysis_json);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         fullAnalysis = null;
       }
     }

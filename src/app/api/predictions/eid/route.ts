@@ -57,7 +57,7 @@ async function getFearGreedIndex(): Promise<{ value: number; classification: str
       value: parseInt(fng.value, 10),
       classification: classificationMap[rawClassification] || rawClassification,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -73,10 +73,10 @@ function getCryptoPriceFromDb(symbol: string): number | null {
       .prepare('SELECT price_usd FROM crypto_prices WHERE UPPER(symbol) = UPPER(?) ORDER BY timestamp DESC LIMIT 1')
       .get(symbol) as { price_usd: number } | undefined;
     return row && typeof row.price_usd === 'number' && row.price_usd > 0 ? row.price_usd : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
-    if (db) try { db.close(); } catch { /* ignore */ }
+    if (db) try { db.close(); } catch { /* ignore - safe-by-design */ }
   }
 }
 
@@ -94,10 +94,10 @@ function getGoldPriceFromDb(): number | null {
     return row && typeof row.price_per_ounce === 'number' && row.price_per_ounce > 0
       ? row.price_per_ounce
       : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
-    if (db) try { db.close(); } catch { /* ignore */ }
+    if (db) try { db.close(); } catch { /* ignore - safe-by-design */ }
   }
 }
 
@@ -114,10 +114,10 @@ function getEgxPriceFromDb(symbol: string): number | null {
     if (row && typeof row.price === 'number' && row.price > 0) return row.price;
     // Try price_history.db as fallback for EGX stocks (Egyptian market not in data_engine.stocks)
     return null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
-    if (db) try { db.close(); } catch { /* ignore */ }
+    if (db) try { db.close(); } catch { /* ignore - safe-by-design */ }
   }
 }
 
@@ -133,10 +133,10 @@ function getEgxStockPriceFromHistory(ticker: string): number | null {
       .prepare('SELECT close_price FROM price_history WHERE ticker = ? ORDER BY date DESC LIMIT 1')
       .get(ticker) as { close_price: number } | undefined;
     return row && typeof row.close_price === 'number' && row.close_price > 0 ? row.close_price : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   } finally {
-    if (db) try { db.close(); } catch { /* ignore */ }
+    if (db) try { db.close(); } catch { /* ignore - safe-by-design */ }
   }
 }
 

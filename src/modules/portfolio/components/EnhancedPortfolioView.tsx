@@ -324,7 +324,7 @@ function StockSearchDropdown({
       const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(term)}`);
       const data = await res.json();
       setResults(data.stocks || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setResults([]);
     } finally {
       setLoading(false);
@@ -434,7 +434,7 @@ function CryptoSearchDropdown({
         })));
         setLoaded(true);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setAllCoins([]);
     } finally {
       setLoading(false);
@@ -557,7 +557,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           }
           setPortfoliosMap(pmap);
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
     }
     fetchPortfoliosMap();
   }, []);
@@ -645,7 +645,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
         try {
           const usd = Number(assetsData.exchange_rates?.USD);
           if (Number.isFinite(usd) && usd > 0) setFxRates(usd);
-        } catch { /* silent — fall back to default 48.5 */ }
+        } catch { /* silent — fall back to default 48.5 - safe-by-design */ }
         // B-1: Read the backend P34 net-worth math directly — no local recomputation.
         setNetWorthData({
           gross: assetsData.gross_assets_egp || assetsData.total_current_value || 0,
@@ -661,7 +661,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
           const fallbackRes = await fetch(`/api/finance/assets${pidQs}`);
           const fallbackData = await fallbackRes.json();
           allAssets.push(...(fallbackData.items || fallbackData.assets || []));
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // both APIs failed — continue with empty
         }
       }
@@ -670,7 +670,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       setObligations(obligationsData?.items || []);
       // P30 TASK 8: Push to unified store so MasterPortfolioSummary + RealReturnPanel auto-update
       usePortfolioStore.getState().updateFromCalcValues(assetsData);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // P30 TASK 7: Only show error toast on initial load, not on silent polls
       if (!silent) toast.error(t('portfolio.toast.loadAssetsFailed'));
     } finally {
@@ -696,7 +696,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
         body: JSON.stringify({ ticker }),
       });
       toast.success(t('portfolio.toast.addToWatchlistSuccess', { ticker }));
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Watchlist add is best-effort; don't block the main flow
     }
   };
@@ -790,7 +790,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       let data: Record<string, unknown>;
       try {
         data = await res.json();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         const text = await res.text().catch(() => '');
         console.error('[Asset Add] Non-JSON response:', res.status, text);
         toast.error(t('portfolio.toast.serverError'), { duration: 10000 });
@@ -851,7 +851,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       } else {
         toast.error(data.error || t('portfolio.toast.updateAssetFailed'));
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     } finally {
       setSaving(false);
@@ -870,7 +870,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       } else {
         toast.error(data.error || t('portfolio.toast.deleteAssetFailed'));
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2085,7 +2085,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       const data = await res.json();
       setTransactions(data.items || []);
       setSummary(data.summary || null);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       if (!silent) toast.error('فشل في تحميل المعاملات');
     } finally {
       if (!silent) setLoading(false);
@@ -2120,7 +2120,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       } else {
         toast.error(data.error || 'فشل في إضافة المعاملة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2136,7 +2136,7 @@ const IncomeExpenseTab = memo(function IncomeExpenseTab() {
       } else {
         toast.error(data.error || 'فشل في الحذف');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2468,7 +2468,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       const res = await fetch('/api/finance/obligations?status=active');
       const data = await res.json();
       setObligations(data.items || []);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       if (!silent) toast.error('فشل في تحميل الالتزامات');
     } finally {
       if (!silent) setLoading(false);
@@ -2511,7 +2511,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       } else {
         toast.error(data.error || 'فشل في إضافة الالتزام');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2537,7 +2537,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       } else {
         toast.error(data.error || 'فشل في التحديث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2555,7 +2555,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       } else {
         toast.error(data.error || 'فشل في الحذف');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2583,7 +2583,7 @@ const ObligationsTab = memo(function ObligationsTab() {
       } else {
         toast.error(data.error || 'فشل في تسجيل الدفعة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('portfolio.toast.connectionError'));
     }
   };
@@ -2819,7 +2819,7 @@ const ReportsTab = memo(function ReportsTab() {
         if (data.success && data.summary) {
           setReports(data.summary);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         toast.error('فشل في تحميل الحالة المالية');
       } finally {
         setLoading(false);

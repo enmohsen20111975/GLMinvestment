@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
           if (Array.isArray(parsed)) {
             tickers = parsed.filter((t) => typeof t === 'string').slice(0, 20);
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           /* ignore */
         }
         return {
@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
     } catch (queryErr) {
       try {
         db.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
       console.error('[mobile/news] query error:', queryErr);

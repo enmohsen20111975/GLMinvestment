@@ -16,7 +16,7 @@ export async function GET() {
   let db: Database.Database;
   try {
     db = new Database(dbPath, { readonly: true, timeout: 3000 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     db = new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
   }
 

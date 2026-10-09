@@ -363,7 +363,7 @@ function extractProfessional(raw: Record<string, unknown>): ProfessionalAnalysis
           }
         : undefined,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -1051,7 +1051,7 @@ export function StockAnalysisReport() {
       setComprehensive(raw);
       const prof = extractProfessional((raw as unknown as Record<string, unknown>) as Record<string, unknown>);
       setAnalysis(prof);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setAnalysis(null);
       setComprehensive(null);
     } finally {

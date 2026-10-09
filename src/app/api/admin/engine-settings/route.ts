@@ -132,11 +132,11 @@ async function fetchWithTimeout(
     let data: unknown = null;
     try {
       data = await res.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore JSON parse errors */
     }
     return { ok: res.ok, status: res.status, data };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { ok: false, status: 0, data: null };
   }
 }

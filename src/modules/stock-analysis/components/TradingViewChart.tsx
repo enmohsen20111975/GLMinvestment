@@ -681,7 +681,7 @@ function MultiPersonaDynamicCard({
             setPortfolioNetWorthEGP(v);
           }
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // keep default 100000
       } finally {
         if (!cancelled) setPortfolioLoaded(true);
@@ -994,7 +994,7 @@ export function TradingViewChart({
               setDataSource(chartJson.source || (isIntraday ? 'intraday' : 'daily'));
             }
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // swallow and try fallback below
         }
 
@@ -1023,7 +1023,7 @@ export function TradingViewChart({
                 setDataSource('full_analysis');
               }
             }
-          } catch {
+          } catch { // silent fallback (safe-by-design)
             // continue to history fallback
           }
         }

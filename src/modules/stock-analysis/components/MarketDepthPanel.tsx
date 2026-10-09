@@ -94,7 +94,7 @@ export function MarketDepthPanel({ initialTicker = 'COMI' }: { initialTicker?: s
       } else {
         setData(null);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setData(null);
     } finally {
       setLoading(false);

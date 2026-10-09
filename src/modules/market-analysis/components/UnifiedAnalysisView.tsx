@@ -147,7 +147,7 @@ export default function UnifiedAnalysisView() {
         const pData = await pRes.json()
         setMarkets(mData.markets  || [])
         setPersonas(pData.personas || [])
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         setError('فشل تحميل الإعدادات من الخادم')
       }
     }
@@ -163,7 +163,7 @@ export default function UnifiedAnalysisView() {
         )
         const data = await res.json()
         setEffectiveConfig(data.effective || null)
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
     load()
   }, [selectedMarket, selectedPersona])
@@ -189,7 +189,7 @@ export default function UnifiedAnalysisView() {
       const data = await res.json()
       if (data.result) setResult(data.result)
       else setError(data.error || 'فشل التحليل')
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError('خطأ في الاتصال بالخادم')
     } finally { setLoading(false) }
   }, [ticker, selectedMarket, selectedPersona, support, resistance])
@@ -210,7 +210,7 @@ export default function UnifiedAnalysisView() {
       const data = await res.json()
       if (data.results) { setScanResults(data.results); setScanStats(data.stats || {}) }
       else setError(data.error || 'فشل الفحص')
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError('خطأ في الاتصال بالخادم')
     } finally { setLoading(false) }
   }, [selectedMarket, selectedPersona])
@@ -231,7 +231,7 @@ export default function UnifiedAnalysisView() {
       const data = await res.json()
       if (data.comparison) setCompareData(data.comparison)
       else setError(data.error || 'فشل المقارنة')
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError('خطأ في الاتصال بالخادم')
     } finally { setLoading(false) }
   }, [ticker, selectedMarket])

@@ -224,7 +224,7 @@ function formatCell(value: unknown): React.ReactNode {
   if (typeof value === 'object') {
     try {
       return <span className="font-mono text-[11px]">{JSON.stringify(value).slice(0, 120)}</span>;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return String(value);
     }
   }
@@ -269,7 +269,7 @@ function formatDateTime(iso: string): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return iso;
   }
 }
@@ -292,7 +292,7 @@ function loadHistory(): string[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.slice(0, HISTORY_LIMIT) : [];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -304,7 +304,7 @@ function saveHistory(sql: string): string[] {
   const next = [sql, ...filtered].slice(0, HISTORY_LIMIT);
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* ignore quota errors */
   }
   return next;

@@ -507,7 +507,7 @@ function AutoTithesCard() {
             );
           }
         }
-      } catch { /* reports endpoint optional — fail soft */ }
+      } catch { /* reports endpoint optional — fail soft - safe-by-design */ }
 
       // 3) Active obligations — monthly debts to deduct from gross income.
       let monthlyDebts = 0;
@@ -523,7 +523,7 @@ function AutoTithesCard() {
             );
           }
         }
-      } catch { /* obligations endpoint optional — fail soft */ }
+      } catch { /* obligations endpoint optional — fail soft - safe-by-design */ }
 
       // otherIncome: reserved for future income fields; currently 0.
       const otherIncome = 0;

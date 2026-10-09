@@ -28,7 +28,7 @@ function safeParseJson<T>(val: Record<string, unknown>, fallback: T): T {
   if (typeof val !== 'string') return val as T;
   try {
     return JSON.parse(val);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -45,7 +45,7 @@ async function triggerCachePurge() {
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
     }).catch(() => {});
-  } catch {}
+  } catch { /* safe-by-design */ }
 }
 
 /**

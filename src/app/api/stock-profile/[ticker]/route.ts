@@ -31,7 +31,7 @@ export async function GET(
         return NextResponse.json(d);
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

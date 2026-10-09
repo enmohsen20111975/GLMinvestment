@@ -160,7 +160,7 @@ export function PromoCodesAdmin() {
       } else {
         toast.error(data.error || 'فشل التحديث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('حدث خطأ في التحديث');
     }
   };
@@ -181,7 +181,7 @@ export function PromoCodesAdmin() {
       } else {
         toast.error(data.error || 'فشل في الحذف');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('حدث خطأ أثناء الحذف');
     }
   };

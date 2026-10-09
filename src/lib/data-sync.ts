@@ -398,7 +398,7 @@ export function parseStockPriceData(
         const data = JSON.parse(jsonStr) as Record<string, unknown>;
         const quote = extractQuoteFromJson(data, ticker);
         if (quote) return quote;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // JSON parse failed, try next pattern
       }
     }
@@ -644,7 +644,7 @@ export async function fetchHistoricalPrices(ticker: string): Promise<{
             }
           }
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Search failed, continue
       }
     }
@@ -732,7 +732,7 @@ export function parseHistoricalFromHtml(
           if (price) prices.push(price);
         }
         if (prices.length > 0) return prices;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // JSON parse failed
       }
     }

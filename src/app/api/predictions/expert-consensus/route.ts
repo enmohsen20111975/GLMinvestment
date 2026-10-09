@@ -43,7 +43,7 @@ export const dynamic = 'force-dynamic';
 function openDb(dbPath: string): Database.Database {
   try {
     return new Database(dbPath, { readonly: true, timeout: 5000, fileMustExist: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${dbPath}?immutable=1`, { readonly: true, timeout: 5000 });
   }
 }
@@ -116,7 +116,7 @@ function minutesSinceLastUpdate(lastUpdate: string | null): number | null {
     const d = new Date(lastUpdate.includes('T') ? lastUpdate : lastUpdate.replace(' ', 'T'));
     if (isNaN(d.getTime())) return null;
     return Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60)));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -126,7 +126,7 @@ function getColumnNames(db: Database.Database, table: string): Set<string> {
   try {
     const rows = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
     return new Set(rows.map(r => r.name));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Set();
   }
 }
@@ -473,7 +473,7 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    try { predDb?.close(); } catch { /* ignore */ }
-    try { stocksDb?.close(); } catch { /* ignore */ }
+    try { predDb?.close(); } catch { /* ignore - safe-by-design */ }
+    try { stocksDb?.close(); } catch { /* ignore - safe-by-design */ }
   }
 }

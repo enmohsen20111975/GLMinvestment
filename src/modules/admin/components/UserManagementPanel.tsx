@@ -185,7 +185,7 @@ export function UserManagementPanel() {
           setBotStatus(svc.status === 'online' ? 'online' : svc.status === 'offline' ? 'offline' : 'unknown');
           setBotLastSeen(svc.last_seen || null);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // silent — don't spam toast
       }
     }
@@ -375,7 +375,7 @@ export function UserManagementPanel() {
           failCount++;
           failedIds.push(id);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         failCount++;
         failedIds.push(id);
       }
@@ -412,7 +412,7 @@ export function UserManagementPanel() {
         } else {
           failCount++;
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         failCount++;
       }
     }
@@ -442,7 +442,7 @@ export function UserManagementPanel() {
         } else {
           failCount++;
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         failCount++;
       }
     }

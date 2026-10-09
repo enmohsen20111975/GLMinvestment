@@ -220,12 +220,12 @@ export function NotificationCenter() {
             gain.connect(ctx.destination);
             osc.start();
             setTimeout(() => { osc.stop(); ctx.close(); }, 180);
-          } catch { /* ignore */ }
+          } catch { /* ignore - safe-by-design */ }
         }
         if (data.notifications?.length > 0) {
           lastSeenId = Math.max(...data.notifications.map((n: any) => Number(n.id)));
         }
-      } catch { /* silent \u2014 poller should never crash the UI */ }
+      } catch { /* silent \u2014 poller should never crash the UI - safe-by-design */ }
     }
 
     // First tick immediately, then every 60s

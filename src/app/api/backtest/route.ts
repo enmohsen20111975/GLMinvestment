@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   let body: Record<string, unknown> = {};
   try {
     body = await req.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // empty body — that's fine
   }
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fall through
   }
 

@@ -75,7 +75,7 @@ export const MarketRegimeBanner = memo(function MarketRegimeBanner({
       if (json && json.success) {
         setData(json);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Keep existing data gracefully
     } finally {
       setLoading(false);

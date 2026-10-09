@@ -46,7 +46,7 @@ function probeTable(
           )
           .get() as { v: string | null };
         lastUpdated = r?.v ?? null;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
     }

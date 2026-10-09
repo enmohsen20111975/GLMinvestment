@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json();
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — read from stocks.db + predictions.db
   try {
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
                 : null,
             persona: r.persona,
           }));
-      } catch {}
+      } catch { /* safe-by-design */ }
       pdb.close();
     }
 

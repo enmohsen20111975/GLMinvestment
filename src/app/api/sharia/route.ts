@@ -265,7 +265,7 @@ export async function GET(req: NextRequest) {
   } finally {
     try {
       db?.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
   }

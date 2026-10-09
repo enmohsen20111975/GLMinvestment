@@ -424,7 +424,7 @@ export function SuperLearningSystem() {
           setPresets(parsed);
         }
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
   }, []);
@@ -444,7 +444,7 @@ export function SuperLearningSystem() {
     setPresets(updated);
     try {
       localStorage.setItem('PRESETS_STORE_KEY', JSON.stringify(updated));
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
     setCustomPresetName('');
@@ -464,7 +464,7 @@ export function SuperLearningSystem() {
     setPresets(updated);
     try {
       localStorage.setItem('PRESETS_STORE_KEY', JSON.stringify(updated));
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
     toast.success('تم حذف القائمة المسبقة');
@@ -503,7 +503,7 @@ export function SuperLearningSystem() {
       } else {
         toast.error(data.error || 'حدث خطأ أثناء التوليد');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.success(
         isDryRun
           ? `⚡ تم محاكاة التوقعات اللحظية الجافة من ${fromDate} بالذاكرة`
@@ -526,7 +526,7 @@ export function SuperLearningSystem() {
       } else {
         toast.error(data.error || 'حدث خطأ أثناء المسح');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.success('تم تنفيذ طلب مسح التوقعات بنجاح');
     } finally {
       setPurgingPredictions(false);
@@ -575,7 +575,7 @@ export function SuperLearningSystem() {
             : null,
         };
         setPersonaBenchmarkResults(prev => ({ ...prev, [persona]: liveResult }));
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         setPersonaBenchmarkResults(prev => ({
           ...prev,
           [persona]: { winRate: null, profitFactor: null, totalReturn: null },

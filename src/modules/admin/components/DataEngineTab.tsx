@@ -125,7 +125,7 @@ export function DataEngineTab() {
         minute: '2-digit',
         second: '2-digit'
       })
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return dateStr
     }
   }

@@ -226,7 +226,7 @@ export function UsersManagement() {
       if (data.success && Array.isArray(data.promo_codes)) {
         setAvailablePromoCodes(data.promo_codes.filter((p: any) => p.is_active));
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
   }, []);
 
   const fetchUsers = useCallback(async () => {

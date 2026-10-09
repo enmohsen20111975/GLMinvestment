@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
   try {
     try {
       await access(CRONTAB_PATH);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         {
           success: false,
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
           existsLog = true;
           lastRun = st.mtime.toISOString();
           lastRunHuman = timeAgo(lastRun);
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // Log file doesn't exist (cron never ran or log was rotated)
           existsLog = false;
         }

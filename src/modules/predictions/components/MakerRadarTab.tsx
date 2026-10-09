@@ -655,7 +655,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         }
         setStockMap(map);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent — sector strip will just hide
     }
   }, [market]);
@@ -718,7 +718,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
         }
       }
       setPredMap(map);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent — prediction column stays empty
     }
   }, [market]);

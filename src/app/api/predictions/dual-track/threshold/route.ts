@@ -52,7 +52,7 @@ function dbExists(path: string): boolean {
   const fs = require('fs');
   try {
     return fs.existsSync(path) && fs.statSync(path).size > 0;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

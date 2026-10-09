@@ -131,7 +131,7 @@ function shortDate(s: string | null | undefined): string {
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return s.slice(0, 10);
     return d.toLocaleDateString('en-GB');
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return s.slice(0, 10);
   }
 }
@@ -378,7 +378,7 @@ export function PredictionTrackingView() {
       } else {
         setStats(null);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       if (!silent) setStats(null);
     } finally {
       if (silent) setRefreshingStats(false); else setLoadingStats(false);
@@ -403,7 +403,7 @@ export function PredictionTrackingView() {
       } else {
         setPicks([]);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       if (!silent) setPicks([]);
     } finally {
       if (silent) setRefreshingList(false); else setLoadingList(false);

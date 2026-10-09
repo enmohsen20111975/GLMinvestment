@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         "SELECT monthly_expenses FROM user_financial_settings WHERE user_id = ? LIMIT 1"
       ).get(userId) as any;
       monthlyExpenses = Number(row?.monthly_expenses || 0);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       monthlyExpenses = 0;
     }
 

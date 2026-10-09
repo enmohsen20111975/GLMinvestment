@@ -92,7 +92,7 @@ function openStocksDb(): Database.Database | null {
   const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
   try {
     return new Database(stocksDbPath, { readonly: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
            LEFT JOIN stocks s ON pa.stock_ticker = s.ticker COLLATE NOCASE
            WHERE pa.user_id = ? AND pa.stock_ticker IS NOT NULL AND pa.stock_ticker != ''`,
         ).all(userId) as PortfolioRow[];
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // portfolio_assets table missing or join failed — fall through with empty profile.
         portfolioRows = [];
       }
@@ -276,7 +276,7 @@ export async function GET(req: NextRequest) {
             for (const r of rows) {
               tickerToSector.set(r.ticker.toUpperCase(), r.sector || null);
             }
-          } catch {
+          } catch { // silent fallback (safe-by-design)
             // ignore — sectors will be null, picks still ranked by base score
           }
           db2.close();

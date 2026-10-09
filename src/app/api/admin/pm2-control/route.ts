@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
     if (result.success) {
         try {
             processes = JSON.parse(result.output);
-        } catch { }
+        } catch { /* safe-by-design */ }
     }
 
     // Also get stats

@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   let body = {};
   try {
     body = await request.json();
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // empty body OK
   }
 

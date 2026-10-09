@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
             stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
           }
           sdb.close();
-        } catch {}
+        } catch { /* safe-by-design */ }
         if (stockInfo.ticker) {
           try {
             const deRow = deDb.prepare('SELECT name, price, change_percent FROM stocks WHERE symbol = ? COLLATE NOCASE LIMIT 1').get(stockInfo.ticker) as Record<string, unknown>;
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
               stockInfo.price = Number(deRow.price || 0);
               stockInfo.change_percent = Number(deRow.change_percent || 0);
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
         const price = Number(stockInfo.price || 0);
         const above = Number(row.alert_price_above || 0);
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
           signal,
         };
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       enrichedItems = rows.map((row: Record<string, unknown>) => ({ id: row.id, ticker: '', name: '', price: 0 }));
     }
 

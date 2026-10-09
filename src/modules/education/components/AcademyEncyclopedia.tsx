@@ -1405,7 +1405,7 @@ function loadProgress(): AcademyProgress {
       completedLessonIds: parsed.completedLessonIds ?? [],
       quizScores: parsed.quizScores ?? {},
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { completedLessonIds: [], quizScores: {} };
   }
 }
@@ -1414,7 +1414,7 @@ function saveProgress(p: AcademyProgress) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
 }

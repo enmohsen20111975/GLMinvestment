@@ -38,7 +38,7 @@ export function PurgeCacheButton() {
           setStats(data.stats);
         }
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent
     } finally {
       setLoading(false);
@@ -88,7 +88,7 @@ export function PurgeCacheButton() {
       } else {
         toast.error(data.error || 'فشل مسح الكاش');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في الاتصال');
     } finally {
       setPurging(false);

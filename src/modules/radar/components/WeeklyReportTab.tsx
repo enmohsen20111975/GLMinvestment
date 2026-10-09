@@ -243,7 +243,7 @@ export function WeeklyReportTab({ market }: WeeklyReportTabProps) {
         { method: 'POST' },
       );
       await fetchData(false);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore — best-effort
     } finally {
       setRegenerating(false);

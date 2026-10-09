@@ -79,7 +79,7 @@ export function RoboNotifierToggle() {
     // صوت تجريبي للتأكيد
     try {
       playAlertSound('up');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
 

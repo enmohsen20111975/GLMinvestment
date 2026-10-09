@@ -424,7 +424,7 @@ export function MyStocksBriefing() {
           } else {
             setNews([]); // news.db missing or error — don't crash the widget.
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           setNews([]);
         }
       } else {

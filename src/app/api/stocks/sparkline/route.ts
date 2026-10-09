@@ -83,7 +83,7 @@ function fetchSingleSparkline(t: string, days: number) {
       }
     }
     phDb.close();
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2. stocks.db.stock_daily_prices
   try {
@@ -151,7 +151,7 @@ function fetchSingleSparkline(t: string, days: number) {
       setCache(key, result);
       return result;
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   const empty = {
     ticker: t,

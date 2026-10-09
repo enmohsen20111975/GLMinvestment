@@ -165,7 +165,7 @@ export function getTADAWULMarketStatus(date: Date = new Date()): MarketSessionSt
     if (t < 600) return { isOpen: false, reason: 'قبل الجلسة (10:00 ص)', marketNameAr: 'تداول السعودية', timezone: 'Asia/Riyadh', scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)' };
     if (t > 900) return { isOpen: false, reason: 'بعد الإغلاق (3:00 م)', marketNameAr: 'تداول السعودية', timezone: 'Asia/Riyadh', scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)' };
     return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'تداول السعودية', timezone: 'Asia/Riyadh', scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)' };
-  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'تداول السعودية', timezone: 'Asia/Riyadh', scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)' }; }
+  } catch { /* safe-by-design */ return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'تداول السعودية', timezone: 'Asia/Riyadh', scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)' }; }
 }
 
 /** KSE (Kuwait) — Sun-Thu, 08:00-12:45 Kuwait time
@@ -190,7 +190,7 @@ export function getKSEMarketStatus(date: Date = new Date()): MarketSessionStatus
     if (t < 480) return { isOpen: false, reason: 'قبل الجلسة (8:00 ص)', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
     if (t > 765) return { isOpen: false, reason: 'بعد الإغلاق (12:45 م)', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
     return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
-  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' }; }
+  } catch { /* safe-by-design */ return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' }; }
 }
 
 /** QSE (Qatar) — Sun-Thu, 09:30-13:00 Doha time
@@ -214,7 +214,7 @@ export function getQSEMarketStatus(date: Date = new Date()): MarketSessionStatus
     if (t < 570) return { isOpen: false, reason: 'قبل الجلسة (9:30 ص)', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
     if (t > 780) return { isOpen: false, reason: 'بعد الإغلاق (1:00 م)', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
     return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
-  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' }; }
+  } catch { /* safe-by-design */ return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' }; }
 }
 
 /** US Market (NYSE/NASDAQ) — Mon-Fri, 09:30-16:00 ET (14:30-21:00 UTC) */
@@ -235,5 +235,5 @@ export function getUSMarketStatus(date: Date = new Date()): MarketSessionStatus 
     if (t < 570) return { isOpen: false, reason: 'Before market (9:30 AM ET)', marketNameAr: 'البورصة الأمريكية', timezone: 'America/New_York', scheduleText: 'Mon-Fri (9:30 AM - 4:00 PM ET)' };
     if (t > 960) return { isOpen: false, reason: 'After close (4:00 PM ET)', marketNameAr: 'البورصة الأمريكية', timezone: 'America/New_York', scheduleText: 'Mon-Fri (9:30 AM - 4:00 PM ET)' };
     return { isOpen: true, reason: 'Market open', marketNameAr: 'البورصة الأمريكية', timezone: 'America/New_York', scheduleText: 'Mon-Fri (9:30 AM - 4:00 PM ET)' };
-  } catch { return { isOpen: false, reason: 'Error', marketNameAr: 'البورصة الأمريكية', timezone: 'America/New_York', scheduleText: 'Mon-Fri (9:30 AM - 4:00 PM ET)' }; }
+  } catch { /* safe-by-design */ return { isOpen: false, reason: 'Error', marketNameAr: 'البورصة الأمريكية', timezone: 'America/New_York', scheduleText: 'Mon-Fri (9:30 AM - 4:00 PM ET)' }; }
 }

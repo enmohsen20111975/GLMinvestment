@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   try {
     try {
       await access(DB_PATH);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         { success: false, error: 'predictions_db_missing', path: DB_PATH },
         { status: 503 },

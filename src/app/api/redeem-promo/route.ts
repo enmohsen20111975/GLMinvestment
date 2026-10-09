@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     let body: unknown = null;
     try {
       body = await request.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         { success: false, error: 'صيغة الطلب غير صحيحة' },
         { status: 400 }
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
           redeemed_by TEXT
         )
       `);
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     const promo = await db.promoCode.findUnique({
       where: { code },

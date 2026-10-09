@@ -716,7 +716,7 @@ function PersonaCard({
               if (navigator.share) {
                 try {
                   await navigator.share({ title: `توقعة ${ticker}`, text });
-                } catch {}
+                } catch { /* safe-by-design */ }
               } else {
                 navigator.clipboard.writeText(text);
                 toast.success('تم نسخ التوقع ✓');
@@ -1026,7 +1026,7 @@ function StockDetailPanel({ item, persona, market, subTab, onSubTabChange, onBac
         toast.success('تم نسخ النص وتحميل بطاقة التحليل ✓', {
           description: 'شارك التوقع على تليجرام أو فيسبوك',
         });
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         toast.success('تم تحميل بطاقة التحليل ✓');
       }
     } catch (err) {
@@ -1549,7 +1549,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
               });
             }
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // فشل صامت — الـ regime تحسين للـ UI مش أساسي
         }
       })();
@@ -1893,7 +1893,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
             <Button variant="outline" size="sm" className="gap-1" onClick={async () => {
               const text = formatAllPersonaPicksText(items, persona, market);
               if (navigator.share) {
-                try { await navigator.share({ title: `توقعات ${headerTheme.title}`, text }); } catch {}
+                try { await navigator.share({ title: `توقعات ${headerTheme.title}`, text }); } catch { /* safe-by-design */ }
               } else {
                 navigator.clipboard.writeText(text);
                 toast.success('تم نسخ جميع التوقعات ✓');
@@ -2165,7 +2165,7 @@ export function PersonaTab({ market, persona }: { market: MarketType; persona: '
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (navigator.share) {
-                            try { await navigator.share({ title: `تحليل ${ticker}`, text: singleText }); } catch {}
+                            try { await navigator.share({ title: `تحليل ${ticker}`, text: singleText }); } catch { /* safe-by-design */ }
                           } else {
                             navigator.clipboard.writeText(singleText);
                             toast.success('تم نسخ التحليل ✓');

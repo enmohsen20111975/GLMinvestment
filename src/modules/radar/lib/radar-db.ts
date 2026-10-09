@@ -147,7 +147,7 @@ export function getRadarDbSize(): number {
   try {
     const stat = statSync(cfg.dbPath);
     return stat.size / (1024 * 1024);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }

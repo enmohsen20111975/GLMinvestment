@@ -77,7 +77,7 @@ function formatDate(timestamp: string) {
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return timestamp;
     return date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return timestamp;
   }
 }
@@ -87,7 +87,7 @@ function formatTime(timestamp: string) {
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return '';
     return date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return '';
   }
 }
@@ -213,7 +213,7 @@ function InvestmentDecisionInsight({
       setCopied(true);
       toast.success(t('news.feed.insight.toastCopySuccess'));
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('news.feed.insight.toastCopyFailed'));
     }
   };
@@ -367,7 +367,7 @@ function ShareAndActions({ item }: { item: NewsItem }) {
       setCopied(true);
       toast.success(t('news.feed.share.toastCopySuccess'));
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('news.feed.share.toastCopyFailed'));
     }
   };

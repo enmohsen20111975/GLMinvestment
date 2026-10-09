@@ -265,7 +265,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
           <Button variant="outline" size="sm" className="gap-1" onClick={async () => {
             const text = formatAllExpertPredictionsText(stocks, market);
             if (navigator.share) {
-              try { await navigator.share({ title: 'توقعات الخبراء', text }); } catch {}
+              try { await navigator.share({ title: 'توقعات الخبراء', text }); } catch { /* safe-by-design */ }
             } else {
               navigator.clipboard.writeText(text);
               toast.success('تم نسخ جميع التوقعات ✓');
@@ -406,7 +406,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                     if (navigator.share) {
                       try {
                         await navigator.share({ title: `توقعة ${stock.ticker}`, text });
-                      } catch {}
+                      } catch { /* safe-by-design */ }
                     } else {
                       navigator.clipboard.writeText(text);
                       toast.success('تم نسخ التوقع ✓');
@@ -469,7 +469,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                         className="gap-1 h-7 text-xs"
                         onClick={async () => {
                           if (navigator.share) {
-                            try { await navigator.share({ title: `تحليل ${stock.ticker}`, text: singleText }); } catch {}
+                            try { await navigator.share({ title: `تحليل ${stock.ticker}`, text: singleText }); } catch { /* safe-by-design */ }
                           } else {
                             navigator.clipboard.writeText(singleText);
                             toast.success('تم نسخ التحليل ✓');

@@ -513,7 +513,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
       const predDate = new Date(prediction.prediction_date);
       const ageHours = (Date.now() - predDate.getTime()) / (1000 * 60 * 60);
       predictionIsFresh = ageHours <= 48;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       predictionIsFresh = false;
     }
   }
@@ -553,7 +553,7 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
   if (prediction?.analysis_json) {
     try {
       analysisDetails = JSON.parse(prediction.analysis_json) as AnalysisDetails;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       analysisDetails = null;
     }
   }

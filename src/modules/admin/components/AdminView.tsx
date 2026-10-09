@@ -495,7 +495,7 @@ export function AdminView() {
         // 1. حاول ضبط admin_session cookie تلقائياً (لو المستخدم أدمن مسجل بـ Google)
         try {
           await fetch('/api/admin/auth/auto-cookie', { method: 'POST' });
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // تجاهل الأخطاء — سنجرب stats بعدها
         }
         // 2. فحص صلاحية الأدمن
@@ -503,7 +503,7 @@ export function AdminView() {
         if (res.ok) {
           setDirectLoggedIn(true);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Not authenticated — that's fine, show login form
       }
     };
@@ -535,7 +535,7 @@ export function AdminView() {
             detail: activeTab,
           }),
         });
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore tracking errors
       }
     };
@@ -610,7 +610,7 @@ export function AdminView() {
       if (data.success) {
         setPredictionStats(data.performance);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent
     }
   }, []);
@@ -671,7 +671,7 @@ export function AdminView() {
         setFeedback(data.feedback || []);
         setFeedbackCount(data.summary?.new ?? undefined);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* non-critical */
     } finally {
       setFeedbackLoading(false);
@@ -729,7 +729,7 @@ export function AdminView() {
       } else {
         toast.error(data.details?.errors?.[0] || 'فشل التحديث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في التحديث');
     } finally {
       setSyncing(false);
@@ -786,7 +786,7 @@ export function AdminView() {
       } else {
         setDirectLoginError(data.error || 'بيانات الدخول غير صحيحة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setDirectLoginError('خطأ في الاتصال');
     } finally {
       setDirectLoginLoading(false);

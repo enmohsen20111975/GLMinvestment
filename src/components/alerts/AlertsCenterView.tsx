@@ -307,7 +307,7 @@ function ObligationAlertCard({ alert }: { alert: ObligationAlert }) {
         day: 'numeric',
       });
     }
-  } catch { /* keep raw */ }
+  } catch { /* keep raw - safe-by-design */ }
 
   return (
     <Card className={cn('transition-all duration-200 hover:shadow-md', severityColors[alert.severity])}>

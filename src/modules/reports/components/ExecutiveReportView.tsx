@@ -530,7 +530,7 @@ export function ExecutiveReportView({
           const t = new Date(dateStr.replace(' ', 'T')).getTime();
           if (isNaN(t)) return false;
           return t >= cutoffTs;
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           return false;
         }
       });
