@@ -122,6 +122,22 @@ export async function GET(request: Request) {
 
     const db = new Database(DB_PATH, { readonly: true });
 
+    // P0-FIX (2026-10-09, Round 2): لو market_news table مش موجودة → fallback لـ news_articles
+    const hasMarketNews = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='market_news'").get();
+    if (!hasMarketNews) {
+      // sandbox fallback: استخدم news_articles لو موجودة
+      const hasNewsArticles = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='news_articles'").get();
+      if (hasNewsArticles) {
+        // alias market_news → news_articles
+        const news = db.prepare(`SELECT * FROM news_articles ORDER BY published_at DESC LIMIT ? OFFSET ?`).all(limit, offset) as any[];
+        const total = db.prepare('SELECT COUNT(*) as count FROM news_articles').get() as { count: number };
+        db.close();
+        return NextResponse.json({ news, total: total.count, markets: [], source: 'news_articles_fallback' });
+      }
+      db.close();
+      return NextResponse.json({ news: [], total: 0, markets: [], source: 'no_table' });
+    }
+
     let query = 'SELECT * FROM market_news';
     const params: any[] = [];
     const conditions: string[] = [];
@@ -164,9 +180,20 @@ export async function GET(request: Request) {
       news = db.prepare(query).all(...params);
     } catch (e) {
       // fallback: retry بدون market_code filter (column مش موجود في الإنتاج)
-      const fallbackQuery = query.replace(/\(market_code = \? OR market = \? OR market_code IS NULL AND market = \?\)/g, 'market = ?');
-      const fallbackParams = params.filter((_, i) => i === 0 || params[i] !== params[i-1]); // keep unique
-      news = db.prepare(fallbackQuery).all(market);
+      // استبدل أي شرط فيه market_code بـ market = ? بس
+      const fallbackQuery = query.replace(
+        /\(market_code = \? OR market = \? OR market_code IS NULL AND market = \?\)/g,
+        'market = ?'
+      );
+      // params: [market, market, market, ...] → keep بس الأول
+      const fallbackParams = [market];
+      try {
+        news = db.prepare(fallbackQuery).all(...fallbackParams);
+      } catch (e2) {
+        // fallback أخير: رجّع كل الأخبار بدون فلتر
+        const noFilterQuery = `SELECT * FROM market_news ORDER BY fetched_at DESC LIMIT ${limit} OFFSET ${offset}`;
+        news = db.prepare(noFilterQuery).all();
+      }
     }
 
     let countQuery = 'SELECT COUNT(*) as count FROM market_news';
@@ -190,7 +217,22 @@ export async function GET(request: Request) {
     if (countConditions.length > 0) {
       countQuery += ' WHERE ' + countConditions.join(' AND ');
     }
-    const total = db.prepare(countQuery).get(...countParams) as { count: number };
+    // P0-FIX: try/catch للـ countQuery برضو (لو market_code مش موجود)
+    let total: { count: number };
+    try {
+      total = db.prepare(countQuery).get(...countParams) as { count: number };
+    } catch (e) {
+      // fallback: count بدون market_code
+      const fallbackCountQuery = countQuery.replace(
+        /\(market_code = \? OR market = \? OR market_code IS NULL AND market = \?\)/g,
+        'market = ?'
+      );
+      try {
+        total = db.prepare(fallbackCountQuery).get(market) as { count: number };
+      } catch (e2) {
+        total = db.prepare('SELECT COUNT(*) as count FROM market_news').get() as { count: number };
+      }
+    }
 
     const markets = db.prepare('SELECT DISTINCT market FROM market_news').all() as { market: string }[];
 
