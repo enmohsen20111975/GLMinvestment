@@ -342,9 +342,47 @@ export function getUnifiedStockData(ticker: string): UnifiedStockData | null {
                atr_at_entry, analysis_json, status
         FROM predictions
         WHERE ticker = ? ${marketFilter}
+          AND (status IS NULL OR status NOT IN ('REJECTED_BAD_RR'))
         ORDER BY prediction_date DESC LIMIT 1
       `)
       .get(tickerUpper, ...marketParams) ?? null) as PredictionRow | null;
+
+    // AUDIT-FIX (2026-10-09): لو مفيش prediction، جرّب stored_analyses
+    // (fallback حقيقي من بيانات محرك التحليل — مش fabrication)
+    if (!prediction) {
+      try {
+        const sa = predDb
+          .prepare(`
+            SELECT ticker, maestro_score as master_score, recommendation as signal,
+                   entry_price, target_price, stop_loss, risk_reward,
+                   confidence, regime, analysis_json
+            FROM stored_analyses
+            WHERE ticker = ?
+            ORDER BY updated_at DESC LIMIT 1
+          `)
+          .get(tickerUpper) as any;
+        if (sa) {
+          prediction = {
+            id: 0,
+            signal: sa.signal?.toUpperCase() || null,
+            signal_type: sa.signal || null,
+            entry_price: sa.entry_price || null,
+            target_price: sa.target_price || null,
+            target_price_2: null,
+            stop_loss: sa.stop_loss || null,
+            master_score: sa.master_score || null,
+            risk_reward: sa.risk_reward || null,
+            confidence: sa.confidence || null,
+            prediction_date: null,
+            atr_at_entry: null,
+            analysis_json: sa.analysis_json || null,
+            status: 'stored_analysis_fallback',
+          } as PredictionRow;
+        }
+      } catch (e) {
+        // stored_analyses table might not exist — silent fallback
+      }
+    }
     predDb.close();
   } catch (e) {
     console.error('[unified-stock-data] predictions.db read failed:', e);
