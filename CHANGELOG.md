@@ -12,6 +12,23 @@
 
 ---
 
+## [2026-10-09 — PHASE-2-ADMIN-PANEL] — لوحة الأدمن (12 تحسين)
+
+### أُضيف (New)
+- **Mission Control**: عدّاد صفوف DB + تنبيه أحمر للقواعد المتأخرة >2h + حالة Scrapers (TradingView/Yahoo/EGKSCO/metals.dev)
+- **Predictions**: زر "إعادة توليد التوقعات لسوق معين" (dropdown 6 أسواق + toast cron-auto)
+- **News**: فلتر High-Impact Catalysts (dropdown 0/40/70/85) + إصلاح admin/news API
+- **Subscribers**: جدول المشتركين حسب الباقة (free/premium/admin/VIP) + مؤشر مزامنة بوت + placeholder Paymob
+- **Telegram**: AlertDialog معاينة الرسالة كاملة قبل النشر + زر "تأكيد النشر"
+
+### مُتحقَّق منه (Verified)
+- ✅ lint: 0 errors
+- ✅ TS: -2 errors (fixed 2 pre-existing in admin/news route)
+- ✅ Rule 27: NULL → "—" (لا fabrication)
+- ✅ شغل الفريق محترم (audit scripts + 06-AUDIT-FINDINGS.md untouched)
+
+---
+
 <<<<<<< HEAD
 ## [2026-10-09 — AUDIT-DEEP-INSPECTION] — Main Agent (Z.ai Code)
 
