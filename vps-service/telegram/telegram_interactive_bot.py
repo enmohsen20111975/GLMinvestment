@@ -529,22 +529,69 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
     return radar_info
 
 DAILY_QUERY_LIMIT_TRIAL = 5
-_daily_query_counts: Dict[str, int] = {}
+# P1-FIX (2026-10-09, Round 2): persist daily query count في auth.db بدل in-memory
+# قبل كده: _daily_query_counts Dict بتتمسح لما البوت يعمل restart
+# دلوقتي: بنحفظ في auth.db.usage_daily (Prisma)
+_daily_query_counts: Dict[str, int] = {}  # in-memory cache (fallback)
+
+def _get_db_path():
+    """جيب مسار auth.db."""
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(root, '..', 'db', 'auth.db')
 
 def check_and_increment_daily_limit(chat_id: int) -> Tuple[bool, int, int]:
     """
     فحص وزيادة عداد الاستعلامات اليومي لمستخدمي الفترة التجريبية.
+    P1-FIX: persist في auth.db.usage_daily (مش in-memory بس).
     Returns: (is_allowed, current_count, remaining_today)
     """
     today_key = f"{chat_id}:{time.strftime('%Y-%m-%d')}"
-    if len(_daily_query_counts) > 5000:
-        _daily_query_counts.clear()
+    today_date = time.strftime('%Y-%m-%d')
 
-    count = _daily_query_counts.get(today_key, 0)
+    # 1) جيب العدد من DB (source of truth)
+    db_count = 0
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            # chat_id = user_id في البوت (بنستخدم telegram_chat_id)
+            row = conn.execute(
+                "SELECT ai_messages_used FROM usage_daily WHERE user_id = ? AND date = ?",
+                (str(chat_id), today_date)
+            ).fetchone()
+            db_count = row[0] if row else 0
+            conn.close()
+    except Exception:
+        # fallback لـ in-memory لو DB مش متاح
+        db_count = _daily_query_counts.get(today_key, 0)
+
+    # 2) in-memory cache (fast path)
+    count = max(db_count, _daily_query_counts.get(today_key, 0))
     if count >= DAILY_QUERY_LIMIT_TRIAL:
         return False, count, 0
+
     new_count = count + 1
-    _daily_query_counts[today_key] = new_count
+    _daily_query_counts[today_key] = new_count  # cache update
+
+    # 3) persist في DB
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.execute("""
+                INSERT INTO usage_daily (id, user_id, date, ai_messages_used, created_at, updated_at)
+                VALUES (lower(hex(randomblob(8))), ?, ?, ?, datetime('now'), datetime('now'))
+                ON CONFLICT(user_id, date) DO UPDATE SET
+                    ai_messages_used = ?, updated_at = datetime('now')
+            """, (str(chat_id), today_date, new_count, new_count))
+            conn.commit()
+            conn.close()
+    except Exception:
+        pass  # in-memory fallback
+
     remaining = max(0, DAILY_QUERY_LIMIT_TRIAL - new_count)
     return True, new_count, remaining
 

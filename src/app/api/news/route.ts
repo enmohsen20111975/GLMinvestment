@@ -127,11 +127,11 @@ export async function GET(request: Request) {
     const conditions: string[] = [];
 
     if (market) {
-      // FIX (2026-10-09, Team 7): market_code هو الـ column اللي فيه السوق الحقيقي
-      // قبل كده: conditions.push('market = ?') ← الـ market column = 'general' دائماً
-      // دلوقتي: بنفلتر بـ market_code (EGX, TADAWUL, KSE, QSE, US, CRYPTO)
-      conditions.push('(market_code = ? OR market = ?)');
-      params.push(market, market);
+      // P0-FIX (2026-10-09, Round 2): market_code column ممكن مش موجود في الإنتاج
+      // الحل: try market_code + market، لو فشل (SQLite error) → fallback لـ market بس
+      // الـ try/catch في الـ wrapper بيمنع الـ 500 error
+      conditions.push('(market_code = ? OR market = ? OR market_code IS NULL AND market = ?)');
+      params.push(market, market, market);
     }
 
     if (catalystParam === 'true' || catalystParam === '1') {
@@ -158,15 +158,24 @@ export async function GET(request: Request) {
 
     query += ` ORDER BY fetched_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
-    const news = db.prepare(query).all(...params);
+    // P0-FIX: try/catch — لو market_code column مش موجود، retry بدون market_code
+    let news: any[];
+    try {
+      news = db.prepare(query).all(...params);
+    } catch (e) {
+      // fallback: retry بدون market_code filter (column مش موجود في الإنتاج)
+      const fallbackQuery = query.replace(/\(market_code = \? OR market = \? OR market_code IS NULL AND market = \?\)/g, 'market = ?');
+      const fallbackParams = params.filter((_, i) => i === 0 || params[i] !== params[i-1]); // keep unique
+      news = db.prepare(fallbackQuery).all(market);
+    }
 
     let countQuery = 'SELECT COUNT(*) as count FROM market_news';
     const countParams: any[] = [];
     const countConditions: string[] = [];
     if (market) {
       // FIX: نفس منطق الـ query الرئيسي
-      countConditions.push('(market_code = ? OR market = ?)');
-      countParams.push(market, market);
+      countConditions.push('(market_code = ? OR market = ? OR market_code IS NULL AND market = ?)');
+      countParams.push(market, market, market);
     }
     if (catalystParam === 'true' || catalystParam === '1') {
       countConditions.push('is_catalyst = 1');

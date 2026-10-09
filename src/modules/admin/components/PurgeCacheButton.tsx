@@ -57,6 +57,12 @@ export function PurgeCacheButton() {
   }, [freedMB]);
 
   const handlePurge = async (scope: 'all' | 'cache_only' | 'predictions_only') => {
+    // P0-FIX (2026-10-09, Round 2): إضافة confirmation dialog قبل الـ purge
+    // قبل كده: بيمسح فوراً بدون تأكيد (خطر!)
+    const scopeText = scope === 'all' ? 'كل الكاش + التوقعات' : scope === 'cache_only' ? 'الكاش فقط' : 'التوقعات فقط';
+    if (!confirm(`⚠️ تأكيد عملية المسح!\n\nسيتم حذف: ${scopeText}\n\nهذه العملية لا يمكن التراجع عنها. هل أنت متأكد؟`)) {
+      return;
+    }
     setPurging(true);
     setFreedMB(null);
     try {
