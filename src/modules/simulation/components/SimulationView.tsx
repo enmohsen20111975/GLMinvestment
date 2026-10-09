@@ -776,7 +776,7 @@ export function SimulationView() {
   const chartData = useMemo(() => {
     return simState.history.map((h) => ({
       time: h.date,
-      value: Number(h.(portfolioValue ?? 0).toFixed(2)),
+      value: Number((h.portfolioValue ?? 0).toFixed(2)),
     }));
   }, [simState.history]);
 

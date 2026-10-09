@@ -1412,7 +1412,7 @@ export function ExecutiveReportView({
                     {cumulativeProfitData.length > 0 && (
                       <Badge variant="outline" className="text-[11px] text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
                         تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1].cumulative > 0 ? '+' : ''}
-                        {cumulativeProfitData[cumulativeProfitData.length - 1].(cumulative ?? 0).toFixed(1)}%
+                        {(cumulativeProfitData[cumulativeProfitData.length - 1].cumulative ?? 0).toFixed(1)}%
                       </Badge>
                     )}
                   </div>

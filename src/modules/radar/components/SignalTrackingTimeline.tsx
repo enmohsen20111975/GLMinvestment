@@ -219,7 +219,7 @@ function PriceJourneySVG({
 
         {/* Area under the curve */}
         <path
-          d={`${pathD} L ${(last.x ?? 0).toFixed(1)} ${H - padY} L ${points[0].(x ?? 0).toFixed(1)} ${H - padY} Z`}
+          d={`${pathD} L ${(last.x ?? 0).toFixed(1)} ${H - padY} L ${(points[0].x ?? 0).toFixed(1)} ${H - padY} Z`}
           fill="url(#timeline-grad)"
           stroke="none"
         />

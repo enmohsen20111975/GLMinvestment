@@ -1520,7 +1520,7 @@ export function PredictionTrackingDashboard({
                     ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                 )}>
-                  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{cumulativeProfitData[cumulativeProfitData.length - 1]?.(cumulative ?? 0).toFixed(2)}%
+                  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{(cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative ?? 0).toFixed(2)}%
                 </Badge>
               </div>
             </div>
