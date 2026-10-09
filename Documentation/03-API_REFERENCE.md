@@ -215,7 +215,7 @@
 
 ## §4 الأسهم والسوق (EGX)
 
-### Stocks (26 routes)
+### Stocks (27 routes)
 | Method | Path | الوصف |
 |--------|------|------|
 | `GET` | `/stocks` | قائمة كل الأسهم (مع آخر سعر) |
@@ -227,6 +227,7 @@
 | `GET` | `/stocks/[ticker]/news` | أخبار السهم |
 | `GET` | `/stocks/[ticker]/comprehensive` | تحليل شامل (فني + أساسي + سيولة) |
 | `GET` | `/stocks/[ticker]/professional-analysis` | تحليل احترافي مفصّل |
+| `GET` | `/stocks/[ticker]/expert-analysis` | 🆕 تحليل خبير احترافي شامل (فني + أساسي + مخاطر + تقرير منسق) — 2026-10-09 |
 | `GET` | `/stocks/[ticker]/recommendation` | توصية السهم الحالية |
 | `GET` | `/stocks/[ticker]/publish-data` | بيانات جاهزة للنشر (تيليجرام/سوشيال) |
 | `GET` | `/stocks/[ticker]/dual-persona` | تحليل بزاويتين (مضارب/مستثمر) |
