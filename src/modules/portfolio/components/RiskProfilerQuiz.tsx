@@ -464,7 +464,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
           {/* توقع Rebalancing (static hint — kept for context) */}
           {!currentAllocation && (
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800">
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/30 border border-teal-200 dark:border-teal-800">
               <p className="text-xs text-teal-800 dark:text-teal-300 leading-relaxed">
                 <strong>توقّع المستشار الآلي:</strong> قارن توزيع محفظتك الحالي بالتوزيع المثالي أعلاه. إذا تجاوز الفرق لأي أصل نسبة 10%، يُنصح بإعادة التوازن (بيع الزائد وشراء الناقص) للبقاء ضمن نطاق شخصيتك الاستثمارية.
               </p>

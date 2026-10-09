@@ -201,7 +201,7 @@ export function PromoCodesAdmin() {
       case 'premium':
         return { label: 'باقة المحترفين', color: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40' };
       case 'normal':
-        return { label: 'الباقة العادية', color: 'bg-primary/20 text-primary dark:text-blue-400 border-primary/40' };
+        return { label: 'الباقة العادية', color: 'bg-primary/20 text-primary dark:text-slate-400 border-primary/40' };
       default:
         return { label: tier, color: 'bg-muted text-muted-foreground border-border' };
     }

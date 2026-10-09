@@ -298,7 +298,7 @@ function statusBadgeClass(variant: ProgressRowProps['variant'], status: string):
   }
   if (status === 'hit') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400';
   if (status === 'approaching') return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
-  if (variant === 'target_2') return 'bg-blue-100 text-primary dark:bg-blue-950/40 dark:text-blue-400';
+  if (variant === 'target_2') return 'bg-slate-100 text-primary dark:bg-slate-900/40 dark:text-slate-400';
   return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
 }
 
@@ -351,7 +351,7 @@ function eventIcon(event: TimelineEventType): React.ReactNode {
 
 function eventDotClass(event: TimelineEventType): string {
   switch (event) {
-    case 'signal':    return 'bg-primary border-blue-300';
+    case 'signal':    return 'bg-primary border-slate-300';
     case 'milestone': return 'bg-emerald-500 border-emerald-300';
     case 'alert':     return 'bg-amber-500 border-amber-300';
     case 'current':   return 'bg-primary border-primary-foreground ring-2 ring-primary/30';
@@ -457,10 +457,10 @@ function NotTrackedCard() {
 
 function NoPriceHistoryCard() {
   return (
-    <Card className="p-4 border-dashed border-blue-200 dark:border-blue-900/40 bg-blue-50/40 dark:bg-blue-950/10">
+    <Card className="p-4 border-dashed border-slate-200 dark:border-slate-800/40 bg-slate-50/40 dark:bg-slate-900/10">
       <div className="flex items-start gap-3">
-        <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
-          <Activity className="h-4 w-4 text-primary dark:text-blue-400" />
+        <div className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-900/40 flex items-center justify-center shrink-0">
+          <Activity className="h-4 w-4 text-primary dark:text-slate-400" />
         </div>
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">لا توجد بيانات أسعار كافية بعد</div>
@@ -647,7 +647,7 @@ export function SignalTrackingTimeline({ ticker }: { ticker: string }) {
   const isUp = data.current.change_pct >= 0;
 
   return (
-    <Card className="p-3 space-y-3 border-blue-200/60 dark:border-blue-900/40 bg-blue-50/20 dark:bg-blue-950/10">
+    <Card className="p-3 space-y-3 border-slate-200/60 dark:border-slate-800/40 bg-slate-50/20 dark:bg-slate-900/10">
       {/* ─── 2.1 Header ─── */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between flex-wrap gap-1">

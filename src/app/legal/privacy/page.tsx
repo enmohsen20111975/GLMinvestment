@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
           {/* Header */}
           <div className="bg-gradient-to-l from-primary to-primary px-8 py-6">
             <h1 className="text-3xl font-bold text-white">سياسة الخصوصية</h1>
-            <p className="text-blue-100 mt-2">آخر تحديث: مايو 2025</p>
+            <p className="text-slate-100 mt-2">آخر تحديث: مايو 2025</p>
           </div>
 
           {/* Content */}
@@ -183,7 +183,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             {/* إقرار */}
-            <section className="bg-blue-50 p-6 rounded-lg mt-8">
+            <section className="bg-slate-50 p-6 rounded-lg mt-8">
               <p className="text-gray-700 text-center font-medium">
                 باستخدامكم لمنصة دليل الاستثمار، فإنكم تقرؤون وتوافقون على سياسة الخصوصية هذه.
               </p>

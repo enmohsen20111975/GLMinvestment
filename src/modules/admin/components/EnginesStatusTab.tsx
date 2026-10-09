@@ -658,7 +658,7 @@ export function EnginesStatusTab() {
                 <EngineCard
                     engine={{ ...engines.data, pm2_name: engines.data.pm2_name || 'data-engine' }}
                     icon={<Database className="w-6 h-6 text-primary" />}
-                    color="bg-blue-100 dark:bg-blue-950/30"
+                    color="bg-slate-100 dark:bg-slate-900/30"
                     expanded={expandedEngine === 'data'}
                     onToggle={() => setExpandedEngine(expandedEngine === 'data' ? null : 'data')}
                     onPm2Action={handlePm2Action}
@@ -700,7 +700,7 @@ export function EnginesStatusTab() {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
+                        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/20 border border-slate-200">
                             <div className="flex items-center gap-2 mb-1">
                                 <Database className="w-4 h-4 text-primary" />
                                 <span className="font-medium text-sm">محرك البيانات</span>

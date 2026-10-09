@@ -206,7 +206,7 @@ export function DataEngineTab() {
             <Button
               variant="outline"
               size="lg"
-              className="border-primary text-primary hover:bg-blue-50 h-11"
+              className="border-primary text-primary hover:bg-slate-50 h-11"
               onClick={() => fetchData()}
             >
               <RefreshCw className="w-5 h-5" />
@@ -246,7 +246,7 @@ export function DataEngineTab() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3 mb-4">
-        <div className="bg-white rounded-xl p-4 text-center border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl p-4 text-center border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <TrendingUp className="w-6 h-6 mx-auto text-primary mb-2" />
           <div className="text-2xl font-bold text-primary">{formatNum(counts?.stocks || 0)}</div>
           <div className="text-sm text-slate-500 font-medium mt-1">STOCKS</div>
@@ -362,7 +362,7 @@ export function DataEngineTab() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full h-10 text-sm border-primary text-primary hover:bg-blue-50"
+            className="w-full h-10 text-sm border-primary text-primary hover:bg-slate-50"
             onClick={() => triggerAction('trigger_stocks')}
             disabled={triggeringAction !== null}
           >
@@ -502,7 +502,7 @@ export function DataEngineTab() {
         </div>
 
         {/* Run All */}
-        <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-4 border-2 border-emerald-400 shadow-sm">
+        <div className="bg-gradient-to-br from-emerald-50 to-slate-50 rounded-xl p-4 border-2 border-emerald-400 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <Zap className="w-6 h-6 text-emerald-600" />
           </div>
@@ -582,7 +582,7 @@ export function DataEngineTab() {
                     log.includes('✅') || log.includes('completed') || log.includes('SUCCESS') ? "text-emerald-400" :
                     log.includes('❌') || log.includes('ERROR') ? "text-red-400" :
                     log.includes('⚠️') || log.includes('WARNING') ? "text-yellow-400" :
-                    log.includes('📥') || log.includes('Fetching') ? "text-blue-400" :
+                    log.includes('📥') || log.includes('Fetching') ? "text-slate-400" :
                     log.includes('📊') ? "text-cyan-400" :
                     "text-slate-300"
                   )}>

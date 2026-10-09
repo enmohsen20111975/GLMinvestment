@@ -140,7 +140,7 @@ const RECOMMENDATION_META: Record<
     ar: 'شراء مؤسسي',
     emoji: '🏛️',
     badgeClass:
-      'bg-blue-50 text-primary border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/60',
+      'bg-slate-50 text-primary border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800/60',
     icon: <Shield className="h-3.5 w-3.5" />,
   },
   HOLD: {
@@ -853,9 +853,9 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
 
         {/* Signal Strength */}
         {(data.signalCount != null || data.path) && (
-          <div className="bg-blue-50/60 dark:bg-blue-950/20 rounded-md p-2.5 space-y-1.5 border border-blue-100/60 dark:border-blue-900/30">
+          <div className="bg-slate-50/60 dark:bg-slate-900/20 rounded-md p-2.5 space-y-1.5 border border-slate-100/60 dark:border-slate-800/30">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-primary dark:text-blue-300 flex items-center gap-1">
+              <span className="font-semibold text-primary dark:text-slate-300 flex items-center gap-1">
                 <Zap className="h-3.5 w-3.5" />
                 قوة الإشارة
               </span>
@@ -882,7 +882,7 @@ function StockPublishCard({ data }: { data: StockPublishData }) {
           <div className="bg-muted/30 rounded-md p-2.5 space-y-2 border border-border/50">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold flex items-center gap-1">
-                <Activity className="h-3.5 w-3.5 text-primary dark:text-blue-400" />
+                <Activity className="h-3.5 w-3.5 text-primary dark:text-slate-400" />
                 حركة السيولة
               </span>
               {data.netFlow != null && (
@@ -1086,9 +1086,9 @@ function TradingTile({ label, value, sub, accent, icon }: TradingTileProps) {
     { bg: string; text: string; border: string }
   > = {
     blue: {
-      bg: 'bg-blue-50/70 dark:bg-blue-950/30',
-      text: 'text-primary dark:text-blue-300',
-      border: 'border-blue-200/60 dark:border-blue-900/40',
+      bg: 'bg-slate-50/70 dark:bg-slate-900/30',
+      text: 'text-primary dark:text-slate-300',
+      border: 'border-slate-200/60 dark:border-slate-800/40',
     },
     emerald: {
       bg: 'bg-emerald-50/70 dark:bg-emerald-950/30',

@@ -575,7 +575,7 @@ function StatPill({
   const toneClass = {
     emerald: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/5 border-emerald-500/20',
     red: 'text-red-700 dark:text-red-300 bg-red-500/5 border-red-500/20',
-    blue: 'text-primary dark:text-blue-300 bg-primary/5 border-primary/20',
+    blue: 'text-primary dark:text-slate-300 bg-primary/5 border-primary/20',
     amber: 'text-amber-700 dark:text-amber-300 bg-amber-500/5 border-amber-500/20',
   }[tone];
 

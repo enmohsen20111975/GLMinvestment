@@ -219,7 +219,7 @@ export function SmartAssistantPanel() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+        <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
           <div className="flex items-center gap-2 mb-1">
             <Wallet className="h-4 w-4 text-teal-600" />
             <span className="text-sm text-muted-foreground">إجمالى الاستثمار</span>
@@ -435,7 +435,7 @@ export function SmartAssistantPanel() {
                             </Badge>
                           )}
                           {stock.stockInfo?.dividend_yield && stock.stockInfo.dividend_yield > 4 && (
-                            <Badge variant="outline" className="bg-blue-50 text-teal-700 border-teal-300">
+                            <Badge variant="outline" className="bg-slate-50 text-teal-700 border-teal-300">
                               يوزع {(stock.stockInfo.dividend_yield ?? 0).toFixed(1)}% أرباح
                             </Badge>
                           )}

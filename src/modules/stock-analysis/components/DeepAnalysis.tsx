@@ -406,7 +406,7 @@ function PriceLevelsVisual({ levels, currentPrice }: { levels: ProfessionalAnaly
 
   return (
     <div className="relative py-4 px-2">
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-l from-red-300 via-blue-400 to-emerald-300" />
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-l from-red-300 via-slate-400 to-emerald-300" />
       <div className="relative flex flex-col gap-3" style={{ minHeight: '120px' }}>
         {items.map((item) => {
           const topPercent = toPercent(item.price);
@@ -418,12 +418,12 @@ function PriceLevelsVisual({ levels, currentPrice }: { levels: ProfessionalAnaly
                     <span className="text-[10px] text-muted-foreground">{item.label}</span>
                     <span className="text-xs font-bold tabular-nums" style={{ color: item.color }} dir="ltr">{fmt(item.price)}</span>
                   </div>
-                  <div className={cn('w-3 h-3 rounded-full border-2 border-background shadow-sm flex-shrink-0', item.isCurrent && 'ring-2 ring-blue-400 ring-offset-1 w-4 h-4')} style={{ backgroundColor: item.color }} />
+                  <div className={cn('w-3 h-3 rounded-full border-2 border-background shadow-sm flex-shrink-0', item.isCurrent && 'ring-2 ring-slate-400 ring-offset-1 w-4 h-4')} style={{ backgroundColor: item.color }} />
                 </>
               )}
               {item.side === 'center' && (
                 <div className="flex-1 flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-background shadow-sm ring-2 ring-blue-400 ring-offset-1 flex-shrink-0" style={{ backgroundColor: item.color }} />
+                  <div className="w-4 h-4 rounded-full border-2 border-background shadow-sm ring-2 ring-slate-400 ring-offset-1 flex-shrink-0" style={{ backgroundColor: item.color }} />
                   <div className="flex flex-col items-center">
                     <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400">{item.label}</span>
                     <span className="text-xs font-bold tabular-nums text-teal-600 dark:text-teal-400" dir="ltr">{fmt(item.price)}</span>
@@ -693,7 +693,7 @@ function RecommendationCard({ prof, deepAnalysis }: { prof: ProfessionalAnalysis
           </Badge>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
+          <div className="text-center p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
             <p className="text-[11px] text-teal-600 dark:text-teal-400 mb-1 flex items-center justify-center gap-1">
               <ArrowLeftRight className="w-3 h-3" />
               سعر الدخول

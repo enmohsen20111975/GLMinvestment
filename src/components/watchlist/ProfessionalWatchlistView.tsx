@@ -141,7 +141,7 @@ function getSeverityColor(severity: string): string {
     case 'danger': return 'border-red-300 bg-red-50 dark:bg-red-950/20';
     case 'warning': return 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20';
     case 'success': return 'border-green-300 bg-green-50 dark:bg-green-950/20';
-    default: return 'border-teal-300 bg-blue-50 dark:bg-blue-950/20';
+    default: return 'border-teal-300 bg-slate-50 dark:bg-slate-900/20';
   }
 }
 
@@ -226,7 +226,7 @@ function WatchlistItemCard({ item, expanded, onToggle }: {
             
             {/* TradingView Integration */}
             {item.type === 'stock' && (
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-3 rounded-lg">
+              <div className="bg-gradient-to-r from-slate-50 to-purple-50 dark:from-slate-900/20 dark:to-purple-950/20 p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="h-4 w-4 text-teal-600" />
                   <span className="font-medium text-sm">TradingView</span>

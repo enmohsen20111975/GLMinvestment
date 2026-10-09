@@ -1,3 +1,4 @@
+// P1-FIX (2026-10-09, Round 2): This file has its own alias map. Should import normalizeMarket() from @/lib/market-utils.ts for single source of truth.
 import { initialize, isInitialized, type SqliteDatabase } from '@/lib/sqlite-wrapper'
 import * as path from 'path'
 import { existsSync, mkdirSync } from 'fs'
