@@ -67652,3 +67652,47 @@ Stage Summary:
 - الـ frontend دلوقتي يقدر يبعت أي alias (TADAWUL / KSA / السعودية) والـ API بيتعامل معاه بشكل صحيح.
 - لو الـ DB فاضي لسوق معين، الـ API بيرجّع 200 + empty + message واضح بدل 500/503.
 - portfolio دلوقتي بـ يعرض badge بـ سوق كل سهم، والأسهم الجديدة بتتسجّل تلقائياً بالسوق الحالي.
+
+---
+Task ID: DOCS-UPDATE-OCT9
+Agent: general-purpose (السكرتيرة الدستورية)
+Task: تحديث 5 وثائق بكل شغل 2026-10-09
+
+Context:
+- Sandbox reset #2 recovery (commit aca19f9) — DBs re-installed via GitHub API blob (MD5 verified).
+- 3 syntax error fixes (commits aca19f96 + 3a63bd04 + d786b8d1):
+  * mini-sparkline.tsx → (points[0].x ?? 0)
+  * SuperLearningSystem.tsx → 6 broken patterns (PERSONA_BENCHMARK_DATA[p].prop ?? 0)
+  * AIAnalysisWidget.tsx → missing opening paren
+- Phase 1 — CPU optimization (commit e8df798d): daily_predictor.py:748 time.sleep(0.01) → CPU 95%→35%.
+- Phase 3 — Market segregation (commit b18b3f21): 10 files + 1 new (market-utils.ts) + normalizeMarket() + 6 markets verified (EGX 451 + TADAWUL 390 + KSE 138 + QSE 67 + US graceful + CRYPTO) + market-hours.ts KSE/QSE fix + EnhancedPortfolioView market badge.
+- Prior session work (Oct 8 — reflect in docs):
+  * 664 .toFixed() null-safety fixes across 118 UI components
+  * 8 toLowerCase()/toUpperCase() null crash fixes
+  * 11 publishing/Telegram quality fixes (3 critical + 5 quality + 3 disclaimer)
+  * 10 dead components archived to archive/dead-components-2026-10-08/
+  * 23 mislabeled proxy routes unified via market-pulse-proxy.ts
+  * 8 security P0 fixes (Bot Token removed + fail-closed + 4 admin gates + secrets cleanup)
+  * news.db schema mismatch fixed (market_news migration from news_articles)
+  * 10 engine fabrications fixed (THRESHOLDS + return 50.0 → None + entry*0.95 → None)
+
+Stage Summary:
+- 5 files updated surgically (BE-AR — Arabic content):
+  1. CHANGELOG.md — NEW entry [2026-10-09 — PHASE-1-TO-3 + STABILITY] at top (Added + Changed + Fixed + Verified + Constraints + 5 doc refs).
+  2. Documentation/05-CURRENT_STATE.md — header (2026-10-08 → 2026-10-09) + §3.1 تأكيد DB snapshot 2026-08-17 unchanged + §17.12 NEW Multi-Market Segregation Status (6 markets + 5 routes + verification) + §17.13 NEW CPU Optimization (micro-sleep) + §17.14 NEW Stability & Null-Safety Pass (664 toFixed + 8 toLowerCase + 10 dead + 23 proxies + 11 publishing + 3 syntax fixes).
+  3. Documentation/01-PROJECT_ANATOMY.md — header (2026-10-08 → 2026-10-09) + §1.6 multi-market table updated (5→6 markets + verified counts + normalizeMarket helper) + §2 file map (market-utils.ts + market-pulse-proxy.ts + market-hours.ts) + §4.2 daily_predictor.py:748 CPU micro-sleep note.
+  4. Documentation/02-SCREENS_AND_COMPONENTS.md — header (2026-10-08 → 2026-10-09) + §0.9 NEW Dead Components Archive (10 components listed with reasons) + §0.10 NEW Multi-Market UI Updates (MarketSelector 6 markets + EnhancedPortfolioView market badge + DashboardView EGX-specific widgets visibility).
+  5. Documentation/SYSTEM_HOW_IT_THINKS.md — header (2026-10-08 → 2026-10-09) + Production Snapshot table updated (5→6-Market UI Mirror + per-market trading hours row) + §1.1 STAGE 6 inline CPU micro-sleep note.
+- Commits cited: b18b3f21 (PHASE-3) · e8df798d (PHASE-1 CPU) · aca19f96 + 3a63bd04 + d786b8d1 (syntax fixes) · aca19f9 (sandbox reset #2).
+- Constraints honored:
+  * ❌ NO code touched (.py/.ts/.tsx) — documentation-only.
+  * ❌ NO Constitution (00-CONSTITUTION.md) touched.
+  * ❌ NO git push (per task constraint — GM handles).
+  * ❌ NO files deleted (Rule 16 — surgical edits only).
+- All output in ARABIC (per task constraint).
+
+Verification:
+- ✅ All 5 docs have "آخر تحديث: 2026-10-09" header.
+- ✅ All commit hashes cited per Rule 16 (VERIFY with evidence).
+- ✅ Existing content preserved — only surgical additions + updates.
+- ✅ Cross-references between docs (e.g., §17.12 ↔ §1.6 + §0.10 ↔ §17.12).

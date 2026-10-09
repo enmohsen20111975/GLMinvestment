@@ -1,6 +1,12 @@
 # 🧠 SYSTEM_HOW_IT_THINKS — كيف يحلّل النظام سهمًا ويُولّد توصية
 
-> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010). التحديثات الحرجة في هذا الـ pass:
+> **THE single source of truth for how the system thinks/decides.** آخر تحديث: 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. التحديثات الحرجة في هذا الـ pass:
+> - **§9.x market-hours per-market** — `market-hours.ts` دلوقتي بـ يحترم ساعات تداول كل سوق (KSE 08:00-12:45 Kuwait + QSE 09:30-13:00 Doha — fixed في commit `b18b3f21`). قبل كده كانت KSE 06:00-09:30 (خطأ) + QSE 09:00-13:00 (خطأ في وقت الافتتاح).
+> - **§1.1 STAGE 1 — CPU optimization note** — `daily_predictor.py:748` فيه `time.sleep(0.01)` micro-sleep بين الأسهم (CPU 95%→35%) — commit `e8df798d` (Task `PHASE-1`).
+> - **6-Market Architecture** — تحديث من 5 → 6 أسواق مدعومة بالكامل (EGX + TADAWUL + KSE + QSE + US graceful + CRYPTO) عبر `normalizeMarket()` helper في `src/lib/market-utils.ts` (commit `b18b3f21`).
+> Commits: `b18b3f21` (PHASE-3) · `e8df798d` (PHASE-1 CPU) · `aca19f96` + `3a63bd04` + `d786b8d1` (syntax fixes). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010). التحديثات الحرجة في هذا الـ pass:
 > - **§5.7 engine_settings (canonical)** — `atr_stop_min_pct` 3.0 → **5.0** + `dynamic_rr_normal` 1.5 → **1.8** (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`). `unified_config.py` + `opportunity_quality.py` + `master_analyzer.py` الآن aligned مع `engine_settings.py`.
 > - **§1.1 STAGE 5** — ATR stop clamp `[3%, 9%]` → **`[5%, 9%]`** + R:R floor 1.5 → **1.8**.
 > - **§5.3-§5.9** — كل مراجع `[3%,9%]` و `1.5` اتحلّت للـ canonical الجديد.
@@ -95,7 +101,8 @@
 | **Backtest engine** | ✅ V38 (sandbox + production-wiring للـ position sizing + A/B harness) | `v38_backtest_engine.py` (1,817 LOC) |
 | **Decision Logger** | ✅ الإنتاج (default ON — غير gated) | `decision_logger.py::log_decision()` يكتب في `decision_log.db` |
 | **10 Feature Flags V40.2** | كلها OFF افتراضياً | تُفعَّل بـ `engine_settings.py` بعد walk-forward |
-| **5-Market UI Mirror** | ✅ الإنتاج (Rule 53) | `MarketSelector` يبدّل `currentMarket` بين EGX/TADAWUL/KSE/QSE/CRYPTO |
+| **5-Market UI Mirror** → **6-Market UI Mirror** (تحديث 2026-10-09) | ✅ الإنتاج (Rule 53) — `MarketSelector` يبدّل `currentMarket` بين **6 أسواق**: EGX/TADAWUL/KSE/QSE/US/CRYPTO | `src/components/shared/MarketSelector.tsx` + `src/lib/market-utils.ts::normalizeMarket()` (commit `b18b3f21` — Task `PHASE-3`). الـ APIs دلوقتي بترجّع 200 graceful + AR message بدل 500 لما الـ DB فاضي لسوق معيّن. |
+| **Per-market trading hours (تحديث 2026-10-09)** | ✅ الإنتاج — `market-hours.ts` بـ يحترم ساعات كل سوق | `src/lib/market-hours.ts` (commit `b18b3f21`): EGX 10:00-14:30 Cairo · TADAWUL 11:00-15:00 Riyadh · **KSE 08:00-12:45 Kuwait** (was 06:00-09:30 — خطأ) · **QSE 09:30-13:00 Doha** (was 09:00-13:00 — خطأ في الافتتاح) · US 14:30-21:00 (EST) · CRYPTO 24/7. |
 | **Live KPIs (1,229 resolved من 1,359 prediction)** | WR=**~50–55%** (was **67.4%** قبل HELI-CLEANUP-2 — recorded status كان مُضخَّم بسبب false TARGET_HITs) · Avg Return=**25.74%** (recorded) · PF=**12.84** (recorded) · Max Loss Streak=**7** · **Reconciliation mismatch rate=31.66%** (was 41.96%) | محسوبة من `predictions.db` على resolved set (TARGET_HIT + closed_stop). الـ actual WR بعد HELI-CLEANUP-2 حوالي ~50–55%. راجع §16 لتفاصيل الـ forensics. Baseline محفوظ في `ab_backtest_baseline_*.json`. |
 | **Auth guards (P0-11-AUTH — NEW)** | ✅ 30 routes secured (4 admin + 26 non-admin) عبر 44 HTTP method handlers | `src/lib/admin-guard.ts` (74 LOC) — thin re-export + new `requireAuthAsync(req)` لـ user-scoped. راجع `00-CONSTITUTION.md` Rule 55. |
 | **SQLi protection (P0-12-SQLI — NEW)** | ✅ 7 sites fixed (5 files) — 3 canonical patterns | `predictions/honest-tracking/live-tracking/route.ts` (3 sites) + `finance/screener/route.ts` + `tab-data/route.ts` + `admin/clear-junk-data/route.ts` (4 sites) + `admin/db-explorer/route.ts` (3 sites). راجع `00-CONSTITUTION.md` Rule 56. |
@@ -516,6 +523,10 @@ BOS/CHOCH كان موجود بالفعل (سطر 953-977).
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  STAGE 6: PREDICTION RECORD IN predictions.db                                │
 │  ─────────────────────────────────────────────────────                        │
+│  ⚡ NEW 2026-10-09 (Task `PHASE-1 — CPU optimization` — commit `e8df798d`):   │
+│  `daily_predictor.py:748` بيـ `time.sleep(0.01)` بين كل stock → CPU 95%→35% │
+│  (يمنع Hostinger CPU limitation من إيقاف الـ cron). Overhead: 10ms × 1,046 = │
+│  ~10s إجمالي (negligible مقابل ~6-7 دقائق runtime). Rule 8 (CAPITAL-PROTECT).│
 │  PredictionTracker.record_prediction() يكتب:                                  │
 │   { ticker, signal, entry_price, target_price, stop_loss,                    │
 │     target_price_2, master_score, technical_score, fundamental_score,        │
