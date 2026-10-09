@@ -68050,3 +68050,25 @@ Next actions (اقتراحات للمالك — مش مطلوب تنفيذها):
 - تمرير `logo_url` (stock face) من نفس البيلدر للـ ShareStockData في الـ caller بتاع ShareButton.
 - استبدال logo placeholder «د» بـ <Image src="/logo.png" /> لو فيه ملف شعار فعلي للمنصة.
 - اعتبار إضافة `sector_ar` (ترجمة عربية للقطاع) لو المنصة بتدعمها.
+
+---
+Task ID: FLUTTER-INTEGRATION (المدير العام — تكامل برنامج الفلاتر)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: تكامل تام بين المنصة وبرنامج الفلاتر (flutter_investment_App)
+
+Work Log:
+- Rule 76: سحبت آخر تحديثات المنصة + استكشفت repo الفلاتر.
+- استنسخت flutter_investment_App (49 شاشة + 60+ API endpoint + Dart).
+- فحصت كل endpoints المستخدمة في lib/api/client.dart.
+- اكتشفت 2 endpoints معطّلة (410 Gone) يستخدمها الفلاتر:
+  1. /api/stocks/X/professional-analysis → رحّلت لـ /api/stocks/X/unified
+  2. /api/maestro/stock/X (Maestro معطّل) → رحّلت لـ /api/stocks/X/unified
+- أضفت market parameter لـ getLatestNews (دعم فصل الأسواق).
+- Push لـ flutter repo: commit 3fe15cd.
+
+Stage Summary:
+- ✅ برنامج الفلاتر محدّث + مرفوع (commit 3fe15cd)
+- ✅ 2 endpoints معطّلة رُحّلت للـ canonical unified
+- ✅ market parameter مضاف للأخبار
+- ✅ المنصة تدعم نفس الـ endpoints التي يطلبها الفلاتر
+- الـ Flutter app عند العملاء وشغال — لم نكسر أي شيء

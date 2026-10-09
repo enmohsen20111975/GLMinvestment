@@ -102,7 +102,7 @@ function getBrokerIcon(broker: string): React.ReactNode {
 function getBrokerColor(broker: string): string {
   if (broker === 'Binance') return 'text-amber-400 bg-amber-950/40 border-amber-800';
   if (broker === 'master') return 'text-emerald-400 bg-emerald-950/40 border-emerald-800';
-  if (broker === 'Thndr') return 'text-teal-400 bg-blue-950/40 border-teal-800';
+  if (broker === 'Thndr') return 'text-teal-400 bg-slate-900/40 border-teal-800';
   if (broker === 'Direct') return 'text-purple-400 bg-purple-950/40 border-purple-800';
   return 'text-zinc-400 bg-zinc-900/40 border-zinc-700';
 }
@@ -634,7 +634,7 @@ export function MultiPortfolioSelector({
                     variant="ghost"
                     size="sm"
                     onClick={() => openEditModal(p)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-teal-400 hover:bg-blue-950/40"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-teal-400 hover:bg-slate-900/40"
                     title="تعديل المحفظة"
                   >
                     <Pencil className="h-3.5 w-3.5" />

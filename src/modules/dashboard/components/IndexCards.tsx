@@ -26,7 +26,7 @@ const INDEX_COLOR_MAP: Record<string, { accent: string; ring: string; text: stri
   EGX50:    { accent: 'bg-cyan-500',    ring: 'ring-cyan-500/20',    text: 'text-cyan-600 dark:text-cyan-400' },
   EGX33:    { accent: 'bg-rose-500',    ring: 'ring-rose-500/20',    text: 'text-rose-600 dark:text-rose-400' },
   // US
-  '^GSPC':  { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-blue-400' },
+  '^GSPC':  { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-slate-400' },
   '^IXIC':  { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
   '^DJI':   { accent: 'bg-emerald-500',  ring: 'ring-emerald-500/20',  text: 'text-emerald-600 dark:text-emerald-400' },
   // CRYPTO
@@ -50,7 +50,7 @@ const MARKET_PALETTE: Record<MarketType, Array<{ accent: string; ring: string; t
     { accent: 'bg-cyan-500',    ring: 'ring-cyan-500/20',    text: 'text-cyan-600 dark:text-cyan-400' },
   ],
   US: [
-    { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-blue-400' },
+    { accent: 'bg-primary',    ring: 'ring-primary/20',    text: 'text-primary dark:text-slate-400' },
     { accent: 'bg-violet-500',  ring: 'ring-violet-500/20',  text: 'text-violet-600 dark:text-violet-400' },
     { accent: 'bg-emerald-500',  ring: 'ring-emerald-500/20',  text: 'text-emerald-600 dark:text-emerald-400' },
   ],

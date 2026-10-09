@@ -2155,7 +2155,7 @@ export function SuperLearningSystem() {
                           <TableCell
                             key={p}
                             className={cn(
-                              "text-xs text-center font-mono text-primary dark:text-blue-400 font-semibold",
+                              "text-xs text-center font-mono text-primary dark:text-slate-400 font-semibold",
                               isBest && "bg-emerald-50/40 dark:bg-emerald-950/10 border-x-2 border-emerald-500"
                             )}
                           >
@@ -2331,7 +2331,7 @@ export function SuperLearningSystem() {
                               {loading ? (
                                 <Loader2 className="w-4 h-4 animate-spin mx-auto text-emerald-600" />
                               ) : r?.profitFactor !== null && r?.profitFactor !== undefined ? (
-                                <span className="text-primary dark:text-blue-400">{(r.profitFactor ?? 0).toFixed(2)}</span>
+                                <span className="text-primary dark:text-slate-400">{(r.profitFactor ?? 0).toFixed(2)}</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}

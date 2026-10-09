@@ -513,7 +513,7 @@ export function UsersManagement() {
             ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/40 hover:bg-purple-500/25"
             : isPremium
             ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25"
-            : "bg-primary/15 text-primary dark:text-blue-300 border-primary/40 hover:bg-primary/25"
+            : "bg-primary/15 text-primary dark:text-slate-300 border-primary/40 hover:bg-primary/25"
         )}
       >
         <Ticket className="w-3.5 h-3.5 text-current shrink-0" />
@@ -535,7 +535,7 @@ export function UsersManagement() {
   const getTrialBadge = (trialStatus: any) => {
     if (!trialStatus) return null;
     if (trialStatus.isInTrial) {
-      return <Badge className="bg-primary/10 text-primary border-blue-200 gap-1">فترة تجريبية ({trialStatus.daysLeft} يوم)</Badge>;
+      return <Badge className="bg-primary/10 text-primary border-slate-200 gap-1">فترة تجريبية ({trialStatus.daysLeft} يوم)</Badge>;
     }
     if (trialStatus.isInWarning) {
       return <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 gap-1"><Clock className="w-3 h-3" />تنبيه ({trialStatus.warningDaysLeft} يوم)</Badge>;

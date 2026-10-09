@@ -280,7 +280,7 @@ function ProofPredictionsTableView({
                       ⚡ مضارب
                     </Badge>
                   ) : (
-                    <Badge className="bg-teal-100 text-teal-700 dark:bg-blue-950 dark:text-teal-300 border border-teal-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
+                    <Badge className="bg-teal-100 text-teal-700 dark:bg-slate-900 dark:text-teal-300 border border-teal-300 gap-1 py-0.5 px-2 text-[11px] font-bold">
                       📊 مستثمر
                     </Badge>
                   )}

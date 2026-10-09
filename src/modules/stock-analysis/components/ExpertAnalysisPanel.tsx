@@ -288,14 +288,14 @@ function PriceBox({ label, value, pct, rationale, color }: {
 }) {
   const colorClasses = {
     emerald: 'border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/20',
-    blue: 'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20',
+    blue: 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/20',
     purple: 'border-purple-200 dark:border-purple-900 bg-purple-50 dark:bg-purple-950/20',
     rose: 'border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/20',
   };
 
   const valueColor = {
     emerald: 'text-emerald-700 dark:text-emerald-400',
-    blue: 'text-primary dark:text-blue-400',
+    blue: 'text-primary dark:text-slate-400',
     purple: 'text-purple-700 dark:text-purple-400',
     rose: 'text-rose-700 dark:text-rose-400',
   };
