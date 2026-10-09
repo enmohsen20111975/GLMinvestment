@@ -226,7 +226,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
                   {/* Current price */}
                   <div className="w-20 text-center">
                     <p className="text-xs text-slate-300 font-mono">
-                      {entry.current_price.toFixed(2)}
+                      {(entry.current_price ?? 0).toFixed(2)}
                     </p>
                     <p className="text-[8px] text-slate-600">ج.م</p>
                   </div>
@@ -246,7 +246,7 @@ const LeagueCardInner = forwardRef<HTMLDivElement, { league: LeagueEntry[]; mont
                       <span className={`font-black ${
                         entry.rank === 1 ? 'text-lg text-emerald-400' : 'text-base text-emerald-400'
                       }`}>
-                        {entry.profit_pct.toFixed(1)}%
+                        {(entry.profit_pct ?? 0).toFixed(1)}%
                       </span>
                     </div>
                   </div>
@@ -362,7 +362,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
                   <div className="text-center flex-shrink-0">
                     <p className="text-[9px] text-slate-500">دخول ← خروج</p>
                     <p className="text-[11px] text-slate-300 font-mono">
-                      {trade.entry_price.toFixed(2)} ← {trade.exit_price.toFixed(2)}
+                      {(trade.entry_price ?? 0).toFixed(2)} ← {(trade.exit_price ?? 0).toFixed(2)}
                     </p>
                   </div>
 
@@ -382,7 +382,7 @@ const TradesCardInner = forwardRef<HTMLDivElement, { trades: TopTrade[]; monthNa
                     <div className="flex items-center gap-0.5">
                       <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                       <span className="text-lg font-black text-emerald-400">
-                        +{trade.profit_pct.toFixed(1)}%
+                        +{(trade.profit_pct ?? 0).toFixed(1)}%
                       </span>
                     </div>
                     <p className="text-[9px] text-slate-500">ربح</p>
@@ -485,7 +485,7 @@ export function StockLeagueImageCard({
     const telegramCaption = tradesHasData
       ? `🏆 أفضل صفقات ${tradesMonthName} ${year}\n\n` +
         tradesList.slice(0, 5).map((t, i) =>
-          `${i + 1}. ${t.ticker} — +${t.profit_pct.toFixed(1)}% (${t.holding_days} يوم)`
+          `${i + 1}. ${t.ticker} — +${(t.profit_pct ?? 0).toFixed(1)}% (${t.holding_days ?? 0} يوم)`
         ).join('\n') +
         `\n\n${OFFICIAL_LINKS_BLOCK.trim()}`
       : `🏆 أفضل صفقات ${tradesMonthName} ${year} — لا توجد صفقات رابحة بعد\n\n${OFFICIAL_LINKS_BLOCK.trim()}`;
@@ -517,7 +517,7 @@ export function StockLeagueImageCard({
   const telegramCaption = league.length > 0
     ? `🏆 الدوري ${usePeriodApi ? PERIOD_LABELS[period!] : 'الممتاز'} للسوق — ${displayLabel} ${usePeriodApi ? '' : year}\n\n` +
       league.slice(0, 10).map((e) =>
-        `${e.rank}. ${e.ticker} — +${e.profit_pct.toFixed(1)}%`
+        `${e.rank}. ${e.ticker} — +${(e.profit_pct ?? 0).toFixed(1)}%`
       ).join('\n') +
       `\n\n${OFFICIAL_LINKS_BLOCK.trim()}`
     : `🏆 الدوري ${usePeriodApi ? PERIOD_LABELS[period!] : 'الممتاز'} للسوق — ${displayLabel} ${usePeriodApi ? '' : year}\nالدوري لسه ما ابدأش — استنى الصفقات!\n\n${OFFICIAL_LINKS_BLOCK.trim()}`;

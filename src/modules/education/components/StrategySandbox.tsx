@@ -445,10 +445,10 @@ function generateSyntheticCandles(pattern: string): Candle[] {
   const out: Candle[] = [];
   const N = 26;
   const clamp = (c: Candle): Candle => ({
-    o: +c.o.toFixed(2),
-    h: +c.h.toFixed(2),
-    l: +c.l.toFixed(2),
-    c: +c.c.toFixed(2),
+    o: +(c.o ?? 0).toFixed(2),
+    h: +(c.h ?? 0).toFixed(2),
+    l: +(c.l ?? 0).toFixed(2),
+    c: +(c.c ?? 0).toFixed(2),
   });
 
   switch (pattern) {
@@ -809,7 +809,7 @@ function CandleChart({
             strokeDasharray="2 4"
           />
           <text x={6} y={yOf(v) + 4} fontSize="10" className="fill-muted-foreground">
-            {v.toFixed(1)}
+            {(v ?? 0).toFixed(1)}
           </text>
         </g>
       ))}
@@ -1433,9 +1433,9 @@ function MACDChart() {
   const signal: number[] = [];
   for (let i = 0; i < N; i++) {
     const v = Math.sin(i * 0.35) * 2 + Math.cos(i * 0.18) * 1.2 + (i - 15) * 0.06;
-    macd.push(+v.toFixed(2));
+    macd.push(+(v ?? 0).toFixed(2));
     const sig = i === 0 ? v : signal[i - 1] + (v - (signal[i - 1] ?? v)) * 0.25;
-    signal.push(+sig.toFixed(2));
+    signal.push(+(sig ?? 0).toFixed(2));
   }
   const allVals = [...macd, ...signal];
   const minV = Math.min(...allVals) - 0.5;

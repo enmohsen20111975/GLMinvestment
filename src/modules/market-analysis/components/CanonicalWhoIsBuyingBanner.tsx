@@ -201,8 +201,8 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
           {(buyPct !== null || sellPct !== null) && (
             <div className="mt-2">
               <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-                <span>شراء: <strong className="font-mono text-emerald-600">{buyPct !== null ? `${buyPct.toFixed(1)}%` : '—'}</strong></span>
-                <span>بيع: <strong className="font-mono text-rose-600">{sellPct !== null ? `${sellPct.toFixed(1)}%` : '—'}</strong></span>
+                <span>شراء: <strong className="font-mono text-emerald-600">{buyPct !== null ? `${(buyPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
+                <span>بيع: <strong className="font-mono text-rose-600">{sellPct !== null ? `${(sellPct ?? 0).toFixed(1)}%` : '—'}</strong></span>
               </div>
               <div className="h-2 rounded-full overflow-hidden bg-rose-200 dark:bg-rose-900/30 flex">
                 {buyPct !== null && (
@@ -220,7 +220,7 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
               </strong>
               {radar.buy_value_m !== null && radar.sell_value_m !== null && (
                 <span className="text-muted-foreground/70">
-                  {' '}(شراء {radar.buy_value_m.toFixed(1)}M · بيع {radar.sell_value_m.toFixed(1)}M)
+                  {' '}(شراء {(radar.buy_value_m ?? 0).toFixed(1)}M · بيع {(radar.sell_value_m ?? 0).toFixed(1)}M)
                 </span>
               )}
             </div>
@@ -265,14 +265,14 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
             <LevelCell label="الهدف 2" value={tp2} currencyLabel={currencyLabel} color="text-emerald-600" />
             <LevelCell label="الهدف 3" value={tp3} currencyLabel={currencyLabel} color="text-emerald-600" />
             <LevelCell label="الوقف" value={stop} currencyLabel={currencyLabel} color="text-rose-600" icon={<ShieldAlert className="w-3 h-3" />} />
-            <LevelCell label="R:R" value={rr !== null ? `${rr.toFixed(2)}R` : null} currencyLabel="" color="text-foreground" icon={<Gauge className="w-3 h-3" />} />
+            <LevelCell label="R:R" value={rr !== null ? `${(rr ?? 0).toFixed(2)}R` : null} currencyLabel="" color="text-foreground" icon={<Gauge className="w-3 h-3" />} />
           </div>
           {confidence !== null && (
             <div className="mt-2 text-[10px] text-muted-foreground">
-              الثقة: <strong className="font-mono text-foreground">{confidence.toFixed(0)}%</strong>
+              الثقة: <strong className="font-mono text-foreground">{(confidence ?? 0).toFixed(0)}%</strong>
               {price !== null && entry !== null && entry > 0 && (
                 <span className="ml-3">
-                  السعر الحالي: <strong className="font-mono text-foreground">{price.toFixed(2)} {currencyLabel}</strong>
+                  السعر الحالي: <strong className="font-mono text-foreground">{(price ?? 0).toFixed(2)} {currencyLabel}</strong>
                   {Math.abs(price - entry) / entry > 0.001 && (
                     <span className={cn('font-mono ml-1', price > entry ? 'text-emerald-600' : 'text-rose-600')}>
                       ({price > entry ? '+' : ''}{(((price - entry) / entry) * 100).toFixed(2)}%)
@@ -291,20 +291,20 @@ export function CanonicalWhoIsBuyingBanner({ data, currencyLabel = 'ج.م' }: Pr
           <Activity className="w-3 h-3" /> مؤشرات كنسية
         </span>
         <span className="text-muted-foreground">
-          RSI (14, Wilder): <strong className="font-mono text-foreground">{rsi !== null ? rsi.toFixed(1) : '—'}</strong>
+          RSI (14, Wilder): <strong className="font-mono text-foreground">{rsi !== null ? (rsi ?? 0).toFixed(1) : '—'}</strong>
           <span className="text-muted-foreground/60 ml-1">[{technical.rsi_source}]</span>
         </span>
         <span className="text-muted-foreground">
-          ATR: <strong className="font-mono text-foreground">{atr !== null ? atr.toFixed(3) : '—'}</strong>
+          ATR: <strong className="font-mono text-foreground">{atr !== null ? (atr ?? 0).toFixed(3) : '—'}</strong>
         </span>
         {technical.support !== null && (
           <span className="text-muted-foreground">
-            دعم: <strong className="font-mono text-emerald-600">{technical.support.toFixed(2)}</strong>
+            دعم: <strong className="font-mono text-emerald-600">{(technical.support ?? 0).toFixed(2)}</strong>
           </span>
         )}
         {technical.resistance !== null && (
           <span className="text-muted-foreground">
-            مقاومة: <strong className="font-mono text-rose-600">{technical.resistance.toFixed(2)}</strong>
+            مقاومة: <strong className="font-mono text-rose-600">{(technical.resistance ?? 0).toFixed(2)}</strong>
           </span>
         )}
         {prediction?.hmm_regime && (
@@ -356,7 +356,7 @@ function LevelCell({
       </span>
       <span className={cn('font-mono font-bold text-xs', color)}>
         {value !== null && value !== undefined
-          ? `${typeof value === 'number' ? value.toFixed(2) : value}${currencyLabel ? ' ' + currencyLabel : ''}`
+          ? `${typeof value === 'number' ? (value ?? 0).toFixed(2) : value}${currencyLabel ? ' ' + currencyLabel : ''}`
           : '— بيانات غير متاحة'}
       </span>
     </div>

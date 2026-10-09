@@ -35,12 +35,12 @@ function buildPineScript(t: string, r: GateAnalysisOutput, i: GateAnalysisInput)
   const gates = r.gates.map((g) => `// ${g.nameAr}: ${g.passed ? '✅' : '❌'} ${g.reasonAr}`).join('\n');
   return [
     `// Pine Script — ${t} | ${r.signalAr} | Gates ${r.gatesPassed}/5 (min ${r.minGates})`,
-    `// R/R: ${r.rrRatio.toFixed(1)}:1 | ATR%: ${r.atrPct.toFixed(1)}% | ${r.marketStageAr}`,
+    `// R/R: ${(r.rrRatio ?? 0).toFixed(1)}:1 | ATR%: ${(r.atrPct ?? 0).toFixed(1)}% | ${r.marketStageAr}`,
     '', `close=${i.close} rsi=${i.rsi} atr=${i.atr}`, `macd=${i.macdLine} sig=${i.signalLine} hist=${i.macdHist}`,
     `sma20=${i.sma20} sma50=${i.sma50} sma200=${i.sma200}`,
     `support1=${i.support1} resistance1=${i.resistance1}`,
-    `target=${r.targetPrice.toFixed(2)} (+${r.targetPct.toFixed(1)}%)`,
-    `stop=${r.stopLoss.toFixed(2)} (-${r.stopPct.toFixed(1)}%)`,
+    `target=${(r.targetPrice ?? 0).toFixed(2)} (+${(r.targetPct ?? 0).toFixed(1)}%)`,
+    `stop=${(r.stopLoss ?? 0).toFixed(2)} (-${(r.stopPct ?? 0).toFixed(1)}%)`,
     `// Persona: ${r.persona === 'gambler' ? 'مضارب' : 'مستثمر'}`, gates,
   ].join('\n');
 }
@@ -205,14 +205,14 @@ export default function GateAnalysisView({ ticker, currentPrice, stockName }: Ga
         {/* Info Table */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <IR label="الإشارة" value={r.signalAr} valueClass="font-semibold" signal={r.signal} />
-          <IR label="السعر" value={r.entryPrice.toFixed(2)} />
-          <IR label="الهدف" value={`${r.targetPrice.toFixed(2)} (+${r.targetPct.toFixed(1)}%)`} valueClass={`${gc} font-medium`} />
-          <IR label="الوقف" value={`${r.stopLoss.toFixed(2)} (-${r.stopPct.toFixed(1)}%)`} valueClass={`${rc} font-medium`} />
-          <IR label="R/R" value={`${r.rrRatio.toFixed(1)}:1`} valueClass={`${rrClr} font-medium`} />
-          <IR label="RSI" value={cachedInput?.rsi.toFixed(1) || '—'} valueExtra={` (${r.rsiBuyThreshold}–${r.rsiSellThreshold})`} />
+          <IR label="السعر" value={(r.entryPrice ?? 0).toFixed(2)} />
+          <IR label="الهدف" value={`${(r.targetPrice ?? 0).toFixed(2)} (+${(r.targetPct ?? 0).toFixed(1)}%)`} valueClass={`${gc} font-medium`} />
+          <IR label="الوقف" value={`${(r.stopLoss ?? 0).toFixed(2)} (-${(r.stopPct ?? 0).toFixed(1)}%)`} valueClass={`${rc} font-medium`} />
+          <IR label="R/R" value={`${(r.rrRatio ?? 0).toFixed(1)}:1`} valueClass={`${rrClr} font-medium`} />
+          <IR label="RSI" value={cachedInput?.(rsi ?? 0).toFixed(1) || '—'} valueExtra={` (${r.rsiBuyThreshold}–${r.rsiSellThreshold})`} />
           <IR label="الاتجاه" value={r.marketStageAr} valueClass={`${trendClr} font-medium`} />
           <IR label="البوابات" value={`${r.gatesPassed}/5`} valueExtra={` (min: ${r.minGates})`} valueClass={`${gatesClr} font-medium`} />
-          <IR label="ATR%" value={`${r.atrPct.toFixed(1)}%`} valueClass={`${atrClr} font-medium`} />
+          <IR label="ATR%" value={`${(r.atrPct ?? 0).toFixed(1)}%`} valueClass={`${atrClr} font-medium`} />
           <IR label="قوة السهم" value={`${r.stockStrength}/100 — ${r.marketProxyAr}`} />
           <IR label="الوصف" value={r.narrative} valueClass="text-xs text-muted-foreground leading-relaxed" full />
         </div>

@@ -158,7 +158,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
       wins,
       losses,
       winRate: trades.length > 0 ? ((wins / trades.length) * 100).toFixed(1) : '0',
-      avgReturn: avgReturn.toFixed(2),
+      avgReturn: (avgReturn ?? 0).toFixed(2),
     };
   }, [trades]);
 
@@ -253,7 +253,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
             )}
           >
             {isUp ? <TrendingUp className="h-3 w-3" /> : isDown ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-            {isUp ? '+' : ''}{v.toFixed(2)}%
+            {isUp ? '+' : ''}{(v ?? 0).toFixed(2)}%
           </span>
         );
       },
@@ -462,7 +462,7 @@ export function HistoricalTradesTable({ initialPageSize = PAGE_SIZE }: Historica
                       : 'text-red-600 dark:text-red-400'
                   )}>
                     {socialProofTrade.return_pct != null
-                      ? `${socialProofTrade.return_pct > 0 ? '+' : ''}${socialProofTrade.return_pct.toFixed(2)}%`
+                      ? `${socialProofTrade.return_pct > 0 ? '+' : ''}${(socialProofTrade.return_pct ?? 0).toFixed(2)}%`
                       : '—'}
                   </span>
                 </div>

@@ -74,7 +74,7 @@ function formatEgp(n: number): string {
 
 function formatPct(n: number): string {
   const sign = n >= 0 ? '+' : '';
-  return sign + n.toFixed(1) + '%';
+  return sign + (n ?? 0).toFixed(1) + '%';
 }
 
 function formatHoldingDays(days: number): string {

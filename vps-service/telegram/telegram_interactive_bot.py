@@ -507,27 +507,73 @@ def build_stock_card(
     """
     sym = stock['symbol']
     name = stock['name_ar']
-    price = float(stock.get('price') or 0.0)
-    chg = float(stock.get('change') or 0.0)
+    # AUDIT-PUBLISH-QUALITY (Rule 27): keep None for price when source has
+    # no real price → render "—" placeholders instead of fabricating "0.00".
+    try:
+        _raw_price = stock.get('price')
+        price = float(_raw_price) if _raw_price is not None else 0.0
+    except (TypeError, ValueError):
+        price = 0.0
+    try:
+        chg = float(stock.get('change') or 0.0)
+    except (TypeError, ValueError):
+        chg = 0.0
 
     chg_icon = "🟢 +" if chg >= 0 else "🔴 "
-    chg_str = f"{chg_icon}{abs(chg):.2f}%"
+    chg_str = f"{chg_icon}{abs(chg):.2f}%" if price > 0 else "—"
 
-    entry_min = float(radar.get('entry_min') or (price * 0.99))
-    entry_max = float(radar.get('entry_max') or (price * 1.01))
-    s1 = float(radar.get('support_1') or (price * 0.96))
-    s2 = float(radar.get('support_2') or (price * 0.92))
-    r1 = float(radar.get('resistance_1') or (price * 1.06))
-    r2 = float(radar.get('resistance_2') or (price * 1.12))
-    tp1 = float(radar.get('target_1') or (r1 * 0.995))
-    tp2 = float(radar.get('target_2') or (r2 * 0.995))
-    sl = float(radar.get('stop_loss') or (s1 * 0.985))
-    rr = float(radar.get('risk_reward') or 2.0)
-    advice = radar.get('advice') or f"السعر داخل نطاق الشراء الآمن ({entry_min:,.2f} - {entry_max:,.2f} ج.م) — التزم بالوقف والأهداف"
+    # AUDIT-PUBLISH-QUALITY: derive fallback levels ONLY when price is real.
+    # When price is missing (0), set everything to None so the card renders
+    # "—" placeholders instead of "0.00 ج.م" everywhere.
+    if price > 0:
+        entry_min = float(radar.get('entry_min') or (price * 0.99))
+        entry_max = float(radar.get('entry_max') or (price * 1.01))
+        s1 = float(radar.get('support_1') or (price * 0.96))
+        s2 = float(radar.get('support_2') or (price * 0.92))
+        r1 = float(radar.get('resistance_1') or (price * 1.06))
+        r2 = float(radar.get('resistance_2') or (price * 1.12))
+        tp1 = float(radar.get('target_1') or (r1 * 0.995))
+        tp2 = float(radar.get('target_2') or (r2 * 0.995))
+        sl = float(radar.get('stop_loss') or (s1 * 0.985))
+    else:
+        entry_min = entry_max = s1 = s2 = r1 = r2 = tp1 = tp2 = sl = None
+    # AUDIT-PUBLISH-QUALITY (Rule 27): do NOT fabricate R/R = 2.0 by default.
+    try:
+        rr = float(radar.get('risk_reward')) if radar.get('risk_reward') is not None else None
+    except (TypeError, ValueError):
+        rr = None
+    if price > 0 and entry_min and entry_max:
+        advice = radar.get('advice') or f"السعر داخل نطاق الشراء الآمن ({entry_min:,.2f} - {entry_max:,.2f} ج.م) — التزم بالوقف والأهداف"
+    else:
+        advice = radar.get('advice') or '— لا تتوفر بيانات كافية لتحديد توجيه محدد لهذا السهم حالياً.'
 
-    tp1_gain = ((tp1 - price) / price * 100) if price > 0 else 0
-    tp2_gain = ((tp2 - price) / price * 100) if price > 0 else 0
-    sl_loss = ((price - sl) / price * 100) if price > 0 else 0
+    tp1_gain = ((tp1 - price) / price * 100) if (price > 0 and tp1 is not None) else 0
+    tp2_gain = ((tp2 - price) / price * 100) if (price > 0 and tp2 is not None) else 0
+    sl_loss = ((price - sl) / price * 100) if (price > 0 and sl is not None) else 0
+
+    # AUDIT-PUBLISH-QUALITY helper: render "—" when level is None.
+    def _lv(v):
+        if v is None:
+            return '—'
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return '—'
+        if f != f or not (-1e12 < f < 1e12):
+            return '—'
+        return f"{f:,.2f}"
+
+    price_str = _lv(price) if price > 0 else '—'
+    entry_min_str = _lv(entry_min)
+    entry_max_str = _lv(entry_max)
+    s1_str = _lv(s1)
+    s2_str = _lv(s2)
+    r1_str = _lv(r1)
+    r2_str = _lv(r2)
+    tp1_str = _lv(tp1)
+    tp2_str = _lv(tp2)
+    sl_str = _lv(sl)
+    rr_str = f"{rr:.1f}" if rr is not None and rr == rr else '—'
 
     is_paid = bool(sub and sub.get("is_paid"))
     is_fail_open = bool(sub and sub.get("_fail_open"))
@@ -535,10 +581,16 @@ def build_stock_card(
 
     days_left = sub.get("days_left", 7) if sub else 7
 
+    # AUDIT-PUBLISH-QUALITY: render gain/loss % only when level is valid
+    # (otherwise the card leaks "+0.0%" / "-0.0%" placeholders).
+    tp1_gain_str = f" (+{tp1_gain:.1f}%)" if (tp1 is not None and price > 0) else ""
+    tp2_gain_str = f" (+{tp2_gain:.1f}%)" if (tp2 is not None and price > 0) else ""
+    sl_loss_str = f" (-{sl_loss:.1f}%)" if (sl is not None and price > 0) else ""
+
     # سطر الهدف الثاني وحالة العضوية
     if is_vip:
         badge_header = "👑 <b>مشترك VIP | فحص غير محدود</b>"
-        tp2_line = f"🚀 <b>الهدف الثاني (TP2):</b> <code>{tp2:,.2f} ج.م</code> (+{tp2_gain:.1f}%) [مقاومة م2: {r2:,.2f}]"
+        tp2_line = f"🚀 <b>الهدف الثاني (TP2):</b> <code>{tp2_str} ج.م</code>{tp2_gain_str} [مقاومة م2: {r2_str}]"
         urgency_footer = ""
     else:
         badge_header = f"⏳ <b>فترة تجريبية (متبقي {days_left} أيام)</b>"
@@ -553,33 +605,36 @@ def build_stock_card(
     msg = f"""📊 <b>سهم {sym} — {name}</b>
 {badge_header}
 ━━━━━━━━━━━━━━━━━━━
-💰 <b>السعر الحالي:</b> <code>{price:,.2f} ج.م</code> ({chg_str})
+💰 <b>السعر الحالي:</b> <code>{price_str} ج.م</code> ({chg_str})
 
 📍 <b>نطاق الدخول المقترح (Buy Zone):</b>
-   من <code>{entry_min:,.2f}</code> إلى <code>{entry_max:,.2f}</code> ج.م
-   ⚠️ <i>لا تطارد السعر إذا تجاوز أعلى نقطة ({entry_max:,.2f} ج.م)!</i>
+   من <code>{entry_min_str}</code> إلى <code>{entry_max_str}</code> ج.م
+   ⚠️ <i>لا تطارد السعر إذا تجاوز أعلى نقطة ({entry_max_str} ج.م)!</i>
 
 🎯 <b>المستهدفات التداولية:</b>
-   🎯 <b>الهدف الأول (TP1):</b> <code>{tp1:,.2f} ج.م</code> (+{tp1_gain:.1f}%)
-      └ <i>عند مقاومة م1 ({r1:,.2f} ج.م) — جني 50% وتأمين الصفقة بنقل الوقف لدخولك.</i>
+   🎯 <b>الهدف الأول (TP1):</b> <code>{tp1_str} ج.م</code>{tp1_gain_str}
+      └ <i>عند مقاومة م1 ({r1_str} ج.م) — جني 50% وتأمين الصفقة بنقل الوقف لدخولك.</i>
    {tp2_line}
 
-🛡️ <b>وقف الخسارة الصارم (SL):</b> <code>{sl:,.2f} ج.م</code> (-{sl_loss:.1f}%)
-   └ <i>كسر الدعم د1 ({s1:,.2f} ج.م) بإغلاق يلغي الإيجابية.</i>
-   ⚖️ <b>نسبة العائد للمخاطرة (R:R):</b> 1 : {rr}
+🛡️ <b>وقف الخسارة الصارم (SL):</b> <code>{sl_str} ج.م</code>{sl_loss_str}
+   └ <i>كسر الدعم د1 ({s1_str} ج.م) بإغلاق يلغي الإيجابية.</i>
+   ⚖️ <b>نسبة العائد للمخاطرة (R:R):</b> 1 : {rr_str}
 
 🧱 <b>خارطة الدعوم والمقاومات الهيكلية:</b>
-   🛡️ <b>الدعوم:</b> د1 = <code>{s1:,.2f}</code> ج.م | د2 = <code>{s2:,.2f}</code> ج.م
-   🚀 <b>المقاومات:</b> م1 = <code>{r1:,.2f}</code> ج.م | م2 = <code>{r2:,.2f}</code> ج.م
+   🛡️ <b>الدعوم:</b> د1 = <code>{s1_str}</code> ج.م | د2 = <code>{s2_str}</code> ج.م
+   🚀 <b>المقاومات:</b> م1 = <code>{r1_str}</code> ج.م | م2 = <code>{r2_str}</code> ج.م
 
 💡 <b>توجيه المحلل الخبير:</b>
    {advice}
 ━━━━━━━━━━━━━━━━━━━
 🔍 <b>رادار الميكرز V40.2:</b>
-• الحالة: {radar['signal']} (ثقة {radar['confidence']}%)
-• المسار: {radar['direction']}
+• الحالة: {radar.get('signal') or '—'} (ثقة {radar.get('confidence') or '—'}%)
+• المسار: {radar.get('direction') or '—'}
 
-💡 <i>مستويات محسوبة هندسياً من قيعان وقمم السيولة الحقيقية.</i>{urgency_footer}"""
+💡 <i>مستويات محسوبة هندسياً من قيعان وقمم السيولة الحقيقية.</i>
+
+━━━━━━━━━━━━━━━━━━━
+⚠️ <i>تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.</i>{urgency_footer}"""
 
     if is_vip:
         keyboard = {

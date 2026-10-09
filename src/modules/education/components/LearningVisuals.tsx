@@ -728,7 +728,7 @@ export function DCAStrategyVisual() {
             <span className="font-semibold">{m.month}</span>
             <span>السعر: {m.price} ج.م</span>
             <span>استثمار: {m.invest} ج.م</span>
-            <span className="font-bold text-emerald-600">أسهم: {m.shares.toFixed(2)}</span>
+            <span className="font-bold text-emerald-600">أسهم: {(m.shares ?? 0).toFixed(2)}</span>
           </motion.div>
         ))}
       </div>
@@ -739,11 +739,11 @@ export function DCAStrategyVisual() {
         </div>
         <div className="flex justify-between text-sm">
           <span>إجمالي الأسهم:</span>
-          <span className="font-bold">{totalShares.toFixed(2)} سهم</span>
+          <span className="font-bold">{(totalShares ?? 0).toFixed(2)} سهم</span>
         </div>
         <div className="flex justify-between text-sm font-bold text-emerald-700 dark:text-emerald-400">
           <span>متوسط السعر:</span>
-          <span>{avgPrice.toFixed(2)} ج.م</span>
+          <span>{(avgPrice ?? 0).toFixed(2)} ج.م</span>
         </div>
       </div>
       <p className="text-xs text-muted-foreground mt-2 text-center">
@@ -1833,7 +1833,7 @@ export function OrderFlowVisual() {
                 )}
                 {/* Price (center) */}
                 <rect x="240" y={y} width="60" height={26} fill={lvl.best ? '#fef3c7' : '#f1f5f9'} stroke={lvl.best ? '#f59e0b' : 'transparent'} strokeWidth={lvl.best ? 1.5 : 0} rx="2" />
-                <text x="270" y={y + 17} textAnchor="middle" fontSize="11" fontWeight={lvl.best ? 700 : 500} fill="#0f172a">{lvl.price.toFixed(1)}</text>
+                <text x="270" y={y + 17} textAnchor="middle" fontSize="11" fontWeight={lvl.best ? 700 : 500} fill="#0f172a">{(lvl.price ?? 0).toFixed(1)}</text>
                 {/* Size label on bar */}
                 <text x={isAsk ? barX + 4 : barX + barWidth - 4} y={y + 17} textAnchor={isAsk ? 'start' : 'end'} fontSize="9" fill={isAsk ? '#7f1d1d' : '#064e3b'} fontWeight="600">{lvl.size}</text>
               </g>
@@ -2252,7 +2252,7 @@ export function RiskRewardVisual() {
             {/* Stop line (red) */}
             <line x1="0" y1={stopY} x2={SVG_W - 60} y2={stopY} stroke="#ef4444" strokeWidth="2" strokeDasharray="6,3" />
             <rect x={SVG_W - 60} y={stopY - 9} width="58" height="18" fill="#ef4444" rx="2" />
-            <text x={SVG_W - 31} y={stopY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">Stop {stop.toFixed(1)}</text>
+            <text x={SVG_W - 31} y={stopY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">Stop {(stop ?? 0).toFixed(1)}</text>
             {/* Draggable Stop handle */}
             <rect
               x="0"
@@ -2267,7 +2267,7 @@ export function RiskRewardVisual() {
             {/* Entry line (slate) */}
             <line x1="0" y1={entryY} x2={SVG_W - 60} y2={entryY} stroke="#475569" strokeWidth="2" />
             <rect x={SVG_W - 60} y={entryY - 9} width="58" height="18" fill="#475569" rx="2" />
-            <text x={SVG_W - 31} y={entryY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">Entry {entry.toFixed(1)}</text>
+            <text x={SVG_W - 31} y={entryY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">Entry {(entry ?? 0).toFixed(1)}</text>
             <rect
               x="0"
               y={entryY - 8}
@@ -2281,7 +2281,7 @@ export function RiskRewardVisual() {
             {/* Target line (emerald) */}
             <line x1="0" y1={targetY} x2={SVG_W - 60} y2={targetY} stroke="#10b981" strokeWidth="2" strokeDasharray="6,3" />
             <rect x={SVG_W - 60} y={targetY - 9} width="58" height="18" fill="#10b981" rx="2" />
-            <text x={SVG_W - 31} y={targetY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">Tgt {target.toFixed(1)}</text>
+            <text x={SVG_W - 31} y={targetY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff">Tgt {(target ?? 0).toFixed(1)}</text>
             <rect
               x="0"
               y={targetY - 8}
@@ -2302,18 +2302,18 @@ export function RiskRewardVisual() {
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center">
               <div className="text-[10px] text-red-700 dark:text-red-300">المخاطرة</div>
-              <div className="text-lg font-bold text-red-700 dark:text-red-300">{risk.toFixed(1)}</div>
+              <div className="text-lg font-bold text-red-700 dark:text-red-300">{(risk ?? 0).toFixed(1)}</div>
               <div className="text-[9px] text-muted-foreground">({(risk / entry * 100).toFixed(1)}%)</div>
             </div>
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center">
               <div className="text-[10px] text-emerald-700 dark:text-emerald-300">العائد</div>
-              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{reward.toFixed(1)}</div>
+              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{(reward ?? 0).toFixed(1)}</div>
               <div className="text-[9px] text-muted-foreground">({(reward / entry * 100).toFixed(1)}%)</div>
             </div>
             <div className="rounded-lg border border-slate-400/40 bg-slate-500/10 p-3 text-center">
               <div className="text-[10px] text-slate-700 dark:text-slate-300">R:R</div>
-              <div className="text-lg font-bold text-slate-700 dark:text-slate-300">{rr.toFixed(2)}</div>
-              <div className="text-[9px] text-muted-foreground">1 : {rr.toFixed(1)}</div>
+              <div className="text-lg font-bold text-slate-700 dark:text-slate-300">{(rr ?? 0).toFixed(2)}</div>
+              <div className="text-[9px] text-muted-foreground">1 : {(rr ?? 0).toFixed(1)}</div>
             </div>
           </div>
 
@@ -2336,7 +2336,7 @@ export function RiskRewardVisual() {
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">سعر الدخول (Entry)</span>
-                <span className="text-slate-600 dark:text-slate-400">{entry.toFixed(1)}</span>
+                <span className="text-slate-600 dark:text-slate-400">{(entry ?? 0).toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -2351,7 +2351,7 @@ export function RiskRewardVisual() {
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
                 <span className="font-semibold text-red-700 dark:text-red-400">الوقف (Stop)</span>
-                <span className="text-slate-600 dark:text-slate-400">{stop.toFixed(1)}</span>
+                <span className="text-slate-600 dark:text-slate-400">{(stop ?? 0).toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -2366,7 +2366,7 @@ export function RiskRewardVisual() {
             <div>
               <div className="mb-1 flex justify-between text-[11px]">
                 <span className="font-semibold text-emerald-700 dark:text-emerald-400">الهدف (Target)</span>
-                <span className="text-slate-600 dark:text-slate-400">{target.toFixed(1)}</span>
+                <span className="text-slate-600 dark:text-slate-400">{(target ?? 0).toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -2384,7 +2384,7 @@ export function RiskRewardVisual() {
           <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-[11px] leading-relaxed text-emerald-900 dark:text-emerald-200" dir="rtl">
             <div className="mb-1 font-bold">حجم الصفقة (Position Size):</div>
             لو مخاطرك المسموحة = 2% من رأس المال (مثلاً 1000 ج.م من 50,000)،
-            والمخاطرة لكل سهم = {risk.toFixed(1)} ج.م →
+            والمخاطرة لكل سهم = {(risk ?? 0).toFixed(1)} ج.م →
             <div className="mt-1 text-center font-bold text-emerald-700 dark:text-emerald-300">
               عدد الأسهم = {Math.floor(1000 / Math.max(0.1, risk))} سهم
             </div>
@@ -2507,7 +2507,7 @@ export function PortfolioAllocationVisual() {
             })}
             {/* Center label */}
             <text x={CX} y={CY - 6} textAnchor="middle" fontSize="11" fill="#64748b" fontWeight="600">العائد المتوقع</text>
-            <text x={CX} y={CY + 14} textAnchor="middle" fontSize="22" fill="#10b981" fontWeight="800">+{portfolioReturn.toFixed(1)}%</text>
+            <text x={CX} y={CY + 14} textAnchor="middle" fontSize="22" fill="#10b981" fontWeight="800">+{(portfolioReturn ?? 0).toFixed(1)}%</text>
             <text x={CX} y={CY + 32} textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="500">سنويًا</text>
           </svg>
 
@@ -2576,22 +2576,22 @@ export function PortfolioAllocationVisual() {
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <div className="text-[10px] text-muted-foreground">عائد متوقع</div>
-                <div className="text-base font-bold text-emerald-700 dark:text-emerald-400">+{portfolioReturn.toFixed(1)}%</div>
+                <div className="text-base font-bold text-emerald-700 dark:text-emerald-400">+{(portfolioReturn ?? 0).toFixed(1)}%</div>
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">تقلب إجمالي</div>
-                <div className="text-base font-bold text-amber-700 dark:text-amber-400">±{portfolioVol.toFixed(1)}%</div>
+                <div className="text-base font-bold text-amber-700 dark:text-amber-400">±{(portfolioVol ?? 0).toFixed(1)}%</div>
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground">Sharpe</div>
-                <div className="text-base font-bold text-slate-700 dark:text-slate-300">{sharpe.toFixed(2)}</div>
+                <div className="text-base font-bold text-slate-700 dark:text-slate-300">{(sharpe ?? 0).toFixed(2)}</div>
               </div>
             </div>
           </div>
 
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200" dir="rtl">
             <span className="font-bold">درس التنويع:</span> المحفظة دي بتدي عائد
-            متوقع +{portfolioReturn.toFixed(0)}% لكن بتقلب ±{portfolioVol.toFixed(0)}% فقط —
+            متوقع +{(portfolioReturn ?? 0).toFixed(0)}% لكن بتقلب ±{(portfolioVol ?? 0).toFixed(0)}% فقط —
             أقل من وضع 100% في Crypto (±70%) أو 100% في EGX (±24%). التنويع بيوازن
             بين العائد والمخاطرة.
           </div>

@@ -90,14 +90,14 @@ function formatCurrency(value: number | null | undefined): string {
 function formatPercent(value: number | null): string {
   if (value === null || value === undefined) return '—';
   const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return `${sign}${(value ?? 0).toFixed(2)}%`;
 }
 
 function abbreviateNumber(value: number): string {
   if (value == null || !Number.isFinite(value)) return '0';
   if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
   if (value >= 1_000) return (value / 1_000).toFixed(1) + 'K';
-  return value.toFixed(2);
+  return (value ?? 0).toFixed(2);
 }
 
 // ==================== ADD STOCK DIALOG ====================

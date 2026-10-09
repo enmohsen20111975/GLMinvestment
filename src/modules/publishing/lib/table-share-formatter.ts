@@ -202,7 +202,9 @@ export function formatTableToText({
     out += `\n... +${data.length - limit} سهم إضافي داخل المنصة\n`;
   }
 
+  // AUDIT-PUBLISH-QUALITY (constitution requirement): mandatory legal disclaimer.
   out += '\n━━━━━━━━━━━━━━━━━━━━\n';
+  out += '⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.\n';
   out += '📲 منصة استثمارية ذكية متعددة الأسواق\n';
   if (hashtags.length > 0) {
     out += hashtags.map((h) => (h.startsWith('#') ? h : `#${h}`)).join(' ') + '\n';
@@ -294,7 +296,9 @@ export function buildStockDetailShareText(
     out += `\n📝 ${details.notes}\n`;
   }
 
+  // AUDIT-PUBLISH-QUALITY (constitution requirement): mandatory legal disclaimer.
   out += '\n━━━━━━━━━━━━━━━━━━━━\n';
+  out += '⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.\n';
   out += '📲 منصة استثمارية ذكية — توقعات + رادار سيولة + تحليل فني\n';
   out += '#بورصة_مصر #EGX #تحليل_فني #' + ticker;
 
@@ -354,7 +358,9 @@ export function buildMarketSummaryText(
     out += `📝 ${highlights.notes}\n\n`;
   }
 
+  // AUDIT-PUBLISH-QUALITY (constitution requirement): mandatory legal disclaimer.
   out += '━━━━━━━━━━━━━━━━━━━━\n';
+  out += '⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.\n';
   out += '📲 منصة استثمارية ذكية\n';
   out += '#بورصة_مصر #EGX #تداول #استثمار';
 

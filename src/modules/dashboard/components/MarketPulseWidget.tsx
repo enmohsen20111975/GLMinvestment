@@ -203,7 +203,7 @@ function arcPath(angleStartDeg: number, angleEndDeg: number, r: number = GAUGE_R
   const largeArc = Math.abs(angleStartDeg - angleEndDeg) > 180 ? 1 : 0;
   // sweep=0 في SVG = اتجاه الزاوية السالبة = عكس عقارب الساعة رياضياً
   // = يمر من الأعلى (لأن y مقلوبة). هذا ما نريده للنصف العلوي.
-  return `M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)} A ${r} ${r} 0 ${largeArc} 0 ${p2.x.toFixed(3)} ${p2.y.toFixed(3)}`;
+  return `M ${(p1.x ?? 0).toFixed(3)} ${(p1.y ?? 0).toFixed(3)} A ${r} ${r} 0 ${largeArc} 0 ${(p2.x ?? 0).toFixed(3)} ${(p2.y ?? 0).toFixed(3)}`;
 }
 
 interface Zone {
@@ -236,7 +236,7 @@ function PulseGauge({ score }: { score: number }) {
       viewBox="0 0 220 130"
       className="w-full h-auto"
       role="img"
-      aria-label={`مؤشر نبض السوق: ${score.toFixed(1)} من 5`}
+      aria-label={`مؤشر نبض السوق: ${(score ?? 0).toFixed(1)} من 5`}
     >
       {/* مناطق الألوان */}
       {ZONES.map((z) => (
@@ -747,7 +747,7 @@ export function MarketPulseWidget() {
                 )}
                 dir="ltr"
               >
-                {pulse ? (pulse.score >= 0 ? `+${pulse.score.toFixed(1)}` : pulse.score.toFixed(1)) : '—'}
+                {pulse ? (pulse.score >= 0 ? `+${(pulse.score ?? 0).toFixed(1)}` : (pulse.score ?? 0).toFixed(1)) : '—'}
               </span>
               <span className="text-[9px] text-slate-400 dark:text-slate-500">
                 من +5

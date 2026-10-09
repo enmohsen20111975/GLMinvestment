@@ -356,7 +356,7 @@ export function PredictionCard({
                       : 'text-rose-600 dark:text-rose-400',
                 )}
               >
-                {confidence.toFixed(0)}%
+                {(confidence ?? 0).toFixed(0)}%
               </span>
             </span>
           )}
@@ -365,7 +365,7 @@ export function PredictionCard({
             <span className="flex items-center gap-1">
               <Activity className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-muted-foreground">النقاط:</span>
-              <span className="font-bold tabular-nums">{masterScore.toFixed(0)}</span>
+              <span className="font-bold tabular-nums">{(masterScore ?? 0).toFixed(0)}</span>
             </span>
           )}
 
@@ -374,7 +374,7 @@ export function PredictionCard({
               variant="outline"
               className="text-[10px] font-mono font-bold border-emerald-300 text-emerald-700 dark:border-emerald-800 dark:text-emerald-400"
             >
-              R/R {riskReward.toFixed(2)}
+              R/R {(riskReward ?? 0).toFixed(2)}
             </Badge>
           )}
 
@@ -397,7 +397,7 @@ export function PredictionCard({
           {riskPct !== null && (
             <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
               <ArrowDownCircle className="h-3.5 w-3.5" />
-              <span className="font-semibold tabular-nums">-{riskPct.toFixed(1)}%</span>
+              <span className="font-semibold tabular-nums">-{(riskPct ?? 0).toFixed(1)}%</span>
               <span className="text-muted-foreground">المخاطرة</span>
             </span>
           )}

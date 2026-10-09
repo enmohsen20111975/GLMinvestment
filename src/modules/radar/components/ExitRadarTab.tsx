@@ -152,18 +152,18 @@ const EXIT_PATHS = [
 // ============================================================================
 function fmtVolRatio(n?: number): string {
   if (n == null || Number.isNaN(n)) return '—';
-  return `${n.toFixed(2)}×`;
+  return `${(n ?? 0).toFixed(2)}×`;
 }
 
 function fmtPrice(n?: number): string {
   if (n == null || Number.isNaN(n)) return '—';
-  return n.toFixed(2);
+  return (n ?? 0).toFixed(2);
 }
 
 function fmtPct(n?: number | null, withSign = true): string {
   if (n == null || Number.isNaN(n)) return '—';
   const sign = withSign && n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${(n ?? 0).toFixed(1)}%`;
 }
 
 // ============================================================================

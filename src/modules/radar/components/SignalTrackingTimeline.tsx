@@ -91,7 +91,7 @@ const fmtNum = (n: number | null | undefined, digits = 2): string => {
 const fmtPct = (n: number | null | undefined): string => {
   if (n == null || isNaN(n as number)) return '-';
   const sign = n > 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${(n ?? 0).toFixed(1)}%`;
 };
 
 const fmtDate = (d: string | null): string => {
@@ -165,7 +165,7 @@ function PriceJourneySVG({
   }));
 
   const pathD = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${(p.x ?? 0).toFixed(1)} ${(p.y ?? 0).toFixed(1)}`)
     .join(' ');
 
   const isUp = currentPrice >= entryPrice;
@@ -219,7 +219,7 @@ function PriceJourneySVG({
 
         {/* Area under the curve */}
         <path
-          d={`${pathD} L ${last.x.toFixed(1)} ${H - padY} L ${points[0].x.toFixed(1)} ${H - padY} Z`}
+          d={`${pathD} L ${(last.x ?? 0).toFixed(1)} ${H - padY} L ${points[0].(x ?? 0).toFixed(1)} ${H - padY} Z`}
           fill="url(#timeline-grad)"
           stroke="none"
         />

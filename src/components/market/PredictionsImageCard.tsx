@@ -383,7 +383,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
         >
           <div style={{ fontSize: 11, color: '#57534e', marginBottom: 2, fontWeight: 600 }}>نسبة الدقة والنجاح</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: '#15803d', lineHeight: 1.1 }}>
-            {stats.winRate.toFixed(0)}%
+            {(stats.winRate ?? 0).toFixed(0)}%
           </div>
         </div>
         <div
@@ -398,7 +398,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
         >
           <div style={{ fontSize: 11, color: '#57534e', marginBottom: 2, fontWeight: 600 }}>متوسط الربح المحقق</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: stats.avgPnl >= 0 ? '#15803d' : '#b91c1c', lineHeight: 1.1 }}>
-            {stats.avgPnl >= 0 ? `+${stats.avgPnl.toFixed(2)}%` : `${stats.avgPnl.toFixed(2)}%`}
+            {stats.avgPnl >= 0 ? `+${(stats.avgPnl ?? 0).toFixed(2)}%` : `${(stats.avgPnl ?? 0).toFixed(2)}%`}
           </div>
         </div>
       </div>
@@ -470,7 +470,7 @@ const accentDark = '#0f766e'; // Teal/emerald theme
                         }`}
                       >
                         {pnl > 0 ? '+' : ''}
-                        {pnl.toFixed(2)}%
+                        {(pnl ?? 0).toFixed(2)}%
                       </span>
                       {outcome && (
                         <span

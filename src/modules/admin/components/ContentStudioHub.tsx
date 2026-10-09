@@ -213,8 +213,8 @@ function buildTradeScenes(trades: SuccessfulTrade[]): Scene[] {
     emoji: '📈',
     texts: [
       { ...EFFECT_PRESETS.headline, text: t.ticker, color: '#ffffff', fontSize: 64 },
-      { ...EFFECT_PRESETS.number, text: `+${t.returnPct.toFixed(1)}%`, color: '#fbbf24', delay: 0.3 },
-      { ...EFFECT_PRESETS.bullet, text: `دخول: ${t.entryPrice.toFixed(2)} → خروج: ${t.exitPrice.toFixed(2)}`, color: '#ffffff', delay: 0.6 },
+      { ...EFFECT_PRESETS.number, text: `+${(t.returnPct ?? 0).toFixed(1)}%`, color: '#fbbf24', delay: 0.3 },
+      { ...EFFECT_PRESETS.bullet, text: `دخول: ${(t.entryPrice ?? 0).toFixed(2)} → خروج: ${(t.exitPrice ?? 0).toFixed(2)}`, color: '#ffffff', delay: 0.6 },
       { ...EFFECT_PRESETS.subtext, text: t.signal, color: 'rgba(255,255,255,0.85)', delay: 0.9, fontSize: 28 },
       { ...EFFECT_PRESETS.hashtag, text: `#${t.ticker} #صفقة_ناجحة`, delay: 1.2 },
     ],
@@ -575,8 +575,8 @@ export function ContentStudioHub() {
         emoji: '📈',
         texts: [
           { ...EFFECT_PRESETS.headline, text: t.ticker, color: '#ffffff', fontSize: 64 },
-          { ...EFFECT_PRESETS.number, text: `+${t.returnPct.toFixed(1)}%`, color: '#fbbf24', delay: 0.3 },
-          { ...EFFECT_PRESETS.bullet, text: `دخول: ${t.entryPrice.toFixed(2)} → خروج: ${t.exitPrice.toFixed(2)}`, color: '#ffffff', delay: 0.6 },
+          { ...EFFECT_PRESETS.number, text: `+${(t.returnPct ?? 0).toFixed(1)}%`, color: '#fbbf24', delay: 0.3 },
+          { ...EFFECT_PRESETS.bullet, text: `دخول: ${(t.entryPrice ?? 0).toFixed(2)} → خروج: ${(t.exitPrice ?? 0).toFixed(2)}`, color: '#ffffff', delay: 0.6 },
           { ...EFFECT_PRESETS.subtext, text: t.signal || 'إشارة قوية', color: 'rgba(255,255,255,0.85)', delay: 0.9, fontSize: 28 },
           { ...EFFECT_PRESETS.hashtag, text: `#${t.ticker} #صفقة_ناجحة #${t.market}`, delay: 1.2 },
         ],
@@ -755,10 +755,10 @@ export function ContentStudioHub() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-sm">{t.ticker}</span>
-                          <Badge className="bg-emerald-500 text-white text-[9px]">+{t.returnPct.toFixed(1)}%</Badge>
+                          <Badge className="bg-emerald-500 text-white text-[9px]">+{(t.returnPct ?? 0).toFixed(1)}%</Badge>
                         </div>
                         <p className="text-[10px] text-muted-foreground truncate">{t.signal || 'إشارة قوية'}</p>
-                        <p className="text-[9px] text-muted-foreground">{t.entryPrice.toFixed(2)} → {t.exitPrice.toFixed(2)} • {t.holdingDays}يوم</p>
+                        <p className="text-[9px] text-muted-foreground">{(t.entryPrice ?? 0).toFixed(2)} → {(t.exitPrice ?? 0).toFixed(2)} • {t.holdingDays}يوم</p>
                       </div>
                     </label>
                   ))}

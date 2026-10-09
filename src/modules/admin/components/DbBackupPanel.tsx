@@ -292,7 +292,7 @@ export function DbBackupPanel() {
         const totalMb = json.archives?.reduce((s, a) => s + a.size_bytes, 0) / 1024 / 1024;
 
         if (created > 0) {
-          toast.success(`تم إنشاء ${created} ملف أرشيف (الحجم الإجمالي: ${totalMb.toFixed(1)} MB) بمقاس أقصى ${maxPartSizeMb} MB`);
+          toast.success(`تم إنشاء ${created} ملف أرشيف (الحجم الإجمالي: ${(totalMb ?? 0).toFixed(1)} MB) بمقاس أقصى ${maxPartSizeMb} MB`);
         }
 
         if (pushToGithub) {

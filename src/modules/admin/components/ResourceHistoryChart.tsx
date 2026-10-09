@@ -190,7 +190,7 @@ function ChartTooltip({ active, payload, label, range }: any) {
               {p.name}
             </span>
             <span className="font-mono font-semibold text-foreground">
-              {typeof p.value === 'number' ? p.value.toFixed(1) : '—'}%
+              {typeof p.value === 'number' ? (p.value ?? 0).toFixed(1) : '—'}%
             </span>
           </div>
         ))}
@@ -220,7 +220,7 @@ function NetTooltip({ active, payload, label, range }: any) {
               {p.name}
             </span>
             <span className="font-mono font-semibold text-foreground">
-              {typeof p.value === 'number' ? p.value.toFixed(2) : '—'} KB/s
+              {typeof p.value === 'number' ? (p.value ?? 0).toFixed(2) : '—'} KB/s
             </span>
           </div>
         ))}

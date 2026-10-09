@@ -263,7 +263,7 @@ export function SmartAssistantPanel() {
             "text-xs",
             data.summary.totalProfitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
           )}>
-            ({data.summary.totalProfitLossPercent >= 0 ? '+' : ''}{data.summary.totalProfitLossPercent.toFixed(2)}%)
+            ({data.summary.totalProfitLossPercent >= 0 ? '+' : ''}{(data.summary.totalProfitLossPercent ?? 0).toFixed(2)}%)
           </div>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
@@ -351,7 +351,7 @@ export function SmartAssistantPanel() {
                             "text-sm",
                             stock.profitLossPercent >= 0 ? "text-emerald-500" : "text-red-600"
                           )}>
-                            ({stock.profitLossPercent >= 0 ? '+' : ''}{stock.profitLossPercent.toFixed(1)}%)
+                            ({stock.profitLossPercent >= 0 ? '+' : ''}{(stock.profitLossPercent ?? 0).toFixed(1)}%)
                           </div>
                         </div>
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -391,15 +391,15 @@ export function SmartAssistantPanel() {
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">السعر الحالى</div>
-                              <div className="font-medium">{stock.stockInfo.current_price.toFixed(2)}</div>
+                              <div className="font-medium">{(stock.stockInfo.current_price ?? 0).toFixed(2)}</div>
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">الدعم</div>
-                              <div className="font-medium text-emerald-500">{stock.stockInfo.support.toFixed(2)}</div>
+                              <div className="font-medium text-emerald-500">{(stock.stockInfo.support ?? 0).toFixed(2)}</div>
                             </div>
                             <div className="bg-muted/50 p-2 rounded">
                               <div className="text-muted-foreground">المقاومة</div>
-                              <div className="font-medium text-red-600">{stock.stockInfo.resistance.toFixed(2)}</div>
+                              <div className="font-medium text-red-600">{(stock.stockInfo.resistance ?? 0).toFixed(2)}</div>
                             </div>
                           </div>
                         )}
@@ -410,13 +410,13 @@ export function SmartAssistantPanel() {
                             {stock.recommendation.targetPrice && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Target className="h-4 w-4 text-emerald-500" />
-                                <span>الهدف: <strong>{stock.recommendation.targetPrice.toFixed(2)}</strong></span>
+                                <span>الهدف: <strong>{(stock.recommendation.targetPrice ?? 0).toFixed(2)}</strong></span>
                               </div>
                             )}
                             {stock.recommendation.stopLoss && (
                               <div className="flex items-center gap-2 text-sm">
                                 <ShieldAlert className="h-4 w-4 text-red-600" />
-                                <span>وقف الخسارة: <strong>{stock.recommendation.stopLoss.toFixed(2)}</strong></span>
+                                <span>وقف الخسارة: <strong>{(stock.recommendation.stopLoss ?? 0).toFixed(2)}</strong></span>
                               </div>
                             )}
                           </div>
@@ -436,7 +436,7 @@ export function SmartAssistantPanel() {
                           )}
                           {stock.stockInfo?.dividend_yield && stock.stockInfo.dividend_yield > 4 && (
                             <Badge variant="outline" className="bg-blue-50 text-teal-700 border-teal-300">
-                              يوزع {stock.stockInfo.dividend_yield.toFixed(1)}% أرباح
+                              يوزع {(stock.stockInfo.dividend_yield ?? 0).toFixed(1)}% أرباح
                             </Badge>
                           )}
                         </div>
@@ -516,7 +516,7 @@ export function SmartAssistantPanel() {
                         "font-bold",
                         gold.profitLoss >= 0 ? "text-emerald-500" : "text-red-600"
                       )}>
-                        {gold.profitLoss >= 0 ? '+' : ''}{gold.profitLossPercent.toFixed(1)}%
+                        {gold.profitLoss >= 0 ? '+' : ''}{(gold.profitLossPercent ?? 0).toFixed(1)}%
                       </div>
                     </div>
                   </div>

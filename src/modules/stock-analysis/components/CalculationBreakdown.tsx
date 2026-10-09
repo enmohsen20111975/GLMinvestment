@@ -139,12 +139,12 @@ function FairValueSection() {
 
   const grahamCalc = details?.graham_calc as string || (
     bvps > 0 && eps > 0
-      ? `√(22.5 × ${eps.toFixed(2)} × ${bvps.toFixed(2)}) = √(${(22.5 * eps * bvps).toFixed(2)}) = ${grahamNumber.toFixed(2)}`
+      ? `√(22.5 × ${(eps ?? 0).toFixed(2)} × ${(bvps ?? 0).toFixed(2)}) = √(${(22.5 * eps * bvps).toFixed(2)}) = ${(grahamNumber ?? 0).toFixed(2)}`
       : 'غير متاح (EPS أو BVPS غير صالح)'
   );
   const peCalc = details?.pe_calc as string || (
     eps > 0
-      ? `${sectorPE} × ${eps.toFixed(2)} = ${peBased.toFixed(2)}`
+      ? `${sectorPE} × ${(eps ?? 0).toFixed(2)} = ${(peBased ?? 0).toFixed(2)}`
       : 'غير متاح (EPS غير صالح)'
   );
   const lynchCalc = details?.lynch_calc as string || null;
@@ -157,7 +157,7 @@ function FairValueSection() {
         <div className="text-center">
           <p className="text-[10px] text-muted-foreground">السعر الحالي</p>
           {currentPrice > 0 ? (
-            <p className="text-lg font-bold font-mono">{currentPrice.toFixed(2)}</p>
+            <p className="text-lg font-bold font-mono">{(currentPrice ?? 0).toFixed(2)}</p>
           ) : (
             <p className="text-sm font-bold font-mono text-amber-600">غير متوفر</p>
           )}
@@ -180,7 +180,7 @@ function FairValueSection() {
               )}
             </div>
           ) : avgFairValue > 0 ? (
-            <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{avgFairValue.toFixed(2)}</p>
+            <p className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{(avgFairValue ?? 0).toFixed(2)}</p>
           ) : (
             <p className="text-sm font-bold font-mono text-gray-500">غير متاح</p>
           )}
@@ -191,7 +191,7 @@ function FairValueSection() {
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground">الفرق</p>
               <p className={cn('text-lg font-bold font-mono', upsideToFair >= 0 ? 'text-emerald-600' : 'text-red-600')}>
-                {upsideToFair >= 0 ? '+' : ''}{upsideToFair.toFixed(1)}%
+                {upsideToFair >= 0 ? '+' : ''}{(upsideToFair ?? 0).toFixed(1)}%
               </p>
             </div>
           </>
@@ -222,7 +222,7 @@ function FairValueSection() {
           <FormulaRow
             label="الحساب"
             formula={grahamCalc}
-            result={grahamNumber > 0 ? `${grahamNumber.toFixed(2)} EGP` : undefined}
+            result={grahamNumber > 0 ? `${(grahamNumber ?? 0).toFixed(2)} EGP` : undefined}
           />
 
           <Separator />
@@ -236,7 +236,7 @@ function FairValueSection() {
           <FormulaRow
             label="الحساب"
             formula={peCalc}
-            result={peBased > 0 ? `${peBased.toFixed(2)} EGP` : undefined}
+            result={peBased > 0 ? `${(peBased ?? 0).toFixed(2)} EGP` : undefined}
           />
 
           {/* Lynch (only if professional analysis available) */}
@@ -251,7 +251,7 @@ function FairValueSection() {
               <FormulaRow
                 label="الحساب"
                 formula={lynchCalc}
-                result={`${lynchValue.toFixed(2)} EGP`}
+                result={`${(lynchValue ?? 0).toFixed(2)} EGP`}
               />
             </>
           )}
@@ -274,7 +274,7 @@ function FairValueSection() {
               <FormulaRow
                 label="الحساب"
                 formula={dcfCalc}
-                result={`${dcfValue.toFixed(2)} EGP`}
+                result={`${(dcfValue ?? 0).toFixed(2)} EGP`}
               />
             </>
           )}
@@ -298,11 +298,11 @@ function FairValueSection() {
               <>
                 <code className="text-xs font-mono text-emerald-600 dark:text-emerald-400" dir="ltr" lang="en">
                   {fairValueData
-                    ? `Graham: ${grahamNumber.toFixed(2)} | Lynch: ${lynchValue.toFixed(2)} | DCF: ${dcfValue.toFixed(2)} | P/E: ${peBased.toFixed(2)}`
-                    : `Graham: ${grahamNumber.toFixed(2)} | P/E: ${peBased.toFixed(2)}`}
+                    ? `Graham: ${(grahamNumber ?? 0).toFixed(2)} | Lynch: ${(lynchValue ?? 0).toFixed(2)} | DCF: ${(dcfValue ?? 0).toFixed(2)} | P/E: ${(peBased ?? 0).toFixed(2)}`
+                    : `Graham: ${(grahamNumber ?? 0).toFixed(2)} | P/E: ${(peBased ?? 0).toFixed(2)}`}
                 </code>
                 <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mt-1">
-                  المتوسط = {avgFairValue.toFixed(2)} EGP
+                  المتوسط = {(avgFairValue ?? 0).toFixed(2)} EGP
                 </p>
               </>
             ) : (
@@ -372,7 +372,7 @@ function TechnicalCalculationsSection() {
         <p className="text-sm font-bold text-foreground mb-2">١. مؤشر القوة النسبية (RSI)</p>
         <FormulaRow
           label="RSI الحالي"
-          formula={`${rsi.toFixed(1)}`}
+          formula={`${(rsi ?? 0).toFixed(1)}`}
           result={rsiZone}
           highlight={rsi < 30 || rsi > 70}
         />
@@ -390,11 +390,11 @@ function TechnicalCalculationsSection() {
         <p className="text-sm font-bold text-foreground mb-2">٢. المتوسطات المتحركة</p>
         <FormulaRow
           label="MA50"
-          formula={ma50.toFixed(2)}
+          formula={(ma50 ?? 0).toFixed(2)}
         />
         <FormulaRow
           label="MA200"
-          formula={ma200.toFixed(2)}
+          formula={(ma200 ?? 0).toFixed(2)}
         />
         <FormulaRow
           label="الموقع"
@@ -413,15 +413,15 @@ function TechnicalCalculationsSection() {
           <>
             <FormulaRow
               label="MACD Line"
-              formula={macdLine.toFixed(4)}
+              formula={(macdLine ?? 0).toFixed(4)}
             />
             <FormulaRow
               label="Signal Line"
-              formula={macdSignal.toFixed(4)}
+              formula={(macdSignal ?? 0).toFixed(4)}
             />
             <FormulaRow
               label="Histogram"
-              formula={macdHist.toFixed(4)}
+              formula={(macdHist ?? 0).toFixed(4)}
               result={macdInterpretation}
               highlight={macdHist > 0}
             />
@@ -485,7 +485,7 @@ function ScoreCalculationsSection() {
         />
         <FormulaRow
           label="الحساب"
-          formula={`${technical.toFixed(0)}×0.30 + ${value.toFixed(0)}×0.25 + ${quality.toFixed(0)}×0.25 + ${riskAdjMomentum.toFixed(1)}×0.10 + ${(100 - riskAdjScore).toFixed(1)}×0.10`}
+          formula={`${(technical ?? 0).toFixed(0)}×0.30 + ${(value ?? 0).toFixed(0)}×0.25 + ${(quality ?? 0).toFixed(0)}×0.25 + ${(riskAdjMomentum ?? 0).toFixed(1)}×0.10 + ${(100 - riskAdjScore).toFixed(1)}×0.10`}
           result={`${calculatedComposite}/100`}
           highlight={calculatedComposite >= 60}
         />
@@ -500,35 +500,35 @@ function ScoreCalculationsSection() {
         <FormulaRow
           label="النتيجة الفنية"
           formula="RSI + MACD + بولينجر + MA + ستوكاستيك"
-          result={`${technical.toFixed(0)}/100`}
+          result={`${(technical ?? 0).toFixed(0)}/100`}
           highlight={technical >= 60}
         />
 
         <FormulaRow
           label="نتيجة القيمة"
           formula="P/E + P/B + توزيعات + EPS"
-          result={`${value.toFixed(0)}/100`}
+          result={`${(value ?? 0).toFixed(0)}/100`}
           highlight={value >= 60}
         />
 
         <FormulaRow
           label="نتيجة الجودة"
           formula="ROE + ديون/حقوق + ثبات الأرباح"
-          result={`${quality.toFixed(0)}/100`}
+          result={`${(quality ?? 0).toFixed(0)}/100`}
           highlight={quality >= 60}
         />
 
         <FormulaRow
           label="نتيجة الزخم"
           formula="ROC + MACD + السعر مقابل المتوسطات"
-          result={`${momentum.toFixed(0)}/100`}
+          result={`${(momentum ?? 0).toFixed(0)}/100`}
           highlight={momentum >= 60}
         />
 
         <FormulaRow
           label="نتيجة المخاطر"
           formula="ATR% + أقصى انخفاض + التقلبات السنوية"
-          result={`${risk.toFixed(0)}/100`}
+          result={`${(risk ?? 0).toFixed(0)}/100`}
           highlight={risk <= 40}
         />
 
@@ -536,8 +536,8 @@ function ScoreCalculationsSection() {
 
         <FormulaRow
           label="زخم معدل المخاطر"
-          formula={`${momentum.toFixed(0)} × (100 - ${risk.toFixed(0)}) / 100`}
-          result={riskAdjMomentum.toFixed(1)}
+          formula={`${(momentum ?? 0).toFixed(0)} × (100 - ${(risk ?? 0).toFixed(0)}) / 100`}
+          result={(riskAdjMomentum ?? 0).toFixed(1)}
         />
       </div>
 
@@ -561,7 +561,7 @@ function ScoreCalculationsSection() {
                 style={{ width: `${item.score}%` }}
               />
             </div>
-            <span className="text-xs font-bold min-w-[30px] text-left">{item.score.toFixed(0)}</span>
+            <span className="text-xs font-bold min-w-[30px] text-left">{(item.score ?? 0).toFixed(0)}</span>
           </div>
         ))}
       </div>

@@ -107,12 +107,12 @@ function fmtNum(n: number): string {
   if (abs >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
   if (abs >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (abs >= 1_000) return (n / 1_000).toFixed(0) + 'K';
-  return n.toFixed(0);
+  return (n ?? 0).toFixed(0);
 }
 
 function fmtPct(n: number): string {
   const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(2)}%`;
+  return `${sign}${(n ?? 0).toFixed(2)}%`;
 }
 
 // ─── Columns for UnifiedTable (Sector Flow) ──────────────────────────────────

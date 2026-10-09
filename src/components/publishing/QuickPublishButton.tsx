@@ -83,8 +83,8 @@ export function QuickPublishButton({
 
     return `📊 التقرير الشامل لتقييم وتوقع السهم (${ticker} - ${stockName || ''})
 ----------------------------------------
-🔹 السعر الحالي: ${currentPrice ? currentPrice.toFixed(2) : '—'} ج.م
-🔹 الإشارة الفنية: ${signalText} (${analysisData?.score ? analysisData.score.toFixed(0) : '50'} درجة)
+🔹 السعر الحالي: ${currentPrice ? (currentPrice ?? 0).toFixed(2) : '—'} ج.م
+🔹 الإشارة الفنية: ${signalText} (${analysisData?.score ? (analysisData.score ?? 0).toFixed(0) : '50'} درجة)
 🔹 السعر المستهدف المتوقع: ${targetVal} ج.م
 🔹 الإطار الزمني: أسبوع
 ----------------------------------------
@@ -209,7 +209,7 @@ ${reasonsList}
                 {currentPrice && (
                   <div className="mr-auto text-left">
                     <p className="text-sm text-muted-foreground">السعر الحالي</p>
-                    <p className="font-bold">{currentPrice.toFixed(2)} ج.م</p>
+                    <p className="font-bold">{(currentPrice ?? 0).toFixed(2)} ج.م</p>
                   </div>
                 )}
               </div>
@@ -223,7 +223,7 @@ ${reasonsList}
                   </Badge>
                   {analysisData.score && (
                     <span className="text-sm font-bold">
-                      ({analysisData.score.toFixed(0)} درجة)
+                      ({(analysisData.score ?? 0).toFixed(0)} درجة)
                     </span>
                   )}
                 </div>

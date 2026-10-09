@@ -98,7 +98,7 @@ const fmtPct = (n: number | null | undefined, withSign = true): string => {
   if (n == null || isNaN(n as number)) return '-';
   const num = Number(n);
   const sign = withSign && num > 0 ? '+' : '';
-  return `${sign}${num.toFixed(1)}%`;
+  return `${sign}${(num ?? 0).toFixed(1)}%`;
 };
 
 const fmtCurrency = (n: number | null | undefined, currency: string): string => {
@@ -106,7 +106,7 @@ const fmtCurrency = (n: number | null | undefined, currency: string): string => 
   const num = Number(n);
   const symbol = currency === 'EGP' ? 'ج.م' : currency === 'SAR' ? 'ر.س' : currency === 'KWD' ? 'د.ك' : currency === 'QAR' ? 'ر.ق' : '$';
   if (num >= 1000) return `${num.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${symbol}`;
-  return `${num.toFixed(2)} ${symbol}`;
+  return `${(num ?? 0).toFixed(2)} ${symbol}`;
 };
 
 // ─── Types (mirror API contract) ─────────────────────────────────────────

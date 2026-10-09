@@ -21,6 +21,10 @@ export const COMMUNITY_PROMPT = 'انضم الآن إلى مجتمع المتد�
 
 /**
  * بلوك الروابط الرسمية كامل - يُضاف لأي نص بيتنسخ أو بيتشار
+ *
+ * AUDIT-PUBLISH-QUALITY (Task 2026-10-08): includes the mandatory legal
+ * disclaimer (constitution requirement — لا نشر بدون إخلاء مسؤولية)
+ * so EVERY shared/copied text carries it automatically via withOfficialLinks().
  */
 export const OFFICIAL_LINKS_BLOCK = `
 ${COMMUNITY_PROMPT}
@@ -31,7 +35,9 @@ ${COMMUNITY_PROMPT}
 🤖 بوت التحليل: ${OFFICIAL_LINKS.bot}
 📘 فيسبوك: ${OFFICIAL_LINKS.facebook}
 ✈️ تليجرام: ${OFFICIAL_LINKS.telegram}
-💬 واتساب: ${OFFICIAL_LINKS.whatsapp}`;
+💬 واتساب: ${OFFICIAL_LINKS.whatsapp}
+
+⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.`;
 
 /**
  * نسخة مختصرة للنصوص القصيرة (سطر واحد)

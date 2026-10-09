@@ -640,13 +640,13 @@ export function EntryTimingSimulator() {
               <MetricCard
                 icon={Target}
                 label="معدل الربح"
-                value={`${active.winRate.toFixed(0)}%`}
+                value={`${(active.winRate ?? 0).toFixed(0)}%`}
                 color="text-amber-700 dark:text-amber-400"
               />
               <MetricCard
                 icon={Activity}
                 label="متوسط R"
-                value={active.avgR.toFixed(2)}
+                value={(active.avgR ?? 0).toFixed(2)}
                 color={active.avgR >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}
               />
               <MetricCard
@@ -814,7 +814,7 @@ function PriceChartWithMarkers({
   for (let i = 0; i < N; i += step) {
     linePoints.push({ x: x(i), y: y(prices[i].close) });
   }
-  const linePath = linePoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const linePath = linePoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${(p.x ?? 0).toFixed(1)} ${(p.y ?? 0).toFixed(1)}`).join(' ');
 
   // Markers (max 20 to avoid clutter)
   const markers = result.entryMarkers.slice(0, 20);
@@ -840,7 +840,7 @@ function PriceChartWithMarkers({
             <g key={i}>
               <line x1={PAD_L} y1={yy} x2={W - PAD_R} y2={yy} stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray="3,3" />
               <text x={PAD_L - 6} y={yy + 3} textAnchor="end" fontSize="9" fill="#64748b">
-                {v.toFixed(1)}
+                {(v ?? 0).toFixed(1)}
               </text>
             </g>
           );
@@ -908,9 +908,9 @@ function TradeList({ result }: { result: BacktestResult }) {
             {trades.map((t, i) => (
               <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
                 <td className="px-2 py-1 text-muted-foreground ltr:text-left" dir="ltr">{t.entryDate}</td>
-                <td className="px-2 py-1 ltr:text-left" dir="ltr">{t.entryPrice.toFixed(2)}</td>
+                <td className="px-2 py-1 ltr:text-left" dir="ltr">{(t.entryPrice ?? 0).toFixed(2)}</td>
                 <td className="px-2 py-1 text-muted-foreground ltr:text-left" dir="ltr">{t.exitDate}</td>
-                <td className="px-2 py-1 ltr:text-left" dir="ltr">{t.exitPrice.toFixed(2)}</td>
+                <td className="px-2 py-1 ltr:text-left" dir="ltr">{(t.exitPrice ?? 0).toFixed(2)}</td>
                 <td
                   className={cn(
                     'px-2 py-1 font-bold ltr:text-left',
@@ -927,7 +927,7 @@ function TradeList({ result }: { result: BacktestResult }) {
                   )}
                   dir="ltr"
                 >
-                  {t.rMultiple.toFixed(2)}R
+                  {(t.rMultiple ?? 0).toFixed(2)}R
                 </td>
                 <td className="px-2 py-1 text-muted-foreground">{t.reason}</td>
               </tr>

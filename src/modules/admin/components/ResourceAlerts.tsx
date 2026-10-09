@@ -389,7 +389,7 @@ export function ResourceAlerts({ className }: ResourceAlertsProps) {
                       </div>
                       {typeof a.value === 'number' && !Number.isNaN(a.value) && (
                         <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-                          القيمة: {a.value.toFixed(1)}
+                          القيمة: {(a.value ?? 0).toFixed(1)}
                           {a.resource === 'cpu' || a.resource === 'ram' || a.resource === 'disk' ? '%' : ''}
                         </div>
                       )}

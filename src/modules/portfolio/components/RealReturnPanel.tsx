@@ -158,12 +158,12 @@ export function RealReturnPanel() {
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">العائد المرجح</div>
-            <div className="font-bold text-emerald-500">{data.summary.weighted_yield.toFixed(1)}%</div>
+            <div className="font-bold text-emerald-500">{(data.summary.weighted_yield ?? 0).toFixed(1)}%</div>
           </div>
           <div className="p-2 rounded-md bg-muted/50">
             <div className="text-xs text-muted-foreground">العائد الحقيقي</div>
             <div className={cn('font-bold', data.summary.weighted_real_return < 0 ? 'text-red-600' : 'text-emerald-500')}>
-              {data.summary.weighted_real_return.toFixed(1)}%
+              {(data.summary.weighted_real_return ?? 0).toFixed(1)}%
             </div>
           </div>
           <div className="p-2 rounded-md bg-muted/50">
@@ -181,7 +181,7 @@ export function RealReturnPanel() {
               <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-red-700 dark:text-red-300">
-                  ⚠️ فلوسك بتذوب! التضخم ({inflation.toFixed(1)}%) أعلى من عائد أصولك.
+                  ⚠️ فلوسك بتذوب! التضخم ({(inflation ?? 0).toFixed(1)}%) أعلى من عائد أصولك.
                 </p>
                 <p className="text-red-600 dark:text-red-400 text-xs mt-1">
                   الخسارة الحقيقية المقدرة: {formatEgp(data.summary.total_real_loss)} ج.م سنوياً. حوّل جزء من محفظتك لأسهم أو ذهب للحفاظ على القيمة الشرائية.
@@ -215,13 +215,13 @@ export function RealReturnPanel() {
                         <TrendingUp className="h-4 w-4 text-green-500" />
                       )}
                       <span className={cn('font-bold', a.real_return < 0 ? 'text-red-600' : 'text-emerald-500')}>
-                        {a.real_return >= 0 ? '+' : ''}{a.real_return.toFixed(1)}%
+                        {(a.real_return ?? 0) >= 0 ? '+' : ''}{(a.real_return ?? 0).toFixed(1)}%
                       </span>
                     </div>
                   </div>
                   <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                    <span>العائد: {a.annual_yield.toFixed(1)}%</span>
-                    <span>التضخم: {a.inflation_rate.toFixed(1)}%</span>
+                    <span>العائد: {(a.annual_yield ?? 0).toFixed(1)}%</span>
+                    <span>التضخم: {(a.inflation_rate ?? 0).toFixed(1)}%</span>
                     {a.total_invested > 0 && <span>المستثمر: {formatEgp(a.total_invested)} ج.م</span>}
                   </div>
                   {a.warning && (

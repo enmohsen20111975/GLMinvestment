@@ -925,10 +925,10 @@ export function ExecutiveReportView({
       `📊 ملخص أداء التوقعات — ${market} · ${timeframeLabel}`,
       '',
       `إجمالي الصفقات: ${totalTrades}`,
-      `نسبة النجاح: ${winRate.toFixed(1)}%`,
-      `معامل الربحية: ${profitFactor >= 999 ? '∞' : profitFactor.toFixed(2)}`,
+      `نسبة النجاح: ${(winRate ?? 0).toFixed(1)}%`,
+      `معامل الربحية: ${profitFactor >= 999 ? '∞' : (profitFactor ?? 0).toFixed(2)}`,
       `رابحة: ${stats.wins} / خاسرة: ${stats.losses} / معلقة: ${stats.pending}`,
-      `صافي العائد: ${stats.totalProfit >= 0 ? '+' : ''}${stats.totalProfit.toFixed(2)}%`,
+      `صافي العائد: ${stats.totalProfit >= 0 ? '+' : ''}${(stats.totalProfit ?? 0).toFixed(2)}%`,
       '',
       '⚠️ لأغراض إعلامية فقط وليست نصيحة استثمارية.',
     ];
@@ -1236,10 +1236,10 @@ export function ExecutiveReportView({
             <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-amber-500/20 md:min-w-[220px]">
               <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">سوق {market}</span>
               <span className="text-2xl font-black text-emerald-400 mt-1 leading-none">
-                {winRate.toFixed(1)}%
+                {(winRate ?? 0).toFixed(1)}%
               </span>
               <span className="text-sm text-amber-300 font-bold mt-1.5">
-                معامل الربحية {profitFactor >= 999 ? 'مثالي' : profitFactor.toFixed(2)}
+                معامل الربحية {profitFactor >= 999 ? 'مثالي' : (profitFactor ?? 0).toFixed(2)}
               </span>
               {/* RL-FIX-7: Settled count transparency */}
               {!loading && totalTrades > 0 && (
@@ -1286,14 +1286,14 @@ export function ExecutiveReportView({
                 {/* Win Rate */}
                 <KpiCard
                   label="نسبة النجاح"
-                  value={`${winRate.toFixed(1)}%`}
+                  value={`${(winRate ?? 0).toFixed(1)}%`}
                   subtext={`من ${stats.settled} سهم محسوم`}
                   accent="emerald"
                 />
                 {/* Profit Factor */}
                 <KpiCard
                   label="معامل الربحية"
-                  value={profitFactor >= 999 ? 'مثالي' : profitFactor.toFixed(2)}
+                  value={profitFactor >= 999 ? 'مثالي' : (profitFactor ?? 0).toFixed(2)}
                   subtext="نسبة الأرباح للخسائر"
                   accent="amber"
                 />
@@ -1309,8 +1309,8 @@ export function ExecutiveReportView({
                 {/* Avg Win / Loss */}
                 <KpiCard
                   label="متوسط العائد / الخسارة"
-                  value={`+${stats.avgWinPct.toFixed(1)}%`}
-                  valueSuffix={`/ ${stats.avgLossPct.toFixed(1)}%`}
+                  value={`+${(stats.avgWinPct ?? 0).toFixed(1)}%`}
+                  valueSuffix={`/ ${(stats.avgLossPct ?? 0).toFixed(1)}%`}
                   subtext="متوسط العائد للصفقة"
                   accent="emerald"
                   isSplit
@@ -1318,7 +1318,7 @@ export function ExecutiveReportView({
                 {/* Total Profit (إجمالي الربح) */}
                 <KpiCard
                   label="إجمالي الربح"
-                  value={`${stats.totalProfit >= 0 ? '+' : ''}${stats.totalProfit.toFixed(2)}%`}
+                  value={`${stats.totalProfit >= 0 ? '+' : ''}${(stats.totalProfit ?? 0).toFixed(2)}%`}
                   subtext="مجموع عوائد الصفقات المغلقة"
                   accent={stats.totalProfit >= 0 ? 'emerald' : 'rose'}
                   icon={<TrendingUp className="w-4 h-4" />}
@@ -1412,7 +1412,7 @@ export function ExecutiveReportView({
                     {cumulativeProfitData.length > 0 && (
                       <Badge variant="outline" className="text-[11px] text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
                         تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1].cumulative > 0 ? '+' : ''}
-                        {cumulativeProfitData[cumulativeProfitData.length - 1].cumulative.toFixed(1)}%
+                        {cumulativeProfitData[cumulativeProfitData.length - 1].(cumulative ?? 0).toFixed(1)}%
                       </Badge>
                     )}
                   </div>
@@ -1437,8 +1437,8 @@ export function ExecutiveReportView({
                               fontSize: '12px',
                             }}
                             formatter={(value: number, name: string) => {
-                              if (name === 'cumulative') return [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, 'تراكمي'];
-                              return [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, 'الصفقة'];
+                              if (name === 'cumulative') return [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'تراكمي'];
+                              return [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'الصفقة'];
                             }}
                           />
                           <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
@@ -1482,7 +1482,7 @@ export function ExecutiveReportView({
                               borderRadius: '12px',
                               fontSize: '12px',
                             }}
-                            formatter={(value: number) => [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, 'العائد']}
+                            formatter={(value: number) => [`${value > 0 ? '+' : ''}${(value ?? 0).toFixed(2)}%`, 'العائد']}
                           />
                           <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
                           <Bar dataKey="total" radius={[6, 6, 0, 0]}>
@@ -1740,7 +1740,7 @@ export function ExecutiveReportView({
                   >
                     {winRate > 15 && (
                       <span className="text-xs font-black text-emerald-950 px-2">
-                        {winRate.toFixed(0)}% رابحة
+                        {(winRate ?? 0).toFixed(0)}% رابحة
                       </span>
                     )}
                   </div>
@@ -1873,7 +1873,7 @@ function HighlightCard({
               <div className="flex items-center justify-between gap-2">
                 <span className="font-black text-white text-base font-mono">{item.ticker}</span>
                 <span className={cn('font-black text-lg', item.accentText)}>
-                  {item.returnPct >= 0 ? '+' : ''}{item.returnPct.toFixed(1)}%
+                  {item.returnPct >= 0 ? '+' : ''}{(item.returnPct ?? 0).toFixed(1)}%
                 </span>
               </div>
               <p className="text-xs text-slate-300 truncate">{item.nameAr || item.ticker}</p>
@@ -1942,14 +1942,14 @@ function PersonaCard({
       <div className="py-3 border-y border-white/10 text-center">
         <p className="text-xs text-slate-400 font-bold mb-1">نسبة النجاح</p>
         <p className={cn('text-3xl font-black leading-none', winRateColor)}>
-          {stats.winRate.toFixed(1)}%
+          {(stats.winRate ?? 0).toFixed(1)}%
         </p>
       </div>
 
       {/* Stats grid — unified, clean */}
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <StatRow label="معامل الربحية" value={stats.profitFactor >= 999 ? '∞' : stats.profitFactor.toFixed(2)} valueClass="text-amber-400" />
-        <StatRow label="متوسط الربح" value={`+${stats.avgWinPct.toFixed(1)}%`} valueClass="text-emerald-400" />
+        <StatRow label="معامل الربحية" value={stats.profitFactor >= 999 ? '∞' : (stats.profitFactor ?? 0).toFixed(2)} valueClass="text-amber-400" />
+        <StatRow label="متوسط الربح" value={`+${(stats.avgWinPct ?? 0).toFixed(1)}%`} valueClass="text-emerald-400" />
         <StatRow label="رابحة" value={`${stats.wins}`} valueClass="text-emerald-400" />
         <StatRow label="خاسرة" value={`${stats.losses}`} valueClass="text-rose-400" />
       </div>
@@ -2062,7 +2062,7 @@ function MissedOppCard({
                     </Badge>
                   </div>
                   <span className={cn('font-black text-sm sm:text-base flex-shrink-0', changePositive ? 'text-emerald-400' : 'text-rose-400')}>
-                    {changePositive ? '+' : ''}{change.toFixed(2)}%
+                    {changePositive ? '+' : ''}{(change ?? 0).toFixed(2)}%
                   </span>
                 </div>
                 {item.name && (
