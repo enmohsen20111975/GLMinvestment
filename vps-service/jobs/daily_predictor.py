@@ -747,6 +747,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
 
     for ticker in tickers:
         processed += 1
+        # Task PHASE1-CPU (Roadmap): micro-sleep between stocks to reduce CPU from 95% → 35%.
+        # This prevents Hostinger CPU limitation activation during daily prediction runs.
+        # 10ms sleep per ticker × 1046 tickers ≈ 10s total overhead — negligible.
+        import time as _time
+        _time.sleep(0.01)
         if processed % 50 == 0:
             print(f"  ⏳ Processing {processed}/{total_tickers} tickers...", flush=True)
 
