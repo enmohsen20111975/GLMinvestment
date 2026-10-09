@@ -14,6 +14,8 @@ import { ensureSchema } from '@/lib/honest-tracking/maestro';
 import { applyProtectionFilter, isProtectionActive, getProtectionDescription, getProtectionSqlFilter } from '@/lib/protection/display-protection';
 import { normalizeEgxSymbol } from '@/lib/stock-names';
 import { applyValidatedTargets } from '@/lib/targets-validator';
+// PHASE3-MARKET-SEGREGATION: canonical market normalization (TADAWUL ↔ KSA)
+import { normalizeMarket, buildMarketFilter, NO_PREDICTIONS_MESSAGE_AR, INTERNAL_ERROR_MESSAGE_AR } from '@/lib/market-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -306,6 +308,12 @@ export async function GET(request: NextRequest) {
   };
 
   let allRows: any[] = [];
+  // PHASE3-MARKET-SEGREGATION: declare canonicalMarket OUTSIDE the try block
+  // so the response builder (which lives in a sibling try) can reference it
+  // to attach the "no predictions for this market" message. Without this,
+  // the empty-result branch throws `canonicalMarket is not defined` and the
+  // route falls through to the error handler.
+  const canonicalMarket = normalizeMarket(market);
   try {
     const db = openDb();
     // RL-FIX-10: فلترة الجودة في الـ SQL نفسه — لو qualityMode='top_picks'، نضيف
@@ -331,17 +339,16 @@ export async function GET(request: NextRequest) {
     // الـ JS filter بيشيل الـ US → المستخدم بيشوف 100 صف US بس بدل 400. الحل: نضيف
     // الـ market filter للـ SQL WHERE clause قبل الـ LIMIT علشان نـ fetch الصفوف
     // الصح من البداية. ملاحظة: 'EGX' في الـ DB ممكن يكون 'EGX' أو 'مصر'.
-    const marketSqlParts: string[] = [];
-    const marketSqlParams: string[] = [];
-    if (market !== 'all') {
-      if (market.toUpperCase() === 'EGX') {
-        marketSqlParts.push(`market IN (?, ?)`);
-        marketSqlParams.push('EGX', 'مصر');
-      } else {
-        marketSqlParts.push(`market = ?`);
-        marketSqlParams.push(market);
-      }
-    }
+    //
+    // PHASE3-MARKET-SEGREGATION: نطبّع الـ market input (TADAWUL ↔ KSA ↔ السعودية)
+    // قبل أي مقارنة. ده بيخلّي الـ API يقبل أي alias للسوق السعودي بدون ما الـ frontend
+    // يحتاج يعرف "هو الـ DB بيخزن TADAWUL ولا KSA؟". بنستخدم buildMarketFilter اللي
+    // بيرجّع WHERE market IN ('TADAWUL','KSA','السعودية') لكل alias سعودي.
+    // ملاحظة: canonicalMarket معرّف برّا الـ try (سطر 316) علشان الـ response builder
+    // يستخدمه بعدين لإضافة الـ "no predictions" message.
+    const marketFilter = buildMarketFilter(canonicalMarket);
+    const marketSqlParts: string[] = marketFilter.clause ? [marketFilter.clause] : [];
+    const marketSqlParams: string[] = marketFilter.params;
     const whereParts = [qualityClause, protClause, ...marketSqlParts].filter(Boolean);
     const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
     // FIX-5D: schema-aware SELECT — نتأكد إن target_price_2 موجود قبل ما نضيفه للـ SELECT
@@ -407,9 +414,29 @@ export async function GET(request: NextRequest) {
     console.error('[honest-tracking/list] local DB query failed, falling back to production:', dbErr);
     const prodResp = await fallbackToProduction();
     if (prodResp) return prodResp;
+    // PHASE3-MARKET-SEGREGATION (Task B): بدل ما نرجّع 500 (اللي بيكسر الـ frontend)،
+    // نرجّع 200 + empty predictions + message واضح. ده بـ يحافظ على Rule 27 (NO-FAKE-DATA)
+    // وبيخلّي الـ UI يعرض "لا توجد توقعات" بدل شاشة خطأ.
     return NextResponse.json(
-      { success: false, error: 'internal_error', predictions: [] },
-      { status: 500 }
+      {
+        success: true,
+        predictions: [],
+        pagination: { total: 0, limit, offset, has_more: false },
+        filters: { market, status, signal, sortBy, sortOrder, minScore, topPerDay, qualityMode },
+        message: INTERNAL_ERROR_MESSAGE_AR,
+        data_source: 'local-db-error',
+        local_row_count: 0,
+      },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Local-Row-Count': '0',
+          'X-Data-Source': 'local-db-error',
+        },
+      }
     );
   }
 
@@ -713,6 +740,14 @@ export async function GET(request: NextRequest) {
     const total = predictions.length;
     const page = predictions.slice(offset, offset + limit);
 
+    // PHASE3-MARKET-SEGREGATION (Task B): لما تكون النتيجة فاضية لسوق غير EGX
+    // (sandbox limitation: predictions.db فيها EGX فقط)، نضيف message واضح بدل ما
+    // الـ UI يعرض "0 results" بدون سياق. ده بـ يحافظ على Rule 27 (NO-FAKE-DATA)
+    // وبيوضّح للعميل إن السوق ده في طور التفعيل.
+    const emptyMessage = (total === 0 && canonicalMarket && canonicalMarket !== 'EGX')
+      ? NO_PREDICTIONS_MESSAGE_AR
+      : undefined;
+
     return NextResponse.json({
       success: true,
       predictions: page,
@@ -736,6 +771,8 @@ export async function GET(request: NextRequest) {
       // علشان المطور يقدر يكتشف لو الـ cleanup مش شغّال أو الـ fallback بيخبيه.
       data_source: localIsEmpty ? 'vps-production-fallback' : 'local-db',
       local_row_count: totalLocal,
+      // PHASE3-MARKET-SEGREGATION: رسالة احترافية بدل ما الواجهة تفضى بدون تفسير
+      ...(emptyMessage ? { message: emptyMessage } : {}),
     }, {
       // GHOST-BUSTER-024: Cache-Control: no-store عشان نمنع التخزين على كل المستويات
       headers: {
@@ -748,9 +785,24 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[predictions:honest-tracking:list]', error);
+    // PHASE3-MARKET-SEGREGATION: نفس القاعدة — ما نرجّعش 500 للـ frontend.
+    // نرجّع 200 + empty predictions + message واضح. لو الـ DB اتكسر، الـ UI
+    // هيفضل شغّال بدل ما الـ tab كامل يبقى أحمر.
     return NextResponse.json(
-      { success: false, error: 'internal_error' },
-      { status: 500 }
+      {
+        success: true,
+        predictions: [],
+        pagination: { total: 0, limit, offset, has_more: false },
+        message: INTERNAL_ERROR_MESSAGE_AR,
+        data_source: 'error-fallback',
+      },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'X-Data-Source': 'error-fallback',
+        },
+      }
     );
   }
 }
