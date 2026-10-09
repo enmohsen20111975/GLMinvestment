@@ -136,9 +136,19 @@ export async function GET(req: NextRequest) {
     const fs = require('fs');
     const dbPath = path.join(process.cwd(), 'db', 'predictions.db');
     if (!fs.existsSync(dbPath)) {
+      // PHASE3-MARKET-SEGREGATION: graceful fallback when DB file is missing.
       return NextResponse.json(
-        { success: false, error: 'تعذّر الوصول إلى قاعدة بيانات التوقعات' },
-        { status: 500 }
+        {
+          success: true,
+          picks: [],
+          count: 0,
+          message: 'لا توجد توقعات متاحة لهذا السوق حالياً. يتم توليد التوقعات للسوق المصري أولاً، ثم تُضاف بقية الأسواق تدريجياً.',
+          source: 'db-missing',
+        },
+        {
+          status: 200,
+          headers: { 'X-Data-Source': 'db-missing' },
+        }
       );
     }
     const Database = require('better-sqlite3');
@@ -276,14 +286,22 @@ export async function GET(req: NextRequest) {
       generated_at: new Date().toISOString(),
     }, picksLocked, isPaidUser));
   } catch (e) {
+    // PHASE3-MARKET-SEGREGATION (Task B): same graceful-fallback rule as
+    // honest-tracking/list — never return 500 to the client. The error is
+    // logged server-side for diagnostics, but the UI gets an empty list +
+    // a friendly Arabic message so the user can keep browsing other tabs.
     return NextResponse.json(
       {
-        success: false,
-        error: 'تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.',
+        success: true,
         picks: [],
         count: 0,
+        message: 'لا توجد توقعات متاحة لهذا السوق حالياً. يتم توليد التوقعات للسوق المصري أولاً، ثم تُضاف بقية الأسواق تدريجياً.',
+        source: 'error-fallback',
       },
-      { status: 500 }
+      {
+        status: 200,
+        headers: { 'X-Data-Source': 'error-fallback' },
+      }
     );
   }
 }

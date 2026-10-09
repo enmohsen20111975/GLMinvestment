@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 import { ensureInitialized, getStocksDb } from '@/lib/egx-db';
+// PHASE3-MARKET-SEGREGATION: canonical market normalization (TADAWUL ↔ KSA)
+import { normalizeMarket, sqlMarketVariants, NO_STOCKS_MESSAGE_AR } from '@/lib/market-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +60,22 @@ export async function GET(req: NextRequest) {
     console.error('[GET /api/stocks] stocks.db fallback failed:', err);
   }
 
+  // PHASE3-MARKET-SEGREGATION (Task B): if we reach here it means BOTH the Python
+  // backend AND stocks.db returned 0 stocks for this market. For known markets
+  // without seeded data (sandbox limitation: US, CRYPTO), we return 200 + empty
+  // + message instead of 503, so the UI shows a graceful empty state instead
+  // of an error screen. Rule 27 (NO-FAKE-DATA): we do NOT fabricate stocks.
+  const fallbackMarket = normalizeMarket(new URL(req.url).searchParams.get('market') || '');
+  if (fallbackMarket) {
+    return NextResponse.json({
+      success: true,
+      stocks: [],
+      total: 0,
+      source: 'stocks.db-empty',
+      message: NO_STOCKS_MESSAGE_AR,
+    });
+  }
+
   return NextResponse.json(
     { success: false, stocks: [], total: 0, error: 'Failed to fetch stocks from backend' },
     { status: 503 }
@@ -78,7 +96,15 @@ function readStocksFromLightDb(req: NextRequest): {
   const db = getStocksDb();
 
   const { searchParams } = new URL(req.url);
-  const market = (searchParams.get('market') || '').trim().toUpperCase();
+  const marketRaw = (searchParams.get('market') || '').trim();
+  // PHASE3-MARKET-SEGREGATION: قبول أي alias للسوق السعودي (TADAWUL / KSA / السعودية)
+  // + EGX aliases (مصر / EGX / Egyptian) + US aliases (USA / NYSE / NASDAQ).
+  // الـ canonical value بـ يتسوى قبل أي مقارنة، فالـ SQL بـ يشتغل صح على الـ DB.
+  const canonicalMarket = normalizeMarket(marketRaw);
+  const market = canonicalMarket ?? marketRaw.toUpperCase(); // fallback للأصل للـ display
+  // بناء قائمة variants للـ SQL filter (مثلاً TADAWUL → ['TADAWUL','KSA','السعودية']).
+  // ده بيخلّي الـ query يلقط كل الصفوف بغض النظر عن الـ alias المستخدم في الـ DB.
+  const marketVariants = canonicalMarket ? sqlMarketVariants(canonicalMarket) : [];
   const query = (searchParams.get('query') || searchParams.get('q') || '').trim();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const pageSize = Math.min(
@@ -90,9 +116,15 @@ function readStocksFromLightDb(req: NextRequest): {
   const whereClauses: string[] = ['is_active = 1'];
   const params: (string | number)[] = [];
 
-  if (market && market !== 'ALL') {
+  if (marketVariants.length > 0) {
+    // مثلاً: WHERE market IN ('TADAWUL', 'KSA', 'السعودية')
+    const placeholders = marketVariants.map(() => '?').join(',');
+    whereClauses.push(`market IN (${placeholders})`);
+    params.push(...marketVariants);
+  } else if (marketRaw && marketRaw.toUpperCase() !== 'ALL') {
+    // Fallback: alias غير معروف — نـ filter بـ exact match (آمن مع bind param).
     whereClauses.push('market = ?');
-    params.push(market);
+    params.push(marketRaw);
   }
 
   if (query) {

@@ -67531,3 +67531,124 @@ Stage Summary:
 - كل endpoints ترجع 200.
 - Python backend يعمل (53 blueprints + 4 DBs ok).
 - لا push جديد مطلوب — كل شيء على GitHub.
+
+---
+Task ID: PHASE3-MARKET-SEGREGATION
+Agent: general-purpose (مهندس فصل الأسواق)
+Task: فحص + إصلاح فصل الأسواق (6 أسواق: EGX + TADAWUL + KSE + QSE + US + CRYPTO) بأقصى احترافية
+
+Work Log:
+
+**A. Naming mismatch: "KSA" vs "TADAWUL" — تم الإصلاح ✅**
+
+- تم اكتشاف الـ mismatch بوضوح:
+  * `store.ts:588` → `MARKET_CODES['TADAWUL'] = 'KSA'`
+  * `helpers.ts:194` → نفس الـ mapping
+  * `stocks.db` → 390 صف بـ market='TADAWUL' (مش KSA!)
+  * `predictions.db` → 153 صف EGX فقط (لا يوجد KSA ولا TADAWUL)
+  * `unified_config.py:394` → `MARKET_PROFILES['KSA']` (Python يستخدم KSA كمفتاح)
+- النتيجة قبل الإصلاح: لو الـ frontend بعت `market=KSA` → `WHERE market='KSA'` بيرجّع 0 صف من stocks.db (لأنه مخزّن TADAWUL). ولو بعت `market=TADAWUL` لـ Python → `MARKET_PROFILES.get('TADAWUL')` بترجّع None.
+- كان فيه 5 hacks سابقة في الكود: `MARKET_CODES[market] === 'KSA' ? 'TADAWUL' : MARKET_CODES[market]` في PersonaTab/PredictionsTab/MarketStatusTab — دي بتشتغل بس الـ approach هش.
+
+**الإصلاح**: تم إنشاء `src/lib/market-utils.ts` (ملف جديد) فيه:
+  * `normalizeMarket(input)` → يحوّل أي alias ('TADAWUL' / 'KSA' / 'السعودية' / 'saudi') للـ canonical value ('TADAWUL')
+  * `sqlMarketVariants(canonical)` → يرجّع كل variants للـ DB (مثلاً TADAWUL → ['TADAWUL','KSA','السعودية'])
+  * `buildMarketFilter(market, column)` → يبني SQL `WHERE market IN (?,?,?)` بالـ placeholders الصحيحة
+  * `pythonMarketCode(market)` → يحوّل TADAWUL→KSA قبل الـ Python call (علشان unified_config.py)
+  * `NO_PREDICTIONS_MESSAGE_AR` + `NO_STOCKS_MESSAGE_AR` + `INTERNAL_ERROR_MESSAGE_AR` (رسايل عربية احترافية)
+
+تم تطبيق `normalizeMarket()` + `buildMarketFilter()` في:
+  * `/api/predictions/honest-tracking/list/route.ts` (سطر 316+347-351)
+  * `/api/stocks/route.ts` (سطر 87-111)
+  * `/api/stocks/[ticker]/unified/route.ts` (سطر 46-59) — التحقّق من market param بدون block
+  * `/api/v2/unified/analyze/route.ts` (سطر 105-115) — تحويل TADAWUL→KSA قبل Python
+
+**B. Graceful fallback للأسواق بدون predictions — تم الإصلاح ✅**
+
+- قبل الإصلاح: `/api/predictions/honest-tracking/list?market=TADAWUL` كان بيرجّع 500 لو الـ production fallback فشل (catch block في سطر 405-414 كان بيعمل return 500).
+- بعد الإصلاح:
+  * catch block الـ DB error (سطر 405-434): بيرجّع 200 + `success: true` + `predictions: []` + `message: INTERNAL_ERROR_MESSAGE_AR` + `data_source: 'local-db-error'`.
+  * outer catch block (سطر 779-800): بيرجّع 200 + `success: true` + `predictions: []` + `message: INTERNAL_ERROR_MESSAGE_AR`.
+  * لما تكون النتيجة فاضية لسوق غير EGX (canonicalMarket !== 'EGX')، بنضيف `message: NO_PREDICTIONS_MESSAGE_AR` للـ response العادي (سطر 736-742, 768).
+- نفس المبدأ تم تطبيقه على `/api/stocks/route.ts` (سطر 63-77): لو الـ Python + stocks.db رجّعوا 0 لسوق معروف (US مثلاً) → 200 + `success: true` + `stocks: []` + `message: NO_STOCKS_MESSAGE_AR` بدل ما يكون 503.
+- وكمان على `/api/predictions/daily-picks/route.ts` (سطر 138-152, 278-296): الـ catch blocks بقى بترجّع 200 + empty list + message بدل 500.
+
+**C. Market-specific display — تم التحقق + التحسين ✅**
+
+- `DashboardView.tsx` (سطر 197-258): الـ EGX-specific widgets (MarketSummary, IndexCards, MarketPulse, MarketSentiment) كلها `visible: () => currentMarket === 'EGX'` — مختفية صح للأسواق التانية.
+- CRYPTO-specific widgets (CryptoSignalsWidget) `visible: (p) => p === 'crypto'` — شغّالة.
+- `DevelopmentNotice.tsx` (سطر 9): تم إضافة 'US' لقائمة `DEVELOPMENT_MARKETS` (كانت ['TADAWUL','KSE','DFM','BSE','QSE']، بقت [..., 'US']). ده بيخلي العميل لما يختار US يشوف notice واضح بدل ما الـ dashboard يفضي بدون تفسير.
+- currency labels (`MARKET_CURRENCY_LABEL` في store.ts): متحقق منها — EGX='ج.م', TADAWUL='ريال', KSE='د.ك', QSE='ر.ق', US='$', CRYPTO='$'. ✓
+
+**D. Market-specific thresholds (ATR clamp) — تم التحقق ✅**
+
+- `unified_config.py` فيه `MARKET_PROFILES` بـ ATR clamp مختلف لكل سوق: EGX [5%,9%], KSA [3%,6%], KSE [2%,4.5%], QSE [2.5%,5%], DFM [2.5%,6%], CRYPTO [5%,15%]. ✓ موجود.
+- التحقق من `getUnifiedStockData(ticker)` (unified-stock-data.ts:265): بياخد ticker بس وبيقرأ `stock.market` من stocks.db مباشرةً (سطر 325)، فبيستخدم السوق الصحيح تلقائياً. مفيش hardcoded 'EGX'.
+- الـ unified/[ticker] route دلوقتي بيقبل market param (سطر 46-59) بس بـ validate فقط بدون block — السوق بيتقرأ من stocks.db (single source of truth).
+- لـ Python calls: تم إضافة `pythonMarketCode()` في `/api/v2/unified/analyze/route.ts` (سطر 113) علشان يحوّل TADAWUL→KSA قبل ما يبعت للـ Python. ده بيضمن إن الـ ATR clamp الصح بيتطبّق.
+
+**E. Trading hours per market — تم الإصلاح ✅**
+
+- `market-hours.ts` كان فيه أخطاء في ساعات KSE و QSE:
+  * KSE: كان 06:00-09:30 (خطأ)، بقى 08:00-12:45 (صح حسب المهمة) — `getKSEMarketStatus` (سطر 174-193).
+  * QSE: كان 09:00-13:00 (خطأ في وقت الافتتاح)، بقى 09:30-13:00 (صح) — `getQSEMarketStatus` (سطر 198-217).
+- تم اختبار كل الدوال بـ tsx: KSE open عند 08:00 Kuwait ✓, closed قبلها ✓, QSE open عند 09:30 Doha ✓, closed قبلها ✓.
+- EGX + TADAWUL + US + CRYPTO كلها كانت صحيحة من قبل، ما اتعدّلتش.
+
+**F. Portfolio segregation — تم الإصلاح ✅**
+
+- قبل الإصلاح: `EnhancedPortfolioView.tsx` كان بياخد `currentMarket` من store (سطر 499) لكن ما بيستخدمهوش. الأسهم من كل الأسواق كانت بتعرض مختلطة بدون تمييز.
+- `PortfolioAsset` type (types/index.ts:470) ما عندهوش `market` field — مفيش schema field للسوق.
+- بعد الإصلاح:
+  * أُضيف `inferStockMarket(ticker, stored?)` helper (سطر 89-110) بيحدد السوق من:
+    - `stored` field لو موجود (مثلاً `asset.stock_market` للأسهم المضافة حديثاً)
+    - heuristic fallback: لو ticker أرقام فقط → 'TADAWUL' (مثلاً 2222 = Aramco)، لو فيه USDT/BTC/ETH → 'CRYPTO'، غير كده → 'EGX' (الافتراضي).
+  * أُضيف Badge قرب اسم السهم (سطر 1341-1354): `🏛️ السوق السعودي` / `🏛️ بورصة الكويت` / `🏛️ بورصة قطر` / `🏛️ البورصة الأمريكية` / `🏛️ العملات الرقمية`. EGX مفيهوش badge (لأنه الافتراضي).
+  * عند إضافة سهم جديد (سطر 769-773): بنخزن `payload.stock_market = currentMarket` تلقائياً، فالسهم الجديد بيتسجّل بالسوق الصح بدون تدخل يدوي من العميل.
+
+**ملفات اتعدّلت (10 ملفات)**:
+1. `src/lib/market-utils.ts` — جديد (200 LOC) — canonical market normalization helpers
+2. `src/app/api/predictions/honest-tracking/list/route.ts` — استبدال 500 → 200 graceful + إضافة message لـ non-EGX
+3. `src/app/api/stocks/route.ts` — قبول TADAWUL/KSA/السعودية aliases + graceful fallback للـ US
+4. `src/app/api/stocks/[ticker]/unified/route.ts` — قبول + validate market param بدون block
+5. `src/app/api/v2/unified/analyze/route.ts` — تحويل TADAWUL→KSA قبل Python call
+6. `src/app/api/predictions/daily-picks/route.ts` — استبدال 500 → 200 graceful + message
+7. `src/lib/market-hours.ts` — إصلاح KSE (08:00-12:45) + QSE (09:30-13:00) hours
+8. `src/modules/dashboard/components/DevelopmentNotice.tsx` — إضافة 'US' للأسواق تحت التطوير
+9. `src/modules/portfolio/components/EnhancedPortfolioView.tsx` — market badge + auto-tag stock_market
+10. (لا تعديل على Python files — per task constraint)
+
+**Verification (تم اجتياز كل الاختبارات)**:
+
+✅ Test 1: `curl "http://localhost:3000/api/stocks?market=TADAWUL&page_size=3"`
+   → `success=true, total=390, stocks=3, source=stocks.db` (مرجّع 390 سهم سعودي)
+
+✅ Test 2: `curl "http://localhost:3000/api/predictions/honest-tracking/list?market=TADAWUL&limit=3"`
+   → `success=true, predictions=[], message="لا توجد توقعات متاحة لهذا السوق حالياً. يتم توليد التوقعات للسوق المصري أولاً، ثم تُضاف بقية الأسواق تدريجياً."` (مش 500)
+
+✅ Test 3: `curl "http://localhost:3000/api/stocks/2222/unified?market=TADAWUL"`
+   → `success=true, ticker=2222, name=أرامكو السعودية, canonical.signal=null, canonical.signal_ar="— لا يوجد توقع طازج"` (Rule 27 respected)
+
+✅ اختبارات إضافية:
+- `market=KSA` → 390 سهم (alias شغّال)
+- `market=KSE` → 138 سهم ✓
+- `market=QSE` → 67 سهم ✓
+- `market=EGX` → 451 سهم ✓ (control)
+- `market=US` → `success=true, total=0, message="لا توجد أسهم متاحة..."` (بدل 503)
+- `market=US` predictions → `success=true, predictions=[], message="لا توجد توقعات..."`
+- KSE hours: open عند 08:00 Kuwait ✓, closed قبلها ✓
+- QSE hours: open عند 09:30 Doha ✓, closed قبلها ✓
+
+✅ Lint: `bun run lint` → exit 0 (0 errors)
+✅ Next.js HTTP 200 على كل الـ endpoints المختبررة
+✅ 0 file deleted (per task constraint)
+✅ 0 git push (per task constraint)
+✅ 0 Python files touched (per task constraint)
+
+Stage Summary:
+- 9 issue fixed (1 naming mismatch + 3 graceful fallback + 1 trading hours + 1 dev notice + 1 portfolio badge + 1 auto-tag market + 1 Python market code mapping)
+- 9 ملفات TS اتعدّلت + 1 ملف جديد (market-utils.ts)
+- 6 أسواق مدعومة بالكامل بفصل احترافي: EGX (451 سهم) + TADAWUL (390) + KSE (138) + QSE (67) + US (0 sandbox) + CRYPTO (مستقل)
+- الـ frontend دلوقتي يقدر يبعت أي alias (TADAWUL / KSA / السعودية) والـ API بيتعامل معاه بشكل صحيح.
+- لو الـ DB فاضي لسوق معين، الـ API بيرجّع 200 + empty + message واضح بدل 500/503.
+- portfolio دلوقتي بـ يعرض badge بـ سوق كل سهم، والأسهم الجديدة بتتسجّل تلقائياً بالسوق الحالي.

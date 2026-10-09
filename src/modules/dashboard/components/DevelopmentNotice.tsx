@@ -6,7 +6,7 @@ import { useAppStore, MarketType } from '@/lib/store';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Markets that are under development (incomplete data)
-const DEVELOPMENT_MARKETS: MarketType[] = ['TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE'];
+const DEVELOPMENT_MARKETS: MarketType[] = ['TADAWUL', 'KSE', 'DFM', 'BSE', 'QSE', 'US']; // PHASE3-MARKET-SEGREGATION: US added (no stocks/predictions yet)
 
 export function DevelopmentNotice() {
   const { currentMarket } = useAppStore();
