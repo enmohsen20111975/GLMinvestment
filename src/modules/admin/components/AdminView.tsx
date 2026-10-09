@@ -1529,8 +1529,8 @@ export function AdminView() {
                 </Button>
                 <Button variant="outline" onClick={() => setActiveTab('dashboard')} className="h-auto py-4 flex-col gap-2 relative">
                   <Zap className="w-6 h-6" />
-                  <span>مركز القيادة</span>
-                  <span className="text-[10px] opacity-70">Maestro Command Center</span>
+                  <span>لوحة التحكم</span>
+                  <span className="text-[10px] opacity-70">نظرة عامة + صحة النظام</span>
                 </Button>
                 {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'data-engine' tab removed —
                     rewired to open 'databases' (the closest live equivalent in
@@ -1627,7 +1627,7 @@ export function AdminView() {
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setActiveTab('dashboard')} className="h-auto py-3">
                   <Zap className="w-4 h-4 ml-1" />
-                  مركز القيادة
+                  لوحة التحكم
                 </Button>
               </div>
             </CardContent>
