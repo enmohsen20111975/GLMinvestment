@@ -2160,7 +2160,7 @@ function resolveLevels(
   stop: number | null;
   target: number | null;
   riskReward: number | null;
-  source: 'ai' | 'technical' | 'none';
+  source: 'ai' | 'technical' | 'math' | 'none';
 } {
   const current = stock.current_price ?? null;
 
@@ -2178,28 +2178,38 @@ function resolveLevels(
     return { entry, stop, target, riskReward: rr, source: 'ai' };
   }
 
-  // 2) Technical levels (fallback) — من بيانات السهم الفعلية فقط (لا fabrication)
+  // 2) Technical levels from DB — من بيانات السهم الفعلية (support/resistance)
   if (current == null || current <= 0) {
     return { entry: null, stop: null, target: null, riskReward: null, source: 'none' };
   }
   const supportRaw = (stock as unknown as Record<string, unknown>).support;
   const resistanceRaw = (stock as unknown as Record<string, unknown>).resistance;
-  const stop = (typeof supportRaw === 'number' && supportRaw > 0) ? supportRaw : null;
-  const target = (typeof resistanceRaw === 'number' && resistanceRaw > 0) ? resistanceRaw : null;
+  const dbStop = (typeof supportRaw === 'number' && supportRaw > 0 && supportRaw < current) ? supportRaw : null;
+  const dbTarget = (typeof resistanceRaw === 'number' && resistanceRaw > 0 && resistanceRaw > current) ? resistanceRaw : null;
 
-  // لو مفيش stop ولا target → "—" (no source)
-  if (stop == null && target == null) {
-    return { entry: current, stop: null, target: null, riskReward: null, source: 'none' };
-  }
+  // 3) Mathematical Volatility Model — احسب من range_10d_pct أو نسبة ثابتة
+  // Task DEEP-DIRECTIVE: ممنوع إرجاع source='none' — كل سهم لازم يكون له مستويات
+  const rangePctRaw = (stock as unknown as Record<string, unknown>).range_10d_pct;
+  const rangePct = (typeof rangePctRaw === 'number' && rangePctRaw > 0) ? rangePctRaw : 5.0; // default 5%
+  // stop = price × (1 - max(2.5%, rangePct × 0.75 / 100))
+  const stopPct = Math.max(2.5, rangePct * 0.75) / 100;
+  const mathStop = current * (1 - stopPct);
+  // target = entry + 2.0 × (entry - stop)  [R:R = 2.0 minimum]
+  const mathTarget = current + 2.0 * (current - mathStop);
 
-  // R:R يتاح فقط لو entry+stop+target كلهم valid > 0 + target > entry > stop
+  // اختر الأفضل: DB levels لو متوفرة، وإلا mathematical
+  const stop = dbStop ?? mathStop;
+  const target = dbTarget ?? mathTarget;
+  const source = (dbStop != null || dbTarget != null) ? 'technical' : 'math';
+
+  // R:R
   let rr: number | null = null;
   if (stop != null && target != null && current > stop && target > current) {
     const denom = current - stop;
     if (denom > 0) rr = (target - current) / denom;
   }
 
-  return { entry: current, stop, target, riskReward: rr, source: 'technical' };
+  return { entry: current, stop, target, riskReward: rr, source };
 }
 
 const StockTable = memo(function StockTable({
@@ -2743,10 +2753,12 @@ const StockTable = memo(function StockTable({
           ? '🤖 توصية AI'
           : source === 'technical'
           ? '📊 مستوى فني'
+          : source === 'math'
+          ? '📊 مستوى حسابي'
           : null;
         const badgeCls = source === 'ai'
           ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-          : source === 'technical'
+          : (source === 'technical' || source === 'math')
           ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
           : 'bg-muted text-muted-foreground';
 
