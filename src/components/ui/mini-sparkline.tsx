@@ -23,7 +23,7 @@ const H = 36;
 function buildPath(points: { x: number; y: number }[], curve: 'linear' | 'smooth') {
   if (points.length === 0) return '';
   if (curve === 'smooth' && points.length > 2) {
-    const d: string[] = [`M ${points[0].(x ?? 0).toFixed(2)} ${points[0].(y ?? 0).toFixed(2)}`];
+    const d: string[] = [`M ${(points[0].x ?? 0).toFixed(2)} ${(points[0].y ?? 0).toFixed(2)}`];
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[i - 1] ?? points[i];
       const p1 = points[i];
@@ -97,7 +97,7 @@ export function MiniSparkline({
 
   const d = buildPath(points, curve);
   const area = points.length > 1
-    ? `${d} L ${points[points.length - 1].(x ?? 0).toFixed(2)} ${viewBoxH} L ${points[0].(x ?? 0).toFixed(2)} ${viewBoxH} Z`
+    ? `${d} L ${(points[points.length - 1].x ?? 0).toFixed(2)} ${viewBoxH} L ${(points[0].x ?? 0).toFixed(2)} ${viewBoxH} Z`
     : '';
   const clipId = `spark-${id.replace(/[:/]/g, '')}`;
 
