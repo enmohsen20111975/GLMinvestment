@@ -555,6 +555,7 @@ interface PredictionEntry {
   direction: string | null; // 'up' | 'down' | null
   confidence: number | null; // 0–100
   master_score: number | null;
+  entry_price: number | null;   // ← FIX: was missing (caused entry column to show '—' / 0)
   target_price: number | null;
   stop_loss: number | null;
 }
@@ -710,6 +711,7 @@ export function MakerRadarTab({ market = 'EGX' }: MakerRadarTabProps) {
             direction: resolvedDirection,
             confidence: conf,
             master_score: row.master_score != null ? Number(row.master_score) : null,
+            entry_price: row.entry_price != null ? Number(row.entry_price) : null, // ← FIX: store entry_price
             target_price: row.target_price != null ? Number(row.target_price) : null,
             stop_loss: row.stop_loss != null ? Number(row.stop_loss) : null,
           });
@@ -2145,10 +2147,75 @@ interface StockTableProps {
 
 type RadarStockRow = RadarStock & { _idx: number; [key: string]: unknown };
 
+// ─── (UNIFIED-TABLE-UPGRADE) Dual-Tier Levels Engine ────────────────────
+// يحسب مستويات الدخول/الوقف/الهدف من مصدرين: توقع AI أولاً، ثم المستويات
+// الفنية من بيانات السهم (support/resistance). لا fabrication (Rule 27):
+// لو support=0/null → stop=null → "—". لو resistance=0/null → target=null.
+// R:R يُحسب فقط لو كل القيم الثلاث أرقام حقيقية > 0.
+function resolveLevels(
+  stock: RadarStock,
+  predictionForTicker: (ticker: string) => PredictionEntry | null,
+): {
+  entry: number | null;
+  stop: number | null;
+  target: number | null;
+  riskReward: number | null;
+  source: 'ai' | 'technical' | 'none';
+} {
+  const current = stock.current_price ?? null;
+
+  // 1) AI prediction levels (preferred) — لو فيه pred.entry_price
+  const pred = predictionForTicker(stock.ticker);
+  if (pred && pred.entry_price != null && pred.entry_price > 0) {
+    const entry = pred.entry_price;
+    const stop = (pred.stop_loss != null && pred.stop_loss > 0) ? pred.stop_loss : null;
+    const target = (pred.target_price != null && pred.target_price > 0) ? pred.target_price : null;
+    let rr: number | null = null;
+    if (stop != null && target != null && entry > stop && target > entry) {
+      const denom = entry - stop;
+      if (denom > 0) rr = (target - entry) / denom;
+    }
+    return { entry, stop, target, riskReward: rr, source: 'ai' };
+  }
+
+  // 2) Technical levels (fallback) — من بيانات السهم الفعلية فقط (لا fabrication)
+  if (current == null || current <= 0) {
+    return { entry: null, stop: null, target: null, riskReward: null, source: 'none' };
+  }
+  const supportRaw = (stock as unknown as Record<string, unknown>).support;
+  const resistanceRaw = (stock as unknown as Record<string, unknown>).resistance;
+  const stop = (typeof supportRaw === 'number' && supportRaw > 0) ? supportRaw : null;
+  const target = (typeof resistanceRaw === 'number' && resistanceRaw > 0) ? resistanceRaw : null;
+
+  // لو مفيش stop ولا target → "—" (no source)
+  if (stop == null && target == null) {
+    return { entry: current, stop: null, target: null, riskReward: null, source: 'none' };
+  }
+
+  // R:R يتاح فقط لو entry+stop+target كلهم valid > 0 + target > entry > stop
+  let rr: number | null = null;
+  if (stop != null && target != null && current > stop && target > current) {
+    const denom = current - stop;
+    if (denom > 0) rr = (target - current) / denom;
+  }
+
+  return { entry: current, stop, target, riskReward: rr, source: 'technical' };
+}
+
 const StockTable = memo(function StockTable({
   stocks, accent, market, sectorForTicker, changePercentForTicker, stockInfoForTicker, predictionForTicker, onSelect, onTrackToggle,
 }: StockTableProps) {
   const a = accentClasses[accent];
+
+  // ─── (UNIFIED-TABLE-UPGRADE) memoized levels resolver — used by both
+  // render functions and sortValue callbacks so they always agree.
+  const levelsByTicker = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof resolveLevels>>();
+    for (const s of stocks) {
+      map.set(s.ticker, resolveLevels(s, predictionForTicker));
+    }
+    return map;
+  }, [stocks, predictionForTicker]);
 
   // إعداد الـ columns للجدول الموحّد
   const columns: Column<RadarStockRow>[] = useMemo(() => [
@@ -2546,6 +2613,11 @@ const StockTable = memo(function StockTable({
       align: 'center',
       sortable: true,
       className: 'font-mono text-xs',
+      // (UNIFIED-TABLE-UPGRADE) sortValue: numeric ADR estimate (null → -1)
+      sortValue: (stock) => {
+        const adr = stock.range_10d_pct ? (stock.range_10d_pct / 2.8) : null;
+        return adr != null && adr > 0 ? adr : -1;
+      },
       render: (stock) => {
         // P0-3 FIX: أزلنا fabrication '2.4%' للتردد (Rule 27 NO-FAKE-DATA).
         // التردد الحقيقي يحتاج حساب ATR من Python (canonical).
@@ -2562,6 +2634,17 @@ const StockTable = memo(function StockTable({
       align: 'center',
       sortable: true,
       className: 'text-xs',
+      // (UNIFIED-TABLE-UPGRADE) sortValue: expected gain % (null → -1)
+      sortValue: (stock) => {
+        const pred = predictionForTicker(stock.ticker);
+        if (pred?.target_price && pred.target_price > 0 && stock.current_price > 0) {
+          return ((pred.target_price - stock.current_price) / stock.current_price * 100);
+        }
+        if (stock.range_10d_pct) {
+          return Math.min(stock.range_10d_pct / 2, 15);
+        }
+        return -1;
+      },
       render: (stock) => {
         // UNIFY-FIX v2: لو لا توقع طازج، استخدم نسب منطقية من range_10d_pct
         // (مش fabrication — ده مقياس تقلب حقيقي من OHLCV).
@@ -2608,16 +2691,26 @@ const StockTable = memo(function StockTable({
       align: 'center',
       sortable: true,
       className: 'font-mono text-xs',
+      // (UNIFIED-TABLE-UPGRADE) sortValue: trigger price (null → -1)
+      // Dual-Tier: AI entry_price first, then technical current_price fallback.
+      sortValue: (stock) => {
+        const levels = levelsByTicker.get(stock.ticker);
+        const entry = levels?.entry ?? null;
+        return entry != null && entry > 0 ? entry : -1;
+      },
       render: (stock) => {
-        // P0-3 FIX: أزلنا fabrication سعر التفعيل = price * (1 + Math.max(0.012, ...)).
-        // سعر التفعيل الحقيقي يأتي من prediction.entry_price عبر unified API.
-        const pred = predictionForTicker(stock.ticker);
-        const trig = pred?.entry_price ?? null;
-        if (trig === null) {
+        // (UNIFIED-TABLE-UPGRADE) Dual-Tier: استخدم levelsByTicker بدلاً من قراءة
+        // predictionForTicker مباشرة عشان يبقى متوافق مع sortValue + badge.
+        const levels = levelsByTicker.get(stock.ticker);
+        const trig = levels?.entry ?? null;
+        const source = levels?.source ?? 'none';
+        if (trig === null || trig <= 0) {
           return <span className="font-mono text-muted-foreground">—</span>;
         }
+        const badge = source === 'ai' ? '🤖' : source === 'technical' ? '📊' : '';
         return (
-          <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+            {badge && <span title={source === 'ai' ? 'توصية AI' : 'مستوى فني'}>{badge}</span>}
             {fmtNum(trig)}
           </span>
         );
@@ -2629,52 +2722,64 @@ const StockTable = memo(function StockTable({
       align: 'right',
       sortable: true,
       className: 'font-mono text-[10px]',
+      // (UNIFIED-TABLE-UPGRADE) Dual-Tier: sortValue = target_price (null → -1)
+      // نرتّب حسب الهدف لأنه أهم قيمة في القرار.
+      sortValue: (stock) => {
+        const levels = levelsByTicker.get(stock.ticker);
+        const t = levels?.target ?? null;
+        return t != null && t > 0 ? t : -1;
+      },
       render: (stock) => {
-        // UNIFY-FIX v2: لو لا توقع، استخدم support/resistance الحقيقية من OHLCV
-        // كنقاط دخول/وقف (مش fabrication — مستويات هيكلية حقيقية).
-        const pred = predictionForTicker(stock.ticker);
-        const tPrice = pred?.target_price ?? null;
-        const slPrice = pred?.stop_loss ?? null;
-        if (tPrice === null || slPrice === null || !stock.current_price) {
-          // Fallback منطقي: استخدم support/resistance من بيانات الرادار
-          const support = (stock as Record<string, unknown>).support ?? null;
-          const resistance = (stock as Record<string, unknown>).resistance ?? null;
-          if (support && resistance && stock.current_price) {
-            const rr = ((Number(resistance) - stock.current_price) / Math.max(0.01, stock.current_price - Number(support))).toFixed(1);
-            return (
-              <div className="flex flex-col text-[10px] leading-tight font-mono bg-amber-50/30 dark:bg-amber-950/10 rounded p-1">
-                <div className="flex gap-1 justify-between">
-                  <span className="text-muted-foreground">هدف:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{Number(resistance).toFixed(2)}</span>
-                </div>
-                <div className="flex gap-1 justify-between">
-                  <span className="text-muted-foreground">وقف:</span>
-                  <span className="text-rose-600 dark:text-rose-400">{Number(support).toFixed(2)}</span>
-                </div>
-                <div className="text-[9px] text-amber-500/70 text-center">1:{rr} RR (تقدير هيكلي)</div>
-              </div>
-            );
-          }
-          // لا بيانات إطلاقاً
+        // (UNIFIED-TABLE-UPGRADE) Dual-Tier Levels Engine:
+        // 🤖 توصية AI لو predMap فيه entry_price
+        // 📊 مستوى فني لو محسوب من support/resistance (real numbers > 0)
+        // — لو مفيش لا ده ولا ده (Rule 27: لا fabrication)
+        const levels = levelsByTicker.get(stock.ticker);
+        const source = levels?.source ?? 'none';
+        const tPrice = levels?.target ?? null;
+        const slPrice = levels?.stop ?? null;
+        const rr = levels?.riskReward ?? null;
+        const badge = source === 'ai'
+          ? '🤖 توصية AI'
+          : source === 'technical'
+          ? '📊 مستوى فني'
+          : null;
+        const badgeCls = source === 'ai'
+          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+          : source === 'technical'
+          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+          : 'bg-muted text-muted-foreground';
+
+        if (tPrice === null && slPrice === null) {
+          // لا توقع ولا مستويات فنية
           return (
-            <div className="flex flex-col text-[10px] leading-tight font-mono bg-amber-50/30 dark:bg-amber-950/10 rounded p-1">
+            <div className="flex flex-col text-[10px] leading-tight font-mono bg-amber-50/30 dark:bg-amber-950/10 rounded p-1 gap-0.5">
               <span className="text-muted-foreground text-center">— راجع التحليل</span>
+              {badge && <span className={`text-[8px] px-1 rounded text-center ${badgeCls}`}>{badge}</span>}
             </div>
           );
         }
-        // UNIFY-FIX v2: لو يوجد توقع طازج، اعرضه بالكامل
-        const rr = ((tPrice - stock.current_price) / Math.max(0.01, stock.current_price - slPrice)).toFixed(1);
+
         return (
-          <div className="flex flex-col text-[10px] leading-tight font-mono">
-            <div className="flex gap-1 justify-between">
-              <span className="text-muted-foreground">هدف:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{fmtNum(tPrice)}</span>
-            </div>
-            <div className="flex gap-1 justify-between">
-              <span className="text-muted-foreground">وقف:</span>
-              <span className="text-rose-600 dark:text-rose-400">{fmtNum(slPrice)}</span>
-            </div>
-            <div className="text-[9px] text-muted-foreground text-center">1:{rr} RR</div>
+          <div className="flex flex-col text-[10px] leading-tight font-mono gap-0.5">
+            {tPrice !== null && (
+              <div className="flex gap-1 justify-between">
+                <span className="text-muted-foreground">هدف:</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{fmtNum(tPrice)}</span>
+              </div>
+            )}
+            {slPrice !== null && (
+              <div className="flex gap-1 justify-between">
+                <span className="text-muted-foreground">وقف:</span>
+                <span className="text-rose-600 dark:text-rose-400">{fmtNum(slPrice)}</span>
+              </div>
+            )}
+            {rr !== null ? (
+              <div className="text-[9px] text-muted-foreground text-center">1:{(rr ?? 0).toFixed(1)} RR</div>
+            ) : (
+              <div className="text-[9px] text-muted-foreground/60 text-center">RR: —</div>
+            )}
+            {badge && <span className={`text-[8px] px-1 rounded text-center ${badgeCls}`}>{badge}</span>}
           </div>
         );
       },
@@ -2734,7 +2839,7 @@ const StockTable = memo(function StockTable({
         </button>
       ),
     },
-  ], [a.badge, changePercentForTicker, onSelect, onTrackToggle, predictionForTicker, sectorForTicker, stockInfoForTicker]);
+  ], [a.badge, changePercentForTicker, onSelect, onTrackToggle, predictionForTicker, sectorForTicker, stockInfoForTicker, levelsByTicker]);
 
   // إضافة index وحساب السعر والتغير اللحظي لكل صف لضمان الترتيب الحي
   const data: RadarStockRow[] = useMemo(

@@ -68,6 +68,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import {
   ChevronUp, ChevronDown, ChevronsUpDown, Inbox, Filter, X, Plus,
   Pin, GripVertical, Save, Download, Search, Calculator, Trash2, ListFilter, Columns3,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -440,6 +441,9 @@ export function UnifiedTable<T extends object>({
   const [draggedColKey, setDraggedColKey] = useState<string | null>(null);
   // Preset save dialog
   const [presetName, setPresetName] = useState('');
+  // (UNIFIED-TABLE-UPGRADE) Multi-sort Popover drag state — index of the
+  // sort level being dragged for reorder (null = no drag in progress).
+  const [sortDragIdx, setSortDragIdx] = useState<number | null>(null);
 
   // ─── (Task 37) «الجدول المتقدّم» — Excel-clone cell-level state ───
   // Rule 67 root cause: AG Grid theme mismatch + npm install failure on VPS →
@@ -602,20 +606,25 @@ export function UnifiedTable<T extends object>({
   // The handlers themselves run later (user click) so closure capture is fine.
 
 
-  const handleSort = useCallback((col: Column<T>) => {
+  const handleSort = useCallback((col: Column<T>, isShift: boolean = false) => {
     if (!col.sortable) return;
     const colKey = String(col.key);
     setSortStack(prev => {
       const existing = prev.find(s => s.key === colKey);
+      if (!isShift) {
+        // SINGLE SORT (normal click) — استبدل الـ stack بمستوى واحد:
+        //   asc → desc → clear (رجوع للوضع الافتراضي).
+        if (!existing) return [{ key: colKey, dir: 'asc' as const }];
+        if (existing.dir === 'asc') return [{ key: colKey, dir: 'desc' as const }];
+        return []; // clear sort
+      }
+      // MULTI SORT (Shift+click) — أضف/حدّث في الـ stack مع rank badge ❶❷❸:
       if (!existing) {
-        // عمود جديد — أضفه للقمة
-        return [...prev, { key: colKey, dir: 'asc' }];
+        return [...prev, { key: colKey, dir: 'asc' as const }];
       }
       if (existing.dir === 'asc') {
-        // تحويل لـ desc
-        return prev.map(s => s.key === colKey ? { ...s, dir: 'desc' } : s);
+        return prev.map(s => s.key === colKey ? { ...s, dir: 'desc' as const } : s);
       } else {
-        // إزالة من القائمة (رجوع للوضع الافتراضي)
         return prev.filter(s => s.key !== colKey);
       }
     });
@@ -625,7 +634,32 @@ export function UnifiedTable<T extends object>({
   const sortRank = useCallback((colKey: string): number | null => {
     const idx = sortStack.findIndex(s => s.key === colKey);
     return idx >= 0 ? idx + 1 : null;
+  }, [sortStack]);
+
+  // ─── (UNIFIED-TABLE-UPGRADE) Multi-Sort reorder/remove helpers ────────
+  // يدعم أزرار الـ Popover «ترتيب مخصص ⇕»: drag-to-reorder + remove level.
+  const removeSortLevel = useCallback((colKey: string) => {
+    setSortStack(prev => prev.filter(s => s.key !== colKey));
   }, []);
+
+  const toggleSortDir = useCallback((colKey: string) => {
+    setSortStack(prev => prev.map(s =>
+      s.key === colKey ? { ...s, dir: s.dir === 'asc' ? 'desc' : 'asc' } : s
+    ));
+  }, []);
+
+  const reorderSortStack = useCallback((fromIdx: number, toIdx: number) => {
+    setSortStack(prev => {
+      if (fromIdx < 0 || fromIdx >= prev.length) return prev;
+      if (toIdx < 0 || toIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next;
+    });
+  }, []);
+
+  const clearAllSorts = useCallback(() => setSortStack([]), []);
 
   const sortedData = useMemo(() => {
     // Task 37: use mutableData (data + localEdits overlay) when excelGrid=true
@@ -661,27 +695,41 @@ export function UnifiedTable<T extends object>({
   }, [data, mutableData, excelGrid, sortStack]);
 
   // ─── (Task 34-A) AutoFilter helpers ───────────────────────────────────
+  // (UNIFIED-TABLE-UPGRADE) Universal value extraction — respects `col.filterValue`
+  // لو الـ render بيرجّع JSX، نستخدم filterValue (لو موجودة) عشان الفلتر يشتغل
+  // على القيمة المعروضة فعلاً (مش القيمة الخام في row). كده أي عمود يشتغل.
+  // NOTE: نستخدم `columns` (مش `allColumns`) لأن allColumns معرّفة بعدين (TDZ).
+  // calc columns لها filterValue implicitly عبر render؛ الـ distinct values لهم
+  // بتتعمل بشكل صحيح من render ( Rule 67 — لا fabrication).
+  const getCellFilterValue = useCallback((row: T, colKey: string): unknown => {
+    const col = columns.find(c => String(c.key) === colKey);
+    if (col?.filterValue) {
+      try { return col.filterValue(row); } catch { /* fallthrough */ }
+    }
+    return getCellValue(row, colKey);
+  }, [columns]);
+
   // detect numeric column (peek at first non-null value)
   const isNumericColumn = useCallback((colKey: string): boolean => {
     for (const row of data) {
-      const v = getCellValue(row, colKey);
+      const v = getCellFilterValue(row, colKey);
       if (v == null || v === '') continue;
       if (typeof v === 'number') return true;
       if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v)) && isFinite(Number(v))) return true;
       return false; // found non-null non-numeric → text column
     }
     return false;
-  }, [data]);
+  }, [data, getCellFilterValue]);
 
   const getDistinctValues = useCallback((colKey: string): string[] => {
     const set = new Set<string>();
     for (const row of data) {
-      const v = getCellValue(row, colKey);
+      const v = getCellFilterValue(row, colKey);
       if (v == null || v === '') continue;
       set.add(String(v));
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'ar', { numeric: true }));
-  }, [data]);
+  }, [data, getCellFilterValue]);
 
   const isColumnFilterActive = useCallback((colKey: string): boolean => {
     if (multiSelectFilters[colKey] && multiSelectFilters[colKey].size > 0) return true;
@@ -755,13 +803,12 @@ export function UnifiedTable<T extends object>({
     let result = sortedData;
 
     // 1) Text filters (بحث نصي)
+    //    (UNIFIED-TABLE-UPGRADE) يشتغل عبر getCellFilterValue (universal).
     if (filterable && Object.keys(filterValues).length > 0) {
       result = result.filter(row => {
         for (const [colKey, filterVal] of Object.entries(filterValues)) {
           if (!filterVal) continue;
-          // Task IMPROVEMENT-20: استخدم filterValue من الـ column لو موجود
-          const col = columns.find(c => String(c.key) === colKey);
-          const val = col?.filterValue ? col.filterValue(row) : getCellValue(row, colKey);
+          const val = getCellFilterValue(row, colKey);
           if (val == null) continue;
           if (!String(val).toLowerCase().includes(filterVal.toLowerCase())) return false;
         }
@@ -770,10 +817,11 @@ export function UnifiedTable<T extends object>({
     }
 
     // 2) Custom conditions (شروط رقمية: > 5, < 1000000, etc.)
+    //    (UNIFIED-TABLE-UPGRADE) يستخدم getCellFilterValue (universal).
     if (customFilters.length > 0) {
       result = result.filter(row => {
         for (const cf of customFilters) {
-          const val = getCellValue(row, cf.key);
+          const val = getCellFilterValue(row, cf.key);
           if (val == null) return false;
           const numVal = Number(val);
           const filterNum = Number(cf.value);
@@ -792,11 +840,13 @@ export function UnifiedTable<T extends object>({
     }
 
     // 3) Multi-select filters — available for ALL filterable tables (not gated behind excelGrid)
+    //    (UNIFIED-TABLE-UPGRADE) يستخدم getCellFilterValue (universal) عشان
+    //    يشتغل مع الأعمدة اللي render JSX لكن ليها filterValue معرّفة.
     if (filterable && Object.keys(multiSelectFilters).length > 0) {
       result = result.filter(row => {
         for (const [colKey, selectedSet] of Object.entries(multiSelectFilters)) {
           if (!selectedSet || selectedSet.size === 0) continue;
-          const val = getCellValue(row, colKey);
+          const val = getCellFilterValue(row, colKey);
           if (val == null) return false;
           if (!selectedSet.has(String(val))) return false;
         }
@@ -805,11 +855,12 @@ export function UnifiedTable<T extends object>({
     }
 
     // 4) Range filters (numeric columns) — available for ALL filterable tables
+    //    (UNIFIED-TABLE-UPGRADE) يستخدم getCellFilterValue (universal).
     if (filterable && Object.keys(rangeFilters).length > 0) {
       result = result.filter(row => {
         for (const [colKey, range] of Object.entries(rangeFilters)) {
           if (range.min == null && range.max == null) continue;
-          const val = getCellValue(row, colKey);
+          const val = getCellFilterValue(row, colKey);
           if (val == null) return false;
           const numVal = Number(val);
           if (!Number.isFinite(numVal)) return false;
@@ -826,8 +877,9 @@ export function UnifiedTable<T extends object>({
     // getCellValue path. For now we expose calc value via a synthetic field.)
 
     return result;
-  }, [sortedData, filterValues, filterable, customFilters, excelGrid, multiSelectFilters, rangeFilters]);
+  }, [sortedData, filterValues, filterable, customFilters, excelGrid, multiSelectFilters, rangeFilters, getCellFilterValue]);
   // NOTE: excelGrid kept in deps for calculated-column filter path (backward compat)
+  // NOTE: getCellFilterValue added for universal filterValue support (UNIFIED-TABLE-UPGRADE)
 
   // ─── (Task 34-A) Build effective columns (native + calculated) ────────
   const allColumns = useMemo(() => {
@@ -1439,6 +1491,101 @@ export function UnifiedTable<T extends object>({
               </button>
             )}
 
+            {/* ─── (UNIFIED-TABLE-UPGRADE) Multi-Sort Control Popover ─── */}
+            {sortStack.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    title="إدارة مستويات الترتيب النشطة (سحب لإعادة الترتيب + حذف)"
+                  >
+                    <ArrowUpDown className="w-3 h-3 text-emerald-600" />
+                    ترتيب مخصص ⇕
+                    <span className="bg-emerald-600 text-white rounded-full text-[9px] w-4 h-4 flex items-center justify-center font-bold">
+                      {sortStack.length}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold">مستويات الترتيب النشطة</div>
+                      <button
+                        onClick={clearAllSorts}
+                        className="text-[10px] text-rose-500 hover:text-rose-700"
+                        title="مسح كل مستويات الترتيب"
+                      >
+                        مسح الكل
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground leading-relaxed">
+                      رتّب المستويات بالسحب (الأعلى = أولوية أعلى). اضغط على اسم العمود لعكس الاتجاه.
+                    </div>
+                    {sortStack.length === 0 ? (
+                      <div className="text-[11px] text-muted-foreground text-center py-3">
+                        لا يوجد ترتيب نشط — اضغط على أي عمود لبدء الترتيب.
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {sortStack.map((s, idx) => {
+                          const col = allColumns.find(c => String(c.key) === s.key);
+                          const label = col ? (col.headerAr || col.header) : s.key;
+                          return (
+                            <div
+                              key={`sort-${s.key}-${idx}`}
+                              draggable
+                              onDragStart={() => setSortDragIdx(idx)}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => {
+                                if (sortDragIdx !== null && sortDragIdx !== idx) {
+                                  reorderSortStack(sortDragIdx, idx);
+                                }
+                                setSortDragIdx(null);
+                              }}
+                              onDragEnd={() => setSortDragIdx(null)}
+                              className={cn(
+                                'flex items-center gap-1.5 px-1.5 py-1 rounded border border-border bg-background hover:bg-muted/40 cursor-grab active:cursor-grabbing transition-colors',
+                                sortDragIdx === idx && 'opacity-50 ring-2 ring-emerald-500/40'
+                              )}
+                            >
+                              <GripVertical className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                              <span className="text-[10px] font-bold w-4 h-4 rounded-full bg-primary/15 text-primary inline-flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <button
+                                onClick={() => toggleSortDir(s.key)}
+                                className="flex-1 text-right text-xs truncate hover:text-primary hover:underline"
+                                title="اضغط لعكس الاتجاه"
+                              >
+                                {label}
+                              </button>
+                              <span className={cn(
+                                'text-[10px] font-mono px-1 rounded shrink-0',
+                                s.dir === 'asc'
+                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                                  : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'
+                              )}>
+                                {s.dir === 'asc' ? '↑ تصاعدي' : '↓ تنازلي'}
+                              </span>
+                              <button
+                                onClick={() => removeSortLevel(s.key)}
+                                className="text-rose-500 hover:text-rose-700 p-0.5 shrink-0"
+                                title="إزالة مستوى الترتيب"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
             {/* ─── (Task 34-A) Dynamic Column Picker (Popover) ─── */}
             {excelGrid && columnToggle ? (
               <Popover>
@@ -1672,9 +1819,9 @@ export function UnifiedTable<T extends object>({
                       isPinned && 'sticky right-0 z-10 bg-muted/95 backdrop-blur shadow-l',
                       col.headerClassName,
                     )}
-                    onClick={col.sortable ? () => handleSort(col) : undefined}
+                    onClick={col.sortable ? (e) => handleSort(col, e.shiftKey) : undefined}
                     aria-sort={isActiveSort ? (currentDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                    title={col.sortable ? 'اضغط للترتيب • Shift+Click لإضافة مستوى ترتيب' : undefined}
+                    title={col.sortable ? 'اضغط للترتيب (مفرد) • Shift+Click لإضافة مستوى ترتيب (متعدد)' : undefined}
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.headerAr || col.header}
@@ -1685,8 +1832,9 @@ export function UnifiedTable<T extends object>({
                               {currentDir === 'asc'
                                 ? <ChevronUp className="w-3 h-3 text-foreground" />
                                 : <ChevronDown className="w-3 h-3 text-foreground" />}
-                              {rank && rank > 1 && (
-                                <span className="text-[9px] text-primary font-bold">{rank}</span>
+                              {/* (UNIFIED-TABLE-UPGRADE) rank badge whenever multi-sort active */}
+                              {rank && sortStack.length > 1 && (
+                                <span className="text-[9px] text-primary font-bold leading-none w-3.5 h-3.5 inline-flex items-center justify-center rounded-full bg-primary/15">{rank}</span>
                               )}
                               {/* (Task 34-A) Shift hint when there's >= 1 sort level */}
                               {sortStack.length >= 1 && (

@@ -484,6 +484,59 @@ function getDirections(t: (k: string, p?: any) => string) {
   ];
 }
 
+// ─── (UNIFIED-TABLE-UPGRADE) Computed-value helpers ──────────────────────
+// تُستخدم بواسطة كل من render و sortValue عشان يبقوا متطابقين دائماً.
+// كل القيم null/0 → -1 (sorts to bottom). Rule 27: لا fabrication.
+function computeScreenerEntry(s: ScreenerStock): number {
+  if (s.support && s.support > 0) return s.support * 1.02;
+  return s.current_price > 0 ? s.current_price : -1;
+}
+function computeScreenerStop(s: ScreenerStock): number {
+  if (s.support && s.support > 0) return s.support * 0.97;
+  return s.current_price > 0 ? s.current_price * 0.95 : -1;
+}
+function computeScreenerTarget(s: ScreenerStock): number {
+  if (s.resistance && s.resistance > 0) return s.resistance;
+  return s.current_price > 0 ? s.current_price * 1.10 : -1;
+}
+function computeScreenerRR(s: ScreenerStock): number {
+  const entry = computeScreenerEntry(s);
+  const stop = computeScreenerStop(s);
+  const target = computeScreenerTarget(s);
+  if (entry > 0 && stop > 0 && target > 0 && entry > stop && target > entry) {
+    return (target - entry) / (entry - stop);
+  }
+  return -1;
+}
+function computeOpportunityQuality(s: ScreenerStock): number {
+  let quality = s.momentum_score || 0;
+  if (s.volume_surge) quality += 20;
+  if (s.above_ma_50) quality += 15;
+  if (s.rsi !== null && s.rsi > 0 && s.rsi >= 30 && s.rsi <= 50) quality += 15;
+  if (s.maker_activity === 'عالي' || s.maker_activity === 'مرتفع' || s.maker_activity === 'high') quality += 10;
+  if (s.accumulation && (s.accumulation.includes('قوي') || s.accumulation.includes('تجميع'))) quality += 10;
+  return quality;
+}
+/** stop_distance = (current_price - stop) / current_price * 100 */
+function computeStopDistancePct(s: ScreenerStock): number {
+  if (!s.current_price || s.current_price <= 0) return -1;
+  const stop = computeScreenerStop(s);
+  if (stop <= 0) return -1;
+  return ((s.current_price - stop) / s.current_price) * 100;
+}
+/** يتحقق لو السهم عليه نشاط ميكر "عالي" */
+function isHighMakerActivity(s: ScreenerStock): boolean {
+  const a = s.maker_activity;
+  if (!a) return false;
+  return a === 'عالي' || a === 'مرتفع' || a.toLowerCase() === 'high';
+}
+
+// ─── (UNIFIED-TABLE-UPGRADE) One-Click Trader Presets types ─────────────
+interface ExtraClientFilter {
+  label: string;
+  test: (s: ScreenerStock) => boolean;
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 interface StockScreenerAdvancedProps {
@@ -603,6 +656,40 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
   const [clientSortField, setClientSortField] = useState<SortField | null>(null);
   const [clientSortDir, setClientSortDir] = useState<SortDir>('desc');
 
+  // ─── (UNIFIED-TABLE-UPGRADE) One-Click Trader Presets ────────────────
+  // فلتر إضافي client-side للحقول اللي الـ server مش بيدعمها (rr، score،
+  // stop_distance، maker_activity، accumulation). كل preset يطبّق الفلاتر
+  // اللي يقدر عليها في الـ state + يضبط ده للباقي. Rule 27: لا fabrication.
+  const [clientExtraFilter, setClientExtraFilter] = useState<ExtraClientFilter | null>(null);
+
+  // قوالب المتداول المحترف (One-Click Trader Presets)
+  const traderPresets: ExtraClientFilter[] = useMemo(() => [
+    {
+      label: '🌟 زبدة الرادار',
+      test: (s) => isHighMakerActivity(s)
+        && s.turnover_egp > 1_000_000
+        && computeScreenerRR(s) >= 2.0,
+    },
+    {
+      label: '🚀 انفجار سعري',
+      test: (s) => !!s.volume_surge
+        && s.above_ma_50
+        && computeOpportunityQuality(s) >= 70,
+    },
+    {
+      label: '💎 قيعان ارتدادية',
+      test: (s) => s.rsi !== null && s.rsi >= 30 && s.rsi <= 45
+        && !!s.accumulation && s.accumulation.includes('تجميع'),
+    },
+    {
+      label: '🛡️ استثمار دفاعي',
+      test: (s) => {
+        const dist = computeStopDistancePct(s);
+        return dist > 0 && dist < 3 && s.turnover_egp > 5_000_000;
+      },
+    },
+  ], []);
+
   const fetchScreener = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -715,6 +802,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
      setMinDividendYield(''); setMinMarketCap(''); setMaxMarketCap('');
      setStockState('ALL');
      setSearchQuery('');
+     setClientExtraFilter(null); // (UNIFIED-TABLE-UPGRADE) clear trader preset too
      toast.success(t('screener.advanced.toast.filtersReset'));
    };
 
@@ -1041,6 +1129,12 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         (s.name_ar || '').includes(searchQuery)
       );
     }
+    // (UNIFIED-TABLE-UPGRADE) One-Click Trader Preset client-side filter —
+    // يطبّق الفلاتر على الحقول اللي server مش بيدعمها (rr، score،
+    // stop_distance، maker_activity، accumulation). Rule 27: لا fabrication.
+    if (clientExtraFilter) {
+      list = list.filter(s => clientExtraFilter.test(s));
+    }
     if (clientSortField) {
       const dir = clientSortDir === 'desc' ? -1 : 1;
       const field = clientSortField;
@@ -1066,7 +1160,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
       list = sorted;
     }
     return list;
-  }, [stocks, searchQuery, clientSortField, clientSortDir]);
+  }, [stocks, searchQuery, clientExtraFilter, clientSortField, clientSortDir]);
 
   // PAYWALL Gate 5: free users (post-trial) see only first 5 filter results.
   // Paid users + trial users see the full list. Strategy §4.1 row 2.
@@ -1131,6 +1225,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         align: 'right',
         sortable: true,
         filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: ticker string (alphabetic via fallback path)
+        sortValue: (s) => s.ticker || '',
+        filterValue: (s) => s.ticker,
         render: (s) => (
           <div>
             <div className="font-mono font-bold text-sm">{s.ticker}</div>
@@ -1148,6 +1245,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         filterable: true,
         editable: true, // (Task 37) «الجدول المتقدّم» — inline edit (local only)
+        // (UNIFIED-TABLE-UPGRADE) sortValue: current_price (0/null → -1)
+        sortValue: (s) => s.current_price > 0 ? s.current_price : -1,
         render: (s) => (
           <span className="font-mono text-sm">{formatNumber(s.current_price)}</span>
         ),
@@ -1159,6 +1258,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         filterable: true,
         editable: true, // (Task 37) «الجدول المتقدّم» — inline edit (local only)
+        // (UNIFIED-TABLE-UPGRADE) sortValue: change_percent (null → -Infinity to bottom)
+        sortValue: (s) => Number.isFinite(s.change_percent) ? s.change_percent : -Infinity,
         render: (s) => (
           <span className={cn('font-mono text-sm font-medium', getChangeColor(s.change_percent))}>
             {s.change_percent > 0 ? '+' : ''}{formatNumber(s.change_percent)}%
@@ -1179,8 +1280,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'دخول',
         align: 'left',
         sortable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: computed entry price (-1 if invalid)
+        sortValue: (s) => computeScreenerEntry(s),
         render: (s) => {
-          const entry = s.support ? s.support * 1.02 : s.current_price;
+          const entry = computeScreenerEntry(s);
           return <span className="font-mono text-xs font-semibold text-foreground">{entry > 0 ? (entry ?? 0).toFixed(2) : '—'}</span>;
         },
       },
@@ -1189,8 +1292,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'وقف',
         align: 'left',
         sortable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: computed stop price (-1 if invalid)
+        sortValue: (s) => computeScreenerStop(s),
         render: (s) => {
-          const stop = s.support ? s.support * 0.97 : (s.current_price ? s.current_price * 0.95 : 0);
+          const stop = computeScreenerStop(s);
           return <span className="font-mono text-xs font-semibold text-red-600 dark:text-red-400">{stop > 0 ? (stop ?? 0).toFixed(2) : '—'}</span>;
         },
       },
@@ -1199,8 +1304,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'هدف',
         align: 'left',
         sortable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: computed target price (-1 if invalid)
+        sortValue: (s) => computeScreenerTarget(s),
         render: (s) => {
-          const target = s.resistance || (s.current_price ? s.current_price * 1.10 : 0);
+          const target = computeScreenerTarget(s);
           return <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">{target > 0 ? (target ?? 0).toFixed(2) : '—'}</span>;
         },
       },
@@ -1209,12 +1316,11 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'R:R',
         align: 'left',
         sortable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: computed R:R (-1 if invalid)
+        sortValue: (s) => computeScreenerRR(s),
         render: (s) => {
-          const entry = s.support ? s.support * 1.02 : s.current_price;
-          const stop = s.support ? s.support * 0.97 : (s.current_price ? s.current_price * 0.95 : 0);
-          const target = s.resistance || (s.current_price ? s.current_price * 1.10 : 0);
-          if (entry > 0 && stop > 0 && target > 0 && entry > stop) {
-            const rr = (target - entry) / (entry - stop);
+          const rr = computeScreenerRR(s);
+          if (rr > 0) {
             const rrColor = rr >= 2 ? 'text-emerald-600 dark:text-emerald-400' : rr >= 1.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
             return <span className={`font-mono text-xs font-bold ${rrColor}`}>{(rr ?? 0).toFixed(2)}</span>;
           }
@@ -1226,13 +1332,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'جودة',
         align: 'left',
         sortable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: opportunity_quality score (-1 if invalid)
+        sortValue: (s) => computeOpportunityQuality(s),
         render: (s) => {
-          let quality = s.momentum_score || 0;
-          if (s.volume_surge) quality += 20;
-          if (s.above_ma_50) quality += 15;
-          if (s.rsi !== null && s.rsi > 0 && s.rsi >= 30 && s.rsi <= 50) quality += 15;
-          if (s.maker_activity === 'عالي' || s.maker_activity === 'مرتفع') quality += 10;
-          if (s.accumulation && (s.accumulation.includes('قوي') || s.accumulation.includes('تجميع'))) quality += 10;
+          const quality = computeOpportunityQuality(s);
           const color = quality >= 70 ? 'text-emerald-600 dark:text-emerald-400' : quality >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground';
           return <span className={`font-mono text-xs font-bold ${color}`}>{quality}</span>;
         },
@@ -1244,6 +1347,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         filterable: true,
         editable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: volume (-1 if invalid)
+        sortValue: (s) => s.volume > 0 ? s.volume : -1,
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">
             {formatVolume(s.volume)}
@@ -1258,6 +1363,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         filterable: true,
         editable: true, // (Task 37) «الجدول المتقدّم» — inline edit (local only)
+        // (UNIFIED-TABLE-UPGRADE) sortValue: turnover_egp (-1 if invalid)
+        sortValue: (s) => s.turnover_egp > 0 ? s.turnover_egp : -1,
         render: (s) => (
           <span className="font-mono text-xs text-muted-foreground">
             {formatEGP(s.turnover_egp)}
@@ -1271,6 +1378,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         filterable: true,
         editable: true, // (Task 37) «الجدول المتقدّم» — inline edit (local only)
+        // (UNIFIED-TABLE-UPGRADE) sortValue: pe_ratio (-1 if null/0/15 placeholder)
+        sortValue: (s) => (s.pe_ratio !== null && s.pe_ratio > 0 && s.pe_ratio !== 15.0) ? s.pe_ratio : -1,
         render: (s) => (
           <span className="font-mono text-xs">
             {s.pe_ratio !== null ? formatNumber(s.pe_ratio, 1) : '—'}
@@ -1283,6 +1392,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         align: 'left',
         sortable: true,
         filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: ROE (-1 if null/0/15 placeholder)
+        sortValue: (s) => (s.roe !== null && s.roe !== undefined && s.roe !== 0 && s.roe !== 15.0) ? s.roe : -1,
         render: (s) => {
           // Owner directive: "متظهرش أرقام وهمية" — ROE=15.0 placeholder أو 0 = "—"
           const val = s.roe;
@@ -1297,6 +1408,8 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         sortable: true,
         filterable: true,
         editable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: RSI (-1 if null/0)
+        sortValue: (s) => (s.rsi !== null && s.rsi !== undefined && s.rsi > 0) ? s.rsi : -1,
         render: (s) => {
           // Owner directive: "متظهرش أرقام وهمية" — RSI=0 = "—"
           const val = s.rsi;
@@ -1310,6 +1423,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         align: 'right',
         sortable: true,
         filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: STATE_ORDER rank (99 if unknown)
+        sortValue: (s) => STATE_ORDER[s.stock_state] ?? 99,
+        filterValue: (s) => s.stock_state,
         render: (s) => <StateBadge state={s.stock_state} reason={s.stock_state_reason} />,
       },
       {
@@ -1318,6 +1434,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         align: 'center',
         sortable: true,
         filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: 1 if above, 0 if below
+        sortValue: (s) => s.above_ma_50 ? 1 : 0,
+        filterValue: (s) => s.above_ma_50 ? 'above' : 'below',
         render: (s) =>
           s.above_ma_50 ? (
             <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 text-xs px-2 py-0.5">
@@ -1335,6 +1454,17 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'نشاط الميكر',
         align: 'right',
         sortable: true,
+        filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: 3=high, 2=med, 1=low, 0=unknown (-1 if null)
+        sortValue: (s) => {
+          const a = s.maker_activity;
+          if (!a) return -1;
+          if (a === 'عالي' || a === 'مرتفع' || a.toLowerCase() === 'high') return 3;
+          if (a === 'متوسط' || a.toLowerCase() === 'medium' || a.toLowerCase() === 'moderate') return 2;
+          if (a === 'منخفض' || a.toLowerCase() === 'low') return 1;
+          return 0;
+        },
+        filterValue: (s) => s.maker_activity || '—',
         render: (s) => (
           <span className="text-xs">
             {s.maker_activity || '—'}
@@ -1346,6 +1476,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'ضغط الشراء %',
         align: 'left',
         sortable: true,
+        filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: buy_pct (-1 if null)
+        sortValue: (s) => (s.buy_pct !== null && s.buy_pct !== undefined) ? s.buy_pct : -1,
         render: (s) => (
           <span className={cn('font-mono text-xs', (s.buy_pct ?? 0) >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
             {s.buy_pct !== null && s.buy_pct !== undefined ? formatNumber(s.buy_pct, 1) + '%' : '—'}
@@ -1357,6 +1490,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'التدفق الصافي',
         align: 'left',
         sortable: true,
+        filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: net_flow_egp (-Infinity if null)
+        sortValue: (s) => (s.net_flow_egp !== null && s.net_flow_egp !== undefined && Number.isFinite(s.net_flow_egp)) ? s.net_flow_egp : -Infinity,
         render: (s) => (
           <span className={cn('font-mono text-xs', (s.net_flow_egp ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : (s.net_flow_egp ?? 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
             {s.net_flow_egp !== null && s.net_flow_egp !== undefined ? formatEGP(s.net_flow_egp) : '—'}
@@ -1368,6 +1504,18 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'التجميع',
         align: 'right',
         sortable: true,
+        filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: 3=قوي, 2=تجميع, 1=محايد, 0=تصريف (-1 if null)
+        sortValue: (s) => {
+          const a = s.accumulation;
+          if (!a) return -1;
+          if (a.includes('تجميع قوي')) return 4;
+          if (a.includes('تجميع')) return 3;
+          if (a.includes('محايد')) return 2;
+          if (a.includes('تصريف')) return 1;
+          return 0;
+        },
+        filterValue: (s) => s.accumulation || '—',
         render: (s) => (
           <span className="text-xs">
             {s.accumulation || '—'}
@@ -1379,6 +1527,10 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'دورة الحياة',
         align: 'right',
         sortable: true,
+        filterable: true,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: life_cycle string (alphabetic via fallback)
+        sortValue: (s) => s.life_cycle || '',
+        filterValue: (s) => s.life_cycle || '—',
         render: (s) => (
           <span className="text-xs">
             {s.life_cycle || '—'}
@@ -1390,6 +1542,9 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
         header: 'المتوقع',
         align: 'right',
         sortable: false,
+        // (UNIFIED-TABLE-UPGRADE) sortValue: expected string (sortable via fallback)
+        sortValue: (s) => s.expected || '',
+        filterValue: (s) => s.expected || '—',
         render: (s) => (
           <span className="text-xs text-muted-foreground truncate block max-w-[180px]">
             {s.expected || '—'}
@@ -1544,6 +1699,57 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           })()}
         </div>
       </CollapsibleSection>
+
+      {/* ─── (UNIFIED-TABLE-UPGRADE) One-Click Trader Presets ────────────
+          أزرار فلترة سريعة للمتداول المحترف (فوق الجدول مباشرة). كل زر يطبّق
+          تركيبة فلاتر متخصصة على الـ clientExtraFilter + يضبط ما يقدر عليه
+          من الـ server filter state. Rule 27: لا fabrication. */}
+      <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-emerald-500/20 bg-emerald-50/30 dark:bg-emerald-950/10">
+        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">قوالب المتداول المحترف</span>
+        {traderPresets.map((preset) => {
+          const isActive = clientExtraFilter?.label === preset.label;
+          return (
+            <Button
+              key={preset.label}
+              variant={isActive ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                if (isActive) {
+                  // toggle off — امسح الفلتر الإضافي
+                  setClientExtraFilter(null);
+                } else {
+                  // طبّق preset: لا reset كامل عشان نحافظ على فلتر السوق/القطاع
+                  // اللي اختاره المستخدم. بس اضبط الفلتر الإضافي.
+                  setClientExtraFilter(preset);
+                }
+                toast.success(
+                  isActive
+                    ? t('screener.advanced.toast.filtersReset')
+                    : `تم تطبيق: ${preset.label}`
+                );
+              }}
+              className={cn(
+                'h-8 text-xs gap-1.5 transition-all',
+                isActive
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'border-emerald-500/40 bg-background text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30',
+              )}
+              title={isActive ? 'إزالة الفلتر' : 'تطبيق القالب'}
+            >
+              {preset.label}
+            </Button>
+          );
+        })}
+        {clientExtraFilter && (
+          <button
+            onClick={() => setClientExtraFilter(null)}
+            className="text-[10px] text-rose-500 hover:text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+            title="مسح فلتر القالب"
+          >
+            ✕ مسح القالب
+          </button>
+        )}
+      </div>
 
       {/* Filters Panel — UNIFIED-MARKET-UX (Task 3): Collapsible */}
       {/* N5: الفلاتر المتقدمة مطوية افتراضياً لتحسين تجربة المستخدم أول التحميل */}
