@@ -5,13 +5,16 @@
 > what is wired, what is pending — derived from reading the actual code
 > (not from old docs).
 >
-> **آخر تحديث:** 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. ملخص تحديثات هذا الـ pass:
-> (g) NEW §17.12 — **Multi-Market Segregation Status (6 markets + graceful fallback)** — توثيق `normalizeMarket()` + `buildMarketFilter()` + `pythonMarketCode()` + KSA/TADAWUL naming fix + 6 markets verified (EGX 451 + TADAWUL 390 + KSE 138 + QSE 67 + US graceful + CRYPTO). Commits: `b18b3f21` (Phase 3) + `e8df798d` (Phase 1 CPU).
-> (h) NEW §17.13 — **CPU Optimization (daily_predictor micro-sleep)** — `time.sleep(0.01)` بين الأسهم → CPU 95%→35%. overhead 10s total (negligible). Commit `e8df798d`.
-> (i) NEW §17.14 — **Stability & Null-Safety Pass (Oct 8-9)** — 664 toFixed null-safety + 8 toLowerCase null crash + 10 dead components archived + 23 proxies unified + 11 publishing quality fixes.
-> (j) §3.1 — تأكيد DB snapshot 2026-08-17 (stocks=1046 + predictions=153 EGX only) بعد sandbox reset #2 recovery (MD5 verified — نفس الـ `0947bdf6c2eff1a75ff8af6c3e576ed8`).
+> **آخر تحديث:** 2026-10-09 (Task `AUDIT-DEEP-INSPECTION` + `EXPERT-ANALYSIS-INTEGRATION` — Main Agent (Z.ai Code) — أوديت عميق + محرك تحليل احترافي + ربط كامل بالشاشات والتليجرام).
 >
-> **تحديث سابق:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running + `zero_conflict_test` improvement + دمج عمل الفريق الآخر `DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `metals.dev/frankfurter.dev/market_indices v2`).
+> ملخص تحديثات هذا الـ pass:
+> (k) NEW §17.15 — **Deep Audit Findings (17 مشكلة)** — فحص شامل كـ "مستخدم صايع معلم" اكتشف 8 CRITICAL + 6 HIGH + 3 MEDIUM. 3 migration scripts أنشئت (`migrate_audit_phase1.py` + `migrate_calc_indicators.py` + `migrate_cleanup_archive.py`) مع `--dry-run` + `--verify` + backup تلقائي. تم تشغيلها على الإنتاج بنجاح: تعطيل 39 سهم بسعر=0 + تصفير 234 RSI + رفض 128 توقع BUY بـ R:R<1 + حساب high_52w/low_52w لـ 611 سهم + حذف 75 خبر متكرر + أرشفة 755 توقع قديم. Commit `860286e`.
+> (l) NEW §17.16 — **Expert Analysis Engine (محرك تحليل احترافي)** — محرك شامل (786 سطر) بيوفر تحليل فني (RSI/MA/S-R/52w) + أساسي (P/E/ROE/EPS/P-B/Dividend) + إدارة مخاطر (Entry/Targets/Stop/R:R/Position size) + ملخص خبير + تقرير منسق. API: `/api/stocks/[ticker]/expert-analysis`. Commit `dfe7ed9`.
+> (m) NEW §17.17 — **Expert Analysis Integration (ربط 3 أماكن)** — ربط المحرك بالشاشة (tab جديد "⚡ تحليل خبير" في ComprehensiveStockAnalysis) + نشر التليجرام (قسم "🎓 تحليل خبير" في auto_poster.py) + البوت التفاعلي (قسم "🎓 تحليل خبير احترافي" في telegram_interactive_bot.py). العميل دلوقتي بيشوف التحليل في كل مكان. Commit `d96b454`.
+> (n) NEW Documentation/06-AUDIT-FINDINGS.md — تقرير شامل لكل المشاكل المكتشفة + الإصلاحات + خطة الإنتاج.
+> (o) NEW Documentation/07-EXPERT-ANALYSIS-ENGINE.md — توثيق محرك التحليل الاحترافي (المنطق + API + أمثلة).
+>
+> **تحديث سابق:** 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation).
 > ملخص تحديثات هذا الـ pass:
 > (a) §1.1 — توثيق إكمال الـ canonical signal migration (10/10 شاشات قرار نشطة الآن canonical).
 > (b) §3.1/§3.3 — تحديث أعداد الصفوف لقواعد البيانات المثبّتة (stocks=1046 + predictions=153 — snapshot 2026-08-17, MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8`).

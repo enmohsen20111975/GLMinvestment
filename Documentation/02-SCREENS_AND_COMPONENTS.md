@@ -1234,7 +1234,8 @@ AdminView (1,913 LOC)
 | `advanced-analysis/SpecialistAnalysisView.tsx` | 1,061 | active (2) | advanced-analysis/ |
 | `stocks/StockAdvancedAnalysisView.tsx` | 679 | active(1) | stocks/ |
 | `stocks/StockAnalysisDashboard.tsx` | 744 | ❌ DEAD | stocks/ |
-| `stocks/ComprehensiveStockAnalysis.tsx` | 1,374 | active(1) | stocks/ |
+| `stocks/ComprehensiveStockAnalysis.tsx` | 1,430 | active(1) | stocks/ |
+| `stocks/ExpertAnalysisPanel.tsx` | 🆕 285 | active(1) | stocks/ — NEW 2026-10-09 — تحليل خبير احترافي شامل (tab جديد في ComprehensiveStockAnalysis) |
 | `stocks/DeepAnalysis.tsx` | 1,148 | active(1) | stocks/ |
 | `stocks/GateAnalysisView.tsx` | 215 | active(1) | stocks/ |
 

@@ -1124,6 +1124,49 @@ if r_mult < get_setting('dynamic_rr_normal', default=1.8):
 
 > كل mini-service = **independent bun project** بـ own `package.json` + own port + `bun --hot` للـ hot-reload.
 
+### 4.4b 🆕 Expert Analysis Engine (محرك التحليل الاحترافي) — NEW 2026-10-09
+
+> **الملف:** `src/lib/expert-analysis.ts` (786 سطر)  
+> **الـ API:** `GET /api/stocks/[ticker]/expert-analysis`  
+> **التكامل:** مربوط في 3 أماكن — شاشة السهم + نشر التليجرام + بوت التليجرام التفاعلي  
+> **الـ Commit:** `dfe7ed9` (engine) + `d96b454` (integration)
+
+محرك تحليل احترافي شامل يولّد تحليل مثل خبير مالي حقيقي. بياخد بيانات السهم من `getUnifiedStockData()` وبيولّد:
+
+**التحليل الفني (Technical):**
+- **RSI** — 5 مستويات: overbought (≥70) / bullish (55-70) / neutral (45-55) / bearish (30-45) / oversold (≤30) + تفسير كامل
+- **Moving Averages** — Golden Cross / Death Cross + 4 أنواع ترند
+- **Support/Resistance** — تحليل موقع السعر + نسبة من النطاق
+- **52-Week Range** — قرب القمة/القاع/منتصف النطاق + تقييم
+
+**التحليل الأساسي (Fundamental):**
+- **P/E Ratio** — underpriced (<10) / fair (10-20) / premium (20-35) / overvalued (>35)
+- **ROE** — excellent (≥20%) / good (15-20%) / average (10-15%) / weak (<10%)
+- **EPS** — ربحية السهم + مكرر محسوب
+- **P/B Ratio** — deep_value (<1) / reasonable (1-2) / growth_premium (2-4) / high_premium (>4)
+- **Dividend Yield** — very_high (≥8%) / attractive (4-8%) / modest (1-4%) / minimal (<1%)
+
+**إدارة المخاطر (Risk Management):**
+- **Entry point** + المبرر (دعم/MA50/فني)
+- **Target 1** + المبرر (مقاومة/R:R)
+- **Target 2** + المبرر (هدف موسع)
+- **Stop Loss** + المبرر (دعم/ATR fallback)
+- **R:R Ratio** (المستهدف ≥ 2.0)
+- **Position Size** — 0.5-1% (high risk) / 1-3% (moderate) / 3-5% (low)
+- **Risk Level** — low/moderate/high + عوامل المخاطر
+
+**التكامل:**
+1. **شاشة السهم** — tab جديد "⚡ تحليل خبير" في `ComprehensiveStockAnalysis.tsx` (عبر `ExpertAnalysisPanel.tsx`)
+2. **نشر التليجرام** — قسم "🎓 تحليل خبير" في `auto_poster.py` (عبر `_fetch_expert_analysis()`)
+3. **البوت التفاعلي** — قسم "🎓 تحليل خبير احترافي" في `telegram_interactive_bot.py` (عبر `_fetch_bot_expert_analysis()`)
+
+**مصادر البيانات:** `getUnifiedStockData()` بيرجّع nested structure:
+- `stock` (name, price, sector)
+- `fundamentals` (P/E, ROE, EPS, P/B, Dividend, Beta)
+- `technical` (RSI, MA50/200, S/R, high/low 52w, trend)
+- `prediction` (signal, score, entry, target, stop)
+- `canonical` (unified signal + score)
+
 ### 4.5 الـ Thresholds الحالية (engine_settings)
 
 > **تحديث 2026-10-08 (Task `REAPPLY-CRITICAL-FIXES` — commit `38665fd1`):**
