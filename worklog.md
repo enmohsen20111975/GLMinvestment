@@ -67494,3 +67494,40 @@ Stage Summary:
 - 0 file deleted (per task constraint)
 - 0 git push (per task constraint)
 - النشر على التليجرام دلوقتي: complete (كل الحقول مطلوبة موجودة) + professional (عربي + RTL) + safe (NULL → "—" مش "0.00") + legal (disclaimer في كل رسالة)
+
+---
+Task ID: RECOVERY-AFTER-RESET-2 (المدير العام — استعادة بعد sandbox reset #2)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: استعادة المشروع من GitHub بعد sandbox reset + إصلاح syntax errors من batch fix + تحديث التوثيقات
+
+Work Log:
+- 1) الساندبوكس اترست تاني. استنسخت آخر main من GitHub (commit aca19f9).
+- 2) استرجاع DB blob عبر GitHub API (MD5 مطابق 100%).
+- 3) تثبيت الـ 17 DB (stocks=1046، predictions=153) + symlinks + .env.
+- 4) bun install + pip install — كل deps مثبتة.
+- 5) بدأ تشغيل Next.js + Python backend — Python شغال، Next.js فشل بسبب syntax errors.
+- 6) اكتشاف syntax errors من الـ batch regex fix (664 toFixed):
+  * mini-sparkline.tsx: points[0].(x ?? 0).toFixed(2) ← invalid JS
+  * SuperLearningSystem.tsx: PERSONA_BENCHMARK_DATA[p].(stopFactor ?? 0).toFixed(1) ← invalid JS
+  * AIAnalysisWidget.tsx: risk_reward_ratio ?? 0) >= 2 ← missing opening paren
+- 7) إصلاح كل syntax errors (3 commits):
+  * fix(syntax): AIAnalysisWidget.tsx missing paren (commit aca19f96)
+  * fix(syntax): mini-sparkline.tsx broken pattern (commit 3a63bd04)
+  * fix(syntax): SuperLearningSystem.tsx 6 broken patterns (commit d786b8d1)
+
+Verification (بعد كل الإصلاحات):
+- ✅ Next.js: HTTP 200
+- ✅ COMI unified: HTTP 200
+- ✅ AALR recommendation: HTTP 200 (كان 500!)
+- ✅ AALR comprehensive: HTTP 200 (كان 500!)
+- ✅ GET /: HTTP 200
+- ✅ Admin gate: 403 (security شغّال)
+- ✅ Lint: 0 errors
+- ✅ dev.log: 0 syntax errors
+
+Stage Summary:
+- المشروع مستعاد بالكامل من GitHub بعد sandbox reset.
+- 3 syntax errors من الـ batch fix أُصلحت.
+- كل endpoints ترجع 200.
+- Python backend يعمل (53 blueprints + 4 DBs ok).
+- لا push جديد مطلوب — كل شيء على GitHub.
