@@ -4,7 +4,13 @@
 >
 > **الهدف:** مرجع كامل لكل ما يخص الـ UI يمنع إنشاء شاشات/مكوّنات مكررة، ويوضّح ما هو نشط فعلًا على الإنتاج وما هو مرشّح للحذف.
 >
-> **آخر تحديث:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010 + `zero_conflict_test` improvement). ملخص التحديثات في هذا الـ pass:
+> **آخر تحديث:** 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. ملخص التحديثات في هذا الـ pass:
+> - **§0.9 NEW — Dead Components Archive (Oct 8-9)** — توثيق 10 dead components اتأرشفوا لـ `archive/dead-components-2026-10-08/` (Rule 16 NO-DELETION — archived مش مسح).
+> - **§4.x MarketSelector supports 6 markets** — تحديث من 5 → 6 markets (EGX + TADAWUL + KSE + QSE + US + CRYPTO) + `normalizeMarket()` helper مُفعّل في كل الـ routes.
+> - **§4.x EnhancedPortfolioView** — إضافة Market Badge (🏛️) قرب اسم كل سهم + auto-tag `stock_market` عند إضافة سهم جديد.
+> Commits: `b18b3f21` (PHASE-3 market segregation) · `e8df798d` (PHASE-1 CPU) · `aca19f96` + `3a63bd04` + `d786b8d1` (syntax fixes). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010 + `zero_conflict_test` improvement). ملخص التحديثات في هذا الـ pass:
 > - **§0.8 NEW — Canonical Signal Migration (10/10)** — توثيق إكمال الترحيل الكامل للإشارات الكنسية على كل شاشات القرار النشطة + تدفق البيانات الكنسي + الـ 410 Gone deprecated endpoints + `zero_conflict_test.py` كآلية إنفاذ Rule 73.
 > - إشارات لـ Rule 73 (SINGLE-DISPLAY-SOURCE) + Rule 74 (TICKER-COOLDOWN) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) — كلها اتضافت للدستور في commit `11853f69` (Task `CONSTITUTION-R75-R76`).
 > Commits: `38665fd1` (REAPPLY+DISABLE-SCRIPTS) · `11853f69` (CONSTITUTION-R75-R76) · `64ee8d54` (zero_conflict_test --require-real-data). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
@@ -397,6 +403,56 @@ Plus 6 more P0 admin features pending in Task 27-B (paywall pricing editor + con
 **Rule 73 enforcement:**
 - لو أي شاشة قررت تنتج signal/master_score/RSI/support/resistance بدون ما تمرّ على `/api/stocks/[ticker]/unified` → الـ test هيرصمها mismatch فورًا.
 - لو أي route فيه local computation للـ canonical fields → الـ test هيرصد drift في thresholds.
+
+---
+
+### 0.9 Dead Components Archive (Oct 8-9, 2026) — NEW 2026-10-09 (Task `DOCS-UPDATE-OCT9`)
+
+> **المرجع:** `archive/dead-components-2026-10-08/` + worklog.md entries من Oct 8.
+> **القاعدة الدستورية:** Rule 16 (NO-DELETION — VERIFY-BEFORE-DELETE) + Rule 25 (refactoring يحتاج موافقة المالك).
+
+**10 dead components اتأرشفوا** (مش اتمسحوا — Rule 16 محترمة). كلهم مكوّنات مش بتُستخدم في أي route نشط + مش ليهم imports حية عبر `src/`. تم نقلهم لـ `archive/dead-components-2026-10-08/` بعد التحقق بـ grep شامل:
+
+| # | Component (archived path) | LOC | Reason for archive |
+|---|---|---:|---|
+| 1 | `OldMarketAnalysisView.tsx` | ~6,450 | تم استبداله بـ orchestrator (297 LOC) + 5 tabs في Wave 3 |
+| 2 | `LearningView.tsx` | ~1,200 | تم استبداله بـ AcademyView في Wave 3 |
+| 3 | `LegacyStocksTable.tsx` | ~890 | تم استبداله بـ UnifiedTable (expandable + filterable) |
+| 4 | `OldPredictionCard.tsx` | ~340 | تم استبداله بـ CanonicalPredictionCard |
+| 5 | `MaestroWidget.tsx` | ~2,750 | Maestro KILLed (2026-08-31) → early-return null |
+| 6 | `V68OracleWidget.tsx` | ~1,100 | V68 A/B-test انتهى — deprecated |
+| 7 | `V72OracleWidget.tsx` | ~980 | V72 A/B-test انتهى — deprecated |
+| 8 | `OldRadarPanel.tsx` | ~1,540 | تم استبداله بـ MakerRadarTab + 5 sub-tabs |
+| 9 | `LegacyPortfolioView.tsx` | ~890 | تم استبداله بـ EnhancedPortfolioView (3,069 LOC) |
+| 10 | `OldTelegramPublisher.tsx` | ~420 | تم استبداله بـ UnifiedPublishButton (canonical) |
+
+**ملخص الـ Wave (Oct 8):**
+- ✅ **0 files deleted** (Rule 16 — archived only).
+- ✅ **0 imports live** بعد الـ grep audit.
+- ✅ كلهم موجودين في `archive/dead-components-2026-10-08/` (recoverable لو اكتُشف caller لاحقًا).
+
+---
+
+### 0.10 Multi-Market UI Updates (Oct 8-9, 2026) — NEW 2026-10-09 (Task `PHASE-3` — commit `b18b3f21`)
+
+> **المرجع الدستوري:** Rule 53 (CRYPTO-IN-MARKETS) + Rule 27 (NO-FAKE-DATA) + Rule 73 (SINGLE-DISPLAY-SOURCE).
+
+**A. MarketSelector (`src/components/shared/MarketSelector.tsx`) — 6 markets supported:**
+- تم تحديث الـ MarketSelector من 5 → **6 markets**: EGX + TADAWUL + KSE + QSE + **US (graceful)** + CRYPTO.
+- الـ store (`useAppStore.currentMarket`) بـ يتغيّر لما المستخدم يختار سوق → كل الـ views بـ تـ reload.
+- `DevelopmentNotice.tsx` (سطر 9): تم إضافة 'US' لقائمة `DEVELOPMENT_MARKETS` (كانت ['TADAWUL','KSE','DFM','BSE','QSE']، بقت [..., 'US']). ده بيخلي العميل لما يختار US يشوف notice واضح بدل ما الـ dashboard يفضي بدون تفسير.
+- currency labels (`MARKET_CURRENCY_LABEL` في store.ts): EGX='ج.م' + TADAWUL='ريال' + KSE='د.ك' + QSE='ر.ق' + US='$' + CRYPTO='$'. ✓
+
+**B. EnhancedPortfolioView (`src/modules/portfolio/components/EnhancedPortfolioView.tsx`) — Market Badge:**
+- قبل الإصلاح: كان بياخد `currentMarket` من store (سطر 499) لكن ما بيستخدمهوش — الأسهم من كل الأسواق كانت بتعرض مختلطة بدون تمييز.
+- بعد الإصلاح (commit `b18b3f21`):
+  - أُضيف `inferStockMarket(ticker, stored?)` helper (سطر 89-110): بيحدد السوق من `stored` field لو موجود، أو heuristic fallback (لو ticker أرقام فقط → 'TADAWUL' مثلًا 2222 = Aramco، لو فيه USDT/BTC/ETH → 'CRYPTO'، غير كده → 'EGX' افتراضي).
+  - **أُضيف Market Badge (🏛️) قرب اسم كل سهم** (سطر 1341-1354): `🏛️ السوق السعودي` / `🏛️ بورصة الكويت` / `🏛️ بورصة قطر` / `🏛️ البورصة الأمريكية` / `🏛️ العملات الرقمية`. EGX مفيهوش badge (لأنه الافتراضي).
+  - عند إضافة سهم جديد (سطر 769-773): بنخزن `payload.stock_market = currentMarket` تلقائياً، فالسهم الجديد بيتسجّل بالسوق الصح بدون تدخل يدوي من العميل.
+
+**C. DashboardView (`src/modules/dashboard/components/DashboardView.tsx`) — EGX-specific widgets visibility:**
+- الـ EGX-specific widgets (MarketSummary + IndexCards + MarketPulse + MarketSentiment) كلها `visible: () => currentMarket === 'EGX'` — مختفية صح للأسواق التانية (سطر 197-258).
+- CRYPTO-specific widgets (CryptoSignalsWidget) `visible: (p) => p === 'crypto'` — شغّالة.
 
 ---
 

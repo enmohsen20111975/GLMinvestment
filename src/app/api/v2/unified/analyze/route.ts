@@ -103,7 +103,15 @@ export async function POST(request: NextRequest) {
     }
 
     const ticker     = String(body.ticker || '').toUpperCase();
-    const market     = String(body.market || 'EGX');
+    // PHASE3-MARKET-SEGREGATION: قبول أي alias للسوق السعودي (TADAWUL/KSA/السعودية)
+    // + تطبيع الـ alias للـ canonical قبل ما نبعت للـ Python. Python unified_config.py
+    // بيستخدم 'KSA' كمفتاح MarketProfile، فلو وصلها 'TADAWUL' بـ ترجّع None وبيفشل.
+    // pythonMarketCode() بـ يحوّل TADAWUL→KSA، وباقي الأسواق زي ما هي.
+    const rawMarket  = String(body.market || 'EGX');
+    const { normalizeMarket, pythonMarketCode } = await import('@/lib/market-utils');
+    const canonicalMarket = normalizeMarket(rawMarket) ?? 'EGX';
+    const market     = pythonMarketCode(canonicalMarket);
+    body.market = market;  // overwrite body before forwarding to Python
     const persona    = String(body.persona || 'balanced');
     const support    = body.support    != null ? num(body.support,    0) : null;
     const resistance = body.resistance != null ? num(body.resistance, 0) : null;

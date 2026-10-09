@@ -85,7 +85,29 @@ import { RiskProfilerQuiz } from '@/modules/portfolio/components/RiskProfilerQui
 import { RoboAdvisorPanel } from '@/modules/portfolio/components/RoboAdvisorPanel';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, MARKET_NAMES_AR, MarketType } from '@/lib/store';
+// PHASE3-MARKET-SEGREGATION: portfolio assets (stocks) carry a `stock_market`
+// hint when added — but legacy rows don't have it, so we also infer from the
+// ticker pattern. The badge shows which market each stock belongs to so the
+// user can distinguish EGX holdings from TADAWUL/KSE/QSE/US/CRYPTO.
+function inferStockMarket(ticker: string, stored?: string | null): MarketType | null {
+  if (stored && stored.trim()) {
+    const upper = stored.trim().toUpperCase();
+    if (upper === 'EGX' || upper === 'مصر' || upper === 'EGYPT') return 'EGX';
+    if (upper === 'TADAWUL' || upper === 'KSA' || upper === 'SAUDI' || upper === 'السعودية') return 'TADAWUL';
+    if (upper === 'KSE' || upper === 'KUWAIT' || upper === 'الكويت') return 'KSE';
+    if (upper === 'QSE' || upper === 'QATAR' || upper === 'قطر') return 'QSE';
+    if (upper === 'US' || upper === 'USA') return 'US';
+    if (upper === 'CRYPTO') return 'CRYPTO';
+  }
+  // Heuristic fallback: TADAWUL tickers are pure digits (e.g. 2222 = Aramco).
+  // EGX tickers are alphabetic (COMI, ETEL, AALR). Crypto tickers usually end
+  // with USDT/BTC/etc.
+  if (!ticker) return null;
+  if (/^\d+$/.test(ticker)) return 'TADAWUL';
+  if (ticker.includes('USDT') || ticker.includes('BTC') || ticker.includes('ETH')) return 'CRYPTO';
+  return 'EGX'; // default for legacy rows
+}
 import { useTranslation } from '@/lib/i18n-context';
 import { trackFeature } from '@/lib/analytics';
 // P39-PHASE-2: Wealth Allocation Matrix — persona-aware asset ceilings + alerts.
@@ -744,6 +766,11 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
       payload.stock_ticker = formTicker;
       payload.quantity = formQuantity ? parseInt(formQuantity) : null;
       payload.avg_buy_price = formAvgBuyPrice ? parseFloat(formAvgBuyPrice) : null;
+      // PHASE3-MARKET-SEGREGATION (Task F): store the selected market alongside
+      // the ticker so the badge (added above) shows the correct market later.
+      // If the user is viewing the dashboard under TADAWUL, new stock additions
+      // automatically tag themselves as TADAWUL — no manual selection needed.
+      payload.stock_market = currentMarket;
     }
     // ── Task 3: Crypto payload — reuse stock_ticker column for symbol ──
     if (formType === 'crypto') {
@@ -1316,6 +1343,20 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                 {isStock && asset.stock_ticker && (
                                   <span className="text-xs text-muted-foreground block" dir="ltr">{asset.stock_ticker}</span>
                                 )}
+                                {isStock && asset.stock_ticker && (() => {
+                                  // PHASE3-MARKET-SEGREGATION (Task F): أضف badge بـ
+                                  // سوق السهم علشان العميل يفرّق بين EGX و TADAWUL و US.
+                                  // لو المحفظة فيها أسهم من أسواق مختلفة، الـ badge بـ يوضّح
+                                  // كل سهم بتاع أي سوق بدل ما يبقوا مخلوطين بدون تمييز.
+                                  const m = inferStockMarket(String(asset.stock_ticker), String((asset as Record<string, unknown>).stock_market ?? ''));
+                                  if (!m || m === 'EGX') return null; // EGX هو الافتراضي — ما نظهرش badge
+                                  const label = MARKET_NAMES_AR[m];
+                                  return (
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                      🏛️ {label}
+                                    </Badge>
+                                  );
+                                })()}
                                 {Boolean(asset.portfolio_id) && String(asset.portfolio_id) !== 'default' && (
                                   <Badge
                                     variant="outline"

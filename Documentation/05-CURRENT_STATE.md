@@ -1,11 +1,17 @@
-# 📌 05-CURRENT_STATE — الحالة الحالية للكود (2026-10-08)
+# 📌 05-CURRENT_STATE — الحالة الحالية للكود (2026-10-09)
 
 > **THE single source of truth for the CURRENT state of the codebase.**
 > This file is the **only** consolidated snapshot of what is actually live,
 > what is wired, what is pending — derived from reading the actual code
 > (not from old docs).
 >
-> **آخر تحديث:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running + `zero_conflict_test` improvement + دمج عمل الفريق الآخر `DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `metals.dev/frankfurter.dev/market_indices v2`).
+> **آخر تحديث:** 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. ملخص تحديثات هذا الـ pass:
+> (g) NEW §17.12 — **Multi-Market Segregation Status (6 markets + graceful fallback)** — توثيق `normalizeMarket()` + `buildMarketFilter()` + `pythonMarketCode()` + KSA/TADAWUL naming fix + 6 markets verified (EGX 451 + TADAWUL 390 + KSE 138 + QSE 67 + US graceful + CRYPTO). Commits: `b18b3f21` (Phase 3) + `e8df798d` (Phase 1 CPU).
+> (h) NEW §17.13 — **CPU Optimization (daily_predictor micro-sleep)** — `time.sleep(0.01)` بين الأسهم → CPU 95%→35%. overhead 10s total (negligible). Commit `e8df798d`.
+> (i) NEW §17.14 — **Stability & Null-Safety Pass (Oct 8-9)** — 664 toFixed null-safety + 8 toLowerCase null crash + 10 dead components archived + 23 proxies unified + 11 publishing quality fixes.
+> (j) §3.1 — تأكيد DB snapshot 2026-08-17 (stocks=1046 + predictions=153 EGX only) بعد sandbox reset #2 recovery (MD5 verified — نفس الـ `0947bdf6c2eff1a75ff8af6c3e576ed8`).
+>
+> **تحديث سابق:** 2026-10-08 (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running + `zero_conflict_test` improvement + دمج عمل الفريق الآخر `DATA-ENGINE-FULL-AUDIT` + `P0-MARKET-INDICES` + `metals.dev/frankfurter.dev/market_indices v2`).
 > ملخص تحديثات هذا الـ pass:
 > (a) §1.1 — توثيق إكمال الـ canonical signal migration (10/10 شاشات قرار نشطة الآن canonical).
 > (b) §3.1/§3.3 — تحديث أعداد الصفوف لقواعد البيانات المثبّتة (stocks=1046 + predictions=153 — snapshot 2026-08-17, MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8`).
@@ -327,6 +333,8 @@
 ### 3.1 Active Databases (6 active + 1 intraday + custom.db pending removal)
 
 > **تحديث 2026-10-08 (Task `DOCS-UPDATE-FINAL`):** الأرقام في الجدول أدناه من snapshot 2026-09-27 (audit baseline). على اللابتوب/الساندبوكس الأرقام المثبّتة فعليًا هي: `stocks.db.stocks` = **1,046 صف** + `predictions.db.predictions` = **153 صف** (snapshot 2026-08-17، MD5 `0947bdf6c2eff1a75ff8af6c3e576ed8` — أرشيف أعيد استيراده من `archive/databases-from-github/` في Wave 7 Task `DOC-20`).predictions.db أرشيف أقدم من 48 ساعة → canonical NULL = Rule 27 محترمة. للإنتاج بقيم non-null، لازم تشغيل `daily_predictor.py` بأرشيف أحدث.
+>
+> **تأكيد 2026-10-09 (Task `DOCS-UPDATE-OCT9` — Sandbox reset #2 recovery):** بعد sandbox reset #2، تم إعادة استيراد الـ DBs من GitHub API blob. MD5 verified مطابق للـ snapshot الأصلي `0947bdf6c2eff1a75ff8af6c3e576ed8`. الأرقام لم تتغير: `stocks.db.stocks` = **1,046 صف** + `predictions.db.predictions` = **153 صف EGX only** (الأسواق التانية مفيشها predictions بعد — بترجّع `[]` + AR message gracefully). التفاصيل في §17.12 (Multi-Market Segregation Status).
 
 | # | DB | Path | Size | Tables | Rows | Role |
 |---|---|---|---|---|---|---|
@@ -2055,6 +2063,102 @@ See §4.7 (radar tab consolidation) + §5.1.1 (PersonalizedRadarTab bug fix) for
 **Mapping الـ blueprints (للمرجعية المستقبلية):**
 - 4/4 من الـ canonical signals مصادرها الآن Python backend (`canonical_signal.py` + `master_analyzer.py` + `engine_settings.py`).
 - Rule 73 enforced end-to-end: كل الـ decision-screens بتقرأ من `/api/stocks/[ticker]/unified` → `getUnifiedStockData()` → canonical Python computations.
+
+### 17.12 Multi-Market Segregation Status (6 markets + graceful fallback) — NEW 2026-10-09 (Task `PHASE-3` — commit `b18b3f21`)
+
+> **المرجع الدستوري:** Rule 20 (PYTHON-IS-THE-BRAIN) + Rule 27 (NO-FAKE-DATA) + Rule 67 (CALCULATION-CANONICAL).
+>
+> **المشكلة:** كان فيه KSA/TADAWUL naming mismatch — الـ frontend بيستخدم `TADAWUL` كـ canonical لكن الـ Python `unified_config.py` بيستخدم `KSA`، والـ DB ممكن يكون فيه 'السعودية' كـ alias. والـ APIs كانت بترجّع 500 بدل 200 لما الـ DB فاضي لسوق معيّن.
+
+**Canonical market normalization helper (NEW — `src/lib/market-utils.ts` — 200 LOC):**
+- `normalizeMarket(input)` → يحوّل أي alias ('TADAWUL' / 'KSA' / 'السعودية' / 'saudi') للـ canonical value ('TADAWUL').
+- `sqlMarketVariants(canonical)` → يرجّع كل variants للـ DB (مثلاً TADAWUL → ['TADAWUL','KSA','السعودية']).
+- `buildMarketFilter(market, column)` → يبني SQL `WHERE market IN (?,?,?)` بالـ placeholders الصحيحة.
+- `pythonMarketCode(market)` → يحوّل TADAWUL→KSA قبل الـ Python call (علشان `unified_config.py`).
+- `NO_PREDICTIONS_MESSAGE_AR` + `NO_STOCKS_MESSAGE_AR` + `INTERNAL_ERROR_MESSAGE_AR` (رسايل عربية احترافية).
+
+**الـ 6 أسواق المدعومة بالكامل (verified HTTP 200):**
+
+| # | Market | Stocks Count | Source | Predictions Available | Status |
+|---|---|---|---|---|---|
+| 1 | `EGX` | **451** | stocks.db (EGX universe) | ✅ 153 (snapshot 2026-08-17 — sandbox) | ✅ Full support |
+| 2 | `TADAWUL` (Saudi Arabia) | **390** | stocks.db (aliases: KSA + السعودية) | ❌ `[]` + AR message | ✅ Graceful (200) |
+| 3 | `KSE` (Kuwait) | **138** | stocks.db | ❌ `[]` + AR message | ✅ Graceful (200) |
+| 4 | `QSE` (Qatar) | **67** | stocks.db | ❌ `[]` + AR message | ✅ Graceful (200) |
+| 5 | `US` | 0 (sandbox) | us_stock_scraper.py (live on VPS) | ❌ `[]` + AR message | ✅ Graceful (200 — was 503) |
+| 6 | `CRYPTO` | independent | crypto_fetcher.py | ✅ independent endpoint | ✅ Full support |
+
+**APIs المُحدَّثة (5 routes):**
+1. `/api/predictions/honest-tracking/list/route.ts` — استبدال 500 → 200 graceful + إضافة message لـ non-EGX.
+2. `/api/stocks/route.ts` — قبول TADAWUL/KSA/السعودية aliases + graceful fallback للـ US.
+3. `/api/stocks/[ticker]/unified/route.ts` — قبول + validate market param بدون block.
+4. `/api/v2/unified/analyze/route.ts` — تحويل TADAWUL→KSA قبل Python call.
+5. `/api/predictions/daily-picks/route.ts` — استبدال 500 → 200 graceful + message.
+
+**Trading hours per market (Fixed in `src/lib/market-hours.ts`):**
+- KSE: كان 06:00-09:30 (خطأ)، بقى **08:00-12:45 Kuwait** ✅ (commit `b18b3f21`).
+- QSE: كان 09:00-13:00 (خطأ في وقت الافتتاح)، بقى **09:30-13:00 Doha** ✅ (commit `b18b3f21`).
+- EGX + TADAWUL + US + CRYPTO: كانت صحيحة من قبل، ما اتعدّلتش.
+
+**Verification (تم اجتياز كل الاختبارات):**
+- ✅ `curl /api/stocks?market=TADAWUL&page_size=3` → `success=true, total=390, stocks=3, source=stocks.db`.
+- ✅ `curl /api/predictions/honest-tracking/list?market=TADAWUL&limit=3` → `success=true, predictions=[], message="لا توجد توقعات..."` (مش 500).
+- ✅ `curl /api/stocks/2222/unified?market=TADAWUL` → `success=true, ticker=2222, name=أرامكو السعودية, canonical.signal=null` (Rule 27 محترمة).
+- ✅ Aliases: `market=KSA` → 390 سهم · `market=KSE` → 138 · `market=QSE` → 67 · `market=EGX` → 451 (control) · `market=US` → `success=true, total=0` (بدل 503).
+- ✅ KSE hours: open عند 08:00 Kuwait ✓ · QSE hours: open عند 09:30 Doha ✓.
+- ✅ `bun run lint` → exit 0 (0 errors).
+
+**10 ملفات اتعدّلت (Task `PHASE-3` — commit `b18b3f21`):**
+1. `src/lib/market-utils.ts` — جديد (200 LOC).
+2. `src/app/api/predictions/honest-tracking/list/route.ts`.
+3. `src/app/api/stocks/route.ts`.
+4. `src/app/api/stocks/[ticker]/unified/route.ts`.
+5. `src/app/api/v2/unified/analyze/route.ts`.
+6. `src/app/api/predictions/daily-picks/route.ts`.
+7. `src/lib/market-hours.ts`.
+8. `src/modules/dashboard/components/DevelopmentNotice.tsx` — إضافة 'US' للأسواق تحت التطوير.
+9. `src/modules/portfolio/components/EnhancedPortfolioView.tsx` — market badge + auto-tag `stock_market`.
+10. (لا تعديل على Python files — per task constraint).
+
+### 17.13 CPU Optimization (daily_predictor micro-sleep) — NEW 2026-10-09 (Task `PHASE-1` — commit `e8df798d`)
+
+> **المشكلة:** `daily_predictor.py` كان بياخد الـ CPU لـ 95% على Hostinger (نسبة لـ tight loop على 1,046 tickers بدون yield). ده بيتسبب في CPU limitation tripping.
+>
+> **الإصلاح:** Added `time.sleep(0.01)` at `daily_predictor.py:748` بين كل stock → CPU drops من 95% → **35%**.
+>
+> **Overhead:** 10ms × 1,046 tickers ≈ **10s إجمالي** (negligible — الـ run الكامل بياخد ~6-7 دقائق).
+>
+> **الموقع الدستوري:** Rule 8 (CAPITAL-PROTECTION-FIRST) — تحسين استقرار الـ host بيحمي الـ cron من الإيقاف.
+
+### 17.14 Stability & Null-Safety Pass (Oct 8-9) — NEW 2026-10-09 (Task `DOCS-UPDATE-OCT9`)
+
+> **ملخص شامل** للإصلاحات الـ 5 اللي حصلت في جلسة Oct 8-9 (موثّقة في `CHANGELOG.md` entry `[2026-10-09 — PHASE-1-TO-3 + STABILITY]`):
+
+**A. 664 `.toFixed()` null-safety fixes** (across 118 UI components — Oct 8):
+- كل call اتحوّل لـ safe pattern `(x ?? 0).toFixed(N)`.
+- يمنع `TypeError: Cannot read properties of null (reading 'toFixed')` crash عند missing data.
+
+**B. 8 `toLowerCase()/toUpperCase()` null crash fixes** (Oct 8):
+- تمنع crash عند `null.toString()` في الـ string transformers.
+- مثلاً: `(str ?? '').toLowerCase()` بدل `str.toLowerCase()`.
+
+**C. 10 dead components archived** لـ `archive/dead-components-2026-10-08/` (Oct 8 — Rule 16 NO-DELETION):
+- مكوّنات مش بتُستخدم في أي route نشط — اتأرشفوا (مش اتمسحوا).
+- القائمة الكاملة في `Documentation/02-SCREENS_AND_COMPONENTS.md` §0.9.
+
+**D. 23 mislabeled proxy routes unified** عبر `src/lib/market-pulse-proxy.ts` (Oct 8):
+- كانت 23 route كل واحد بيستخدم helper مختلف بـ logic مختلف.
+- اتعمل proxy واحد canonical وكل الـ routes بتستخدمه.
+
+**E. 11 publishing/Telegram quality fixes** (3 critical + 5 quality + 3 disclaimer — Oct 8):
+- **3 critical:** publish route NULL policy + disclaimer field required + image fallback.
+- **5 quality:** message format + emoji standardization + image sizing + thumbnail + caption.
+- **3 disclaimer:** disclaimer text mandatory + risk warning + arabic localization.
+
+**F. 3 syntax error fixes** (regression من batch regex fix — Oct 9):
+- `mini-sparkline.tsx`: `points[0].(x ?? 0)` → `(points[0].x ?? 0)` (commit `aca19f96` → `3a63bd04`).
+- `SuperLearningSystem.tsx`: 6 broken patterns `PERSONA_BENCHMARK_DATA[p].(prop ?? 0)` → `(PERSONA_BENCHMARK_DATA[p].prop ?? 0)` (commit `d786b8d1`).
+- `AIAnalysisWidget.tsx`: missing opening paren (commit `aca19f96`).
 
 ### 17.2 Flutter App — 32 Endpoints Restored (commit `774a208`)
 

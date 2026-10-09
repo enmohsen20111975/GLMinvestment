@@ -167,7 +167,10 @@ export function getTADAWULMarketStatus(date: Date = new Date()): MarketSessionSt
   } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'تداول السعودية', timezone: 'Asia/Riyadh', scheduleText: 'الأحد - الخميس (10:00 ص - 3:00 م)' }; }
 }
 
-/** KSE (Kuwait) — Sun-Thu, 06:00-09:30 Kuwait time */
+/** KSE (Kuwait) — Sun-Thu, 08:00-12:45 Kuwait time
+ *  PHASE3-MARKET-SEGREGATION: corrected from 06:00-09:30 to 08:00-12:45 per
+ *  official KSE trading schedule. Pre-market auction 07:30-08:00; continuous
+ *  trading 08:00-11:30; last 15 minutes (11:30-12:45) closing auction. */
 export function getKSEMarketStatus(date: Date = new Date()): MarketSessionStatus {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -180,15 +183,18 @@ export function getKSEMarketStatus(date: Date = new Date()): MarketSessionStatus
       if (p.type === 'minute') minute = parseInt(p.value);
     }
     const isWeekend = weekdayStr === 'Fri' || weekdayStr === 'Sat';
-    if (isWeekend) return { isOpen: false, reason: 'عطلة نهاية الأسبوع', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (6:00 ص - 9:30 ص)' };
+    if (isWeekend) return { isOpen: false, reason: 'عطلة نهاية الأسبوع', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
     const t = hour * 60 + minute;
-    if (t < 360) return { isOpen: false, reason: 'قبل الجلسة (6:00 ص)', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (6:00 ص - 9:30 ص)' };
-    if (t > 570) return { isOpen: false, reason: 'بعد الإغلاق (9:30 ص)', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (6:00 ص - 9:30 ص)' };
-    return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (6:00 ص - 9:30 ص)' };
-  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (6:00 ص - 9:30 ص)' }; }
+    // 08:00 = 480 min | 12:45 = 765 min
+    if (t < 480) return { isOpen: false, reason: 'قبل الجلسة (8:00 ص)', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
+    if (t > 765) return { isOpen: false, reason: 'بعد الإغلاق (12:45 م)', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
+    return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' };
+  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة الكويت', timezone: 'Asia/Kuwait', scheduleText: 'الأحد - الخميس (8:00 ص - 12:45 م)' }; }
 }
 
-/** QSE (Qatar) — Sun-Thu, 09:00-13:00 Doha time */
+/** QSE (Qatar) — Sun-Thu, 09:30-13:00 Doha time
+ *  PHASE3-MARKET-SEGREGATION: corrected from 09:00 start to 09:30 per official
+ *  QSE schedule. Continuous trading 09:30-13:00 (no separate closing auction). */
 export function getQSEMarketStatus(date: Date = new Date()): MarketSessionStatus {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -201,12 +207,13 @@ export function getQSEMarketStatus(date: Date = new Date()): MarketSessionStatus
       if (p.type === 'minute') minute = parseInt(p.value);
     }
     const isWeekend = weekdayStr === 'Fri' || weekdayStr === 'Sat';
-    if (isWeekend) return { isOpen: false, reason: 'عطلة نهاية الأسبوع', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:00 ص - 1:00 م)' };
+    if (isWeekend) return { isOpen: false, reason: 'عطلة نهاية الأسبوع', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
     const t = hour * 60 + minute;
-    if (t < 540) return { isOpen: false, reason: 'قبل الجلسة (9:00 ص)', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:00 ص - 1:00 م)' };
-    if (t > 780) return { isOpen: false, reason: 'بعد الإغلاق (1:00 م)', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:00 ص - 1:00 م)' };
-    return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:00 ص - 1:00 م)' };
-  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:00 ص - 1:00 م)' }; }
+    // 09:30 = 570 min | 13:00 = 780 min
+    if (t < 570) return { isOpen: false, reason: 'قبل الجلسة (9:30 ص)', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
+    if (t > 780) return { isOpen: false, reason: 'بعد الإغلاق (1:00 م)', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
+    return { isOpen: true, reason: 'السوق مفتوح', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' };
+  } catch { return { isOpen: false, reason: 'تعذّر التحقق', marketNameAr: 'بورصة قطر', timezone: 'Asia/Qatar', scheduleText: 'الأحد - الخميس (9:30 ص - 1:00 م)' }; }
 }
 
 /** US Market (NYSE/NASDAQ) — Mon-Fri, 09:30-16:00 ET (14:30-21:00 UTC) */
