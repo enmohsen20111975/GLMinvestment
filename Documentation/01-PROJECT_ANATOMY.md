@@ -5,7 +5,13 @@
 > والـ file inventory موجود هنا. لو ضاع المستودع بالكامل، هذا الملف + `00-CONSTITUTION.md`
 > يمكّنانك من فهم كل جزء في المنصة.
 >
-> **آخر تحديث: 2026-10-08** (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010). ملخص التحديثات في هذا الـ pass:
+> **آخر تحديث: 2026-10-09** (Task `DOCS-UPDATE-OCT9` — Documentation Secretary — تحديث جراحي بـ عمل اليوم: sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation. ملخص التحديثات في هذا الـ pass:
+> 1. **§1.6 multi-market section** — تحديث من 5 → **6 أسواق مدعومة بالكامل** (EGX + TADAWUL + KSE + QSE + US + CRYPTO) + إضافة `normalizeMarket()` canonical helper (`src/lib/market-utils.ts` — 200 LOC). commit `b18b3f21` (Task `PHASE-3`).
+> 2. **§1.6 file map** — إضافة `src/lib/market-utils.ts` + `src/lib/market-pulse-proxy.ts` للـ file inventory.
+> 3. **§4 engine map** — `daily_predictor.py:748` فيه `time.sleep(0.01)` micro-sleep بين الأسهم (CPU 95%→35%) — commit `e8df798d` (Task `PHASE-1`).
+> Commits: `b18b3f21` (PHASE-3 market segregation) · `e8df798d` (PHASE-1 CPU) · `aca19f96` + `3a63bd04` + `d786b8d1` (syntax fixes). Per Rule 62 (GIT-PUSH-DISCIPLINE) + Rule 75 (PUSH-AFTER-EVERY-TASK) + Rule 76 (TEAM-WORK-REVIEW) + README editing rule 1.)
+>
+> **آخر تحديث سابق: 2026-10-08** (Task `DOCS-UPDATE-FINAL` — Documentation Secretary — تحديث جراحي بعد جلسة الإنجاز الكاملة (Tasks `REAPPLY-CRITICAL-FIXES` + `CONSTITUTION-R75-R76` + `DISABLE-SCRIPTS` + `TIER3-ROUTES-MIGRATE` + fabrications cleanup + Python backend running على 8010). ملخص التحديثات في هذا الـ pass:
 > 1. **§4 Engine Map** — `master_analyzer.py` دلوقتي بـ يفوّض signal classification لـ `canonical_signal.classify_signal` (single source of truth per Rule 72 + Rule 73). `_get_signal_from_score` + `_get_signal_arabic` ما عادوش يحسبوا locally.
 > 2. **§4.5 thresholds table** — توثيق العتبات الكنسية **78/65/55/40/25** (Rule 71 lowered `STRONG_BUY` 80→78). كان فيه drift سابق (REDUCE=35, SELL=20, STRONG_SELL=10 + HOLD_LOW/HIGH) — اتحلّ في commit `38665fd1` (Task `REAPPLY-CRITICAL-FIXES`). الآن 100% مطابق لـ `canonical_signal.py` + `engine_settings.py`.
 > 3. **§6 pipeline diagram** — ATR stop clamp اتصلّح من `[3%, 9%]` → **`[5%, 9%]`** (Rule 8 — حماية رأس المال مقدسة) + R:R floor من 1.5 → **1.8** (Rule 18). الإصلاح في `vps-service/config/unified_config.py` EGX profile (ATR 3.0→5.0 + R:R 1.5→1.8) + `vps-service/core/opportunity_quality.py` (ATR_STOP_MIN_PCT 3.0→5.0) + `vps-service/engines/backtest_engine.py` + `vps-service/jobs/daily_predictor.py` (V40_2_STOP_MAX_PCT default 7.0→9.0).
@@ -474,20 +480,31 @@ V73_AUCTION_TRAP_REJECT  = '0'  # ❌ 0 triggers
 
 ### 1.6 الـ 5-Market Architecture + UI-Mirror Protocol + SQLite Fallback Pattern (2026-09-25)
 
-**الأسواق الخمسة المدعومة (5-Market Architecture):**
+> **تحديث 2026-10-09 (Task `PHASE-3` — commit `b18b3f21`):** تم تفعيل الـ Multi-Market Segregation الكامل لـ **6 أسواق** (مش 5). `normalizeMarket()` helper في `src/lib/market-utils.ts` (200 LOC) بيحوّل أي alias للـ canonical قبل أي DB/Python call. كل الـ APIs دلوقتي بترجّع 200 graceful + AR message بدل 500 لما الـ DB فاضي لسوق معيّن (Rule 27 محترمة). الأرقام في الجدول أدناه هي **آخر verified counts** من الساندبوكس. تفاصيل كاملة في `05-CURRENT_STATE.md` §17.12.
 
-| السوق | الكود (currentMarket) | المصدر | عدد الأسهم |
-|---|---|---|---:|
-| EGX (مصر) | `EGX` | `stocks.db` + `data_engine.db` | 380 (stocks.db) / 1,585 (data_engine.db) — EGX30=27 + EGX70=20 members |
-| TADAWUL (السعودية) | `TADAWUL` | `stocks.db` | 413 |
-| KSE (الكويت) | `KSE` | `stocks.db` | 128 |
-| QSE (قطر) | `QSE` | `stocks.db` | 55 |
-| CRYPTO | `CRYPTO` | `data_engine.db.crypto_prices` + `crypto.db` | (~200 active tickers) |
+**الأسواق الستة المدعومة (6-Market Architecture — updated 2026-10-09):**
+
+| السوق | الكود (currentMarket) | المصدر | عدد الأسهم (verified 2026-10-09) | Predictions |
+|---|---|---|---:|---|
+| EGX (مصر) | `EGX` | `stocks.db` + `data_engine.db` | **451** (sandbox) | ✅ 153 (snapshot 2026-08-17) |
+| TADAWUL (السعودية) | `TADAWUL` (aliases: KSA + السعودية + saudi) | `stocks.db` | **390** | ❌ `[]` + AR message (graceful 200) |
+| KSE (الكويت) | `KSE` | `stocks.db` | **138** | ❌ `[]` + AR message (graceful 200) |
+| QSE (قطر) | `QSE` | `stocks.db` | **67** | ❌ `[]` + AR message (graceful 200) |
+| US (أمريكا) | `US` | `us_stock_scraper.py` (live on VPS) | 0 (sandbox) | ❌ `[]` + AR message (graceful 200 — was 503) |
+| CRYPTO | `CRYPTO` | `data_engine.db.crypto_prices` + `crypto.db` | ~200 active tickers | ✅ independent endpoint |
+
+**Canonical Market Normalization Helper (`src/lib/market-utils.ts` — 200 LOC — NEW 2026-10-09):**
+- `normalizeMarket(input)` → يحوّل أي alias للـ canonical ('TADAWUL' / 'KSA' / 'السعودية' / 'saudi' → 'TADAWUL').
+- `sqlMarketVariants(canonical)` → يرجّع كل DB variants (TADAWUL → ['TADAWUL','KSA','السعودية']).
+- `buildMarketFilter(market, column)` → يبني SQL `WHERE market IN (?,?,?)` بـ placeholders صحيحة (Rule: SQL injection-safe).
+- `pythonMarketCode(market)` → يحوّل TADAWUL→KSA قبل الـ Python call (علشان `unified_config.py`).
+- `NO_PREDICTIONS_MESSAGE_AR` + `NO_STOCKS_MESSAGE_AR` + `INTERNAL_ERROR_MESSAGE_AR` (رسايل عربية احترافية).
 
 **UI-Mirror Protocol (القاعدة 53 — CRYPTO-IN-MARKETS):**
 - شاشات الأسهم (`DashboardView`, `StocksView`, `EnhancedWatchlistView`, `TradingChartView`) بتتشارك نفس المكوّنات مع `currentMarket='CRYPTO'` بدل إنشاء شاشات منفصلة.
-- الـ `<MarketSwitcher />` (`src/components/shared/MarketSelector.tsx`) هو نقطة التبديل الوحيدة؛ يكتب `currentMarket` في `useAppStore` ويُعيد تحميل الـ view.
+- الـ `<MarketSwitcher />` (`src/components/shared/MarketSelector.tsx`) هو نقطة التبديل الوحيدة؛ يكتب `currentMarket` في `useAppStore` ويُعيد تحميل الـ view. يدعم **6 markets** (EGX + TADAWUL + KSE + QSE + US + CRYPTO) — تفاصيل في `02-SCREENS_AND_COMPONENTS.md`.
 - لما `currentMarket='CRYPTO'` → `InvestorsFlowPanel` + `MarketDepthPanel` بـ تختفي (مش متاحة للكريبتو) — باقي الـ widgets بتشتغل بـ thresholds مكيّفة (القاعدة 8: ATR stop [5%,15%] للكريبتو بدل **[5%,9%]** للأسهم — Task `REAPPLY-CRITICAL-FIXES` 2026-10-08 رفع min للأسهم من 3.0→5.0).
+- لما `currentMarket='US'` → `DevelopmentNotice` بـ يظهر (US تحت التطوير على الساندبوكس — `us_stock_scraper.py` شغّال على الـ VPS بس).
 - `loadStocks(market)` بـ يمرر `market` لـ `/api/stocks?market=X` → كل سوق بـ يجيب بياناته الحقيقية بدون تفرع شاشات.
 
 **SQLite Fallback Pattern (القاعدة 20 — Python = العقل، Node = العرض فقط):**
@@ -798,6 +815,9 @@ GLMinvestment/                              # ← PROJECT ROOT
 │   │   ├── auth.ts                          # NextAuth config
 │   │   ├── prisma.ts                        # Prisma client (auth.db + predictions.db)
 │   │   ├── sqlite-readonly.ts               # better-sqlite3 read-only (architecture violation if used for write)
+│   │   ├── market-utils.ts                  # ⭐ NEW 2026-10-09 (Task PHASE-3 — commit b18b3f21) — canonical market normalization helpers (normalizeMarket + sqlMarketVariants + buildMarketFilter + pythonMarketCode + NO_PREDICTIONS_MESSAGE_AR) — 200 LOC
+│   │   ├── market-pulse-proxy.ts            # ⭐ NEW Oct 8 — unified proxy لـ 23 mislabeled proxy routes (was scattered helpers)
+│   │   ├── market-hours.ts                  # per-market trading hours (EGX + TADAWUL + KSE 08:00-12:45 Kuwait + QSE 09:30-13:00 Doha + US + CRYPTO) — KSE/QSE fixed 2026-10-09 (commit b18b3f21)
 │   │   └── utils.ts                         # cn(), formatters, RTL helpers
 │   │
 │   ├── hooks/                               # React hooks (useChart, usePredictions, useSocket, ...)
@@ -1073,6 +1093,9 @@ if r_mult < get_setting('dynamic_rr_normal', default=1.8):
 > - `vps-service/engines/backtest_engine.py` (V40_2_STOP_MAX_PCT default 7.0→9.0).
 >
 > KSA/KSE/QSE/DFM/CRYPTO profiles غير ملموسة (ما زالت بمواصفاتها السابقة — التغيير EGX-only).
+>
+> **تحديث 2026-10-09 (Task `PHASE-1 — CPU optimization` — commit `e8df798d`):**
+> `vps-service/jobs/daily_predictor.py:748` أُضيف `time.sleep(0.01)` بين الأسهم لتقليل استهلاك CPU من 95%→**35%** (يمنع Hostinger CPU limitation من إيقاف الـ cron). Overhead إجمالي: 10ms × 1,046 tickers ≈ **10s** (negligible مقابل ~6-7 دقائق runtime). الموقع الدستوري: Rule 8 (CAPITAL-PROTECTION-FIRST) — استقرار الـ cron بـ يحمي إنتاج التوقعات اليومية.
 
 - مع الـ key-mismatch fix، `dynamic_rr_outperform=2.0` يُحترم للأسهم اللي outperforming الـ market → الـ gate نادرًا what يفعل.
 - 95.27% من الصفقات بـ R:R=2.0 (outperform path).

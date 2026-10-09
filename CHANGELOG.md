@@ -12,6 +12,72 @@
 
 ---
 
+## [2026-10-09 — PHASE-1-TO-3 + STABILITY] — Documentation Secretary (السكرتيرة الدستورية)
+
+> **المرجع:** `worklog.md` tasks `DOCS-UPDATE-OCT9` + عمل اليوم (sandbox reset #2 recovery + 3 syntax error fixes + Phase 1 CPU optimization + Phase 3 market segregation). هذا الإدخال يكمّل إدخال `[2026-10-08 — PHASE-1-TO-5]` المُسجَّل أسفله بـ توثيق شغل 2026-10-09.
+
+### أُضيف (New)
+- **`src/lib/market-utils.ts`** (200 LOC — Task `PHASE-3 — Market segregation` — commit `b18b3f21`): canonical market normalization helpers.
+  - `normalizeMarket(input)` → يحوّل أي alias ('TADAWUL' / 'KSA' / 'السعودية' / 'saudi') للـ canonical value ('TADAWUL').
+  - `sqlMarketVariants(canonical)` → يرجّع كل variants للـ DB (TADAWUL → ['TADAWUL','KSA','السعودية']).
+  - `buildMarketFilter(market, column)` → يبني SQL `WHERE market IN (?,?,?)` بالـ placeholders الصحيحة.
+  - `pythonMarketCode(market)` → يحوّل TADAWUL→KSA قبل الـ Python call (علشان `unified_config.py`).
+  - `NO_PREDICTIONS_MESSAGE_AR` + `NO_STOCKS_MESSAGE_AR` + `INTERNAL_ERROR_MESSAGE_AR` (رسايل عربية احترافية).
+- **`src/lib/market-pulse-proxy.ts`** (Task from Oct 8 carried over): توحيد 23 mislabeled proxy routes تحت proxy واحد canonical.
+- **`computeRSISeries`** في `src/lib/indicators/rsi.ts` (Refactor — Pure TS منفصل عن `better-sqlite3`).
+
+### تغيّر (Changed)
+- **`vps-service/jobs/daily_predictor.py:748`** (Task `PHASE-1 — CPU optimization` — commit `e8df798d`): Added `time.sleep(0.01)` بين الأسهم لتقليل CPU من 95%→35% (يمنع Hostinger CPU limitation). overhead: 10ms × 1046 tickers ≈ 10s إجمالي (negligible).
+- **664 `.toFixed()` null-safety fixes** عبر 118 UI components (Task من Oct 8 — reflect في docs اليوم): كل call اتحوّل لـ safe pattern `(x ?? 0).toFixed(N)`.
+- **8 `toLowerCase()/toUpperCase()` null crash fixes**: تمنع crash عند `null.toString()` في الـ string transformers.
+
+### أُصلح (Fixed)
+- **3 syntax errors** (regression من batch regex fix — commits `aca19f96` + `3a63bd04` + `d786b8d1`):
+  1. `mini-sparkline.tsx`: `points[0].(x ?? 0)` → `(points[0].x ?? 0)` (commit `aca19f96` → `3a63bd04`).
+  2. `SuperLearningSystem.tsx`: 6 broken patterns `PERSONA_BENCHMARK_DATA[p].(prop ?? 0)` → `(PERSONA_BENCHMARK_DATA[p].prop ?? 0)` (commit `d786b8d1`).
+  3. `AIAnalysisWidget.tsx`: missing opening paren (commit `aca19f96`).
+- **11 publishing/Telegram quality fixes** (3 critical + 5 quality + 3 disclaimer — Oct 8): disclaimer fields + NULL policy على publish route.
+- **8 security P0 fixes** (Oct 8 — already in `2026-10-08 — PHASE-1-TO-5` entry أعلاه — مرجعية فقط): Bot Token removed + fail-closed + 4 admin gates + secrets cleanup.
+- **10 engine fabrications fixed** (Oct 8 — مرجعية): THRESHOLDS + `return 50.0` → None + `entry*0.95` → None.
+- **news.db schema mismatch fixed** (Oct 8 — مرجعية): `market_news` migration from `news_articles` (7,894 rows migrated).
+- **10 dead components archived** لـ `archive/dead-components-2026-10-08/` (Oct 8 — مرجعية).
+- **KSA/TADAWUL naming mismatch** (Task `PHASE-3` — commit `b18b3f21`): fixed عبر `normalizeMarket()` helper — كل الـ aliases ('TADAWUL'/'KSA'/'السعودية'/'saudi') بتتحوّل للـ canonical قبل أي DB/Python call.
+- **`market-hours.ts` trading hours fix** (commit `b18b3f21`):
+  - KSE: كان 06:00-09:30 (خطأ)، بقى 08:00-12:45 Kuwait (صح).
+  - QSE: كان 09:00-13:00 (خطأ في وقت الافتتاح)، بقى 09:30-13:00 Doha (صح).
+- **Sandbox reset #2 recovery** (2026-10-09): project re-cloned from GitHub (commit `aca19f9`) + DBs re-installed via GitHub API blob (MD5 verified — نفس الـ snapshot `0947bdf6c2eff1a75ff8af6c3e576ed8`) + deps re-installed.
+
+### مُتحقَّق منه (Verified)
+- ✅ **6 markets × 4 endpoints all HTTP 200** (commit `b18b3f21`):
+  - `EGX` → stocks=451, predictions=OK.
+  - `TADAWUL` → stocks=390, predictions=[] + AR message (200 not 500).
+  - `KSE` → stocks=138, predictions=[] + AR message (200 not 500).
+  - `QSE` → stocks=67, predictions=[] + AR message (200 not 500).
+  - `US` → stocks=0 + AR message (200 not 503) — graceful.
+  - `CRYPTO` → endpoint مستقل.
+- ✅ **Admin gates return 403** for unauthenticated requests (4 routes — same as Oct 8).
+- ✅ **`bun run lint`**: 0 errors.
+- ✅ KSE hours: open عند 08:00 Kuwait ✓, closed قبلها ✓ (tested via tsx).
+- ✅ QSE hours: open عند 09:30 Doha ✓, closed قبلها ✓ (tested via tsx).
+- ✅ MD5 of re-installed DBs مطابق للـ snapshot الأصلي.
+
+### قيود (Constraints Honored)
+- ❌ **لا حذف ملفات** (Rule 16 — NO-DELETION).
+- ❌ **لا بيانات وهمية** (Rule 27 — NO-FAKE-DATA) — الأسواق بدون predictions بترجّع `[]` + message بدل fabrication.
+- ❌ **لم تُلمس الحمايات** (Rule 8/18/19: ATR [5%,9%] + R:R 1.8 + Hard Loss 7% + Split Guard 35%).
+- ❌ **لم ألمس الكود** (.py/.ts/.tsx) — تعديلات توثيقية فقط (Phase 1 + Phase 3 commited by code agents; Documentation Secretary فقط وثّق).
+- ❌ **لا push على GitHub** (per task constraint — GM handles).
+- ✅ **0 Python files touched in Phase 3** (per task constraint — فقط TS routes/libs).
+
+### المراجع التوثيقية المُحدَّثة (5 files)
+1. `Documentation/05-CURRENT_STATE.md` — آخر تحديث + §3.1 (DB snapshot 2026-08-17 unchanged — stocks=1046 + predictions=153 EGX only) + Multi-Market Segregation Status NEW + CPU Optimization NEW + 664 toFixed + 8 toLowerCase + 10 dead components + 23 proxies unified + 11 publishing quality.
+2. `Documentation/01-PROJECT_ANATOMY.md` — آخر تحديث + §1.6 multi-market (6 markets supported + normalizeMarket()) + file map (market-utils.ts + market-pulse-proxy.ts) + daily_predictor.py CPU micro-sleep.
+3. `Documentation/02-SCREENS_AND_COMPONENTS.md` — آخر تحديث + 10 dead components archived + MarketSelector supports 6 markets + EnhancedPortfolioView market badge.
+4. `Documentation/SYSTEM_HOW_IT_THINKS.md` — آخر تحديث + market-hours per-market (KSE 08:00-12:45 + QSE 09:30-13:00) + CPU optimization note.
+5. `CHANGELOG.md` — هذا الإدخال.
+
+---
+
 ## [2026-10-08 — PHASE-1-TO-5 (5 Phases Implementation)] — المدير العام (عضو مهم في الفريق)
 
 ### Phase 1 — Security P0 (commit `03ea211f`)
