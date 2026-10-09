@@ -430,27 +430,9 @@ export function DbBackupPanel() {
     }
   };
 
-<<<<<<< HEAD
-  // 2b. NEW: جلب حالة الـ git (ahead/behind/rebase in progress)
-  const fetchGitStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/db-backup', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ action: 'status' }),
-      });
-      const json = await res.json();
-      if (json.success && json.status) {
-        setGitStatus(json.status);
-      }
-    } catch { // silent fallback (safe-by-design)
-      // silent fail — status is optional
-=======
   const handleCancelRunning = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
->>>>>>> 04e3cf6982c328c8f292a20c8b27d8ffe16e3bdc
     }
   };
 

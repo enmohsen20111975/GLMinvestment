@@ -325,17 +325,10 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-<<<<<<< HEAD
-      let st;
-      try { st = await stat(archivePath); } catch { // silent fallback (safe-by-design)
-        errors.push(`الملف ${archiveName} لم يُنشأ`);
-        continue;
-=======
       let toPush = existingArchives;
       if (Array.isArray(body.selected_archives) && body.selected_archives.length > 0) {
         const set = new Set(body.selected_archives);
         toPush = existingArchives.filter(a => set.has(a.name));
->>>>>>> 04e3cf6982c328c8f292a20c8b27d8ffe16e3bdc
       }
 
       if (toPush.length === 0) {
