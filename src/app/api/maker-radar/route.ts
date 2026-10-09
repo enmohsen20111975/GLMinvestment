@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
     const db = new Database(dbPath, { readonly: true });
     // DEEP-MARKET-SEPARATION: فلترة بـ market بتاع السوق المختار
     const marketFilter = market === 'EGX' ? `AND market IN ('EGX','مصر')` : `AND market = '${market}'`;
-    const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar FROM stocks WHERE current_price > 0 ${marketFilter}`).all() as any[];
+    const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0 ${marketFilter}`).all() as any[];
     for (const r of liveRows) {
       if (r.ticker) {
         liveMap.set(String(r.ticker).toUpperCase(), r);
@@ -128,6 +128,22 @@ export async function GET(req: NextRequest) {
       s.change_percent = live.change_percent;
       if (live.volume) s.volume = live.volume;
       if (live.name_ar && !s.name_ar) s.name_ar = live.name_ar;
+      // Task DEEP-DIRECTIVE: إمداد الرادار بمستويات الدعم والمقاومة + RSI + MA
+      s.support = live.support ?? null;
+      s.resistance = live.resistance ?? null;
+      s.ma_50 = live.ma_50 ?? null;
+      s.ma_200 = live.ma_200 ?? null;
+      s.rsi = live.rsi ?? null;
+      s.high_price = live.high_price ?? null;
+      s.low_price = live.low_price ?? null;
+      s.open_price = live.open_price ?? null;
+      s.previous_close = live.previous_close ?? null;
+      // حساب turnover_egp رياضياً لو NULL (نفس إصلاح الـ screener)
+      if (!s.turnover_egp || s.turnover_egp === 0) {
+        s.turnover_egp = (live.current_price > 0 && live.volume > 0)
+          ? Math.round(live.current_price * live.volume)
+          : 0;
+      }
     }
     const tracked = tracking[s.ticker];
     if (tracked) {

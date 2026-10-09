@@ -308,8 +308,16 @@ def advanced_screener():
                     'high_52w': high52,
                     'low_52w': low52,
                     'avg_volume': int(avg_vol) if avg_vol else 0,
-                    'turnover_egp': round(_safe_float(r['turnover_egp'], 0) or 0, 0),
-                    'value_traded': round(_safe_float(r['value_traded'], 0) or 0, 0),
+                    'turnover_egp': round(
+                        (_safe_float(r['turnover_egp']) if _safe_float(r['turnover_egp']) and _safe_float(r['turnover_egp']) > 0
+                         else (_safe_float(r['current_price'], 0) * _safe_float(r['volume'], 0)) if _safe_float(r['current_price'], 0) > 0 and _safe_float(r['volume'], 0) > 0
+                         else 0.0),
+                        0),
+                    'value_traded': round(
+                        (_safe_float(r['value_traded']) if _safe_float(r['value_traded']) and _safe_float(r['value_traded']) > 0
+                         else (_safe_float(r['current_price'], 0) * _safe_float(r['volume'], 0)) if _safe_float(r['current_price'], 0) > 0 and _safe_float(r['volume'], 0) > 0
+                         else 0.0),
+                        0),
                     'is_egx30': bool(r['is_egx30']),
                     'is_egx70': bool(r['is_egx70']),
                     'is_egx100': bool(r['is_egx100']),
