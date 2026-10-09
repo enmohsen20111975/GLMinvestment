@@ -301,6 +301,64 @@ def answer_callback_query(callback_query_id: str, text: str = ""):
 # ─────────────────────────────────────────────────────────────────────────────
 # محرك البحث عن الأسهم واستخراج البيانات
 # ─────────────────────────────────────────────────────────────────────────────
+
+# EXPERT-ANALYSIS-ENGINE (2026-10-09):
+# جلب تحليل خبير احترافي من Node API
+def _fetch_bot_expert_analysis(ticker: str) -> str:
+    """جلب تحليل خبير من /api/stocks/[ticker]/expert-analysis للبوت."""
+    if not ticker:
+        return "—"
+    try:
+        import requests
+        url = f"http://localhost:3000/api/stocks/{ticker.upper()}/expert-analysis"
+        resp = requests.get(url, timeout=5)
+        if not resp.ok:
+            return "—"
+        data = resp.json()
+        if not data.get('success') or not data.get('analysis'):
+            return "—"
+        a = data['analysis']
+        tech = a.get('technical', {})
+        fund = a.get('fundamental', {})
+        risk = a.get('risk', {})
+
+        lines = []
+        # ملخص فني
+        rsi = tech.get('rsi', {})
+        ma = tech.get('movingAverages', {})
+        sr = tech.get('supportResistance', {})
+        if rsi.get('value') is not None:
+            lines.append(f"📈 RSI: <b>{rsi['value']:.1f}</b> ({rsi.get('signal_ar', '—')})")
+        if ma.get('trend_ar'):
+            lines.append(f"📊 الترند: <b>{ma['trend_ar']}</b>")
+        if sr.get('support') is not None or sr.get('resistance') is not None:
+            lines.append(f"🎯 دعم: <code>{sr.get('support', '—')}</code> | مقاومة: <code>{sr.get('resistance', '—')}</code>")
+
+        # ملخص أساسي
+        roe = fund.get('roe', {})
+        pe = fund.get('peRatio', {})
+        div = fund.get('dividend', {})
+        eps = fund.get('eps', {})
+        if roe.get('value') is not None:
+            lines.append(f"🏦 ROE: <b>{roe['value']:.1f}%</b> ({roe.get('rating_ar', '—')})")
+        if pe.get('value') is not None:
+            lines.append(f"💰 P/E: <b>{pe['value']:.1f}x</b> ({pe.get('rating_ar', '—')})")
+        if eps.get('value') is not None:
+            lines.append(f"💵 EPS: <b>{eps['value']:.2f} جنيه</b>")
+        if div.get('value') is not None:
+            lines.append(f"💸 توزيعات: <b>{div['value']:.2f}%</b> ({div.get('rating_ar', '—')})")
+
+        # مخاطر
+        if risk.get('level_ar'):
+            lines.append(f"⚠️ المخاطرة: <b>{risk['level_ar']}</b>")
+        if risk.get('positionSize_ar'):
+            lines.append(f"📏 المركز: {risk['positionSize_ar']}")
+
+        return '\n'.join(lines) if lines else "—"
+    except Exception:
+        return "—"
+
+
 def search_stock(query: str) -> Optional[Dict]:
     """البحث عن السهم بالرمز الإنجليزي أو الاسم العربي الشائع."""
     q = query.strip()
@@ -602,6 +660,9 @@ def build_stock_card(
 ⚡ <b>الاستهلاك اليومي:</b> تم استخدام {used_today}/{DAILY_QUERY_LIMIT_TRIAL} استعلامات اليوم.
 💎 <b>اشترك الآن لفتح الهدف الثاني (TP2) والوصول اللامحدود:</b>"""
 
+    # EXPERT-ANALYSIS-ENGINE (2026-10-09): جلب تحليل خبير احترافي
+    expert_analysis_text = _fetch_bot_expert_analysis(sym)
+
     msg = f"""📊 <b>سهم {sym} — {name}</b>
 {badge_header}
 ━━━━━━━━━━━━━━━━━━━
@@ -632,6 +693,10 @@ def build_stock_card(
 • المسار: {radar.get('direction') or '—'}
 
 💡 <i>مستويات محسوبة هندسياً من قيعان وقمم السيولة الحقيقية.</i>
+
+━━━━━━━━━━━━━━━━━━━
+🎓 <b>تحليل خبير احترافي:</b>
+{expert_analysis_text}
 
 ━━━━━━━━━━━━━━━━━━━
 ⚠️ <i>تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. إدارة رأس المال مسؤوليتك أولاً.</i>{urgency_footer}"""
