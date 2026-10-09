@@ -67494,3 +67494,39 @@ Stage Summary:
 - 0 file deleted (per task constraint)
 - 0 git push (per task constraint)
 - النشر على التليجرام دلوقتي: complete (كل الحقول مطلوبة موجودة) + professional (عربي + RTL) + safe (NULL → "—" مش "0.00") + legal (disclaimer في كل رسالة)
+
+---
+Task ID: POST-MERGE-FIXES
+Agent: Main Agent (Z.ai Code) — المبرمج الثاني
+Task: سحب آخر تحديثات زميلي + إصلاح syntax errors الناتجة + استرجاع DBs الإنتاجية
+
+Work Log:
+- سحب آخر 4 commits من زميلي (إصلاح toLowerCase + 664 toFixed + جودة النشر + syntax fix)
+- اكتشفت syntax errors حرجة ناتجة عن batch regex بتاع زميلي:
+  Pattern مكسور: `obj.(prop ?? 0).toFixed(N)` ← syntax error
+  Pattern صحيح: `(obj.prop ?? 0).toFixed(N)`
+  السبب: الـ regex أضاف قوس مفتوح بعد النقطة بدون قوس إغلاق مطابق
+- إصلاح 16 syntax error عبر 8 ملفات:
+  • mini-sparkline.tsx (4 fixes)
+  • SignalTrackingTimeline.tsx (1 fix)
+  • SuperLearningSystem.tsx (6 fixes)
+  • ExecutiveReportView.tsx (1 fix)
+  • SimulationView.tsx (1 fix)
+  • GateAnalysisView.tsx (1 fix)
+  • CryptoPortfolioView.tsx (1 fix)
+  • PredictionTrackingDashboard.tsx (1 fix)
+- إصلاح 2 pattern إضافي: `points[length - (1]` ← `points[length - 1]`
+- اكتشاف إن كل الـ DBs الإنتاجية ضاعت بعد git pull (DBs في .gitignore):
+  • أعيد تحميل 7 DBs من GitHub branches (databases + mammoth-cougar)
+  • أعيد تطبيق migrations: 9,339 توقع + 4,428 خبر + 1,039 سهم
+  • أضيف ~40 عمود ناقص في predictions + news + stocks DBs
+- النتيجة النهائية:
+  ✅ 7/7 APIs حرجة شغّالة (health, stocks, unified, predictions, stats, news, news/latest)
+  ✅ lint: 0 errors
+  ✅ الصفحة بتظهر بشكل صحيح في المتصفح
+  ✅ صفر syntax errors في dev.log
+
+Stage Summary:
+- تم إصلاح كل syntax errors الناتجة عن batch regex بتاع زميلي
+- تم استرجاع كل البيانات الإنتاجية (1.2M+ صف)
+- المنصة شغّالة بشكل كامل ومستقر
