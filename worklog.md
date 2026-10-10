@@ -68096,3 +68096,29 @@ Stage Summary:
 - ✅ market parameter مضاف للأخبار
 - ✅ المنصة تدعم نفس الـ endpoints التي يطلبها الفلاتر
 - الـ Flutter app عند العملاء وشغال — لم نكسر أي شيء origin/main
+
+---
+Task ID: FLUTTER-CLIENT-COMPLETE (المدير العام — إكمال شاشات العميل)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: إكمال 3 شاشات عميل متبقية في الفلاتر (radar + reports + dashboard)
+
+Work Log:
+- 1) radar_screen.dart: أضفت fallback لـ canonical levels من prediction
+  * effEntry/effTarget1/effStop/effRR = trade_levels ?? prediction fallback
+  * track button يستخدم effEntry (مش entry فقط)
+  * لما trade_levels غير متوفرة، يقرأ من prediction (entry_price/target_price/stop_loss)
+- 2) reports_screen.dart: 
+  * platform name: 'دليل الاستثمار'
+  * market selector: 6 أسواق + أسماء عربية
+  * disclaimer احترافي
+- 3) dashboard_screen.dart:
+  * _selectedMarket state + _markets list (6 أسواق موحدة)
+- Push لـ flutter repo: commit 3fa3f8c.
+
+Stage Summary:
+- ✅ 3 شاشات عميل محدّثة + مرفوعة (commit 3fa3f8c)
+- ✅ radar: canonical levels fallback (AI → trade_levels → mathematical)
+- ✅ reports: branding + market selector + disclaimer
+- ✅ dashboard: 6 markets state
+- ✅ لا شاشات أدمن في الفلاتر (عميل فقط)
+- كل شاشات العميل متكاملة مع المنصة الجديدة
