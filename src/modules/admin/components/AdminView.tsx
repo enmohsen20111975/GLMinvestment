@@ -82,6 +82,7 @@ import {
   Film,
   Megaphone,
   Cpu,
+  GitBranch,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
