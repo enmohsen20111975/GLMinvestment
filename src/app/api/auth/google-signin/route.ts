@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { db } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { checkAuthRateLimit } from '@/lib/rate-limiter'; // FIX-WAVE-1-SECURITY (AUDIT-DEEP-4 #2)
+import { repairLastActiveAt } from '@/lib/last-active-helper';
 
 /**
  * GET /api/auth/google-signin
@@ -199,10 +200,26 @@ export async function POST(request: NextRequest) {
 
     console.log('[Google Signin] ✅ Token verified for:', email);
 
-    // Check if user exists
-    let user = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    // Ensure corrupted DateTime strings in SQLite are repaired before Prisma reads them
+    try {
+      repairLastActiveAt();
+    } catch {
+      // safe-by-design
+    }
+
+    // Check if user exists (with retry fallback if Prisma hits un-repaired column)
+    let user = null;
+    try {
+      user = await db.user.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+    } catch (findErr: any) {
+      console.warn('[Google Signin] Prisma findUnique failed, running emergency repair:', findErr?.message);
+      repairLastActiveAt();
+      user = await db.user.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+    }
 
     let isNewUser = false;
 

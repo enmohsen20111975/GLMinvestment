@@ -53,7 +53,7 @@ export function updateLastActiveRaw(userId: string): void {
 export function repairLastActiveAt(): number {
   try {
     const sqlite = getAuthSqlite();
-    // Find rows where last_active_at is a numeric string > 10 chars (ms timestamp)
+    // 1. Find rows where last_active_at is a numeric string > 10 chars (ms timestamp)
     const badRows = sqlite.prepare(
       'SELECT id, last_active_at FROM "User" WHERE last_active_at IS NOT NULL AND typeof(last_active_at) = \'text\' AND CAST(last_active_at AS INTEGER) > 1000000000000'
     ).all() as { id: string; last_active_at: string }[];
@@ -66,6 +66,20 @@ export function repairLastActiveAt(): number {
       sqlite.prepare('UPDATE "User" SET last_active_at = ? WHERE id = ?').run(iso, row.id);
       fixed++;
     }
+
+    // 2. Also repair last_login if corrupted with millisecond timestamp
+    const badLoginRows = sqlite.prepare(
+      'SELECT id, last_login FROM "User" WHERE last_login IS NOT NULL AND typeof(last_login) = \'text\' AND CAST(last_login AS INTEGER) > 1000000000000'
+    ).all() as { id: string; last_login: string }[];
+
+    for (const row of badLoginRows) {
+      const ms = parseInt(row.last_login, 10);
+      if (isNaN(ms)) continue;
+      const iso = new Date(ms).toISOString();
+      sqlite.prepare('UPDATE "User" SET last_login = ? WHERE id = ?').run(iso, row.id);
+      fixed++;
+    }
+
     return fixed;
   } catch { // silent fallback (safe-by-design)
     return 0;
