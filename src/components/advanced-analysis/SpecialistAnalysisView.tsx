@@ -2695,23 +2695,31 @@ export function SpecialistAnalysisView() {
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-2">
-            <select
+            {/* SEARCH-FIX (2026-10-10): استبدال select بـ input + datalist (search ذكي) */}
+            <input
+              type="text"
+              list="specialist-stock-list"
               value={ticker}
               onChange={(e) => {
-                const val = e.target.value;
+                const val = e.target.value.toUpperCase().trim();
                 setTicker(val);
-                if (val) fetchAnalysis(val);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && ticker.trim()) {
+                  fetchAnalysis(ticker.trim().toUpperCase());
+                }
               }}
               disabled={loading}
+              placeholder="ابحث عن سهم... (مثال: COMI, ETEL, SWDY)"
               className="flex-1 px-3 sm:px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-background text-foreground text-sm sm:text-base min-w-0"
-            >
-              <option value="">اختر سهماً من {MARKET_NAMES_AR[currentMarket] || currentMarket}...</option>
+            />
+            <datalist id="specialist-stock-list">
               {stocks.map((stock) => (
                 <option key={stock.ticker} value={stock.ticker}>
                   {stock.ticker} {stock.name_ar ? `- ${stock.name_ar}` : stock.name ? `- ${stock.name}` : ''}
                 </option>
               ))}
-            </select>
+            </datalist>
             <Button onClick={handleSearch} disabled={loading || !ticker} className="flex-shrink-0 gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               <span>تحليل</span>

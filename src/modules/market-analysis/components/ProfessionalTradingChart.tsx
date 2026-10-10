@@ -537,9 +537,9 @@ export function ProfessionalTradingChart({ initialTicker }: Props) {
           {chartMode === 'tradingview' ? (
             /* CHART-FIX: TradingView widget — بيجيب الشموع الحية مباشرة بدون فجوات */
             <iframe
-              src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(`EGX:${selectedTicker}`)}&interval=D&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`}
+              src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(`EGX:${ticker}`)}&interval=D&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`}
               className="w-full h-full border-0"
-              title={`TradingView ${selectedTicker}`}
+              title={`TradingView ${ticker}`}
               allowFullScreen
             />
           ) : data?.ohlcv && data.ohlcv.length > 0 ? (
