@@ -100,55 +100,215 @@ export async function GET(req: NextRequest) {
     const market = MARKET_MAP[marketRaw] || 'EGX';
 
     const sector = url.searchParams.get('sector')?.trim();
+    const minPrice = url.searchParams.get('min_price');
+    const maxPrice = url.searchParams.get('max_price');
     const minVolume = url.searchParams.get('min_volume');
     const minTurnover = url.searchParams.get('min_turnover');
     const minMarketCap = url.searchParams.get('min_market_cap');
+    const maxMarketCap = url.searchParams.get('max_market_cap');
     const minSignal = url.searchParams.get('signal');
+    const trend = url.searchParams.get('trend')?.toLowerCase();
+    const aboveMa = url.searchParams.get('above_ma')?.toLowerCase();
+    const rsiOversold = url.searchParams.get('rsi_oversold');
+    const rsiOverbought = url.searchParams.get('rsi_overbought');
+    const volumeSurge = url.searchParams.get('volume_surge');
+    const near52wHigh = url.searchParams.get('near_52w_high');
+    const near52wLow = url.searchParams.get('near_52w_low');
+    const minPe = url.searchParams.get('min_pe');
+    const maxPe = url.searchParams.get('max_pe');
+    const minRoe = url.searchParams.get('min_roe');
+    const minDividendYield = url.searchParams.get('min_dividend_yield');
+    const stockState = url.searchParams.get('stock_state')?.toUpperCase();
     const sortRaw = (url.searchParams.get('sort') || 'change_percent').toLowerCase();
-    const sort = ['change_percent', 'volume', 'market_cap'].includes(sortRaw)
+    // FIX (FILTERS-1): دعم كل أنواع الـ sort اللي الـ UI ممكن يبعتها
+    const sort = ['change_percent', 'volume', 'market_cap', 'turnover_egp', 'rsi', 'pe_ratio', 'roe', 'dividend_yield'].includes(sortRaw)
       ? sortRaw
       : 'change_percent';
+    const orderRaw = (url.searchParams.get('order') || 'desc').toLowerCase();
+    const order = orderRaw === 'asc' ? 'ASC' : 'DESC';
     const limitRaw = Number(url.searchParams.get('limit') || 50);
-    const limit = Math.max(1, Math.min(50, Number.isFinite(limitRaw) ? limitRaw : 50));
+    const limit = Math.max(1, Math.min(200, Number.isFinite(limitRaw) ? limitRaw : 50));
 
-    const filtersApplied: Record<string, unknown> = { market, sort, limit };
+    const filtersApplied: Record<string, unknown> = { market, sort, order, limit };
     const where: string[] = ['market = ?'];
     const params: unknown[] = [market];
 
-    if (sector) {
+    // ─── فلتر القطاع ──────────────────────────────────────────────────────
+    if (sector && sector !== 'ALL') {
       where.push('sector = ? COLLATE NOCASE');
       params.push(sector);
       filtersApplied.sector = sector;
     }
+
+    // ─── فلتر السعر (min/max) ───────────────────────────────────────────
+    if (minPrice && !Number.isNaN(Number(minPrice))) {
+      where.push('current_price >= ?');
+      params.push(Number(minPrice));
+      filtersApplied.min_price = Number(minPrice);
+    }
+    if (maxPrice && !Number.isNaN(Number(maxPrice))) {
+      where.push('current_price <= ?');
+      params.push(Number(maxPrice));
+      filtersApplied.max_price = Number(maxPrice);
+    }
+
+    // ─── فلتر الحجم ─────────────────────────────────────────────────────
     if (minVolume && !Number.isNaN(Number(minVolume))) {
       where.push('volume >= ?');
       params.push(Number(minVolume));
       filtersApplied.min_volume = Number(minVolume);
     }
+
+    // ─── فلتر القيمة السوقية (min/max) ───────────────────────────────────
     if (minMarketCap && !Number.isNaN(Number(minMarketCap))) {
       where.push('market_cap >= ?');
       params.push(Number(minMarketCap));
       filtersApplied.min_market_cap = Number(minMarketCap);
     }
+    if (maxMarketCap && !Number.isNaN(Number(maxMarketCap))) {
+      where.push('market_cap <= ?');
+      params.push(Number(maxMarketCap));
+      filtersApplied.max_market_cap = Number(maxMarketCap);
+    }
+
+    // ─── فلتر الإشارة (signal) ──────────────────────────────────────────
     if (minSignal && !Number.isNaN(Number(minSignal))) {
       where.push('signal >= ?');
       params.push(Number(minSignal));
       filtersApplied.min_signal = Number(minSignal);
     }
+
+    // ─── فلتر السيولة (turnover) ────────────────────────────────────────
     if (minTurnover && !Number.isNaN(Number(minTurnover))) {
-      // turnover_egp often NULL — compute via current_price * volume
       where.push('(COALESCE(turnover_egp, current_price * volume) >= ?)');
       params.push(Number(minTurnover));
       filtersApplied.min_turnover = Number(minTurnover);
     }
 
-    // Build ORDER BY: NULLs last for sort column
-    // ملاحظة: الـ schema الجديد ممكن ما يكون فيه change_percent — نحسبه في SELECT
-    const orderBy = sort === 'volume'
-      ? 'volume DESC NULLS LAST'
-      : sort === 'market_cap'
-        ? 'market_cap DESC NULLS LAST'
-        : 'chg_pct DESC NULLS LAST';
+    // ─── فلتر الاتجاه (trend) ───────────────────────────────────────────
+    if (trend && trend !== 'all' && has('trend')) {
+      // trend values: up, down, sideways
+      const trendMap: Record<string, string> = {
+        up: 'UP', down: 'DOWN', sideways: 'SIDEWAYS',
+        bullish: 'UP', bearish: 'DOWN', neutral: 'SIDEWAYS',
+      };
+      const trendVal = trendMap[trend] || trend.toUpperCase();
+      where.push('UPPER(trend) = ?');
+      params.push(trendVal);
+      filtersApplied.trend = trendVal;
+    }
+
+    // ─── فلتر فوق/تحت المتوسط المتحرك (above_ma) ───────────────────────
+    if (aboveMa && aboveMa !== 'all') {
+      if (aboveMa === 'ma50' && has('ma_50')) {
+        where.push('current_price > ma_50');
+        filtersApplied.above_ma = 'ma50';
+      } else if (aboveMa === 'ma200' && has('ma_200')) {
+        where.push('current_price > ma_200');
+        filtersApplied.above_ma = 'ma200';
+      } else if (aboveMa === 'below_ma50' && has('ma_50')) {
+        where.push('current_price < ma_50');
+        filtersApplied.above_ma = 'below_ma50';
+      }
+    }
+
+    // ─── فلتر RSI (oversold/overbought) ─────────────────────────────────
+    if (rsiOversold === '1' && has('rsi')) {
+      where.push('rsi IS NOT NULL AND rsi < 30');
+      filtersApplied.rsi_oversold = true;
+    }
+    if (rsiOverbought === '1' && has('rsi')) {
+      where.push('rsi IS NOT NULL AND rsi > 70');
+      filtersApplied.rsi_overbought = true;
+    }
+
+    // ─── فلتر ارتفاع الحجم (volume_surge) ───────────────────────────────
+    if (volumeSurge === '1') {
+      // volume_surge = volume > 1.5× average volume (لو فيه column avg_volume)
+      if (has('avg_volume_20') || has('avg_volume')) {
+        const avgCol = has('avg_volume_20') ? 'avg_volume_20' : 'avg_volume';
+        where.push(`volume > ${avgCol} * 1.5`);
+        filtersApplied.volume_surge = true;
+      }
+      // لو مفيش avg_volume column، نعتمد على الـ volume بس
+    }
+
+    // ─── فلتر قرب قمة/قاع 52 أسبوع ─────────────────────────────────────
+    if (near52wHigh === '1' && has('high_52w')) {
+      where.push('high_52w IS NOT NULL AND current_price >= high_52w * 0.95');
+      filtersApplied.near_52w_high = true;
+    }
+    if (near52wLow === '1' && has('low_52w')) {
+      where.push('low_52w IS NOT NULL AND current_price <= low_52w * 1.05');
+      filtersApplied.near_52w_low = true;
+    }
+
+    // ─── فلتر P/E (min/max) ─────────────────────────────────────────────
+    if (minPe && !Number.isNaN(Number(minPe)) && has('pe_ratio')) {
+      where.push('pe_ratio IS NOT NULL AND pe_ratio >= ?');
+      params.push(Number(minPe));
+      filtersApplied.min_pe = Number(minPe);
+    }
+    if (maxPe && !Number.isNaN(Number(maxPe)) && has('pe_ratio')) {
+      where.push('pe_ratio IS NOT NULL AND pe_ratio <= ?');
+      params.push(Number(maxPe));
+      filtersApplied.max_pe = Number(maxPe);
+    }
+
+    // ─── فلتر ROE ──────────────────────────────────────────────────────
+    if (minRoe && !Number.isNaN(Number(minRoe)) && has('roe')) {
+      where.push('roe IS NOT NULL AND roe >= ?');
+      params.push(Number(minRoe));
+      filtersApplied.min_roe = Number(minRoe);
+    }
+
+    // ─── فلتر التوزيعات (dividend_yield) ────────────────────────────────
+    if (minDividendYield && !Number.isNaN(Number(minDividendYield)) && has('dividend_yield')) {
+      where.push('dividend_yield IS NOT NULL AND dividend_yield >= ?');
+      params.push(Number(minDividendYield));
+      filtersApplied.min_dividend_yield = Number(minDividendYield);
+    }
+
+    // ─── فلتر حالة السهم المركبة (stock_state) ───────────────────────────
+    // CORRECTION_END: نزل تحت ma_50 بس لسه فوق ma_200 + volume مش مرتفع
+    // GAINER: change_percent > 0
+    // LOSER: change_percent < 0
+    // VOLUME_BOOST: volume > avg_volume * 1.5
+    if (stockState && stockState !== 'ALL') {
+      if (stockState === 'GAINER' && has('change_percent')) {
+        where.push('change_percent > 0');
+        filtersApplied.stock_state = 'GAINER';
+      } else if (stockState === 'LOSER' && has('change_percent')) {
+        where.push('change_percent < 0');
+        filtersApplied.stock_state = 'LOSER';
+      } else if (stockState === 'CORRECTION_END' && has('ma_50') && has('ma_200')) {
+        where.push('current_price < ma_50 AND current_price > ma_200');
+        filtersApplied.stock_state = 'CORRECTION_END';
+      } else if (stockState === 'VOLUME_BOOST') {
+        if (has('avg_volume_20')) {
+          where.push('volume > avg_volume_20 * 1.5');
+        } else if (has('avg_volume')) {
+          where.push('volume > avg_volume * 1.5');
+        }
+        filtersApplied.stock_state = 'VOLUME_BOOST';
+      }
+    }
+
+    // Build ORDER BY: NULLs last for sort column + دعم ASC/DESC + كل أعمدة الـ sort
+    // FIX (FILTERS-1): الـ UI ممكن يبعت sort=turnover_egp/rsi/pe_ratio/roe/dividend_yield
+    // + order=asc/desc — كنا بنتجاهل الـ order وبنفرض DESC دايماً
+    const sortColMap: Record<string, string> = {
+      change_percent: 'chg_pct',
+      volume: 'volume',
+      market_cap: 'market_cap',
+      turnover_egp: 'turnover_egp',
+      rsi: 'rsi',
+      pe_ratio: 'pe_ratio',
+      roe: 'roe',
+      dividend_yield: 'dividend_yield',
+    };
+    const sortCol = sortColMap[sort] || 'chg_pct';
+    const orderBy = `${sortCol} ${order} NULLS LAST`;
 
     // ابني SELECT حسب الأعمدة المتاحة فقط
     const selectParts: string[] = ['ticker', 'name_ar', 'name', 'sector', 'current_price', 'previous_close', 'volume'];
