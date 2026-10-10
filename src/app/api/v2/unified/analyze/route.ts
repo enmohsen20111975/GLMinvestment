@@ -19,6 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { classifySignal } from '@/lib/canonical-signal';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,11 +83,20 @@ function signalToScore(signal: any, baseline = 50): number {
 }
 
 function scoreToRecommendation(score: number): { recommendation: string; recommendation_ar: string } {
-  if (score >= 75) return { recommendation: 'STRONG_BUY',  recommendation_ar: 'شراء قوي'  };
-  if (score >= 70) return { recommendation: 'BUY',         recommendation_ar: 'شراء'      };
-  if (score >= 60) return { recommendation: 'HOLD',        recommendation_ar: 'انتظار'    };
-  if (score >= 50) return { recommendation: 'REDUCE',      recommendation_ar: 'تقليل'     };
-  return { recommendation: 'AVOID', recommendation_ar: 'تجنب' };
+  // RULE-73 UNIFY: استخدم canonical classifySignal (78/65/55/40/25).
+  // قبل كده: hardcoded 75/70/60/50 = نظام خامس مختلف، بيعطي توصيات متناقضة.
+  // دلوقتي: نفس thresholds في كل مكان (single source of truth).
+  const sig = classifySignal(score);
+  const map: Record<string, { recommendation: string; recommendation_ar: string }> = {
+    STRONG_BUY: { recommendation: 'STRONG_BUY', recommendation_ar: 'شراء قوي' },
+    BUY: { recommendation: 'BUY', recommendation_ar: 'شراء' },
+    ACCUMULATE: { recommendation: 'ACCUMULATE', recommendation_ar: 'تجميع' },
+    HOLD: { recommendation: 'HOLD', recommendation_ar: 'انتظار' },
+    REDUCE: { recommendation: 'REDUCE', recommendation_ar: 'تقليل' },
+    SELL: { recommendation: 'SELL', recommendation_ar: 'بيع' },
+    STRONG_SELL: { recommendation: 'STRONG_SELL', recommendation_ar: 'بيع قوي' },
+  };
+  return map[sig] ?? { recommendation: 'AVOID', recommendation_ar: 'تجنب' };
 }
 
 // ---------------------------------------------------------------------------

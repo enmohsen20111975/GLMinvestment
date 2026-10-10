@@ -73,10 +73,17 @@ async function fetchFromEgxpy(): Promise<{
       'ALDU', 'TALA', 'CIEB', 'PHAR', 'OBOR', 'JOIN', 'ACGC', 'MFPC', 'ALUM', 'BIMP',
     ].filter(t => tickers.includes(t));
 
-    // Add up to 30 more random tickers for diversity
+    // RULE-27 FIX (2026-10-10): شيلنا Math.random() shuffle — كان بيرجّع ترتيب مختلف
+    // كل request = data inconsistency (Rule 27: لا بيانات كاذبة). استبدلناها بـ
+    // deterministic shuffle (hash-based) عشان التنوع يفضل موجود بس بدون عشوائية.
     const extraTickers = tickers
       .filter(t => !priorityTickers.includes(t))
-      .sort(() => Math.random() - 0.5)
+      .sort((a, b) => {
+        // deterministic "shuffle" using string hash comparison (stable per request)
+        const ha = a.charCodeAt(0) + a.charCodeAt(a.length - 1);
+        const hb = b.charCodeAt(0) + b.charCodeAt(b.length - 1);
+        return ha - hb;
+      })
       .slice(0, 30);
 
     const allTickers = [...priorityTickers, ...extraTickers];

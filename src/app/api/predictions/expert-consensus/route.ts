@@ -36,7 +36,7 @@ import path from 'path';
 // bullish/bearish counter (Rule 20 violation — financial computation in
 // route.ts). Now the verdict is sourced from the canonical V40.2 prediction
 // signal (or canonical classifySignal(master_score) as fallback).
-import { classifySignal } from '@/lib/canonical-signal';
+import { classifySignal, SIGNAL_THRESHOLDS } from '@/lib/canonical-signal';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,10 +162,11 @@ function computeConsensus(
       bearish += 2;
       reasons.push(`تحليل سابق: STRONG_SELL (score ${score})`);
     }
-    if (score >= 65) {
+    // RULE-73 UNIFY: استخدم SIGNAL_THRESHOLDS من canonical (مش hardcoded 65/40).
+    if (score >= SIGNAL_THRESHOLDS.BUY) {
       bullish += 1;
       reasons.push(`master_score قوي (${score})`);
-    } else if (score < 40) {
+    } else if (score < SIGNAL_THRESHOLDS.REDUCE) {
       bearish += 1;
       reasons.push(`master_score ضعيف (${score})`);
     }

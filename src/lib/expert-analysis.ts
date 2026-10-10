@@ -36,6 +36,7 @@
 
 import { currencyUnitAr } from '@/lib/market-profiles';
 import type { MarketType } from '@/lib/store';
+import { classifySignal, signalAr as canonicalSignalAr, SIGNAL_THRESHOLDS } from '@/lib/canonical-signal';
 
 export interface StockDataForAnalysis {
   ticker: string;
@@ -652,12 +653,11 @@ export function generateExpertAnalysis(data: StockDataForAnalysis): ExpertAnalys
     rec = data.signal;
     rec_ar = signalAr(data.signal);
   } else if (data.master_score !== null && data.master_score !== undefined) {
-    // CANONICAL-FIX: استخدم canonical thresholds (78/65/55/40/25)
-    if (data.master_score >= 78) { rec = 'STRONG_BUY'; rec_ar = 'شراء قوي'; }
-    else if (data.master_score >= 65) { rec = 'BUY'; rec_ar = 'شراء'; }
-    else if (data.master_score >= 55) { rec = 'ACCUMULATE'; rec_ar = 'تجميع'; }
-    else if (data.master_score <= 25) { rec = 'STRONG_SELL'; rec_ar = 'بيع قوي'; }
-    else if (data.master_score <= 40) { rec = 'SELL'; rec_ar = 'بيع'; }
+    // RULE-73 UNIFY: استخدم canonical classifySignal (مش thresholds hardcoded).
+    // قبل كده: hardcoded 78/65/55/40/25 — values صح بس مكررة (Rule 28).
+    // دلوقتي: مصدر واحد بس للـ thresholds (canonical-signal.ts).
+    rec = classifySignal(data.master_score);
+    rec_ar = canonicalSignalAr(rec);
     // 41-54 = HOLD (canonical)
   }
 
