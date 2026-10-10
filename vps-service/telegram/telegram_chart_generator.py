@@ -499,6 +499,35 @@ async def generate_stock_chart_image(ticker: str) -> Optional[Path]:
     candles = get_stock_candles(ticker, limit=35)
     stock = get_stock_details(ticker)
     
+    # CHART-FIX (2026-10-10): لو مفيش شموع كافية → جرّب stock_daily_prices من stocks.db
+    if len(candles) < 5:
+        try:
+            con = sqlite3.connect(str(STOCKS_DB))
+            con.row_factory = sqlite3.Row
+            rows = con.execute("""
+                SELECT price_date as date, open, high, low, close, volume
+                FROM stock_daily_prices
+                WHERE ticker = ? AND close IS NOT NULL AND close > 0
+                ORDER BY price_date DESC LIMIT 35
+            """, (ticker,)).fetchall()
+            con.close()
+            candles = []
+            for r in reversed(rows):
+                candles.append({
+                    'date': r['date'],
+                    'open': float(r['open'] or 0),
+                    'high': float(r['high'] or 0),
+                    'low': float(r['low'] or 0),
+                    'close': float(r['close'] or 0),
+                    'volume': int(r['volume'] or 0) if r['volume'] else 0,
+                })
+        except Exception as e:
+            print(f"⚠️ خطأ جلب شموع احتياطية من stocks.db: {e}")
+    
+    if len(candles) < 2:
+        print(f"⚠️ لا توجد شموع كافية لرسم شارت {ticker}")
+        return None
+    
     svg = build_svg_chart(candles, stock, width=1016, height=580)
     html = render_html_card(stock, svg)
     
@@ -511,7 +540,8 @@ async def generate_stock_chart_image(ticker: str) -> Optional[Path]:
                 args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
             )
             page = await browser.new_page(viewport={'width': 1080, 'height': 1080}, device_scale_factor=1.5)
-            await page.set_content(html, wait_until='load', timeout=7000)
+            # CHART-FIX: زيادة timeout من 7s إلى 15s (السيرفر الإنتاجي ممكن يكون بطيء)
+            await page.set_content(html, wait_until='load', timeout=15000)
             await page.screenshot(path=str(out_file), type='png')
             await browser.close()
             

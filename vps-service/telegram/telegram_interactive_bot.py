@@ -930,6 +930,10 @@ def send_stock_analysis_response(
             r = send_photo(chat_id, Path(chart_path), msg, reply_markup=None)
             if r and r.get('ok'):
                 photo_sent = True
+            else:
+                log.warning(f"فشل إرسال الصورة: {r}")
+        else:
+            log.warning(f"الشارت مش موجود: {chart_path}")
     except Exception as e:
         log.warning(f"تعذر رسم شارت {stock['symbol']}: {e}")
 
