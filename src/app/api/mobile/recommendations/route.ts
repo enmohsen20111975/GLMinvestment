@@ -35,10 +35,17 @@ export async function GET(req: NextRequest) {
     const stocksDbPath = path.join(process.cwd(), 'db', 'stocks.db');
     const predDbPath = path.join(process.cwd(), 'db', 'predictions.db');
     if (!fs.existsSync(stocksDbPath)) {
-      return NextResponse.json(
-        { success: false, error: 'stocks.db not found' },
-        { status: 500 }
-      );
+      // FIX (FLUTTER-PROD-5): return 200 + empty array بدل 500
+      // السبب: Flutter بيتعامل مع 5xx كـ exception ويطلّع error toast
+      // لكن "مفيش بيانات" مش = "خطأ" — دي حالة طبيعية لو DB مش متاح
+      return NextResponse.json({
+        success: true,
+        source: 'unavailable',
+        market,
+        summary: { total: 0, advancing: 0, declining: 0, unchanged: 0 },
+        recommendations: [],
+        message: 'قاعدة بيانات الأسهم غير متاحة حالياً',
+      }, { status: 200 });
     }
 
     const sdb = new Database(stocksDbPath, { readonly: true });
