@@ -60,10 +60,15 @@ export async function GET(req: NextRequest) {
     const Database = require('better-sqlite3');
     const predDbPath = path.join(process.cwd(), 'db', 'predictions.db');
     if (!fs.existsSync(predDbPath)) {
-      return NextResponse.json(
-        { success: false, error: 'predictions.db not found' },
-        { status: 500 }
-      );
+      // FIX (FLUTTER-PROD-5): return 200 + empty array بدل 500
+      return NextResponse.json({
+        success: true,
+        source: 'unavailable',
+        market,
+        count: 0,
+        predictions: [],
+        message: 'قاعدة بيانات التوقعات غير متاحة حالياً',
+      }, { status: 200 });
     }
     const pdb = new Database(predDbPath, { readonly: true });
 
