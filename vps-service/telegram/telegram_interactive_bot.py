@@ -750,10 +750,25 @@ def build_stock_card(
     else:
         entry_min = entry_max = s1 = s2 = r1 = r2 = tp1 = tp2 = sl = None
     # AUDIT-PUBLISH-QUALITY (Rule 27): do NOT fabricate R/R = 2.0 by default.
+    # PREDICTIONS-FIX (2026-10-10): احسب R:R من entry/target/stop الفعلية
+    # قبل كده: كنا بناخذ R:R من radar['risk_reward'] (ممكن يكون غلط)
+    # دلوقتي: نحسب يدوياً من الأسعار الحقيقية
     try:
         rr = float(radar.get('risk_reward')) if radar.get('risk_reward') is not None else None
     except (TypeError, ValueError):
         rr = None
+    # PREDICTIONS-FIX: override R:R بالحساب اليدوي لو الأرقام متوفرة
+    if price > 0 and tp1 is not None and sl is not None and sl < price and tp1 > price:
+        risk = price - sl
+        reward = tp1 - price
+        if risk > 0:
+            rr = reward / risk  # الحساب الصحيح
+    # لو مفيش tp1 → جرّب entry_min
+    if rr is None and price > 0 and entry_min and sl and sl < entry_min:
+        risk = entry_min - sl
+        reward = tp1 - entry_min if tp1 else 0
+        if risk > 0 and reward > 0:
+            rr = reward / risk
     if price > 0 and entry_min and entry_max:
         advice = radar.get('advice') or f"السعر داخل نطاق الشراء الآمن ({entry_min:,.2f} - {entry_max:,.2f} ج.م) — التزم بالوقف والأهداف"
     else:
