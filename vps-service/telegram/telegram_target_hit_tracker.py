@@ -1030,6 +1030,21 @@ def run_target_hit_tracker(preview: bool = False, force: bool = False):
         # 1. توثيق وتسجيل ضرب الهدف في قاعدة البيانات للمشروع والموقع أولاً
         record_target_hit_in_db(item)
 
+        # ─── TELEGRAM-HIT-FILTER (Owner Directive: عدم إغراق القناة) ───
+        max_hits_per_day = int(os.environ.get('MAX_TELEGRAM_HITS_PER_DAY', '2'))
+        min_broadcast_profit = float(os.environ.get('MIN_BROADCAST_PROFIT_PCT', '5.0'))
+
+        today_prefix = datetime.now().strftime('%Y-%m-%d')
+        today_sent = sum(1 for v in announced.values() if isinstance(v, dict) and str(v.get('sent_at', '')).startswith(today_prefix))
+
+        if not force and today_sent >= max_hits_per_day:
+            print(f"ℹ️ تم بلوغ الحد اليومي لبث الأهداف على التليجرام ({today_sent}/{max_hits_per_day}) — تم توثيق الهدف بالموقع فقط لتجنب إغراق القناة.")
+            continue
+
+        if not force and item.get('profit_pct', 0) < min_broadcast_profit and item.get('hit_level') != 'TP2':
+            print(f"ℹ️ الربح المحقق (+{item.get('profit_pct', 0):.1f}%) أقل من عتبة البث المميز ({min_broadcast_profit}%) — تم توثيقه بالقاعدة دون إزعاج المتابعين.")
+            continue
+
         # 2. توليد البطاقة المصورة المتطورة
         card_img = asyncio.run(generate_hit_card_image(item))
         caption, reply_markup = format_hit_caption(item)
