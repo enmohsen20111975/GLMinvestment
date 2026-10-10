@@ -9,7 +9,7 @@
  *   - markets  (EGX, TADAWUL, KSE, QSE, US, CRYPTO, ...)
  *   - engines  (technical, fundamental, macro, sentiment, confluence, ...)
  *   - weights  (per-persona engine weighting)
- *   - presets, pipelines (best-effort — pulled from existing v2 endpoints)
+ *   - presets, pipelines (best-effort � pulled from existing v2 endpoints)
  *
  * Behaviour:
  *   1. Try Python `${PY}/api/v2/unified/config` (passes ?market & ?persona through).
@@ -35,9 +35,9 @@ const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
 const PERSONAS = [
   {
     id: 'investor',
-    name: 'المستثمر',
+    name: '????????',
     name_en: 'Investor',
-    description: 'استثمار طويل الأجل مبني على الأساسيات والقيمة العادلة',
+    description: '??????? ???? ????? ???? ??? ????????? ??????? ???????',
     description_en: 'Long-term value investing based on fundamentals',
     risk_level: 'low',
     timeframe: 'weeks-months',
@@ -48,9 +48,9 @@ const PERSONAS = [
   },
   {
     id: 'gambler',
-    name: 'المغامر',
+    name: '???????',
     name_en: 'Gambler',
-    description: 'مضاربة عالية المخاطر بحثًا عن فرص انفجارية',
+    description: '?????? ????? ??????? ????? ?? ??? ????????',
     description_en: 'High-risk speculation hunting explosive moves',
     risk_level: 'high',
     timeframe: 'intraday',
@@ -61,9 +61,9 @@ const PERSONAS = [
   },
   {
     id: 'swing',
-    name: 'المتأرجح',
+    name: '????????',
     name_en: 'Swing',
-    description: 'تداول متوسط الأجل على موجات السهم',
+    description: '????? ????? ????? ??? ????? ?????',
     description_en: 'Medium-term swing trading on price waves',
     risk_level: 'medium',
     timeframe: 'days-weeks',
@@ -74,9 +74,9 @@ const PERSONAS = [
   },
   {
     id: 'scalper',
-    name: 'المضارب السريع',
+    name: '??????? ??????',
     name_en: 'Scalper',
-    description: 'تداول فائق السرعة داخل اليوم',
+    description: '????? ???? ?????? ???? ?????',
     description_en: 'Ultra-fast intraday scalping',
     risk_level: 'very_high',
     timeframe: 'minutes-hours',
@@ -87,9 +87,9 @@ const PERSONAS = [
   },
   {
     id: 'balanced',
-    name: 'المتوازن',
+    name: '????????',
     name_en: 'Balanced',
-    description: 'مزيج متوازن من كل المحركات',
+    description: '???? ?????? ?? ?? ????????',
     description_en: 'Balanced blend of all engines',
     risk_level: 'medium',
     timeframe: 'days-weeks',
@@ -101,20 +101,20 @@ const PERSONAS = [
 ];
 
 const MARKETS = [
-  { id: 'EGX',     name: 'البورصة المصرية',         name_en: 'Egyptian Exchange',     currency: 'EGP', country: 'Egypt',     default: true },
-  { id: 'TADAWUL', name: 'السوق السعودي',           name_en: 'Saudi Exchange',        currency: 'SAR', country: 'Saudi Arabia' },
-  { id: 'KSE',     name: 'بورصة الكويت',            name_en: 'Kuwait Stock Exchange', currency: 'KWD', country: 'Kuwait' },
-  { id: 'QSE',     name: 'بورصة قطر',               name_en: 'Qatar Stock Exchange',  currency: 'QAR', country: 'Qatar' },
-  { id: 'US',      name: 'الأسواق الأمريكية',        name_en: 'US Markets',            currency: 'USD', country: 'United States' },
-  { id: 'CRYPTO',  name: 'العملات الرقمية',         name_en: 'Crypto Markets',        currency: 'USD', country: 'Global' },
+  { id: 'EGX',     name: '??????? ???????',         name_en: 'Egyptian Exchange',     currency: 'EGP', country: 'Egypt',     default: true },
+  { id: 'TADAWUL', name: '????? ???????',           name_en: 'Saudi Exchange',        currency: 'SAR', country: 'Saudi Arabia' },
+  { id: 'KSE',     name: '????? ??????',            name_en: 'Kuwait Stock Exchange', currency: 'KWD', country: 'Kuwait' },
+  { id: 'QSE',     name: '????? ???',               name_en: 'Qatar Stock Exchange',  currency: 'QAR', country: 'Qatar' },
+  { id: 'US',      name: '??????? ?????????',        name_en: 'US Markets',            currency: 'USD', country: 'United States' },
+  { id: 'CRYPTO',  name: '??????? ???????',         name_en: 'Crypto Markets',        currency: 'USD', country: 'Global' },
 ];
 
 const ENGINES = [
   {
     id: 'technical',
-    name: 'المحرك الفني',
+    name: '?????? ?????',
     name_en: 'Technical Engine',
-    description: 'مؤشرات فنية، اتجاهات، دعم ومقاومة',
+    description: '?????? ????? ???????? ??? ???????',
     description_en: 'Technical indicators, trends, support/resistance',
     enabled: true,
     category: 'price_action',
@@ -122,9 +122,9 @@ const ENGINES = [
   },
   {
     id: 'fundamental',
-    name: 'المحرك الأساسي',
+    name: '?????? ???????',
     name_en: 'Fundamental Engine',
-    description: 'Piotroski, Altman Z, FCF، نمو الإيرادات',
+    description: 'Piotroski, Altman Z, FCF? ??? ?????????',
     description_en: 'Piotroski, Altman Z, FCF, revenue growth',
     enabled: true,
     category: 'valuation',
@@ -132,9 +132,9 @@ const ENGINES = [
   },
   {
     id: 'macro',
-    name: 'المحرك الكلي',
+    name: '?????? ?????',
     name_en: 'Macro Engine',
-    description: 'سياق الاقتصاد الكلي وأداء القطاعات',
+    description: '???? ???????? ????? ????? ????????',
     description_en: 'Macroeconomic context and sector performance',
     enabled: true,
     category: 'context',
@@ -142,9 +142,9 @@ const ENGINES = [
   },
   {
     id: 'sentiment',
-    name: 'محرك المشاعر',
+    name: '???? ???????',
     name_en: 'Sentiment Engine',
-    description: 'تحليل الأخبار والمشاعر السوقية',
+    description: '????? ??????? ???????? ???????',
     description_en: 'News analysis and market sentiment',
     enabled: true,
     category: 'news',
@@ -152,9 +152,9 @@ const ENGINES = [
   },
   {
     id: 'confluence',
-    name: 'مجلس المستشارين',
+    name: '???? ??????????',
     name_en: 'Confluence Engine',
-    description: '5 مستشارين (فني/أساسي/كلي/اتجاه/شخصية) مع توافق الآراء',
+    description: '5 ???????? (???/?????/???/?????/?????) ?? ????? ??????',
     description_en: '5 counselors (tech/fund/macro/trend/personality) with consensus',
     enabled: true,
     category: 'aggregate',
@@ -163,16 +163,16 @@ const ENGINES = [
 ];
 
 const PIPELINES = [
-  { id: 'default',        name: 'الخط الافتراضي',  name_en: 'Default Pipeline',        stages: ['technical', 'fundamental', 'macro', 'sentiment', 'confluence'] },
-  { id: 'fast',           name: 'خط سريع',          name_en: 'Fast Pipeline',            stages: ['technical', 'confluence'] },
-  { id: 'fundamentals',   name: 'خط الأساسيات',     name_en: 'Fundamentals Pipeline',    stages: ['fundamental', 'macro'] },
-  { id: 'day-trade',      name: 'خط المضاربة',       name_en: 'Day-Trading Pipeline',     stages: ['technical', 'sentiment', 'confluence'] },
+  { id: 'default',        name: '???? ?????????',  name_en: 'Default Pipeline',        stages: ['technical', 'fundamental', 'macro', 'sentiment', 'confluence'] },
+  { id: 'fast',           name: '?? ????',          name_en: 'Fast Pipeline',            stages: ['technical', 'confluence'] },
+  { id: 'fundamentals',   name: '?? ?????????',     name_en: 'Fundamentals Pipeline',    stages: ['fundamental', 'macro'] },
+  { id: 'day-trade',      name: '?? ????????',       name_en: 'Day-Trading Pipeline',     stages: ['technical', 'sentiment', 'confluence'] },
 ];
 
 const PRESETS = [
-  { id: 'conservative', name: 'محافظ',  name_en: 'Conservative', persona: 'investor', min_score: 80, top_n: 10 },
-  { id: 'balanced',     name: 'متوازن', name_en: 'Balanced',     persona: 'balanced', min_score: 70, top_n: 15 },
-  { id: 'aggressive',   name: 'هجومي',  name_en: 'Aggressive',   persona: 'gambler',  min_score: 60, top_n: 25 },
+  { id: 'conservative', name: '?????',  name_en: 'Conservative', persona: 'investor', min_score: 80, top_n: 10 },
+  { id: 'balanced',     name: '??????', name_en: 'Balanced',     persona: 'balanced', min_score: 70, top_n: 15 },
+  { id: 'aggressive',   name: '?????',  name_en: 'Aggressive',   persona: 'gambler',  min_score: 60, top_n: 25 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -281,12 +281,16 @@ export async function GET(request: NextRequest) {
       scoring: {
         min: 0,
         max: 100,
+        // RULE-73 UNIFY (2026-10-10): ????? thresholds ??? canonical-signal.ts
+        // ??? ???: 80/70/60/50/40 � ???? ???? ?????? ????? ?????? ??????? ?? canonical.
+        // ??????: 78/65/55/40/25 = ??? thresholds ???????? ?? canonical-signal.ts
+        // (Rule 28: ?? ????? � ???? ???? ?? ??? thresholds).
         thresholds: {
-          strong_buy: 80,
-          buy: 70,
-          hold: 60,
-          avoid: 50,
-          strong_avoid: 40,
+          strong_buy: 78,
+          buy: 65,
+          hold: 55,
+          avoid: 40,
+          strong_avoid: 25,
         },
       },
     };
@@ -301,7 +305,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'فشل تحميل إعدادات التحليل الموحد',
+        error: '??? ????? ??????? ??????? ??????',
         error_en: 'Failed to load unified analysis config',
         details: error instanceof Error ? error.message : String(error),
         config: null,

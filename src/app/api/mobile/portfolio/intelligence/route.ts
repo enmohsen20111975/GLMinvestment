@@ -11,7 +11,7 @@
  *   - summary: total_value, total_cost, total_pnl, total_pnl_pct
  *   - holdings breakdown (top 10 by value)
  *
- * Reads the user's portfolio from `db/auth.db` → PortfolioItem (via Prisma)
+ * Reads the user's portfolio from `db/auth.db` ? PortfolioItem (via Prisma)
  * and enriches with current_price from stocks.db.
  *
  * Auth: required (getSessionUserId). 401 if no userId.
@@ -95,7 +95,7 @@ function unauthorized() {
   return NextResponse.json(
     {
       success: false,
-      error: 'مطلوب تسجيل الدخول',
+      error: '????? ????? ??????',
       error_en: 'Authentication required',
     },
     { status: 401 }
@@ -111,10 +111,26 @@ export async function GET(_req: NextRequest) {
     if (userIds.length === 0) return unauthorized();
 
     // 1. Pull portfolio items from auth.db (Prisma).
-    const items = await db.portfolioItem.findMany({
-      where: { user_id: { in: userIds } },
-      orderBy: { created_at: 'desc' },
-    });
+    // FIX (FLUTTER-PROD-4): wrap Prisma call in try/catch to give a clearer
+    // error message if the DB schema is out of sync (e.g. updated_at missing).
+    let items: Awaited<ReturnType<typeof db.portfolioItem.findMany>>;
+    try {
+      items = await db.portfolioItem.findMany({
+        where: { user_id: { in: userIds } },
+        orderBy: { created_at: 'desc' },
+      });
+    } catch (dbErr) {
+      console.error('[mobile/portfolio/intelligence] Prisma error:', dbErr);
+      return NextResponse.json(
+        {
+          success: false,
+          error: '???? ?????? ?????? ?????? ???????. ???? ???????? ??? ????.',
+          error_en: 'Portfolio database unavailable',
+          details: dbErr instanceof Error ? dbErr.message : String(dbErr),
+        },
+        { status: 503 }
+      );
+    }
 
     if (items.length === 0) {
       return NextResponse.json({
@@ -126,9 +142,9 @@ export async function GET(_req: NextRequest) {
         suggestions: [
           {
             priority: 'high',
-            title: 'ابدأ بإضافة أول أصل لمحفظتك',
+            title: '???? ?????? ??? ??? ???????',
             reason:
-              'محفظتك فاضية حالياً. ابدأ بإضافة سهم أو ذهب أو شهادة إيداع.',
+              '?????? ????? ??????. ???? ?????? ??? ?? ??? ?? ????? ?????.',
           },
         ],
         summary: {
@@ -188,9 +204,9 @@ export async function GET(_req: NextRequest) {
       sectors.add(h.sector || 'OTHER');
       assetTypes.add(h.asset_type);
     }
-    const sectorScore = Math.min(100, sectors.size * 15); // 7+ sectors → 100
-    const assetScore = Math.min(40, assetTypes.size * 12); // 4+ types → 48 capped
-    const holdingCountScore = Math.min(30, holdings.length * 5); // 6+ → 30
+    const sectorScore = Math.min(100, sectors.size * 15); // 7+ sectors ? 100
+    const assetScore = Math.min(40, assetTypes.size * 12); // 4+ types ? 48 capped
+    const holdingCountScore = Math.min(30, holdings.length * 5); // 6+ ? 30
     const diversificationScore = Math.min(
       100,
       Math.round(sectorScore * 0.5 + assetScore * 0.3 + holdingCountScore * 0.2)
@@ -208,7 +224,7 @@ export async function GET(_req: NextRequest) {
       (m, h) => Math.max(m, Math.abs(h.pnl_pct)),
       0
     );
-    // Risk: 0 (safe) → 100 (very risky).
+    // Risk: 0 (safe) ? 100 (very risky).
     const riskScore = Math.min(
       100,
       Math.round(lossConcentration * 40 + Math.min(40, avgLoss) + Math.min(20, maxLoss / 2))
@@ -230,50 +246,50 @@ export async function GET(_req: NextRequest) {
     if (diversificationScore < 40) {
       suggestions.push({
         priority: 'high',
-        title: 'نوّع محفظتك',
-        reason: `تنويعك ضعيف (${diversificationScore}/100). ركّزك في ${sectors.size} قطاع/قطاعات فقط وزّع على 3-5 قطاعات مختلفة.`,
+        title: '???? ??????',
+        reason: `?????? ???? (${diversificationScore}/100). ????? ?? ${sectors.size} ????/?????? ??? ???? ??? 3-5 ?????? ??????.`,
       });
     } else if (diversificationScore < 70) {
       suggestions.push({
         priority: 'medium',
-        title: 'حسّن التنويع',
-        reason: `تنويعك متوسط (${diversificationScore}/100). فكّر في إضافة أصول من قطاع جديد.`,
+        title: '???? ???????',
+        reason: `?????? ????? (${diversificationScore}/100). ???? ?? ????? ???? ?? ???? ????.`,
       });
     }
 
     if (riskScore > 60) {
       suggestions.push({
         priority: 'high',
-        title: 'قلّل تركيز المخاطرة',
-        reason: `درجة المخاطرة عالية (${riskScore}/100). ${losers.length} من ${holdings.length} مركز خاسر، ومتوسط الخسارة ${avgLoss.toFixed(1)}%. فكّر في إعادة توزيع رأس المال.`,
+        title: '???? ????? ????????',
+        reason: `???? ???????? ????? (${riskScore}/100). ${losers.length} ?? ${holdings.length} ???? ????? ?????? ??????? ${avgLoss.toFixed(1)}%. ???? ?? ????? ????? ??? ?????.`,
       });
     } else if (riskScore > 40) {
       suggestions.push({
         priority: 'medium',
-        title: 'راقب المراكز الخاسرة',
-        reason: `درجة المخاطرة متوسطة (${riskScore}/100). لديك ${losers.length} مركز خاسر — تابع وقف الخسارة.`,
+        title: '???? ??????? ???????',
+        reason: `???? ???????? ?????? (${riskScore}/100). ???? ${losers.length} ???? ???? � ???? ??? ???????.`,
       });
     }
 
     if (totalPnlPct < -10) {
       suggestions.push({
         priority: 'high',
-        title: 'راجع استراتيجية الدخول',
-        reason: `محفظتك خسرانة ${Math.abs(totalPnlPct).toFixed(1)}% إجمالي. راجع استراتيجية الدخول ووقف الخسارة قبل أي صفقة جديدة.`,
+        title: '???? ?????????? ??????',
+        reason: `?????? ?????? ${Math.abs(totalPnlPct).toFixed(1)}% ??????. ???? ?????????? ?????? ???? ??????? ??? ?? ???? ?????.`,
       });
     } else if (totalPnlPct > 20) {
       suggestions.push({
         priority: 'low',
-        title: 'فكّر في تأمين جزء من الأرباح',
-        reason: `محفظتك رابحة ${totalPnlPct.toFixed(1)}% — partial take-profit على المراكز الرابحة بـ 50%+ يخفّض المخاطرة.`,
+        title: '???? ?? ????? ??? ?? ???????',
+        reason: `?????? ????? ${totalPnlPct.toFixed(1)}% � partial take-profit ??? ??????? ??????? ?? 50%+ ????? ????????.`,
       });
     }
 
     if (suggestions.length === 0) {
       suggestions.push({
         priority: 'low',
-        title: 'محفظتك متوازنة',
-        reason: `التنويع ${diversificationScore}/100 والمخاطرة ${riskScore}/100 — وضع جيد. واصل المراقبة الدورية.`,
+        title: '?????? ???????',
+        reason: `??????? ${diversificationScore}/100 ????????? ${riskScore}/100 � ??? ???. ???? ???????? ???????.`,
       });
     }
 

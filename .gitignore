@@ -3,9 +3,9 @@
 skills/
 node_modules/
 
-# Flutter app — separate repo (https://github.com/enmohsen20111975/flutter_investment_App)
+# Flutter app � separate repo (https://github.com/enmohsen20111975/flutter_investment_App)
 # Cloned locally at /home/z/my-project/flutter_app/ for cross-repo sync.
-# NEVER commit it into GLMinvestment repo — it has its own git history.
+# NEVER commit it into GLMinvestment repo � it has its own git history.
 flutter_app/
 
 # Python
@@ -13,7 +13,7 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Databases — NEVER track DB files (production data, can be corrupted by git LFS / line-ending changes)
+# Databases � NEVER track DB files (production data, can be corrupted by git LFS / line-ending changes)
 *.db
 *.db-shm
 *.db-wal
@@ -60,18 +60,18 @@ db/*.seeded
 db/*.broken*
 db/stocks_full_data.json
 
-# DB toolkit audit/backup output directories (v3.66.0) — NEVER push these
+# DB toolkit audit/backup output directories (v3.66.0) � NEVER push these
 db/_audit/
 db/_backups/
 db/_pre_cleanup_backup/
 
-# DB recovery/audit scripts in db/ — local only, never push
+# DB recovery/audit scripts in db/ � local only, never push
 db/recover_*.py
 db/CANONICAL_DB_INVENTORY.md
 db/analysis_tools_audit.json
 db/db_inventory_*.json
 
-# DB modification/migration toolkit — DANGEROUS on VPS, local dev only
+# DB modification/migration toolkit � DANGEROUS on VPS, local dev only
 scripts/db_tools/
 scripts/db_cleanup.py
 scripts/db_migration_tool*.py
@@ -86,15 +86,15 @@ scripts/test-better-sqlite3.js
 scripts/test_better_sqlite3.js
 scripts/analysis_predict_performance.py
 
-# DB cleanup plan docs — local reference only, not for VPS
+# DB cleanup plan docs � local reference only, not for VPS
 Documentation/DB_CLEANUP_*.md
 Documentation/DB_CODE_REFACTOR_*.md
 Documentation/DB_LOCKING_*.md
 
-# DB audit scratch folder — local only
+# DB audit scratch folder � local only
 tmp_audit/
 
-# VPS DB audit data — local only
+# VPS DB audit data � local only
 vps-service/ai_db_audit.json
 
 # Config outputs
@@ -216,7 +216,7 @@ db/engine_status.json
 db/metals_forex_latest.json
 db/metals_forex_status.json
 
-# Shariah scraper HTTP cache (1.8MB, قابل لإعادة التحميل من المصدر)
+# Shariah scraper HTTP cache (1.8MB, ???? ?????? ??????? ?? ??????)
 db/sharia_scrape_latest.json
 db/sharia_scrape_state.json
 
@@ -244,7 +244,7 @@ p0-*.png
 # V40.2 Protection: runtime config (do not commit state)
 db/display_protection.json
 
-# SECURITY: payment & messaging credentials — NEVER commit
+# SECURITY: payment & messaging credentials � NEVER commit
 db/pymob
 db/Telegram_data
 db/*pymob*
@@ -264,14 +264,14 @@ vps-service/backtest_results/*.json
 !data/active_databases_20260817_full.zip
 !**/active_databases_*.zip
 
-# Maker Radar — tracking + paper test data (user-specific, لا ترفع)
+# Maker Radar � tracking + paper test data (user-specific, ?? ????)
 db/maker_radar_tracking.json
 db/paper_test_v2.json
 db/paper_mode_v2.json
 db/production_snapshot_progress.json
-# Radar runtime state — السيرفر بيكتب فيهم كل شوية. كانوا متتبّعين
-# في git، فكانوا بيعملوا conflict مع أي pull لأن النسخة المحلية
-# بتتغير لحظياً. نفس سياسة maker_radar_tracking.json فوق.
+# Radar runtime state � ??????? ????? ???? ?? ????. ????? ????????
+# ?? git? ?????? ??????? conflict ?? ?? pull ??? ?????? ???????
+# ?????? ??????. ??? ????? maker_radar_tracking.json ???.
 db/radar_alerts_state.json
 db/radar_cache_status.json
 scripts/output/paper_test_monitor_*.json
@@ -283,7 +283,7 @@ scripts/output/liquidity_rejections_*.json
 scripts/output/missed_opportunities_*.json
 scripts/output/*.json
 
-# Large database archives & zip packages — keep local, don't push to GitHub
+# Large database archives & zip packages � keep local, don't push to GitHub
 data/*.zip
 data/*.part
 data/*.zip.part
@@ -298,21 +298,22 @@ Documentation.zip
 
 
 
-# Task 35 — runtime-generated scraper status files (should never be tracked)
+# Task 35 � runtime-generated scraper status files (should never be tracked)
 data/multi_market_scraper_status.json
 data/us_scraper_status.json
 data/*_scraper_status.json
 data/*_status.json
 
-# Task 34 — DB backup archives must never be tracked (686 MB of zips bloated git history)
+# Task 34 � DB backup archives must never be tracked (686 MB of zips bloated git history)
 data/db_backup_*.zip
 data/db_backup_*.zip.part
 archive/databases-from-github/*.zip
 # Windows NTFS alternate-data-stream artifacts (Zone.Identifier) from WSL/Windows copies
 *:Zone.Identifier
 
-# GIT-FILES-MANAGER (2026-10-10): إيقاف تتبع ملفات DB backups
-# الملفات موجودة على GitHub بس مش متتبعة بعد كده
+# GIT-FILES-MANAGER (2026-10-10): ????? ???? ????? DB backups
+# ??????? ?????? ??? GitHub ?? ?? ?????? ??? ???
 data/db_backup_*
 data/db_backup*.zip
 data/db_backup*.zip.part
+data/db_snapshot_2026-10-10/db_backup_full.zip
