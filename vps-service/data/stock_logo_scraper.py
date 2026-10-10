@@ -180,16 +180,26 @@ def get_tickers_from_db(market: Optional[str] = None) -> List[Tuple[str, str]]:
 
 # ─── Main scraper ────────────────────────────────────────────────────────────
 
-def scrape_ticker(ticker: str, market: str, dry_run: bool = False) -> str:
+def scrape_ticker(ticker: str, market: str, dry_run: bool = False, force_update: bool = False, max_age_days: int = 30) -> str:
     """
     ينزّل logo لسهم واحد.
-    بيرجّع: 'downloaded' / 'exists' / 'no_logoid' / 'failed'
+    بيرجّع: 'downloaded' / 'exists' / 'no_logoid' / 'failed' / 'updated'
+    
+    ICON-AUTO-FIX (2026-10-10): تحديث تلقائي لو الأيقونة قديمة.
+    - force_update=True: ينزّل من جديد حتى لو موجودة
+    - max_age_days: لو الملف أقدم من X يوم → ينزّل من جديد (default 30 يوم)
     """
     output_path = OUTPUT_DIR / f"{ticker.upper()}.svg"
     
-    # لو الملف موجود ومش فاضي → skip
+    # لو الملف موجود ومش فاضي
     if output_path.exists() and output_path.stat().st_size > 50:
-        return "exists"
+        if not force_update:
+            # شيك على عمر الملف — لو أقدم من max_age_days → حدّث
+            import time as _time
+            file_age_seconds = _time.time() - output_path.stat().st_mtime
+            file_age_days = file_age_seconds / 86400  # seconds → days
+            if file_age_days < max_age_days:
+                return "exists"  # لسه طازة
     
     # TradingView exchange prefix
     exchange = MARKET_EXCHANGE_MAP.get(market, "EGX")
@@ -204,8 +214,9 @@ def scrape_ticker(ticker: str, market: str, dry_run: bool = False) -> str:
         return "downloaded"
     
     # 2. نزّل الـ SVG
+    was_existing = output_path.exists()
     if download_logo_svg(logoid, output_path):
-        return "downloaded"
+        return "updated" if was_existing else "downloaded"
     else:
         return "failed"
 
@@ -216,6 +227,8 @@ def main():
     parser.add_argument("--all-markets", action="store_true", help="كل الأسواق")
     parser.add_argument("--ticker", type=str, help="سهم واحد بس")
     parser.add_argument("--dry-run", action="store_true", help="test بدون تحميل")
+    parser.add_argument("--update", action="store_true", help="تحديث الأيقونات القديمة (force re-download)")
+    parser.add_argument("--max-age-days", type=int, default=30, help="حد عمر الأيقونة قبل التحديث (default: 30 يوم)")
     args = parser.parse_args()
     
     print("=" * 70)
@@ -226,6 +239,8 @@ def main():
     print(f"Delay: {REQUEST_DELAY}s between requests")
     if args.dry_run:
         print("⚠️ DRY-RUN MODE (بدون تحميل فعلي)")
+    if args.update:
+        print(f"🔄 UPDATE MODE: تحديث الأيقونات الأقدم من {args.max_age_days} يوم")
     print()
     
     # جمع tickers
@@ -244,16 +259,20 @@ def main():
     print()
     
     # إحصائيات
-    stats = {"downloaded": 0, "exists": 0, "no_logoid": 0, "failed": 0}
+    stats = {"downloaded": 0, "exists": 0, "no_logoid": 0, "failed": 0, "updated": 0}
     no_logoid_list = []
     failed_list = []
+    updated_list = []
     
     for i, (ticker, market) in enumerate(tickers, 1):
-        result = scrape_ticker(ticker, market, dry_run=args.dry_run)
+        result = scrape_ticker(ticker, market, dry_run=args.dry_run, force_update=args.update, max_age_days=args.max_age_days)
         stats[result] = stats.get(result, 0) + 1
         
         if result == "downloaded":
             print(f"  [{i}/{len(tickers)}] ✅ {ticker} ({market}) — تم التحميل")
+        elif result == "updated":
+            updated_list.append(f"{ticker} ({market})")
+            print(f"  [{i}/{len(tickers)}] 🔄 {ticker} ({market}) — تم التحديث")
         elif result == "exists":
             pass  # skip silent
         elif result == "no_logoid":
@@ -263,7 +282,7 @@ def main():
             print(f"  [{i}/{len(tickers)}] ❌ {ticker} ({market}) — فشل التحميل")
         
         # Rate limiting
-        if not args.dry_run and result == "downloaded":
+        if not args.dry_run and result in ("downloaded", "updated"):
             time.sleep(REQUEST_DELAY)
     
     # تقرير نهائي
@@ -272,10 +291,16 @@ def main():
     print("📊 التقرير النهائي")
     print("=" * 70)
     print(f"  ✅ تم التحميل: {stats['downloaded']}")
-    print(f"  ⏭️  موجود بالفعل: {stats['exists']}")
+    print(f"  🔄 تم التحديث: {stats['updated']}")
+    print(f"  ⏭️  موجود وطازج: {stats['exists']}")
     print(f"  ⚠️  TradingView ماعندوش logo: {stats['no_logoid']}")
     print(f"  ❌ فشل التحميل: {stats['failed']}")
     print(f"  📁 إجمالي الأيقونات في /public/stock-icons/: {len(list(OUTPUT_DIR.glob('*.svg')))}")
+    
+    if updated_list:
+        print(f"\n🔄 أسهم تم تحديث أيقوناتها ({len(updated_list)}):")
+        for t in updated_list[:20]:
+            print(f"   - {t}")
     
     if no_logoid_list:
         print(f"\n⚠️  أسهم بدون logo في TradingView ({len(no_logoid_list)}):")
@@ -291,6 +316,9 @@ def main():
     
     print()
     print("✅ خلص! الأيقونات المتاحة دلوقتي في /public/stock-icons/")
+    print()
+    print("💡 نصيحة: شغّل --update كل أسبوع عشان تحدّث الأيقونات المتغيرة")
+    print("   أو شغّل بدون --update عشان ينزّل الجديدة بس (اللي مش موجودة)")
 
 
 if __name__ == "__main__":

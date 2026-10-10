@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn, safeNum } from '@/lib/utils';
 import { MiniSparkline } from '@/components/ui/mini-sparkline';
+import { StockIcon } from '@/modules/stock-analysis/components/StockIcon';
 import type { StockMini } from '@/types';
 
 function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser' }) {
@@ -22,21 +23,25 @@ function MoverItem({ stock, type }: { stock: StockMini; type: 'gainer' | 'loser'
           : 'hover:bg-red-50/60 dark:hover:bg-red-950/20'
       )}
     >
-      {/* Icon */}
-      <div
+      {/* Stock Icon — ICON-AUTO-FIX (2026-10-10): أستبدلنا Arrow icon بـ StockIcon */}
+      <StockIcon
+        ticker={stock.ticker}
+        name={stock.name_ar}
+        sector={stock.sector}
+        size="sm"
         className={cn(
-          'flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center',
+          'flex-shrink-0 ring-2',
           isGainer
-            ? 'bg-emerald-100 dark:bg-emerald-900/40'
-            : 'bg-red-100 dark:bg-red-900/40'
+            ? 'ring-emerald-200 dark:ring-emerald-800/50'
+            : 'ring-red-200 dark:ring-red-800/50'
         )}
-      >
-        {isGainer ? (
-          <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-        ) : (
-          <ArrowDownRight className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-        )}
-      </div>
+      />
+      {/* Direction badge (صغير جنب الأيقونة) */}
+      {isGainer ? (
+        <ArrowUpRight className="w-3 h-3 text-emerald-500 dark:text-emerald-400 -mr-1" />
+      ) : (
+        <ArrowDownRight className="w-3 h-3 text-red-600 dark:text-red-400 -mr-1" />
+      )}
 
       {/* Ticker & Name */}
       <div className="flex-1 min-w-0">
