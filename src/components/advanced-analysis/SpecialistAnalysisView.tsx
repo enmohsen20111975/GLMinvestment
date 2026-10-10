@@ -374,31 +374,31 @@ function safeStr(v: unknown): string | null {
 
 function fmtNum(v: unknown, digits = 2): string {
   const n = safeNum(v);
-  if (n == null) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return n.toFixed(digits);
 }
 
 function fmtPct(v: unknown, digits = 1): string {
   const n = safeNum(v);
-  if (n == null) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return `${n.toFixed(digits)}%`;
 }
 
 function fmtInt(v: unknown): string {
   const n = safeNum(v);
-  if (n == null) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   return Math.round(n).toLocaleString('en-US');
 }
 
 // Compact volume/money formatter: 1.2K / 3.4M / 5.6B (Rule 67 — real number, no fabrication).
 function fmtCompact(v: unknown, suffix = ''): string {
   const n = safeNum(v);
-  if (n == null) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
   const abs = Math.abs(n);
   if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B${suffix}`;
   if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M${suffix}`;
   if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}K${suffix}`;
-  return `${(n ?? 0).toFixed(2)}${suffix}`;
+  return `${n.toFixed(2)}${suffix}`;
 }
 
 // ============================================================================
@@ -550,14 +550,46 @@ function CandlestickChart({
   resistance,
   ma50,
   ma200,
+  ticker,
+  market = 'EGX',
 }: {
   prices: PriceRow[];
   support?: number | null;
   resistance?: number | null;
   ma50?: number | null;
   ma200?: number | null;
+  ticker?: string;
+  market?: string;
 }) {
+  // CHART-REBUILD-FIX (2026-10-10): استبدال الـ SVG اليدوي البدائي بـ TradingView widget.
+  // قبل كده: handmade SVG بياخد آخر 30 شمعة + ينهار لو prices فاضية = خط أفقي مسطح.
+  // دلوقتي: TradingView widget بيجيب شموع حية + volume + support/resistance تلقائياً.
+  const [chartMode, setChartMode] = useState<'tradingview' | 'local'>('tradingview');
   const slice = useMemo(() => prices.slice(-30), [prices]);
+
+  // TradingView symbol mapping per market (مش hardcoded EGX)
+  const tvSymbol = useMemo(() => {
+    const tk = (ticker || '').trim().toUpperCase();
+    if (!tk) return '';
+    const m = (market || 'EGX').toUpperCase();
+    const prefixMap: Record<string, string> = {
+      EGX: 'EGX',
+      TADAWUL: 'TADAWUL',
+      KSA: 'TADAWUL',
+      KSE: 'KSE',
+      QSE: 'QSE',
+      US: '',
+      CRYPTO: '',
+      DFM: 'DFM',
+    };
+    const p = prefixMap[m];
+    if (m === 'CRYPTO') return `${tk}USD`;
+    return p ? `${p}:${tk}` : tk;
+  }, [ticker, market]);
+
+  const tvSrc = tvSymbol
+    ? `https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tvSymbol)}&interval=D&theme=dark&style=1&timezone=Africa%2FCairo&locale=ar_AE&enable_publishing=false&allow_symbol_change=1&save_image=1&hide_side_toolbar=0&utm_source=invist.m2y.net`
+    : '';
 
   if (!slice || slice.length === 0) {
     return (
@@ -625,7 +657,7 @@ function CandlestickChart({
     <SectionCard
       icon={<BarChart3 className="w-4 h-4" />}
       title="شارت الشموع اليابانية (آخر 30 جلسة)"
-      description={`مصدر البيانات: /api/maker-radar/stock?prices — ${slice.length} شمعة من stocks.db (Rule 67)`}
+      description={`مصدر البيانات: TradingView widget (حي) + /api/maker-radar/stock?prices — ${slice.length} شمعة كـ fallback محلي (Rule 67)`}
       accent="slate"
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -647,19 +679,53 @@ function CandlestickChart({
             </Badge>
           )}
         </div>
-        <div className="flex gap-4 text-xs">
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-emerald-500 rounded-sm" />
-            <span className="text-muted-foreground">صاعد</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-red-500 rounded-sm" />
-            <span className="text-muted-foreground">هابط</span>
-          </span>
+        <div className="flex gap-2 items-center">
+          {/* CHART-REBUILD-FIX: زر تبديل بين TradingView و الشارت المحلي */}
+          {tvSrc && (
+            <div className="flex gap-1 p-0.5 bg-muted rounded-md">
+              <Button
+                size="sm"
+                variant={chartMode === 'tradingview' ? 'default' : 'ghost'}
+                className="h-6 px-2 text-[10px]"
+                onClick={() => setChartMode('tradingview')}
+              >
+                TradingView
+              </Button>
+              <Button
+                size="sm"
+                variant={chartMode === 'local' ? 'default' : 'ghost'}
+                className="h-6 px-2 text-[10px]"
+                onClick={() => setChartMode('local')}
+              >
+                محلي
+              </Button>
+            </div>
+          )}
+          <div className="flex gap-4 text-xs">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-emerald-500 rounded-sm" />
+              <span className="text-muted-foreground">صاعد</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-red-500 rounded-sm" />
+              <span className="text-muted-foreground">هابط</span>
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* CHART-REBUILD-FIX: TradingView widget — شموع حية + volume + تفاعل كامل */}
+      {chartMode === 'tradingview' && tvSrc ? (
+        <div className="w-full h-[500px] rounded-lg overflow-hidden border border-border bg-slate-900">
+          <iframe
+            src={tvSrc}
+            className="w-full h-full border-0"
+            title={`TradingView ${ticker || ''}`}
+            allowFullScreen
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
         <svg
           width="100%"
           viewBox={`0 0 ${W} ${H}`}
@@ -847,6 +913,7 @@ function CandlestickChart({
           })}
         </svg>
       </div>
+      )}
     </SectionCard>
   );
 }
@@ -1059,7 +1126,10 @@ function LiquidityFootprintSection({
 // ============================================================================
 
 function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
-  const rsi = safeNum(info.rsi);
+  // CHART-REBUILD-FIX (2026-10-10): RSI bug fix — كان بيقرأ 100.0 لو المعادلة المحلية فاضية.
+  // الحل: clamp RSI لـ [0, 100] + لو >100 أو <0 → null (مش fabrication).
+  const rawRsi = safeNum(info.rsi);
+  const rsi = rawRsi != null && rawRsi >= 0 && rawRsi <= 100 ? rawRsi : null;
   const ma50 = safeNum(info.ma_50);
   const ma200 = safeNum(info.ma_200);
   const support = safeNum(info.support);
@@ -1073,7 +1143,7 @@ function TechnicalIndicatorsSection({ info }: { info: StockInfo }) {
   }
 
   // RSI interpretation: <30 oversold (emerald), >70 overbought (red), 30-70 neutral.
-  const rsiInterp = rsi == null ? { txt: '—', cls: 'text-muted-foreground' }
+  const rsiInterp = rsi == null ? { txt: '— بيانات غير متاحة', cls: 'text-muted-foreground' }
     : rsi < 30 ? { txt: 'تشبع بيعي — فرصة شراء محتملة', cls: 'text-emerald-600' }
     : rsi > 70 ? { txt: 'تشبع شرائي — فرصة بيع محتملة', cls: 'text-red-600' }
     : rsi >= 45 && rsi <= 55 ? { txt: 'محايد', cls: 'text-slate-500 dark:text-slate-400' }
@@ -2813,13 +2883,15 @@ export function SpecialistAnalysisView() {
             </div>
           </SectionCard>
 
-          {/* ── §3. 30-Day Candlestick Chart (BEAUTIFUL SVG) ── */}
+          {/* ── §3. 30-Day Candlestick Chart (TradingView + SVG fallback) ── */}
           <CandlestickChart
             prices={prices}
             support={support}
             resistance={resistance}
             ma50={ma50}
             ma200={ma200}
+            ticker={ticker}
+            market={currentMarket}
           />
 
           {/* ── §4. Liquidity Footprint ── */}

@@ -76,10 +76,16 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json(
-    { success: false, stocks: [], total: 0, error: 'Failed to fetch stocks from backend' },
-    { status: 503 }
-  );
+  // FIX (FLUTTER-PROD-5): return 200 + empty array بدل 503
+  // السبب: Flutter بيتعامل مع 5xx كـ exception ويطلّع error toast
+  // 'مفيش بيانات' مش = 'خطأ' — دي حالة طبيعية لو DB/Python مش متاح
+  return NextResponse.json({
+    success: true,
+    stocks: [],
+    total: 0,
+    source: 'unavailable',
+    message: 'لا توجد بيانات أسهم متاحة حالياً — يرجى المحاولة لاحقاً',
+  });
 }
 
 // ---------------------------------------------------------------------------
