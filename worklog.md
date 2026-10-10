@@ -69111,3 +69111,50 @@ Stage Summary:
 - ⚠️ trading-chart محتاج إثراء (شغل المبرمج التاني القادم حسب البرومبت)
 - ⚠️ Python backend (8010) واقف — مؤثر على endpoints بتاعة Python بس
 - commits: 1e7b44ed (إصلاحات) + 55d0890b (merge) مرفوعة على GitHub
+
+---
+Task ID: RECOVERY-1
+Agent: Main Agent (Z.ai Code)
+Task: استرجاع شغل ضاع بسبب force pushes + git reset
+
+اللي حصل:
+- فيه 4 مبرمجين بـ شتغلوا على نفس الريبو
+- حصلت force pushes متكررة منهم على origin/main
+- أنا عملت git reset --hard origin/main عشان أدمج تحديثاتهم
+- ده مسح شغلي (CHART-ENRICH + ARCH-OPTION-2) من HEAD + remote
+
+اللي ضاع:
+1. CHART-ENRICH (ProfessionalTradingChart.tsx) — 730 سطر جديد
+   - AI Executive Stock Story panel
+   - 4 tabs (WhoIsBuying + MoneyFlow + TrapDetector + SMCKeyLevels)
+   - ملء الشرطات الفارغة في أسباب القرار
+2. ARCH-OPTION-2 (7 ملفات) — 1057 سطر جديد
+   - market-profile.ts (743 سطر) — MarketProfile TS engine
+   - expert-analysis.ts (MarketProfile-aware)
+   - dynamic-analysis-engine.ts (MarketProfile-aware)
+   - gate-analyzer.ts (MarketProfile-aware)
+   - 3 API routes (unified + v2/config + stocks/[ticker]/expert-analysis)
+
+الاسترجاع:
+- لقيت commits بتوعي في git reflog (024dbfe لـ CHART-ENRICH)
+- لقيت ARCH-OPTION-2 في backup-arch-option-2 branch
+- استرجعت كل الملفات وحفظتها على /tmp/recovery
+- عملت git reset --hard origin/main للدمج مع آخر تحديثات المبرمجين
+- رجّعت الملفات + عملت commit + push
+
+التحقق النهائي (كل التعديلات على origin/main):
+1. CHART-ENRICH: 22 reference للـ panels + aiStory ✅
+2. ARCH-OPTION-2: market-profile.ts 743 سطر ✅
+3. FILTERS-1: 14 reference للفلاتر ✅
+4. FILTERS-2: 6 reference لـ normalizeMarket ✅
+5. FLUTTER-PROD-4: 2 reference لـ updated_at: new Date ✅
+6. canonical-signal: 6 reference لـ SIGNAL_THRESHOLDS ✅
+
+الدرس المستفاد:
+- لازم أعمل backup branch قبل أي git reset --hard
+- لازم أتأكد إن شغلي موجود في reflog قبل ما أمسحه
+- لو فيه force pushes متكررة، أعمل fetch + cherry-pick بدل reset --hard
+
+commits:
+- 11432ce: استرجاع CHART-ENRICH
+- 86fc23e: استرجاع ARCH-OPTION-2
