@@ -1,18 +1,18 @@
 /**
  * POST /api/ai/analyze-stock
  * ==========================
- * Flutter compat endpoint � ????? AI ?????.
+ * Flutter compat endpoint — تحليل AI للسهم.
  *
  * Body: { ticker: string, market?: string }
  *
- * ????????????:
- *   1. ?? ??? Python maestro ??? :8010 ? proxy ?? (???? ?????)
- *   2. ?? Python ?????/??? ? ???? ?? predictions.db:
- *      a. stored_analyses (??? ????? Maestro ??????? ?????)
- *      b. predictions (??? ?????? ????? + ????????)
- *   3. ?? ???? ?????? ??????? ? {success: false, error: 'no analysis available'}
+ * الاستراتيجية:
+ *   1. لو فيه Python maestro على :8010 → proxy له (أفضل تحليل)
+ *   2. لو Python مفقود/فشل → اقرأ من predictions.db:
+ *      a. stored_analyses (آخر تحليل Maestro مُخزَّن للسهم)
+ *      b. predictions (آخر توقعات للسهم + إحصائيات)
+ *   3. لو مفيش بيانات إطلاقاً → {success: false, error: 'no analysis available'}
  *
- * ???: ?? ????? mock data ???????.
+ * مهم: لا يُرجع mock data إطلاقاً.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -104,7 +104,7 @@ function fetchStoredAnalysis(db: any, ticker: string): StoredAnalysisRow | null 
   try {
     // FRESHNESS-CHECK (Task PHASE-3, Rule 72)
     // TODO: Add `AND updated_at >= datetime('now', '-2 days')` to filter stale analyses.
-    //       Currently a row from 2 weeks ago appears "alive" � users see old predictions.
+    //       Currently a row from 2 weeks ago appears "alive" — users see old predictions.
     const row = db.prepare(`
       SELECT * FROM stored_analyses WHERE ticker = ? COLLATE NOCASE LIMIT 1
     `).get(ticker) as StoredAnalysisRow | undefined;
@@ -175,7 +175,7 @@ function computePredictionStats(preds: PredictionRow[]) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth ????? (??? ????? /api/ai/chat)
+    // Auth مطلوب (نفس سياسة /api/ai/chat)
     const { userId } = await getSessionUserId();
     if (!userId) {
       return NextResponse.json(
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
     const market = String(body.market || 'EGX').toUpperCase();
     const marketArabic = marketCodeToArabic(market);
 
-    // 1) ???? Python maestro ?????
+    // 1) جرّب Python maestro أولاً
     const pyResult = await tryPythonProxy(ticker, market);
     if (pyResult && (pyResult.success !== false || pyResult.maestro_score || pyResult.signal)) {
       return NextResponse.json({
@@ -208,19 +208,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2) fallback ??? predictions.db (stored_analyses + predictions)
+    // 2) fallback إلى predictions.db (stored_analyses + predictions)
     if (!dbExists(PREDICTIONS_DB_PATH)) {
-      // FIX (FLUTTER-PROD-4): return 200 + analysis: null ??? 404.
-      // ?????: Flutter app ??????? ?? 4xx/5xx ?? exception ?????? error toast.
-      // ??? "???? ????? ????" ?? ??? � ?? ???? ?????? ??? ????? ????.
-      // Rule 27 (NO-FAKE-DATA): analysis: null (?? fabricated).
+      // FIX (FLUTTER-PROD-4): return 200 + analysis: null بدل 404.
+      // السبب: Flutter app بيتعامل مع 4xx/5xx كـ exception ويطلّع error toast.
+      // لكن "مفيش تحليل متاح" مش خطأ — دي حالة طبيعية لما السهم جديد.
+      // Rule 27 (NO-FAKE-DATA): analysis: null (مش fabricated).
       return NextResponse.json({
         success: true,
         ticker,
         market,
         source: 'unavailable',
         analysis: null,
-        message: '?? ???? ????? AI ???? ?????? ???? ????? � ???? ??????',
+        message: 'لا يوجد تحليل AI متاح حالياً لهذا السهم — جرّب لاحقاً',
       }, { status: 200 });
     }
 
@@ -229,14 +229,14 @@ export async function POST(req: NextRequest) {
       const Database = require('better-sqlite3');
       db = new Database(PREDICTIONS_DB_PATH, { readonly: true });
     } catch (e) {
-      // FIX (FLUTTER-PROD-4): 200 ??? 500 � ??? ?????? ???
+      // FIX (FLUTTER-PROD-4): 200 بدل 500 — نفس المنطق فوق
       return NextResponse.json({
         success: true,
         ticker,
         market,
         source: 'unavailable',
         analysis: null,
-        message: '????? ??? ????? ?????? ?????????',
+        message: 'تعذّر فتح قاعدة بيانات التحليلات',
       }, { status: 200 });
     }
 
@@ -245,18 +245,18 @@ export async function POST(req: NextRequest) {
     db.close();
 
     if (!stored && recentPreds.length === 0) {
-      // FIX (FLUTTER-PROD-4): 200 ??? 404 � ???? ?????? ?? = ???
+      // FIX (FLUTTER-PROD-4): 200 بدل 404 — مفيش بيانات مش = خطأ
       return NextResponse.json({
         success: true,
         ticker,
         market,
         source: 'empty',
         analysis: null,
-        message: '?? ???? ????? ?? ?????? ???? ????? ??????',
+        message: 'لا يوجد تحليل أو توقعات لهذا السهم حالياً',
       }, { status: 200 });
     }
 
-    // ????? ????? ?????? ?? data_engine.db.stocks
+    // قراءة السعر الحالي من data_engine.db.stocks
     let currentPrice = 0;
     let stockName: string | null = null;
     try {
@@ -271,7 +271,7 @@ export async function POST(req: NextRequest) {
 
     const stats = computePredictionStats(recentPreds);
 
-    // ?? ??? analysis_json ?? stored_analyses? ???? ?? full_analysis
+    // لو فيه analysis_json في stored_analyses، رجعه كـ full_analysis
     let fullAnalysis: unknown = null;
     if (stored?.analysis_json) {
       try {

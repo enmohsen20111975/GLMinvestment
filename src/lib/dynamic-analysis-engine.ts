@@ -1,15 +1,15 @@
 /**
- * Dynamic Analysis Engine � Gemini Strategy Implementation
+ * Dynamic Analysis Engine — Gemini Strategy Implementation
  * =========================================================
- * ???? ??????? ?????????? ???????
+ * محرك التحليل الديناميكي المتكيف
  *
- * "????? ???? ?? ?????? ???????? ????????? ?? ??????? ????"
+ * "السوق كائن حي بيتحرك بالسيولة والنفسية، مش بكتالوج ثابت"
  *
  * This engine implements the 4 core Gemini proposals:
- * 1. Dynamic Parameter Matrix � RSI/ATR/MA periods adapt to Regime + Volatility + Sector
- * 2. ATR-Aware Structural Targets � Stop & Target based on ATR multipliers + S/R + Fib extensions
- * 3. Adaptive Weights Engine � Component weights shift based on market regime
- * 4. BB Squeeze Detection + Position Override � Squeeze triggers momentum boost; profitable positions override to TAKE_PROFIT
+ * 1. Dynamic Parameter Matrix — RSI/ATR/MA periods adapt to Regime + Volatility + Sector
+ * 2. ATR-Aware Structural Targets — Stop & Target based on ATR multipliers + S/R + Fib extensions
+ * 3. Adaptive Weights Engine — Component weights shift based on market regime
+ * 4. BB Squeeze Detection + Position Override — Squeeze triggers momentum boost; profitable positions override to TAKE_PROFIT
  *
  * Design: Pure functions, no DB, no network. Can be called from maestro.ts, gate-analyzer.ts,
  * or any API route.
@@ -26,7 +26,7 @@ export type SqueezeLevel = 'NONE' | 'NARROWING' | 'SQUEEZE' | 'EXTREME_SQUEEZE';
 export type SignalType = 'BUY' | 'SELL' | 'HOLD' | 'TAKE_PROFIT' | 'STRONG_BUY' | 'STRONG_SELL';
 
 export interface DynamicParams {
-  // RSI thresholds � move based on regime
+  // RSI thresholds — move based on regime
   rsiOverbought: number;
   rsiOversold: number;
   rsiPeriod: number;
@@ -108,27 +108,27 @@ export interface DynamicAnalysisResult {
 // 1. DYNAMIC PARAMETER MATRIX
 // ============================================================================
 
-// ---------------------------------------------------------------------------
-// Sector classification � EGX + US + TADAWUL sectors (Rule 29 unified system).
-// ??? ???: sector lists ???? EGX-only ? ?? US sector (????? "Information Technology")
-// ?? ???????? ? fallback MEDIUM = ????? ??? ????.
-// Rule 27 fix: ????? US/Global sectors ???? ????? ?? Yahoo Finance + Finnhub.
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════
+// Sector classification — EGX + US + TADAWUL sectors (Rule 29 unified system).
+// قبل كده: sector lists كانت EGX-only → أي US sector (مثلاً "Information Technology")
+// ما بيتطابقش → fallback MEDIUM = تحليل غير دقيق.
+// Rule 27 fix: أضفنا US/Global sectors اللي بتظهر في Yahoo Finance + Finnhub.
+// ═══════════════════════════════════════════════════════════════════════════
 const FAST_SECTORS = [
   // EGX
-  'technology', 'tech', '?????????', 'pharma', '?????', 'financial', '?????', 'banking', '????', 'services', '?????', 'telecom', '???????',
+  'technology', 'tech', 'تكنولوجيا', 'pharma', 'أدوية', 'financial', 'مصرفي', 'banking', 'بنوك', 'services', 'خدمات', 'telecom', 'اتصالات',
   // US/Global (Yahoo Finance / Finnhub sector names)
   'information technology', 'software', 'semiconductor', 'internet', 'fintech', 'biotechnology', 'biotech',
   // TADAWUL
-  'energy', '????', 'materials', '????', 'commodity', '???',
+  'energy', 'طاقة', 'materials', 'مواد', 'commodity', 'سلع',
 ];
 const SLOW_SECTORS = [
   // EGX
-  'utilities', '?????', 'real estate', '??????', 'consumer staples', '??? ?????????', 'cement', '?????', 'construction', '????', 'food', '?????', 'healthcare', '????? ????',
+  'utilities', 'مرافق', 'real estate', 'عقارات', 'consumer staples', 'سلع استهلاكية', 'cement', 'أسمنت', 'construction', 'بناء', 'food', 'أغذية', 'healthcare', 'رعاية صحية',
   // US/Global
   'consumer defensive', 'utilities', 'real estate', 'communication services',
   // TADAWUL
-  'insurance', '?????',
+  'insurance', 'تأمين',
 ];
 
 export function classifySectorSpeed(sector: string): SectorSpeed {
@@ -199,11 +199,11 @@ export function getDynamicParams(
   // ---- REGIME ADJUSTMENTS ----
   switch (regime) {
     case 'STRONG_BULL':
-      // In strong bull: lower overbought (70), higher oversold (38) � strong stocks don't reach 30
+      // In strong bull: lower overbought (70), higher oversold (38) — strong stocks don't reach 30
       p.rsiOverbought = Math.max(55, p.rsiOverbought - 5);  // 65
       p.rsiOversold = Math.max(0, p.rsiOversold + 8);        // 38
-      p.minRiskReward = Math.max(0.8, p.minRiskReward - 0.5); // 1.0 � more aggressive entries
-      p.atrStopMultiplier = Math.max(1.2, p.atrStopMultiplier - 0.3); // 1.5 � tighter stops in trend
+      p.minRiskReward = Math.max(0.8, p.minRiskReward - 0.5); // 1.0 — more aggressive entries
+      p.atrStopMultiplier = Math.max(1.2, p.atrStopMultiplier - 0.3); // 1.5 — tighter stops in trend
       break;
     case 'WEAK_BULL':
       p.rsiOverbought = Math.max(60, p.rsiOverbought - 3);  // 67
@@ -213,7 +213,7 @@ export function getDynamicParams(
     case 'RANGE':
       // In range: standard thresholds, but higher R:R requirement
       p.minRiskReward = Math.max(1.8, p.minRiskReward + 0.3); // 1.8
-      p.atrStopMultiplier = Math.max(1.5, p.atrStopMultiplier + 0.2); // 2.0 � wider stops for whipsaws
+      p.atrStopMultiplier = Math.max(1.5, p.atrStopMultiplier + 0.2); // 2.0 — wider stops for whipsaws
       break;
     case 'WEAK_BEAR':
       p.rsiOverbought = Math.min(90, p.rsiOverbought + 5);   // 75
@@ -224,8 +224,8 @@ export function getDynamicParams(
       // In strong bear: high overbought threshold (80), lower oversold (22)
       p.rsiOverbought = Math.min(95, p.rsiOverbought + 10);  // 80
       p.rsiOversold = Math.max(0, p.rsiOversold - 8);         // 22
-      p.minRiskReward = Math.min(10, p.minRiskReward + 0.5);  // 2.0 � very strict
-      p.atrStopMultiplier = Math.max(1.5, p.atrStopMultiplier + 0.5); // 2.3 � very wide stops
+      p.minRiskReward = Math.min(10, p.minRiskReward + 0.5);  // 2.0 — very strict
+      p.atrStopMultiplier = Math.max(1.5, p.atrStopMultiplier + 0.5); // 2.3 — very wide stops
       break;
   }
 
@@ -234,8 +234,8 @@ export function getDynamicParams(
     case 'VERY_HIGH':
       p.swingLookback = Math.min(100, p.swingLookback + 8);   // +8
       p.atrPeriod = Math.min(30, p.atrPeriod + 4);            // +4
-      p.rsiPeriod = Math.min(28, p.rsiPeriod + 4);            // +4 � smoother RSI
-      p.atrStopMultiplier = Math.max(1.5, p.atrStopMultiplier + 0.7); // +0.7 � wide stops
+      p.rsiPeriod = Math.min(28, p.rsiPeriod + 4);            // +4 — smoother RSI
+      p.atrStopMultiplier = Math.max(1.5, p.atrStopMultiplier + 0.7); // +0.7 — wide stops
       p.atrTargetMultiplier = Math.max(2.0, p.atrTargetMultiplier + 0.5);
       p.trailingStopPct = Math.min(0.15, p.trailingStopPct + 0.03);
       break;
@@ -264,12 +264,12 @@ export function getDynamicParams(
   // ---- SECTOR SPEED ADJUSTMENTS ----
   switch (sectorSpeed) {
     case 'FAST':
-      p.swingLookback = Math.max(5, p.swingLookback - 3);     // -3 � faster reaction
+      p.swingLookback = Math.max(5, p.swingLookback - 3);     // -3 — faster reaction
       p.atrPeriod = Math.max(5, p.atrPeriod - 2);             // -2
       p.rsiPeriod = Math.max(7, p.rsiPeriod - 2);             // -2
       break;
     case 'SLOW':
-      p.swingLookback = Math.min(100, p.swingLookback + 4);   // +4 � more patience
+      p.swingLookback = Math.min(100, p.swingLookback + 4);   // +4 — more patience
       p.atrPeriod = Math.min(25, p.atrPeriod + 2);            // +2
       p.rsiPeriod = Math.min(25, p.rsiPeriod + 2);            // +2
       break;
@@ -286,7 +286,7 @@ export function getDynamicParams(
 /**
  * Detect Bollinger Band Squeeze.
  * BB Squeeze = BB Width is significantly below its recent average.
- * When squeeze is active, expect a big move (explosion) � direction is unknown
+ * When squeeze is active, expect a big move (explosion) — direction is unknown
  * but momentum/volume will tell.
  *
  * Formula:
@@ -303,7 +303,7 @@ export function detectBBSqueeze(
     bbWidthTrend: 'stable',
     avgWidth20: 0,
     squeezeScore: 0,
-    descriptionAr: '?????? ??? ?????',
+    descriptionAr: 'بيانات غير كافية',
   };
 
   if (bbWidthPct === null || bbWidthPct <= 0) return empty;
@@ -335,19 +335,19 @@ export function detectBBSqueeze(
   if (ratio < 0.4) {
     level = 'EXTREME_SQUEEZE';
     squeezeScore = 95;
-    descriptionAr = '?????? ?????? ???? � ?????? ???? ???? ????';
+    descriptionAr = 'انضغاط بولنجر شديد — انفجار سعري وشيك جداً';
   } else if (ratio < 0.6) {
     level = 'SQUEEZE';
     squeezeScore = 75;
-    descriptionAr = '?????? ?????? � ?????? ???? ???? ?????';
+    descriptionAr = 'انضغاط بولنجر — احتمال حركة قوية قريبة';
   } else if (ratio < 0.8 && trend === 'narrowing') {
     level = 'NARROWING';
     squeezeScore = 50;
-    descriptionAr = '?????? ?????? ???????? � ???? ?????';
+    descriptionAr = 'النطاق بيتضيق تدريجياً — راقب الكسر';
   } else {
     level = 'NONE';
     squeezeScore = Math.round(Math.max(0, (1 - ratio) * 50));
-    descriptionAr = '?? ???? ??????';
+    descriptionAr = 'لا يوجد انضغاط';
   }
 
   // Boost score if actively narrowing
@@ -484,7 +484,7 @@ export function calculateStructuralTargets(options: {
     }
     // If no resistance ahead (Blue Sky Breakout), use Fibonacci 1.618
     if (targetSource === 'atr_multiple' && !resistance && farResistance === null && recentSwingHighs.length === 0) {
-      // Use the most recent significant swing low ? high range
+      // Use the most recent significant swing low → high range
       if (recentSwingLows.length > 0 && recentSwingHighs.length > 0) {
         const lastLow = Math.min(...recentSwingLows.slice(-3));
         const lastHigh = Math.max(...recentSwingHighs.slice(-3));
@@ -556,9 +556,9 @@ export function calculateStructuralTargets(options: {
  * Calculate analysis component weights based on market regime.
  * In different market conditions, different indicators are more/less important.
  *
- * STRONG_BULL: Momentum + Volume drive ? higher technical/momentum weights
- * RANGE: Fundamental + S/R drive ? higher fundamental/SR weights
- * STRONG_BEAR: Risk management dominates ? higher risk weight
+ * STRONG_BULL: Momentum + Volume drive → higher technical/momentum weights
+ * RANGE: Fundamental + S/R drive → higher fundamental/SR weights
+ * STRONG_BEAR: Risk management dominates → higher risk weight
  */
 export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
   const REGIME_CONFIGS: Record<StockRegime, {
@@ -576,10 +576,10 @@ export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
         bollingerBands: 0.07,
         risk: 0.05,
         regime: 'STRONG_BULL',
-        regimeLabel: '???? ??? � ??????? ?????? ??? ?????',
+        regimeLabel: 'صاعد قوي — السيولة والزخم هما الملك',
         regimeMultiplier: 1.2,
       },
-      label: '???? ???',
+      label: 'صاعد قوي',
       multiplier: 1.2,
     },
     WEAK_BULL: {
@@ -592,10 +592,10 @@ export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
         bollingerBands: 0.08,
         risk: 0.07,
         regime: 'WEAK_BULL',
-        regimeLabel: '???? ???? � ???? ?? ????? ??? ??????',
+        regimeLabel: 'صاعد ضعيف — تأكد من الدعم قبل الدخول',
         regimeMultiplier: 1.1,
       },
-      label: '???? ????',
+      label: 'صاعد ضعيف',
       multiplier: 1.1,
     },
     RANGE: {
@@ -608,10 +608,10 @@ export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
         bollingerBands: 0.13,
         risk: 0.08,
         regime: 'RANGE',
-        regimeLabel: '???? � ????? ????????? ????????? ??? ??????',
+        regimeLabel: 'عرضي — الدعم والمقاومة والبولنجر هما المرجع',
         regimeMultiplier: 0.9,
       },
-      label: '????',
+      label: 'عرضي',
       multiplier: 0.9,
     },
     WEAK_BEAR: {
@@ -624,10 +624,10 @@ export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
         bollingerBands: 0.10,
         risk: 0.16,
         regime: 'WEAK_BEAR',
-        regimeLabel: '???? ???? � ??? ?? ?????? ???????????',
+        regimeLabel: 'هابط ضعيف — حذر من الفخاخ والارتدادات',
         regimeMultiplier: 0.8,
       },
-      label: '???? ????',
+      label: 'هابط ضعيف',
       multiplier: 0.8,
     },
     STRONG_BEAR: {
@@ -640,10 +640,10 @@ export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
         bollingerBands: 0.10,
         risk: 0.30,
         regime: 'STRONG_BEAR',
-        regimeLabel: '???? ??? � ????? ??????? ????? ????????? ????',
+        regimeLabel: 'هابط قوي — إدارة المخاطر أولاً والابتعاد أفضل',
         regimeMultiplier: 0.6,
       },
-      label: '???? ???',
+      label: 'هابط قوي',
       multiplier: 0.6,
     },
   };
@@ -662,8 +662,8 @@ export function getAdaptiveWeights(regime: StockRegime): AdaptiveWeights {
  * flip the signal to TAKE_PROFIT regardless of what the model says.
  *
  * Example from Gemini proposal:
- * "?? ????? ???? ??? 15% ???? RSI ????? ???????? ???? ??????? ?? TAKE_PROFIT
- *  ????? ??? ?? ???? ????? BUY ????? ??? ????? ??????"
+ * "لو السهم جايب ربح 15% والـ RSI تضخم، المنظومة تقلب الإشارة لـ TAKE_PROFIT
+ *  فوراً بدل ما تفضل تقوله BUY بناءً على الزخم القديم"
  */
 export function applyPositionOverride(options: {
   currentSignal: SignalType;
@@ -700,7 +700,7 @@ export function applyPositionOverride(options: {
         originalSignal: currentSignal,
         overrideSignal: 'TAKE_PROFIT',
         reason: `Position +${userPositionPnl.toFixed(1)}% with RSI ${rsi.toFixed(0)} >= ${rsiOverbought} (overbought)`,
-        reasonAr: `?????? ???? ${userPositionPnl.toFixed(1)}% ???? RSI ${rsi.toFixed(0)} ?? ???? ????? � ??? ?????`,
+        reasonAr: `المركز رابح ${userPositionPnl.toFixed(1)}% والـ RSI ${rsi.toFixed(0)} في تشبع شرائي — جني أرباح`,
       };
     }
 
@@ -711,7 +711,7 @@ export function applyPositionOverride(options: {
         originalSignal: currentSignal,
         overrideSignal: 'TAKE_PROFIT',
         reason: `Position +${userPositionPnl.toFixed(1)}% but trend reversed to BEARISH`,
-        reasonAr: `?????? ???? ${userPositionPnl.toFixed(1)}% ??? ??????? ????? ???? � ??? ????? ?????`,
+        reasonAr: `المركز رابح ${userPositionPnl.toFixed(1)}% لكن الاتجاه انعكس هابط — جني أرباح فوراً`,
       };
     }
 
@@ -722,7 +722,7 @@ export function applyPositionOverride(options: {
         originalSignal: currentSignal,
         overrideSignal: 'TAKE_PROFIT',
         reason: `Position +${userPositionPnl.toFixed(1)}% but price ${priceVsMA20.toFixed(1)}% below MA20`,
-        reasonAr: `?????? ???? ${userPositionPnl.toFixed(1)}% ??? ????? ??? ??? ??????? � ??? ?????`,
+        reasonAr: `المركز رابح ${userPositionPnl.toFixed(1)}% لكن السعر نزل تحت المتوسط — جني أرباح`,
       };
     }
 
@@ -733,18 +733,18 @@ export function applyPositionOverride(options: {
         originalSignal: currentSignal,
         overrideSignal: 'TAKE_PROFIT',
         reason: `Position +${userPositionPnl.toFixed(1)}% with BB width ${bollingerWidthPct.toFixed(1)}% (exhaustion)`,
-        reasonAr: `?????? ???? ${userPositionPnl.toFixed(1)}% ????????? ???? ???? (?????) � ??? ?????`,
+        reasonAr: `المركز رابح ${userPositionPnl.toFixed(1)}% والبولنجر متسع جداً (إرهاق) — جني أرباح`,
       };
     }
 
-    // Rule 5: Huge profit (>20%) � always suggest taking at least partial profit
+    // Rule 5: Huge profit (>20%) — always suggest taking at least partial profit
     if (userPositionPnl >= 20 && currentSignal !== 'TAKE_PROFIT') {
       return {
         shouldOverride: true,
         originalSignal: currentSignal,
         overrideSignal: 'TAKE_PROFIT',
-        reason: `Position +${userPositionPnl.toFixed(1)}% � profit protection trigger at 20%`,
-        reasonAr: `?????? ???? ${userPositionPnl.toFixed(1)}% � ????? ??????? (????? 20%)`,
+        reason: `Position +${userPositionPnl.toFixed(1)}% — profit protection trigger at 20%`,
+        reasonAr: `المركز رابح ${userPositionPnl.toFixed(1)}% — حماية الأرباح (تجاوز 20%)`,
       };
     }
   }
@@ -758,8 +758,8 @@ export function applyPositionOverride(options: {
         shouldOverride: true,
         originalSignal: 'BUY',
         overrideSignal: 'HOLD',
-        reason: `Position -${Math.abs(userPositionPnl).toFixed(1)}% in BEARISH trend � avoid adding to loser (catching falling knife)`,
-        reasonAr: `????? ${Math.abs(userPositionPnl).toFixed(1)}% ?? ????? ???? � ???? ???? ???? ??? ????`,
+        reason: `Position -${Math.abs(userPositionPnl).toFixed(1)}% in BEARISH trend — avoid adding to loser (catching falling knife)`,
+        reasonAr: `خسارة ${Math.abs(userPositionPnl).toFixed(1)}% في اتجاه هابط — مفيش حاجة تضيف على خاسر`,
       };
     }
   }
@@ -768,7 +768,7 @@ export function applyPositionOverride(options: {
 }
 
 // ============================================================================
-// 6. MAIN ENTRY POINT � TIE EVERYTHING TOGETHER
+// 6. MAIN ENTRY POINT — TIE EVERYTHING TOGETHER
 // ============================================================================
 
 export interface DynamicAnalysisInput {
@@ -810,18 +810,18 @@ export function runDynamicAnalysis(input: DynamicAnalysisInput): DynamicAnalysis
   const sectorSpeed = classifySectorSpeed(input.sector);
 
   notes.push(`Regime=${regime}, Vol=${volatility}, Sector=${sectorSpeed}`);
-  notesAr.push(`?????: ${regimeLabelAr(regime)}, ??????: ${volatilityLabelAr(volatility)}, ??????: ${sectorSpeedLabelAr(sectorSpeed)}`);
+  notesAr.push(`الوضع: ${regimeLabelAr(regime)}, التقلب: ${volatilityLabelAr(volatility)}, القطاع: ${sectorSpeedLabelAr(sectorSpeed)}`);
 
   // ---- Step 2: Dynamic Parameter Matrix ----
   const params = getDynamicParams(regime, volatility, sectorSpeed);
   notes.push(`RSI: ${params.rsiOversold}/${params.rsiOverbought}, ATR Stop: ${params.atrStopMultiplier}x, Min R:R: ${params.minRiskReward}`);
-  notesAr.push(`RSI: ${params.rsiOversold}/${params.rsiOverbought}, ???: ${params.atrStopMultiplier}�ATR, ?? R:R: ${params.minRiskReward}`);
+  notesAr.push(`RSI: ${params.rsiOversold}/${params.rsiOverbought}, وقف: ${params.atrStopMultiplier}×ATR, حد R:R: ${params.minRiskReward}`);
 
   // ---- Step 3: BB Squeeze ----
   const squeeze = detectBBSqueeze(input.bollingerWidthPct, input.bollingerWidthHistory);
   if (squeeze.level !== 'NONE') {
     notes.push(`BB Squeeze: ${squeeze.level} (score: ${squeeze.squeezeScore})`);
-    notesAr.push(`?????? ??????: ${squeeze.level} (?????: ${squeeze.squeezeScore})`);
+    notesAr.push(`انضغاط بولنجر: ${squeeze.level} (مستوى: ${squeeze.squeezeScore})`);
   }
 
   // ---- Step 4: Structural Targets ----
@@ -843,13 +843,13 @@ export function runDynamicAnalysis(input: DynamicAnalysisInput): DynamicAnalysis
       bbSqueezeLevel: squeeze.level,
     });
     notes.push(`Target: ${targets.target.toFixed(2)} (${targets.targetSource}), Stop: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), R:R: ${targets.riskReward}`);
-    notesAr.push(`???: ${targets.target.toFixed(2)} (${targetSourceLabelAr(targets.targetSource)}), ???: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), ????: ${targets.riskReward}`);
+    notesAr.push(`هدف: ${targets.target.toFixed(2)} (${targetSourceLabelAr(targets.targetSource)}), وقف: ${targets.stopLoss.toFixed(2)} (${targets.stopSource}), نسبة: ${targets.riskReward}`);
   }
 
   // ---- Step 5: Adaptive Weights ----
   const weights = getAdaptiveWeights(regime);
   notes.push(`Weights: Tech=${(weights.technical * 100).toFixed(0)}% Fund=${(weights.fundamental * 100).toFixed(0)}% Mom=${(weights.momentum * 100).toFixed(0)}% Risk=${(weights.risk * 100).toFixed(0)}%`);
-  notesAr.push(`???????: ???=${(weights.technical * 100).toFixed(0)}% ?????=${(weights.fundamental * 100).toFixed(0)}% ???=${(weights.momentum * 100).toFixed(0)}% ?????=${(weights.risk * 100).toFixed(0)}%`);
+  notesAr.push(`الأوزان: فني=${(weights.technical * 100).toFixed(0)}% أساسي=${(weights.fundamental * 100).toFixed(0)}% زخم=${(weights.momentum * 100).toFixed(0)}% مخاطر=${(weights.risk * 100).toFixed(0)}%`);
 
   // ---- Step 6: Position Override ----
   let positionOverride: PositionOverrideResult | null = null;
@@ -865,8 +865,8 @@ export function runDynamicAnalysis(input: DynamicAnalysisInput): DynamicAnalysis
       priceVsMA20: input.priceVsMA20,
     });
     if (positionOverride && positionOverride.shouldOverride) {
-      notes.push(`OVERRIDE: ${positionOverride.originalSignal} ? ${positionOverride.overrideSignal}: ${positionOverride.reason}`);
-      notesAr.push(`?????: ${signalLabelAr(positionOverride.originalSignal)} ? ${signalLabelAr(positionOverride.overrideSignal)}: ${positionOverride.reasonAr}`);
+      notes.push(`OVERRIDE: ${positionOverride.originalSignal} → ${positionOverride.overrideSignal}: ${positionOverride.reason}`);
+      notesAr.push(`تجاوز: ${signalLabelAr(positionOverride.originalSignal)} → ${signalLabelAr(positionOverride.overrideSignal)}: ${positionOverride.reasonAr}`);
     }
   }
 
@@ -890,57 +890,57 @@ export function runDynamicAnalysis(input: DynamicAnalysisInput): DynamicAnalysis
 
 export function regimeLabelAr(regime: StockRegime): string {
   const labels: Record<StockRegime, string> = {
-    STRONG_BULL: '???? ??? ??',
-    WEAK_BULL: '???? ???? ??',
-    RANGE: '???? ??',
-    WEAK_BEAR: '???? ???? ??',
-    STRONG_BEAR: '???? ??? ??',
+    STRONG_BULL: 'صاعد قوي 🐂',
+    WEAK_BULL: 'صاعد ضعيف 📈',
+    RANGE: 'عرضي ➡️',
+    WEAK_BEAR: 'هابط ضعيف 📉',
+    STRONG_BEAR: 'هابط قوي 🐻',
   };
   return labels[regime];
 }
 
 export function volatilityLabelAr(vol: VolatilityLevel): string {
   const labels: Record<VolatilityLevel, string> = {
-    VERY_LOW: '????? ????',
-    LOW: '?????',
-    MEDIUM: '?????',
-    HIGH: '????',
-    VERY_HIGH: '???? ????',
+    VERY_LOW: 'منخفض جداً',
+    LOW: 'منخفض',
+    MEDIUM: 'متوسط',
+    HIGH: 'عالي',
+    VERY_HIGH: 'عالي جداً',
   };
   return labels[vol];
 }
 
 export function sectorSpeedLabelAr(speed: SectorSpeed): string {
   const labels: Record<SectorSpeed, string> = {
-    FAST: '???? ?',
-    MEDIUM: '?????',
-    SLOW: '???? ??',
+    FAST: 'سريع ⚡',
+    MEDIUM: 'متوسط',
+    SLOW: 'بطيء 🐢',
   };
   return labels[speed];
 }
 
 function targetSourceLabelAr(source: string): string {
   const labels: Record<string, string> = {
-    swing_resistance: '?????? ??????',
-    fibonacci_1618: '????????? 161.8%',
-    fibonacci_1272: '????????? 127.2%',
-    atr_multiple: '????? ATR',
-    atr_floor: '?? ???? ATR',
-    swing_support: '??? ?????',
-    atr_multiple: '????? ATR',
-    atr_floor: '?? ???? ATR',
+    swing_resistance: 'مقاومة هيكلية',
+    fibonacci_1618: 'فيبوناتشي 161.8%',
+    fibonacci_1272: 'فيبوناتشي 127.2%',
+    atr_multiple: 'مضاعف ATR',
+    atr_floor: 'حد أدنى ATR',
+    swing_support: 'دعم هيكلي',
+    atr_multiple: 'مضاعف ATR',
+    atr_floor: 'حد أدنى ATR',
   };
   return labels[source] || source;
 }
 
 function signalLabelAr(signal: SignalType): string {
   const labels: Record<SignalType, string> = {
-    BUY: '????',
-    SELL: '???',
-    HOLD: '??????',
-    TAKE_PROFIT: '??? ?????',
-    STRONG_BUY: '???? ???',
-    STRONG_SELL: '??? ???',
+    BUY: 'شراء',
+    SELL: 'بيع',
+    HOLD: 'انتظار',
+    TAKE_PROFIT: 'جني أرباح',
+    STRONG_BUY: 'شراء قوي',
+    STRONG_SELL: 'بيع قوي',
   };
   return labels[signal] || signal;
 }

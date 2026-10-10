@@ -5,22 +5,22 @@ import { classifySignal, signalAr } from '@/lib/canonical-signal'
 export const dynamic = 'force-dynamic'
 
 const MARKET_PROFILES = {
-  EGX: { code: 'EGX', name_ar: '??????? ???????', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
-  TADAWUL: { code: 'TADAWUL', name_ar: '????? ???????', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
-  KSE: { code: 'KSE', name_ar: '????? ??????', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
-  QSE: { code: 'QSE', name_ar: '????? ???', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
-  DFM: { code: 'DFM', name_ar: '??? ??? ??????', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
-  ADX: { code: 'ADX', name_ar: '??? ?????? ??????? ???????', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 }
+  EGX: { code: 'EGX', name_ar: 'البورصة المصرية', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
+  TADAWUL: { code: 'TADAWUL', name_ar: 'السوق السعودي', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
+  KSE: { code: 'KSE', name_ar: 'بورصة الكويت', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
+  QSE: { code: 'QSE', name_ar: 'بورصة قطر', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
+  DFM: { code: 'DFM', name_ar: 'سوق دبي المالي', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 },
+  ADX: { code: 'ADX', name_ar: 'سوق أبوظبي للأوراق المالية', min_score: 65, min_rr: 1.5, position_pct: 5, max_trades: 10 }
 }
 
 const PERSONA_PROFILES = {
-  scalper: { id: 'scalper', name_ar: '????? ????', min_rr: 1.2, position_pct: 2, max_trades: 15, score_boost: -5 },
-  trader: { id: 'trader', name_ar: '?????? ???', min_rr: 1.5, position_pct: 5, max_trades: 10, score_boost: 0 },
-  investor: { id: 'investor', name_ar: '?????? ???', min_rr: 2.0, position_pct: 8, max_trades: 5, score_boost: 5 },
-  conservative: { id: 'conservative', name_ar: '????? ????', min_rr: 2.5, position_pct: 10, max_trades: 3, score_boost: 15 }
+  scalper: { id: 'scalper', name_ar: 'مضارب سريع', min_rr: 1.2, position_pct: 2, max_trades: 15, score_boost: -5 },
+  trader: { id: 'trader', name_ar: 'متداول نشط', min_rr: 1.5, position_pct: 5, max_trades: 10, score_boost: 0 },
+  investor: { id: 'investor', name_ar: 'مستثمر حذر', min_rr: 2.0, position_pct: 8, max_trades: 5, score_boost: 5 },
+  conservative: { id: 'conservative', name_ar: 'محافظ جداً', min_rr: 2.5, position_pct: 10, max_trades: 3, score_boost: 15 }
 }
 
-// --- GET Handler -------------------------------------------------------------
+// ─── GET Handler ─────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const action = searchParams.get('action') || 'markets'
@@ -72,11 +72,11 @@ export async function GET(req: NextRequest) {
     }
 
     default:
-      return NextResponse.json({ error: `action ??? ?????: ${action}` }, { status: 400 })
+      return NextResponse.json({ error: `action غير معروف: ${action}` }, { status: 400 })
   }
 }
 
-// --- POST Handler -------------------------------------------------------------
+// ─── POST Handler ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const action = body.action || 'analyze'
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       const persona = (body.persona || 'trader').toLowerCase()
 
       if (!ticker) {
-        return NextResponse.json({ error: '??? ????? ??? ????? (ticker)' }, { status: 400 })
+        return NextResponse.json({ error: 'يجب تحديد رمز السهم (ticker)' }, { status: 400 })
       }
 
       try {
@@ -99,20 +99,20 @@ export async function POST(req: NextRequest) {
         const data = await response.json()
 
         if (!data.success || !data.data) {
-          return NextResponse.json({ error: data.error || '??? ???????' }, { status: 404 })
+          return NextResponse.json({ error: data.error || 'فشل التحليل' }, { status: 404 })
         }
 
         const analysis = data.data
         const risk = analysis.risk_profile || {}
         const personaProfile = PERSONA_PROFILES[persona as keyof typeof PERSONA_PROFILES]
         const scoreBoost = personaProfile ? personaProfile.score_boost : 0
-        // AUDIT-FIX (2026-10-09): ????? fallback score=50 (Rule 27 NO-FAKE-DATA).
-        // ?? master_score = null ? finalScore = null ? signal = null.
+        // AUDIT-FIX (2026-10-09): إزالة fallback score=50 (Rule 27 NO-FAKE-DATA).
+        // لو master_score = null → finalScore = null → signal = null.
         const rawScore = analysis.master_score ?? null;
         const finalScore = rawScore === null ? null : Math.max(10, Math.min(95, rawScore + scoreBoost));
 
-        // RULE-73 UNIFY: ?????? canonical classifySignal (78/65/55/40/25) ??? 75/60/50 ?????????.
-        // ??? ???: ??? ????? ??? ????? BUY ??? ? ACCUMULATE ?? StockDetail = ????? ???? ?????.
+        // RULE-73 UNIFY: استخدم canonical classifySignal (78/65/55/40/25) بدل 75/60/50 المتعارضة.
+        // قبل كده: نفس السهم كان بيعطي BUY هنا و ACCUMULATE في StockDetail = تناقض يكسر الثقة.
         let signal: string | null = null;
         let signal_ar: string | null = null;
         if (finalScore !== null) {
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
           signal,
           signal_ar,
           score: finalScore,
-          // AUDIT-FIX: ????? confidence=75 fallback (Rule 27)
+          // AUDIT-FIX: إزالة confidence=75 fallback (Rule 27)
           confidence: analysis.confidence ?? null,
           current_price: risk.entry_price || analysis.current_price || 0,
           entry_price: risk.entry_price || analysis.current_price || 0,
@@ -141,14 +141,14 @@ export async function POST(req: NextRequest) {
           market_regime: analysis.session_phase || 'NEUTRAL',
           rsi_override: false,
           rr_valid: (risk.risk_reward_ratio || 0) >= (personaProfile?.min_rr || 1.5),
-          rejection_reason: risk.is_valid_trade ? null : (risk.warnings && risk.warnings[0] ? risk.warnings[0] : '??? ???? ????????'),
+          rejection_reason: risk.is_valid_trade ? null : (risk.warnings && risk.warnings[0] ? risk.warnings[0] : 'غير صالح للمخاطرة'),
           warnings: analysis.liquidity_warning ? [analysis.liquidity_warning] : [],
           technical_score: analysis.technical_score || 50,
           volume_score: analysis.timing_score || 50,
           candle_score: analysis.pattern_score || 50,
           buy_reasons: analysis.technical_summary ? [analysis.technical_summary] : [],
           sell_reasons: analysis.fundamental_summary ? [analysis.fundamental_summary] : [],
-          market_regime_ar: analysis.market_regime_ar || '??? ?????',
+          market_regime_ar: analysis.market_regime_ar || 'غير معروف',
           market_regime_strength: analysis.market_regime_strength || 0,
           sector_relative_score: analysis.sector_relative_score || 50
         }
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
         })
       } catch (e) {
         console.error('Error forwarding analysis to Python:', e)
-        return NextResponse.json({ error: '??? ??????? ????? ??????? ?? ????????' }, { status: 502 })
+        return NextResponse.json({ error: 'فشل الاتصال بمحرك التحليل في الباكيند' }, { status: 502 })
       }
     }
 
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
         const data = await response.json()
 
         if (!data.success || !data.results) {
-          return NextResponse.json({ error: data.error || '??? ?????' }, { status: 404 })
+          return NextResponse.json({ error: data.error || 'فشل الفحص' }, { status: 404 })
         }
 
         const results = data.results.map((item: Record<string, unknown>) => {
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
             market: item.market || market,
             persona,
             signal: adj.adjusted_signal || item.signal || 'HOLD',
-            signal_ar: adj.adjusted_signal === 'BUY' ? '????' : adj.adjusted_signal === 'STRONG_BUY' ? '???? ???' : adj.adjusted_signal === 'SELL' ? '???' : '??????',
+            signal_ar: adj.adjusted_signal === 'BUY' ? 'شراء' : adj.adjusted_signal === 'STRONG_BUY' ? 'شراء قوي' : adj.adjusted_signal === 'SELL' ? 'بيع' : 'احتفاظ',
             score: adj.adjusted_score || item.master_score || 50,
             confidence: item.confidence || 75,
             current_price: entryPrice,
@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
         })
       } catch (e) {
         console.error('Error forwarding scan to Python:', e)
-        return NextResponse.json({ error: '??? ??????? ????? ????? ?????????' }, { status: 502 })
+        return NextResponse.json({ error: 'فشل الاتصال بمحرك الفحص بالباكيند' }, { status: 502 })
       }
     }
 
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
       const market = (body.market || 'EGX').toUpperCase()
 
       if (!ticker) {
-        return NextResponse.json({ error: 'ticker ?????' }, { status: 400 })
+        return NextResponse.json({ error: 'ticker مطلوب' }, { status: 400 })
       }
 
       try {
@@ -263,10 +263,10 @@ export async function POST(req: NextRequest) {
         const comparison: Record<string, unknown> = {}
 
         const mappedPersonas = [
-          { id: 'scalper', py: 'active_trader', name_ar: '????? ????' },
-          { id: 'trader', py: 'balanced', name_ar: '?????? ???' },
-          { id: 'investor', py: 'cautious', name_ar: '??????' },
-          { id: 'conservative', py: 'conservative', name_ar: '?????' }
+          { id: 'scalper', py: 'active_trader', name_ar: 'مضارب سريع' },
+          { id: 'trader', py: 'balanced', name_ar: 'متداول نشط' },
+          { id: 'investor', py: 'cautious', name_ar: 'مستثمر' },
+          { id: 'conservative', py: 'conservative', name_ar: 'محافظ' }
         ]
 
         const response = await fetch(`${PYTHON_BACKEND_URL}/api/v2/analysis/${baseTicker}`, {
@@ -275,7 +275,7 @@ export async function POST(req: NextRequest) {
         const data = await response.json()
 
         if (!data.success || !data.data) {
-          return NextResponse.json({ error: '??? ????? ?????? ????????' }, { status: 404 })
+          return NextResponse.json({ error: 'فشل تحميل بيانات المقارنة' }, { status: 404 })
         }
 
         const analysis = data.data
@@ -286,7 +286,7 @@ export async function POST(req: NextRequest) {
           const scoreBoost = personaProfile ? personaProfile.score_boost : 0
           const finalScore = Math.max(10, Math.min(95, (analysis.master_score || 50) + scoreBoost))
 
-          // RULE-73 UNIFY: canonical classifySignal (78/65/55/40/25) � ?? thresholds ?????.
+          // RULE-73 UNIFY: canonical classifySignal (78/65/55/40/25) — لا thresholds محلية.
           const canonical = classifySignal(finalScore);
           const signal = canonical;
           const signal_ar = signalAr(canonical);
@@ -313,11 +313,11 @@ export async function POST(req: NextRequest) {
         })
       } catch (e) {
         console.error('Error in compare action:', e)
-        return NextResponse.json({ error: '??? ?? ????? ?????? ?????????' }, { status: 502 })
+        return NextResponse.json({ error: 'فشل في تحميل مقارنة التحليلات' }, { status: 502 })
       }
     }
 
     default:
-      return NextResponse.json({ error: `action ??? ?????: ${action}` }, { status: 400 })
+      return NextResponse.json({ error: `action غير معروف: ${action}` }, { status: 400 })
   }
 }

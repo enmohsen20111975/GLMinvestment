@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * would throw an uncaught SyntaxError outside any try/catch. The handler is
  * now fully wrapped and we explicitly:
  *   1. await `params` (Next.js 16 async dynamic API) inside try.
- *   2. Verify `res.ok` AND content-type is JSON before parsing — if Python
+ *   2. Verify `res.ok` AND content-type is JSON before parsing â€” if Python
  *      returned HTML or a non-2xx status, we forward a clean JSON 502.
  *   3. Surface any unhandled exception as a JSON 503 (never HTML).
  */
@@ -37,7 +37,7 @@ export async function GET(
     });
 
     // If Python returned a non-2xx status OR returned HTML instead of JSON,
-    // do NOT call res.json() — it would throw a SyntaxError. Forward a clean
+    // do NOT call res.json() â€” it would throw a SyntaxError. Forward a clean
     // JSON 200 (FIX-FLUTTER-PROD-4) so Flutter doesn't crash on 5xx.
     // snapshots: [] = empty data (Rule 27 NO-FAKE-DATA), not a service error.
     const contentType = res.headers.get('content-type') || '';
@@ -52,7 +52,7 @@ export async function GET(
           snapshots: [],
           meta: { source: 'next-fallback', account_id: id, count: 0 },
           count: 0,
-          message: 'Python backend unavailable — no equity curve data',
+          message: 'Python backend unavailable â€” no equity curve data',
         },
         { status: 200 }
       );
@@ -70,7 +70,7 @@ export async function GET(
         snapshots: [],
         meta: { source: 'next-fallback', count: 0 },
         count: 0,
-        message: 'Python backend unreachable — no equity curve data',
+        message: 'Python backend unreachable â€” no equity curve data',
       },
       { status: 200 }
     );

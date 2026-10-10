@@ -13,11 +13,11 @@
  *   POST   /api/mobile/portfolio        body: {ticker, shares, avg_price, ...}
  *   DELETE /api/mobile/portfolio?id=<item_id>
  *
- * Field mapping (Flutter ? Prisma PortfolioItem):
- *   ticker    ? symbol
- *   shares    ? shares
- *   avg_price ? purchase_price
- *   asset_type / name / current_price / currency / notes � passed through if provided
+ * Field mapping (Flutter → Prisma PortfolioItem):
+ *   ticker    → symbol
+ *   shares    → shares
+ *   avg_price → purchase_price
+ *   asset_type / name / current_price / currency / notes — passed through if provided
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -33,7 +33,7 @@ function unauthorized() {
   return NextResponse.json(
     {
       success: false,
-      error: '??? ????',
+      error: 'غير مصرح',
       error_en: 'Unauthorized',
     },
     { status: 401 }
@@ -41,7 +41,7 @@ function unauthorized() {
 }
 
 // ---------------------------------------------------------------------------
-// GET � try Python first; on failure require auth and return Prisma portfolio
+// GET — try Python first; on failure require auth and return Prisma portfolio
 //       enriched with current_price from stocks.db (SQLite fallback).
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   const qs = url.searchParams.toString();
   const targetUrl = `${PY}/api/live-monitor${qs ? `?${qs}` : ''}`;
 
-  // 1) Try Python first (5s timeout � mobile-friendly)
+  // 1) Try Python first (5s timeout — mobile-friendly)
   try {
     const res = await fetch(targetUrl, {
       signal: AbortSignal.timeout(5000),
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
   } catch { /* safe-by-design */ }
 
-  // 2) Fallback � auth required
+  // 2) Fallback — auth required
   const { userId } = await getSessionUserId();
   if (!userId) {
     return unauthorized();
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POST � create a PortfolioItem directly in auth.db
+// POST — create a PortfolioItem directly in auth.db
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'ticker ?????',
+          error: 'ticker مطلوب',
           error_en: 'ticker is required',
         },
         { status: 400 }
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
             : null,
         currency: (body.currency as string) || 'EGP',
         notes: (body.notes as string) || null,
-        // FIX (FLUTTER-PROD-4): explicit updated_at (?? ??? DB schema ???? ??????? @updatedAt)
+        // FIX (FLUTTER-PROD-4): explicit updated_at (لو الـ DB schema قديم ومفيهوش @updatedAt)
         updated_at: new Date(),
       },
     });
@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         item,
-        message: '??? ???????',
+        message: 'تمت الإضافة',
         message_en: 'Added successfully',
       },
       { status: 201 }
@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: '??? ??? ????? ????? ??????',
+        error: 'حدث خطأ أثناء إضافة العنصر',
         error_en: 'Failed to add portfolio item',
         details: message,
       },
@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// DELETE � delete a PortfolioItem by id with ownership check
+// DELETE — delete a PortfolioItem by id with ownership check
 // ---------------------------------------------------------------------------
 export async function DELETE(req: NextRequest) {
   try {
@@ -263,7 +263,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'id ?????',
+          error: 'id مطلوب',
           error_en: 'id query parameter is required',
         },
         { status: 400 }
@@ -280,7 +280,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '?????? ??? ?????',
+          error: 'العنصر غير موجود',
           error_en: 'Item not found',
         },
         { status: 404 }
@@ -291,7 +291,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '??? ???? ???? ??? ??????',
+          error: 'غير مصرح بحذف هذا العنصر',
           error_en: 'Forbidden: item does not belong to user',
         },
         { status: 403 }
@@ -302,7 +302,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: '?? ?????',
+      message: 'تم الحذف',
       message_en: 'Deleted successfully',
     });
   } catch (e: unknown) {
@@ -311,7 +311,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: '??? ??? ????? ?????',
+        error: 'حدث خطأ أثناء الحذف',
         error_en: 'Failed to delete portfolio item',
         details: message,
       },

@@ -1,20 +1,20 @@
 /**
- * Gate Analyzer � TypeScript 5-Gate Analysis Engine
+ * Gate Analyzer — TypeScript 5-Gate Analysis Engine
  *
  * Translates the Pine Script 5-gate stock analysis system into a pure
  * TypeScript function. Every calculation matches the TradingView indicator
  * exactly so the results are identical for the same input data.
  *
- * Gate 1: Liquidity   � volume + price floor
- * Gate 2: Trend       � SMA20/50 regime + market stage
- * Gate 3: S/R         � proximity to support / resistance
- * Gate 4: R/R         � dynamic ATR-based target & stop
- * Gate 5: Confirmation � MACD + RSI + Volume
+ * Gate 1: Liquidity   — volume + price floor
+ * Gate 2: Trend       — SMA20/50 regime + market stage
+ * Gate 3: S/R         — proximity to support / resistance
+ * Gate 4: R/R         — dynamic ATR-based target & stop
+ * Gate 5: Confirmation — MACD + RSI + Volume
  *
  * Signal priority chain produces one of 8 signal types.
  * Dual persona support: 'gambler' (aggressive) / 'investor' (conservative).
  *
- * PURE FUNCTION � no side effects, no I/O, deterministic.
+ * PURE FUNCTION — no side effects, no I/O, deterministic.
  */
 
 import { detectBBSqueeze, type BBSqueezeResult } from '@/lib/dynamic-analysis-engine';
@@ -52,10 +52,10 @@ export interface GateAnalysisInput {
   /** Recent BB width history for squeeze trend (optional) */
   bollingerWidthHistory?: number[];
   /**
-   * ????? ???? ????? ?????? ??? � Rule 27/29 fix.
-   * ??? ???: close>1.0 ???? ??? ????? penny stocks US + micro-cap crypto.
-   * ??????: priceFloor ?????? ??? MarketProfile (CRYPTO=0.000001? US=1.0? EGX=0.5).
-   * ?? ?? ???? ? fallback ?? EGX profile (?????? ??? ?????? ????????).
+   * السوق اللي السهم بينتمي ليه — Rule 27/29 fix.
+   * قبل كده: close>1.0 ثابت كان بيرفض penny stocks US + micro-cap crypto.
+   * دلوقتي: priceFloor بيتحدد حسب MarketProfile (CRYPTO=0.000001، US=1.0، EGX=0.5).
+   * لو مش متاح → fallback لـ EGX profile (محافظظ على السلوك التاريخي).
    */
   market?: MarketType;
 }
@@ -143,13 +143,13 @@ export interface GateAnalysisOutput {
 
 interface RegimeConfig {
   minVolumeThreshold: number; // Gate 1
-  supportZonePct: number; // Gate 3 � how close to support counts as "near"
-  resistanceZonePct: number; // Gate 3 � how close to resistance counts as "near"
+  supportZonePct: number; // Gate 3 — how close to support counts as "near"
+  resistanceZonePct: number; // Gate 3 — how close to resistance counts as "near"
   rsiBuyThreshold: number; // Gate 5 / Signal
   rsiSellThreshold: number; // Gate 5 / Signal
   minRrThreshold: number; // Signal
   minGates: number; // minimum gates to produce a BUY
-  confirmationStrict: boolean; // Gate 5 � true = all 3 conditions required
+  confirmationStrict: boolean; // Gate 5 — true = all 3 conditions required
 }
 
 /**
@@ -223,7 +223,7 @@ function getMarketStage(
   if (trendBull && close > sma200) {
     return {
       stage: "Strong Bull",
-      stageAr: "???? ???",
+      stageAr: "صاعد قوي",
       refinedBull: true,
       refinedBear: false,
       refinedRange: false,
@@ -233,7 +233,7 @@ function getMarketStage(
   if (trendBull && close <= sma200) {
     return {
       stage: "Weak Bull / Correction",
-      stageAr: "????? ????",
+      stageAr: "تصحيح صاعد",
       refinedBull: true,
       refinedBear: false,
       refinedRange: false,
@@ -243,7 +243,7 @@ function getMarketStage(
   if (trendBear && close < sma200) {
     return {
       stage: "Strong Bear",
-      stageAr: "???? ???",
+      stageAr: "هابط قوي",
       refinedBull: false,
       refinedBear: true,
       refinedRange: false,
@@ -253,7 +253,7 @@ function getMarketStage(
   if (trendBear && close >= sma200) {
     return {
       stage: "Weak Bear",
-      stageAr: "???? ????",
+      stageAr: "هابط ضعيف",
       refinedBull: false,
       refinedBear: true,
       refinedRange: false,
@@ -263,16 +263,16 @@ function getMarketStage(
   if (trendRange) {
     return {
       stage: "Range",
-      stageAr: "????",
+      stageAr: "عرضي",
       refinedBull: false,
       refinedBear: false,
       refinedRange: true,
     };
   }
-  // Fallback � should be unreachable but just in case
+  // Fallback — should be unreachable but just in case
   return {
     stage: "Range",
-    stageAr: "????",
+    stageAr: "عرضي",
     refinedBull: false,
     refinedBear: false,
     refinedRange: true,
@@ -284,7 +284,7 @@ function getMarketStage(
 // ---------------------------------------------------------------------------
 
 /**
- * Gate 1 � Liquidity
+ * Gate 1 — Liquidity
  * Pine: gate_1_liquidity = volume > min_volume_threshold and close > 1.0
  * Dynamic threshold varies by regime: 40K bull, 60K bear, 50K range
  */
@@ -292,14 +292,14 @@ function evaluateGate1(
   input: GateAnalysisInput,
   config: RegimeConfig
 ): GateResult {
-  // RULE-27 MARKET-AWARE: price floor ?????? ??? MarketProfile (?? 1.0 ????).
-  // ??? ???: BTC=$50K ? AAPL=$190 ?????? ?? DOGE=$0.40 ???? ? ?? EGX penny stock ???.
-  // ???? relative volume check: ?? volume ???? ???? ?? relative ???? (???? ?? ????? 20 ???)
-  // ? ????? ????? ????? (Rule 29: ????? ????? ?? ?????).
+  // RULE-27 MARKET-AWARE: price floor بيتحدد حسب MarketProfile (مش 1.0 ثابت).
+  // قبل كده: BTC=$50K و AAPL=$190 وافوا، بس DOGE=$0.40 فشل، و أي EGX penny stock فشل.
+  // كمان relative volume check: لو volume مطلق صغير بس relative عالي (أكبر من متوسط 20 يوم)
+  // → السهم سيوله كافية (Rule 29: سيولة نسبية مش مطلقة).
   const profile = input.market ? getMarketProfile(input.market) : null;
   const priceFloor = profile?.priceFloor ?? 1.0;
   const relativeVol = input.avgVolume20 > 0 ? input.volume / input.avgVolume20 : 0;
-  // absolute threshold (????) OR relative = 1.0 (???? � ???? ????? ????? ??????)
+  // absolute threshold (قديم) OR relative ≥ 1.0 (جديد — يسمح بأسهم صغيرة شغّالة)
   const volumeOk = input.volume > config.minVolumeThreshold || relativeVol >= 1.0;
   const priceOk = input.close > priceFloor;
   const passed = volumeOk && priceOk;
@@ -307,18 +307,18 @@ function evaluateGate1(
   return {
     passed,
     name: "Liquidity",
-    nameAr: "???????",
+    nameAr: "السيولة",
     reason: passed
       ? `Volume ${input.volume.toLocaleString()} > ${config.minVolumeThreshold.toLocaleString()} threshold (or relative ${relativeVol.toFixed(2)}x avg20), price ${input.close.toFixed(2)} > ${floorLabel}`
-      : `Volume ${input.volume.toLocaleString()} ${!volumeOk ? `= ${config.minVolumeThreshold.toLocaleString()} threshold (relative ${relativeVol.toFixed(2)}x)` : "OK"}${!priceOk ? `, price ${input.close.toFixed(2)} = ${floorLabel}` : ""}`,
+      : `Volume ${input.volume.toLocaleString()} ${!volumeOk ? `≤ ${config.minVolumeThreshold.toLocaleString()} threshold (relative ${relativeVol.toFixed(2)}x)` : "OK"}${!priceOk ? `, price ${input.close.toFixed(2)} ≤ ${floorLabel}` : ""}`,
     reasonAr: passed
-      ? `????? ${input.volume.toLocaleString()} ???? ?? ???? ${config.minVolumeThreshold.toLocaleString()}? ????? ${input.close.toFixed(2)}`
-      : `????? ${input.volume.toLocaleString()} ??? ?? ???? ${config.minVolumeThreshold.toLocaleString()}`,
+      ? `الحجم ${input.volume.toLocaleString()} أعلى من الحد ${config.minVolumeThreshold.toLocaleString()}، السعر ${input.close.toFixed(2)}`
+      : `الحجم ${input.volume.toLocaleString()} أقل من الحد ${config.minVolumeThreshold.toLocaleString()}`,
   };
 }
 
 /**
- * Gate 2 � Trend
+ * Gate 2 — Trend
  * Pine: trend_bull = close > sma20 and sma20 > sma50
  *        trend_bear = close < sma20 and sma20 < sma50
  * Gambler: accepts bull or range (not bear)
@@ -335,7 +335,7 @@ function evaluateGate2(
   let reason = "";
 
   if (persona === "gambler") {
-    // Gambler accepts bull or range � only rejects bear
+    // Gambler accepts bull or range — only rejects bear
     passed = !trendBear;
     reason = passed
       ? trendBull
@@ -348,27 +348,27 @@ function evaluateGate2(
     reason = passed
       ? "Investor: Bull trend confirmed (close > SMA20 > SMA50)"
       : trendBear
-        ? "Investor: Bear trend � not accepted"
-        : "Investor: Range � bull trend required";
+        ? "Investor: Bear trend — not accepted"
+        : "Investor: Range — bull trend required";
   }
 
   return {
     passed,
     name: "Trend",
-    nameAr: "???????",
+    nameAr: "الاتجاه",
     reason,
     reasonAr: passed
       ? persona === "gambler"
-        ? "???????: ??????? ?????"
-        : "????????: ??????? ?????? ????"
+        ? "المضارب: الاتجاه مقبول"
+        : "المستثمر: الاتجاه الصاعد مؤكد"
       : persona === "gambler"
-        ? "???????: ??????? ?????? ?????"
-        : "????????: ????? ????? ????",
+        ? "المضارب: الاتجاه الهابط مرفوض"
+        : "المستثمر: يتطلب اتجاه صاعد",
   };
 }
 
 /**
- * Gate 3 � Support / Resistance
+ * Gate 3 — Support / Resistance
  * Pine:
  *   distance_to_support_pct = (close - nearest_support) / close * 100
  *   distance_to_resistance_pct = (nearest_resistance - close) / close * 100
@@ -406,19 +406,19 @@ function evaluateGate3(
   const reason = passed
     ? `Near support (${distanceToSupportPct.toFixed(1)}% < ${config.supportZonePct}%), away from resistance (${distanceToResistancePct.toFixed(1)}%)`
     : nearResistance
-      ? `Near resistance (${distanceToResistancePct.toFixed(1)}% < ${config.resistanceZonePct}%) � too close to sell zone`
-      : `Far from support (${distanceToSupportPct.toFixed(1)}% = ${config.supportZonePct}%)`;
+      ? `Near resistance (${distanceToResistancePct.toFixed(1)}% < ${config.resistanceZonePct}%) — too close to sell zone`
+      : `Far from support (${distanceToSupportPct.toFixed(1)}% ≥ ${config.supportZonePct}%)`;
 
   return {
     passed,
     name: "Support/Resistance",
-    nameAr: "?????/????????",
+    nameAr: "الدعم/المقاومة",
     reason,
     reasonAr: passed
-      ? `???? ?? ????? (${distanceToSupportPct.toFixed(1)}%)? ???? ?? ????????`
+      ? `قريب من الدعم (${distanceToSupportPct.toFixed(1)}%)، بعيد عن المقاومة`
       : nearResistance
-        ? `???? ?? ???????? (${distanceToResistancePct.toFixed(1)}%)`
-        : `???? ?? ????? (${distanceToSupportPct.toFixed(1)}%)`,
+        ? `قريب من المقاومة (${distanceToResistancePct.toFixed(1)}%)`
+        : `بعيد عن الدعم (${distanceToSupportPct.toFixed(1)}%)`,
     // Attach computed values for downstream use
     ...((() => {
       // We return these as extra properties for signal logic
@@ -428,7 +428,7 @@ function evaluateGate3(
 }
 
 /**
- * Gate 4 � Risk / Reward (Dynamic ATR-based)
+ * Gate 4 — Risk / Reward (Dynamic ATR-based)
  *
  * Pine logic:
  *   atr_pct = atr / close * 100
@@ -462,7 +462,7 @@ function evaluateGate4(
   let atrStopMult: number;
 
   if (atrPct > 5) {
-    // High volatility � tighter targets
+    // High volatility — tighter targets
     atrTargetMult = 1.5;
     atrStopMult = 1.0;
   } else if (atrPct >= 2) {
@@ -470,7 +470,7 @@ function evaluateGate4(
     atrTargetMult = 2.0;
     atrStopMult = 1.5;
   } else {
-    // Low volatility � wider targets
+    // Low volatility — wider targets
     atrTargetMult = 2.5;
     atrStopMult = 2.0;
   }
@@ -512,13 +512,13 @@ function evaluateGate4(
     gate: {
       passed,
       name: "Risk/Reward",
-      nameAr: "???? ????????/??????",
+      nameAr: "نسبة المخاطرة/العائد",
       reason: passed
-        ? `R/R ${rrRatio.toFixed(2)} = ${config.minRrThreshold} (target +${targetPct.toFixed(1)}%, stop -${stopPct.toFixed(1)}%)`
+        ? `R/R ${rrRatio.toFixed(2)} ≥ ${config.minRrThreshold} (target +${targetPct.toFixed(1)}%, stop -${stopPct.toFixed(1)}%)`
         : `R/R ${rrRatio.toFixed(2)} < ${config.minRrThreshold} (target +${targetPct.toFixed(1)}%, stop -${stopPct.toFixed(1)}%)`,
       reasonAr: passed
-        ? `???? ${rrRatio.toFixed(2)} ???? ?? ???? ${config.minRrThreshold}`
-        : `???? ${rrRatio.toFixed(2)} ??? ?? ???? ${config.minRrThreshold}`,
+        ? `نسبة ${rrRatio.toFixed(2)} أعلى من الحد ${config.minRrThreshold}`
+        : `نسبة ${rrRatio.toFixed(2)} أقل من الحد ${config.minRrThreshold}`,
     },
     entryPrice: input.close,
     targetPrice,
@@ -531,7 +531,7 @@ function evaluateGate4(
 }
 
 /**
- * Gate 5 � Confirmation
+ * Gate 5 — Confirmation
  *
  * Pine logic:
  *   MACD bullish = macdLine > signalLine
@@ -563,25 +563,25 @@ function evaluateGate5(
   if (macdBullish) conditions.push("MACD bullish");
   else conditions.push("MACD bearish");
   if (rsiInRange) conditions.push(`RSI ${input.rsi.toFixed(1)} < ${config.rsiSellThreshold}`);
-  else conditions.push(`RSI ${input.rsi.toFixed(1)} = ${config.rsiSellThreshold}`);
-  if (volumeConfirmed) conditions.push("Volume > 1.2� avg");
-  else conditions.push("Volume = 1.2� avg");
+  else conditions.push(`RSI ${input.rsi.toFixed(1)} ≥ ${config.rsiSellThreshold}`);
+  if (volumeConfirmed) conditions.push("Volume > 1.2× avg");
+  else conditions.push("Volume ≤ 1.2× avg");
 
   return {
     passed,
     name: "Confirmation",
-    nameAr: "???????",
+    nameAr: "التأكيد",
     reason: passed
       ? `Confirmed: ${conditions.join(", ")} [${config.confirmationStrict ? "strict" : "relaxed"} mode]`
       : `Failed: ${conditions.join(", ")} [${config.confirmationStrict ? "strict" : "relaxed"} mode]`,
     reasonAr: passed
-      ? "????: " + conditions.map((c) => {
-          if (c.includes("MACD bullish")) return "MACD ????";
-          if (c.includes("RSI")) return "RSI ?? ??????";
-          if (c.includes("Volume >")) return "??? ?????";
+      ? "مؤكد: " + conditions.map((c) => {
+          if (c.includes("MACD bullish")) return "MACD صاعد";
+          if (c.includes("RSI")) return "RSI في النطاق";
+          if (c.includes("Volume >")) return "حجم مرتفع";
           return c;
-        }).join("? ")
-      : "??? ????: ???? ??? ??????",
+        }).join("، ")
+      : "غير مؤكد: شروط غير مكتملة",
   };
 }
 
@@ -623,96 +623,96 @@ function determineSignal(ctx: SignalContext): {
 } {
   const { input, config } = ctx;
 
-  // 1. R/R = 0 ? AVOID (invalid target/stop)
+  // 1. R/R ≤ 0 → AVOID (invalid target/stop)
   if (ctx.rrRatio <= 0) {
     return {
       signal: "AVOID",
-      signalAr: "????",
+      signalAr: "تجنب",
       signalColor: "bg-gray-500",
-      narrative: `???? ????????/?????? ??? ????? (${ctx.rrRatio.toFixed(2)}). ???? ??? ?????.`,
+      narrative: `نسبة المخاطرة/العائد غير صالحة (${ctx.rrRatio.toFixed(2)}). تجنب هذا السهم.`,
     };
   }
 
-  // 2. R/R < 1.0 ? WAIT
+  // 2. R/R < 1.0 → WAIT
   if (ctx.rrRatio < 1.0) {
     return {
       signal: "WAIT",
-      signalAr: "?????",
+      signalAr: "انتظر",
       signalColor: "bg-yellow-500",
-      narrative: `???? ????????/?????? ${ctx.rrRatio.toFixed(2)} ??? ?? 1.0. ???????? ???? ?? ?????? ???????. ????? ???? ??????.`,
+      narrative: `نسبة المخاطرة/العائد ${ctx.rrRatio.toFixed(2)} أقل من 1.0. المخاطرة أعلى من العائد المتوقع. انتظر تحسن الظروف.`,
     };
   }
 
-  // 3. Near resistance (not at support) ? WAIT, or BUY if bull breakout
+  // 3. Near resistance (not at support) → WAIT, or BUY if bull breakout
   if (ctx.nearResistance && !ctx.nearSupport) {
     if (ctx.trendBull && ctx.macdBullish && ctx.volumeRatio > 1.5) {
-      // Bull breakout near resistance with volume � possible breakout BUY
+      // Bull breakout near resistance with volume — possible breakout BUY
       return {
         signal: "BUY",
-        signalAr: "????",
+        signalAr: "شراء",
         signalColor: "bg-green-500",
-        narrative: `???? ?? ???????? ??? ?? ????? ???? ??? ???? ????? ???? ?????. ???? ?????? ?? ?????? ????????.`,
+        narrative: `قريب من المقاومة لكن مع اتجاه صاعد قوي وكسر محتمل بحجم مرتفع. يمكن الشراء مع مراقبة المقاومة.`,
       };
     }
     return {
       signal: "WAIT",
-      signalAr: "?????",
+      signalAr: "انتظر",
       signalColor: "bg-yellow-500",
-      narrative: `????? ???? ?? ???????? (${ctx.distanceToResistancePct.toFixed(1)}%) ???? ??? ?????. ????? ??????? ????? ?? ??? ????????.`,
+      narrative: `السهم قريب من المقاومة (${ctx.distanceToResistancePct.toFixed(1)}%) وليس قرب الدعم. انتظر تراجعاً للدعم أو كسر المقاومة.`,
     };
   }
 
-  // 4. Break support � 0.98 + below SMA20 ? SELL
+  // 4. Break support × 0.98 + below SMA20 → SELL
   if (ctx.nearestSupport > 0 && input.close < ctx.nearestSupport * 0.98 && input.close < input.sma20) {
     return {
       signal: "SELL",
-      signalAr: "???",
+      signalAr: "بيع",
       signalColor: "bg-red-500",
-      narrative: `??? ????? ??????? (??? ?? ${ctx.nearestSupport.toFixed(2)} � 0.98) ????? ??????? 20. ????? ??? ?????.`,
+      narrative: `كسر الدعم الرئيسي (أقل من ${ctx.nearestSupport.toFixed(2)} × 0.98) وأسفل المتوسط 20. إشارة بيع واضحة.`,
     };
   }
 
-  // 5. RSI > 75 + above SMA20 + negative MACD hist ? SELL_STRONG
+  // 5. RSI > 75 + above SMA20 + negative MACD hist → SELL_STRONG
   if (input.rsi > 75 && input.close > input.sma20 && input.macdHist < 0) {
     return {
       signal: "SELL_STRONG",
-      signalAr: "??? ???",
+      signalAr: "بيع قوي",
       signalColor: "bg-red-700",
-      narrative: `RSI ??? ${input.rsi.toFixed(1)} (???? ?????) + ??? SMA20 + MACD ????. ????? ??? ???? � ???? ????? ????.`,
+      narrative: `RSI عند ${input.rsi.toFixed(1)} (تشبع شرائي) + فوق SMA20 + MACD سالب. إشارة بيع قوية — توقف خسارة فوري.`,
     };
   }
 
-  // 6. RSI > 65 + above SMA20 + volume > 2� avg ? SELL
+  // 6. RSI > 65 + above SMA20 + volume > 2× avg → SELL
   if (input.rsi > 65 && input.close > input.sma20 && ctx.volumeRatio > 2.0) {
     return {
       signal: "SELL",
-      signalAr: "???",
+      signalAr: "بيع",
       signalColor: "bg-red-500",
-      narrative: `RSI ??? ${input.rsi.toFixed(1)} (?????) + ??? ????? ???? (${ctx.volumeRatio.toFixed(1)}� ???????). ????? ???.`,
+      narrative: `RSI عند ${input.rsi.toFixed(1)} (مرتفع) + حجم مرتفع جداً (${ctx.volumeRatio.toFixed(1)}× المتوسط). إشارة بيع.`,
     };
   }
 
-  // 7. 5/5 gates + R/R = 2.0 ? BUY_STRONG
+  // 7. 5/5 gates + R/R ≥ 2.0 → BUY_STRONG
   if (ctx.gatesPassed === 5 && ctx.rrRatio >= 2.0) {
     return {
       signal: "BUY_STRONG",
-      signalAr: "???? ???",
+      signalAr: "شراء قوي",
       signalColor: "bg-emerald-600",
-      narrative: `???? ???????? ????? ?????? + ???? ????/?????? ${ctx.rrRatio.toFixed(2)} = 2.0. ???? ???? ????! ????? ${ctx.targetPrice.toFixed(2)} (+${ctx.targetPct.toFixed(1)}%)? ??? ??????? ${ctx.stopLoss.toFixed(2)} (-${ctx.stopPct.toFixed(1)}%).`,
+      narrative: `جميع البوابات الخمس مكتملة + نسبة عائد/مخاطرة ${ctx.rrRatio.toFixed(2)} ≥ 2.0. فرصة شراء قوية! الهدف ${ctx.targetPrice.toFixed(2)} (+${ctx.targetPct.toFixed(1)}%)، وقف الخسارة ${ctx.stopLoss.toFixed(2)} (-${ctx.stopPct.toFixed(1)}%).`,
     };
   }
 
-  // 8. min_gates passed + R/R = threshold ? BUY
+  // 8. min_gates passed + R/R ≥ threshold → BUY
   if (ctx.gatesPassed >= ctx.minGates && ctx.rrRatio >= config.minRrThreshold) {
     return {
       signal: "BUY",
-      signalAr: "????",
+      signalAr: "شراء",
       signalColor: "bg-green-500",
-      narrative: `${ctx.gatesPassed}/5 ?????? ?????? + ???? ${ctx.rrRatio.toFixed(2)} = ${config.minRrThreshold}. ????? ????. ????? ${ctx.targetPrice.toFixed(2)} (+${ctx.targetPct.toFixed(1)}%).`,
+      narrative: `${ctx.gatesPassed}/5 بوابات مكتملة + نسبة ${ctx.rrRatio.toFixed(2)} ≥ ${config.minRrThreshold}. إشارة شراء. الهدف ${ctx.targetPrice.toFixed(2)} (+${ctx.targetPct.toFixed(1)}%).`,
     };
   }
 
-  // 9. RSI < 25 + near support + volume > 1.5� + MACD hist rising ? BUY_CONTRARIAN
+  // 9. RSI < 25 + near support + volume > 1.5× + MACD hist rising → BUY_CONTRARIAN
   if (
     input.rsi < 25 &&
     ctx.nearSupport &&
@@ -724,14 +724,14 @@ function determineSignal(ctx: SignalContext): {
     if (histRising) {
       return {
         signal: "BUY_CONTRARIAN",
-        signalAr: "???? ????",
+        signalAr: "شراء عكسي",
         signalColor: "bg-amber-500",
-        narrative: `RSI ??? ${input.rsi.toFixed(1)} (???? ???? ????) + ??? ????? + ??? ????? + MACD ?????. ???? ???? ????? ?????????.`,
+        narrative: `RSI عند ${input.rsi.toFixed(1)} (تشبع بيعي شديد) + قرب الدعم + حجم مرتفع + MACD يتحسن. فرصة شراء عكسية للمضاربين.`,
       };
     }
   }
 
-  // 10. 2+ gates + < min_gates + near support + R/R = 1.0 ? ACCUMULATE
+  // 10. 2+ gates + < min_gates + near support + R/R ≥ 1.0 → ACCUMULATE
   if (
     ctx.gatesPassed >= 2 &&
     ctx.gatesPassed < ctx.minGates &&
@@ -740,18 +740,18 @@ function determineSignal(ctx: SignalContext): {
   ) {
     return {
       signal: "ACCUMULATE",
-      signalAr: "?????",
+      signalAr: "تجميع",
       signalColor: "bg-primary",
-      narrative: `${ctx.gatesPassed}/5 ?????? ?????? (??? ?? ??????? ${ctx.minGates}) ??? ??? ????? ????? ${ctx.rrRatio.toFixed(2)} ??????. ???? ??????? ????????.`,
+      narrative: `${ctx.gatesPassed}/5 بوابات مكتملة (أقل من المطلوب ${ctx.minGates}) لكن قرب الدعم ونسبة ${ctx.rrRatio.toFixed(2)} مقبولة. يمكن التجميع التدريجي.`,
     };
   }
 
-  // 11. Default ? WAIT
+  // 11. Default → WAIT
   return {
     signal: "WAIT",
-    signalAr: "?????",
+    signalAr: "انتظر",
     signalColor: "bg-yellow-500",
-    narrative: `?????? ??? ?????? (${ctx.gatesPassed}/5 ??????? R/R ${ctx.rrRatio.toFixed(2)}). ????? ????? ???? ??? ??????.`,
+    narrative: `الشروط غير مكتملة (${ctx.gatesPassed}/5 بوابات، R/R ${ctx.rrRatio.toFixed(2)}). انتظر تأكيد أقوى قبل الدخول.`,
   };
 }
 
@@ -797,18 +797,18 @@ function computeStockStrength(
 
   // Market proxy based on sector if available
   let proxy = "EGX Market";
-  let proxyAr = "??? ??????? ???????";
+  let proxyAr = "سوق الأوراق المالية";
 
   if (sectorPerformance !== undefined) {
     if (sectorPerformance > 1) {
       proxy = "Sector Leading";
-      proxyAr = "???? ????";
+      proxyAr = "قطاع رائد";
     } else if (sectorPerformance < -1) {
       proxy = "Sector Lagging";
-      proxyAr = "???? ?????";
+      proxyAr = "قطاع متأخر";
     } else {
       proxy = "Sector Neutral";
-      proxyAr = "???? ?????";
+      proxyAr = "قطاع محايد";
     }
   }
 
@@ -820,11 +820,11 @@ function computeStockStrength(
 // ---------------------------------------------------------------------------
 
 /**
- * analyzeGates � Pure function that takes a single stock snapshot and
+ * analyzeGates — Pure function that takes a single stock snapshot and
  * returns the complete 5-gate analysis output.
  *
- * @param input  � All required market data for one stock at one point in time
- * @param persona � 'gambler' (aggressive) or 'investor' (conservative), default 'gambler'
+ * @param input  — All required market data for one stock at one point in time
+ * @param persona — 'gambler' (aggressive) or 'investor' (conservative), default 'gambler'
  * @returns GateAnalysisOutput with signal, gates, targets, and narrative
  */
 export function analyzeGates(
@@ -893,21 +893,21 @@ export function analyzeGates(
   const gate1 = evaluateGate1(input, config);
   const gate2 = evaluateGate2(input, trendBull, trendBear, trendRange, persona);
 
-  // Gate 3 � using pre-computed S/R proximity
+  // Gate 3 — using pre-computed S/R proximity
   const gate3: GateResult = {
     passed: nearSupport && !nearResistance,
     name: "Support/Resistance",
-    nameAr: "?????/????????",
+    nameAr: "الدعم/المقاومة",
     reason: nearSupport && !nearResistance
       ? `Near support (${distanceToSupportPct.toFixed(1)}% < ${config.supportZonePct}%), away from resistance (${distanceToResistancePct.toFixed(1)}%)`
       : nearResistance
         ? `Near resistance (${distanceToResistancePct.toFixed(1)}% < ${config.resistanceZonePct}%)`
-        : `Far from support (${distanceToSupportPct.toFixed(1)}% = ${config.supportZonePct}%)`,
+        : `Far from support (${distanceToSupportPct.toFixed(1)}% ≥ ${config.supportZonePct}%)`,
     reasonAr: nearSupport && !nearResistance
-      ? `???? ?? ????? (${distanceToSupportPct.toFixed(1)}%)? ???? ?? ????????`
+      ? `قريب من الدعم (${distanceToSupportPct.toFixed(1)}%)، بعيد عن المقاومة`
       : nearResistance
-        ? `???? ?? ???????? (${distanceToResistancePct.toFixed(1)}%)`
-        : `???? ?? ????? (${distanceToSupportPct.toFixed(1)}%)`,
+        ? `قريب من المقاومة (${distanceToResistancePct.toFixed(1)}%)`
+        : `بعيد عن الدعم (${distanceToSupportPct.toFixed(1)}%)`,
   };
 
   const gate4Result = evaluateGate4(input, config, nearestSupport, nearestResistance);
@@ -966,7 +966,7 @@ export function analyzeGates(
 
   // -----------------------------------------------------------------------
   // Step 9.5: BB Squeeze Bonus (Gemini Dynamic Analysis)
-  // When BB Squeeze is active, reduce minGates by 1 � squeeze means
+  // When BB Squeeze is active, reduce minGates by 1 — squeeze means
   // an explosive move is imminent, so we lower the confirmation bar.
   // -----------------------------------------------------------------------
   let squeezeResult: BBSqueezeResult | null = null;
@@ -982,9 +982,9 @@ export function analyzeGates(
         if (gatesPassed >= effectiveMinGates && signalResult.signal === 'WAIT') {
           if (trendBull && volumeRatio > 1.2) {
             signalResult.signal = 'BUY';
-            signalResult.signalAr = '???? (?????? ?????? + ???)';
+            signalResult.signalAr = 'شراء (انضغاط بولنجر + حجم)';
             signalResult.signalColor = 'bg-emerald-500/20 text-emerald-400';
-            signalResult.narrative += `\n\n? BB Squeeze active (score: ${squeezeResult.squeezeScore}) � explosive move expected. Volume confirming direction.`;
+            signalResult.narrative += `\n\n⚡ BB Squeeze active (score: ${squeezeResult.squeezeScore}) — explosive move expected. Volume confirming direction.`;
           }
         }
       }
