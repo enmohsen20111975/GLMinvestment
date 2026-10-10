@@ -69158,3 +69158,85 @@ Task: استرجاع شغل ضاع بسبب force pushes + git reset
 commits:
 - 11432ce: استرجاع CHART-ENRICH
 - 86fc23e: استرجاع ARCH-OPTION-2
+
+---
+Task ID: THEME-OVERHAUL-1
+Agent: Main Agent (Z.ai Code)
+Task: المرحلة 1 — Institutional Dark Design System (colors + typography)
+
+Work Log:
+- قرأت تقييم Gemini للتطبيق: تشخيص مشاكل الألوان والتنقل والـ 50 شاشة
+- قرأت colors.dart + typography.dart الحاليين
+- لقيت ألوان نيون صاخبة (neonCyan, neonLime, gradientNeon, gradientPurplePink)
+
+التنفيذ (235 سطر جديد، 111 سطر محذوف):
+
+colors.dart — Institutional Dark Design System:
+- Deep Obsidian #080B11 (خلفية عميقة)
+- Slate Surface #0F172A (أسطح/بطاقات)
+- Institutional Emerald #10B981 (لون رئيسي)
+- Crisp Carmine #F43F5E (هبوط/خسارة)
+- Refined Gold #F59E0B (تحليلات متقدمة)
+- إزالة ألوان النيون (neonCyan→Teal, neonLime→Emerald, neonYellow→Gold)
+- مطابقة TradingView Pro / Bloomberg / Binance Institutional
+- كل أسماء الألوان القديمة محفوظة كـ aliases (ما يكسرش الكود الموجود)
+
+typography.dart — خط مالي + tabularFigures:
+- إضافة FontFeature.tabularFigures() لكل TextStyle
+  (أرقام جدولية — ما تهتزش أثناء تحديث الأسعار)
+- أوزان مدروسة: w400 (body), w600 (titles), w800 (headlines)
+- إضافة numeric styles: priceLarge/priceMedium/priceSmall/percentChange
+
+التحقق:
+- flutter analyze: 0 errors ✅
+- 11 warnings/infos فقط (مش بتمنع compile)
+- كلها من الكود القديم (unused fields + deprecated cacheExtent)
+
+commits:
+- bb9983a على flutter_investment_App
+
+Stage Summary:
+- المرحلة 1 (Theme + Typography) اكتملت ✅
+- المرحلة 2 (app.dart BottomNav + Drawer) — جارية
+- المرحلة 3 (Screen Consolidation) — لاحقاً
+- المرحلة 4 (API verification) — لاحقاً
+
+---
+Task ID: THEME-OVERHAUL-2
+Agent: Main Agent (Z.ai Code)
+Task: المرحلة 2 — BottomNav 5 Golden Pillars + إزالة FAB المشوه
+
+Work Log:
+- فحصت app.dart (1415 سطر) — لقيت BottomNav بـ 5 tabs مش مطابقة للـ blueprint
+- لقيت FloatingActionButton بـ gradient نيون قديم (#4F46E5/#0EA5E9 — محظور)
+
+التنفيذ:
+
+BottomNav — 5 Golden Pillars (مطابقة Master Blueprint):
+- الأسواق (Markets) — tab 0 — Icons.show_chart
+- الرادار (AI Radar) — tab 1 — Icons.radar
+- المحفظة (Portfolio) — tab 2 — Icons.account_balance_wallet
+- المختبر (Trading Lab) — tab 3 — Icons.science
+- الحساب (Account) — tab 4 — Icons.person
+
+إزالة FloatingActionButton المشوه:
+- كان gradient نيون قديم (indigo→sky — ألوان محظورة)
+- كان بـ يفتح _showQuickHubModal (modal ضخم بـ 9 أزرار عشوائية)
+- استبدال: مفيش FAB — التطبيق المؤسسي مفيهوش أزرار عشوائية
+
+تنظيف dead code (-116 سطر):
+- إزالة _showQuickHubModal (88 سطر)
+- إزالة _buildQuickHubTile (28 سطر)
+- إزالة unused imports (investors_screen + stock_search_dialog)
+
+التحقق:
+- flutter analyze: 0 errors ✅
+- 11 warnings/infos فقط (نفس اللي كانت قبل كده)
+
+commit: 332f522 على flutter_investment_App
+
+Stage Summary:
+- المرحلة 1 (Theme + Typography) ✅
+- المرحلة 2 (BottomNav + FAB removal) ✅
+- المرحلة 3 (Screen Consolidation) — لاحقاً
+- المرحلة 4 (API verification) — لاحقاً
