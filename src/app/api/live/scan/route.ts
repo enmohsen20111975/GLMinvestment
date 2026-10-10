@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getTopMoversFallback } from '@/lib/flutter-sqlite-fallback';
+import { PYTHON_BACKEND_URL } from '@/lib/python-backend';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const qs = new URLSearchParams({ limit: String(limit) });
     if (market) qs.set('market', market);
-    const res = await fetch(`http://localhost:8010/api/live/scan?${qs.toString()}`, {
+    const res = await fetch(`${PYTHON_BACKEND_URL}/api/live/scan?${qs.toString()}`, {
       signal: AbortSignal.timeout(5000),
       cache: 'no-store',
     });
