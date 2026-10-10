@@ -12,6 +12,30 @@
 
 ---
 
+## [2026-10-10 — DATA-VERIFY + SMART-RECALC + SEARCH] — المدير العام
+
+### Added
+- **smart_recalc.py**: 3-layer solution لتحديث support/resistance بدون ضغط CPU
+  - Layer 1: Validation Guard (0% CPU — if support>price → NULL)
+  - Layer 2: Smart Detection (كشف الأسهم المتغيرة > 2%)
+  - Layer 3: Rolling Update (50 سهم/ساعة — cron job)
+- **StockSearchSelector** في #specialist-analysis: بحث بالعربي/الإنجليزي/الرمز + اقتراحات ذكية
+- **cron job**: `0 * * * * smart_recalc.py --rolling 50` (تحديث تدريجي كل ساعة)
+
+### Fixed
+- **430 قيم support/resistance غير منطقية**: تصفير support>price + resistance<price → NULL
+- **syntax error** في daily_price_updater.py validation guard
+- **daily_price_updater.py**: + Validation Guard بعد كل تحديث أسعار
+
+### Verified
+- ✅ تطابق القيم: COMI price=124.65 في كل المصادر (list=detail=screener)
+- ✅ صفر هلاوس بعد الإصلاح (كانت 430 → 0)
+- ✅ 153/153 توقعات صحيحة رياضيًا
+- ✅ 5 أسواق + 1205 سهم نشط
+- ✅ lint: 0 errors
+
+---
+
 ## [2026-10-09 — PHASE-2-ADMIN-PANEL] — لوحة الأدمن (12 تحسين)
 
 ### أُضيف (New)
