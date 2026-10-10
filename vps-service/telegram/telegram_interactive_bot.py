@@ -112,6 +112,7 @@ MAIN_MENU_KEYBOARD = {
             {"text": "📚 درس اليوم التعليمي"}
         ],
         [
+            {"text": "👤 حسابي واشتراكي"},
             {"text": "🌐 منصة التحليل المباشر"}
         ]
     ],
@@ -528,17 +529,15 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
 
     return radar_info
 
-DAILY_QUERY_LIMIT_TRIAL = 5
+DAILY_QUERY_LIMIT_TRIAL = 50
 # P1-FIX (2026-10-09, Round 2): persist daily query count في auth.db بدل in-memory
 # قبل كده: _daily_query_counts Dict بتتمسح لما البوت يعمل restart
 # دلوقتي: بنحفظ في auth.db.usage_daily (Prisma)
 _daily_query_counts: Dict[str, int] = {}  # in-memory cache (fallback)
 
-def _get_db_path():
+def _get_db_path() -> str:
     """جيب مسار auth.db."""
-    import os
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, '..', 'db', 'auth.db')
+    return str(DB_DIR / "auth.db")
 
 def check_and_increment_daily_limit(chat_id: int) -> Tuple[bool, int, int]:
     """
@@ -698,14 +697,13 @@ def build_stock_card(
         tp2_line = f"🚀 <b>الهدف الثاني (TP2):</b> <code>{tp2_str} ج.م</code>{tp2_gain_str} [مقاومة م2: {r2_str}]"
         urgency_footer = ""
     else:
-        badge_header = f"⏳ <b>فترة تجريبية (متبقي {days_left} أيام)</b>"
-        tp2_line = "🚀 <b>الهدف الثاني (TP2):</b> 🔒 <i>[محجوب — متاح لمشتركي باقات VIP فقط]</i>"
-        used_today = DAILY_QUERY_LIMIT_TRIAL - (remaining_queries if remaining_queries is not None else 0)
+        badge_header = f"⏳ <b>فترة تجريبية نشطة (متبقي {days_left} أيام) | كامل المزايا</b>"
+        tp2_line = f"🚀 <b>الهدف الثاني (TP2):</b> <code>{tp2_str} ج.م</code>{tp2_gain_str} [مقاومة م2: {r2_str}]"
+        used_today = max(1, DAILY_QUERY_LIMIT_TRIAL - (remaining_queries if remaining_queries is not None else DAILY_QUERY_LIMIT_TRIAL))
         urgency_footer = f"""
 ━━━━━━━━━━━━━━━━━━━
-⏳ <b>تنبيه التجربة المجانية (7 أيام):</b> متبقي لك <b>{days_left}</b> أيام فقط!
-⚡ <b>الاستهلاك اليومي:</b> تم استخدام {used_today}/{DAILY_QUERY_LIMIT_TRIAL} استعلامات اليوم.
-💎 <b>اشترك الآن لفتح الهدف الثاني (TP2) والوصول اللامحدود:</b>"""
+⏳ <b>فترتك التجريبية نشطة:</b> متبقي لك <b>{days_left}</b> أيام بكامل المزايا والأهداف.
+⚡ <b>الاستهلاك اليومي:</b> {used_today}/{DAILY_QUERY_LIMIT_TRIAL} فحص اليوم."""
 
     # EXPERT-ANALYSIS-ENGINE (2026-10-09): جلب تحليل خبير احترافي
     expert_analysis_text = _fetch_bot_expert_analysis(sym)
@@ -765,14 +763,14 @@ def build_stock_card(
         keyboard = {
             "inline_keyboard": [
                 [
-                    {"text": "💎 فتح الهدف الثاني واشتراك VIP", "url": SUBSCRIPTION_UPGRADE_URL}
+                    {"text": "📊 فتح الشارت الحي على المنصة", "url": "https://invist.m2y.net/#trading-chart"}
                 ],
                 [
                     {"text": "🔍 فحص سهم آخر", "callback_data": "action:show_stock_menu"},
                     {"text": "🎯 رادار الميكرز", "callback_data": "action:show_radar_picks"}
                 ],
                 [
-                    {"text": "🌐 ترقية باقتك على المنصة", "url": SUBSCRIPTION_UPGRADE_URL}
+                    {"text": "💎 ترقية باقتك إلى VIP غير المحدود", "url": SUBSCRIPTION_UPGRADE_URL}
                 ]
             ]
         }
@@ -873,9 +871,8 @@ def check_subscription(chat_id: int) -> dict:
         )
         if r.ok:
             data = r.json()
-            if isinstance(data, dict):
+            if isinstance(data, dict) and data.get("linked"):
                 return data
-        log.warning(f"check_subscription HTTP {r.status_code}: {r.text[:200]}")
     except Exception as e:
         log.warning(f"check_subscription HTTP failed: {e}")
 
@@ -986,26 +983,27 @@ def generate_link_token(chat_id: int, username: str = "") -> dict:
 
 
 def _send_link_prompt(chat_id: int, user_name: str = ""):
-    """إشعار حصر البوت للمسجلين فقط في المنصة."""
+    """إشعار حصر البوت للمسجلين فقط في المنصة مع دعم الربط المباشر بالبريد."""
     link_data = generate_link_token(chat_id, user_name)
     link_url = link_data.get("link_url") or f"{PLATFORM_URL}/#auth"
 
     msg = f"""مرحباً بك <b>{user_name or 'عزيزي المستثمر'}</b>! 👋
 
-🔒 <b>خدمة بوت الميكرز التفاعلي متاحة حصرياً للأعضاء المسجلين في منصتنا.</b>
+🔒 <b>خدمة بوت الميكرز التفاعلي متاحة لأعضاء منصة دليل المستثمر.</b>
 
-للاستفادة من تحليلات البوت، فحص الأسهم، وشارتات الشموع اللحظية:
-1️⃣ أنشئ حسابك مجاناً على المنصة (أو سجّل دخولك إذا كان لديك حساب).
-2️⃣ تحصل فوراً على <b>فترة تجريبية مجانية لمدة أسبوع (7 أيام)</b> بكافة المزايا.
-3️⃣ اضغط على زر <b>🔗 ربط حسابك في الموقع</b> أدناه لتفعيل البوت فوراً! ✅
+⚡ <b>إذا كان لديك حساب مسجل بالفعل على المنصة:</b>
+أرسل بريدك الإلكتروني هنا في المحادثة مباشرة (مثال: <code>/link name@example.com</code> أو اكتب إيميلك فقط)،
+وسيتم التعرف عليك وربط حسابك وتفعيل البوت فوراً! ✅
 
-🌐 <b>رابط المنصة للتسجيل والتفعيل:</b>
-👉 https://invist.m2y.net/"""
+🌐 <b>إذا لم تكن مسجلاً بعد:</b>
+1️⃣ اضغط على زر <b>التسجيل في المنصة</b> أدناه (أقل من دقيقة).
+2️⃣ تحصل فوراً على <b>فترة تجريبية مجانية 7 أيام بكامل المزايا</b> (فحص الأسهم، الأهداف كاملة، والرادار).
+3️⃣ ارجع هنا وأرسل إيميلك لتبدأ التداول الذكي فوراً! 🚀"""
 
     kb = {
         "inline_keyboard": [
-            [{"text": "🔗 ربط حسابك في الموقع (تفعيل فوري)", "url": link_url}],
-            [{"text": "🌐 فتح المنصة والتسجيل (تجربة 7 أيام)", "url": "https://invist.m2y.net/"}]
+            [{"text": "🔗 ربط سريع عبر المتصفح", "url": link_url}],
+            [{"text": "🌐 فتح المنصة والتسجيل (تجربة 7 أيام مجاناً)", "url": f"{PLATFORM_URL}/#auth"}]
         ]
     }
     send_message(chat_id, msg, reply_markup=kb)
@@ -1037,23 +1035,184 @@ def _send_trial_expired_prompt(chat_id: int, user_name: str = ""):
 
 
 def _send_daily_limit_exceeded_prompt(chat_id: int, user_name: str = ""):
-    """إشعار تجاوز الحد اليومي للاستعلامات (5 استعلامات) للباقة التجريبية."""
-    msg = f"""⚠️ <b>عزيزي {user_name or 'المتداول'}، لقد استنفدت حد الفحص اليومي!</b>
+    """إشعار تجاوز الحد اليومي للاستعلامات للباقة التجريبية."""
+    msg = f"""⚠️ <b>عزيزي {user_name or 'المتداول'}، لقد استنفدت حد الفحص اليومي ({DAILY_QUERY_LIMIT_TRIAL} استعلاماً)!</b>
 ━━━━━━━━━━━━━━━━━━━━
-⚡ في الفترة التجريبية المجانية، الحد المتاح هو <b>5 استعلامات فقط في اليوم</b>.
+⚡ في الفترة التجريبية المجانية، الحد المتاح هو <b>{DAILY_QUERY_LIMIT_TRIAL} استعلاماً في اليوم</b> لضمان أفضل سرعة واستقرار للجميع.
+يتجدد الرصيد تلقائياً صباح كل يوم ☀️.
 
 💎 <b>هل ترغب في فحص أي سهم بلا حدود؟</b>
-اشترك الآن في باقة <b>Premium</b> للحصول على:
-• ♾️ استعلامات وفحص شارتات غير محدودة
-• 🔓 فتح الهدف الثاني (TP2) لجميع الأسهم
-• 🎯 الوصول الكامل لكل فرص رادار الميكرز اللحظية
+اشترك الآن في باقة <b>VIP</b> للحصول على:
+• ♾️ استعلامات وفحص شارتات غير محدودة طوال اليوم
+• 🎯 تنبيهات رادار الميكرز اللحظية على تليجرام
+• 📊 شارتات احترافية ودراسات كمية متقدمة
 
-👇 اضغط للترقية فوراً وبدء الوصول اللامحدود:"""
+👇 اضغط للترقية الفورية والوصول اللامحدود:"""
 
     kb = {
         "inline_keyboard": [
-            [{"text": "💎 ترقية إلى باقة Premium غير المحدودة", "url": SUBSCRIPTION_UPGRADE_URL}],
+            [{"text": "💎 ترقية إلى باقة VIP غير المحدودة", "url": SUBSCRIPTION_UPGRADE_URL}],
             [{"text": "🎯 رادار الميكرز", "callback_data": "action:show_radar_picks"}]
+        ]
+    }
+    send_message(chat_id, msg, reply_markup=kb)
+
+
+def link_user_by_email(chat_id: int, email: str, username: str = "") -> bool:
+    """ربط حساب التليجرام بالبريد الإلكتروني المسجل في auth.db مباشرة وبكل سهولة."""
+    email_clean = email.strip().lower()
+    auth_db_path = DB_DIR / "auth.db"
+    if not auth_db_path.exists():
+        send_message(chat_id, "⚠️ عذراً، قاعدة بيانات الحسابات غير متاحة حالياً.")
+        return False
+    try:
+        conn = sqlite3.connect(str(auth_db_path))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # التأكد من وجود جدول user_telegram_links
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_telegram_links (
+                id                 TEXT PRIMARY KEY,
+                user_id            TEXT NOT NULL UNIQUE,
+                telegram_chat_id   TEXT NOT NULL UNIQUE,
+                telegram_username  TEXT,
+                linked_at          TEXT NOT NULL,
+                is_active          INTEGER NOT NULL DEFAULT 1
+            )
+        """)
+
+        user = cur.execute(
+            "SELECT id, name, username, email, subscription_tier, trial_ends_at, created_at, is_active FROM User WHERE LOWER(TRIM(email)) = ?",
+            (email_clean,)
+        ).fetchone()
+
+        if not user:
+            conn.close()
+            send_message(
+                chat_id,
+                f"❌ لم يتم العثور على حساب مسجل بالبريد: <code>{email_clean}</code>\n\n"
+                f"🌐 يمكنك إنشاء حساب مجاناً في دقيقة واحدة وتفعيل تجربة الـ 7 أيام:\n"
+                f"👉 <a href='https://invist.m2y.net/#auth'>اضغط هنا للتسجيل على المنصة</a>",
+                reply_markup={"inline_keyboard": [[{"text": "🌐 إنشاء حساب جديد مجاناً", "url": "https://invist.m2y.net/#auth"}]]}
+            )
+            return False
+
+        if user["is_active"] is not None and not user["is_active"]:
+            conn.close()
+            send_message(chat_id, "⚠️ هذا الحساب معطل حالياً. يرجى التواصل مع إدارة المنصة.")
+            return False
+
+        user_id = user["id"]
+        # حذف أي ربط قديم لنفس المستخدم أو نفس chat_id لمنع تعارض الـ UNIQUE
+        cur.execute("DELETE FROM user_telegram_links WHERE user_id = ? OR telegram_chat_id = ?", (user_id, str(chat_id)))
+
+        import uuid
+        link_id = f"link_{uuid.uuid4().hex[:12]}"
+        tg_user = username or user["username"] or user["name"] or ""
+        cur.execute(
+            "INSERT INTO user_telegram_links (id, user_id, telegram_chat_id, telegram_username, linked_at, is_active) "
+            "VALUES (?, ?, ?, ?, datetime('now'), 1)",
+            (link_id, user_id, str(chat_id), tg_user)
+        )
+        conn.commit()
+        conn.close()
+
+        # لو الحساب admin أو خاص بالمالك، نفعله تلقائياً في ADMIN_TELEGRAM_IDS
+        tier_raw = (user["subscription_tier"] or "free").lower()
+        if tier_raw == "admin" or email_clean in ("mohsentaher42@gmail.com",):
+            ADMIN_TELEGRAM_IDS.add(str(chat_id))
+
+        # إعادة جلب بيانات الاشتراك لعرض تقرير الترحيب الشخصي
+        sub = check_subscription(chat_id)
+        display_name = user["name"] or user["username"] or email_clean.split('@')[0]
+        tier = (sub.get("subscription_tier") or tier_raw).lower()
+        is_paid = sub.get("is_paid", False)
+        days_left = sub.get("days_left", 7)
+
+        tier_names = {
+            "admin": "👑 المالك / الإدارة (Admin VIP)",
+            "developer": "💻 مطور معتمد",
+            "b2b_enterprise": "🏢 باقة المؤسسات Enterprise VIP",
+            "b2b_pro": "💼 باقة الشركات B2B Pro VIP",
+            "b2b_starter": "🚀 باقة الشركات البداية B2B Starter VIP",
+            "pro": "💎 باقة Pro VIP",
+            "premium": "🌟 باقة Premium VIP",
+            "normal": "✨ باقة VIP",
+            "free": "⏳ باقة التجربة المجانية (Full Trial)"
+        }
+        tier_label = tier_names.get(tier, f"✨ {tier.upper()}")
+
+        if is_paid:
+            status_desc = "وصول غير محدود ♾️ لجميع ميزات رادار الميكرز وتحليلات الأسهم."
+        else:
+            status_desc = f"فترة تجريبية كاملة المزايا — متبقي لك <b>{days_left}</b> يوماً."
+
+        success_msg = f"""🎉 <b>أهلاً بك يا {display_name}! تم ربط حسابك بنجاح ✅</b>
+━━━━━━━━━━━━━━━━━━━━
+📧 <b>البريد المرتبط:</b> <code>{email_clean}</code>
+🏅 <b>الباقة:</b> {tier_label}
+📊 <b>حالة الوصول:</b> {status_desc}
+
+🚀 البوت الآن متصل بحسابك ويتعرف عليك في كل استعلام.
+👇 يمكنك البدء فوراً باختيار سهم من القائمة أو تصفح رادار الميكرز:"""
+
+        send_message(chat_id, success_msg, reply_markup=MAIN_MENU_KEYBOARD)
+        return True
+    except Exception as e:
+        log.error(f"خطأ أثناء ربط الحساب بالبريد {email_clean}: {e}")
+        send_message(chat_id, f"⚠️ حدث خطأ أثناء محاولة ربط الحساب: {e}")
+        return False
+
+
+def handle_account_status(chat_id: int, user_name: str = ""):
+    """عرض معلومات الحساب الشخصي والاشتراك وحالة التجربة للمستخدم."""
+    sub = check_subscription(chat_id)
+    if not sub.get("linked"):
+        _send_link_prompt(chat_id, user_name)
+        return
+
+    display_name = sub.get("display_name") or user_name or "المتداول"
+    tier = (sub.get("subscription_tier") or "free").lower()
+    is_paid = sub.get("is_paid", False)
+    days_left = sub.get("days_left", 0)
+
+    tier_names = {
+        "admin": "👑 المالك / الإدارة (Admin VIP)",
+        "developer": "💻 مطور معتمد",
+        "b2b_enterprise": "🏢 باقة المؤسسات Enterprise VIP",
+        "b2b_pro": "💼 باقة الشركات B2B Pro VIP",
+        "b2b_starter": "🚀 باقة الشركات البداية B2B Starter VIP",
+        "pro": "💎 باقة Pro VIP",
+        "premium": "🌟 باقة Premium VIP",
+        "normal": "✨ باقة VIP",
+        "free": "⏳ باقة التجربة المجانية (Full Trial)"
+    }
+    tier_label = tier_names.get(tier, f"✨ {tier.upper()}")
+
+    today_key = f"{chat_id}:{time.strftime('%Y-%m-%d')}"
+    used_today = _daily_query_counts.get(today_key, 0)
+    limit_text = "غير محدود ♾️" if is_paid else f"{used_today}/{DAILY_QUERY_LIMIT_TRIAL} فحص اليوم"
+    expiry_text = "اشتراك دائم مدى الحياة ♾️" if is_paid else f"متبقي {days_left} أيام بكامل المزايا"
+
+    msg = f"""👤 <b>بيانات حسابك في دليل المستثمر العربي:</b>
+━━━━━━━━━━━━━━━━━━━━
+👋 <b>الاسم:</b> {display_name}
+🆔 <b>معرف تليجرام:</b> <code>{chat_id}</code>
+🏅 <b>الباقة الحالية:</b> {tier_label}
+⏳ <b>الصلاحية:</b> {expiry_text}
+⚡ <b>الاستهلاك اليومي:</b> {limit_text}
+
+🎯 <b>المزايا المتاحة لحسابك:</b>
+• كشف منطقة الدخول والوقف الآمن ✅
+• كشف أهداف السهم (الهدف 1 + الهدف 2) ✅
+• رادار الميكرز V40.2 اللحظي بكامل الفرص ✅
+• شارتات فنية فائقة الدقة لكل أسهم البورصة ✅"""
+
+    kb = {
+        "inline_keyboard": [
+            [{"text": "🌐 فتح المنصة ولوحة التحكم", "url": "https://invist.m2y.net/#dashboard"}],
+            [{"text": "💎 تفاصيل باقات VIP", "url": SUBSCRIPTION_UPGRADE_URL}]
         ]
     }
     send_message(chat_id, msg, reply_markup=kb)
@@ -1163,20 +1322,24 @@ def handle_start(chat_id: int, user_name: str = "", start_param: str = ""):
 def _send_full_welcome(chat_id: int, user_name: str = "", sub: Optional[Dict] = None):
     """الترحيب وعرض القائمة مع توضيح حالة الحساب (VIP أو تجربة نشطة)."""
     is_vip = bool(sub and (sub.get("is_paid") or sub.get("_fail_open")))
+    is_trial_active = bool(sub and sub.get("is_trial_active"))
     days_left = sub.get("days_left", 7) if sub else 7
+    display_name = (sub and sub.get("display_name")) or user_name or "صديقنا المتداول"
 
     if is_vip:
-        status_banner = "👑 <b>حسابك: مشترك VIP مُميّز — وصول كامل غير محدود</b>"
+        status_banner = f"👑 <b>أهلاً بك يا {display_name} | مشترك VIP مُميّز — وصول كامل غير محدود ♾️</b>"
+    elif is_trial_active:
+        status_banner = f"""⏳ <b>أهلاً بك يا {display_name} | فترتك التجريبية نشطة (متبقي {days_left} أيام)</b>
+✨ <i>كامل المزايا مفتوحة لك: فحص الأسهم، الأهداف (TP1 و TP2)، ورادار الميكرز اللحظي.</i>"""
     else:
-        status_banner = f"""⏳ <b>حسابك: فترة تجريبية مجانية (متبقي {days_left} أيام فقط)</b>
-⚡ <i>الحد اليومي: 5 استعلامات/يوم | الهدف الثاني محجوب لمشتركي VIP</i>
-💎 <a href="{SUBSCRIPTION_UPGRADE_URL}">اضغط هنا للترقية وإلغاء القيود فوراً</a>"""
+        status_banner = f"""⏳ <b>أهلاً بك يا {display_name} | فترة تجريبية مجانية</b>
+💎 <a href="{SUBSCRIPTION_UPGRADE_URL}">اضغط هنا للترقية والوصول غير المحدود</a>"""
 
-    welcome = f"""مرحباً بك يا <b>{user_name or 'صديقنا المتداول'}</b> في <b>دليل المستثمر العربي</b> 📈!
+    welcome = f"""مرحباً بك يا <b>{display_name}</b> في <b>دليل المستثمر العربي</b> 📈!
 
 {status_banner}
 
-🤖 <b>البوت الآلي الأول لرصد صناع السوق (الميكرز) بالبورصة المصرية V40.2.</b>
+🤖 <b>البوت الآلي لرصد صناع السوق (الميكرز) بالبورصة المصرية V40.2.</b>
 
 🔍 <b>ماذا يمكنني أن أقدم لك؟</b>
 • <b>شارتات شموع يابانية فورية</b> لكل أسهم البورصة المصرية.
@@ -1190,7 +1353,7 @@ def _send_full_welcome(chat_id: int, user_name: str = "", sub: Optional[Dict] = 
 
 
 def handle_radar_command(chat_id: int, sub: Optional[Dict] = None):
-    """عرض أسهم رادار الميكرز مع تفرقة بين الـ VIP والـ Trial (زيادة ضغط التحويل)."""
+    """عرض أسهم رادار الميكرز مع إتاحة كاملة للمشتركين والعملاء في التجربة."""
     candidates = []
     if PREDICTIONS_DB.exists():
         try:
@@ -1213,37 +1376,26 @@ def handle_radar_command(chat_id: int, sub: Optional[Dict] = None):
         return
 
     is_vip = bool(sub and (sub.get("is_paid") or sub.get("_fail_open")))
+    is_trial_active = bool(sub and sub.get("is_trial_active"))
+    days_left = sub.get("days_left", 7) if sub else 7
 
     buttons = []
-    text_lines = ["🎯 <b>أبرز فرص رادار الميكرز تحت المجهر اليوم:</b>\n"]
+    text_lines = ["🎯 <b>أبرز فرص رادار الميكرز V40.2 تحت المجهر اليوم:</b>\n"]
 
-    if is_vip:
-        for c in candidates:
-            tk = c['ticker']
-            conf = c['confidence'] or 70
-            sig = c['signal']
-            text_lines.append(f"▪️ <b>{tk}</b> — ثقة {conf}% ({sig})")
-            buttons.append([{"text": f"📊 تحليل وشارت {tk}", "callback_data": f"stock:{tk}"}])
+    for c in candidates:
+        tk = c['ticker']
+        conf = c['confidence'] or 70
+        sig = c['signal']
+        text_lines.append(f"▪️ <b>{tk}</b> — ثقة {conf}% ({sig})")
+        buttons.append([{"text": f"📊 فحص وشارت {tk}", "callback_data": f"stock:{tk}"}])
 
-        buttons.append([{"text": "🌐 فتح شاشة الرادار الكاملة", "url": "https://invist.m2y.net/#recommendations"}])
-        text_lines.append("\n👇 <b>اضغط على أي سهم لاستعراض شارت الشموع وأهدافه فوراً:</b>")
-    else:
-        # للمستخدم في التجربة: نعرض سهم واحد فقط ونقفل الباقي للتشويق وزيادة التحويل
-        top_cand = candidates[0]
-        tk = top_cand['ticker']
-        conf = top_cand['confidence'] or 70
-        sig = top_cand['signal']
-        text_lines.append(f"▪️ <b>{tk}</b> — ثقة {conf}% ({sig}) [معاينة تجريبية]")
-        buttons.append([{"text": f"📊 معاينة تحليل وشارت {tk}", "callback_data": f"stock:{tk}"}])
+    buttons.append([{"text": "🌐 فتح شاشة الرادار الحية على المنصة", "url": "https://invist.m2y.net/#recommendations"}])
+    buttons.append([{"text": "🔍 فحص سهم آخر من القائمة", "callback_data": "action:show_stock_menu"}])
 
-        text_lines.append(f"""
-🔒 <b>+4 فرص ذهبية أخرى رصدها الرادار محجوبة الآن!</b>
-رادار الميكرز رصد سيولة ذكية تجميعية عالية في أسهم أخرى لكنها متاحة حصرياً للمشتركين المدفوعين.
+    if is_trial_active and not is_vip:
+        text_lines.append(f"\n💡 <i>ملاحظة: فترتك التجريبية تتيح لك معاينة كامل فرص الرادار (متبقي {days_left} أيام).</i>")
 
-💎 <b>اشترك في Premium لفتح كامل قائمة رادار الميكرز فوراً:</b>""")
-
-        buttons.append([{"text": "💎 فتح كامل أسهم رادار الميكرز", "url": SUBSCRIPTION_UPGRADE_URL}])
-        buttons.append([{"text": "🔍 فحص سهم آخر من القائمة", "callback_data": "action:show_stock_menu"}])
+    text_lines.append("\n👇 <b>اضغط على أي سهم لاستعراض شارت الشموع وأهدافه فوراً:</b>")
 
     send_message(chat_id, "\n".join(text_lines), reply_markup={"inline_keyboard": buttons})
 
@@ -1329,6 +1481,8 @@ def process_update(update: dict):
             send_stock_picker_menu(chat_id)
         elif data == "action:show_radar_picks":
             handle_radar_command(chat_id, sub=sub)
+        elif data == "action:account_status":
+            handle_account_status(chat_id, user_name)
         return
 
     # 2. معالجة الرسائل النصية
@@ -1358,6 +1512,32 @@ def process_update(update: dict):
         handle_start(chat_id, user_name, start_param=start_arg)
         return
 
+    # فحص أوامر الربط المباشر بالبريد الإلكتروني
+    email_to_link = None
+    if text.startswith("/link"):
+        parts = text.split(None, 1)
+        if len(parts) > 1:
+            email_to_link = parts[1].strip()
+        else:
+            send_message(
+                chat_id,
+                "ℹ️ <b>طريقة ربط حسابك بالبريد الإلكتروني:</b>\n\n"
+                "أرسل الأمر متبوعاً ببريدك المسجل بالمنصة، مثال:\n"
+                "<code>/link name@example.com</code>\n\n"
+                "أو اكتب بريدك مباشرة في رسالة.",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return
+    elif "@" in text and "." in text:
+        import re
+        match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text.strip())
+        if match and len(text.strip().split()) == 1:
+            email_to_link = match.group(0)
+
+    if email_to_link:
+        link_user_by_email(chat_id, email_to_link, user_name)
+        return
+
     # أمر "المنصة" متاح للكل للتسجيل والاشتراك
     if text in ("🌐 منصة التحليل المباشر", "المنصة", "الموقع"):
         send_message(
@@ -1365,6 +1545,11 @@ def process_update(update: dict):
             "🌐 <b>رابط منصة التحليل المباشر ودليل المستثمر:</b>\n👉 https://invist.m2y.net/#dashboard",
             reply_markup=MAIN_MENU_KEYBOARD
         )
+        return
+
+    # استعلام عن بيانات الحساب والاشتراك
+    if text in ("👤 حسابي واشتراكي", "حسابي", "اشتراكي", "معلومات حسابي", "/status", "/account", "/my_plan"):
+        handle_account_status(chat_id, user_name)
         return
 
     # أوامر عامة لا تتطلب اشتراك مسبق
