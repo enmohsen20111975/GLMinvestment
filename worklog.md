@@ -67865,3 +67865,26 @@ Constraints honored:
 
 Stage Summary:
 - 26 changes total across 3 files (6 + 7 + 13)
+
+---
+Task ID: FLUTTER-CLIENT-SCREENS (المدير العام — شاشات العميل في الفلاتر)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: تحديث شاشات العميل في برنامج الفلاتر (لا أدمن — عميل فقط)
+
+Work Log:
+- قاعدة المالك: "المطلوب شاشات العميل فقط — أي شيء يخص الأدمن مايروحش لتطبيق الفلاتر"
+- جرد كامل لـ 49 شاشة في الفلاتر — كلها شاشات عميل ✅ (لا أدمن).
+- فحص الفجوات بين المنصة والفلاتر:
+  1. screener_screen: markets قديمة [EGX,TADAWUL,KSE,QSE,DFM,ADX] → محدّثة لـ [EGX,TADAWUL,KSE,QSE,US,CRYPTO]
+  2. screener_screen: أضفت _activePreset state للـ trader presets (زبدة/انفجار/قيعان/دفاعي)
+  3. hunter_screen: markets محدّثة — أضيف US + CRYPTO
+  4. radar_screen: entry/stop/target/R:R موجود جزئيًا (trade_levels) — يحتاج تحديث من canonical unified
+  5. reports_screen: يحتاج تحديث بالـ branding الجديد (logo + market + disclaimer)
+- Push لـ flutter repo: commit 600fb44.
+
+Stage Summary:
+- ✅ Flutter app محدّث + مرفوع (commit 600fb44)
+- ✅ 6 أسواق موحدة في screener + hunter
+- ✅ preset state مضاف للـ screener
+- ✅ لا شاشات أدمن في الفلاتر (عميل فقط)
+- المتبقي: تحديث radar_screen بـ canonical levels + تحديث reports_screen بالـ branding
