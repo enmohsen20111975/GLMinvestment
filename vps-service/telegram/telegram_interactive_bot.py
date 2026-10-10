@@ -15,8 +15,10 @@ import asyncio
 import sqlite3
 import logging
 import requests
+import difflib
+import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 # مسارات المشروع
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -87,9 +89,10 @@ CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "").strip()  # Task SECURITY-
 # السبب: check_subscription() بـ يتحقق من user_telegram_links table — لو
 # الـ chat_id مش متسجل هناك، البوت بيرفض الدخول حتى لو كان الأدمن نفسه.
 # الحل: قائمة ADMIN_TELEGRAM_IDS من env vars — أي chat_id فيها بـ يدخل مباشرة.
-ADMIN_TELEGRAM_IDS = set(
-    tid.strip() for tid in os.environ.get("ADMIN_TELEGRAM_IDS", "").split(",") if tid.strip()
-)
+ADMIN_TELEGRAM_IDS = {
+    "6030948280",  # Eng Mohsen (المالك / الأدمن)
+    *(tid.strip() for tid in os.environ.get("ADMIN_TELEGRAM_IDS", "").split(",") if tid.strip())
+}
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 PLATFORM_URL = "https://invist.m2y.net"
 
@@ -360,9 +363,43 @@ def _fetch_bot_expert_analysis(ticker: str) -> str:
         return "—"
 
 
+def normalize_arabic(text: str) -> str:
+    """تطبيع النصوص العربية لإزالة الفروق الإملائية الشائعة."""
+    if not text:
+        return ""
+    t = text.strip()
+    t = re.sub(r"[أإآٱ]", "ا", t)
+    t = re.sub(r"ة", "ه", t)
+    t = re.sub(r"[ىي]", "ي", t)
+    t = re.sub(r"[\u064B-\u065F\u0670]", "", t)  # إزالة التشكيل
+    t = re.sub(r"\s+", " ", t)
+    return t
+
+
+def _row_to_stock_dict(d: Union[dict, sqlite3.Row], symbol_fallback: str) -> Dict:
+    if hasattr(d, "keys"):
+        d_dict = dict(d)
+    else:
+        d_dict = d
+    return {
+        'symbol': d_dict.get('ticker') or d_dict.get('symbol', symbol_fallback),
+        'name_ar': d_dict.get('name_ar') or d_dict.get('name') or symbol_fallback,
+        'name_en': d_dict.get('name') or symbol_fallback,
+        'price': float(d_dict.get('current_price') or d_dict.get('close_price') or d_dict.get('price') or 0),
+        'change': float(d_dict.get('change_percent') or d_dict.get('change') or 0),
+        'open': float(d_dict.get('open_price') or 0),
+        'high': float(d_dict.get('high_price') or 0),
+        'low': float(d_dict.get('low_price') or 0),
+        'volume': int(d_dict.get('volume') or 0),
+        'market': 'EGX'
+    }
+
+
 def search_stock(query: str) -> Optional[Dict]:
-    """البحث عن السهم بالرمز الإنجليزي أو الاسم العربي الشائع."""
+    """البحث الذكي عن السهم بالرمز الإنجليزي، الاسم العربي، Anagrams، أو المطابقة التقريبية (Fuzzy)."""
     q = query.strip()
+    if not q:
+        return None
     q_upper = q.upper()
 
     # 1. مطابقة مباشرة لقاموس الأسماء العربية
@@ -371,13 +408,14 @@ def search_stock(query: str) -> Optional[Dict]:
     elif q.lower() in ARABIC_ALIASES:
         q_upper = ARABIC_ALIASES[q.lower()]
     else:
-        # ترتيب الألقاب بالأطول أولاً لتجنب الكلمات القصيرة مثل 'وي'
+        q_norm = normalize_arabic(q)
         for alias, tk in sorted(ARABIC_ALIASES.items(), key=lambda x: len(x[0]), reverse=True):
-            if len(alias) >= 3 and (alias in q or (len(q) >= 3 and q in alias)):
+            alias_norm = normalize_arabic(alias)
+            if alias_norm == q_norm or (len(alias_norm) >= 3 and (alias_norm in q_norm or q_norm in alias_norm)):
                 q_upper = tk
                 break
 
-    # 2. البحث في stocks.db
+    # 2. البحث الدقيق أو المباشر في stocks.db
     if STOCKS_DB.exists():
         try:
             conn = sqlite3.connect(str(STOCKS_DB))
@@ -395,25 +433,52 @@ def search_stock(query: str) -> Optional[Dict]:
                 ).fetchone()
 
             if row:
-                d = dict(row)
+                res = _row_to_stock_dict(row, q_upper)
                 conn.close()
-                return {
-                    'symbol': d.get('ticker') or d.get('symbol', q_upper),
-                    'name_ar': d.get('name_ar') or d.get('name') or q_upper,
-                    'name_en': d.get('name') or q_upper,
-                    'price': float(d.get('current_price') or d.get('close_price') or 0),
-                    'change': float(d.get('change_percent') or d.get('change') or 0),
-                    'open': float(d.get('open_price') or 0),
-                    'high': float(d.get('high_price') or 0),
-                    'low': float(d.get('low_price') or 0),
-                    'volume': int(d.get('volume') or 0),
-                    'market': 'EGX'
-                }
+                return res
+
+            # 3. مطابقة ذكية متقدمة (Anagram + Fuzzy Matching)
+            all_rows = cur.execute("SELECT * FROM stocks WHERE ticker IS NOT NULL").fetchall()
+
+            clean_q = re.sub(r"[^A-Za-z]", "", q_upper)
+            # أ) Anagram Match: حل كتابة الحروف بترتيب مقلوب مثل ccgg -> GGCC أو capp -> CCAP
+            if clean_q and len(clean_q) >= 3:
+                q_sorted = sorted(clean_q)
+                for r in all_rows:
+                    tk = (r["ticker"] or "").upper()
+                    if len(tk) == len(clean_q) and sorted(tk) == q_sorted:
+                        res = _row_to_stock_dict(r, tk)
+                        conn.close()
+                        return res
+
+            # ب) Fuzzy Match للرمز الإنجليزي (مثل fowry -> FWRY أو swedy -> SWDY)
+            if clean_q and len(clean_q) >= 3:
+                tickers_map = { (r["ticker"] or "").upper(): r for r in all_rows if r["ticker"] }
+                close_tickers = difflib.get_close_matches(clean_q, tickers_map.keys(), n=1, cutoff=0.60)
+                if close_tickers:
+                    res = _row_to_stock_dict(tickers_map[close_tickers[0]], close_tickers[0])
+                    conn.close()
+                    return res
+
+            # ج) Fuzzy Match للاسم العربي بعد التطبيع (مثل حديدعز -> حديد عز)
+            q_norm = normalize_arabic(q)
+            if q_norm and len(q_norm) >= 3:
+                norm_map = {}
+                for r in all_rows:
+                    if r["name_ar"]:
+                        norm_map[normalize_arabic(r["name_ar"])] = r
+                close_names = difflib.get_close_matches(q_norm, norm_map.keys(), n=1, cutoff=0.55)
+                if close_names:
+                    matched_r = norm_map[close_names[0]]
+                    res = _row_to_stock_dict(matched_r, matched_r["ticker"])
+                    conn.close()
+                    return res
+
             conn.close()
         except Exception as e:
-            log.warning(f"خطأ في البحث في stocks.db: {e}")
+            log.warning(f"خطأ في البحث الذكي في stocks.db: {e}")
 
-    # 3. البحث في data_engine.db
+    # 4. البحث في data_engine.db كـ fallback
     if DATA_ENGINE_DB.exists():
         try:
             conn = sqlite3.connect(str(DATA_ENGINE_DB))
@@ -424,22 +489,65 @@ def search_stock(query: str) -> Optional[Dict]:
                 (q_upper, f"%{q_upper}%")
             ).fetchone()
             if row:
-                d = dict(row)
+                res = _row_to_stock_dict(row, q_upper)
                 conn.close()
-                return {
-                    'symbol': d.get('symbol', q_upper),
-                    'name_ar': d.get('name', q_upper),
-                    'name_en': d.get('name', q_upper),
-                    'price': float(d.get('price') or d.get('close') or 0),
-                    'change': float(d.get('change_percent') or 0),
-                    'volume': int(d.get('volume') or 0),
-                    'market': 'EGX'
-                }
+                return res
             conn.close()
         except Exception as e:
             log.warning(f"خطأ في البحث في data_engine.db: {e}")
 
     return None
+
+
+def get_stock_suggestions(query: str, limit: int = 3) -> List[Tuple[str, str]]:
+    """استخراج أفضل 3 اقتراحات لأسهم مقترحة عند عدم العثور على تطابق مباشر."""
+    q = query.strip()
+    if not q or not STOCKS_DB.exists():
+        return []
+    try:
+        conn = sqlite3.connect(str(STOCKS_DB))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        rows = cur.execute("SELECT ticker, name_ar FROM stocks WHERE ticker IS NOT NULL").fetchall()
+        conn.close()
+
+        clean_q = re.sub(r"[^A-Za-z]", "", q).upper()
+        q_norm = normalize_arabic(q)
+        suggestions: List[Tuple[str, str]] = []
+        seen = set()
+
+        if clean_q and len(clean_q) >= 2:
+            q_sorted = sorted(clean_q)
+            for r in rows:
+                tk = (r["ticker"] or "").upper()
+                if tk not in seen and len(tk) == len(clean_q) and sorted(tk) == q_sorted:
+                    suggestions.append((r["name_ar"] or tk, tk))
+                    seen.add(tk)
+
+            tickers_map = { (r["ticker"] or "").upper(): r["name_ar"] or r["ticker"] for r in rows if r["ticker"] }
+            close_tickers = difflib.get_close_matches(clean_q, tickers_map.keys(), n=limit, cutoff=0.45)
+            for tk in close_tickers:
+                if tk not in seen:
+                    suggestions.append((tickers_map[tk], tk))
+                    seen.add(tk)
+
+        if q_norm and len(q_norm) >= 2:
+            names_map = {}
+            for r in rows:
+                if r["name_ar"]:
+                    norm_k = normalize_arabic(r["name_ar"])
+                    names_map[norm_k] = (r["name_ar"], r["ticker"])
+            close_names = difflib.get_close_matches(q_norm, names_map.keys(), n=limit, cutoff=0.40)
+            for nk in close_names:
+                real_name, tk = names_map[nk]
+                if tk not in seen:
+                    suggestions.append((real_name, tk))
+                    seen.add(tk)
+
+        return suggestions[:limit]
+    except Exception as e:
+        log.warning(f"خطأ في get_stock_suggestions: {e}")
+        return []
 
 def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -> Dict:
     """استخراج إشارات رادار الميكرز V40.2 ومستويات الأهداف الموحدة هندسياً من trader_levels_engine (SSOT)."""
@@ -1664,15 +1772,28 @@ def process_update(update: dict):
 
             send_stock_analysis_response(chat_id, stock, sub=sub, remaining_queries=rem)
         else:
-            not_found_msg = f"""عفواً، لم أتعرف على السهم: <b>{text}</b> 🔍
+            suggestions = get_stock_suggestions(text, limit=3)
+            if suggestions:
+                buttons = []
+                for name_ar, sym in suggestions:
+                    buttons.append([{"text": f"📊 {name_ar} ({sym})", "callback_data": f"stock:{sym}"}])
+                buttons.append([{"text": "🔍 فتح القائمة الكاملة للأسهم", "callback_data": "action:show_stock_menu"}])
+
+                sugg_msg = f"""🔍 لم نجد سهماً بالاسم '<b>{text}</b>' بدقة.
+
+💡 <b>هل كنت تقصد أحد هذه الأسهم القريبة؟</b>
+اضغط على السهم المطلوب لفحصه ورسم شارت الميكرز فوراً:"""
+                send_message(chat_id, sugg_msg, reply_markup={"inline_keyboard": buttons})
+            else:
+                not_found_msg = f"""عفواً، لم أتعرف على السهم: <b>{text}</b> 🔍
 
 💡 <b>يمكنك:</b>
 1. اختيار السهم مباشرة من القائمة أدناه.
 2. أو كتابة الرمز مثل: <code>COMI</code> أو <code>FWRY</code> أو <code>SWDY</code>
 3. أو كتابة الاسم العربي مثل: <code>فوري</code> أو <code>طلعت مصطفى</code> أو <code>السويدي</code>"""
 
-            send_message(chat_id, not_found_msg.strip(), reply_markup=MAIN_MENU_KEYBOARD)
-            send_stock_picker_menu(chat_id)
+                send_message(chat_id, not_found_msg.strip(), reply_markup=MAIN_MENU_KEYBOARD)
+                send_stock_picker_menu(chat_id)
 
 def run_polling():
     """تشغيل البوت في وضع الاستقبال المستمر (Long Polling)."""
