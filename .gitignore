@@ -3,6 +3,11 @@
 skills/
 node_modules/
 
+# Flutter app — separate repo (https://github.com/enmohsen20111975/flutter_investment_App)
+# Cloned locally at /home/z/my-project/flutter_app/ for cross-repo sync.
+# NEVER commit it into GLMinvestment repo — it has its own git history.
+flutter_app/
+
 # Python
 __pycache__/
 *.pyc
