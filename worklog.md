@@ -69331,3 +69331,54 @@ Stage Summary:
 - كل الـ APIs بترجع 200 (graceful degradation)
 - 0 compile errors في flutter analyze
 - التطبيق جاهز للـ build والرفع على Google Store
+
+---
+Task ID: NAV-FIX-2
+Agent: Main Agent (Z.ai Code)
+Task: إصلاح مشاكل API + market: null + JSON parsing
+
+Work Log:
+- فحصت تقرير Gemini عن 404 errors + market: null + شاشات فاضية
+- لقيت إن المشكلة الأساسية في 8 endpoints بـ تقبل market?: String?
+
+التنفيذ:
+
+1) إصلاح market: null في 8 endpoints:
+   - getMarketOverview: default 'EGX' لو market = null
+   - getMarketLiveData: default 'EGX'
+   - getMarketInvesting: default 'EGX'
+   - getMarketSummary: default 'EGX'
+   - getMarketIndices: default 'EGX'
+   - getLatestNews: default 'EGX'
+   - getMobileRecommendations: default 'EGX'
+   - getMobilePredictions: default 'EGX'
+   
+   استبدال 'if (market != null) 'market': market,'
+   بـ "'market': market ?? 'EGX',"
+   
+   8 replacements total — كل الـ API calls هتبعت 'EGX' كـ fallback
+
+2) التحقق من JSON parsing في الرادارات:
+   - radar_screen.dart: بـ يستخدم (data['quiet_list'] as List?) ?? [] — defensive ✅
+   - hunter_screen.dart: بـ يستخدم getExplosiveOpportunities — defensive ✅
+   - exit_radar_screen.dart: بـ يستخدم getExitRadar — defensive ✅
+   - getMakerRadar: بيرجع Map<String, dynamic> مع fallback {} — defensive ✅
+   - getExitRadar: بيرجع Map مع fallback {'success': false} — defensive ✅
+
+3) التحقق من الـ endpoints على السيرفر:
+   - /api/maker-radar/exit-radar/route.ts — موجود ✅
+   - /api/market/regime/route.ts — موجود ✅
+   - /api/market/exit-status/route.ts — موجود ✅
+   - /api/explosive/hunt/route.ts — موجود ✅
+
+التحقق:
+- flutter analyze: 0 errors ✅
+- 16 issues (warnings/infos) — مش بتمنع compile
+
+commit: 7685105 على flutter_investment_App
+
+Stage Summary:
+- market: null اتصلح في 8 endpoints (default EGX)
+- JSON parsing defensive في كل الرادارات
+- كل الـ endpoints موجودة على السيرفر
+- التطبيق جاهز للـ build
