@@ -192,21 +192,19 @@ class PriceUpdater:
                         ph_errors += 1
 
             conn.commit()
-            ph_
-        # ─── VALIDATION GUARD (Task OWNER-DIRECTIVE): تصفير قيم غير منطقية ───
-        # لو support > current_price → NULL (الدعم لازم تحت السعر)
-        # لو resistance < current_price → NULL (المقاومة لازم فوق السعر)
-        try:
-            cur.execute("UPDATE stocks SET support = NULL WHERE support > 0 AND current_price > 0 AND support > current_price")
-            _sf = cur.rowcount
-            cur.execute("UPDATE stocks SET resistance = NULL WHERE resistance > 0 AND current_price > 0 AND resistance < current_price")
-            _rf = cur.rowcount
-            if _sf or _rf:
-                print(f"[ValidationGuard] Fixed: {_sf} support + {_rf} resistance -> NULL", flush=True)
-        except Exception as _ve:
-            print(f"[ValidationGuard] Warning: {_ve}", flush=True)
-
-        conn.commit()
+            # ─── VALIDATION GUARD (Task OWNER-DIRECTIVE): تصفير قيم غير منطقية ───
+            # لو support > current_price → NULL (الدعم لازم تحت السعر)
+            # لو resistance < current_price → NULL (المقاومة لازم فوق السعر)
+            try:
+                cur.execute("UPDATE stocks SET support = NULL WHERE support > 0 AND current_price > 0 AND support > current_price")
+                _sf = cur.rowcount
+                cur.execute("UPDATE stocks SET resistance = NULL WHERE resistance > 0 AND current_price > 0 AND resistance < current_price")
+                _rf = cur.rowcount
+                if _sf or _rf:
+                    print(f"[ValidationGuard] Fixed: {_sf} support + {_rf} resistance -> NULL", flush=True)
+            except Exception as _ve:
+                print(f"[ValidationGuard] Warning: {_ve}", flush=True)
+            conn.commit()
 
             _extra = f" | pollution_skipped={ph_pollution_skipped}" if ph_pollution_skipped else ""
             logger.info(f"[PriceUpdater] Synced: {updated_sdp} stocks in stock_daily_prices, "
