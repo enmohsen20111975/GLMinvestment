@@ -5,6 +5,7 @@ import { getFinanceDb } from '@/lib/finance-db';
 import { getSessionUserId } from '@/lib/auth-helper';
 import { createHash } from 'crypto';
 import { db as authDb } from '@/lib/db';
+import { updateLastActiveRaw } from '@/lib/last-active-helper';
 
 // ---------------------------------------------------------------------------
 // POST /api/track
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest) {
 
     // ---- Fire-and-forget: update User.last_active_at for authenticated users ----
     // Throttled to 1 update per user per 5 minutes via global cache.
+    // FIX (Prisma SQLite bug): Uses updateLastActiveRaw (better-sqlite3) directly to avoid corrupting DateTime with ms integers.
     if (isAuthenticated && realUserId && type === 'page_view') {
       const now = Date.now();
       const g = globalThis as unknown as { _lastActiveUpdate?: Record<string, number> };
@@ -125,13 +127,11 @@ export async function POST(request: NextRequest) {
       const last = g._lastActiveUpdate[realUserId] || 0;
       if (now - last > 5 * 60 * 1000) {
         g._lastActiveUpdate[realUserId] = now;
-        // Fire-and-forget — never block the tracking response on this.
-        authDb.user.update({
-          where: { id: realUserId },
-          data: { last_active_at: new Date().toISOString() },
-        }).catch(() => {
+        try {
+          updateLastActiveRaw(realUserId);
+        } catch {
           // Non-fatal — tracking must still succeed.
-        });
+        }
       }
     }
 
