@@ -108,8 +108,28 @@ export interface DynamicAnalysisResult {
 // 1. DYNAMIC PARAMETER MATRIX
 // ============================================================================
 
-const FAST_SECTORS = ['technology', 'tech', 'تكنولوجيا', 'pharma', 'أدوية', 'financial', 'مصرفي', 'banking', 'بنوك', 'services', 'خدمات', 'telecom', 'اتصالات'];
-const SLOW_SECTORS = ['utilities', 'مرافق', 'real estate', 'عقارات', 'consumer staples', 'سلع استهلاكية', 'cement', 'أسمنت', 'construction', 'بناء', 'food', 'أغذية', 'healthcare', 'رعاية صحية'];
+// ═══════════════════════════════════════════════════════════════════════════
+// Sector classification — EGX + US + TADAWUL sectors (Rule 29 unified system).
+// قبل كده: sector lists كانت EGX-only → أي US sector (مثلاً "Information Technology")
+// ما بيتطابقش → fallback MEDIUM = تحليل غير دقيق.
+// Rule 27 fix: أضفنا US/Global sectors اللي بتظهر في Yahoo Finance + Finnhub.
+// ═══════════════════════════════════════════════════════════════════════════
+const FAST_SECTORS = [
+  // EGX
+  'technology', 'tech', 'تكنولوجيا', 'pharma', 'أدوية', 'financial', 'مصرفي', 'banking', 'بنوك', 'services', 'خدمات', 'telecom', 'اتصالات',
+  // US/Global (Yahoo Finance / Finnhub sector names)
+  'information technology', 'software', 'semiconductor', 'internet', 'fintech', 'biotechnology', 'biotech',
+  // TADAWUL
+  'energy', 'طاقة', 'materials', 'مواد', 'commodity', 'سلع',
+];
+const SLOW_SECTORS = [
+  // EGX
+  'utilities', 'مرافق', 'real estate', 'عقارات', 'consumer staples', 'سلع استهلاكية', 'cement', 'أسمنت', 'construction', 'بناء', 'food', 'أغذية', 'healthcare', 'رعاية صحية',
+  // US/Global
+  'consumer defensive', 'utilities', 'real estate', 'communication services',
+  // TADAWUL
+  'insurance', 'تأمين',
+];
 
 export function classifySectorSpeed(sector: string): SectorSpeed {
   const s = (sector || '').toLowerCase();

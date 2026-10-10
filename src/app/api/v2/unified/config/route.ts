@@ -281,12 +281,16 @@ export async function GET(request: NextRequest) {
       scoring: {
         min: 0,
         max: 100,
+        // RULE-73 UNIFY (2026-10-10): توحيد thresholds على canonical-signal.ts
+        // قبل كده: 80/70/60/50/40 — نظام رابع مختلف، بيعطي توصيات متناقضة مع canonical.
+        // دلوقتي: 78/65/55/40/25 = نفس thresholds الموجودة في canonical-signal.ts
+        // (Rule 28: لا تكرار — مصدر واحد بس للـ thresholds).
         thresholds: {
-          strong_buy: 80,
-          buy: 70,
-          hold: 60,
-          avoid: 50,
-          strong_avoid: 40,
+          strong_buy: 78,
+          buy: 65,
+          hold: 55,
+          avoid: 40,
+          strong_avoid: 25,
         },
       },
     };
