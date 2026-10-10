@@ -2696,7 +2696,7 @@ export function SpecialistAnalysisView() {
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-2">
-            <StockSearchSelector
+<StockSearchSelector
               value={ticker}
               onSelectStock={(val) => {
                 setTicker(val);

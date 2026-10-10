@@ -268,32 +268,47 @@ def send_photo(chat_id: int, photo_path: Path, caption: str, reply_markup: Optio
     """إرسال صورة وشارت عالي الدقة مع التسمية التوضيحية والأزرار التفاعلية."""
     url = f"{TELEGRAM_API}/sendPhoto"
     
-    # CHART-FIX (2026-10-10): المشكلة كانت إن الرسالة بتتقصّ عند 1000 حرف
-    # وده بيكسر HTML tags → Telegram بيرفض الصورة (400 Bad Request)
-    # الحل: نبعت الصورة مع caption قصير، وبعدين نبعت التحليل الكامل كرسالة منفصلة
-    
-    # caption قصير للصورة (تحت 200 حرف — آمن)
-    short_caption = f"📊 شارت سهم {caption.split('—')[0].strip() if '—' in caption else caption[:80]}"
+    # CHART-FIX-v5 (2026-10-10): caption نصي بسيط بدون HTML tags
+    # المشكلة: msg فيه HTML tags (<b>, <code>) ولما بنقصّ بنكسرها → Telegram error 400
+    # الحل: نص بسيط بدون أي HTML
+    ticker_name = caption.split('—')[0].strip() if '—' in caption else caption[:80]
+    # شيل أي HTML tags
+    import re as _re
+    ticker_name = _re.sub(r'<[^>]+>', '', ticker_name)
+    short_caption = f"📊 شارت {ticker_name}"
     
     data = {
         "chat_id": chat_id,
         "caption": short_caption[:200],
-        "parse_mode": "HTML"
     }
     if reply_markup:
         data["reply_markup"] = json.dumps(reply_markup)
         
-    try:
-        with open(photo_path, 'rb') as f:
-            files = {'photo': f}
-            r = requests.post(url, data=data, files=files, timeout=30)
+    # CHART-FIX-v4: retry logic للـ sendPhoto (نفس منطق send_message)
+    MAX_RETRIES = 3
+    RETRY_DELAYS = [2, 5, 10]
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            # CHART-FIX: قراءة الصورة bytes بدل فتح file handle (أكثر استقراراً)
+            photo_bytes = open(photo_path, 'rb').read()
+            files = {'photo': (photo_path.name, photo_bytes, 'image/png')}
+            r = requests.post(url, data=data, files=files, timeout=60)
             res = r.json()
-            if not res.get('ok'):
-                log.warning(f"فشل إرسال الصورة عبر sendPhoto: {res}")
-            return res
-    except Exception as e:
-        log.error(f"خطأ في إرسال الصورة إلى {chat_id}: {e}")
-        return None
+            if res.get('ok'):
+                return res
+            else:
+                log.warning(f"فشل sendPhoto (attempt {attempt+1}/{MAX_RETRIES}): {res.get('description', res)}")
+                if attempt < MAX_RETRIES - 1:
+                    import time
+                    time.sleep(RETRY_DELAYS[attempt])
+        except Exception as e:
+            log.error(f"خطأ sendPhoto (attempt {attempt+1}/{MAX_RETRIES}): {e}")
+            if attempt < MAX_RETRIES - 1:
+                import time
+                time.sleep(RETRY_DELAYS[attempt])
+    
+    return None
 
 def answer_callback_query(callback_query_id: str, text: str = ""):
     """إغلاق مؤشر الانتظار عند النقر على الأزرار التفاعلية."""
@@ -913,12 +928,18 @@ def send_stock_analysis_response(
     radar = get_stock_radar_status(stock['symbol'], current_price=stock.get('price', 0.0))
     msg, kb = build_stock_card(stock, radar, sub=sub, remaining_queries=remaining_queries)
 
-    # 1. إشعار فوري بأن الشارت جاري رسمه
-    wait_msg = send_message(chat_id, f"⏳ جاري رسم شارت <b>{stock['symbol']}</b> وفحص مستويات الميكرز...", reply_markup=None)
+    # CHART-FIX-v6 (2026-10-10): ابعت التحليل النصي أولاً (سريع) ثم الصورة (بطيء)
+    # قبل كده: كان بيرسم الشارت الأول (12 ثانية) والمستخدم بيبقى مستني
+    # دلوقتي: بيبعت التحليل فوراً → ثم يرسم ويبعت الصورة في الخلفية
+
+    # 1. ابعت التحليل النصي فوراً (مع الأزرار التفاعلية)
+    send_message(chat_id, msg, reply_markup=kb)
+
+    # 2. رسالة قصيرة "جاري الرسم"
+    wait_msg = send_message(chat_id, f"🎨 جاري رسم شارت <b>{stock['symbol']}</b>...", reply_markup=None)
     wait_msg_id = wait_msg.get('result', {}).get('message_id') if wait_msg else None
 
-    # 2. رسم الشارت فائق الدقة
-    photo_sent = False
+    # 3. رسم + إرسال الشارت في الخلفية
     try:
         try:
             from telegram_chart_generator import generate_stock_chart_image
@@ -926,29 +947,20 @@ def send_stock_analysis_response(
             from telegram.telegram_chart_generator import generate_stock_chart_image
         chart_path = asyncio.run(generate_stock_chart_image(stock['symbol']))
         if chart_path and Path(chart_path).exists():
-            # CHART-FIX: الصورة بتبعت بدون reply_markup — الأزرار هتبقى مع الرسالة النصية
             r = send_photo(chat_id, Path(chart_path), msg, reply_markup=None)
-            if r and r.get('ok'):
-                photo_sent = True
+            if not r or not r.get('ok'):
+                log.warning(f"فشل إرسال الصورة: {r}")
+        else:
+            log.warning(f"الشارت مش موجود: {chart_path}")
     except Exception as e:
         log.warning(f"تعذر رسم شارت {stock['symbol']}: {e}")
 
-    # 3. مسح رسالة الانتظار
+    # 4. مسح رسالة "جاري الرسم"
     if wait_msg_id:
         try:
             requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": wait_msg_id}, timeout=5)
         except Exception:
             pass
-
-    # 4. CHART-FIX (2026-10-10):
-    # لو الصورة ات send → ابعت التحليل الكامل كرسالة منفصلة (text message)
-    # لو الصورة فشلت → ابعت التحليل كنص أنيق (الـ flow القديم)
-    if photo_sent:
-        # الصورة اتبعتت بنجاح → ابعت التحليل الكامل كرسالة نصية منفصلة
-        send_message(chat_id, msg, reply_markup=kb)
-    else:
-        # الصورة فشلت → ابعت التحليل كنص أنيق فقط
-        send_message(chat_id, msg, reply_markup=kb)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # معالجة الأوامر والقوائم التفاعلية
