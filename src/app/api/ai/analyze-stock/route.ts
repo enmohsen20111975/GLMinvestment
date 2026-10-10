@@ -210,16 +210,18 @@ export async function POST(req: NextRequest) {
 
     // 2) fallback إلى predictions.db (stored_analyses + predictions)
     if (!dbExists(PREDICTIONS_DB_PATH)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'no analysis available',
-          ticker,
-          market,
-          reason: 'predictions.db not found and Python maestro unavailable',
-        },
-        { status: 404 }
-      );
+      // FIX (FLUTTER-PROD-4): return 200 + analysis: null بدل 404.
+      // السبب: Flutter app بيتعامل مع 4xx/5xx كـ exception ويطلّع error toast.
+      // لكن "مفيش تحليل متاح" مش خطأ — دي حالة طبيعية لما السهم جديد.
+      // Rule 27 (NO-FAKE-DATA): analysis: null (مش fabricated).
+      return NextResponse.json({
+        success: true,
+        ticker,
+        market,
+        source: 'unavailable',
+        analysis: null,
+        message: 'لا يوجد تحليل AI متاح حالياً لهذا السهم — جرّب لاحقاً',
+      }, { status: 200 });
     }
 
     let db: any;
@@ -227,16 +229,15 @@ export async function POST(req: NextRequest) {
       const Database = require('better-sqlite3');
       db = new Database(PREDICTIONS_DB_PATH, { readonly: true });
     } catch (e) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'no analysis available',
-          ticker,
-          market,
-          reason: 'Cannot open predictions.db: ' + String(e),
-        },
-        { status: 500 }
-      );
+      // FIX (FLUTTER-PROD-4): 200 بدل 500 — نفس المنطق فوق
+      return NextResponse.json({
+        success: true,
+        ticker,
+        market,
+        source: 'unavailable',
+        analysis: null,
+        message: 'تعذّر فتح قاعدة بيانات التحليلات',
+      }, { status: 200 });
     }
 
     const stored = fetchStoredAnalysis(db, ticker);
@@ -244,14 +245,15 @@ export async function POST(req: NextRequest) {
     db.close();
 
     if (!stored && recentPreds.length === 0) {
-      // مفيش بيانات إطلاقاً → مفيش mock
+      // FIX (FLUTTER-PROD-4): 200 بدل 404 — مفيش بيانات مش = خطأ
       return NextResponse.json({
-        success: false,
-        error: 'no analysis available',
+        success: true,
         ticker,
         market,
-        reason: 'No stored analysis or predictions found for this ticker',
-      }, { status: 404 });
+        source: 'empty',
+        analysis: null,
+        message: 'لا يوجد تحليل أو توقعات لهذا السهم حالياً',
+      }, { status: 200 });
     }
 
     // قراءة السعر الحالي من data_engine.db.stocks

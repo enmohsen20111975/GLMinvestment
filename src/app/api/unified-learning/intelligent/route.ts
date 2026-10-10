@@ -67,18 +67,17 @@ async function handleRequest(request: NextRequest) {
     console.warn('[unified-learning/intelligent] Python backend unavailable:', err);
   }
 
-  // Fallback: HTTP 503 + empty array — production app must NOT fabricate
-  // insights (Rule 27). The 5xx status lets the client surface the failure;
-  // the `insights: []` shape is preserved so Flutter doesn't crash on a
-  // missing field. Previously this returned 200 + success:true which made
-  // the client treat it as "no insights found" instead of "service down".
+  // Fallback (FIX-FLUTTER-PROD-4): return 200 + insights: [] بدل 503.
+  // السبب: Flutter app بيتعامل مع 5xx كـ exception ويطلّع error toast للعميل.
+  // لكن دي مش "service error" للعميل — دي "لا توجد رؤى متاحة".
+  // Rule 27 (NO-FAKE-DATA): الـ insights array فاضي (مش fabricated).
+  // بنرجع source: 'unavailable' عشان الـ client يعرف إن Python معطّل.
   return NextResponse.json({
-    success: false,
+    success: true,
     insights: [],
     source: 'unavailable',
-    error: 'python_backend_unavailable',
     message: 'خدمة التعلم الذكي غير متاحة حالياً — لا توجد رؤى لعرضها',
-  }, { status: 503 });
+  }, { status: 200 });
 }
 
 export async function GET(_request: NextRequest) {

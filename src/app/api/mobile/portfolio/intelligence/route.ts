@@ -111,10 +111,26 @@ export async function GET(_req: NextRequest) {
     if (userIds.length === 0) return unauthorized();
 
     // 1. Pull portfolio items from auth.db (Prisma).
-    const items = await db.portfolioItem.findMany({
-      where: { user_id: { in: userIds } },
-      orderBy: { created_at: 'desc' },
-    });
+    // FIX (FLUTTER-PROD-4): wrap Prisma call in try/catch to give a clearer
+    // error message if the DB schema is out of sync (e.g. updated_at missing).
+    let items: Awaited<ReturnType<typeof db.portfolioItem.findMany>>;
+    try {
+      items = await db.portfolioItem.findMany({
+        where: { user_id: { in: userIds } },
+        orderBy: { created_at: 'desc' },
+      });
+    } catch (dbErr) {
+      console.error('[mobile/portfolio/intelligence] Prisma error:', dbErr);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'تعذر الوصول لقاعدة بيانات المحفظة. يرجى المحاولة مرة أخرى.',
+          error_en: 'Portfolio database unavailable',
+          details: dbErr instanceof Error ? dbErr.message : String(dbErr),
+        },
+        { status: 503 }
+      );
+    }
 
     if (items.length === 0) {
       return NextResponse.json({
