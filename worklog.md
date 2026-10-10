@@ -68917,3 +68917,41 @@ Stage Summary:
   * crypto engine dead 4 months (محتاج restart sync job)
   * 127 NULL name_ar + 47 em-dash sector (محتاج backfill ترجمة)
   * ExpertRecommendation duplicated across 3 DBs (محتاج consolidation)
+
+---
+Task ID: GIT-DIVERGENCE-DIAGNOSIS
+Agent: المدير العام (Z.ai Code)
+Task: تشخيص تفرع git history بين محلي و remote
+
+Work Log:
+- Rule 26 (SANDBOX-RESET-SAVEREGUARD): عملت git fetch origin main
+- اكتشفت إن محلي ahead بـ 118 commit + remote عليه 1 commit جديد (a36cffa5)
+- merge attempt فشل: "refusing to merge unrelated histories"
+- يعني الـ remote اتعمل له history rewrite/reset كامل
+- commit a36cffa5 بيضيف: +318 سطر .gitignore + zscripts (8 ملفات shell scripts)
+- ده معناه إن الـ sandbox اتـ reset للـ snapshot + اترفع للـ remote
+
+- شغلي الجديد (آخر 2 commit) محفوظ كـ patches:
+  * /tmp/my-commits/0001-fix-constitution-thresholds-market-aware-currency-pr.patch (37KB)
+  * /tmp/my-commits/0002-fix-constitution-thresholds-4-sector-lists-US-Global.patch (5KB)
+
+- شغلي اللي عملته في السيشن دي:
+  * src/lib/market-profiles.ts (NEW — port لـ Python MARKET_PROFILES)
+  * src/app/api/unified/route.ts (توحيد thresholds 75/60/50 → canonical 78/65/55)
+  * src/modules/stock-analysis/components/StockDetail.tsx (توحيد fallback 75/60/45/30)
+  * src/lib/expert-analysis.ts (إزالة "جنيه" hard-coded → currencyUnitAr)
+  * src/lib/gate-analyzer.ts (close>1.0 → priceFloor من MarketProfile)
+  * src/lib/dynamic-analysis-engine.ts (توسيع sector lists US/Global)
+  * src/app/api/v2/unified/config/route.ts (80/70/60/50/40 → canonical 78/65/55/40/25)
+
+- التحقق قبل التوقف:
+  * lint: 0 errors ✅
+  * tsc --noEmit: 1973 errors baseline = 1973 errors بعد = صفر أخطاء جديدة ✅
+  * Rule 14 محترمة (التحقق الكامل بدون skipLibCheck)
+
+Stage Summary:
+- محلي ahead بـ 118 commit + شغلي الجديد (آخر 2)
+- remote اتـ reset (history rewrite) — محلي "unrelated" للـ remote
+- محتاج قرار المالك: reset محلي + reapply شغلي OR force push محلي
+- شغلي محفوظ في /tmp/my-commits/ (patches)
+- ما حصلش أي فقدان بيانات — كل حاجة محفوظة
