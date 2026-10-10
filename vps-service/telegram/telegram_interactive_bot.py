@@ -268,11 +268,7 @@ def send_photo(chat_id: int, photo_path: Path, caption: str, reply_markup: Optio
     """إرسال صورة وشارت عالي الدقة مع التسمية التوضيحية والأزرار التفاعلية."""
     url = f"{TELEGRAM_API}/sendPhoto"
     
-    # CHART-FIX (2026-10-10): المشكلة كانت إن الرسالة بتتقصّ عند 1000 حرف
-    # وده بيكسر HTML tags → Telegram بيرفض الصورة (400 Bad Request)
-    # الحل: نبعت الصورة مع caption قصير، وبعدين نبعت التحليل الكامل كرسالة منفصلة
-    
-    # caption قصير للصورة (تحت 200 حرف — آمن)
+    # CHART-FIX (2026-10-10): caption قصير (تحت 200 حرف — آمن)
     short_caption = f"📊 شارت سهم {caption.split('—')[0].strip() if '—' in caption else caption[:80]}"
     
     data = {
@@ -283,17 +279,31 @@ def send_photo(chat_id: int, photo_path: Path, caption: str, reply_markup: Optio
     if reply_markup:
         data["reply_markup"] = json.dumps(reply_markup)
         
-    try:
-        with open(photo_path, 'rb') as f:
-            files = {'photo': f}
-            r = requests.post(url, data=data, files=files, timeout=30)
+    # CHART-FIX-v4: retry logic للـ sendPhoto (نفس منطق send_message)
+    MAX_RETRIES = 3
+    RETRY_DELAYS = [2, 5, 10]
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            # CHART-FIX: قراءة الصورة bytes بدل فتح file handle (أكثر استقراراً)
+            photo_bytes = open(photo_path, 'rb').read()
+            files = {'photo': (photo_path.name, photo_bytes, 'image/png')}
+            r = requests.post(url, data=data, files=files, timeout=60)
             res = r.json()
-            if not res.get('ok'):
-                log.warning(f"فشل إرسال الصورة عبر sendPhoto: {res}")
-            return res
-    except Exception as e:
-        log.error(f"خطأ في إرسال الصورة إلى {chat_id}: {e}")
-        return None
+            if res.get('ok'):
+                return res
+            else:
+                log.warning(f"فشل sendPhoto (attempt {attempt+1}/{MAX_RETRIES}): {res.get('description', res)}")
+                if attempt < MAX_RETRIES - 1:
+                    import time
+                    time.sleep(RETRY_DELAYS[attempt])
+        except Exception as e:
+            log.error(f"خطأ sendPhoto (attempt {attempt+1}/{MAX_RETRIES}): {e}")
+            if attempt < MAX_RETRIES - 1:
+                import time
+                time.sleep(RETRY_DELAYS[attempt])
+    
+    return None
 
 def answer_callback_query(callback_query_id: str, text: str = ""):
     """إغلاق مؤشر الانتظار عند النقر على الأزرار التفاعلية."""
