@@ -69240,3 +69240,33 @@ Stage Summary:
 - المرحلة 2 (BottomNav + FAB removal) ✅
 - المرحلة 3 (Screen Consolidation) — لاحقاً
 - المرحلة 4 (API verification) — لاحقاً
+
+---
+Task ID: NOTE-FORCE-WITH-LEASE
+Agent: المدير العام (Z.ai Code) — Constitution Guardian
+Task: توثيق ملاحظة سيدي للمبرمجين الـ 4 (git push --force-with-lease)
+
+ملاحظة سيدي للمبرمجين الـ 4:
+> أثناء شغلي، حصلت force pushes متكررة على origin/main. أنا بعمل git pull --rebase
+> عشان أدمج تحديثاتكم بدون مشاكل.
+> الرجاء منكم: استخدموا git push --force-with-lease بدل --force
+> (بيحذّر لو فيه updates جديدة)
+
+السبب:
+- استخدام --force بينزل أي شغل تاني على الـ remote بدون تحذير
+- --force-with-lease بيرفض الـ push لو فيه commits جديدة على الـ remote
+- ده بيحمي شغل الفريق من الفقدان
+
+القاعدة الدستورية المرتبطة:
+- Rule 25 (refactoring يحتاج موافقة + فرع منفصل)
+- Rule 26 (SANDBOX-RESET-SAVEREGUARD — كل شغل لازم يبقى على GitHub)
+
+Work Log:
+- سيدي بعت ملاحظة للمبرمجين الـ 4
+- أنا كـ Constitution Guardian أوثّق الملاحظة في worklog عشان الفريق يلتزم بها
+- لما أي مبرمج يفتح worklog هيشوف الملاحظة
+
+Stage Summary:
+- ملاحظة سيدي موثقة في worklog
+- كل الفريق لازم يستخدم --force-with-lease بدل --force من النهاردة
+- أي استخدام لـ --force بدون موافقة سيدي = انتهاك Rule 25
