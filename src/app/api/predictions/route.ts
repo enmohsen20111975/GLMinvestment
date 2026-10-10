@@ -139,13 +139,13 @@ export async function GET(request: NextRequest) {
       const query = `
         SELECT
           id, ticker, signal, signal_type, prediction_date,
-          entry_price, entry_price_min, entry_price_max,
+          entry_price,
           target_price, target_price_2, stop_loss,
-          support_level, support_level_2, resistance_level, resistance_level_2,
           master_score, technical_score, fundamental_score, confidence, persona,
           market, outcome_date, exit_price, actual_return,
           hit_target, hit_stop, is_correct, holding_days,
-          status, risk_reward, created_at, analysis_json
+          status, risk_reward, created_at, analysis_json,
+          who_is_buying, morning_bell, evidence_count, explosive_label
         FROM predictions
         WHERE ticker = ? ${marketClause}
         ORDER BY prediction_date DESC, id DESC
@@ -183,12 +183,14 @@ export async function GET(request: NextRequest) {
         // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
         // (entry*0.99/1.01, support entry*0.96, target1*1.05). Now NULL when
         // the prediction record lacks these fields.
-        const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : null;
-        const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
-        const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
-        const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
-        const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
-        const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
+        // FIX (2026-10-10): entry_price_min/max + support/resistance مش موجودة في الإنتاج
+        // استخدم entry_price + target/stop كـ fallback
+        const entryMin = null;
+        const entryMax = null;
+        const s1 = null;
+        const s2 = null;
+        const r1 = validated.target1 ?? null;
+        const r2 = p.target_price_2 ?? null;
 
         return enrichWithTechnical({
           ...p,
@@ -348,15 +350,9 @@ export async function GET(request: NextRequest) {
         signal_type,
         prediction_date,
         entry_price,
-        entry_price_min,
-        entry_price_max,
         target_price,
         target_price_2,
         stop_loss,
-        support_level,
-        support_level_2,
-        resistance_level,
-        resistance_level_2,
         master_score,
         confidence,
         market,
@@ -368,7 +364,11 @@ export async function GET(request: NextRequest) {
         is_correct,
         holding_days,
         created_at,
-        analysis_json
+        analysis_json,
+        who_is_buying,
+        morning_bell,
+        evidence_count,
+        explosive_label
       FROM predictions
       ${fbMarketClause}
       ORDER BY prediction_date DESC, master_score DESC
@@ -408,15 +408,13 @@ export async function GET(request: NextRequest) {
         target1: p.target_price,
         stop_loss: p.stop_loss,
       });
-      // Task FINALIZE-UNIFICATION (Rule 27): removed fabricated fallbacks
-      // (entry*0.99/1.01, support entry*0.96, target1*1.05). Now NULL when
-      // the prediction record lacks these fields.
-      const entryMin = (p.entry_price_min && p.entry_price_min > 0) ? p.entry_price_min : null;
-      const entryMax = (p.entry_price_max && p.entry_price_max > 0) ? p.entry_price_max : null;
-      const s1 = (p.support_level && p.support_level > 0) ? p.support_level : null;
-      const s2 = (p.support_level_2 && p.support_level_2 > 0) ? p.support_level_2 : null;
-      const r1 = (p.resistance_level && p.resistance_level > 0) ? p.resistance_level : (validated.target1 ?? null);
-      const r2 = (p.resistance_level_2 && p.resistance_level_2 > 0) ? p.resistance_level_2 : (p.target_price_2 ?? null);
+      // FIX (2026-10-10): entry_price_min/max + support/resistance مش موجودة في الإنتاج
+      const entryMin = null;
+      const entryMax = null;
+      const s1 = null;
+      const s2 = null;
+      const r1 = validated.target1 ?? null;
+      const r2 = p.target_price_2 ?? null;
 
       return enrichWithTechnical({
         ...p,
