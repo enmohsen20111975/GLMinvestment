@@ -101,6 +101,7 @@ import { PlatformPerformanceView } from './platform-performance/PlatformPerforma
 import { NewsManagementTab as NewsManagementTabComponent } from './NewsManagementTab';
 import { BacktestTab } from './BacktestTab';
 import { DbBackupPanel } from './DbBackupPanel';
+import { GitHubFileManager } from './GitHubFileManager';
 import { SystemMonitorPanel } from './SystemMonitorPanel';
 import { UserManagementPanel } from './UserManagementPanel';
 
@@ -398,6 +399,7 @@ type AdminTab =
   | 'telegram'
   | 'reports'
   | 'databases'
+  | 'git-files'
   | 'db-backup'
   | 'system-control'
   | 'system-monitor'
@@ -1042,6 +1044,7 @@ export function AdminView() {
       accent: 'border-sky-500/40 bg-sky-500/5',
       tabs: [
         { id: 'databases', label: 'قواعد البيانات', icon: <Database className="w-3.5 h-3.5" />, desc: 'إدارة DBs' },
+        { id: 'git-files', label: '🐙 ملفات GitHub', icon: <GitBranch className="w-3.5 h-3.5" />, desc: 'عرض + حذف + تتبع' },
         { id: 'db-backup', label: 'النسخ الاحتياطي', icon: <Upload className="w-3.5 h-3.5" />, desc: 'backup/restore' },
         { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" />, desc: 'scraper + sync + cron' },
         { id: 'news-control', label: 'إدارة الأخبار', icon: <Newspaper className="w-3.5 h-3.5" />, desc: 'أخبار + مصادر' },
@@ -1869,6 +1872,11 @@ export function AdminView() {
       {/* ==================== DATABASES TAB (Full Database Manager) ==================== */}
       {activeTab === 'databases' && (
         <DatabaseManagerFull />
+      )}
+
+      {/* ==================== GITHUB FILES MANAGER TAB (NEW — 2026-10-10) ==================== */}
+      {activeTab === 'git-files' && (
+        <GitHubFileManager />
       )}
 
       {/* ==================== DB BACKUP TAB (NEW — ADMIN-ADVANCED-FEATURES) ==================== */}
