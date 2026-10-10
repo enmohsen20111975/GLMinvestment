@@ -92,17 +92,16 @@ export async function POST(request: NextRequest) {
 
     const createdAt = userRecord?.created_at ? new Date(userRecord.created_at) : new Date();
     const now = new Date();
-    const diffMs = now.getTime() - createdAt.getTime();
-    const daysPassed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const daysLeft = Math.max(0, TRIAL_DAYS - daysPassed);
-    const isTrialActive = daysLeft > 0;
-    const isTrialExpired = daysLeft <= 0;
-
     const trialEndsAt = userRecord?.trial_ends_at ? new Date(userRecord.trial_ends_at) : new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-    const warningEndsAt = new Date(trialEndsAt.getTime() + WARNING_DAYS * 24 * 60 * 60 * 1000);
-    const isInWarning = isTrialExpired && now < warningEndsAt;
-    const isExpiredAndDeletionPending = isTrialExpired && now >= warningEndsAt;
-    const warningDaysLeft = isInWarning ? Math.max(0, Math.ceil((warningEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+    const isTrialExpired = now.getTime() > trialEndsAt.getTime();
+    const msLeft = trialEndsAt.getTime() - now.getTime();
+    const daysLeft = isTrialExpired ? 0 : Math.max(1, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+    const isTrialActive = !isTrialExpired;
+
+    const warningEndsAt = trialEndsAt;
+    const isInWarning = false;
+    const isExpiredAndDeletionPending = isTrialExpired;
+    const warningDaysLeft = 0;
 
     // P0-5: use canonical PAID_TIERS Set (لا hardcoded inline list)
     const isFreeUser = !PAID_TIERS.has(tier.toLowerCase()) && !hasActiveSubscription;

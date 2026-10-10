@@ -194,7 +194,7 @@ export function SeasonalityDashboard() {
               <div className="text-3xl font-bold text-emerald-600">{safeNum(summary.strong_buy_signals, 0)}</div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-primary/20">
+          <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/20 dark:to-primary/20">
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">شراء</div>
               <div className="text-3xl font-bold text-teal-600">{safeNum(summary.buy_signals, 0)}</div>

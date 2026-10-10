@@ -1352,7 +1352,7 @@ const AssetsTab = memo(function AssetsTab({ selectedPortfolioId = 'master' }: { 
                                   if (!m || m === 'EGX') return null; // EGX هو الافتراضي — ما نظهرش badge
                                   const label = MARKET_NAMES_AR[m];
                                   return (
-                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-primary text-primary dark:text-blue-300">
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 mt-1 ml-1 inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-primary text-primary dark:text-slate-300">
                                       🏛️ {label}
                                     </Badge>
                                   );
@@ -2871,7 +2871,7 @@ const ReportsTab = memo(function ReportsTab() {
               <p className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(totalLiabilities)}</p>
               <p className="text-[10px] text-muted-foreground mt-1">قروض + أقساط + ديون</p>
             </div>
-            <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20">
+            <div className="text-center p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20">
               <p className="text-xs text-muted-foreground mb-1">صافي الثروة</p>
               <p className={cn('text-lg font-bold', netWorth >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(netWorth)}
@@ -2901,7 +2901,7 @@ const ReportsTab = memo(function ReportsTab() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {investmentReturns.bank_monthly > 0 && (
-                <div className="p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 text-center">
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20 text-center">
                   <p className="text-xs text-muted-foreground mb-1">عائد البنك الشهري</p>
                   <p className="text-base font-bold text-teal-600 dark:text-teal-400">{formatCurrency(investmentReturns.bank_monthly)}</p>
                 </div>
@@ -3000,7 +3000,7 @@ const ReportsTab = memo(function ReportsTab() {
                   'flex items-start gap-3 p-3 rounded-lg border',
                   alert.type === 'danger' && 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900/50',
                   alert.type === 'warning' && 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900/50',
-                  alert.type === 'info' && 'bg-blue-50 border-teal-200 dark:bg-blue-950/20 dark:border-teal-900/50'
+                  alert.type === 'info' && 'bg-slate-50 border-teal-200 dark:bg-slate-900/20 dark:border-teal-900/50'
                 )}
               >
                 {alert.type === 'danger' && <XCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />}
@@ -3061,7 +3061,7 @@ const ReportsTab = memo(function ReportsTab() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Portfolio Health Score */}
-            <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20">
+            <div className="p-3 rounded-lg bg-gradient-to-r from-emerald-50 to-slate-50 dark:from-emerald-900/20 dark:to-slate-800/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-sm">تقييم صحة المحفظة</span>
                 <span className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
@@ -3107,7 +3107,7 @@ const ReportsTab = memo(function ReportsTab() {
 
                     {/* Good: High Bank Returns */}
                     {bankPercent > 60 && investmentReturns && investmentReturns.bank_monthly > 0 && (
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
                         <CheckCircle2 className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-teal-800 dark:text-teal-200">عوائد بنكية ممتازة</p>
@@ -3149,7 +3149,7 @@ const ReportsTab = memo(function ReportsTab() {
             </div>
 
             {/* Money Distribution Plan */}
-            <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-emerald-50 via-blue-50 to-purple-50 dark:from-emerald-900/20 dark:via-blue-900/20 dark:to-purple-900/20 border">
+            <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-emerald-50 via-slate-50 to-purple-50 dark:from-emerald-900/20 dark:via-slate-800/20 dark:to-purple-900/20 border">
               <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                 <Coins className="w-4 h-4" />
                 خطة توزيع الأموال المقترحة

@@ -471,7 +471,7 @@ export function DataScraperControl() {
                   key={job.id}
                   className={cn(
                     "p-3 rounded-lg border",
-                    job.status === 'running' && "bg-blue-50 dark:bg-blue-950/20 border-blue-200",
+                    job.status === 'running' && "bg-slate-50 dark:bg-slate-900/20 border-slate-200",
                     job.status === 'completed' && "bg-green-50 dark:bg-green-950/20 border-green-200",
                     job.status === 'failed' && "bg-red-50 dark:bg-red-950/20 border-red-200"
                   )}

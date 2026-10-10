@@ -41,6 +41,16 @@ export interface ShareStockData {
   expectedReturn?: number;  // العائد المتوقع %
   riskLevel?: string;
   sector?: string;
+  // ─── PHASE2-PUBLISHING-CARDS (owner directive) ─────────────────────────
+  // شارة السوق + تواريخ التوقّع/التحقق/المدة + R:R + سعر الدخول + شعار السهم.
+  market?: string;            // 'EGX' | 'TADAWUL' | 'KSE' | 'QSE' | 'US' | 'CRYPTO'
+  marketNameAr?: string;      // اسم السوق بالعربية (مثل: البورصة المصرية)
+  predictionDate?: string;    // تاريخ التوقّع
+  verificationDate?: string;  // تاريخ التحقق (إصابة الهدف)
+  daysTaken?: number;         // عدد الأيام من التوقّع للتحقق
+  riskReward?: number;        // معامل الربحية (R:R)
+  entryPrice?: number;        // سعر الدخول المقترح
+  logoUrl?: string;           // شعار السهم (الوجه) — fallback: أول حرف من ticker
 }
 
 // ─── Share Card (hidden, for image generation) ──────────────────────────────
@@ -67,6 +77,29 @@ function ShareCard({
 
   const recColor = getRecColor(data.recommendation);
 
+  // PHASE2-PUBLISHING-CARDS: شارة السوق بالعربية + اسم المنصة
+  const platformName = 'دليل الاستثمار';
+
+  // صياغة التواريخ بالعربية (Rule 27: null/invalid → "—")
+  const fmtDateAr = (dateStr?: string): string => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return '—';
+    }
+  };
+
+  const todayStr = fmtDateAr(new Date().toISOString());
+  const predictionDateStr = data.predictionDate ? fmtDateAr(data.predictionDate) : '—';
+  const verificationDateStr = data.verificationDate ? fmtDateAr(data.verificationDate) : '—';
+  const daysTakenStr =
+    data.daysTaken != null && Number.isFinite(data.daysTaken)
+      ? `${data.daysTaken} يوم`
+      : '—';
+
   return (
     <div
       ref={cardRef}
@@ -80,6 +113,39 @@ function ShareCard({
         color: '#f8fafc',
       }}
     >
+      {/* PHASE2-PUBLISHING-CARDS: Platform branding strip — اسم المنصة + السوق */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 12px', marginBottom: '20px', borderRadius: '8px',
+        background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            width: '28px', height: '28px', borderRadius: '6px',
+            background: 'linear-gradient(135deg, #eab308, #d97706)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#0f172a', fontWeight: 'bold', fontSize: '14px',
+          }}>
+            د
+          </div>
+          <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#facc15' }}>{platformName}</span>
+        </div>
+        {data.market && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '3px 10px', borderRadius: '12px',
+            background: 'rgba(255,255,255,0.08)',
+          }}>
+            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#facc15', fontFamily: 'monospace' }}>
+              {data.market}
+            </span>
+            <span style={{ fontSize: '11px', color: '#cbd5e1' }}>
+              {data.marketNameAr || ''}
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
@@ -89,8 +155,20 @@ function ShareCard({
               background: 'linear-gradient(135deg, #059669, #0d9488)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 'bold', fontSize: '18px',
+              overflow: 'hidden',
             }}>
-              {data.ticker.charAt(0)}
+              {data.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={data.logoUrl}
+                  alt={data.ticker}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span>{data.ticker.charAt(0)}</span>
+              )}
             </div>
             <div>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f8fafc' }}>{data.ticker}</div>
@@ -112,10 +190,10 @@ function ShareCard({
             background: 'linear-gradient(135deg, #059669, #0d9488)',
             color: 'white', fontWeight: 'bold', fontSize: '13px',
           }}>
-            دليل الاستثمار
+            {platformName}
           </div>
           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', textAlign: 'left' }} suppressHydrationWarning>
-            {new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+            {todayStr}
           </div>
         </div>
       </div>
@@ -158,12 +236,21 @@ function ShareCard({
       )}
 
       {/* Trading Prices - أسعار التداول */}
-      {(data.buyPrice || data.targetPrice || data.sellPrice || data.stopLoss || data.fairValue) && (
+      {(data.entryPrice || data.buyPrice || data.targetPrice || data.sellPrice || data.stopLoss || data.fairValue || data.riskReward) && (
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px', fontWeight: '600' }}>
             〰️ أسعار التداول المهمة 〰️
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            {data.entryPrice != null && (
+              <div style={{
+                padding: '12px 16px', borderRadius: '12px',
+                background: 'rgba(59, 130, 246, 0.18)', border: '1px solid rgba(59, 130, 246, 0.35)',
+              }}>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>🎯 سعر الدخول المقترح</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>{(data.entryPrice ?? 0).toFixed(2)}</div>
+              </div>
+            )}
             {data.buyPrice && (
               <div style={{
                 padding: '12px 16px', borderRadius: '12px',
@@ -210,6 +297,17 @@ function ShareCard({
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{(data.fairValue ?? 0).toFixed(2)}</div>
               </div>
             )}
+            {data.riskReward != null && (
+              <div style={{
+                padding: '12px 16px', borderRadius: '12px',
+                background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)',
+              }}>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>⚖️ معامل الربحية (R:R)</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#f59e0b' }}>
+                  {(data.riskReward ?? 0).toFixed(1)} : 1
+                </div>
+              </div>
+            )}
             {(data.expectedReturn ?? data.upsidePotential) !== undefined && (data.expectedReturn ?? data.upsidePotential) !== 0 && (
               <div style={{
                 padding: '12px 16px', borderRadius: '12px', background: 'rgba(16,185,129,0.1)',
@@ -224,6 +322,27 @@ function ShareCard({
           </div>
         </div>
       )}
+
+      {/* PHASE2-PUBLISHING-CARDS: تواريخ التوقّع / التحقق / المدة */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '10px 14px', marginBottom: '16px', borderRadius: '8px',
+        background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.2)',
+        fontSize: '11px', color: '#cbd5e1',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#94a3b8', fontSize: '10px' }}>تاريخ التوقّع</div>
+          <div style={{ fontWeight: 'bold', color: '#facc15', fontFamily: 'monospace' }}>{predictionDateStr}</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#94a3b8', fontSize: '10px' }}>تاريخ التحقق</div>
+          <div style={{ fontWeight: 'bold', color: '#10b981', fontFamily: 'monospace' }}>{verificationDateStr}</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#94a3b8', fontSize: '10px' }}>المدة المستغرقة</div>
+          <div style={{ fontWeight: 'bold', color: '#f8fafc', fontFamily: 'monospace' }}>{daysTakenStr}</div>
+        </div>
+      </div>
 
       {/* Metrics Grid */}
       {data.metrics && (
@@ -249,13 +368,23 @@ function ShareCard({
         </div>
       )}
 
-      {/* Footer */}
+      {/* Footer — PHASE2-PUBLISHING-CARDS: owner's exact required disclaimer */}
       <div style={{
         marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <span style={{ fontSize: '11px', color: '#475569' }}>تحليل تلقائي — لا يعتبر نصيحة استثمارية</span>
-        <span style={{ fontSize: '11px', color: '#475569' }}>دليل الاستثمار</span>
+        <div style={{
+          padding: '8px 12px', borderRadius: '8px',
+          background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)',
+          marginBottom: '8px',
+        }}>
+          <p style={{ fontSize: '11px', color: '#fbbf24', textAlign: 'center', fontWeight: '600' }}>
+            ⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.
+          </p>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '11px', color: '#475569' }}>تحليل تلقائي بالذكاء الاصطناعي</span>
+          <span style={{ fontSize: '11px', color: '#475569' }}>دليل الاستثمار</span>
+        </div>
       </div>
     </div>
   );
@@ -305,11 +434,18 @@ export function ShareButton({
     const d = stockData;
     const changeStr = d.change !== undefined ? `${d.change >= 0 ? '▲' : '▼'} ${Math.abs(d.change).toFixed(2)}%` : '';
 
-    let text = `📈 تحليل ${d.ticker} - ${d.nameAr || d.name}\n`;
+    // PHASE2-PUBLISHING-CARDS: الترويسة — اسم المنصة + السهم + السوق
+    let text = `📈 ${'دليل الاستثمار'} — تحليل ${d.ticker}`;
+    if (d.nameAr || d.name) text += ` — ${d.nameAr || d.name}`;
+    text += `\n`;
+    if (d.market) {
+      const marketLabel = d.marketNameAr ? `${d.marketNameAr} (${d.market})` : d.market;
+      text += `🏛️ السوق: ${marketLabel}\n`;
+    }
     text += `💰 السعر الحالي: ${(d.price ?? 0).toFixed(2)} ج.م ${changeStr}\n`;
 
     if (d.recommendation) {
-      text += `🎯 التحليل: ${d.recommendationAr || d.recommendation}\n`;
+      text += `🎯 الإشارة: ${d.recommendationAr || d.recommendation}\n`;
     }
     if (d.confidence !== undefined) {
       text += `📊 مستوى الثقة: ${(d.confidence ?? 0).toFixed(0)}%\n`;
@@ -317,28 +453,37 @@ export function ShareButton({
 
     // === أسعار التداول المهمة ===
     text += `\n〰️〰️ أسعار التداول 〰️〰️\n`;
-    
+
+    if (d.entryPrice != null) {
+      text += `🎯 سعر الدخول: ${(d.entryPrice ?? 0).toFixed(2)} ج.م\n`;
+    }
+
     if (d.buyPrice) {
       text += `✅ سعر الشراء الجيد: ${(d.buyPrice ?? 0).toFixed(2)} ج.م\n`;
     } else if (d.fairValue && d.fairValue < d.price * 0.95) {
       // إذا القيمة العادلة أقل من السعر بـ 5%، نستخدمها كسعر شراء
       text += `✅ سعر الشراء الجيد: ${(d.fairValue ?? 0).toFixed(2)} ج.م\n`;
     }
-    
+
+    if (d.targetPrice) {
+      text += `🎯 السعر المستهدف: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
+    }
+
     if (d.sellPrice) {
       text += `📤 سعر البيع المقترح: ${(d.sellPrice ?? 0).toFixed(2)} ج.م\n`;
     } else if (d.targetPrice) {
       text += `📤 سعر البيع المقترح: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
     }
-    
-    if (d.targetPrice) {
-      text += `🎯 السعر المستهدف: ${(d.targetPrice ?? 0).toFixed(2)} ج.م\n`;
-    }
-    
+
     if (d.stopLoss) {
       text += `🛑 وقف الخسارة: ${(d.stopLoss ?? 0).toFixed(2)} ج.م\n`;
     }
-    
+
+    // PHASE2-PUBLISHING-CARDS: معامل الربحية R:R
+    if (d.riskReward != null) {
+      text += `⚖️ معامل الربحية (R:R): ${(d.riskReward ?? 0).toFixed(1)} : 1\n`;
+    }
+
     if (d.expectedReturn !== undefined) {
       text += `📈 العائد المتوقع: ${d.expectedReturn >= 0 ? '+' : ''}${(d.expectedReturn ?? 0).toFixed(1)}%\n`;
     } else if (d.upsidePotential !== undefined && d.upsidePotential !== 0) {
@@ -366,21 +511,40 @@ export function ShareButton({
         if (m.dividendYield) text += `   عائد التوزيعات: ${(m.dividendYield ?? 0).toFixed(1)}%\n`;
       }
     }
-    
+
     if (d.riskLevel) {
       const riskMap: Record<string, string> = { Low: 'منخفض', Medium: 'متوسط', High: 'مرتفع', 'Very High': 'مرتفع جداً' };
       text += `\n⚠️ مستوى المخاطرة: ${riskMap[d.riskLevel] || d.riskLevel}\n`;
     }
     if (d.sector) text += `🏢 القطاع: ${d.sector}\n`;
 
-    // === التوقيع والروابط الرسمية ===
+    // PHASE2-PUBLISHING-CARDS: التواريخ (توقّع / تحقق / مدة)
+    if (d.predictionDate || d.verificationDate || d.daysTaken != null) {
+      text += `\n📅 تواريخ التوقّع:\n`;
+      if (d.predictionDate) text += `   • توقّع: ${d.predictionDate}\n`;
+      if (d.verificationDate) text += `   • تحقق: ${d.verificationDate}\n`;
+      if (d.daysTaken != null) text += `   • المدة: ${d.daysTaken} يوم\n`;
+    }
+
+    // === التوقيع + الروابط الرسمية + الإخلاء الإجباري ===
     text += `\n━━━━━━━━━━━━━━━━━`;
-    text += `\n⚠️ هذا التحليل لأغراض تعليمية فقط - ليس نصيحة استثمارية`;
-    text += `\nدليل الاستثمار — تحليل ذكي للبورصة المصرية`;
+    text += `\n⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.`;
+    text += `\nدليل الاستثمار — تحليل ذكي للأسواق المالية`;
     text += OFFICIAL_LINKS_BLOCK;
 
-    // === الهاشتاجات ===
-    text += `\n\n#البورصة_المصرية #توقعات_أسهم #EGX #الاستثمار #تداول #مصر #الاقتصاد_المصري`;
+    // === الهاشتاجات (متكيّفة مع السوق) ===
+    const marketHashtagMap: Record<string, string> = {
+      EGX: '#البورصة_المصرية #EGX #مصر',
+      TADAWUL: '#السوق_السعودي #تداول #TADAWUL',
+      KSE: '#بورصة_الكويت #KSE',
+      QSE: '#بورصة_قطر #QSE',
+      US: '#البورصة_الأمريكية #NYSE #NASDAQ',
+      CRYPTO: '#العملات_الرقمية #CRYPTO',
+    };
+    const marketHashtags = d.market
+      ? (marketHashtagMap[d.market] || `#${d.market}`)
+      : '#البورصة_المصرية #توقعات_أسهم #EGX';
+    text += `\n\n#توقعات_أسهم #الاستثمار #تداول #الاقتصاد ${marketHashtags}`;
 
     return text;
   }, [stockData]);
@@ -465,7 +629,18 @@ export function ShareButton({
 
   const shareText = getShareText();
   const platformUrl = typeof window !== 'undefined' ? window.location.origin : 'https://invist.m2y.net';
-  const shortText = `${stockData.ticker} - ${stockData.nameAr || stockData.name}\nالسعر: ${(stockData.price ?? 0).toFixed(2)} ج.م\nالتحليل: ${stockData.recommendationAr || stockData.recommendation || 'غير محدد'}\n\ndليل الاستثمار${OFFICIAL_LINKS_BLOCK}`;
+  // PHASE2-PUBLISHING-CARDS: نص مختصر يتضمن المنصة + السهم + السوق + السعر + الإشارة + الإخلاء.
+  const _s = stockData;
+  const _marketLine = _s.market
+    ? `السوق: ${_s.marketNameAr ? `${_s.marketNameAr} (${_s.market})` : _s.market}\n`
+    : '';
+  const shortText =
+    `دليل الاستثمار — تحليل ${_s.ticker}${_s.nameAr || _s.name ? ` — ${_s.nameAr || _s.name}` : ''}\n` +
+    (_marketLine) +
+    `السعر: ${(_s.price ?? 0).toFixed(2)} ج.م\n` +
+    `الإشارة: ${_s.recommendationAr || _s.recommendation || 'غير محدد'}\n` +
+    `⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.` +
+    OFFICIAL_LINKS_BLOCK;
   
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,

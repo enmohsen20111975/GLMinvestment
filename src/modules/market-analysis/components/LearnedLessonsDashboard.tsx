@@ -390,7 +390,7 @@ function Metric({
   tone: 'blue' | 'red' | 'amber' | 'green' | 'muted';
 }) {
   const toneClass = {
-    blue: 'text-primary dark:text-blue-300 bg-primary/5',
+    blue: 'text-primary dark:text-slate-300 bg-primary/5',
     red: 'text-red-700 dark:text-red-300 bg-red-500/5',
     amber: 'text-amber-700 dark:text-amber-300 bg-amber-500/5',
     green: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/5',

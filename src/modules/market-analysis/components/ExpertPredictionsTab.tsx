@@ -419,7 +419,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1 h-7 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                  className="gap-1 h-7 text-xs flex-1 border-teal-400 text-teal-600 hover:bg-slate-50 dark:hover:bg-slate-900/20"
                   onClick={() => {
                     const text = formatSingleExpertPredictionText(stock);
                     navigator.clipboard.writeText(text);
@@ -482,7 +482,7 @@ export function ExpertPredictionsTab({ market }: { market: MarketType }) {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                        className="gap-1 h-7 text-xs border-teal-400 text-teal-600 hover:bg-slate-50 dark:hover:bg-slate-900/20"
                         onClick={() => {
                           navigator.clipboard.writeText(singleText);
                           window.open('https://www.facebook.com/', '_blank');

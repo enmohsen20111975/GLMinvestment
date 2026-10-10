@@ -90,7 +90,7 @@ const severityColors: Record<string, string> = {
   danger: 'border-red-300 bg-red-50 dark:bg-red-950/20',
   warning: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20',
   success: 'border-green-300 bg-green-50 dark:bg-green-950/20',
-  info: 'border-teal-300 bg-blue-50 dark:bg-blue-950/20'
+  info: 'border-teal-300 bg-slate-50 dark:bg-slate-900/20'
 };
 
 const severityBadgeColors: Record<string, string> = {
@@ -287,7 +287,7 @@ export function SmartAlertsPanel() {
               </Badge>
             )}
             {summary.by_type.support_near > 0 && (
-              <Badge variant="outline" className="bg-blue-50 text-teal-700">
+              <Badge variant="outline" className="bg-slate-50 text-teal-700">
                 📥 {summary.by_type.support_near} قريب من دعم
               </Badge>
             )}

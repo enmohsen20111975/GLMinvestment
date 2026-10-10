@@ -447,7 +447,7 @@ export function DealAdvisorPanel({
                     ? 'border-emerald-300 bg-emerald-50'
                     : data.action_scenarios.current_recommendation.action === 'reduce'
                       ? 'border-orange-300 bg-orange-50'
-                      : 'border-teal-300 bg-blue-50'
+                      : 'border-teal-300 bg-slate-50'
               }
             >
               <Target className="h-4 w-4" />

@@ -433,13 +433,15 @@ export function AdminView() {
   const { user } = useAppStore();
   const userEmail = user?.email || session?.user?.email || '';
   const userName = (user as any)?.username || (user as any)?.name || (session?.user as any)?.name || (session?.user as any)?.username || '';
+  // P0-FIX (2026-10-09, Round 2): إزالة hardcoded admin emails (security — كانت بتتسرب للـ browser)
+  // قبل كده: hardcoded list ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', ...]
+  // دلوقتي: بنعتمد على isAdmin() من admin-auth.ts (بيقرأ من env/admin-identities.ts)
   const isAdminUser =
     (user as any)?.is_admin === true ||
     (user as any)?.subscription_tier === 'admin' ||
     (session?.user as any)?.is_admin === true ||
     (session?.user as any)?.subscription_tier === 'admin' ||
     (userName && ['mohseny', 'admin'].includes(userName.toLowerCase())) ||
-    (userEmail && ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(userEmail.toLowerCase())) ||
     isAdmin(userEmail, userName) ||
     isAdmin(userName, userEmail);
 

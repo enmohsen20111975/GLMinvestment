@@ -2241,10 +2241,11 @@ def run_generator(start_date, end_date, scan_interval=SCAN_INTERVAL,
             # - BOOST (IPO/beat/MA) → رفع score
             # NOTE: في backtest mode، الأخبار التاريخية مش متاحة → skip (NEUTRAL)
             # NOTE: في production، news_fetcher_analyzer بـ يجيب أخبار حقيقية + يحللها
-            # Toggle: V40_2_NEWS_IMPACT=1 (default OFF للـ backtest)
-            # Toggle: V40_2_FORCE_NEWS_IN_BACKTEST=1 → بيـ skip الـ backtest guard عشان
-            #         نقدر نختبر تأثير الأخبار في backtest (لما news.db فيه أخبار للفترة)
-            if os.environ.get('V40_2_NEWS_IMPACT', '0') == '1':
+            # P1-FIX (2026-10-09, Round 2): default ON (كان OFF)
+            # قبل كده: default '0' → الأخبار مش بتأثر على التوقعات
+            # دلوقتي: default '1' → الأخبار بتأثر على الـ score (لو news-agent شغّال)
+            # الأثر: لو news-agent مش متثبت cron أو news.db فاضي، الـ code بيتخطاه بأمان
+            if os.environ.get('V40_2_NEWS_IMPACT', '1') == '1':
                 _is_backtest = os.environ.get('V40_2_BACKTEST_MODE', '0') == '1'
                 _force_news_in_backtest = os.environ.get('V40_2_FORCE_NEWS_IN_BACKTEST', '0') == '1'
                 if not _is_backtest or _force_news_in_backtest:

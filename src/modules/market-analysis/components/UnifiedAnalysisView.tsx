@@ -243,7 +243,7 @@ export default function UnifiedAnalysisView() {
 
       {/* Header */}
       <div className="mb-8 print:hidden">
-        <h1 className="text-3xl font-bold bg-gradient-to-l from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-l from-slate-400 to-purple-400 bg-clip-text text-transparent">
           نظام التحليل الموحد
         </h1>
         <p className="text-gray-400 mt-1 text-sm">
