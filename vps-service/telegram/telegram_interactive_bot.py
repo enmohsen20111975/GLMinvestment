@@ -1008,7 +1008,7 @@ def check_subscription(chat_id: int) -> dict:
                 if user["is_active"] is not None and not user["is_active"]:
                     return {"linked": False}
                 tier = (user["subscription_tier"] or "free").lower()
-                paid_tiers = {"normal", "premium", "pro", "b2b_starter", "b2b_pro", "b2b_enterprise", "developer", "admin"}
+                paid_tiers = {"normal", "premium", "pro", "vip_pass", "b2b_starter", "b2b_pro", "b2b_enterprise", "developer", "admin"}
                 is_paid = tier in paid_tiers
 
                 # حساب فترة التجربة 7 أيام

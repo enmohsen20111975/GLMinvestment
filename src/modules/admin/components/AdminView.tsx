@@ -130,6 +130,7 @@ import { TelegramPredictionsTab } from './TelegramPredictionsTab';
 import { SystemHealthCard } from './SystemHealthCard';
 // Task 31-B (Engine Monitor Battalion) — unified engine control room.
 import { EngineControlRoomTab } from './EngineControlRoomTab';
+import { InstapayAdminTab } from './InstapayAdminTab';
 
 // ============================================================================
 // Phase 3 — Next.js Bundle Diet (Lazy Loading Heavy Components)
@@ -396,6 +397,7 @@ type AdminTab =
   | 'backtest'
   | 'users'
   | 'user-management'
+  | 'instapay'
   | 'telegram'
   | 'reports'
   | 'databases'
@@ -1062,6 +1064,7 @@ export function AdminView() {
       tabs: [
         { id: 'user-management', label: 'إدارة المستخدمين', icon: <Users className="w-3.5 h-3.5" />, desc: 'CRUD + باقات' },
         { id: 'pricing', label: 'التسعير + البوابات', icon: <DollarSign className="w-3.5 h-3.5" />, desc: 'plans + 7 paywall gates' },
+        { id: 'instapay', label: 'دفع إنستاباي 💳', icon: <Coins className="w-3.5 h-3.5" />, desc: 'إثباتات الدفع + التفعيل الفوري' },
         { id: 'feedback', label: 'آراء المستخدمين', icon: <MessageSquareText className="w-3.5 h-3.5" />, count: feedbackCount, desc: 'ملاحظات + شكاوى' },
         // Task ADMIN-CLEANUP: أخفينا 'users' (تحليلات عرضية) + 'promo-codes' (عرضي)
       ],
@@ -1810,6 +1813,11 @@ export function AdminView() {
       {/* ==================== PRICING EDITOR TAB (Task 28-B Fix 5) ==================== */}
       {activeTab === 'pricing' && (
         <PricingEditorTab />
+      )}
+
+      {/* ==================== INSTAPAY ADMIN TAB ==================== */}
+      {activeTab === 'instapay' && (
+        <InstapayAdminTab />
       )}
 
       {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'behavior' tab removed.

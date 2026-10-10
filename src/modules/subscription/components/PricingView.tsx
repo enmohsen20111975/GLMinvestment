@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { InstapayModal } from './InstapayModal';
 
 interface Plan {
   tier: string;
@@ -77,6 +78,14 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [instapayPlan, setInstapayPlan] = useState<{
+    tier: string;
+    name_ar: string;
+    price: number;
+    currency: string;
+    billingCycle: string;
+    market: string;
+  } | null>(null);
 
   // auto-detect السوق من navigator.language
   useEffect(() => {
@@ -294,22 +303,45 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
                     ))}
                   </ul>
 
-                  <Button
-                    onClick={() => handleCheckout(plan.tier)}
-                    disabled={checkoutLoading === plan.tier}
-                    className={cn(
-                      'w-full gap-2',
-                      popular && 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white',
+                  <div className="space-y-2 mt-auto">
+                    <Button
+                      onClick={() => handleCheckout(plan.tier)}
+                      disabled={checkoutLoading === plan.tier}
+                      className={cn(
+                        'w-full gap-2',
+                        popular && 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white',
+                      )}
+                      variant={popular ? 'default' : 'outline'}
+                    >
+                      {checkoutLoading === plan.tier ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Crown className="w-4 h-4" />
+                      )}
+                      {isB2B ? 'تواصل معنا' : 'الدفع بالبطاقة / كاش'}
+                    </Button>
+
+                    {!isB2B && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          setInstapayPlan({
+                            tier: plan.tier,
+                            name_ar: plan.name_ar,
+                            price: plan.price_local,
+                            currency: plan.currency,
+                            billingCycle: plan.billing_cycle,
+                            market,
+                          })
+                        }
+                        className="w-full gap-2 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs"
+                      >
+                        <span>⚡</span>
+                        الدفع عبر إنستاباي (InstaPay)
+                      </Button>
                     )}
-                    variant={popular ? 'default' : 'outline'}
-                  >
-                    {checkoutLoading === plan.tier ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Crown className="w-4 h-4" />
-                    )}
-                    {isB2B ? 'تواصل معنا' : 'اشترك الآن'}
-                  </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -327,6 +359,14 @@ export function PricingView({ asModal = false, forcedMarket, onCheckoutSuccess }
           </p>
         )}
       </div>
+
+      {instapayPlan && (
+        <InstapayModal
+          open={!!instapayPlan}
+          onOpenChange={(open) => !open && setInstapayPlan(null)}
+          plan={instapayPlan}
+        />
+      )}
     </div>
   );
 }
