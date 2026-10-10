@@ -316,3 +316,4 @@ archive/databases-from-github/*.zip
 data/db_backup_*
 data/db_backup*.zip
 data/db_backup*.zip.part
+data/db_snapshot_2026-10-10/db_backup_full.zip
