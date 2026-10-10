@@ -68,7 +68,7 @@ function openDb(): Database.Database {
     const db = new Database(dbPath, { timeout: 3000 });
     ensureSchema(db);
     return db;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${dbPath}?immutable=1`, { timeout: 3000 });
   }
 }
@@ -632,7 +632,7 @@ function extractLessons(db: Database.Database, overall: OverallStatsRow): Predic
         });
       }
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Lessons extraction is best-effort
   }
 

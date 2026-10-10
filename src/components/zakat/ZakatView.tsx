@@ -201,7 +201,7 @@ function IslamicBasis() {
               <p className="text-xs text-muted-foreground mt-2 text-left">سورة البقرة: 43</p>
             </div>
             
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-950/30 dark:to-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800/50 shadow-sm">
+            <div className="p-4 bg-gradient-to-r from-slate-50 to-teal-50 dark:from-slate-900/30 dark:to-teal-950/30 rounded-xl border border-teal-200 dark:border-teal-800/50 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">س</div>
                 <span className="font-bold text-teal-700 dark:text-teal-400">من السنة النبوية</span>
@@ -340,7 +340,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
     try {
       const saved = localStorage.getItem('zakat_nisab_metal');
       if (saved === 'gold' || saved === 'silver') setNisabMetal(saved);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // localStorage غير متاح — نُبقي القيمة الافتراضية
     }
   }, []);
@@ -349,7 +349,7 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
   useEffect(() => {
     try {
       localStorage.setItem('zakat_nisab_metal', nisabMetal);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // تجاهل أخطاء الكتابة
     }
   }, [nisabMetal]);
@@ -577,11 +577,11 @@ function ZakatCalculator({ goldPrice, silverPrice, gold21Price, gold18Price }: Z
         </Card>
         
         {/* Stocks & Trade Section */}
-        <Card className="relative overflow-hidden border-2 border-teal-300 dark:border-teal-700/50 bg-gradient-to-br from-blue-50/50 to-teal-50/50 dark:from-blue-950/20 dark:to-teal-950/20">
+        <Card className="relative overflow-hidden border-2 border-teal-300 dark:border-teal-700/50 bg-gradient-to-br from-slate-50/50 to-teal-50/50 dark:from-slate-900/20 dark:to-teal-950/20">
           <div className="absolute top-0 right-0 w-20 h-20 bg-teal-400/10 rounded-full -translate-y-1/2 translate-x-1/2"/>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-teal-500 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white"/>
               </div>
               <div>
@@ -755,7 +755,7 @@ function CalculationMethods() {
             'relative overflow-hidden border-r-4',
             method.color === 'yellow' && 'border-r-yellow-500 bg-gradient-to-l from-yellow-50/50 to-transparent dark:from-yellow-950/20',
             method.color === 'green' && 'border-r-green-500 bg-gradient-to-l from-green-50/50 to-transparent dark:from-green-950/20',
-            method.color === 'blue' && 'border-r-blue-500 bg-gradient-to-l from-blue-50/50 to-transparent dark:from-blue-950/20',
+            method.color === 'blue' && 'border-r-primary bg-gradient-to-l from-slate-50/50 to-transparent dark:from-slate-900/20',
             method.color === 'purple' && 'border-r-purple-500 bg-gradient-to-l from-purple-50/50 to-transparent dark:from-purple-950/20',
             method.color === 'emerald' && 'border-r-emerald-500 bg-gradient-to-l from-emerald-50/50 to-transparent dark:from-emerald-950/20',
           )}>
@@ -967,7 +967,7 @@ function AutoZakatCard({ goldPrice }: { goldPrice: number }) {
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert className="border-teal-300 bg-blue-50 dark:bg-blue-950/30">
+                <Alert className="border-teal-300 bg-slate-50 dark:bg-slate-900/30">
                   <Info className="w-5 h-5 text-teal-600"/>
                   <AlertDescription className="text-sm text-teal-800 dark:text-teal-200">
                     أضف أصولاً لمحفظتك (نقد، أسهم، ذهب، كريبتو) من قسم المحفظة ليتم حساب الزكاة تلقائياً.

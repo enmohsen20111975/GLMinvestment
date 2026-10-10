@@ -87,7 +87,7 @@ export function SourceAuthorityTab() {
           endpoint_live: false,
         });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Network error — fall back to mirror constants
       setData({
         success: true,

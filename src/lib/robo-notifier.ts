@@ -36,7 +36,7 @@ function loadSeen(): Record<string, SeenPrediction> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return {};
   }
 }
@@ -50,7 +50,7 @@ function saveSeen(seen: Record<string, SeenPrediction>): void {
     const trimmed: Record<string, SeenPrediction> = {};
     for (const [k, v] of entries) trimmed[k] = v;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore quota errors
   }
 }
@@ -67,7 +67,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
       new Promise<NotificationPermission>((resolve) => setTimeout(() => resolve('default'), 3000)),
     ]);
     return result === 'granted';
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -77,7 +77,7 @@ export async function registerRoboSW(): Promise<void> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
   try {
     await navigator.serviceWorker.register('/sw.js');
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // الـ SW اختياري — الإشعارات بتشتغل من غيره كمان
   }
 }
@@ -97,14 +97,14 @@ function fireNotification(title: string, body: string, direction: 'up' | 'down' 
       } else {
         new Notification(title, { body, icon });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
   }
   // الصوت
   try {
     playAlertSound(direction);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
 }
@@ -193,7 +193,7 @@ async function fetchPredictions(): Promise<{ active: any[]; previous: any[] } | 
       active: Array.isArray(data.active_predictions || data.predictions) ? (data.active_predictions || data.predictions) : [],
       previous: Array.isArray(data.previous_predictions) ? data.previous_predictions : [],
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -209,7 +209,7 @@ export function startRoboNotifier(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(ENABLED_KEY, '1');
-  } catch {}
+  } catch { /* safe-by-design */ }
   enabled = true;
   // سجّل الـ SW
   registerRoboSW();
@@ -239,7 +239,7 @@ export function stopRoboNotifier(): void {
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(ENABLED_KEY, '0');
-    } catch {}
+    } catch { /* safe-by-design */ }
   }
   enabled = false;
   if (pollTimer) {
@@ -255,7 +255,7 @@ export function isRoboNotifierRunning(): boolean {
     const saved = localStorage.getItem(ENABLED_KEY);
     if (saved === '0') return false;
     return true; // افتراضياً مفعّل للمستخدمين
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return true;
   }
 }

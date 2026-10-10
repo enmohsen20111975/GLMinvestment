@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 
 function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
+  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { /* safe-by-design */ return false; }
 }
 
 function openDb(p: string, readonly = true): any {
@@ -65,7 +65,7 @@ export async function GET(
           });
         }
         db.close();
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
 
     // 2) Try stocks.db.news_items (filter by ticker, type='disclosure')
@@ -96,7 +96,7 @@ export async function GET(
           }
         }
         db.close();
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
 
     // 3) Try news.db.market_news (filter by tickers LIKE %symbol%)
@@ -124,7 +124,7 @@ export async function GET(
           });
         }
         db.close();
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
 
     return NextResponse.json({

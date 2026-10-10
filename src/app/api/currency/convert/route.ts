@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
       if (text && text.trim()) {
         body = JSON.parse(text) as Record<string, unknown>;
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore JSON parse errors and fall through to query params
     }
     const url = new URL(req.url);

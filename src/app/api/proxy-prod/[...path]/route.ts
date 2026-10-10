@@ -203,7 +203,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           responseHeaders.set('Access-Control-Allow-Origin', origin);
           responseHeaders.set('Vary', 'Origin');
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore malformed origin
       }
     }

@@ -338,7 +338,7 @@ export function TreasuryBondsView() {
       </div>
 
       {/* Info Banner */}
-      <Card className="py-0 gap-0 bg-blue-50 dark:bg-blue-950/20 border-teal-200 dark:border-teal-900">
+      <Card className="py-0 gap-0 bg-slate-50 dark:bg-slate-900/20 border-teal-200 dark:border-teal-900">
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
             <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400 mt-0.5 flex-shrink-0" />

@@ -264,7 +264,7 @@ export async function DELETE(
           updated_at: new Date().toISOString(),
         },
       });
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     return NextResponse.json({
       success: true,

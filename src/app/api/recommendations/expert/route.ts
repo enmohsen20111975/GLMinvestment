@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     let db: Database.Database | null = null;
     try {
       db = new Database(dbPath, { readonly: true });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json({
         success: true,
         source: 'sqlite_fallback_empty',
@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
     } catch (queryErr) {
       try {
         db.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
       console.error('[recommendations/expert] query error:', queryErr);

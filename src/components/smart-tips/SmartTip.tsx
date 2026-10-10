@@ -68,9 +68,9 @@ const CATEGORY_CONFIG: Record<string, {
     label: 'التحليل والقرار',
     labelEn: 'Analysis',
     icon: BarChart3,
-    gradient: 'from-blue-50 to-teal-50',
+    gradient: 'from-slate-50 to-teal-50',
     border: 'border-teal-200',
-    bg: 'bg-blue-50/80',
+    bg: 'bg-slate-50/80',
     text: 'text-teal-900',
     iconBg: 'bg-teal-100',
     badge: 'bg-teal-100 text-teal-700',
@@ -143,7 +143,7 @@ export function SmartTip({
       } else {
         setError(true);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError(true);
     } finally {
       setLoading(false);
@@ -414,7 +414,7 @@ export function AllTipsView() {
           }
         }
         setTips(allTips);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore
       } finally {
         setLoading(false);

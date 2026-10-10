@@ -127,7 +127,7 @@ export function WatchlistIntelligenceSection() {
       } else {
         setError(json.error || 'فشل في تحميل البيانات');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setError('حدث خطأ في الاتصال');
     } finally {
       setLoading(false);
@@ -244,7 +244,7 @@ export function WatchlistIntelligenceSection() {
           />
         </Card>
 
-        <Card className="p-4 gap-2 bg-gradient-to-br from-blue-50 to-transparent dark:from-blue-950/20">
+        <Card className="p-4 gap-2 bg-gradient-to-br from-slate-50 to-transparent dark:from-slate-900/20">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Target className="w-4 h-4 text-teal-500" />
             <span className="text-xs font-medium">قرب الدعم</span>

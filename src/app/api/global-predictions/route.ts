@@ -32,7 +32,7 @@ function openRo(p: string): Database.Database | null {
   try {
     if (!fs.existsSync(p)) return null;
     return new Database(p, { readonly: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -87,7 +87,7 @@ export async function GET(_req: NextRequest) {
       }
       try {
         pdb.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
     }
@@ -128,7 +128,7 @@ export async function GET(_req: NextRequest) {
       }
       try {
         cdb.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
     }
@@ -166,7 +166,7 @@ export async function GET(_req: NextRequest) {
       }
       try {
         gdb.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
     }

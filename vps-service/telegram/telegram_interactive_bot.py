@@ -529,22 +529,69 @@ def get_stock_radar_status(symbol: str, current_price: Optional[float] = None) -
     return radar_info
 
 DAILY_QUERY_LIMIT_TRIAL = 5
-_daily_query_counts: Dict[str, int] = {}
+# P1-FIX (2026-10-09, Round 2): persist daily query count في auth.db بدل in-memory
+# قبل كده: _daily_query_counts Dict بتتمسح لما البوت يعمل restart
+# دلوقتي: بنحفظ في auth.db.usage_daily (Prisma)
+_daily_query_counts: Dict[str, int] = {}  # in-memory cache (fallback)
+
+def _get_db_path():
+    """جيب مسار auth.db."""
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(root, '..', 'db', 'auth.db')
 
 def check_and_increment_daily_limit(chat_id: int) -> Tuple[bool, int, int]:
     """
     فحص وزيادة عداد الاستعلامات اليومي لمستخدمي الفترة التجريبية.
+    P1-FIX: persist في auth.db.usage_daily (مش in-memory بس).
     Returns: (is_allowed, current_count, remaining_today)
     """
     today_key = f"{chat_id}:{time.strftime('%Y-%m-%d')}"
-    if len(_daily_query_counts) > 5000:
-        _daily_query_counts.clear()
+    today_date = time.strftime('%Y-%m-%d')
 
-    count = _daily_query_counts.get(today_key, 0)
+    # 1) جيب العدد من DB (source of truth)
+    db_count = 0
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            # chat_id = user_id في البوت (بنستخدم telegram_chat_id)
+            row = conn.execute(
+                "SELECT ai_messages_used FROM usage_daily WHERE user_id = ? AND date = ?",
+                (str(chat_id), today_date)
+            ).fetchone()
+            db_count = row[0] if row else 0
+            conn.close()
+    except Exception:
+        # fallback لـ in-memory لو DB مش متاح
+        db_count = _daily_query_counts.get(today_key, 0)
+
+    # 2) in-memory cache (fast path)
+    count = max(db_count, _daily_query_counts.get(today_key, 0))
     if count >= DAILY_QUERY_LIMIT_TRIAL:
         return False, count, 0
+
     new_count = count + 1
-    _daily_query_counts[today_key] = new_count
+    _daily_query_counts[today_key] = new_count  # cache update
+
+    # 3) persist في DB
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.execute("""
+                INSERT INTO usage_daily (id, user_id, date, ai_messages_used, created_at, updated_at)
+                VALUES (lower(hex(randomblob(8))), ?, ?, ?, datetime('now'), datetime('now'))
+                ON CONFLICT(user_id, date) DO UPDATE SET
+                    ai_messages_used = ?, updated_at = datetime('now')
+            """, (str(chat_id), today_date, new_count, new_count))
+            conn.commit()
+            conn.close()
+    except Exception:
+        pass  # in-memory fallback
+
     remaining = max(0, DAILY_QUERY_LIMIT_TRIAL - new_count)
     return True, new_count, remaining
 
@@ -1319,6 +1366,84 @@ def process_update(update: dict):
             reply_markup=MAIN_MENU_KEYBOARD
         )
         return
+
+    # أوامر عامة لا تتطلب اشتراك مسبق
+    if text in ("/id", "/myid", "ايدي", "معرفي", "id"):
+        send_message(
+            chat_id,
+            f"🆔 <b>معرّف تليجرام الخاص بك (Chat ID):</b>\n<code>{chat_id}</code>\n"
+            f"👤 الاسم: <b>{user_name}</b>\n\n"
+            f"💡 <i>استخدم هذا المعرّف للربط أو إضافته لصلاحيات الأدمن والمالك.</i>"
+        )
+        return
+
+    if text.startswith("/claim_admin") or text.startswith("/admin_login"):
+        parts = text.split(None, 1)
+        secret_input = parts[1].strip() if len(parts) > 1 else ""
+        admin_tok = os.environ.get("ADMIN_TOKEN", "").strip()
+        admin_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
+        shared_sec = os.environ.get("SHARED_SECRET", "").strip()
+        bot_sec = os.environ.get("BOT_API_SECRET", "").strip()
+        valid_secrets = {s for s in [admin_tok, admin_pw, shared_sec, bot_sec] if s}
+
+        if secret_input and secret_input in valid_secrets:
+            ADMIN_TELEGRAM_IDS.add(str(chat_id))
+            # تثبيت في auth.db
+            try:
+                auth_db_path = DB_DIR / "auth.db"
+                if auth_db_path.exists():
+                    c = sqlite3.connect(str(auth_db_path))
+                    c.execute(
+                        "INSERT OR REPLACE INTO user_telegram_links (id, user_id, telegram_chat_id, telegram_username, linked_at, is_active) "
+                        "VALUES (?, ?, ?, ?, datetime('now'), 1)",
+                        (
+                            f"admin_link_{chat_id}",
+                            "48457b7f-40f2-4a7e-8955-d4d2cd1d79bd",
+                            str(chat_id),
+                            message.get("from", {}).get("username", user_name)
+                        )
+                    )
+                    c.commit()
+                    c.close()
+            except Exception as ex:
+                log.error(f"Error persisting admin link to auth.db: {ex}")
+
+            # تثبيت في .env
+            try:
+                env_file = PROJECT_ROOT / ".env"
+                if env_file.exists():
+                    content = env_file.read_text(encoding="utf-8")
+                    if "ADMIN_TELEGRAM_IDS=" in content:
+                        import re
+                        content = re.sub(
+                            r"ADMIN_TELEGRAM_IDS=(.*)",
+                            lambda m: f"ADMIN_TELEGRAM_IDS={m.group(1).strip()},{chat_id}" if str(chat_id) not in m.group(1) else m.group(0),
+                            content
+                        )
+                    else:
+                        content += f"\nADMIN_TELEGRAM_IDS={chat_id}\n"
+                    env_file.write_text(content, encoding="utf-8")
+            except Exception as ex:
+                log.error(f"Error persisting to .env: {ex}")
+
+            send_message(
+                chat_id,
+                f"👑 <b>أهلاً بك يا باشمهندس محسن (المالك / الأدمن)!</b> 👋\n\n"
+                f"✅ تم تفعيل وتثبيت حساب التليجرام الخاص بك (Chat ID: <code>{chat_id}</code>) بصلاحيات <b>المالك الكاملة غير المحدودة مدى الحياة</b>.\n"
+                f"• باقة الاشتراك: <b>Owner / Admin VIP</b>\n"
+                f"• الاستعلامات: <b>غير محدودة ♾️</b>\n"
+                f"• رادار الميكرز وشارتات الأسهم مفتوحة بالكامل بدون أي قيود.",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return
+        else:
+            send_message(
+                chat_id,
+                "❌ <b>رمز التحقق غير صحيح.</b>\n"
+                "لتفعيل صلاحيات المالك أرسل الأمر متبوعاً بالرمز:\n"
+                "<code>/claim_admin &lt;ADMIN_TOKEN_OR_PASSWORD&gt;</code>"
+            )
+            return
 
     # كل الأوامر والبحث تخضع للبوابة الحصرية
     sub = check_subscription(chat_id)

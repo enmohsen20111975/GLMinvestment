@@ -18,7 +18,7 @@ function getAudioContext(): AudioContext | null {
     try {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioContext = new AC();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return null;
     }
   }
@@ -81,7 +81,7 @@ export function playAlertSound(direction: AlertDirection = 'neutral'): void {
       // Single mid tone: E5 (659Hz) — informational
       playBeep(ctx, { frequency: 659.25, duration: 0.3, volume: 0.25, startTime: 0 });
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Silent fail — audio not critical
   }
 }
@@ -112,7 +112,7 @@ export function playChatNotificationSound(variant: 'opportunity' | 'exit' | 'nor
       playBeep(ctx, { frequency: 880.0, duration: 0.1, volume: 0.3, startTime: 0 });
       playBeep(ctx, { frequency: 1318.5, duration: 0.25, volume: 0.32, startTime: 0.07 });
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Silent fail
   }
 }

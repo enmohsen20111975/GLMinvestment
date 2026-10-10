@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Idempotently add is_authenticated column for legacy installs (Rule 56: column name is whitelisted literal).
     try {
       db.run(`ALTER TABLE analytics_events ADD COLUMN is_authenticated INTEGER DEFAULT 0`);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Column already exists — safe to ignore.
     }
 

@@ -21,7 +21,7 @@ interface RunBody {
 
 // P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
 async function pathExists(p: string): Promise<boolean> {
-  try { await access(p); return true; } catch { return false; }
+  try { await access(p); return true; } catch { /* safe-by-design */ return false; }
 }
 
 export async function POST(req: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         const db = new Database(predsDbPath);
         db.prepare('DELETE FROM predictions').run();
         db.close();
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Table might not exist — ignore
       }
     }

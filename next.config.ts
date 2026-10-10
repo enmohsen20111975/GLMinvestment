@@ -3,8 +3,11 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // P2-FIX (2026-10-09, Round 2): تفعيل TypeScript errors في الـ build
+  // قبل كده: ignoreBuildErrors: true → TS errors كانت بتتسرب للإنتاج
+  // دلوقتي: false → الـ build هيفشل لو فيه TS errors (force fix)
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   reactStrictMode: false,
   // UNIFY-FIX (2026-10-08): تعطيل standalone — يسبب مشاكل مع next start + ecosystem.config.js

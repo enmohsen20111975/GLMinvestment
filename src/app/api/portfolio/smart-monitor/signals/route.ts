@@ -23,7 +23,7 @@ const fs = require('fs');
 const path = require('path');
 
 function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
+  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { /* safe-by-design */ return false; }
 }
 
 async function tryPythonSignals(ticker: string): Promise<any | null> {
@@ -38,7 +38,7 @@ async function tryPythonSignals(ticker: string): Promise<any | null> {
       if (data.signal) return data;
     }
     return null;
-  } catch { return null; }
+  } catch { /* safe-by-design */ return null; }
 }
 
 export async function GET(request: NextRequest) {
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     try {
       const session = await getSessionUserId();
       userId = session.userId || undefined;
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
   }
   if (!userId) {
     return NextResponse.json(
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
         changePct = Number(stockRow.change_percent || 0);
         volume = Number(stockRow.volume || 0);
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     if (livePrice <= 0) {
       try {
@@ -130,14 +130,14 @@ export async function GET(request: NextRequest) {
           "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
         ).get(ticker) as any;
         if (histRow && Number(histRow.close_price) > 0) livePrice = Number(histRow.close_price);
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
 
     if (livePrice <= 0) {
       try {
         const clean = await getLastCleanClose(ticker);
         if (clean.price > 0) livePrice = clean.price;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
 
     if (livePrice <= 0 && avgBuy > 0) livePrice = avgBuy;
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
         const added = new Date(String(asset.added_at).replace(' ', 'T'));
         holdingDays = Math.max(0, Math.floor((Date.now() - added.getTime()) / 86400000));
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     let subPortfolio = 'المحفظة الافتراضية';
     try {
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
         ).get(asset.portfolio_id, String(asset.portfolio_id)) as any;
         if (sp?.name) subPortfolio = sp.name;
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     // Multi-factor signal generation
     let signalCode = 'HOLD';

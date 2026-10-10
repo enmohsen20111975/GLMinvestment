@@ -391,28 +391,28 @@ export async function getLatestGoldPrices(): Promise<DataEngineGoldPrice[]> {
     const db = await _ensureDataEngineCompat();
     try {
         return db.prepare('SELECT * FROM gold_prices WHERE timestamp = (SELECT MAX(timestamp) FROM gold_prices) ORDER BY country, karat').all() as DataEngineGoldPrice[];
-    } catch { return []; }
+    } catch { /* safe-by-design */ return []; }
 }
 
 export async function getLatestCryptoPrices(limit: number = 50): Promise<DataEngineCrypto[]> {
     const db = await _ensureDataEngineCompat();
     try {
         return db.prepare('SELECT * FROM crypto_prices WHERE timestamp = (SELECT MAX(timestamp) FROM crypto_prices) ORDER BY rank ASC LIMIT ?').all(limit) as DataEngineCrypto[];
-    } catch { return []; }
+    } catch { /* safe-by-design */ return []; }
 }
 
 export async function getLatestExchangeRates(): Promise<DataEngineExchangeRate[]> {
     const db = await _ensureDataEngineCompat();
     try {
         return db.prepare('SELECT * FROM exchange_rates WHERE timestamp = (SELECT MAX(timestamp) FROM exchange_rates) ORDER BY currency').all() as DataEngineExchangeRate[];
-    } catch { return []; }
+    } catch { /* safe-by-design */ return []; }
 }
 
 export async function getLatestSilverPrices(): Promise<DataEngineSilverPrice[]> {
     const db = await _ensureDataEngineCompat();
     try {
         return db.prepare('SELECT * FROM silver_prices WHERE timestamp = (SELECT MAX(timestamp) FROM silver_prices) ORDER BY country').all() as DataEngineSilverPrice[];
-    } catch { return []; }
+    } catch { /* safe-by-design */ return []; }
 }
 
 export async function getHistoricalData(symbol: string, limit: number = 100): Promise<PriceHistoryRecord[]> {
@@ -437,7 +437,7 @@ export async function getHistoricalData(symbol: string, limit: number = 100): Pr
             ORDER BY price_date DESC
             LIMIT ?
         `).all(symbol, limit) as PriceHistoryRecord[];
-    } catch { return []; }
+    } catch { /* safe-by-design */ return []; }
 }
 /**
  * P31-CHART-PORTFOLIO-DATA-BINDING: Get the most recent clean close price for a ticker.

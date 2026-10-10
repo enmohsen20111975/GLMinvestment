@@ -84,7 +84,7 @@ function openDb(file: string): Database.Database {
     const db = new Database(dbPath, { readonly: true, timeout: busyTimeout });
     db.pragma(`busy_timeout = ${busyTimeout}`);
     return db;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Fallback — WAL reconcile requires read-write in some setups.
     const db = new Database(dbPath, { timeout: busyTimeout });
     db.pragma(`busy_timeout = ${busyTimeout}`);
@@ -174,7 +174,7 @@ export async function GET(
       }
       stocksDb.close();
     } catch (e) {
-      try { stocksDb?.close(); } catch { /* ignore */ }
+      try { stocksDb?.close(); } catch { /* ignore - safe-by-design */ }
       console.warn(`[depth] stocks.db lookup failed for ${rawTicker}:`, e instanceof Error ? e.message : e);
     }
 

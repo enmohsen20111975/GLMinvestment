@@ -26,6 +26,8 @@ import { LiveStockTicker } from '@/modules/dashboard/components/LiveStockTicker'
 import { MarketPulseWidget } from '@/modules/dashboard/components/MarketPulseWidget';
 // PORTFOLIO-INTEGRATION: ربط المحفظة بالدashboard — عمود من أعمدة المنصة
 import { LiveMonitor } from '@/modules/dashboard/components/LiveMonitor';
+// A11Y-FIX (2026-10-09, Team 8): wrap major widgets في ErrorBoundary
+import { withErrorBoundary, ErrorBoundary } from '@/components/shared/ErrorBoundary';
 // MARKET-DEPTH-VIEW: InvestorsFlowPanel + LiquidityFlowPanel + IntradayPressurePanel
 // اتشالوا من هنا واتنقلوا لشاشة #market-depth المنفصلة (Owner directive: شاشة
 // منفصلة من قائمة الأعلى). الـ Dashboard دلوقتي نضيف بدونها.
@@ -216,7 +218,9 @@ export function DashboardView() {
       visible: () => currentMarket === 'EGX',
       render: () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MarketPulseWidget />
+          <ErrorBoundary title="نبض السوق">
+            <MarketPulseWidget />
+          </ErrorBoundary>
           <MarketSentiment />
         </div>
       ),
@@ -244,14 +248,14 @@ export function DashboardView() {
       id: 'live-monitor',
       title: 'محفظتي',
       visible: () => true,
-      render: () => <LiveMonitor />,
+      render: () => <ErrorBoundary title="المراقبة اللحظية"><LiveMonitor /></ErrorBoundary>,
     },
     // 9. إشارات الكريبتو → CRYPTO فقط (Owner directive)
     {
       id: 'crypto-signals',
       title: 'إشارات الكريبتو',
       visible: (p) => p === 'crypto',
-      render: () => <CryptoSignalsWidget />,
+      render: () => <ErrorBoundary title="إشارات الكريبتو"><CryptoSignalsWidget /></ErrorBoundary>,
     },
     // 10. إشارات الموسمية — تم إزالتها (Owner directive: "شيلها خالص")
   ], []);
@@ -412,7 +416,7 @@ export function DashboardView() {
                       return (
                         <Card
                           key={stock.ticker}
-                          className={`border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-blue-500'} cursor-pointer hover:shadow-md transition-shadow`}
+                          className={`border-r-4 ${isStrong ? 'border-r-emerald-500' : 'border-r-primary'} cursor-pointer hover:shadow-md transition-shadow`}
                           onClick={() => useAppStore.getState().setCurrentView('stock-detail') || useAppStore.getState().setSelectedTicker(stock.ticker)}
                         >
                           <CardContent className="p-3 space-y-2">
@@ -422,7 +426,7 @@ export function DashboardView() {
                                 <div className="font-mono font-bold text-sm">{stock.ticker}</div>
                                 <div className="text-xs text-muted-foreground truncate max-w-[120px]">{stock.nameAr || stock.name}</div>
                               </div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isStrong ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-slate-100 text-primary dark:bg-slate-800/40 dark:text-slate-300'}`}>
                                 {stock.recommendationAr || stock.recommendation}
                               </span>
                             </div>
@@ -492,7 +496,9 @@ export function DashboardView() {
                 🔔 تنبيهات أسهمك الشخصية
               </summary>
               <div className="p-4 pt-0">
-                <MyStocksBriefing />
+                <ErrorBoundary title="تنبيهات المحفظة">
+                  <MyStocksBriefing />
+                </ErrorBoundary>
               </div>
             </details>
 

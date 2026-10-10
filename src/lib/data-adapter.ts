@@ -868,7 +868,7 @@ export async function fetchHistoricalData(
       setCachedHistorical(normalizedTicker, alphaData.historical);
       return alphaData.historical.slice(-days);
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Continue to next source
   }
 
@@ -907,12 +907,12 @@ export async function fetchHistoricalData(
                   return extracted.slice(-days);
                 }
               }
-            } catch {
+            } catch { // silent fallback (safe-by-design)
               // Page read failed, continue
             }
           }
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Search failed, continue
       }
     }
@@ -962,7 +962,7 @@ function extractHistoricalFromHtml(html: string, ticker: string): HistoricalPric
           });
         }
         if (prices.length > 0) return prices;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // JSON parse failed
       }
     }

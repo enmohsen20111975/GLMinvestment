@@ -321,7 +321,7 @@ function getKnownTickersFromDb(): string[] {
       .prepare('SELECT ticker FROM stocks WHERE is_active = 1')
       .all() as Array<{ ticker: string }>;
     return rows.filter((r) => r.ticker).map((r) => r.ticker.toUpperCase());
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }
@@ -468,7 +468,7 @@ export async function POST(_request: NextRequest) {
           INSERT OR REPLACE INTO db_metadata (key, value, updated_at)
           VALUES ('last_sync', ?, datetime('now'))
         `).run(source === 'vps' ? 'vps_sync' : 'local_sync');
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Ignore metadata update errors
       }
 

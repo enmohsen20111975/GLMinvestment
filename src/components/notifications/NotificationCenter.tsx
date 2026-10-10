@@ -47,7 +47,7 @@ function getNotificationColor(type: Notification['type']) {
     case 'portfolio_update':
       return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40';
     case 'market_event':
-      return 'text-teal-600 dark:text-teal-400 bg-blue-50 dark:bg-blue-950/30 border-teal-200 dark:border-teal-800/40';
+      return 'text-teal-600 dark:text-teal-400 bg-slate-50 dark:bg-slate-900/30 border-teal-200 dark:border-teal-800/40';
     case 'system':
       return 'text-muted-foreground bg-muted border-border';
     default:
@@ -220,12 +220,12 @@ export function NotificationCenter() {
             gain.connect(ctx.destination);
             osc.start();
             setTimeout(() => { osc.stop(); ctx.close(); }, 180);
-          } catch { /* ignore */ }
+          } catch { /* ignore - safe-by-design */ }
         }
         if (data.notifications?.length > 0) {
           lastSeenId = Math.max(...data.notifications.map((n: any) => Number(n.id)));
         }
-      } catch { /* silent \u2014 poller should never crash the UI */ }
+      } catch { /* silent \u2014 poller should never crash the UI - safe-by-design */ }
     }
 
     // First tick immediately, then every 60s

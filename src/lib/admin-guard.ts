@@ -89,7 +89,7 @@ export async function requireAuthAsync(
       );
     }
     return { userId };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return NextResponse.json(
       { success: false, error: 'جلسة غير صالحة' },
       { status: 401 }

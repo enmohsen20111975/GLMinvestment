@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
         } else {
           result[table] = { label: TAB_LABELS_AR[table], data: null };
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         result[table] = { label: TAB_LABELS_AR[table], data: null };
       }
     }

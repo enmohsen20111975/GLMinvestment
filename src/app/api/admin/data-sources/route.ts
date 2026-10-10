@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
           clearTimeout(timeoutId);
           dataSources.vps.available = response.ok;
           setCachedVpsHealth(response.ok);
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           dataSources.vps.available = false;
           setCachedVpsHealth(false);
         }
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
     const egxpyBridgePath = path.join(dbPath, 'vps-service', 'main.py');
     // P0-14-ASYNC fix (2026-09-27): existsSync → access.
     let egxpyBridgeExists = false;
-    try { await access(egxpyBridgePath); egxpyBridgeExists = true; } catch { egxpyBridgeExists = false; }
+    try { await access(egxpyBridgePath); egxpyBridgeExists = true; } catch { /* safe-by-design */ egxpyBridgeExists = false; }
     dataSources.local_python.available = egxpyBridgeExists;
 
     // Stocks DB (formerly light_db/custom.db)
@@ -200,10 +200,10 @@ export async function GET(request: NextRequest) {
         const lastUpdateRow = db.prepare('SELECT MAX(last_update) as last_update FROM stocks').get() as { last_update: string | null };
         dataSources.database.stocks_db.stocks_count = countRow?.count || 0;
         dataSources.database.stocks_db.last_update = lastUpdateRow?.last_update || null;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Ignore DB errors
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // stocks.db not present — leave defaults
     }
 
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
       dataSources.database.predictions_db.exists = true;
       dataSources.database.predictions_db.size_bytes = stats.size;
       dataSources.database.predictions_db.size_human = formatBytes(stats.size);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // predictions.db not present — leave defaults
     }
 
@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
       dataSources.database.auth_db.exists = true;
       dataSources.database.auth_db.size_bytes = stats.size;
       dataSources.database.auth_db.size_human = formatBytes(stats.size);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // auth.db not present — leave defaults
     }
 

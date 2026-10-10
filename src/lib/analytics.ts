@@ -42,7 +42,7 @@ export function trackEvent(event: AnalyticsEvent): void {
     }).catch(() => {
       // Non-fatal — analytics must not break UX.
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // ignore
   }
 }

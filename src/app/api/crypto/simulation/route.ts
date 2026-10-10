@@ -83,16 +83,16 @@ function fetchCryptoPrice(symbol: string): number {
       if (row && Number(row.current_price) > 0) {
         price = Number(row.current_price);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     try {
       db.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     return price;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -117,16 +117,16 @@ function fetchGoldPrice(): number {
       if (row && Number(row.price_per_gram) > 0) {
         price = Number(row.price_per_gram);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     try {
       db.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     return price;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     let body: { ticker?: unknown; amount?: unknown; leverage?: unknown };
     try {
       body = await req.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return badRequest('جسم الطلب غير صالح', 'Invalid JSON body');
     }
 

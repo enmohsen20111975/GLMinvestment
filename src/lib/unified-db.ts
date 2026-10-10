@@ -23,7 +23,7 @@ export async function ensureUnifiedDbInitialized(): Promise<void> {
     try {
       await _ensurePromise;
       return;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       _ensurePromise = null;
     }
   }

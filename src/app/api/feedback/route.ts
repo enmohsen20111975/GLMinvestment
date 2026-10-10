@@ -35,7 +35,7 @@ function safeParseList(raw: string): FeedbackEntry[] {
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }

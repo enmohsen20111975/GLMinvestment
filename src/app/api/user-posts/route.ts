@@ -2,20 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = "force-dynamic";
 
 import { db } from '@/lib/db';
+import { getSessionUserId } from '@/lib/auth-helper';
 
 // GET - جلب المنشورات
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const ticker = searchParams.get('ticker');
-    const user_id = searchParams.get('user_id');
+    // SECURITY-FIX (2026-10-09, Team 3 IDOR): استخدم session userId بدل body param
+    const sessionUserId = await getSessionUserId();
     const status = searchParams.get('status') || 'active';
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const where: Record<string, unknown> = {};
     if (ticker) where.ticker = ticker;
-    if (user_id) where.user_id = user_id;
+    // SECURITY-FIX: استخدم session userId لو موجود
+    if (sessionUserId) where.user_id = sessionUserId;
     if (status !== 'all') where.status = status;
 
     const posts = await db.userPost.findMany({
@@ -81,9 +84,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { user_id, ticker, direction, entry_price, target_price, stop_loss, timeframe, reasoning, confidence } = body;
+    const { ticker, direction, entry_price, target_price, stop_loss, timeframe, reasoning, confidence } = body;
 
-    if (!user_id || !ticker || !direction) {
+    // SECURITY-FIX (2026-10-09, Team 3 IDOR): استخدم session userId بدل body.user_id
+    // قبل كده: const { user_id } = body; ← أي حد يقدر ينشر باسم أي حد
+    // دلوقتي: session userId من auth → مش هينفع spoofing
+    const user_id = await getSessionUserId();
+    if (!user_id) {
+      return NextResponse.json({ error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
+    }
+    if (!ticker || !direction) {
       return NextResponse.json({ error: 'البيانات غير مكتملة' }, { status: 400 });
     }
 

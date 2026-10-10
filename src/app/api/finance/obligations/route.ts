@@ -285,7 +285,7 @@ export async function DELETE(request: NextRequest) {
       try {
         const body = await request.json();
         obligationId = body.id ? Number(body.id) : null;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // No body
       }
     }

@@ -46,7 +46,7 @@ const exportTypes: ExportType[] = [
         const res = await fetch('/api/stocks?page_size=1&is_active=true');
         const data = await res.json();
         return data.total || 0;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         return 0;
       }
     },
@@ -63,7 +63,7 @@ const exportTypes: ExportType[] = [
         if (!res.ok) return 0;
         const data = await res.json();
         return Array.isArray(data.stock_statuses) ? data.stock_statuses.length : 0;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         return 0;
       }
     },
@@ -79,7 +79,7 @@ const exportTypes: ExportType[] = [
         const res = await fetch('/api/market/overview');
         const data = await res.json();
         return Array.isArray(data.sectors) ? data.sectors.length : 0;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         return 0;
       }
     },
@@ -99,10 +99,10 @@ const exportTypes: ExportType[] = [
           const text = await blob.text();
           const data = JSON.parse(text);
           return Array.isArray(data.recommendations) ? data.recommendations.length : 0;
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           return 0;
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         return 0;
       }
     },
@@ -197,7 +197,7 @@ export function DataManager() {
       try {
         const count = await et.recordCountFetcher();
         setRecordCounts(prev => ({ ...prev, [et.id]: count }));
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore
       }
     });

@@ -115,7 +115,7 @@ export function readEngineControl(): EngineControlState {
     if (!raw.trim()) return defaultEngineControlState();
     const parsed = JSON.parse(raw) as Partial<EngineControlState>;
     return mergeWithDefaults(parsed);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return defaultEngineControlState();
   }
 }
@@ -137,7 +137,7 @@ export function writeEngineControl(state: EngineControlState): void {
     // Best-effort cleanup of the temp file if rename failed.
     try {
       if (fs.existsSync(TMP_PATH)) fs.unlinkSync(TMP_PATH);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     throw err;

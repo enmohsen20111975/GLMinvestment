@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
+  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { /* safe-by-design */ return false; }
 }
 
 async function tryPythonWatchlists(userId: string | undefined): Promise<any | null> {
@@ -36,7 +36,7 @@ async function tryPythonWatchlists(userId: string | undefined): Promise<any | nu
     const data = await res.json();
     if (Array.isArray(data.watchlist) && data.watchlist.length > 0) return data;
     return null;
-  } catch { return null; }
+  } catch { /* safe-by-design */ return null; }
 }
 
 export async function GET(request: NextRequest) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       try {
         const session = await getSessionUserId();
         userId = session.userId || undefined;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
     if (!userId) {
       return NextResponse.json(
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     try {
       const { getDataEngineDb } = await import('@/lib/data-engine-db');
       deDb = getDataEngineDb();
-    } catch { /* data_engine optional */ }
+    } catch { /* data_engine optional - safe-by-design */ }
 
     // Fetch portfolio tickers to mark in_portfolio
     let portfolioTickers = new Set<string>();
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         "SELECT DISTINCT stock_ticker FROM portfolio_assets WHERE user_id = ? AND stock_ticker IS NOT NULL AND stock_ticker != ''"
       ).all(userId) as any[];
       portfolioTickers = new Set(pfTickers.map(r => String(r.stock_ticker).toUpperCase()));
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
 
     const watchlist = rows.map((row: any) => {
       const ticker = row.ticker || '';
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
             changePct = Number(deRow.change_percent || 0);
             if (!name || name === ticker) name = deRow.name || name;
           }
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
       }
 
       if (price <= 0 && Number(row.previous_close) > 0) {

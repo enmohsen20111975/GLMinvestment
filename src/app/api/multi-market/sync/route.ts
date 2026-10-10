@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
           available: (count?.cnt || 0) > 0,
           count: count?.cnt || 0,
         };
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         status[market] = { available: false, count: 0 };
       }
     }

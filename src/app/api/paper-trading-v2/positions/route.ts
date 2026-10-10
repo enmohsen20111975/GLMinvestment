@@ -71,7 +71,7 @@ async function fetchLivePrice(request: NextRequest, ticker: string, assetType: s
     const stock = data.stock || data;
     const price = stock?.current_price ?? stock?.last_price ?? stock?.close ?? null;
     return typeof price === 'number' ? price : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

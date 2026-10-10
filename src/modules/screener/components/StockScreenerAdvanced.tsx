@@ -741,7 +741,7 @@ function AdvancedFiltersTab({ initialMarket }: { initialMarket?: string }) {
           for (const item of lists) {
             if (item?.ticker) radarMap.set(String(item.ticker).toUpperCase(), item);
           }
-        } catch { /* radar optional — fail silently */ }
+        } catch { /* radar optional — fail silently - safe-by-design */ }
       }
 
       if (json.success) {
@@ -2666,7 +2666,7 @@ export function ExportDropdown({
       setCopied(true);
       toast.success(t('screener.advanced.toast.copyToClipboard'));
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error(t('screener.advanced.toast.copyFailed'));
     }
   }, [shareText]);

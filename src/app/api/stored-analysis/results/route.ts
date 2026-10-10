@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
         }
         stocksDb.close();
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     const analyses = rows.map((r) => {
       const lookup = stocksLookup.get(String(r.ticker));

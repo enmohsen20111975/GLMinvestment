@@ -67,13 +67,17 @@ class NewsAgent:
         self.running  = False
 
         self.collectors = [WebScraper(self.store), RSSCollector(self.store)]
-        if os.getenv('TELEGRAM_WEB_ENABLED', '1').lower() in ('1', 'true', 'yes', 'on'):
+        # Task OWNER-DIRECTIVE-1: إيقاف سحب الأخبار والتوصيات من التليجرام مؤقتًا
+        # المالك: "محتاج اجنب سحب الأخبار والتوصيات من التليجرام لحد مانشوف نفلترها"
+        # قبل كده: TELEGRAM_WEB_ENABLED default='1' (مفعّل) + TelegramCollector لو creds موجودين
+        # دلوقتي: معطّل افتراضيًا — لتفعيله لاحقًا: TELEGRAM_WEB_ENABLED=1 + TELEGRAM_API_ID + TELEGRAM_API_HASH
+        if os.getenv('TELEGRAM_WEB_ENABLED', '0').lower() in ('1', 'true', 'yes', 'on'):
             self.collectors.append(TelegramWebCollector(self.store))
         telegram_creds = all([
             os.getenv('TELEGRAM_API_ID'),
             os.getenv('TELEGRAM_API_HASH'),
         ])
-        if telegram_creds:
+        if telegram_creds and os.getenv('TELEGRAM_COLLECTOR_ENABLED', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.insert(0, TelegramCollector(self.store))
         if os.getenv('ENABLE_EGYPTIAN_SOURCES', '0').lower() in ('1', 'true', 'yes'):
             self.collectors.append(EgyptianSourcesCollector(self.store))

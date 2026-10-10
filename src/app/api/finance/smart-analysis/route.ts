@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           message: 'Portfolio table not initialized',
         });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json({
         success: true,
         data: { assets: [], summary: { total: 0, buy: 0, sell: 0, hold: 0 } },
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
             currentPrice = Number(stockRow.current_price);
             currentValue = currentPrice * Number(asset.quantity || 0);
           }
-        } catch {}
+        } catch { /* safe-by-design */ }
       } else if (asset.type === 'gold' && asset.weight_grams && goldPrices) {
         const karat = asset.karat || 24;
         const pricePerGram = karat === 24 ? goldPrices['24k'] :

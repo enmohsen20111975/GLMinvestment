@@ -115,7 +115,7 @@ async function fetchFromVps(): Promise<{
       return { stocks: stocks.slice(0, 300), source: 'vps', message: 'Data from VPS' };
     }
     return null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }

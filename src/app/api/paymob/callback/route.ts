@@ -78,7 +78,7 @@ function verifyHmac(data: Record<string, string>, receivedHmac: string): boolean
       Buffer.from(calculatedHmac.toLowerCase(), 'utf-8'),
       Buffer.from(receivedHmac.toLowerCase(), 'utf-8')
     );
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false; // length mismatch → invalid
   }
 }
@@ -165,7 +165,7 @@ async function processPaymentResult(params: Record<string, string>) {
       if (yearlyPricing?.price_egp && Math.abs(amountCents - Math.round(yearlyPricing.price_egp * 100)) <= 100) {
         billingCycle = 'yearly';
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore
     }
   }

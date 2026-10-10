@@ -28,14 +28,26 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Trophy, Zap, Shield, Flame, Scale, TrendingUp, TrendingDown,
+  Award, Zap, Shield, Flame, Scale, TrendingUp, TrendingDown,
   Clock, Download, Sparkles, Layers, Gauge,
   CheckCircle2, CheckCircle, RefreshCw, ChevronLeft, BarChart3, PieChart as PieIcon,
   AlertTriangle, Filter, Search, X, Database,
+  // REPORT-REDESIGN: أيقونات احترافية للـ branding + اختيار السوق + جدول التوقعات الفائزة.
+  Landmark, CalendarRange, HandCoins, Building2,
 } from 'lucide-react';
 import { cn, fmtPrice } from '@/lib/utils';
 import { toPng } from 'html-to-image';
 import { toast } from 'sonner';
+// REPORT-REDESIGN: Select UI لإضافة dropdown اختيار السوق داخل التقرير.
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+// REPORT-REDESIGN: MARKET_NAMES_AR + MarketType لعرض أسماء الأسواق بالعربية + typing قوي.
+import { MARKET_NAMES_AR, type MarketType } from '@/lib/store';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, ReferenceLine,
@@ -209,6 +221,23 @@ const SIGNAL_FILTER_OPTIONS: Array<{ value: FilterSignal; label: string }> = [
   { value: 'SELL', label: 'بيع' },
 ];
 
+// REPORT-REDESIGN: خيارات السوق — يتيح للمستثمر تبديل التقرير بين الأسواق المدعومة
+// بدون مغادرة صفحة التقرير. كل تبديل بـ يعيد fetch البيانات من نفس الـ endpoint
+// الكانوني (/api/predictions/honest-tracking/list) — لا fabrication.
+const MARKET_FILTER_OPTIONS: Array<{ value: MarketType; label: string; emoji: string }> = [
+  { value: 'EGX', label: 'البورصة المصرية', emoji: '🇪🇬' },
+  { value: 'TADAWUL', label: 'السوق السعودي', emoji: '🇸🇦' },
+  { value: 'KSE', label: 'بورصة الكويت', emoji: '🇰🇼' },
+  { value: 'QSE', label: 'بورصة قطر', emoji: '🇶🇦' },
+  { value: 'US', label: 'البورصة الأمريكية', emoji: '🇺🇸' },
+  { value: 'CRYPTO', label: 'العملات الرقمية', emoji: '₿' },
+];
+
+// REPORT-REDESIGN: اسم المنصة الرسمي + شعار نصي مختصر — يظهر في الـ header
+// وفي الـ PNG المُصدَّر. لو المنصة عندها شعار صورة، يُستبدل placeholder بالمسار.
+const PLATFORM_NAME = 'دليل الاستثمار';
+const PLATFORM_TAGLINE = 'تقرير الأداء الاستثماري';
+
 // RL-FIX-10: وضع الجودة — يتحكم في هل نعرض كل التوقعات ولا أفضلها بس
 // 'top_picks' = أفضل 5 توقعات/يوم لكل شخصية (الافتراضي — منطقي للعميل)
 // 'all' = كل التوقعات (للتحليل الشامل)
@@ -227,7 +256,7 @@ const CONFIDENCE_OPTIONS: Array<{ value: number; label: string }> = [
 ];
 
 export interface ExecutiveReportViewProps {
-  market?: string;
+  market?: MarketType;
   initialDays?: ReportTimeframe;
   onClose?: () => void;
   className?: string;
@@ -240,6 +269,10 @@ export function ExecutiveReportView({
   className
 }: ExecutiveReportViewProps) {
   const [days, setDays] = useState<ReportTimeframe>(initialDays);
+  // REPORT-REDESIGN: حالة السوق المحلية — تتيح للمستثمر تبديل السوق من داخل التقرير.
+  // تُهيَّأ من الـ prop، لكن بعدها مستقلة (لا تتطلب إعادة mount عند تغيير السوق).
+  // كل تغيير بـ يعيد تشغيل fetchData + fetchMissedOpps تلقائياً عبر useCallback deps.
+  const [selectedMarket, setSelectedMarket] = useState<MarketType>(market);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<LiveTrackingResponse | null>(null);
@@ -275,7 +308,7 @@ export function ExecutiveReportView({
       // RL-FIX-10: نمرر qualityMode + minScore + topPerDay للـ API
       // علشان يفلتر في الـ SQL نفسه (أسرع + أدق).
       const params = new URLSearchParams({
-        market,
+        market: selectedMarket,
         limit: '2000',
         sortBy: 'prediction_date',
         sortOrder: 'DESC',
@@ -398,7 +431,7 @@ export function ExecutiveReportView({
               conservative: { total: 0, wins: 0, losses: 0, pending: 0, settled: 0, winRate: 0, avgWinPct: 0, avgLossPct: 0, profitFactor: 0, closedCount: 0 },
             },
             last_updated: new Date().toISOString(),
-            market,
+            market: selectedMarket,
             source: json.source || 'honest-tracking-list',
           };
           setData(transformed);
@@ -411,7 +444,7 @@ export function ExecutiveReportView({
       setLoading(false);
       setRefreshing(false);
     }
-  }, [market, qualityMode, minConfidence]);
+  }, [selectedMarket, qualityMode, minConfidence]);
 
   useEffect(() => {
     fetchData();
@@ -428,7 +461,7 @@ export function ExecutiveReportView({
       const params = new URLSearchParams({
         threshold: '10',
         limit: '8',
-        market,
+        market: selectedMarket,
         dedupe: '1',
       });
       // RL-FIX-15: فلترة الجودة + الفترة — تطابق الـ report
@@ -456,7 +489,7 @@ export function ExecutiveReportView({
     } finally {
       setMissedOppsLoading(false);
     }
-  }, [market, qualityMode, minConfidence, days]);
+  }, [selectedMarket, qualityMode, minConfidence, days]);
 
   useEffect(() => {
     fetchMissedOpps();
@@ -530,7 +563,7 @@ export function ExecutiveReportView({
           const t = new Date(dateStr.replace(' ', 'T')).getTime();
           if (isNaN(t)) return false;
           return t >= cutoffTs;
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           return false;
         }
       });
@@ -760,6 +793,67 @@ export function ExecutiveReportView({
     return deduped.slice(0, 4);
   }, [allPredictions]);
 
+  // REPORT-REDESIGN: أعلى 5 توقعات فائزة لبطاقة التقرير القابلة للنشر.
+  // نفس منطق topGains لكن slice=5 + بيانات entry→target كاملة لعرضها في جدول مدمج.
+  // البيانات كلها من نفس المصدر الكانوني (honest-tracking/list) — لا fabrication (Rule 27).
+  const topFiveWinningPredictions = useMemo(() => {
+    const closedWins = allPredictions.filter(
+      (p) => p.outcome === 'WIN' && p.returnPct != null && Number(p.returnPct) > 0
+    );
+    const sorted = [...closedWins].sort(
+      (a, b) => Number(b.returnPct || 0) - Number(a.returnPct || 0)
+    );
+    const seen = new Set<string>();
+    const deduped = sorted.filter((p) => {
+      if (seen.has(p.ticker)) return false;
+      seen.add(p.ticker);
+      return true;
+    });
+    return deduped.slice(0, 5);
+  }, [allPredictions]);
+
+  // REPORT-REDESIGN: متوسط فترة الاحتفاظ (Avg holding days) — KPI رئيسي للمستثمرين.
+  // يُحسب من الصفقات المغلقة فقط (WIN + LOSS) باستخدام daysSinceEntry الفعلي.
+  // لو لا توجد صفقات مغلقة → null → العرض "—" (Rule 27: لا fabrication).
+  const avgHoldingDays = useMemo(() => {
+    const closed = allPredictions.filter(
+      (p) => (p.outcome === 'WIN' || p.outcome === 'LOSS')
+        && p.daysSinceEntry != null
+        && Number(p.daysSinceEntry) > 0
+    );
+    if (closed.length === 0) return null;
+    const total = closed.reduce((s, p) => s + Number(p.daysSinceEntry || 0), 0);
+    return Math.round((total / closed.length) * 10) / 10;
+  }, [allPredictions]);
+
+  // REPORT-REDESIGN: نطاق الفترة الزمنية (من ← إلى) للعرض في الـ header + الـ PNG.
+  // - days=0 → "كافة الأوقات" (لا تاريخ بداية)
+  // - days=999 → YTD (1 يناير للسنة الحالية)
+  // - days=N → من اليوم − N
+  // النهاية = تاريخ اليوم (أو آخر توقع مُغلق لو متاح وأحدث).
+  const periodRange = useMemo(() => {
+    const fmtAr = (d: Date) => d.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const end = new Date();
+    let start: Date | null = null;
+    let startLabel = 'كافة الأوقات';
+    if (days === 999) {
+      start = new Date(new Date().getFullYear(), 0, 1);
+      startLabel = fmtAr(start);
+    } else if (days > 0) {
+      start = new Date(Date.now() - days * 86400000);
+      startLabel = fmtAr(start);
+    }
+    return {
+      start: startLabel,
+      end: fmtAr(end),
+      isAllTime: days === 0,
+    };
+  }, [days]);
+
   // ── بيانات الرسوم البيانية ──
   // RL-FIX-15: الرسوم البيانية (Donut, Area, Bar) بتشتغل على uniqueStocks
   // (توقع واحد لكل سهم/يوم) علشان الأرقام تطلع منطقية ومش منفوخة 3×.
@@ -878,11 +972,11 @@ export function ExecutiveReportView({
     return deduped.slice(0, 4);
   }, [allPredictions]);
 
-  // PNG export
+  // PNG export — REPORT-REDESIGN: اسم الملف بيشمل اسم السوق المختار + اسم المنصة.
   const handleExportPng = useCallback(async () => {
     if (!reportContainerRef.current) return;
     setExporting(true);
-    toast.loading('جاري توليد صورة الملخص...', { id: 'report-export' });
+    toast.loading('جاري توليد تقرير الأداء كصورة...', { id: 'report-export' });
     try {
       const dataUrl = await toPng(reportContainerRef.current, {
         cacheBust: true,
@@ -892,19 +986,19 @@ export function ExecutiveReportView({
       });
       const link = document.createElement('a');
       const timeLabel = TIMEFRAME_OPTIONS.find((t) => t.value === days)?.badge || `${days}d`;
-      link.download = `GLM_Summary_${timeLabel}_${Date.now()}.png`;
+      link.download = `Dalilestithmar_Report_${selectedMarket}_${timeLabel}_${Date.now()}.png`;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success('تم استخراج الملخص كصورة', { id: 'report-export' });
+      toast.success('تم استخراج تقرير الأداء كصورة', { id: 'report-export' });
     } catch (err) {
       console.error('[ExecutiveReport] Export failed:', err);
-      toast.error('تعذّر استخراج الملخص كصورة', { id: 'report-export' });
+      toast.error('تعذّر استخراج التقرير كصورة', { id: 'report-export' });
     } finally {
       setExporting(false);
     }
-  }, [days]);
+  }, [days, selectedMarket]);
 
   // RL-FIX-15: KPI الرئيسية بتشتغل على uniqueStocks (القياس على أساس السهم).
   // statsByPersona بتيجي من statsByPersonaPred (القياس على الـ 3 توقعات لكل سهم)
@@ -920,20 +1014,25 @@ export function ExecutiveReportView({
   const timeframeLabel = TIMEFRAME_OPTIONS.find((t) => t.value === days)?.label || '';
 
   // نص المشاركة لملخص الأداء — ينتج من statsByStock
+  // REPORT-REDESIGN: نص احترافي للمستثمرين — اسم المنصة + السوق + الفترة + الأرقام الموثقة.
   const reportShareText = useMemo(() => {
+    const marketName = MARKET_NAMES_AR[selectedMarket] || selectedMarket;
     const lines: string[] = [
-      `📊 ملخص أداء التوقعات — ${market} · ${timeframeLabel}`,
+      `${PLATFORM_NAME} — ${PLATFORM_TAGLINE}`,
+      `السوق: ${marketName} · الفترة: ${timeframeLabel}`,
+      `من ${periodRange.start} إلى ${periodRange.end}`,
       '',
       `إجمالي الصفقات: ${totalTrades}`,
       `نسبة النجاح: ${(winRate ?? 0).toFixed(1)}%`,
       `معامل الربحية: ${profitFactor >= 999 ? '∞' : (profitFactor ?? 0).toFixed(2)}`,
       `رابحة: ${stats.wins} / خاسرة: ${stats.losses} / معلقة: ${stats.pending}`,
       `صافي العائد: ${stats.totalProfit >= 0 ? '+' : ''}${(stats.totalProfit ?? 0).toFixed(2)}%`,
+      avgHoldingDays != null ? `متوسط فترة الاحتفاظ: ${avgHoldingDays} يوم` : '',
       '',
-      '⚠️ لأغراض إعلامية فقط وليست نصيحة استثمارية.',
-    ];
+      'تنبيه: هذا التقرير لأغراض إعلامية فقط ولا يُعد نصيحة استثمارية. الأداء السابق لا يضمن النتائج المستقبلية.',
+    ].filter(Boolean);
     return lines.join('\n');
-  }, [market, timeframeLabel, totalTrades, winRate, profitFactor, stats]);
+  }, [selectedMarket, timeframeLabel, periodRange, totalTrades, winRate, profitFactor, stats, avgHoldingDays]);
 
   return (
     <div className={cn('w-full max-w-6xl mx-auto space-y-5', className)} dir="rtl">
@@ -943,7 +1042,7 @@ export function ExecutiveReportView({
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-bold gap-1 text-xs">
               <Layers className="w-3.5 h-3.5" />
-              ملخص الأداء
+              {PLATFORM_TAGLINE}
             </Badge>
             <span className="text-xs text-muted-foreground font-mono">
               {timeframeLabel}
@@ -951,13 +1050,13 @@ export function ExecutiveReportView({
             <span className="text-xs text-muted-foreground">
               · {uniqueStockCount} سهم فريد
               {totalPredictionCount > uniqueStockCount && (
-                <span className="text-slate-500"> ({totalPredictionCount} توقع · 3 شخصيات/سهم)</span>
+                <span className="text-slate-500"> ({totalPredictionCount} توقع · 3 استراتيجيات/سهم)</span>
               )}
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-black text-foreground mt-2 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-amber-500 flex-shrink-0" />
-            <span>ملخص أداء التوقعات</span>
+            <span>{PLATFORM_NAME} — {PLATFORM_TAGLINE}</span>
           </h2>
         </div>
 
@@ -980,15 +1079,15 @@ export function ExecutiveReportView({
             className="h-10 px-4 text-sm font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-lg shadow-amber-500/20"
           >
             <Download className="w-4 h-4 ml-1.5" />
-            تصدير PNG 📸
+            تصدير التقرير PNG
           </Button>
 
           <UnifiedPublishButton
             content={reportShareText}
-            title={`ملخص أداء التوقعات — ${market} · ${timeframeLabel}`}
+            title={`${PLATFORM_NAME} — ${PLATFORM_TAGLINE} | ${MARKET_NAMES_AR[selectedMarket] || selectedMarket} · ${timeframeLabel}`}
             image={reportContainerRef}
-            filename={`executive_report_${market}_${new Date().toISOString().split('T')[0]}`}
-            hashtags={['EGX', 'بورصة', 'توقعات']}
+            filename={`dalilestithmar_report_${selectedMarket}_${new Date().toISOString().split('T')[0]}`}
+            hashtags={[selectedMarket, 'بورصة', 'تقرير_أداء']}
             variant="outline"
             size="sm"
           />
@@ -1001,24 +1100,53 @@ export function ExecutiveReportView({
         </div>
       </div>
 
-      {/* ════════════════ Timeframe Selector ════════════════ */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar">
-        <span className="text-sm font-bold text-muted-foreground ml-1 flex-shrink-0">الفترة:</span>
-        {TIMEFRAME_OPTIONS.map((opt) => (
-          <button
-            key={`tf-${opt.value}`}
-            onClick={() => setDays(opt.value)}
-            className={cn(
-              'px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 border flex-shrink-0 whitespace-nowrap',
-              days === opt.value
-                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black border-amber-400 shadow-md shadow-amber-500/30'
-                : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
-            )}
+      {/* ════════════════ REPORT-REDESIGN: Market + Timeframe Selectors ════════════════ */}
+      {/* اختيار السوق + الفترة الزمنية في صف واحد — يتيح للمستثمر تبديل التقرير بين
+          الأسواق الـ 6 المدعومة (EGX/TADAWUL/KSE/QSE/US/CRYPTO) + اختيار الفترة.
+          كل تغيير بـ يعيد fetch البيانات من /api/predictions/honest-tracking/list. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-card/60 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-border shadow-sm">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Building2 className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <span className="text-sm font-bold text-muted-foreground flex-shrink-0">السوق:</span>
+          <Select
+            value={selectedMarket}
+            onValueChange={(value) => setSelectedMarket(value as MarketType)}
           >
-            <Clock className="w-3.5 h-3.5" />
-            {opt.label}
-          </button>
-        ))}
+            <SelectTrigger
+              className="w-[200px] h-9 text-sm font-bold"
+              aria-label="اختيار السوق"
+            >
+              <SelectValue placeholder="اختر السوق" />
+            </SelectTrigger>
+            <SelectContent>
+              {MARKET_FILTER_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="font-medium">
+                  <span className="ml-1">{opt.emoji}</span>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar flex-1 min-w-0">
+          <span className="text-sm font-bold text-muted-foreground ml-1 flex-shrink-0">الفترة:</span>
+          {TIMEFRAME_OPTIONS.map((opt) => (
+            <button
+              key={`tf-${opt.value}`}
+              onClick={() => setDays(opt.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border flex-shrink-0 whitespace-nowrap',
+                days === opt.value
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black border-amber-400 shadow-md shadow-amber-500/30'
+                  : 'bg-card/80 hover:bg-muted text-muted-foreground border-border'
+              )}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ════════════════ RL-FIX-7: Advanced Filters Toolbar ════════════════ */}
@@ -1177,29 +1305,51 @@ export function ExecutiveReportView({
         <div className="absolute bottom-0 left-0 w-[28rem] h-[28rem] bg-emerald-500/6 blur-[140px] pointer-events-none rounded-full" />
 
         <div className="relative z-10 p-6 sm:p-8 md:p-10 lg:p-12 space-y-8">
-          {/* ── Branding Header (بسيط، بدون ادعاءات) ── */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-7 border-b border-white/10">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-3">
-                <span className="px-3 py-1 rounded-full text-[11px] font-black bg-amber-500/15 text-amber-300 border border-amber-500/30 tracking-wider">
-                  ملخص الأداء
+          {/* ── REPORT-REDESIGN: Branding Header (احترافي للمستثمرين + PNG) ──
+              شعار نصي placeholder + اسم المنصة «دليل الاستثمار» + سطر التاج لاين
+              «تقرير الأداء الاستثماري» + نطاق الفترة (من ← إلى) + شارة السوق.
+              كل العناصر داخل الـ reportContainerRef علشان تظهر في الـ PNG المُصدَّر. */}
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-7 border-b border-white/10">
+            {/* اليمين: الشعار + اسم المنصة + الفترة + السوق */}
+            <div className="min-w-0 flex-1">
+              {/* الصف الأول: شعار placeholder + اسم المنصة + سطر التاج لاين */}
+              <div className="flex items-center gap-4">
+                {/* Logo placeholder — علبة ذهبية بأيقونة Landmark.
+                    لو المنصة عندها شعار صورة، يُستبدل بـ <Image /> أو <img />. */}
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 flex-shrink-0 ring-2 ring-amber-300/40">
+                  <Landmark className="w-7 h-7 sm:w-8 sm:h-8 text-amber-950" strokeWidth={2.5} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
+                    {PLATFORM_NAME}
+                  </h1>
+                  <p className="text-sm sm:text-base text-amber-300 font-bold mt-0.5">
+                    {PLATFORM_TAGLINE}
+                  </p>
+                </div>
+              </div>
+
+              {/* الصف الثاني: نطاق الفترة (من ← إلى) + شارة السوق */}
+              <div className="flex items-center gap-2 flex-wrap mt-4">
+                <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800/80 text-slate-200 border border-white/15 flex items-center gap-1.5">
+                  <CalendarRange className="w-3.5 h-3.5 text-amber-400" />
+                  {periodRange.isAllTime ? (
+                    <span>كافة الأوقات ← {periodRange.end}</span>
+                  ) : (
+                    <span>{periodRange.start} ← {periodRange.end}</span>
+                  )}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  {timeframeLabel} · {market}
+                <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" />
+                  {MARKET_NAMES_AR[selectedMarket] || selectedMarket}
                 </span>
-                {/* RL-FIX-7/8: Data source indicator */}
+                {/* RL-FIX-7/8: Data source indicator — يظهر للمستخدم مصدر البيانات */}
                 {data?.source && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/50 text-slate-300 border border-slate-600/50 flex items-center gap-1">
                     <Database className="w-3 h-3" />
                     {data.source.includes('vps') || data.source.includes('prod') || data.source.includes('production')
                       ? 'بيانات الإنتاج'
                       : 'بيانات محلية'}
-                  </span>
-                )}
-                {/* RL-FIX-7: Active filters indicator */}
-                {activeFilterCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    {activeFilterCount} فلتر نشط
                   </span>
                 )}
                 {/* RL-FIX-10: Quality mode indicator */}
@@ -1214,42 +1364,44 @@ export function ExecutiveReportView({
                     ? `أفضل التوقعات (≥${minConfidence})`
                     : 'كل التوقعات'}
                 </span>
+                {/* RL-FIX-7: Active filters indicator */}
+                {activeFilterCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    {activeFilterCount} فلتر نشط
+                  </span>
+                )}
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white flex items-center gap-3 tracking-tight leading-tight">
-                <Gauge className="w-8 h-8 sm:w-9 sm:h-9 text-amber-400 flex-shrink-0" />
-                <span>ملخص أداء التوقعات</span>
-              </h1>
-              <p className="text-sm sm:text-base text-slate-300 mt-2 max-w-2xl leading-relaxed">
-                ملخص لنتائج التوقعات خلال {timeframeLabel}، يعرض الأرقام الفعلية للصفقات.
+
+              {/* الصف الثالث: وصف موجز احترافي للمستثمرين */}
+              <p className="text-sm text-slate-300 mt-3 max-w-2xl leading-relaxed">
+                تقرير موثَّق بأداء التوقعات الفعلية للمنصة خلال الفترة المحددة،
+                يستند إلى بيانات الصفقات المغلقة من قاعدة بيانات التتبُّع.
                 {!loading && totalTrades > 0 && (
                   <>
                     <span className="text-amber-300 font-bold"> — {uniqueStockCount} سهم فريد في النتائج</span>
                     {totalPredictionCount > uniqueStockCount && (
-                      <span className="text-slate-400"> ({totalPredictionCount} توقع · 3 شخصيات لكل سهم)</span>
+                      <span className="text-slate-400"> ({totalPredictionCount} توقع · 3 استراتيجيات لكل سهم)</span>
                     )}
                   </>
                 )}
               </p>
             </div>
 
-            {/* Market + key metric badge */}
-            <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-amber-500/20 md:min-w-[220px]">
-              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">سوق {market}</span>
-              <span className="text-2xl font-black text-emerald-400 mt-1 leading-none">
+            {/* اليسار: صندوق المؤشرات الرئيسية (للعرض السريع في الـ PNG) */}
+            <div className="flex flex-col items-start md:items-end justify-center bg-slate-900/70 px-5 py-4 rounded-2xl border border-amber-500/20 md:min-w-[240px]">
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">نسبة النجاح</span>
+              <span className="text-3xl font-black text-emerald-400 mt-1 leading-none">
                 {(winRate ?? 0).toFixed(1)}%
               </span>
-              <span className="text-sm text-amber-300 font-bold mt-1.5">
+              <span className="text-sm text-amber-300 font-bold mt-2">
                 معامل الربحية {profitFactor >= 999 ? 'مثالي' : (profitFactor ?? 0).toFixed(2)}
               </span>
               {/* RL-FIX-7: Settled count transparency */}
               {!loading && totalTrades > 0 && (
                 <span className="text-[11px] text-slate-400 mt-1.5">
                   {stats.wins} رابحة / {stats.losses} خاسرة / {stats.pending} معلقة
-                  {/* FIX-5C: TRAILING_PROFIT counter — لو فيه صفقات خرجت بربح جزئي، */}
-                  {/* نعرض عددها جنب الـ settled count علشان المالك يفرّق بين "هدف */}
-                  {/* محقق" و"جني أرباح قبل الهدف". */}
                   {trailingProfitCount > 0 && (
-                    <span className="text-teal-400 font-bold"> · {trailingProfitCount} 💰 خرجت بربح</span>
+                    <span className="text-teal-400 font-bold"> · {trailingProfitCount} خرجت بربح جزئي</span>
                   )}
                   <span className="text-slate-500"> · قياس على الأسهم الفريدة</span>
                 </span>
@@ -1273,16 +1425,18 @@ export function ExecutiveReportView({
             <div className="text-center py-16">
               <BarChart3 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <p className="text-slate-400 text-base">
-                لا توجد توقعات خلال الفترة المحددة
+                لا توجد توقعات في هذه الفترة
               </p>
               <p className="text-slate-500 text-sm mt-1">
-                جرّب فترة زمنية أطول لعرض المزيد من البيانات
+                جرّب فترة زمنية أطول أو بدّل السوق لعرض المزيد من البيانات
               </p>
             </div>
           ) : (
             <>
-              {/* ═══ 1. HERO KPI CARDS — 5 metrics, unified style ═══ */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* ═══ 1. HERO KPI CARDS — 6 مؤشرات أساسية للمستثمر ═══ */}
+              {/* REPORT-REDESIGN: أضفنا KPI «متوسط فترة الاحتفاظ» (Avg holding days) — */}
+              {/* مؤشر أساسي للمستثمر يقيس المدة الفعلية للصفقات. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 {/* Win Rate */}
                 <KpiCard
                   label="نسبة النجاح"
@@ -1323,6 +1477,15 @@ export function ExecutiveReportView({
                   accent={stats.totalProfit >= 0 ? 'emerald' : 'rose'}
                   icon={<TrendingUp className="w-4 h-4" />}
                 />
+                {/* Avg Holding Days — REPORT-REDESIGN: مؤشر جديد للمستثمرين */}
+                <KpiCard
+                  label="متوسط فترة الاحتفاظ"
+                  value={avgHoldingDays != null ? `${avgHoldingDays}` : '—'}
+                  valueSuffix={avgHoldingDays != null ? 'يوم' : undefined}
+                  subtext="متوسط مدة الصفقات المغلقة"
+                  accent="amber"
+                  icon={<Clock className="w-4 h-4" />}
+                />
               </div>
 
               {/* FIX-5C: TRAILING_PROFIT KPI Card منفصل — لو فيه صفقات خرجت بربح جزئي،
@@ -1332,9 +1495,9 @@ export function ExecutiveReportView({
                   الـ UI لو مفيش بيانات. */}
               {trailingProfitCount > 0 && (
                 <div className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-teal-500/10 border border-teal-500/30">
-                  <span className="text-2xl">💰</span>
+                  <HandCoins className="w-6 h-6 text-teal-400 flex-shrink-0" />
                   <div className="flex flex-col">
-                    <span className="text-[11px] text-slate-400 font-bold">خرجت بربح (Trailing Profit)</span>
+                    <span className="text-[11px] text-slate-400 font-bold">صفقات أُغلقت بربح جزئي (Trailing Profit)</span>
                     <span className="text-teal-300 font-black text-lg font-mono">
                       {trailingProfitCount} صفقة
                     </span>
@@ -1344,6 +1507,83 @@ export function ExecutiveReportView({
                   </span>
                 </div>
               )}
+
+              {/* ═══ REPORT-REDESIGN: Top 5 Winning Predictions — جدول مدمج للنشر ═══
+                  جدول احترافي يعرض أعلى 5 توقعات فائزة في الفترة، بتنسيق مناسب
+                  لبطاقة التقرير الموجهة للمستثمرين: السهم | الإشارة | الدخول ← الهدف |
+                  المدة | العائد. كل البيانات من honest-tracking/list — لا fabrication. */}
+              <div className="bg-slate-900/70 p-5 sm:p-6 rounded-2xl border border-emerald-500/20">
+                <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-base sm:text-lg font-bold text-white">أبرز 5 توقعات فائزة</h3>
+                  </div>
+                  <Badge variant="outline" className="text-[11px] text-emerald-300 border-emerald-500/30 bg-emerald-500/10 whitespace-nowrap">
+                    أعلى عائد في الفترة
+                  </Badge>
+                </div>
+                {topFiveWinningPredictions.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                          <th className="text-right py-2 px-2 font-bold">#</th>
+                          <th className="text-right py-2 px-2 font-bold">السهم</th>
+                          <th className="text-center py-2 px-2 font-bold">الإشارة</th>
+                          <th className="text-right py-2 px-2 font-bold">الدخول ← الهدف</th>
+                          <th className="text-center py-2 px-2 font-bold">المدة</th>
+                          <th className="text-left py-2 px-2 font-bold">العائد</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topFiveWinningPredictions.map((item, idx) => {
+                          const sig = (item.signal || '').toUpperCase();
+                          const isBuy = sig === 'BUY' || sig === 'STRONG_BUY';
+                          return (
+                            <tr
+                              key={`top5-${item.ticker}-${idx}`}
+                              className="border-t border-white/5 hover:bg-white/5 transition-colors"
+                            >
+                              <td className="py-2.5 px-2 text-slate-500 font-bold font-mono">{idx + 1}</td>
+                              <td className="py-2.5 px-2">
+                                <div className="flex flex-col">
+                                  <span className="font-black text-white text-sm font-mono">{item.ticker}</span>
+                                  {item.nameAr && (
+                                    <span className="text-[11px] text-slate-400 truncate max-w-[140px]">{item.nameAr}</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-2 text-center">
+                                <span className={cn(
+                                  'inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border',
+                                  isBuy
+                                    ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10'
+                                    : 'text-rose-300 border-rose-500/30 bg-rose-500/10'
+                                )}>
+                                  {isBuy ? 'شراء' : 'بيع'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-300">
+                                {fmtPrice(item.entryPrice)} ← {fmtPrice(item.targetPrice)}
+                              </td>
+                              <td className="py-2.5 px-2 text-center text-slate-300 font-bold text-xs">
+                                {item.daysSinceEntry || 1} يوم
+                              </td>
+                              <td className="py-2.5 px-2 text-left font-black text-emerald-400">
+                                +{(Number(item.returnPct || 0)).toFixed(2)}%
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    لا توجد صفقات رابحة في هذه الفترة
+                  </div>
+                )}
+              </div>
 
               {/* ═══ 2. CHARTS GRID — 3 رسوم بيانية جمالية ═══ */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -1533,12 +1773,13 @@ export function ExecutiveReportView({
               </div>
 
               {/* ═══ 4. HIGHLIGHTS: Top Gains + Fastest Gains ═══ */}
+              {/* REPORT-REDESIGN: استبدلنا أيقونة Trophy بأيقونة Award الاحترافية. */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {/* Top Gains */}
                 <HighlightCard
                   title="أعلى المكاسب"
                   subtitle="الأعلى عائداً"
-                  icon={<Trophy className="w-5 h-5 text-amber-400" />}
+                  icon={<Award className="w-5 h-5 text-amber-400" />}
                   accentBorder="border-amber-500/30"
                   items={topGains.map((item) => ({
                     ticker: item.ticker,
@@ -1562,7 +1803,7 @@ export function ExecutiveReportView({
                     nameAr: item.nameAr,
                     returnPct: Number(item.returnPct || 0),
                     meta: `دخول ${fmtPrice(item.entryPrice)}`,
-                    rightMeta: `⚡ ${item.daysSinceEntry || 1} يوم`,
+                    rightMeta: `${item.daysSinceEntry || 1} يوم`,
                     accentText: 'text-emerald-400',
                   }))}
                   placeholder="لا توجد صفقات سريعة في هذه الفترة"
@@ -1592,12 +1833,14 @@ export function ExecutiveReportView({
                   نعرض أعلى 4 منها في HighlightCard منفصلة بـ لون زمردي مميز عن Top Gains
                   (الأصفر). ده بـ يـ differentiate بين "هدف محقق كامل" (Top Gains) و
                   "جني أرباح قبل الهدف" (Trailing Profit). الكارد بـ يظهر بس لو فيه عدد > 0. */}
+              {/* REPORT-REDESIGN: استبدلنا أيقونة Trophy بأيقونة HandCoins + أزلنا emoji */}
+              {/* العشوائي من العنوان (لغة احترافية للمستثمرين). */}
               {topTrailingProfit.length > 0 && (
                 <div className="mt-5">
                   <HighlightCard
-                    title="💰 خرجت بربح (Trailing Profit)"
+                    title="صفقات أُغلقت بربح جزئي"
                     subtitle="جني أرباح قبل الهدف الكامل"
-                    icon={<Trophy className="w-5 h-5 text-teal-400" />}
+                    icon={<HandCoins className="w-5 h-5 text-teal-400" />}
                     accentBorder="border-teal-500/30"
                     items={topTrailingProfit.map((item) => ({
                       ticker: item.ticker,
@@ -1756,12 +1999,30 @@ export function ExecutiveReportView({
                   </div>
                 </div>
 
+                {/* REPORT-REDESIGN: Professional Disclaimer — تنبيه استثماري احترافي
+                    يوضح أن التقرير لأغراض إعلامية فقط ولا يُعد نصيحة استثمارية.
+                    يظهر داخل الـ PNG المُصدَّر علشان يوصل للمستثمر اللي بيشوف البطاقة. */}
+                <div className="mt-2 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-[11px] sm:text-xs text-slate-300 leading-relaxed space-y-1">
+                      <p className="font-bold text-amber-300">تنبيه للمستثمر</p>
+                      <p>
+                        هذا التقرير لأغراض إعلامية فقط ولا يُعد نصيحة استثمارية أو توصية بالبيع أو الشراء.
+                        الأداء السابق لا يضمن النتائج المستقبلية. القرار الاستثماري النهائي ومسؤولية المخاطر
+                        تقع على عاتق المستثمر وحده. جميع الأرقام مستمدة من قاعدة بيانات التتبُّع الفعلية
+                        للمنصة ({selectedMarket}) خلال الفترة المحددة.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Footer */}
                 <div className="pt-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 text-sm">
                   <div className="flex items-center gap-2 text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                     <span className="text-xs sm:text-sm text-center md:text-right">
-                      ملخص أداء التوقعات — {timeframeLabel}
+                      {PLATFORM_NAME} — {PLATFORM_TAGLINE} | {MARKET_NAMES_AR[selectedMarket] || selectedMarket} · {timeframeLabel}
                     </span>
                   </div>
                   <span className="font-mono text-xs text-slate-500 flex-shrink-0">

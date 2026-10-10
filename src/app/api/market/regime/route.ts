@@ -132,7 +132,7 @@ function parseReasons(raw: string | null | undefined): string[] {
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as string[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // not JSON — treat as plain text
     return [raw];
   }
@@ -143,7 +143,7 @@ function parseIndicators(raw: string | null | undefined): RegimeIndicators {
   if (!raw) return {};
   try {
     return JSON.parse(raw) as RegimeIndicators;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return {};
   }
 }
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
         const data = await res.json();
         return NextResponse.json(data);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // fall through to SQLite fallback
     }
   }
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
       if (row?.value) {
         state = JSON.parse(row.value) as RegimeState;
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // table missing or row malformed — leave state empty
     }
 
@@ -221,7 +221,7 @@ export async function GET(req: NextRequest) {
         )
         .get(market) as LogRow | undefined;
       latestLog = logRow || null;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // table doesn't exist — first run
     }
 
@@ -241,7 +241,7 @@ export async function GET(req: NextRequest) {
           )
           .all(market, historyLimit) as LogRow[];
         history.push(...rows);
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // table missing — ignore
       }
     }
@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     if (db) {
-      try { db.close(); } catch {}
+      try { db.close(); } catch { /* safe-by-design */ }
     }
     console.error('[market:regime]', e);
     return NextResponse.json(

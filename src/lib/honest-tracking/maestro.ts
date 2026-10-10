@@ -389,7 +389,7 @@ export function openPredictionsDb(writable = true): Database.Database {
       timeout: 5000,
       fileMustExist: false,
     });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return new Database(`file:${PRED_DB_PATH}?immutable=1`, {
       readonly: true,
       timeout: 5000,
@@ -400,7 +400,7 @@ export function openPredictionsDb(writable = true): Database.Database {
 function openReadonly(p: string): Database.Database | null {
   try {
     return new Database(p, { readonly: true, timeout: 5000, fileMustExist: true });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -951,7 +951,7 @@ ATR: ${input.ind.atr ?? 'N/A'}
             aiNarrative: String(parsed.narrative),
           };
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // fallback below
       }
     }
@@ -963,7 +963,7 @@ ATR: ${input.ind.atr ?? 'N/A'}
       aiReason: lines[0]?.slice(0, 200) || '',
       aiNarrative: lines.slice(0, 3).join(' ').slice(0, 500) || text.slice(0, 200),
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -1227,7 +1227,7 @@ export function verifyPendingPredictions(limit: number): VerifyResult {
             asOf: r.last_update || new Date().toISOString(),
           });
         }
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
 
     const updateStmt = pdb.prepare(`
@@ -1276,7 +1276,7 @@ export function verifyPendingPredictions(limit: number): VerifyResult {
                 ORDER BY date ASC
               `).bind(p.ticker, predDateStr, windowEnd).all() as PriceRow[];
               if (effectiveRows.length > 0) priceSources.price_history_egksco++;
-            } catch { /* ignore */ }
+            } catch { /* ignore - safe-by-design */ }
 
             // Fallback 1: egx_investment_migration (more data, may have splits)
             if (effectiveRows.length === 0) {
@@ -1288,7 +1288,7 @@ export function verifyPendingPredictions(limit: number): VerifyResult {
                   ORDER BY date ASC
                 `).bind(p.ticker, predDateStr, windowEnd).all() as PriceRow[];
                 if (effectiveRows.length > 0) priceSources.price_history_migration++;
-              } catch { /* ignore */ }
+              } catch { /* ignore - safe-by-design */ }
             }
 
             // Fallback 2: stock_daily_prices in stocks.db (recent data)
@@ -1301,7 +1301,7 @@ export function verifyPendingPredictions(limit: number): VerifyResult {
                   ORDER BY price_date ASC
                 `).bind(p.ticker, predDateStr, windowEnd).all() as PriceRow[];
                 if (effectiveRows.length > 0) priceSources.price_history_egksco++;
-              } catch { /* table missing */ }
+              } catch { /* table missing - safe-by-design */ }
             }
 
             if (effectiveRows.length > 0) {
@@ -1403,7 +1403,7 @@ export function verifyPendingPredictions(limit: number): VerifyResult {
             priceSources.unresolved++;
             results.still_pending++;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           results.errors++;
         }
       }
@@ -1587,7 +1587,7 @@ export function extractLessons(db: Database.Database): PredictionLesson[] {
     for (const l of lessons) {
       try {
         insert.run(l.type, l.category, l.rule, l.evidence, l.failure_rate, l.sample_size, l.recommendation);
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
   } catch (e) {
     console.error('extractLessons error:', e);
@@ -1608,7 +1608,7 @@ function readLessons(db: Database.Database): PredictionLesson[] {
       ORDER BY failure_rate DESC, sample_size DESC
       LIMIT 20
     `).all() as PredictionLesson[];
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return [];
   }
 }

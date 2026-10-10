@@ -26,7 +26,7 @@ const fs = require('fs');
 function dbExists(path: string): boolean {
   try {
     return fs.existsSync(path) && fs.statSync(path).size > 0;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         ORDER BY threshold_date DESC
         LIMIT 1
       `).get(market) as any;
-    } catch { /* table may not exist yet */ }
+    } catch { /* table may not exist yet - safe-by-design */ }
 
     // Group by track for summary
     const byTrack: any = {};

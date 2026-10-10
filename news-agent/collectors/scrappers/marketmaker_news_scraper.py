@@ -6,7 +6,12 @@ from datetime import datetime
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-OUTPUT_PATH = 'D:\\My WebStie Applications\\news_agent\\data\\marketmaker_news.json'
+# P1-FIX (2026-10-09, Round 2): إصلاح Windows path → Linux path
+# قبل كده: 'D:\\My WebStie Applications\\news_agent\\data\\marketmaker_news.json'
+# دلوقتي: relative path من PROJECT_ROOT
+import os
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+OUTPUT_PATH = os.path.join(_PROJECT_ROOT, 'news-agent', 'data', 'marketmaker_news.json')
 
 async def scrape_page(page, page_num):
     """Scrape a single page of MarketMaker news"""

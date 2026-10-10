@@ -67496,7 +67496,6 @@ Stage Summary:
 - النشر على التليجرام دلوقتي: complete (كل الحقول مطلوبة موجودة) + professional (عربي + RTL) + safe (NULL → "—" مش "0.00") + legal (disclaimer في كل رسالة)
 
 ---
-<<<<<<< HEAD
 Task ID: POST-MERGE-FIXES
 Agent: Main Agent (Z.ai Code) — المبرمج الثاني
 Task: سحب آخر تحديثات زميلي + إصلاح syntax errors الناتجة + استرجاع DBs الإنتاجية
@@ -67531,7 +67530,9 @@ Stage Summary:
 - تم إصلاح كل syntax errors الناتجة عن batch regex بتاع زميلي
 - تم استرجاع كل البيانات الإنتاجية (1.2M+ صف)
 - المنصة شغّالة بشكل كامل ومستقر
-=======
+
+---
+<!-- merged -->
 Task ID: RECOVERY-AFTER-RESET-2 (المدير العام — استعادة بعد sandbox reset #2)
 Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
 Task: استعادة المشروع من GitHub بعد sandbox reset + إصلاح syntax errors من batch fix + تحديث التوثيقات
@@ -67731,8 +67732,7 @@ Verification:
 - ✅ All 5 docs have "آخر تحديث: 2026-10-09" header.
 - ✅ All commit hashes cited per Rule 16 (VERIFY with evidence).
 - ✅ Existing content preserved — only surgical additions + updates.
-- ✅ Cross-references between docs (e.g., §17.12 ↔ §1.6 + §0.10 ↔ §17.12).
->>>>>>> ffd49494d70a43b1078408d07bd0666aa49f59e3
+- ✅ Cross-references between docs (e.g., §17.12 ↔ §1.6 + §0.10 ↔ §17.12). ffd49494d70a43b1078408d07bd0666aa49f59e3
 
 ---
 Task ID: PHASE2-ADMIN-PANEL
@@ -67888,3 +67888,211 @@ Stage Summary:
 - ✅ preset state مضاف للـ screener
 - ✅ لا شاشات أدمن في الفلاتر (عميل فقط)
 - المتبقي: تحديث radar_screen بـ canonical levels + تحديث reports_screen بالـ branding
+
+---
+<!-- merged -->
+Task ID: REPORT-REDESIGN
+Agent: general-purpose (مهندس واجهات)
+Task: إعادة تصميم التقرير الذكي ليناسب المستثمرين + اختيار السوق + branding
+
+Stage Summary:
+- 14 تغيير جراحي في ملف واحد: src/modules/reports/components/ExecutiveReportView.tsx (2089 ← 2349 سطر، +260 سطر).
+- صفر ملفات محذوفة + صفر Python + صفر git push (احترام كامل للقيود).
+
+═══ 1. الـ Imports (REPORT-REDESIGN) ═══
+1. استبدال `Trophy` ← `Award` (أيقونة احترافية بدل لغة البطولات/الألعاب).
+2. إضافة `Landmark, CalendarRange, HandCoins, Building2` لأيقونات الـ branding + الفترة + السوق.
+3. استيراد `Select, SelectContent, SelectItem, SelectTrigger, SelectValue` من `@/components/ui/select` لاختيار السوق.
+4. استيراد `MARKET_NAMES_AR, type MarketType` من `@/lib/store` لأسماء الأسواق العربية + typing قوي.
+
+═══ 2. الثوابت الجديدة (REPORT-REDESIGN) ═══
+5. `MARKET_FILTER_OPTIONS`: قائمة الأسواق الـ 6 (EGX/TADAWUL/KSE/QSE/US/CRYPTO) بأسماء عربية + emoji علم.
+6. `PLATFORM_NAME = 'دليل الاستثمار'` + `PLATFORM_TAGLINE = 'تقرير الأداء الاستثماري'` للـ branding.
+
+═══ 3. الـ Props + الـ State (REPORT-REDESIGN) ═══
+7. تغيير `market?: string` ← `market?: MarketType` (typing أقوى).
+8. إضافة `selectedMarket` state (يُهيَّأ من الـ prop، مستقل بعدها — يتيح تبديل السوق من داخل التقرير).
+
+═══ 4. استبدال `market` ← `selectedMarket` (4 مواقع) ═══
+9. `fetchData`: params + deps (يعيد fetch عند تبديل السوق).
+10. `fetchMissedOpps`: params + deps.
+11. `reportShareText`: نص المشاركة الاحترافي للمستثمرين.
+12. `handleExportPng`: اسم الملف `Dalilestithmar_Report_{market}_{timeLabel}_{ts}.png`.
+13. `UnifiedPublishButton`: title + filename + hashtags محدّثة.
+
+═══ 5. Memos جديدة (REPORT-REDESIGN) ═══
+14. `topFiveWinningPredictions`: أعلى 5 توقعات فائزة (slice 5 + dedupe by ticker) — بيانات entry→target كاملة.
+15. `avgHoldingDays`: متوسط فترة الاحتفاظ من الصفقات المغلقة (null لو لا بيانات → عرض "—" حسب Rule 27).
+16. `periodRange`: نطاق الفترة (start ← end) منسَّق بالعربية، يدعم YTD/0/N.
+
+═══ 6. الـ UI الجديدة (REPORT-REDESIGN) ═══
+17. **Market + Timeframe Selectors**: صف جديد موحَّد فيه dropdown اختيار السوق + أزرار الفترة (استبدل صف الفترة المنفصل).
+18. **Branding Header مُعاد تصميمه** (داخل reportContainerRef للظهور في الـ PNG):
+    - Logo placeholder (علبة ذهبية + Landmark icon) قابلة للاستبدال بـ <Image /> لو فيه شعار.
+    - اسم المنصة «دليل الاستثمار» + سطر التاج لاين «تقرير الأداء الاستثماري».
+    - شارة نطاق الفترة (من ← إلى) + شارة السوق بالعربية + شارات المصدر/الجودة/الفلاتر.
+    - وصف موجز احترافي للمستثمرين (استبدل "ملخص لنتائج التوقعات" بكلام موثَّق).
+    - صندوق يمين: نسبة النجاح + معامل الربحية + عدّاد الصفقات (محسوم/معلق/trailing).
+19. **KPI Grid موسَّع**: 5 ← 6 بطاقات (أضفنا «متوسط فترة الاحتفاظ» — مؤشر رئيسي للمستثمرين).
+    grid: `lg:grid-cols-3 xl:grid-cols-6` (3 على التابلت، 6 على الديسكتوب).
+20. **NEW: جدول «أبرز 5 توقعات فائزة»** — جدول مدمج احترافي للنشر:
+    أعمدة: # | السهم | الإشارة (شراء/بيع badge) | الدخول ← الهدف | المدة | العائد%.
+    كل البيانات من honest-tracking/list — لا fabrication (Rule 27).
+21. استبدال أيقونة `Trophy` ← `Award` في بطاقة «أعلى المكاسب» + إزالة emoji «⚡» من meta.
+22. استبدال أيقونة `Trophy` ← `HandCoins` + إزالة emoji «💰» من عنوان بطاقة trailing profit
+    («💰 خرجت بربح» ← «صفقات أُغلقت بربح جزئي»).
+23. استبدال emoji «💰» في KPI الـ trailing profit counter بأيقونة `HandCoins`.
+24. **Professional Disclaimer**: صندوق تنبيه احترافي جديد قبل الـ footer:
+    «هذا التقرير لأغراض إعلامية فقط ولا يُعد نصيحة استثمارية أو توصية بالبيع أو الشراء.
+    الأداء السابق لا يضمن النتائج المستقبلية. القرار الاستثماري النهائي ومسؤولية المخاطر
+    تقع على عاتق المستثمر وحده...»
+25. تحديث الـ Footer: «دليل الاستثمار — تقرير الأداء الاستثماري | {السوق} · {الفترة}».
+26. تحديث رسالة الـ empty state: «لا توجد توقعات خلال الفترة المحددة» ← «لا توجد توقعات في هذه الفترة» (تطابق Rule 27).
+27. تحديث عنوان Control Bar: «ملخص أداء التوقعات» ← «دليل الاستثمار — تقرير الأداء الاستثماري».
+28. إزالة emoji «📸» من زر «تصدير PNG» (لغة احترافية).
+
+═══ 7. التحقق (Verification) ═══
+- ✅ `bun run lint` → exit 0 (0 errors).
+- ✅ `npx tsc --noEmit --skipLibCheck`:
+  - Baseline (git stash): 1653 error TS.
+  - بعد التعديلات: 1652 error TS → -1 خطأ (تحسُّن طفيف، صفر أخطاء جديدة).
+  - صفر أخطاء في ExecutiveReportView.tsx.
+  - صفر أخطاء في UnifiedPredictionsTab.tsx (الـ caller).
+  - صفر أخطاء في src/modules/reports/* كله.
+- ✅ Rule 27 محترمة: avgHoldingDays=null → "—"، لا توقعات → «لا توجد توقعات في هذه الفترة»،
+  كل الأرقام من /api/predictions/honest-tracking/list.
+- ✅ صفر ملفات محذوفة + صفر Python touched + صفر git push.
+- ✅ كل المخرجات بالعربية.
+
+Constraints honored:
+- ❌ NO file deleted (surgical edits only — +260 سطر في نفس الملف).
+- ❌ NO Python files touched.
+- ❌ NO git push.
+- ✅ All output in ARABIC.
+- ✅ Rule 27: لا fabrication — كل رقم من honest-tracking/list، null/0 → "—".
+
+Next actions (اقتراحات للمالك — مش مطلوب تنفيذها):
+- استبدال logo placeholder بـ <Image src="/logo.png" /> لو فيه ملف شعار فعلي.
+- إضافة API endpoint لجلب الـ logo ديناميكياً من إعدادات المنصة (لو متاح).
+- اعتبار إضافة فلتر «القطاع» لو المنصة بتدعم تصنيف الأسهم بالقطاعات.
+
+---
+Task ID: PHASE2-PUBLISHING-CARDS
+Agent: general-purpose (مهندس واجهات)
+Task: تحسين كروت النشر الاحترافية (branding + market + dates + disclaimer)
+
+Stage Summary:
+ملخص التعديلات الجراحية على الملفات الثلاثة المُصرَّح بها فقط (لا حذف ملفات، لا تعديل Python، لا git push):
+
+═══ 1. StockInfographicCard.tsx (+200 سطر داخل نفس الملف) ═══
+1. استيراد `MARKET_NAMES_AR` + `type MarketType` من `@/lib/store`.
+2. توسيع `StockInfographicCardProps['data']` بحقول اختيارية جديدة:
+   - `market?: MarketType` — شارة السوق (EGX/TADAWUL/KSE/QSE/US/CRYPTO).
+   - `prediction_date?: string | null` — تاريخ التوقّع.
+   - `verification_date?: string | null` — تاريخ التحقق.
+   - `days_taken?: number | null` — عدد الأيام من التوقّع للتحقق.
+   - `platform_name?: string` — اسم المنصة (default: «دليل الاستثمار»).
+   - `platform_logo_url?: string` — شعار المنصة (لو متاح).
+3. دوال مساعدة جديدة (null-safety كامل حسب Rule 27):
+   - `fmtDateAr(dateStr)` → تاريخ عربي مختصر (Month Year, Day) أو «—».
+   - `fmtMarketAr(market)` → { label, code } بالعربية + الرمز الإنجليزي.
+4. **Section 0 جديد — Platform Branding Header** (قبل Section 1):
+   - يمين RTL: شعار المنصة (مربع ذهبي بحرف «د» fallback أو صورة platform_logo_url) + اسم المنصة + سطر «تحليل كمي بالذكاء الاصطناعي».
+   - وسط: شارة السوق بالعربية + رمز السوق (EGX/TADAWUL/...).
+   - يسار: صف التواريخ الثلاثة (توقّع / تحقق / مدة) بـ monospace وحدات مختلفة لكل قيمة.
+5. تحديث إخلاء المسؤولية (Section 6) ليحوي النصَّين:
+   - النص المطلوب من المالك بالحرف: «⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.»
+   - النص التفصيلي التكميلي القديم (تعليمي/تأخير 15 دقيقة/مستشار مالي مرخّص).
+6. تحسينات لغوية احترافية:
+   - «الهدف المستهدف» ← «الهدف الصعودي».
+   - «الهدف السفلي» ← «الهدف الهبوطي».
+   - `data.sector` fallback إلى «عام» بدلاً من عرض قيمة فارغة.
+
+═══ 2. StockPublisher.tsx (+25 سطر داخل نفس الملف) ═══
+7. استيراد `MARKET_NAMES_AR` + `type MarketType` من `@/lib/store` (مع `useAppStore`).
+8. **mergedInfographicData** (useMemo جديد): يدمج `data.market` من StockPublishData
+   إلى infographicData قبل تمريرها لـ StockInfographicCard — حتى لو الـ caller
+   ما مرَّرش market في البطاقة، شارة السوق هتظهر (مع التحقق من صحة MarketType).
+9. تمرير `mergedInfographicData` لـ:
+   - Branch A (multipart image publish): يلتقط البطاقة المُدمج عليها شارة السوق + branding.
+   - Off-screen render للـ StockInfographicCard (للـ Telegram bot).
+10. إضافة `logo_url` للـ FormData المُرسلة لبوت تيليجرام (مع null-safety).
+11. **StockPublishCard**: شارة سوق ذهبية جديدة بجانب الـ ticker في الـ header
+    (`{EGX} · {البورصة المصرية}`) مع title توضيحي.
+12. **Disclaimer block جديد** فوق الـ Footer في StockPublishCard:
+    «⚠️ تحليل كمي بالذكاء الاصطناعي — ليس نصيحة استثمارية. قرارات الاستثمار مسؤوليتك الكاملة.»
+
+═══ 3. ShareButton.tsx (+200 سطر داخل نفس الملف) ═══
+13. توسيع `ShareStockData` بحقول اختيارية جديدة:
+    - `market?` + `marketNameAr?` — شارة السوق بالعربية.
+    - `predictionDate?` + `verificationDate?` + `daysTaken?` — تواريخ التوقّع والتحقق.
+    - `riskReward?` — معامل الربحية R:R.
+    - `entryPrice?` — سعر الدخول المقترح.
+    - `logoUrl?` — شعار/وجه السهم (fallback: أول حرف من ticker).
+14. **ShareCard (الصورة المخفية للـ PNG)** — تحسينات بصرية كاملة:
+    - شريط Branding جديد في الأعلى: شعار «د» ذهبي + «دليل الاستثمار» + شارة السوق.
+    - في الـ Header: دعم `logoUrl` (مع fallback لأول حرف من ticker).
+    - في الـ Trading Grid: تيلز جديدة لـ entryPrice (أزرق) + R:R (كهرماني).
+    - صف تواريخ جديد (gold strip): توقّع / تحقق / مدة — بـ monospace وحدات ملوّنة.
+    - Footer disclaimer مُحدَّث بالنص الحرفي للمالك + إطار ذهبي.
+15. **getShareText()** — تحديث شامل ليضمّ:
+    - اسم المنصة + ticker + اسم السهم + السوق بالعربية في الترويسة.
+    - سعر الدخول (لو متاح) + سعر الشراء الجيد + الهدف + سعر البيع + وقف الخسارة.
+    - **R:R معامل الربحية** (جديد).
+    - **صف التواريخ**: توقّع / تحقق / مدة (جديد).
+    - الإخلاء الإجباري الحرفي للمالك (يحلَّ محل النص القديم).
+    - هاشتاجات متكيّفة مع السوق (`marketHashtagMap`) بدلاً من EGX فقط.
+16. **shortText** (للـ Facebook quote + غيره): تحديث ليضمّ المنصة + السهم + السوق + السعر + الإشارة + الإخلاء.
+
+═══ 4. التحقق (Verification) ═══
+- ✅ `bun run lint` → exit 0 (0 errors).
+- ✅ `npx tsc --noEmit --skipLibCheck`:
+  - Baseline (git stash): 1659 error TS.
+  - بعد التعديلات: 1658 error TS → **-1 خطأ (تحسُّن صافي، صفر أخطاء جديدة)**.
+  - صفر أخطاء في StockInfographicCard.tsx (قبل وبعد).
+  - الأخطاء الباقية في StockPublisher.tsx + ShareButton.tsx هي pre-existing baseline
+    (RECOMMENDATION_META ناقصة ACCUMULATE/REDUCE/STRONG_SELL — ليست من تعديلاتي).
+- ✅ StockPublisher.test.tsx: 20/21 tests تمرّ، الاختبار الفاشل (HOLD emoji)
+  هو **pre-existing على main** (verified via git stash) — من `stock-publish-text.ts`
+  اللي أنا مش مُصرَّح بتعديله.
+- ✅ Rule 27 محترمة: market/dates null → «—»، لا fabrication، كل الحقول الجديدة optional.
+- ✅ صفر ملفات محذوفة + صفر Python touched + صفر git push.
+- ✅ كل المخرجات بالعربية + لغة احترافية تناسب المستثمرين.
+
+Constraints honored:
+- ❌ NO file deleted (surgical edits only — +400 سطر داخل نفس الملفات الثلاثة).
+- ❌ NO Python files touched.
+- ❌ NO git push.
+- ❌ NO test files touched (reverted the test mock change).
+- ✅ All output in ARABIC.
+- ✅ Rule 27: لا fabrication — كل قيمة من الـ props المُمرَّرة فقط، null → «—».
+
+Next actions (اقتراحات للمالك — مش مطلوب تنفيذها):
+- تمرير `prediction_date` + `verification_date` + `days_taken` من API
+  /api/predictions/honest-tracking/list إلى buildStockInfographicDataFromStock
+  (في StockDetail.tsx — خارج نطاق الملفات المُصرَّح بها هنا) حتى تظهر التواريخ ببيانات حقيقية.
+- تمرير `logo_url` (stock face) من نفس البيلدر للـ ShareStockData في الـ caller بتاع ShareButton.
+- استبدال logo placeholder «د» بـ <Image src="/logo.png" /> لو فيه ملف شعار فعلي للمنصة.
+- اعتبار إضافة `sector_ar` (ترجمة عربية للقطاع) لو المنصة بتدعمها.
+
+---
+Task ID: FLUTTER-INTEGRATION (المدير العام — تكامل برنامج الفلاتر)
+Agent: المدير العام (Z.ai Code) — عضو مهم في الفريق
+Task: تكامل تام بين المنصة وبرنامج الفلاتر (flutter_investment_App)
+
+Work Log:
+- Rule 76: سحبت آخر تحديثات المنصة + استكشفت repo الفلاتر.
+- استنسخت flutter_investment_App (49 شاشة + 60+ API endpoint + Dart).
+- فحصت كل endpoints المستخدمة في lib/api/client.dart.
+- اكتشفت 2 endpoints معطّلة (410 Gone) يستخدمها الفلاتر:
+  1. /api/stocks/X/professional-analysis → رحّلت لـ /api/stocks/X/unified
+  2. /api/maestro/stock/X (Maestro معطّل) → رحّلت لـ /api/stocks/X/unified
+- أضفت market parameter لـ getLatestNews (دعم فصل الأسواق).
+- Push لـ flutter repo: commit 3fe15cd.
+
+Stage Summary:
+- ✅ برنامج الفلاتر محدّث + مرفوع (commit 3fe15cd)
+- ✅ 2 endpoints معطّلة رُحّلت للـ canonical unified
+- ✅ market parameter مضاف للأخبار
+- ✅ المنصة تدعم نفس الـ endpoints التي يطلبها الفلاتر
+- الـ Flutter app عند العملاء وشغال — لم نكسر أي شيء origin/main

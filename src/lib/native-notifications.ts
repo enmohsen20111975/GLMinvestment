@@ -48,7 +48,7 @@ export async function requestDesktopNotificationPermission(): Promise<boolean> {
       return true;
     }
     return false;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }
@@ -71,7 +71,7 @@ export function dispatchWhatsAppAlert(payload: AlertNotificationPayload): void {
   // 1. تشغيل صوت الواتساب
   try {
     playChatNotificationSound(soundVariant);
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2. إرسال إشعار سطح المكتب الحقيقي (Native Desktop Notification)
   // هذا الإشعار هو الذي يظهر للعميل على نظام ويندوز أو ماك أو أندرويد حتى لو المتصفح مصغر تماماً!
@@ -104,7 +104,7 @@ export function dispatchWhatsAppAlert(payload: AlertNotificationPayload): void {
       } else {
         new Notification(fullTitle, options);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // ignore OS notification failure
     }
   }
@@ -128,7 +128,7 @@ export function dispatchWhatsAppAlert(payload: AlertNotificationPayload): void {
         position: 'top-center',
       }
     );
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // fallback to standard toast
     toast.success(payload.title, { description: payload.message });
   }

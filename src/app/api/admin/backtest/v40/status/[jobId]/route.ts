@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
     // P0-14-ASYNC fix (2026-09-27): existsSync → access (async).
     try {
       await access(logFile);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json({
         success: true,
         data: { status: 'unknown', message: 'Job not found', log_tail: [] },
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ jobI
       // pgrep returns exit code 1 when no matches; execFile throws on non-zero exit.
       const { stdout } = await execFileAsync('pgrep', ['-f', 'daily_predictor'], { timeout: 3000 });
       running = stdout.trim().length > 0;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       running = false;
     }
 

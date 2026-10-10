@@ -47,7 +47,7 @@ async function fetchGold24Price(): Promise<{ price: number; source: string }> {
     if (eg && eg.price_per_gram) {
       return { price: eg.price_per_gram, source: 'data_engine.db' };
     }
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     /* ignore */
   }
   return { price: PLACEHOLDER_GOLD_24K, source: 'placeholder' };
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     let body: any = {};
     try {
       body = await req.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       body = {};
     }
 

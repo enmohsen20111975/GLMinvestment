@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           message: 'Portfolio table not initialized',
         });
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json({
         success: true,
         items: [],
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
                 livePrice = Number(histRow.close_price);
                 priceSource = 'stock_price_history';
               }
-            } catch { /* table may not exist — safe skip */ }
+            } catch { /* table may not exist — safe skip - safe-by-design */ }
           }
 
           // ── P31 TASK 1: Fallback 3.5 — price_history.db (yahoo_clean → egksco → any) ──
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
           } else if (current <= 0 && invested > 0) {
             current = invested;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           if (current <= 0 && invested > 0) current = invested;
         }
       } else if (type === 'gold' || type === 'silver') {
@@ -529,7 +529,7 @@ async function getGoldPrices(db: Database.Database): Promise<{ '24k': number; '2
       };
     }
     return fallback;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -546,7 +546,7 @@ async function getExchangeRates(db: Database.Database): Promise<Record<string, n
       }
     }
     return fallback;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return fallback;
   }
 }
@@ -569,7 +569,7 @@ async function getMonthlyExpenses(db: Database.Database, userId: string): Promis
       "SELECT monthly_expenses FROM user_financial_settings WHERE user_id = ? LIMIT 1"
     ).get(userId) as SqlRow | undefined;
     return Number(row?.monthly_expenses || 0);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -591,7 +591,7 @@ async function getTotalObligations(db: Database.Database, userId: string): Promi
       "WHERE user_id = ? AND (status = 'active' OR status IS NULL OR status = '')"
     ).get(userId) as SqlRow | undefined;
     return Number(row?.total || 0);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }
@@ -626,7 +626,7 @@ async function getCryptoLivePrice(symbol: string): Promise<number> {
         }
         _cryptoPriceCache = { ts: now, prices };
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Keep stale cache if available, else empty
     }
   }

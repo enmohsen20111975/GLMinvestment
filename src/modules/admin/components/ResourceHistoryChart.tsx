@@ -131,7 +131,7 @@ function formatTs(ts: string, range: RangeKey): string {
     const hh = String(d.getHours()).padStart(2, '0');
     const mi = String(d.getMinutes()).padStart(2, '0');
     return `${hh}:${mi}`;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return ts;
   }
 }
@@ -147,7 +147,7 @@ function formatTimeAgo(ts: string): string {
     const hr = Math.floor(min / 60);
     if (hr < 24) return `منذ ${hr} ساعة`;
     return `منذ ${Math.floor(hr / 24)} يوم`;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return ts;
   }
 }

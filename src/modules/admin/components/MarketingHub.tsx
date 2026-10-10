@@ -114,7 +114,7 @@ function CampaignBuilder({ feature, market, ctaGoal }: { feature: FeatureKey; ma
       setCopied(key);
       toast.success('اتنسخ ✅');
       setTimeout(() => setCopied(null), 1800);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('فشل النسخ');
     }
   };

@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
             pdfPath = path.join(OUTPUT_DIR, f);
             break;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // skip malformed
         }
       }

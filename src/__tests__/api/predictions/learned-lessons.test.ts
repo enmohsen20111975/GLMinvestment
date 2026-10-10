@@ -39,7 +39,7 @@ async function probe(url: string, ms = 4000): Promise<boolean> {
   try {
     const res = await fetchWithTimeout(url, ms);
     return res.ok;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return false;
   }
 }

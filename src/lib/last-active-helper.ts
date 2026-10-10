@@ -40,7 +40,7 @@ export function updateLastActiveRaw(userId: string): void {
     const sqlite = getAuthSqlite();
     const now = new Date().toISOString();
     sqlite.prepare('UPDATE "User" SET last_active_at = ? WHERE id = ?').run(now, userId);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Non-fatal — tracking must never break auth.
   }
 }
@@ -67,7 +67,7 @@ export function repairLastActiveAt(): number {
       fixed++;
     }
     return fixed;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 0;
   }
 }

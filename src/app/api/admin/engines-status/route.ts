@@ -47,9 +47,9 @@ async function fetchWithTimeout(url: string, timeoutMs = 3000): Promise<{ ok: bo
         clearTimeout(timeoutId);
         const latency = Date.now() - start;
         let data: any = null;
-        try { data = await res.json(); } catch { }
+        try { data = await res.json(); } catch { /* safe-by-design */ }
         return { ok: res.ok, status: res.status, data, latency };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
         return { ok: false, status: 0, data: null, latency: Date.now() - start };
     }
 }
@@ -61,7 +61,7 @@ function safeDbQuery<T>(dbPath: string, query: string, params: any[] = []): T | 
         const result = db.prepare(query).get(...params) as T;
         db.close();
         return result;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
         return null;
     }
 }
@@ -73,7 +73,7 @@ function safeDbQueryAll<T>(dbPath: string, query: string, params: any[] = []): T
         const result = db.prepare(query).all(...params) as T[];
         db.close();
         return result;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
         return [];
     }
 }
@@ -83,12 +83,12 @@ async function loadJsonFile(filePath: string): Promise<any | null> {
     try {
         try {
             await access(filePath);
-        } catch {
+        } catch { // silent fallback (safe-by-design)
             return null;
         }
         const raw = await readFile(filePath, 'utf-8');
         return JSON.parse(raw);
-    } catch { return null; }
+    } catch { /* safe-by-design */ return null; }
 }
 
 // ============== Engine Checkers ==============
@@ -152,22 +152,22 @@ async function checkDataEngine() {
     try {
         const r = safeDbQuery<{ count: number }>(DATA_ENGINE_DB, 'SELECT COUNT(*) as count FROM stocks');
         stocksCount = r?.count || 0;
-    } catch { }
+    } catch { /* safe-by-design */ }
     try {
         const r = safeDbQuery<{ count: number }>(DATA_ENGINE_DB, 'SELECT COUNT(*) as count FROM crypto_prices');
         cryptoCount = r?.count || 0;
-    } catch { }
+    } catch { /* safe-by-design */ }
     try {
         const r = safeDbQuery<{ count: number }>(DATA_ENGINE_DB, 'SELECT COUNT(*) as count FROM gold_prices');
         goldCount = r?.count || 0;
-    } catch { }
+    } catch { /* safe-by-design */ }
 
     // Check price_history freshness (last inserted row) — now reads from data_engine.db.egksco_price_history
     let priceHistoryLastUpdate: string | null = null;
     try {
         const r = safeDbQuery<{ latest: string }>(DATA_ENGINE_DB, 'SELECT MAX(price_date) as latest FROM egksco_price_history');
         priceHistoryLastUpdate = r?.latest || null;
-    } catch { }
+    } catch { /* safe-by-design */ }
 
     // Calculate staleness (minutes since last update)
     const minutesAgo = lastUpdate
@@ -241,7 +241,7 @@ async function checkAnalysisEngine() {
             analysisCount = r.count || analysisCount;
             if (!lastUpdate && r.latest) lastUpdate = r.latest;
         }
-    } catch { }
+    } catch { /* safe-by-design */ }
 
     // If VPS is up but analyzer endpoint didn't respond, still mark as running
     if (health.ok && !running) {
@@ -361,7 +361,7 @@ async function checkPredictionEngine() {
             description: 'توليد التوقعات والإشارات (STRONG_BUY, BUY, HOLD, SELL)',
             update_interval: '15 minutes (expected)',
         };
-    } catch {
+    } catch { // silent fallback (safe-by-design)
         return {
             name: 'Prediction Engine',
             name_ar: 'محرك التوقعات',

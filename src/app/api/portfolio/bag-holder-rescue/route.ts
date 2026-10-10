@@ -27,7 +27,7 @@ const fs = require('fs');
 const path = require('path');
 
 function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
+  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { /* safe-by-design */ return false; }
 }
 
 const PY = process.env.EGXPY_SERVICE_URL || 'http://127.0.0.1:8010';
@@ -44,7 +44,7 @@ async function tryPythonRescue(ticker: string | null, userId: string | undefined
       if (data.success !== false && (data.recommendation || data.signal)) return data;
     }
     return null;
-  } catch { return null; }
+  } catch { /* safe-by-design */ return null; }
 }
 
 function fetchStockRange(db: any, ticker: string): { high52: number; low52: number; firstDate: string | null } {
@@ -60,7 +60,7 @@ function fetchStockRange(db: any, ticker: string): { high52: number; low52: numb
       low52: Number(row?.l52 || 0),
       firstDate: row?.first_date || null,
     };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return { high52: 0, low52: 0, firstDate: null };
   }
 }
@@ -79,7 +79,7 @@ async function fetchLivePrice(db: any, ticker: string): Promise<{ price: number;
       name = stockRow.name_ar || stockRow.name || ticker;
       sector = stockRow.sector || '';
     }
-  } catch { /* ignore */ }
+  } catch { /* ignore - safe-by-design */ }
 
   if (price <= 0) {
     try {
@@ -87,14 +87,14 @@ async function fetchLivePrice(db: any, ticker: string): Promise<{ price: number;
         "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
       ).get(ticker) as any;
       if (histRow && Number(histRow.close_price) > 0) price = Number(histRow.close_price);
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
   }
 
   if (price <= 0) {
     try {
       const clean = await getLastCleanClose(ticker);
       if (clean.price > 0) price = clean.price;
-    } catch { /* ignore */ }
+    } catch { /* ignore - safe-by-design */ }
   }
 
   return { price, name, sector };
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
       try {
         const session = await getSessionUserId();
         userId = session.userId || undefined;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
     if (!userId) {
       return NextResponse.json(
@@ -166,7 +166,7 @@ export async function GET(req: NextRequest) {
           const added = new Date(String(asset.added_at).replace(' ', 'T'));
           holdingDays = Math.max(0, Math.floor((Date.now() - added.getTime()) / 86400000));
         }
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
 
       positions.push({
         ticker,

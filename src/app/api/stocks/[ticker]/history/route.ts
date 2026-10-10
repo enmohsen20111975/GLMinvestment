@@ -47,12 +47,15 @@ export async function GET(req: NextRequest, { params }: { params: { ticker: stri
   if (existsSync(stocksDbPath)) {
     try {
       const db = new Database(stocksDbPath, { readonly: true, timeout: 5000 });
+      // SCHEMA-FIX (2026-10-09, Team 9): استخدم COALESCE لكل column بديل
+      // stock_daily_prices columns: price_date, open, high, low, close, volume
+      // (some rows have NULL for open/high/low → use close as fallback)
       const rows = db.prepare(`
         SELECT price_date as date,
-               COALESCE(open, open_price) as open,
-               COALESCE(high, high_price) as high,
-               COALESCE(low, low_price) as low,
-               COALESCE(close, close_price) as close,
+               COALESCE(open, close) as open,
+               COALESCE(high, close) as high,
+               COALESCE(low, close) as low,
+               close as close,
                COALESCE(volume, 0) as volume
         FROM stock_daily_prices
         WHERE ticker = ?

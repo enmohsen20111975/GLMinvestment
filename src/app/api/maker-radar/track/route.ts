@@ -23,7 +23,7 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
     try {
       await access(TRACKING_FILE);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return {};
     }
     const data = await readFile(TRACKING_FILE, 'utf-8');
@@ -39,7 +39,7 @@ async function saveTracking(tracking: Record<string, TrackedStock>): Promise<voi
   const dir = path.dirname(TRACKING_FILE);
   try {
     await access(dir);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     await mkdir(dir, { recursive: true });
   }
   await writeFile(TRACKING_FILE, JSON.stringify(tracking, null, 2));

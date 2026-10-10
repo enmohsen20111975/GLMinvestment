@@ -75,7 +75,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
         if (typeof body.totalLimit === 'number') {
           totalLimit = Math.max(1, Math.min(100, body.totalLimit));
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
     } else {
       const url = new URL(req.url);
       const m = url.searchParams.get('markets');
@@ -140,7 +140,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
           });
         }
       }
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     // 2) Fallback — read from predictions.db
     try {
@@ -192,7 +192,7 @@ async function handleRequest(req: NextRequest, method: 'GET' | 'POST') {
           }
           stocksDb.close();
         }
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       const data: ConfluencePick[] = rows.map((r) => {
         const masterScore = Number(r.master_score ?? r.maestro_score ?? 0);

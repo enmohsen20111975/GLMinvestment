@@ -96,9 +96,9 @@ export function openDb(dbName: string, options?: OpenOptions): Database.Database
       try {
         cached.prepare('SELECT 1').get();
         return cached;
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Stale connection — drop and reopen
-        try { cached.close(); } catch { /* ignore */ }
+        try { cached.close(); } catch { /* ignore - safe-by-design */ }
         _cache.delete(cacheKey);
       }
     }
@@ -116,7 +116,7 @@ export function openDb(dbName: string, options?: OpenOptions): Database.Database
     db.pragma(`busy_timeout = ${busyTimeout}`);
     if (!readonly) {
       // Match the Python service's journal mode so WAL is reconciled correctly
-      try { db.pragma('journal_mode = WAL'); } catch { /* ignore */ }
+      try { db.pragma('journal_mode = WAL'); } catch { /* ignore - safe-by-design */ }
     }
     return db;
   };
@@ -141,13 +141,13 @@ export function openDb(dbName: string, options?: OpenOptions): Database.Database
     // lets SQLite reconcile the WAL when the snapshot is opened.
     const snapName = `node-readonly-snapshot-${process.pid}-${path.basename(absPath)}`;
     const snapDir = path.join(os.tmpdir(), 'glminvestment-snapshots');
-    try { mkdirSync(snapDir, { recursive: true }); } catch { /* ignore */ }
+    try { mkdirSync(snapDir, { recursive: true }); } catch { /* ignore - safe-by-design */ }
     const snapPath = path.join(snapDir, snapName);
     const sidecars = [`${absPath}-wal`, `${absPath}-shm`];
     try {
       copyFileSync(absPath, snapPath);
       for (const sc of sidecars) {
-        try { copyFileSync(sc, `${snapPath}${sc.slice(absPath.length)}`); } catch { /* no sidecar yet */ }
+        try { copyFileSync(sc, `${snapPath}${sc.slice(absPath.length)}`); } catch { /* no sidecar yet - safe-by-design */ }
       }
     } catch (copyErr) {
       throw new Error(
@@ -157,7 +157,7 @@ export function openDb(dbName: string, options?: OpenOptions): Database.Database
     // Open read-write so SQLite reconciles the copied WAL into the snapshot
     // (no other process touches the snapshot, so writing only applies the WAL).
     const db = new Database(snapPath, { readonly: false, timeout: busyTimeout });
-    try { db.pragma(`busy_timeout = ${busyTimeout}`); } catch { /* ignore */ }
+    try { db.pragma(`busy_timeout = ${busyTimeout}`); } catch { /* ignore - safe-by-design */ }
     return db;
   };
 

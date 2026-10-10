@@ -174,7 +174,7 @@ export function useAuthCheck(): void {
                 return;
               }
             }
-          } catch {
+          } catch { // silent fallback (safe-by-design)
             // Retry failed — fall through to logout below
           }
 
@@ -186,7 +186,7 @@ export function useAuthCheck(): void {
           setAuthChecked(true);
         }
         // For 403/404/5xx: leave state untouched so the user stays logged in.
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         if (!cancelled) {
           // Network/abort error: don't aggressively log the user out,
           // but DO mark auth as checked so the gate can show.

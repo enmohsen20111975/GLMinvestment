@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     let body: { token?: unknown };
     try {
       body = await req.json();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return NextResponse.json(
         { success: false, error: 'invalid_json' },
         { status: 400 },

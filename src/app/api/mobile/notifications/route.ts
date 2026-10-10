@@ -48,7 +48,7 @@ function ensureNotifTable(db: SqliteDatabase): void {
   const have = new Set(cols.map((c) => c.name));
   const ensureCol = (name: string, def: string): void => {
     if (!have.has(name)) {
-      try { db.prepare(`ALTER TABLE user_notifications ADD COLUMN ${name} ${def}`).run(); } catch { /* exists */ }
+      try { db.prepare(`ALTER TABLE user_notifications ADD COLUMN ${name} ${def}`).run(); } catch { /* exists - safe-by-design */ }
     }
   };
   ensureCol('title', "TEXT DEFAULT ''");
@@ -61,7 +61,7 @@ function ensureNotifTable(db: SqliteDatabase): void {
     db.prepare(
       `CREATE INDEX IF NOT EXISTS idx_user_notif_dedup ON user_notifications(user_id, type, ticker)`
     ).run();
-  } catch { /* ignore */ }
+  } catch { /* ignore - safe-by-design */ }
 }
 
 interface NotificationItem {

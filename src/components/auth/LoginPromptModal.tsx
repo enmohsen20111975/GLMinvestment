@@ -98,7 +98,7 @@ export function LoginPromptModal() {
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem('auth_initial_tab', 'register');
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
     }
@@ -110,7 +110,7 @@ export function LoginPromptModal() {
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.setItem('auth_initial_tab', 'login');
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         /* ignore */
       }
     }

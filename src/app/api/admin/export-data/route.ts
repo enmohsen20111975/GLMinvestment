@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         JOIN stocks s ON s.id = sph.stock_id
         ORDER BY s.ticker ASC, sph.date DESC
       `).all() as PriceHistoryRow[];
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Price history table may not exist
       console.log('[export-data] Price history table not available, skipping...');
     }
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       const packageJsonPath = path.join(process.cwd(), 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
       version = packageJson.version || version;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // Use default version
     }
 

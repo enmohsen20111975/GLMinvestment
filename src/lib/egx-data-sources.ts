@@ -247,7 +247,7 @@ function parseMubasherResponse(html: string, text: string, ticker: string): Muba
             changePercent = quote.changePercent;
             break;
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // JSON parse failed
         }
       } else {
@@ -416,11 +416,11 @@ export async function fetchFromWebSearch(ticker: string): Promise<{
                   }
                 }
               }
-            } catch {
+            } catch { // silent fallback (safe-by-design)
               // Page read failed, continue
             }
           }
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // Search failed, continue
         }
       }

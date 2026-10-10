@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
             stockInfo.name = stockRow.name_ar || stockRow.name || stockRow.ticker || '';
           }
           sdb.close();
-        } catch {}
+        } catch { /* safe-by-design */ }
 
         if (stockInfo.ticker) {
           try {
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
               stockInfo.price = Number(deRow.price || 0);
               stockInfo.change_percent = Number(deRow.change_percent || 0);
             }
-          } catch {}
+          } catch { /* safe-by-design */ }
         }
 
         return {
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
           view_count: row.view_count,
         };
       });
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       enrichedItems = rows.map((row) => ({
         id: row.id,
         ticker: '',
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     try {
       const row = stocksDb.prepare('SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1').get(ticker) as { id?: number } | undefined;
       if (row) stockId = row.id;
-    } catch {}
+    } catch { /* safe-by-design */ }
 
     const result = stocksDb.prepare(`
       INSERT INTO user_stock_watchlists

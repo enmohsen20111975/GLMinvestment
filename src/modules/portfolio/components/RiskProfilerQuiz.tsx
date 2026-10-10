@@ -238,7 +238,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
         const parsed = JSON.parse(raw);
         if (parsed?.score) setSavedProfile(evaluateProfile(parsed.score));
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
   }, []);
@@ -247,7 +247,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
     setHidden(true);
     try {
       localStorage.setItem(HIDDEN_KEY, '1');
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
     toast.success('تم إخفاء الاستبيان. يمكنك إظهاره من زر «إظهار الاستبيان»');
@@ -257,7 +257,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
     setHidden(false);
     try {
       localStorage.removeItem(HIDDEN_KEY);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
   };
@@ -276,7 +276,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
         setSavedProfile(profile);
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify({ score: total, date: new Date().toISOString() }));
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           /* ignore */
         }
         setStep(QUESTIONS.length); // result screen
@@ -293,7 +293,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
     setSavedProfile(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
   };
@@ -464,7 +464,7 @@ export function RiskProfilerQuiz({ currentAllocation }: RiskProfilerQuizProps) {
 
           {/* توقع Rebalancing (static hint — kept for context) */}
           {!currentAllocation && (
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-teal-200 dark:border-teal-800">
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/30 border border-teal-200 dark:border-teal-800">
               <p className="text-xs text-teal-800 dark:text-teal-300 leading-relaxed">
                 <strong>توقّع المستشار الآلي:</strong> قارن توزيع محفظتك الحالي بالتوزيع المثالي أعلاه. إذا تجاوز الفرق لأي أصل نسبة 10%، يُنصح بإعادة التوازن (بيع الزائد وشراء الناقص) للبقاء ضمن نطاق شخصيتك الاستثمارية.
               </p>

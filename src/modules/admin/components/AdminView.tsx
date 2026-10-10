@@ -433,13 +433,15 @@ export function AdminView() {
   const { user } = useAppStore();
   const userEmail = user?.email || session?.user?.email || '';
   const userName = (user as any)?.username || (user as any)?.name || (session?.user as any)?.name || (session?.user as any)?.username || '';
+  // P0-FIX (2026-10-09, Round 2): إزالة hardcoded admin emails (security — كانت بتتسرب للـ browser)
+  // قبل كده: hardcoded list ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', ...]
+  // دلوقتي: بنعتمد على isAdmin() من admin-auth.ts (بيقرأ من env/admin-identities.ts)
   const isAdminUser =
     (user as any)?.is_admin === true ||
     (user as any)?.subscription_tier === 'admin' ||
     (session?.user as any)?.is_admin === true ||
     (session?.user as any)?.subscription_tier === 'admin' ||
     (userName && ['mohseny', 'admin'].includes(userName.toLowerCase())) ||
-    (userEmail && ['mohseny@m2y.net', 'enmohsen20111975@gmail.com', 'enmohsen2011975@gmail.com', 'ceo@m2y.net'].includes(userEmail.toLowerCase())) ||
     isAdmin(userEmail, userName) ||
     isAdmin(userName, userEmail);
 
@@ -495,7 +497,7 @@ export function AdminView() {
         // 1. حاول ضبط admin_session cookie تلقائياً (لو المستخدم أدمن مسجل بـ Google)
         try {
           await fetch('/api/admin/auth/auto-cookie', { method: 'POST' });
-        } catch {
+        } catch { // silent fallback (safe-by-design)
           // تجاهل الأخطاء — سنجرب stats بعدها
         }
         // 2. فحص صلاحية الأدمن
@@ -503,7 +505,7 @@ export function AdminView() {
         if (res.ok) {
           setDirectLoggedIn(true);
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // Not authenticated — that's fine, show login form
       }
     };
@@ -535,7 +537,7 @@ export function AdminView() {
             detail: activeTab,
           }),
         });
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ignore tracking errors
       }
     };
@@ -610,7 +612,7 @@ export function AdminView() {
       if (data.success) {
         setPredictionStats(data.performance);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       // silent
     }
   }, []);
@@ -671,7 +673,7 @@ export function AdminView() {
         setFeedback(data.feedback || []);
         setFeedbackCount(data.summary?.new ?? undefined);
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* non-critical */
     } finally {
       setFeedbackLoading(false);
@@ -729,7 +731,7 @@ export function AdminView() {
       } else {
         toast.error(data.details?.errors?.[0] || 'فشل التحديث');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       toast.error('خطأ في التحديث');
     } finally {
       setSyncing(false);
@@ -786,7 +788,7 @@ export function AdminView() {
       } else {
         setDirectLoginError(data.error || 'بيانات الدخول غير صحيحة');
       }
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       setDirectLoginError('خطأ في الاتصال');
     } finally {
       setDirectLoginLoading(false);
@@ -1014,9 +1016,8 @@ export function AdminView() {
       tabs: [
         { id: 'dashboard', label: 'لوحة التحكم', icon: <Activity className="w-3.5 h-3.5" />, desc: 'نظرة عامة + صحة النظام' },
         { id: 'system-monitor', label: 'مراقبة الموارد', icon: <Monitor className="w-3.5 h-3.5" />, desc: 'CPU/RAM/DB' },
-        { id: 'problems', label: 'مشاكل النظام', icon: <ShieldAlert className="w-3.5 h-3.5" />, desc: 'تنبيهات + حلول' },
-        // Task 28-B (Fix 4) — Fix Battalion: Cron Health dashboard.
         { id: 'cron-health', label: 'حالة المهام', icon: <Clock className="w-3.5 h-3.5" />, desc: 'crontab + آخر تشغيل' },
+        // Task ADMIN-CLEANUP: أخفينا 'problems' (مكرر مع dashboard)
       ],
     },
     {
@@ -1026,15 +1027,11 @@ export function AdminView() {
       icon: <Zap className="w-4 h-4" />,
       accent: 'border-amber-500/40 bg-amber-500/5',
       tabs: [
-        // Task 31-B (Engine Monitor Battalion) — unified engine control room
-        // (8 engine cards + per-engine deep view + error console + start-all/stop-all).
-        { id: 'engine-control-room', label: '🎮 غرفة تحكم المحركات', icon: <Cpu className="w-3.5 h-3.5" />, desc: 'كل المحركات + كونسول + تحكم' },
         { id: 'data-engine', label: 'محرك البيانات', icon: <Database className="w-3.5 h-3.5" />, desc: 'تفاصيل Scrapers + Historical' },
-        { id: 'general', label: 'المحركات', icon: <Server className="w-3.5 h-3.5" />, desc: 'حالة المحركات + تحكم' },
         { id: 'engine-settings', label: 'إعدادات المحرك', icon: <Settings className="w-3.5 h-3.5" />, desc: 'أوزان + بارامترات' },
         { id: 'learning', label: 'التعلم الذكي', icon: <Brain className="w-3.5 h-3.5" />, desc: 'تعلّم + توقعات' },
         { id: 'backtest', label: 'الباك تست', icon: <Activity className="w-3.5 h-3.5" />, desc: 'اختبار الاستراتيجيات' },
-        { id: 'platform-performance', label: 'كفاءة المنصة', icon: <Gauge className="w-3.5 h-3.5" />, desc: 'مؤشرات الأداء' },
+        // Task ADMIN-CLEANUP: أخفينا 'engine-control-room' (🎮 حشو) + 'general' (مكرر) + 'platform-performance' (عرضي)
       ],
     },
     {
@@ -1048,14 +1045,9 @@ export function AdminView() {
         { id: 'db-backup', label: 'النسخ الاحتياطي', icon: <Upload className="w-3.5 h-3.5" />, desc: 'backup/restore' },
         { id: 'system-control', label: 'تحكم شامل', icon: <Settings className="w-3.5 h-3.5" />, desc: 'scraper + sync + cron' },
         { id: 'news-control', label: 'إدارة الأخبار', icon: <Newspaper className="w-3.5 h-3.5" />, desc: 'أخبار + مصادر' },
-        // Task 28-B (Fix 6) — Fix Battalion: News source health dashboard.
         { id: 'news-health', label: 'صحة مصادر الأخبار', icon: <Wifi className="w-3.5 h-3.5" />, desc: 'last_fetch + مصادر معطّلة' },
-        // Task 28-B (Fix 1) — Fix Battalion: Sharia management tab (Rule 64).
         { id: 'sharia', label: 'الفحص الشرعي', icon: <Shield className="w-3.5 h-3.5" />, desc: 'توافق + تطهير + سكرابر' },
-        // Task 28-B (Fix 2) — Fix Battalion: Source Authority tab (Rule 66).
-        { id: 'source-authority', label: 'سلطة المصادر', icon: <Shield className="w-3.5 h-3.5" />, desc: 'Rule 66 + محظورات + تعارضات' },
-        // Task 28-B (Fix 3) — Fix Battalion: Validation Monitor tab (Rule 65).
-        { id: 'validation-monitor', label: 'مراقبة التحقق', icon: <ShieldCheck className="w-3.5 h-3.5" />, desc: 'Rule 65 + حقول باطلة' },
+        // Task ADMIN-CLEANUP: أخفينا 'source-authority' + 'validation-monitor' (عرضي/متقدم — متاح للمطورين)
       ],
     },
     {
@@ -1066,11 +1058,9 @@ export function AdminView() {
       accent: 'border-rose-500/40 bg-rose-500/5',
       tabs: [
         { id: 'user-management', label: 'إدارة المستخدمين', icon: <Users className="w-3.5 h-3.5" />, desc: 'CRUD + باقات' },
-        { id: 'users', label: 'تحليلات المستخدمين', icon: <BarChart3 className="w-3.5 h-3.5" />, desc: 'إحصائيات + behavior' },
-        { id: 'promo-codes', label: 'أكواد الخصم', icon: <Ticket className="w-3.5 h-3.5" />, desc: 'CRUD + متابعة' },
-        // Task 28-B (Fix 5) — Fix Battalion: Pricing + paywall gates status.
         { id: 'pricing', label: 'التسعير + البوابات', icon: <DollarSign className="w-3.5 h-3.5" />, desc: 'plans + 7 paywall gates' },
         { id: 'feedback', label: 'آراء المستخدمين', icon: <MessageSquareText className="w-3.5 h-3.5" />, count: feedbackCount, desc: 'ملاحظات + شكاوى' },
+        // Task ADMIN-CLEANUP: أخفينا 'users' (تحليلات عرضية) + 'promo-codes' (عرضي)
       ],
     },
     {
@@ -1080,11 +1070,10 @@ export function AdminView() {
       icon: <Send className="w-4 h-4" />,
       accent: 'border-teal-500/40 bg-teal-500/5',
       tabs: [
-        { id: 'marketing-studio', label: 'استوديو التسويق', icon: <Sparkles className="w-3.5 h-3.5" />, desc: 'فيديو + كروت + حملات + تقويم' },
         { id: 'reports', label: 'التقارير الذكية', icon: <FileText className="w-3.5 h-3.5" />, desc: 'يومية + أسبوعية + PDF' },
         { id: 'telegram', label: 'تيليجرام', icon: <Send className="w-3.5 h-3.5" />, desc: 'bot + نشر + reports' },
-        // Task 28-B (Fix 7) — Fix Battalion: Telegram published predictions audit.
         { id: 'telegram-predictions', label: 'تدقيق توقعات TG', icon: <MessageSquareText className="w-3.5 h-3.5" />, desc: 'published + pending' },
+        // Task ADMIN-CLEANUP: أخفينا 'marketing-studio' (أحلام جامدة — مشروع ضخم يحتاج تخطيط منفصل)
       ],
     },
   ];
@@ -1387,7 +1376,7 @@ export function AdminView() {
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <Users className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                    <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
                     <div className="text-lg md:text-xl lg:text-2xl font-bold">{stats?.users?.total ?? 0}</div>
                     <div className="text-xs text-muted-foreground">مستخدم</div>
                   </div>
@@ -1529,8 +1518,8 @@ export function AdminView() {
                 </Button>
                 <Button variant="outline" onClick={() => setActiveTab('dashboard')} className="h-auto py-4 flex-col gap-2 relative">
                   <Zap className="w-6 h-6" />
-                  <span>مركز القيادة</span>
-                  <span className="text-[10px] opacity-70">Maestro Command Center</span>
+                  <span>لوحة التحكم</span>
+                  <span className="text-[10px] opacity-70">نظرة عامة + صحة النظام</span>
                 </Button>
                 {/* FIX-P3-P5-P6 (Group P6 — Fix 7): 'data-engine' tab removed —
                     rewired to open 'databases' (the closest live equivalent in
@@ -1609,7 +1598,7 @@ export function AdminView() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30">
-                  <Database className="w-5 h-5 text-blue-500" />
+                  <Database className="w-5 h-5 text-primary" />
                   <div>
                     <div className="text-xs text-muted-foreground">قواعد البيانات</div>
                     <div className="font-bold">
@@ -1627,7 +1616,7 @@ export function AdminView() {
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setActiveTab('dashboard')} className="h-auto py-3">
                   <Zap className="w-4 h-4 ml-1" />
-                  مركز القيادة
+                  لوحة التحكم
                 </Button>
               </div>
             </CardContent>

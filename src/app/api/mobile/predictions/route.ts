@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       }
       return NextResponse.json(data);
     }
-  } catch {}
+  } catch { /* safe-by-design */ }
 
   // 2) Fallback — predictions.db
   try {

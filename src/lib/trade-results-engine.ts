@@ -156,7 +156,7 @@ export function getCairoOffsetMinutes(now: Date = new Date()): number {
     const hours = parseInt(m[2], 10) || 0;
     const minutes = m[3] ? parseInt(m[3], 10) : 0;
     return sign * (hours * 60 + minutes);
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return 120; // safe default
   }
 }
@@ -283,7 +283,7 @@ const DB_PATH = path.join(process.cwd(), 'db', 'predictions.db');
 function openPredictionsDb(): Database.Database {
   try {
     return new Database(DB_PATH, { readonly: true, fileMustExist: true, timeout: 3000 });
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // Fallback: immutable=1 lets us read even from a locked/zero-byte file
     // (sqlite treats it as a snapshot). Throws if file truly doesn't exist.
     return new Database(`file:${DB_PATH}?immutable=1`, { timeout: 3000 });

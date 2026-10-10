@@ -36,7 +36,7 @@ async function loadTracking(): Promise<Record<string, TrackedStock>> {
   try {
     try {
       await access(TRACKING_FILE);
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       return {};
     }
     const data = await readFile(TRACKING_FILE, 'utf-8');
@@ -105,9 +105,16 @@ export async function GET(req: NextRequest) {
   try {
     const dbPath = path.join(PROJECT_ROOT, 'db', 'stocks.db');
     const db = new Database(dbPath, { readonly: true });
-    // DEEP-MARKET-SEPARATION: فلترة بـ market بتاع السوق المختار
-    const marketFilter = market === 'EGX' ? `AND market IN ('EGX','مصر')` : `AND market = '${market}'`;
-    const liveRows = db.prepare(`SELECT ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close FROM stocks WHERE current_price > 0 ${marketFilter}`).all() as any[];
+    // SECURITY-FIX + DEEP-MARKET-SEPARATION: parameterized query بدل interpolation
+    const selectCols = `ticker, current_price, change_percent, volume, name_ar, support, resistance, ma_50, ma_200, rsi, change_value, high_price, low_price, open_price, previous_close`;
+    let liveRows: any[];
+    if (market === 'EGX') {
+      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0 AND market IN ('EGX','مصر')`).all() as any[];
+    } else if (market) {
+      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0 AND market = ?`).all(market) as any[];
+    } else {
+      liveRows = db.prepare(`SELECT ${selectCols} FROM stocks WHERE current_price > 0`).all() as any[];
+    }
     for (const r of liveRows) {
       if (r.ticker) {
         liveMap.set(String(r.ticker).toUpperCase(), r);

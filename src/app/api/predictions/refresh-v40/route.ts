@@ -32,7 +32,7 @@ const V40_MUTEX_TTL_MS = 10 * 60 * 1000; // 10 min — V40.2 can be slow on big 
 
 // P0-14-ASYNC fix (2026-09-27): async helper to check file existence.
 async function pathExists(p: string): Promise<boolean> {
-  try { await access(p); return true; } catch { return false; }
+  try { await access(p); return true; } catch { /* safe-by-design */ return false; }
 }
 
 /**
@@ -98,7 +98,7 @@ async function readStatus(): Promise<V40Status> {
     if (!(await pathExists(STATUS_FILE))) return def;
     const raw = await readFile(STATUS_FILE, 'utf-8');
     return { ...def, ...JSON.parse(raw) };
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return def;
   }
 }
@@ -112,7 +112,7 @@ async function writeStatus(s: Partial<V40Status>): Promise<void> {
     }
     const cur = await readStatus();
     await writeFile(STATUS_FILE, JSON.stringify({ ...cur, ...s }, null, 2));
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     // silent
   }
 }
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
     child.stderr?.on('data', (chunk) => { stderr += chunk.toString(); });
 
     const timer = setTimeout(() => {
-      try { child.kill('SIGKILL'); } catch {}
+      try { child.kill('SIGKILL'); } catch { /* safe-by-design */ }
       v40InMemory = false;
       // P0-14-ASYNC fix (2026-09-27): readStatus/writeStatus are now async; use
       // an async IIFE to await them inside the setTimeout callback.

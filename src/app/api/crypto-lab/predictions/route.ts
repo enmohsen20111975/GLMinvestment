@@ -59,7 +59,7 @@ function resolveDbPath(): string | null {
   for (const c of candidates) {
     try {
       if (fs.existsSync(c)) return c;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       /* ignore */
     }
   }
@@ -73,7 +73,7 @@ function safeParseAnalysis(raw: string | null): Record<string, unknown> | null {
     return parsed && typeof parsed === 'object'
       ? (parsed as Record<string, unknown>)
       : null;
-  } catch {
+  } catch { // silent fallback (safe-by-design)
     return null;
   }
 }
@@ -105,7 +105,7 @@ export async function GET() {
         )
         .get() as { name: string } | undefined;
       tableExists = !!row;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       tableExists = false;
     }
 

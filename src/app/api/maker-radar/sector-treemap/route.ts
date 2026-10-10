@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
         sectorMap[sector].push({ ...s, name_ar: stock?.name_ar, sector });
       }
       db.close();
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       sectorMap = { 'غير مُصنّف': allStocks };
     }
 

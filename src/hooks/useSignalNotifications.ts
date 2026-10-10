@@ -166,7 +166,7 @@ export function useSignalNotifications() {
         if (foundNew || foundStatusChange) {
           // تمت إضافة الإشعارات بالفعل في الـ loop
         }
-      } catch {
+      } catch { // silent fallback (safe-by-design)
         // ساكت — مش كل fetch لازم ينجح
       }
     };

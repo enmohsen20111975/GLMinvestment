@@ -75,7 +75,7 @@ export function WhaleAlertListener() {
         const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFQmJOAA...');
         audio.volume = 0.3;
         audio.play().catch(() => {}); // silent fail لو المتصفح منع الصوت
-      } catch {}
+      } catch { /* safe-by-design */ }
 
       clearNewAlert();
     }

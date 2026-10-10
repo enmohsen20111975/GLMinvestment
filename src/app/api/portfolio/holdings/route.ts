@@ -33,7 +33,7 @@ const fs = require('fs');
 const path = require('path');
 
 function dbExists(p: string): boolean {
-  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { return false; }
+  try { return fs.existsSync(p) && fs.statSync(p).size > 0; } catch { /* safe-by-design */ return false; }
 }
 
 async function tryPythonHoldings(userId: string | undefined): Promise<any | null> {
@@ -47,7 +47,7 @@ async function tryPythonHoldings(userId: string | undefined): Promise<any | null
     const data = await res.json();
     if (Array.isArray(data.holdings) && data.holdings.length > 0) return data;
     return null;
-  } catch { return null; }
+  } catch { /* safe-by-design */ return null; }
 }
 
 function fetchGoldPrices(): { '24k': number; '21k': number; '18k': number } {
@@ -61,7 +61,7 @@ function fetchGoldPrices(): { '24k': number; '21k': number; '18k': number } {
         '18k': live['18k'] || fallback['18k'],
       };
     }
-  } catch { /* ignore */ }
+  } catch { /* ignore - safe-by-design */ }
   return fallback;
 }
 
@@ -71,7 +71,7 @@ function fetchUsdRate(db: any): number {
       "SELECT rate FROM exchange_rates WHERE currency_from = 'USD' ORDER BY id DESC LIMIT 1"
     ).get() as any;
     if (row && Number(row.rate) > 0) return Number(row.rate);
-  } catch { /* ignore */ }
+  } catch { /* ignore - safe-by-design */ }
   return 48.5;
 }
 
@@ -100,7 +100,7 @@ async function fetchCryptoPrices(): Promise<Record<string, number>> {
       _cryptoCache = { ts: now, prices };
       return prices;
     }
-  } catch { /* keep stale */ }
+  } catch { /* keep stale - safe-by-design */ }
   return _cryptoCache.prices;
 }
 
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       try {
         const session = await getSessionUserId();
         userId = session.userId || undefined;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
     }
     if (!userId) {
       return NextResponse.json(
@@ -176,7 +176,7 @@ export async function GET(req: NextRequest) {
             else if (Number(stockRow.previous_close) > 0) livePrice = Number(stockRow.previous_close);
             if (!name) name = stockRow.name_ar || stockRow.name || ticker;
           }
-        } catch { /* ignore */ }
+        } catch { /* ignore - safe-by-design */ }
 
         if (livePrice <= 0) {
           try {
@@ -184,14 +184,14 @@ export async function GET(req: NextRequest) {
               "SELECT close_price FROM stock_price_history WHERE stock_id = (SELECT id FROM stocks WHERE ticker = ? COLLATE NOCASE LIMIT 1) ORDER BY date DESC LIMIT 1"
             ).get(ticker) as any;
             if (histRow && Number(histRow.close_price) > 0) livePrice = Number(histRow.close_price);
-          } catch { /* ignore */ }
+          } catch { /* ignore - safe-by-design */ }
         }
 
         if (livePrice <= 0) {
           try {
             const cleanClose = await getLastCleanClose(ticker);
             if (cleanClose.price > 0) livePrice = cleanClose.price;
-          } catch { /* ignore */ }
+          } catch { /* ignore - safe-by-design */ }
         }
 
         if (livePrice <= 0 && avgBuy > 0) livePrice = avgBuy;
@@ -254,7 +254,7 @@ export async function GET(req: NextRequest) {
           const added = new Date(String(asset.added_at).replace(' ', 'T'));
           holdingDays = Math.max(0, Math.floor((Date.now() - added.getTime()) / 86400000));
         }
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
 
       let subPortfolioName = 'المحفظة الافتراضية';
       try {
@@ -264,7 +264,7 @@ export async function GET(req: NextRequest) {
           ).get(asset.portfolio_id, String(asset.portfolio_id)) as any;
           if (sp?.name) subPortfolioName = sp.name;
         }
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
 
       let inWatchlist = false;
       try {
@@ -272,7 +272,7 @@ export async function GET(req: NextRequest) {
           "SELECT 1 FROM user_stock_watchlists w JOIN stocks s ON w.stock_id = s.id WHERE w.user_id = ? AND s.ticker = ? COLLATE NOCASE LIMIT 1"
         ).get(userId, ticker) as any;
         inWatchlist = !!wl;
-      } catch { /* ignore */ }
+      } catch { /* ignore - safe-by-design */ }
 
       totalInvested += invested;
       totalCurrent += current;

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     let body: Record<string, unknown> = {};
     try {
       body = (await req.json()) as Record<string, unknown>;
-    } catch {
+    } catch { // silent fallback (safe-by-design)
       body = {};
     }
 

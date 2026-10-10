@@ -618,7 +618,7 @@ export function UnifiedPublishButton({
               تليجرام
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleFacebook} className="gap-2 text-xs cursor-pointer">
-              <Facebook className="w-3.5 h-3.5 text-blue-600" />
+              <Facebook className="w-3.5 h-3.5 text-primary" />
               فيسبوك
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleWhatsApp} className="gap-2 text-xs cursor-pointer">
@@ -708,7 +708,7 @@ export function UnifiedPublishButton({
           تليجرام
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleFacebook} className="gap-2 text-xs cursor-pointer">
-          <Facebook className="w-3.5 h-3.5 text-blue-600" />
+          <Facebook className="w-3.5 h-3.5 text-primary" />
           فيسبوك
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleWhatsApp} className="gap-2 text-xs cursor-pointer">
