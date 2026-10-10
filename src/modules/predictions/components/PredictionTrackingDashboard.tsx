@@ -730,7 +730,19 @@ export function PredictionTrackingDashboard({
   // في الجدول. قبل كده كان الرسم بـ uses allRawPredictions من غير فلتر → لما
   // المستخدم بيغير الفترة الزمنية، الجدول كان بيتحرك بس الرسم بيفضل ثابت.
   // دلوقتي الرسم بـ يتحدث مع تغيير الفترة.
-  const cumulativeProfitData = useMemo<{ date: string; label: string; cumulative: number; trade: number; ticker: string }[]>(() => {
+  // ─── CHART-DAILY-FIX (2026-10-10): نبض الأداء والعوائد اليومية ───
+  // سيدي طلب: استبدال شارت الأرباح التراكمية بنظام "الأداء والنبض اليومي المستقل"
+  // قبل كده: cumulative sum = انطباع خاطئ إن المنصة كانت بتخسر في الأول
+  // دلوقتي: تجميع يومي (Daily PnL) — كل يوم مستقل بأرباحه الحقيقية.
+  const dailyPerformanceData = useMemo<{
+    date: string;
+    label: string;
+    netReturnPct: number;
+    winCount: number;
+    lossCount: number;
+    totalTrades: number;
+    tickers: string[];
+  }[]>(() => {
     // احسب حد تاريخ الدخول للفلتر الزمني (نفس منطق filteredPredictions)
     let entryCutoff: number | null = null;
     if (entryPeriod !== 'all') {
@@ -738,36 +750,75 @@ export function PredictionTrackingDashboard({
       entryCutoff = Date.now() - d * 86400000;
     }
 
-    // PERSONA-DEDUP + Rule 7: الرسم التراكمي يستخدم الأسهم المخصّصة (ticker-level) + HARD cap 50%.
+    // PERSONA-DEDUP + Rule 7: نفس الفلاتر + HARD cap 50%.
     const closed = aggregateByTicker
       .filter((p) => p.outcome === 'WIN' || p.outcome === 'LOSS')
       .filter((p) => p.closedAt && p.returnPct != null)
       .filter((p) => Math.abs(Number(p.returnPct || 0)) <= 50)
-      // 🔥 VERIFY-FIX-5: فلتر entryPeriod — نفس اللي الجدول بـ يستخدمه
       .filter((p) => {
         if (entryCutoff === null || !p.entryDate) return true;
         const t = new Date(String(p.entryDate).replace(' ', 'T')).getTime();
-        if (isNaN(t)) return true; // لو التاريخ مش مفهوم، خليه (better to show than hide)
+        if (isNaN(t)) return true;
         return t >= entryCutoff;
       })
       .map((p) => ({
         ticker: p.ticker,
-        closedAt: p.closedAt as string,
+        closedAt: String(p.closedAt).slice(0, 10), // YYYY-MM-DD
         returnPct: Number(p.returnPct),
-      }))
-      .sort((a, b) => String(a.closedAt).localeCompare(String(b.closedAt)));
-    let cum = 0;
-    return closed.map((c, i) => {
-      cum += c.returnPct;
-      return {
-        date: String(c.closedAt).slice(0, 10),
-        label: `${String(c.closedAt).slice(5, 10)} · ${c.ticker}`,
-        cumulative: Math.round(cum * 100) / 100,
-        trade: Math.round(c.returnPct * 100) / 100,
+      }));
+
+    // تجميع حسب اليوم
+    const dayMap = new Map<string, { returnPct: number; ticker: string; isWin: boolean }[]>();
+    for (const c of closed) {
+      if (!dayMap.has(c.closedAt)) dayMap.set(c.closedAt, []);
+      dayMap.get(c.closedAt)!.push({
+        returnPct: c.returnPct,
         ticker: c.ticker,
-      };
-    });
-  }, [qualityFilteredPredictions, entryPeriod]);
+        isWin: c.returnPct >= 0,
+      });
+    }
+
+    // تحويل لـ array مرتب حسب التاريخ
+    return Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, trades]) => {
+        const netReturnPct = trades.reduce((sum, t) => sum + t.returnPct, 0);
+        const winCount = trades.filter((t) => t.isWin).length;
+        const lossCount = trades.length - winCount;
+        // tickers مع العائد لعرضها في الـ Tooltip
+        const tickers = trades.map((t) => `${t.ticker} (${t.returnPct >= 0 ? '+' : ''}${t.returnPct.toFixed(1)}%)`);
+        // label: DD/MM
+        const label = `${date.slice(8, 10)}/${date.slice(5, 7)}`;
+        return {
+          date,
+          label,
+          netReturnPct: Math.round(netReturnPct * 100) / 100,
+          winCount,
+          lossCount,
+          totalTrades: trades.length,
+          tickers: tickers.slice(0, 10), // limit to 10 for tooltip readability
+        };
+      });
+  }, [aggregateByTicker, entryPeriod]);
+
+  // CHART-DAILY-FIX: إحصائيات يومية (KPIs)
+  const dailyKPIs = useMemo(() => {
+    if (dailyPerformanceData.length === 0) {
+      return { bestDay: null, worstDay: null, greenDaysPct: 0, avgTradesPerDay: 0, totalDays: 0 };
+    }
+    const sorted = [...dailyPerformanceData].sort((a, b) => b.netReturnPct - a.netReturnPct);
+    const bestDay = sorted[0];
+    const worstDay = sorted[sorted.length - 1];
+    const greenDays = dailyPerformanceData.filter((d) => d.netReturnPct >= 0).length;
+    const totalTrades = dailyPerformanceData.reduce((sum, d) => sum + d.totalTrades, 0);
+    return {
+      bestDay,
+      worstDay,
+      greenDaysPct: Math.round((greenDays / dailyPerformanceData.length) * 100),
+      avgTradesPerDay: Math.round((totalTrades / dailyPerformanceData.length) * 10) / 10,
+      totalDays: dailyPerformanceData.length,
+    };
+  }, [dailyPerformanceData]);
 
   // RL-FIX-13: Computed Persona Stats — من التوقعات المفلترة بالجودة (مش من backend stats)
   const activeStats = useMemo<PersonaStats>(() => {
@@ -1500,50 +1551,116 @@ export function PredictionTrackingDashboard({
         </Card>
       )}
 
-      {/* ─── P0-v17: Cumulative Profit Movement Chart ─── */}
-      {cumulativeProfitData.length > 0 && (
+      {/* ─── CHART-DAILY-FIX (2026-10-10): نبض الأداء والعوائد اليومية ─── */}
+      {/* سيدي طلب: استبدال شارت الأرباح التراكمية بنظام "الأداء اليومي المستقل" */}
+      {dailyPerformanceData.length > 0 && (
         <Card className="border border-border/80 shadow-md rounded-2xl overflow-hidden bg-card">
           <CardHeader className="p-4 border-b border-border/60">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <CalendarClock className="w-5 h-5 text-emerald-500" />
-                <CardTitle className="text-base font-black">حركة الأرباح التراكمية عبر الزمن</CardTitle>
-              </div>
-              <div className="flex items-center gap-3 text-xs">
-                <span className="text-muted-foreground">إجمالي الصفقات المقفولة:</span>
+                <CardTitle className="text-base font-black">نبض الأداء والعوائد اليومية للصفقات</CardTitle>
                 <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono font-black">
-                  {cumulativeProfitData.length} صفقة
-                </Badge>
-                <Badge className={cn(
-                  'font-mono font-black',
-                  cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                    : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                )}>
-                  تراكمي: {cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative >= 0 ? '+' : ''}{(cumulativeProfitData[cumulativeProfitData.length - 1]?.cumulative ?? 0).toFixed(2)}%
+                  {dailyKPIs.totalDays} يوم
                 </Badge>
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1">
-              الرسم بيوضح تراكم العائد % مع كل صفقة مقفولة (مرتبة حسب تاريخ التنفيذ). بـ يساعدك تشوف اتجاه الأرباح على المنصة عبر الفترات الزمنية.
+              كل يوم مستقل بأرباحه الحقيقية — بدون تراكم مضلل. شوف أعلى يوم تداول وأقل يوم ونسبة الأيام الرابحة.
             </p>
           </CardHeader>
-          <CardContent className="p-2 md:p-4">
+          <CardContent className="p-2 md:p-4 space-y-3">
+            {/* ─── CHART-DAILY-FIX: شريط المؤشرات اليومية (KPI Strip) ─── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {/* 🌟 أفضل يوم تداول */}
+              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                <div className="text-[9px] text-muted-foreground font-bold">🌟 أفضل يوم تداول</div>
+                {dailyKPIs.bestDay && (
+                  <>
+                    <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                      +{dailyKPIs.bestDay.netReturnPct.toFixed(1)}%
+                    </div>
+                    <div className="text-[9px] text-muted-foreground">
+                      {dailyKPIs.bestDay.label} · {dailyKPIs.bestDay.winCount} صفقة ناجحة
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* 🛡️ أقصى تراجع يومي */}
+              <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30">
+                <div className="text-[9px] text-muted-foreground font-bold">🛡️ أقصى تراجع يومي</div>
+                {dailyKPIs.worstDay && (
+                  <>
+                    <div className="text-sm font-black text-rose-600 dark:text-rose-400 font-mono">
+                      {dailyKPIs.worstDay.netReturnPct.toFixed(1)}%
+                    </div>
+                    <div className="text-[9px] text-muted-foreground">
+                      {dailyKPIs.worstDay.label} · {dailyKPIs.worstDay.lossCount} خاسرة
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* 📈 نسبة الأيام الخضراء */}
+              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                <div className="text-[9px] text-muted-foreground font-bold">📈 نسبة الأيام الرابحة</div>
+                <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                  {dailyKPIs.greenDaysPct}%
+                </div>
+                <div className="text-[9px] text-muted-foreground">من {dailyKPIs.totalDays} يوم تداول</div>
+              </div>
+              {/* 🎯 متوسط صفقات اليوم */}
+              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="text-[9px] text-muted-foreground font-bold">🎯 متوسط صفقات اليوم</div>
+                <div className="text-sm font-black text-amber-600 dark:text-amber-400 font-mono">
+                  {dailyKPIs.avgTradesPerDay}
+                </div>
+                <div className="text-[9px] text-muted-foreground">صفقة / يوم</div>
+              </div>
+            </div>
+
+            {/* ─── CHART-DAILY-FIX: شارت الأعمدة اليومية (Daily PnL Bar Chart) ─── */}
             <div className="h-56 md:h-64 w-full dir-ltr">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cumulativeProfitData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                <BarChart data={dailyPerformanceData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} interval="preserveStartEnd" minTickGap={20} angle={-20} textAnchor="end" height={48} />
                   <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={48} tickFormatter={(v) => `${v}%`} />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" opacity={0.5} />
                   <Tooltip
-                    contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 10, fontSize: 11, direction: 'ltr' }}
-                    labelStyle={{ fontWeight: 700, marginBottom: 4 }}
-                    formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name === 'cumulative' ? 'التراكمي' : 'الصفقة']}
+                    content={({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { date?: string; netReturnPct?: number; winCount?: number; lossCount?: number; totalTrades?: number; tickers?: string[] } }> }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0]?.payload;
+                      if (!d) return null;
+                      const isWin = (d.netReturnPct ?? 0) >= 0;
+                      // تاريخ كامل عربي
+                      const dateObj = d.date ? new Date(d.date) : null;
+                      const dateAr = dateObj ? dateObj.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' }) : (d.date || '—');
+                      return (
+                        <div className="bg-card border border-border rounded-lg p-2 shadow-lg text-xs space-y-1 max-w-[260px]" dir="rtl">
+                          <div className="font-bold text-foreground">📅 {dateAr}</div>
+                          <div className={cn('font-black font-mono', isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                            💰 صافي ربح اليوم: {isWin ? '+' : ''}{(d.netReturnPct ?? 0).toFixed(2)}%
+                          </div>
+                          <div className="text-muted-foreground">
+                            🔢 {d.winCount ?? 0} صفقة ناجحة / {d.lossCount ?? 0} خاسرة
+                          </div>
+                          {d.tickers && d.tickers.length > 0 && (
+                            <div className="text-[10px] text-muted-foreground border-t border-border pt-1">
+                              📋 الأسهم المغلقة:
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {d.tickers.map((t, i) => (
+                                  <span key={i} className="px-1 py-0.5 rounded bg-muted/60 font-mono text-[9px]">{t}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }}
                   />
-                  <Bar dataKey="cumulative" name="cumulative" radius={[4, 4, 0, 0]}>
-                    {cumulativeProfitData.map((entry, idx) => (
-                      <RechartsCell key={`cell-${idx}`} fill={entry.cumulative >= 0 ? '#10b981' : '#f43f5e'} />
+                  <Bar dataKey="netReturnPct" name="netReturnPct" radius={[4, 4, 0, 0]}>
+                    {dailyPerformanceData.map((entry, idx) => (
+                      <RechartsCell key={`cell-${idx}`} fill={entry.netReturnPct >= 0 ? '#10b981' : '#f43f5e'} />
                     ))}
                   </Bar>
                 </BarChart>

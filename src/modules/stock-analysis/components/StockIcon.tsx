@@ -5,10 +5,32 @@ import { cn } from '@/lib/utils';
 import { getStockIconUrl, getSectorIcon, STOCK_ICON_SIZES, type StockIconProps } from '@/lib/stock-icon';
 
 /**
+ * NewStockBadge — شارة "جديد" صغيرة فوق الأيقونة للأسهم الجديدة.
+ * NEW-STOCK-DETECTION (2026-10-10): سيدي طلب تمييز الأسهم الجديدة.
+ * بتظهر لو isNew=true (محسوب من created_at/listing_date في isNewStock() helper).
+ */
+function NewStockBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const badgeSize = size === 'sm' ? 'w-3 h-3 text-[7px]' : size === 'lg' ? 'w-5 h-5 text-[9px]' : 'w-4 h-4 text-[8px]';
+  return (
+    <span
+      className={cn(
+        'absolute -top-1 -right-1 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-bold flex items-center justify-center shadow-lg ring-1 ring-white/60 z-10',
+        badgeSize
+      )}
+      title="سهم جديد — لسة داخل البورصة"
+    >
+      ★
+    </span>
+  );
+}
+
+/**
  * StockIcon Component
  * 
  * Displays a stock icon from logoUrl (database TradingView URL) or /stock-icons/{ticker}.svg
  * Falls back to an elegant 2-letter avatar badge with sector indicator
+ *
+ * NEW-STOCK-DETECTION (2026-10-10): لو isNew=true → بعرض شارة "جديد" فوق الأيقونة.
  */
 export function StockIcon({ 
   ticker, 
@@ -16,7 +38,8 @@ export function StockIcon({
   sector, 
   logoUrl,
   size = 'md', 
-  className 
+  className,
+  isNew = false,
 }: StockIconProps) {
   const [imageError, setImageError] = useState(false);
   const iconUrl = (!imageError && (logoUrl || getStockIconUrl(ticker))) || null;
@@ -28,13 +51,14 @@ export function StockIcon({
     return (
       <div 
         className={cn(
-          'flex items-center justify-center rounded-lg bg-muted/60 font-bold text-foreground border border-border/40 flex-shrink-0 text-xs',
+          'relative flex items-center justify-center rounded-lg bg-muted/60 font-bold text-foreground border border-border/40 flex-shrink-0 text-xs',
           sizeClass,
           className
         )}
-        title={name ? `${cleanTicker} - ${name}` : cleanTicker}
+        title={name ? `${cleanTicker} - ${name}${isNew ? ' (سهم جديد)' : ''}` : cleanTicker}
       >
         <span>{cleanTicker.slice(0, 2) || fallbackEmoji}</span>
+        {isNew && <NewStockBadge size={size} />}
       </div>
     );
   }
@@ -46,7 +70,7 @@ export function StockIcon({
         sizeClass,
         className
       )}
-      title={name ? `${cleanTicker} - ${name}` : cleanTicker}
+      title={name ? `${cleanTicker} - ${name}${isNew ? ' (سهم جديد)' : ''}` : cleanTicker}
     >
       <img
         src={iconUrl}
@@ -54,6 +78,7 @@ export function StockIcon({
         className="w-full h-full object-contain p-0.5 rounded-lg"
         onError={() => setImageError(true)}
       />
+      {isNew && <NewStockBadge size={size} />}
     </div>
   );
 }

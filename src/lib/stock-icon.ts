@@ -99,6 +99,8 @@ export interface StockIconProps {
   logoUrl?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  /** NEW-STOCK-DETECTION (2026-10-10): لو true → بعرض شارة "جديد" فوق الأيقونة. */
+  isNew?: boolean;
 }
 
 /**

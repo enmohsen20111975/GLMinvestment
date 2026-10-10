@@ -96,6 +96,38 @@ export interface Stock extends StockMini {
   // ─── 52-Week Range (Single Source of Truth) ───
   high_52w?: number | null;
   low_52w?: number | null;
+  // ─── NEW-STOCK-DETECTION (2026-10-10): تاريخ إدراج السهم في البورصة ───
+  // سيدي طلب: تمييز الأسهم الجديدة/اللي لسة داخلة البورصة.
+  // created_at = تاريخ إضافة السهم للـ DB (ممكن يكون تاريخ الإدراج الفعلي لو الـ scraper بيسجّله).
+  // isNew = محسوب من created_at (لو أقل من NEW_STOCK_THRESHOLD_DAYS = 90 يوم).
+  created_at?: string;
+  listing_date?: string;  // تاريخ الإدراج الفعلي في البورصة (لو متاح)
+}
+
+/**
+ * NEW-STOCK-DETECTION (2026-10-10):
+ * عدد الأيام اللي السهم بيتعتبر "جديد" خلالها (90 يوم = 3 شهور).
+ * قابل للتعديل من مكان واحد.
+ */
+export const NEW_STOCK_THRESHOLD_DAYS = 90;
+
+/**
+ * isNewStock — بيرجّع true لو السهم جديد (أقل من NEW_STOCK_THRESHOLD_DAYS يوم).
+ * @param stock - السهم اللي بنفحصه
+ * @returns true لو السهم جديد
+ *
+ * بيستخدم listing_date لو موجود، غير كده created_at، غير كده false (مش fabrication).
+ */
+export function isNewStock(stock: { created_at?: string; listing_date?: string } | null | undefined): boolean {
+  if (!stock) return false;
+  // listing_date (تاريخ الإدراج الفعلي) أولوية
+  const dateStr = stock.listing_date || stock.created_at;
+  if (!dateStr) return false;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return false;
+  const ageMs = Date.now() - date.getTime();
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  return ageDays >= 0 && ageDays <= NEW_STOCK_THRESHOLD_DAYS;
 }
 
 export interface StockListResponse {
