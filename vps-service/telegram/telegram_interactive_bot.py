@@ -928,12 +928,18 @@ def send_stock_analysis_response(
     radar = get_stock_radar_status(stock['symbol'], current_price=stock.get('price', 0.0))
     msg, kb = build_stock_card(stock, radar, sub=sub, remaining_queries=remaining_queries)
 
-    # 1. إشعار فوري بأن الشارت جاري رسمه
-    wait_msg = send_message(chat_id, f"⏳ جاري رسم شارت <b>{stock['symbol']}</b> وفحص مستويات الميكرز...", reply_markup=None)
+    # CHART-FIX-v6 (2026-10-10): ابعت التحليل النصي أولاً (سريع) ثم الصورة (بطيء)
+    # قبل كده: كان بيرسم الشارت الأول (12 ثانية) والمستخدم بيبقى مستني
+    # دلوقتي: بيبعت التحليل فوراً → ثم يرسم ويبعت الصورة في الخلفية
+
+    # 1. ابعت التحليل النصي فوراً (مع الأزرار التفاعلية)
+    send_message(chat_id, msg, reply_markup=kb)
+
+    # 2. رسالة قصيرة "جاري الرسم"
+    wait_msg = send_message(chat_id, f"🎨 جاري رسم شارت <b>{stock['symbol']}</b>...", reply_markup=None)
     wait_msg_id = wait_msg.get('result', {}).get('message_id') if wait_msg else None
 
-    # 2. رسم الشارت فائق الدقة
-    photo_sent = False
+    # 3. رسم + إرسال الشارت في الخلفية
     try:
         try:
             from telegram_chart_generator import generate_stock_chart_image
@@ -941,33 +947,20 @@ def send_stock_analysis_response(
             from telegram.telegram_chart_generator import generate_stock_chart_image
         chart_path = asyncio.run(generate_stock_chart_image(stock['symbol']))
         if chart_path and Path(chart_path).exists():
-            # CHART-FIX: الصورة بتبعت بدون reply_markup — الأزرار هتبقى مع الرسالة النصية
             r = send_photo(chat_id, Path(chart_path), msg, reply_markup=None)
-            if r and r.get('ok'):
-                photo_sent = True
-            else:
+            if not r or not r.get('ok'):
                 log.warning(f"فشل إرسال الصورة: {r}")
         else:
             log.warning(f"الشارت مش موجود: {chart_path}")
     except Exception as e:
         log.warning(f"تعذر رسم شارت {stock['symbol']}: {e}")
 
-    # 3. مسح رسالة الانتظار
+    # 4. مسح رسالة "جاري الرسم"
     if wait_msg_id:
         try:
             requests.post(f"{TELEGRAM_API}/deleteMessage", json={"chat_id": chat_id, "message_id": wait_msg_id}, timeout=5)
         except Exception:
             pass
-
-    # 4. CHART-FIX (2026-10-10):
-    # لو الصورة ات send → ابعت التحليل الكامل كرسالة منفصلة (text message)
-    # لو الصورة فشلت → ابعت التحليل كنص أنيق (الـ flow القديم)
-    if photo_sent:
-        # الصورة اتبعتت بنجاح → ابعت التحليل الكامل كرسالة نصية منفصلة
-        send_message(chat_id, msg, reply_markup=kb)
-    else:
-        # الصورة فشلت → ابعت التحليل كنص أنيق فقط
-        send_message(chat_id, msg, reply_markup=kb)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # معالجة الأوامر والقوائم التفاعلية
