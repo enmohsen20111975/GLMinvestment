@@ -218,6 +218,8 @@ export async function POST(req: NextRequest) {
             : null,
         currency: (body.currency as string) || 'EGP',
         notes: (body.notes as string) || null,
+        // FIX (FLUTTER-PROD-4): explicit updated_at (لو الـ DB schema قديم ومفيهوش @updatedAt)
+        updated_at: new Date(),
       },
     });
 

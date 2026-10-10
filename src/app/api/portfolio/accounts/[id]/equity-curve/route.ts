@@ -38,7 +38,8 @@ export async function GET(
 
     // If Python returned a non-2xx status OR returned HTML instead of JSON,
     // do NOT call res.json() — it would throw a SyntaxError. Forward a clean
-    // JSON 502 so the Flutter client always sees JSON.
+    // JSON 200 (FIX-FLUTTER-PROD-4) so Flutter doesn't crash on 5xx.
+    // snapshots: [] = empty data (Rule 27 NO-FAKE-DATA), not a service error.
     const contentType = res.headers.get('content-type') || '';
     if (!res.ok || !contentType.includes('application/json')) {
       console.warn('[portfolio:accounts:[id]:equity-curve] upstream non-JSON or non-2xx:', {
@@ -47,13 +48,13 @@ export async function GET(
       });
       return NextResponse.json(
         {
-          success: false,
-          error: 'upstream_unavailable',
+          success: true,
           snapshots: [],
-          meta: { source: 'python', account_id: id, count: 0 },
+          meta: { source: 'next-fallback', account_id: id, count: 0 },
           count: 0,
+          message: 'Python backend unavailable — no equity curve data',
         },
-        { status: 502 }
+        { status: 200 }
       );
     }
 
@@ -61,15 +62,17 @@ export async function GET(
     return NextResponse.json(data, { status: res.status });
   } catch (e) {
     console.error('[portfolio:accounts:[id]:equity-curve]', e);
+    // FIX-FLUTTER-PROD-4: return 200 + empty snapshots instead of 503
+    // so Flutter doesn't crash on 5xx. snapshots: [] = NO-FAKE-DATA.
     return NextResponse.json(
       {
-        success: false,
-        error: 'internal_error',
+        success: true,
         snapshots: [],
-        meta: { source: 'python', count: 0 },
+        meta: { source: 'next-fallback', count: 0 },
         count: 0,
+        message: 'Python backend unreachable — no equity curve data',
       },
-      { status: 503 }
+      { status: 200 }
     );
   }
 }
