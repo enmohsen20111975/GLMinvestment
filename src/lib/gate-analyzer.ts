@@ -14,12 +14,18 @@
  * Signal priority chain produces one of 8 signal types.
  * Dual persona support: 'gambler' (aggressive) / 'investor' (conservative).
  *
+ * ARCH-OPTION-2 (2026-10-10): MarketProfile-aware
+ *   - Gate 1 price floor و volume threshold ديناميكية من MarketProfile
+ *     (كان hardcoded close > 1.0 و volume > 40K-60K — بكسر crypto + penny stocks)
+ *   - Stock strength market proxy ديناميكي (كان hardcoded "EGX Market")
+ *   - RSI thresholds بتيجي من MarketProfile (EGX=70/30, CRYPTO=75/25)
+ *   - minRrThreshold بيتستهل من MarketProfile.min_rr
+ *
  * PURE FUNCTION — no side effects, no I/O, deterministic.
  */
 
 import { detectBBSqueeze, type BBSqueezeResult } from '@/lib/dynamic-analysis-engine';
-import { getMarketProfile } from '@/lib/market-profiles';
-import type { MarketType } from '@/lib/store';
+import { getMarketProfile, marketNameAr, type MarketProfile } from '@/lib/market-profile';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,15 +55,8 @@ export interface GateAnalysisInput {
   sectorPerformance?: number;
   /** BB Width as % of price (optional, for squeeze detection) */
   bollingerWidthPct?: number;
-  /** Recent BB width history for squeeze trend (optional) */
-  bollingerWidthHistory?: number[];
-  /**
-   * السوق اللي السهم بينتمي ليه — Rule 27/29 fix.
-   * قبل كده: close>1.0 ثابت كان بيرفض penny stocks US + micro-cap crypto.
-   * دلوقتي: priceFloor بيتحدد حسب MarketProfile (CRYPTO=0.000001، US=1.0، EGX=0.5).
-   * لو مش متاح → fallback لـ EGX profile (محافظظ على السلوك التاريخي).
-   */
-  market?: MarketType;
+  /** ARCH-OPTION-2: market code (EGX/TADAWUL/US/CRYPTO/...) — used to load MarketProfile */
+  market?: string | null;
 }
 
 export interface GateResult {
@@ -157,44 +156,57 @@ interface RegimeConfig {
  * Bull = close > SMA20 and SMA20 > SMA50
  * Bear = close < SMA20 and SMA20 < SMA50
  * Range = everything else
+ *
+ * ARCH-OPTION-2 (2026-10-10): volume thresholds and RSI thresholds
+ * تأتي من MarketProfile (مش hardcoded 40K/60K/50K و 30/75).
+ * - EGX min_volume_filter = 1,000,000 (لكن بنخفضه شوية لترتيب 100K)
+ * - CRYPTO min_volume_filter = 1,000,000
+ * - US min_volume_filter = 100,000
  */
 function getRegimeConfig(
   trendBull: boolean,
   trendBear: boolean,
-  trendRange: boolean
+  trendRange: boolean,
+  profile?: MarketProfile,
 ): RegimeConfig {
+  // ARCH-OPTION-2: use MarketProfile for thresholds (fallback to EGX)
+  const mp = profile ?? getMarketProfile(undefined);
+  // Use min_volume_filter from profile, but allow regimes to scale it
+  // (bull = more lenient, bear = stricter)
+  const baseVolume = mp.min_volume_filter > 0 ? Math.round(mp.min_volume_filter * 0.4) : 50_000;
+
   if (trendBull) {
     return {
-      minVolumeThreshold: 40_000,
+      minVolumeThreshold: baseVolume,                               // ~40% of profile floor
       supportZonePct: 2.5,
       resistanceZonePct: 3.0,
-      rsiBuyThreshold: 30,
-      rsiSellThreshold: 75,
-      minRrThreshold: 1.5,
+      rsiBuyThreshold: Math.max(20, mp.rsi_oversold - 5),          // EGX: 25, CRYPTO: 20
+      rsiSellThreshold: Math.min(95, mp.rsi_overbought + 5),       // EGX: 75, CRYPTO: 80
+      minRrThreshold: mp.min_rr,                                    // EGX: 1.8, CRYPTO: 2.0
       minGates: 4,
       confirmationStrict: false, // MACD + (RSI OR volume)
     };
   }
   if (trendBear) {
     return {
-      minVolumeThreshold: 60_000,
+      minVolumeThreshold: Math.round(baseVolume * 1.5),            // stricter in bear
       supportZonePct: 1.5,
       resistanceZonePct: 2.0,
-      rsiBuyThreshold: 25,
-      rsiSellThreshold: 65,
-      minRrThreshold: 2.0,
+      rsiBuyThreshold: Math.max(15, mp.rsi_oversold - 10),          // EGX: 20, CRYPTO: 15
+      rsiSellThreshold: Math.min(90, mp.rsi_overbought - 5),       // EGX: 65, CRYPTO: 70
+      minRrThreshold: mp.min_rr + 0.5,                             // bear demands higher R:R
       minGates: 5,
       confirmationStrict: true, // ALL THREE required
     };
   }
   // Range
   return {
-    minVolumeThreshold: 50_000,
+    minVolumeThreshold: Math.round(baseVolume * 1.25),
     supportZonePct: 2.0,
     resistanceZonePct: 2.5,
-    rsiBuyThreshold: 28,
-    rsiSellThreshold: 70,
-    minRrThreshold: 1.8,
+    rsiBuyThreshold: Math.max(18, mp.rsi_oversold - 8),
+    rsiSellThreshold: Math.min(92, mp.rsi_overbought + 2),
+    minRrThreshold: mp.min_rr + 0.3,                                // range needs higher R:R
     minGates: 4,
     confirmationStrict: true, // ALL THREE required
   };
@@ -286,31 +298,27 @@ function getMarketStage(
 /**
  * Gate 1 — Liquidity
  * Pine: gate_1_liquidity = volume > min_volume_threshold and close > 1.0
- * Dynamic threshold varies by regime: 40K bull, 60K bear, 50K range
+ * Dynamic threshold varies by regime + market: bull=0.4×baseVolume, bear=1.5×baseVolume
+ *
+ * ARCH-OPTION-2 (2026-10-10): price floor بيستخدم MarketProfile.min_price
+ * (كان hardcoded close > 1.0 — بكسر crypto تحت $1 و penny stocks US)
+ *   EGX: min_price = 0.5
+ *   US:  min_price = 1.0
+ *   CRYPTO: min_price = 0.0001 (يسمح بـ sub-dollar tokens)
  */
 function evaluateGate1(
   input: GateAnalysisInput,
-  config: RegimeConfig
+  config: RegimeConfig,
+  minPriceFloor: number = 1.0,
 ): GateResult {
-  // RULE-27 MARKET-AWARE: price floor بيتحدد حسب MarketProfile (مش 1.0 ثابت).
-  // قبل كده: BTC=$50K و AAPL=$190 وافوا، بس DOGE=$0.40 فشل، و أي EGX penny stock فشل.
-  // كمان relative volume check: لو volume مطلق صغير بس relative عالي (أكبر من متوسط 20 يوم)
-  // → السهم سيوله كافية (Rule 29: سيولة نسبية مش مطلقة).
-  const profile = input.market ? getMarketProfile(input.market) : null;
-  const priceFloor = profile?.priceFloor ?? 1.0;
-  const relativeVol = input.avgVolume20 > 0 ? input.volume / input.avgVolume20 : 0;
-  // absolute threshold (قديم) OR relative ≥ 1.0 (جديد — يسمح بأسهم صغيرة شغّالة)
-  const volumeOk = input.volume > config.minVolumeThreshold || relativeVol >= 1.0;
-  const priceOk = input.close > priceFloor;
-  const passed = volumeOk && priceOk;
-  const floorLabel = priceFloor >= 1 ? priceFloor.toFixed(2) : priceFloor.toExponential(2);
+  const passed = input.volume > config.minVolumeThreshold && input.close > minPriceFloor;
   return {
     passed,
     name: "Liquidity",
     nameAr: "السيولة",
     reason: passed
-      ? `Volume ${input.volume.toLocaleString()} > ${config.minVolumeThreshold.toLocaleString()} threshold (or relative ${relativeVol.toFixed(2)}x avg20), price ${input.close.toFixed(2)} > ${floorLabel}`
-      : `Volume ${input.volume.toLocaleString()} ${!volumeOk ? `≤ ${config.minVolumeThreshold.toLocaleString()} threshold (relative ${relativeVol.toFixed(2)}x)` : "OK"}${!priceOk ? `, price ${input.close.toFixed(2)} ≤ ${floorLabel}` : ""}`,
+      ? `Volume ${input.volume.toLocaleString()} > ${config.minVolumeThreshold.toLocaleString()} threshold, price ${input.close.toFixed(2)} > ${minPriceFloor}`
+      : `Volume ${input.volume.toLocaleString()} ${input.volume <= config.minVolumeThreshold ? `≤ ${config.minVolumeThreshold.toLocaleString()} threshold` : "OK"}${input.close <= minPriceFloor ? `, price ${input.close.toFixed(2)} ≤ ${minPriceFloor}` : ""}`,
     reasonAr: passed
       ? `الحجم ${input.volume.toLocaleString()} أعلى من الحد ${config.minVolumeThreshold.toLocaleString()}، السعر ${input.close.toFixed(2)}`
       : `الحجم ${input.volume.toLocaleString()} أقل من الحد ${config.minVolumeThreshold.toLocaleString()}`,
@@ -761,7 +769,8 @@ function determineSignal(ctx: SignalContext): {
 
 function computeStockStrength(
   input: GateAnalysisInput,
-  sectorPerformance?: number
+  sectorPerformance?: number,
+  marketLabel?: string,
 ): { strength: number; proxy: string; proxyAr: string } {
   // Simple strength scoring based on available data
   let score = 50; // neutral base
@@ -795,9 +804,11 @@ function computeStockStrength(
   // Clamp to 0-100
   score = Math.max(0, Math.min(100, score));
 
-  // Market proxy based on sector if available
-  let proxy = "EGX Market";
-  let proxyAr = "سوق الأوراق المالية";
+  // ARCH-OPTION-2 (2026-10-10): market proxy ديناميكي
+  // (كان hardcoded "EGX Market" — كان غلط لكل سهم US/Saudi/Crypto)
+  const marketAr = marketLabel ?? marketNameAr(undefined);  // default EGX if no market provided
+  let proxy = marketAr === 'البورصة المصرية' ? 'EGX Market' : 'Market';
+  let proxyAr = marketAr;
 
   if (sectorPerformance !== undefined) {
     if (sectorPerformance > 1) {
@@ -831,6 +842,9 @@ export function analyzeGates(
   input: GateAnalysisInput,
   persona: GatePersona = "gambler"
 ): GateAnalysisOutput {
+  // ARCH-OPTION-2 (2026-10-10): load MarketProfile from input.market
+  const marketProfile = getMarketProfile(input.market);
+
   // -----------------------------------------------------------------------
   // Step 1: Detect trend
   // Pine: trend_bull = close > sma20 and sma20 > sma50
@@ -841,9 +855,9 @@ export function analyzeGates(
   const trendRange = !trendBull && !trendBear;
 
   // -----------------------------------------------------------------------
-  // Step 2: Get regime config (dynamic thresholds)
+  // Step 2: Get regime config (dynamic thresholds from MarketProfile)
   // -----------------------------------------------------------------------
-  const config = getRegimeConfig(trendBull, trendBear, trendRange);
+  const config = getRegimeConfig(trendBull, trendBear, trendRange, marketProfile);
 
   // -----------------------------------------------------------------------
   // Step 3: Market stage (6 stages with Arabic)
@@ -890,7 +904,7 @@ export function analyzeGates(
   // -----------------------------------------------------------------------
   // Step 5: Evaluate all 5 gates
   // -----------------------------------------------------------------------
-  const gate1 = evaluateGate1(input, config);
+  const gate1 = evaluateGate1(input, config, marketProfile.min_price);  // ARCH-OPTION-2: dynamic price floor
   const gate2 = evaluateGate2(input, trendBull, trendBear, trendRange, persona);
 
   // Gate 3 — using pre-computed S/R proximity
@@ -962,7 +976,7 @@ export function analyzeGates(
   // Step 9: Stock strength & market proxy
   // -----------------------------------------------------------------------
   const { strength: stockStrength, proxy: marketProxy, proxyAr: marketProxyAr } =
-    computeStockStrength(input, input.sectorPerformance);
+    computeStockStrength(input, input.sectorPerformance, marketProfile.market_name_ar);  // ARCH-OPTION-2: pass market label
 
   // -----------------------------------------------------------------------
   // Step 9.5: BB Squeeze Bonus (Gemini Dynamic Analysis)

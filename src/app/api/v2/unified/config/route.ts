@@ -23,6 +23,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSelfBaseUrl } from '@/lib/server-url';
+import { SIGNAL_THRESHOLDS } from '@/lib/canonical-signal';
+import { MARKET_PROFILE_DEFAULTS, listMarketProfiles } from '@/lib/market-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -281,18 +283,37 @@ export async function GET(request: NextRequest) {
       scoring: {
         min: 0,
         max: 100,
-        // RULE-73 UNIFY (2026-10-10): توحيد thresholds على canonical-signal.ts
-        // قبل كده: 80/70/60/50/40 — نظام رابع مختلف، بيعطي توصيات متناقضة مع canonical.
-        // دلوقتي: 78/65/55/40/25 = نفس thresholds الموجودة في canonical-signal.ts
-        // (Rule 28: لا تكرار — مصدر واحد بس للـ thresholds).
+        // ARCH-OPTION-2 (2026-10-10): توحيد SIGNAL_THRESHOLDS من canonical-signal.ts
+        // (كانت 80/70/60/50/40 — نظام رابع مختلف عن canonical 78/65/55/40/25)
         thresholds: {
-          strong_buy: 78,
-          buy: 65,
-          hold: 55,
-          avoid: 40,
-          strong_avoid: 25,
+          strong_buy: SIGNAL_THRESHOLDS.STRONG_BUY,   // 78
+          buy: SIGNAL_THRESHOLDS.BUY,                  // 65
+          hold: SIGNAL_THRESHOLDS.ACCUMULATE,          // 55
+          avoid: SIGNAL_THRESHOLDS.REDUCE,             // 40
+          strong_avoid: SIGNAL_THRESHOLDS.STRONG_SELL, // 25
         },
       },
+      // ARCH-OPTION-2 (2026-10-10): expose MarketProfile defaults for each market
+      market_profiles: listMarketProfiles().map(key => {
+        const p = MARKET_PROFILE_DEFAULTS[key];
+        return {
+          market_code: p.market_code,
+          market_name_ar: p.market_name_ar,
+          currency: p.currency,
+          rsi_overbought: p.rsi_overbought,
+          rsi_oversold: p.rsi_oversold,
+          min_score_buy: p.min_score_buy,
+          min_score_strong: p.min_score_strong,
+          min_rr: p.min_rr,
+          stop_max_pct: p.stop_max_pct,
+          stop_min_pct: p.stop_min_pct,
+          target_min_pct: p.target_min_pct,
+          target_max_pct: p.target_max_pct,
+          position_size_pct: p.position_size_pct,
+          is_continuous_24_7: p.is_continuous_24_7,
+          has_fundamentals: p.weights.fundamental > 0,
+        };
+      }),
     };
 
     return NextResponse.json({
